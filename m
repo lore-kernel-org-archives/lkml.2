@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754147Ab0IODbK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 23:31:10 -0400
-Received: from mga11.intel.com ([192.55.52.93]:40320 "EHLO mga11.intel.com"
+	id S1753642Ab0IODm0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 23:42:26 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:47981 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752244Ab0IODbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 23:31:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,368,1280732400"; 
-   d="scan'208";a="837724229"
-Date: Wed, 15 Sep 2010 11:31:00 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: "Li, Shaohua" <shaohua.li@intel.com>
-Cc: Neil Brown <neilb@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: Deadlock possibly caused by too_many_isolated.
-Message-ID: <20100915033059.GA12542@localhost>
-References: <20100915091118.3dbdc961@notabene>
- <4C90139A.1080809@redhat.com>
- <20100915122334.3fa7b35f@notabene>
- <20100915023735.GA9175@localhost>
- <20100915025454.GA10230@localhost>
- <20100915030640.GA11141@localhost>
- <20100915031343.GA12005@localhost>
- <1284520712.30133.1.camel@sli10-conroe.sh.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284520712.30133.1.camel@sli10-conroe.sh.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752331Ab0IODmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 23:42:25 -0400
+Date: Wed, 15 Sep 2010 13:42:20 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?B?IlV3ZSBLbGVpbmUtS8O2bmlnIg==?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Greg KH <greg@kroah.com>, Jan Blunck <jblunck@infradead.org>
+Subject: linux-next: manual merge of the bkl-vfs tree with the usb tree
+Message-Id: <20100915134220.743bd584.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 15, 2010 at 11:18:32AM +0800, Li, Shaohua wrote:
+Hi Arnd,
 
-> > +	if (!(sc->gfp_mask & __GFP_WAIT))
-> > +		return 0;
-> > +
-> it appears __GFP_WAIT allocation doesn't go to direct reclaim.
+Today's linux-next merge of the bkl-vfs tree got a conflict in
+drivers/usb/gadget/inode.c between commit
+e77e6e934520456e9e47f51847eb9dffa3dca9e5 ("usb gadget: don't save bind
+callback in struct usb_gadget_driver") from the usb tree and commit
+5cfc17f9036a43727c498ababa0ae79148bb4fb5 ("BKL: Explicitly add BKL around
+get_sb/fill_super") from the bkl-vfs tree.
 
-Good point! So we are returning to its very first version ;)
+Just context changes. I fixed it up (see below) and can carry the fix as
+necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1135,6 +1135,7 @@ static int too_many_isolated(struct zone *zone, int file,
- 		struct scan_control *sc)
- {
- 	unsigned long inactive, isolated;
-+	int ratio;
- 
- 	if (current_is_kswapd())
- 		return 0;
-@@ -1150,7 +1151,9 @@ static int too_many_isolated(struct zone *zone, int file,
- 		isolated = zone_page_state(zone, NR_ISOLATED_ANON);
- 	}
- 
--	return isolated > inactive;
-+	ratio = sc->gfp_mask & (__GFP_IO | __GFP_FS) ? 1 : 8;
-+
-+	return isolated > inactive * ratio;
- }
- 
- /*
+diff --cc drivers/usb/gadget/inode.c
+index e2e8eda,82a88d3..0000000
+--- a/drivers/usb/gadget/inode.c
++++ b/drivers/usb/gadget/inode.c
+@@@ -2041,13 -2043,19 +2041,19 @@@ gadgetfs_fill_super (struct super_bloc
+  	struct dentry	*d;
+  	struct dev_data	*dev;
+  
+- 	if (the_device)
++ 	lock_kernel();
++ 
++ 	if (the_device) {
++ 		unlock_kernel();
+  		return -ESRCH;
++ 	}
+  
+  	/* fake probe to determine $CHIP */
+ -	(void) usb_gadget_register_driver (&probe_driver);
+ +	(void) usb_gadget_probe_driver(&probe_driver, gadgetfs_probe);
+- 	if (!CHIP)
++ 	if (!CHIP) {
++ 		unlock_kernel();
+  		return -ENODEV;
++ 	}
+  
+  	/* superblock */
+  	sb->s_blocksize = PAGE_CACHE_SIZE;
