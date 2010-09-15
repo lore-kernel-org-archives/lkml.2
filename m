@@ -1,383 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294Ab0IONnE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 09:43:04 -0400
-Received: from relay03-haj2.antispameurope.com ([83.246.65.53]:45699 "EHLO
-	relay03-haj2.antispameurope.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751492Ab0IONnB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 09:43:01 -0400
-Message-ID: <4C90CD36.6020602@iis.fraunhofer.de>
-Date: Wed, 15 Sep 2010 15:42:14 +0200
-From: Manuel Stahl <manuel.stahl@iis.fraunhofer.de>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; de; rv:1.9.2.9) Gecko/20100825 Lightning/1.0b2 Thunderbird/3.1.3
-MIME-Version: 1.0
-To: Jonathan Corbet <corbet@lwn.net>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Greg KH <greg@kroah.com>, linux-serial@vger.kernel.org
-Subject: Re: [PATCH] Add sc16is7x2 driver
-References: <4C80F419.5070601@iis.fraunhofer.de>	<20100913172544.a81e8422.akpm@linux-foundation.org>	<4C8F7381.50300@iis.fraunhofer.de> <20100914072746.4dad4e34@bike.lwn.net>
-In-Reply-To: <20100914072746.4dad4e34@bike.lwn.net>
-Content-Type: multipart/mixed;
- boundary="------------020507020101050802050307"
+	id S1753657Ab0IONnh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 09:43:37 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:34621 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752896Ab0IONng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 09:43:36 -0400
+From: florian@mickler.org
+To: linux-kernel@vger.kernel.org
+Cc: ebiederm@xmission.com, Florian Mickler <florian@mickler.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>
+Subject: [v2 PATCH rfc] scripts/get_maintainer.pl: add interactive mode
+Date: Wed, 15 Sep 2010 15:43:00 +0200
+Message-Id: <1284558207-10223-1-git-send-email-florian@mickler.org>
+X-Mailer: git-send-email 1.7.2
+In-Reply-To: <1284552799-12748-1-git-send-email-florian@mickler.org>
+References: <1284552799-12748-1-git-send-email-florian@mickler.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------020507020101050802050307
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+This is a first version of an interactive mode for
+scripts/get_maintainer.pl .
 
-OK, here is an implementation with threaded irqs. Still not sure about 
-the locking stuff. Maybe someone experienced with uart drivers can help?
+It allows the user to interact with the script. Each cc candidate can be
+selected and deselected and a shortlog of authored commits can be
+displayed for each candidate.
 
-Am 14.09.2010 15:27, schrieb Jonathan Corbet:
-> On Tue, 14 Sep 2010 15:07:13 +0200
-> Manuel Stahl<manuel.stahl@iis.fraunhofer.de>  wrote:
->
->> Where can I find some example how to use the new threaded irqs?
->
-> Basic description here: http://lwn.net/Articles/302043/
->
-> If you grep request_threaded_irq() in drivers/, you'll certainly find
-> some real-world examples.
->
-> jon
+The menu is displayed via STDERR, the end result is outputted to STDOUT.
 
+This allows using get_maintainer.pl in interactive mode via
+git send-email --cc-cmd.
 
-
---------------020507020101050802050307
-Content-Type: text/plain;
- name="sc16is7x2-use-threaded-irqs.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="sc16is7x2-use-threaded-irqs.patch"
-
-sc16is7x2: use threaded irqs
-
-Signed-off-by: Manuel Stahl <manuel.stahl@iis.fraunhofer.de>
 ---
- drivers/serial/sc16is7x2.c |  115 +++++++++++++++----------------------------
- 1 files changed, 40 insertions(+), 75 deletions(-)
+ scripts/get_maintainer.pl |  119 +++++++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 115 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/serial/sc16is7x2.c b/drivers/serial/sc16is7x2.c
-index a9bcd03..04cb1ad 100644
---- a/drivers/serial/sc16is7x2.c
-+++ b/drivers/serial/sc16is7x2.c
-@@ -92,28 +92,13 @@ struct sc16is7x2_channel {
- struct sc16is7x2_chip {
- 	struct spi_device *spi;
- 	struct gpio_chip gpio;
--	struct mutex	 lock;
- 	struct sc16is7x2_channel channel[2];
+changes from v1: I forgot to git add a small bugfix, that made it actually work 
+
+TODO:
+ - fixup multiple file case
+ - fixup chief_penguin handling
+ - make output prettier
+ - usability?
+
+diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
+index b228198..2e15c22 100755
+--- a/scripts/get_maintainer.pl
++++ b/scripts/get_maintainer.pl
+@@ -32,6 +32,7 @@ my $email_git_max_maintainers = 5;
+ my $email_git_min_percent = 5;
+ my $email_git_since = "1-year-ago";
+ my $email_hg_since = "-365";
++my $interactive = 0;
+ my $email_remove_duplicates = 1;
+ my $output_multiline = 1;
+ my $output_separator = ", ";
+@@ -51,6 +52,8 @@ my $help = 0;
  
--	/* for handling irqs: need workqueue since we do spi_sync */
--	struct workqueue_struct *workqueue;
--	struct work_struct work;
--	/* set to 1 to make the workhandler exit as soon as possible */
--	int force_end_work;
--	/* need to know we are suspending to avoid deadlock on workqueue */
--	int suspending;
--
-+	/* set to true to make the work thread exit as soon as possible */
-+	bool force_end_work;
- 	struct spi_message fifo_message;
+ my $exit = 0;
  
--#define UART_BUG_TXEN	BIT(1)	/* UART has buggy TX IIR status */
--#define UART_BUG_NOMSR	BIT(2)	/* UART has buggy MSR status bits (Au1x00) */
--#define UART_BUG_THRE	BIT(3)	/* UART has buggy THRE reassertion */
--	u16		bugs;		/* port bugs */
--
--#define LSR_SAVE_FLAGS UART_LSR_BRK_ERROR_BITS
--	u8		lsr_saved_flags;
--#define MSR_SAVE_FLAGS UART_MSR_ANY_DELTA
--	u8		msr_saved_flags;
-+	struct mutex	io_lock;	/* lock for GPIO functions */
- 	u8		io_dir;		/* cache for IODir register */
- 	u8		io_state;	/* cache for IOState register */
- 	u8		io_gpio;	/* PIN is GPIO */
-@@ -451,7 +436,7 @@ static void sc16is7x2_shutdown(struct uart_port *port)
- 	BUG_ON(!chan);
- 	BUG_ON(!ts);
- 
--	if (ts->suspending)
-+	if (ts->force_end_work)
- 		return;
- 
- 	/* Disable interrupts from this port */
-@@ -639,7 +624,7 @@ static void sc16is7x2_release_port(struct uart_port *port)
- 	struct sc16is7x2_chip *ts = chan->chip;
- 
- 	dev_dbg(&ts->spi->dev, "%s\n", __func__);
--	ts->force_end_work = 1;
-+	ts->force_end_work = true;
- }
- 
- static int sc16is7x2_request_port(struct uart_port *port)
-@@ -709,7 +694,7 @@ static int sc16is7x2_gpio_request(struct gpio_chip *gpio, unsigned offset)
- 	BUG_ON(offset > 8);
- 	dev_dbg(&ts->spi->dev, "%s: offset = %d\n", __func__, offset);
- 
--	mutex_lock(&ts->lock);
-+	mutex_lock(&ts->io_lock);
- 
- 	/* GPIO 0:3 and 4:7 can only be controlled as block */
- 	ts->io_gpio |= BIT(offset);
-@@ -720,7 +705,7 @@ static int sc16is7x2_gpio_request(struct gpio_chip *gpio, unsigned offset)
- 		ret = sc16is7x2_write(ts->spi, REG_IOC, 0, ts->io_control);
- 	}
- 
--	mutex_unlock(&ts->lock);
-+	mutex_unlock(&ts->io_lock);
- 
- 	return ret;
- }
-@@ -734,7 +719,7 @@ static void sc16is7x2_gpio_free(struct gpio_chip *gpio, unsigned offset)
- 
- 	BUG_ON(offset > 8);
- 
--	mutex_lock(&ts->lock);
-+	mutex_lock(&ts->io_lock);
- 
- 	/* GPIO 0:3 and 4:7 can only be controlled as block */
- 	ts->io_gpio &= ~BIT(offset);
-@@ -746,7 +731,7 @@ static void sc16is7x2_gpio_free(struct gpio_chip *gpio, unsigned offset)
- 		sc16is7x2_write(ts->spi, REG_IOC, 0, ts->io_control);
- 	}
- 
--	mutex_unlock(&ts->lock);
-+	mutex_unlock(&ts->io_lock);
- }
- 
- static int sc16is7x2_direction_input(struct gpio_chip *gpio, unsigned offset)
-@@ -757,12 +742,12 @@ static int sc16is7x2_direction_input(struct gpio_chip *gpio, unsigned offset)
- 
- 	BUG_ON(offset > 8);
- 
--	mutex_lock(&ts->lock);
-+	mutex_lock(&ts->io_lock);
- 
- 	ts->io_dir &= ~BIT(offset);
- 	io_dir = ts->io_dir;
- 
--	mutex_unlock(&ts->lock);
-+	mutex_unlock(&ts->io_lock);
- 
- 	return sc16is7x2_write_async(ts->spi, REG_IOD, 0, io_dir);
- }
-@@ -776,7 +761,7 @@ static int sc16is7x2_direction_output(struct gpio_chip *gpio, unsigned offset,
- 
- 	BUG_ON(offset > 8);
- 
--	mutex_lock(&ts->lock);
-+	mutex_lock(&ts->io_lock);
- 
- 	if (value)
- 		ts->io_state |= BIT(offset);
-@@ -791,7 +776,7 @@ static int sc16is7x2_direction_output(struct gpio_chip *gpio, unsigned offset,
- 		sc16is7x2_add_write_cmd(&cmds[1], REG_IOD, 0, ts->io_dir);
- 	}
- 
--	mutex_unlock(&ts->lock);
-+	mutex_unlock(&ts->io_lock);
- 
- 	return sc16is7x2_spi_async(ts->spi, cmds, 2);
- }
-@@ -804,7 +789,7 @@ static int sc16is7x2_get(struct gpio_chip *gpio, unsigned offset)
- 
- 	BUG_ON(offset > 8);
- 
--	mutex_lock(&ts->lock);
-+	mutex_lock(&ts->io_lock);
- 
- 	if (ts->io_dir & BIT(offset)) {
- 		/* Output: return cached level */
-@@ -818,7 +803,7 @@ static int sc16is7x2_get(struct gpio_chip *gpio, unsigned offset)
- 		}
- 	}
- 
--	mutex_unlock(&ts->lock);
-+	mutex_unlock(&ts->io_lock);
- 
- 	return level;
- }
-@@ -831,7 +816,7 @@ static void sc16is7x2_set(struct gpio_chip *gpio, unsigned offset, int value)
- 
- 	BUG_ON(offset > 8);
- 
--	mutex_lock(&ts->lock);
-+	mutex_lock(&ts->io_lock);
- 
- 	if (value)
- 		ts->io_state |= BIT(offset);
-@@ -839,7 +824,7 @@ static void sc16is7x2_set(struct gpio_chip *gpio, unsigned offset, int value)
- 		ts->io_state &= ~BIT(offset);
- 	io_state = ts->io_state;
- 
--	mutex_unlock(&ts->lock);
-+	mutex_unlock(&ts->io_lock);
- 
- 	sc16is7x2_write_async(ts->spi, REG_IOS, 0, io_state);
- }
-@@ -971,7 +956,7 @@ static bool sc16is7x2_msg_add_fifo_tx(struct sc16is7x2_chip *ts, unsigned ch)
- 	}
- 
- 	txlvl = sc16is7x2_read(ts->spi, REG_TXLVL, ch);
--	if (txlvl <= 0) {
-+	if (txlvl == 0) {
- 		dev_dbg(&ts->spi->dev, " fifo full\n");
- 		return false;
- 	}
-@@ -1066,21 +1051,18 @@ static bool sc16is7x2_handle_channel(struct sc16is7x2_chip *ts, unsigned ch)
- 	return (chan->iir & UART_IIR_NO_INT) == 0x00;
- }
- 
--static void sc16is7x2_work(struct work_struct *w)
-+static irqreturn_t sc16is7x2_work(int irq, void *data)
- {
--	struct sc16is7x2_chip *ts =
--			container_of(w, struct sc16is7x2_chip, work);
-+	struct sc16is7x2_chip *ts = (struct sc16is7x2_chip *)data;
- 	unsigned pending = 0;
- 	unsigned ch = 0;
- 
- 	dev_dbg(&ts->spi->dev, "%s\n", __func__);
--	BUG_ON(!w);
- 	BUG_ON(!ts);
- 
--
- 	if (ts->force_end_work) {
- 		dev_dbg(&ts->spi->dev, "%s: force end!\n", __func__);
--		return;
-+		return IRQ_NONE;
- 	}
- 
- 	if (ts->channel[0].active)
-@@ -1089,29 +1071,28 @@ static void sc16is7x2_work(struct work_struct *w)
- 		pending |= BIT(1);
- 
- 	do {
--		mutex_lock(&(ts->channel[ch].lock));
- 		if (pending & BIT(ch) && ts->channel[ch].active) {
- 			if (!sc16is7x2_handle_channel(ts, ch))
- 				pending &= ~BIT(ch);
- 		}
--		mutex_unlock(&(ts->channel[ch].lock));
- 		ch ^= 1;	/* switch channel */
--	} while (!ts->force_end_work && !freezing(current) && pending);
-+	} while (!ts->force_end_work && pending);
- 
- 	dev_dbg(&ts->spi->dev, "%s finished\n", __func__);
++my %shortlog_buffer;
 +
-+	return IRQ_HANDLED;
+ my @penguin_chief = ();
+ push(@penguin_chief, "Linus Torvalds:torvalds\@linux-foundation.org");
+ #Andrew wants in on most everything - 2009/01/14
+@@ -91,7 +94,8 @@ my %VCS_cmds_git = (
+     "blame_range_cmd" => "git blame -l -L \$diff_start,+\$diff_length \$file",
+     "blame_file_cmd" => "git blame -l \$file",
+     "commit_pattern" => "^commit [0-9a-f]{40,40}",
+-    "blame_commit_pattern" => "^([0-9a-f]+) "
++    "blame_commit_pattern" => "^([0-9a-f]+) ",
++    "shortlog_cmd" => "git log --no-color --oneline --since=\$email_git_since --author=\"\$email\" -- \$file"
+ );
+ 
+ my %VCS_cmds_hg = (
+@@ -104,7 +108,8 @@ my %VCS_cmds_hg = (
+     "blame_range_cmd" => "",		# not supported
+     "blame_file_cmd" => "hg blame -c \$file",
+     "commit_pattern" => "^commit [0-9a-f]{40,40}",
+-    "blame_commit_pattern" => "^([0-9a-f]+):"
++    "blame_commit_pattern" => "^([0-9a-f]+):",
++    "shortlog_cmd" => "ht log --date=\$email_hg_since"
+ );
+ 
+ if (-f "${lk_path}.get_maintainer.conf") {
+@@ -142,6 +147,7 @@ if (!GetOptions(
+ 		'git-min-percent=i' => \$email_git_min_percent,
+ 		'git-since=s' => \$email_git_since,
+ 		'hg-since=s' => \$email_hg_since,
++		'i|interactive!' => \$interactive,
+ 		'remove-duplicates!' => \$email_remove_duplicates,
+ 		'm!' => \$email_maintainer,
+ 		'n!' => \$email_usename,
+@@ -219,6 +225,8 @@ if ($email_git_all_signature_types) {
+     $signaturePattern = "(.+?)[Bb][Yy]:";
  }
  
--static irqreturn_t sc16is7x2_interrupt(int irq, void *dev_id)
-+static irqreturn_t sc16is7x2_irq(int irq, void *data)
- {
--	struct sc16is7x2_chip *ts = dev_id;
--
--	dev_dbg(&ts->spi->dev, "%s\n", __func__);
-+	struct sc16is7x2_chip *ts = (struct sc16is7x2_channel *)data;
++
++
+ ## Read MAINTAINERS for type/value pairs
  
--	if (!ts->force_end_work && !work_pending(&ts->work) &&
--	    !freezing(current) && !ts->suspending)
--		queue_work(ts->workqueue, &ts->work);
+ my @typevalue = ();
+@@ -440,10 +448,14 @@ foreach my $file (@files) {
+     if ($email && $email_git) {
+ 	vcs_file_signoffs($file);
+     }
 -
--	return IRQ_HANDLED;
-+	/* It takes too long to read the regs over SPI,
-+	 * so just wake up the thread */
-+	if (ts->channel[0].active || ts->channel[1].active)
-+		return IRQ_WAKE_THREAD;
-+	else
-+		return IRQ_NONE;
+     if ($email && $email_git_blame) {
+ 	vcs_file_blame($file);
+     }
++    if ($email && $interactive){
++	#FIXME: multiple file case is broken at the moment
++	#FIXME: penguin_chief handlich is broken at the moment
++	vcs_interactive_menu($file);
++    }
  }
  
- /* ******************************** INIT ********************************* */
-@@ -1229,16 +1210,16 @@ static int __devinit sc16is7x2_probe(struct spi_device *spi)
- 	if (!ts)
- 		return -ENOMEM;
- 
--	mutex_init(&ts->lock);
-+	mutex_init(&ts->io_lock);
- 	spi_set_drvdata(spi, ts);
- 	ts->spi = spi;
--	ts->force_end_work = 1;
-+	ts->force_end_work = true;
- 
- 	/* Reset the chip TODO: and disable IRQ output */
- 	sc16is7x2_write(spi, REG_IOC, 0, IOC_SRESET);
- 
--	ret = request_irq(spi->irq, sc16is7x2_interrupt,
--			IRQF_TRIGGER_FALLING | IRQF_SHARED, "sc16is7x2", ts);
-+	ret = request_threaded_irq(spi->irq, sc16is7x2_irq, sc16is7x2_work,
-+			IRQF_TRIGGER_FALLING | IRQF_SHARED, DRIVER_NAME, ts);
- 	if (ret) {
- 		dev_warn(&ts->spi->dev, "cannot register interrupt\n");
- 		goto exit_destroy;
-@@ -1255,14 +1236,7 @@ static int __devinit sc16is7x2_probe(struct spi_device *spi)
- 	if (ret)
- 		goto exit_uart1;
- 
--	ts->workqueue = create_freezeable_workqueue(DRIVER_NAME);
--	if (!ts->workqueue) {
--		dev_warn(&ts->spi->dev, "cannot create workqueue\n");
--		ret = -EBUSY;
--		goto exit_gpio;
--	}
--	INIT_WORK(&ts->work, sc16is7x2_work);
--	ts->force_end_work = 0;
-+	ts->force_end_work = false;
- 
- 	printk(KERN_INFO DRIVER_NAME " at CS%d (irq %d), 2 UARTs, 8 GPIOs\n"
- 			"    eser%d, eser%d, gpiochip%d\n",
-@@ -1272,9 +1246,6 @@ static int __devinit sc16is7x2_probe(struct spi_device *spi)
- 
- 	return ret;
- 
--exit_gpio:
--	ret = gpiochip_remove(&ts->gpio);
--
- exit_uart1:
- 	sc16is7x2_unregister_uart_port(ts, 1);
- 
-@@ -1286,7 +1257,7 @@ exit_irq:
- 
- exit_destroy:
- 	dev_set_drvdata(&spi->dev, NULL);
--	mutex_destroy(&ts->lock);
-+	mutex_destroy(&ts->io_lock);
- 	kfree(ts);
- 	return ret;
+ if ($keywords) {
+@@ -476,6 +488,7 @@ if ($email) {
+     }
  }
-@@ -1299,14 +1270,8 @@ static int __devexit sc16is7x2_remove(struct spi_device *spi)
- 	if (ts == NULL)
- 		return -ENODEV;
  
-+	ts->force_end_work = true;
- 	free_irq(spi->irq, ts);
--	ts->force_end_work = 1;
--
--	if (ts->workqueue) {
--		flush_workqueue(ts->workqueue);
--		destroy_workqueue(ts->workqueue);
--		ts->workqueue = NULL;
--	}
++
+ if ($email || $email_list) {
+     my @to = ();
+     if ($email) {
+@@ -545,6 +558,7 @@ MAINTAINER field selection options:
+     --git-blame => use git blame to find modified commits for patch or file
+     --git-since => git history to use (default: $email_git_since)
+     --hg-since => hg history to use (default: $email_hg_since)
++    --interactive => display a menu (mostly useful if used with the --git option)
+     --m => include maintainer(s) if any
+     --n => include name 'Full Name <addr\@domain.tld>'
+     --l => include list(s) if any
+@@ -1104,6 +1118,103 @@ sub vcs_exists {
+     return 0;
+ }
  
- 	ret = sc16is7x2_unregister_uart_port(ts, 0);
- 	if (ret)
-@@ -1321,7 +1286,7 @@ static int __devexit sc16is7x2_remove(struct spi_device *spi)
- 		goto exit_error;
- 	}
++sub vcs_interactive_menu {
++    my ($file) = @_;
++
++    return if (!vcs_exists());
++
++    my %selected;
++    my %shortlog;
++    my $input;
++    my $count = 0;
++
++    #select maintainers by default
++    foreach my $entry (@email_to){
++	    my $role = $entry->[1];
++	    $selected{$count} = ($role =~ /maintainer:/);
++	    $count++;
++    }
++
++    #menu loop
++    do {
++	my $count = 0;
++	foreach my $entry (@email_to){
++	    my $email = $entry->[0];
++	    my $role = $entry->[1];
++	    if ($selected{$count}){
++		print STDERR "* ";
++	    } else {
++		print STDERR "  ";
++	    }
++	    print STDERR "$count: $email,\t\t $role";
++	    print STDERR "\n";
++	    if ($shortlog{$count}){
++		my @lines = @{vcs_get_shortlog($email, $file)};
++		print STDERR "\tauthored commits:" . @lines . ".\n";
++		foreach my $commit (@lines){
++		    print STDERR "\t$commit\n";
++		}
++		print STDERR "\n";
++	    }
++	    $count++;
++	}
++	print STDERR "\n";
++	print STDERR "Choose whom to cc by entering a commaseperated list of numbers and hitting enter.\n";
++	print STDERR "To show a short list of commits, precede the number by a '?',\n";
++	print STDERR "A blank line indicates that you are satisfied with your choice.\n";
++	$input = <STDIN>;
++	chomp($input);
++
++	my @wish = split(/[, ]+/,$input);
++	foreach my $nr (@wish){
++		my $logtoggle = 0;
++		if ($nr =~ /\?/){
++			$nr =~ s/\?//;
++			$logtoggle = 1;
++		}
++
++		#skip out of bounds numbers
++		next unless ($nr <= $count && $nr >= 0);
++
++		if ($logtoggle){
++			$shortlog{$nr} = !$shortlog{$nr};
++		} else {
++			$selected{$nr} = !$selected{$nr};
++		}
++	};
++    } while(length($input) > 0);
++
++    #drop not selected entries
++    $count = 0;
++    my @new_emailto;
++    foreach my $entry (@email_to){
++	if ($selected{$count}){
++		push(@new_emailto,$email_to[$count]);
++		print STDERR "$count: ";
++		print STDERR $email_to[$count]->[0];
++		print STDERR ",\t\t ";
++		print STDERR $email_to[$count]->[1];
++		print STDERR "\n";
++	}
++	$count++;
++    }
++    @email_to = @new_emailto;
++}
++
++sub vcs_get_shortlog {
++	my $email = shift;
++	my ($file) = @_;
++
++	if (!$shortlog_buffer{$email}){
++		my $cmd = $VCS_cmds{"shortlog_cmd"};
++		$cmd =~ s/(\$\w+)/$1/eeg;		#interpolate $cmd
++
++		my @lines = &{$VCS_cmds{"execute_cmd"}}($cmd);
++		$shortlog_buffer{$email}=\@lines;
++	}
++	return $shortlog_buffer{$email};
++}
++
+ sub vcs_assign {
+     my ($role, $divisor, @lines) = @_;
  
--	mutex_destroy(&ts->lock);
-+	mutex_destroy(&ts->io_lock);
- 	kfree(ts);
+@@ -1179,7 +1290,7 @@ sub vcs_file_blame {
+ 	my @commit_signers = ();
  
- exit_error:
+ 	my $cmd = $VCS_cmds{"find_commit_signers_cmd"};
+-	$cmd =~ s/(\$\w+)/$1/eeg;	#interpolate $cmd
++	$cmd =~ s/(\$\w+)/$1/eeg;	#substitute variables in $cmd
+ 
+ 	($commit_count, @commit_signers) = vcs_find_signers($cmd);
+ 	push(@signers, @commit_signers);
 -- 
-1.7.2.3
+1.7.2
 
-
---------------020507020101050802050307--
