@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309Ab0IOGfH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 02:35:07 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:34105 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429Ab0IOGfF (ORCPT
+	id S1752605Ab0IOGg1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 02:36:27 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:39930 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751934Ab0IOGgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 02:35:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=s1cXa6fQ2pnSLthR3MvzO0bErIoOGUTm8FY8j/pOvLHLITf62D3SUoEcbW7+xG2zgs
-         aXo2sCIOE46mgwLp16GnepIr1Hy22GYga8wwQ+9El1ENvmpH0xZH/fMmHb8VcUAYmbBu
-         zoIgoCs4hTZju23HF7/GOrOedoIMe+s6KPoeo=
-Date: Wed, 15 Sep 2010 09:35:18 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: "Ted Ts'o" <tytso@mit.edu>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, Jan Kara <jack@suse.cz>,
-        Eric Sandeen <sandeen@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ext4: fix NULL pointer dereference in
- print_daily_error_info
-Message-ID: <20100915063517.GA8456@swordfish.minsk.epam.com>
-References: <20100914125102.GA5318@swordfish.minsk.epam.com>
- <20100914194641.GB3730@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100914194641.GB3730@thunk.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 15 Sep 2010 02:36:25 -0400
+Date: Wed, 15 Sep 2010 08:35:25 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Ben Dooks <ben-i2c@fluff.org>
+Cc: Kyungmin Park <kmpark@infradead.org>,
+        Haavard Skinnemoen <hskinnemoen@atmel.com>,
+        Wolfram Sang <w.sang@pengutronix.de>, Tejun Heo <tj@kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] I2C-GPIO: Don't include the asm/gpio.h directly
+Message-ID: <20100915083525.16786342@hyperion.delvare>
+In-Reply-To: <20100914232026.GB7494@trinity.fluff.org>
+References: <20100914073053.GA15611@july>
+	<20100914232026.GB7494@trinity.fluff.org>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix NULL pointer dereference in print_daily_error_info, when   
-called on unmounted fs (EXT4_SB(sb) returns NULL), by removing error 
-reporting timer in ext4_put_super.
+On Wed, 15 Sep 2010 00:20:26 +0100, Ben Dooks wrote:
+> On Tue, Sep 14, 2010 at 04:30:53PM +0900, Kyungmin Park wrote:
+> > Don't include asm/gpio.h directly. Use the linux/gpio.h.
+> > 
+> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> 
+> will merge this, unless Jean wants to do it, at the next merge window.
 
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Please do, i2c-gpio is mostly used on embedded systems.
 
----
-
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 2614774..751997d 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -719,6 +719,7 @@ static void ext4_put_super(struct super_block *sb)
- 			ext4_abort(sb, "Couldn't clean up the journal");
- 	}
- 
-+	del_timer(&sbi->s_err_report);
- 	ext4_release_system_zone(sb);
- 	ext4_mb_release(sb);
- 	ext4_ext_release(sb);
-
-
+Thanks,
+-- 
+Jean Delvare
