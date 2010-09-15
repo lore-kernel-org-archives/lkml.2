@@ -1,122 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754447Ab0IOQVM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 12:21:12 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:54148 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753402Ab0IOQVK (ORCPT
+	id S1754620Ab0IOQVa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 12:21:30 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:52753 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754525Ab0IOQV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 12:21:10 -0400
-X-SpamScore: -8
-X-BigFish: VPS-8(zzbb2cK98dNzz1202hzz8275bhz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L8SQQ9-01-2HV-02
-X-M-MSG: 
-Date: Wed, 15 Sep 2010 18:20:34 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-CC: Don Zickus <dzickus@redhat.com>, "gorcunov@gmail.com" <gorcunov@gmail.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "eranian@google.com" <eranian@google.com>
-Subject: [PATCH] perf, x86: catch spurious interrupts after disabling
- counters
-Message-ID: <20100915162034.GO13563@erda.amd.com>
-References: <1284118900.402.35.camel@laptop>
- <20100910132741.GB4879@redhat.com>
- <20100910144634.GA1060@elte.hu>
- <20100910155659.GD13563@erda.amd.com>
- <20100911094157.GA11521@elte.hu>
- <20100911114404.GE13563@erda.amd.com>
- <20100911124537.GA22850@elte.hu>
- <20100912095202.GF13563@erda.amd.com>
- <20100913143713.GK13563@erda.amd.com>
- <20100914174132.GN13563@erda.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100914174132.GN13563@erda.amd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+	Wed, 15 Sep 2010 12:21:29 -0400
+X-Authority-Analysis: v=1.1 cv=2ipXt8Ao/PPbK329gQN1nC6XU/V8QMABDttguNTIlb0= c=1 sm=0 a=Age2qVpHITYA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=uz0XKN4v8RSbsE9rLO4A:9 a=ziuidWAl8RIedq_hLABZTM9YLhQA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 3/3] tracing: Remove leftover
+ FTRACE_ENABLE/DISABLE_MCOUNT enums
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Valdis.Kletnieks@vt.edu
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <11102.1284567033@localhost>
+References: <20100915030139.444219083@goodmis.org>
+	 <20100915030402.346004778@goodmis.org>  <11102.1284567033@localhost>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 15 Sep 2010 12:21:26 -0400
+Message-ID: <1284567686.5701.129.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14.09.10 19:41:32, Robert Richter wrote:
-> I found the reason why we get the unknown nmi. For some reason
-> cpuc->active_mask in x86_pmu_handle_irq() is zero. Thus, no counters
-> are handled when we get an nmi. It seems there is somewhere a race
-> accessing the active_mask. So far I don't have a fix available.
-> Changing x86_pmu_stop() did not help:
+On Wed, 2010-09-15 at 12:10 -0400, Valdis.Kletnieks@vt.edu wrote:
+> On Tue, 14 Sep 2010 23:01:42 EDT, Steven Rostedt said:
+> > From: Steven Rostedt <srostedt@redhat.com>
+> > 
+> > The enums for FTRACE_ENABLE_MCOUNT and FTRACE_DISABLE_MCOUNT were
+> > used as commands to ftrace_run_update_code(). But these commands
+> > were used by the old nasty ftrace daemon that has long been slain.
+> 
+> > -	FTRACE_START_FUNC_RET		= (1 << 5),
+> > -	FTRACE_STOP_FUNC_RET		= (1 << 6),
+> > +	FTRACE_START_FUNC_RET		= (1 << 3),
+> > +	FTRACE_STOP_FUNC_RET		= (1 << 4),
+> 
+> This renumber isn't visible to user space, correct? (Asking because the enable/
+> disable apparently *were* visible to the since-slain userspace daemon)
 
-The patch below for tip/perf/urgent fixes this.
+Nope, it's not visible to userspace, and the slain-daemon was a kernel
+thread, not userspace.
 
--Robert
+-- Steve
 
->From 4206a086f5b37efc1b4d94f1d90b55802b299ca0 Mon Sep 17 00:00:00 2001
-From: Robert Richter <robert.richter@amd.com>
-Date: Wed, 15 Sep 2010 16:12:59 +0200
-Subject: [PATCH] perf, x86: catch spurious interrupts after disabling counters
-
-Some cpus still deliver spurious interrupts after disabling a counter.
-This caused 'undelivered NMI' messages. This patch fixes this.
-
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- arch/x86/kernel/cpu/perf_event.c |   13 ++++++++++++-
- 1 files changed, 12 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 3efdf28..df7aabd 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -102,6 +102,7 @@ struct cpu_hw_events {
- 	 */
- 	struct perf_event	*events[X86_PMC_IDX_MAX]; /* in counter order */
- 	unsigned long		active_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
-+	unsigned long		running[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
- 	int			enabled;
- 
- 	int			n_events;
-@@ -1010,6 +1011,7 @@ static int x86_pmu_start(struct perf_event *event)
- 	x86_perf_event_set_period(event);
- 	cpuc->events[idx] = event;
- 	__set_bit(idx, cpuc->active_mask);
-+	__set_bit(idx, cpuc->running);
- 	x86_pmu.enable(event);
- 	perf_event_update_userpage(event);
- 
-@@ -1141,8 +1143,17 @@ static int x86_pmu_handle_irq(struct pt_regs *regs)
- 	cpuc = &__get_cpu_var(cpu_hw_events);
- 
- 	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
--		if (!test_bit(idx, cpuc->active_mask))
-+		if (!test_bit(idx, cpuc->active_mask)) {
-+			if (__test_and_clear_bit(idx, cpuc->running))
-+				/*
-+				 * Though we deactivated the counter
-+				 * some cpus might still deliver
-+				 * spurious interrupts. Catching them
-+				 * here.
-+				 */
-+				handled++;
- 			continue;
-+		}
- 
- 		event = cpuc->events[idx];
- 		hwc = &event->hw;
--- 
-1.7.2.2
-
-
-
-
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
 
