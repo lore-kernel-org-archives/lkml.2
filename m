@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180Ab0IOUVP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 16:21:15 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:39606 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753629Ab0IOUVO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 16:21:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=xi4f1qF/ybeCgWjlcc/Ye/u5od06BqgNOtdiJaUChH92nyHkd0YoMJDRifi5zIu7Cq
-         OizYabRvL69EFrgFzdWA==
-MIME-Version: 1.0
-In-Reply-To: <20100915193437.GA28455@lenovo>
-References: <20100911114404.GE13563@erda.amd.com>
-	<20100911124537.GA22850@elte.hu>
-	<20100912095202.GF13563@erda.amd.com>
-	<20100913143713.GK13563@erda.amd.com>
-	<20100914174132.GN13563@erda.amd.com>
-	<20100915162034.GO13563@erda.amd.com>
-	<AANLkTimWoE5XiYSr8jx=RFS5Nb9d4_wWe=c-W3oMj8dH@mail.gmail.com>
-	<20100915170057.GQ13563@erda.amd.com>
-	<AANLkTi=yvDF34e5rYqJt=Av7dhSwBLjXp=r_EfEAMLJY@mail.gmail.com>
-	<20100915184424.GS13563@erda.amd.com>
-	<20100915193437.GA28455@lenovo>
-Date: Wed, 15 Sep 2010 22:21:10 +0200
-Message-ID: <AANLkTimPh7bo1XxTK8bnisvLq8pCySUV6XJspw8m-Wwa@mail.gmail.com>
-Subject: Re: [PATCH] perf, x86: catch spurious interrupts after disabling counters
-From: Stephane Eranian <eranian@google.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, Don Zickus <dzickus@redhat.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1753807Ab0IOUZm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 16:25:42 -0400
+Received: from mx1.orcon.net.nz ([219.88.242.51]:36379 "EHLO mx1.orcon.net.nz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753420Ab0IOUZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 16:25:40 -0400
+Cc: mingo@redhat.com, dengcheng.zhu@gmail.com, yanmin_zhang@linux.intel.com,
+        gorcunov@gmail.com, fweisbec@gmail.com, robert.richter@amd.com,
+        ming.m.lin@intel.com, tglx@linutronix.de, hpa@zytor.com,
+        paulus@samba.org, linux-kernel@vger.kernel.org, eranian@googlemail.com,
+        will.deacon@arm.com, lethal@linux-sh.org, davem@davemloft.net,
+        mingo@elte.hu, linux-alpha@vger.kernel.org
+Message-Id: <90A4CF1B-01EC-47B2-BAEC-F35385C76593@orcon.net.nz>
+From: Michael Cree <mcree@orcon.net.nz>
+To: Peter Zijlstra <peterz@infradead.org>
+In-Reply-To: <1284473273.2275.514.camel@laptop>
+Content-Type: text/plain; charset=US-ASCII; format=flowed; delsp=yes
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0 (Apple Message framework v936)
+Subject: Re: [tip:perf/core] perf: Rework the PMU methods
+Date: Thu, 16 Sep 2010 08:25:34 +1200
+References: <new-submission> <tip-a4eaf7f14675cb512d69f0c928055e73d0c6d252@git.kernel.org> <4C8B3AD3.5050309@orcon.net.nz> <1284198035.2251.29.camel@laptop> <4C8C6611.20206@orcon.net.nz>  <1284380153.2275.261.camel@laptop> <1284383927.2275.284.camel@laptop>  <4C8F4A3E.5070603@orcon.net.nz> <1284473273.2275.514.camel@laptop>
+X-Mailer: Apple Mail (2.936)
+X-DSPAM-Check: by mx1.orcon.net.nz on Thu, 16 Sep 2010 16:26:21 +1200
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Thu Sep 16 16:26:22 2010
+X-DSPAM-Confidence: 0.7003
+X-DSPAM-Probability: 0.0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When you do perf record foo, it's equivalent to
-perf record -e cycles:uk -F 1000 foo
-
-I think there is a problem with perf record in case you provide
-multiple events. It is going to sample on all of them at the same
-frequency. You may not always want that, but I don't think there
-is a way to change that.
-
-
-On Wed, Sep 15, 2010 at 9:34 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> On Wed, Sep 15, 2010 at 08:44:24PM +0200, Robert Richter wrote:
-> ...
+On 15/09/2010, at 2:07 AM, Peter Zijlstra wrote:
+> On Tue, 2010-09-14 at 22:11 +1200, Michael Cree wrote:
 >>
->> Do you know at which period the counters running for the following?
->>
->>  perf record ./hackbench 10
->>  perf record -e cycles -e instructions -e cache-references \
->>      -e cache-misses -e branch-misses -a -- <cmd>
->>
->> I couldn't find something about this in the man page.
->>
+>> [  818.575752] Unable to handle kernel paging request at virtual  
+>> address
+>> 0000000000000060
+>> [  818.575752] perf(4935): Oops 0
 >
-> It's on top of tools/perf/builtin-record.c so by default they
-> should be sampled with frequency 1KHz. Frederic or Peter knows
-> for sure ;)
+> Does the below cure that?
 >
->        -- Cyrill
+> ---
+> commit 0c67b40872326a5340cab51d79a192a5fbaeb484
+> Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Date:   Mon Sep 13 11:15:58 2010 +0200
 >
+>    perf: Fix free_event()
+
+Yes, thanks, that's fixed it.
+
+Cheers
+Michael.
+
