@@ -1,155 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681Ab0IOI3F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 04:29:05 -0400
-Received: from mga01.intel.com ([192.55.52.88]:7295 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751813Ab0IOI3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 04:29:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,370,1280732400"; 
-   d="scan'208";a="607058659"
-Date: Wed, 15 Sep 2010 16:28:43 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Neil Brown <neilb@suse.de>
-Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+	id S1752729Ab0IOI3S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 04:29:18 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:55660 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752558Ab0IOI3P convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 04:29:15 -0400
+Subject: Re: [PATCH -tip -v4] irq_work: generic hard-irq context callbacks
+From: Peter Zijlstra <peterz@infradead.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, paulus <paulus@samba.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Li Shaohua <shaohua.li@intel.com>
-Subject: Re: Deadlock possibly caused by too_many_isolated.
-Message-ID: <20100915082843.GA17252@localhost>
-References: <20100915091118.3dbdc961@notabene>
- <4C90139A.1080809@redhat.com>
- <20100915122334.3fa7b35f@notabene>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100915122334.3fa7b35f@notabene>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        Andi Kleen <andi@firstfloor.org>, dhowells <dhowells@redhat.com>,
+        Russell King <rmk@arm.linux.org.uk>, Kyle McMartin <kyle@mcmartin.ca>,
+        davem <davem@davemloft.net>, Linux-Arch <linux-arch@vger.kernel.org>,
+        Matt Fleming <matt@console-pimps.org>,
+        DavidHowells <dhowells@redhat.com>
+In-Reply-To: <1284528590.2256.135.camel@yhuang-dev.sh.intel.com>
+References: <1284360648.3269.115.camel@yhuang-dev.sh.intel.com>
+	 <20100913123213.76b1b5fa@mschwide.boeblingen.de.ibm.com>
+	 <1284377790.2275.212.camel@laptop>
+	 <1284528590.2256.135.camel@yhuang-dev.sh.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 15 Sep 2010 10:28:40 +0200
+Message-ID: <1284539320.3764.266.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Neil,
+On Wed, 2010-09-15 at 13:29 +0800, Huang Ying wrote:
 
-Sorry for the rushed and imaginary ideas this morning..
+> I uses the cross build tool from:
+> 
+> http://www.kernel.org/pub/tools/crosstool/
 
-> @@ -1101,6 +1101,12 @@ static unsigned long shrink_inactive_lis
->  	int lumpy_reclaim = 0;
->  
->  	while (unlikely(too_many_isolated(zone, file, sc))) {
-> +		if ((sc->gfp_mask & GFP_IOFS) != GFP_IOFS)
-> +			/* Not allowed to do IO, so mustn't wait
-> +			 * on processes that might try to
-> +			 */
-> +			return SWAP_CLUSTER_MAX;
-> +
+I'm not familiar with those, I build my own gcc-4.5.1 toolchains for all
+targets that would actually build a gcc toolchains, for those that don't
+I simply don't care about.
 
-The above patch should behavior like this: it returns SWAP_CLUSTER_MAX
-to cheat all the way up to believe "enough pages have been reclaimed".
-So __alloc_pages_direct_reclaim() see non-zero *did_some_progress and
-go on to call get_page_from_freelist(). That normally fails because
-the task didn't really scanned the LRU lists. However it does have the
-possibility to succeed -- when so many processes are doing concurrent
-direct reclaims, it may luckily get one free page reclaimed by other
-tasks. What's more, if it does fail to get a free page, the upper
-layer __alloc_pages_slowpath() will be repeat recalling
-__alloc_pages_direct_reclaim(). So, sooner or later it will succeed in
-"stealing" a free page reclaimed by other tasks.
+> But I get compile errors on s390 and alpha even for tip/master
+> (ce0c65112d37ff04016b4e0962a406281640739b). The build logs are attached.
 
-In summary, the patch behavior for !__GFP_IO/FS is
-- won't do any page reclaim
-- won't fail the page allocation (unexpected)
-- will wait and steal one free page from others (unreasonable)
+I've got a patch to solve the Alpha issue, and I've got a patch for one
+of the SH issues as well, but I understand you need to pull in Paul
+Mundt's SH tree to make it fully build.
 
-So it will address the problem you encountered, however it sounds
-pretty unexpected and illogical behavior, right?
+I've asked Ingo to merge the Alpha and SH patches I had pending.
 
-I believe this patch will address the problem equally well.
-What do you think?
+> Do I use the wrong git tree? Or we should fix tip/master firstly?
+> 
+> And frv and sh have compile error even for linus/master and 2.6.35. So I
+> can not compile test for these arches.
 
-Thanks,
-Fengguang
----
+FRV is one of those architectures that doesn't build a toolchain from
+plain gcc sources, David Howells did provide me with a toolchain for
+that, it does build, but really it should be getting its toolchain
+sorted upstream.
 
-mm: Avoid possible deadlock caused by too_many_isolated()
 
-Neil finds that if too_many_isolated() returns true while performing
-direct reclaim we can end up waiting for other threads to complete their
-direct reclaim.  If those threads are allowed to enter the FS or IO to
-free memory, but this thread is not, then it is possible that those
-threads will be waiting on this thread and so we get a circular
-deadlock.
-
-some task enters direct reclaim with GFP_KERNEL
-  => too_many_isolated() false
-    => vmscan and run into dirty pages
-      => pageout()
-        => take some FS lock
-	  => fs/block code does GFP_NOIO allocation
-	    => enter direct reclaim again
-	      => too_many_isolated() true
-		=> waiting for others to progress, however the other
-		   tasks may be circular waiting for the FS lock..
-
-The fix is to let !__GFP_IO and !__GFP_FS direct reclaims enjoy higher
-priority than normal ones, by honouring them higher throttle threshold.
-
-Now !__GFP_IO/FS reclaims won't be waiting for __GFP_IO/FS reclaims to
-progress. They will be blocked only when there are too many concurrent
-!__GFP_IO/FS reclaims, however that's very unlikely because the IO-less
-direct reclaims is able to progress much more faster, and they won't
-deadlock each other. The threshold is raised high enough for them, so
-that there can be sufficient parallel progress of !__GFP_IO/FS reclaims.
-
-Reported-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- mm/vmscan.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
---- linux-next.orig/mm/vmscan.c	2010-09-15 11:58:58.000000000 +0800
-+++ linux-next/mm/vmscan.c	2010-09-15 15:36:14.000000000 +0800
-@@ -1141,36 +1141,39 @@ int isolate_lru_page(struct page *page)
- 	return ret;
- }
- 
- /*
-  * Are there way too many processes in the direct reclaim path already?
-  */
- static int too_many_isolated(struct zone *zone, int file,
- 		struct scan_control *sc)
- {
- 	unsigned long inactive, isolated;
-+	int ratio;
- 
- 	if (current_is_kswapd())
- 		return 0;
- 
- 	if (!scanning_global_lru(sc))
- 		return 0;
- 
- 	if (file) {
- 		inactive = zone_page_state(zone, NR_INACTIVE_FILE);
- 		isolated = zone_page_state(zone, NR_ISOLATED_FILE);
- 	} else {
- 		inactive = zone_page_state(zone, NR_INACTIVE_ANON);
- 		isolated = zone_page_state(zone, NR_ISOLATED_ANON);
- 	}
- 
--	return isolated > inactive;
-+	ratio = sc->gfp_mask & (__GFP_IO | __GFP_FS) ? 1 : 8;
-+
-+	return isolated > inactive * ratio;
- }
- 
- /*
-  * TODO: Try merging with migrations version of putback_lru_pages
-  */
- static noinline_for_stack void
- putback_lru_pages(struct zone *zone, struct scan_control *sc,
- 				unsigned long nr_anon, unsigned long nr_file,
- 				struct list_head *page_list)
- {
