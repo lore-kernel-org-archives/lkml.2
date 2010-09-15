@@ -1,127 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754997Ab0IOSpI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 14:45:08 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:3634 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754938Ab0IOSpG convert rfc822-to-8bit (ORCPT
+	id S1754976Ab0IOSrw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 14:47:52 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:31865 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754768Ab0IOSrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 14:45:06 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzzz32i2a8h)
-X-WSS-ID: 0L8SXDX-02-1M2-02
-X-M-MSG: 
-Date: Wed, 15 Sep 2010 20:44:24 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Stephane Eranian <eranian@google.com>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Don Zickus <dzickus@redhat.com>,
-        "gorcunov@gmail.com" <gorcunov@gmail.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>
-Subject: Re: [PATCH] perf, x86: catch spurious interrupts after disabling
- counters
-Message-ID: <20100915184424.GS13563@erda.amd.com>
-References: <20100911094157.GA11521@elte.hu>
- <20100911114404.GE13563@erda.amd.com>
- <20100911124537.GA22850@elte.hu>
- <20100912095202.GF13563@erda.amd.com>
- <20100913143713.GK13563@erda.amd.com>
- <20100914174132.GN13563@erda.amd.com>
- <20100915162034.GO13563@erda.amd.com>
- <AANLkTimWoE5XiYSr8jx=RFS5Nb9d4_wWe=c-W3oMj8dH@mail.gmail.com>
- <20100915170057.GQ13563@erda.amd.com>
- <AANLkTi=yvDF34e5rYqJt=Av7dhSwBLjXp=r_EfEAMLJY@mail.gmail.com>
+	Wed, 15 Sep 2010 14:47:51 -0400
+Message-ID: <4C9114A6.6040500@oracle.com>
+Date: Wed, 15 Sep 2010 11:47:02 -0700
+From: Yinghai Lu <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=yvDF34e5rYqJt=Av7dhSwBLjXp=r_EfEAMLJY@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
-X-Reverse-DNS: ausb3extmailp02.amd.com
+To: Greg KH <gregkh@suse.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        John Wright <john.wright@hp.com>
+Subject: 2.6.32.y stable kernel regression with taskset
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.09.10 13:32:49, Stephane Eranian wrote:
-> > I tried to clear the bit in the active_mask after disabling the
-> > counter (writing to the msr), which did not solve it. Shouldn't the
-> > counter be disabled immediatly? Maybe clearing the INT bit would have
-> > been worked too, but I was not sure about side effects.
-> >
-> 0 instr1
-> 1 instr2
-> 2 instr3
-> 3 wrmsrl(eventsel0, 0);
-> 
-> There is skid between the instruction you overflow the counter and
-> where the interrupt
-> is posted.  If you overflow on instr1, suppose you post the interrupt
-> on instr3 which
-> is immediately followed by disable. There may a chance you get the
-> interrupt even
-> though the counter was disabled. I also don't know when the INT bit is
-> looked at.
+found problem with cpuscaling test.
 
-Yes, this could be possible. So, we should assume interrupts may be
-delivered after a counter is disabled, which the patch addresses.
+Under 2.6.32.21   Userspace gov  
+min freq load test time is nearly the same as max freq load test time around  ~16 seconds
 
-> 
-> It may be worthwhile trying with:
-> 
-> static inline void x86_pmu_disable_event(struct perf_event *event)
-> {
->         struct hw_perf_event *hwc = &event->hw;
->         (void)checking_wrmsrl(hwc->config_base + hwc->idx, 0);
-> }
-> 
-> to see if it makes a difference.
-> 
-> 
-> >> Does the counter value reflect this?
-> >
-> > Yes, the disabled bit was cleared after reading the evntsel msr and
-> > the ctr value have had about 400 cycles (it could have been
-> > overflowed, though we actually can't say since the counter was
-> > disabled).
-> >
-> >> Were you also getting this if you were only measuring at the user level?
-> >
-> > I tried only
-> >
-> >  perf record ./hackbench 10
-> >
-> > which triggered it on my system.
-> >
-> I suspect that if you do:
-> 
-> perf record -e cycles:u ./hackbench 10
-> 
-> It does not happen.
+under 2.6.18-194
+min freq load test time is ~40 seconds
+max freq load test time	  is ~ 17 seconds
 
-Do you know at which period the counters running for the following?
+the test is 
+1. set governor for one cpu to userspace
+2. set freq to min for that cpu
+3. using taskset to put load test only on that cpu, and get the time for load test.
 
- perf record ./hackbench 10
- perf record -e cycles -e instructions -e cache-references \
-     -e cache-misses -e branch-misses -a -- <cmd>
+so that mean taskset did not put load test on cpu that we want. and other cpu still have ondemand governor and load test get done much faster
 
-I couldn't find something about this in the man page.
+git bisect report:
 
-I will do some further investigations here, esp. with:
+c6fc81afa2d7ef2f775e48672693d8a0a8a7325d is the first bad commit
+commit c6fc81afa2d7ef2f775e48672693d8a0a8a7325d
+Author: John Wright <john.wright@hp.com>
+Date:   Tue Apr 13 16:55:37 2010 -0600
 
-* compile order,
-* checking_wrmsrl(),
-* -e cycles:u
+    sched: Fix a race between ttwu() and migrate_task()
+    
+    Based on commit e2912009fb7b715728311b0d8fe327a1432b3f79 upstream, but
+    done differently as this issue is not present in .33 or .34 kernels due
+    to rework in this area.
+    
+    If a task is in the TASK_WAITING state, then try_to_wake_up() is working
+    on it, and it will place it on the correct cpu.
+    
+    This commit ensures that neither migrate_task() nor __migrate_task()
+    calls set_task_cpu(p) while p is in the TASK_WAKING state.  Otherwise,
+    there could be two concurrent calls to set_task_cpu(p), resulting in
+    the task's cfs_rq being inconsistent with its cpu.
+    
+    Signed-off-by: John Wright <john.wright@hp.com>
+    Cc: Ingo Molnar <mingo@elte.hu>
+    Cc: Peter Zijlstra <peterz@infradead.org>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-But I can not start with it before next week.
+:040000 040000 a9d18950d8edddb761c0266706f671f0e9a006fe 2c3a7d7d5e616ecc276b4e93f4b6e5162a9382c8 M	kernel
 
--Robert
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 2591562..3261c19 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2116,12 +2116,10 @@ migrate_task(struct task_struct *p, int dest_cpu, struct
+ 
+ 	/*
+ 	 * If the task is not on a runqueue (and not running), then
+-	 * it is sufficient to simply update the task's cpu field.
++	 * the next wake-up will properly place the task.
+ 	 */
+-	if (!p->se.on_rq && !task_running(rq, p)) {
+-		set_task_cpu(p, dest_cpu);
++	if (!p->se.on_rq && !task_running(rq, p))
+ 		return 0;
+-	}
+ 
+ 	init_completion(&req->done);
+ 	req->task = p;
+@@ -7167,6 +7165,9 @@ static int __migrate_task(struct task_struct *p, int src_c
+ 	/* Already moved. */
+ 	if (task_cpu(p) != src_cpu)
+ 		goto done;
++	/* Waking up, don't get in the way of try_to_wake_up(). */
++	if (p->state == TASK_WAKING)
++		goto fail;
+ 	/* Affinity changed (again). */
+ 	if (!cpumask_test_cpu(dest_cpu, &p->cpus_allowed))
+ 		goto fail;
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
 
+after reverting it, cpuscaling can pass the test.
+
+BTW, currently mainline is ok.
+
+Thanks
+
+Yinghai Lu
