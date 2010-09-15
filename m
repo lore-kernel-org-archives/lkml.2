@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754997Ab0IOWpY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 18:45:24 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:7072 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754833Ab0IOWpV (ORCPT
+	id S1755091Ab0IOWuF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 18:50:05 -0400
+Received: from grayling.iasd.schoolaccess.net ([24.237.246.2]:38760 "EHLO
+	grayling.iasd.schoolaccess.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751809Ab0IOWuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 18:45:21 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 3/3] PCI: allocate bus resources from the top down
-Date: Wed, 15 Sep 2010 16:44:37 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Brian Bloniarz <phunge0@hotmail.com>,
-        Charles Butterfield <charles.butterfield@nextcentury.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stefan Becker <chemobejk@gmail.com>,
-        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-References: <20100915210818.12365.58732.stgit@bob.kio> <20100915210912.12365.78836.stgit@bob.kio> <4C913F96.4020106@zytor.com>
-In-Reply-To: <4C913F96.4020106@zytor.com>
+	Wed, 15 Sep 2010 18:50:03 -0400
+X-Greylist: delayed 3515 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Sep 2010 18:50:02 EDT
+From: Bre Bunke <bbunke@grayling.iasd.schoolaccess.net>
+Message-ID: <2763.82.128.15.182.1284586834.squirrel@grayling.iasd.schoolaccess.net>
+Date: Wed, 15 Sep 2010 13:40:34 -0800 (AKDT)
+Subject: Dear Account User
+Reply-To: upgrade56@w.cn
+User-Agent: SquirrelMail/1.4.3a-9.EL4
+X-Mailer: SquirrelMail/1.4.3a-9.EL4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009151644.38563.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 15, 2010 03:50:14 pm H. Peter Anvin wrote:
-> On 09/15/2010 02:09 PM, Bjorn Helgaas wrote:
-> > 
-> > On the machine above (a Dell T3500), the [mem 0xbff00000-0xbfffffff] region
-> > doesn't actually work and is likely a BIOS defect.  The symptom is that we
-> > move the AHCI controller to 0xbff00000, which leads to "Boot has failed,
-> > sleeping forever," a BUG in ahci_stop_engine(), or some other boot failure.
-> > 
-> 
-> Acked-by: H. Peter Anvin <hpa@zytor.com>
-> 
-> ... for the patch in general, but I would like to *also* request a DMA
-> or PCI quirk to explicitly reserve the above range on the affected Dell
-> machines.
+Dear Account User,
 
-I'd like to do that, but I don't see a good way to do it yet.
+This Email is from all Webmail Direct Account Owner and we are
+sending it to every Accounts Owner for safety.
 
-We saw the problem on a T3500, a T3400, and a T4500, and I'm sure there
-are others.  So I don't know how to identify the affected machines.
+We are having congestions due to the anonymous registration of Webmail
+Accounts so we are shutting down some accounts that are no amore active
+and your account was among those to be deleted. We are sending you this
+email to you so that you can verify and let us know if you still want to
+use this Account. If you are still interested please confirm your account
+by filling the space below. Your User Name and Password, Date of Bith and
+your country information would be needed to verify your Account.
+Due to the congestion in all Webmail Users and removal of all unused
+Accounts, Webmail would be shutting down all unused Accounts,
 
-And I don't know how to identify the invalid ranges, because I suspect
-it depends on the memory size.  I think it would be quite unusual for
-a window to start 1MB under the nice 256MB boundary, but I'm not sure
-I'm ready to say that's always illegal.
+You will have to confirm your E-mail by filling out your by filling the
+space below.Your User Name and Password, Date of Bith and your country
+information would be needed to verify your Account and any customer mail
+not verified will be suspended within 24 hours for security reasons.
+CONFIRM YOUR EMAIL IDENTITY BELOW
 
-On these machines, the [mem 0xbff00000-0xbfffffff] area is actually
-reported as reserved in the E820 map, and I first thought we could
-simply rely on that.  But I'm not really comfortable with that either,
-because I don't think there's a dependable relationship between those
-E820 entries and ACPI and PCI devices.  For one thing, I experimented
-with Windows, and it happily places PCI devices in reserved areas,
-and I think we're likely to trip over more BIOS bugs if we rely on
-something Windows doesn't.
+1.Full Email Address......................
+2.password:....................................
+3.age/country:..................................
+4.date of birth:...................................
+5.First name/Last name:....................
 
-I suspect Windows would blow up, too, if we could somehow fill up the
-rest of the window and force it to allocate the bottom.  But since
-it's only a 1MB area, I think that would be very difficult to do
-unless there's some way to tweak PCI BARs before booting Windows.
+Your response should be sent to Admin Manager Email: upgrade56@w.cn
+ Warning Code:VX2G99AAJ
+Warning!!! Account owner that refuses to update his or her account within
+Seven days of receiving this warning will lose his or her account
+permanently.
 
-Bjorn
+Warning Code:VX2G99AAJ
+Thank you for using Webmail!
+Regard,Webmail Direct Account Owner
