@@ -1,32 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab0IOJWT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 05:22:19 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:52198 "EHLO mx3.mail.elte.hu"
+	id S1752664Ab0IOJZv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 05:25:51 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:54015 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751703Ab0IOJWS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 05:22:18 -0400
-Date: Wed, 15 Sep 2010 11:22:05 +0200
+	id S1752094Ab0IOJZt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 05:25:49 -0400
+Date: Wed, 15 Sep 2010 11:25:32 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>
-Subject: Re: [RFC PATCH] sched: START_NICE feature (temporarily niced forks)
- (v3)
-Message-ID: <20100915092205.GG16593@elte.hu>
-References: <20100914202503.GA1496@Krystal>
- <1284539831.21727.6.camel@marge.simson.net>
- <1284541405.22863.8.camel@marge.simson.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: linux-next: build warnings after merge of the final tree (tip
+ treee related)
+Message-ID: <20100915092532.GH16593@elte.hu>
+References: <20100913132721.5a02cfbc.sfr@canb.auug.org.au>
+ <4C8DA517.9000603@kernel.org>
+ <20100913143942.7344ada4.sfr@canb.auug.org.au>
+ <4C8DDFB4.1020508@kernel.org>
+ <20100914145025.977ec2a6.sfr@canb.auug.org.au>
+ <4C8FFE76.8070801@kernel.org>
+ <20100915150047.42551e34.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1284541405.22863.8.camel@marge.simson.net>
+In-Reply-To: <20100915150047.42551e34.sfr@canb.auug.org.au>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -40,25 +42,34 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Mike Galbraith <efault@gmx.de> wrote:
+* Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-> Tangent: cgroups with classification user/pgid
->
-> taskset -c 3 ./wakeup-latency& sleep 30 && killall wakeup-latency
-> (taskset -c 3 make -j10 running)
+> Hi Yinghai,
 > 
-> maximum latency: 256.5 µs
-> average latency: 25.7 µs
-> missed timer events: 0
+> On Tue, 14 Sep 2010 16:00:06 -0700 Yinghai Lu <yinghai@kernel.org> wrote:
+> >
+> > Also, we may need to remove all extern and __init and __initdata etc in .h files.
+> > 
+> > please check
+> > 
+> > [PATCH -v3] memblock: Fix section mismatch warning
+> > 
+> > Use __init_memblock to replace __init, and remove __init in memblock.h
+> > 
+> > -v2: more with memblock_is_meory()
+> > -v3: remove __init for function declaring in memblock.h. Pointed out by Stephen.
+> > 
+> > Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> > Signed-off-by: Yinghai Lu <Yinghai@kernel.org>
 > 
-> Rather spiffy for this case.
+> This version fixes all the warnings for me.  So if you put the "extern"s
+> back, you can add:
+> 
+> Tested-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
-Ouch, nothing beats proper segregation of workloads.
-
-It would be _really_ nice to get that automatically somehow, for make -j 
-jobs. Perhaps a per tty auto-cgroup-classification kernel feature?
-
-We cannot really rely on distros to pull this off.
+Yinghai, mind posting the final version of the patch as a standalone 
+posting, with a proper changelog, and with the extern issue fixed as 
+well, plus all Reported-by and Tested-by tags added?
 
 Thanks,
 
