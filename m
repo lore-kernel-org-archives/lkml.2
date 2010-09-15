@@ -1,64 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544Ab0IOMrd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 08:47:33 -0400
-Received: from smarthost02.mail.zen.net.uk ([212.23.3.141]:52337 "EHLO
-	smarthost02.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752454Ab0IOMrc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 08:47:32 -0400
-Date: Wed, 15 Sep 2010 13:47:12 +0100
-From: Colin Watson <cjwatson@canonical.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] x86-64: fix mapping updates across pmd boundary
-Message-ID: <20100915124712.GP21862@riva.ucam.org>
+	id S1753699Ab0IOMs1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 08:48:27 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:44497 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752475Ab0IOMs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 08:48:26 -0400
+Message-ID: <4C90C098.6070404@kernel.dk>
+Date: Wed, 15 Sep 2010 14:48:24 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-Originating-Smarthost02-IP: [82.69.40.219]
+To: Namhyung Kim <namhyung@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block: add assert_spin_locked() to ensure lock is held
+References: <1284554007-13077-1-git-send-email-namhyung@gmail.com>
+In-Reply-To: <1284554007-13077-1-git-send-email-namhyung@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A Dell Precision M4500 booted in UEFI mode shows the following warning
-at boot:
+On 2010-09-15 14:33, Namhyung Kim wrote:
+> Use assert_spin_locked() macro in order to ensure that queue_lock
+> must be held prior to calling some EXPORTed functions.
 
-[    0.040003] init_memory_mapping: 00000000bb5df000-00000000bb637000
-[    0.046182] EFI: ioremap of 0xBB5DF000 failed!
+As far as I know, no such bug has ever occurred that I know
+of. So while I don't mind adding such instrumentation, there's
+little point to doing it when you are not seeing any usability
+problems in there. And all these paths (requeue less) are
+heavily used, so problems would appear quickly.
 
-The range in question corresponds to an entry in the UEFI memory map,
-which is always aligned on 4096-byte pages but not necessarily any more
-than that.  init_memory_mapping passes the start address to
-kernel_physical_mapping_init which passes it on to phys_pud_update, etc.
-phys_pud_init takes care that if the address crosses a pud boundary then
-it's set to the start of the pud, but phys_pmd_init simply increased the
-address by PMD_SIZE, which in this case meant that it would jump from
-0xbb600000 to 0xbb7df000 and immediately stop since that was after the
-end address, not setting any of the remaining pte entries.
+Locking in the block layer is still fairly trivial, we just
+have the one lock per queue.
 
-Bringing phys_pmd_init into line with phys_pud_init fixes this.
-
-Signed-off-by: Colin Watson <cjwatson@canonical.com>
----
- arch/x86/mm/init_64.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 9a66746..2f386de 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -368,7 +368,8 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
- 
- 	int i = pmd_index(address);
- 
--	for (; i < PTRS_PER_PMD; i++, address += PMD_SIZE) {
-+	for (; i < PTRS_PER_PMD;
-+	     i++, address = (address & PMD_MASK) + PMD_SIZE) {
- 		unsigned long pte_phys;
- 		pmd_t *pmd = pmd_page + pmd_index(address);
- 		pte_t *pte;
 -- 
-1.7.1
+Jens Axboe
+
