@@ -1,68 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378Ab0IOFhI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 01:37:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
+	id S1753364Ab0IOFvw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 01:51:52 -0400
+Received: from mail2.ecunet.org ([72.250.175.188]:48583 "EHLO mail2.ecunet.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751298Ab0IOFhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 01:37:05 -0400
-Date: Wed, 15 Sep 2010 07:31:00 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
-        "Xin, Xiaohui" <xiaohui.xin@intel.com>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
- kernel
-Message-ID: <20100915053059.GB25481@redhat.com>
-References: <1284476719.13351.35.camel@localhost.localdomain>
- <201009141721.13202.arnd@arndb.de>
- <20100914152231.GA13105@redhat.com>
- <1284480025.13351.49.camel@localhost.localdomain>
- <20100914162952.GB13560@redhat.com>
- <1284483745.13351.71.camel@localhost.localdomain>
- <20100914182707.GB15549@redhat.com>
- <1284490143.13351.82.camel@localhost.localdomain>
- <20100914190156.GA16037@redhat.com>
- <1284492029.13351.88.camel@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284492029.13351.88.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1751768Ab0IOFvv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 01:51:51 -0400
+X-Greylist: delayed 7401 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Sep 2010 01:51:50 EDT
+Date: Tue, 14 Sep 2010 23:43:24 -0400
+Message-Id: <201009150343.o8F3hO5M031512@ecunet-web-1.ecunet.org>
+From: peace_lakarme@ecunet.org
+To: peace_lakarme@ecunet.org
+Subject: peace_lakarme@yahoo.com
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.0 (ecunet.org [192.168.0.90]); Tue, 14 Sep 2010 23:44:13 -0400 (EDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 14, 2010 at 12:20:29PM -0700, Shirley Ma wrote:
-> On Tue, 2010-09-14 at 21:01 +0200, Michael S. Tsirkin wrote:
-> > On Tue, Sep 14, 2010 at 11:49:03AM -0700, Shirley Ma wrote:
-> > > On Tue, 2010-09-14 at 20:27 +0200, Michael S. Tsirkin wrote:
-> > > > As others said, the harder issues for TX are in determining that
-> > it's
-> > > > safe
-> > > > to unpin the memory, and how much memory is it safe to pin to
-> > beging
-> > > > with.  For RX we have some more complexity.
-> > > 
-> > > I think unpin the memory is in kfree_skb() whenever the last
-> > reference
-> > > is gone for TX. What we discussed about here is when/how vhost get
-> > > notified to update ring buffer descriptors. Do I misunderstand
-> > something
-> > > here? 
-> > 
-> > Right, that's a better way to put it. 
-> 
-> That's how this macvtap patch did. For how much pinned pages,it is
-> limited by sk_wmem_alloc size in this patch.
-> 
-> thanks
-> Shirley
+Hello ,
 
-Except that you seem to pin full pages but account sub-page size
-in wmem.
+my name is Peace Lakarme, I was impressed when I saw your profile today.and I will like to establish a long lasting relationship with you , please you can contact me through my mail,peace_lakarme@yahoo.com
+ so that I will send you my picture and tell you more about me.
 
--- 
-MST
+I will be waiting for your reply as soon as possible.
+>From your friend,
+Peace.
