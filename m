@@ -1,83 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071Ab0IOCsq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 22:48:46 -0400
-Received: from mga03.intel.com ([143.182.124.21]:33726 "EHLO mga03.intel.com"
+	id S1753013Ab0IOCzA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 22:55:00 -0400
+Received: from mga02.intel.com ([134.134.136.20]:46266 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752066Ab0IOCso convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 22:48:44 -0400
+	id S1752083Ab0IOCy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 22:54:59 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.56,368,1280732400"; 
-   d="scan'208";a="324670401"
-From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>, Shirley Ma <mashirle@us.ibm.com>
-CC: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
-        David Miller <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 15 Sep 2010 10:46:02 +0800
-Subject: RE: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
- kernel
-Thread-Topic: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
- kernel
-Thread-Index: ActUKvFuuAEttlFbRXWBaNNr5A2hJwAUsi8A
-Message-ID: <F2E9EB7348B8264F86B6AB8151CE2D792B8C815314@shsmsx502.ccr.corp.intel.com>
-References: <1284410580.13351.10.camel@localhost.localdomain>
- <4C8F3C77.7010302@redhat.com>
- <1284476719.13351.35.camel@localhost.localdomain>
- <201009141721.13202.arnd@arndb.de> <20100914152231.GA13105@redhat.com>
- <1284480025.13351.49.camel@localhost.localdomain>
- <20100914162952.GB13560@redhat.com>
-In-Reply-To: <20100914162952.GB13560@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+   d="scan'208";a="554561251"
+Date: Wed, 15 Sep 2010 10:54:54 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Neil Brown <neilb@suse.de>
+Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: Deadlock possibly caused by too_many_isolated.
+Message-ID: <20100915025454.GA10230@localhost>
+References: <20100915091118.3dbdc961@notabene>
+ <4C90139A.1080809@redhat.com>
+ <20100915122334.3fa7b35f@notabene>
+ <20100915023735.GA9175@localhost>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100915023735.GA9175@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From: Michael S. Tsirkin [mailto:mst@redhat.com]
->Sent: Wednesday, September 15, 2010 12:30 AM
->To: Shirley Ma
->Cc: Arnd Bergmann; Avi Kivity; Xin, Xiaohui; David Miller; netdev@vger.kernel.org;
->kvm@vger.kernel.org; linux-kernel@vger.kernel.org
->Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host kernel
->
->On Tue, Sep 14, 2010 at 09:00:25AM -0700, Shirley Ma wrote:
->> On Tue, 2010-09-14 at 17:22 +0200, Michael S. Tsirkin wrote:
->> > I would expect this to hurt performance significantly.
->> > We could do this for asynchronous requests only to avoid the
->> > slowdown.
->>
->> Is kiocb in sendmsg helpful here? It is not used now.
->>
->> Shirley
->
->Precisely. This is what the patch from Xin Xiaohui does.  That code
->already seems to do most of what you are trying to do, right?
->
->The main thing missing seems to be macvtap integration, so that we can fall back
->on data copy if zero copy is unavailable?
->How hard would it be to basically link the mp and macvtap modules
->together to get us this functionality? Anyone?
->
-Michael,
-Is to support macvtap with zero-copy through mp device the functionality
-you mentioned above?
-Before Shirley Ma has suggested to move the zero-copy functionality into
-tun/tap device or macvtap device. How do you think about that? I suspect
-there will be a lot of duplicate code in that three drivers except we can extract
-code of zero-copy into kernel APIs and vhost APIs.
-Do you think that's worth to do and help current process which is blocked too
-long than I expected?
+On Wed, Sep 15, 2010 at 10:37:35AM +0800, Wu Fengguang wrote:
+> On Wed, Sep 15, 2010 at 10:23:34AM +0800, Neil Brown wrote:
+> > On Tue, 14 Sep 2010 20:30:18 -0400
+> > Rik van Riel <riel@redhat.com> wrote:
+> > 
+> > > On 09/14/2010 07:11 PM, Neil Brown wrote:
+> > > 
+> > > > Index: linux-2.6.32-SLE11-SP1/mm/vmscan.c
+> > > > ===================================================================
+> > > > --- linux-2.6.32-SLE11-SP1.orig/mm/vmscan.c	2010-09-15 08:37:32.000000000 +1000
+> > > > +++ linux-2.6.32-SLE11-SP1/mm/vmscan.c	2010-09-15 08:38:57.000000000 +1000
+> > > > @@ -1106,6 +1106,11 @@ static unsigned long shrink_inactive_lis
+> > > >   		/* We are about to die and free our memory. Return now. */
+> > > >   		if (fatal_signal_pending(current))
+> > > >   			return SWAP_CLUSTER_MAX;
+> > > > +		if (!(sc->gfp_mask&  __GFP_IO))
+> > > > +			/* Not allowed to do IO, so mustn't wait
+> > > > +			 * on processes that might try to
+> > > > +			 */
+> > > > +			return SWAP_CLUSTER_MAX;
+> > > >   	}
+> > > >
+> > > >   	/*
+> > > 
+> > > Close.  We must also be sure that processes without __GFP_FS
+> > > set in their gfp_mask do not wait on processes that do have
+> > > __GFP_FS set.
+> > > 
+> > > Considering how many times we've run into a bug like this,
+> > > I'm kicking myself for not having thought of it :(
+> > > 
+> > 
+> > So maybe this?  I've added the test for __GFP_FS, and moved the test before
+> > the congestion_wait on the basis that we really want to get back up the stack
+> > and try the mempool ASAP.
+> 
+> The patch may well fail the !__GFP_IO page allocation and then
+> quickly exhaust the mempool.
+> 
+> Another approach may to let too_many_isolated() use much higher
+> thresholds for !__GFP_IO/FS and lower ones for __GFP_IO/FS. ie. to
+> allow at least nr2 NOIO/FS tasks to be blocked independent of the
+> IO/FS ones.  Since NOIO vmscans typically completes fast, it will then
+> very hard to accumulate enough NOIO processes to be actually blocked.
+> 
+> 
+>                   IO/FS tasks                NOIO/FS tasks           full
+>                   block here                 block here              LRU size
+> |-----------------|--------------------------|-----------------------|
+> |      nr1        |           nr2            |
 
->
->--
->MST
+How about this fix? We may need very high threshold for NOIO/NOFS to
+prevent possible regressions.
+
+Thanks,
+Fengguang
+---
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 225a759..5e116cd 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1135,6 +1135,7 @@ static int too_many_isolated(struct zone *zone, int file,
+ 		struct scan_control *sc)
+ {
+ 	unsigned long inactive, isolated;
++	int ratio;
+ 
+ 	if (current_is_kswapd())
+ 		return 0;
+@@ -1150,7 +1151,9 @@ static int too_many_isolated(struct zone *zone, int file,
+ 		isolated = zone_page_state(zone, NR_ISOLATED_ANON);
+ 	}
+ 
+-	return isolated > inactive;
++	ratio = sc->gfp_mask & (__GFP_FS|__GFP_IO) ? 1 : 8;
++
++	return isolated > inactive * ratio;
+ }
+ 
+ /*
