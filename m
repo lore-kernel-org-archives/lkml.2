@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752422Ab0IOEjN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 00:39:13 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:41570 "EHLO smtps.tip.net.au"
+	id S1752335Ab0IOEpw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 00:45:52 -0400
+Received: from mail.perches.com ([173.55.12.10]:2044 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750983Ab0IOEjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 00:39:12 -0400
-Date: Wed, 15 Sep 2010 14:39:04 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: linux-next: build warnings after merge of the final tree (tip
- treee related)
-Message-Id: <20100915143904.ca226c83.sfr@canb.auug.org.au>
-In-Reply-To: <4C90226E.4050306@kernel.org>
-References: <20100913132721.5a02cfbc.sfr@canb.auug.org.au>
-	<4C8DA517.9000603@kernel.org>
-	<20100913143942.7344ada4.sfr@canb.auug.org.au>
-	<4C8DDFB4.1020508@kernel.org>
-	<20100914145025.977ec2a6.sfr@canb.auug.org.au>
-	<4C8FFE76.8070801@kernel.org>
-	<20100915102930.5e4d59cb.sfr@canb.auug.org.au>
-	<4C90226E.4050306@kernel.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1751244Ab0IOEpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 00:45:51 -0400
+Subject: Re: [PATCH] get_maintainer.pl: append reason for cc to the name by
+ default
+From: Joe Perches <joe@perches.com>
+To: Florian Mickler <florian@mickler.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>
+In-Reply-To: <20100915063445.7d8ccd4d@schatten.dmk.lab>
+References: <1284111212-10659-1-git-send-email-florian@mickler.org>
+	 <1284111767.1783.35.camel@Joe-Laptop>
+	 <20100911001350.GA11478@infradead.org>
+	 <1284165074.1783.213.camel@Joe-Laptop>
+	 <20100911004550.GA30584@infradead.org>
+	 <20100911112855.6ee6e929@schatten.dmk.lab>
+	 <m1hbhucdv5.fsf@fess.ebiederm.org> <1284364665.22185.116.camel@Joe-Laptop>
+	 <20100913105434.62b150f7@schatten.dmk.lab>
+	 <m1lj749ra2.fsf@fess.ebiederm.org>
+	 <20100914194646.52d4bf96@schatten.dmk.lab>
+	 <1284521324.26719.146.camel@Joe-Laptop>
+	 <20100915063445.7d8ccd4d@schatten.dmk.lab>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 Sep 2010 21:45:49 -0700
+Message-ID: <1284525949.26719.153.camel@Joe-Laptop>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__15_Sep_2010_14_39_04_+1000_/zC80piBEq1tdWF3"
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__15_Sep_2010_14_39_04_+1000_/zC80piBEq1tdWF3
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2010-09-15 at 06:34 +0200, Florian Mickler wrote:
+> But for the interactive mode I had STDIN in mind. 
+> And now that I checked, it is indeed possible. I have a quick prove of
+> concept for an get_maintainer.pl --interactive mode that shows you the
+> cc's, lists their commits  and let's you choose whom to add to the cc
+> (using STDERR, as git-send-email.pl obviously expects adresses on
+> STDOUT).
+> I haven't experimented much with it, but if it works out expect a
+> patch. But first I need some coffee and breakfast, as it's morning
+> over here. :-)
 
-Hi Yinghai,
+I suggest you don't need to patch get_maintainer.pl,
+but should add another script that calls it and/or
+uses git commands directly.
 
-On Tue, 14 Sep 2010 18:33:34 -0700 Yinghai Lu <yinghai@kernel.org> wrote:
->
-> On 09/14/2010 05:29 PM, Stephen Rothwell wrote:
-> >=20
-> > Do not remove the "extern" key word.
->=20
-> why? you got another warning?
+cheers, Joe
 
-It is normal C coding practice to mark declarations in header files with
-extern.  It probably doesn't strictly matter for functions, but I have
-seen a case where not doing so to a variable lead to multiple definitions
-of the variable.  Consistency is also good.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__15_Sep_2010_14_39_04_+1000_/zC80piBEq1tdWF3
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMkE3oAAoJEDMEi1NhKgbs9tsH/36cUc0lhYxCRoio5m3qer2a
-QRPUy/IAcYC5lp+O3NHzCEvCm3051G9b5A0E5TSMKlTD83JRMoA3ek+zEoQ4dRQY
-SKbVqaiWrpw+WLk8oXG8aEW1F+DiTeFUGgsnuG8qEGpPGQ152CRuD028Mfp5bMGW
-Rz+FzpnG+KEpQW6X+ouZk+kaYWaDhjXeC5sYEbBann8pVzeLBqXgWtSkR42qHuKh
-UAvo360pjYLNQ9FEb61NU51Lxh1Qz5YuQ1538ABGIK9/rHc3KNrDyxJH5BSsKCaY
-vI2tgVQXrdBevfeSouUgdP6du5sdykWkiDjFneEY/i4eDqF/i1XOKzdRvCgr2t4=
-=hM6n
------END PGP SIGNATURE-----
-
---Signature=_Wed__15_Sep_2010_14_39_04_+1000_/zC80piBEq1tdWF3--
