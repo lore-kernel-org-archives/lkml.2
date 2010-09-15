@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754537Ab0IOPoG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 11:44:06 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:62525 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752938Ab0IOPoE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 11:44:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=E83xNwpFdsJvi6L6YzuqQWPMepBN9fAHv5G8y3k/7vlgX/zBuiQhstQbQKvVPiI4DG
-         iewvWgcDrx4EDNbK5pBmB5G4yV37qv7zm++KbAwCD2qF+rbhm3fa47+CHJqrI/8JXTmT
-         fZwEg+LOEc5OSWn9+GbATOqtPUgj7sOdeQe04=
+	id S1754588Ab0IOPpF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 11:45:05 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:41610 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752938Ab0IOPpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 11:45:03 -0400
+Date: Wed, 15 Sep 2010 10:44:58 -0500
+From: Robin Holt <holt@sgi.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Christopher Yeoh <cyeoh@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [RFC][PATCH] Cross Memory Attach
+Message-ID: <20100915154458.GE3013@sgi.com>
+References: <20100915104855.41de3ebf@lilo>
+ <4C90A6C7.9050607@redhat.com>
+ <20100916001232.0c496b02@lilo>
+ <AANLkTikkAs5jUPhsq5=_Efv-MbbfCNmT10rcV6VUc54D@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinpFpAdiU=kNTmL4FNn4kTyRUiVcKxnq=mi2O2D@mail.gmail.com>
-References: <AANLkTinpFpAdiU=kNTmL4FNn4kTyRUiVcKxnq=mi2O2D@mail.gmail.com>
-Date: Wed, 15 Sep 2010 23:44:03 +0800
-Message-ID: <AANLkTinJ4nDfSKTPoN=OXDR+tUum8KjPQy-ZrmoE=5UM@mail.gmail.com>
-Subject: Re: new "multi-version snapshot target" [was: Re: [PATCH] vfs:
- calculate block-size correctly]
-From: McPacino <mcpacino@gmail.com>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>, Nick Piggin <npiggin@kernel.dk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        device-mapper development <dm-devel@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikkAs5jUPhsq5=_Efv-MbbfCNmT10rcV6VUc54D@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 15, 2010 at 10:20 PM, Mike Snitzer <snitzer@redhat.com> wrote:
-> On Wed, Sep 15, 2010 at 4:14 AM, McPacino <mcpacino@gmail.com> wrote:
->> On Tue, Sep 14, 2010 at 7:09 AM, Andrew Morton
->> <akpm@linux-foundation.org> wrote:
->>>
->>> On Wed, 8 Sep 2010 18:07:10 +0800
->>> Cong Meng <mcpacino@gmail.com> wrote:
->>>
->>> > I sent this patch half mount ago, but no response at all. If anything is
->>> > wrong, please tell me. Thanks a lots. This is my first time to send patch
->>> > to linux kernel.
->>> >
->>> > The invocation of __getblk(bdev, block, size) will cause kernel stall if
->>> > the @size parameter is not equal to the blockr-size of @bdev, which is saved
->>> > in bdev->bd_inode->i_blkbits.
->>> >
->>> > submit_bh() has the similar problem.
->>> >
->>> > This patch calculates the block-size using i_blkbits.
->>> > So that, for example, __getblk() can get a 4K buffer head while the
->>> > block-size of @bdev is 1K.
->>> >
->>>
->>> This comes up every couple of years and iirc we always decided that
->>> it's a bug in the calling code somewhere.  How did you hit it?
->>>
->>
->> I am working on a new multi-version snapshot target module for device-mapper
->> which is almost done.
->
-> And you hope to have this code included upstream?  Do you intend to
-> post your patches to dm-devel?
->
+> > 3. ability to map part of another process's address space directly into
+> >   the current one. Would have setup/tear down overhead, but this would
+> >   be useful specifically for reduction operations where we don't even
+> >   need to really copy the data once at all, but use it directly in
+> >   arithmetic/logical operations on the receiver.
+> 
+> Don't even think about this. If you want to map another tasks memory,
+> use shared memory. The shared memory code knows about that. The races
+> for anything else are crazy.
 
-Of course, yes.
-The code is almost finished and is being tested.
-I will post it few weeks later if everything goes well.
+SGI has a similar, but significantly more difficult, problem to solve and
+have written a fairly complex driver to handle exactly the scenario IBM
+is proposing.  In our case, not only are we trying to directly access one
+processes memory, we are doing it from a completely different operating
+system instance operating on the same numa fabric.
 
-> Thanks,
-> Mike
->
+In our case (I have not looked at IBMs patch), we are actually using
+get_user_pages() to get extra references on struct pages.  We are
+judicious about reference counting the mm and we use get_task_mm in all
+places with the exception of process teardown (ignorable detail for now).
+We have a fault handler inserting PFNs as appropriate.  You can guess
+at the complexity.  Even with all its complexity, we still need to
+caveat certain functionality as not being supported.
+
+If we were to try and get that driver included in the kernel, how would
+you suggest we expand the shared memory code to include support for the
+coordination needed between those seperate operating system instances?
+I am genuinely interested and not trying to be argumentative.  This has
+been on my "Get done before Aug-1 list for months and I have not had
+any time to pursue.
+
+Thanks,
+Robin
