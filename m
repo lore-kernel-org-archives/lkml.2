@@ -1,44 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605Ab0IOGg1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 02:36:27 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:39930 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751934Ab0IOGgZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 02:36:25 -0400
-Date: Wed, 15 Sep 2010 08:35:25 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Ben Dooks <ben-i2c@fluff.org>
-Cc: Kyungmin Park <kmpark@infradead.org>,
-        Haavard Skinnemoen <hskinnemoen@atmel.com>,
-        Wolfram Sang <w.sang@pengutronix.de>, Tejun Heo <tj@kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] I2C-GPIO: Don't include the asm/gpio.h directly
-Message-ID: <20100915083525.16786342@hyperion.delvare>
-In-Reply-To: <20100914232026.GB7494@trinity.fluff.org>
-References: <20100914073053.GA15611@july>
-	<20100914232026.GB7494@trinity.fluff.org>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752410Ab0IOGyA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 02:54:00 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:55505 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751216Ab0IOGx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 02:53:58 -0400
+Date: Wed, 15 Sep 2010 09:53:45 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: "Balbi, Felipe" <balbi@ti.com>, Ming Lei <tom.leiming@gmail.com>,
+        "greg@kroah.com" <greg@kroah.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        "Gadiyar, Anand" <gadiyar@ti.com>, Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [RESEND/PATCH 5/6] USB: musb-gadget: complete request only if
+ data is transfered over
+Message-ID: <20100915065345.GC3393@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1283873014-32511-1-git-send-email-tom.leiming@gmail.com>
+ <1283873014-32511-6-git-send-email-tom.leiming@gmail.com>
+ <4C8E18AD.8000502@ru.mvista.com>
+ <AANLkTinei3u1OZ-eBiUTDF=PDjwxLcL6rBpt7iNQJgHJ@mail.gmail.com>
+ <4C8E4882.6040600@ru.mvista.com>
+ <4C8E50CC.3080705@ru.mvista.com>
+ <20100914065604.GD2601@legolas.emea.dhcp.ti.com>
+ <4C8F527E.40408@ru.mvista.com>
+ <20100914105402.GD7554@legolas.emea.dhcp.ti.com>
+ <4C8FB60D.1080906@ru.mvista.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <4C8FB60D.1080906@ru.mvista.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Sep 2010 00:20:26 +0100, Ben Dooks wrote:
-> On Tue, Sep 14, 2010 at 04:30:53PM +0900, Kyungmin Park wrote:
-> > Don't include asm/gpio.h directly. Use the linux/gpio.h.
-> > 
-> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> 
-> will merge this, unless Jean wants to do it, at the next merge window.
+On Tue, Sep 14, 2010 at 12:51:09PM -0500, Sergei Shtylyov wrote:
+>Hello.
+>
+>Felipe Balbi wrote:
+>
+>>>    If a DMA interrupt comes when the whole transfer is not yet
+>>> complete (and
+>>> other Ming Lei's patches are making this possible),
+>
+>    Oh, here I mixed some other patch with Ming Lei's ones...
+>
+>>> it will pass due to the
+>
+>> than this is the actual problem, no ? If we're using mode1 dma (as we
+>> are on tx path), we should only get dma interrupt when the whole
+>> transfer has been completed.
+>
+>    The Inventra DMA controller has serious DMA length limitation, so the whole
+>transfer may take more than one DMA.
 
-Please do, i2c-gpio is mostly used on embedded systems.
+When I said 'whole transfer' I meant the transfer size you programmed
+dma to transfer, see that we have (not actual code):
 
-Thanks,
+if (transfer_size > dma->max_len)
+	transfer_size = dma->max_len;
+
+dma->channel_program(...,..., transfer_size,...);
+
+with mode1, we will only get irq when dma has transferred transfer_size
+bytes.
+
+>> likewise, this was there before the patch. I don't think the real
+>> problem lies with this patch, it's been there for a while, don't you
+>> agree ?
+>
+>    Then what problem this patch fixes, if not this one?
+
+if request->length == 1MB and dma->max_len = 128KB, when is_dma is true,
+request->actual will be different from request->length for 7
+'iterations', then only on the 8th it will be the same. I believe that's
+what Ming is trying to fix.
+
+Ming, am I correct ?
+
+>    Let me repeat: in the PIO mode the added check is just duplicate, in the DMA
+
+it is duplicate for PIO, but not for DMA.
+
 -- 
-Jean Delvare
+balbi
