@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab0IOD2r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 23:28:47 -0400
-Received: from mail.perches.com ([173.55.12.10]:2036 "EHLO mail.perches.com"
+	id S1754147Ab0IODbK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 23:31:10 -0400
+Received: from mga11.intel.com ([192.55.52.93]:40320 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752912Ab0IOD2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 23:28:46 -0400
-Subject: Re: [PATCH] get_maintainer.pl: append reason for cc to the name by
- default
-From: Joe Perches <joe@perches.com>
-To: Florian Mickler <florian@mickler.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
+	id S1752244Ab0IODbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 23:31:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,368,1280732400"; 
+   d="scan'208";a="837724229"
+Date: Wed, 15 Sep 2010 11:31:00 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: "Li, Shaohua" <shaohua.li@intel.com>
+Cc: Neil Brown <neilb@suse.de>, Rik van Riel <riel@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>
-In-Reply-To: <20100914194646.52d4bf96@schatten.dmk.lab>
-References: <1284111212-10659-1-git-send-email-florian@mickler.org>
-	 <1284111767.1783.35.camel@Joe-Laptop>
-	 <20100911001350.GA11478@infradead.org>
-	 <1284165074.1783.213.camel@Joe-Laptop>
-	 <20100911004550.GA30584@infradead.org>
-	 <20100911112855.6ee6e929@schatten.dmk.lab>
-	 <m1hbhucdv5.fsf@fess.ebiederm.org> <1284364665.22185.116.camel@Joe-Laptop>
-	 <20100913105434.62b150f7@schatten.dmk.lab>
-	 <m1lj749ra2.fsf@fess.ebiederm.org>
-	 <20100914194646.52d4bf96@schatten.dmk.lab>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 14 Sep 2010 20:28:44 -0700
-Message-ID: <1284521324.26719.146.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: Deadlock possibly caused by too_many_isolated.
+Message-ID: <20100915033059.GA12542@localhost>
+References: <20100915091118.3dbdc961@notabene>
+ <4C90139A.1080809@redhat.com>
+ <20100915122334.3fa7b35f@notabene>
+ <20100915023735.GA9175@localhost>
+ <20100915025454.GA10230@localhost>
+ <20100915030640.GA11141@localhost>
+ <20100915031343.GA12005@localhost>
+ <1284520712.30133.1.camel@sli10-conroe.sh.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284520712.30133.1.camel@sli10-conroe.sh.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-09-14 at 19:46 +0200, Florian Mickler wrote:
-> On Tue, 14 Sep 2010 10:19:33 -0700
-> ebiederm@xmission.com (Eric W. Biederman) wrote:
-> > Florian Mickler <florian@mickler.org> writes:
-> >
-> 
-> 
-> 
-> > What is needed is something other than output that is a list of
-> > email addresses.
-> > 
-> > email address foo had x% of non-author signed off bys
-> > email address foo had y% of author signed off bys
-> > email address foo had y% of author commits.
-> > email address foo came from the Maintainers file.
-> 
-> Currently get_maintainer.pl only does signed-off-by counting, it doesn't
-> take authorship in account, IIRC. That is a good point. It's
-> information that is easily available. 
-> 
-> > 
-> > Additionally for email addresses that hit less often a list
-> > of patch subject titles, and truncated sha1 patch ids.  So
-> > with luck you can tell at a glance the person is of interest
-> > and if not you can look at their commits quickly and see.
-> 
-> An interactive mode in git shortlog form of the last year should be
-> possible, i guess. 
-> 
-> I wonder, if git send-email --cc-cmd allows for directing input towards
-> get_maintainer.pl. That would be awesome.
+On Wed, Sep 15, 2010 at 11:18:32AM +0800, Li, Shaohua wrote:
 
-Yes it does.  You could use any script or direct command
-with arguments you like.
+> > +	if (!(sc->gfp_mask & __GFP_WAIT))
+> > +		return 0;
+> > +
+> it appears __GFP_WAIT allocation doesn't go to direct reclaim.
 
-I sent you privately a script that does that last week.
+Good point! So we are returning to its very first version ;)
 
-
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1135,6 +1135,7 @@ static int too_many_isolated(struct zone *zone, int file,
+ 		struct scan_control *sc)
+ {
+ 	unsigned long inactive, isolated;
++	int ratio;
+ 
+ 	if (current_is_kswapd())
+ 		return 0;
+@@ -1150,7 +1151,9 @@ static int too_many_isolated(struct zone *zone, int file,
+ 		isolated = zone_page_state(zone, NR_ISOLATED_ANON);
+ 	}
+ 
+-	return isolated > inactive;
++	ratio = sc->gfp_mask & (__GFP_IO | __GFP_FS) ? 1 : 8;
++
++	return isolated > inactive * ratio;
+ }
+ 
+ /*
