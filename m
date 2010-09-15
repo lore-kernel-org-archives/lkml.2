@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588Ab0IOPpF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 11:45:05 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:41610 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752938Ab0IOPpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 11:45:03 -0400
-Date: Wed, 15 Sep 2010 10:44:58 -0500
-From: Robin Holt <holt@sgi.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Christopher Yeoh <cyeoh@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [RFC][PATCH] Cross Memory Attach
-Message-ID: <20100915154458.GE3013@sgi.com>
-References: <20100915104855.41de3ebf@lilo>
- <4C90A6C7.9050607@redhat.com>
- <20100916001232.0c496b02@lilo>
- <AANLkTikkAs5jUPhsq5=_Efv-MbbfCNmT10rcV6VUc54D@mail.gmail.com>
+	id S1754640Ab0IOPpX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 11:45:23 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:46804 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754508Ab0IOPpS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 11:45:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikkAs5jUPhsq5=_Efv-MbbfCNmT10rcV6VUc54D@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [87.66.152.179]
+In-Reply-To: <20100909075403.GA10798@elte.hu>
+References: <AANLkTinUmbSUUuxUzc8++pcb9gd1CZFdyTQFrveTBXyV@mail.gmail.com>
+	<20100908065333.GG3439@elte.hu>
+	<AANLkTikpwSA411XRTi7Ybj_19URnW0mEMrf6pFYNpxVF@mail.gmail.com>
+	<20100909075403.GA10798@elte.hu>
+Date: Wed, 15 Sep 2010 17:45:09 +0200
+Message-ID: <AANLkTimCy8pB6JZ2bkGutTou8-oXc1yjweqCxVrLw=Kk@mail.gmail.com>
+Subject: Re: [PATCH] tracing, perf: add more power related events
+From: Jean Pihet <jean.pihet@newoldbits.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Renninger <trenn@suse.de>, Arjan van de Ven <arjan@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
+        arjan@infradead.org, Kevin Hilman <khilman@deeprootsystems.com>,
+        linux-kernel@vger.kernel.org, discuss@lesswatts.org,
+        linux-pm@lists.linux-foundation.org, linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > 3. ability to map part of another process's address space directly into
-> >   the current one. Would have setup/tear down overhead, but this would
-> >   be useful specifically for reduction operations where we don't even
-> >   need to really copy the data once at all, but use it directly in
-> >   arithmetic/logical operations on the receiver.
-> 
-> Don't even think about this. If you want to map another tasks memory,
-> use shared memory. The shared memory code knows about that. The races
-> for anything else are crazy.
+On Thu, Sep 9, 2010 at 9:54 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>> I think the ACPI tracepoints can be added on top of the proposed
+>> patch. Is that ok?
+>
+> Yeah - and the OMAP thing can be split up too if the OMAP folks prefer
+> it that way, but we still want to _see_ all the patches in this thread
+> together so that we have a critical mass of people interested in all
+> this ...
 
-SGI has a similar, but significantly more difficult, problem to solve and
-have written a fairly complex driver to handle exactly the scenario IBM
-is proposing.  In our case, not only are we trying to directly access one
-processes memory, we are doing it from a completely different operating
-system instance operating on the same numa fabric.
+Any chance to get the patch merged in?
+What is needed wrt to ACPI support?
 
-In our case (I have not looked at IBMs patch), we are actually using
-get_user_pages() to get extra references on struct pages.  We are
-judicious about reference counting the mm and we use get_task_mm in all
-places with the exception of process teardown (ignorable detail for now).
-We have a fault handler inserting PFNs as appropriate.  You can guess
-at the complexity.  Even with all its complexity, we still need to
-caveat certain functionality as not being supported.
-
-If we were to try and get that driver included in the kernel, how would
-you suggest we expand the shared memory code to include support for the
-coordination needed between those seperate operating system instances?
-I am genuinely interested and not trying to be argumentative.  This has
-been on my "Get done before Aug-1 list for months and I have not had
-any time to pursue.
+>
+> Thanks,
+>
+>        Ingo
 
 Thanks,
-Robin
+Jean
