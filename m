@@ -1,155 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754316Ab0IODrk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 23:47:40 -0400
-Received: from mga11.intel.com ([192.55.52.93]:15888 "EHLO mga11.intel.com"
+	id S1751048Ab0IOEBT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 00:01:19 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:36775 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752970Ab0IODrj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 23:47:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,368,1280732400"; 
-   d="scan'208";a="606998631"
-Date: Wed, 15 Sep 2010 11:47:35 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Neil Brown <neilb@suse.de>
-Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: Deadlock possibly caused by too_many_isolated.
-Message-ID: <20100915034734.GA12264@localhost>
-References: <20100915091118.3dbdc961@notabene>
- <4C90139A.1080809@redhat.com>
- <20100915122334.3fa7b35f@notabene>
- <20100915023735.GA9175@localhost>
- <20100915025454.GA10230@localhost>
- <20100915030640.GA11141@localhost>
- <20100915131735.08899288@notabene>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100915131735.08899288@notabene>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1750695Ab0IOEBS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 00:01:18 -0400
+Date: Wed, 15 Sep 2010 14:01:14 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jan Blunck <jblunck@infradead.org>,
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Subject: linux-next: manual merge of the bkl-vfs tree with the nilfs2 tree
+Message-Id: <20100915140114.81406c4f.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 15, 2010 at 11:17:35AM +0800, Neil Brown wrote:
-> On Wed, 15 Sep 2010 11:06:40 +0800
-> Wu Fengguang <fengguang.wu@intel.com> wrote:
-> 
-> > On Wed, Sep 15, 2010 at 10:54:54AM +0800, Wu Fengguang wrote:
-> > > On Wed, Sep 15, 2010 at 10:37:35AM +0800, Wu Fengguang wrote:
-> > > > On Wed, Sep 15, 2010 at 10:23:34AM +0800, Neil Brown wrote:
-> > > > > On Tue, 14 Sep 2010 20:30:18 -0400
-> > > > > Rik van Riel <riel@redhat.com> wrote:
-> > > > > 
-> > > > > > On 09/14/2010 07:11 PM, Neil Brown wrote:
-> > > > > > 
-> > > > > > > Index: linux-2.6.32-SLE11-SP1/mm/vmscan.c
-> > > > > > > ===================================================================
-> > > > > > > --- linux-2.6.32-SLE11-SP1.orig/mm/vmscan.c	2010-09-15 08:37:32.000000000 +1000
-> > > > > > > +++ linux-2.6.32-SLE11-SP1/mm/vmscan.c	2010-09-15 08:38:57.000000000 +1000
-> > > > > > > @@ -1106,6 +1106,11 @@ static unsigned long shrink_inactive_lis
-> > > > > > >   		/* We are about to die and free our memory. Return now. */
-> > > > > > >   		if (fatal_signal_pending(current))
-> > > > > > >   			return SWAP_CLUSTER_MAX;
-> > > > > > > +		if (!(sc->gfp_mask&  __GFP_IO))
-> > > > > > > +			/* Not allowed to do IO, so mustn't wait
-> > > > > > > +			 * on processes that might try to
-> > > > > > > +			 */
-> > > > > > > +			return SWAP_CLUSTER_MAX;
-> > > > > > >   	}
-> > > > > > >
-> > > > > > >   	/*
-> > > > > > 
-> > > > > > Close.  We must also be sure that processes without __GFP_FS
-> > > > > > set in their gfp_mask do not wait on processes that do have
-> > > > > > __GFP_FS set.
-> > > > > > 
-> > > > > > Considering how many times we've run into a bug like this,
-> > > > > > I'm kicking myself for not having thought of it :(
-> > > > > > 
-> > > > > 
-> > > > > So maybe this?  I've added the test for __GFP_FS, and moved the test before
-> > > > > the congestion_wait on the basis that we really want to get back up the stack
-> > > > > and try the mempool ASAP.
-> > > > 
-> > > > The patch may well fail the !__GFP_IO page allocation and then
-> > > > quickly exhaust the mempool.
-> > > > 
-> > > > Another approach may to let too_many_isolated() use much higher
-> > > > thresholds for !__GFP_IO/FS and lower ones for __GFP_IO/FS. ie. to
-> > > > allow at least nr2 NOIO/FS tasks to be blocked independent of the
-> > > > IO/FS ones.  Since NOIO vmscans typically completes fast, it will then
-> > > > very hard to accumulate enough NOIO processes to be actually blocked.
-> > > > 
-> > > > 
-> > > >                   IO/FS tasks                NOIO/FS tasks           full
-> > > >                   block here                 block here              LRU size
-> > > > |-----------------|--------------------------|-----------------------|
-> > > > |      nr1        |           nr2            |
-> > > 
-> > > How about this fix? We may need very high threshold for NOIO/NOFS to
-> > > prevent possible regressions.
-> > 
-> > Plus __GFP_WAIT..
-> > 
-> > ---
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index 225a759..6a896eb 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -1135,6 +1135,7 @@ static int too_many_isolated(struct zone *zone, int file,
-> >  		struct scan_control *sc)
-> >  {
-> >  	unsigned long inactive, isolated;
-> > +	int ratio;
-> >  
-> >  	if (current_is_kswapd())
-> >  		return 0;
-> > @@ -1150,7 +1151,15 @@ static int too_many_isolated(struct zone *zone, int file,
-> >  		isolated = zone_page_state(zone, NR_ISOLATED_ANON);
-> >  	}
-> >  
-> > -	return isolated > inactive;
-> > +	ratio = 1;
-> > +	if (!(sc->gfp_mask & (__GFP_FS)))
-> > +		ratio <<= 1;
-> > +	if (!(sc->gfp_mask & (__GFP_IO)))
-> > +		ratio <<= 1;
-> > +	if (!(sc->gfp_mask & (__GFP_WAIT)))
-> > +		ratio <<= 1;
-> > +
-> > +	return isolated > inactive * ratio;
-> >  }
-> >  
-> >  /*
-> 
-> 
-> Are you suggesting this instead of my patch, or as well as my patch?
+Hi Arnd,
 
-Your patch surely breaks the deadlock, however might reintroduce the
-old problem too_many_isolated() tried to address..
+Today's linux-next merge of the bkl-vfs tree got a conflict in
+fs/nilfs2/super.c between commit 38999dca4fdc4a0d1b92a540bc0772a32b07388a
+("nilfs2: do not allocate multiple super block instances for a device")
+from the nilfs2 tree and commit 3fec873dc6e9026d98e2359202fa50fd06ee7b64
+("BKL: Remove BKL from NILFS2") from the bkl-vfs tree.
 
-> Because while I think it sounds like a good idea I don't think it actually
-> removes the chance of a deadlock, just makes it a lot less likely.
-> So I think your patch combined with my patch would be a good total solution.
+I fixed it up (I think - see below) and can carry the fix as necessary.
 
-Deadlock means IO/FS tasks (blocked on FS lock) blocking the NOIO/FS
-tasks? I think raising the threshold for NOIO/FS would be sufficient
-to break the deadlock: The NOIO/FS tasks will be blocked simply
-because there are so many NOIO/FS tasks competing with each other.
-They do not inherently depend on the release of FS locks to proceed.
+P.S. Arndt, the first of the above bkl/vfs commits does not have a SOB
+line from you and has a bug (missing open brace) that is fixed in the
+second.  Just in case you decide to rebase this branch at any point ...
 
-The too_many_isolated() was introduced initially to prevent OOM for
-some fork-bomb workload, where no IO is involved (so no FS locks). If
-removing the congestion wait for NOIO/FS tasks, the OOM may raise
-again for the fork-bomb workload.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-So I'd suggest to use sufficient high threshold for NOIO/FS, but still
-limit the number of concurrent NOIO/FS allocations.
-
-Thanks,
-Fengguang
+diff --cc fs/nilfs2/super.c
+index 3a78f6c,9f4913f..0000000
+--- a/fs/nilfs2/super.c
++++ b/fs/nilfs2/super.c
+@@@ -345,17 -348,16 +342,15 @@@ static void nilfs_put_super(struct supe
+  		nilfs_cleanup_super(sbi);
+  		up_write(&nilfs->ns_sem);
+  	}
+ -	down_write(&nilfs->ns_super_sem);
+ -	if (nilfs->ns_current == sbi)
+ -		nilfs->ns_current = NULL;
+ -	up_write(&nilfs->ns_super_sem);
+  
+ -	nilfs_detach_checkpoint(sbi);
+ -	put_nilfs(sbi->s_nilfs);
+ +	iput(nilfs->ns_sufile);
+ +	iput(nilfs->ns_cpfile);
+ +	iput(nilfs->ns_dat);
+ +
+ +	destroy_nilfs(nilfs);
+  	sbi->s_super = NULL;
+  	sb->s_fs_info = NULL;
+ -	nilfs_put_sbinfo(sbi);
+ +	kfree(sbi);
+- 
+- 	unlock_kernel();
+  }
+  
+  static int nilfs_sync_fs(struct super_block *sb, int wait)
+@@@ -970,12 -942,13 +965,10 @@@ static int nilfs_remount(struct super_b
+  	struct the_nilfs *nilfs = sbi->s_nilfs;
+  	unsigned long old_sb_flags;
+  	struct nilfs_mount_options old_opts;
+ -	int was_snapshot, err;
+ +	int err;
+  
+- 	lock_kernel();
+- 
+ -	down_write(&nilfs->ns_super_sem);
+  	old_sb_flags = sb->s_flags;
+  	old_opts.mount_opt = sbi->s_mount_opt;
+ -	old_opts.snapshot_cno = sbi->s_snapshot_cno;
+ -	was_snapshot = nilfs_test_opt(sbi, SNAPSHOT);
+  
+  	if (!parse_options(data, sb, 1)) {
+  		err = -EINVAL;
+@@@ -1040,13 -1016,14 +1033,11 @@@
+  		up_write(&nilfs->ns_sem);
+  	}
+   out:
+- 	unlock_kernel();
+ -	up_write(&nilfs->ns_super_sem);
+  	return 0;
+  
+   restore_opts:
+  	sb->s_flags = old_sb_flags;
+  	sbi->s_mount_opt = old_opts.mount_opt;
+- 	unlock_kernel();
+ -	sbi->s_snapshot_cno = old_opts.snapshot_cno;
+ -	up_write(&nilfs->ns_super_sem);
+  	return err;
+  }
+  
