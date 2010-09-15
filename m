@@ -1,82 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751429Ab0IOEHt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 00:07:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52094 "EHLO mx1.redhat.com"
+	id S1751685Ab0IOETY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 00:19:24 -0400
+Received: from sh.osrg.net ([192.16.179.4]:41472 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750695Ab0IOEHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 00:07:48 -0400
-Message-ID: <4C904685.9090402@redhat.com>
-Date: Tue, 14 Sep 2010 18:07:33 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@siemens.com>
-CC: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [KVM timekeeping 10/35] Fix deep C-state TSC desynchronization
-References: <1282291669-25709-1-git-send-email-zamsden@redhat.com> <1282291669-25709-11-git-send-email-zamsden@redhat.com> <4C8F3C03.50306@siemens.com>
-In-Reply-To: <4C8F3C03.50306@siemens.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+	id S1750983Ab0IOETX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 00:19:23 -0400
+Date: Wed, 15 Sep 2010 13:16:28 +0900 (JST)
+Message-Id: <20100915.131628.69479307.ryusuke@osrg.net>
+To: sfr@canb.auug.org.au
+Cc: arnd@arndb.de, linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jblunck@infradead.org, konishi.ryusuke@lab.ntt.co.jp
+Subject: Re: linux-next: manual merge of the bkl-vfs tree with the nilfs2
+ tree
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+In-Reply-To: <20100915140114.81406c4f.sfr@canb.auug.org.au>
+References: <20100915140114.81406c4f.sfr@canb.auug.org.au>
+X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 15 Sep 2010 13:16:29 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/2010 11:10 PM, Jan Kiszka wrote:
-> Am 20.08.2010 10:07, Zachary Amsden wrote:
->    
->> When CPUs with unstable TSCs enter deep C-state, TSC may stop
->> running.  This causes us to require resynchronization.  Since
->> we can't tell when this may potentially happen, we assume the
->> worst by forcing re-compensation for it at every point the VCPU
->> task is descheduled.
->>
->> Signed-off-by: Zachary Amsden<zamsden@redhat.com>
->> ---
->>   arch/x86/kvm/x86.c |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->> index 7fc4a55..52b6c21 100644
->> --- a/arch/x86/kvm/x86.c
->> +++ b/arch/x86/kvm/x86.c
->> @@ -1866,7 +1866,7 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
->>   	}
->>
->>   	kvm_x86_ops->vcpu_load(vcpu, cpu);
->> -	if (unlikely(vcpu->cpu != cpu)) {
->> +	if (unlikely(vcpu->cpu != cpu) || check_tsc_unstable()) {
->>   		/* Make sure TSC doesn't go backwards */
->>   		s64 tsc_delta = !vcpu->arch.last_host_tsc ? 0 :
->>   				native_read_tsc() - vcpu->arch.last_host_tsc;
->>      
-> For yet unknown reason, this commit breaks Linux guests here if they are
-> started with only a single VCPU. They hang during boot, obviously no
-> longer receiving interrupts.
->
-> I'm using kvm-kmod against a 2.6.34 host kernel, so this may be a side
-> effect of the wrapping, though I cannot imagine how.
->
-> Anyone any ideas?
->    
+On Wed, 15 Sep 2010 14:01:14 +1000, Stephen Rothwell wrote:
+> Hi Arnd,
+> 
+> Today's linux-next merge of the bkl-vfs tree got a conflict in
+> fs/nilfs2/super.c between commit 38999dca4fdc4a0d1b92a540bc0772a32b07388a
+> ("nilfs2: do not allocate multiple super block instances for a device")
+> from the nilfs2 tree and commit 3fec873dc6e9026d98e2359202fa50fd06ee7b64
+> ("BKL: Remove BKL from NILFS2") from the bkl-vfs tree.
+> 
+> I fixed it up (I think - see below) and can carry the fix as necessary.
 
-Question: how did you come to the knowledge that this is the commit 
-which breaks things?  I'm assuming you bisected, in which case a 
-transition from stable -> unstable would have only happened once.  This 
-also means the PM suspend event which you observed only happened once, 
-so obviously if you bisected successfully, there is a bug which doesn't 
-involved the PM transition or the stable -> unstable transition.
+The fix looks fine to me.
 
-Your host TSC must have desynchronized during the PM transition, and 
-this change compensates the TSC on an unstable host to effectively show 
-run time, not real time.  Perhaps the lack of catchup code (to catch 
-back up to real time) is triggering the bug.
+Thanks!
 
-In any case, I'll proceed with the forcing of unstable TSC and HPET 
-clocksource and see what happens.
-
-Zach
+Ryusuke Konishi
