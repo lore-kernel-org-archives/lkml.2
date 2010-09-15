@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596Ab0IOQup (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 12:50:45 -0400
-Received: from fabiana.iplannetworks.net ([201.216.250.248]:43460 "EHLO
-	fabiana.iplannetworks.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751809Ab0IOQuo convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 12:50:44 -0400
-Date: Wed, 15 Sep 2010 09:50:39 -0700
-Message-ID: <4AFFC5480003A112@ms1.iplannetworks.net>
-From: "Webmail Support Team" <copracoperaciones@iplanmail.com.ar>
-Subject: Please Confirm Your Account Information
-Reply-To: supportidessk@mail2webmaster.com
+	id S1754719Ab0IOQ6F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 12:58:05 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:41853 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751809Ab0IOQ6D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 12:58:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=jyvkmP8nJv0reaT5nINnrEGyMxN0WKs7eogs2YCZ+YDkpJUW1kQBiU7xQQz+NEcqPs
+         C7TD8p+tdeHOBFdfSrwWFagdH9L5iJrKpGKEENd7xOn73Ooqv5GCz04UhOdUSBhl98Qg
+         9WY4XYP8FFhocytXsHMyKq5ud9ackobLvM/B4=
+Date: Wed, 15 Sep 2010 09:57:55 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Keng-Yu Lin <keng-yu.lin@canonical.com>
+Cc: len.brown@intel.com, alan-jenkins@tuffmail.co.uk, superm1@ubuntu.com,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dell-laptop: Add debugfs support
+Message-ID: <20100915165755.GA29234@core.coreip.homeip.net>
+References: <1284457690-32635-1-git-send-email-keng-yu.lin@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284457690-32635-1-git-send-email-keng-yu.lin@canonical.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Keng-Yu,
 
-Dear Webmail Subscriber,
+On Tue, Sep 14, 2010 at 05:48:10PM +0800, Keng-Yu Lin wrote:
+> Export the status of RF killswitch through debugfs.
+> 
 
-We regret to announce to you that we will be making some vital maintenance
-on our Webmail service. During this process you might have login problems
-in signing into your webmail account, to prevent this, you will have to confirm
-your account immediately after you receive this notification.
+The patch description could be improved. What is the driving point in
+exporting this data?
 
-To confirm and to keep your account active during and after this maintenance
-process, please reply to this message with the below account information.
+Thanks.
 
-Failure to do this might result to a permanent deactivation of your account
-from our database to enable us create more spaces for new users and to also
-reduce spam input.
-
-Confirm Your Account Details
-Webmail Email ID:
-Email Password:
-Date of birth:
-
-Your account shall remain active after you must have successfully confirmed
-your account details.
-
-Thanks for bearing with us.
-
-Webmail Support Team.
-
-
+-- 
+Dmitry
