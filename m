@@ -1,67 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605Ab0IOI2h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 04:28:37 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:60689 "EHLO mx3.mail.elte.hu"
+	id S1752681Ab0IOI3F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 04:29:05 -0400
+Received: from mga01.intel.com ([192.55.52.88]:7295 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751813Ab0IOI2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 04:28:35 -0400
-Date: Wed, 15 Sep 2010 10:28:24 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/4] [GIT PULL] tracing: real fix for set_ftrace_filter
-Message-ID: <20100915082824.GC16593@elte.hu>
-References: <20100914202714.376849326@goodmis.org>
+	id S1751813Ab0IOI3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 04:29:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,370,1280732400"; 
+   d="scan'208";a="607058659"
+Date: Wed, 15 Sep 2010 16:28:43 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Neil Brown <neilb@suse.de>
+Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Li Shaohua <shaohua.li@intel.com>
+Subject: Re: Deadlock possibly caused by too_many_isolated.
+Message-ID: <20100915082843.GA17252@localhost>
+References: <20100915091118.3dbdc961@notabene>
+ <4C90139A.1080809@redhat.com>
+ <20100915122334.3fa7b35f@notabene>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100914202714.376849326@goodmis.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20100915122334.3fa7b35f@notabene>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Neil,
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+Sorry for the rushed and imaginary ideas this morning..
 
-> Ingo,
-> 
-> This includes the real fix for the bug that was found for
-> set_ftrace_filter. Since I noticed that Linus's tree has the
-> quick fix that Christ Wright and I made, I just based off of
-> mainline.
-> 
-> -- Steve
-> 
-> Please pull the latest tip/perf/core tree, which can be found at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-> tip/perf/core
-> 
-> 
-> Steven Rostedt (4):
->       tracing: Do not reset *pos in set_ftrace_filter
->       tracing: Replace typecasted void pointer in set_ftrace_filter code
->       tracing: Keep track of set_ftrace_filter position and allow lseek again
->       tracing: Fix reading of set_ftrace_filter across lists
-> 
-> ----
->  kernel/trace/ftrace.c |  105 +++++++++++++++++++++++++++++++++++-------------
->  1 files changed, 76 insertions(+), 29 deletions(-)
+> @@ -1101,6 +1101,12 @@ static unsigned long shrink_inactive_lis
+>  	int lumpy_reclaim = 0;
+>  
+>  	while (unlikely(too_many_isolated(zone, file, sc))) {
+> +		if ((sc->gfp_mask & GFP_IOFS) != GFP_IOFS)
+> +			/* Not allowed to do IO, so mustn't wait
+> +			 * on processes that might try to
+> +			 */
+> +			return SWAP_CLUSTER_MAX;
+> +
 
-Pulled, thanks a lot Steve! I wanted to merge -rc4 into perf/core anyway 
-;-)
+The above patch should behavior like this: it returns SWAP_CLUSTER_MAX
+to cheat all the way up to believe "enough pages have been reclaimed".
+So __alloc_pages_direct_reclaim() see non-zero *did_some_progress and
+go on to call get_page_from_freelist(). That normally fails because
+the task didn't really scanned the LRU lists. However it does have the
+possibility to succeed -- when so many processes are doing concurrent
+direct reclaims, it may luckily get one free page reclaimed by other
+tasks. What's more, if it does fail to get a free page, the upper
+layer __alloc_pages_slowpath() will be repeat recalling
+__alloc_pages_direct_reclaim(). So, sooner or later it will succeed in
+"stealing" a free page reclaimed by other tasks.
 
-	Ingo
+In summary, the patch behavior for !__GFP_IO/FS is
+- won't do any page reclaim
+- won't fail the page allocation (unexpected)
+- will wait and steal one free page from others (unreasonable)
+
+So it will address the problem you encountered, however it sounds
+pretty unexpected and illogical behavior, right?
+
+I believe this patch will address the problem equally well.
+What do you think?
+
+Thanks,
+Fengguang
+---
+
+mm: Avoid possible deadlock caused by too_many_isolated()
+
+Neil finds that if too_many_isolated() returns true while performing
+direct reclaim we can end up waiting for other threads to complete their
+direct reclaim.  If those threads are allowed to enter the FS or IO to
+free memory, but this thread is not, then it is possible that those
+threads will be waiting on this thread and so we get a circular
+deadlock.
+
+some task enters direct reclaim with GFP_KERNEL
+  => too_many_isolated() false
+    => vmscan and run into dirty pages
+      => pageout()
+        => take some FS lock
+	  => fs/block code does GFP_NOIO allocation
+	    => enter direct reclaim again
+	      => too_many_isolated() true
+		=> waiting for others to progress, however the other
+		   tasks may be circular waiting for the FS lock..
+
+The fix is to let !__GFP_IO and !__GFP_FS direct reclaims enjoy higher
+priority than normal ones, by honouring them higher throttle threshold.
+
+Now !__GFP_IO/FS reclaims won't be waiting for __GFP_IO/FS reclaims to
+progress. They will be blocked only when there are too many concurrent
+!__GFP_IO/FS reclaims, however that's very unlikely because the IO-less
+direct reclaims is able to progress much more faster, and they won't
+deadlock each other. The threshold is raised high enough for them, so
+that there can be sufficient parallel progress of !__GFP_IO/FS reclaims.
+
+Reported-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ mm/vmscan.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+--- linux-next.orig/mm/vmscan.c	2010-09-15 11:58:58.000000000 +0800
++++ linux-next/mm/vmscan.c	2010-09-15 15:36:14.000000000 +0800
+@@ -1141,36 +1141,39 @@ int isolate_lru_page(struct page *page)
+ 	return ret;
+ }
+ 
+ /*
+  * Are there way too many processes in the direct reclaim path already?
+  */
+ static int too_many_isolated(struct zone *zone, int file,
+ 		struct scan_control *sc)
+ {
+ 	unsigned long inactive, isolated;
++	int ratio;
+ 
+ 	if (current_is_kswapd())
+ 		return 0;
+ 
+ 	if (!scanning_global_lru(sc))
+ 		return 0;
+ 
+ 	if (file) {
+ 		inactive = zone_page_state(zone, NR_INACTIVE_FILE);
+ 		isolated = zone_page_state(zone, NR_ISOLATED_FILE);
+ 	} else {
+ 		inactive = zone_page_state(zone, NR_INACTIVE_ANON);
+ 		isolated = zone_page_state(zone, NR_ISOLATED_ANON);
+ 	}
+ 
+-	return isolated > inactive;
++	ratio = sc->gfp_mask & (__GFP_IO | __GFP_FS) ? 1 : 8;
++
++	return isolated > inactive * ratio;
+ }
+ 
+ /*
+  * TODO: Try merging with migrations version of putback_lru_pages
+  */
+ static noinline_for_stack void
+ putback_lru_pages(struct zone *zone, struct scan_control *sc,
+ 				unsigned long nr_anon, unsigned long nr_file,
+ 				struct list_head *page_list)
+ {
