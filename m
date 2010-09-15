@@ -1,75 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752735Ab0IOKEn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 06:04:43 -0400
-Received: from hera.kernel.org ([140.211.167.34]:39958 "EHLO hera.kernel.org"
+	id S1753228Ab0IOKEr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 06:04:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29808 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751429Ab0IOKEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 06:04:41 -0400
-Date: Wed, 15 Sep 2010 10:04:11 GMT
-From: tip-bot for Namhyung Kim <namhyung@gmail.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de,
-        namhyung@gmail.com, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de,
-        namhyung@gmail.com, mingo@elte.hu
-In-Reply-To: <1284512670-2369-2-git-send-email-namhyung@gmail.com>
-References: <1284512670-2369-2-git-send-email-namhyung@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] kprobes: Remove redundant address check
-Message-ID: <tip-edbaadbe42b0b790618ec49d29626223529d8195@git.kernel.org>
-Git-Commit-ID: edbaadbe42b0b790618ec49d29626223529d8195
-X-Mailer: tip-git-log-daemon
+	id S1752724Ab0IOKEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 06:04:44 -0400
+Date: Wed, 15 Sep 2010 11:58:37 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+Cc: Shirley Ma <mashirle@us.ibm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Avi Kivity <avi@redhat.com>, David Miller <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
+ kernel
+Message-ID: <20100915095837.GA28016@redhat.com>
+References: <1284410580.13351.10.camel@localhost.localdomain>
+ <4C8F3C77.7010302@redhat.com>
+ <1284476719.13351.35.camel@localhost.localdomain>
+ <201009141721.13202.arnd@arndb.de>
+ <20100914152231.GA13105@redhat.com>
+ <1284480025.13351.49.camel@localhost.localdomain>
+ <20100914162952.GB13560@redhat.com>
+ <F2E9EB7348B8264F86B6AB8151CE2D792B8C815314@shsmsx502.ccr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 15 Sep 2010 10:04:12 +0000 (UTC)
+In-Reply-To: <F2E9EB7348B8264F86B6AB8151CE2D792B8C815314@shsmsx502.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  edbaadbe42b0b790618ec49d29626223529d8195
-Gitweb:     http://git.kernel.org/tip/edbaadbe42b0b790618ec49d29626223529d8195
-Author:     Namhyung Kim <namhyung@gmail.com>
-AuthorDate: Wed, 15 Sep 2010 10:04:26 +0900
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 15 Sep 2010 10:44:00 +0200
+On Wed, Sep 15, 2010 at 10:46:02AM +0800, Xin, Xiaohui wrote:
+> >From: Michael S. Tsirkin [mailto:mst@redhat.com]
+> >Sent: Wednesday, September 15, 2010 12:30 AM
+> >To: Shirley Ma
+> >Cc: Arnd Bergmann; Avi Kivity; Xin, Xiaohui; David Miller; netdev@vger.kernel.org;
+> >kvm@vger.kernel.org; linux-kernel@vger.kernel.org
+> >Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host kernel
+> >
+> >On Tue, Sep 14, 2010 at 09:00:25AM -0700, Shirley Ma wrote:
+> >> On Tue, 2010-09-14 at 17:22 +0200, Michael S. Tsirkin wrote:
+> >> > I would expect this to hurt performance significantly.
+> >> > We could do this for asynchronous requests only to avoid the
+> >> > slowdown.
+> >>
+> >> Is kiocb in sendmsg helpful here? It is not used now.
+> >>
+> >> Shirley
+> >
+> >Precisely. This is what the patch from Xin Xiaohui does.  That code
+> >already seems to do most of what you are trying to do, right?
+> >
+> >The main thing missing seems to be macvtap integration, so that we can fall back
+> >on data copy if zero copy is unavailable?
+> >How hard would it be to basically link the mp and macvtap modules
+> >together to get us this functionality? Anyone?
+> >
+> Michael,
+> Is to support macvtap with zero-copy through mp device the functionality
+> you mentioned above?
 
-kprobes: Remove redundant address check
+I have trouble parsing the above question.  At some point Arnd suggested
+that the mp device functionality would fit nicely as part of the macvtap
+driver.  It seems to make sense superficially, the advantage if it
+worked would be that we would get zero copy (mostly) transparently.
 
-Remove call to kernel_text_address() in register_jprobes()
-because it is called right after in register_kprobe().
+Do you agree with this goal?
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-LKML-Reference: <1284512670-2369-2-git-send-email-namhyung@gmail.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/kprobes.c |   13 +++++--------
- 1 files changed, 5 insertions(+), 8 deletions(-)
+> Before Shirley Ma has suggested to move the zero-copy functionality into
+> tun/tap device or macvtap device. How do you think about that?
+> I suspect
+> there will be a lot of duplicate code in that three drivers except we can extract
+> code of zero-copy into kernel APIs and vhost APIs.
 
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 282035f..8f96701 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -1343,14 +1343,11 @@ int __kprobes register_jprobes(struct jprobe **jps, int num)
- 		jp = jps[i];
- 		addr = arch_deref_entry_point(jp->entry);
- 
--		if (!kernel_text_address(addr))
--			ret = -EINVAL;
--		else {
--			/* Todo: Verify probepoint is a function entry point */
--			jp->kp.pre_handler = setjmp_pre_handler;
--			jp->kp.break_handler = longjmp_break_handler;
--			ret = register_kprobe(&jp->kp);
--		}
-+		/* Todo: Verify probepoint is a function entry point */
-+		jp->kp.pre_handler = setjmp_pre_handler;
-+		jp->kp.break_handler = longjmp_break_handler;
-+		ret = register_kprobe(&jp->kp);
-+
- 		if (ret < 0) {
- 			if (i > 0)
- 				unregister_jprobes(jps, i);
+
+tap would be very hard at this point as it does not bind to a device.
+macvtap might work, we mainly need to figure out a way to detect that
+device can do zero copy so the right mode is used.  I think a first step
+could be to simply link mp code into macvtap module, pass necessary
+ioctls on, then move some code around as necessary.  This might get rid
+of code duplication nicely.
+
+
+> Do you think that's worth to do and help current process which is blocked too
+> long than I expected?
+
+I think it's nice to have.
+
+And if done hopefully this will get the folk working on the macvtap
+driver to review the code, which will help find all issues faster.
+
+I think if you post some performance numbers,
+this will also help get people excited and looking at the code.
+
+I also don't see the process as completely blocked, each review round points
+out more issues: we aren't going back and forth changing
+same lines again and again, are we?
+
+One thing that might help is increase the frequency of updates,
+try sending them out sooner.
+On the other hand 10 new patches each revision is a lot:
+if there is a part of patchset that has stabilised you can split it out,
+post once and keep posting the changing part separately.
+
+I hope these suggestions help.
+
+> >
+> >--
+> >MST
