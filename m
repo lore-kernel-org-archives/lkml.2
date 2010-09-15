@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755144Ab0IOTBs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 15:01:48 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45900 "EHLO
+	id S1755232Ab0IOTCc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 15:02:32 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45905 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753453Ab0IOTBr (ORCPT
+	with ESMTP id S1752448Ab0IOTCb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 15:01:47 -0400
-Date: Wed, 15 Sep 2010 20:01:43 +0100 (BST)
+	Wed, 15 Sep 2010 15:02:31 -0400
+Date: Wed, 15 Sep 2010 20:02:27 +0100 (BST)
 From: James Simmons <jsimmons@infradead.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Jarek Poplawski <jarkao2@gmail.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fbcon: fix lockdep warning from fbcon_deinit()
-In-Reply-To: <20100913152127.c2328034.akpm@linux-foundation.org>
-Message-ID: <alpine.LFD.2.00.1009152000220.7965@casper.infradead.org>
-References: <20100913215850.GA2176@del.dom.local> <20100913152127.c2328034.akpm@linux-foundation.org>
+To: Joe Perches <joe@perches.com>
+cc: linux-kernel@vger.kernel.org,
+        Thomas Winischhofer <thomas@winischhofer.net>,
+        Joseph Chan <JosephChan@via.com.tw>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH 21/25] drivers/video: Use static const char arrays
+In-Reply-To: <2435a9f5831685e3b7f06b93799a8836f4bfef61.1284406639.git.joe@perches.com>
+Message-ID: <alpine.LFD.2.00.1009152002090.7965@casper.infradead.org>
+References: <cover.1284406638.git.joe@perches.com> <2435a9f5831685e3b7f06b93799a8836f4bfef61.1284406639.git.joe@perches.com>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -24,71 +27,91 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-> On Mon, 13 Sep 2010 23:58:50 +0200
-> Jarek Poplawski <jarkao2@gmail.com> wrote:
-> 
-> > This patch fixes the lockdep warning:
-> > 
-> > [   13.657164] INFO: trying to register non-static key.
-> > [   13.657169] the code is fine but needs lockdep annotation.
-> > [   13.657171] turning off the locking correctness validator.
-> > [   13.657177] Pid: 622, comm: modprobe Not tainted 2.6.36-rc3c #8
-> > [   13.657180] Call Trace:
-> > [   13.657194]  [<c13002c8>] ? printk+0x18/0x20
-> > [   13.657202]  [<c1056cf6>] register_lock_class+0x336/0x350
-> > [   13.657208]  [<c1058bf9>] __lock_acquire+0x449/0x1180
-> > [   13.657215]  [<c1059997>] lock_acquire+0x67/0x80
-> > [   13.657222]  [<c1042bf1>] ? __cancel_work_timer+0x51/0x230
-> > [   13.657227]  [<c1042c23>] __cancel_work_timer+0x83/0x230
-> > [   13.657231]  [<c1042bf1>] ? __cancel_work_timer+0x51/0x230
-> > [   13.657236]  [<c10582b2>] ? mark_held_locks+0x62/0x80
-> > [   13.657243]  [<c10b3a2f>] ? kfree+0x7f/0xe0
-> > [   13.657248]  [<c105853c>] ? trace_hardirqs_on_caller+0x11c/0x160
-> > [   13.657253]  [<c105858b>] ? trace_hardirqs_on+0xb/0x10
-> > [   13.657259]  [<c117f4cd>] ? fbcon_deinit+0x16d/0x1e0
-> > [   13.657263]  [<c117f4cd>] ? fbcon_deinit+0x16d/0x1e0
-> > [   13.657268]  [<c1042dea>] cancel_work_sync+0xa/0x10
-> > [   13.657272]  [<c117f444>] fbcon_deinit+0xe4/0x1e0
-> > ...
-> > 
-> > The warning is caused by trying to cancel an uninitialized work from
-> > fbcon_exit(). Fix it by adding a check for queue.func, similarly to
-> > other places in this code.
-> > 
-> > Signed-off-by: Jarek Poplawski <jarkao2@gmail.com>
-> > ---
-> > 
-> > diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
-> > index 84f8423..7ccc967 100644
-> > --- a/drivers/video/console/fbcon.c
-> > +++ b/drivers/video/console/fbcon.c
-> > @@ -3508,7 +3508,7 @@ static void fbcon_exit(void)
-> >  	softback_buf = 0UL;
-> >  
-> >  	for (i = 0; i < FB_MAX; i++) {
-> > -		int pending;
-> > +		int pending = 0;
-> >  
-> >  		mapped = 0;
-> >  		info = registered_fb[i];
-> > @@ -3516,7 +3516,8 @@ static void fbcon_exit(void)
-> >  		if (info == NULL)
-> >  			continue;
-> >  
-> > -		pending = cancel_work_sync(&info->queue);
-> > +		if (info->queue.func)
-> > +			pending = cancel_work_sync(&info->queue);
-> >  		DPRINTK("fbcon: %s pending work\n", (pending ? "canceled" :
-> >  			"no"));
-> >  
-> 
-> Well.  It'd be better to just initialise the dang thing.
-> 
-> But all that code looks really hacky, fiddling around inside workqueue
-> internals as a driver-private state variable.  Needs a rewrite, I suspect.
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-You are not kidding. I just started to tackle that mess. Currently fbcon 
-is broken in my tree but I plan to get in going again in the next few 
-weeks.
+Acked-by: James Simmons <jsimmons@infradead.org>
 
-http://git.infradead.org/users/jsimmons/linuxconsole-2.6.git
+> ---
+>  drivers/video/sh_mipi_dsi.c  |    4 ++--
+>  drivers/video/sis/sis_main.c |   10 +++++-----
+>  drivers/video/via/viafbdev.c |    2 +-
+>  3 files changed, 8 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/video/sh_mipi_dsi.c b/drivers/video/sh_mipi_dsi.c
+> index 5699ce0..4a8501b 100644
+> --- a/drivers/video/sh_mipi_dsi.c
+> +++ b/drivers/video/sh_mipi_dsi.c
+> @@ -319,7 +319,7 @@ static int __init sh_mipi_probe(struct platform_device *pdev)
+>  	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  	unsigned long rate, f_current;
+>  	int idx = pdev->id, ret;
+> -	char dsip_clk[] = "dsi.p_clk";
+> +	char dsip_clk[sizeof("dsiXp_clk")];
+>  
+>  	if (!res || idx >= ARRAY_SIZE(mipi_dsi) || !pdata)
+>  		return -ENODEV;
+> @@ -370,7 +370,7 @@ static int __init sh_mipi_probe(struct platform_device *pdev)
+>  
+>  	dev_dbg(&pdev->dev, "DSI-T clk %lu -> %lu\n", f_current, rate);
+>  
+> -	sprintf(dsip_clk, "dsi%1.1dp_clk", idx);
+> +	sprintf(dsip_clk, "dsi%cp_clk", idx + '0');
+>  	mipi->dsip_clk = clk_get(&pdev->dev, dsip_clk);
+>  	if (IS_ERR(mipi->dsip_clk)) {
+>  		ret = PTR_ERR(mipi->dsip_clk);
+> diff --git a/drivers/video/sis/sis_main.c b/drivers/video/sis/sis_main.c
+> index 559bf17..4be65d1 100644
+> --- a/drivers/video/sis/sis_main.c
+> +++ b/drivers/video/sis/sis_main.c
+> @@ -2387,8 +2387,8 @@ SiS_Sense30x(struct sis_video_info *ivideo)
+>      u16 cvbs=0, cvbs_c=0;
+>      u16 vga2=0, vga2_c=0;
+>      int myflag, result;
+> -    char stdstr[] = "sisfb: Detected";
+> -    char tvstr[]  = "TV connected to";
+> +    static const char stdstr[] = "sisfb: Detected";
+> +    static const char tvstr[] = "TV connected to";
+>  
+>      if(ivideo->vbflags2 & VB2_301) {
+>         svhs = 0x00b9; cvbs = 0x00b3; vga2 = 0x00d1;
+> @@ -2525,7 +2525,7 @@ SiS_SenseCh(struct sis_video_info *ivideo)
+>  {
+>  #if defined(CONFIG_FB_SIS_300) || defined(CONFIG_FB_SIS_315)
+>      u8 temp1, temp2;
+> -    char stdstr[] = "sisfb: Chrontel: Detected TV connected to";
+> +    static const char stdstr[] = "sisfb: Chrontel: Detected TV connected to";
+>  #endif
+>  #ifdef CONFIG_FB_SIS_300
+>      unsigned char test[3];
+> @@ -2648,8 +2648,8 @@ SiS_SenseCh(struct sis_video_info *ivideo)
+>  static void __devinit
+>  sisfb_get_VB_type(struct sis_video_info *ivideo)
+>  {
+> -	char stdstr[]    = "sisfb: Detected";
+> -	char bridgestr[] = "video bridge";
+> +	static const char stdstr[] = "sisfb: Detected";
+> +	static const char bridgestr[] = "video bridge";
+>  	u8 vb_chipid;
+>  	u8 reg;
+>  
+> diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
+> index 5a947b0..394ef48 100644
+> --- a/drivers/video/via/viafbdev.c
+> +++ b/drivers/video/via/viafbdev.c
+> @@ -367,7 +367,7 @@ static int viafb_ioctl(struct fb_info *info, u_int cmd, u_long arg)
+>  	} u;
+>  	u32 state_info = 0;
+>  	u32 *viafb_gamma_table;
+> -	char driver_name[] = "viafb";
+> +	static const char driver_name[] = "viafb";
+>  
+>  	u32 __user *argp = (u32 __user *) arg;
+>  	u32 gpu32;
+> -- 
+> 1.7.3.rc1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
