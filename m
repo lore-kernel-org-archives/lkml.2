@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754247Ab0IOPKK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 11:10:10 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:52060 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753143Ab0IOPKI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 11:10:08 -0400
-Message-ID: <37141.91.60.150.116.1284563403.squirrel@www.firstfloor.org>
-Date: Wed, 15 Sep 2010 17:10:03 +0200 (CEST)
-Subject: Re: [PATCH -tip -v4] irq_work: generic hard-irq context callbacks
-From: "Andi Kleen" <andi@firstfloor.org>
-To: "Peter Zijlstra" <peterz@infradead.org>
-Cc: "Huang Ying" <ying.huang@intel.com>,
-        "Martin Schwidefsky" <schwidefsky@de.ibm.com>,
-        "Ingo Molnar" <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        "paulus" <paulus@samba.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Andi Kleen" <andi@firstfloor.org>, "dhowells" <dhowells@redhat.com>,
-        "Russell King" <rmk@arm.linux.org.uk>,
-        "Kyle McMartin" <kyle@mcmartin.ca>, "davem" <davem@davemloft.net>,
-        "Linux-Arch" <linux-arch@vger.kernel.org>,
-        "Matt Fleming" <matt@console-pimps.org>
-User-Agent: SquirrelMail/1.4.11
+	id S1754339Ab0IOPKY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 11:10:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51309 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754293Ab0IOPKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 11:10:20 -0400
+Date: Wed, 15 Sep 2010 17:04:12 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
+        "Xin, Xiaohui" <xiaohui.xin@intel.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
+ kernel
+Message-ID: <20100915150412.GA679@redhat.com>
+References: <20100914162952.GB13560@redhat.com>
+ <1284483745.13351.71.camel@localhost.localdomain>
+ <20100914182707.GB15549@redhat.com>
+ <1284490143.13351.82.camel@localhost.localdomain>
+ <20100914190156.GA16037@redhat.com>
+ <1284492983.13351.95.camel@localhost.localdomain>
+ <20100915051241.GA25340@redhat.com>
+ <1284531675.24603.259.camel@localhost.localdomain>
+ <20100915101000.GB28016@redhat.com>
+ <1284562354.2573.12.camel@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284562354.2573.12.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, 2010-09-15 at 13:29 +0800, Huang Ying wrote:
->
->> I uses the cross build tool from:
->>
->> http://www.kernel.org/pub/tools/crosstool/
->
-> I'm not familiar with those, I build my own gcc-4.5.1 toolchains for all
-> targets that would actually build a gcc toolchains, for those that don't
-> I simply don't care about.
+On Wed, Sep 15, 2010 at 07:52:34AM -0700, Shirley Ma wrote:
+> On Wed, 2010-09-15 at 12:10 +0200, Michael S. Tsirkin wrote:
+> > Another issue is that macvtap can be bound to almost
+> > anything, including e.g. a tap device or a bridge,
+> > which might hang on to skb fragments for unlimited time.
+> > Zero copy TX won't easily work there.
+> > I can imagine either somehow triggering a data copy after the
+> > fact (hard), or detecting such devices and avoiding
+> > zero copy (unfortunate for guest to guest, and drivers
+> > will need tuning).
+> 
+> So far macvtap zero copy patch is limited to lower devices supports high
+> memory DMA, it doesn't apply to a tap device or a bridge.
 
-I don't think it's a reasonable requirement to have every contributor
-compile on all architectures. If that was a general requirement
-soon nobody would send patches anymore.
+Okay. What about macvtap in bridge mode?
 
-Cross arch breakages happen rarely and can be usually repaired after
-the fact.
-
--Andi
-
+> > >  Don't you think once I address vhost_add_used_and_signal update
+> > > issue, it is a simple and complete patch for macvtap TX zero copy?
+> > > 
+> > > Thanks
+> > > Shirley
+> > 
+> > I like the fact that the patch is simple. Unfortunately
+> > I suspect it'll stop being simple by the time it's complete :) 
+> 
+> I can make a try. :)
+> 
+> Thanks
+> Shirley
