@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729Ab0IOI3S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 04:29:18 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:55660 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752558Ab0IOI3P convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 04:29:15 -0400
-Subject: Re: [PATCH -tip -v4] irq_work: generic hard-irq context callbacks
-From: Peter Zijlstra <peterz@infradead.org>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, paulus <paulus@samba.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, dhowells <dhowells@redhat.com>,
-        Russell King <rmk@arm.linux.org.uk>, Kyle McMartin <kyle@mcmartin.ca>,
-        davem <davem@davemloft.net>, Linux-Arch <linux-arch@vger.kernel.org>,
-        Matt Fleming <matt@console-pimps.org>,
-        DavidHowells <dhowells@redhat.com>
-In-Reply-To: <1284528590.2256.135.camel@yhuang-dev.sh.intel.com>
-References: <1284360648.3269.115.camel@yhuang-dev.sh.intel.com>
-	 <20100913123213.76b1b5fa@mschwide.boeblingen.de.ibm.com>
-	 <1284377790.2275.212.camel@laptop>
-	 <1284528590.2256.135.camel@yhuang-dev.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 15 Sep 2010 10:28:40 +0200
-Message-ID: <1284539320.3764.266.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1752791Ab0IOI31 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 04:29:27 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:53496 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751813Ab0IOI3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 04:29:25 -0400
+Date: Wed, 15 Sep 2010 10:29:02 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/3] [GIT PULL] tracing: ftrace features and clean ups
+Message-ID: <20100915082902.GD16593@elte.hu>
+References: <20100915030139.444219083@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100915030139.444219083@goodmis.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-09-15 at 13:29 +0800, Huang Ying wrote:
 
-> I uses the cross build tool from:
+* Steven Rostedt <rostedt@goodmis.org> wrote:
+
+> Ingo,
 > 
-> http://www.kernel.org/pub/tools/crosstool/
-
-I'm not familiar with those, I build my own gcc-4.5.1 toolchains for all
-targets that would actually build a gcc toolchains, for those that don't
-I simply don't care about.
-
-> But I get compile errors on s390 and alpha even for tip/master
-> (ce0c65112d37ff04016b4e0962a406281640739b). The build logs are attached.
-
-I've got a patch to solve the Alpha issue, and I've got a patch for one
-of the SH issues as well, but I understand you need to pull in Paul
-Mundt's SH tree to make it fully build.
-
-I've asked Ingo to merge the Alpha and SH patches I had pending.
-
-> Do I use the wrong git tree? Or we should fix tip/master firstly?
+> This series is based off of your tip/perf/core and does not contain 
+> the changes in the previous git pull request (does not include my 
+> repo's tip/perf/core). This is a separate pull.
 > 
-> And frv and sh have compile error even for linus/master and 2.6.35. So I
-> can not compile test for these arches.
+> Please pull the latest tip/perf/core-2 tree, which can be found at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+> tip/perf/core-2
+> 
+> 
+> Jiri Olsa (1):
+>       tracing: Add funcgraph-irq option for function graph tracer.
+> 
+> Steven Rostedt (2):
+>       tracing: Do not trace in irq when funcgraph-irq option is zero
+>       tracing: Remove leftover FTRACE_ENABLE/DISABLE_MCOUNT enums
+> 
+> ----
+>  kernel/trace/ftrace.c                |   18 +----
+>  kernel/trace/trace_functions_graph.c |  124 +++++++++++++++++++++++++++++++++-
+>  2 files changed, 126 insertions(+), 16 deletions(-)
 
-FRV is one of those architectures that doesn't build a toolchain from
-plain gcc sources, David Howells did provide me with a toolchain for
-that, it does build, but really it should be getting its toolchain
-sorted upstream.
+Pulled, thanks a lot Steve!
 
-
+	Ingo
