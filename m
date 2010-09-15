@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090Ab0IOKOz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 06:14:55 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:35382 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660Ab0IOKOy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 06:14:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=FQEjyBFAl+7wFGzEldN8fqC3+4FyF4C+jNuyznyZIm+7BvEfKORe51IqCrQZ5GNPUa
-         eKPDpoiao7SkhuxM8RXIRXH2GD0MKBeZuQ47WOg+hiS5lVjUfz7JXmKdeMx4chh+t3fA
-         s5GGzbYOAddXTjvZiEFi6EsPCuI9GKArNiW0U=
+	id S1753120Ab0IOKQJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 06:16:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36954 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751523Ab0IOKQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 06:16:08 -0400
+Date: Wed, 15 Sep 2010 12:10:00 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
+        "Xin, Xiaohui" <xiaohui.xin@intel.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
+ kernel
+Message-ID: <20100915101000.GB28016@redhat.com>
+References: <20100914152231.GA13105@redhat.com>
+ <1284480025.13351.49.camel@localhost.localdomain>
+ <20100914162952.GB13560@redhat.com>
+ <1284483745.13351.71.camel@localhost.localdomain>
+ <20100914182707.GB15549@redhat.com>
+ <1284490143.13351.82.camel@localhost.localdomain>
+ <20100914190156.GA16037@redhat.com>
+ <1284492983.13351.95.camel@localhost.localdomain>
+ <20100915051241.GA25340@redhat.com>
+ <1284531675.24603.259.camel@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <4C909B2E.3000909@ru.mvista.com>
-References: <4C8E18AD.8000502@ru.mvista.com>
-	<AANLkTinei3u1OZ-eBiUTDF=PDjwxLcL6rBpt7iNQJgHJ@mail.gmail.com>
-	<4C8E4882.6040600@ru.mvista.com>
-	<4C8E50CC.3080705@ru.mvista.com>
-	<20100914065604.GD2601@legolas.emea.dhcp.ti.com>
-	<4C8F527E.40408@ru.mvista.com>
-	<20100914105402.GD7554@legolas.emea.dhcp.ti.com>
-	<4C8FB60D.1080906@ru.mvista.com>
-	<20100915065345.GC3393@legolas.emea.dhcp.ti.com>
-	<4C909961.10001@ru.mvista.com>
-	<20100915100553.GJ3393@legolas.emea.dhcp.ti.com>
-	<4C909B2E.3000909@ru.mvista.com>
-Date: Wed, 15 Sep 2010 18:14:51 +0800
-Message-ID: <AANLkTi=A+1ThrRTNjWoFbXr-G1OUnpThEwG5rCgGirzC@mail.gmail.com>
-Subject: Re: [RESEND/PATCH 5/6] USB: musb-gadget: complete request only if
- data is transfered over
-From: Ming Lei <tom.leiming@gmail.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: balbi@ti.com, "greg@kroah.com" <greg@kroah.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        "Gadiyar, Anand" <gadiyar@ti.com>, Mike Frysinger <vapier@gentoo.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284531675.24603.259.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/9/15 Sergei Shtylyov <sshtylyov@mvista.com>:
-> Hello.
->
-> On 15-09-2010 14:05, Felipe Balbi wrote:
->
->>> I didn't say it was duplicate for DMA, just too late.
->
->> how come ? we need to send ZLP before giving back the request.
->
->   Well, look at the code ionce again. We need to send ZLP *after*
-> request->actual == request->length, but as the check is inserted after the
-> ZLP send, ZLP *may* be sent once the first DMA completes, not the last.
+On Tue, Sep 14, 2010 at 11:21:15PM -0700, Shirley Ma wrote:
+> On Wed, 2010-09-15 at 07:12 +0200, Michael S. Tsirkin wrote:
+> > Yes, I agree this patch is useful for demo purposes:
+> > simple, and shows what kind of performance gains
+> > we can expect for TX. 
+> 
+> Any other issue you can see in this patch beside vhost descriptors
+> update?
 
-Yes, it is really a problem, as said by balbi.  And the problem should be
-in the check for zlp or the 'is_dma' condition.
+Another issue is that macvtap can be bound to almost
+anything, including e.g. a tap device or a bridge,
+which might hang on to skb fragments for unlimited time.
+Zero copy TX won't easily work there.
+I can imagine either somehow triggering a data copy after the
+fact (hard), or detecting such devices and avoiding
+zero copy (unfortunate for guest to guest, and drivers
+will need tuning).
 
-But this patch is not addressed for the zlp problem, and is is only for
-completing the request only if the data transfer in usb_request
-is over, as explained before, right?
+>  Don't you think once I address vhost_add_used_and_signal update
+> issue, it is a simple and complete patch for macvtap TX zero copy?
+> 
+> Thanks
+> Shirley
+
+I like the fact that the patch is simple. Unfortunately
+I suspect it'll stop being simple by the time it's complete :)
 
 -- 
-Lei Ming
+MST
