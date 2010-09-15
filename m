@@ -1,101 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152Ab0IOGdA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 02:33:00 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:37398 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429Ab0IOGc7 (ORCPT
+	id S1752309Ab0IOGfH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 02:35:07 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:34105 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429Ab0IOGfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 02:32:59 -0400
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: JBeulich@novell.com, linux-kernel@vger.kernel.org, rjw@sisk.pl,
-        miklos@szeredi.hu
-In-reply-to: <20100914160654.20c91c22.akpm@linux-foundation.org> (message from
-	Andrew Morton on Tue, 14 Sep 2010 16:06:54 -0700)
-Subject: Re: [PATCH] use clear_page()/copy_page() in favor of
- memset()/memcpy() on whole pages
-References: <4C7FB50D0200007800013F36@vpn.id2.novell.com> <20100914160654.20c91c22.akpm@linux-foundation.org>
-Message-Id: <E1OvlY2-0004Vd-Ss@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Wed, 15 Sep 2010 08:32:50 +0200
+	Wed, 15 Sep 2010 02:35:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=s1cXa6fQ2pnSLthR3MvzO0bErIoOGUTm8FY8j/pOvLHLITf62D3SUoEcbW7+xG2zgs
+         aXo2sCIOE46mgwLp16GnepIr1Hy22GYga8wwQ+9El1ENvmpH0xZH/fMmHb8VcUAYmbBu
+         zoIgoCs4hTZju23HF7/GOrOedoIMe+s6KPoeo=
+Date: Wed, 15 Sep 2010 09:35:18 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: "Ted Ts'o" <tytso@mit.edu>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, Jan Kara <jack@suse.cz>,
+        Eric Sandeen <sandeen@redhat.com>, Christoph Hellwig <hch@lst.de>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ext4: fix NULL pointer dereference in
+ print_daily_error_info
+Message-ID: <20100915063517.GA8456@swordfish.minsk.epam.com>
+References: <20100914125102.GA5318@swordfish.minsk.epam.com>
+ <20100914194641.GB3730@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100914194641.GB3730@thunk.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Sep 2010, Andrew Morton wrote:
-> On Thu, 02 Sep 2010 13:30:37 +0100
-> "Jan Beulich" <JBeulich@novell.com> wrote:
-> 
-> > After all that's what they are intended for.
-> > 
-> > ...
-> >
-> > --- linux-2.6.36-rc3/fs/fuse/dev.c
-> > +++ 2.6.36-rc3-use-clear_page/fs/fuse/dev.c
-> > @@ -811,7 +811,7 @@ static int fuse_copy_page(struct fuse_co
-> >  
-> >  	if (page && zeroing && count < PAGE_SIZE) {
-> >  		void *mapaddr = kmap_atomic(page, KM_USER1);
-> > -		memset(mapaddr, 0, PAGE_SIZE);
-> > +		clear_page(mapaddr);
-> >  		kunmap_atomic(mapaddr, KM_USER1);
-> >  	}
-> >  	while (count) {
-> 
-> fuse wanted to use clear_highpage() here.  But clear_highpage() uses
-> KM_USER0.  I don't immediately see why fuse uses KM_USER1 here?
+Fix NULL pointer dereference in print_daily_error_info, when   
+called on unmounted fs (EXT4_SB(sb) returns NULL), by removing error 
+reporting timer in ext4_put_super.
 
-There used to be KM_USER0 kmaps in there, but now they've been
-replaced with plain kmaps.  So switching to clear_highpage() should be
-fine.
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-Incremental patch appended.
-
-Thanks,
-Miklos
-----
-
-Subject: fuse: use clear_highpage() and  KM_USER0 instead of KM_USER1
-From: Miklos Szeredi <mszeredi@suse.cz>
-
-Commit 7909b1c640 (fuse: don't use atomic kmap) removed KM_USER0 usage
-from fuse/dev.c.  Switch KM_USER1 uses to KM_USER0 for clarity.  Also
-replace open coded clear_highpage().
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/fuse/dev.c |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
 
-Index: linux-2.6/fs/fuse/dev.c
-===================================================================
---- linux-2.6.orig/fs/fuse/dev.c	2010-09-15 08:22:34.000000000 +0200
-+++ linux-2.6/fs/fuse/dev.c	2010-09-15 08:24:30.000000000 +0200
-@@ -809,11 +809,9 @@ static int fuse_copy_page(struct fuse_co
- 	int err;
- 	struct page *page = *pagep;
- 
--	if (page && zeroing && count < PAGE_SIZE) {
--		void *mapaddr = kmap_atomic(page, KM_USER1);
--		clear_page(mapaddr);
--		kunmap_atomic(mapaddr, KM_USER1);
--	}
-+	if (page && zeroing && count < PAGE_SIZE)
-+		clear_highpage(page);
-+
- 	while (count) {
- 		if (cs->write && cs->pipebufs && page) {
- 			return fuse_ref_page(cs, page, offset, count);
-@@ -830,10 +828,10 @@ static int fuse_copy_page(struct fuse_co
- 			}
- 		}
- 		if (page) {
--			void *mapaddr = kmap_atomic(page, KM_USER1);
-+			void *mapaddr = kmap_atomic(page, KM_USER0);
- 			void *buf = mapaddr + offset;
- 			offset += fuse_copy_do(cs, &buf, &count);
--			kunmap_atomic(mapaddr, KM_USER1);
-+			kunmap_atomic(mapaddr, KM_USER0);
- 		} else
- 			offset += fuse_copy_do(cs, NULL, &count);
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 2614774..751997d 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -719,6 +719,7 @@ static void ext4_put_super(struct super_block *sb)
+ 			ext4_abort(sb, "Couldn't clean up the journal");
  	}
+ 
++	del_timer(&sbi->s_err_report);
+ 	ext4_release_system_zone(sb);
+ 	ext4_mb_release(sb);
+ 	ext4_ext_release(sb);
+
+
