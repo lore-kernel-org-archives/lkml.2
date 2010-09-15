@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215Ab0IOWZy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 18:25:54 -0400
-Received: from THUNK.ORG ([69.25.196.29]:60972 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753483Ab0IOWZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753933Ab0IOWZw (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 15 Sep 2010 18:25:52 -0400
-Date: Wed, 15 Sep 2010 18:25:09 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: David Rientjes <rientjes@google.com>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH v2 2/2] SLUB: Mark merged slab caches in /proc/slabinfo
-Message-ID: <20100915222509.GE3730@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	David Rientjes <rientjes@google.com>,
-	Pekka Enberg <penberg@kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>
-References: <1284490101-2362-1-git-send-email-penberg@kernel.org>
- <1284490101-2362-2-git-send-email-penberg@kernel.org>
- <alpine.DEB.2.00.1009141243290.1470@chino.kir.corp.google.com>
- <AANLkTinj2P_QbdgdLS3BweSMDzhQH5g4p2B3SqS=CNYc@mail.gmail.com>
- <alpine.DEB.2.00.1009141320090.7123@chino.kir.corp.google.com>
- <4C8FE263.5070101@kernel.org>
- <alpine.DEB.2.00.1009141646350.26982@chino.kir.corp.google.com>
- <1097CAA8-8234-4FE2-BAA1-9C7D9FA01CEC@mit.edu>
- <alpine.DEB.2.00.1009151322370.29425@chino.kir.corp.google.com>
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:19420 "EHLO
+	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751294Ab0IOWZv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 18:25:51 -0400
+X-SpamScore: -13
+X-BigFish: VPS-13(zzbb2cK98dN1db9Mzz1202hzzz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L8T6XV-02-B1Z-02
+X-M-MSG: 
+Date: Thu, 16 Sep 2010 00:10:41 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, Don Zickus <dzickus@redhat.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>
+Subject: Re: [PATCH] perf, x86: catch spurious interrupts after disabling
+ counters
+Message-ID: <20100915221041.GT13563@erda.amd.com>
+References: <20100911124537.GA22850@elte.hu>
+ <20100912095202.GF13563@erda.amd.com>
+ <20100913143713.GK13563@erda.amd.com>
+ <20100914174132.GN13563@erda.amd.com>
+ <20100915162034.GO13563@erda.amd.com>
+ <20100915164610.GA5959@lenovo>
+ <AANLkTim5knbg8GdUAYyx_i5WQUwnez8tHkU1SfiJJ+L7@mail.gmail.com>
+ <20100915170222.GB5959@lenovo>
+ <20100915172805.GR13563@erda.amd.com>
+ <20100915174012.GC5959@lenovo>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1009151322370.29425@chino.kir.corp.google.com>
+In-Reply-To: <20100915174012.GC5959@lenovo>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 15, 2010 at 01:33:07PM -0700, David Rientjes wrote:
-> I'd love to have per-cache statistics that we could export without the 
-> cost of the extra memory from fragmented partial slabs.  You'd have to do 
-> this for every cache even if it's a "superslab", though, to avoid a branch 
-> in the fastpath to find the cpu slab.  I'm not sure if Pekka and Christoph 
-> will be happy with the allocation of kmem_cache structures for mergable 
-> caches and the increment of the statistic in the fastpath.
+On 15.09.10 13:40:12, Cyrill Gorcunov wrote:
+> Yeah, already noted from your previous email. Perhaps we might
+> do a bit simplier approach then -- in nmi handler were we mark
+> "next nmi" we could take into account not "one next" nmi but
+> sum of handled counters minus one being just handled (of course
+> cleaning this counter if new "non spurious" nmi came in), can't
+> say I like this approach but just a thought.
 
-I agree, it would be cleaner if we could separate out the data
-structures which are used for accounting for the number of objects
-allocated and reclaimed for each object type, and then have a separate
-data structure which is used for dealing with the pages used by those
-slabs that have been merged together.
+If we disable a counter, it might still trigger an interrupt which we
+cannot detect. Thus, if a running counter is deactivated, we must
+count it as handled in the nmi handler.
 
-All I can say is I hope the merging code is intelligent.  We recently
-had a problem where we were wasting huge amounts of memory because we
-were allocating large numbers of a the ext4_group_info structure,
-which was 132 bytes, and for which kmalloc() used a size-256 slab ---
-and the wasted memory was enough to cause OOM's in a critical
-(unfortunately statically sized) container when the disks got large
-enough and numerous enough.  The fix was to use a separate cache just
-for these 132-byte objects, and not to use kmalloc().
+Working with a sum is not possible, because a disabled counter may or
+*may not* trigger an interrupt. We cannot predict the number of
+counters that will be handled.
 
-I would be really annoyed if we switched to a slab allocator which did
-merging, and then found that the said slab allocator helpfully merged
-the 132-byte slab cache and the size-256 slab into a single slab
-cache, on the grounds that it thought it would save memory...  (I
-guess I'm just really really nervous about merging happening behind my
-back, and I really like having the per-object type allocation
-statistics.)
+Dealing with the "next nmi" is also not handy here. Spurious nmis are
+caused then stopping a counter. Since this is done outside the nmi
+handler, we would then start touching the "next nmi" also outside the
+handler. This might be more complex because we then have to deal with
+locking or atomic access. We shouldn't do that.
 
-							- Ted
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
