@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab0IOQaJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 12:30:09 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:36625 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753577Ab0IOQaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 12:30:07 -0400
-Date: Wed, 15 Sep 2010 18:25:03 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: linux-pcmcia@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: [RFC] PCMCIA patches for 2.6.36-rc5
-Message-ID: <20100915162503.GA15043@comet.dominikbrodowski.net>
-Mail-Followup-To: linux-pcmcia@lists.infradead.org,
-	linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-	linux-serial@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754680Ab0IOQac (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 12:30:32 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59388 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754567Ab0IOQaa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 12:30:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=Ozy2yIGSWvogmD0PtWyTzLQbxyWl8PQg1haXR7F4Dq7h7d/v2sYz869Q/vGUFTZEk+
+         Ex5U/6FlfRH66JlaYJ7vfa7LbROYf2Yc+X4P5qKH2Njou4fEkrfJ+jTqhi2XiXRGHLbo
+         hSLGMdHXCk3MatHuHhSDucdn0CNh6DMTUgTLE=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH UPDATED 1/2] ida: document IDA_BITMAP_LONGS calculation
+Date: Thu, 16 Sep 2010 01:30:19 +0900
+Message-Id: <1284568219-14574-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <20100915082217.6bf82715.rdunlap@xenotime.net>
+References: <20100915082217.6bf82715.rdunlap@xenotime.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+IDA_BITMAP_LONGS value is calculated take into account struct ida_bitmap
+not to waste memory space. Comment it.
 
-in order to solve a severe bug rendering many serial PCMCIA cards
-unuseable, and to let pcnet_cs work on more cards, I intend to submit
-a pull request for three patches tomorrow. They're available at
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+---
+ include/linux/idr.h |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-git://git.kernel.org/pub/scm/linux/kernel/git/brodo/pcmcia-2.6.git urgent
+diff --git a/include/linux/idr.h b/include/linux/idr.h
+index e968db7..3f4b718 100644
+--- a/include/linux/idr.h
++++ b/include/linux/idr.h
+@@ -117,10 +117,13 @@ void idr_init(struct idr *idp);
+ /*
+  * IDA - IDR based id allocator, use when translation from id to
+  * pointer isn't necessary.
++ *
++ * IDA_BITMAP_LONGS is calculated to be one less to accommodate
++ * ida_bitmap->nr_busy so that the whole struct fits in 128 bytes.
+  */
+ #define IDA_CHUNK_SIZE		128	/* 128 bytes per chunk */
+-#define IDA_BITMAP_LONGS	(128 / sizeof(long) - 1)
+-#define IDA_BITMAP_BITS		(IDA_BITMAP_LONGS * sizeof(long) * 8)
++#define IDA_BITMAP_LONGS	(IDA_CHUNK_SIZE / sizeof(long) - 1)
++#define IDA_BITMAP_BITS 	(IDA_BITMAP_LONGS * sizeof(long) * 8)
+ 
+ struct ida_bitmap {
+ 	long			nr_busy;
+-- 
+1.7.2.2
 
-As usual, I'm interested in your input to this patch series. The individual
-patches will be sent out (at least) to the PCMCIA list in a few moments.
-
-Best,
-	Dominik
-
-Dominik Brodowski (3):
-      pcmcia serial_cs.c: fix multifunction card handling
-      pcmcia: per-device, not per-socket debug messages
-      pcmcia pcnet_cs: try setting io_lines to 16 if card setup fails
-
- drivers/net/pcmcia/pcnet_cs.c    |  139 ++++++++++++++++++++++---------------
- drivers/pcmcia/pcmcia_resource.c |   51 +++++++-------
- drivers/serial/serial_cs.c       |   62 ++++++++++-------
- 3 files changed, 146 insertions(+), 106 deletions(-)
