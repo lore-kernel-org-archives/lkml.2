@@ -1,91 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410Ab0IOGyA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 02:54:00 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:55505 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751216Ab0IOGx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 02:53:58 -0400
-Date: Wed, 15 Sep 2010 09:53:45 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: "Balbi, Felipe" <balbi@ti.com>, Ming Lei <tom.leiming@gmail.com>,
-        "greg@kroah.com" <greg@kroah.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        "Gadiyar, Anand" <gadiyar@ti.com>, Mike Frysinger <vapier@gentoo.org>
-Subject: Re: [RESEND/PATCH 5/6] USB: musb-gadget: complete request only if
- data is transfered over
-Message-ID: <20100915065345.GC3393@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1283873014-32511-1-git-send-email-tom.leiming@gmail.com>
- <1283873014-32511-6-git-send-email-tom.leiming@gmail.com>
- <4C8E18AD.8000502@ru.mvista.com>
- <AANLkTinei3u1OZ-eBiUTDF=PDjwxLcL6rBpt7iNQJgHJ@mail.gmail.com>
- <4C8E4882.6040600@ru.mvista.com>
- <4C8E50CC.3080705@ru.mvista.com>
- <20100914065604.GD2601@legolas.emea.dhcp.ti.com>
- <4C8F527E.40408@ru.mvista.com>
- <20100914105402.GD7554@legolas.emea.dhcp.ti.com>
- <4C8FB60D.1080906@ru.mvista.com>
+	id S1752339Ab0IOHIQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 03:08:16 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47093 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626Ab0IOHIP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 03:08:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=dQHLUF5x/Q1kZ9lVvEN7C3ltsZ0b9tvc9a/9yWb2AjbnQnUNbNSD/1EnwBnDgds1IM
+         f52HULiSmP7XsEvDtY+Xig7j0lvptXa//1rffMpl2+ZCvGertTaD1ZCtGO8yjJPOPkVv
+         TVzOquSMPSxlGlprgbC3PcW4v5ITZgTKtT7z4=
+From: Vasily Khoruzhick <anarsoul@gmail.com>
+To: Sitsofe Wheeler <sitsofe@yahoo.com>
+Subject: Re: Interrupt latency on some 945GM platforms
+Date: Wed, 15 Sep 2010 10:07:09 +0300
+User-Agent: KMail/1.13.5 (Linux/2.6.35-gentoo-r5-anarsoul; KDE/4.5.1; i686; ; )
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+References: <201009132336.17310.anarsoul@gmail.com> <201009141529.53179.anarsoul@gmail.com> <20100914224111.GA14467@sucs.org>
+In-Reply-To: <20100914224111.GA14467@sucs.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <4C8FB60D.1080906@ru.mvista.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: multipart/signed;
+  boundary="nextPart2859747.OCWnCCh9yA";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009151007.14212.anarsoul@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 14, 2010 at 12:51:09PM -0500, Sergei Shtylyov wrote:
->Hello.
->
->Felipe Balbi wrote:
->
->>>    If a DMA interrupt comes when the whole transfer is not yet
->>> complete (and
->>> other Ming Lei's patches are making this possible),
->
->    Oh, here I mixed some other patch with Ming Lei's ones...
->
->>> it will pass due to the
->
->> than this is the actual problem, no ? If we're using mode1 dma (as we
->> are on tx path), we should only get dma interrupt when the whole
->> transfer has been completed.
->
->    The Inventra DMA controller has serious DMA length limitation, so the whole
->transfer may take more than one DMA.
+--nextPart2859747.OCWnCCh9yA
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-When I said 'whole transfer' I meant the transfer size you programmed
-dma to transfer, see that we have (not actual code):
+=D0=92 =D1=81=D0=BE=D0=BE=D0=B1=D1=89=D0=B5=D0=BD=D0=B8=D0=B8 =D0=BE=D1=82 =
+15 of September 2010 01:41:11 =D0=B0=D0=B2=D1=82=D0=BE=D1=80 Sitsofe Wheele=
+r =D0=BD=D0=B0=D0=BF=D0=B8=D1=81=D0=B0=D0=BB:
+> On Tue, Sep 14, 2010 at 03:29:48PM +0300, Vasily Khoruzhick wrote:
+> > =D0=92 =D1=81=D0=BE=D0=BE=D0=B1=D1=89=D0=B5=D0=BD=D0=B8=D0=B8 =D0=BE=D1=
+=82 14 of September 2010 12:52:57 =D0=B0=D0=B2=D1=82=D0=BE=D1=80 Thomas Gle=
+ixner=20
+=D0=BD=D0=B0=D0=BF=D0=B8=D1=81=D0=B0=D0=BB:
+> > > Can you try with NOHZ enabled and the following on the kernel command=
+=20
+line:
+> > >     processor.max_cstate=3D1
+> >=20
+> > It works in this case (gears in glxgears move smoothly)
+> >=20
+> > > If that works, then try
+> > >=20
+> > >     processor.max_cstate=3D2
+> >=20
+> > Nope, it doesn't work with max_cstate=3D2
+>=20
+> Perhaps intel_idle is being used? Any mention of it in dmesg?
 
-if (transfer_size > dma->max_len)
-	transfer_size = dma->max_len;
+Nope, acpi_idle is being used, intel_idle doesn't support my CPU (it's c2d=
+=20
+t5500):
 
-dma->channel_program(...,..., transfer_size,...);
+[    0.653279] intel_idle: does not run on family 6 model 15
 
-with mode1, we will only get irq when dma has transferred transfer_size
-bytes.
+Regards
+Vasily
 
->> likewise, this was there before the patch. I don't think the real
->> problem lies with this patch, it's been there for a while, don't you
->> agree ?
->
->    Then what problem this patch fixes, if not this one?
+--nextPart2859747.OCWnCCh9yA
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-if request->length == 1MB and dma->max_len = 128KB, when is_dma is true,
-request->actual will be different from request->length for 7
-'iterations', then only on the 8th it will be the same. I believe that's
-what Ming is trying to fix.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
 
-Ming, am I correct ?
+iEYEABECAAYFAkyQcKIACgkQRM6pQpltKE7cxACfXLp0iVRlxazmUnJINtstDaPw
+ETQAn0k7uo7Udgqt6VUkH8f67kHfE9RQ
+=Odja
+-----END PGP SIGNATURE-----
 
->    Let me repeat: in the PIO mode the added check is just duplicate, in the DMA
-
-it is duplicate for PIO, but not for DMA.
-
--- 
-balbi
+--nextPart2859747.OCWnCCh9yA--
