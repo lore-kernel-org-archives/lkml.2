@@ -1,347 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755110Ab0IOTAV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 15:00:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2765 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753638Ab0IOTAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 15:00:19 -0400
-Date: Wed, 15 Sep 2010 20:54:17 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Gleb Natapov <gleb@redhat.com>, kvm@vger.kernel.org,
+	id S1755144Ab0IOTBs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 15:01:48 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45900 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753453Ab0IOTBr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 15:01:47 -0400
+Date: Wed, 15 Sep 2010 20:01:43 +0100 (BST)
+From: James Simmons <jsimmons@infradead.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Jarek Poplawski <jarkao2@gmail.com>, linux-fbdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH RFC] kvm: enable irq injection from interrupt context
-Message-ID: <20100915185417.GA3924@redhat.com>
+Subject: Re: [PATCH] fbcon: fix lockdep warning from fbcon_deinit()
+In-Reply-To: <20100913152127.c2328034.akpm@linux-foundation.org>
+Message-ID: <alpine.LFD.2.00.1009152000220.7965@casper.infradead.org>
+References: <20100913215850.GA2176@del.dom.local> <20100913152127.c2328034.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To avoid bouncing irqfd injection out to workqueue context,
-we must support injecting irqs from local interrupt
-context. Doing this seems to only require disabling
-irqs locally.
 
-RFC, completely untested, x86 only.
+> On Mon, 13 Sep 2010 23:58:50 +0200
+> Jarek Poplawski <jarkao2@gmail.com> wrote:
+> 
+> > This patch fixes the lockdep warning:
+> > 
+> > [   13.657164] INFO: trying to register non-static key.
+> > [   13.657169] the code is fine but needs lockdep annotation.
+> > [   13.657171] turning off the locking correctness validator.
+> > [   13.657177] Pid: 622, comm: modprobe Not tainted 2.6.36-rc3c #8
+> > [   13.657180] Call Trace:
+> > [   13.657194]  [<c13002c8>] ? printk+0x18/0x20
+> > [   13.657202]  [<c1056cf6>] register_lock_class+0x336/0x350
+> > [   13.657208]  [<c1058bf9>] __lock_acquire+0x449/0x1180
+> > [   13.657215]  [<c1059997>] lock_acquire+0x67/0x80
+> > [   13.657222]  [<c1042bf1>] ? __cancel_work_timer+0x51/0x230
+> > [   13.657227]  [<c1042c23>] __cancel_work_timer+0x83/0x230
+> > [   13.657231]  [<c1042bf1>] ? __cancel_work_timer+0x51/0x230
+> > [   13.657236]  [<c10582b2>] ? mark_held_locks+0x62/0x80
+> > [   13.657243]  [<c10b3a2f>] ? kfree+0x7f/0xe0
+> > [   13.657248]  [<c105853c>] ? trace_hardirqs_on_caller+0x11c/0x160
+> > [   13.657253]  [<c105858b>] ? trace_hardirqs_on+0xb/0x10
+> > [   13.657259]  [<c117f4cd>] ? fbcon_deinit+0x16d/0x1e0
+> > [   13.657263]  [<c117f4cd>] ? fbcon_deinit+0x16d/0x1e0
+> > [   13.657268]  [<c1042dea>] cancel_work_sync+0xa/0x10
+> > [   13.657272]  [<c117f444>] fbcon_deinit+0xe4/0x1e0
+> > ...
+> > 
+> > The warning is caused by trying to cancel an uninitialized work from
+> > fbcon_exit(). Fix it by adding a check for queue.func, similarly to
+> > other places in this code.
+> > 
+> > Signed-off-by: Jarek Poplawski <jarkao2@gmail.com>
+> > ---
+> > 
+> > diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
+> > index 84f8423..7ccc967 100644
+> > --- a/drivers/video/console/fbcon.c
+> > +++ b/drivers/video/console/fbcon.c
+> > @@ -3508,7 +3508,7 @@ static void fbcon_exit(void)
+> >  	softback_buf = 0UL;
+> >  
+> >  	for (i = 0; i < FB_MAX; i++) {
+> > -		int pending;
+> > +		int pending = 0;
+> >  
+> >  		mapped = 0;
+> >  		info = registered_fb[i];
+> > @@ -3516,7 +3516,8 @@ static void fbcon_exit(void)
+> >  		if (info == NULL)
+> >  			continue;
+> >  
+> > -		pending = cancel_work_sync(&info->queue);
+> > +		if (info->queue.func)
+> > +			pending = cancel_work_sync(&info->queue);
+> >  		DPRINTK("fbcon: %s pending work\n", (pending ? "canceled" :
+> >  			"no"));
+> >  
+> 
+> Well.  It'd be better to just initialise the dang thing.
+> 
+> But all that code looks really hacky, fiddling around inside workqueue
+> internals as a driver-private state variable.  Needs a rewrite, I suspect.
 
-Thoughts?
+You are not kidding. I just started to tackle that mess. Currently fbcon 
+is broken in my tree but I plan to get in going again in the next few 
+weeks.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- arch/x86/kvm/i8259.c |   12 ++++++++++++
- virt/kvm/eventfd.c   |   30 +++++++++---------------------
- virt/kvm/ioapic.c    |   34 ++++++++++++++++++++--------------
- 3 files changed, 41 insertions(+), 35 deletions(-)
-
-diff --git a/arch/x86/kvm/i8259.c b/arch/x86/kvm/i8259.c
-index 8d10c06..294fa36 100644
---- a/arch/x86/kvm/i8259.c
-+++ b/arch/x86/kvm/i8259.c
-@@ -198,8 +198,10 @@ void kvm_pic_update_irq(struct kvm_pic *s)
- int kvm_pic_set_irq(void *opaque, int irq, int level)
- {
- 	struct kvm_pic *s = opaque;
-+	unsigned long flags;
- 	int ret = -1;
- 
-+	local_irq_save(flags);
- 	pic_lock(s);
- 	if (irq >= 0 && irq < PIC_NUM_PINS) {
- 		ret = pic_set_irq1(&s->pics[irq >> 3], irq & 7, level);
-@@ -208,6 +210,7 @@ int kvm_pic_set_irq(void *opaque, int irq, int level)
- 				      s->pics[irq >> 3].imr, ret == 0);
- 	}
- 	pic_unlock(s);
-+	local_irq_restore(flags);
- 
- 	return ret;
- }
-@@ -235,8 +238,10 @@ static inline void pic_intack(struct kvm_kpic_state *s, int irq)
- int kvm_pic_read_irq(struct kvm *kvm)
- {
- 	int irq, irq2, intno;
-+	unsigned long flags;
- 	struct kvm_pic *s = pic_irqchip(kvm);
- 
-+	local_irq_save(flags);
- 	pic_lock(s);
- 	irq = pic_get_irq(&s->pics[0]);
- 	if (irq >= 0) {
-@@ -263,6 +268,7 @@ int kvm_pic_read_irq(struct kvm *kvm)
- 	}
- 	pic_update_irq(s);
- 	pic_unlock(s);
-+	local_irq_restore(flags);
- 
- 	return intno;
- }
-@@ -476,6 +482,7 @@ static int picdev_write(struct kvm_io_device *this,
- {
- 	struct kvm_pic *s = to_pic(this);
- 	unsigned char data = *(unsigned char *)val;
-+	unsigned long flags;
- 	if (!picdev_in_range(addr))
- 		return -EOPNOTSUPP;
- 
-@@ -484,6 +491,7 @@ static int picdev_write(struct kvm_io_device *this,
- 			printk(KERN_ERR "PIC: non byte write\n");
- 		return 0;
- 	}
-+	local_irq_save(flags);
- 	pic_lock(s);
- 	switch (addr) {
- 	case 0x20:
-@@ -498,6 +506,7 @@ static int picdev_write(struct kvm_io_device *this,
- 		break;
- 	}
- 	pic_unlock(s);
-+	local_irq_restore(flags);
- 	return 0;
- }
- 
-@@ -506,6 +515,7 @@ static int picdev_read(struct kvm_io_device *this,
- {
- 	struct kvm_pic *s = to_pic(this);
- 	unsigned char data = 0;
-+	unsigned long flags;
- 	if (!picdev_in_range(addr))
- 		return -EOPNOTSUPP;
- 
-@@ -514,6 +524,7 @@ static int picdev_read(struct kvm_io_device *this,
- 			printk(KERN_ERR "PIC: non byte read\n");
- 		return 0;
- 	}
-+	local_irq_save(flags);
- 	pic_lock(s);
- 	switch (addr) {
- 	case 0x20:
-@@ -529,6 +540,7 @@ static int picdev_read(struct kvm_io_device *this,
- 	}
- 	*(unsigned char *)val = data;
- 	pic_unlock(s);
-+	local_irq_restore(flags);
- 	return 0;
- }
- 
-diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-index 66cf65b..30ede90 100644
---- a/virt/kvm/eventfd.c
-+++ b/virt/kvm/eventfd.c
-@@ -50,22 +50,11 @@ struct _irqfd {
- 	struct list_head          list;
- 	poll_table                pt;
- 	wait_queue_t              wait;
--	struct work_struct        inject;
- 	struct work_struct        shutdown;
- };
- 
- static struct workqueue_struct *irqfd_cleanup_wq;
- 
--static void
--irqfd_inject(struct work_struct *work)
--{
--	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
--	struct kvm *kvm = irqfd->kvm;
--
--	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 1);
--	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
--}
--
- /*
-  * Race-free decouple logic (ordering is critical)
-  */
-@@ -82,12 +71,6 @@ irqfd_shutdown(struct work_struct *work)
- 	eventfd_ctx_remove_wait_queue(irqfd->eventfd, &irqfd->wait, &cnt);
- 
- 	/*
--	 * We know no new events will be scheduled at this point, so block
--	 * until all previously outstanding events have completed
--	 */
--	flush_work(&irqfd->inject);
--
--	/*
- 	 * It is now safe to release the object's resources
- 	 */
- 	eventfd_ctx_put(irqfd->eventfd);
-@@ -128,7 +111,8 @@ irqfd_wakeup(wait_queue_t *wait, unsigned mode, int sync, void *key)
- 
- 	if (flags & POLLIN)
- 		/* An event has been signaled, inject an interrupt */
--		schedule_work(&irqfd->inject);
-+		kvm_set_irq(irqfd->kvm, KVM_USERSPACE_IRQ_SOURCE_ID,
-+			    irqfd->gsi, 1);
- 
- 	if (flags & POLLHUP) {
- 		/* The eventfd is closing, detach from KVM */
-@@ -179,7 +163,6 @@ kvm_irqfd_assign(struct kvm *kvm, int fd, int gsi)
- 	irqfd->kvm = kvm;
- 	irqfd->gsi = gsi;
- 	INIT_LIST_HEAD(&irqfd->list);
--	INIT_WORK(&irqfd->inject, irqfd_inject);
- 	INIT_WORK(&irqfd->shutdown, irqfd_shutdown);
- 
- 	file = eventfd_fget(fd);
-@@ -218,14 +201,19 @@ kvm_irqfd_assign(struct kvm *kvm, int fd, int gsi)
- 	events = file->f_op->poll(file, &irqfd->pt);
- 
- 	list_add_tail(&irqfd->list, &kvm->irqfds.items);
--	spin_unlock_irq(&kvm->irqfds.lock);
- 
- 	/*
- 	 * Check if there was an event already pending on the eventfd
- 	 * before we registered, and trigger it as if we didn't miss it.
-+	 *
-+	 * Do this under irqfds.lock, this way we can be sure
-+	 * the irqfd is not going away.
- 	 */
- 	if (events & POLLIN)
--		schedule_work(&irqfd->inject);
-+		kvm_set_irq(irqfd->kvm, KVM_USERSPACE_IRQ_SOURCE_ID,
-+			    irqfd->gsi, 1);
-+
-+	spin_unlock_irq(&kvm->irqfds.lock);
- 
- 	/*
- 	 * do not drop the file until the irqfd is fully initialized, otherwise
-diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
-index 0b9df83..cc1d2fe 100644
---- a/virt/kvm/ioapic.c
-+++ b/virt/kvm/ioapic.c
-@@ -197,8 +197,9 @@ int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level)
- 	u32 mask = 1 << irq;
- 	union kvm_ioapic_redirect_entry entry;
- 	int ret = 1;
-+	unsigned long flags;
- 
--	spin_lock(&ioapic->lock);
-+	spin_lock_irqsave(&ioapic->lock, flags);
- 	old_irr = ioapic->irr;
- 	if (irq >= 0 && irq < IOAPIC_NUM_PINS) {
- 		entry = ioapic->redirtbl[irq];
-@@ -216,7 +217,7 @@ int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level)
- 		}
- 		trace_kvm_ioapic_set_irq(entry.bits, irq, ret == 0);
- 	}
--	spin_unlock(&ioapic->lock);
-+	spin_unlock_irqrestore(&ioapic->lock, flags);
- 
- 	return ret;
- }
-@@ -240,9 +241,9 @@ static void __kvm_ioapic_update_eoi(struct kvm_ioapic *ioapic, int vector,
- 		 * is dropped it will be put into irr and will be delivered
- 		 * after ack notifier returns.
- 		 */
--		spin_unlock(&ioapic->lock);
-+		spin_unlock_irqrestore(&ioapic->lock, flags);
- 		kvm_notify_acked_irq(ioapic->kvm, KVM_IRQCHIP_IOAPIC, i);
--		spin_lock(&ioapic->lock);
-+		spin_lock_irqsave(&ioapic->lock, flags);
- 
- 		if (trigger_mode != IOAPIC_LEVEL_TRIG)
- 			continue;
-@@ -257,13 +258,14 @@ static void __kvm_ioapic_update_eoi(struct kvm_ioapic *ioapic, int vector,
- void kvm_ioapic_update_eoi(struct kvm *kvm, int vector, int trigger_mode)
- {
- 	struct kvm_ioapic *ioapic = kvm->arch.vioapic;
-+	unsigned long flags;
- 
- 	smp_rmb();
- 	if (!test_bit(vector, ioapic->handled_vectors))
- 		return;
--	spin_lock(&ioapic->lock);
-+	spin_lock_irqsave(&ioapic->lock, flags);
- 	__kvm_ioapic_update_eoi(ioapic, vector, trigger_mode);
--	spin_unlock(&ioapic->lock);
-+	spin_unlock_irqrestore(&ioapic->lock, flags);
- }
- 
- static inline struct kvm_ioapic *to_ioapic(struct kvm_io_device *dev)
-@@ -281,6 +283,7 @@ static int ioapic_mmio_read(struct kvm_io_device *this, gpa_t addr, int len,
- 			    void *val)
- {
- 	struct kvm_ioapic *ioapic = to_ioapic(this);
-+	unsigned long flags;
- 	u32 result;
- 	if (!ioapic_in_range(ioapic, addr))
- 		return -EOPNOTSUPP;
-@@ -289,7 +292,7 @@ static int ioapic_mmio_read(struct kvm_io_device *this, gpa_t addr, int len,
- 	ASSERT(!(addr & 0xf));	/* check alignment */
- 
- 	addr &= 0xff;
--	spin_lock(&ioapic->lock);
-+	spin_lock_irqsave(&ioapic->lock, flags);
- 	switch (addr) {
- 	case IOAPIC_REG_SELECT:
- 		result = ioapic->ioregsel;
-@@ -303,7 +306,7 @@ static int ioapic_mmio_read(struct kvm_io_device *this, gpa_t addr, int len,
- 		result = 0;
- 		break;
- 	}
--	spin_unlock(&ioapic->lock);
-+	spin_unlock_irqrestore(&ioapic->lock, flags);
- 
- 	switch (len) {
- 	case 8:
-@@ -324,6 +327,7 @@ static int ioapic_mmio_write(struct kvm_io_device *this, gpa_t addr, int len,
- 			     const void *val)
- {
- 	struct kvm_ioapic *ioapic = to_ioapic(this);
-+	unsigned long flags;
- 	u32 data;
- 	if (!ioapic_in_range(ioapic, addr))
- 		return -EOPNOTSUPP;
-@@ -340,7 +344,7 @@ static int ioapic_mmio_write(struct kvm_io_device *this, gpa_t addr, int len,
- 	}
- 
- 	addr &= 0xff;
--	spin_lock(&ioapic->lock);
-+	spin_lock_irqsave(&ioapic->lock, flags);
- 	switch (addr) {
- 	case IOAPIC_REG_SELECT:
- 		ioapic->ioregsel = data;
-@@ -358,7 +362,7 @@ static int ioapic_mmio_write(struct kvm_io_device *this, gpa_t addr, int len,
- 	default:
- 		break;
- 	}
--	spin_unlock(&ioapic->lock);
-+	spin_unlock_irqrestore(&ioapic->lock, flags);
- 	return 0;
- }
- 
-@@ -418,24 +422,26 @@ void kvm_ioapic_destroy(struct kvm *kvm)
- int kvm_get_ioapic(struct kvm *kvm, struct kvm_ioapic_state *state)
- {
- 	struct kvm_ioapic *ioapic = ioapic_irqchip(kvm);
-+	unsigned long flags;
- 	if (!ioapic)
- 		return -EINVAL;
- 
--	spin_lock(&ioapic->lock);
-+	spin_lock_irqsave(&ioapic->lock, flags);
- 	memcpy(state, ioapic, sizeof(struct kvm_ioapic_state));
--	spin_unlock(&ioapic->lock);
-+	spin_unlock_irqrestore(&ioapic->lock, flags);
- 	return 0;
- }
- 
- int kvm_set_ioapic(struct kvm *kvm, struct kvm_ioapic_state *state)
- {
- 	struct kvm_ioapic *ioapic = ioapic_irqchip(kvm);
-+	unsigned long flags;
- 	if (!ioapic)
- 		return -EINVAL;
- 
--	spin_lock(&ioapic->lock);
-+	spin_lock_irqsave(&ioapic->lock, flags);
- 	memcpy(ioapic, state, sizeof(struct kvm_ioapic_state));
- 	update_handled_vectors(ioapic);
--	spin_unlock(&ioapic->lock);
-+	spin_unlock_irqrestore(&ioapic->lock, flags);
- 	return 0;
- }
--- 
-1.7.3.rc1.5.ge5969
+http://git.infradead.org/users/jsimmons/linuxconsole-2.6.git
