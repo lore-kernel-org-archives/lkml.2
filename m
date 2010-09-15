@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896Ab0IOIs4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 04:48:56 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:58274 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752806Ab0IOIsy (ORCPT
+	id S1752930Ab0IOIuG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 04:50:06 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:56218 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751699Ab0IOIuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 04:48:54 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: manual merge of the bkl-vfs tree with the nilfs2 tree
-Date: Wed, 15 Sep 2010 10:48:43 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jan Blunck <jblunck@infradead.org>,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-References: <20100915140114.81406c4f.sfr@canb.auug.org.au>
-In-Reply-To: <20100915140114.81406c4f.sfr@canb.auug.org.au>
+	Wed, 15 Sep 2010 04:50:04 -0400
+Date: Wed, 15 Sep 2010 09:50:03 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Huang Ying <ying.huang@intel.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        paulus <paulus@samba.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, dhowells <dhowells@redhat.com>,
+        Russell King <rmk@arm.linux.org.uk>, Kyle McMartin <kyle@mcmartin.ca>,
+        davem <davem@davemloft.net>, Linux-Arch <linux-arch@vger.kernel.org>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH -tip -v4] irq_work: generic hard-irq context callbacks
+Message-ID: <20100915085003.GA20697@console-pimps.org>
+References: <1284360648.3269.115.camel@yhuang-dev.sh.intel.com> <20100913123213.76b1b5fa@mschwide.boeblingen.de.ibm.com> <1284377790.2275.212.camel@laptop> <1284528590.2256.135.camel@yhuang-dev.sh.intel.com> <1284539320.3764.266.camel@twins>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009151048.44071.arnd@arndb.de>
-X-Provags-ID: V02:K0:yuAIvxfQRIbilf8sHzM596ApXKb3vBKjBbYKeeKclc1
- h4jYdaWYb9n7y09Szw8oIz9iTgWOkZC+9qULzAKU1QS6Gnus1a
- xnNB/BonBhI23bsfPIsTsNinA+Qq6z5WQujWhJsLiNokQA6yDy
- pbuZa6BarcUlro89A+SmUskbVCBOzfRkURjsiEOF22fbxvpFu1
- dnwXORNdFkDZ9EBHnNBog==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284539320.3764.266.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 15 September 2010, Stephen Rothwell wrote:
-> Today's linux-next merge of the bkl-vfs tree got a conflict in
-> fs/nilfs2/super.c between commit 38999dca4fdc4a0d1b92a540bc0772a32b07388a
-> ("nilfs2: do not allocate multiple super block instances for a device")
-> from the nilfs2 tree and commit 3fec873dc6e9026d98e2359202fa50fd06ee7b64
-> ("BKL: Remove BKL from NILFS2") from the bkl-vfs tree.
+On Wed, Sep 15, 2010 at 10:28:40AM +0200, Peter Zijlstra wrote:
 > 
-> I fixed it up (I think - see below) and can carry the fix as necessary.
+> I've got a patch to solve the Alpha issue, and I've got a patch for one
+> of the SH issues as well, but I understand you need to pull in Paul
+> Mundt's SH tree to make it fully build.
 
-Ok, thanks!
+FWIW this is the commit that is missing in Linus' tree which fixes the
+build issues,
 
-> P.S. Arndt, the first of the above bkl/vfs commits does not have a SOB
-> line from you and has a bug (missing open brace) that is fixed in the
-> second.  Just in case you decide to rebase this branch at any point ...
+http://git.kernel.org/?p=linux/kernel/git/lethal/sh-2.6.git;a=commit;h=b9afa3e015273a52718e0a7efe198a0df76be880
 
-I'm still rebasing all the branches while people take patches into their
-own trees, so I'll fix this up soon. Thanks for the info.
-
-	Arnd
+I'm guessing Paul will be sending a pull request to fix this breakage
+before 2.6.36 is released.
