@@ -1,38 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab0IOOW3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 10:22:29 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:44621 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753917Ab0IOOW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 10:22:28 -0400
-Message-ID: <4C90D6A3.8070101@kernel.dk>
-Date: Wed, 15 Sep 2010 16:22:27 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Will Drewry <wad@chromium.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Kay Sievers <kay.sievers@vrfy.org>, Karel Zak <kzak@redhat.com>,
-        Tejun Heo <tj@kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        Joe Perches <joe@perches.com>, Jan Blunck <jblunck@suse.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH v4 1/3] block, partition: add partition_meta_info to hd_struct
-References: <1280946126-19587-3-git-send-email-wad@chromium.org> <1283287627-13842-1-git-send-email-wad@chromium.org>
-In-Reply-To: <1283287627-13842-1-git-send-email-wad@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754042Ab0IOO1V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 10:27:21 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:55402 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753154Ab0IOO1U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 10:27:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=bt3cZ/QRbe/azr5oaDveQDU64WjDXF1ffkt+IgtWoWqPBHHI+V+KqEirY+fyzqRi30
+         /Sa43+mOZAeOET+Nu95SbFpncNvwgvQuAZPedo8rRyyupsWlVS4G8f+U80euVilGwq7u
+         p1tNOnAM6QbqbSxLLjoCAhb3WfhABF9fOrMTA=
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+To: mjg59@srcf.ucam.org
+Cc: linux-kernel@vger.kernel.org, mjg@redhat.com, gregkh@suse.de,
+        Valdis.Kletnieks@vt.edu, Dennis.Jansen@web.de, randy.dunlap@oracle.com,
+        linux-acpi@vger.kernel.org, trenn@suse.de,
+        "Lee, Chun-Yi" <jlee@novell.com>
+Subject: [PATCH] Add Intel Poulsbo Stub Driver
+Date: Wed, 15 Sep 2010 22:24:39 +0800
+Message-Id: <1284560679-19907-1-git-send-email-jlee@novell.com>
+X-Mailer: git-send-email 1.6.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-08-31 22:47, Will Drewry wrote:
-> I'm reposting this patch series as v4 since there have been no additional
-> comments, and I cleaned up one extra bit of unneeded code (in 3/3). The patches
-> are against Linus's tree: 2bfc96a127bc1cc94d26bfaa40159966064f9c8c
-> (2.6.36-rc3).
+Currently, there have no GMA500(Poulsbo) native video driver to support
+intel opregion. So, use this stub driver to enable the acpi backlight
+control sysfs entry files by requrest acpi_video_register.
 
-I've included them in the for-2.6.37/core branch.
+Signed-off-by: Lee, Chun-Yi <jlee@novell.com>
+---
+ drivers/gpu/Makefile       |    2 +-
+ drivers/gpu/stub/Kconfig   |   13 +++++++++
+ drivers/gpu/stub/Makefile  |    1 +
+ drivers/gpu/stub/poulsbo.c |   63 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/video/Kconfig      |    2 +
+ 5 files changed, 80 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/gpu/stub/Kconfig
+ create mode 100644 drivers/gpu/stub/Makefile
+ create mode 100644 drivers/gpu/stub/poulsbo.c
 
+diff --git a/drivers/gpu/Makefile b/drivers/gpu/Makefile
+index 30879df..cc92778 100644
+--- a/drivers/gpu/Makefile
++++ b/drivers/gpu/Makefile
+@@ -1 +1 @@
+-obj-y			+= drm/ vga/
++obj-y			+= drm/ vga/ stub/
+diff --git a/drivers/gpu/stub/Kconfig b/drivers/gpu/stub/Kconfig
+new file mode 100644
+index 0000000..8f5a540
+--- /dev/null
++++ b/drivers/gpu/stub/Kconfig
+@@ -0,0 +1,13 @@
++config STUB_POULSBO
++	tristate "Intel GMA500 Stub Driver"
++	depends on PCI
++        # Poulsbo stub depends on ACPI_VIDEO when ACPI is enabled
++        # but for select to work, need to select ACPI_VIDEO's dependencies, ick
++        select ACPI_VIDEO if ACPI
++	help
++	  Choose this option if you have a system that has Intel GMA500
++	  (Poulsbo) integrated graphics. If M is selected, the module will
++	  be called Poulsbo. This driver is a stub driver for Poulsbo that
++	  will call poulsbo.ko to enable the acpi backlight control sysfs
++	  entry file because there have no poulsbo native driver can support
++	  intel opregion.
+diff --git a/drivers/gpu/stub/Makefile b/drivers/gpu/stub/Makefile
+new file mode 100644
+index 0000000..cd940cc
+--- /dev/null
++++ b/drivers/gpu/stub/Makefile
+@@ -0,0 +1 @@
++obj-$(CONFIG_STUB_POULSBO) += poulsbo.o
+diff --git a/drivers/gpu/stub/poulsbo.c b/drivers/gpu/stub/poulsbo.c
+new file mode 100644
+index 0000000..d8aa636
+--- /dev/null
++++ b/drivers/gpu/stub/poulsbo.c
+@@ -0,0 +1,63 @@
++/*
++ * Intel Poulsbo Stub driver
++ *
++ * Copyright (C) 2010 Novell <jlee@novell.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/pci.h>
++#include <acpi/video.h>
++
++#define DRIVER_NAME "poulsbo"
++
++enum {
++	CHIP_PSB_8108 = 0,
++	CHIP_PSB_8109 = 1,
++};
++
++static struct pci_device_id pciidlist[] = {
++	{0x8086, 0x8108, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_8108}, \
++	{0x8086, 0x8109, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_8109}, \
++	{0, 0, 0}
++};
++
++static int poulsbo_probe(struct pci_dev *pdev, const struct pci_device_id *id)
++{
++	return acpi_video_register();
++}
++
++static void poulsbo_remove(struct pci_dev *pdev)
++{
++	acpi_video_unregister();
++}
++
++static struct pci_driver poulsbo_driver = {
++	.name = DRIVER_NAME,
++	.id_table = pciidlist,
++	.probe = poulsbo_probe,
++	.remove = poulsbo_remove,
++};
++
++static int __init poulsbo_init(void)
++{
++	return pci_register_driver(&poulsbo_driver);
++}
++
++static void __exit poulsbo_exit(void)
++{
++	pci_unregister_driver(&poulsbo_driver);
++}
++
++module_init(poulsbo_init);
++module_exit(poulsbo_exit);
++
++MODULE_AUTHOR("Lee, Chun-Yi <jlee@novell.com>");
++MODULE_DESCRIPTION("Poulsbo Stub Driver");
++MODULE_LICENSE("GPL");
++
++MODULE_DEVICE_TABLE(pci, pciidlist);
+diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+index 8b31fdf..8807ae5 100644
+--- a/drivers/video/Kconfig
++++ b/drivers/video/Kconfig
+@@ -17,6 +17,8 @@ source "drivers/gpu/vga/Kconfig"
+ 
+ source "drivers/gpu/drm/Kconfig"
+ 
++source "drivers/gpu/stub/Kconfig"
++
+ config VGASTATE
+        tristate
+        default n
 -- 
-Jens Axboe
+1.6.0.2
 
