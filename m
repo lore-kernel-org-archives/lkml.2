@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253Ab0IOVtg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 17:49:36 -0400
-Received: from mx1.vsecurity.com ([209.67.252.12]:63200 "EHLO
+	id S1755337Ab0IOVtz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 17:49:55 -0400
+Received: from mx1.vsecurity.com ([209.67.252.12]:58289 "EHLO
 	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754981Ab0IOVte (ORCPT
+	with ESMTP id S1755324Ab0IOVtw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 17:49:34 -0400
-Subject: [PATCH v2] drivers/net/cxgb3/cxgb3_main.c: prevent reading
- uninitialized stack memory
+	Wed, 15 Sep 2010 17:49:52 -0400
+Subject: [PATCH v2] drivers/net/usb/hso.c: prevent reading uninitialized
+ memory
 From: Dan Rosenberg <drosenberg@vsecurity.com>
-To: divy@chelsio.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, security@kernel.org
+To: j.dumon@option.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, security@kernel.org,
+        davem@davemloft.net, stable@kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 15 Sep 2010 17:43:12 -0400
-Message-ID: <1284586992.6275.93.camel@dan>
+Date: Wed, 15 Sep 2010 17:43:28 -0400
+Message-ID: <1284587008.6275.95.camel@dan>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -24,25 +25,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Fixed formatting (tabs and line breaks).
 
-The CHELSIO_GET_QSET_NUM device ioctl allows unprivileged users to read
-4 bytes of uninitialized stack memory, because the "addr" member of the
-ch_reg struct declared on the stack in cxgb_extension_ioctl() is not
-altered or zeroed before being copied back to the user.  This patch
-takes care of it.
+The TIOCGICOUNT device ioctl allows unprivileged users to read
+uninitialized stack memory, because the "reserved" member of the
+serial_icounter_struct struct declared on the stack in hso_get_count()
+is not altered or zeroed before being copied back to the user.  This
+patch takes care of it.
 
 Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
 
---- linux-2.6.35.4.orig/drivers/net/cxgb3/cxgb3_main.c	2010-08-26 19:47:12.000000000 -0400
-+++ linux-2.6.35.4/drivers/net/cxgb3/cxgb3_main.c	2010-09-14 21:24:34.369511115 -0400
-@@ -2296,6 +2296,8 @@ static int cxgb_extension_ioctl(struct n
- 	case CHELSIO_GET_QSET_NUM:{
- 		struct ch_reg edata;
+--- linux-2.6.35.4.orig/drivers/net/usb/hso.c	2010-08-26 19:47:12.000000000 -0400
++++ linux-2.6.35.4/drivers/net/usb/hso.c	2010-09-14 21:26:18.477585183 -0400
+@@ -1653,6 +1653,8 @@ static int hso_get_count(struct hso_seri
+ 	struct uart_icount cnow;
+ 	struct hso_tiocmget  *tiocmget = serial->tiocmget;
  
-+		memset(&edata, 0, sizeof(struct ch_reg));
++	memset(&icount, 0, sizeof(struct serial_icounter_struct));
 +
- 		edata.cmd = CHELSIO_GET_QSET_NUM;
- 		edata.val = pi->nqsets;
- 		if (copy_to_user(useraddr, &edata, sizeof(edata)))
+ 	if (!tiocmget)
+ 		 return -ENOENT;
+ 	spin_lock_irq(&serial->serial_lock);
+
+
 
 
 
