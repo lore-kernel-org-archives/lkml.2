@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532Ab0IOX2Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 19:28:24 -0400
-Received: from kroah.org ([198.145.64.141]:34816 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754303Ab0IOX2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 19:28:22 -0400
-Date: Wed, 15 Sep 2010 16:28:04 -0700
-From: Greg KH <greg@kroah.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Joe Perches <joe@perches.com>,
-        Jean Tourrilhes <jt@hpl.hp.com>, Tejun Heo <tj@kernel.org>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [vendor-sec] [PATCH] wireless: fix 64K kernel heap content
- leak via ioctl
-Message-ID: <20100915232804.GB25877@kroah.com>
-References: <20100827210240.GC4703@outflux.net>
- <20100915224836.GF19835@kroah.com>
- <1284592267.3707.7.camel@jlt3.sipsolutions.net>
+	id S1754380Ab0IOXpl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 19:45:41 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:41304 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1753391Ab0IOXpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 19:45:39 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1/0hG9QtHf0SLCd89NDlTPLRYncaON7iqDPybfmYF
+	fAxvLVOSX2JiwB
+Message-ID: <4C915A9E.408@gmx.de>
+Date: Thu, 16 Sep 2010 01:45:34 +0200
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284592267.3707.7.camel@jlt3.sipsolutions.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+CC: JosephChan@via.com.tw, ScottFang@viatech.com.cn,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        security@kernel.org, stable@kernel.org
+Subject: Re: [PATCH v2] drivers/video/via/ioctl.c: prevent reading uninitialized
+ stack memory
+References: <1284592104.10727.12.camel@dan>
+In-Reply-To: <1284592104.10727.12.camel@dan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 01:11:07AM +0200, Johannes Berg wrote:
-> On Wed, 2010-09-15 at 15:48 -0700, Greg KH wrote:
-> > On Fri, Aug 27, 2010 at 02:02:41PM -0700, Kees Cook wrote:
-> > > This problem was originally tracked down by Brad Spengler.
-> > > 
-> > > When calling wireless ioctls, if a driver does not correctly
-> > > validate/shrink iwp->length, the resulting copy_to_user can leak up to
-> > > 64K of kernel heap contents.
-> > > 
-> > > It seems that this is triggerable[1] in 2.6.32 at least on ath5k, but
-> > > I was not able to track down how. The twisty maze of ioctl handlers
-> > > stumped me. :) Other drivers I checked did not appear to have any problems,
-> > > but the potential remains. I'm not sure if this patch is the right approach;
-> > > it was fixed differently[2] in grsecurity.
-> > > 
-> > > [1] http://forums.grsecurity.net/viewtopic.php?f=3&t=2290&start=0
-> > > [2] http://grsecurity.net/~spender/wireless-infoleak-fix2.patch
-> > 
-> > Is this fixed differently upstream in the kernel with commit id
-> > 42da2f948d949efd0111309f5827bf0298bcc9a4?
+Dan Rosenberg schrieb:
+> Disregard previous version, which had a typo and wouldn't compile.
+> Also, math is fun: the ioctl allows reading of 1968 BITS = 246 bytes,
+> not 1968 bytes as previously reported.
+
+Thanks, I will take care of getting it in mainline as soon as possible,
+
+Florian Tobias Schandinat
+
 > 
-> Yes, that's the fix for this.
+> The VIAFB_GET_INFO device ioctl allows unprivileged users to read 246
+> bytes of uninitialized stack memory, because the "reserved" member of
+> the viafb_ioctl_info struct declared on the stack is not altered or
+> zeroed before being copied back to the user.  This patch takes care of
+> it.
+> 
+> Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+> 
+> --- linux-2.6.35.4.orig/drivers/video/via/ioctl.c	2010-08-26 19:47:12.000000000 -0400
+> +++ linux-2.6.35.4/drivers/video/via/ioctl.c	2010-09-15 11:53:29.997375748 -0400
+> @@ -25,6 +25,8 @@ int viafb_ioctl_get_viafb_info(u_long ar
+>  {
+>  	struct viafb_ioctl_info viainfo;
+>  
+> +	memset(&viainfo, 0, sizeof(struct viafb_ioctl_info));
+> +
+>  	viainfo.viafb_id = VIAID;
+>  	viainfo.vendor_id = PCI_VIA_VENDOR_ID;
+>  
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-Wonderful, thanks for letting me know.
-
-greg k-h
