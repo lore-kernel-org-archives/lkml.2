@@ -1,94 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439Ab0IOGJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 02:09:56 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:2162 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752990Ab0IOGJo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 02:09:44 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=hp5Bv2Now3d5h4Tf++14F8Unp46rzShEulJS1ygP+o7xL16DtoWv78ZThieRS5V+O
-	4C9idM+nfecKzMWdXZW0w==
-From: Michael Rubin <mrubin@google.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org
-Cc: fengguang.wu@intel.com, jack@suse.cz, riel@redhat.com,
-        akpm@linux-foundation.org, david@fromorbit.com,
-        kosaki.motohiro@jp.fujitsu.com, npiggin@kernel.dk, hch@lst.de,
-        axboe@kernel.dk, Michael Rubin <mrubin@google.com>
-Subject: [PATCH 3/5] writeback: nr_dirtied and nr_written in /proc/vmstat
-Date: Tue, 14 Sep 2010 23:08:27 -0700
-Message-Id: <1284530908-13430-1-git-send-email-mrubin@google.com>
-X-Mailer: git-send-email 1.7.1
+	id S1752341Ab0IOGO2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 02:14:28 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:60384 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751721Ab0IOGO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 02:14:27 -0400
+Subject: Re: [RFC][PATCH] update /proc/sys/vm/drop_caches documentation
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        lnxninja@linux.vnet.ibm.com
+In-Reply-To: <20100915135016.C9F1.A69D9226@jp.fujitsu.com>
+References: <20100914234714.8AF506EA@kernel.beaverton.ibm.com>
+	 <20100915133303.0b232671.kamezawa.hiroyu@jp.fujitsu.com>
+	 <20100915135016.C9F1.A69D9226@jp.fujitsu.com>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Tue, 14 Sep 2010 23:14:22 -0700
+Message-ID: <1284531262.27089.15725.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To help developers and applications gain visibility into writeback
-behaviour adding two entries to vm_stat_items and /proc/vmstat. This
-will allow us to track the "written" and "dirtied" counts.
+On Wed, 2010-09-15 at 13:53 +0900, KOSAKI Motohiro wrote:
+> > >  ==============================================================
+> > >  
+> > > diff -puN fs/drop_caches.c~update-drop_caches-documentation fs/drop_caches.c
+> > > --- linux-2.6.git/fs/drop_caches.c~update-drop_caches-documentation	2010-09-14 15:44:29.000000000 -0700
+> > > +++ linux-2.6.git-dave/fs/drop_caches.c	2010-09-14 15:58:31.000000000 -0700
+> > > @@ -47,6 +47,8 @@ int drop_caches_sysctl_handler(ctl_table
+> > >  {
+> > >  	proc_dointvec_minmax(table, write, buffer, length, ppos);
+> > >  	if (write) {
+> > > +		WARN_ONCE(1, "kernel caches forcefully dropped, "
+> > > +			     "see Documentation/sysctl/vm.txt\n");
+> > 
+> > Documentation updeta seems good but showing warning seems to be meddling to me.
+> 
+> Agreed.
+> 
+> If the motivation is blog's bogus rumor, this is no effective. I easily
+> imazine they will write "Hey, drop_caches may output strange message, 
+> but please ignore it!".
 
-   # grep nr_dirtied /proc/vmstat
-   nr_dirtied 3747
-   # grep nr_written /proc/vmstat
-   nr_written 3618
+Fair enough.  But, is there a point that we _should_ be warning?  If
+someone is doing this every minute, or every hour, something is pretty
+broken.  Should we at least be doing a WARN_ON() so that the TAINT_WARN
+is set?
 
-Signed-off-by: Michael Rubin <mrubin@google.com>
----
- include/linux/mmzone.h |    2 ++
- mm/page-writeback.c    |    2 ++
- mm/vmstat.c            |    3 +++
- 3 files changed, 7 insertions(+), 0 deletions(-)
+I'm worried that there are users out there experiencing real problems
+that aren't reporting it because "workarounds" like this just paper over
+the issue.
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 6e6e626..bd6c7fc 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -104,6 +104,8 @@ enum zone_stat_item {
- 	NR_ISOLATED_ANON,	/* Temporary isolated pages from anon lru */
- 	NR_ISOLATED_FILE,	/* Temporary isolated pages from file lru */
- 	NR_SHMEM,		/* shmem pages (included tmpfs/GEM pages) */
-+	NR_DIRTIED,		/* page dirtyings since bootup */
-+	NR_WRITTEN,		/* page writings since bootup */
- #ifdef CONFIG_NUMA
- 	NUMA_HIT,		/* allocated in intended node */
- 	NUMA_MISS,		/* allocated in non intended node */
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index ae5f5d5..79feaa0 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1126,6 +1126,7 @@ void account_page_dirtied(struct page *page, struct address_space *mapping)
- {
- 	if (mapping_cap_account_dirty(mapping)) {
- 		__inc_zone_page_state(page, NR_FILE_DIRTY);
-+		__inc_zone_page_state(page, NR_DIRTIED);
- 		__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
- 		task_dirty_inc(current);
- 		task_io_account_write(PAGE_CACHE_SIZE);
-@@ -1141,6 +1142,7 @@ EXPORT_SYMBOL(account_page_dirtied);
- void account_page_writeback(struct page *page)
- {
- 	inc_zone_page_state(page, NR_WRITEBACK);
-+	inc_zone_page_state(page, NR_WRITTEN);
- }
- EXPORT_SYMBOL(account_page_writeback);
- 
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index f389168..d448ef4 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -732,6 +732,9 @@ static const char * const vmstat_text[] = {
- 	"nr_isolated_anon",
- 	"nr_isolated_file",
- 	"nr_shmem",
-+	"nr_dirtied",
-+	"nr_written",
-+
- #ifdef CONFIG_NUMA
- 	"numa_hit",
- 	"numa_miss",
--- 
-1.7.1
+-- Dave
 
