@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798Ab0IOJ37 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 05:29:59 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:44587 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752393Ab0IOJ36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 05:29:58 -0400
-Date: Wed, 15 Sep 2010 11:29:43 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Huang Ying <ying.huang@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 5/6] x86, NMI, Add support to notify hardware error with
- unknown NMI
-Message-ID: <20100915092943.GI16593@elte.hu>
-References: <20100913172438.37443bf7@basil.nowhere.org>
- <20100913154750.GA26290@redhat.com>
- <20100913185721.59ad9b4d@basil.nowhere.org>
- <20100913175346.GC26290@redhat.com>
- <20100913200707.3b31429e@basil.nowhere.org>
- <20100913182354.GE26290@redhat.com>
- <20100913203654.26724055@basil.nowhere.org>
- <20100913193655.GF26290@redhat.com>
- <20100914122131.GF12425@elte.hu>
- <20100914193449.GA9797@lenovo>
+	id S1752657Ab0IOJbh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 05:31:37 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:49520 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984Ab0IOJbg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 05:31:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=IBzT1H0MfrPfYLUqQvXMCzkAxa9OiwlNRQ3ITXMmms/lyFb0AOWtPj1bPqsclJ9JFU
+         V9y8MkNe0u4NnnVEABOl6bPoX4RChhKyx1DXf4JEWFcEctQSrJP7MtLgRWa3rIhgDMGu
+         wwNBGzvlOdomvFO+Ce/l5O6gWLq5vXRE5HeME=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100914193449.GA9797@lenovo>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.5
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.5 required=5.9 tests=BAYES_40 autolearn=no SpamAssassin version=3.2.5
-	0.5 BAYES_40               BODY: Bayesian spam probability is 20 to 40%
-	[score: 0.2212]
+In-Reply-To: <1284493213-7263-5-git-send-email-arnd@arndb.de>
+References: <1284493139-7233-1-git-send-email-arnd@arndb.de>
+	<1284493213-7263-5-git-send-email-arnd@arndb.de>
+Date: Wed, 15 Sep 2010 10:31:34 +0100
+Message-ID: <AANLkTik44U-8vTbw5XvVxRJp-7v1wDg35vqPT-BTJQ70@mail.gmail.com>
+Subject: Re: [PATCH 04/18] isapnp: BKL removal
+From: Will Newton <will.newton@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Sep 14, 2010 at 8:40 PM, Arnd Bergmann <arnd@arndb.de> wrote:
 
-* Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> diff --git a/drivers/pnp/isapnp/proc.c b/drivers/pnp/isapnp/proc.c
+> index 3f94eda..4249999 100644
+> --- a/drivers/pnp/isapnp/proc.c
+> +++ b/drivers/pnp/isapnp/proc.c
+> @@ -31,8 +31,9 @@ static struct proc_dir_entry *isapnp_proc_bus_dir = NULL;
+>  static loff_t isapnp_proc_bus_lseek(struct file *file, loff_t off, int whence)
+>  {
+>        loff_t new = -1;
+> +       struct inode *inode = file->f_path.dentry->d_inode;
+>
+> -       lock_kernel();
+> +       mutex_lock(&inode->i_mutex);
+>        switch (whence) {
+>        case 0:
+>                new = off;
+> @@ -45,11 +46,11 @@ static loff_t isapnp_proc_bus_lseek(struct file *file, loff_t off, int whence)
+>                break;
+>        }
+>        if (new < 0 || new > 256) {
 
-> On Tue, Sep 14, 2010 at 02:21:31PM +0200, Ingo Molnar wrote:
-> > 
-> ... 
-> > The proper approach would be not to add hacks to the NMI code but to 
-> > implement southbridge drivers - which would also have NMI callbacks. 
-> > These are unchartered waters, but variance in that space is reducing 
-> > systematically so it would be worth a shot.
-> > 
-> > Thanks,
-> > 
-> > 	Ingo
-> 
-> Hi Ingo,
-> 
-> while there is a conversation about makeing NMI handler robust/modern 
-> or whatever, I think the naming Huang has implemented for NMI 
-> Stat&Ctrl registers/ports look quite good and convenient (I thought 
-> about this times ago when being merging nmi-32/64 code but didn't 
-> implemented it properly). So I presume perhaps we could merge this 
-> snippets first? Or I miss something on discussion in general?
+Mismatched brackets here?
 
-Yeah, i'm waiting for Don to pick out the good ones and send them to me 
-after a bit of testing (he's been driving this topic lately). We can 
-obviously make some progress.
-
-Thanks,
-
-	Ingo
+> -               unlock_kernel();
+> -               return -EINVAL;
+> -       }
+> -       unlock_kernel();
+> -       return (file->f_pos = new);
+> +               new = -EINVAL;
+> +       else
+> +               file->f_pos = new;
+> +       mutex_unlock(&inode->i_mutex);
+> +       return new;
+>  }
+>
