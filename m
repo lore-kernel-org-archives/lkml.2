@@ -1,98 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866Ab0IODOX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 23:14:23 -0400
-Received: from mga02.intel.com ([134.134.136.20]:55215 "EHLO mga02.intel.com"
+	id S1754935Ab0IODRr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 23:17:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38353 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754587Ab0IODOV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 23:14:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,368,1280732400"; 
-   d="scan'208";a="554565149"
-From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+	id S1754251Ab0IODRq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 23:17:46 -0400
+Date: Wed, 15 Sep 2010 13:17:35 +1000
+From: Neil Brown <neilb@suse.de>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "herbert@gondor.hengli.com.au" <herbert@gondor.hengli.com.au>,
-        "jdike@linux.intel.com" <jdike@linux.intel.com>
-Date: Wed, 15 Sep 2010 11:13:44 +0800
-Subject: RE: [RFC PATCH v9 12/16] Add mp(mediate passthru) device.
-Thread-Topic: [RFC PATCH v9 12/16] Add mp(mediate passthru) device.
-Thread-Index: ActSgHWmIA4SbTyYSWO0Z3ZqMONSqgCAzBvw
-Message-ID: <F2E9EB7348B8264F86B6AB8151CE2D792B8C815365@shsmsx502.ccr.corp.intel.com>
-References: <1281086624-5765-8-git-send-email-xiaohui.xin@intel.com>
- <1281086624-5765-9-git-send-email-xiaohui.xin@intel.com>
- <1281086624-5765-10-git-send-email-xiaohui.xin@intel.com>
- <1281086624-5765-11-git-send-email-xiaohui.xin@intel.com>
- <1281086624-5765-12-git-send-email-xiaohui.xin@intel.com>
- <1281086624-5765-13-git-send-email-xiaohui.xin@intel.com>
- <1281086624-5765-14-git-send-email-xiaohui.xin@intel.com>
- <20100906111126.GA15608@redhat.com>
- <F2E9EB7348B8264F86B6AB8151CE2D79280489A9C9@shsmsx502.ccr.corp.intel.com>
- <F2E9EB7348B8264F86B6AB8151CE2D79280489AA05@shsmsx502.ccr.corp.intel.com>
- <20100912133703.GJ22982@redhat.com>
-In-Reply-To: <20100912133703.GJ22982@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: Deadlock possibly caused by too_many_isolated.
+Message-ID: <20100915131735.08899288@notabene>
+In-Reply-To: <20100915030640.GA11141@localhost>
+References: <20100915091118.3dbdc961@notabene>
+	<4C90139A.1080809@redhat.com>
+	<20100915122334.3fa7b35f@notabene>
+	<20100915023735.GA9175@localhost>
+	<20100915025454.GA10230@localhost>
+	<20100915030640.GA11141@localhost>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From: Michael S. Tsirkin [mailto:mst@redhat.com]
->Sent: Sunday, September 12, 2010 9:37 PM
->To: Xin, Xiaohui
->Cc: netdev@vger.kernel.org; kvm@vger.kernel.org; linux-kernel@vger.kernel.org;
->mingo@elte.hu; davem@davemloft.net; herbert@gondor.hengli.com.au;
->jdike@linux.intel.com
->Subject: Re: [RFC PATCH v9 12/16] Add mp(mediate passthru) device.
->
->On Sat, Sep 11, 2010 at 03:41:14PM +0800, Xin, Xiaohui wrote:
->> >>Playing with rlimit on data path, transparently to the application in this way
->> >>looks strange to me, I suspect this has unexpected security implications.
->> >>Further, applications may have other uses for locked memory
->> >>besides mpassthru - you should not just take it because it's there.
->> >>
->> >>Can we have an ioctl that lets userspace configure how much
->> >>memory to lock? This ioctl will decrement the rlimit and store
->> >>the data in the device structure so we can do accounting
->> >>internally. Put it back on close or on another ioctl.
->> >Yes, we can decrement the rlimit in ioctl in one time to avoid
->> >data path.
->> >
->> >>Need to be careful for when this operation gets called
->> >>again with 0 or another small value while we have locked memory -
->> >>maybe just fail with EBUSY?  or wait until it gets unlocked?
->> >>Maybe 0 can be special-cased and deactivate zero-copy?.
->> >>
->>
->> How about we don't use a new ioctl, but just check the rlimit
->> in one MPASSTHRU_BINDDEV ioctl? If we find mp device
->> break the rlimit, then we fail the bind ioctl, and thus can't do
->> zero copy any more.
->
->Yes, and not just check, but decrement as well.
->I think we should give userspace control over
->how much memory we can lock and subtract from the rlimit.
->It's OK to add this as a parameter to MPASSTHRU_BINDDEV.
->Then increment the rlimit back on unbind and on close?
->
->This opens up an interesting condition: process 1
->calls bind, process 2 calls unbind or close.
->This will increment rlimit for process 2.
->Not sure how to fix this properly.
->
-I can't too, can we do any synchronous operations on rlimit stuff?
-I quite suspect in it.
- 
->--
->MST
+On Wed, 15 Sep 2010 11:06:40 +0800
+Wu Fengguang <fengguang.wu@intel.com> wrote:
+
+> On Wed, Sep 15, 2010 at 10:54:54AM +0800, Wu Fengguang wrote:
+> > On Wed, Sep 15, 2010 at 10:37:35AM +0800, Wu Fengguang wrote:
+> > > On Wed, Sep 15, 2010 at 10:23:34AM +0800, Neil Brown wrote:
+> > > > On Tue, 14 Sep 2010 20:30:18 -0400
+> > > > Rik van Riel <riel@redhat.com> wrote:
+> > > > 
+> > > > > On 09/14/2010 07:11 PM, Neil Brown wrote:
+> > > > > 
+> > > > > > Index: linux-2.6.32-SLE11-SP1/mm/vmscan.c
+> > > > > > ===================================================================
+> > > > > > --- linux-2.6.32-SLE11-SP1.orig/mm/vmscan.c	2010-09-15 08:37:32.000000000 +1000
+> > > > > > +++ linux-2.6.32-SLE11-SP1/mm/vmscan.c	2010-09-15 08:38:57.000000000 +1000
+> > > > > > @@ -1106,6 +1106,11 @@ static unsigned long shrink_inactive_lis
+> > > > > >   		/* We are about to die and free our memory. Return now. */
+> > > > > >   		if (fatal_signal_pending(current))
+> > > > > >   			return SWAP_CLUSTER_MAX;
+> > > > > > +		if (!(sc->gfp_mask&  __GFP_IO))
+> > > > > > +			/* Not allowed to do IO, so mustn't wait
+> > > > > > +			 * on processes that might try to
+> > > > > > +			 */
+> > > > > > +			return SWAP_CLUSTER_MAX;
+> > > > > >   	}
+> > > > > >
+> > > > > >   	/*
+> > > > > 
+> > > > > Close.  We must also be sure that processes without __GFP_FS
+> > > > > set in their gfp_mask do not wait on processes that do have
+> > > > > __GFP_FS set.
+> > > > > 
+> > > > > Considering how many times we've run into a bug like this,
+> > > > > I'm kicking myself for not having thought of it :(
+> > > > > 
+> > > > 
+> > > > So maybe this?  I've added the test for __GFP_FS, and moved the test before
+> > > > the congestion_wait on the basis that we really want to get back up the stack
+> > > > and try the mempool ASAP.
+> > > 
+> > > The patch may well fail the !__GFP_IO page allocation and then
+> > > quickly exhaust the mempool.
+> > > 
+> > > Another approach may to let too_many_isolated() use much higher
+> > > thresholds for !__GFP_IO/FS and lower ones for __GFP_IO/FS. ie. to
+> > > allow at least nr2 NOIO/FS tasks to be blocked independent of the
+> > > IO/FS ones.  Since NOIO vmscans typically completes fast, it will then
+> > > very hard to accumulate enough NOIO processes to be actually blocked.
+> > > 
+> > > 
+> > >                   IO/FS tasks                NOIO/FS tasks           full
+> > >                   block here                 block here              LRU size
+> > > |-----------------|--------------------------|-----------------------|
+> > > |      nr1        |           nr2            |
+> > 
+> > How about this fix? We may need very high threshold for NOIO/NOFS to
+> > prevent possible regressions.
+> 
+> Plus __GFP_WAIT..
+> 
+> ---
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 225a759..6a896eb 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1135,6 +1135,7 @@ static int too_many_isolated(struct zone *zone, int file,
+>  		struct scan_control *sc)
+>  {
+>  	unsigned long inactive, isolated;
+> +	int ratio;
+>  
+>  	if (current_is_kswapd())
+>  		return 0;
+> @@ -1150,7 +1151,15 @@ static int too_many_isolated(struct zone *zone, int file,
+>  		isolated = zone_page_state(zone, NR_ISOLATED_ANON);
+>  	}
+>  
+> -	return isolated > inactive;
+> +	ratio = 1;
+> +	if (!(sc->gfp_mask & (__GFP_FS)))
+> +		ratio <<= 1;
+> +	if (!(sc->gfp_mask & (__GFP_IO)))
+> +		ratio <<= 1;
+> +	if (!(sc->gfp_mask & (__GFP_WAIT)))
+> +		ratio <<= 1;
+> +
+> +	return isolated > inactive * ratio;
+>  }
+>  
+>  /*
+
+
+Are you suggesting this instead of my patch, or as well as my patch?
+
+Because while I think it sounds like a good idea I don't think it actually
+removes the chance of a deadlock, just makes it a lot less likely.
+So I think your patch combined with my patch would be a good total solution.
+
+Do you agree?
+
+Thanks,
+NeilBrown
+
