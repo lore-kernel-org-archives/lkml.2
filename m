@@ -1,110 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896Ab0IOKUR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 06:20:17 -0400
-Received: from bizon.gios.gov.pl ([195.187.34.71]:43811 "EHLO
-	bizon.gios.gov.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751778Ab0IOKUQ (ORCPT
+	id S1753262Ab0IOKU3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 06:20:29 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:39325 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330Ab0IOKU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 06:20:16 -0400
-X-Greylist: delayed 587 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Sep 2010 06:20:15 EDT
-Message-ID: <4C9099AF.6030303@ans.pl>
-Date: Wed, 15 Sep 2010 12:02:23 +0200
-From: =?UTF-8?B?S3J6eXN6dG9mIE9sxJlkemtp?= <ole@ans.pl>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; pl; rv:1.9.2.9) Gecko/20100825 Lightning/1.0b2 Thunderbird/3.1.3
+	Wed, 15 Sep 2010 06:20:28 -0400
+Message-ID: <4C909D87.2090901@ru.mvista.com>
+Date: Wed, 15 Sep 2010 14:18:47 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.9) Gecko/20100825 Thunderbird/3.1.3
 MIME-Version: 1.0
-To: Thomas Backlund <tmb@mandriva.org>
-CC: Greg KH <gregkh@suse.de>, "stable@kernel.org" <stable@kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        David Miller <davem@davemloft.net>,
-        "Larry.Finger@lwfinger.net" <Larry.Finger@lwfinger.net>,
+To: Ming Lei <tom.leiming@gmail.com>
+CC: Sergei Shtylyov <sshtylyov@mvista.com>, balbi@ti.com,
+        "greg@kroah.com" <greg@kroah.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [33-stable regression ssb/broadcom]
-References: <4C8E6192.2010003@mandriva.org> <20100913.122329.39186333.davem@davemloft.net> <20100913193647.GD4052@tuxdriver.com> <4C8E8AC2.2030201@mandriva.org> <4C8E8C73.60306@mandriva.org> <20100913210145.GA18969@suse.de> <4C9097BA.1080208@mandriva.org>
-In-Reply-To: <4C9097BA.1080208@mandriva.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+        David Brownell <dbrownell@users.sourceforge.net>,
+        "Gadiyar, Anand" <gadiyar@ti.com>, Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [RESEND/PATCH 5/6] USB: musb-gadget: complete request only if
+ data is transfered over
+References: <4C8E18AD.8000502@ru.mvista.com>	<AANLkTinei3u1OZ-eBiUTDF=PDjwxLcL6rBpt7iNQJgHJ@mail.gmail.com>	<4C8E4882.6040600@ru.mvista.com>	<4C8E50CC.3080705@ru.mvista.com>	<20100914065604.GD2601@legolas.emea.dhcp.ti.com>	<4C8F527E.40408@ru.mvista.com>	<20100914105402.GD7554@legolas.emea.dhcp.ti.com>	<4C8FB60D.1080906@ru.mvista.com>	<20100915065345.GC3393@legolas.emea.dhcp.ti.com>	<4C909961.10001@ru.mvista.com>	<20100915100553.GJ3393@legolas.emea.dhcp.ti.com>	<4C909B2E.3000909@ru.mvista.com> <AANLkTi=A+1ThrRTNjWoFbXr-G1OUnpThEwG5rCgGirzC@mail.gmail.com>
+In-Reply-To: <AANLkTi=A+1ThrRTNjWoFbXr-G1OUnpThEwG5rCgGirzC@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-09-15 11:54, Thomas Backlund wrote:
-> Greg KH skrev 14.9.2010 00:01:
->> On Mon, Sep 13, 2010 at 11:41:23PM +0300, Thomas Backlund wrote:
->>> Thomas Backlund skrev 13.9.2010 23:34:
->>>> John W. Linville skrev 13.9.2010 22:36:
->>>>> On Mon, Sep 13, 2010 at 12:23:29PM -0700, David Miller wrote:
->>>>>> From: Thomas Backlund<tmb@mandriva.org>
->>>>>> Date: Mon, 13 Sep 2010 20:38:26 +0300
->>>>>>
->>>>>>> In Mandriva 2010.1 we noticed that 2.6.33.7 broke ssb/Broadcom lan for
->>>>>>> several users...
->>>>>>>
->>>>>>> Issue is tracked at:
->>>>>>> https://qa.mandriva.com/show_bug.cgi?id=60968
->>>>>>>
->>>>>>> Reverting the commit restores a working lan.
->>>>>>>
->>>>>>> The offending commit is:
->>>>>>
->>>>>> Please always CC: netdev on networking reports, otherwise you are
->>>>>> very unlikely to get any experts looking into your issue.
->>>>>
->>>>> IIRC, there was a bad patch that got sent for the 2.6.33.y series.
->>>>> I thought it had been reverted or fixed already?
->>>>>
->>>>
->>>> Nope.
->>>>
->>>> It got added in 2.6.33.7
->>>> http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.33.y.git;a=commit;h=6fb037c2ed8378c7ab0c1e00536ba6b2a866503e
->>>>
->>>
->>> After checking some more...
->>>
->>> I see the revert of the broken patch was done in 2.6.34.3 and a set
->>> of ssb patches replacing it...
->>>
->>> but it didn't happend for 2.6.33.y
->>
->> Yeah, I think I "dropped" support for .33 by then and I really didn't
->> care anymore.
->>
-> 
-> Yep.
-> final 2.6.33.7 was released 8 days before 2.6.34.3.
-> 
->> Note, I have gotten a few rumblings that I should bring .33 back to life
->> for some loving due to a few distros relying on it, but I need to find
->> the time in my schedule to do so...
->>
-> 
-> Well,
-> if you dont want to really bring it back to life, I'd suggest to simply
-> released a 2.6.33.8 with only reverting the broken patch as it would
-> "unbreak" the tree and call it a day :-)
-> 
-> Otherwise...
-> I now have merged the ssb fixes from 26.34.3:
-> 19bfed793ee38ce027326a3c518ff6201f673a8d ssb: do not read SPROM if it
-> does not exist
-> 3ca696ca403b2715018bd5c693ab105c3a3ea888 ssb: Look for SPROM at
-> different offset on higher rev CC
-> a8515c84db1a9c9be19d8d873b059473474b6dab ssb: fix NULL ptr deref when
-> pcihost_wrapper is used
-> 8235ddc2cd7a3367b688e0ed52ab377eac6cfad4 ssb: Handle alternate SSPROM
-> location
-> 
-> into 2.6.33.7 after reverting the broken commit and have confirmation
-> from users that it still works, so thats what I'll do for Mandriva 2010.1
+Hello.
 
-If a new 2.6.33-stable kernel is going to be release there is one more
-important bugfix worth to be backported:
- http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff_plain;h=719f835853a92f6090258114a72ffe41f09155cd
+On 15-09-2010 14:14, Ming Lei wrote:
 
-This bug is present in 2.6.33, 2.6.34 and 2.6.35.
+>>>> I didn't say it was duplicate for DMA, just too late.
 
-Best regards,
+>>> how come ? we need to send ZLP before giving back the request.
 
-			Krzysztof Olędzki
+>>    Well, look at the code ionce again. We need to send ZLP *after*
+>> request->actual == request->length, but as the check is inserted after the
+>> ZLP send, ZLP *may* be sent once the first DMA completes, not the last.
+
+> Yes, it is really a problem, as said by balbi.  And the problem should be
+> in the check for zlp or the 'is_dma' condition.
+
+> But this patch is not addressed for the zlp problem, and is is only for
+> completing the request only if the data transfer in usb_request
+> is over, as explained before, right?
+
+    I don't see why we should fix only this problem, while it's obvious tha 
+the fix is incomplete and leaves the other problem exposed. Please recast the 
+patch.
+
+WBR, Sergei
