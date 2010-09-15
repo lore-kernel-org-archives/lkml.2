@@ -1,115 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab0IOM2n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 08:28:43 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:57027 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753453Ab0IOM2k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 08:28:40 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH] md: do not use ++ in rcu_dereference() argument
-Date: Wed, 15 Sep 2010 14:28:32 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Kulikov Vasiliy <segooon@gmail.com>, kernel-janitors@vger.kernel.org,
-        Neil Brown <neilb@suse.de>, Jens Axboe <jaxboe@fusionio.com>,
-        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1283711539-7123-1-git-send-email-segooon@gmail.com> <20100910034603.GA2612@linux.vnet.ibm.com> <20100914003351.GA8300@linux.vnet.ibm.com>
-In-Reply-To: <20100914003351.GA8300@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009151428.32348.arnd@arndb.de>
-X-Provags-ID: V02:K0:q5lvOY5A9vI9fJ8xsHlqlNft1pf8JGmBB+b3bY464rE
- UcH1KY/2iGr6z5rQ9mgmtG/cEn/nQEcx2S31zfnIooOHLv/wQI
- 13kfHAqgndn1tXGFst34nG4CANlnoub5osaQPVIQLqm6ruNAlu
- vv0uDWnAN1NSGCgVKZs4XZ1aiHZKzTGI4rbyPJsABoAj3wWPPJ
- 6fp0THuEbo2uIH9AFpYaw==
+	id S1753442Ab0IOM2h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 08:28:37 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:45574 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752475Ab0IOM15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 08:27:57 -0400
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: [PATCH 6/8] vmscan: isolated_lru_pages() stop neighbour search if neighbour cannot be isolated
+Date: Wed, 15 Sep 2010 13:27:49 +0100
+Message-Id: <1284553671-31574-7-git-send-email-mel@csn.ul.ie>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1284553671-31574-1-git-send-email-mel@csn.ul.ie>
+References: <1284553671-31574-1-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 14 September 2010, Paul E. McKenney wrote:
->    The current version of the __rcu_access_pointer(),
-> __rcu_dereference_check(), and __rcu_dereference_protected() macros
-> evaluate their "p" argument three times, not counting typeof()s.  This is
-> bad news if that argument contains a side effect.  This commit therefore
-> evaluates this argument only once in normal kernel builds.  However, the
-> straightforward approach defeats sparse's RCU-pointer checking, so this
-> commit also adds a KBUILD_CHECKSRC symbol defined when running a checker. 
-> Therefore, when this new KBUILD_CHECKSRC symbol is defined, the additional
-> pair of evaluations of the "p" argument are performed in order to permit
-> sparse to detect misuse of RCU-protected pointers.
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-In general, I don't like the idea much because that means we're passing
-semantically different code into sparse and gcc. Of course if my other
-patch doesn't work, we might need to do it after all.
+isolate_lru_pages() does not just isolate LRU tail pages, but also isolate
+neighbour pages of the eviction page. The neighbour search does not stop even
+if neighbours cannot be isolated which is excessive as the lumpy reclaim will
+no longer result in a successful higher order allocation. This patch stops
+the PFN neighbour pages if an isolation fails and moves on to the next block.
 
-> diff --git a/Makefile b/Makefile
-> index f3bdff8..1c4984d 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -330,7 +330,7 @@ PERL                = perl
->  CHECK          = sparse
->  
->  CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
-> -                 -Wbitwise -Wno-return-void $(CF)
-> +                 -Wbitwise -Wno-return-void -DKBUILD_CHECKSRC $(CF)
->  CFLAGS_MODULE   =
->  AFLAGS_MODULE   =
->  LDFLAGS_MODULE  =
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/vmscan.c |   17 +++++++++++------
+ 1 files changed, 11 insertions(+), 6 deletions(-)
 
-sparse already define __CHECKER__ itself, no need to define another symbol.
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 00075f3..2836913 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1052,7 +1052,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 
+ 			/* Check that we have not crossed a zone boundary. */
+ 			if (unlikely(page_zone_id(cursor_page) != zone_id))
+-				continue;
++				break;
+ 
+ 			/*
+ 			 * If we don't have enough swap space, reclaiming of
+@@ -1060,8 +1060,8 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 			 * pointless.
+ 			 */
+ 			if (nr_swap_pages <= 0 && PageAnon(cursor_page) &&
+-					!PageSwapCache(cursor_page))
+-				continue;
++			    !PageSwapCache(cursor_page))
++				break;
+ 
+ 			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
+ 				list_move(&cursor_page->lru, dst);
+@@ -1072,11 +1072,16 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 					nr_lumpy_dirty++;
+ 				scan++;
+ 			} else {
+-				if (mode == ISOLATE_BOTH &&
+-						page_count(cursor_page))
+-					nr_lumpy_failed++;
++				/* the page is freed already. */
++				if (!page_count(cursor_page))
++					continue;
++				break;
+ 			}
+ 		}
++
++		/* If we break out of the loop above, lumpy reclaim failed */
++		if (pfn < end_pfn)
++			nr_lumpy_failed++;
+ 	}
+ 
+ 	*scanned = scan;
+-- 
+1.7.1
 
-> +#ifdef KBUILD_CHECKSRC
-> +#define rcu_dereference_sparse(p, space) \
-> +       ((void)(((typeof(*p) space *)p) == p))
-> +#else /* #ifdef KBUILD_CHECKSRC */
-> +#define rcu_dereference_sparse(p, space)
-> +#endif /* #else #ifdef KBUILD_CHECKSRC */
-
-Did you see a problem with my macro?
-
-#define rcu_dereference_sparse(p, space) \
-       ((void)(((typeof(*p) space *)NULL) == ((typeof(p))NULL)))
-
-I think this should warn in all the cases we want it to, but have no side-effects.
-
->  #define __rcu_access_pointer(p, space) \
->         ({ \
->                 typeof(*p) *_________p1 = (typeof(*p)*__force )ACCESS_ONCE(p); \
-> -               (void) (((typeof (*p) space *)p) == p); \
-> +               rcu_dereference_sparse(p, space); \
->                 ((typeof(*p) __force __kernel *)(_________p1)); \
->         })
->  #define __rcu_dereference_check(p, c, space) \
->         ({ \
->                 typeof(*p) *_________p1 = (typeof(*p)*__force )ACCESS_ONCE(p); \
->                 rcu_lockdep_assert(c); \
-> -               (void) (((typeof (*p) space *)p) == p); \
-> +               rcu_dereference_sparse(p, space); \
->                 smp_read_barrier_depends(); \
->                 ((typeof(*p) __force __kernel *)(_________p1)); \
->         })
->  #define __rcu_dereference_protected(p, c, space) \
->         ({ \
->                 rcu_lockdep_assert(c); \
-> -               (void) (((typeof (*p) space *)p) == p); \
-> +               rcu_dereference_sparse(p, space); \
->                 ((typeof(*p) __force __kernel *)(p)); \
->         })
->  
-
-This part might be useful in any case, to better document what the cast and
-compare does, and to prevent the three users from diverging.
-
->diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
->index 439ddab..adb09cb 100644
->--- a/kernel/rcutorture.c
->+++ b/kernel/rcutorture.c
-
-This didn't seem to belong here.
-
-	Arnd
