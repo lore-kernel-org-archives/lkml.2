@@ -1,149 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752601Ab0IOIC5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 04:02:57 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:45252 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752522Ab0IOICw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 04:02:52 -0400
-Date: Wed, 15 Sep 2010 10:02:35 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Christopher Yeoh <cyeoh@au1.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-mm@kvack.org
-Subject: Re: [RFC][PATCH] Cross Memory Attach
-Message-ID: <20100915080235.GA13152@elte.hu>
-References: <20100915104855.41de3ebf@lilo>
+	id S1752252Ab0IOIEQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 04:04:16 -0400
+Received: from fmmailgate03.web.de ([217.72.192.234]:35214 "EHLO
+	fmmailgate03.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932Ab0IOIEK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 04:04:10 -0400
+Message-ID: <4C907DF4.8000601@web.de>
+Date: Wed, 15 Sep 2010 10:04:04 +0200
+From: Jan Kiszka <jan.kiszka@web.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100915104855.41de3ebf@lilo>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Avi Kivity <avi@redhat.com>
+CC: Zachary Amsden <zamsden@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Glauber Costa <glommer@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <johnstul@us.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [KVM timekeeping 10/35] Fix deep C-state TSC desynchronization
+References: <1282291669-25709-1-git-send-email-zamsden@redhat.com> <1282291669-25709-11-git-send-email-zamsden@redhat.com> <4C8F3C03.50306@siemens.com> <4C8F3FF3.9080803@redhat.com> <4C8F5125.5060505@siemens.com> <4C8FCDE2.3000202@redhat.com> <4C8FF690.7030107@web.de> <4C9007F2.9020205@redhat.com> <4C905AFC.5020706@web.de> <4C907C0A.7060607@redhat.com>
+In-Reply-To: <4C907C0A.7060607@redhat.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigDC4C91EF72B82E2AC9020A91"
+X-Provags-ID: V01U2FsdGVkX1/ZJa5WVwjyw6ZKCQuHSUAFjuiZvMBkV7mFK1ga
+	uMvm+bjbT/Jbp9TboLltE3yslET/ENlPS0M5U8l5+ncvkk2GtG
+	5mPxgZRVc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigDC4C91EF72B82E2AC9020A91
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-(Interesting patch found on lkml, more folks Cc:-ed)
+Am 15.09.2010 09:55, Avi Kivity wrote:
+>  On 09/15/2010 07:34 AM, Jan Kiszka wrote:
+>> Do you think kvm-kmod could contribute to this? As I said, I'm on a 34=
 
-* Christopher Yeoh <cyeoh@au1.ibm.com> wrote:
+>> kernel, namely SUSE's 2.6.34.4-0.1-desktop. Any feature missing in tha=
+t
+>> kernel latest KVM depends for proper tsc/kvm-clock handling? If you ha=
+ve
+>> any concerns, I could try to run kvm.git natively later on.
+>=20
+> In case you aren't aware of it, 'make localmodconfig' is an easy way to=
 
-> The basic idea behind cross memory attach is to allow MPI programs 
-> doing intra-node communication to do a single copy of the message 
-> rather than a double copy of the message via shared memory.
-> 
-> The following patch attempts to achieve this by allowing a destination 
-> process, given an address and size from a source process, to copy 
-> memory directly from the source process into its own address space via 
-> a system call. There is also a symmetrical ability to copy from the 
-> current process's address space into a destination process's address 
-> space.
-> 
-> Use of vmsplice instead was considered, but has problems. Since you 
-> need the reader and writer working co-operatively if the pipe is not 
-> drained then you block. Which requires some wrapping to do non 
-> blocking on the send side or polling on the receive. In all to all 
-> communication it requires ordering otherwise you can deadlock. And in 
-> the example of many MPI tasks writing to one MPI task vmsplice 
-> serialises the copying.
-> 
-> I've added the use of this capability to OpenMPI and run some MPI 
-> benchmarks on a 64-way (with SMT off) Power6 machine which see 
-> improvements in the following areas:
-> 
-> HPCC results:
-> =============
-> 
-> MB/s			Num Processes	
-> Naturally Ordered	4	8	16	32
-> Base			1235	935	622	419
-> CMA			4741	3769	1977	703
-> 
-> 			
-> MB/s			Num Processes	
-> Randomly Ordered	4	8	16	32
-> Base			1227	947	638	412
-> CMA			4666	3682	1978	710
-> 				
-> MB/s			Num Processes	
-> Max Ping Pong		4	8	16	32
-> Base			2028	1938	1928	1882
-> CMA			7424	7510	7598	7708
-> 
-> 
-> NPB:
-> ====
-> BT - 12% improvement
-> FT - 15% improvement
-> IS - 30% improvement
-> SP - 34% improvement
-> 
-> IMB:
-> ===
-> 		
-> Ping Pong - ~30% improvement
-> Ping Ping - ~120% improvement
-> SendRecv - ~100% improvement
-> Exchange - ~150% improvement
-> Gather(v) - ~20% improvement
-> Scatter(v) - ~20% improvement
-> AlltoAll(v) - 30-50% improvement
-> 
-> Patch is as below. Any comments?
+> transition from a distro kernel to a locally built kernel.
+>=20
 
-Impressive numbers!
+I am aware of it. But this doesn't remove the need to shut down my
+session and reboot the notebook - something I usually avoid for weeks or
+even longer.
 
-What did those OpenMPI facilities use before your patch - shared memory 
-or sockets?
+Jan
 
-I have an observation about the interface:
 
-> +asmlinkage long sys_copy_from_process(pid_t pid, unsigned long addr,
-> +				      unsigned long len,
-> +				      char __user *buf, int flags);
-> +asmlinkage long sys_copy_to_process(pid_t pid, unsigned long addr,
-> +				    unsigned long len,
-> +				    char __user *buf, int flags);
+--------------enigDC4C91EF72B82E2AC9020A91
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-A small detail: 'int flags' should probably be 'unsigned long flags' - 
-it leaves more space.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.15 (GNU/Linux)
+Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
 
-Also, note that there is a further performance optimization possible 
-here: if the other task's ->mm is the same as this task's (they share 
-the MM), then the copy can be done straight in this process context, 
-without GUP. User-space might not necessarily be aware of this so it 
-might make sense to express this special case in the kernel too.
+iEYEARECAAYFAkyQffkACgkQitSsb3rl5xRjrwCcDwKJ9Dxi9m1kodk5CMyLlVJg
+iVUAoK+4Dy8poW2PGTDiXhMToBITKpZb
+=nWkn
+-----END PGP SIGNATURE-----
 
-More fundamentally, wouldnt it make sense to create an iovec interface 
-here? If the Gather(v) / Scatter(v) / AlltoAll(v) workloads have any 
-fragmentation on the user-space buffer side then the copy of multiple 
-areas could be done in a single syscall. (the MM lock has to be touched 
-only once, target task only be looked up only once, etc.)
-
-Plus, a small naming detail, shouldnt the naming be more IO like:
-
-  sys_process_vm_read()
-  sys_process_vm_write()
-
-Basically a regular read()/write() interface, but instead of fd's we'd 
-have (PID,addr) identifiers for remote buffers, and instant execution 
-(no buffering).
-
-This makes these somewhat special syscalls a bit less special :-)
-
-[ In theory we could also use this new ABI in a way to help the various 
-  RDMA efforts as well - but it looks way too complex. RDMA is rather 
-  difficult from an OS design POV - and this special case you have 
-  implemented is much easier to do, as we are in a single trust domain. ]
-
-Thanks,
-
-	Ingo
+--------------enigDC4C91EF72B82E2AC9020A91--
