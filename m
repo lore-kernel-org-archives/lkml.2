@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350Ab0IOWX3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 18:23:29 -0400
-Received: from smtp.nokia.com ([147.243.1.47]:35657 "EHLO mgw-sa01.nokia.com"
+	id S1753854Ab0IOWYe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 18:24:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59136 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752604Ab0IOWX1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 18:23:27 -0400
-Date: Thu, 16 Sep 2010 01:22:16 +0300
-From: Phil Carmody <ext-phil.2.carmody@nokia.com>
-To: ext Tony Luck <tony.luck@intel.com>
-Cc: "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] ia64: possible module unwind table optimisation
-Message-ID: <20100915222216.GF27658@esdhcp04044.research.nokia.com>
-References: <1284115245-23876-1-git-send-email-ext-phil.2.carmody@nokia.com> <AANLkTi=RsA0tACWOg+8RTSuDHwa4LGOiyO-4TxpJ_rb5@mail.gmail.com> <20100915124831.GB27658@esdhcp04044.research.nokia.com> <AANLkTi=hPcXC1=Lrey1H_UHRJRJ-NdTsvmyxgP_n+dM8@mail.gmail.com>
+	id S1752604Ab0IOWYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 18:24:33 -0400
+Message-ID: <4C91479E.3040208@zytor.com>
+Date: Wed, 15 Sep 2010 15:24:30 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=hPcXC1=Lrey1H_UHRJRJ-NdTsvmyxgP_n+dM8@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-Nokia-AV: Clean
+To: Brian Gerst <brgerst@gmail.com>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [RFC PATCH 0/5] Bump gcc minimum version to 3.4, 4.1 for x86
+References: <1284408880-14414-1-git-send-email-hpa@linux.intel.com> <AANLkTi=JpfhvyxC13U98x5me9U8dU6BHOcGkPC0KK7aW@mail.gmail.com>
+In-Reply-To: <AANLkTi=JpfhvyxC13U98x5me9U8dU6BHOcGkPC0KK7aW@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/09/10 19:28 +0200, ext Tony Luck wrote:
-> On Wed, Sep 15, 2010 at 5:48 AM, Phil Carmody
-> <ext-phil.2.carmody@nokia.com> wrote:
-> >>   for (table = unw.tables; table; table = table->next)
-> >>
-> >> before we find the right table to look?
-> >
-> > Yes, that's the one. Sorry I wasn't more explicit.
+On 09/13/2010 05:11 PM, Brian Gerst wrote:
+> On Mon, Sep 13, 2010 at 4:14 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+>> This patchset bumps the minimum supported gcc version to 3.4 for the
+>> general kernel, and to 4.1 for x86.
+>>
+>> We have had a rash of bug reports related to these really old
+>> compilers and their associated binutils version lately, and it is
+>> clear that the support burden of these older compilers is getting to
+>> be excessive.  If you really want to build a kernel on a system that
+>> old you can build or obtain an updated gcc/binutils as well.
 > 
-> My usual workload (building new Linux kernels - what else :-) doesn't
-> seem to generate
-> any unwind requests.  I reached the loop just 58 times while booting,
-> and only did 23
-> steps past the first item [didn't track a histogram, so I don't know
-> whether that was a
-> single 23 step lookup, or 23 one-step ones].  Building the kernel
-> (make -j32) didn't add
-> to either count.
+> What version of binutils does this correspond to?  It would be nice to
+> clean up some of the hacks for ancient binutils as well.
 > 
-> Workload ideas?
 
-Turn on kmemleak, or anything else which repeatedly runs up the stack just
-for the fun of gathering backtraces. Kmemleak's what caused us to notice 
-the issue in our ARM-based environment.
+4.1 -> 2.16
+3.4 -> 2.14/2.15 (gcc 3.4.0 beat binutils 2.15 by a mere 29 days)
 
-Phil
+This is somewhat unfortunate, since neither of these brackets eliminate
+the Binutils Version From Hell, a.k.a. 2.16.
+
+	-hpa
+
+
