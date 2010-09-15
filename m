@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950Ab0IOL3Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 07:29:16 -0400
-Received: from galiil.marvell.com ([199.203.130.254]:54589 "EHLO
-	galiil.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055Ab0IOL3P convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 07:29:15 -0400
-From: Saeed Bishara <saeed@marvell.com>
-To: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Chris Ball <cjb@laptop.org>, Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 15 Sep 2010 13:29:11 +0300
-Subject: RE: [PATCH] mmc: Add architecture dependency for Marvell SoC
- controller
-Thread-Topic: [PATCH] mmc: Add architecture dependency for Marvell SoC
- controller
-Thread-Index: ActUyApE0aLGApF/TaOCFEdrBbBOigAAOw5g
-Message-ID: <FCBE654890C0334289D0AD3AF4EF009FD18EE74AE9@IL-MB01.marvell.com>
-References: <1284366279-17140-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-	<20100914190549.GA21918@void.printf.net>
-	<20100915094006.GA21620@sirena.org.uk>
-	<FCBE654890C0334289D0AD3AF4EF009FD18EE74AA8@IL-MB01.marvell.com>
-	<20100915110001.GA4254@rakim.wolfsonmicro.main>
-	<FCBE654890C0334289D0AD3AF4EF009FD18EE74AC7@IL-MB01.marvell.com>
- <AANLkTi=fsntfyAoFygrTrksVARvQpuxie6tFxCcuLtVR@mail.gmail.com>
-In-Reply-To: <AANLkTi=fsntfyAoFygrTrksVARvQpuxie6tFxCcuLtVR@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1753214Ab0IOLcX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 07:32:23 -0400
+Received: from mga14.intel.com ([143.182.124.37]:62947 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751620Ab0IOLcW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 07:32:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,370,1280732400"; 
+   d="scan'208";a="324814253"
+Date: Wed, 15 Sep 2010 13:32:45 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Gary King <gking@nvidia.com>
+Cc: linux-kernel@vger.kernel.org, mike@compulab.co.il
+Subject: Re: [PATCH v3] mfd: tps6586x: add basic interrupt support
+Message-ID: <20100915113244.GA17201@sortiz-mobl>
+References: <1284428262-14158-1-git-send-email-gking@nvidia.com>
+ <20100915105534.GA2597@sortiz-mobl>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100915105534.GA2597@sortiz-mobl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 15, 2010 at 12:55:34PM +0200, Samuel Ortiz wrote:
+> Hi Gary,
+> 
+> On Mon, Sep 13, 2010 at 06:37:42PM -0700, Gary King wrote:
+> > Hi Samuel, Mike,
+> > 
+> > This patch incorporates Mike's feedback to my v2 patch to add interrupt
+> > support to the tps6586x driver.
+> > 
+> > Changes since v2:
+> >  * Remove stale comment in commit message
+> > 
+> > Changes since v1:
+> >  * Move the interrupt enum ordering to match the ACK register values
+> > 
+> >  * Treat the INT_ACK registers as a single 32b unsigned int.
+> > 
+> >  * Name and define all the interrupts on the device
+> > 
+> >  * If reading the ACK registers in the interrupt thread fails, IRQ_NONE
+> >    is returned, rather than disabling the IRQ handler. This fixes
+> >    interrupts following suspend.
+> > 
+> >  * The cascaded IRQ is passed through the i2c_client's .irq field, rather
+> >    than through platform data.
+> Patch applied, many thanks.
+...with this build fix:
+
+
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 01c928b..385cc38 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -563,8 +563,8 @@ config MFD_JZ4740_ADC
+ 	  This driver is necessary for jz4740-battery and jz4740-hwmon driver.
  
+ config MFD_TPS6586X
+-	tristate "TPS6586x Power Management chips"
+-	depends on I2C && GPIOLIB
++	bool "TPS6586x Power Management chips"
++	depends on I2C && GPIOLIB && GENERIC_HARDIRQS
+ 	select MFD_CORE
+ 	help
+ 	  If you say yes here you get support for the TPS6586X series of
 
->-----Original Message-----
->From: Haojian Zhuang [mailto:haojian.zhuang@gmail.com] 
->Sent: Wednesday, September 15, 2010 1:21 PM
->To: Saeed Bishara
->Cc: Mark Brown; Chris Ball; Andrew Morton; 
->linux-mmc@vger.kernel.org; linux-kernel@vger.kernel.org
->Subject: Re: [PATCH] mmc: Add architecture dependency for 
->Marvell SoC controller
->
->On Wed, Sep 15, 2010 at 6:06 PM, Saeed Bishara 
-><saeed@marvell.com> wrote:
->>
->>>Which CPUs does the driver actually support?  The Kconfig and
->>>commit log
->>>just say "Marvell" so I went for the conservative option and included
->>>all Marvell CPUs I was aware of.
->> The Marvell Dove SoC includes this device, this SoC defined 
->by ARCH_DOVE
->> I guess it found also only on mmp (defined by ARCH_MMP), 
->Haojian, can you confirm?
->> saeed
->
->As I know, MG1 is also using this IP. Although MG1 isn't supported in
->mainline, it's planned to be added into ARCH_PXA or one new ARCH. So
->PLAT_PXA is preferred.
-I think (ARCH_DOVE || ARCH_MMP) is prefered, when MG1 gets added to mainline, then we will add that new ARCH.
+Cheers,
+Samuel.
 
-saeed
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
