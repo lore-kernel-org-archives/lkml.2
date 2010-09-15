@@ -1,91 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755246Ab0IOWUc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 18:20:32 -0400
-Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:54708 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752062Ab0IOWUa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 18:20:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=to:subject:from
-	:date:message-id:mime-version:content-type
-	:content-transfer-encoding; q=dns; s=sasl; b=JowqcuBuAnYd+l9oaUW
-	OSpCAP4cmq5FcdoRydr1ZPI+3R8iJ5HTG1dDSw3pndrgMWMqJkeMXmZCXRQ5iGS0
-	eZcZPLYUR/tmrsErNBJ878n8i4AbUhM92NREtddgeKblEY0re1FvR5+DDFRpM9hP
-	1696LZdDnvC8VV6wy76u4Ixc=
-To: git@vger.kernel.org
-Subject: [ANNOUNCE] Git 1.7.3.rc2
-From: Junio C Hamano <gitster@pobox.com>
-Date: Wed, 15 Sep 2010 15:20:21 -0700
-Message-ID: <7vd3se644a.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	id S1753350Ab0IOWX3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 18:23:29 -0400
+Received: from smtp.nokia.com ([147.243.1.47]:35657 "EHLO mgw-sa01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752604Ab0IOWX1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 18:23:27 -0400
+Date: Thu, 16 Sep 2010 01:22:16 +0300
+From: Phil Carmody <ext-phil.2.carmody@nokia.com>
+To: ext Tony Luck <tony.luck@intel.com>
+Cc: "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] ia64: possible module unwind table optimisation
+Message-ID: <20100915222216.GF27658@esdhcp04044.research.nokia.com>
+References: <1284115245-23876-1-git-send-email-ext-phil.2.carmody@nokia.com> <AANLkTi=RsA0tACWOg+8RTSuDHwa4LGOiyO-4TxpJ_rb5@mail.gmail.com> <20100915124831.GB27658@esdhcp04044.research.nokia.com> <AANLkTi=hPcXC1=Lrey1H_UHRJRJ-NdTsvmyxgP_n+dM8@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Pobox-Relay-ID: 70F4868C-C117-11DF-B94D-030CEE7EF46B-77302942!a-pb-sasl-quonix.pobox.com
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=hPcXC1=Lrey1H_UHRJRJ-NdTsvmyxgP_n+dM8@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A release candidate Git 1.7.3.rc2 is available at the usual places
-for testing:
+On 15/09/10 19:28 +0200, ext Tony Luck wrote:
+> On Wed, Sep 15, 2010 at 5:48 AM, Phil Carmody
+> <ext-phil.2.carmody@nokia.com> wrote:
+> >> † for (table = unw.tables; table; table = table->next)
+> >>
+> >> before we find the right table to look?
+> >
+> > Yes, that's the one. Sorry I wasn't more explicit.
+> 
+> My usual workload (building new Linux kernels - what else :-) doesn't
+> seem to generate
+> any unwind requests.  I reached the loop just 58 times while booting,
+> and only did 23
+> steps past the first item [didn't track a histogram, so I don't know
+> whether that was a
+> single 23 step lookup, or 23 one-step ones].  Building the kernel
+> (make -j32) didn't add
+> to either count.
+> 
+> Workload ideas?
 
-  http://www.kernel.org/pub/software/scm/git/
+Turn on kmemleak, or anything else which repeatedly runs up the stack just
+for the fun of gathering backtraces. Kmemleak's what caused us to notice 
+the issue in our ARM-based environment.
 
-  git-1.7.3.rc2.tar.{gz,bz2}			(source tarball)
-  git-htmldocs-1.7.3.rc2.tar.{gz,bz2}		(preformatted docs)
-  git-manpages-1.7.3.rc2.tar.{gz,bz2}		(preformatted docs)
-
-The RPM binary packages for a few architectures are found in:
-
-  testing/git-*-1.7.3.rc2-1.fc11.$arch.rpm	(RPM)
-
-
-
-Changes since v1.7.3-rc1 are as follows:
-
-Csaba Henk (2):
-      bundle: detect if bundle file cannot be created
-      filter-branch: retire --remap-to-ancestor
-
-Jens Lehmann (2):
-      Several tests: cd inside subshell instead of around
-      t1020: Get rid of 'cd "$HERE"' at the start of each test
-
-Jonathan Nieder (5):
-      tests: subshell indentation stylefix
-      t1450 (fsck): remove dangling objects
-      t2105 (gitfile): add missing &&
-      t1302 (core.repositoryversion): style tweaks
-      t2016 (checkout -p): add missing &&
-
-Junio C Hamano (3):
-      t3101: modernise style
-      ls-tree $di $dir: do not mistakenly recurse into directories
-      Git 1.7.3 rc2
-
-Matthieu Moy (1):
-      git-gui: use shell to launch textconv filter in "blame"
-
-Oded Shimon (1):
-      Add --src/dst-prefix to git-formt-patch in git-rebase.sh
-
-Pat Thoyts (6):
-      git-gui: Make usage statement visible on Windows.
-      git-gui: display error launching blame as a message box.
-      git-gui: handle textconv filter on Windows and in development
-      git-gui: ensure correct application termination in git-gui--askpass
-      git-gui: avoid mis-encoding the copyright message on Windows.
-      git-gui 0.13
-
-Peter Krefting (1):
-      git-gui: Update Swedish translation (521t).
-
-Ramsay Allan Jones (1):
-      vcs-svn: Fix some printf format compiler warnings
-
-Ren√© Scharfe (1):
-      compat/nedmalloc: don't force NDEBUG on the rest of git
-
-Schalk, Ken (1):
-      Avoid rename/add conflict when contents are identical
+Phil
