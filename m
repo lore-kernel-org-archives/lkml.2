@@ -1,92 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752625Ab0IOKCM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 06:02:12 -0400
-Received: from hera.kernel.org ([140.211.167.34]:53703 "EHLO hera.kernel.org"
+	id S1752833Ab0IOKCk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 06:02:40 -0400
+Received: from hera.kernel.org ([140.211.167.34]:53722 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751294Ab0IOKCK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 06:02:10 -0400
-Date: Wed, 15 Sep 2010 10:01:31 GMT
-From: tip-bot for Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        seto.hidetoshi@jp.fujitsu.com, a.p.zijlstra@chello.nl,
-        redhat-bugzilla@very.puzzling.org, sysman@etherpilot.com,
-        tglx@linutronix.de, sgruszka@redhat.com, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, seto.hidetoshi@jp.fujitsu.com,
-        redhat-bugzilla@very.puzzling.org, sysman@etherpilot.com,
-        tglx@linutronix.de, sgruszka@redhat.com, mingo@elte.hu
-In-Reply-To: <20100914143513.GB8415@redhat.com>
-References: <20100914143513.GB8415@redhat.com>
+	id S1751330Ab0IOKCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 06:02:38 -0400
+Date: Wed, 15 Sep 2010 10:01:56 GMT
+From: tip-bot for Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <4c8f7a23.cae9d80a.2c11.0bb4@mx.google.com>
+References: <4c8f7a23.cae9d80a.2c11.0bb4@mx.google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched: Fix user time incorrectly accounted as system time on 32-bit
-Message-ID: <tip-e75e863dd5c7d96b91ebbd241da5328fc38a78cc@git.kernel.org>
-Git-Commit-ID: e75e863dd5c7d96b91ebbd241da5328fc38a78cc
+Subject: [tip:perf/core] watchdog: Avoid kernel crash when disabling watchdog
+Message-ID: <tip-d9ca07a05ce1c42ac9717e54eaea4546a3a80978@git.kernel.org>
+Git-Commit-ID: d9ca07a05ce1c42ac9717e54eaea4546a3a80978
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 15 Sep 2010 10:01:33 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 15 Sep 2010 10:01:57 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e75e863dd5c7d96b91ebbd241da5328fc38a78cc
-Gitweb:     http://git.kernel.org/tip/e75e863dd5c7d96b91ebbd241da5328fc38a78cc
-Author:     Stanislaw Gruszka <sgruszka@redhat.com>
-AuthorDate: Tue, 14 Sep 2010 16:35:14 +0200
+Commit-ID:  d9ca07a05ce1c42ac9717e54eaea4546a3a80978
+Gitweb:     http://git.kernel.org/tip/d9ca07a05ce1c42ac9717e54eaea4546a3a80978
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Tue, 14 Sep 2010 15:34:01 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 15 Sep 2010 10:41:36 +0200
+CommitDate: Wed, 15 Sep 2010 10:43:58 +0200
 
-sched: Fix user time incorrectly accounted as system time on 32-bit
+watchdog: Avoid kernel crash when disabling watchdog
 
-We have 32-bit variable overflow possibility when multiply in
-task_times() and thread_group_times() functions. When the
-overflow happens then the scaled utime value becomes erroneously
-small and the scaled stime becomes i erroneously big.
+In case you boot with the watchdog disabled, i.e., nowatchdog, then,
+if you try to disable it via /proc/sys/kernel/watchdog, you get
+a kernel crash. The reason is that you are trying to cancel a hrtimer
+which has never been initialized.
 
-Reported here:
+This patch fixes this by skipping execution of
+watchdog_disable_all_cpus() when the watchdog is marked
+disabled from boot.
 
- https://bugzilla.redhat.com/show_bug.cgi?id=633037
- https://bugzilla.kernel.org/show_bug.cgi?id=16559
-
-Reported-by: Michael Chapman <redhat-bugzilla@very.puzzling.org>
-Reported-by: Ciriaco Garcia de Celis <sysman@etherpilot.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: Stephane Eranian <eranian@google.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: <stable@kernel.org>  # 2.6.32.19+ (partially) and 2.6.33+
-LKML-Reference: <20100914143513.GB8415@redhat.com>
+LKML-Reference: <4c8f7a23.cae9d80a.2c11.0bb4@mx.google.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/sched.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ kernel/watchdog.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index ed09d4f..dc85ceb 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -3513,9 +3513,9 @@ void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
- 	rtime = nsecs_to_cputime(p->se.sum_exec_runtime);
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index fa71aeb..89eadbb 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -473,6 +473,9 @@ static void watchdog_disable_all_cpus(void)
+ {
+ 	int cpu;
  
- 	if (total) {
--		u64 temp;
-+		u64 temp = rtime;
++	if (no_watchdog)
++		return;
++
+ 	for_each_online_cpu(cpu)
+ 		watchdog_disable(cpu);
  
--		temp = (u64)(rtime * utime);
-+		temp *= utime;
- 		do_div(temp, total);
- 		utime = (cputime_t)temp;
- 	} else
-@@ -3546,9 +3546,9 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
- 	rtime = nsecs_to_cputime(cputime.sum_exec_runtime);
- 
- 	if (total) {
--		u64 temp;
-+		u64 temp = rtime;
- 
--		temp = (u64)(rtime * cputime.utime);
-+		temp *= cputime.utime;
- 		do_div(temp, total);
- 		utime = (cputime_t)temp;
- 	} else
