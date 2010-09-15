@@ -1,104 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234Ab0IOEfD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 00:35:03 -0400
-Received: from cantor.suse.de ([195.135.220.2]:35809 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752028Ab0IOEfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 00:35:01 -0400
-From: Nikanth Karthikesan <knikanth@suse.de>
-Organization: suse.de
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH] After swapout/swapin private dirty mappings become clean
-Date: Wed, 15 Sep 2010 10:07:42 +0530
-User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-default; KDE/4.3.5; x86_64; ; )
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
-        balbir@linux.vnet.ibm.com, rguenther@novell.com, matz@novell.com
-References: <201009141640.55650.knikanth@suse.de> <20100915092239.C9D9.A69D9226@jp.fujitsu.com>
-In-Reply-To: <20100915092239.C9D9.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1752138Ab0IOEis (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 00:38:48 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40718 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750907Ab0IOEir (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 00:38:47 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 15 Sep 2010 13:33:03 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        lnxninja@linux.vnet.ibm.com
+Subject: Re: [RFC][PATCH] update /proc/sys/vm/drop_caches documentation
+Message-Id: <20100915133303.0b232671.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100914234714.8AF506EA@kernel.beaverton.ibm.com>
+References: <20100914234714.8AF506EA@kernel.beaverton.ibm.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009151007.43232.knikanth@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 15 September 2010 05:54:31 KOSAKI Motohiro wrote:
-> > /proc/$pid/smaps broken: After swapout/swapin private dirty mappings
-> > become clean.
-> >
-> > When a page with private file mapping becomes dirty, the vma will be in
-> > both i_mmap tree and anon_vma list. The /proc/$pid/smaps will account
-> > these pages as dirty and backed by the file.
-> >
-> > But when those dirty pages gets swapped out, and when they are read back
-> > from swap, they would be marked as clean, as it should be, as they are
-> > part of swap cache now.
-> >
-> > But the /proc/$pid/smaps would report the vma as a mapping of a file and
-> > it is clean. The pages are actually in same state i.e., dirty with
-> > respect to file still, but which was once reported as dirty is now being
-> > reported as clean to user-space.
-> >
-> > This confuses tools like gdb which uses this information. Those tools
-> > think that those pages were never modified and it creates problem when
-> > they create dumps.
-> >
-> > The file mapping of the vma also cannot be broken as pages never read
-> > earlier, will still have to come from the file. Just that those dirty
-> > pages have become clean anonymous pages.
-> >
-> > During swaping in, restoring the exact state as dirty file-backed pages
-> > before swapout would be useless, as there in no real bug. Breaking the
-> > vma with only anonymous pages as seperate vmas unnecessary may not be a
-> > good thing as well. So let us just export the information that a
-> > file-backed vma has anonymous dirty pages.
-> 
-> Why can't gdb check Swap: field in smaps? I think Swap!=0 mean we need dump
->  out.
-> 
+On Tue, 14 Sep 2010 16:47:14 -0700
+Dave Hansen <dave@linux.vnet.ibm.com> wrote:
 
-Yes. When the page is swapped out it is accounted in "Swap:".
-
-> Am I missing anything?
 > 
-
-But when it gets swapped in back to memory, it is removed from "Swap:" and 
-added to "Private_Clean:" instead of "Private_Dirty:".
-
-Thanks
-Nikanth
-
->  - kosaki
+> There seems to be an epidemic spreading around.  People get the idea
+> in their heads that the kernel caches are evil.  They eat too much
+> memory, and there's no way to set a size limit on them!  Stupid
+> kernel!
 > 
-> > Export this information in smaps by prepending file-names with "[anon]+",
-> > when some of the pages in a file backed vma become anonymous.
-> >
-> > Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
-> >
-> > ---
-> >
-> > diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-> > index 439fc1f..68f9806 100644
-> > --- a/fs/proc/task_mmu.c
-> > +++ b/fs/proc/task_mmu.c
-> > @@ -242,6 +242,8 @@ static void show_map_vma(struct seq_file *m, struct
-> > vm_area_struct *vma) */
-> >  	if (file) {
-> >  		pad_len_spaces(m, len);
-> > +		if (vma->anon_vma)
-> > +			seq_puts(m, "[anon]+");
-> >  		seq_path(m, &file->f_path, "\n");
-> >  	} else {
-> >  		const char *name = arch_vma_name(vma);
-> >
-> >
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> There is plenty of anecdotal evidence and a load of blog posts
+> suggesting that using "drop_caches" periodically keeps your system
+> running in "tip top shape".  I do not think that is true.
 > 
+> If we are not shrinking caches effectively, then we have real bugs.
+> Using drop_caches will simply mask the bugs and make them harder
+> to find, but certainly does not fix them, nor is it an appropriate
+> "workaround" to limit the size of the caches.
+> 
+> It's a great debugging tool, and is really handy for doing things
+> like repeatable benchmark runs.  So, add a bit more documentation
+> about it, and add a WARN_ONCE().  Maybe the warning will scare
+> some sense into people.
+> 
+> 
+> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+> ---
+> 
+>  linux-2.6.git-dave/Documentation/sysctl/vm.txt |   14 ++++++++++++--
+>  linux-2.6.git-dave/fs/drop_caches.c            |    2 ++
+>  2 files changed, 14 insertions(+), 2 deletions(-)
+> 
+> diff -puN Documentation/sysctl/vm.txt~update-drop_caches-documentation Documentation/sysctl/vm.txt
+> --- linux-2.6.git/Documentation/sysctl/vm.txt~update-drop_caches-documentation	2010-09-14 15:30:19.000000000 -0700
+> +++ linux-2.6.git-dave/Documentation/sysctl/vm.txt	2010-09-14 16:40:58.000000000 -0700
+> @@ -145,8 +145,18 @@ To free dentries and inodes:
+>  To free pagecache, dentries and inodes:
+>  	echo 3 > /proc/sys/vm/drop_caches
+>  
+> -As this is a non-destructive operation and dirty objects are not freeable, the
+> -user should run `sync' first.
+> +This is a non-destructive operation and will not free any dirty objects.
+> +To increase the number of objects freed by this operation, the user may run
+> +`sync' prior to writing to /proc/sys/vm/drop_caches.  This will minimize the
+> +number of dirty objects on the system and create more candidates to be
+> +dropped.
+> +
+> +This file is not a means to control the growth of the various kernel caches
+> +(inodes, dentries, pagecache, etc...)  These objects are automatically
+> +reclaimed by the kernel when memory is needed elsewhere on the system.
+> +
+> +Outside of a testing or debugging environment, use of
+> +/proc/sys/vm/drop_caches is not recommended.
+>  
+>  ==============================================================
+>  
+> diff -puN fs/drop_caches.c~update-drop_caches-documentation fs/drop_caches.c
+> --- linux-2.6.git/fs/drop_caches.c~update-drop_caches-documentation	2010-09-14 15:44:29.000000000 -0700
+> +++ linux-2.6.git-dave/fs/drop_caches.c	2010-09-14 15:58:31.000000000 -0700
+> @@ -47,6 +47,8 @@ int drop_caches_sysctl_handler(ctl_table
+>  {
+>  	proc_dointvec_minmax(table, write, buffer, length, ppos);
+>  	if (write) {
+> +		WARN_ONCE(1, "kernel caches forcefully dropped, "
+> +			     "see Documentation/sysctl/vm.txt\n");
+
+Documentation updeta seems good but showing warning seems to be meddling to me.
+
+Thanks,
+-Kame
+
