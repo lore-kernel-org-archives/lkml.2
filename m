@@ -1,95 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974Ab0IOOAR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 10:00:17 -0400
-Received: from pegase1.c-s.fr ([194.2.40.7]:49371 "EHLO mailhub1.si.c-s.fr"
+	id S1753957Ab0IOODJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 10:03:09 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:58692 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752690Ab0IOOAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 10:00:15 -0400
-X-Greylist: delayed 1821 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Sep 2010 10:00:15 EDT
-Message-ID: <4C90CA4D.2020902@c-s.fr>
-Date: Wed, 15 Sep 2010 15:29:49 +0200
-From: LEROY Christophe <christophe.leroy@c-s.fr>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.9) Gecko/20100825 Thunderbird/3.1.3
+	id S1752994Ab0IOODI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 10:03:08 -0400
+Date: Wed, 15 Sep 2010 16:02:46 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>
+Subject: Re: [RFC PATCH] sched: START_NICE feature (temporarily niced forks)
+ (v3)
+Message-ID: <20100915140246.GA25983@elte.hu>
+References: <20100914202503.GA1496@Krystal>
+ <1284539831.21727.6.camel@marge.simson.net>
+ <1284541405.22863.8.camel@marge.simson.net>
+ <20100915092205.GG16593@elte.hu>
+ <1284556366.22863.80.camel@marge.simson.net>
 MIME-Version: 1.0
-To: David Brownell <dbrownell@users.sourceforge.net>,
-        Grant Likely <grant.likely@secretlab.ca>
-CC: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>
-Subject: [PATCH] fixes probe issue and hangup in spi_mpc8xxx.c for data bigger
- than PAGE_SIZE
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <1284556366.22863.80.camel@marge.simson.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -1.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.0 required=5.9 tests=BAYES_20 autolearn=no SpamAssassin version=3.2.5
+	-1.0 BAYES_20               BODY: Bayesian spam probability is 5 to 20%
+	[score: 0.1102]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This patch applies to 2.6.34.7. It also applies to 2.6.35.4 althought 
-part of it is already included in 2.6.35.4
-It fixed a problem with spi_mpc8xxx.c when transmitting or receiving 
-data bigger than PAGE_SIZE when doing a read only or write only operation
-It also fixed an issue with the init probe when fetching the information 
-on parameter RAM from the DTB.
 
-Signed-off-by: christophe leroy <christophe.leroy@c-s.fr>
+* Mike Galbraith <efault@gmx.de> wrote:
 
-Index: trunk/drivers/spi/spi_mpc8xxx.c
-===================================================================
---- trunk/drivers/spi/spi_mpc8xxx.c    (révision 963)
-+++ trunk/drivers/spi/spi_mpc8xxx.c    (copie de travail)
-@@ -393,11 +393,17 @@
+> On Wed, 2010-09-15 at 11:22 +0200, Ingo Molnar wrote:
+> > * Mike Galbraith <efault@gmx.de> wrote:
+> > 
+> > > Tangent: cgroups with classification user/pgid
+> > >
+> > > taskset -c 3 ./wakeup-latency& sleep 30 && killall wakeup-latency
+> > > (taskset -c 3 make -j10 running)
+> > > 
+> > > maximum latency: 256.5 µs
+> > > average latency: 25.7 µs
+> > > missed timer events: 0
+> > > 
+> > > Rather spiffy for this case.
+> > 
+> > Ouch, nothing beats proper segregation of workloads.
+> > 
+> > It would be _really_ nice to get that automatically somehow, for make -j 
+> > jobs. Perhaps a per tty auto-cgroup-classification kernel feature?
+> > 
+> > We cannot really rely on distros to pull this off.
+> 
+> Dunno, wasn't hard.
 
-      xfer_ofs = mspi->xfer_in_progress->len - mspi->count;
+Renicing a make -j 10 isnt hard either - still people/apps dont do it
+:-/
 
--    out_be32(&rx_bd->cbd_bufaddr, mspi->rx_dma + xfer_ofs);
-+    if (mspi->rx_dma == mspi->dma_dummy_rx)
-+        out_be32(&rx_bd->cbd_bufaddr, mspi->rx_dma);
-+    else
-+        out_be32(&rx_bd->cbd_bufaddr, mspi->rx_dma + xfer_ofs);
-      out_be16(&rx_bd->cbd_datlen, 0);
-      out_be16(&rx_bd->cbd_sc, BD_SC_EMPTY | BD_SC_INTRPT | BD_SC_WRAP);
+Thanks,
 
--    out_be32(&tx_bd->cbd_bufaddr, mspi->tx_dma + xfer_ofs);
-+    if (mspi->tx_dma == mspi->dma_dummy_tx)
-+        out_be32(&tx_bd->cbd_bufaddr, mspi->tx_dma);
-+    else
-+        out_be32(&tx_bd->cbd_bufaddr, mspi->tx_dma + xfer_ofs);
-      out_be16(&tx_bd->cbd_datlen, xfer_len);
-      out_be16(&tx_bd->cbd_sc, BD_SC_READY | BD_SC_INTRPT | BD_SC_WRAP |
-                   BD_SC_LAST);
-@@ -438,7 +444,7 @@
-              dev_err(dev, "unable to map tx dma\n");
-              return -ENOMEM;
-          }
--    } else {
-+    } else if (t->tx_buf) {
-          mspi->tx_dma = t->tx_dma;
-      }
-
-@@ -449,7 +455,7 @@
-              dev_err(dev, "unable to map rx dma\n");
-              goto err_rx_dma;
-          }
--    } else {
-+    } else if (t->rx_buf) {
-          mspi->rx_dma = t->rx_dma;
-      }
-
-@@ -822,7 +828,7 @@
-      if (!iprop || size != sizeof(*iprop) * 4)
-          return -ENOMEM;
-
--    spi_base_ofs = cpm_muram_alloc_fixed(iprop[2], 2);
-+    spi_base_ofs = iprop[2];
-      if (IS_ERR_VALUE(spi_base_ofs))
-          return -ENOMEM;
-
-@@ -844,7 +850,6 @@
-              return spi_base_ofs;
-      }
-
--    cpm_muram_free(spi_base_ofs);
-      return pram_ofs;
-  }
-
-
+	Ingo
