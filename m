@@ -1,59 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752385Ab0IOIRE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 04:17:04 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:55116 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751703Ab0IOIRB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 04:17:01 -0400
-Date: Wed, 15 Sep 2010 10:16:53 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Christopher Yeoh <cyeoh@au1.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-mm@kvack.org
-Subject: Re: [RFC][PATCH] Cross Memory Attach
-Message-ID: <20100915081653.GA16406@elte.hu>
-References: <20100915104855.41de3ebf@lilo>
- <20100915080235.GA13152@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100915080235.GA13152@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1752560Ab0IOISx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 04:18:53 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:54663 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752152Ab0IOISu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 04:18:50 -0400
+Subject: Re: [PATCH 3/3] perf events: Cleanup pid passing
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matt Helsley <matthltc@us.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        containers@lists.linux-foundation.org,
+        Robin Green <greenrd@greenrd.org>, linux-kernel@vger.kernel.org,
+        Prasad <prasad@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        Will Deacon <will.deacon@arm.com>,
+        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+In-Reply-To: <a134e5e392ab0204961fd1a62c84a222bf5874a9.1284407763.git.matthltc@us.ibm.com>
+References: <1284408080-2135-1-git-send-email-matthltc@us.ibm.com>
+	 <f63454af09fb1915717251570423eb9ddd338340.1284407762.git.matthltc@us.ibm.com>
+	 <561205417b450b8a4bf7488374541d64b4690431.1284407762.git.matthltc@us.ibm.com>
+	 <a134e5e392ab0204961fd1a62c84a222bf5874a9.1284407763.git.matthltc@us.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 15 Sep 2010 10:18:30 +0200
+Message-ID: <1284538710.3764.245.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2010-09-13 at 13:01 -0700, Matt Helsley wrote:
+> The kernel perf event creation path shouldn't use find_task_by_vpid()
+> because a vpid exists in a specific namespace. find_task_by_vpid() uses
+> current's pid namespace which isn't always the correct namespace to use
+> for the vpid in all the places perf_event_create_kernel_counter() (and
+> thus find_get_context()) is called.
+> 
+> The goal is to clean up pid namespace handling and prevent bugs like:
+> 
+>         https://bugzilla.kernel.org/show_bug.cgi?id=17281
+> 
+> Instead of using pids switch find_get_context() to use task struct
+> pointers directly. The syscall is responsible for resolving the pid to
+> a task struct. This moves the pid namespace resolution into the syscall
+> much like every other syscall that takes pid parameters.
 
-> > NPB:
-> > ====
-> > BT - 12% improvement
-> > FT - 15% improvement
-> > IS - 30% improvement
-> > SP - 34% improvement
-> > 
-> > IMB:
-> > ===
-> > 		
-> > Ping Pong - ~30% improvement
-> > Ping Ping - ~120% improvement
-> > SendRecv - ~100% improvement
-> > Exchange - ~150% improvement
-> > Gather(v) - ~20% improvement
-> > Scatter(v) - ~20% improvement
-> > AlltoAll(v) - 30-50% improvement
 
-btw., how does OpenMPI signal the target tasks that something happened 
-to their address space - is there some pipe/socket side-channel, or 
-perhaps purely based on flags in the modified memory areas, which are 
-polled?
+I took the three patches with the following change to this patch:
 
-	Ingo
+---
+Index: linux-2.6/kernel/perf_event.c
+===================================================================
+--- linux-2.6.orig/kernel/perf_event.c
++++ linux-2.6/kernel/perf_event.c
+@@ -5522,7 +5522,7 @@ SYSCALL_DEFINE5(perf_event_open,
+ 	struct perf_event_context *ctx;
+ 	struct file *event_file = NULL;
+ 	struct file *group_file = NULL;
+-	struct task_struct *task;
++	struct task_struct *task = NULL;
+ 	struct pmu *pmu;
+ 	int event_fd;
+ 	int fput_needed = 0;
+@@ -5577,14 +5577,12 @@ SYSCALL_DEFINE5(perf_event_open,
+ 	if ((pmu->task_ctx_nr == perf_sw_context) && group_leader)
+ 		pmu = group_leader->pmu;
+ 
++	if (pid != -1)
++		task = find_lively_task_by_vpid(pid);
++
+ 	/*
+ 	 * Get the target context (task or percpu):
+ 	 */
+-	if (pid == -1 && cpu != -1)
+-		task = NULL;
+-	else
+-		task = find_lively_task_by_vpid(pid);
+-
+ 	ctx = find_get_context(pmu, task, cpu);
+ 	if (IS_ERR(ctx)) {
+ 		err = PTR_ERR(ctx);
+
