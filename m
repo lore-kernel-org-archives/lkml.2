@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381Ab0IOQdB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 12:33:01 -0400
-Received: from xenotime.net ([72.52.115.56]:56179 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751294Ab0IOQdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 12:33:00 -0400
-Date: Wed, 15 Sep 2010 09:32:53 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH UPDATED 1/2] ida: document IDA_BITMAP_LONGS calculation
-Message-Id: <20100915093253.798d5cdf.rdunlap@xenotime.net>
-In-Reply-To: <1284568219-14574-1-git-send-email-namhyung@gmail.com>
-References: <20100915082217.6bf82715.rdunlap@xenotime.net>
-	<1284568219-14574-1-git-send-email-namhyung@gmail.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754305Ab0IOQeN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 12:34:13 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:62375 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751778Ab0IOQeL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 12:34:11 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Subject: Re: linux-next: Tree for September 15 (bkl-related)
+Date: Wed, 15 Sep 2010 18:34:02 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+References: <20100915142954.6a36f52d.sfr@canb.auug.org.au> <20100915085910.a137904f.randy.dunlap@oracle.com>
+In-Reply-To: <20100915085910.a137904f.randy.dunlap@oracle.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201009151834.02624.arnd@arndb.de>
+X-Provags-ID: V02:K0:lnj9g07nnkAyocPNYHfoOMfUdBr/S/CocZ4jiMNIfsJ
+ QZUk6yb1pZN9r6Fpxt0J0BkWRM+PLWVWIOYWxsv03EVzJWHxGs
+ mHw2OaXEVq6BY5HMLq6MvYqMFFviZfkKq0HXXnmdIwyKzRqE2K
+ umlO7PDFnx8T/Qrk9W6LBY4eBeM0kZjkdQH/CLOWaVK3GrJjMe
+ BwaHBYmpaZlC5c9Et6bbg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Sep 2010 01:30:19 +0900 Namhyung Kim wrote:
-
-> IDA_BITMAP_LONGS value is calculated take into account struct ida_bitmap
-> not to waste memory space. Comment it.
+On Wednesday 15 September 2010, Randy Dunlap wrote:
+> (1)
+> drivers/pnp/isapnp/proc.c:50: error: expected '}' before 'else'
 > 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> Acked-by: Tejun Heo <tj@kernel.org>
+> (2) when CONFIG_SCSI_PROC_FS is not enabled:
+> drivers/scsi/sg.c:233: error: 'sg_mutex' undeclared (first use in this function)
+> drivers/scsi/sg.c:1096: error: 'sg_mutex' undeclared (first use in this function)
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+Good catch, I'll fix these tonight.
 
-Thanks.
+Thanks,
 
-
-> ---
->  include/linux/idr.h |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/idr.h b/include/linux/idr.h
-> index e968db7..3f4b718 100644
-> --- a/include/linux/idr.h
-> +++ b/include/linux/idr.h
-> @@ -117,10 +117,13 @@ void idr_init(struct idr *idp);
->  /*
->   * IDA - IDR based id allocator, use when translation from id to
->   * pointer isn't necessary.
-> + *
-> + * IDA_BITMAP_LONGS is calculated to be one less to accommodate
-> + * ida_bitmap->nr_busy so that the whole struct fits in 128 bytes.
->   */
->  #define IDA_CHUNK_SIZE		128	/* 128 bytes per chunk */
-> -#define IDA_BITMAP_LONGS	(128 / sizeof(long) - 1)
-> -#define IDA_BITMAP_BITS		(IDA_BITMAP_LONGS * sizeof(long) * 8)
-> +#define IDA_BITMAP_LONGS	(IDA_CHUNK_SIZE / sizeof(long) - 1)
-> +#define IDA_BITMAP_BITS 	(IDA_BITMAP_LONGS * sizeof(long) * 8)
->  
->  struct ida_bitmap {
->  	long			nr_busy;
-> -- 
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+	Arnd
