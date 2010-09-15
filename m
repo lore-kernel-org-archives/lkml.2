@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942Ab0IOMGl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 08:06:41 -0400
-Received: from smtp111.sbc.mail.mud.yahoo.com ([68.142.198.207]:38611 "HELO
-	smtp111.sbc.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752665Ab0IOMGj (ORCPT
+	id S1753339Ab0IOMHA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 08:07:00 -0400
+Received: from smtp101.sbc.mail.re3.yahoo.com ([66.196.96.84]:46986 "HELO
+	smtp101.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753235Ab0IOMG5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 08:06:39 -0400
+	Wed, 15 Sep 2010 08:06:57 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: sX7LO0gVM1nX8oJ7frmAhfxzF0rboHYyswc9m8fu_hA5V5B
- IWBM2NbS4gk7CVruTlQ0bzhfGTXeXoYR0LMAmFHC4BrVzd_UdSAUvU6R65Uo
- 8h8VZ5zIVTi9OkegrLbn3lBbJTHObIpVqy.2.l6ANS0Gii4K6AK3reIHHOwd
- s5QGGod6iqLLDf4zAq6mYvnpUOSydVbowAd3h34vtAqnME7IBPTx0Qyb7Lm8
- SJC79JV9rNZyGgvrPHPPOGvB_SKJcDzyJgCgP9k0J2irtzdNU6U8p5.gB72S
- _7VEf8r8mIBvFufRQo9ZAJfXZQ9qOhCDzdQSDfwE3Sz61zigDmY2E12wNaQa
- VY6cGM.JO_Lc2gqv3Rw--
+X-YMail-OSG: OlQ9cbQVM1kdWDG67INWlyFs9g0WqSziSYR6I92jqA.HDnV
+ p2YMSth8G0T.dypzkFQ1yWBe_kzpy66D4.CYvkDiFzbh42MS8kb9MSUcBPbT
+ 5mzxvThhKE.MaSRJnLunyYYDAKbISwChHBZ4GwsOWBB.UzyYeU3qvhhGN4Q6
+ MBuJ8vNGW5NNTtW9W6il.09gHpFtfP2_8w5119mFZWd95I3xjWGxrlF7AWEd
+ YdDwGFVn63EGijawXEr6fEHpUBd1Xnq0F7Q.P.bMBSGFxWffbW.GpKRhk4RI
+ uqKqa
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -27,9 +26,9 @@ Cc: Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
         Douglas Gilbert <dgilbert@interlog.com>,
         Joe Eykholt <jeykholt@cisco.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 0/2] tcm/tcm_loop: Add BIDI support and XDWRITE_READ_10 emulation
-Date: Wed, 15 Sep 2010 05:06:34 -0700
-Message-Id: <1284552394-30525-1-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 2/2] tcm_loop: Add DMA_BIDIRECTIONAL CDB support
+Date: Wed, 15 Sep 2010 05:06:52 -0700
+Message-Id: <1284552412-30567-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -37,35 +36,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Greetings Boaz, Tomo-san and Co,
+This patch series adds DMA_BIDIRECTIONAL CDB to the TCM_Loop Virtual SCSI
+LLD module.  This includes the following changes:
 
-This series adds initial support for functional bidirectional CDBs into TCM_Core
-and the TCM_Loop fabric module.  So far this is limited to XDWRITE_READ_10 emulation
-following scsi_debug.c, but everything appears to now be functioning as expected.
+	*) Add call to include/scsi/scsi_cmnd.h:scsi_bidi_cmnd() to set
+	   TCM struct se_cmd internal data_direction in tcm_loop_allocate_core_cmd()
+	*) Update tcm_loop_new_cmd_map() to handle BIDI READ payload from scsi_in()
+	*) Drop DMA_BIDIRECTIONAL usage check from tcm_loop_queuecommand()
+	*) Add tcm_loop_slave_alloc() and tcm_loop_slave_configure() handlers for
+	   struct scsi_host_template to set QUEUE_FLAG_BIDI in the former.
 
-This first patch adds support for BIDI operations and XDWRITE_READ_10 emulation
-into TCM_Core for the individual I/O descriptor setup, memory mapping, callback
-and release codepaths.
-
-The second patch enables BIDI operations with the TCM_Loop Virtual SCSI LLD
-fabric module using the updated callers.
-
-So far this has been lightly tested on v2.6.36-rc3 HVM using custom userspace BSG
-code to issue XDWRITE_READ_10 I/O into TCM_Loop LUNs using FILEIO backstores.
-Support for BIDI CDBs will also extend to LIO-Target and other TCM fabric modules
-in the near future.
-
-Comments are welcome!
+So far this has been tested together with commit 1f8f3eda132c using XDWRITE_READ_10
+via BSG userspace code on a v2.6.36-rc3 kernel.
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+---
+ drivers/target/tcm_loop/tcm_loop_fabric_scsi.c |   48 ++++++++++++++++++------
+ 1 files changed, 36 insertions(+), 12 deletions(-)
 
-Nicholas Bellinger (2):
-  tcm: Add support for BIDI operation and XDWRITE_READ_10 emulation
-  tcm_loop: Add DMA_BIDIRECTIONAL CDB support
-
- drivers/target/target_core_transport.c         |  282 +++++++++++++++++++++---
- drivers/target/tcm_loop/tcm_loop_fabric_scsi.c |   48 +++-
- include/target/target_core_base.h              |    9 +-
- include/target/target_core_transport.h         |   10 +-
- 4 files changed, 297 insertions(+), 52 deletions(-)
+diff --git a/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c b/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
+index 644f978..c4139d8 100644
+--- a/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
++++ b/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
+@@ -64,6 +64,7 @@ static struct se_cmd *tcm_loop_allocate_core_cmd(
+ 	struct tcm_loop_nexus *tl_nexus = tl_hba->tl_nexus;
+ 	struct tcm_loop_cmd *tl_cmd;
+ 	int sam_task_attr;
++	enum dma_data_direction data_direction;
+ 
+ 	if (!(tl_nexus)) {
+ 		scmd_printk(KERN_ERR, sc, "TCM_Loop I_T Nexus"
+@@ -81,6 +82,13 @@ static struct se_cmd *tcm_loop_allocate_core_cmd(
+ 	 * Save the pointer to struct scsi_cmnd *sc
+ 	 */
+ 	tl_cmd->sc = sc;
++	/*
++	 * Check for scsi_bidi_cmnd() to signal TCM Core for DMA_BIDIRECTIONAL
++	 */
++	if (scsi_bidi_cmnd(sc))
++		data_direction = DMA_BIDIRECTIONAL;
++	else
++		data_direction = sc->sc_data_direction;
+ 
+ 	/*
+ 	 * Locate the SAM Task Attr from struct scsi_cmnd *
+@@ -105,7 +113,7 @@ static struct se_cmd *tcm_loop_allocate_core_cmd(
+ 	 * Initialize struct se_cmd descriptor from target_core_mod infrastructure
+ 	 */
+ 	transport_init_se_cmd(se_cmd, se_tpg->se_tpg_tfo, se_sess,
+-			scsi_bufflen(sc), sc->sc_data_direction, sam_task_attr,
++			scsi_bufflen(sc), data_direction, sam_task_attr,
+ 			&tl_cmd->tl_sense_buf[0]);
+ 	/*
+ 	 * Locate the struct se_lun pointer and attach it to struct se_cmd
+@@ -128,14 +136,16 @@ static struct se_cmd *tcm_loop_allocate_core_cmd(
+ /*
+  * Called by struct target_core_fabric_ops->new_cmd_map()
+  *
+- * Always called in process context
++ * Always called in process context.  A non zero return value
++ * here will signal to handle an exception based on the return code.
+  */
+ int tcm_loop_new_cmd_map(struct se_cmd *se_cmd)
+ {
+ 	struct tcm_loop_cmd *tl_cmd = container_of(se_cmd,
+ 				struct tcm_loop_cmd, tl_se_cmd);
+ 	struct scsi_cmnd *sc = tl_cmd->sc;
+-	void *mem_ptr;
++	void *mem_ptr, *mem_bidi_ptr = NULL;
++	u32 sg_no_bidi = 0;
+ 	int ret;
+ 	/*
+ 	 * Allocate the necessary tasks to complete the received CDB+data
+@@ -163,6 +173,16 @@ int tcm_loop_new_cmd_map(struct se_cmd *se_cmd)
+ 	if (scsi_sg_count(sc)) {
+ 		se_cmd->se_cmd_flags |= SCF_PASSTHROUGH_SG_TO_MEM;
+ 		mem_ptr = (void *)scsi_sglist(sc);
++		/*
++		 * For BIDI commands, pass in the extra READ buffer
++		 * to transport_generic_map_mem_to_cmd() below..
++		 */
++		if (se_cmd->data_direction == DMA_BIDIRECTIONAL) {
++			struct scsi_data_buffer *sdb = scsi_in(sc);
++
++			mem_bidi_ptr = (void *)sdb->table.sgl;
++			sg_no_bidi = sdb->table.nents;
++		}
+ 	} else {
+ 		/*
+ 		 * Used for DMA_NONE
+@@ -322,15 +342,6 @@ static int tcm_loop_queuecommand(
+ 	}
+ 	tl_tpg = &tl_hba->tl_hba_tpgs[sc->device->id];
+ 	se_tpg = &tl_tpg->tl_se_tpg;
+-
+-	if (sc->sc_data_direction == DMA_BIDIRECTIONAL) {
+-		spin_lock_irq(host->host_lock);
+-		printk(KERN_ERR "Unsupported BIDI sc->sc_data_direction: %d\n",
+-			sc->sc_data_direction);	
+-		sc->result = host_byte(DID_ERROR);
+-		(*done)(sc);
+-		return 0;
+-	}
+ 	/*
+ 	 * Determine the SAM Task Attribute and allocate tl_cmd and
+ 	 * tl_cmd->tl_se_cmd from TCM infrastructure
+@@ -446,6 +457,17 @@ release:
+ 	return ret;
+ }
+ 
++static int tcm_loop_slave_alloc(struct scsi_device *sd)
++{
++	set_bit(QUEUE_FLAG_BIDI, &sd->request_queue->queue_flags);
++	return 0;
++}
++
++static int tcm_loop_slave_configure(struct scsi_device *sd)
++{
++	return 0;
++}
++
+ static struct scsi_host_template tcm_loop_driver_template = {
+ 	.proc_info		= tcm_loop_proc_info,
+ 	.proc_name		= "tcm_loopback",
+@@ -468,6 +490,8 @@ static struct scsi_host_template tcm_loop_driver_template = {
+ 	.cmd_per_lun		= TL_SCSI_CMD_PER_LUN,
+ 	.max_sectors		= TL_SCSI_MAX_SECTORS,
+ 	.use_clustering		= DISABLE_CLUSTERING,
++	.slave_alloc		= tcm_loop_slave_alloc,
++	.slave_configure	= tcm_loop_slave_configure,
+ 	.module			= THIS_MODULE,
+ };
+ 
+-- 
+1.5.6.5
 
