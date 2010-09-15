@@ -1,48 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918Ab0IODEG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 23:04:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:33499 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035Ab0IODEE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 23:04:04 -0400
-X-Authority-Analysis: v=1.1 cv=2ipXt8Ao/PPbK329gQN1nC6XU/V8QMABDttguNTIlb0= c=1 sm=0 a=0fIHWCe0mwQA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=DRqATOM_JJy1SuR1-WQA:9 a=B6UcknrEgR6bw5po1erFBiCefpIA:4 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Message-Id: <20100915030139.444219083@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Tue, 14 Sep 2010 23:01:39 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 0/3] [GIT PULL] tracing: ftrace features and clean ups
+	id S1753975Ab0IODGq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 23:06:46 -0400
+Received: from mga03.intel.com ([143.182.124.21]:44418 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753261Ab0IODGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 23:06:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,368,1280732400"; 
+   d="scan'208";a="324674677"
+Date: Wed, 15 Sep 2010 11:06:40 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Neil Brown <neilb@suse.de>
+Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: Deadlock possibly caused by too_many_isolated.
+Message-ID: <20100915030640.GA11141@localhost>
+References: <20100915091118.3dbdc961@notabene>
+ <4C90139A.1080809@redhat.com>
+ <20100915122334.3fa7b35f@notabene>
+ <20100915023735.GA9175@localhost>
+ <20100915025454.GA10230@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100915025454.GA10230@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 15, 2010 at 10:54:54AM +0800, Wu Fengguang wrote:
+> On Wed, Sep 15, 2010 at 10:37:35AM +0800, Wu Fengguang wrote:
+> > On Wed, Sep 15, 2010 at 10:23:34AM +0800, Neil Brown wrote:
+> > > On Tue, 14 Sep 2010 20:30:18 -0400
+> > > Rik van Riel <riel@redhat.com> wrote:
+> > > 
+> > > > On 09/14/2010 07:11 PM, Neil Brown wrote:
+> > > > 
+> > > > > Index: linux-2.6.32-SLE11-SP1/mm/vmscan.c
+> > > > > ===================================================================
+> > > > > --- linux-2.6.32-SLE11-SP1.orig/mm/vmscan.c	2010-09-15 08:37:32.000000000 +1000
+> > > > > +++ linux-2.6.32-SLE11-SP1/mm/vmscan.c	2010-09-15 08:38:57.000000000 +1000
+> > > > > @@ -1106,6 +1106,11 @@ static unsigned long shrink_inactive_lis
+> > > > >   		/* We are about to die and free our memory. Return now. */
+> > > > >   		if (fatal_signal_pending(current))
+> > > > >   			return SWAP_CLUSTER_MAX;
+> > > > > +		if (!(sc->gfp_mask&  __GFP_IO))
+> > > > > +			/* Not allowed to do IO, so mustn't wait
+> > > > > +			 * on processes that might try to
+> > > > > +			 */
+> > > > > +			return SWAP_CLUSTER_MAX;
+> > > > >   	}
+> > > > >
+> > > > >   	/*
+> > > > 
+> > > > Close.  We must also be sure that processes without __GFP_FS
+> > > > set in their gfp_mask do not wait on processes that do have
+> > > > __GFP_FS set.
+> > > > 
+> > > > Considering how many times we've run into a bug like this,
+> > > > I'm kicking myself for not having thought of it :(
+> > > > 
+> > > 
+> > > So maybe this?  I've added the test for __GFP_FS, and moved the test before
+> > > the congestion_wait on the basis that we really want to get back up the stack
+> > > and try the mempool ASAP.
+> > 
+> > The patch may well fail the !__GFP_IO page allocation and then
+> > quickly exhaust the mempool.
+> > 
+> > Another approach may to let too_many_isolated() use much higher
+> > thresholds for !__GFP_IO/FS and lower ones for __GFP_IO/FS. ie. to
+> > allow at least nr2 NOIO/FS tasks to be blocked independent of the
+> > IO/FS ones.  Since NOIO vmscans typically completes fast, it will then
+> > very hard to accumulate enough NOIO processes to be actually blocked.
+> > 
+> > 
+> >                   IO/FS tasks                NOIO/FS tasks           full
+> >                   block here                 block here              LRU size
+> > |-----------------|--------------------------|-----------------------|
+> > |      nr1        |           nr2            |
+> 
+> How about this fix? We may need very high threshold for NOIO/NOFS to
+> prevent possible regressions.
 
-Ingo,
+Plus __GFP_WAIT..
 
-This series is based off of your tip/perf/core and does not contain
-the changes in the previous git pull request (does not include
-my repo's tip/perf/core). This is a separate pull.
-
-Please pull the latest tip/perf/core-2 tree, which can be found at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-tip/perf/core-2
-
-
-Jiri Olsa (1):
-      tracing: Add funcgraph-irq option for function graph tracer.
-
-Steven Rostedt (2):
-      tracing: Do not trace in irq when funcgraph-irq option is zero
-      tracing: Remove leftover FTRACE_ENABLE/DISABLE_MCOUNT enums
-
-----
- kernel/trace/ftrace.c                |   18 +----
- kernel/trace/trace_functions_graph.c |  124 +++++++++++++++++++++++++++++++++-
- 2 files changed, 126 insertions(+), 16 deletions(-)
-
+---
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 225a759..6a896eb 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1135,6 +1135,7 @@ static int too_many_isolated(struct zone *zone, int file,
+ 		struct scan_control *sc)
+ {
+ 	unsigned long inactive, isolated;
++	int ratio;
+ 
+ 	if (current_is_kswapd())
+ 		return 0;
+@@ -1150,7 +1151,15 @@ static int too_many_isolated(struct zone *zone, int file,
+ 		isolated = zone_page_state(zone, NR_ISOLATED_ANON);
+ 	}
+ 
+-	return isolated > inactive;
++	ratio = 1;
++	if (!(sc->gfp_mask & (__GFP_FS)))
++		ratio <<= 1;
++	if (!(sc->gfp_mask & (__GFP_IO)))
++		ratio <<= 1;
++	if (!(sc->gfp_mask & (__GFP_WAIT)))
++		ratio <<= 1;
++
++	return isolated > inactive * ratio;
+ }
+ 
+ /*
