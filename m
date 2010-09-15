@@ -1,130 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652Ab0IOQgi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 12:36:38 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:15637 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753402Ab0IOQgh convert rfc822-to-8bit (ORCPT
+	id S1754704Ab0IOQjG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 12:39:06 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:51433 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752152Ab0IOQjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 12:36:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Xxi1/3z1kGG9ac10rWi1i+KxKwd9qp+E94txzenxbOML5xj80Ds2SFqqV2MtX9F6oc
-         ymKqYK5cInNIoQeaZBQA==
+	Wed, 15 Sep 2010 12:39:04 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Valdis.Kletnieks@vt.edu
+Subject: Re: [PATCH 00/15] change default_llseek action
+Date: Wed, 15 Sep 2010 18:37:29 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, Jeremy Kerr <jk@ozlabs.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Julia Lawall <julia@diku.dk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, Samuel Ortiz <samuel@sortiz.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Tony Lindgren <tony@atomide.com>
+References: <1284495763-7506-1-git-send-email-arnd@arndb.de> <9828.1284565136@localhost>
+In-Reply-To: <9828.1284565136@localhost>
 MIME-Version: 1.0
-In-Reply-To: <20100915162034.GO13563@erda.amd.com>
-References: <1284118900.402.35.camel@laptop>
-	<20100910132741.GB4879@redhat.com>
-	<20100910144634.GA1060@elte.hu>
-	<20100910155659.GD13563@erda.amd.com>
-	<20100911094157.GA11521@elte.hu>
-	<20100911114404.GE13563@erda.amd.com>
-	<20100911124537.GA22850@elte.hu>
-	<20100912095202.GF13563@erda.amd.com>
-	<20100913143713.GK13563@erda.amd.com>
-	<20100914174132.GN13563@erda.amd.com>
-	<20100915162034.GO13563@erda.amd.com>
-Date: Wed, 15 Sep 2010 18:36:27 +0200
-Message-ID: <AANLkTimWoE5XiYSr8jx=RFS5Nb9d4_wWe=c-W3oMj8dH@mail.gmail.com>
-Subject: Re: [PATCH] perf, x86: catch spurious interrupts after disabling counters
-From: Stephane Eranian <eranian@google.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Don Zickus <dzickus@redhat.com>,
-        "gorcunov@gmail.com" <gorcunov@gmail.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009151837.30026.arnd@arndb.de>
+X-Provags-ID: V02:K0:ex9V76nyzMg12EaSj+o1mbNufW8QptUVw/LKeoZHEVA
+ /IMkt9dbVPHFWezEZ6GO2YrEKXZn8kIGbwcrfEyFwDSCYEvWS/
+ T5CTzLGFoy4I8j8LNpyYX2x2HY4ThX1RZ+D17IDtOfkd+u5DMd
+ 7paLzS7gGeLkilqdaoiASgwGYoD5ZCld0z9AxPl20UKXEPxxR+
+ 7Mv6FkUzuv7vBtbZkCwkg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 15, 2010 at 6:20 PM, Robert Richter <robert.richter@amd.com> wrote:
-> On 14.09.10 19:41:32, Robert Richter wrote:
->> I found the reason why we get the unknown nmi. For some reason
->> cpuc->active_mask in x86_pmu_handle_irq() is zero. Thus, no counters
->> are handled when we get an nmi. It seems there is somewhere a race
->> accessing the active_mask. So far I don't have a fix available.
->> Changing x86_pmu_stop() did not help:
->
-> The patch below for tip/perf/urgent fixes this.
->
-> -Robert
->
-> From 4206a086f5b37efc1b4d94f1d90b55802b299ca0 Mon Sep 17 00:00:00 2001
-> From: Robert Richter <robert.richter@amd.com>
-> Date: Wed, 15 Sep 2010 16:12:59 +0200
-> Subject: [PATCH] perf, x86: catch spurious interrupts after disabling counters
->
-> Some cpus still deliver spurious interrupts after disabling a counter.
+On Wednesday 15 September 2010, Valdis.Kletnieks@vt.edu wrote:
+>   Show Details
+>   On Tue, 14 Sep 2010 22:22:28 +0200, Arnd Bergmann said:
+> 
+> > This changes all instances of struct file_operations in
+> > the kernel to have a .llseek operation and then changes
+> > the default to no_llseek, which returns -ESPIPE, which
+> > is what we had decided some time ago in a discussion
+> > with Christoph Hellwig.
+> 
+> I don't suppose there's any clean way to throw a build error or a
+> printk_on_once() or something if we encounter an unconverted 'struct
+> file_operations', is there? I have this creeping fear that this patch will go
+> upstream during the merge window - as will 12 new staging/ drivers from authors
+> who didn't get the memo yet.
+> 
+> Other than the "missed converting a new usage" issue, it looks OK to me.
 
-Most likely the interrupt was in flight at the time you disabled it.
-Does the counter value reflect this?
-Were you also getting this if you were only measuring at the user level?
+One advantage of the scripted approach is that I can run the script
+repeatedly, and send a patch after -rc1 fixing up all the new file
+operations.
 
-> This caused 'undelivered NMI' messages. This patch fixes this.
->
-> Signed-off-by: Robert Richter <robert.richter@amd.com>
-> ---
->  arch/x86/kernel/cpu/perf_event.c |   13 ++++++++++++-
->  1 files changed, 12 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-> index 3efdf28..df7aabd 100644
-> --- a/arch/x86/kernel/cpu/perf_event.c
-> +++ b/arch/x86/kernel/cpu/perf_event.c
-> @@ -102,6 +102,7 @@ struct cpu_hw_events {
->         */
->        struct perf_event       *events[X86_PMC_IDX_MAX]; /* in counter order */
->        unsigned long           active_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
-> +       unsigned long           running[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
->        int                     enabled;
->
->        int                     n_events;
-> @@ -1010,6 +1011,7 @@ static int x86_pmu_start(struct perf_event *event)
->        x86_perf_event_set_period(event);
->        cpuc->events[idx] = event;
->        __set_bit(idx, cpuc->active_mask);
-> +       __set_bit(idx, cpuc->running);
->        x86_pmu.enable(event);
->        perf_event_update_userpage(event);
->
-> @@ -1141,8 +1143,17 @@ static int x86_pmu_handle_irq(struct pt_regs *regs)
->        cpuc = &__get_cpu_var(cpu_hw_events);
->
->        for (idx = 0; idx < x86_pmu.num_counters; idx++) {
-> -               if (!test_bit(idx, cpuc->active_mask))
-> +               if (!test_bit(idx, cpuc->active_mask)) {
-> +                       if (__test_and_clear_bit(idx, cpuc->running))
-> +                               /*
-> +                                * Though we deactivated the counter
-> +                                * some cpus might still deliver
-> +                                * spurious interrupts. Catching them
-> +                                * here.
-> +                                */
-> +                               handled++;
->                        continue;
-> +               }
->
->                event = cpuc->events[idx];
->                hwc = &event->hw;
-> --
-> 1.7.2.2
->
->
->
->
->
-> --
-> Advanced Micro Devices, Inc.
-> Operating System Research Center
->
->
+Moreover, any new drivers are by definition not regressions and staging
+drivers are expected to have issues. IIRC the most common llseek operation
+is 'noop_llseek', which usually means it should have been 'no_llseek' to
+start with, but since this has been in a released kernel, some random
+user application might expect a seek on that file to succeed without
+error.
+
+	Arnd
