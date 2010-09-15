@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228Ab0IOFBd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 01:01:33 -0400
-Received: from cantor.suse.de ([195.135.220.2]:36336 "EHLO mx1.suse.de"
+	id S1752517Ab0IOFGf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 01:06:35 -0400
+Received: from mga01.intel.com ([192.55.52.88]:36347 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753111Ab0IOFBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 01:01:31 -0400
-From: Nikanth Karthikesan <knikanth@suse.de>
-Organization: suse.de
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH v2] After swapout/swapin private dirty mappings are reported clean in smaps
-Date: Wed, 15 Sep 2010 10:34:22 +0530
-User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-default; KDE/4.3.5; x86_64; ; )
-Cc: Richard Guenther <rguenther@suse.de>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>, balbir@linux.vnet.ibm.com,
-        Michael Matz <matz@novell.com>, Matt Mackall <mpm@selenic.com>,
-        linux-kernel@vger.kernel.org
-References: <20100915092504.C9DC.A69D9226@jp.fujitsu.com> <201009151008.05129.knikanth@suse.de> <20100915134724.C9EE.A69D9226@jp.fujitsu.com>
-In-Reply-To: <20100915134724.C9EE.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1751984Ab0IOFGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 01:06:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,369,1280732400"; 
+   d="scan'208";a="607012913"
+Subject: Re: [RFC 5/6] x86, NMI, Add support to notify hardware error with
+ unknown NMI
+From: Huang Ying <ying.huang@intel.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Andi Kleen <andi@firstfloor.org>, Don Zickus <dzickus@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100914174814.GC3822@elte.hu>
+References: <45864.91.60.148.9.1284474680.squirrel@www.firstfloor.org>
+	 <20100914174814.GC3822@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 15 Sep 2010 13:06:32 +0800
+Message-ID: <1284527192.2256.113.camel@yhuang-dev.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009151034.22497.knikanth@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 15 September 2010 10:18:11 KOSAKI Motohiro wrote:
-> > On Wednesday 15 September 2010 05:56:36 KOSAKI Motohiro wrote:
-> > > > diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-> > > > index 439fc1f..06fc468 100644
-> > > > --- a/fs/proc/task_mmu.c
-> > > > +++ b/fs/proc/task_mmu.c
-> > > > @@ -368,7 +368,11 @@ static int smaps_pte_range(pmd_t *pmd, unsigned
-> > > > long addr, unsigned long end, mss->shared_clean += PAGE_SIZE;
-> > > >  			mss->pss += (PAGE_SIZE << PSS_SHIFT) / mapcount;
-> > > >  		} else {
-> > > > -			if (pte_dirty(ptent))
-> > > > +			/*
-> > > > +			 * File-backed pages, now anonymous are dirty
-> > > > +			 * with respect to the file.
-> > > > +			 */
-> > > > +			if (pte_dirty(ptent) || (vma->vm_file && PageAnon(page)))
-> > > >  				mss->private_dirty += PAGE_SIZE;
-> > > >  			else
-> > > >  				mss->private_clean += PAGE_SIZE;
+On Wed, 2010-09-15 at 01:48 +0800, Ingo Molnar wrote:
+> * Some One <some@where> stripped out all quoted identities and wrote:
 > > >
-> > > This is risky than v1. number of dirties are used a lot of application.
-> >
-> > This is exactly to help those applications, as currently after swap-out
-> > and swap-in, the same pages are accounted as "Private_Clean:" instead of
-> > "Private_Dirty:".
+> > > The proper approach would be not to add hacks to the NMI code but to 
+> > > implement southbridge drivers - which would also have NMI callbacks.
+> > 
+> > BTW southbridges do less and less regarding PCI.
 > 
-> I don't think so.
-
-Actually this behaviour is observed. With a simple memhog, you can see pages 
-which are "Private_Dirty:", become "Swap:" and then to "Private_Clean:". And 
-that confused GDB.
-
-Thanks
-Nikanth
-
-> incorrect infomation bring a lot of confusion rather than
->  its worth.
+> Except WICTCR.
 > 
+> > > These are unchartered waters, but variance in that space is reducing 
+> > > systematically so it would be worth a shot.
+> > 
+> > You don't really need special drivers for AER [...]
+> 
+> On the contrary, we need proper driverization for _everything_ new. 
+> Embedded x86 is here to stay, so we are abstracting away each and every 
+> bit of the platform. See struct x86_ops for a highlevel platform driver 
+> - but a more specific, southbridge-encompassing driver framework can be 
+> created too.
 
+All in all, we can have proper drivers to printk/write to NVRAM the
+error information collected for unknown NMI, regardless they are AER or
+Southbridge driver or both. And, the drivers will register handlers for
+unknown NMI. Do you agree?
+
+Best Regards,
+Huang Ying
 
