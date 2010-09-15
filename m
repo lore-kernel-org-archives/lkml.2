@@ -1,117 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755232Ab0IOTCc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 15:02:32 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45905 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752448Ab0IOTCb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 15:02:31 -0400
-Date: Wed, 15 Sep 2010 20:02:27 +0100 (BST)
-From: James Simmons <jsimmons@infradead.org>
-To: Joe Perches <joe@perches.com>
-cc: linux-kernel@vger.kernel.org,
-        Thomas Winischhofer <thomas@winischhofer.net>,
-        Joseph Chan <JosephChan@via.com.tw>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH 21/25] drivers/video: Use static const char arrays
-In-Reply-To: <2435a9f5831685e3b7f06b93799a8836f4bfef61.1284406639.git.joe@perches.com>
-Message-ID: <alpine.LFD.2.00.1009152002090.7965@casper.infradead.org>
-References: <cover.1284406638.git.joe@perches.com> <2435a9f5831685e3b7f06b93799a8836f4bfef61.1284406639.git.joe@perches.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755167Ab0IOTI1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 15:08:27 -0400
+Received: from cantor.suse.de ([195.135.220.2]:34247 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755097Ab0IOTI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 15:08:26 -0400
+Date: Wed, 15 Sep 2010 21:08:21 +0200 (CEST)
+From: Richard Guenther <rguenther@suse.de>
+To: Matt Mackall <mpm@selenic.com>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Nikanth Karthikesan <knikanth@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michael Matz <matz@novell.com>, linux-kernel@vger.kernel.org,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>
+Subject: Re: [PATCH v2] After swapout/swapin private dirty mappings are
+ reported clean in smaps
+In-Reply-To: <1284571473.21906.428.camel@calx>
+Message-ID: <alpine.LNX.2.00.1009152103470.28912@zhemvz.fhfr.qr>
+References: <20100915134724.C9EE.A69D9226@jp.fujitsu.com>  <201009151034.22497.knikanth@suse.de>  <20100915141710.C9F7.A69D9226@jp.fujitsu.com>  <201009151201.11359.knikanth@suse.de>  <20100915140911.GC4383@balbir.in.ibm.com>  <alpine.LNX.2.00.1009151612450.28912@zhemvz.fhfr.qr>
+  <1284561982.21906.280.camel@calx>  <alpine.LNX.2.00.1009151648390.28912@zhemvz.fhfr.qr> <1284571473.21906.428.camel@calx>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 15 Sep 2010, Matt Mackall wrote:
 
-> Signed-off-by: Joe Perches <joe@perches.com>
+> [adding Hugh]
+> 
+> On Wed, 2010-09-15 at 16:53 +0200, Richard Guenther wrote:
+> > On Wed, 15 Sep 2010, Matt Mackall wrote:
+> > 
+> > > On Wed, 2010-09-15 at 16:14 +0200, Richard Guenther wrote:
+> > > > On Wed, 15 Sep 2010, Balbir Singh wrote:
+> > > > 
+> > > > > * Nikanth Karthikesan <knikanth@suse.de> [2010-09-15 12:01:11]:
+> > > > > 
+> > > > > > How? Current smaps information without this patch provides incorrect 
+> > > > > > information. Just because a private dirty page became part of swap cache, it 
+> > > > > > shown as clean and backed by a file. If it is shown as clean and backed by 
+> > > > > > swap then it is fine.
+> > > > > >
+> > > > > 
+> > > > > How is GDB using this information?  
+> > > > 
+> > > > GDB counts the number of dirty and swapped pages in a private mapping and
+> > > > based on that decides whether it needs to dump it to a core file or not.
+> > > > If there are no dirty or swapped pages gdb assumes it can reconstruct
+> > > > the mapping from the original backing file.  This way for example
+> > > > shared libraries do not end up in the core file.
+> > > 
+> > > This whole discussion is a little disturbing.
+> > >
+> > > The page is being reported clean as per the kernel's definition of
+> > > clean, full stop.
+> > > 
+> > > So either there's a latent bug/inconsistency in the kernel VM or
+> > > external tools are misinterpreting this data. But smaps is just
+> > > reporting what's there, the fault doesn't lie in smaps. So fixing smaps
+> > > just hides the problem, wherever it is.
+> > > 
+> > > Richard's report that the page is still clean after swapoff suggests the
+> > > inconsistency lies in the VM.
+> > 
+> > Well - the discussion is about the /proc/smaps interface and
+> > inconsistencies in what it reports.  In particular the interface
+> > does not have the capability of reporting all details the kernel
+> > has, so it might make sense to not "report a page clean as per
+> > the kernel's definition of clean", but only in a /proc/smaps
+> > context definition of clean that makes sense.
+> > 
+> > So, for
+> > 
+> > 7ffff81ff000-7ffff8201000 r--p 000a8000 08:01 16376 /bin/bash
+> > Size:                  8 kB
+> > Rss:                   8 kB
+> > Pss:                   8 kB
+> > Shared_Clean:          0 kB
+> > Shared_Dirty:          0 kB
+> > Private_Clean:         8 kB
+> > Private_Dirty:         0 kB
+> > Referenced:            4 kB
+> > Swap:                  0 kB
+> > 
+> > I expect both pages of that mapping to be file-backed by /bin/bash.
+> > But surprisingly one page is actually backed by anonymous memory
+> > (it was changed, then mapped readonly, swapped out and swapped in
+> > again).
+> > 
+> > Thus, the bug is the above inconsistency in /proc/smaps.
+> 
+> But that's my point: the consistency problem is NOT in smaps. The page
+> is NOT marked dirty, ergo smaps doesn't report it as dirty. Whether or
+> not there is MORE information smaps could be reporting is irrelevant,
+> the information it IS reporting is consistent with the underlying VM
+> data. If there's an inconsistency about what it means to be clean, it's
+> either in the VM or in your head.
+> 
+> And I frankly think it's in the VM.
+> 
+> In any case, I don't think Nikanth's fix is the right fix, as it
+> basically says "you can't trust any of this". Either swap should return
+> the pages to their pre-swap dirty state in the VM, or we should add
+> another field here:
+> 
+> Weird_Anon_Page_You_Should_Pretend_Is_Private_Dirty: 8 kB 
+> 
+> See?
 
-Acked-by: James Simmons <jsimmons@infradead.org>
+Well.  There is also the case where the page is swapped in again
+but still allocated in the swap cache.  So it's swap-backed,
+private and clean (because the copy in swap is still valid).  But
+in that case it's not accounted to "Swap:" (presumably because
+Rss + Swap wouldn't add to the mappings size).
 
-> ---
->  drivers/video/sh_mipi_dsi.c  |    4 ++--
->  drivers/video/sis/sis_main.c |   10 +++++-----
->  drivers/video/via/viafbdev.c |    2 +-
->  3 files changed, 8 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/video/sh_mipi_dsi.c b/drivers/video/sh_mipi_dsi.c
-> index 5699ce0..4a8501b 100644
-> --- a/drivers/video/sh_mipi_dsi.c
-> +++ b/drivers/video/sh_mipi_dsi.c
-> @@ -319,7 +319,7 @@ static int __init sh_mipi_probe(struct platform_device *pdev)
->  	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	unsigned long rate, f_current;
->  	int idx = pdev->id, ret;
-> -	char dsip_clk[] = "dsi.p_clk";
-> +	char dsip_clk[sizeof("dsiXp_clk")];
->  
->  	if (!res || idx >= ARRAY_SIZE(mipi_dsi) || !pdata)
->  		return -ENODEV;
-> @@ -370,7 +370,7 @@ static int __init sh_mipi_probe(struct platform_device *pdev)
->  
->  	dev_dbg(&pdev->dev, "DSI-T clk %lu -> %lu\n", f_current, rate);
->  
-> -	sprintf(dsip_clk, "dsi%1.1dp_clk", idx);
-> +	sprintf(dsip_clk, "dsi%cp_clk", idx + '0');
->  	mipi->dsip_clk = clk_get(&pdev->dev, dsip_clk);
->  	if (IS_ERR(mipi->dsip_clk)) {
->  		ret = PTR_ERR(mipi->dsip_clk);
-> diff --git a/drivers/video/sis/sis_main.c b/drivers/video/sis/sis_main.c
-> index 559bf17..4be65d1 100644
-> --- a/drivers/video/sis/sis_main.c
-> +++ b/drivers/video/sis/sis_main.c
-> @@ -2387,8 +2387,8 @@ SiS_Sense30x(struct sis_video_info *ivideo)
->      u16 cvbs=0, cvbs_c=0;
->      u16 vga2=0, vga2_c=0;
->      int myflag, result;
-> -    char stdstr[] = "sisfb: Detected";
-> -    char tvstr[]  = "TV connected to";
-> +    static const char stdstr[] = "sisfb: Detected";
-> +    static const char tvstr[] = "TV connected to";
->  
->      if(ivideo->vbflags2 & VB2_301) {
->         svhs = 0x00b9; cvbs = 0x00b3; vga2 = 0x00d1;
-> @@ -2525,7 +2525,7 @@ SiS_SenseCh(struct sis_video_info *ivideo)
->  {
->  #if defined(CONFIG_FB_SIS_300) || defined(CONFIG_FB_SIS_315)
->      u8 temp1, temp2;
-> -    char stdstr[] = "sisfb: Chrontel: Detected TV connected to";
-> +    static const char stdstr[] = "sisfb: Chrontel: Detected TV connected to";
->  #endif
->  #ifdef CONFIG_FB_SIS_300
->      unsigned char test[3];
-> @@ -2648,8 +2648,8 @@ SiS_SenseCh(struct sis_video_info *ivideo)
->  static void __devinit
->  sisfb_get_VB_type(struct sis_video_info *ivideo)
->  {
-> -	char stdstr[]    = "sisfb: Detected";
-> -	char bridgestr[] = "video bridge";
-> +	static const char stdstr[] = "sisfb: Detected";
-> +	static const char bridgestr[] = "video bridge";
->  	u8 vb_chipid;
->  	u8 reg;
->  
-> diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
-> index 5a947b0..394ef48 100644
-> --- a/drivers/video/via/viafbdev.c
-> +++ b/drivers/video/via/viafbdev.c
-> @@ -367,7 +367,7 @@ static int viafb_ioctl(struct fb_info *info, u_int cmd, u_long arg)
->  	} u;
->  	u32 state_info = 0;
->  	u32 *viafb_gamma_table;
-> -	char driver_name[] = "viafb";
-> +	static const char driver_name[] = "viafb";
->  
->  	u32 __user *argp = (u32 __user *) arg;
->  	u32 gpu32;
-> -- 
-> 1.7.3.rc1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+I only care about consistency in /proc/smaps, but agree that
+an anonymous page that is not backed by swap-cache should always
+be dirty (in case it was cowed from the zero page at any point
+of course).  Probably that inconsistency doesn't matter, as if it
+isn't swap-backed even a clean anonmous page can't be simply thrown 
+away (in fact, "clean" or "dirty" doesn't have a meaningful
+semantics for anonymous memory IMHO).
+
+Richard.
