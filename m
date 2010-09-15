@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753596Ab0IONUc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 09:20:32 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:48035 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751809Ab0IONUb (ORCPT
+	id S1753933Ab0IONUq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 09:20:46 -0400
+Received: from pindarots.xs4all.nl ([80.101.128.228]:40264 "EHLO
+	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753840Ab0IONUp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 09:20:31 -0400
-Date: Wed, 15 Sep 2010 22:50:19 +0930
-From: Christopher Yeoh <cyeoh@au1.ibm.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-mm@kvack.org
-Subject: Re: [RFC][PATCH] Cross Memory Attach
-Message-ID: <20100915225019.4ca665fc@lilo>
-In-Reply-To: <20100915080235.GA13152@elte.hu>
-References: <20100915104855.41de3ebf@lilo>
-	<20100915080235.GA13152@elte.hu>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 15 Sep 2010 09:20:45 -0400
+Message-ID: <4C90C829.2080005@xs4all.nl>
+Date: Wed, 15 Sep 2010 15:20:41 +0200
+From: Udo van den Heuvel <udovdh@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.3
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: Fwd: patch: HPET force enable for CX700 / VIA Epia LT  was: Re: hpet
+ timers gone?
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Sep 2010 10:02:35 +0200
-Ingo Molnar <mingo@elte.hu> wrote:
+Hello,
+
+Who can help me get this minor patch into the kernel?
+
+Kind regards,
+Udo
+
+-------- Original Message --------
+Subject: patch: HPET force enable for CX700 / VIA Epia LT  was: Re: hpet
+timers gone?
+Date: Tue, 14 Sep 2010 07:15:08 +0200
+From: Udo van den Heuvel <udovdh@xs4all.nl>
+To: Robert Hancock <hancockrwd@gmail.com>
+CC: linux-kernel@vger.kernel.org
+
+On 2010-09-14 01:16, Robert Hancock wrote:
+> On Mon, Sep 13, 2010 at 8:52 AM, Udo van den Heuvel <udovdh@xs4all.nl> wrote:
+>> So what else can I do to enable HPET?
 > 
-> What did those OpenMPI facilities use before your patch - shared
-> memory or sockets?
+> At this point, not much, unless you can track down the chipset
+> information that would allow us to implement force enabling HPET on
+> that chipset..
 
-This comparison is against OpenMPI using the shared memory btl.
+Signed-off-by: Udo van den Heuvel <udovdh@xs4all.nl>
 
-> I have an observation about the interface:
-> 
-> A small detail: 'int flags' should probably be 'unsigned long flags'
-> - it leaves more space.
+--- a/arch/x86/kernel/quirks.c	2010-09-13 18:02:14.639710309 +0200
++++ b/arch/x86/kernel/quirks.c	2010-09-13 18:02:06.095280815 +0200
+@@ -344,6 +344,8 @@
+ 			 vt8237_force_enable_hpet);
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_8237,
+ 			 vt8237_force_enable_hpet);
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_CX700,
++			 vt8237_force_enable_hpet);
 
-ok.
+ static void ati_force_hpet_resume(void)
+ {
 
-> Also, note that there is a further performance optimization possible 
-> here: if the other task's ->mm is the same as this task's (they share 
-> the MM), then the copy can be done straight in this process context, 
-> without GUP. User-space might not necessarily be aware of this so it 
-> might make sense to express this special case in the kernel too.
+Patch does make hpet appear on VIA Epia LT (CX700M2 chipset) with
+hpet=force on kernel commandline.
 
-ok.
 
-> More fundamentally, wouldnt it make sense to create an iovec
-> interface here? If the Gather(v) / Scatter(v) / AlltoAll(v) workloads
-> have any fragmentation on the user-space buffer side then the copy of
-> multiple areas could be done in a single syscall. (the MM lock has to
-> be touched only once, target task only be looked up only once, etc.)
+Udo
 
-yes, I think so. Currently where I'm using the interface in OpenMPI I
-can't take advantage of this, but it could be changed in the future- and
-its likely other MPI's could take advantage of it already.
-
-> Plus, a small naming detail, shouldnt the naming be more IO like:
-> 
->   sys_process_vm_read()
->   sys_process_vm_write()
-
-Yes, that looks better to me. I really wasn't sure how to name them.
-
-Regards,
-
-Chris
--- 
-cyeoh@au.ibm.com
