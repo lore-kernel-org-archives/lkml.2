@@ -1,115 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309Ab0IOLt4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 07:49:56 -0400
-Received: from piggy.rz.tu-ilmenau.de ([141.24.4.8]:43473 "EHLO
-	piggy.rz.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751813Ab0IOLtw (ORCPT
+	id S1752724Ab0IOL71 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 07:59:27 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:50504 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475Ab0IOL70 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 07:49:52 -0400
-Date: Wed, 15 Sep 2010 13:48:20 +0200
-From: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>
-To: Ike Panhc <ike.pan@canonical.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Thomas Renninger <trenn@suse.de>, Alan Cox <alan@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Corentin Chary <corentincj@iksaif.net>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        "Brown, Len" <len.brown@intel.com>, Matthew Garrett <mjg@redhat.com>
-Subject: Re: [PATCH 0/8] [Resend] ideapad: using EC command to control
- rf/camera power
-Message-ID: <20100915114820.GA22415@darkside.kls.lan>
-Mail-Followup-To: Mario 'BitKoenig' Holbe <Mario.Holbe@TU-Ilmenau.DE>,
-	Ike Panhc <ike.pan@canonical.com>,
-	David Woodhouse <dwmw2@infradead.org>,
-	"platform-driver-x86@vger.kernel.org" <platform-driver-x86@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-	Thomas Renninger <trenn@suse.de>, Alan Cox <alan@linux.intel.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Corentin Chary <corentincj@iksaif.net>,
-	Randy Dunlap <randy.dunlap@oracle.com>,
-	"Brown, Len" <len.brown@intel.com>,
-	Matthew Garrett <mjg@redhat.com>
-References: <20100820090824.GA23186@darkside.kls.lan>
- <4C7505A2.3000402@canonical.com>
- <20100830181954.GE31068@darkside.kls.lan>
- <4C7E3DE0.7030209@canonical.com>
- <20100901195617.GD32589@darkside.kls.lan>
- <4C80BA81.20701@canonical.com>
- <20100909181714.GA14951@darkside.kls.lan>
- <4C89D3C0.7040105@canonical.com>
- <20100910071155.GA1263@darkside.kls.lan>
- <4C909C57.5030107@canonical.com>
+	Wed, 15 Sep 2010 07:59:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=dsDDvK9p4mtYAxO0G5foMY8Z6VepQyq8ZqAOLcb1w8SwUdaIE1xquoDJAaUT+pa8Ss
+         tbw4hjTupEomatUnQ/t6BICcfJZKNQ/V2NK6U4juAbO5U5AVqHeCJokEwPCJ7RL6dib5
+         P555tov/ul6htjVLgVz9PmZ/PpAmNf+7s8MK4=
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Q68bSM7Ycu6FN28Q"
-Content-Disposition: inline
-In-Reply-To: <4C909C57.5030107@canonical.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <FCBE654890C0334289D0AD3AF4EF009FD18EE74AE9@IL-MB01.marvell.com>
+References: <1284366279-17140-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	<20100914190549.GA21918@void.printf.net>
+	<20100915094006.GA21620@sirena.org.uk>
+	<FCBE654890C0334289D0AD3AF4EF009FD18EE74AA8@IL-MB01.marvell.com>
+	<20100915110001.GA4254@rakim.wolfsonmicro.main>
+	<FCBE654890C0334289D0AD3AF4EF009FD18EE74AC7@IL-MB01.marvell.com>
+	<AANLkTi=fsntfyAoFygrTrksVARvQpuxie6tFxCcuLtVR@mail.gmail.com>
+	<FCBE654890C0334289D0AD3AF4EF009FD18EE74AE9@IL-MB01.marvell.com>
+Date: Wed, 15 Sep 2010 19:59:24 +0800
+Message-ID: <AANLkTimggn5WGyFS2SPkNPFzqKatvNd0OGwJ1CZ0S5-C@mail.gmail.com>
+Subject: Re: [PATCH] mmc: Add architecture dependency for Marvell SoC controller
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Saeed Bishara <saeed@marvell.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Chris Ball <cjb@laptop.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 15, 2010 at 6:29 PM, Saeed Bishara <saeed@marvell.com> wrote:
+>
+>
+>>-----Original Message-----
+>>From: Haojian Zhuang [mailto:haojian.zhuang@gmail.com]
+>>Sent: Wednesday, September 15, 2010 1:21 PM
+>>To: Saeed Bishara
+>>Cc: Mark Brown; Chris Ball; Andrew Morton;
+>>linux-mmc@vger.kernel.org; linux-kernel@vger.kernel.org
+>>Subject: Re: [PATCH] mmc: Add architecture dependency for
+>>Marvell SoC controller
+>>
+>>On Wed, Sep 15, 2010 at 6:06 PM, Saeed Bishara
+>><saeed@marvell.com> wrote:
+>>>
+>>>>Which CPUs does the driver actually support?  The Kconfig and
+>>>>commit log
+>>>>just say "Marvell" so I went for the conservative option and included
+>>>>all Marvell CPUs I was aware of.
+>>> The Marvell Dove SoC includes this device, this SoC defined
+>>by ARCH_DOVE
+>>> I guess it found also only on mmp (defined by ARCH_MMP),
+>>Haojian, can you confirm?
+>>> saeed
+>>
+>>As I know, MG1 is also using this IP. Although MG1 isn't supported in
+>>mainline, it's planned to be added into ARCH_PXA or one new ARCH. So
+>>PLAT_PXA is preferred.
+> I think (ARCH_DOVE || ARCH_MMP) is prefered, when MG1 gets added to mainline, then we will add that new ARCH.
+>
+> saeed
 
---Q68bSM7Ycu6FN28Q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, Sep 15, 2010 at 06:13:43PM +0800, Ike Panhc wrote:
-> On 09/10/2010 03:11 PM, Mario 'BitKoenig' Holbe wrote:
-> > 	rfkill_init_sw_state(priv->rfk[dev], 0);
-> eh.. after review the code, the rfkill_init_sw_state shall not give 0 as =
-the default
-> value. I shall read the value from EC and set reasonable value.
-
-Well - probably :)
-The current behaviour results in each device becoming unblocked no
-matter what state it had before.
-
-> > 	if (no_bt_rfkill && (ideapad_rfk_data[dev].type =3D=3D RFKILL_TYPE_BLU=
-ETOOTH))
-> > 		ideapad_rfk_set(???, 0);
-> Do you mean driver still setup the rfkill for bluetooth, but we can not b=
-lock
-> bluetooth when module parameter set to 1? This idea is better then no_bt_=
-rfkill.
-> Will modify the driver.
-
-Well, not really... I mean: in the no_bt_rfkill=3D1 case the driver should
-(try to) unblock the bluetooth device in order to activate it to make it
-further manageable via it's own (hci) rfkill switch.
-I don't think setting up the ideapad_bluetooth rfkill is necessary for
-that. Not setting it up is IMHO the right direction. Just the device
-activation is missing.
-
-
-Mario
---=20
-Tower: "Say fuelstate." Pilot: "Fuelstate."
-Tower: "Say again." Pilot: "Again."
-Tower: "Arghl, give me your fuel!" Pilot: "Sorry, need it by myself..."
-
---Q68bSM7Ycu6FN28Q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEVAwUBTJCyhBS+e2HeSPbpAQKllgf/a37tMSBXNoEgyUayAp7cn5/vt/wMUSTs
-dJHRZiJb4Mvp1m+/7v41+TOW8HAMEqFfuCv8WgVugE027BbVS7yNWRAJuJJuoaMW
-7obwBYsLM6PyqCyAOQ/L/y4L3mg+Grfw+PF1rsqxMlLKqU4rx9j1BWlNxjcObrEw
-oi2naSaRw1MzzA690HEDyXlNtE4ZLc9iOKQek3SNFy76u5tOqTFn+G1IlGRQfpAf
-4hgYwIi2yOCXDk7KdvP9fihgkmyAZg9pKlbCzzlvEtkyublsg9eNWcyE6DfWOCVI
-QJWpAeYXKkbtq5zRvqqrlvq5CmgoAIZKpaGVnAz52I9EG2cvLyrqwg==
-=TJAN
------END PGP SIGNATURE-----
-
---Q68bSM7Ycu6FN28Q--
+OK.
