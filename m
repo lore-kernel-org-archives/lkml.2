@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751492Ab0IOJij (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 05:38:39 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:42213 "EHLO smtps.tip.net.au"
+	id S1751739Ab0IOJjj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 05:39:39 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:42242 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750695Ab0IOJii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 05:38:38 -0400
-Date: Wed, 15 Sep 2010 19:38:30 +1000
+	id S1750907Ab0IOJjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 05:39:37 -0400
+Date: Wed, 15 Sep 2010 19:39:26 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        linux-mtd@lists.infradead.org,
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, Jeremy Kerr <jk@ozlabs.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Julia Lawall <julia@diku.dk>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@ozlabs.org, Corey Minyard <minyard@acm.org>,
-        openipmi-developer@lists.sourceforge.net, Takashi Iwai <tiwai@suse.de>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 0/7] BKL mass-conversion to mutex
-Message-Id: <20100915193830.27722c3a.sfr@canb.auug.org.au>
-In-Reply-To: <1284494022-7346-1-git-send-email-arnd@arndb.de>
-References: <1284494022-7346-1-git-send-email-arnd@arndb.de>
+        linux-fsdevel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, Samuel Ortiz <samuel@sortiz.org>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH 00/15] change default_llseek action
+Message-Id: <20100915193926.ae2fe838.sfr@canb.auug.org.au>
+In-Reply-To: <1284495763-7506-1-git-send-email-arnd@arndb.de>
+References: <1284495763-7506-1-git-send-email-arnd@arndb.de>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA1";
- boundary="Signature=_Wed__15_Sep_2010_19_38_30_+1000_x_8PDlRlfK6atX+0"
+ boundary="Signature=_Wed__15_Sep_2010_19_39_26_+1000_DQXdvYbRSl_dI/ss"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__15_Sep_2010_19_38_30_+1000_x_8PDlRlfK6atX+0
+--Signature=_Wed__15_Sep_2010_19_39_26_+1000_DQXdvYbRSl_dI/ss
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi Arnd,
 
-On Tue, 14 Sep 2010 21:53:35 +0200 Arnd Bergmann <arnd@arndb.de> wrote:
+On Tue, 14 Sep 2010 22:22:28 +0200 Arnd Bergmann <arnd@arndb.de> wrote:
 >
 > Stephen, please add
-> git+ssh://master.kernel.org/pub/scm/linux/kernel/git/arnd/bkl.git trivial
+> git+ssh://master.kernel.org/pub/scm/linux/kernel/git/arnd/bkl.git llseek
 
 Added from today.
 
@@ -80,19 +80,19 @@ project, the testing procedures, the results, the e-mails, etc.  If you
 don't agree to these ground rules, let me know and I'll remove your tree
 from participation in linux-next.
 
---Signature=_Wed__15_Sep_2010_19_38_30_+1000_x_8PDlRlfK6atX+0
+--Signature=_Wed__15_Sep_2010_19_39_26_+1000_DQXdvYbRSl_dI/ss
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQEcBAEBAgAGBQJMkJQWAAoJEDMEi1NhKgbs/qcH/j6Q5d5mYGECz3JtxE/Em3WG
-qO7Bk3/4JfuxCzIjBlDyoz4EpG0a2ghiIiPrCM3kGwg3awScEMf9lFKYJE0KSBsH
-yxGilZjzBDG/XxMa58hGxb/ZmaIr/W5dwA7/XCUuF8lgGiqsvpoP94ncTf7mVQ1/
-KPV+S767DPzqOQK1w8RVMBx+0slO2MEr0qEtyEsbjYFfrfSPCqpUruASJh53GiVi
-SdPkjxstl8yG0YG6VGvGs2FHv1yeWbL5R4kFBARVIf+78ZDAzNYUhn2bgLZolL4Z
-0PboNcLQDByMqUfOQ+Wh7rdjouKzQLeDNqq/2GAfzhWaZCJ16X7kYnBQuvTXwFI=
-=52gd
+iQEcBAEBAgAGBQJMkJROAAoJEDMEi1NhKgbsYp0H+wXse/dv0zaLotuqwSwNBEwU
+pGyUJJlbgnsQrSCuQ0RowdoQ0djjfK9vpruhdv82egNE/g/Fce/cGx7W4VH1danv
+kAEkH42TGgqfbRZ2/bzxBNrewRNLZWd35RPHraMbuYWifGWvrvcY0XqbXL8shP1a
+7yQhIdm7yhETa0pCWNgNr96Uxm6zn5Dh6VcF7ux+CoabO9OJ/UTHwnS9YSg2Jq8V
+IY9XXeTrwUbKHiZlBTyLXqexe74h04hK5Dl6xz1+PQw+cLnwwgX07lNa+MzEMeLC
+FnQcuYnjVedEKfJvTdO4omXXPscchuPj1fJAAVs6jD8/2n4/+fA6nY6UNCKzN9k=
+=B+lf
 -----END PGP SIGNATURE-----
 
---Signature=_Wed__15_Sep_2010_19_38_30_+1000_x_8PDlRlfK6atX+0--
+--Signature=_Wed__15_Sep_2010_19_39_26_+1000_DQXdvYbRSl_dI/ss--
