@@ -1,70 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279Ab0IOFUb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 01:20:31 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42151 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752409Ab0IOFUa (ORCPT
+	id S1752707Ab0IOFXg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 01:23:36 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:24844 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774Ab0IOFXf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 01:20:30 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Nikanth Karthikesan <knikanth@suse.de>
-Subject: Re: [PATCH v2] After swapout/swapin private dirty mappings are reported clean in smaps
-Cc: kosaki.motohiro@jp.fujitsu.com, Richard Guenther <rguenther@suse.de>,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        balbir@linux.vnet.ibm.com, Michael Matz <matz@novell.com>,
-        Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <201009151034.22497.knikanth@suse.de>
-References: <20100915134724.C9EE.A69D9226@jp.fujitsu.com> <201009151034.22497.knikanth@suse.de>
-Message-Id: <20100915141710.C9F7.A69D9226@jp.fujitsu.com>
+	Wed, 15 Sep 2010 01:23:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=KraaAWq89gxoMvwYvPPEXxwFifQwxl4OJ+T592LqDtmL8FOnUx6u49r5D+loq8lfon
+         lDYXnZ/Hc+A8Qj0mG5+w==
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed, 15 Sep 2010 14:20:25 +0900 (JST)
+In-Reply-To: <AANLkTinBs-fK4=fr+pc7aK0X+SBgkXDCB9n1aXsg=jyD@mail.gmail.com>
+References: <1284357493-20078-1-git-send-email-mrubin@google.com>
+ <1284357493-20078-4-git-send-email-mrubin@google.com> <20100913142017.2a426365.akpm@linux-foundation.org>
+ <AANLkTinBs-fK4=fr+pc7aK0X+SBgkXDCB9n1aXsg=jyD@mail.gmail.com>
+From: Michael Rubin <mrubin@google.com>
+Date: Tue, 14 Sep 2010 22:23:11 -0700
+Message-ID: <AANLkTik0xT5YBfKRPY6F8m4-iLc47H_tuqHAN6nNFdXk@mail.gmail.com>
+Subject: Re: [PATCH 3/5] writeback: nr_dirtied and nr_written in /proc/vmstat
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, fengguang.wu@intel.com, jack@suse.cz,
+        riel@redhat.com, david@fromorbit.com, kosaki.motohiro@jp.fujitsu.com,
+        npiggin@kernel.dk, hch@lst.de, axboe@kernel.dk
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wednesday 15 September 2010 10:18:11 KOSAKI Motohiro wrote:
-> > > On Wednesday 15 September 2010 05:56:36 KOSAKI Motohiro wrote:
-> > > > > diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-> > > > > index 439fc1f..06fc468 100644
-> > > > > --- a/fs/proc/task_mmu.c
-> > > > > +++ b/fs/proc/task_mmu.c
-> > > > > @@ -368,7 +368,11 @@ static int smaps_pte_range(pmd_t *pmd, unsigned
-> > > > > long addr, unsigned long end, mss->shared_clean += PAGE_SIZE;
-> > > > >  			mss->pss += (PAGE_SIZE << PSS_SHIFT) / mapcount;
-> > > > >  		} else {
-> > > > > -			if (pte_dirty(ptent))
-> > > > > +			/*
-> > > > > +			 * File-backed pages, now anonymous are dirty
-> > > > > +			 * with respect to the file.
-> > > > > +			 */
-> > > > > +			if (pte_dirty(ptent) || (vma->vm_file && PageAnon(page)))
-> > > > >  				mss->private_dirty += PAGE_SIZE;
-> > > > >  			else
-> > > > >  				mss->private_clean += PAGE_SIZE;
-> > > >
-> > > > This is risky than v1. number of dirties are used a lot of application.
-> > >
-> > > This is exactly to help those applications, as currently after swap-out
-> > > and swap-in, the same pages are accounted as "Private_Clean:" instead of
-> > > "Private_Dirty:".
-> > 
-> > I don't think so.
-> 
-> Actually this behaviour is observed. With a simple memhog, you can see pages 
-> which are "Private_Dirty:", become "Swap:" and then to "Private_Clean:". And 
-> that confused GDB.
+I know it's been applied but in case you want minor nits fixed. I am
+sending one more update.
 
-As I said, incorrect information is always no good solustion. We should concern
-how to provide good and enough information, but not how to lie.
-If currect gdb is crappy, it should fix. 
+mrubin
 
-
-> > incorrect infomation bring a lot of confusion rather than
-> >  its worth.
-
-
+On Mon, Sep 13, 2010 at 3:17 PM, Michael Rubin <mrubin@google.com> wrote:
+> On Mon, Sep 13, 2010 at 2:20 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+>> On Sun, 12 Sep 2010 22:58:11 -0700
+>> Michael Rubin <mrubin@google.com> wrote:
+>>
+>>> To help developers and applications gain visibility into writeback
+>>> behaviour adding two entries to vm_stat_items and /proc/vmstat. This
+>>> will allow us to track the "written" and "dirtied" counts.
+>>>
+>>>    # grep nr_dirtied /proc/vmstat
+>>>    nr_dirtied 3747
+>>>    # grep nr_written /proc/vmstat
+>>>    nr_written 3618
+>>>
+>>> Signed-off-by: Michael Rubin <mrubin@google.com>
+>>> Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
+>>> ---
+>>>  include/linux/mmzone.h |    2 ++
+>>>  mm/page-writeback.c    |    2 ++
+>>>  mm/vmstat.c            |    3 +++
+>>>  3 files changed, 7 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+>>> index 6e6e626..d0d7454 100644
+>>> --- a/include/linux/mmzone.h
+>>> +++ b/include/linux/mmzone.h
+>>> @@ -104,6 +104,8 @@ enum zone_stat_item {
+>>>       NR_ISOLATED_ANON,       /* Temporary isolated pages from anon lru */
+>>>       NR_ISOLATED_FILE,       /* Temporary isolated pages from file lru */
+>>>       NR_SHMEM,               /* shmem pages (included tmpfs/GEM pages) */
+>>> +     NR_FILE_DIRTIED,        /* accumulated dirty pages */
+>>> +     NR_WRITTEN,             /* accumulated written pages */
+>>
+>> I think we can make those comments less ambiguous>
+>>
+>> --- a/include/linux/mmzone.h
+>> +++ a/include/linux/mmzone.h
+>> @@ -104,8 +104,8 @@ enum zone_stat_item {
+>>        NR_ISOLATED_ANON,       /* Temporary isolated pages from anon lru */
+>>        NR_ISOLATED_FILE,       /* Temporary isolated pages from file lru */
+>>        NR_SHMEM,               /* shmem pages (included tmpfs/GEM pages) */
+>> -       NR_FILE_DIRTIED,        /* accumulated dirty pages */
+>> -       NR_WRITTEN,             /* accumulated written pages */
+>> +       NR_FILE_DIRTIED,        /* page dirtyings since bootup */
+>> +       NR_WRITTEN,             /* page writings since bootup */
+>
+> Got it. Will fix.
+>
+>> The mismatch between "NR_FILE_DIRTIED" and "nr_dirtied" is a bit, umm,
+>> dirty.  I can kinda see the logic in the naming but still..
+>
+> Got it will fix.
+>
+> mrubin
+>
