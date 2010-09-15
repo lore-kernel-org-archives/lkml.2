@@ -1,156 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab0IOVJS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 17:09:18 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:18477 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755222Ab0IOVJP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 17:09:15 -0400
-Subject: [PATCH 3/3] PCI: allocate bus resources from the top down
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: Brian Bloniarz <phunge0@hotmail.com>,
-        Charles Butterfield <charles.butterfield@nextcentury.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stefan Becker <chemobejk@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-Date: Wed, 15 Sep 2010 15:09:13 -0600
-Message-ID: <20100915210912.12365.78836.stgit@bob.kio>
-In-Reply-To: <20100915210818.12365.58732.stgit@bob.kio>
-References: <20100915210818.12365.58732.stgit@bob.kio>
-User-Agent: StGit/0.15
+	id S1754092Ab0IOV0r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 17:26:47 -0400
+Received: from web50108.mail.re2.yahoo.com ([206.190.38.36]:32775 "HELO
+	web50108.mail.re2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753331Ab0IOV0q convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 17:26:46 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Sep 2010 17:26:46 EDT
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=M933uHDRcvTP7FrHBrqbnTHgxKBDCAaqM/pWoEZOJBSp7IaVAe3yRn7lJlUOorDQT/ZRjfZzjRyYZS7pHi+QzycjFMrAydK4axEGlivDT+bw6WXoryhHusQL7pMnV5b9VMV+wMNZN4af2NsXTXQjvlgi1qxIqHnIyStl7WXZfmw=;
+Message-ID: <216309.52558.qm@web50108.mail.re2.yahoo.com>
+X-YMail-OSG: NyKpwtQVM1mloVEl3iXtKTsOt2sKN4CSUmPqwMld.f93xJk
+ NRFOxU8wRMKfRWF542l4UwLCWFz7XRdw.5VDuqub_FkdL1WuG5p25UfvilvJ
+ BhnvCmLlVcr4TMN1jTuKAyy0z6ckjB59WtFpPHpQP1_9OWlnOB0gSe5FtLDk
+ 4L6_fW.2nQwclA.MEkrrdCOcU52OVvx04IVfgytsiiH8LFHINz8I7L1tAz_u
+ zkEGRNkqdKf44.eE7n6xoWYTKa7lPsZWI1rXatcOgBqxGqMwlvjK31mL3srI
+ 7dpoRLJafr3oEr2ELdAj1PDifzjzcoSkwvLaR6OSlOLN5YfuaIsy3pD6VmW4
+ -
+X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.105.279950
+Date: Wed, 15 Sep 2010 14:20:05 -0700 (PDT)
+From: Doug Thompson <norsk5@yahoo.com>
+Subject: Re: [PATCH] i7core_edac: fix panic in udimm sysfs attributes registration
+To: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-edac@vger.kernel.org
+In-Reply-To: <20100914162602.GA6047@joi.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Allocate space from the highest-address PCI bus resource first, then work
-downward.
 
-Previously, we looked for space in PCI host bridge windows in the order
-we discovered the windows.  For example, given the following windows
-(discovered via an ACPI _CRS method):
+--- On Tue, 9/14/10, Marcin Slusarz <marcin.slusarz@gmail.com> wrote:
 
-    pci_root PNP0A03:00: host bridge window [mem 0x000a0000-0x000bffff]
-    pci_root PNP0A03:00: host bridge window [mem 0x000c0000-0x000effff]
-    pci_root PNP0A03:00: host bridge window [mem 0x000f0000-0x000fffff]
-    pci_root PNP0A03:00: host bridge window [mem 0xbff00000-0xf7ffffff]
-    pci_root PNP0A03:00: host bridge window [mem 0xff980000-0xff980fff]
-    pci_root PNP0A03:00: host bridge window [mem 0xff97c000-0xff97ffff]
-    pci_root PNP0A03:00: host bridge window [mem 0xfed20000-0xfed9ffff]
+> From: Marcin Slusarz <marcin.slusarz@gmail.com>
+> Subject: [PATCH] i7core_edac: fix panic in udimm sysfs attributes registration
+> To: "Mauro Carvalho Chehab" <mchehab@redhat.com>
+> Cc: "LKML" <linux-kernel@vger.kernel.org>, linux-edac@vger.kernel.org
+> Date: Tuesday, September 14, 2010, 10:26 AM
+> Array of udimm sysfs attributes was
+> not ended with NULL marker.
+> 
+> EDAC DEBUG: edac_create_mci_instance_attributes:
+> edac_create_mci_instance_attributes() file udimm0
+> EDAC DEBUG: edac_create_mci_instance_attributes:
+> edac_create_mci_instance_attributes() file udimm1
+> EDAC DEBUG: edac_create_mci_instance_attributes:
+> edac_create_mci_instance_attributes() file udimm2
+> BUG: unable to handle kernel NULL pointer dereference at
+> 00000000000001a4
+> IP: [<ffffffff81330b36>]
+> edac_create_mci_instance_attributes+0x148/0x1f1
+> PGD 0
+> Oops: 0000 [#1] PREEMPT SMP
+> last sysfs file:
+> CPU 3
+> Modules linked in:
+> 
 
-we attempted to allocate from [mem 0x000a0000-0x000bffff] first, then
-[mem 0x000c0000-0x000effff], and so on.
+> Kernel panic - not syncing: Attempted to kill init!
+> 
+> Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+> Cc: stable@kernel.org
+> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-With this patch, we allocate from [mem 0xff980000-0xff980fff] first, then
-[mem 0xff97c000-0xff97ffff], [mem 0xfed20000-0xfed9ffff], etc.
-
-Allocating top-down follows Windows practice, so we're less likely to
-trip over BIOS defects in the _CRS description.
-
-On the machine above (a Dell T3500), the [mem 0xbff00000-0xbfffffff] region
-doesn't actually work and is likely a BIOS defect.  The symptom is that we
-move the AHCI controller to 0xbff00000, which leads to "Boot has failed,
-sleeping forever," a BUG in ahci_stop_engine(), or some other boot failure.
-
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=16228#c43
-Reference: https://bugzilla.redhat.com/show_bug.cgi?id=620313
-Reference: https://bugzilla.redhat.com/show_bug.cgi?id=629933
-Reported-by: Brian Bloniarz <phunge0@hotmail.com>
-Reported-and-tested-by: Stefan Becker <chemobejk@gmail.com>
-Reported-by: Denys Vlasenko <dvlasenk@redhat.com>
-Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
----
-
- drivers/pci/bus.c |   53 ++++++++++++++++++++++++++++++++++++++++++++++++-----
- 1 files changed, 48 insertions(+), 5 deletions(-)
+Acked-by: Doug Thompson <dougthompson@xmission.com>
 
 
-diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-index 7f0af0e..172bf26 100644
---- a/drivers/pci/bus.c
-+++ b/drivers/pci/bus.c
-@@ -64,6 +64,49 @@ void pci_bus_remove_resources(struct pci_bus *bus)
- 	}
- }
- 
-+/*
-+ * Find the highest-address bus resource below the cursor "res".  If the
-+ * cursor is NULL, return the highest resource.
-+ */
-+static struct resource *pci_bus_find_resource_prev(struct pci_bus *bus,
-+						   unsigned int type,
-+						   struct resource *res)
-+{
-+	struct resource *r, *prev = NULL;
-+	int i;
-+
-+	pci_bus_for_each_resource(bus, r, i) {
-+		if (!r)
-+			continue;
-+
-+		if ((r->flags & IORESOURCE_TYPE_BITS) != type)
-+			continue;
-+
-+		/* If this resource is at or past the cursor, skip it */
-+		if (res) {
-+			if (r == res)
-+				continue;
-+			if (r->end > res->end)
-+				continue;
-+			if (r->end == res->end && r->start > res->start)
-+				continue;
-+		}
-+
-+		if (!prev)
-+			prev = r;
-+
-+		/*
-+		 * A small resource is higher than a large one that ends at
-+		 * the same address.
-+		 */
-+		if (r->end > prev->end ||
-+		    (r->end == prev->end && r->start > prev->start))
-+			prev = r;
-+	}
-+
-+	return prev;
-+}
-+
- /**
-  * pci_bus_alloc_resource - allocate a resource from a parent bus
-  * @bus: PCI bus
-@@ -89,9 +132,10 @@ pci_bus_alloc_resource(struct pci_bus *bus, struct resource *res,
- 					  resource_size_t),
- 		void *alignf_data)
- {
--	int i, ret = -ENOMEM;
-+	int ret = -ENOMEM;
- 	struct resource *r;
- 	resource_size_t max = -1;
-+	unsigned int type = res->flags & IORESOURCE_TYPE_BITS;
- 
- 	type_mask |= IORESOURCE_IO | IORESOURCE_MEM;
- 
-@@ -99,10 +143,9 @@ pci_bus_alloc_resource(struct pci_bus *bus, struct resource *res,
- 	if (!(res->flags & IORESOURCE_MEM_64))
- 		max = PCIBIOS_MAX_MEM_32;
- 
--	pci_bus_for_each_resource(bus, r, i) {
--		if (!r)
--			continue;
--
-+	/* Look for space at highest addresses first */
-+	r = pci_bus_find_resource_prev(bus, type, NULL);
-+	for ( ; r; r = pci_bus_find_resource_prev(bus, type, r)) {
- 		/* type_mask must match */
- 		if ((res->flags ^ r->flags) & type_mask)
- 			continue;
-
+> ---
+>  drivers/edac/i7core_edac.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/edac/i7core_edac.c
+> b/drivers/edac/i7core_edac.c
+> index e0187d1..0fd5b85 100644
+> --- a/drivers/edac/i7core_edac.c
+> +++ b/drivers/edac/i7core_edac.c
+> @@ -1140,6 +1140,7 @@ static struct mcidev_sysfs_attribute
+> i7core_udimm_counters_attrs[] = {
+>      ATTR_COUNTER(0),
+>      ATTR_COUNTER(1),
+>      ATTR_COUNTER(2),
+> +    { .attr = { .name = NULL } }
+>  };
+>  
+>  static struct mcidev_sysfs_group i7core_udimm_counters =
+> {
+> -- 
+> 1.7.2.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe
+> linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
