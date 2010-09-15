@@ -1,286 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753657Ab0IOM3j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 08:29:39 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:44468 "EHLO gir.skynet.ie"
+	id S1753567Ab0IOMaW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 08:30:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42754 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752560Ab0IOM1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 08:27:55 -0400
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH 1/8] tracing, vmscan: Add trace events for LRU list shrinking
-Date: Wed, 15 Sep 2010 13:27:44 +0100
-Message-Id: <1284553671-31574-2-git-send-email-mel@csn.ul.ie>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1284553671-31574-1-git-send-email-mel@csn.ul.ie>
-References: <1284553671-31574-1-git-send-email-mel@csn.ul.ie>
+	id S1752475Ab0IOMaS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 08:30:18 -0400
+Date: Wed, 15 Sep 2010 09:29:59 -0300
+From: Glauber Costa <glommer@redhat.com>
+To: Zachary Amsden <zamsden@redhat.com>
+Cc: Jan Kiszka <jan.kiszka@web.de>, Avi Kivity <avi@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <johnstul@us.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [KVM timekeeping 10/35] Fix deep C-state TSC desynchronization
+Message-ID: <20100915122959.GB3688@mothafucka.localdomain>
+References: <1282291669-25709-1-git-send-email-zamsden@redhat.com>
+ <1282291669-25709-11-git-send-email-zamsden@redhat.com>
+ <4C8F3C03.50306@siemens.com>
+ <4C8F3FF3.9080803@redhat.com>
+ <4C8F5125.5060505@siemens.com>
+ <4C8FCDE2.3000202@redhat.com>
+ <4C8FF690.7030107@web.de>
+ <4C9007F2.9020205@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C9007F2.9020205@redhat.com>
+X-ChuckNorris: True
+User-Agent: Jack Bauer
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a trace event for shrink_inactive_list() and updates the
-sample postprocessing script appropriately. It can be used to determine
-how many pages were reclaimed and for non-lumpy reclaim where exactly the
-pages were reclaimed from.
+On Tue, Sep 14, 2010 at 01:40:34PM -1000, Zachary Amsden wrote:
+> On 09/14/2010 12:26 PM, Jan Kiszka wrote:
+> >Am 14.09.2010 21:32, Zachary Amsden wrote:
+> >>On 09/14/2010 12:40 AM, Jan Kiszka wrote:
+> >>>Am 14.09.2010 11:27, Avi Kivity wrote:
+> >>>
+> >>>>    On 09/14/2010 11:10 AM, Jan Kiszka wrote:
+> >>>>
+> >>>>>Am 20.08.2010 10:07, Zachary Amsden wrote:
+> >>>>>
+> >>>>>>When CPUs with unstable TSCs enter deep C-state, TSC may stop
+> >>>>>>running.  This causes us to require resynchronization.  Since
+> >>>>>>we can't tell when this may potentially happen, we assume the
+> >>>>>>worst by forcing re-compensation for it at every point the VCPU
+> >>>>>>task is descheduled.
+> >>>>>>
+> >>>>>>Signed-off-by: Zachary Amsden<zamsden@redhat.com>
+> >>>>>>---
+> >>>>>>    arch/x86/kvm/x86.c |    2 +-
+> >>>>>>    1 files changed, 1 insertions(+), 1 deletions(-)
+> >>>>>>
+> >>>>>>diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> >>>>>>index 7fc4a55..52b6c21 100644
+> >>>>>>--- a/arch/x86/kvm/x86.c
+> >>>>>>+++ b/arch/x86/kvm/x86.c
+> >>>>>>@@ -1866,7 +1866,7 @@ void kvm_arch_vcpu_load(struct kvm_vcpu
+> >>>>>>*vcpu, int cpu)
+> >>>>>>        }
+> >>>>>>
+> >>>>>>        kvm_x86_ops->vcpu_load(vcpu, cpu);
+> >>>>>>-    if (unlikely(vcpu->cpu != cpu)) {
+> >>>>>>+    if (unlikely(vcpu->cpu != cpu) || check_tsc_unstable()) {
+> >>>>>>            /* Make sure TSC doesn't go backwards */
+> >>>>>>            s64 tsc_delta = !vcpu->arch.last_host_tsc ? 0 :
+> >>>>>>                    native_read_tsc() - vcpu->arch.last_host_tsc;
+> >>>>>>
+> >>>>>For yet unknown reason, this commit breaks Linux guests here if they
+> >>>>>are
+> >>>>>started with only a single VCPU. They hang during boot, obviously no
+> >>>>>longer receiving interrupts.
+> >>>>>
+> >>>>>I'm using kvm-kmod against a 2.6.34 host kernel, so this may be a side
+> >>>>>effect of the wrapping, though I cannot imagine how.
+> >>>>>
+> >>>>>Anyone any ideas?
+> >>>>>
+> >>>>>
+> >>>>>
+> >>>>Most likely, time went backwards, and some 'future - past' calculation
+> >>>>resulted in a negative sleep value which was then interpreted as
+> >>>>unsigned and resulted in a 2342525634 year sleep.
+> >>>>
+> >>>Looks like that's the case on first glance at the apic state.
+> >>>
+> >>This compensation effectively nulls the delta between current and last TSC:
+> >>
+> >>         if (unlikely(vcpu->cpu != cpu) || check_tsc_unstable()) {
+> >>                 /* Make sure TSC doesn't go backwards */
+> >>                 s64 tsc_delta = !vcpu->arch.last_host_tsc ? 0 :
+> >>                                 native_read_tsc() -
+> >>vcpu->arch.last_host_tsc;
+> >>                 if (tsc_delta<  0)
+> >>                         mark_tsc_unstable("KVM discovered backwards TSC");
+> >>                 if (check_tsc_unstable())
+> >>                         kvm_x86_ops->adjust_tsc_offset(vcpu, -tsc_delta);
+> >>                 kvm_migrate_timers(vcpu);
+> >>                 vcpu->cpu = cpu;
+> >>
+> >>If TSC has advanced quite a bit due to a TSC jump during sleep(*), it
+> >>will adjust the offset backwards to compensate; similarly, if it has
+> >>gone backwards, it will advance the offset.
+> >>
+> >>In neither case should the visible TSC go backwards, assuming
+> >>last_host_tsc is recorded properly, and so kvmclock should be similarly
+> >>unaffected.
+> >>
+> >>Perhaps the guest is more intelligent than we hope, and is comparing two
+> >>different clocks: kvmclock or TSC with the rate of PIT interrupts.  This
+> >>could result in negative arithmetic begin interpreted as unsigned.  Are
+> >>you using PIT interrupt reinjection on this guest or passing
+> >>-no-kvm-pit-reinjection?
+> >>
+> >>>
+> >>>>Does your guest use kvmclock, tsc, or some other time source?
+> >>>>
+> >>>A kernel that has kvmclock support even hangs in SMP mode. The others
+> >>>pick hpet or acpi_pm. TSC is considered unstable.
+> >>>
+> >>SMP mode here has always and will always be unreliable.  Are you running
+> >>on an Intel or AMD CPU?  The origin of this code comes from a workaround
+> >>for (*) in vendor-specific code, and perhaps it is inappropriate for both.
+> >I'm on a fairly new Intel i7 (M 620). And I accidentally rebooted my box
+> >a few hours ago. Well, the issue is gone now...
+> >
+> >So I looked into the system logs and found this:
+> >
+> >[18446744053.434939] PM: resume of devices complete after 4379.595 msecs
+> >[18446744053.457133] PM: Finishing wakeup.
+> >[18446744053.457135] Restarting tasks ...
+> >[    0.000999] Marking TSC unstable due to KVM discovered backwards TSC
+> >[270103.974668] done.
+> >
+> > From that point on the box was on hpet, including the time I did the
+> >failing tests this morning. The kvm-kmod version loaded at this point
+> >was based on kvm.git df549cfc.
+> >
+> >But my /proc/cpuinfo claims "constant_tsc", and Linux is generally happy
+> >with using it as clock source. Does this tell you anything?
+> 
+> Yes, quite a bit.
+> 
+> It's possible that marking the TSC unstable with an actively running
+> VM causes a boundary condition that I had not accounted for.  It's
+> also possible that the clocksource switch triggered some bad
+> behavior.
+changing the clocksource will change the resolution of the underlying
+clock base. This do can cause a big problem for anything that does
+a mix of tsc + other clocksources. For the old version of kvmclock,
+this should not really matter, since we have the stable bit hammer
+on the guest side, that just gets flipped if we go out of tsc clocksource
+to something else (actually, right now it is still always on).
 
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
----
- .../trace/postprocess/trace-vmscan-postprocess.pl  |   39 +++++++++++++-----
- include/trace/events/vmscan.h                      |   42 ++++++++++++++++++++
- mm/vmscan.c                                        |    6 +++
- 3 files changed, 77 insertions(+), 10 deletions(-)
-
-diff --git a/Documentation/trace/postprocess/trace-vmscan-postprocess.pl b/Documentation/trace/postprocess/trace-vmscan-postprocess.pl
-index 1b55146..b3e73dd 100644
---- a/Documentation/trace/postprocess/trace-vmscan-postprocess.pl
-+++ b/Documentation/trace/postprocess/trace-vmscan-postprocess.pl
-@@ -46,7 +46,7 @@ use constant HIGH_KSWAPD_LATENCY		=> 20;
- use constant HIGH_KSWAPD_REWAKEUP		=> 21;
- use constant HIGH_NR_SCANNED			=> 22;
- use constant HIGH_NR_TAKEN			=> 23;
--use constant HIGH_NR_RECLAIM			=> 24;
-+use constant HIGH_NR_RECLAIMED			=> 24;
- use constant HIGH_NR_CONTIG_DIRTY		=> 25;
- 
- my %perprocesspid;
-@@ -58,11 +58,13 @@ my $opt_read_procstat;
- my $total_wakeup_kswapd;
- my ($total_direct_reclaim, $total_direct_nr_scanned);
- my ($total_direct_latency, $total_kswapd_latency);
-+my ($total_direct_nr_reclaimed);
- my ($total_direct_writepage_file_sync, $total_direct_writepage_file_async);
- my ($total_direct_writepage_anon_sync, $total_direct_writepage_anon_async);
- my ($total_kswapd_nr_scanned, $total_kswapd_wake);
- my ($total_kswapd_writepage_file_sync, $total_kswapd_writepage_file_async);
- my ($total_kswapd_writepage_anon_sync, $total_kswapd_writepage_anon_async);
-+my ($total_kswapd_nr_reclaimed);
- 
- # Catch sigint and exit on request
- my $sigint_report = 0;
-@@ -104,7 +106,7 @@ my $regex_kswapd_wake_default = 'nid=([0-9]*) order=([0-9]*)';
- my $regex_kswapd_sleep_default = 'nid=([0-9]*)';
- my $regex_wakeup_kswapd_default = 'nid=([0-9]*) zid=([0-9]*) order=([0-9]*)';
- my $regex_lru_isolate_default = 'isolate_mode=([0-9]*) order=([0-9]*) nr_requested=([0-9]*) nr_scanned=([0-9]*) nr_taken=([0-9]*) contig_taken=([0-9]*) contig_dirty=([0-9]*) contig_failed=([0-9]*)';
--my $regex_lru_shrink_inactive_default = 'lru=([A-Z_]*) nr_scanned=([0-9]*) nr_reclaimed=([0-9]*) priority=([0-9]*)';
-+my $regex_lru_shrink_inactive_default = 'nid=([0-9]*) zid=([0-9]*) nr_scanned=([0-9]*) nr_reclaimed=([0-9]*) priority=([0-9]*) flags=([A-Z_|]*)';
- my $regex_lru_shrink_active_default = 'lru=([A-Z_]*) nr_scanned=([0-9]*) nr_rotated=([0-9]*) priority=([0-9]*)';
- my $regex_writepage_default = 'page=([0-9a-f]*) pfn=([0-9]*) flags=([A-Z_|]*)';
- 
-@@ -203,8 +205,8 @@ $regex_lru_shrink_inactive = generate_traceevent_regex(
- 			"vmscan/mm_vmscan_lru_shrink_inactive",
- 			$regex_lru_shrink_inactive_default,
- 			"nid", "zid",
--			"lru",
--			"nr_scanned", "nr_reclaimed", "priority");
-+			"nr_scanned", "nr_reclaimed", "priority",
-+			"flags");
- $regex_lru_shrink_active = generate_traceevent_regex(
- 			"vmscan/mm_vmscan_lru_shrink_active",
- 			$regex_lru_shrink_active_default,
-@@ -375,6 +377,16 @@ EVENT_PROCESS:
- 			my $nr_contig_dirty = $7;
- 			$perprocesspid{$process_pid}->{HIGH_NR_SCANNED} += $nr_scanned;
- 			$perprocesspid{$process_pid}->{HIGH_NR_CONTIG_DIRTY} += $nr_contig_dirty;
-+		} elsif ($tracepoint eq "mm_vmscan_lru_shrink_inactive") {
-+			$details = $5;
-+			if ($details !~ /$regex_lru_shrink_inactive/o) {
-+				print "WARNING: Failed to parse mm_vmscan_lru_shrink_inactive as expected\n";
-+				print "         $details\n";
-+				print "         $regex_lru_shrink_inactive/o\n";
-+				next;
-+			}
-+			my $nr_reclaimed = $4;
-+			$perprocesspid{$process_pid}->{HIGH_NR_RECLAIMED} += $nr_reclaimed;
- 		} elsif ($tracepoint eq "mm_vmscan_writepage") {
- 			$details = $5;
- 			if ($details !~ /$regex_writepage/o) {
-@@ -464,8 +476,8 @@ sub dump_stats {
- 
- 	# Print out process activity
- 	printf("\n");
--	printf("%-" . $max_strlen . "s %8s %10s   %8s   %8s %8s %8s %8s\n", "Process", "Direct",  "Wokeup", "Pages",   "Pages",   "Pages",     "Time");
--	printf("%-" . $max_strlen . "s %8s %10s   %8s   %8s %8s %8s %8s\n", "details", "Rclms",   "Kswapd", "Scanned", "Sync-IO", "ASync-IO",  "Stalled");
-+	printf("%-" . $max_strlen . "s %8s %10s   %8s %8s  %8s %8s %8s %8s\n", "Process", "Direct",  "Wokeup", "Pages",   "Pages",   "Pages",   "Pages",     "Time");
-+	printf("%-" . $max_strlen . "s %8s %10s   %8s %8s  %8s %8s %8s %8s\n", "details", "Rclms",   "Kswapd", "Scanned", "Rclmed",  "Sync-IO", "ASync-IO",  "Stalled");
- 	foreach $process_pid (keys %stats) {
- 
- 		if (!$stats{$process_pid}->{MM_VMSCAN_DIRECT_RECLAIM_BEGIN}) {
-@@ -475,6 +487,7 @@ sub dump_stats {
- 		$total_direct_reclaim += $stats{$process_pid}->{MM_VMSCAN_DIRECT_RECLAIM_BEGIN};
- 		$total_wakeup_kswapd += $stats{$process_pid}->{MM_VMSCAN_WAKEUP_KSWAPD};
- 		$total_direct_nr_scanned += $stats{$process_pid}->{HIGH_NR_SCANNED};
-+		$total_direct_nr_reclaimed += $stats{$process_pid}->{HIGH_NR_RECLAIMED};
- 		$total_direct_writepage_file_sync += $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_FILE_SYNC};
- 		$total_direct_writepage_anon_sync += $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_ANON_SYNC};
- 		$total_direct_writepage_file_async += $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_FILE_ASYNC};
-@@ -489,11 +502,12 @@ sub dump_stats {
- 			$index++;
- 		}
- 
--		printf("%-" . $max_strlen . "s %8d %10d   %8u   %8u %8u %8.3f",
-+		printf("%-" . $max_strlen . "s %8d %10d   %8u %8u  %8u %8u %8.3f",
- 			$process_pid,
- 			$stats{$process_pid}->{MM_VMSCAN_DIRECT_RECLAIM_BEGIN},
- 			$stats{$process_pid}->{MM_VMSCAN_WAKEUP_KSWAPD},
- 			$stats{$process_pid}->{HIGH_NR_SCANNED},
-+			$stats{$process_pid}->{HIGH_NR_RECLAIMED},
- 			$stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_FILE_SYNC} + $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_ANON_SYNC},
- 			$stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_FILE_ASYNC} + $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_ANON_ASYNC},
- 			$this_reclaim_delay / 1000);
-@@ -529,8 +543,8 @@ sub dump_stats {
- 
- 	# Print out kswapd activity
- 	printf("\n");
--	printf("%-" . $max_strlen . "s %8s %10s   %8s   %8s %8s %8s\n", "Kswapd",   "Kswapd",  "Order",     "Pages",   "Pages",  "Pages");
--	printf("%-" . $max_strlen . "s %8s %10s   %8s   %8s %8s %8s\n", "Instance", "Wakeups", "Re-wakeup", "Scanned", "Sync-IO", "ASync-IO");
-+	printf("%-" . $max_strlen . "s %8s %10s   %8s   %8s %8s %8s\n", "Kswapd",   "Kswapd",  "Order",     "Pages",   "Pages",   "Pages",  "Pages");
-+	printf("%-" . $max_strlen . "s %8s %10s   %8s   %8s %8s %8s\n", "Instance", "Wakeups", "Re-wakeup", "Scanned", "Rclmed",  "Sync-IO", "ASync-IO");
- 	foreach $process_pid (keys %stats) {
- 
- 		if (!$stats{$process_pid}->{MM_VMSCAN_KSWAPD_WAKE}) {
-@@ -539,16 +553,18 @@ sub dump_stats {
- 
- 		$total_kswapd_wake += $stats{$process_pid}->{MM_VMSCAN_KSWAPD_WAKE};
- 		$total_kswapd_nr_scanned += $stats{$process_pid}->{HIGH_NR_SCANNED};
-+		$total_kswapd_nr_reclaimed += $stats{$process_pid}->{HIGH_NR_RECLAIMED};
- 		$total_kswapd_writepage_file_sync += $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_FILE_SYNC};
- 		$total_kswapd_writepage_anon_sync += $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_ANON_SYNC};
- 		$total_kswapd_writepage_file_async += $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_FILE_ASYNC};
- 		$total_kswapd_writepage_anon_async += $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_ANON_ASYNC};
- 
--		printf("%-" . $max_strlen . "s %8d %10d   %8u   %8i %8u",
-+		printf("%-" . $max_strlen . "s %8d %10d   %8u %8u  %8i %8u",
- 			$process_pid,
- 			$stats{$process_pid}->{MM_VMSCAN_KSWAPD_WAKE},
- 			$stats{$process_pid}->{HIGH_KSWAPD_REWAKEUP},
- 			$stats{$process_pid}->{HIGH_NR_SCANNED},
-+			$stats{$process_pid}->{HIGH_NR_RECLAIMED},
- 			$stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_FILE_SYNC} + $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_ANON_SYNC},
- 			$stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_FILE_ASYNC} + $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_ANON_ASYNC});
- 
-@@ -579,6 +595,7 @@ sub dump_stats {
- 	print "\nSummary\n";
- 	print "Direct reclaims:     			$total_direct_reclaim\n";
- 	print "Direct reclaim pages scanned:		$total_direct_nr_scanned\n";
-+	print "Direct reclaim pages reclaimed:		$total_direct_nr_reclaimed\n";
- 	print "Direct reclaim write file sync I/O:	$total_direct_writepage_file_sync\n";
- 	print "Direct reclaim write anon sync I/O:	$total_direct_writepage_anon_sync\n";
- 	print "Direct reclaim write file async I/O:	$total_direct_writepage_file_async\n";
-@@ -588,6 +605,7 @@ sub dump_stats {
- 	print "\n";
- 	print "Kswapd wakeups:				$total_kswapd_wake\n";
- 	print "Kswapd pages scanned:			$total_kswapd_nr_scanned\n";
-+	print "Kswapd pages reclaimed:			$total_kswapd_nr_reclaimed\n";
- 	print "Kswapd reclaim write file sync I/O:	$total_kswapd_writepage_file_sync\n";
- 	print "Kswapd reclaim write anon sync I/O:	$total_kswapd_writepage_anon_sync\n";
- 	print "Kswapd reclaim write file async I/O:	$total_kswapd_writepage_file_async\n";
-@@ -612,6 +630,7 @@ sub aggregate_perprocesspid() {
- 		$perprocess{$process}->{MM_VMSCAN_WAKEUP_KSWAPD} += $perprocesspid{$process_pid}->{MM_VMSCAN_WAKEUP_KSWAPD};
- 		$perprocess{$process}->{HIGH_KSWAPD_REWAKEUP} += $perprocesspid{$process_pid}->{HIGH_KSWAPD_REWAKEUP};
- 		$perprocess{$process}->{HIGH_NR_SCANNED} += $perprocesspid{$process_pid}->{HIGH_NR_SCANNED};
-+		$perprocess{$process}->{HIGH_NR_RECLAIMED} += $perprocesspid{$process_pid}->{HIGH_NR_RECLAIMED};
- 		$perprocess{$process}->{MM_VMSCAN_WRITEPAGE_FILE_SYNC} += $perprocesspid{$process_pid}->{MM_VMSCAN_WRITEPAGE_FILE_SYNC};
- 		$perprocess{$process}->{MM_VMSCAN_WRITEPAGE_ANON_SYNC} += $perprocesspid{$process_pid}->{MM_VMSCAN_WRITEPAGE_ANON_SYNC};
- 		$perprocess{$process}->{MM_VMSCAN_WRITEPAGE_FILE_ASYNC} += $perprocesspid{$process_pid}->{MM_VMSCAN_WRITEPAGE_FILE_ASYNC};
-diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
-index 370aa5a..ecf9521 100644
---- a/include/trace/events/vmscan.h
-+++ b/include/trace/events/vmscan.h
-@@ -10,6 +10,7 @@
- 
- #define RECLAIM_WB_ANON		0x0001u
- #define RECLAIM_WB_FILE		0x0002u
-+#define RECLAIM_WB_MIXED	0x0010u
- #define RECLAIM_WB_SYNC		0x0004u
- #define RECLAIM_WB_ASYNC	0x0008u
- 
-@@ -17,6 +18,7 @@
- 	(flags) ? __print_flags(flags, "|",			\
- 		{RECLAIM_WB_ANON,	"RECLAIM_WB_ANON"},	\
- 		{RECLAIM_WB_FILE,	"RECLAIM_WB_FILE"},	\
-+		{RECLAIM_WB_MIXED,	"RECLAIM_WB_MIXED"},	\
- 		{RECLAIM_WB_SYNC,	"RECLAIM_WB_SYNC"},	\
- 		{RECLAIM_WB_ASYNC,	"RECLAIM_WB_ASYNC"}	\
- 		) : "RECLAIM_WB_NONE"
-@@ -26,6 +28,12 @@
- 	(sync == PAGEOUT_IO_SYNC ? RECLAIM_WB_SYNC : RECLAIM_WB_ASYNC)   \
- 	)
- 
-+#define trace_shrink_flags(file, sync) ( \
-+	(sync == PAGEOUT_IO_SYNC ? RECLAIM_WB_MIXED : \
-+			(file ? RECLAIM_WB_FILE : RECLAIM_WB_ANON)) |  \
-+	(sync == PAGEOUT_IO_SYNC ? RECLAIM_WB_SYNC : RECLAIM_WB_ASYNC) \
-+	)
-+
- TRACE_EVENT(mm_vmscan_kswapd_sleep,
- 
- 	TP_PROTO(int nid),
-@@ -269,6 +277,40 @@ TRACE_EVENT(mm_vmscan_writepage,
- 		show_reclaim_flags(__entry->reclaim_flags))
- );
- 
-+TRACE_EVENT(mm_vmscan_lru_shrink_inactive,
-+
-+	TP_PROTO(int nid, int zid,
-+			unsigned long nr_scanned, unsigned long nr_reclaimed,
-+			int priority, int reclaim_flags),
-+
-+	TP_ARGS(nid, zid, nr_scanned, nr_reclaimed, priority, reclaim_flags),
-+
-+	TP_STRUCT__entry(
-+		__field(int, nid)
-+		__field(int, zid)
-+		__field(unsigned long, nr_scanned)
-+		__field(unsigned long, nr_reclaimed)
-+		__field(int, priority)
-+		__field(int, reclaim_flags)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->nid = nid;
-+		__entry->zid = zid;
-+		__entry->nr_scanned = nr_scanned;
-+		__entry->nr_reclaimed = nr_reclaimed;
-+		__entry->priority = priority;
-+		__entry->reclaim_flags = reclaim_flags;
-+	),
-+
-+	TP_printk("nid=%d zid=%d nr_scanned=%ld nr_reclaimed=%ld priority=%d flags=%s",
-+		__entry->nid, __entry->zid,
-+		__entry->nr_scanned, __entry->nr_reclaimed,
-+		__entry->priority,
-+		show_reclaim_flags(__entry->reclaim_flags))
-+);
-+
-+
- #endif /* _TRACE_VMSCAN_H */
- 
- /* This part must be outside protection */
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index c391c32..652650f 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1359,6 +1359,12 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
- 	__count_zone_vm_events(PGSTEAL, zone, nr_reclaimed);
- 
- 	putback_lru_pages(zone, sc, nr_anon, nr_file, &page_list);
-+
-+	trace_mm_vmscan_lru_shrink_inactive(zone->zone_pgdat->node_id,
-+		zone_idx(zone),
-+		nr_scanned, nr_reclaimed,
-+		priority,
-+		trace_shrink_flags(file, sc->lumpy_reclaim_mode));
- 	return nr_reclaimed;
- }
- 
--- 
-1.7.1
+But now that you mentioned, changing _to_ tsc csource can be problematic...
 
