@@ -1,72 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab0IOKN6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 06:13:58 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:60822 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751615Ab0IOKN4 (ORCPT
+	id S1752942Ab0IOKOV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 06:14:21 -0400
+Received: from mail-ww0-f66.google.com ([74.125.82.66]:50629 "EHLO
+	mail-ww0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751720Ab0IOKOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 06:13:56 -0400
-Message-ID: <4C909C57.5030107@canonical.com>
-Date: Wed, 15 Sep 2010 18:13:43 +0800
-From: Ike Panhc <ike.pan@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100903 Thunderbird/3.1.3
+	Wed, 15 Sep 2010 06:14:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:reply-to:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=CkD+N8H6wH5AHTaJS+EgqO8hnBTKBwjs9kxOPuPdrMrPzAqbUMZekH8ekK6qQi4Hnl
+         Eei5cul3u/7u0gpwtEKthBgd1rOxkQ0KcXaanuwcs0uYrCXOXovykb//wfHlTBy+nGrZ
+         Kva5QorlBAYIaEOqw21q3mPFPyqA9/+DXzK4s=
 MIME-Version: 1.0
-To: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Thomas Renninger <trenn@suse.de>, Alan Cox <alan@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Corentin Chary <corentincj@iksaif.net>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        "Brown, Len" <len.brown@intel.com>, Matthew Garrett <mjg@redhat.com>
-Subject: Re: [PATCH 0/8] [Resend] ideapad: using EC command to control rf/camera
- power
-References: <20100819193146.GB32665@darkside.kls.lan> <4C6E2833.6080407@canonical.com> <20100820090824.GA23186@darkside.kls.lan> <4C7505A2.3000402@canonical.com> <20100830181954.GE31068@darkside.kls.lan> <4C7E3DE0.7030209@canonical.com> <20100901195617.GD32589@darkside.kls.lan> <4C80BA81.20701@canonical.com> <20100909181714.GA14951@darkside.kls.lan> <4C89D3C0.7040105@canonical.com> <20100910071155.GA1263@darkside.kls.lan>
-In-Reply-To: <20100910071155.GA1263@darkside.kls.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Reply-To: pghatwork@gmail.com
+In-Reply-To: <AANLkTinctyN3d4o8vq-8pAH67FaoAXOiX3=kobWkNTms@mail.gmail.com>
+References: <AANLkTikTBdr4U1bPtfXWhgLgdvWDMPJrFjBCktPL40dg@mail.gmail.com>
+	<20100910143813.4af0a3ce@lxorguk.ukuu.org.uk>
+	<AANLkTikXFmaZs+XzrOWjWoLPhyUy0CEXfOQMqP=Xp1cO@mail.gmail.com>
+	<AANLkTinctyN3d4o8vq-8pAH67FaoAXOiX3=kobWkNTms@mail.gmail.com>
+Date: Wed, 15 Sep 2010 12:14:17 +0200
+X-Google-Sender-Auth: 4ypo9GFAIEQouxGXmsB1EddVRxo
+Message-ID: <AANLkTi=CNdDYVGNmx17miVBXfPgnWY0X59Ao1pRQDN=S@mail.gmail.com>
+Subject: Re: Request for input regarding new driver in MFD for
+ GPS_Bluetooth_FM controller CG2900
+From: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
+To: Pavan Savoy <pavan_savoy@sify.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linus.walleij@stericsson.com,
+        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2010 03:11 PM, Mario 'BitKoenig' Holbe wrote:
-> 
-> ideapad_rfk_set is also called in ideapad_register_rfkill:
-> 
-> static int ideapad_register_rfkill(struct acpi_device *adevice, int dev)
-> {
-> ...
-> 	if (no_bt_rfkill && (ideapad_rfk_data[dev].type == RFKILL_TYPE_BLUETOOTH))
-> 		return 0;
-> ...
-> 	rfkill_init_sw_state(priv->rfk[dev], 0);
-> }
+Hi Pavan,
 
-eh.. after review the code, the rfkill_init_sw_state shall not give 0 as the default
-value. I shall read the value from EC and set reasonable value.
+Thanks for your comments and sorry for me taking time to answer your mail.
+See below for answers.
 
-> 
-> The rfkill_init_sw_state call to unblock the device finally calls
-> ideapad_rfk_set. In the no_bt_rfkill=1 case rfkill_init_sw_state isn't
-> called, thus the device is not unblocked if it was blocked before.
-> Hence, if I prior disabled BT in Windows, the device remains invisible.
-> This is why I think a manual call to ideapad_rfk_set in the
-> no_bt_rfkill=1 case would make the BT device visible.
-> 
-> "manual" in terms of:
-> 	if (no_bt_rfkill && (ideapad_rfk_data[dev].type == RFKILL_TYPE_BLUETOOTH))
-> 	{
-> 		ideapad_rfk_set(???, 0);
-> 		return 0;
-> 	}
-> 
-> But I don't know what to provide as "???".
+>
+> ok bit more of information ....
+> We don;t use the hciattach, instead we have our own daemon which opens
+> up the UART and installs the line discipline (not N_HCI, but similar
+> one called N_SHARED) when the hciconfig hci0 up happens or even when
+> /dev/radio0 (FM V4L2 device) happens or when generic GPS character
+> device (/dev/tigps) happens...
 
-Do you mean driver still setup the rfkill for bluetooth, but we can not block
-bluetooth when module parameter set to 1? This idea is better then no_bt_rfkill.
-Will modify the driver.
+:-) We also have our own user space application for opening the UART
+and setting the line disc since we don't  want to depend completely on
+hciattach, which contains more than we need, and also misses stuff
+that we want to do towards our specific controller. I just used it as
+an example since that is the common BlueZ way to open the Bluetooth
+transport.
 
+>
+> There is non-mailine driver which gets modified to get into mainline @
+> http://git.omapzoom.org/?p=kernel/omap.git;a=tree;f=drivers/misc/ti-
+> st;h=028ff4a739d7b59b94d0c613b5ef510ff338b65d;hb=refs/heads/p-android-
+> omap-2.6.32
+>
+> feel free to have a look at it...
+> Yes our solution too works with BlueZ and non-exactly a MFD driver but
+> it is a simple platform device driver .. by looks of things the driver
+> can run as is for your chip too .. (except for the firmware search and
+> download part .. may be...).
+
+Your code is in a lot of ways similar to ours (which is not so strange
+since you address the same market with your chip as we do with ours),
+but there are several differences that would at least for now make it
+impossible for us to use your driver. When we post our first patches
+(which will hopefully be in a few days) you can see for yourself. But
+I don't think there is a simple way for us to re-use your driver.
+
+>
+> and note when we would want to support SPI transport for the same, we
+> plan a SPI-TTY driver ('ala usb-serial) where-in we can install this
+> N_TI_WL line discipline on that /dev/ttySPI0 device, and the SPI
+> related stuff to be handled by the spi-tty.c which registers itself as
+> a tty_device and a tty_driver ....
+
+Our SPI usage will be a bit different, where we don't use TTY for our
+driver. We will use the SPI directly instead.
+
+>
+> regards,
+> Pavan
+>
+> On Fri, Sep 10, 2010 at 2:07 PM, Pavan Savoy <pavan_savoy@sify.com>
+> wrote:
+> > Can you directly make use of the ti-st driver which is currently
+> staged?
+> > It has _EXACTLY_ the same thing.... which is REALLY REALLY surprising
+> !!!
+
+:-) As I said earlier this is quite natural since both TI and
+ST-Ericsson address the same market segments.
+
+/P-G
