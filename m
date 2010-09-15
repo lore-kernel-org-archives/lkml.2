@@ -1,104 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755006Ab0IOSmq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 14:42:46 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:61770 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754568Ab0IOSmp (ORCPT
+	id S1754997Ab0IOSpI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 14:45:08 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:3634 "EHLO
+	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754938Ab0IOSpG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 14:42:45 -0400
-Date: Wed, 15 Sep 2010 15:42:35 -0300
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: Mat Martineau <mathewm@codeaurora.org>
-Cc: linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, marcel@holtmann.org, davem@davemloft.net
-Subject: Re: Possible regression with skb_clone() in 2.6.36
-Message-ID: <20100915184235.GA31685@vigoh>
-References: <1283988727-1456-1-git-send-email-padovan@profusion.mobi>
- <alpine.DEB.2.00.1009100920270.14322@linux-sea-02>
- <20100910194509.GC19693@vigoh>
+	Wed, 15 Sep 2010 14:45:06 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzzz32i2a8h)
+X-WSS-ID: 0L8SXDX-02-1M2-02
+X-M-MSG: 
+Date: Wed, 15 Sep 2010 20:44:24 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Stephane Eranian <eranian@google.com>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Don Zickus <dzickus@redhat.com>,
+        "gorcunov@gmail.com" <gorcunov@gmail.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>
+Subject: Re: [PATCH] perf, x86: catch spurious interrupts after disabling
+ counters
+Message-ID: <20100915184424.GS13563@erda.amd.com>
+References: <20100911094157.GA11521@elte.hu>
+ <20100911114404.GE13563@erda.amd.com>
+ <20100911124537.GA22850@elte.hu>
+ <20100912095202.GF13563@erda.amd.com>
+ <20100913143713.GK13563@erda.amd.com>
+ <20100914174132.GN13563@erda.amd.com>
+ <20100915162034.GO13563@erda.amd.com>
+ <AANLkTimWoE5XiYSr8jx=RFS5Nb9d4_wWe=c-W3oMj8dH@mail.gmail.com>
+ <20100915170057.GQ13563@erda.amd.com>
+ <AANLkTi=yvDF34e5rYqJt=Av7dhSwBLjXp=r_EfEAMLJY@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Disposition: inline
-In-Reply-To: <20100910194509.GC19693@vigoh>
+In-Reply-To: <AANLkTi=yvDF34e5rYqJt=Av7dhSwBLjXp=r_EfEAMLJY@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mat,
-
-* Gustavo F. Padovan <padovan@profusion.mobi> [2010-09-10 16:45:09 -0300]:
-
-> Hi Mat,
+On 15.09.10 13:32:49, Stephane Eranian wrote:
+> > I tried to clear the bit in the active_mask after disabling the
+> > counter (writing to the msr), which did not solve it. Shouldn't the
+> > counter be disabled immediatly? Maybe clearing the INT bit would have
+> > been worked too, but I was not sure about side effects.
+> >
+> 0 instr1
+> 1 instr2
+> 2 instr3
+> 3 wrmsrl(eventsel0, 0);
 > 
-> * Mat Martineau <mathewm@codeaurora.org> [2010-09-10 09:53:31 -0700]:
-> 
-> > 
-> > Gustavo -
-> > 
-> > I'm not sure why the streaming code used to work, but this does not 
-> > look like an skb_clone() problem.  Your patch to remove the 
-> > skb_clone() call in l2cap_streaming_send() addresses the root cause of 
-> > this crash.
-> > 
-> > On Wed, 8 Sep 2010, Gustavo F. Padovan wrote:
-> > 
-> > > I've been experiencing some problems when running the L2CAP Streaming mode in
-> > > 2.6.36. The system quickly runs in an Out Of Memory condition and crash. That
-> > > wasn't happening before, so I think we may have a regression here (I didn't
-> > > find where yet). The crash log is below.
-> > >
-> > > The following patch does not fix the regression, but shows that removing the
-> > > skb_clone() call from l2cap_streaming_send() we workaround the problem. The
-> > > patch is good anyway because it saves memory and time.
-> > >
-> > > By now I have no idea on how to fix this.
-> > >
-> > > <snip>
-> > 
-> > This has to do with the sk->sk_wmem_alloc accounting that controls the 
-> > amount of write buffer space used on the socket.
-> > 
-> > When the L2CAP streaming mode socket segments its data, it allocates 
-> > memory using sock_alloc_send_skb() (via bt_skb_send_alloc()).  Before 
-> > that allocation call returns, skb_set_owner_w() is called on the new 
-> > skb.  This adds to sk->sk_wmem_alloc and sets skb->destructor so that 
-> > sk->sk_wmem_alloc is correctly updated when the skb is freed.
-> > 
-> > When that skb is cloned, the clone is not "owned" by the write buffer. 
-> > The clone's destructor is set to NULL in __skb_clone().  The version 
-> > of l2cap_streaming_send() that runs out of memory is passing the 
-> > non-owned skb clone down to the HCI layer.  The original skb (the one 
-> > that's "owned by w") is immediately freed, which adjusts 
-> > sk->sk_wmem_alloc back down - the socket thinks it has unlimited write 
-> > buffer space.  As a result, bt_skb_send_alloc() never blocks waiting 
-> > for buffer space (or returns EAGAIN for nonblocking writes) and the 
-> > HCI send queue keeps growing.
-> 
-> If the problem is what you are saying, add a skb_set_owner_w(skb, sk) on
-> the cloned skb should solve the problem, but it doesn't. That's exactly
-> what tcp_transmit_skb() does. Also that just appeared in 2.6.36, is was
-> working fine before, i.e, we have a regression here. 
+> There is skid between the instruction you overflow the counter and
+> where the interrupt
+> is posted.  If you overflow on instr1, suppose you post the interrupt
+> on instr3 which
+> is immediately followed by disable. There may a chance you get the
+> interrupt even
+> though the counter was disabled. I also don't know when the INT bit is
+> looked at.
 
-I've run some other tests and what you said also fixes the problem for
-Streaming Mode. If I use skb_set_owner_w() on the cloned skb, everything
-works fine. But we still have the problem for ERTM as I described.
-send() blocks wainting for memory. The regression is there yet.
-:(
+Yes, this could be possible. So, we should assume interrupts may be
+delivered after a counter is disabled, which the patch addresses.
 
 > 
-> > 
-> > This isn't a problem for the ERTM sends, because the original skbs are 
-> > kept in the ERTM tx queue until they are acked.  Once they're acked, 
-> > the write buffer space is freed and additional skbs can be allocated.
+> It may be worthwhile trying with:
 > 
-> It affects ERTM as well, but in that case the kernel doesn't crash
-> because ERTM block on sending trying to allocate memory. Then we are not
-> able to receive any ack (everything stays queued in sk_backlog_queue as
-> the sk is owned by the user) and ERTM stalls.
+> static inline void x86_pmu_disable_event(struct perf_event *event)
+> {
+>         struct hw_perf_event *hwc = &event->hw;
+>         (void)checking_wrmsrl(hwc->config_base + hwc->idx, 0);
+> }
 > 
+> to see if it makes a difference.
+> 
+> 
+> >> Does the counter value reflect this?
+> >
+> > Yes, the disabled bit was cleared after reading the evntsel msr and
+> > the ctr value have had about 400 cycles (it could have been
+> > overflowed, though we actually can't say since the counter was
+> > disabled).
+> >
+> >> Were you also getting this if you were only measuring at the user level?
+> >
+> > I tried only
+> >
+> >  perf record ./hackbench 10
+> >
+> > which triggered it on my system.
+> >
+> I suspect that if you do:
+> 
+> perf record -e cycles:u ./hackbench 10
+> 
+> It does not happen.
+
+Do you know at which period the counters running for the following?
+
+ perf record ./hackbench 10
+ perf record -e cycles -e instructions -e cache-references \
+     -e cache-misses -e branch-misses -a -- <cmd>
+
+I couldn't find something about this in the man page.
+
+I will do some further investigations here, esp. with:
+
+* compile order,
+* checking_wrmsrl(),
+* -e cycles:u
+
+But I can not start with it before next week.
+
+-Robert
 
 -- 
-Gustavo F. Padovan
-ProFUSION embedded systems - http://profusion.mobi
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
