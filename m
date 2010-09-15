@@ -1,76 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565Ab0IOHJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 03:09:56 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55786 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752163Ab0IOHJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 03:09:55 -0400
-Date: Wed, 15 Sep 2010 10:09:37 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: "tom.leiming@gmail.com" <tom.leiming@gmail.com>,
-        "greg@kroah.com" <greg@kroah.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Felipe Balbi <me@felipebalbi.com>, "Gadiyar, Anand" <gadiyar@ti.com>,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: Re: [RESEND/PATCH 6/6] USB: musb-gadget: fix dma length in txstate
-Message-ID: <20100915070936.GD3393@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1283873014-32511-1-git-send-email-tom.leiming@gmail.com>
- <1283873014-32511-7-git-send-email-tom.leiming@gmail.com>
- <4C8FB43D.5020604@ru.mvista.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
+	id S1752094Ab0IOHer (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 03:34:47 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:53720 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751703Ab0IOHeq convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:4:1>);
+	Wed, 15 Sep 2010 03:34:46 -0400
+Message-Id: <4C90935D020000780001630D@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Wed, 15 Sep 2010 08:35:25 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Fenghua Yu" <fenghua.yu@intel.com>
+Cc: "khali@linux-fr.org" <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86/hwmon: avoid deadlock on CPU removal in
+	 pkgtemp
+References: <4C8E14D90200007800015AAE@vpn.id2.novell.com>
+ <20100915001259.GA1237@fenghua-desk.sc.intel.com>
+In-Reply-To: <20100915001259.GA1237@fenghua-desk.sc.intel.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <4C8FB43D.5020604@ru.mvista.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 14, 2010 at 12:43:25PM -0500, Sergei Shtylyov wrote:
->Hello.
->
->tom.leiming@gmail.com wrote:
->
->> From: Ming Lei <tom.leiming@gmail.com>
->
->> DMA length should not go beyond the availabe space of request buffer,
->> so fix it.
->
->> Signed-off-by: Ming Lei <tom.leiming@gmail.com>
->> Cc: David Brownell <dbrownell@users.sourceforge.net>
->> Cc: Felipe Balbi <me@felipebalbi.com>
->> Cc: Anand Gadiyar <gadiyar@ti.com>
->> Cc: Mike Frysinger <vapier@gentoo.org>
->> Cc: Sergei Shtylyov <sshtylyov@ru.mvista.com>
->
->[...]
->
->> diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
->> index fa826f9..cacae96 100644
->> --- a/drivers/usb/musb/musb_gadget.c
->> +++ b/drivers/usb/musb/musb_gadget.c
->> @@ -300,6 +300,11 @@ static void txstate(struct musb *musb, struct musb_request *req)
->>  #ifndef	CONFIG_MUSB_PIO_ONLY
->>  	if (is_dma_capable() && musb_ep->dma) {
->>  		struct dma_controller	*c = musb->dma_controller;
->> +		size_t request_size;
->> +
->> +		/* setup DMA, then program endpoint CSR */
->> +		request_size = min_t(size_t, request->length - request->actual,
->> +					musb_ep->dma->max_len);
->
->    Er, you're moving this from under #ifdef CONFIG_USB_INVENTRA_DMA to the
->common code, right? Do you know that not all DMA drivers initialize max_len? For
->example CPPI driver doesn't, so it's left at zero. You're going to break DMA for
->CPPI. Please extend your patch, adding cppi_dma.c to it.
+>>> On 15.09.10 at 02:13, Fenghua Yu <fenghua.yu@intel.com> wrote:
+> From: Fenghua Yu <fenghua.yu@intel.com>
+> 
+> When a sibling is added to dev_list after a cpu is hot-removed, 
+> pdev_list_mutex
+> has been locked already. But pkgtemp_device_add() tries to lock 
+> pdev_list_mutex
+> again. This is incorrect. The patch fixes this issue.
+> 
+> The patch also removes __cpuinit for pkgtemp_device_add() to avoid section
+> mismatch warning.
 
-yes, please set some value on cppi_dma.c max_len field.
+But that the wrong direction of a change - __cpuinit should be added
+to pkgtemp_device_remove() instead.
 
--- 
-balbi
+> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+> ---
+>  drivers/hwmon/pkgtemp.c |   18 +++++++++++++-----
+>  1 files changed, 13 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/hwmon/pkgtemp.c b/drivers/hwmon/pkgtemp.c
+> index 74157fc..928a016 100644
+> --- a/drivers/hwmon/pkgtemp.c
+> +++ b/drivers/hwmon/pkgtemp.c
+> @@ -276,7 +276,7 @@ struct pdev_entry {
+>  static LIST_HEAD(pdev_list);
+>  static DEFINE_MUTEX(pdev_list_mutex);
+>  
+> -static int __cpuinit pkgtemp_device_add(unsigned int cpu)
+> +static int pkgtemp_device_add(unsigned int cpu)
+>  {
+>  	int err;
+>  	struct platform_device *pdev;
+> @@ -341,26 +341,34 @@ static void pkgtemp_device_remove(unsigned int cpu)
+>  {
+>  	struct pdev_entry *p, *n;
+>  	unsigned int i;
+> -	int err;
+>  
+> -	mutex_lock(&pdev_list_mutex);
+>  	list_for_each_entry_safe(p, n, &pdev_list, list) {
+>  		if (p->cpu != cpu)
+>  			continue;
+>  
+> +		mutex_lock(&pdev_list_mutex);
+>  		platform_device_unregister(p->pdev);
+>  		list_del(&p->list);
+>  		kfree(p);
+> +		mutex_unlock(&pdev_list_mutex);
+
+While probably not very important, it's nevertheless unclear why you
+need to do the kfree() with the mutex held.
+
+Jan
+
+> +		/*
+> +		 * Select one of removed cpu's siblings to represent sensor
+> +		 * for this package.
+> +		 * If there is no more running sibling in a package, the
+> +		 * package sensor for this package is not available to user
+> +		 * space any more.
+> +		 */
+>  		for_each_cpu(i, cpu_core_mask(cpu)) {
+> +			int err;
+> +
+>  			if (i != cpu) {
+>  				err = pkgtemp_device_add(i);
+>  				if (!err)
+>  					break;
+>  			}
+>  		}
+> -		break;
+> +		return;
+>  	}
+> -	mutex_unlock(&pdev_list_mutex);
+>  }
+>  
+>  static int __cpuinit pkgtemp_cpu_callback(struct notifier_block *nfb,
+
+
