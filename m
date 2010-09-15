@@ -1,253 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab0IOMNg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 08:13:36 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:44210 "EHLO mx01.d-labs.de"
+	id S1753383Ab0IOM17 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 08:27:59 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:45576 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753181Ab0IOMNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 08:13:35 -0400
-From: florian@mickler.org
-To: linux-kernel@vger.kernel.org
-Cc: ebiederm@xmission.com, Florian Mickler <florian@mickler.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>
-Subject: [PATCH rfc] scripts/get_maintainer.pl: add interactive mode
-Date: Wed, 15 Sep 2010 14:13:06 +0200
-Message-Id: <1284552799-12748-1-git-send-email-florian@mickler.org>
-X-Mailer: git-send-email 1.7.2
+	id S1753181Ab0IOM16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 08:27:58 -0400
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: [PATCH 7/8] writeback: Do not sleep on the congestion queue if there are no congested BDIs
+Date: Wed, 15 Sep 2010 13:27:50 +0100
+Message-Id: <1284553671-31574-8-git-send-email-mel@csn.ul.ie>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1284553671-31574-1-git-send-email-mel@csn.ul.ie>
+References: <1284553671-31574-1-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a first version of an interactive mode for
-scripts/get_maintainer.pl .
+If congestion_wait() is called with no BDI congested, the caller will sleep
+for the full timeout and this may be an unnecessary sleep. This patch adds
+a wait_iff_congested() that checks congestion and only sleeps if a BDI is
+congested else, it calls cond_resched() to ensure the caller is not hogging
+the CPU longer than its quota but otherwise will not sleep.
 
-It allows the user to interact with the script. Each cc candidate can be
-selected and deselected and a shortlog of authored commits can be
-displayed for each candidate.
-The menu is displayed via STDERR, the end result is outputted to STDOUT. 
-This unconventional mechanism allows it to be used via
+This is aimed at reducing some of the major desktop stalls reported during
+IO. For example, while kswapd is operating, it calls congestion_wait()
+but it could just have been reclaiming clean page cache pages with no
+congestion. Without this patch, it would sleep for a full timeout but after
+this patch, it'll just call schedule() if it has been on the CPU too long.
+Similar logic applies to direct reclaimers that are not making enough
+progress.
 
-git send-email --cc-cmd=scripts/get_maintainer.pl 
-
-To use it, add --interactive to the commandline or put it into .get_maintainer.conf.
-To have the usual signed-off-by percentage visible in the menu, add --rolestats.
-
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 ---
+ include/linux/backing-dev.h      |    2 +-
+ include/trace/events/writeback.h |    7 +++++
+ mm/backing-dev.c                 |   54 ++++++++++++++++++++++++++++++++++++-
+ mm/page_alloc.c                  |    4 +-
+ 4 files changed, 62 insertions(+), 5 deletions(-)
 
-
-
-TODO:
- - fixup multiple file case
- - fixup chief_penguin handling
- - make output prettier
- - usability?
-
-scripts/get_maintainer.pl |  118 +++++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 114 insertions(+), 4 deletions(-)
-
-diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
-index b228198..45eb560 100755
---- a/scripts/get_maintainer.pl
-+++ b/scripts/get_maintainer.pl
-@@ -32,6 +32,7 @@ my $email_git_max_maintainers = 5;
- my $email_git_min_percent = 5;
- my $email_git_since = "1-year-ago";
- my $email_hg_since = "-365";
-+my $interactive = 0;
- my $email_remove_duplicates = 1;
- my $output_multiline = 1;
- my $output_separator = ", ";
-@@ -51,6 +52,8 @@ my $help = 0;
- 
- my $exit = 0;
- 
-+my %shortlog_buffer;
-+
- my @penguin_chief = ();
- push(@penguin_chief, "Linus Torvalds:torvalds\@linux-foundation.org");
- #Andrew wants in on most everything - 2009/01/14
-@@ -91,7 +94,8 @@ my %VCS_cmds_git = (
-     "blame_range_cmd" => "git blame -l -L \$diff_start,+\$diff_length \$file",
-     "blame_file_cmd" => "git blame -l \$file",
-     "commit_pattern" => "^commit [0-9a-f]{40,40}",
--    "blame_commit_pattern" => "^([0-9a-f]+) "
-+    "blame_commit_pattern" => "^([0-9a-f]+) ",
-+    "shortlog_cmd" => "git log --no-color --oneline --since=\$email_git_since --author=\"\$email\" -- \$file"
- );
- 
- my %VCS_cmds_hg = (
-@@ -104,7 +108,8 @@ my %VCS_cmds_hg = (
-     "blame_range_cmd" => "",		# not supported
-     "blame_file_cmd" => "hg blame -c \$file",
-     "commit_pattern" => "^commit [0-9a-f]{40,40}",
--    "blame_commit_pattern" => "^([0-9a-f]+):"
-+    "blame_commit_pattern" => "^([0-9a-f]+):",
-+    "shortlog_cmd" => "ht log --date=\$email_hg_since"
- );
- 
- if (-f "${lk_path}.get_maintainer.conf") {
-@@ -142,6 +147,7 @@ if (!GetOptions(
- 		'git-min-percent=i' => \$email_git_min_percent,
- 		'git-since=s' => \$email_git_since,
- 		'hg-since=s' => \$email_hg_since,
-+		'i|interactive!' => \$interactive,
- 		'remove-duplicates!' => \$email_remove_duplicates,
- 		'm!' => \$email_maintainer,
- 		'n!' => \$email_usename,
-@@ -219,6 +225,8 @@ if ($email_git_all_signature_types) {
-     $signaturePattern = "(.+?)[Bb][Yy]:";
- }
- 
-+
-+
- ## Read MAINTAINERS for type/value pairs
- 
- my @typevalue = ();
-@@ -440,10 +448,14 @@ foreach my $file (@files) {
-     if ($email && $email_git) {
- 	vcs_file_signoffs($file);
-     }
+diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+index 35b0074..72bb510 100644
+--- a/include/linux/backing-dev.h
++++ b/include/linux/backing-dev.h
+@@ -285,7 +285,7 @@ enum {
+ void clear_bdi_congested(struct backing_dev_info *bdi, int sync);
+ void set_bdi_congested(struct backing_dev_info *bdi, int sync);
+ long congestion_wait(int sync, long timeout);
 -
-     if ($email && $email_git_blame) {
- 	vcs_file_blame($file);
-     }
-+    if ($email && $interactive){
-+	#FIXME: multiple file case is broken at the moment
-+	#FIXME: penguin_chief handlich is broken at the moment
-+	vcs_interactive_menu($file);
-+    }
- }
++long wait_iff_congested(int sync, long timeout);
  
- if ($keywords) {
-@@ -476,6 +488,7 @@ if ($email) {
-     }
- }
+ static inline bool bdi_cap_writeback_dirty(struct backing_dev_info *bdi)
+ {
+diff --git a/include/trace/events/writeback.h b/include/trace/events/writeback.h
+index 275d477..eeaf1f5 100644
+--- a/include/trace/events/writeback.h
++++ b/include/trace/events/writeback.h
+@@ -181,6 +181,13 @@ DEFINE_EVENT(writeback_congest_waited_template, writeback_congestion_wait,
+ 	TP_ARGS(usec_timeout, usec_delayed)
+ );
  
++DEFINE_EVENT(writeback_congest_waited_template, writeback_wait_iff_congested,
 +
- if ($email || $email_list) {
-     my @to = ();
-     if ($email) {
-@@ -545,6 +558,7 @@ MAINTAINER field selection options:
-     --git-blame => use git blame to find modified commits for patch or file
-     --git-since => git history to use (default: $email_git_since)
-     --hg-since => hg history to use (default: $email_hg_since)
-+    --interactive => display a menu (mostly useful if used with the --git option)
-     --m => include maintainer(s) if any
-     --n => include name 'Full Name <addr\@domain.tld>'
-     --l => include list(s) if any
-@@ -1104,6 +1118,102 @@ sub vcs_exists {
-     return 0;
- }
++	TP_PROTO(unsigned int usec_timeout, unsigned int usec_delayed),
++
++	TP_ARGS(usec_timeout, usec_delayed)
++);
++
+ #endif /* _TRACE_WRITEBACK_H */
  
-+sub vcs_interactive_menu {
-+    my ($file) = @_;
+ /* This part must be outside protection */
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index e891794..3caf679 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -727,6 +727,7 @@ static wait_queue_head_t congestion_wqh[2] = {
+ 		__WAIT_QUEUE_HEAD_INITIALIZER(congestion_wqh[0]),
+ 		__WAIT_QUEUE_HEAD_INITIALIZER(congestion_wqh[1])
+ 	};
++static atomic_t nr_bdi_congested[2];
+ 
+ void clear_bdi_congested(struct backing_dev_info *bdi, int sync)
+ {
+@@ -734,7 +735,8 @@ void clear_bdi_congested(struct backing_dev_info *bdi, int sync)
+ 	wait_queue_head_t *wqh = &congestion_wqh[sync];
+ 
+ 	bit = sync ? BDI_sync_congested : BDI_async_congested;
+-	clear_bit(bit, &bdi->state);
++	if (test_and_clear_bit(bit, &bdi->state))
++		atomic_dec(&nr_bdi_congested[sync]);
+ 	smp_mb__after_clear_bit();
+ 	if (waitqueue_active(wqh))
+ 		wake_up(wqh);
+@@ -746,7 +748,8 @@ void set_bdi_congested(struct backing_dev_info *bdi, int sync)
+ 	enum bdi_state bit;
+ 
+ 	bit = sync ? BDI_sync_congested : BDI_async_congested;
+-	set_bit(bit, &bdi->state);
++	if (!test_and_set_bit(bit, &bdi->state))
++		atomic_inc(&nr_bdi_congested[sync]);
+ }
+ EXPORT_SYMBOL(set_bdi_congested);
+ 
+@@ -777,3 +780,50 @@ long congestion_wait(int sync, long timeout)
+ }
+ EXPORT_SYMBOL(congestion_wait);
+ 
++/**
++ * wait_iff_congested - Conditionally wait for a backing_dev to become uncongested or a zone to complete writes
++ * @sync: SYNC or ASYNC IO
++ * @timeout: timeout in jiffies
++ *
++ * In the event of a congested backing_dev (any backing_dev), this waits for up
++ * to @timeout jiffies for either a BDI to exit congestion of the given @sync
++ * queue.
++ *
++ * If there is no congestion, then cond_resched() is called to yield the
++ * processor if necessary but otherwise does not sleep.
++ *
++ * The return value is 0 if the sleep is for the full timeout. Otherwise,
++ * it is the number of jiffies that were still remaining when the function
++ * returned. return_value == timeout implies the function did not sleep.
++ */
++long wait_iff_congested(int sync, long timeout)
++{
++	long ret;
++	unsigned long start = jiffies;
++	DEFINE_WAIT(wait);
++	wait_queue_head_t *wqh = &congestion_wqh[sync];
 +
-+    return if (!vcs_exists());
++	/* If there is no congestion, yield if necessary instead of sleeping */
++	if (atomic_read(&nr_bdi_congested[sync]) == 0) {
++		cond_resched();
 +
-+    my %selected;
-+    my %shortlog;
-+    my $input;
-+    my $count = 0;
++		/* In case we scheduled, work out time remaining */
++		ret = timeout - (jiffies - start);
++		if (ret < 0)
++			ret = 0;
 +
-+    #select maintainers by default
-+    foreach my $entry (@email_to){
-+	    my $role = $entry->[1];
-+	    $selected{$count} = ($role =~ /maintainer:/);
-+	    $count++;
-+    }
-+
-+    #menu loop
-+    do {
-+	my $count = 0;
-+	foreach my $entry (@email_to){
-+	    my $email = $entry->[0];
-+	    my $role = $entry->[1];
-+	    if ($selected{$count}){
-+		print STDERR "* ";
-+	    } else {
-+		print STDERR "  ";
-+	    }
-+	    print STDERR "$count: $email,\t\t $role";
-+	    print STDERR "\n";
-+	    if ($shortlog{$count}){
-+		my @lines = @{vcs_get_shortlog($email, $file)};
-+		print STDERR "\tauthored commits:" . @lines . ".\n";
-+		foreach my $commit (@lines){
-+		    print STDERR "\t$commit\n";
-+		}
-+		print STDERR "\n";
-+	    }
-+	    $count++;
++		goto out;
 +	}
-+	print STDERR "\n";
-+	print STDERR "Choose whom to cc by entering a commaseperated list of numbers and hitting enter.\n";
-+	print STDERR "To show a short list of commits, precede the number by a '?',\n";
-+	print STDERR "A blank line indicates that you are satisfied with your choice.\n";
-+	$input = <STDIN>;
-+	chomp($input);
 +
-+	my @wish = split(/[, ]+/,$input);
-+	foreach my $nr (@wish){
-+		my $logtoggle = 0;
-+		if ($nr =~ /\?/){
-+			$nr =~ s/\?//;
-+			$logtoggle = 1;
-+		}
++	/* Sleep until uncongested or a write happens */
++	prepare_to_wait(wqh, &wait, TASK_UNINTERRUPTIBLE);
++	ret = io_schedule_timeout(timeout);
++	finish_wait(wqh, &wait);
 +
-+		#skip out of bounds numbers
-+		next unless ($nr <= $count && $nr >= 0);
++out:
++	trace_writeback_wait_iff_congested(jiffies_to_usecs(timeout),
++					jiffies_to_usecs(jiffies - start));
 +
-+		if ($logtoggle){
-+			$shortlog{$nr} = !$shortlog{$nr};
-+		} else {
-+			$selected{$nr} = !$selected{$nr};
-+		}
-+	};
-+    } while(length($input) > 0);
-+
-+    #drop not selected entries
-+    $count = 0;
-+    my @new_emailto;
-+    foreach my $entry (@email_to){
-+	next unless $selected{$count};
-+	push(@new_emailto,$email_to[$count]);
-+	print STDERR "$count: ";
-+	print STDERR $email_to[$count]->[0];
-+	print STDERR ",\t\t ";
-+	print STDERR $email_to[$count]->[1];
-+	print STDERR "\n";
-+	$count++;
-+    }
-+    @email_to = @new_emailto;
++	return ret;
 +}
-+
-+sub vcs_get_shortlog {
-+	my $email = shift;
-+	my ($file) = @_;
-+
-+	if (!$shortlog_buffer{$email}){
-+		my $cmd = $VCS_cmds{"shortlog_cmd"};
-+		$cmd =~ s/(\$\w+)/$1/eeg;		#interpolate $cmd
-+
-+		my @lines = &{$VCS_cmds{"execute_cmd"}}($cmd);
-+		$shortlog_buffer{$email}=\@lines;
-+	}
-+	return $shortlog_buffer{$email};
-+}
-+
- sub vcs_assign {
-     my ($role, $divisor, @lines) = @_;
++EXPORT_SYMBOL(wait_iff_congested);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index a8cfa9c..9b66c75 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1906,7 +1906,7 @@ __alloc_pages_high_priority(gfp_t gfp_mask, unsigned int order,
+ 			preferred_zone, migratetype);
  
-@@ -1179,7 +1289,7 @@ sub vcs_file_blame {
- 	my @commit_signers = ();
+ 		if (!page && gfp_mask & __GFP_NOFAIL)
+-			congestion_wait(BLK_RW_ASYNC, HZ/50);
++			wait_iff_congested(BLK_RW_ASYNC, HZ/50);
+ 	} while (!page && (gfp_mask & __GFP_NOFAIL));
  
- 	my $cmd = $VCS_cmds{"find_commit_signers_cmd"};
--	$cmd =~ s/(\$\w+)/$1/eeg;	#interpolate $cmd
-+	$cmd =~ s/(\$\w+)/$1/eeg;	#substitute variables in $cmd
+ 	return page;
+@@ -2094,7 +2094,7 @@ rebalance:
+ 	pages_reclaimed += did_some_progress;
+ 	if (should_alloc_retry(gfp_mask, order, pages_reclaimed)) {
+ 		/* Wait for some write requests to complete then retry */
+-		congestion_wait(BLK_RW_ASYNC, HZ/50);
++		wait_iff_congested(BLK_RW_ASYNC, HZ/50);
+ 		goto rebalance;
+ 	}
  
- 	($commit_count, @commit_signers) = vcs_find_signers($cmd);
- 	push(@signers, @commit_signers);
 -- 
-1.7.2
+1.7.1
 
