@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928Ab0IONnw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 09:43:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34570 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753235Ab0IONnu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 09:43:50 -0400
-Date: Wed, 15 Sep 2010 15:42:00 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Balbir Singh <balbir@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Izik Eidus <ieidus@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Nick Piggin <npiggin@suse.de>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: Transparent Hugepage Support #30
-Message-ID: <20100915134200.GD5981@random.random>
-References: <20100901190859.GA20316@random.random>
- <20100909104630.GO4443@balbir.in.ibm.com>
- <20100909234008.GS8925@random.random>
- <20100913093409.GF17950@balbir.in.ibm.com>
+	id S1753413Ab0IONpG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 09:45:06 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:40544 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620Ab0IONpF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 09:45:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100913093409.GF17950@balbir.in.ibm.com>
+In-Reply-To: <20100915132731.GA20558@khazad-dum.debian.net>
+References: <1284284969.2928.18.camel@maxim-laptop> <1284427621.4127.7.camel@maxim-laptop>
+ <4C8F2699.3020509@kernel.org> <AANLkTinGHB9fbLw1Cm5wvPLGy8QEuoBBmFiqpnvXiZ8R@mail.gmail.com>
+ <1284507516.4963.2.camel@maxim-laptop> <AANLkTimFpyYab69=XQVZc+P50v6_uVr6UbA246Fnm3-u@mail.gmail.com>
+ <1284511071.3551.1.camel@maxim-laptop> <AANLkTikF37hN7dFqPbCp-gcim7SarveaTrjXipnGpJM7@mail.gmail.com>
+ <20100915132731.GA20558@khazad-dum.debian.net>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Wed, 15 Sep 2010 15:44:48 +0200
+Message-ID: <AANLkTinGDUxsgaGey7EnYOu3kKP-YRE00gL33hiKvAWj@mail.gmail.com>
+Subject: Re: [REGRESSION] cdrom drive doesn't detect removal
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Maxim Levitsky <maximlevitsky@gmail.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Sep 15, 2010 at 15:27, Henrique de Moraes Holschuh
+<hmh@hmh.eng.br> wrote:
+> On Wed, 15 Sep 2010, Kay Sievers wrote:
+>> It's only the polling that should be able to trigger these events for
+>> the device. the device itself can't report any changes to the host,
+>> unless you have a SATA drive which can send AN (async notification)
+>> events. But we disabled the AN support recently, because it was
+>> running in loops on some boxes.
+>
+> Is it so widespread or extremely difficult to detect, that it justifies
+> breaking AN for all users?
 
-On Mon, Sep 13, 2010 at 03:04:09PM +0530, Balbir Singh wrote:
-> OK, when the code is touched next and from now on, we'll stop making
-> that assumption.
+Yes. It's not properly implemented, and many drives just always send
+an event on access, regardless if the media is changed or not. To work
+properly, it will need in-kernel media presence polling, which is
+being worked on. The current AN events, the stuff the drives send, and
+the way it is handled in the kernel, is just not usable.
 
-Great, thanks!
+> Anyway, if userspace thinks AN is available, it won't pool or touch
+> /dev/sr*, which would explain the problem (but one still would have to find
+> the root cause: why userspace thinks it doesn't need to pool?).
 
-> Thanks, is there an overhead of the compound_lock that will show up?
+There is no userspace checking for AN support right now. It wouldn't
+work anyway. And the only thing that makes sense is to move the
+polling in the kernel regardless of AN support or not, and make
+userspace check for that and skip polling when the kernel takes care.
 
-The compound lock is a per-page bit spinlock, so it'll surely scale
-well, but surely there is a locked op overhead associated to it, but
-it will only cost for hugepages, not normal pages.
-
-Hugepages can't be collapsed in place, and they can only be collapsed
-under the mmap_sem write mode (so holding the mmap sem in read or
-write mode is enough to protect against it). The same can't be said
-for the split of an hugepage, hugepages can be splitted under the mmap
-sem just fine (the only way to protect against it is the compound_lock
-or the anon_vma_lock, or yet another way to avoid the page to be
-splitted under us is to local_irq_disable and then call
-__get_user_pages_fast like futex.c does, it can't be splitted until
-local_irq_enable is called, same guarantee as in gup_fast, the
-pmd_splitting_flush_notify will wait, the tlb flush for the splitting
-is really useless, it's just there to send an IPI and wait for any
-gup_fast to finish). It's not entirely clear right now, what kind of
-protection we need in memcg.
-
-> Please do look at it, most of the churn is not controllable since it
-> is bug fixes and feature enhancements for newer subsystems and
-> performance. We'll try not to break anything fundamental.
-
-Looking at it right now!
+Kay
