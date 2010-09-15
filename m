@@ -1,86 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770Ab0IOJdH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 05:33:07 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:34690 "EHLO comal.ext.ti.com"
+	id S1751492Ab0IOJij (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 05:38:39 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:42213 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752393Ab0IOJdE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 05:33:04 -0400
-From: "Ghorai, Sukumar" <s-ghorai@ti.com>
-To: Chris Ball <cjb@laptop.org>, Adrian Hunter <adrian.hunter@nokia.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Matt Fleming <matt@console-pimps.org>,
-        Linus Walleij <linus.ml.walleij@gmail.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "STEricsson_nomadik_linux@list.st.com" 
-	<STEricsson_nomadik_linux@list.st.com>,
-        Hanumath Prasad <hanumath.prasad@stericsson.com>,
-        Kyungmin Park <kmpark@infradead.org>
-Date: Wed, 15 Sep 2010 15:02:05 +0530
-Subject: RE: [PATCH] mmc: MMC 4.4 DDR support
-Thread-Topic: [PATCH] mmc: MMC 4.4 DDR support
-Thread-Index: ActUAZFODssEdaEqRv+Cdh0xy1RV+gAtQrbg
-Message-ID: <2A3DCF3DA181AD40BDE86A3150B27B6B0315FAFD01@dbde02.ent.ti.com>
-References: <1278658780-26397-1-git-send-email-hanumath.prasad@stericsson.com>
- <AANLkTikBdBhJeQ-t2+0echJfAxz529QZEYPJtyHUsROd@mail.gmail.com>
- <m3pqxbsibq.fsf@pullcord.laptop.org>
- <20100823204829.GB6510@console-pimps.org>
- <20100823142816.59b12253.akpm@linux-foundation.org>
- <4C739F55.8030301@nokia.com> <20100914112143.GA16039@void.printf.net>
-In-Reply-To: <20100914112143.GA16039@void.printf.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1750695Ab0IOJii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 05:38:38 -0400
+Date: Wed, 15 Sep 2010 19:38:30 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        linux-mtd@lists.infradead.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@ozlabs.org, Corey Minyard <minyard@acm.org>,
+        openipmi-developer@lists.sourceforge.net, Takashi Iwai <tiwai@suse.de>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH 0/7] BKL mass-conversion to mutex
+Message-Id: <20100915193830.27722c3a.sfr@canb.auug.org.au>
+In-Reply-To: <1284494022-7346-1-git-send-email-arnd@arndb.de>
+References: <1284494022-7346-1-git-send-email-arnd@arndb.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__15_Sep_2010_19_38_30_+1000_x_8PDlRlfK6atX+0"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Wed__15_Sep_2010_19_38_30_+1000_x_8PDlRlfK6atX+0
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> -----Original Message-----
-> From: linux-mmc-owner@vger.kernel.org [mailto:linux-mmc-
-> owner@vger.kernel.org] On Behalf Of Chris Ball
-> Sent: Tuesday, September 14, 2010 4:52 PM
-> To: Adrian Hunter
-> Cc: Andrew Morton; Matt Fleming; Linus Walleij; linux-mmc@vger.kernel.org;
-> linux-kernel@vger.kernel.org; STEricsson_nomadik_linux@list.st.com;
-> Hanumath Prasad; Kyungmin Park
-> Subject: Re: [PATCH] mmc: MMC 4.4 DDR support
-> 
-> Hi Hanumath, Linus,
-> 
-> On Tue, Aug 24, 2010 at 01:30:45PM +0300, Adrian Hunter wrote:
-> > I am not able to test DDR mode but it look to me that the patch
-> > should be changed.  Here is a fix:
-> >
-> > From: Adrian Hunter <adrian.hunter@nokia.com>
-> > Date: Tue, 24 Aug 2010 13:20:26 +0300
-> > Subject: [PATCH] mmc: Fix Dual Data Rate (DDR) support
-> 
-> Could someone please test Adrian's patch and report back?  I'd like
-> to merge this, but not without testing.
-> 
-> https://patchwork.kernel.org/patch/177332/
+Hi Arnd,
 
-[Ghorai] I was testing this patch (Adrian's) and top of patch[1] from Hanumath; Looks working fine as functionality. Checking throughput in my omap platform.
-[1] http://lkml.org/lkml/2010/7/9/35
-But there are few comments on this patch from others, I think. And is not applying cleanly in latest codebase. Also following #define is conflicting with Hanumath's patch.
-File: include/linux/mmc/host.h
-#define MMC_CAP_ERASE           (1 << 10)
+On Tue, 14 Sep 2010 21:53:35 +0200 Arnd Bergmann <arnd@arndb.de> wrote:
+>
+> Stephen, please add
+> git+ssh://master.kernel.org/pub/scm/linux/kernel/git/arnd/bkl.git trivial
 
-> 
-> Thanks,
-> 
-> --
-> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-> One Laptop Per Child
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Added from today.
+
+Thanks for adding your subsystem tree as a participant of linux-next.  As
+you may know, this is not a judgment of your code.  The purpose of
+linux-next is for integration testing and to lower the impact of
+conflicts between subsystems in the next merge window.=20
+
+You will need to ensure that the patches/commits in your tree/series have
+been:
+     * submitted under GPL v2 (or later) and include the Contributor's
+	Signed-off-by,
+     * posted to the relevant mailing list,
+     * reviewed by you (or another maintainer of your subsystem tree),
+     * successfully unit tested, and=20
+     * destined for the current or next Linux merge window.
+
+Basically, this should be just what you would send to Linus (or ask him
+to fetch).  It is allowed to be rebased if you deem it necessary.
+
+--=20
+Cheers,
+Stephen Rothwell=20
+sfr@canb.auug.org.au
+
+Legal Stuff:
+By participating in linux-next, your subsystem tree contributions are
+public and will be included in the linux-next trees.  You may be sent
+e-mail messages indicating errors or other issues when the
+patches/commits from your subsystem tree are merged and tested in
+linux-next.  These messages may also be cross-posted to the linux-next
+mailing list, the linux-kernel mailing list, etc.  The linux-next tree
+project and IBM (my employer) make no warranties regarding the linux-next
+project, the testing procedures, the results, the e-mails, etc.  If you
+don't agree to these ground rules, let me know and I'll remove your tree
+from participation in linux-next.
+
+--Signature=_Wed__15_Sep_2010_19_38_30_+1000_x_8PDlRlfK6atX+0
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMkJQWAAoJEDMEi1NhKgbs/qcH/j6Q5d5mYGECz3JtxE/Em3WG
+qO7Bk3/4JfuxCzIjBlDyoz4EpG0a2ghiIiPrCM3kGwg3awScEMf9lFKYJE0KSBsH
+yxGilZjzBDG/XxMa58hGxb/ZmaIr/W5dwA7/XCUuF8lgGiqsvpoP94ncTf7mVQ1/
+KPV+S767DPzqOQK1w8RVMBx+0slO2MEr0qEtyEsbjYFfrfSPCqpUruASJh53GiVi
+SdPkjxstl8yG0YG6VGvGs2FHv1yeWbL5R4kFBARVIf+78ZDAzNYUhn2bgLZolL4Z
+0PboNcLQDByMqUfOQ+Wh7rdjouKzQLeDNqq/2GAfzhWaZCJ16X7kYnBQuvTXwFI=
+=52gd
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__15_Sep_2010_19_38_30_+1000_x_8PDlRlfK6atX+0--
