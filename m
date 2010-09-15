@@ -1,95 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab0IOMdl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 08:33:41 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45168 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751792Ab0IOMdk (ORCPT
+	id S1753139Ab0IOMkS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 08:40:18 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:45924 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751727Ab0IOMkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 08:33:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=KgCWnioi7RaTUxXGf/ClgmJlE/sLcf4muh5KnjYAFH8bhh9mcBGrOChM7stP+ut5G6
-         EqxH5p7cSa5SdPikXcpsq4fzYBzunmSeNkPb/shyI4NgPdMEhKwyx+/gL6qemLOMnWQT
-         THGO0ZfiVMmR1jI3xgxUYhTUXb6jBnIQZz/7s=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] block: add assert_spin_locked() to ensure lock is held
-Date: Wed, 15 Sep 2010 21:33:27 +0900
-Message-Id: <1284554007-13077-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.2.2
+	Wed, 15 Sep 2010 08:40:16 -0400
+Message-ID: <4C90BE9F.5050007@canonical.com>
+Date: Wed, 15 Sep 2010 20:39:59 +0800
+From: Ike Panhc <ike.pan@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100826 Thunderbird/3.0.7
+MIME-Version: 1.0
+To: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Thomas Renninger <trenn@suse.de>, Alan Cox <alan@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Corentin Chary <corentincj@iksaif.net>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        "Brown, Len" <len.brown@intel.com>, Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH 0/8] [Resend] ideapad: using EC command to control rf/camera
+ power
+References: <20100820090824.GA23186@darkside.kls.lan> <4C7505A2.3000402@canonical.com> <20100830181954.GE31068@darkside.kls.lan> <4C7E3DE0.7030209@canonical.com> <20100901195617.GD32589@darkside.kls.lan> <4C80BA81.20701@canonical.com> <20100909181714.GA14951@darkside.kls.lan> <4C89D3C0.7040105@canonical.com> <20100910071155.GA1263@darkside.kls.lan> <4C909C57.5030107@canonical.com> <20100915114820.GA22415@darkside.kls.lan>
+In-Reply-To: <20100915114820.GA22415@darkside.kls.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use assert_spin_locked() macro in order to ensure that queue_lock
-must be held prior to calling some EXPORTed functions.
+On 09/15/2010 07:48 PM, Mario 'BitKoenig' Holbe wrote:
+> On Wed, Sep 15, 2010 at 06:13:43PM +0800, Ike Panhc wrote:
+>> On 09/10/2010 03:11 PM, Mario 'BitKoenig' Holbe wrote:
+>>> 	rfkill_init_sw_state(priv->rfk[dev], 0);
+>> eh.. after review the code, the rfkill_init_sw_state shall not give 0 as the default
+>> value. I shall read the value from EC and set reasonable value.
+> 
+> Well - probably :)
+> The current behaviour results in each device becoming unblocked no
+> matter what state it had before.
+> 
+>>> 	if (no_bt_rfkill && (ideapad_rfk_data[dev].type == RFKILL_TYPE_BLUETOOTH))
+>>> 		ideapad_rfk_set(???, 0);
+>> Do you mean driver still setup the rfkill for bluetooth, but we can not block
+>> bluetooth when module parameter set to 1? This idea is better then no_bt_rfkill.
+>> Will modify the driver.
+> 
+> Well, not really... I mean: in the no_bt_rfkill=1 case the driver should
+> (try to) unblock the bluetooth device in order to activate it to make it
+> further manageable via it's own (hci) rfkill switch.
+> I don't think setting up the ideapad_bluetooth rfkill is necessary for
+> that. Not setting it up is IMHO the right direction. Just the device
+> activation is missing.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- block/blk-core.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+This sounds even better, will modify the driver in this way - force enable
+bluetooth and no setup rfkill for bluetooth when no_bt_rfkill.
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 32a1c12..b849064 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -975,6 +975,8 @@ EXPORT_SYMBOL(blk_make_request);
-  */
- void blk_requeue_request(struct request_queue *q, struct request *rq)
- {
-+	assert_spin_locked(q->queue_lock);
-+
- 	blk_delete_timer(rq);
- 	blk_clear_rq_complete(rq);
- 	trace_block_rq_requeue(q, rq);
-@@ -1098,6 +1100,8 @@ EXPORT_SYMBOL_GPL(part_round_stats);
-  */
- void __blk_put_request(struct request_queue *q, struct request *req)
- {
-+	assert_spin_locked(q->queue_lock);
-+
- 	if (unlikely(!q))
- 		return;
- 	if (unlikely(--req->ref_count))
-@@ -1729,6 +1733,8 @@ unsigned int blk_rq_err_bytes(const struct request *rq)
- 	unsigned int bytes = 0;
- 	struct bio *bio;
- 
-+	assert_spin_locked(rq->q->queue_lock);
-+
- 	if (!(rq->cmd_flags & REQ_MIXED_MERGE))
- 		return blk_rq_bytes(rq);
- 
-@@ -1811,6 +1817,8 @@ struct request *blk_peek_request(struct request_queue *q)
- 	struct request *rq;
- 	int ret;
- 
-+	assert_spin_locked(q->queue_lock);
-+
- 	while ((rq = __elv_next_request(q)) != NULL) {
- 		if (!(rq->cmd_flags & REQ_STARTED)) {
- 			/*
-@@ -1926,6 +1934,8 @@ void blk_dequeue_request(struct request *rq)
-  */
- void blk_start_request(struct request *req)
- {
-+	assert_spin_locked(req->q->queue_lock);
-+
- 	blk_dequeue_request(req);
- 
- 	/*
-@@ -1959,6 +1969,8 @@ struct request *blk_fetch_request(struct request_queue *q)
- {
- 	struct request *rq;
- 
-+	assert_spin_locked(q->queue_lock);
-+
- 	rq = blk_peek_request(q);
- 	if (rq)
- 		blk_start_request(rq);
--- 
-1.7.2.2
+> 
+> 
+> Mario
 
