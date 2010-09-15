@@ -1,216 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724Ab0IOIlr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 04:41:47 -0400
-Received: from hera.kernel.org ([140.211.167.34]:34998 "EHLO hera.kernel.org"
+	id S1752771Ab0IOIoq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 04:44:46 -0400
+Received: from cantor.suse.de ([195.135.220.2]:42472 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752358Ab0IOIlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 04:41:46 -0400
-Date: Wed, 15 Sep 2010 08:41:27 GMT
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        rostedt@goodmis.org, tglx@linutronix.de, jolsa@redhat.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, tglx@linutronix.de, jolsa@redhat.com
-In-Reply-To: <20100907145344.GC1912@jolsa.brq.redhat.com>
-References: <20100907145344.GC1912@jolsa.brq.redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tracing: Add funcgraph-irq option for function graph tracer.
-Message-ID: <tip-2bd16212b8eb86f9574e78d6605a5ba9e9aa8c4e@git.kernel.org>
-Git-Commit-ID: 2bd16212b8eb86f9574e78d6605a5ba9e9aa8c4e
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 15 Sep 2010 08:41:27 +0000 (UTC)
+	id S1752367Ab0IOIop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 04:44:45 -0400
+Date: Wed, 15 Sep 2010 18:44:34 +1000
+From: Neil Brown <neilb@suse.de>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Li Shaohua <shaohua.li@intel.com>
+Subject: Re: Deadlock possibly caused by too_many_isolated.
+Message-ID: <20100915184434.18e2d933@notabene>
+In-Reply-To: <20100915082843.GA17252@localhost>
+References: <20100915091118.3dbdc961@notabene>
+	<4C90139A.1080809@redhat.com>
+	<20100915122334.3fa7b35f@notabene>
+	<20100915082843.GA17252@localhost>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2bd16212b8eb86f9574e78d6605a5ba9e9aa8c4e
-Gitweb:     http://git.kernel.org/tip/2bd16212b8eb86f9574e78d6605a5ba9e9aa8c4e
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Tue, 7 Sep 2010 16:53:44 +0200
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Tue, 14 Sep 2010 20:18:07 -0400
+On Wed, 15 Sep 2010 16:28:43 +0800
+Wu Fengguang <fengguang.wu@intel.com> wrote:
 
-tracing: Add funcgraph-irq option for function graph tracer.
+> Neil,
+> 
+> Sorry for the rushed and imaginary ideas this morning..
+> 
+> > @@ -1101,6 +1101,12 @@ static unsigned long shrink_inactive_lis
+> >  	int lumpy_reclaim = 0;
+> >  
+> >  	while (unlikely(too_many_isolated(zone, file, sc))) {
+> > +		if ((sc->gfp_mask & GFP_IOFS) != GFP_IOFS)
+> > +			/* Not allowed to do IO, so mustn't wait
+> > +			 * on processes that might try to
+> > +			 */
+> > +			return SWAP_CLUSTER_MAX;
+> > +
+> 
+> The above patch should behavior like this: it returns SWAP_CLUSTER_MAX
+> to cheat all the way up to believe "enough pages have been reclaimed".
+> So __alloc_pages_direct_reclaim() see non-zero *did_some_progress and
+> go on to call get_page_from_freelist(). That normally fails because
+> the task didn't really scanned the LRU lists. However it does have the
+> possibility to succeed -- when so many processes are doing concurrent
+> direct reclaims, it may luckily get one free page reclaimed by other
+> tasks. What's more, if it does fail to get a free page, the upper
+> layer __alloc_pages_slowpath() will be repeat recalling
+> __alloc_pages_direct_reclaim(). So, sooner or later it will succeed in
+> "stealing" a free page reclaimed by other tasks.
+> 
+> In summary, the patch behavior for !__GFP_IO/FS is
+> - won't do any page reclaim
+> - won't fail the page allocation (unexpected)
+> - will wait and steal one free page from others (unreasonable)
+> 
+> So it will address the problem you encountered, however it sounds
+> pretty unexpected and illogical behavior, right?
+> 
+> I believe this patch will address the problem equally well.
+> What do you think?
 
-It's handy to be able to disable the irq related output
-and not to have to jump over each irq related code, when
-you have no interrest in it.
+Thank you for the detailed explanation.  Is agree with your reasoning and
+now understand why your patch is sufficient.
 
-The option is by default enabled, so there's no change to
-current behaviour. It affects only the final output, so all
-the irq related data stay in the ring buffer.
+I will get it tested and let you know how that goes.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-LKML-Reference: <20100907145344.GC1912@jolsa.brq.redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace_functions_graph.c |  101 +++++++++++++++++++++++++++++++++-
- 1 files changed, 100 insertions(+), 1 deletions(-)
+Thanks,
+NeilBrown
 
-diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index c93bcb2..8674750 100644
---- a/kernel/trace/trace_functions_graph.c
-+++ b/kernel/trace/trace_functions_graph.c
-@@ -18,6 +18,7 @@
- struct fgraph_cpu_data {
- 	pid_t		last_pid;
- 	int		depth;
-+	int		depth_irq;
- 	int		ignore;
- 	unsigned long	enter_funcs[FTRACE_RETFUNC_DEPTH];
- };
-@@ -41,6 +42,7 @@ struct fgraph_data {
- #define TRACE_GRAPH_PRINT_PROC		0x8
- #define TRACE_GRAPH_PRINT_DURATION	0x10
- #define TRACE_GRAPH_PRINT_ABS_TIME	0x20
-+#define TRACE_GRAPH_PRINT_IRQS		0x40
- 
- static struct tracer_opt trace_opts[] = {
- 	/* Display overruns? (for self-debug purpose) */
-@@ -55,13 +57,15 @@ static struct tracer_opt trace_opts[] = {
- 	{ TRACER_OPT(funcgraph-duration, TRACE_GRAPH_PRINT_DURATION) },
- 	/* Display absolute time of an entry */
- 	{ TRACER_OPT(funcgraph-abstime, TRACE_GRAPH_PRINT_ABS_TIME) },
-+	/* Display interrupts */
-+	{ TRACER_OPT(funcgraph-irqs, TRACE_GRAPH_PRINT_IRQS) },
- 	{ } /* Empty entry */
- };
- 
- static struct tracer_flags tracer_flags = {
- 	/* Don't display overruns and proc by default */
- 	.val = TRACE_GRAPH_PRINT_CPU | TRACE_GRAPH_PRINT_OVERHEAD |
--	       TRACE_GRAPH_PRINT_DURATION,
-+	       TRACE_GRAPH_PRINT_DURATION | TRACE_GRAPH_PRINT_IRQS,
- 	.opts = trace_opts
- };
- 
-@@ -855,6 +859,92 @@ print_graph_prologue(struct trace_iterator *iter, struct trace_seq *s,
- 	return 0;
- }
- 
-+/*
-+ * Entry check for irq code
-+ *
-+ * returns 1 if
-+ *  - we are inside irq code
-+ *  - we just extered irq code
-+ *
-+ * retunns 0 if
-+ *  - funcgraph-interrupts option is set
-+ *  - we are not inside irq code
-+ */
-+static int
-+check_irq_entry(struct trace_iterator *iter, u32 flags,
-+		unsigned long addr, int depth)
-+{
-+	int cpu = iter->cpu;
-+	struct fgraph_data *data = iter->private;
-+	int *depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
-+
-+	if (flags & TRACE_GRAPH_PRINT_IRQS)
-+		return 0;
-+
-+	/*
-+	 * We are inside the irq code
-+	 */
-+	if (*depth_irq >= 0)
-+		return 1;
-+
-+	if ((addr < (unsigned long)__irqentry_text_start) ||
-+	    (addr >= (unsigned long)__irqentry_text_end))
-+		return 0;
-+
-+	/*
-+	 * We are entering irq code.
-+	 */
-+	*depth_irq = depth;
-+	return 1;
-+}
-+
-+/*
-+ * Return check for irq code
-+ *
-+ * returns 1 if
-+ *  - we are inside irq code
-+ *  - we just left irq code
-+ *
-+ * returns 0 if
-+ *  - funcgraph-interrupts option is set
-+ *  - we are not inside irq code
-+ */
-+static int
-+check_irq_return(struct trace_iterator *iter, u32 flags, int depth)
-+{
-+	int cpu = iter->cpu;
-+	struct fgraph_data *data = iter->private;
-+	int *depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
-+
-+	if (flags & TRACE_GRAPH_PRINT_IRQS)
-+		return 0;
-+
-+	/*
-+	 * We are not inside the irq code.
-+	 */
-+	if (*depth_irq == -1)
-+		return 0;
-+
-+	/*
-+	 * We are inside the irq code, and this is returning entry.
-+	 * Let's not trace it and clear the entry depth, since
-+	 * we are out of irq code.
-+	 *
-+	 * This condition ensures that we 'leave the irq code' once
-+	 * we are out of the entry depth. Thus protecting us from
-+	 * the RETURN entry loss.
-+	 */
-+	if (*depth_irq >= depth) {
-+		*depth_irq = -1;
-+		return 1;
-+	}
-+
-+	/*
-+	 * We are inside the irq code, and this is not the entry.
-+	 */
-+	return 1;
-+}
-+
- static enum print_line_t
- print_graph_entry(struct ftrace_graph_ent_entry *field, struct trace_seq *s,
- 			struct trace_iterator *iter, u32 flags)
-@@ -865,6 +955,9 @@ print_graph_entry(struct ftrace_graph_ent_entry *field, struct trace_seq *s,
- 	static enum print_line_t ret;
- 	int cpu = iter->cpu;
- 
-+	if (check_irq_entry(iter, flags, call->func, call->depth))
-+		return TRACE_TYPE_HANDLED;
-+
- 	if (print_graph_prologue(iter, s, TRACE_GRAPH_ENT, call->func, flags))
- 		return TRACE_TYPE_PARTIAL_LINE;
- 
-@@ -902,6 +995,9 @@ print_graph_return(struct ftrace_graph_ret *trace, struct trace_seq *s,
- 	int ret;
- 	int i;
- 
-+	if (check_irq_return(iter, flags, trace->depth))
-+		return TRACE_TYPE_HANDLED;
-+
- 	if (data) {
- 		struct fgraph_cpu_data *cpu_data;
- 		int cpu = iter->cpu;
-@@ -1210,9 +1306,12 @@ void graph_trace_open(struct trace_iterator *iter)
- 		pid_t *pid = &(per_cpu_ptr(data->cpu_data, cpu)->last_pid);
- 		int *depth = &(per_cpu_ptr(data->cpu_data, cpu)->depth);
- 		int *ignore = &(per_cpu_ptr(data->cpu_data, cpu)->ignore);
-+		int *depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
-+
- 		*pid = -1;
- 		*depth = 0;
- 		*ignore = 0;
-+		*depth_irq = -1;
- 	}
- 
- 	iter->private = data;
+
+> 
+> Thanks,
+> Fengguang
+> ---
+> 
+> mm: Avoid possible deadlock caused by too_many_isolated()
+> 
+> Neil finds that if too_many_isolated() returns true while performing
+> direct reclaim we can end up waiting for other threads to complete their
+> direct reclaim.  If those threads are allowed to enter the FS or IO to
+> free memory, but this thread is not, then it is possible that those
+> threads will be waiting on this thread and so we get a circular
+> deadlock.
+> 
+> some task enters direct reclaim with GFP_KERNEL
+>   => too_many_isolated() false
+>     => vmscan and run into dirty pages
+>       => pageout()
+>         => take some FS lock
+> 	  => fs/block code does GFP_NOIO allocation
+> 	    => enter direct reclaim again
+> 	      => too_many_isolated() true
+> 		=> waiting for others to progress, however the other
+> 		   tasks may be circular waiting for the FS lock..
+> 
+> The fix is to let !__GFP_IO and !__GFP_FS direct reclaims enjoy higher
+> priority than normal ones, by honouring them higher throttle threshold.
+> 
+> Now !__GFP_IO/FS reclaims won't be waiting for __GFP_IO/FS reclaims to
+> progress. They will be blocked only when there are too many concurrent
+> !__GFP_IO/FS reclaims, however that's very unlikely because the IO-less
+> direct reclaims is able to progress much more faster, and they won't
+> deadlock each other. The threshold is raised high enough for them, so
+> that there can be sufficient parallel progress of !__GFP_IO/FS reclaims.
+> 
+> Reported-by: NeilBrown <neilb@suse.de>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> ---
+>  mm/vmscan.c |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> --- linux-next.orig/mm/vmscan.c	2010-09-15 11:58:58.000000000 +0800
+> +++ linux-next/mm/vmscan.c	2010-09-15 15:36:14.000000000 +0800
+> @@ -1141,36 +1141,39 @@ int isolate_lru_page(struct page *page)
+>  	return ret;
+>  }
+>  
+>  /*
+>   * Are there way too many processes in the direct reclaim path already?
+>   */
+>  static int too_many_isolated(struct zone *zone, int file,
+>  		struct scan_control *sc)
+>  {
+>  	unsigned long inactive, isolated;
+> +	int ratio;
+>  
+>  	if (current_is_kswapd())
+>  		return 0;
+>  
+>  	if (!scanning_global_lru(sc))
+>  		return 0;
+>  
+>  	if (file) {
+>  		inactive = zone_page_state(zone, NR_INACTIVE_FILE);
+>  		isolated = zone_page_state(zone, NR_ISOLATED_FILE);
+>  	} else {
+>  		inactive = zone_page_state(zone, NR_INACTIVE_ANON);
+>  		isolated = zone_page_state(zone, NR_ISOLATED_ANON);
+>  	}
+>  
+> -	return isolated > inactive;
+> +	ratio = sc->gfp_mask & (__GFP_IO | __GFP_FS) ? 1 : 8;
+> +
+> +	return isolated > inactive * ratio;
+>  }
+>  
+>  /*
+>   * TODO: Try merging with migrations version of putback_lru_pages
+>   */
+>  static noinline_for_stack void
+>  putback_lru_pages(struct zone *zone, struct scan_control *sc,
+>  				unsigned long nr_anon, unsigned long nr_file,
+>  				struct list_head *page_list)
+>  {
+
