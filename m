@@ -1,206 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106Ab0IOUG1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 16:06:27 -0400
-Received: from smtp104.sbc.mail.gq1.yahoo.com ([67.195.15.63]:47014 "HELO
-	smtp104.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753957Ab0IOUG0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 16:06:26 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: HCs3ZtwVM1mgV42_t7RrNADFM3Q4M_vYMRllnq8Hd.8HJyL
- STEddbAIyLM0MYB_J0YOnTve8wHKFzTs5V_BmaXFHe0zeTbjEWZr9.51BHUD
- salgVh6cy7gNppasefwAubpaGKDeB._nlZfiqqIFuBQ_N8j2sZNgybb0f0.6
- Zt.HmRfFPQpfjMLj5Qhy5q9ImTtjp7nbwkAo.JrFrjCdAJW4V99PGbMezUeT
- nHSFwRyxp_n4DtwNyEXreFlp6qd5RZDPPodC.YIpWzUdSKnnFBqs9aNkm577
- OlTUGZBd8XFaKMq5vYs4yVW7L27HAdgwo_asU8yABYQmEw6tgVF49coDCIC7
- JjSHMr6dOPlUGuaxTjA--
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [PATCH 2/2] tcm_loop: Add DMA_BIDIRECTIONAL CDB support
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Joe Eykholt <jeykholt@cisco.com>
-In-Reply-To: <4C90D346.1030907@panasas.com>
-References: <1284552412-30567-1-git-send-email-nab@linux-iscsi.org>
-	 <4C90D346.1030907@panasas.com>
-Content-Type: text/plain
-Date: Wed, 15 Sep 2010 13:02:17 -0700
-Message-Id: <1284580937.13344.9.camel@haakon2.linux-iscsi.org>
+	id S1754089Ab0IOUJD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 16:09:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4525 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753339Ab0IOUJB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 16:09:01 -0400
+Subject: Re: audit_tree: sleep inside atomic
+From: Eric Paris <eparis@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jiri Slaby <jirislaby@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+In-Reply-To: <20100913170522.f0b8b1e8.akpm@linux-foundation.org>
+References: <4C1F8217.5020909@gmail.com> <4C80FD9E.5040408@gmail.com>
+	 <20100913170522.f0b8b1e8.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 15 Sep 2010 16:08:25 -0400
+Message-ID: <1284581305.2703.127.camel@localhost.localdomain>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-09-15 at 16:08 +0200, Boaz Harrosh wrote:
-> On 09/15/2010 02:06 PM, Nicholas A. Bellinger wrote:
-> > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> > 
-> > This patch series adds DMA_BIDIRECTIONAL CDB to the TCM_Loop Virtual SCSI
-> > LLD module.  This includes the following changes:
-> > 
-> > 	*) Add call to include/scsi/scsi_cmnd.h:scsi_bidi_cmnd() to set
-> > 	   TCM struct se_cmd internal data_direction in tcm_loop_allocate_core_cmd()
-> > 	*) Update tcm_loop_new_cmd_map() to handle BIDI READ payload from scsi_in()
-> > 	*) Drop DMA_BIDIRECTIONAL usage check from tcm_loop_queuecommand()
-> > 	*) Add tcm_loop_slave_alloc() and tcm_loop_slave_configure() handlers for
-> > 	   struct scsi_host_template to set QUEUE_FLAG_BIDI in the former.
-> > 
-> > So far this has been tested together with commit 1f8f3eda132c using XDWRITE_READ_10
-> > via BSG userspace code on a v2.6.36-rc3 kernel.
-> > 
+On Mon, 2010-09-13 at 17:05 -0700, Andrew Morton wrote:
+> On Fri, 03 Sep 2010 15:52:30 +0200
+> Jiri Slaby <jirislaby@gmail.com> wrote:
 > 
-> I'll start the review with this patch. Then we'll move on to the bigger harder one.
+> > Ideas, comments?
 > 
-> > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-> > ---
-> >  drivers/target/tcm_loop/tcm_loop_fabric_scsi.c |   48 ++++++++++++++++++------
-> >  1 files changed, 36 insertions(+), 12 deletions(-)
-> > 
-> > diff --git a/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c b/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
-> > index 644f978..c4139d8 100644
-> > --- a/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
-> > +++ b/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
-> > @@ -64,6 +64,7 @@ static struct se_cmd *tcm_loop_allocate_core_cmd(
-> >  	struct tcm_loop_nexus *tl_nexus = tl_hba->tl_nexus;
-> >  	struct tcm_loop_cmd *tl_cmd;
-> >  	int sam_task_attr;
-> > +	enum dma_data_direction data_direction;
-> >  
-> >  	if (!(tl_nexus)) {
-> >  		scmd_printk(KERN_ERR, sc, "TCM_Loop I_T Nexus"
-> > @@ -81,6 +82,13 @@ static struct se_cmd *tcm_loop_allocate_core_cmd(
-> >  	 * Save the pointer to struct scsi_cmnd *sc
-> >  	 */
-> >  	tl_cmd->sc = sc;
-> > +	/*
-> > +	 * Check for scsi_bidi_cmnd() to signal TCM Core for DMA_BIDIRECTIONAL
-> > +	 */
-> > +	if (scsi_bidi_cmnd(sc))
-> > +		data_direction = 
-> > +	else
-> > +		data_direction = sc->sc_data_direction;
+> Apparently not.
+
+Sorry, I've been slacking off on vacation the last couple weeks.
+
+> The question is: why is nobody reporting this bug?  Obviously nobody's
+> running that code path.  Why not?
+
+The only people who run this code path, that I know of, are govt orgs
+who run in certified environments.  I don't know of any upstream kernel
+users who really would hit it.
+
+In any case I don't think it would be particularly painful to just
+always allocate a chunk between the two locks.  this is not a hot path
+by any stretch of the imagination.  I'll see if I can't code something
+up today/tomorrow.
+
+-Eric
+
+> > On 06/21/2010 05:15 PM, Jiri Slaby wrote:
+> > > Hi,
+> > > 
+> > > stanse found a sleep inside atomic added by the following commit:
+> > > commit fb36de479642bc9bdd3af251ae48b882d8a1ad5d
+> > > Author: Eric Paris <eparis@redhat.com>
+> > > Date:   Thu Dec 17 20:12:05 2009 -0500
+> > > 
+> > >     audit: reimplement audit_trees using fsnotify rather than inotify
+> > > 
+> > >     Simply switch audit_trees from using inotify to using fsnotify for it's
+> > >     inode pinning and disappearing act information.
+> > > 
+> > >     Signed-off-by: Eric Paris <eparis@redhat.com>
+> > > 
+> > > 
+> > > In untag_chunk, there is
+> > >   spin_lock(&entry->lock);
+> > >   ...
+> > >   new = alloc_chunk(size);
+> > >   ...
+> > >   spin_unlock(&entry->lock);
+> > > 
+> > > with
+> > > static struct audit_chunk *alloc_chunk(int count)
+> > > {
+> > >   struct audit_chunk *chunk;
+> > >   ...
+> > >   chunk = kzalloc(size, GFP_KERNEL);
+> > > 
+> > > But this can sleep. How big the allocations are? Could it be ATOMIC or
+> > > moved outside the spinlock?
 > 
-> So you noticed that scsi-ml has a data_direction = DMA_TO_DEVICE and
-> scsi_bidi_cmnd(sc) == true. I think you could do the same and code will
-> be more simple, see below.
+> Yes, we could make it GFP_ATOMIC - the code tries to handle allocation
+> failures.
 > 
-> So for start this here is just droped
-
-Hi Boaz,
-
-Thanks for the previous emails wrt to your comments about
-DMA_BIDIRECTIONAL and actual BIDI-COMMAND usage.  This definately
-clarifies things for me now, and I will go ahead and drop the incorrect
-DMA_BIDIRECTIONAL here.
-
+> But if we did that we'd be adding a rarely-executed codepath to an
+> apparently-never-executed code path.  We'd end up shipping stuff which
+> nobody had tested, ever.
 > 
-> >  
-> >  	/*
-> >  	 * Locate the SAM Task Attr from struct scsi_cmnd *
-> > @@ -105,7 +113,7 @@ static struct se_cmd *tcm_loop_allocate_core_cmd(
-> >  	 * Initialize struct se_cmd descriptor from target_core_mod infrastructure
-> >  	 */
-> >  	transport_init_se_cmd(se_cmd, se_tpg->se_tpg_tfo, se_sess,
-> > -			scsi_bufflen(sc), sc->sc_data_direction, sam_task_attr,
-> > +			scsi_bufflen(sc), data_direction, sam_task_attr,
+> Plus GFP_ATOMIC is unreliable and using it because we screwed up the
+> locking is lame.
 > 
-> And this is dropped
-
-Ditto
-
-> 
-> >  			&tl_cmd->tl_sense_buf[0]);
-> >  	/*
-> >  	 * Locate the struct se_lun pointer and attach it to struct se_cmd
-> > @@ -128,14 +136,16 @@ static struct se_cmd *tcm_loop_allocate_core_cmd(
-> >  /*
-> >   * Called by struct target_core_fabric_ops->new_cmd_map()
-> >   *
-> > - * Always called in process context
-> > + * Always called in process context.  A non zero return value
-> > + * here will signal to handle an exception based on the return code.
-> >   */
-> >  int tcm_loop_new_cmd_map(struct se_cmd *se_cmd)
-> >  {
-> >  	struct tcm_loop_cmd *tl_cmd = container_of(se_cmd,
-> >  				struct tcm_loop_cmd, tl_se_cmd);
-> >  	struct scsi_cmnd *sc = tl_cmd->sc;
-> > -	void *mem_ptr;
-> > +	void *mem_ptr, *mem_bidi_ptr = NULL;
-> > +	u32 sg_no_bidi = 0;
-> >  	int ret;
-> >  	/*
-> >  	 * Allocate the necessary tasks to complete the received CDB+data
-> > @@ -163,6 +173,16 @@ int tcm_loop_new_cmd_map(struct se_cmd *se_cmd)
-> >  	if (scsi_sg_count(sc)) {
-> >  		se_cmd->se_cmd_flags |= SCF_PASSTHROUGH_SG_TO_MEM;
-> >  		mem_ptr = (void *)scsi_sglist(sc);
-> > +		/*
-> > +		 * For BIDI commands, pass in the extra READ buffer
-> > +		 * to transport_generic_map_mem_to_cmd() below..
-> > +		 */
-> > +		if (se_cmd->data_direction == DMA_BIDIRECTIONAL) {
-> 
-> Just change to if (scsi_bidi_cmnd(sc))
-> [remember data_direction == DMA_TO_DEVICE]
-
-<nod>
-
-> 
-> > +			struct scsi_data_buffer *sdb = scsi_in(sc);
-> > +
-> > +			mem_bidi_ptr = (void *)sdb->table.sgl;
-> > +			sg_no_bidi = sdb->table.nents;
-> 
-> This is the all bidi secret the presence of the  scsi_in buffer
-
-Makes sense..
-
-> 
-> > +		}
-> >  	} else {
-> >  		/*
-> >  		 * Used for DMA_NONE
-> > @@ -322,15 +342,6 @@ static int tcm_loop_queuecommand(
-> >  	}
-> >  	tl_tpg = &tl_hba->tl_hba_tpgs[sc->device->id];transport_get_task
-> >  	se_tpg = &tl_tpg->tl_se_tpg;
-> > -
-> > -	if (sc->sc_data_direction == DMA_BIDIRECTIONAL) {
-> > -		spin_lock_irq(host->host_lock);
-> > -		printk(KERN_ERR "Unsupported BIDI sc->sc_data_direction: %d\n",
-> > -			sc->sc_data_direction);	
-> > -		sc->result = host_byte(DID_ERROR);
-> > -		(*done)(sc);
-> > -		return 0;
-> > -	}
-> >  	/*
-> >  	 * Determine the SAM Task Attribute and allocate tl_cmd and
-> >  	 * tl_cmd->tl_se_cmd from TCM infrastructure
-> > @@ -446,6 +457,17 @@ release:
-> >  	return ret;
-> >  }
-> >  
-> > +static int tcm_loop_slave_alloc(struct scsi_device *sd)
-> > +{
-> > +	set_bit(QUEUE_FLAG_BIDI, &sd->request_queue->queue_flags);
-> 
-> Thank got, another new one. We are up to 4
-
-Perfect, I will make these changes to TCM_Loop and follow up on the
-larger patch in a moment.
-
-Thanks!
-
---nab
+> untag_chunk() could be converted to use GFP_KERNEL outside hash_lock
+> and ->entry_lock.  The usual way is to take a peek, see if it looks
+> like we'll probably need to do an allocation and if so, do it outside
+> the locks then free it again if it turned out that we didn't need it
+> after all.  Or to maintain a one-deep static-local cache and preload
+> that cache if it's empty.  Neither are particularly pretty.
 
 
