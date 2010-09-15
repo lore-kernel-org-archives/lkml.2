@@ -1,45 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754305Ab0IOQeN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 12:34:13 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:62375 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751778Ab0IOQeL (ORCPT
+	id S1754652Ab0IOQgi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 12:36:38 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:15637 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753402Ab0IOQgh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 12:34:11 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Subject: Re: linux-next: Tree for September 15 (bkl-related)
-Date: Wed, 15 Sep 2010 18:34:02 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-References: <20100915142954.6a36f52d.sfr@canb.auug.org.au> <20100915085910.a137904f.randy.dunlap@oracle.com>
-In-Reply-To: <20100915085910.a137904f.randy.dunlap@oracle.com>
+	Wed, 15 Sep 2010 12:36:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Xxi1/3z1kGG9ac10rWi1i+KxKwd9qp+E94txzenxbOML5xj80Ds2SFqqV2MtX9F6oc
+         ymKqYK5cInNIoQeaZBQA==
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009151834.02624.arnd@arndb.de>
-X-Provags-ID: V02:K0:lnj9g07nnkAyocPNYHfoOMfUdBr/S/CocZ4jiMNIfsJ
- QZUk6yb1pZN9r6Fpxt0J0BkWRM+PLWVWIOYWxsv03EVzJWHxGs
- mHw2OaXEVq6BY5HMLq6MvYqMFFviZfkKq0HXXnmdIwyKzRqE2K
- umlO7PDFnx8T/Qrk9W6LBY4eBeM0kZjkdQH/CLOWaVK3GrJjMe
- BwaHBYmpaZlC5c9Et6bbg==
+In-Reply-To: <20100915162034.GO13563@erda.amd.com>
+References: <1284118900.402.35.camel@laptop>
+	<20100910132741.GB4879@redhat.com>
+	<20100910144634.GA1060@elte.hu>
+	<20100910155659.GD13563@erda.amd.com>
+	<20100911094157.GA11521@elte.hu>
+	<20100911114404.GE13563@erda.amd.com>
+	<20100911124537.GA22850@elte.hu>
+	<20100912095202.GF13563@erda.amd.com>
+	<20100913143713.GK13563@erda.amd.com>
+	<20100914174132.GN13563@erda.amd.com>
+	<20100915162034.GO13563@erda.amd.com>
+Date: Wed, 15 Sep 2010 18:36:27 +0200
+Message-ID: <AANLkTimWoE5XiYSr8jx=RFS5Nb9d4_wWe=c-W3oMj8dH@mail.gmail.com>
+Subject: Re: [PATCH] perf, x86: catch spurious interrupts after disabling counters
+From: Stephane Eranian <eranian@google.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Don Zickus <dzickus@redhat.com>,
+        "gorcunov@gmail.com" <gorcunov@gmail.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 15 September 2010, Randy Dunlap wrote:
-> (1)
-> drivers/pnp/isapnp/proc.c:50: error: expected '}' before 'else'
-> 
-> (2) when CONFIG_SCSI_PROC_FS is not enabled:
-> drivers/scsi/sg.c:233: error: 'sg_mutex' undeclared (first use in this function)
-> drivers/scsi/sg.c:1096: error: 'sg_mutex' undeclared (first use in this function)
+On Wed, Sep 15, 2010 at 6:20 PM, Robert Richter <robert.richter@amd.com> wrote:
+> On 14.09.10 19:41:32, Robert Richter wrote:
+>> I found the reason why we get the unknown nmi. For some reason
+>> cpuc->active_mask in x86_pmu_handle_irq() is zero. Thus, no counters
+>> are handled when we get an nmi. It seems there is somewhere a race
+>> accessing the active_mask. So far I don't have a fix available.
+>> Changing x86_pmu_stop() did not help:
+>
+> The patch below for tip/perf/urgent fixes this.
+>
+> -Robert
+>
+> From 4206a086f5b37efc1b4d94f1d90b55802b299ca0 Mon Sep 17 00:00:00 2001
+> From: Robert Richter <robert.richter@amd.com>
+> Date: Wed, 15 Sep 2010 16:12:59 +0200
+> Subject: [PATCH] perf, x86: catch spurious interrupts after disabling counters
+>
+> Some cpus still deliver spurious interrupts after disabling a counter.
 
-Good catch, I'll fix these tonight.
+Most likely the interrupt was in flight at the time you disabled it.
+Does the counter value reflect this?
+Were you also getting this if you were only measuring at the user level?
 
-Thanks,
-
-	Arnd
+> This caused 'undelivered NMI' messages. This patch fixes this.
+>
+> Signed-off-by: Robert Richter <robert.richter@amd.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event.c |   13 ++++++++++++-
+>  1 files changed, 12 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> index 3efdf28..df7aabd 100644
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -102,6 +102,7 @@ struct cpu_hw_events {
+>         */
+>        struct perf_event       *events[X86_PMC_IDX_MAX]; /* in counter order */
+>        unsigned long           active_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
+> +       unsigned long           running[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
+>        int                     enabled;
+>
+>        int                     n_events;
+> @@ -1010,6 +1011,7 @@ static int x86_pmu_start(struct perf_event *event)
+>        x86_perf_event_set_period(event);
+>        cpuc->events[idx] = event;
+>        __set_bit(idx, cpuc->active_mask);
+> +       __set_bit(idx, cpuc->running);
+>        x86_pmu.enable(event);
+>        perf_event_update_userpage(event);
+>
+> @@ -1141,8 +1143,17 @@ static int x86_pmu_handle_irq(struct pt_regs *regs)
+>        cpuc = &__get_cpu_var(cpu_hw_events);
+>
+>        for (idx = 0; idx < x86_pmu.num_counters; idx++) {
+> -               if (!test_bit(idx, cpuc->active_mask))
+> +               if (!test_bit(idx, cpuc->active_mask)) {
+> +                       if (__test_and_clear_bit(idx, cpuc->running))
+> +                               /*
+> +                                * Though we deactivated the counter
+> +                                * some cpus might still deliver
+> +                                * spurious interrupts. Catching them
+> +                                * here.
+> +                                */
+> +                               handled++;
+>                        continue;
+> +               }
+>
+>                event = cpuc->events[idx];
+>                hwc = &event->hw;
+> --
+> 1.7.2.2
+>
+>
+>
+>
+>
+> --
+> Advanced Micro Devices, Inc.
+> Operating System Research Center
+>
+>
