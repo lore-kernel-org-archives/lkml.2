@@ -1,82 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754372Ab0IPRGn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 13:06:43 -0400
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:32875 "HELO
-	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752475Ab0IPRGm (ORCPT
+	id S1754274Ab0IPRJn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 13:09:43 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:51585 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752935Ab0IPRJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 13:06:42 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 2bpqh9AVM1lnrjOFScvaLZoa_3JqVzVmF54j0IAVNk1VqN6
- WCSbOFM5q8I9cBTQBRAoDdAWIkAJ6zVLdFJTTQcbfYJedBkf7sb1fMGgETtn
- v6MJjd9ZeQ4HCgo.W649AX3ZM.9V.1f_OuyX6zemX4VSWPn4NR9jIZ7HB_Le
- Ng9v9Rk2R7uK2LJLsVRffGb_Rp0UQqnrj3ItZh7QL6P4en8mx2r1hgBP6Yoi
- dvsEWLGuP6WLUEHjYI1j.482lPNAk
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 16 Sep 2010 12:06:38 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-cc: robm@fastmail.fm, linux-kernel@vger.kernel.org,
-        Bron Gondwana <brong@fastmail.fm>, linux-mm <linux-mm@kvack.org>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: Default zone_reclaim_mode = 1 on NUMA kernel is bad for
- file/email/web servers
-In-Reply-To: <20100916184240.3BC9.A69D9226@jp.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1009161153210.22849@router.home>
-References: <1284349152.15254.1394658481@webmail.messagingengine.com> <20100916184240.3BC9.A69D9226@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 16 Sep 2010 13:09:41 -0400
+Subject: Re: memory barrier question
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: paulmck@linux.vnet.ibm.com, dhowells@redhat.com,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+In-Reply-To: <E1OwHkg-0007IX-DH@pomaz-ex.szeredi.hu>
+References: <E1OwEjQ-0006wS-MU@pomaz-ex.szeredi.hu>
+	 <E1Ovt6F-0005CS-RU@pomaz-ex.szeredi.hu> <3777.1284638136@redhat.com>
+	 <6383.1284647456@redhat.com> <20100916150356.GD2462@linux.vnet.ibm.com>
+	 <E1OwGz7-0007Cu-CC@pomaz-ex.szeredi.hu>
+	 <20100916163708.GG2462@linux.vnet.ibm.com>
+	 <E1OwHkg-0007IX-DH@pomaz-ex.szeredi.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 16 Sep 2010 13:09:38 -0400
+Message-ID: <1284656978.26423.11.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Sep 2010, KOSAKI Motohiro wrote:
+On Thu, 2010-09-16 at 18:56 +0200, Miklos Szeredi wrote:
+> On Thu, 16 Sep 2010, Paul E. McKenney wrote:
+> > On Thu, Sep 16, 2010 at 06:06:53PM +0200, Miklos Szeredi wrote:
+> > > On Thu, 16 Sep 2010, Paul E. McKenney wrote:
+> > > > On Thu, Sep 16, 2010 at 03:30:56PM +0100, David Howells wrote:
+> > > > > Miklos Szeredi <miklos@szeredi.hu> wrote:
+> > > > > 
+> > > > > > Is the rmb() really needed?
+> > > > > > 
+> > > > > > Take this code from fs/namei.c for example:
+> > > > > > 
+> > > > > > 		inode = next.dentry->d_inode;
+> > > > > > 		if (!inode)
+> > > > > > 			goto out_dput;
+> > > > > > 
+> > > > > > 		if (inode->i_op->follow_link) {
+> > > > > > 
+> > > > > > It happily dereferences dentry->d_inode without a barrier after
+> > > > > > checking it for non-null, while that d_inode might have just been
+> > > > > > initialized on another CPU with a freshly created inode.  There's
+> > > > > > absolutely no synchornization with that on this side.
+> > > > > 
+> > > > > Perhaps it's not necessary; once set, how likely is i_op to be changed once
+> > > > > I_NEW is cleared?
+> > > > 
+> > > > Are the path_get()s protecting this?
+> > > 
+> > > No, when creating a file the dentry will go from negative to positive
+> > > independently from lookup.  The dentry can get instantiated with an
+> > > inode between the path_get() and dereferencing ->d_inode.
+> > > 
+> > > > If there is no protection, then something like rcu_dereference() is
+> > > > needed for the assignment from next.dentry->d_inode.
+> > > 
+> > > Do I understand correctly that the problem is that a CPU may have a
+> > > stale cache associated with *inode, one that was loaded before the
+> > > write barrier took effect?
+> > 
+> > Yes, especially if the compiler is aggressively optimizing.
+> 
+> How do compiler optimizations make a difference?
 
-> > So over the last couple of weeks, I've noticed that our shiny new IMAP
-> > servers (Dual Xeon E5520 + Intel S5520UR MB) with 48G of RAM haven't
-> > been performing as well as expected, and there were some big oddities.
-> > Namely two things stuck out:
-> >
-> > 1. There was free memory. There's 20T of data on these machines. The
-> >    kernel should have used lots of memory for caching, but for some
-> >    reason, it wasn't. cache ~ 2G, buffers ~ 25G, unused ~ 5G
+There are two types of reorderings that cause problems if you expect the
+bus visible ordering to matter.  One is CPU issue reordering, where the
+cpu decides to output loads and stores in a different order than the
+input instruction stream actually said.  The other is compiler
+re-ordering where the compiler actually reorders the instructions to
+execute in a different order from what you'd expect by simply reading
+the C code.
 
-This means that that the memory allocations did only occur on a single
-processor? And with zone reclaim it only used one node since the page
-cache was reclaimed?
+We have compiler barrier instructions for the latter and barriers which
+issue CPU primitives for the former.
 
-> > Having very little knowledge of what this actually does, I'd just
-> > like to point out that from a users point of view, it's really
-> > annoying for your machine to be crippled by a default kernel setting
-> > that's pretty obscure.
-
-Thats an issue of the NUMA BIOS information. Kernel defaults to zone
-reclaim if the cost of accessing remote memory vs local memory crosses
-a certain threshhold which usually impacts performance.
-
-> Yes, sadly intel motherboard turn on zone_reclaim_mode by default. and
-> current zone_reclaim_mode doesn't fit file/web server usecase ;-)
-
-Or one could also say that the web servers are not designed to properly
-distribute the load on a complex NUMA based memory architecture of todays
-Intel machines.
-
-> So, I've created new proof concept patch. This doesn't disable zone_reclaim
-> at all. Instead, distinguish for file cache and for anon allocation and
-> only file cache doesn't use zone-reclaim.
-
-zone reclaim was intended to only be applicable to unmapped file cache in
-order to be low impact.  Now you just want to apply it to anonymous pages?
-
-> That said, high-end hpc user often turn on cpuset.memory_spread_page and
-> they avoid this issue. But, why don't we consider avoid it by default?
-
-Well as you say setting memory spreading on would avoid the issue.
-
-So would enabling memory interleave in the BIOS to get the machine to not
-consider the memory distances but average out the NUMA effects.
+James
 
 
