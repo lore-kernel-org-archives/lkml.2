@@ -1,112 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756524Ab0IPWOs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 18:14:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53370 "EHLO mx1.redhat.com"
+	id S1756565Ab0IPWOx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 18:14:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2726 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756473Ab0IPWOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 18:14:36 -0400
+	id S1756473Ab0IPWOt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 18:14:49 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Christoph Hellwig <hch@infradead.org>,
         Andreas Gruenbacher <agruen@suse.de>, Nick Piggin <npiggin@kernel.dk>,
         linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 17/34] union-mount: Create needs_lookup_union()
-Date: Thu, 16 Sep 2010 15:12:08 -0700
-Message-Id: <1284675145-4391-18-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 19/34] union-mount: Add clone_union_tree() and put_union_sb()
+Date: Thu, 16 Sep 2010 15:12:10 -0700
+Message-Id: <1284675145-4391-20-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1284675145-4391-1-git-send-email-vaurora@redhat.com>
 References: <1284675145-4391-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-needs_lookup_union() tests if a path could possibly require a union
-lookup.
+A union mount clones the vfsmount tree of all of the read-only layers
+of the union and keeps a reference to it in the vfsmount of the
+topmost layer of the union.
+
+clone_union_tree() takes the path of the proposed union mountpoint and
+attempts to clones every vfsmount mounted at that same pathname, as
+well as their submounts.  All these mounts must be read-only, not
+slave, and not shared.
+
+put_union_sb() unwinds everything clone_union_tree() does.  It is
+called when the superblock is deactivated.  Thus, you can lazy unmount
+a union mount and when the last reference goes away, the union will be
+torn down.
 
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
 ---
- fs/union.c |   49 +++++++++++++++++++++++++++++++++++++++++++++++++
- fs/union.h |    2 ++
- 2 files changed, 51 insertions(+), 0 deletions(-)
+ fs/namespace.c        |   71 +++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mount.h |    2 +
+ 2 files changed, 73 insertions(+), 0 deletions(-)
 
-diff --git a/fs/union.c b/fs/union.c
-index bc53066..a9427bf 100644
---- a/fs/union.c
-+++ b/fs/union.c
-@@ -127,3 +127,52 @@ int union_create_topmost_dir(struct path *parent, struct qstr *name,
- 
- 	return res;
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 62c2f7a..e966890 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -1393,6 +1393,77 @@ static int check_topmost_union_mnt(struct vfsmount *topmost_mnt, int mnt_flags)
+ 	return 0;
  }
+ 
++void put_union_sb(struct super_block *sb)
++{
++       struct vfsmount *mnt = sb->s_union_lower_mnts;
++       LIST_HEAD(umount_list);
++
++       if (!mnt)
++               return;
++       spin_lock(&vfsmount_lock);
++       umount_tree(mnt, 0, &umount_list);
++       spin_unlock(&vfsmount_lock);
++       release_mounts(&umount_list);
++       sb->s_union_lower_mnts = 0;
++       sb->s_union_count = 0;
++}
 +
 +/**
-+ * needs_lookup_union - Avoid union lookup when not necessary
++ * clone_union_tree - Clone all union-able mounts at this mountpoint
 + *
-+ * @parent_path: path of the parent directory
-+ * @path: path of the lookup target
++ * @topmost - vfsmount of topmost layer
++ * @mntpnt - target of union mount
 + *
-+ * Check to see if the target needs union lookup - that is, needs its
-+ * union stack constructed.  Two cases need union lookup in a unioned
-+ * parent directory: the target is a directory without a union stack,
-+ * or the target is a negative dentry.
++ * Given the target mountpoint of a union mount, clone all the mounts
++ * at that mountpoint (well, pathname) that qualify as a union lower
++ * layer.  Increment the hard readonly count of the lower layer
++ * superblocks.
 + *
-+ * Returns 0 if this dentry does not need union lookup.  Returns 1 if
-+ * it is possible this dentry needs union lookup.
++ * Returns error if any of the mounts or submounts mounted on or below
++ * this pathname are unsuitable for union mounting.  This means you
++ * can't construct a union mount at the root of an existing mount
++ * without unioning it.
++ *
++ * XXX - Maybe should take # of layers to go down as an argument. But
++ * how to pass this in through mount options?  All solutions look
++ * ugly.  Currently you express your intention through mounting file
++ * systems on the same mountpoint, which is pretty elegant.
 + */
 +
-+int needs_lookup_union(struct path *parent_path, struct path *path)
++static int clone_union_tree(struct vfsmount *topmost, struct path *mntpnt)
 +{
-+	if (!IS_DIR_UNIONED(parent_path->dentry))
-+		return 0;
++	struct vfsmount *mnt, *cloned_tree;
 +
-+	/* Root dir union stack created at mount (if this is a unioned mnt) */
-+	if (IS_ROOT(path->dentry))
-+		return 0;
++	if (!IS_ROOT(mntpnt->dentry)) {
++		printk(KERN_INFO "union mount: mount point must be a root dir\n");
++		return -EINVAL;
++	}
 +
-+	/* Union stack for target already created, clearly */
-+	if (IS_DIR_UNIONED(path->dentry))
-+		return 0;
-+
-+	if (d_is_whiteout(path->dentry))
-+		return 0;
-+
-+	if (IS_OPAQUE(parent_path->dentry->d_inode) &&
-+	    !d_is_fallthru(path->dentry))
-+		return 0;
-+
-+	/* Non-directories don't need union stacks */
-+	if (path->dentry->d_inode &&
-+	    !S_ISDIR(path->dentry->d_inode->i_mode))
-+		return 0;
-+
++	/* Look for the "lowest" layer to union. */
++	mnt = mntpnt->mnt;
++	while (mnt->mnt_parent->mnt_root == mnt->mnt_mountpoint) {
++		/* Got root (mnt)? */
++		if (mnt->mnt_parent == mnt)
++			break;
++		mnt = mnt->mnt_parent;
++	}
 +	/*
-+	 * XXX Things with nothing below them in a union dir
-+	 * (including negative dentries) must always go through union
-+	 * lookup.  This is like negative dentries in the dcache.
-+	 * Write some optimization for this case.
++	 * Clone all the read-only mounts and submounts, only if they
++	 * are not shared or slave, and increment the hard read-only
++	 * users count on each one.  If this can't be done for every
++	 * mount and submount below this one, fail.
 +	 */
-+	return 1;
++	cloned_tree = copy_tree(mnt, mnt->mnt_root,
++				CL_COPY_ALL | CL_PRIVATE |
++				CL_NO_SHARED | CL_NO_SLAVE |
++				CL_MAKE_HARD_READONLY);
++	if (IS_ERR(cloned_tree))
++		return PTR_ERR(cloned_tree);
++
++	topmost->mnt_sb->s_union_lower_mnts = cloned_tree;
++	return 0;
 +}
-diff --git a/fs/union.h b/fs/union.h
-index c496823..0c8fbca 100644
---- a/fs/union.h
-+++ b/fs/union.h
-@@ -56,6 +56,7 @@ extern void d_free_unions(struct dentry *);
- extern int union_add_dir(struct path *, struct path *, unsigned int);
- extern int union_create_topmost_dir(struct path *, struct qstr *, struct path *,
- 				    struct path *);
-+extern int needs_lookup_union(struct path *, struct path *);
++
+ /*
+  *  @source_mnt : mount tree to be attached
+  *  @nd         : place the mount tree @source_mnt is attached
+diff --git a/include/linux/mount.h b/include/linux/mount.h
+index 4014ff1..5643835 100644
+--- a/include/linux/mount.h
++++ b/include/linux/mount.h
+@@ -138,4 +138,6 @@ extern void mark_mounts_for_expiry(struct list_head *mounts);
  
- static inline struct path *union_find_dir(struct dentry *dentry,
- 					  unsigned int layer) {
-@@ -72,6 +73,7 @@ static inline struct path *union_find_dir(struct dentry *dentry,
- #define union_add_dir(x, y, z)		({ BUG(); (0); })
- #define union_find_dir(x, y)		({ BUG(); (NULL); })
- #define union_create_topmost_dir(w, x, y, z)	({ BUG(); (0); })
-+#define needs_lookup_union(x, y)	({ (0); })
+ extern dev_t name_to_dev_t(char *name);
  
- #endif	/* CONFIG_UNION_MOUNT */
- #endif	/* __KERNEL__ */
++extern void put_union_sb(struct super_block *sb);
++
+ #endif /* _LINUX_MOUNT_H */
 -- 
 1.6.3.3
 
