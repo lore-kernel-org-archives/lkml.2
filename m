@@ -1,78 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041Ab0IPPO5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 11:14:57 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:13100 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754599Ab0IPPOz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 11:14:55 -0400
-Date: Thu, 16 Sep 2010 17:14:43 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, lm-sensors@lm-sensors.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] hwmon: (adm1031) Replace update_rate sysfs
- attribute with update_interval
-Message-ID: <20100916171443.0322bdb6@hyperion.delvare>
-In-Reply-To: <1284602835-7605-2-git-send-email-guenter.roeck@ericsson.com>
-References: <1284602835-7605-1-git-send-email-guenter.roeck@ericsson.com>
-	<1284602835-7605-2-git-send-email-guenter.roeck@ericsson.com>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754918Ab0IPPSn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 11:18:43 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:49046 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754396Ab0IPPSl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 11:18:41 -0400
+Date: Thu, 16 Sep 2010 16:18:28 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH 8/8] writeback: Do not sleep on the congestion queue if
+	there are no congested BDIs or if significant congestion is not
+	being encountered in the current zone
+Message-ID: <20100916151827.GA11405@csn.ul.ie>
+References: <1284553671-31574-1-git-send-email-mel@csn.ul.ie> <1284553671-31574-9-git-send-email-mel@csn.ul.ie> <20100916081338.GB16115@barrios-desktop> <20100916091824.GB15709@csn.ul.ie> <20100916141147.GC16115@barrios-desktop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100916141147.GC16115@barrios-desktop>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Sep 2010 19:07:14 -0700, Guenter Roeck wrote:
-> The attribute reflects an interval, not a rate.
+> > > <snip>
+> > > 
+> > > >  			      struct scan_control *sc)
+> > > >  {
+> > > > +	enum bdi_queue_status ret = QUEUEWRITE_DENIED;
+> > > > +
+> > > >  	if (current->flags & PF_SWAPWRITE)
+> > > > -		return 1;
+> > > > +		return QUEUEWRITE_ALLOWED;
+> > > >  	if (!bdi_write_congested(bdi))
+> > > > -		return 1;
+> > > > +		return QUEUEWRITE_ALLOWED;
+> > > > +	else
+> > > > +		ret = QUEUEWRITE_CONGESTED;
+> > > >  	if (bdi == current->backing_dev_info)
+> > > > -		return 1;
+> > > > +		return QUEUEWRITE_ALLOWED;
+> > > >  
+> > > >  	/* lumpy reclaim for hugepage often need a lot of write */
+> > > >  	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
+> > > > -		return 1;
+> > > > -	return 0;
+> > > > +		return QUEUEWRITE_ALLOWED;
+> > > > +	return ret;
+> > > >  }
+> > > 
+> > > The function can't return QUEUEXXX_DENIED.
+> > > It can affect disable_lumpy_reclaim. 
+> > > 
+> > 
+> > Yes, but that change was made in "vmscan: Narrow the scenarios lumpy
+> > reclaim uses synchrounous reclaim". Maybe I am misunderstanding your
+> > objection.
 > 
-> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-> ---
->  Documentation/hwmon/sysfs-interface |   12 +++++-----
->  drivers/hwmon/adm1031.c             |   43 +++++++++++++++++++---------------
->  2 files changed, 30 insertions(+), 25 deletions(-)
+> I means current may_write_to_queue never returns QUEUEWRITE_DENIED.
+> What's the role of it?
 > 
-> diff --git a/Documentation/hwmon/sysfs-interface b/Documentation/hwmon/sysfs-interface
-> index ff45d1f..df0cdd2 100644
-> --- a/Documentation/hwmon/sysfs-interface
-> +++ b/Documentation/hwmon/sysfs-interface
-> @@ -91,13 +91,13 @@ name		The chip name.
->  		I2C devices get this attribute created automatically.
->  		RO
->  
-> -update_rate	The rate at which the chip will update readings.
-> -		Unit: millisecond
-> +update_interval	The interval at which the chip or driver will update readings.
 
-I think I prefer the original wording. The attribute is really about
-setting the register refresh rate at the hardware level. The fact that
-register cache lifetime in the driver can be adjusted accordingly is an
-optional implementation detail IMHO.
+As of now, little point because QUEUEWRITE_CONGESTED implies denied. I was allowing
+the possibility of distinguishing between these cases in the future depending
+on what happened with wait_iff_congested(). I will drop it for simplicity
+and reintroduce it when or if there is a distinction between
+denied and congested.
 
-> +		Unit: milliseconds
+> In addition, we don't need disable_lumpy_reclaim_mode() in pageout.
+> That's because both PAGE_KEEP and PAGE_KEEP_CONGESTED go to keep_locked
+> and calls disable_lumpy_reclaim_mode at last. 
+> 
 
-Why change? All other units are singular in the file.
-
->  		RW
-> -		Some devices have a variable update rate. This attribute
-> -		can be used to change the update rate to the desired
-> -		frequency.
-> -
-
-Killing an innocent blank line ;)
-
-> +		Some devices have a variable update rate or interval.
-> +		Some drivers may want to make the update interval configurable
-> +		instead of using a hardcoded value. This attribute can be used
-> +		to change the update interval to the desired value.
->  
->  ************
->  * Voltages *
-
-I'm fine with all the rest.
+True, good spot.
 
 -- 
-Jean Delvare
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
