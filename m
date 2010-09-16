@@ -1,85 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754430Ab0IPXNw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 19:13:52 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:52475 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753523Ab0IPXNv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 19:13:51 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
-        "xiyou.wangcong\@gmail.com" <xiyou.wangcong@gmail.com>,
-        "paulmck\@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "simon.kagstrom\@netinsight.net" <simon.kagstrom@netinsight.net>,
-        "kexec\@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        "dle-develop\@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C0979C90E@USINDEVS01.corp.hds.com>
-Date: Thu, 16 Sep 2010 16:13:38 -0700
-In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C0979C90E@USINDEVS01.corp.hds.com>
-	(Seiji Aguchi's message of "Thu, 16 Sep 2010 16:16:14 -0400")
-Message-ID: <m1wrql2sf1.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 98.207.157.188
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Seiji Aguchi <seiji.aguchi@hds.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] Fix kexec abort due to IPI from panic().
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	id S1753793Ab0IPXPY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 19:15:24 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:55344 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750826Ab0IPXPX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 19:15:23 -0400
+Subject: Re: [PATCH 1/7] notify userspace about time changes
+From: john stultz <johnstul@us.ibm.com>
+To: Alexander Shishkin <virtuoso@slind.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        Greg KH <gregkh@suse.de>, Chris Friesen <chris.friesen@genband.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
+        John Kacur <jkacur@redhat.com>
+In-Reply-To: <20100916225843.GB10463@shisha.kicks-ass.net>
+References: <1284675049-23479-1-git-send-email-virtuoso@slind.org>
+	 <1284675049-23479-2-git-send-email-virtuoso@slind.org>
+	 <1284676240.2669.41.camel@localhost.localdomain>
+	 <20100916225843.GB10463@shisha.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 16 Sep 2010 16:15:12 -0700
+Message-ID: <1284678912.2669.92.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seiji Aguchi <seiji.aguchi@hds.com> writes:
+On Fri, 2010-09-17 at 01:58 +0300, Alexander Shishkin wrote:
+> On Thu, Sep 16, 2010 at 03:30:40 -0700, john stultz wrote:
+> > On Fri, 2010-09-17 at 01:10 +0300, Alexander Shishkin wrote:
+> > > Certain userspace applications (like "clock" desktop applets or cron) might
+> > > want to be notified when some other application changes the system time. It
+> > > might also be important for an application to be able to distinguish between
+> > > its own and somebody else's time changes.
+> > > 
+> > > This patch implements a notification interface via eventfd mechanism. Proccess
+> > > wishing to be notified about time changes should create an eventfd and pass it
+> > > to time_change_notify() syscall along with notification options.
+> > > After that, any calls to settimeofday()/stime()/adjtimex() made by other
+> > > processes will be signalled to this eventfd. Credits for suggesting the eventfd
+> > > mechanism for this purpose go to Kirill Shutemov.
+> > 
+> > One thing I have thought of since the last time you posted this, maybe
+> > it would be worth adding a clockid field to the syscall?
+> > 
+> > Basically, we're looking at extending the posix clocks interfaces to
+> > allow for additional clock hardware to be exposed (See the discussion on
+> > PTP and my CLOCK_RTC patch today for examples and details).
+> > 
+> > So it seems possible that folks would want a similar interface to catch
+> > updates to non CLOCK_REALTIME clocks.
+> > 
+> > Does this seem reasonable?
+> 
+> The whole idea seems interesting, I'll try to add this in the next iteration
+> of this patchset.
 
-> Hi,
->
-> I'm Seiji Aguchi.
-> I work for Hitachi Data Systems.
-> It's a first time to send a patch to lkml.
-> Nice to meet you.
->  
-> I found an issue in kexec.
-> Please give me your comments and suggestions.
->  
-> Kexec abort when two cpus panic at the same time.
-> An example scenario:
-> 1. Two cpus panic at the same time .
-> 2. One cpu ,cpu0, get kexec_mutex in crash_kexec().
-> 3. The other cpu ,cpu1, can't get kexec_mutex and return from crash_kexec().
-> 4. Cpu0 runs kmsg_dump(KMSG_DUMP_KEXEC).
-> 5. Cpu1 can't get dump_list_lock and return from kmsg_dump(KMSG_DUMP_PANIC).
-> 6. Cpu1 runs smp_send_stop() in panic() and sends IPI to other cpus.
-> 7. Cpu0 may receive IPI from cpu1 while running kmsg_dump(KMSG_DUMP_KEXEC),
->    crash_setup_regs(), or crash_save_vmcore().
->  
-> We can solve this issue by disabling external interrupt while getting kexec_mutex 
-> in crash_kexec().
+Very cool!
 
-Disabling interrupts is fine, I thought we did that already at some
-point.  However that call to kmsg_dump(KMSG_DUMP_KEXEC) is a bug as it
-introduces locks into a path that should not be taking locks.  Please
-remove that broken kmsg_dump call as well.
+> The first thing that comes it mind is -- are there going to be additional
+> events that the user might like to be notified of, like rtc_set_alarm()?
+> Doesn't seem too likely, though.
 
-Nothing in the crash_kexec path should even have the option of blocking.
+Well, the posix interface patch is trying to abstract over the hardware
+details like rtc_set_alarm.
 
-Eric
+So instead it would be timer_create/timer_settime/etc. These interfaces
+deal with timer structures that are per-process, so I don't think we
+need a notification hook for them.
+
+thanks
+-john
+
+
+
+
