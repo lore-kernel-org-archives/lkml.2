@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964Ab0IPHzS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 03:55:18 -0400
-Received: from relay.atmel.no ([194.19.124.36]:35040 "EHLO relay.atmel.no"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752266Ab0IPHzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 03:55:16 -0400
-Date: Thu, 16 Sep 2010 09:55:00 +0200
-From: Haavard Skinnemoen <haavard.skinnemoen@atmel.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: linux-mmc@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmc: Reduce fOD to 200 kHz if possible
-Message-ID: <20100916095500.7e79fc0f@hskinnemoen-d830>
-In-Reply-To: <20100915135719.GA1677@void.printf.net>
-References: <1284541140-7328-1-git-send-email-haavard.skinnemoen@atmel.com>
-	<20100915135719.GA1677@void.printf.net>
-Organization: Atmel
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753255Ab0IPH76 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 03:59:58 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:36351 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751504Ab0IPH75 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 03:59:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=HrdaUazCU+TSJeWT6HLpxPBkDZ4UeRmPbrY10usVN4h+HvqhtvEO3F0GGLcLCeiRch
+         k1kpwowqXg5kbh2EvZadVMM2v3vC7vwrDuy6QYF9W/6Tn0LL1e7iDoEJMC1Hs61KfzVN
+         5e0f5KINT8Xl+pu6h9Zg1OVZAO/F0ZVO85ruk=
+Date: Thu, 16 Sep 2010 16:59:49 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH 7/8] writeback: Do not sleep on the congestion queue if
+ there are no congested BDIs
+Message-ID: <20100916075949.GA16115@barrios-desktop>
+References: <1284553671-31574-1-git-send-email-mel@csn.ul.ie>
+ <1284553671-31574-8-git-send-email-mel@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284553671-31574-8-git-send-email-mel@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris Ball <cjb@laptop.org> wrote:
-> Hi Haavard,
+On Wed, Sep 15, 2010 at 01:27:50PM +0100, Mel Gorman wrote:
+> If congestion_wait() is called with no BDI congested, the caller will sleep
+> for the full timeout and this may be an unnecessary sleep. This patch adds
+> a wait_iff_congested() that checks congestion and only sleeps if a BDI is
+> congested else, it calls cond_resched() to ensure the caller is not hogging
+> the CPU longer than its quota but otherwise will not sleep.
 > 
-> On Wed, Sep 15, 2010 at 10:59:00AM +0200, Haavard Skinnemoen wrote:
-> > Since the identification frequency was increased to 400 kHz, my
-> > ATSTK1000 board has not been able to initialize any MMC or SD cards.
-> > Reducing the identification mode frequency to 200 kHz fixes the problem.
+> This is aimed at reducing some of the major desktop stalls reported during
+> IO. For example, while kswapd is operating, it calls congestion_wait()
+> but it could just have been reclaiming clean page cache pages with no
+> congestion. Without this patch, it would sleep for a full timeout but after
+> this patch, it'll just call schedule() if it has been on the CPU too long.
+> Similar logic applies to direct reclaimers that are not making enough
+> progress.
+
+I confused due to kswapd you mentioned.
+This patch affects only direct reclaim.
+Please, complete the description. 
+
+"This patch affects direct reclaimer to reduce stall"
+Otherwise, looks good to me. 
+
 > 
-> Good news -- there's already a patch to fix this in -mm.
-> 
-> Please test http://article.gmane.org/gmane.linux.kernel.commits.mm/62969
-> and let us know whether it works for you.
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-It does, sort of. I get this:
-
-atmel_mci atmel_mci.0: Atmel MCI controller at 0xfff02400 irq 28, 1 slots
-mmc0: mmc_rescan: trying to init card at 400000 Hz
-Freeing init memory: 916K (90000000 - 900e5000)
-mmc0: mmc_rescan: trying to init card at 300000 Hz
-mmc0: mmc_rescan: trying to init card at 200000 Hz
-mmc0: mmc_rescan: trying to init card at 136719 Hz
-mmc0: host does not support reading read-only switch. assuming write-enable.
-mmc0: new SD card at address 1234
-mmcblk0: mmc0:1234 SD1GB 972 MiB 
- mmcblk0: p1
-
-which is mostly ok, since it does succeed at initializing the card
-eventually, but it is somewhat surprising that it needs to go all the
-way down to 136 kHz. Usually, it works fine at 200 kHz.
-
-On the other hand, I did try something else before testing the 200 kHz
-patch: I enabled the internal pull-ups on the MMC lines. Turning them
-off again makes the card initialization fail at 200 kHz.
-
-So please ignore my patch, and let's go for Hein's patch instead.
-
-Haavard
+-- 
+Kind regards,
+Minchan Kim
