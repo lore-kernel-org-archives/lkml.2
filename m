@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756705Ab0IPWtf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 18:49:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34393 "EHLO mx2.suse.de"
+	id S1755765Ab0IPW5N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 18:57:13 -0400
+Received: from kroah.org ([198.145.64.141]:40526 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755712Ab0IPWtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 18:49:33 -0400
-Date: Thu, 16 Sep 2010 15:48:29 -0700
-From: Greg KH <gregkh@suse.de>
-To: pavan_savoy@ti.com
-Cc: alan@lxorguk.ukuu.org.uk, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers:staging:ti-st: mv headers to ti_wilink_st
-Message-ID: <20100916224829.GB14256@suse.de>
-References: <1284676444-23904-1-git-send-email-pavan_savoy@ti.com>
+	id S1753495Ab0IPW5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 18:57:12 -0400
+Date: Thu, 16 Sep 2010 15:53:46 -0700
+From: Greg KH <greg@kroah.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCHv2 01/10] staging: rt2860: change plain format of mac
+ address to %pM in *printf()
+Message-ID: <20100916225346.GA14448@kroah.com>
+References: <8ad2522ae82e753fcfa9fa9726d2a301e7b8b987.1284316733.git.andy.shevchenko@gmail.com>
+ <20100916193249.GD10397@kroah.com>
+ <AANLkTin_fs+moDjvd18H4QwMF1y0EXFq7tr3dq20JDoa@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1284676444-23904-1-git-send-email-pavan_savoy@ti.com>
+In-Reply-To: <AANLkTin_fs+moDjvd18H4QwMF1y0EXFq7tr3dq20JDoa@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 06:34:04PM -0400, pavan_savoy@ti.com wrote:
-> From: Pavan Savoy <pavan_savoy@ti.com>
-> 
-> move all the header information to ti_wilink_st.h.
-> This header would then not only serve the local modules like the st_core.c,
-> st_kim.c and st_ll.c but also the external modules/protocol drivers that are
-> dependent on the shared transport driver.
-> Also modify the structures to use cleaner u8/u16 types for data coming
-> in from chip and data parsed out of firmware.
+On Fri, Sep 17, 2010 at 01:45:48AM +0300, Andy Shevchenko wrote:
+> On Thu, Sep 16, 2010 at 10:32 PM, Greg KH <greg@kroah.com> wrote:
+> > If so, care to send me the remaining pieces and I'll apply
+> > them?
+> Do I understand correctly I need to prepare correction series with
+> changes between v1 and v2?
 
-No!
+Yes.
 
-Don't do more than one thing at once please, do one thing at a time.
+> P.S. In one patch in v1 series there was a typo as well.
 
-One patch to modify the structures.
-
-And one patch to move things together.
+Ick, yeah, sorry about that, the differences between the two is what I
+need to apply to fix up the issues.
 
 thanks,
 
