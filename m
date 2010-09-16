@@ -1,78 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782Ab0IPXFy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 19:05:54 -0400
-Received: from smtp104.sbc.mail.mud.yahoo.com ([68.142.198.203]:29376 "HELO
-	smtp104.sbc.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753964Ab0IPXFw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 19:05:52 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: HLmC4F8VM1mriiUYg.dazgT6EU4eqX_tkEDuKzqxECrmzHz
- B.p6BuEdCbI905LhypC0_5CD.tGLalNvnrv8LpWpkgACbJAVrLbOahooQz41
- m1gzXpuuaCLOv6WsaKmWwAjXVVU8EWNp.4NIxk6XtjxsRQiHl_u8TDehIG4S
- ztsuzceBk27DxXK9T5PfyAuFeuJ0.hWMxrk5XuPs5nACClGyaxjgSif0jOGD
- 1_QcrqfTVtM3cbk3Beuy7C9J2jGj2DK_KFptGUSwEXiCP3Rj7v6lKrmGU6tK
- vfiYtOq3B74wUoIkW31_PwJef2wAx_FDrU3bLgwSRiO2kLMMaFBuxbn5n
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [PATCH 0/8] Drop host_lock around LLD SHT->queuecommand()
-	caller
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-scsi <linux-scsi@vger.kernel.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        James Smart <james.smart@emulex.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
-        Christoph Hellwig <hch@lst.de>
-In-Reply-To: <1284676521-10737-1-git-send-email-nab@linux-iscsi.org>
-References: <1284676521-10737-1-git-send-email-nab@linux-iscsi.org>
-Content-Type: text/plain
-Date: Thu, 16 Sep 2010 16:01:43 -0700
-Message-Id: <1284678103.13344.111.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1753964Ab0IPXN1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 19:13:27 -0400
+Received: from kroah.org ([198.145.64.141]:41294 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752704Ab0IPXNW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 19:13:22 -0400
+Date: Thu, 16 Sep 2010 16:13:07 -0700
+From: Greg KH <greg@kroah.com>
+To: Peter Palfrader <peter@palfrader.org>, stable@kernel.org,
+        Tejun Heo <tj@kernel.org>, Huang Shijie <shijie8@gmail.com>,
+        akpm@linux-foundation.org, linux-mm@kvack.org,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [stable] breaks 2.6.32.21+ (was: [PATCH] percpu: fix a memory
+ leak in	pcpu_extend_area_map())
+Message-ID: <20100916231307.GB24617@kroah.com>
+References: <1281261197-8816-1-git-send-email-shijie8@gmail.com>
+ <4C5EA651.7080009@kernel.org>
+ <20100916213603.GW6447@anguilla.noreply.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100916213603.GW6447@anguilla.noreply.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-16 at 15:35 -0700, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
+On Thu, Sep 16, 2010 at 11:36:03PM +0200, Peter Palfrader wrote:
+> Hey,
 > 
-> Greetings all,
+> The patch quoted below seems to have made it into Greg's stable-queue
+> for 2.6.32.
 > 
-> This series contains the first round of a whole-sale conversion for droping
-> struct Scsi_Host->host_lock around struct Scsi_Host->queuecommand() within
-> scsi_dispatch_cmd().  So with this first patch the only part of scsi_dispatch_cmd()
-> that is protected by host_lock is scsi_cmd_get_serial)_.
+> I tried building a kernel based on 2.6.32.21 plus all the patches
+> currently in that queue.  The resulting kernel unfortunately didn't
+> boot for me, neither as a 32 nor as 64 bit x86 kernel.
 > 
-> The patches #2 -> #8 converts libiscsi, libsas, lpfc, qla4xxx, qla2xxx,
-> TCM_Loop, and libfc code to drop their own SHT->queuecommand() internal
-> host_lock unlock() + lock() optimization that certain high performance libs
-> and LLDs have adopted over the years.  The changes involved here are really
-> quite straight forward, but please note that none of this code has been tested
-> with actual hardware yet, and is intended for generating comments for the relivent
-> SCSI LLD driver maintainers and other interested folks.
+> I have put up a screenshot of a trace at
+> http://asteria.noreply.org/~weasel/volatile/2010-09-16-SrLl9JHtDTg/trace-64bit.png
+> since the kernel fortunately also died in kvm - unfortunately only the
+> last 60 lines are easily available.  If you need more I could try to set
+> up some serial console thing to catch more.
 > 
-> There are probably still be more LLDs which use this optimization, so please
-> let me know if there is another piece of SHT->queuecommand() caller code that
-> does this legacy optimization and needs to be updated.  I will be sure to
-> CC the right driver maintainers and CC linux-scsi as I come across any more
-> conversions.
+> Bisecting led to this patch and reverting "percpu: fix a memory leak in
+> pcpu_extend_area_map()" makes the kernel boot for me again.
 
-Hi Guys,
+Odd, someone just reported the same problem for .35-stable as well.
 
-drivers/scsi/fnic needs the conversion as well..  Here is that patch;
+Tejun, what's going on here?
 
-http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=commitdiff;h=3c886b2ab6faccbe2803094deb7a9647199e5118
+thanks,
 
-Thanks!
+greg k-h
 
---nab
-
+> 
+> > From 206c53730b8b1707becca7a868ea8d14ebee24d2 Mon Sep 17 00:00:00 2001
+> > From: Huang Shijie <shijie8@gmail.com>
+> > Date: Sun, 8 Aug 2010 14:39:07 +0200
+> > 
+> > The original code did not free the old map.  This patch fixes it.
+> > 
+> > tj: use @old as memcpy source instead of @chunk->map, and indentation
+> >     and description update
+> > 
+> > Signed-off-by: Huang Shijie <shijie8@gmail.com>
+> > Signed-off-by: Tejun Heo <tj@kernel.org>
+> > ---
+> > Patch applied to percpu#for-linus w/ some updates.  Thanks a lot for
+> > catching this.
+> > 
+> >  mm/percpu.c |    4 +++-
+> >  1 files changed, 3 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/mm/percpu.c b/mm/percpu.c
+> > index e61dc2c..a1830d8 100644
+> > --- a/mm/percpu.c
+> > +++ b/mm/percpu.c
+> > @@ -393,7 +393,9 @@ static int pcpu_extend_area_map(struct pcpu_chunk *chunk, int new_alloc)
+> >  		goto out_unlock;
+> > 
+> >  	old_size = chunk->map_alloc * sizeof(chunk->map[0]);
+> > -	memcpy(new, chunk->map, old_size);
+> > +	old = chunk->map;
+> > +
+> > +	memcpy(new, old, old_size);
+> > 
+> >  	chunk->map_alloc = new_alloc;
+> >  	chunk->map = new;
+> 
+> Cheers,
+> Peter
+> -- 
+>                            |  .''`.  ** Debian GNU/Linux **
+>       Peter Palfrader      | : :' :      The  universal
+>  http://www.palfrader.org/ | `. `'      Operating System
+>                            |   `-    http://www.debian.org/
+> 
+> _______________________________________________
+> stable mailing list
+> stable@linux.kernel.org
+> http://linux.kernel.org/mailman/listinfo/stable
