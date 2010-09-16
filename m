@@ -1,77 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab0IPOdJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 10:33:09 -0400
-Received: from dtp.xs4all.nl ([80.101.171.8]:30077 "HELO abra2.bitwizard.nl"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1754981Ab0IPOdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 10:33:07 -0400
-Date: Thu, 16 Sep 2010 16:33:04 +0200
-From: Rogier Wolff <R.E.Wolff@BitWizard.nl>
-To: linux-kernel@vger.kernel.org
-Subject: Sudden "hangs".... 
-Message-ID: <20100916143304.GA14874@bitwizard.nl>
+	id S1754992Ab0IPOjf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 10:39:35 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:60311 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753686Ab0IPOjd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 10:39:33 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: codalist@TELEMANN.coda.cs.cmu.edu
+Subject: Remaining BKL users, what to do
+Date: Thu, 16 Sep 2010 16:32:59 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: autofs@linux.kernel.org, linux-media@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, Christoph Hellwig <hch@infradead.org>,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Petr Vandrovec <vandrove@vc.cvut.cz>, Anders Larsen <al@alarsen.net>,
+        Jan Kara <jack@suse.cz>, Evgeniy Dushistov <dushistov@mail.ru>,
+        Ingo Molnar <mingo@elte.hu>, netdev@vger.kernel.org,
+        Samuel Ortiz <samuel@sortiz.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Andrew Hendry <andrew.hendry@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: BitWizard.nl
-User-Agent: Mutt/1.5.13 (2006-08-11)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009161632.59210.arnd@arndb.de>
+X-Provags-ID: V02:K0:ZKoCyo3ID5MgoU2rgnSwK8q/WERysvT7/no3xrB/mT1
+ Wj3Sqlh6tCJm5OQ+McudokKEbNIke8RfAp9LR8XINZ73HuHiS8
+ ttnpiVTLO3ecTePnKsleM+0JNtgrTJp7rWjekYbyowntDz37iN
+ 8oNQLCLBdjV8UFUD3CfIrC/CSZj2JQnAU7qgbCSVj40Rk+J+bx
+ YteW9ehuy4HLDtI9reEvQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The big kernel lock is gone from almost all code in linux-next, this is
+the status of what I think will happen to the remaining users:
 
-Hi,
+drivers/gpu/drm/i810/{i810,i830}_dma.c:
+	Fixable, but needs someone with the hardware to test. Can probably be
+	marked CONFIG_BROKEN_ON_SMP if nobody cares.
 
-It seems my home workstation hangs on a "mkdir" once every morning for
-about half a minute. It'll freeze whatever I'm doing and continue
-happily 30 seconds later, but I can't figure out what's going on
-because it's frozen...
+drivers/media/video (V4L):
+	Mauro is working on it, some drivers get moved to staging while the
+	others get fixed. An easy workaround would be possible by adding
+	per-driver mutexes, but Mauro wants to it properly by locking all
+	the right places.
 
-My server did it just now and I was able to grab some more
-debugging info..... 
+fs/adfs:
+	Probably not hard to fix, but needs someone to test it.
+	adfs has only seen janitorial fixes for the last 5 years.
+	Do we know of any users?
 
-obelix:~> time mkdir /recover3/testdir
-0.000u 0.004s 2:11.83 0.0%      0+0k 0+0io 5pf+0w
-obelix:~> 
+fs/autofs:
+	Pretty much dead, replaced by autofs4. I'd suggest moving this
+	to drivers/staging in 2.6.37 and letting it die there.
 
-Over two minutes to make a directory! (I have the impression that
-the wait is for something to finish, so if I had started the mkdir
-a minute earlier, it would've taken a minute longer). 
+fs/coda:
+	Coda seems to have an active community, but not all of their
+	code is actually part of linux (pioctl!), while the last official
+	release is missing many of the cleanups that were don in Linux.
+	Not sure what to do, if someone is interested, the best way might
+	be a fresh start with a merger of the mainline linux and the
+	coda.cs.cmu.edu	codebase in drivers/staging.
+	Just removing the BKL without the Coda community seems like a heap
+	of pointless work.
 
-The process:
-28649 root      20   0     0    0    0 D  6.3  0.0   0:11.69 flush-9:0 
+fs/freevxfs:
+	Uses the BKL in readdir and lookup, should be easy to fix. Christoph?
 
-was in "top", and as shown here in "disk wait" mode. 
+fs/hpfs:
+	Looks fixable, if anyone cares. Maybe it's time for retirement in
+	drivers/staging though. The web page only has a Link to the
+	linux-2.2 version.
 
-While this is going on, "vmstat 1"  shows:
+fs/lockd:
+	Trond writes that he has someone working on BKL removal here.
 
-procs -----------memory---------- ---swap-- -----io---- -system-- ----cpu----
- r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa
- 0  1   5368  12764 324804 1616932    0    0   464     0  244  477  0  2  0 98
- 0  1   5368  12764 324556 1617168    0    0   448     0  255  474  0  1  0 99
- 0  1   5368  12764 324952 1616832    0    0   472     0  257  487  0  1  0 99
+fs/locks.c:
+	Patch is under discussion, blocked by work on fs/lockd currently.
 
-... about 400 kbytes of IO per second. This is similar to the
-single-disk machine at home.
+fs/ncpfs:
+	Should be fixable if Petr still cares about it. Otherwise suggest
+	moving to drivers/staging if there are no users left.
 
-The server runs: 
+fs/qnx4:
+	Should be easy to fix, there are only a few places in the code that
+	use the BKL. Anders?
 
-Linux version 2.6.34 (wolff@abra2) (gcc version 4.1.2 20061115 (prerelease) (Debian 4.1.1-21)) #5 SMP Tue Jun 1 14:44:01 CEST 2010
+fs/smbfs:
+	Last I heard this was considered obsolete. Should be move it to
+	drivers/staging now?
 
-at home I run: 
-Linux version 2.6.28-19-generic (buildd@palmer) (gcc version 4.3.3 (Ubuntu 4.3.3-5ubuntu4) ) #61-Ubuntu SMP Wed May 26 23:35:15 UTC 2010
+fs/udf:
+	Not completely trivial, but probably necessary to fix. Project web
+	site is dead, I hope that Jan Kara can be motivated to fix it though.
 
+fs/ufs:
+	Evgeniy Dushistov is maintaining this, I hope he can take care of
+	getting rid of the BKL in UFS.
 
-Does anybody know what's going on? 
+kernel/trace/blktrace.c:
+	Should be easy. Ingo? Steven?
 
-	Roger. 
+net/appletalk:
+net/ipx/af_ipx.c:
+net/irda/af_irda.c:
+	Can probably be saved from retirement in drivers/staging if the
+	maintainers still care.
+	
+net/x25:
+	Andrew Hendry has started working on it.
 
+This is all that's left now. I still need to submit a few patches for
+simple file system changes, but it seems we're getting closer to finally
+killing it for good.
 
--- 
-** R.E.Wolff@BitWizard.nl ** http://www.BitWizard.nl/ ** +31-15-2600998 **
-**    Delftechpark 26 2628 XH  Delft, The Netherlands. KVK: 27239233    **
-*-- BitWizard writes Linux device drivers for any device you may have! --*
-Q: It doesn't work. A: Look buddy, doesn't work is an ambiguous statement. 
-Does it sit on the couch all day? Is it unemployed? Please be specific! 
-Define 'it' and what it isn't doing. --------- Adapted from lxrbot FAQ
+	Arnd
