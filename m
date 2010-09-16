@@ -1,97 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753688Ab0IPHPn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 03:15:43 -0400
-Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:40584 "EHLO
-	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752455Ab0IPHPl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 03:15:41 -0400
-From: Arun MURTHY <arun.murthy@stericsson.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Mattias WALLIN <mattias.wallin@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Arun MURTHY <arun.murthy@stericsson.com>
-Date: Thu, 16 Sep 2010 09:15:22 +0200
-Subject: RE: linux-next: build failure after merge of the final tree (mfd
- tree related)
-Thread-Topic: linux-next: build failure after merge of the final tree (mfd
- tree related)
-Thread-Index: ActTvwEqyEUTTUgeTUSZNyUW5WhdEwAC0bzwAGkJ7cA=
-Message-ID: <F45880696056844FA6A73F415B568C69532D96AC51@EXDCVYMBSTM006.EQ1STM.local>
-References: <20100914134321.5eee798a.sfr@canb.auug.org.au> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753881Ab0IPHQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 03:16:28 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:51820 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752963Ab0IPHQ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 03:16:26 -0400
+Message-ID: <4C91C44F.40700@cn.fujitsu.com>
+Date: Thu, 16 Sep 2010 15:16:31 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        "Theodore Ts'o" <tytso@mit.edu>, Chris Mason <chris.mason@oracle.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Btrfs <linux-btrfs@vger.kernel.org>,
+        Linux Ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH] x86_64/lib: improve the performance of memmove
+References: <56957.91.60.149.91.1284619705.squirrel@www.firstfloor.org>
+In-Reply-To: <56957.91.60.149.91.1284619705.squirrel@www.firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Thu, 16 Sep 2010 08:48:25 +0200 (cest), Andi Kleen wrote:
+>> When the dest and the src do overlap and the memory area is large, memmove
+>> of
+>> x86_64 is very inefficient, and it led to bad performance, such as btrfs's
+>> file
+>> deletion performance. This patch improved the performance of memmove on
+>> x86_64
+>> by using __memcpy_bwd() instead of byte copy when doing large memory area
+>> copy
+>> (len>  64).
+>
+>
+> I still don't understand why you don't simply use a backwards
+> string copy (with std) ? That should be much simpler and
+> hopefully be as optimized for kernel copies on recent CPUs.
 
-> > Hi Samuel,
-> >
-> > After merging the final tree, today's linux-next build (powerpc
-> > allyesconfig) failed like this:
-> >
-> > drivers/mfd/built-in.o: In function `__crc_pwm_free':
-> > (*ABS*+0x24ba6d1e): multiple definition of `__crc_pwm_free'
-> > drivers/mfd/built-in.o: In function `.pwm_free':
-> > (.text+0x1ab3c): multiple definition of `.pwm_free'
-> > drivers/misc/built-in.o:(.text+0x2620c): first defined here
-> > drivers/mfd/built-in.o: In function `__crc_pwm_request':
-> > (*ABS*+0xc1f4ec93): multiple definition of `__crc_pwm_request'
-> > drivers/mfd/built-in.o: In function `__crc_pwm_enable':
-> > (*ABS*+0x9d09808d): multiple definition of `__crc_pwm_enable'
-> > drivers/mfd/built-in.o: In function `.pwm_enable':
-> > (.text+0x1abc8): multiple definition of `.pwm_enable'
-> > drivers/misc/built-in.o:(.text+0x26278): first defined here
-> > drivers/mfd/built-in.o: In function `.pwm_request':
-> > (.text+0x1a774): multiple definition of `.pwm_request'
-> > drivers/misc/built-in.o:(.text+0x2604c): first defined here
-> > drivers/mfd/built-in.o: In function `pwm_config':
-> > (.opd+0x1ce0): multiple definition of `pwm_config'
-> > drivers/misc/built-in.o:(.opd+0x3000): first defined here
-> > drivers/mfd/built-in.o: In function `pwm_free':
-> > (.opd+0x1d28): multiple definition of `pwm_free'
-> > drivers/misc/built-in.o:(.opd+0x2fd0): first defined here
-> > drivers/mfd/built-in.o: In function `pwm_request':
-> > (.opd+0x1cf8): multiple definition of `pwm_request'
-> > drivers/misc/built-in.o:(.opd+0x2f58): first defined here
-> > drivers/mfd/built-in.o: In function `__crc_pwm_disable':
-> > (*ABS*+0xb0493b18): multiple definition of `__crc_pwm_disable'
-> > drivers/mfd/built-in.o: In function `.pwm_disable':
-> > (.text+0x1aa24): multiple definition of `.pwm_disable'
-> > drivers/misc/built-in.o:(.text+0x2613c): first defined here
-> > drivers/mfd/built-in.o: In function `pwm_enable':
-> > (.opd+0x1d40): multiple definition of `pwm_enable'
-> > drivers/misc/built-in.o:(.opd+0x2fe8): first defined here
-> > drivers/mfd/built-in.o: In function `.pwm_config':
-> > (.text+0x1a648): multiple definition of `.pwm_config'
-> > drivers/misc/built-in.o:(.text+0x26358): first defined here
-> > drivers/mfd/built-in.o: In function `pwm_disable':
-> > (.opd+0x1d10): multiple definition of `pwm_disable'
-> > drivers/misc/built-in.o:(.opd+0x2fb8): first defined here
-> > drivers/mfd/built-in.o: In function `__crc_pwm_config':
-> > (*ABS*+0xc23f5b9): multiple definition of `__crc_pwm_config'
-> >
-> > Caused by commit 03f582a93ecca6e9584b622570022abf08ed03ec ("misc: Add
-> > ab8500 pwm driver").  I have reverted that commit for today.
-> >
-Please find the patch that fixes this build issue @ 
-http://git.kernel.org/?p=linux/kernel/git/sameo/mfd-2.6.git;a=commit;h=f33bd494862cdc519db1f5d9b3f8214a1dd4c1ff
+But according to the comment of memcpy, some CPUs don't support "REP" instruction,
+so I think we must implement a backwards string copy by other method for those CPUs,
+But that implement is complex, so I write it as a function -- __memcpy_bwd().
 
-Kindly merge this patch.
-
-Thanks and Regards,
-Arun R Murthy
-------------
+Thanks!
+Miao
