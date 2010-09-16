@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755395Ab0IPSVQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 14:21:16 -0400
-Received: from cantor.suse.de ([195.135.220.2]:51732 "EHLO mx1.suse.de"
+	id S1755344Ab0IPSZw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 14:25:52 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:35120 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753523Ab0IPSVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 14:21:15 -0400
-From: Jan Kara <jack@suse.cz>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, tj@kernel.org, Jan Kara <jack@suse.cz>
-Subject: [PATCH] block: Fix race during disk initialization
-Date: Thu, 16 Sep 2010 20:20:17 +0200
-Message-Id: <1284661217-22783-1-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.6.4.2
+	id S1754164Ab0IPSZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 14:25:51 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC][PATCH] PM / Runtime: Use alloc_workqueue() for creating PM workqueue
+Date: Thu, 16 Sep 2010 20:24:51 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Arjan van de Ven <arjan@infradead.org>
+References: <201009152156.30749.rjw@sisk.pl> <4C91D132.6090607@kernel.org>
+In-Reply-To: <4C91D132.6090607@kernel.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009162024.51520.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a new disk is being discovered, add_disk() first ties the bdev to gendisk
-(via register_disk()->blkdev_get()) and only after that calls
-bdi_register_bdev(). Because register_disk() also creates disk's kobject, it
-can happen that userspace manages to open and modify the device's data (or
-inode) before its BDI is properly initialized leading to a warning in
-__mark_inode_dirty().
+On Thursday, September 16, 2010, Tejun Heo wrote:
+> Hello, Rafael.
+> 
+> On 09/15/2010 09:56 PM, Rafael J. Wysocki wrote:
+> > I'm not sure about that WQ_RESCUER thing.  Can you please tell me what
+> > exactly it is for?
+> 
+> It's to guarantee forward progress for workqueues which process work
+> items which may be used to reclaim memory.  It reserves a rescue
+> worker thread to be used under memory pressure.  I finished workqueue
+> documentation a few days ago and sent pull request to Linus.
+> 
+>   http://git.kernel.org/?p=linux/kernel/git/tj/wq.git;a=blob;f=Documentation/workqueue.txt;h=e4498a2872c37a0b3b156ddc7ad7135d030d224d;hb=c54fce6eff197d9c57c97afbf6c9722ce434fc8f
+> 
+> So, for pm_wq, there's no reason to use WQ_RESUER.
+> alloc_workqueue("pm", WQ_FREEZEABLE, 0) should do it.
 
-Fix the problem by registering BDI early enough.
+Great, thanks!
 
-This patch addresses https://bugzilla.kernel.org/show_bug.cgi?id=16312
+> Thanks for doing it.
 
-Reported-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: Jan Kara <jack@suse.cz>
+No big deal.  Actually I should thank you for making it possible to use
+freezable workqueues that are not singlethread. :-)
+
+Updated patch follows.
+
+Thanks,
+Rafael
+
 ---
- block/genhd.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+From: Rafael J. Wysocki <rjw@sisk.pl>
+Subject: PM / Runtime: Use alloc_workqueue() for creating the PM workqueue
 
- Jens, would you consider merging this fix? The kernel boots with it but
-I'm not too familiar with this area of kernel so there can be something subtle
-I've missed. So please review. Thanks.
+Although we need the PM workqueue to be freezable, we don't need it
+to be singlethread.  Also, the number of concurrent work items
+running on a single CPU need not be constrained.  For these reasons
+use alloc_workqueue() directly, with suitable arguments, instead of
+create_freezeable_workqueue(), to create the runtime PM workqueue.
 
-diff --git a/block/genhd.c b/block/genhd.c
-index 59a2db6..315afd2 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -541,13 +541,15 @@ void add_disk(struct gendisk *disk)
- 	disk->major = MAJOR(devt);
- 	disk->first_minor = MINOR(devt);
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ kernel/power/main.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-2.6/kernel/power/main.c
+===================================================================
+--- linux-2.6.orig/kernel/power/main.c
++++ linux-2.6/kernel/power/main.c
+@@ -308,7 +308,7 @@ EXPORT_SYMBOL_GPL(pm_wq);
  
-+	/* Register BDI before referencing it from bdev */
-+	bdi = &disk->queue->backing_dev_info;
-+	bdi_register_dev(bdi, disk_devt(disk));
-+
- 	blk_register_region(disk_devt(disk), disk->minors, NULL,
- 			    exact_match, exact_lock, disk);
- 	register_disk(disk);
- 	blk_register_queue(disk);
+ static int __init pm_start_workqueue(void)
+ {
+-	pm_wq = create_freezeable_workqueue("pm");
++	pm_wq = alloc_workqueue("pm", WQ_FREEZEABLE, 0);
  
--	bdi = &disk->queue->backing_dev_info;
--	bdi_register_dev(bdi, disk_devt(disk));
- 	retval = sysfs_create_link(&disk_to_dev(disk)->kobj, &bdi->dev->kobj,
- 				   "bdi");
- 	WARN_ON(retval);
--- 
-1.6.4.2
-
+ 	return pm_wq ? 0 : -ENOMEM;
+ }
