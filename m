@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756844Ab0IPWSA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 18:18:00 -0400
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:57501 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756797Ab0IPWRT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 18:17:19 -0400
-From: Alexander Shishkin <virtuoso@slind.org>
-To: linux-kernel@vger.kernel.org
-Cc: John Stultz <johnstul@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        Greg KH <gregkh@suse.de>, Chris Friesen <chris.friesen@genband.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Alexander Shishkin <virtuoso@slind.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Andreas Schwab <schwab@linux-m68k.org>, Christoph Hellwig <hch@lst.de>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH 4/7] wire up sys_time_change_notify() on powerpc
-Date: Fri, 17 Sep 2010 01:10:46 +0300
-Message-Id: <1284675049-23479-5-git-send-email-virtuoso@slind.org>
-X-Mailer: git-send-email 1.7.2.1.45.gb66c2
-In-Reply-To: <1284675049-23479-1-git-send-email-virtuoso@slind.org>
-References: <1284675049-23479-1-git-send-email-virtuoso@slind.org>
+	id S1756660Ab0IPWPR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 18:15:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61305 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756514Ab0IPWPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 18:15:14 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Christoph Hellwig <hch@infradead.org>,
+        Andreas Gruenbacher <agruen@suse.de>, Nick Piggin <npiggin@kernel.dk>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Valerie Aurora <vaurora@redhat.com>
+Subject: [PATCH 26/34] union-mount: Temporarily disable some syscalls
+Date: Thu, 16 Sep 2010 15:12:17 -0700
+Message-Id: <1284675145-4391-27-git-send-email-vaurora@redhat.com>
+In-Reply-To: <1284675145-4391-1-git-send-email-vaurora@redhat.com>
+References: <1284675145-4391-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Andreas Schwab <schwab@linux-m68k.org>
-CC: Alexander Shishkin <virtuoso@slind.org>
-CC: Christoph Hellwig <hch@lst.de>
-CC: Jesper Nilsson <jesper.nilsson@axis.com>
-CC: linuxppc-dev@lists.ozlabs.org
-CC: linux-kernel@vger.kernel.org
----
- arch/powerpc/include/asm/systbl.h |    1 +
- arch/powerpc/include/asm/unistd.h |    3 ++-
- 2 files changed, 3 insertions(+), 1 deletions(-)
+After some of the following patches in this series, a few system calls
+will crash the kernel if called on union-mounted file systems.
+Temporarily disable rename(), unlink(), and rmdir() on unioned file
+systems until they are correctly implemented by later patches.
 
-diff --git a/arch/powerpc/include/asm/systbl.h b/arch/powerpc/include/asm/systbl.h
-index 3d21266..124b610 100644
---- a/arch/powerpc/include/asm/systbl.h
-+++ b/arch/powerpc/include/asm/systbl.h
-@@ -329,3 +329,4 @@ COMPAT_SYS(rt_tgsigqueueinfo)
- SYSCALL(fanotify_init)
- COMPAT_SYS(fanotify_mark)
- SYSCALL_SPU(prlimit64)
-+SYSCALL(time_change_notify)
-diff --git a/arch/powerpc/include/asm/unistd.h b/arch/powerpc/include/asm/unistd.h
-index 597e6f9..6ab64da 100644
---- a/arch/powerpc/include/asm/unistd.h
-+++ b/arch/powerpc/include/asm/unistd.h
-@@ -348,10 +348,11 @@
- #define __NR_fanotify_init	323
- #define __NR_fanotify_mark	324
- #define __NR_prlimit64		325
-+#define __NR_time_change_notify	326
+Signed-off-by: Valerie Aurora <vaurora@redhat.com>
+---
+ fs/namei.c |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
+
+diff --git a/fs/namei.c b/fs/namei.c
+index 0b6378e..2de4378 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -35,6 +35,7 @@
+ #include <asm/uaccess.h>
  
- #ifdef __KERNEL__
+ #include "internal.h"
++#include "union.h"
  
--#define __NR_syscalls		326
-+#define __NR_syscalls		327
+ /* [Feb-1997 T. Schoebel-Theuer]
+  * Fundamental changes in the pathname lookup mechanisms (namei)
+@@ -2404,6 +2405,11 @@ static long do_rmdir(int dfd, const char __user *pathname)
+ 	if (error)
+ 		return error;
  
- #define __NR__exit __NR_exit
- #define NR_syscalls	__NR_syscalls
++	/* rmdir() on union mounts not implemented yet */
++	error = -EINVAL;
++	if (IS_DIR_UNIONED(nd.path.dentry))
++		goto exit1;
++
+ 	switch(nd.last_type) {
+ 	case LAST_DOTDOT:
+ 		error = -ENOTEMPTY;
+@@ -2500,6 +2506,11 @@ static long do_unlinkat(int dfd, const char __user *pathname)
+ 	if (nd.last_type != LAST_NORM)
+ 		goto exit1;
+ 
++	/* unlink() on union mounts not implemented yet */
++	error = -EINVAL;
++	if (IS_DIR_UNIONED(nd.path.dentry))
++		goto exit1;
++
+ 	nd.flags &= ~LOOKUP_PARENT;
+ 
+ 	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
+@@ -2890,6 +2901,12 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 	if (oldnd.path.mnt != newnd.path.mnt)
+ 		goto exit2;
+ 
++	/* rename() on union mounts not implemented yet */
++	error = -EXDEV;
++	if (IS_DIR_UNIONED(oldnd.path.dentry) ||
++	    IS_DIR_UNIONED(newnd.path.dentry))
++		goto exit2;
++
+ 	old_dir = oldnd.path.dentry;
+ 	error = -EBUSY;
+ 	if (oldnd.last_type != LAST_NORM)
 -- 
-1.7.2.1.45.gb66c2
+1.6.3.3
 
