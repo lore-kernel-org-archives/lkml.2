@@ -1,72 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752329Ab0IPHrJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 03:47:09 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:39744 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751456Ab0IPHrH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 03:47:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Z1thxjXxJogduoF4DOFPNmS8acwTf77+KO3V4yl59VVQRMk5EcQPdEqPWFTmj8JMr1
-         bNTUg+1kcOJ7Upu96cyy993SGoeGPizeCpV71c8qIS2HTXPpGmGqplOcR6UI1RJHXeUU
-         cMbKssupr5tpKsqOCYh1uH1QMwnWhVCKHKD6s=
+	id S1752802Ab0IPHwf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 03:52:35 -0400
+Received: from ebb05.tieto.com ([131.207.168.36]:55032 "EHLO ebb05.tieto.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752085Ab0IPHwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 03:52:34 -0400
+X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Sep 2010 03:52:33 EDT
+X-AuditID: 83cfa824-b7b16ae000000a21-06-4c91c93bac06
+From: Yang Ruirui <ruirui.r.yang@tieto.com>
+Organization: Tieto China
+To: Alex Elder <aelder@sgi.com>, <xfs@oss.sgi.com>,
+        <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: -mm: xfs lockdep warning
+Date: Thu, 16 Sep 2010 15:46:16 +0800
+User-Agent: KMail/1.11.4 (Linux/2.6.36-rc4-mm1; KDE/4.2.4; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <20100916155413.3BC0.A69D9226@jp.fujitsu.com>
-References: <20100916145452.3BB1.A69D9226@jp.fujitsu.com>
-	<alpine.DEB.2.00.1009152300380.25200@chino.kir.corp.google.com>
-	<20100916155413.3BC0.A69D9226@jp.fujitsu.com>
-Date: Thu, 16 Sep 2010 10:47:05 +0300
-X-Google-Sender-Auth: BSGBl_4W_xwq7-dKWG2mDpkSdX0
-Message-ID: <AANLkTikyxAZBp63FxY26_MS6afDZO59r2FNoWF9W-GmT@mail.gmail.com>
-Subject: Re: [PATCH 1/4] oom: remove totalpage normalization from oom_badness()
-From: Pekka Enberg <penberg@kernel.org>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, oss-security@lists.openwall.com,
-        Solar Designer <solar@openwall.com>,
-        Kees Cook <kees.cook@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Oleg Nesterov <oleg@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        linux-fsdevel@vger.kernel.org, pageexec@freemail.hu,
-        Brad Spengler <spender@grsecurity.net>, Eugene Teo <eugene@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201009161546.16909.ruirui.r.yang@tieto.com>
+X-Brightmail-Tracker: AAAAARYGMzY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 9:57 AM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
->> On Thu, 16 Sep 2010, KOSAKI Motohiro wrote:
->>
->> > Current oom_score_adj is completely broken because It is strongly bound
->> > google usecase and ignore other all.
->> >
->>
->> We've talked about this issue three times already.  The last two times
->> you've sent a revert patch, you failed to followup on the threads:
->>
->>       http://marc.info/?t=128272938200002
->>       http://marc.info/?t=128324705200002
->>
->> And now you've gone above Andrew, who is the maintainer of this code, and
->> straight to Linus.  Between that and your failure to respond to my answers
->> to your questions, I'm really stunned at how unprofessional you've handled
->> this.
->
-> Selfish must die. you failed to persuade to me. and I havgen't get anyone's objection.
-> Then, I don't care your ugly whining.
+Hi,
 
-I haven't followed the discussion at all so I hope you don't mind me
-jumping in. Are there some real-world bug reports where OOM rewrite is
-to blame? Why haven't those been fixed?
+I got following lockdep warning, xfs related?
 
-                        Pekka
+[  604.416384] =================================
+[  604.416625] [ INFO: inconsistent lock state ]
+[  604.416625] 2.6.36-rc4-mm1 #2
+[  604.416625] ---------------------------------
+[  604.416625] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
+[  604.416625] kswapd0/418 [HC0[0]:SC0[0]:HE1:SE1] takes:
+[  604.416625]  (&(&ip->i_iolock)->mr_lock#2){++++?+}, at: [<ffffffff812046df>] xfs_ilock+0x94/0x137
+[  604.416625] {RECLAIM_FS-ON-W} state was registered at:
+[  604.416625]   [<ffffffff81065571>] mark_held_locks+0x4d/0x6b
+[  604.416625]   [<ffffffff81065641>] lockdep_trace_alloc+0xb2/0xd7
+[  604.416625]   [<ffffffff810ee215>] kmem_cache_alloc+0x2a/0x126
+[  604.416625]   [<ffffffff81225d5b>] kmem_zone_alloc+0x67/0xaf
+[  604.416625]   [<ffffffff81225db2>] kmem_zone_zalloc+0xf/0x30
+[  604.416625]   [<ffffffff8121dd73>] _xfs_trans_alloc+0x22/0x5f
+[  604.416625]   [<ffffffff8121ef9f>] xfs_trans_alloc+0x9d/0xaa
+[  604.416625]   [<ffffffff8122520c>] xfs_setattr+0x3d2/0x8b4
+[  604.416625]   [<ffffffff8122eea4>] xfs_vn_setattr+0x16/0x1a
+[  604.416625]   [<ffffffff81106ec7>] notify_change+0x18f/0x27d
+[  604.416625]   [<ffffffff810f1de1>] do_truncate+0x6a/0x88
+[  604.416625]   [<ffffffff810fd7ff>] do_last+0x588/0x58f
+[  604.416625]   [<ffffffff810fda43>] do_filp_open+0x23d/0x5db
+[  604.416625]   [<ffffffff810f1055>] do_sys_open+0x5a/0xf0
+[  604.416625]   [<ffffffff810f1114>] sys_open+0x1b/0x1d
+[  604.416625]   [<ffffffff81002b82>] system_call_fastpath+0x16/0x1b
+[  604.416625] irq event stamp: 144829
+[  604.416625] hardirqs last  enabled at (144829): [<ffffffff815c96ba>] _raw_spin_unlock_irqrestore+0x46/0x55
+[  604.416625] hardirqs last disabled at (144828): [<ffffffff815c910b>] _raw_spin_lock_irqsave+0x24/0x58
+[  604.416625] softirqs last  enabled at (142796): [<ffffffff8103fc97>] __do_softirq+0x1b6/0x1c7
+[  604.416625] softirqs last disabled at (142791): [<ffffffff81003afc>] call_softirq+0x1c/0x28
+[  604.416625] 
+[  604.416625] other info that might help us debug this:
+[  604.416625] 1 lock held by kswapd0/418:
+[  604.416625]  #0:  (shrinker_rwsem){++++..}, at: [<ffffffff810c682c>] shrink_slab+0x38/0x164
+[  604.416625] 
+[  604.416625] stack backtrace:
+[  604.416625] Pid: 418, comm: kswapd0 Not tainted 2.6.36-rc4-mm1 #2
+[  604.416625] Call Trace:
+[  604.416625]  [<ffffffff810652b0>] valid_state+0x18b/0x19e
+[  604.416625]  [<ffffffff8100db7b>] ? save_stack_trace+0x2a/0x48
+[  604.416625]  [<ffffffff81065ca9>] ? check_usage_forwards+0x0/0x7e
+[  604.416625]  [<ffffffff810653c9>] mark_lock+0x106/0x261
+[  604.416625]  [<ffffffff81364cef>] ? radix_tree_tag_clear+0xa5/0x108
+[  604.416625]  [<ffffffff8106676f>] __lock_acquire+0x3bb/0xe1f
+[  604.416625]  [<ffffffff810671c4>] ? __lock_acquire+0xe10/0xe1f
+[  604.416625]  [<ffffffff8100db7b>] ? save_stack_trace+0x2a/0x48
+[  604.416625]  [<ffffffff810671c4>] ? __lock_acquire+0xe10/0xe1f
+[  604.416625]  [<ffffffff81364ecd>] ? radix_tree_delete+0xad/0x1b7
+[  604.416625]  [<ffffffff810672ab>] lock_acquire+0xd8/0x104
+[  604.416625]  [<ffffffff812046df>] ? xfs_ilock+0x94/0x137
+[  604.416625]  [<ffffffff810586cf>] down_write_nested+0x4a/0x6d
+[  604.416625]  [<ffffffff812046df>] ? xfs_ilock+0x94/0x137
+[  604.416625]  [<ffffffff812046df>] xfs_ilock+0x94/0x137
+[  604.416625]  [<ffffffff81231c9f>] xfs_reclaim_inode+0x277/0x2c1
+[  604.416625]  [<ffffffff81232608>] xfs_inode_ag_walk+0x8e/0xe9
+[  604.416625]  [<ffffffff81231a28>] ? xfs_reclaim_inode+0x0/0x2c1
+[  604.416625]  [<ffffffff812326c7>] xfs_inode_ag_iterator+0x64/0xc3
+[  604.416625]  [<ffffffff81231a28>] ? xfs_reclaim_inode+0x0/0x2c1
+[  604.416625]  [<ffffffff81232762>] xfs_reclaim_inode_shrink+0x3c/0x83
+[  604.416625]  [<ffffffff810c68d5>] shrink_slab+0xe1/0x164
+[  604.416625]  [<ffffffff810c6f3c>] kswapd+0x5e4/0x864
+[  604.416625]  [<ffffffff8105499e>] ? autoremove_wake_function+0x0/0x38
+[  604.416625]  [<ffffffff810c6958>] ? kswapd+0x0/0x864
+[  604.416625]  [<ffffffff8105452d>] kthread+0x81/0x89
+[  604.416625]  [<ffffffff81003a04>] kernel_thread_helper+0x4/0x10
+[  604.416625]  [<ffffffff81096ee2>] ? watchdog+0x0/0x281
+[  604.416625]  [<ffffffff815c9ad0>] ? restore_args+0x0/0x30
+[  604.416625]  [<ffffffff810544ac>] ? kthread+0x0/0x89
+[  604.416625]  [<ffffffff81003a00>] ? kernel_thread_helper+0x0/0x10
+--
+Thanks
+Yang Ruirui
