@@ -1,117 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754298Ab0IPKrz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 06:47:55 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:60847 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753254Ab0IPKrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 06:47:53 -0400
-Message-ID: <4C91F5DF.9060001@cn.fujitsu.com>
-Date: Thu, 16 Sep 2010 18:47:59 +0800
-From: Miao Xie <miaox@cn.fujitsu.com>
-Reply-To: miaox@cn.fujitsu.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1752705Ab0IPKuy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 06:50:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16183 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751456Ab0IPKux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 06:50:53 -0400
+Date: Thu, 16 Sep 2010 12:44:55 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] kvm: enable irq injection from interrupt context
+Message-ID: <20100916104455.GA22254@redhat.com>
+References: <20100915185417.GA3924@redhat.com>
+ <20100916090256.GU3008@redhat.com>
+ <20100916091054.GA20864@redhat.com>
+ <20100916092553.GV3008@redhat.com>
+ <4C91E75B.6010704@redhat.com>
+ <20100916095310.GG20864@redhat.com>
+ <20100916101332.GW3008@redhat.com>
+ <20100916101339.GK20864@redhat.com>
+ <20100916102047.GY3008@redhat.com>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        "Theodore Ts'o" <tytso@mit.edu>, Chris Mason <chris.mason@oracle.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH] x86_64/lib: improve the performance of memmove
-References: <56957.91.60.149.91.1284619705.squirrel@www.firstfloor.org>	<4C91C44F.40700@cn.fujitsu.com>	<20100916104008.3e1e34b2@basil.nowhere.org>	<4C91E37C.2060309@cn.fujitsu.com> <20100916121141.6eb95a22@basil.nowhere.org>
-In-Reply-To: <20100916121141.6eb95a22@basil.nowhere.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100916102047.GY3008@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Sep 2010 12:11:41 +0200, Andi Kleen wrote:
-> On Thu, 16 Sep 2010 17:29:32 +0800
-> Miao Xie<miaox@cn.fujitsu.com>  wrote:
->
->
-> Ok was a very broken patch. Sorry should have really done some more
-> work on it. Anyways hopefully the corrected version is good for
-> testing.
->
-> -Andi
->
+On Thu, Sep 16, 2010 at 12:20:47PM +0200, Gleb Natapov wrote:
+> On Thu, Sep 16, 2010 at 12:13:39PM +0200, Michael S. Tsirkin wrote:
+> > On Thu, Sep 16, 2010 at 12:13:32PM +0200, Gleb Natapov wrote:
+> > > On Thu, Sep 16, 2010 at 11:53:10AM +0200, Michael S. Tsirkin wrote:
+> > > > On Thu, Sep 16, 2010 at 11:46:03AM +0200, Avi Kivity wrote:
+> > > > >  On 09/16/2010 11:25 AM, Gleb Natapov wrote:
+> > > > > >>
+> > > > > >>  MSI only appeared in rhel6, older guests still use level interrupts.
+> > > > > >So they are already slow for other reasons.
+> > > > > >
+> > > > > 
+> > > > > Exactly, for example they need to exit to userspace to ack the
+> > > > > interrupt.  That's far slower than the workqueue.
+> > > > 
+> > > > Well, this is not exactly comparable: you might get
+> > > > same irq asserted multiple times and only deasserted once.
+> > > > 
+> > > Are we talking about level interrupts? Why would you assert level
+> > > triggered interrupt multiple times before deasserting it?
+> > 
+> > User of irqfd has no way to know what current interrupt level is.
+> > So it has to keep asserting.
+> > 
+> Why can't it keep track of current level?
 
-title: x86_64/lib: improve the performance of memmove
+This breaks the model: eventfd user is unaware of PCI, levels and such:
+it just signals the event.  Remember that asserts are done from e.g. vhost-net,
+deasserts need to be handled by qemu.
 
-Implement the 64bit memmmove backwards case using string instructions
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
----
-  arch/x86/lib/memcpy_64.S  |   29 +++++++++++++++++++++++++++++
-  arch/x86/lib/memmove_64.c |    8 ++++----
-  2 files changed, 33 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/lib/memcpy_64.S b/arch/x86/lib/memcpy_64.S
-index bcbcd1e..9de5e9a 100644
---- a/arch/x86/lib/memcpy_64.S
-+++ b/arch/x86/lib/memcpy_64.S
-@@ -141,3 +141,32 @@ ENDPROC(__memcpy)
-  	.byte .Lmemcpy_e - .Lmemcpy_c
-  	.byte .Lmemcpy_e - .Lmemcpy_c
-  	.previous
-+
-+/*
-+ * Copy memory backwards (for memmove)
-+ * rdi target
-+ * rsi source
-+ * rdx count
-+ */
-+
-+ENTRY(memcpy_backwards)
-+	CFI_STARTPROC
-+	std
-+	movq %rdi, %rax
-+	movl %edx, %ecx
-+	addq %rdx, %rdi
-+	addq %rdx, %rsi
-+	leaq -8(%rdi), %rdi
-+	leaq -8(%rsi), %rsi
-+	shrl $3, %ecx
-+	andl $7, %edx
-+	rep movsq
-+	addq $7, %rdi
-+	addq $7, %rsi
-+	movl %edx, %ecx
-+	rep movsb
-+	cld
-+	ret
-+	CFI_ENDPROC
-+ENDPROC(memcpy_backwards)
-+	
-diff --git a/arch/x86/lib/memmove_64.c b/arch/x86/lib/memmove_64.c
-index 0a33909..6774fd8 100644
---- a/arch/x86/lib/memmove_64.c
-+++ b/arch/x86/lib/memmove_64.c
-@@ -5,16 +5,16 @@
-  #include <linux/string.h>
-  #include <linux/module.h>
-  
-+extern void * asmlinkage memcpy_backwards(void *dst, const void *src,
-+				        size_t count);
-+
-  #undef memmove
-  void *memmove(void *dest, const void *src, size_t count)
-  {
-  	if (dest < src) {
-  		return memcpy(dest, src, count);
-  	} else {
--		char *p = dest + count;
--		const char *s = src + count;
--		while (count--)
--			*--p = *--s;
-+		return memcpy_backwards(dest, src, count);
-  	}
-  	return dest;
-  }
--- 
-1.7.0.1
-
+> --
+> 			Gleb.
