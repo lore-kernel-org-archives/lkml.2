@@ -1,80 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756148Ab0IPUSi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 16:18:38 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:29230 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754037Ab0IPUSh convert rfc822-to-8bit (ORCPT
+	id S1756174Ab0IPUTQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 16:19:16 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53921 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754037Ab0IPUTP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 16:18:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=I2y+SvSOUTqA0NNBjVf0JPOgX020ph9wFDaI2i44PVzxEjLqgLtzcnF0f5mjPdV876
-         g+suU3L9ezeVloyJFlnw==
-MIME-Version: 1.0
-In-Reply-To: <1284658950.2275.591.camel@laptop>
-References: <1283454469-1909-1-git-send-email-dzickus@redhat.com>
-	<1284118900.402.35.camel@laptop>
-	<20100910132741.GB4879@redhat.com>
-	<20100910144634.GA1060@elte.hu>
-	<20100910155659.GD13563@erda.amd.com>
-	<1284658950.2275.591.camel@laptop>
-Date: Thu, 16 Sep 2010 22:18:33 +0200
-Message-ID: <AANLkTimuG3N-qPvB-af=afgJbo5aVBCd6ozxkLFNz78K@mail.gmail.com>
-Subject: Re: [PATCH] x86: fix duplicate calls of the nmi handler
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
-        Don Zickus <dzickus@redhat.com>,
-        "gorcunov@gmail.com" <gorcunov@gmail.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 16 Sep 2010 16:19:15 -0400
+From: "Savoy, Pavan" <pavan_savoy@ti.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 17 Sep 2010 01:48:53 +0530
+Subject: RE: [RFC 3/3] include:linux: make ti_wilink_st like the rest
+Thread-Topic: [RFC 3/3] include:linux: make ti_wilink_st like the rest
+Thread-Index: ActV2l5aptkbx8pFRjSKkbC1YjcHSwAAFvvQ
+Message-ID: <19F8576C6E063C45BE387C64729E73940468914048@dbde02.ent.ti.com>
+References: <1284148738-21643-1-git-send-email-pavan_savoy@ti.com>
+ <1284148738-21643-2-git-send-email-pavan_savoy@ti.com>
+ <1284148738-21643-3-git-send-email-pavan_savoy@ti.com>
+ <1284148738-21643-4-git-send-email-pavan_savoy@ti.com>
+ <1284148738-21643-5-git-send-email-pavan_savoy@ti.com>
+ <20100916200058.GI10397@kroah.com>
+In-Reply-To: <20100916200058.GI10397@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 7:42 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, 2010-09-10 at 17:56 +0200, Robert Richter wrote:
->> The commit:
->>
->>  e40b172 x86: Move notify_die from nmi.c to traps.c
->>
->> moved the nmi handler call to default_do_nmi(). DIE_NMI_IPI and
->> DIE_NMI are called subsequently now. If the return code is
->> !NOTIFY_STOP, then the handlers are called twice. This patch fixes
->> this.
->
-> What is this NMI_IPI thing, and why do we bother?
->
-I think you only need to be on one of the callchains and most likely
-the higher priority one. That's beauce you're using NMI for performance
-monitoring and not debugging. Thus you expect a high rate of calls and
-you don't want to be calling a bunch of other handlers for nothing.
 
-The way the code is laid out in default_do_nmi() means that NMI_IPI
-has higher priority over NMI. NMI also depends on X86_LOCAL_APIC,
-but without it no PMU interrupts anyway.
+Greg,
 
-The other thing to notice is that default_do_nmi() is the only place for
-invoking NMI_IPI. I don't see the point of it vs. NMI (except APIC vs. no APIC).
+ 
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Thursday, September 16, 2010 3:01 PM
+> To: Savoy, Pavan
+> Cc: gregkh@suse.de; alan@lxorguk.ukuu.org.uk; devel@driverdev.osuosl.org;
+> linux-kernel@vger.kernel.org
+> Subject: Re: [RFC 3/3] include:linux: make ti_wilink_st like the rest
+> 
+> On Fri, Sep 10, 2010 at 03:58:58PM -0400, pavan_savoy@ti.com wrote:
+> > From: Pavan Savoy <pavan_savoy@ti.com>
+> >
+> > ti_wilink_st.h now is similar to other headers in include/linux.
+> > The st_ll dependency on ti_wilink_st is also fixed.
+> >
+> > Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+> > ---
+> >  drivers/staging/ti-st/st_ll.c |    2 +
+> >  include/linux/ti_wilink_st.h  |   51 +++++++++++++++++++++++---------------
+> --
+> >  2 files changed, 31 insertions(+), 22 deletions(-)
+> >
+> > diff --git a/drivers/staging/ti-st/st_ll.c b/drivers/staging/ti-st/st_ll.c
+> > index e899920..15e4028 100644
+> > --- a/drivers/staging/ti-st/st_ll.c
+> > +++ b/drivers/staging/ti-st/st_ll.c
+> > @@ -19,6 +19,8 @@
+> >   */
+> >
+> >  #define pr_fmt(fmt) "(stll) :" fmt
+> > +#include <linux/module.h>
+> > +#include <linux/skbuff.h>
+> 
+> Why is this needed?  Does it fix something that broke in patch 2/3?  If
+> so, fix it in that patch please.
 
-Why not just have one level, NMI, and use the priority field to position
-handlers correctly?
+Hnm, I don't think they are needed. Must be a mistake will correct it.
 
-> If the hardware reason thin can discriminate between IPI and other NMIs
-> we should never call both chains, if it cannot, why do we have 2 chains?
->
-> In any case, I don't think perf/oprofile/etc,. should use NMI_IPI, that
-> doesn't really make sense.
->
-> Or am I totally confused about things here?
->
+> >  #include <linux/ti_wilink_st.h>
+> >
+> >  /**********************************************************************/
+> > diff --git a/include/linux/ti_wilink_st.h b/include/linux/ti_wilink_st.h
+> > index df8d2ee..a563e09 100644
+> > --- a/include/linux/ti_wilink_st.h
+> > +++ b/include/linux/ti_wilink_st.h
+> > @@ -26,12 +26,18 @@
+> >  #ifndef ST_H
+> >  #define ST_H
+> >
+> > -#include <linux/skbuff.h>
+> > +#ifdef __KERNEL__
+> > +#include <linux/skbuff.h>	/* for sk_buff */
+> > +#include <linux/rfkill.h>	/* for rfkill */
+> > +#include <linux/tty.h>		/* for tty_struct */
+> > +#include <linux/tty_ldisc.h>	/* for tty_ldisc_ops */
+> 
+> Are these really needed?  Can't you include them in the .c files that
+> need to include this .h file instead?
+
+Yes, that was the idea, but then just including these without including the headers here, we get tons of errors, although it shouldn't happen.
+Had a look at other headers which sort of did something similar.
+
+> > +
+> > +#endif
+> 
+> I don't think you need this #ifdef, do you?  Are you really exporting
+> this file to userspace for some reason?  If so, what reason?
+
+For line discipline number only.
+There will be a user-space daemon which when requested (via rfkill) opens the UART, sets the baud-rate to both local and chip side and installs the line discipline.
+
+> >
+> >  /* TODO:
+> >   * Move the following to tty.h upon acceptance
+> >   */
+> > -#define N_TI_WL	20	/* Ldisc for TI's WL BT, FM, GPS combo chips */
+> > +#define N_TI_WL	22	/* Ldisc for TI's WL BT, FM, GPS combo chips */
+> 
+> Why did this change?
+
+Yes the number of line disciplines has grown since I last submitted a patch :)
+
+> >
+> >  /**
+> >   * enum kim_gpio_state - Few protocols such as FM have ACTIVE LOW
+> > @@ -292,10 +298,10 @@ void kim_st_list_protocols(struct st_data_s *, void
+> *);
+> >   *	relevant procedure to be called.
+> >   */
+> >  struct bts_header {
+> > -	uint32_t magic;
+> > -	uint32_t version;
+> > -	uint8_t future[24];
+> > -	uint8_t actions[0];
+> > +	unsigned long magic;
+> > +	unsigned long version;
+> > +	unsigned char future[24];
+> > +	unsigned char actions[0];
+> 
+> Why change these now?  That should happen some other place in the
+> series, not here.  Especially as you don't mention anything like this in
+> the changelog comment.
+> 
+> Also, why not just use 'u8' and friends instead?  That's the "proper"
+> kernel types to be using, not the uint8_t mess that is not correct
+> kernel types.
+
+Yes a mistake here too.
+This should have been in the patch where I plan to combine all the headers into 1 header and have it in include/linux/
+[the headers like st_core.h, st_kim.h, st_ll.h, bt_drv.h and fm and GPs headers]
+
+Yes, and the Bluetooth driver to go into drivers/Bluetooth/ and ST driver (st_core.c/st_kim.c and st_ll.c) to go into drivers/char/
+And the upcoming FM V4L2 to go into the drivers/media/radio/
+
+Does this sound fine?
+
+> > @@ -386,6 +392,7 @@ void st_ll_wakeup(struct st_data_s *);
+> >
+> >  /**
+> >   * structures and declarations used by the st_core for FM packets
+> > + * and GPS packets
+> >   */
+> >  struct fm_event_hdr {
+> >  	unsigned char plen;
+> 
+> Oh, is it?  That should go somewhere else.
+
+Plan is to have just 1 large header to be included by all protocol drivers (BT, FM and GPS)...
+Is it a bad idea?
+
+> > @@ -397,8 +404,8 @@ struct fm_event_hdr {
+> >
+> >  /* gps stuff */
+> >  struct gps_event_hdr {
+> > -unsigned char opcode;
+> > -unsigned short plen;
+> > +	unsigned char opcode;
+> > +	unsigned short plen;
+> >  } __attribute__ ((packed));
+> 
+> This should be done somewhere else, it's a formatting patch.
+
+Yes, I'll do it in another patch.
+
+> >
+> >  #endif /* ST_H */
+> 
+> I don't think this file is called "ST_H" here anymore.
+
+Yes, need your input here. This file will be made use by the rest of the protocol drivers I plan to push patches for.
+So does ti_wilink_st.h sound fine? And in include/linux? So that rest of the drivers can be in their individual directories.
+
+Thanks,
+Pavan
+
+> thanks,
+> 
+> greg k-h
