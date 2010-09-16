@@ -1,71 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177Ab0IPOTx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 10:19:53 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54082 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752257Ab0IPOTv convert rfc822-to-8bit (ORCPT
+	id S1754703Ab0IPOXe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 10:23:34 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58855 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753556Ab0IPOXd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 10:19:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=tgFUvVkibaXXjPc0vMHEH6wQG6k/azwvCId803HozKfSgJRBlI7tzrqc/iSdL/otfV
-         wa4f4b8OGb7sOvKK96giWpesqtX/xGAqFOKHzeBPJPu5TOUtOmwTKq5pgkjs9+mrICi9
-         6CVz4lGAVG8XeMMTGiKdnLzKJss3zefLLkjWE=
-MIME-Version: 1.0
-In-Reply-To: <4C524F7A.20505@gmail.com>
-References: <E1OefgE-0005vu-JN@tytso-glaptop>
-	<4C524F7A.20505@gmail.com>
-Date: Thu, 16 Sep 2010 07:19:50 -0700
-Message-ID: <AANLkTinKCyUnpmGz_opU19nr2PmTELyZ7cP69jEdF_zW@mail.gmail.com>
-Subject: Re: PSA: Please update your flash plugin!
-From: Justin Mattock <justinmattock@gmail.com>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-kernel@vger.kernel.org,
-        ksummit-2010-discuss@lists.linux-foundation.org, bharrosh@panasas.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 16 Sep 2010 10:23:33 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH v2] ihex: Add support for CS:IP/EIP records
+Date: Thu, 16 Sep 2010 15:23:28 +0100
+Message-Id: <1284647008-17469-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 29, 2010 at 9:05 PM, Justin P. Mattock
-<justinmattock@gmail.com> wrote:
-> On 07/29/2010 07:50 PM, Theodore Ts'o wrote:
->>
->> This is a public service announcement --- if you are running Flash 10.0,
->> make sure you upgrade to 10.1.  Flash 10.0 has a horrible security
->> vulnerability:
->>
->>        http://www.adobe.com/support/security/bulletins/apsb10-14.html
->>
->> I have Google Analytics running on the ksummit2010 website, and in
->> addition to discovering that 59% used Firefox and 25% were using Chrome,
->> and that the most popular screen resolution was 1280x800 followed by
->> 1280x1024, etc. --- I also was able to find that while 59% were running
->> Flash 10.1, over 40% of the visitors to the ksummit2010 web site were
->> running a vulnerable version of Adobe flash, which has a remote code
->> execution vulerability.
->>
->> If you were visiting that site from your development system, which you
->> use to push changes to a subsystem maintianer, or even Linus, hopefully
->> I don't need to tell you what a bad idea it is to leave yourself open
->> and vulnerable like this.  (This particular security problem with Flash
->> has been announced for almost 2 months at this point!)
->>
->>                                                - Ted
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
+ihex firmwares can include a jump address for starting execution. Add
+a -j option which will cause this to be written into the generated
+file as a record with address zero and data consisting of the address
+to jump to, allowing drivers to make use of this information.
 
-o.k. looks like the x86_64 people are not left out in the cold...:
-http://labs.adobe.com/downloads/flashplayer10.html
+This format is chosen because it most closely follows the original ihex
+format, though it may make more sense to write a record with length zero
+and the address stored as the address.  The records are not omitted by
+default since our ihex format does not include record type information
+and so including additional records may lead to confusion.
 
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
 
+Updated to avoid alignment issues.
+
+ firmware/ihex2fw.c |   17 ++++++++++++++---
+ 1 files changed, 14 insertions(+), 3 deletions(-)
+
+diff --git a/firmware/ihex2fw.c b/firmware/ihex2fw.c
+index 5a03ba8..ba0cf0b 100644
+--- a/firmware/ihex2fw.c
++++ b/firmware/ihex2fw.c
+@@ -55,6 +55,7 @@ static int output_records(int outfd);
+ 
+ static int sort_records = 0;
+ static int wide_records = 0;
++static int include_jump = 0;
+ 
+ static int usage(void)
+ {
+@@ -63,6 +64,7 @@ static int usage(void)
+ 	fprintf(stderr, "usage: ihex2fw [<options>] <src.HEX> <dst.fw>\n");
+ 	fprintf(stderr, "       -w: wide records (16-bit length)\n");
+ 	fprintf(stderr, "       -s: sort records by address\n");
++	fprintf(stderr, "       -j: include records for CS:IP/EIP address\n");
+ 	return 1;
+ }
+ 
+@@ -73,7 +75,7 @@ int main(int argc, char **argv)
+ 	uint8_t *data;
+ 	int opt;
+ 
+-	while ((opt = getopt(argc, argv, "ws")) != -1) {
++	while ((opt = getopt(argc, argv, "wsj")) != -1) {
+ 		switch (opt) {
+ 		case 'w':
+ 			wide_records = 1;
+@@ -81,7 +83,9 @@ int main(int argc, char **argv)
+ 		case 's':
+ 			sort_records = 1;
+ 			break;
+-		default:
++		case 'j':
++			include_jump = 1;
++			break;
+ 			return usage();
+ 		}
+ 	}
+@@ -128,6 +132,7 @@ static int process_ihex(uint8_t *data, ssize_t size)
+ {
+ 	struct ihex_binrec *record;
+ 	uint32_t offset = 0;
++	uint32_t data32;
+ 	uint8_t type, crc = 0, crcbyte = 0;
+ 	int i, j;
+ 	int line = 1;
+@@ -223,8 +228,14 @@ next_record:
+ 			return -EINVAL;
+ 		}
+ 
++		memcpy(&data32, &record->data[0], sizeof(data32));
++		data32 = htonl(data32);
++		memcpy(&record->data[0], &data32, sizeof(data32));
++
+ 		/* These records contain the CS/IP or EIP where execution
+-		 * starts. Don't really know what to do with them. */
++		 * starts. If requested output this as a record. */
++		if (include_jump)
++			file_record(record);
+ 		goto next_record;
+ 
+ 	default:
 -- 
-Justin P. Mattock
+1.7.1
+
