@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234Ab0IPJZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 05:25:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10588 "EHLO mx1.redhat.com"
+	id S1752643Ab0IPJ06 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 05:26:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7050 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751532Ab0IPJZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 05:25:55 -0400
-Date: Thu, 16 Sep 2010 11:25:53 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] kvm: enable irq injection from interrupt context
-Message-ID: <20100916092553.GV3008@redhat.com>
-References: <20100915185417.GA3924@redhat.com>
- <20100916090256.GU3008@redhat.com>
- <20100916091054.GA20864@redhat.com>
+	id S1751768Ab0IPJ05 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 05:26:57 -0400
+Message-ID: <4C91E2CC.9040709@redhat.com>
+Date: Thu, 16 Sep 2010 11:26:36 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100916091054.GA20864@redhat.com>
+To: Christopher Yeoh <cyeoh@au1.ibm.com>
+CC: Bryan Donlan <bdonlan@gmail.com>, linux-kernel@vger.kernel.org,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [RFC][PATCH] Cross Memory Attach
+References: <20100915104855.41de3ebf@lilo>	<4C90A6C7.9050607@redhat.com>	<AANLkTi=rmUUPCm212Sju-wW==5cT4eqqU+FEP_hX-Z_y@mail.gmail.com> <20100916104819.36d10acb@lilo>
+In-Reply-To: <20100916104819.36d10acb@lilo>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 11:10:55AM +0200, Michael S. Tsirkin wrote:
-> On Thu, Sep 16, 2010 at 11:02:56AM +0200, Gleb Natapov wrote:
-> > On Wed, Sep 15, 2010 at 08:54:17PM +0200, Michael S. Tsirkin wrote:
-> > > To avoid bouncing irqfd injection out to workqueue context,
-> > > we must support injecting irqs from local interrupt
-> > > context. Doing this seems to only require disabling
-> > > irqs locally.
-> > > 
-> > > RFC, completely untested, x86 only.
-> > > 
-> > > Thoughts?
-> > > 
-> > We do not want to disable irqs for a long time and some of code paths
-> > under lock involve looping over all cpus. For MSI injection path is
-> > lockless and this is the only case that matters,
-> 
-> MSI only appeared in rhel6, older guests still use level interrupts.
-So they are already slow for other reasons.
+  On 09/16/2010 03:18 AM, Christopher Yeoh wrote:
+> On Wed, 15 Sep 2010 23:46:09 +0900
+> Bryan Donlan<bdonlan@gmail.com>  wrote:
+>
+> >  On Wed, Sep 15, 2010 at 19:58, Avi Kivity<avi@redhat.com>  wrote:
+> >
+> >  >  Instead of those two syscalls, how about a vmfd(pid_t pid, ulong
+> >  >  start, ulong len) system call which returns an file descriptor that
+> >  >  represents a portion of the process address space.  You can then
+> >  >  use preadv() and pwritev() to copy memory, and
+> >  >  io_submit(IO_CMD_PREADV) and io_submit(IO_CMD_PWRITEV) for
+> >  >  asynchronous variants (especially useful with a dma engine, since
+> >  >  that adds latency).
+> >  >
+> >  >  With some care (and use of mmu_notifiers) you can even mmap() your
+> >  >  vmfd and access remote process memory directly.
+> >
+> >  Rather than introducing a new vmfd() API for this, why not just add
+> >  implementations for these more efficient operations to the existing
+> >  /proc/$pid/mem interface?
+>
+> Perhaps I'm misunderstanding something here, but
+> accessing /proc/$pid/mem requires ptracing the target process.
+> We can't really have all these MPI processes ptraceing each other
+> just to send/receive a message....
+>
 
-> Which paths require looping over all cpus? Do PCI interrupts
-> need this?
-> 
-All interrupts need it. IOAPIC has a loop to find dst cpu for interrupt.
-Pic has a loop to find cpu in virtual wire mode.
+You could have each process open /proc/self/mem and pass the fd using 
+SCM_RIGHTS.
 
---
-			Gleb.
+That eliminates a race; with copy_to_process(), by the time the pid is 
+looked up it might designate a different process.
+
+-- 
+error compiling committee.c: too many arguments to function
+
