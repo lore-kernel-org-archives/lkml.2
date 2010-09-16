@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753591Ab0IPISg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 04:18:36 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:52360
-	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752171Ab0IPISe (ORCPT
+	id S1753933Ab0IPITS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 04:19:18 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:56666 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753285Ab0IPITN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 04:18:34 -0400
-X-SpamScore: -20
-X-BigFish: VPS-20(zzbb2cK1432N98dN179dNzz1202hzzz32i2a8h62h)
-X-Spam-TCS-SCL: 1:0
-X-WSS-ID: 0L8TZ25-02-BLT-02
-X-M-MSG: 
-Date: Thu, 16 Sep 2010 10:18:06 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Huang Ying <ying.huang@intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [RFC 3/6] x86, NMI, Rename memory parity error to PCI SERR
- error
-Message-ID: <20100916081806.GV13563@erda.amd.com>
-References: <1284087065-32722-1-git-send-email-ying.huang@intel.com>
- <1284087065-32722-3-git-send-email-ying.huang@intel.com>
- <20100913010248.GH21909@erda.amd.com>
- <1284343326.3269.70.camel@yhuang-dev.sh.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1284343326.3269.70.camel@yhuang-dev.sh.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	Thu, 16 Sep 2010 04:19:13 -0400
+Date: Thu, 16 Sep 2010 09:39:22 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        security@kernel.org, stable@kernel.org
+Subject: Re: [PATCH] drivers/usb/serial/mos*: prevent reading uninitialized
+ stack memory
+Message-ID: <20100916093922.197ebe18@lxorguk.ukuu.org.uk>
+In-Reply-To: <1284587056.6275.100.camel@dan>
+References: <1284587056.6275.100.camel@dan>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.09.10 22:02:06, Huang Ying wrote:
-> > Haven't you introduced *_MEMPAR with patch 1/6?
-> 
-> Yes. And I suggest to rename it to *_SERR in this patch to reflect the
-> contemporary hardware better. I think they are two steps: naming the
-> magic number and changing the name of constant and function.
+On Wed, 15 Sep 2010 17:44:16 -0400
+Dan Rosenberg <drosenberg@vsecurity.com> wrote:
 
-Hmm, I would rather avoid introducing a name and then immediatly
-renaming it again.
+> The TIOCGICOUNT device ioctl in both mos7720.c and mos7840.c allows
+> unprivileged users to read uninitialized stack memory, because the
+> "reserved" member of the serial_icounter_struct struct declared on the
+> stack is not altered or zeroed before being copied back to the user.
+> This patch takes care of it.
 
--Robert
+ACK ... but this is the wrong way to fix these. We'll be squashing new
+ones between here and eternity if we just stick memsets in. It wants
+making a tty operation off the tty ioctl code so that there is one place
+that clears it and copies it to the user.
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+I'll have a look at what is needed - I don't think very much.
 
+Alan
