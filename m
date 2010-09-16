@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337Ab0IPFql (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 01:46:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51781 "EHLO mx2.suse.de"
+	id S1752835Ab0IPFre (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 01:47:34 -0400
+Received: from cantor.suse.de ([195.135.220.2]:49736 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750714Ab0IPFqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 01:46:40 -0400
-Date: Thu, 16 Sep 2010 07:46:38 +0200
-Message-ID: <s5h1v8ujl4x.wl%tiwai@suse.de>
+	id S1751549Ab0IPFrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 01:47:33 -0400
+Date: Thu, 16 Sep 2010 07:47:31 +0200
+Message-ID: <s5hzkvii6j0.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build warning after merge of the final tree (sound tree related)
-In-Reply-To: <20100916150948.cc9ebed8.sfr@canb.auug.org.au>
-References: <20100916150948.cc9ebed8.sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kailang Yang <kailang@realtek.com>
+Subject: Re: linux-next: build failure after merge of the final tree
+In-Reply-To: <20100916151534.afb212be.sfr@canb.auug.org.au>
+References: <20100916151534.afb212be.sfr@canb.auug.org.au>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.1
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -23,22 +24,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Thu, 16 Sep 2010 15:09:48 +1000,
+At Thu, 16 Sep 2010 15:15:34 +1000,
 Stephen Rothwell wrote:
 > 
-> [1  <text/plain; US-ASCII (quoted-printable)>]
 > Hi Takashi,
 > 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) produced this warning:
+> After merging the final tree, today's linux-next build (i386 defconfig)
+> failed like this:
 > 
-> sound/pci/hda/patch_conexant.c: In function 'cx_auto_parse_beep':
-> sound/pci/hda/patch_conexant.c:3565: warning: unused variable 'spec'
+> sound/pci/hda/patch_realtek.c: In function 'patch_alc269':
+> sound/pci/hda/patch_realtek.c:15028: error: 'alc269_suspend' undeclared (first use in this function)
 > 
-> Introduced by commit 05f7349fc754f20cf92009934498d92435518141 ("ALSA: hda
-> - Preliminary support for new Conexant audio codecs").
+> Caused by commit bf402279498f71e6629d90939737c7c0d311c5d6 ("ALSA: hda -
+> Set up COEFs for ALC269 to avoid click noises at power-saving").
+> 
+> I have reverted that commit for today.
+> 
+> BTW, that commit has no Signed-off-by from its author.
 
-Thanks, fixed now.
+Yes, obviously overlooked.  Fixed both issues now.
 
+
+thanks,
 
 Takashi
