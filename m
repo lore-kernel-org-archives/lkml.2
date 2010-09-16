@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab0IPPms (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 11:42:48 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:55863 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753629Ab0IPPmr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 11:42:47 -0400
-X-Sasl-enc: pI/l45yIc4l+NiLzPMKCvoMZZA0/q661l/qRLrF6qjSS 1284651766
-Date: Thu, 16 Sep 2010 12:42:43 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] [PATCH 1/2] hwmon: (adm1031) Replace update_rate
- sysfs attribute with update_interval
-Message-ID: <20100916154243.GB25145@khazad-dum.debian.net>
-References: <1284602835-7605-1-git-send-email-guenter.roeck@ericsson.com>
- <1284602835-7605-2-git-send-email-guenter.roeck@ericsson.com>
- <20100916171443.0322bdb6@hyperion.delvare>
+	id S1755458Ab0IPPn3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 11:43:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5761 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753629Ab0IPPn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 11:43:28 -0400
+Date: Thu, 16 Sep 2010 17:43:26 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] kvm: enable irq injection from interrupt context
+Message-ID: <20100916154326.GL3008@redhat.com>
+References: <20100916111752.GA3008@redhat.com>
+ <20100916121338.GA23779@redhat.com>
+ <20100916123301.GE3008@redhat.com>
+ <20100916125717.GA24284@redhat.com>
+ <20100916131823.GH3008@redhat.com>
+ <20100916135137.GB24850@redhat.com>
+ <20100916140615.GJ3008@redhat.com>
+ <20100916142335.GC24850@redhat.com>
+ <20100916145117.GK3008@redhat.com>
+ <20100916152411.GE24850@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100916171443.0322bdb6@hyperion.delvare>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100916152411.GE24850@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Sep 2010, Jean Delvare wrote:
-> On Wed, 15 Sep 2010 19:07:14 -0700, Guenter Roeck wrote:
-> > The attribute reflects an interval, not a rate.
-> > 
-> > Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-> > ---
-> >  Documentation/hwmon/sysfs-interface |   12 +++++-----
-> >  drivers/hwmon/adm1031.c             |   43 +++++++++++++++++++---------------
-> >  2 files changed, 30 insertions(+), 25 deletions(-)
-> > 
-> > diff --git a/Documentation/hwmon/sysfs-interface b/Documentation/hwmon/sysfs-interface
-> > index ff45d1f..df0cdd2 100644
-> > --- a/Documentation/hwmon/sysfs-interface
-> > +++ b/Documentation/hwmon/sysfs-interface
-> > @@ -91,13 +91,13 @@ name		The chip name.
-> >  		I2C devices get this attribute created automatically.
-> >  		RO
-> >  
-> > -update_rate	The rate at which the chip will update readings.
-> > -		Unit: millisecond
-> > +update_interval	The interval at which the chip or driver will update readings.
+On Thu, Sep 16, 2010 at 05:24:11PM +0200, Michael S. Tsirkin wrote:
+> On Thu, Sep 16, 2010 at 04:51:17PM +0200, Gleb Natapov wrote:
+> > > > What for? Device emulation should do de-assert.
+> > > 
+> > > Sorry, but at this point I have no idea what you call device emulation.
+> > The same thing everyone calls device emulation. In case of virtio-net it
+> > is in hw/virtio-net.c. If vhost-net is in use device emulation is split
+> > between userspace and kernel, but it is still just device emulation.
 > 
-> I think I prefer the original wording. The attribute is really about
-> setting the register refresh rate at the hardware level. The fact that
+> 
+> case in point, virtio net does not know about pci at all,
+> so it can not deassert.
+> 
+I don't see what PCI has to do with it. virtio-net device implementation is
+split between several files. virtio-net/virtio-ring/virtio-pci. All of
+them still implement one emulated device. Whoever implemented virtio-net
+initially decided to put irq ack register into PCI config space, so code
+that does de-assert is in virtio-pci, but it is still part of emulated
+device.
 
-Only, it doesn't set any rates in the hardware.  It sets the period
-(interval).
+> > > qemu has code to de-assert. vhost has code to assert.
+> > Good. So qemu will de-assert. So what do you mean by
+> > "KVM would need to find all irqfd objects mapped to gsi and notify
+> > them on deassert"
+> > 
+> > > I would like to optimize level interrupts and stop driving
+> > > scheduler insane if at all possible.
+> > > 
+> > Worthy goal. Do it in irqfd. Irqfd shouldn't call kvm_set_irq() if irq
+> > level hasn't changed.
+> 
+> Right. Then it needs to know about deasserts. It does not get this
+Dessert should be done by qemu writing 0 into irqfd. Assertion and
+de-assertion should be done through irqfd.
 
-If the unit of update_rate is changed to Hz, and the driver does
-hardware_timer_milliseconds = 1000/update_rate_Hz, THEN it will be
-correct to call it a rate...
+> information, so when kvm gets deassert ioctl it should
+> locate irqfd object and set level to 0.
+> See?
+No.
 
-I'd rather have it in Hz, actually.  I consider that more user-friendly.
-But that's just personal preference.
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+--
+			Gleb.
