@@ -1,127 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab0IPAKW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 20:10:22 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:44967 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751294Ab0IPAKV (ORCPT
+	id S1753649Ab0IPAR2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 20:17:28 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36194 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752948Ab0IPAR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 20:10:21 -0400
-Date: Wed, 15 Sep 2010 21:10:12 -0300
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: Mat Martineau <mathewm@codeaurora.org>
-Cc: linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, marcel@holtmann.org, davem@davemloft.net
-Subject: Re: Possible regression with skb_clone() in 2.6.36
-Message-ID: <20100916001012.GA5656@vigoh>
-References: <1283988727-1456-1-git-send-email-padovan@profusion.mobi>
- <alpine.DEB.2.00.1009100920270.14322@linux-sea-02>
- <20100910194509.GC19693@vigoh>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100910194509.GC19693@vigoh>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 15 Sep 2010 20:17:27 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 16 Sep 2010 09:12:15 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "Tim Pepper" <lnxninja@linux.vnet.ibm.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC][PATCH] update /proc/sys/vm/drop_caches documentation
+Message-Id: <20100916091215.ef59acd7.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100915192454.GD5585@tpepper-t61p.dolavim.us>
+References: <20100914234714.8AF506EA@kernel.beaverton.ibm.com>
+	<20100915133303.0b232671.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100915192454.GD5585@tpepper-t61p.dolavim.us>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Gustavo F. Padovan <padovan@profusion.mobi> [2010-09-10 16:45:09 -0300]:
+On Wed, 15 Sep 2010 12:24:55 -0700
+"Tim Pepper" <lnxninja@linux.vnet.ibm.com> wrote:
 
-> Hi Mat,
+> On Wed 15 Sep at 13:33:03 +0900 kamezawa.hiroyu@jp.fujitsu.com said:
+> > >  
+> > > diff -puN fs/drop_caches.c~update-drop_caches-documentation fs/drop_caches.c
+> > > --- linux-2.6.git/fs/drop_caches.c~update-drop_caches-documentation	2010-09-14 15:44:29.000000000 -0700
+> > > +++ linux-2.6.git-dave/fs/drop_caches.c	2010-09-14 15:58:31.000000000 -0700
+> > > @@ -47,6 +47,8 @@ int drop_caches_sysctl_handler(ctl_table
+> > >  {
+> > >  	proc_dointvec_minmax(table, write, buffer, length, ppos);
+> > >  	if (write) {
+> > > +		WARN_ONCE(1, "kernel caches forcefully dropped, "
+> > > +			     "see Documentation/sysctl/vm.txt\n");
+> > 
+> > Documentation updeta seems good but showing warning seems to be meddling to me.
 > 
-> * Mat Martineau <mathewm@codeaurora.org> [2010-09-10 09:53:31 -0700]:
+> We already have examples of things where we warn in order to turn up
+> "interesting" userspace code, in the hope of starting dialog and getting
+> things fixed for the future.  I don't see this so much as meddling as
+> one of the fundamental aspects of open source.
 > 
-> > 
-> > Gustavo -
-> > 
-> > I'm not sure why the streaming code used to work, but this does not 
-> > look like an skb_clone() problem.  Your patch to remove the 
-> > skb_clone() call in l2cap_streaming_send() addresses the root cause of 
-> > this crash.
-> > 
-> > On Wed, 8 Sep 2010, Gustavo F. Padovan wrote:
-> > 
-> > > I've been experiencing some problems when running the L2CAP Streaming mode in
-> > > 2.6.36. The system quickly runs in an Out Of Memory condition and crash. That
-> > > wasn't happening before, so I think we may have a regression here (I didn't
-> > > find where yet). The crash log is below.
-> > >
-> > > The following patch does not fix the regression, but shows that removing the
-> > > skb_clone() call from l2cap_streaming_send() we workaround the problem. The
-> > > patch is good anyway because it saves memory and time.
-> > >
-> > > By now I have no idea on how to fix this.
-> > >
-> > > <snip>
-> > 
-> > This has to do with the sk->sk_wmem_alloc accounting that controls the 
-> > amount of write buffer space used on the socket.
-> > 
-> > When the L2CAP streaming mode socket segments its data, it allocates 
-> > memory using sock_alloc_send_skb() (via bt_skb_send_alloc()).  Before 
-> > that allocation call returns, skb_set_owner_w() is called on the new 
-> > skb.  This adds to sk->sk_wmem_alloc and sets skb->destructor so that 
-> > sk->sk_wmem_alloc is correctly updated when the skb is freed.
-> > 
-> > When that skb is cloned, the clone is not "owned" by the write buffer. 
-> > The clone's destructor is set to NULL in __skb_clone().  The version 
-> > of l2cap_streaming_send() that runs out of memory is passing the 
-> > non-owned skb clone down to the HCI layer.  The original skb (the one 
-> > that's "owned by w") is immediately freed, which adjusts 
-> > sk->sk_wmem_alloc back down - the socket thinks it has unlimited write 
-> > buffer space.  As a result, bt_skb_send_alloc() never blocks waiting 
-> > for buffer space (or returns EAGAIN for nonblocking writes) and the 
-> > HCI send queue keeps growing.
+> drop_caches probably originally should have gone in under a CONFIG_DEBUG
+> (even if all the distros would have turned it on), and had a WARN_ON
+> (personally I'd argue for this compared to WARN_ONCE()), and even have
+> been exposed in debugfs not procfs...but it's part of the "the interface"
+> at this point.
 > 
-> If the problem is what you are saying, add a skb_set_owner_w(skb, sk) on
-> the cloned skb should solve the problem, but it doesn't. That's exactly
-> what tcp_transmit_skb() does. Also that just appeared in 2.6.36, is was
-> working fine before, i.e, we have a regression here. 
+> Somebody doing debug and testing which leverages drop_caches should not
+> be bothered by a WARN_ON().  Somebody using it to "fix" the kernel with
+> repeated/regular calls to drop_caches should get called out for fixing
+> themselves and the WARN_*()'s noting the comm could help that, unless
+> somebody has a use case where repeated/regular calls to drop_caches
+> is valid and not connected to buggy usage or explicit performance
+> debug/testing?
 > 
-> > 
-> > This isn't a problem for the ERTM sends, because the original skbs are 
-> > kept in the ERTM tx queue until they are acked.  Once they're acked, 
-> > the write buffer space is freed and additional skbs can be allocated.
-> 
-> It affects ERTM as well, but in that case the kernel doesn't crash
-> because ERTM block on sending trying to allocate memory. Then we are not
-> able to receive any ack (everything stays queued in sk_backlog_queue as
-> the sk is owned by the user) and ERTM stalls.
 
-By reverting 
+I hear a customer's case. His server generates 3-80000+ new dentries per day
+and dentries will be piled up to 1000000+ in a month. This makes open()'s 
+performance very bad because Hash-lookup will be heavy. (He has very big memory.)
 
-commit 218bb9dfd21472128f86b38ad2eab123205c2991
-Author: Gustavo F. Padovan <padovan@profusion.mobi>
-Date:   Mon Jun 21 18:53:22 2010 -0300
+What we could ask him was
+  - rewrite your application. or
+  - reboot once in a month (and change hash size) or
+  - drop_cache once in a month
 
-    Bluetooth: Add backlog queue to ERTM code
-    
-    backlog queue is the canonical mechanism to avoid race conditions due
-    interrupts in bottom half context. After the socket lock is released the
-    net core take care of push all skb in its backlog queue.
-    
-    Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
-    Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Because their servers cannot stop, he used drop_caches once in a month
+while his server is idle, at night. Changing HashSize cannot be a permanent
+fix because he may not stop the server for years.
+
+For rare users who have 10000000+ of files and tons of free memory, drop_cache
+can be an emergency help. 
+
+Thanks,
+-Kame
 
 
-we can workaround the bug. It's not the real cause of the bug because the
-backlog queue was working before 2.6.36, but removing the backlog queue scheme
-make L2CAP works again and also give us more time to find the real cause of the
-problem.
-    
-Before  implement the backlog queue L2CAP had his own lock scheme to avoid race
-conditions. The point is that the backlog queue adds too much serialization to
-L2CAP, that was the cause of the ERTM bug. The old scheme (the one we are going
-to use after revert this commit) just serialize access to some places. 
 
-By not using the backlog queue, we can receive the acknowledgement frames more
-quickly and then free the acked frames quickly. In fact the old scheme is
-looks better than backlog queue.
 
-I think we should proceed with the revert with this commit in mainline, and at the
-same time try to find the root cause of the problem.
 
--- 
-Gustavo F. Padovan
-ProFUSION embedded systems - http://profusion.mobi
+
