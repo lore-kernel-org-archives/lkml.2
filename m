@@ -1,184 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab0IPOvV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 10:51:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755396Ab0IPOvT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 10:51:19 -0400
-Date: Thu, 16 Sep 2010 16:51:17 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] kvm: enable irq injection from interrupt context
-Message-ID: <20100916145117.GK3008@redhat.com>
-References: <20100916105403.GZ3008@redhat.com>
- <20100916105352.GB22254@redhat.com>
- <20100916111752.GA3008@redhat.com>
- <20100916121338.GA23779@redhat.com>
- <20100916123301.GE3008@redhat.com>
- <20100916125717.GA24284@redhat.com>
- <20100916131823.GH3008@redhat.com>
- <20100916135137.GB24850@redhat.com>
- <20100916140615.GJ3008@redhat.com>
- <20100916142335.GC24850@redhat.com>
+	id S1755467Ab0IPOvo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 10:51:44 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:54150 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754637Ab0IPOvm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 10:51:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=lyJICblBC6ZiNcMERt9hVe3fKW1n3Ftz4F/CTk7PaGFEcqqv3nCVlCrvKWiyqQJojm
+         Ptvip4JQr+V/FmuhR3CwsOFC5JQkYu5qJwTtqNYroGoK9yKPqG9G3/9hLFhv7RqWEgFv
+         aTXu1CS57H8E02rcyeYsfnfXhSPsm2wdZlkl0=
+Date: Thu, 16 Sep 2010 16:51:36 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Stephane Eranian <eranian@google.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, Don Zickus <dzickus@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>
+Subject: Re: [PATCH] perf, x86: catch spurious interrupts after disabling
+	counters
+Message-ID: <20100916145132.GB5352@nowhere>
+References: <20100912095202.GF13563@erda.amd.com> <20100913143713.GK13563@erda.amd.com> <20100914174132.GN13563@erda.amd.com> <20100915162034.GO13563@erda.amd.com> <AANLkTimWoE5XiYSr8jx=RFS5Nb9d4_wWe=c-W3oMj8dH@mail.gmail.com> <20100915203948.GB28455@lenovo> <20100915222712.GU13563@erda.amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100916142335.GC24850@redhat.com>
+In-Reply-To: <20100915222712.GU13563@erda.amd.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 04:23:35PM +0200, Michael S. Tsirkin wrote:
-> > > > > There is no such thing as device's line status on real hardware, either.
-> > > > > Devices do not drive INT# high: they drive it low (all the time)
-> > > > > or do not drive it at all.
-> > > > Same thing, other naming. Device either drive it low (irq_set(1)) or
-> > > > not (irq_set(0)).
-> > > 
-> > > Well, if I drive it low any number of times it should hae no effect.
-> > > 
-> > There is no meaning of "driving low the line multiple times" on real HW.
-> > You either drive it low or not. We try to emulate this with individual
-> > "drive low/high" events in software.
-> > > > > 
-> > > > > Or consider express, the spec explicitly says:
-> > > > > "Note: Duplicate Assert_INTx/Deassert_INTx Messages have no effect, but
+On Thu, Sep 16, 2010 at 12:27:12AM +0200, Robert Richter wrote:
+> > On Wed, Sep 15, 2010 at 10:21:10PM +0200, Stephane Eranian wrote:
+> > > When you do perf record foo, it's equivalent to
+> > > perf record -e cycles:uk -F 1000 foo
 > 
-> Express has assert and deassert messages. It might be easier for
-> you to think in these terms. level 1: assert, level 0: deassert.
-> Seems a simple model and what we do models this pretty well.
+> Yes, thanks.
 > 
-They are between device and pci controller. I am talking about what
-happens between pci controller and irq chip. We are talking about
-different things really.
+> I am asking because I have observed up to 4 back-to-back nmis from the
+> same counter when enabling an event. The period is not yet adjusted.
+> We should avoid those short sampling periods in the beginning and
+> better start with too long periods. Didn't look at the implementation
+> so far. I know this is not easy to handle because this very much
+> depends on the event we measure.
+> 
+> Maybe we start the counter with a delay and then calculate period =
+> duration - delay, later decreasing the delay until the frequency is
+> adjusted but keeping the total sampling rate more or less constant.
 
-> > > > >  are not errors."
-> > > > > 
-> > > > > > > 
-> > > > > > > > > Another application is out of process virtio (sandboxing!).
-> > > > > > > > It will still assert and de-assert irq at the same code, so it will be
-> > > > > > > > able to track irq line status.
-> > > > > > > > 
-> > > > > > > > > Again, pci stuff needs to stay in qemu.
-> > > > > > > > > 
-> > > > > > > > 
-> > > > > > > > Nothing to do with PCI whatsoever.
-> > > > > > > > 
-> > > > > > > > [0] most qemu devices behave incorrectly and trigger level irq more then
-> > > > > > > >     needed.
-> > > > > > > 
-> > > > > > > Which devices?
-> > > > > > Most of them. They just call update_irq_status() or something and
-> > > > > > re-assert interrupt regardless of what previous status was.
-> > > > > 
-> > > > > At least for PCI devices, these calls do nothing if status does not change.
-> > > > I am not sure what code are you locking at. e1000 device emulation
-> > > > doesn't check previous line status before calling qemu_set_irq().
-> > > 
-> > > Right. If you dig through useless levels of indirection, you will
-> > > see that each PCI device has 4 pin levels, when one of these
-> > > changes this makes it up level to the parent bus, and so on.
-> > Yes. Qemu PCI level does it right. Ideally device would not even invoke 
-> > this logic if interrupt status haven't changed.
-> 
-> It needs to call *some* function to check status
-> and assert, right? qemu_set_irq is that function.
-qemu_set_irq does not check previous level and calls a callback
-unconditionally.
 
-> 
-> > > 
-> > > > > 
-> > > > > > > pci core tracks line status and will never assert the same
-> > > > > > > line multiple times.
-> > > > > > That's good if pci core does this, but device shouldn't even try it.
-> > > > > 
-> > > > > I disagree. We don't want to duplicate a ton of code all over
-> > > > > the codebase.
-> > > > > 
-> > > > So abstract it into a function. It shouldn't be part of PCI emulation.
-> > > 
-> > > I don't know what you mean by this, send a patch and we can discuss?
-> > I don't care enough to send patch.  Just remember previous irq status
-> > and do not call qemu_set_irq() if it doesn't change. Three lines of
-> > code.
-> 
-> Heh, we have a ton of devices to support.
-So?
+Yep, IIRC, the first arming is set with a 1 sample period. So that a first
+calculation can be made on top of the first triggering event time to get
+a better sample period. That avoids the need to start with frequency
+nature assumptions for each event.
 
-> And then we need to migrate this extra status, and make sure it's in
-> sync with PCI code.  We'll end up with much more more than 3 lines all
-> of it in a very sensitive and hard to test parts code.
-> 
-You should be able to reconstruct it from device state. What should be
-in sync with PCI code? 
+I doubt that can be worked around easily.
 
-> > > Note that when I patches PCI interrupt handling for compliance
-> > > I made it mimic hardware as closely as possible: devices
-> > > can send any # of assert/deassert messages, bus discards duplicates.
-> > > 
-> > Qemu PCI code is correct as far as I can see. Not all devices are connected
-> > via PCI and there is not need to go through couple of layer of
-> > indirection to figure out that nothing should be done.
-> > 
-> 
-> If we want to remove the indirection I would be much more
-> interested to remove it for all cases, not just when
-> nothing should be done.
-I don't care. This indirection may be justified for all I know. You try to
-shift this discussion to areas I am not interested to look into :) All I
-am saying is that each device is capable of knowing its current irq line
-state and optimize out function call + additional logic. Whether upper
-layer should handle two asserts without de-assert in between is different
-point and I think we agree on it.
-
-> 
-> > > > > > > 
-> > > > > > > > [1] this is how correct PCI device should behave but we override
-> > > > > > > >     polarity in ACPI, but now incorrect behaviour is deeply designed
-> > > > > > > >     into vhost-net.
-> > > > > > > 
-> > > > > > > Not really, vhost net signals an eventfd. What happens then is
-> > > > > > > up to kvm.
-> > > > > > > 
-> > > > > > That is what current broken design does and it works, but if you want to
-> > > > > > save unneeded calls into kvm fix design.
-> > > > > 
-> > > > > The interface seems clean enough: vhost handles virtio ring, qemu/kvm handle pci.
-> > > > > Making vhost aware of pci breaks this, I would not call that fixing the
-> > > > > design.
-> > > > > 
-> > > > Once again. Nothing to do with PCI, everything to do with device
-> > > > emulation. And I propose to abstract interrupt assertion part into
-> > > > irqfd, not into vhost.
-> > > > 
-> > > > --
-> > > > 			Gleb.
-> > > 
-> > > This could work. KVM would need to find all irqfd
-> > > objects mapped to gsi and notify them on deassert.
-> > > No idea how hard this is.
-> > > 
-> > What for? Device emulation should do de-assert.
-> 
-> Sorry, but at this point I have no idea what you call device emulation.
-The same thing everyone calls device emulation. In case of virtio-net it
-is in hw/virtio-net.c. If vhost-net is in use device emulation is split
-between userspace and kernel, but it is still just device emulation.
-
-> qemu has code to de-assert. vhost has code to assert.
-Good. So qemu will de-assert. So what do you mean by
-"KVM would need to find all irqfd objects mapped to gsi and notify
-them on deassert"
-
-> I would like to optimize level interrupts and stop driving
-> scheduler insane if at all possible.
-> 
-Worthy goal. Do it in irqfd. Irqfd shouldn't call kvm_set_irq() if irq
-level hasn't changed.
-
---
-			Gleb.
