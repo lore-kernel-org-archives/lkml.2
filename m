@@ -1,63 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754937Ab0IPTRF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 15:17:05 -0400
-Received: from be1ssnxpe2.nxp.com ([57.67.164.70]:35669 "EHLO
-	be1ssnxpe2.nxp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753733Ab0IPTRD convert rfc822-to-8bit (ORCPT
+	id S1755427Ab0IPTT7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 15:19:59 -0400
+Received: from DELFT.AURA.CS.CMU.EDU ([128.2.209.12]:34086 "EHLO
+	delft.aura.cs.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754487Ab0IPTT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 15:17:03 -0400
-From: Kevin Wells <kevin.wells@nxp.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-CC: Kevin Wells <wellsk40@gmail.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "rabin.vincent@stericsson.com" <rabin.vincent@stericsson.com>,
-        "srinidhi.kasagar@stericsson.com" <srinidhi.kasagar@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "Lukasz.Baj@tieto.com" <Lukasz.Baj@tieto.com>
-Date: Thu, 16 Sep 2010 21:16:08 +0200
-Subject: RE: resend: [PATCH] amba_pl022: Setup SPI configuration based on
- spi->mode
-Thread-Topic: resend: [PATCH] amba_pl022: Setup SPI configuration based on
- spi->mode
-Thread-Index: ActUG4wpmO+rQ/2xTJmVIZ5LSUmnZQBt+FEQ
-Message-ID: <083DF309106F364B939360100EC290F80AF398DEE4@eu1rdcrdc1wx030.exi.nxp.com>
-References: <AANLkTikbKwo9=xLWo1qEcc2E5aa2iN2F_KCokJPpnWOk@mail.gmail.com>
-	<083DF309106F364B939360100EC290F80AD49D5230@eu1rdcrdc1wx030.exi.nxp.com>
- <AANLkTim4a7eha6Z3pjrZ0kg9VNRcuH52Qs2h4XydsXi4@mail.gmail.com>
-In-Reply-To: <AANLkTim4a7eha6Z3pjrZ0kg9VNRcuH52Qs2h4XydsXi4@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 16 Sep 2010 15:19:57 -0400
+X-Greylist: delayed 1080 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Sep 2010 15:19:57 EDT
+Date: Thu, 16 Sep 2010 15:00:25 -0400
+From: Jan Harkes <jaharkes@cs.cmu.edu>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Petr Vandrovec <vandrove@vc.cvut.cz>, Anders Larsen <al@alarsen.net>,
+        Jan Kara <jack@suse.cz>, Evgeniy Dushistov <dushistov@mail.ru>,
+        Ingo Molnar <mingo@elte.hu>, Samuel Ortiz <samuel@sortiz.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Andrew Hendry <andrew.hendry@gmail.com>
+Subject: Re: Remaining BKL users, what to do
+Message-ID: <20100916190025.GG24296@cs.cmu.edu>
+Mail-Followup-To: Arnd Bergmann <arnd@arndb.de>,
+	Christoph Hellwig <hch@infradead.org>,
+	Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+	Trond Myklebust <Trond.Myklebust@netapp.com>,
+	Petr Vandrovec <vandrove@vc.cvut.cz>,
+	Anders Larsen <al@alarsen.net>, Jan Kara <jack@suse.cz>,
+	Evgeniy Dushistov <dushistov@mail.ru>, Ingo Molnar <mingo@elte.hu>,
+	Samuel Ortiz <samuel@sortiz.org>,
+	Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+	Andrew Hendry <andrew.hendry@gmail.com>
+References: <201009161632.59210.arnd@arndb.de>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.0.10011,1.0.148,0.0.0000 definitions=2010-09-16_11:2010-09-16,2010-09-16,1970-01-01 signatures=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201009161632.59210.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> With this correction it starts working, so
-> Acked-by/Tested-by/Reviewed-by: Linus Walleij
-> <linus.walleij@stericsson.com>
-> 
-> Please submit the whole patch series with corrections and my tag
-> so Grant can pick it up, and thanks for doing this because I think
-> it is a great improvement to the driver!
-> 
+On Thu, Sep 16, 2010 at 11:19:28AM -0400, Arnd Bergmann wrote:
+> fs/coda:
+> 	Coda seems to have an active community, but not all of their
+> 	code is actually part of linux (pioctl!),
 
-Thanks! I'll put them up today.
+Probably more than 99% of the code is running in userspace. And that
+isn't really pioctl related, a pioctl is simply an ioctl that can in a
+somewhat cross-platform way operate not just on files, but also on
+symlinks and directories because it is path based instead of fd based.
 
-> Yours,
-> Linus Walleij
+These path-ioctls are there for user commands on specific objects
+visible in the filesystem, examining and repairing conflicts, forcing
+cache refresh or prefetch, accessing extended information such as which
+servers store a replica of the object.
+
+Some of this could move to extended attributes, other things might work
+without kernel involvement over a unix-domain socket, but the hard part
+is that our userspace code is mostly identical across several systems
+and such features aren't universally available.
+
+> 	                                          while the last official
+> 	release is missing many of the cleanups that were don in Linux.
+
+And some of those might have broken at least mounting the Coda file
+system. I haven't bisected yet, but I got a report that on a recent RC
+kernel any attempt to start Coda caused some sort of lockup.
+
+> 	Just removing the BKL without the Coda community seems like a heap
+> 	of pointless work.
+
+It depends, it might get rid of that mount lockup. There shouldn't be
+too much shared state because the kernel module mostly just forwards
+requests to userspace and the BKL right now seems to be mostly used to
+protects access to the upcall lists and could probably without too much
+trouble be replaced with a single 'global' (but Coda-only) or
+mount-point specific mutex.
+
+I have to figure out what broke mount first though.
+
+Jan
