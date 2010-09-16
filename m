@@ -1,91 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756637Ab0IPWVX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 18:21:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14681 "EHLO mx1.redhat.com"
+	id S1756105Ab0IPWO0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 18:14:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29483 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756406Ab0IPWOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 18:14:30 -0400
+	id S1755993Ab0IPWOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 18:14:23 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Christoph Hellwig <hch@infradead.org>,
         Andreas Gruenbacher <agruen@suse.de>, Nick Piggin <npiggin@kernel.dk>,
         linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 14/34] union-mount: Create union_add_dir()
-Date: Thu, 16 Sep 2010 15:12:05 -0700
-Message-Id: <1284675145-4391-15-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 10/34] union-mount: Add union_alloc()
+Date: Thu, 16 Sep 2010 15:12:01 -0700
+Message-Id: <1284675145-4391-11-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1284675145-4391-1-git-send-email-vaurora@redhat.com>
 References: <1284675145-4391-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-union_add_dir() fills out the union stack for the topmost dentry with
-the path of the directory in this layer of the union.
+union_alloc() allocates a union stack with enough entries for the
+maximum possible number of directories that might be unioned at this
+point.
+
+The union_stack may be larger than strictly necessary if this
+directory does not exist on all layers, but allocating exactly the
+right number would require keeping the number of layers in the
+union_stack structure.  We optimize for the case of unioning two file
+systems and keep the count of layers in the superblock.
 
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
 ---
- fs/union.c |   28 ++++++++++++++++++++++++++++
- fs/union.h |    2 ++
- 2 files changed, 30 insertions(+), 0 deletions(-)
+ fs/Makefile |    1 +
+ fs/union.c  |   42 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 43 insertions(+), 0 deletions(-)
+ create mode 100644 fs/union.c
 
+diff --git a/fs/Makefile b/fs/Makefile
+index e6ec1d3..936acf0 100644
+--- a/fs/Makefile
++++ b/fs/Makefile
+@@ -52,6 +52,7 @@ obj-$(CONFIG_NFS_COMMON)	+= nfs_common/
+ obj-$(CONFIG_GENERIC_ACL)	+= generic_acl.o
+ 
+ obj-y				+= quota/
++obj-$(CONFIG_UNION_MOUNT)	+= union.o
+ 
+ obj-$(CONFIG_PROC_FS)		+= proc/
+ obj-y				+= partitions/
 diff --git a/fs/union.c b/fs/union.c
-index a191bef..45552f8 100644
---- a/fs/union.c
+new file mode 100644
+index 0000000..52a5c28
+--- /dev/null
 +++ b/fs/union.c
-@@ -65,3 +65,31 @@ void d_free_unions(struct dentry *topmost)
- 	kfree(topmost->d_union_stack);
- 	topmost->d_union_stack = NULL;
- }
-+
-+/**
-+ * union_add_dir - Add another layer to a unioned directory
+@@ -0,0 +1,42 @@
++ /*
++ * VFS-based union mounts for Linux
 + *
-+ * @topmost - topmost directory
-+ * @lower - directory in the current layer
-+ * @layer - index of layer to add this at
++ * Copyright (C) 2004-2007 IBM Corporation, IBM Deutschland Entwicklung GmbH.
++ * Copyright (C) 2007-2009 Novell Inc.
++ * Copyright (C) 2009-2010 Red Hat, Inc.
 + *
-+ * @layer counts starting at 0 for the dir below the topmost dir.
-+ * Must take a reference to @lower (call path_get()) before calling
-+ * this function.
++ *   Author(s): Jan Blunck (j.blunck@tu-harburg.de)
++ *              Valerie Aurora <vaurora@redhat.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
 + */
 +
-+int union_add_dir(struct path *topmost, struct path *lower,
-+		  unsigned int layer)
-+{
-+	struct path *path;
-+	struct dentry *dentry = topmost->dentry;
-+	BUG_ON(layer >= dentry->d_sb->s_union_count);
++#include <linux/bootmem.h>
++#include <linux/init.h>
++#include <linux/types.h>
++#include <linux/fs.h>
++#include <linux/mount.h>
++#include <linux/fs_struct.h>
++#include <linux/slab.h>
 +
-+	if (!dentry->d_union_stack)
-+		dentry->d_union_stack = union_alloc(topmost);
-+	if (!dentry->d_union_stack)
-+		return -ENOMEM;
-+	path = union_find_dir(dentry, layer);
-+	*path = *lower;
-+	return 0;
++#include "union.h"
++
++/**
++ * union_alloc - allocate a union stack
++ *
++ * @path: path of topmost directory
++ *
++ * Allocate a union_stack large enough to contain the maximum number
++ * of layers in this union mount.
++ */
++
++static struct union_stack *union_alloc(struct path *topmost)
++{
++	unsigned int layers = topmost->dentry->d_sb->s_union_count;
++	BUG_ON(!S_ISDIR(topmost->dentry->d_inode->i_mode));
++
++	return kzalloc(sizeof(struct path) * layers, GFP_KERNEL);
 +}
-diff --git a/fs/union.h b/fs/union.h
-index 353f78d..bd03d67 100644
---- a/fs/union.h
-+++ b/fs/union.h
-@@ -52,6 +52,7 @@ struct union_stack {
- #define IS_DIR_UNIONED(dentry)	((dentry)->d_union_stack)
- 
- extern void d_free_unions(struct dentry *);
-+extern int union_add_dir(struct path *, struct path *, unsigned int);
- 
- static inline struct path *union_find_dir(struct dentry *dentry,
- 					  unsigned int layer) {
-@@ -64,6 +65,7 @@ static inline struct path *union_find_dir(struct dentry *dentry,
- #define IS_DIR_UNIONED(x)		(0)
- 
- #define d_free_unions(x)		do { } while (0)
-+#define union_add_dir(x, y, z)		({ BUG(); (0); })
- #define union_find_dir(x, y)		({ BUG(); (NULL); })
- 
- #endif	/* CONFIG_UNION_MOUNT */
 -- 
 1.6.3.3
 
