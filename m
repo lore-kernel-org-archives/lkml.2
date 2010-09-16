@@ -1,58 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756082Ab0IPVkD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 17:40:03 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:54871 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750986Ab0IPVkC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 17:40:02 -0400
-Subject: Re: [PATCH 1/2] hwmon: (adm1031) Replace update_rate sysfs
- attribute with update_interval
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Jean Delvare <khali@linux-fr.org>
-CC: Randy Dunlap <rdunlap@xenotime.net>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100916230234.34f16725@hyperion.delvare>
-References: <1284602835-7605-1-git-send-email-guenter.roeck@ericsson.com>
-	 <1284602835-7605-2-git-send-email-guenter.roeck@ericsson.com>
-	 <20100916171443.0322bdb6@hyperion.delvare>
-	 <20100916153715.GE14165@ericsson.com>
-	 <20100916184237.3be9250d@hyperion.delvare>
-	 <1284666195.15696.35.camel@groeck-laptop>
-	 <20100916230234.34f16725@hyperion.delvare>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Thu, 16 Sep 2010 14:39:15 -0700
-Message-ID: <1284673155.15696.66.camel@groeck-laptop>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1756290Ab0IPVk0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 17:40:26 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:52750 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752677Ab0IPVkY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 17:40:24 -0400
+Date: Thu, 16 Sep 2010 23:01:57 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Greg KH <greg@kroah.com>
+Cc: Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, drosenberg@vsecurity.com
+Subject: Re: [PATCH 0/3] Fix the TIOCGICOUNT problem for good
+Message-ID: <20100916230157.0c045cdd@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100916184446.GA8803@kroah.com>
+References: <20100916171747.25987.33573.stgit@localhost.localdomain>
+	<20100916184446.GA8803@kroah.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-16 at 17:02 -0400, Jean Delvare wrote:
-> On Thu, 16 Sep 2010 12:43:15 -0700, Guenter Roeck wrote:
-> > On Thu, 2010-09-16 at 12:42 -0400, Jean Delvare wrote:
-> > > I'd rather change all these to "millisecond", so that the document
-> > > consistently uses singular for all units.
-> > > 
-> > > I also see that the indentation isn't consistent, with power and energy
-> > > having 4 tabs where the rest has only 2. Bah.
-> > > 
-> > To get beyond this ... how about you apply my rev2, and I make the other
-> > changes (formatting and milliseconds --> millisecond) in a subsequent
-> > patch ?
+On Thu, 16 Sep 2010 11:44:46 -0700
+Greg KH <greg@kroah.com> wrote:
+
+> On Thu, Sep 16, 2010 at 06:21:06PM +0100, Alan Cox wrote:
+> > Remembering to clear fields is something driver authors are simply never
+> > going to remember to get right every new driver. Instead take the problem
+> > away from them and give them a simple interface to do the job.
 > 
-> I'll do the milliseconds --> millisecond myself, no need to resend.
-> Further changes would indeed belong to one or two separate patches, if
-> you have time for that. This is definitely low priority though.
-> 
-Ok, thanks
+> Looks good.  But is it ok if I keep the one driver patch I have now for
+> .36 and queue this up for .37?  I'll handle the merge conflicts myself.
 
-Guenter
-
-
+Probably sensible given the closeness of .36 and the scale of changes
