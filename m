@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705Ab0IPI4V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 04:56:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8076 "EHLO mx1.redhat.com"
+	id S1752888Ab0IPI5L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 04:57:11 -0400
+Received: from mga11.intel.com ([192.55.52.93]:6033 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751601Ab0IPI4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 04:56:19 -0400
-Date: Thu, 16 Sep 2010 14:26:08 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: linux-next: manual merge of the bkl-llseek tree with the rr tree
-Message-ID: <20100916085608.GB8159@amit-laptop.redhat.com>
-References: <20100915132646.4aef58f8.sfr@canb.auug.org.au>
- <20100916065438.GE2429@amit-laptop.redhat.com>
- <201009161020.01392.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201009161020.01392.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1751768Ab0IPI5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 04:57:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,375,1280732400"; 
+   d="scan'208";a="607435312"
+Subject: Re: [PATCH -tip -v4] irq_work: generic hard-irq context callbacks
+From: Huang Ying <ying.huang@intel.com>
+To: dhowells <dhowells@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        paulus <paulus@samba.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Russell King <rmk@arm.linux.org.uk>,
+        Kyle McMartin <kyle@mcmartin.ca>, davem <davem@davemloft.net>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Matt Fleming <matt@console-pimps.org>
+In-Reply-To: <1284539320.3764.266.camel@twins>
+References: <1284360648.3269.115.camel@yhuang-dev.sh.intel.com>
+	 <20100913123213.76b1b5fa@mschwide.boeblingen.de.ibm.com>
+	 <1284377790.2275.212.camel@laptop>
+	 <1284528590.2256.135.camel@yhuang-dev.sh.intel.com>
+	 <1284539320.3764.266.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 16 Sep 2010 16:57:05 +0800
+Message-ID: <1284627425.2754.434.camel@yhuang-dev>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Thu) Sep 16 2010 [10:20:01], Arnd Bergmann wrote:
-> On Thursday 16 September 2010 08:54:39 Amit Shah wrote:
-> > Arnd, the device is supposed to be non-seekable so I'll add a
-> > nonseekable_open() to the open() call.
-> > 
-> > So I guess the llseek operation should ne no_llseek instead of
-> > noop_llseek.  Will you change that in your patchset?  Should I do that
-> > in the patch I'll queue up?
-> 
-> Yes, I think it's best if you just do both changes in your patch, I'll
-> drop this file from my series then.
+Hi, David,
 
-Great, I'll queue that up.
+On Wed, 2010-09-15 at 16:28 +0800, Peter Zijlstra wrote:
+> FRV is one of those architectures that doesn't build a toolchain from
+> plain gcc sources, David Howells did provide me with a toolchain for
+> that, it does build, but really it should be getting its toolchain
+> sorted upstream.
 
-		Amit
+Where can I find latest FRV cross compiler workable for Linux kernel?
+
+Best Regards,
+Huang Ying
+
