@@ -1,40 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755714Ab0IPRrY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 13:47:24 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:33689 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755693Ab0IPRrT convert rfc822-to-8bit (ORCPT
+	id S1755757Ab0IPRrb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 13:47:31 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:60662 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755703Ab0IPRrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 13:47:19 -0400
-Subject: Re: [RFC][PATCH] Cross Memory Attach
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Christopher Yeoh <cyeoh@au1.ibm.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTikquj_2DE4UhTFAoDxL+1g=_BocCQJ5agrwC4NU@mail.gmail.com>
-References: <20100915104855.41de3ebf@lilo>
-	 <AANLkTimNsDxeyZL4GVaH4L7YGO-EoRyCMHDtMPWU37hN@mail.gmail.com>
-	 <1284654451.2275.579.camel@laptop>
-	 <AANLkTinihPeUueKhEqUuraW2hcf3FFHjm26RieKQZi0d@mail.gmail.com>
-	 <1284657194.2275.585.camel@laptop>
-	 <AANLkTikquj_2DE4UhTFAoDxL+1g=_BocCQJ5agrwC4NU@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 16 Sep 2010 19:47:07 +0200
-Message-ID: <1284659227.2275.595.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 16 Sep 2010 13:47:23 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-kernel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Jan Blunck <jblunck@infradead.org>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        "H. Peter Anvin" <hpa@zytor.com>, reiserfs-devel@vger.kernel.org,
+        netdev@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        linux-usb@vger.kernel.org, linux-afs@lists.infradead.org,
+        David Howells <dhowells@redhat.com>,
+        Dustin Kirkland <kirkland@canonical.com>,
+        Tyler Hicks <tyhicks@linux.vnet.ibm.com>,
+        ecryptfs-devel@lists.launchpad.net,
+        David Woodhouse <dwmw2@infradead.org>,
+        Phillip Lougher <phillip@lougher.demon.co.uk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <joel.becker@oracle.com>,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH 00/12] more BKL removal after get_sb pushdown
+Date: Thu, 16 Sep 2010 19:46:13 +0200
+Message-Id: <1284659185-8942-1-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.1
+X-Provags-ID: V02:K0:I+m9casegpHikJUzJHAwMyXfW3Rj4u8YyGszThzUJmG
+ RyNVdd6KTsL4u0OYxSBUPhvZR/XhihBqPqh1NQExPMvbpBFpfY
+ T6Rcqeok5Oey7VNe4s4Mmt+9/RjMO5PjiFBdY2khGlQvFmM6BN
+ IZ13iV93xAa1ok1Eq1l1ePC7NyzohDbemxx8Wqb/bQUkzif+yq
+ mAX2I65GicpiLUYO/JG2g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-16 at 10:34 -0700, Linus Torvalds wrote:
-> 
-> Of course, these days I would seriously suggest against trying to
-> optimize the kmap() case. It only matters on crap hardware these days.
-> Anybody running HIGHMEM in 2010 and thinks that it makes sense
-> deserves the pain the get. We should not complicate the kernel further
-> for it, and sane architectures will have a no-op kmap(). 
+These patches have not been posted yet, I did some of them
+only when going through the list of remaining BKL users and
+found them to be simple to fix myself.
 
-OK, fully agreed. Someone ought to tell ARM though :-)
+Most of these patches only apply on top of the pushdown into
+the get_sb operation, which is now in linux-next, so I'm
+planning to keep them in the same series instead of
+going through maintainer trees.
 
+The full series can be found in
+git://git.kernel.org/pub/scm/linux/kernel/git/arnd/bkl.git vfs
+
+Arnd Bergmann (12):
+  BKL: Remove BKL from usbfs
+  BKL: Remove BKL from fat
+  BKL: Remove BKL from isofs
+  BKL: Remove BKL from autofs4
+  BKL: Remove BKL from ReiserFS
+  BKL: Remove BKL from capifs
+  BKL: Remove BKL from USB gadgetfs
+  BKL: Remove BKL from afs
+  BKL: Remove BKL from ecryptfs
+  BKL: Remove BKL from jffs2
+  BKL: Remove BKL from squashfs
+  BKL: Remove BKL from OCFS2
+
+ drivers/isdn/capi/capifs.c |    8 +-------
+ drivers/usb/core/inode.c   |    6 ------
+ drivers/usb/gadget/inode.c |   13 ++-----------
+ fs/afs/super.c             |   10 ----------
+ fs/autofs4/root.c          |   12 +++++++-----
+ fs/ecryptfs/file.c         |    3 ---
+ fs/ecryptfs/main.c         |    4 ----
+ fs/fat/inode.c             |    5 -----
+ fs/fat/namei_msdos.c       |    7 +++----
+ fs/fat/namei_vfat.c        |    7 +++----
+ fs/isofs/dir.c             |    6 +++---
+ fs/isofs/inode.c           |   16 ++++++----------
+ fs/isofs/namei.c           |    8 ++++----
+ fs/isofs/rock.c            |    8 ++++----
+ fs/jffs2/fs.c              |    4 ----
+ fs/jffs2/super.c           |   12 +-----------
+ fs/ocfs2/dlmfs/dlmfs.c     |    9 +--------
+ fs/ocfs2/stack_user.c      |    3 ---
+ fs/ocfs2/super.c           |   12 ------------
+ fs/reiserfs/super.c        |    6 ------
+ fs/squashfs/super.c        |   11 -----------
+ 21 files changed, 35 insertions(+), 135 deletions(-)
+
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Jan Blunck <jblunck@infradead.org>
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Jan Blunck <jblunck@infradead.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: reiserfs-devel@vger.kernel.org
+Cc: netdev@vger.kernel.org
+Cc: David Brownell <dbrownell@users.sourceforge.net>
+Cc: linux-usb@vger.kernel.org
+Cc: linux-afs@lists.infradead.org
+Cc: David Howells <dhowells@redhat.com>
+Cc: Dustin Kirkland <kirkland@canonical.com>
+Cc: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Cc: ecryptfs-devel@lists.launchpad.net
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Phillip Lougher <phillip@lougher.demon.co.uk>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <joel.becker@oracle.com>
+Cc: linux-fsdevel@vger.kernel.org
