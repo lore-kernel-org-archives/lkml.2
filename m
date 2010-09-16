@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab0IPV2i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 17:28:38 -0400
-Received: from ppsw-33.csi.cam.ac.uk ([131.111.8.133]:56812 "EHLO
-	ppsw-33.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752731Ab0IPV2h convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 17:28:37 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Subject: Re: Remaining BKL users, what to do
-Mime-Version: 1.0 (Apple Message framework v1081)
-Content-Type: text/plain; charset=us-ascii
-From: Anton Altaparmakov <aia21@cam.ac.uk>
-In-Reply-To: <20100916150459.GA8437@quack.suse.cz>
-Date: Thu, 16 Sep 2010 22:26:24 +0100
-Cc: Arnd Bergmann <arnd@arndb.de>, codalist@TELEMANN.coda.cs.cmu.edu,
-        autofs@linux.kernel.org, linux-media@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, Christoph Hellwig <hch@infradead.org>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Petr Vandrovec <vandrove@vc.cvut.cz>, Anders Larsen <al@alarsen.net>,
-        Evgeniy Dushistov <dushistov@mail.ru>, Ingo Molnar <mingo@elte.hu>,
-        netdev@vger.kernel.org, Samuel Ortiz <samuel@sortiz.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Andrew Hendry <andrew.hendry@gmail.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <16843727-8A3D-48FF-9021-E0AD99C23E18@cam.ac.uk>
-References: <201009161632.59210.arnd@arndb.de> <20100916150459.GA8437@quack.suse.cz>
-To: Jan Kara <jack@suse.cz>
-X-Mailer: Apple Mail (2.1081)
+	id S1754832Ab0IPVbh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 17:31:37 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:53712 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752601Ab0IPVbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 17:31:35 -0400
+Date: Fri, 17 Sep 2010 07:31:26 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>, Will Drewry <wad@chromium.org>
+Subject: Re: linux-next: Tree for September 16 (do_mounts.c)
+Message-Id: <20100917073126.f382c799.sfr@canb.auug.org.au>
+In-Reply-To: <20100916091125.f12cc17c.randy.dunlap@oracle.com>
+References: <20100916152805.c9f31656.sfr@canb.auug.org.au>
+	<20100916091125.f12cc17c.randy.dunlap@oracle.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__17_Sep_2010_07_31_26_+1000_fcC0XdsVcFSNL=sZ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--Signature=_Fri__17_Sep_2010_07_31_26_+1000_fcC0XdsVcFSNL=sZ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 16 Sep 2010, at 16:04, Jan Kara wrote:
-> On Thu 16-09-10 16:32:59, Arnd Bergmann wrote:
->> The big kernel lock is gone from almost all code in linux-next, this is
->> the status of what I think will happen to the remaining users:
-> ...
->> fs/ncpfs:
->> 	Should be fixable if Petr still cares about it. Otherwise suggest
->> 	moving to drivers/staging if there are no users left.
->  I think some people still use this...
+On Thu, 16 Sep 2010 09:11:25 -0700 Randy Dunlap <randy.dunlap@oracle.com> w=
+rote:
+>
+> When CONFIG_BLOCK is not enabled:
+>=20
+> init/do_mounts.c:71: error: implicit declaration of function 'dev_to_part'
+> init/do_mounts.c:71: warning: initialization makes pointer from integer w=
+ithout a cast
+> init/do_mounts.c:73: error: dereferencing pointer to incomplete type
+> init/do_mounts.c:76: error: dereferencing pointer to incomplete type
+> init/do_mounts.c:76: error: dereferencing pointer to incomplete type
+> init/do_mounts.c:102: error: implicit declaration of function 'part_pack_=
+uuid'
+> init/do_mounts.c:104: error: 'block_class' undeclared (first use in this =
+function)
 
-Yes, indeed.  Netware is still alive (unfortunately!) and ncpfs is used in a lot of Universities here in the UK at least (we use it about a thousand workstations and servers here at Cambridge University!).
+Caused by commit b5af921ec02333e943efb59aca4f56b78fc0e100 ("init: add
+support for root devices specified by partition UUID") from the block tree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Best regards,
+--Signature=_Fri__17_Sep_2010_07_31_26_+1000_fcC0XdsVcFSNL=sZ
+Content-Type: application/pgp-signature
 
-	Anton
--- 
-Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
-Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
-Linux NTFS maintainer, http://www.linux-ntfs.org/
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iQEcBAEBAgAGBQJMkoyuAAoJEDMEi1NhKgbsT/oH/1AZ6gvXzCEluqm1Q+lGUAgO
+4TH9cN9oD1WAc0mb4GNnbpHMO7s7ytJqafBdBgyQfHeM87MyuQkKXTLkQjG6HSsp
+WGQKwf3wEdwdJgozlcmMvQ+i83PZQP9AIyA+QrEDqae1mnCbmqoqzB3oE9IA9UO6
+/B4/AU5DiO4klcdy2XA3Yk+ujCH5YxtdFKJSCV12m+9k2rQszulEgqVjNBxKfeeU
++wu0r/Lmdh+Ld/6w48ATluIvAvpLdtQ8V7xotILAS9/tTvKzp/Jd+mbysAxlS12U
+2PHAbN2L4KNh/Rem02pkpjdR3qiDLKdyGowiUnwrBfQrSaB6yonp3vbmhz0eXR0=
+=V2Z+
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__17_Sep_2010_07_31_26_+1000_fcC0XdsVcFSNL=sZ--
