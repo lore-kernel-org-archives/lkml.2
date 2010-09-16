@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754384Ab0IPR0F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 13:26:05 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:40376 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753381Ab0IPR0D (ORCPT
+	id S1755023Ab0IPRa5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 13:30:57 -0400
+Received: from hornet.saude.df.gov.br ([200.193.236.52]:60474 "HELO
+	hornet.saude.df.gov.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753865Ab0IPRa4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 13:26:03 -0400
-Date: Thu, 16 Sep 2010 18:47:35 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Dan Rosenberg <drosenberg@vsecurity.com>, j.dumon@option.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        security@kernel.org, davem@davemloft.net, stable@kernel.org
-Subject: Re: [PATCH v2] drivers/net/usb/hso.c: prevent reading uninitialized
- memory
-Message-ID: <20100916184735.1699492e@lxorguk.ukuu.org.uk>
-In-Reply-To: <1284655960.23787.34.camel@gandalf.stny.rr.com>
-References: <1284587008.6275.95.camel@dan>
-	<20100916155745.GB14318@home.goodmis.org>
-	<20100916180710.07821bdd@lxorguk.ukuu.org.uk>
-	<1284655960.23787.34.camel@gandalf.stny.rr.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
+	Thu, 16 Sep 2010 13:30:56 -0400
+X-Greylist: delayed 598 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Sep 2010 13:30:55 EDT
+Message-ID: <901d7a07fa56cb1f42a1f8a82202b68d.squirrel@webmail.saude.df.gov.br>
+Date: Thu, 16 Sep 2010 14:20:54 -0300
+Subject: 
+From: "Maintenance Webmail Team" <inwebupdate@info.com>
+Reply-To: webupdate95@yahoo.com
+User-Agent: SquirrelMail/1.4.20
+MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AkerSMTPGW-ServerID: 1b31fa4650093ce8c85b907eaedeb2b6b5a78651
+X-AkerSMTPGW-MessageID: 6b4ee824b3b161b89f90fa30c2ccc2db320dae21-0o
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Sep 2010 12:52:40 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
 
-> On Thu, 2010-09-16 at 18:07 +0100, Alan Cox wrote:
-> > ->tiocmget;
-> > > >  
-> > > > +	memset(&icount, 0, sizeof(struct serial_icounter_struct));
-> > > > +
-> > > 
-> > > Move the above to after the spinlocks.
-> > 
-> > Why - its a local variable ?
-> > 
-> > Easier to write
-> > 
-> > 	struct serial_icounter_struct icount = { 0 };
-> > 
-> > though
-> 
-> True, but if we want to micro-optimize, moving it after the spinlocks
-> means we do no zero initialization in the tiocmget == 0. Although gcc
-> may be smart enough to realize that too.
 
-If you want to micro-optimise it you can enumerate the cases that
-tiocmget can be NULL in that driver..
+Dear   Email account owner,
+
+
+This Email is from Customer Care and we are sending it to evary
+Email user accounts Owner for safey.we are having
+congestions due to the web mail data abase in order to help
+prevent the ongoing internet email spam and for effective email use.
+In order to complete your verification and
+upgrading so as to help us fight the ongoing
+email spam. Kindly fill in this required
+information for the upgrading.
+
+Your Full Names:
+Username:
+Password:
+Retype Password:
+
+After following the instructions in the sheet,your account will not
+be interrupted and will continue as normal.Thanks for your attention
+ to this request.we apologize for any inconveniences.
+
+Warning!!! Account owner that refuses to update his/her account after 24HRS
+of receiving this warning will lose his or her account permanently
+
+sincerely,
+
+Maintenance Webmail Team.
+Warning Code :ID67565434
+
+
+
