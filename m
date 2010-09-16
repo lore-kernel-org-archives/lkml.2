@@ -1,80 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493Ab0IPXXS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 19:23:18 -0400
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:3789 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752542Ab0IPXXR (ORCPT
+	id S1753841Ab0IPX0q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 19:26:46 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56074 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752454Ab0IPX0l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 19:23:17 -0400
-From: Dmitry Torokhov <dtor@vmware.com>
-Organization: VMware, Inc.
-To: Chetan Loke <chetanloke@gmail.com>
-Subject: Re: [PATCH] VMware Balloon: rename module
-Date: Thu, 16 Sep 2010 16:23:14 -0700
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4+; KDE/4.4.5; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-References: <AANLkTikWmwVvWzRMK7yvtyqYbd4OeeR1nLsP1OAxbnJg@mail.gmail.com>
-In-Reply-To: <AANLkTikWmwVvWzRMK7yvtyqYbd4OeeR1nLsP1OAxbnJg@mail.gmail.com>
+	Thu, 16 Sep 2010 19:26:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Vddh5UhvDBVJ/tOkbtOls1j4hWMYDYfDQnpq1ytC6kHtQvJa8q+1cGUFdnjggfGjRT
+         8ETrJh1ZTR/fMqHqkXJLJ58qnD+8/2f2ZmmJO4VB9pKsj9eb844a6F8jEx+r6b3tjIPE
+         +eXNhQNjdVzA2HT9sJ23Pzz9c/sCu8CS46AlI=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009161623.14722.dtor@vmware.com>
+In-Reply-To: <1284676521-10737-1-git-send-email-nab@linux-iscsi.org>
+References: <1284676521-10737-1-git-send-email-nab@linux-iscsi.org>
+Date: Thu, 16 Sep 2010 19:26:40 -0400
+Message-ID: <AANLkTi=QXj0Do_PDvFmu5v8Py_tm_uJdDh_PQu_96M2v@mail.gmail.com>
+Subject: Re: [PATCH 0/8] Drop host_lock around LLD SHT->queuecommand() caller
+From: Chetan Loke <chetanloke@gmail.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
+        Christoph Hellwig <hch@lst.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chetan,
+On Thu, Sep 16, 2010 at 6:35 PM, Nicholas A. Bellinger
+<nab@linux-iscsi.org> wrote:
 
-On Thursday, September 16, 2010 04:05:28 pm Chetan Loke wrote:
-> > From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> > owner@vger.kernel.org] On Behalf Of Dmitry Torokhov
-> > Sent: September 16, 2010 6:01 PM
-> > To: linux-kernel@vger.kernel.org
-> > Cc: pv-drivers@vmware.com; Andrew Morton
-> > Subject: [PATCH] VMware Balloon: rename module
-> > 
-> > 
-> > 
-> > In an effort to minimize customer confusion we want to unify naming
-> > convention for VMware-provided kernel modules. This change renames
-> > the balloon driver from vmware_ballon to vmw_balloon.
-> 
-> What will vmtools name its vmware_balloon driver to? vmw_balloon, correct?
+> and LLDs have adopted over the years.  The changes involved here are really
+> quite straight forward, but please note that none of this code has been tested
+> with actual hardware yet, and is intended for generating comments for the relivent
+> SCSI LLD driver maintainers and other interested folks.
+>
 
-That is the plan.
-
-> 
-> > +	vmballoon_wq = create_freezeable_workqueue("vmmemctl");
-> 
-> minor change - vmware_vmmemctl?
-
-I do not think this needs to be changed; it does not have to match
-the module name, plus, given Tejun's changes, it will all be generic
-[worker/u:X] soon anyway.
-
-> 
-> I might've seen a debugfs entry too.
-
-I still plan on keeping it as "vmmemctl" so we do not have to change
-scripts too often. The move in module names prompted by complaints
-that name changes when user requests tools to clobber distribution-
-provided modules.
-
-> 
-> 
-> side note - is it possible to extend the balloon driver to get a
-> notification on other events? like CPUs, NICs? Just an event is what
-> I'm looking for. No action need to be taken in the guest.
-
-No, balloon driver should be limited to ballooning. I think the data
-you are looking for can be retrieved via GuestSDK (and I believe we
-are adding balloon_target to the available data).
-
-Thanks.
-
--- 
-Dmitry
+NO. Why not try testing it w/ an abort storm first else we will
+seriously end up screwing the filesystems....
