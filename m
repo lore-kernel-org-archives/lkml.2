@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196Ab0IPVHP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 17:07:15 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57094 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752186Ab0IPVHO (ORCPT
+	id S1754873Ab0IPVJb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 17:09:31 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:33810 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752517Ab0IPVJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 17:07:14 -0400
-Date: Thu, 16 Sep 2010 14:06:44 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: thomas@winischhofer.net, security@kernel.org, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-Subject: Re: [Security] [PATCH] drivers/video/sis/sis_main.c: prevent
- reading uninitialized stack memory
-Message-Id: <20100916140644.9788e677.akpm@linux-foundation.org>
-In-Reply-To: <1284587033.6275.96.camel@dan>
-References: <1284587033.6275.96.camel@dan>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Sep 2010 17:09:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=xJgRkJn800K+G47yfZNEqlX4Su+ewUfCOf7ZTPdftjkrmYl2luhIVOsYIgvYmmDy/+
+         sFssFAJA2EoSkAGfFXfpLX3vvPgVWHkioU6/ySYlxYVUkcwE5q8CMiqekkDAjfbH4PH3
+         /4X25y/wU2O6PH0HrcmAOvUOyQSHQBaBmet0A=
+Date: Thu, 16 Sep 2010 17:08:30 -0400
+From: Chris Snook <chris.snook@gmail.com>
+To: akpm@linux-foundation.org, joe@perches.com, linux-kernel@vger.kernel.org,
+        atl1-devel@lists.sourceforge.net, jcliburn@gmail.com,
+        jie.yang@atheros.com
+Subject: [PATCH] MAINTAINERS: move atlx discussions to netdev
+Message-ID: <20100916210830.GB25481@fourier.jnsq.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Sep 2010 17:43:53 -0400
-Dan Rosenberg <drosenberg@vsecurity.com> wrote:
+From: Chris Snook <chris.snook@gmail.com>
 
-> The FBIOGET_VBLANK device ioctl allows unprivileged users to read 16
-> bytes of uninitialized stack memory, because the "reserved" member of
-> the fb_vblank struct declared on the stack is not altered or zeroed
-> before being copied back to the user.  This patch takes care of it.
-> 
-> Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-> 
-> --- linux-2.6.35.4.orig/drivers/video/sis/sis_main.c	2010-08-26 19:47:12.000000000 -0400
-> +++ linux-2.6.35.4/drivers/video/sis/sis_main.c	2010-09-15 11:52:41.437375730 -0400
-> @@ -1701,6 +1701,9 @@ static int	sisfb_ioctl(struct fb_info *i
->  		break;
->  
->  	   case FBIOGET_VBLANK:
-> +
-> +		memset(&sisvbblank, 0, sizeof(struct fb_vblank));
+The atlx drivers are sufficiently mature that we no longer need a separate
+mailing list for them.  Move the discussion to netdev, so we can decommission
+atl1-devel, which is now mostly spam.
 
-grumble.  Every one of these patches I need to go in and check that the
-types are correct.  In this case, that sisvbblank really does have the
-type `struct fb_vblank'.
+Signed-off-by: Chris Snook <chris.snook@gmail.com>
 
-If the code had done
-
-		memset(&sisvbblank, 0, sizeof(sisvbblank));
-
-then I wouldn't need to do that.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index e7c528f..8e904c8 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1135,7 +1135,7 @@ ATLX ETHERNET DRIVERS
+ M:	Jay Cliburn <jcliburn@gmail.com>
+ M:	Chris Snook <chris.snook@gmail.com>
+ M:	Jie Yang <jie.yang@atheros.com>
+-L:	atl1-devel@lists.sourceforge.net
++L:	netdev@vger.kernel.org
+ W:	http://sourceforge.net/projects/atl1
+ W:	http://atl1.sourceforge.net
+ S:	Maintained
 
