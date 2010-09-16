@@ -1,107 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756434Ab0IPWOb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 18:14:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1491 "EHLO mx1.redhat.com"
+	id S1756637Ab0IPWVX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 18:21:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14681 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756368Ab0IPWO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 18:14:27 -0400
+	id S1756406Ab0IPWOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 18:14:30 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Christoph Hellwig <hch@infradead.org>,
         Andreas Gruenbacher <agruen@suse.de>, Nick Piggin <npiggin@kernel.dk>,
         linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Jan Blunck <jblunck@suse.de>, Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 13/34] union-mount: Free union stack on removal of topmost dentry from dcache
-Date: Thu, 16 Sep 2010 15:12:04 -0700
-Message-Id: <1284675145-4391-14-git-send-email-vaurora@redhat.com>
+        Valerie Aurora <vaurora@redhat.com>
+Subject: [PATCH 14/34] union-mount: Create union_add_dir()
+Date: Thu, 16 Sep 2010 15:12:05 -0700
+Message-Id: <1284675145-4391-15-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1284675145-4391-1-git-send-email-vaurora@redhat.com>
 References: <1284675145-4391-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Blunck <jblunck@suse.de>
-
-If a dentry is removed from dentry cache because its usage count drops
-to zero, its union stack is freed too.
+union_add_dir() fills out the union stack for the topmost dentry with
+the path of the directory in this layer of the union.
 
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
 ---
- fs/dcache.c    |   11 +++++++++++
- fs/namespace.c |    2 ++
- 2 files changed, 13 insertions(+), 0 deletions(-)
+ fs/union.c |   28 ++++++++++++++++++++++++++++
+ fs/union.h |    2 ++
+ 2 files changed, 30 insertions(+), 0 deletions(-)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 85e2737..0910ce7 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -34,6 +34,7 @@
- #include <linux/fs_struct.h>
- #include <linux/hardirq.h>
- #include "internal.h"
-+#include "union.h"
- 
- int sysctl_vfs_cache_pressure __read_mostly = 100;
- EXPORT_SYMBOL_GPL(sysctl_vfs_cache_pressure);
-@@ -175,6 +176,7 @@ static struct dentry *d_kill(struct dentry *dentry)
- 	dentry_stat.nr_dentry--;	/* For d_free, below */
- 	/*drops the locks, at that point nobody can reach this dentry */
- 	dentry_iput(dentry);
-+	d_free_unions(dentry);
- 	if (IS_ROOT(dentry))
- 		parent = NULL;
- 	else
-@@ -695,6 +697,7 @@ static void shrink_dcache_for_umount_subtree(struct dentry *dentry)
- 					iput(inode);
- 			}
- 
-+			d_free_unions(dentry);
- 			d_free(dentry);
- 
- 			/* finished when we fall off the top of the tree,
-@@ -1535,6 +1538,7 @@ void d_delete(struct dentry * dentry)
- 	if (atomic_read(&dentry->d_count) == 1) {
- 		dentry->d_flags &= ~DCACHE_CANT_MOUNT;
- 		dentry_iput(dentry);
-+		d_free_unions(dentry);
- 		fsnotify_nameremove(dentry, isdir);
- 		return;
- 	}
-@@ -1545,6 +1549,13 @@ void d_delete(struct dentry * dentry)
- 	spin_unlock(&dentry->d_lock);
- 	spin_unlock(&dcache_lock);
- 
-+	/*
-+	 * Remove any associated unions.  While someone still has this
-+	 * directory open (ref count > 0), we could not have deleted
-+	 * it unless it was empty, and therefore has no references to
-+	 * directories below it.  So we don't need the unions.
-+	 */
-+	d_free_unions(dentry);
- 	fsnotify_nameremove(dentry, isdir);
+diff --git a/fs/union.c b/fs/union.c
+index a191bef..45552f8 100644
+--- a/fs/union.c
++++ b/fs/union.c
+@@ -65,3 +65,31 @@ void d_free_unions(struct dentry *topmost)
+ 	kfree(topmost->d_union_stack);
+ 	topmost->d_union_stack = NULL;
  }
- EXPORT_SYMBOL(d_delete);
-diff --git a/fs/namespace.c b/fs/namespace.c
-index f8d7d11..ffa5ed7 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -33,6 +33,7 @@
- #include <asm/unistd.h>
- #include "pnode.h"
- #include "internal.h"
-+#include "union.h"
++
++/**
++ * union_add_dir - Add another layer to a unioned directory
++ *
++ * @topmost - topmost directory
++ * @lower - directory in the current layer
++ * @layer - index of layer to add this at
++ *
++ * @layer counts starting at 0 for the dir below the topmost dir.
++ * Must take a reference to @lower (call path_get()) before calling
++ * this function.
++ */
++
++int union_add_dir(struct path *topmost, struct path *lower,
++		  unsigned int layer)
++{
++	struct path *path;
++	struct dentry *dentry = topmost->dentry;
++	BUG_ON(layer >= dentry->d_sb->s_union_count);
++
++	if (!dentry->d_union_stack)
++		dentry->d_union_stack = union_alloc(topmost);
++	if (!dentry->d_union_stack)
++		return -ENOMEM;
++	path = union_find_dir(dentry, layer);
++	*path = *lower;
++	return 0;
++}
+diff --git a/fs/union.h b/fs/union.h
+index 353f78d..bd03d67 100644
+--- a/fs/union.h
++++ b/fs/union.h
+@@ -52,6 +52,7 @@ struct union_stack {
+ #define IS_DIR_UNIONED(dentry)	((dentry)->d_union_stack)
  
- #define HASH_SHIFT ilog2(PAGE_SIZE / sizeof(struct list_head))
- #define HASH_SIZE (1UL << HASH_SHIFT)
-@@ -1065,6 +1066,7 @@ void umount_tree(struct vfsmount *mnt, int propagate, struct list_head *kill)
- 		propagate_umount(kill);
+ extern void d_free_unions(struct dentry *);
++extern int union_add_dir(struct path *, struct path *, unsigned int);
  
- 	list_for_each_entry(p, kill, mnt_hash) {
-+		d_free_unions(p->mnt_root);
- 		list_del_init(&p->mnt_expire);
- 		list_del_init(&p->mnt_list);
- 		__touch_mnt_namespace(p->mnt_ns);
+ static inline struct path *union_find_dir(struct dentry *dentry,
+ 					  unsigned int layer) {
+@@ -64,6 +65,7 @@ static inline struct path *union_find_dir(struct dentry *dentry,
+ #define IS_DIR_UNIONED(x)		(0)
+ 
+ #define d_free_unions(x)		do { } while (0)
++#define union_add_dir(x, y, z)		({ BUG(); (0); })
+ #define union_find_dir(x, y)		({ BUG(); (NULL); })
+ 
+ #endif	/* CONFIG_UNION_MOUNT */
 -- 
 1.6.3.3
 
