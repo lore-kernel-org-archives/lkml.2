@@ -1,101 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755963Ab0IPUpZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 16:45:25 -0400
-Received: from usindmx01.hds.com ([207.126.252.12]:39571 "EHLO
-	usindmx01.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754626Ab0IPUpY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 16:45:24 -0400
-X-Greylist: delayed 1671 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Sep 2010 16:45:18 EDT
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "xiyou.wangcong@gmail.com" <xiyou.wangcong@gmail.com>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "simon.kagstrom@netinsight.net" <simon.kagstrom@netinsight.net>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+	id S1756263Ab0IPU7m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 16:59:42 -0400
+Received: from kroah.org ([198.145.64.141]:55979 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756205Ab0IPU7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 16:59:41 -0400
+Date: Thu, 16 Sep 2010 13:59:29 -0700
+From: Greg KH <greg@kroah.com>
+To: "Savoy, Pavan" <pavan_savoy@ti.com>
+Cc: "gregkh@suse.de" <gregkh@suse.de>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Satoru Moriya <satoru.moriya@hds.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>
-Date: Thu, 16 Sep 2010 16:16:14 -0400
-Subject: [PATCH] Fix kexec abort due to IPI from panic().
-Thread-Topic: [PATCH] Fix kexec abort due to IPI from panic().
-Thread-Index: ActV23frgU2iJtDkTHK/vPC8dXBdJAAACVmw
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C0979C90E@USINDEVS01.corp.hds.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [RFC 3/3] include:linux: make ti_wilink_st like the rest
+Message-ID: <20100916205929.GA12515@kroah.com>
+References: <1284148738-21643-1-git-send-email-pavan_savoy@ti.com>
+ <1284148738-21643-2-git-send-email-pavan_savoy@ti.com>
+ <1284148738-21643-3-git-send-email-pavan_savoy@ti.com>
+ <1284148738-21643-4-git-send-email-pavan_savoy@ti.com>
+ <1284148738-21643-5-git-send-email-pavan_savoy@ti.com>
+ <20100916200058.GI10397@kroah.com>
+ <19F8576C6E063C45BE387C64729E73940468914048@dbde02.ent.ti.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <19F8576C6E063C45BE387C64729E73940468914048@dbde02.ent.ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Sep 17, 2010 at 01:48:53AM +0530, Savoy, Pavan wrote:
+> > Also, why not just use 'u8' and friends instead?  That's the "proper"
+> > kernel types to be using, not the uint8_t mess that is not correct
+> > kernel types.
+> 
+> Yes a mistake here too.
+> This should have been in the patch where I plan to combine all the headers into 1 header and have it in include/linux/
+> [the headers like st_core.h, st_kim.h, st_ll.h, bt_drv.h and fm and GPs headers]
+> 
+> Yes, and the Bluetooth driver to go into drivers/Bluetooth/ and ST
+> driver (st_core.c/st_kim.c and st_ll.c) to go into drivers/char/ And
+> the upcoming FM V4L2 to go into the drivers/media/radio/
+> 
+> Does this sound fine?
 
-I'm Seiji Aguchi.
-I work for Hitachi Data Systems.
-It's a first time to send a patch to lkml.
-Nice to meet you.
- 
-I found an issue in kexec.
-Please give me your comments and suggestions.
- 
-Kexec abort when two cpus panic at the same time.
-An example scenario:
-1. Two cpus panic at the same time .
-2. One cpu ,cpu0, get kexec_mutex in crash_kexec().
-3. The other cpu ,cpu1, can't get kexec_mutex and return from crash_kexec().
-4. Cpu0 runs kmsg_dump(KMSG_DUMP_KEXEC).
-5. Cpu1 can't get dump_list_lock and return from kmsg_dump(KMSG_DUMP_PANIC).
-6. Cpu1 runs smp_send_stop() in panic() and sends IPI to other cpus.
-7. Cpu0 may receive IPI from cpu1 while running kmsg_dump(KMSG_DUMP_KEXEC),
-   crash_setup_regs(), or crash_save_vmcore().
- 
-We can solve this issue by disabling external interrupt while getting kexec_mutex 
-in crash_kexec().
+Yes.
 
+> > > @@ -386,6 +392,7 @@ void st_ll_wakeup(struct st_data_s *);
+> > >
+> > >  /**
+> > >   * structures and declarations used by the st_core for FM packets
+> > > + * and GPS packets
+> > >   */
+> > >  struct fm_event_hdr {
+> > >  	unsigned char plen;
+> > 
+> > Oh, is it?  That should go somewhere else.
+> 
+> Plan is to have just 1 large header to be included by all protocol drivers (BT, FM and GPS)...
+> Is it a bad idea?
 
- Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+No, as long as all drivers need it.
 
----
- kernel/kexec.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+> > >  #endif /* ST_H */
+> > 
+> > I don't think this file is called "ST_H" here anymore.
+> 
+> Yes, need your input here. This file will be made use by the rest of
+> the protocol drivers I plan to push patches for.
+> So does ti_wilink_st.h sound fine? And in include/linux? So that rest
+> of the drivers can be in their individual directories.
 
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index c0613f7..9e9f159 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -1075,6 +1075,10 @@ void crash_kexec(struct pt_regs *regs)
- 	 * sufficient.  But since I reuse the memory...
- 	 */
- 	if (mutex_trylock(&kexec_mutex)) {
-+		unsigned long flags;
-+
-+		local_irq_save(flags);
-+
- 		if (kexec_crash_image) {
- 			struct pt_regs fixed_regs;
- 
-@@ -1085,6 +1089,9 @@ void crash_kexec(struct pt_regs *regs)
- 			machine_crash_shutdown(&fixed_regs);
- 			machine_kexec(kexec_crash_image);
- 		}
-+
-+		local_irq_restore(flags);
-+
- 		mutex_unlock(&kexec_mutex);
- 	}
- }
--- 
-1.7.2.2
+Yes, that name is fine, but it needs to be the same as the #ifdef
+guard as well.
 
+thanks,
 
-Regards,
-
-Seiji
+greg k-h
