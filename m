@@ -1,106 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191Ab0IPVYt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 17:24:49 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:53749 "EHLO bear.ext.ti.com"
+	id S1753317Ab0IPVZT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 17:25:19 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:35670 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750807Ab0IPVYs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 17:24:48 -0400
-From: "Savoy, Pavan" <pavan_savoy@ti.com>
-To: Greg KH <greg@kroah.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 17 Sep 2010 02:54:31 +0530
-Subject: RE: [RFC 3/3] include:linux: make ti_wilink_st like the rest
-Thread-Topic: [RFC 3/3] include:linux: make ti_wilink_st like the rest
-Thread-Index: ActV4heIw5NXLYh6RP+m6PqkcijmMQAAzswA
-Message-ID: <19F8576C6E063C45BE387C64729E7394046891404F@dbde02.ent.ti.com>
-References: <1284148738-21643-1-git-send-email-pavan_savoy@ti.com>
- <1284148738-21643-2-git-send-email-pavan_savoy@ti.com>
- <1284148738-21643-3-git-send-email-pavan_savoy@ti.com>
- <1284148738-21643-4-git-send-email-pavan_savoy@ti.com>
- <1284148738-21643-5-git-send-email-pavan_savoy@ti.com>
- <20100916200058.GI10397@kroah.com>
- <19F8576C6E063C45BE387C64729E73940468914048@dbde02.ent.ti.com>
- <20100916205929.GA12515@kroah.com>
-In-Reply-To: <20100916205929.GA12515@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1750986Ab0IPVZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 17:25:17 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH] PM: Fix potential issue with failing asynchronous suspend (was: Re: [PATCH] PM: Prevent waiting ...)
+Date: Thu, 16 Sep 2010 23:24:18 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Colin Cross <ccross@android.com>, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, Pavel Machek <pavel@ucw.cz>
+References: <Pine.LNX.4.44L0.1009161655470.1695-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1009161655470.1695-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009162324.19109.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg,
+On Thursday, September 16, 2010, Alan Stern wrote:
+> On Thu, 16 Sep 2010, Rafael J. Wysocki wrote:
+> 
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > Subject: PM: Fix potential issue with failing asynchronous suspend
+> > 
+> > There is a potential issue with the asynchronous suspend code that
+> > a device driver suspending asynchronously may not notice that it
+> > should back off.  There are two failing scenarions, (1) when the
+> > driver is waiting for a driver suspending synchronously to complete
+> > and that second driver returns error code, in which case async_error
+> > won't be set and the waiting driver will continue suspending and (2)
+> > after the driver has called device_pm_wait_for_dev() and the waited
+> > for driver returns error code, in which case the caller of
+> > device_pm_wait_for_dev() will not know that there was an error and
+> > will continue suspending.
+> > 
+> > To fix this issue make __device_suspend() set async_error, so
+> > async_suspend() doesn't need to set it any more, and make
+> > device_pm_wait_for_dev() return async_error, so that its callers
+> > can check whether or not they should continue suspending.
+> > 
+> > No more changes are necessary, since device_pm_wait_for_dev() is
+> > not used by any drivers' suspend routines at the moment.
+> 
+> You just squeaked by, since it is _is_ being used by a USB _resume_
+> routine.  :-)
 
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Thursday, September 16, 2010 3:59 PM
-> To: Savoy, Pavan
-> Cc: gregkh@suse.de; alan@lxorguk.ukuu.org.uk; devel@driverdev.osuosl.org;
-> linux-kernel@vger.kernel.org
-> Subject: Re: [RFC 3/3] include:linux: make ti_wilink_st like the rest
-> 
-> On Fri, Sep 17, 2010 at 01:48:53AM +0530, Savoy, Pavan wrote:
-> > > Also, why not just use 'u8' and friends instead?  That's the "proper"
-> > > kernel types to be using, not the uint8_t mess that is not correct
-> > > kernel types.
-> >
-> > Yes a mistake here too.
-> > This should have been in the patch where I plan to combine all the headers
-> into 1 header and have it in include/linux/
-> > [the headers like st_core.h, st_kim.h, st_ll.h, bt_drv.h and fm and GPs
-> headers]
-> >
-> > Yes, and the Bluetooth driver to go into drivers/Bluetooth/ and ST
-> > driver (st_core.c/st_kim.c and st_ll.c) to go into drivers/char/ And
-> > the upcoming FM V4L2 to go into the drivers/media/radio/
-> >
-> > Does this sound fine?
-> 
-> Yes.
-> 
-> > > > @@ -386,6 +392,7 @@ void st_ll_wakeup(struct st_data_s *);
-> > > >
-> > > >  /**
-> > > >   * structures and declarations used by the st_core for FM packets
-> > > > + * and GPS packets
-> > > >   */
-> > > >  struct fm_event_hdr {
-> > > >  	unsigned char plen;
-> > >
-> > > Oh, is it?  That should go somewhere else.
-> >
-> > Plan is to have just 1 large header to be included by all protocol drivers
-> (BT, FM and GPS)...
-> > Is it a bad idea?
-> 
-> No, as long as all drivers need it.
-> 
-> > > >  #endif /* ST_H */
-> > >
-> > > I don't think this file is called "ST_H" here anymore.
-> >
-> > Yes, need your input here. This file will be made use by the rest of
-> > the protocol drivers I plan to push patches for.
-> > So does ti_wilink_st.h sound fine? And in include/linux? So that rest
-> > of the drivers can be in their individual directories.
-> 
-> Yes, that name is fine, but it needs to be the same as the #ifdef
-> guard as well.
+I know that, but resume actually doesn't need to care about async_error.
 
-
-I've re-worked on the patch;
-I hope now it's close to ready to be in include/linux/?
-
-> thanks,
-> 
-> greg k-h
+Thanks,
+Rafael
