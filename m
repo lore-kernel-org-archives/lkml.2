@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754972Ab0IPQHF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 12:07:05 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:46930 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752674Ab0IPQHE (ORCPT
+	id S1755303Ab0IPQHv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 12:07:51 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:52606 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751780Ab0IPQHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 12:07:04 -0400
-To: paulmck@linux.vnet.ibm.com
-CC: dhowells@redhat.com, miklos@szeredi.hu, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-In-reply-to: <20100916150356.GD2462@linux.vnet.ibm.com>
-	(paulmck@linux.vnet.ibm.com)
-Subject: Re: memory barrier question
-References: <E1OwEjQ-0006wS-MU@pomaz-ex.szeredi.hu>
- <E1Ovt6F-0005CS-RU@pomaz-ex.szeredi.hu>
- <3777.1284638136@redhat.com>
- <6383.1284647456@redhat.com> <20100916150356.GD2462@linux.vnet.ibm.com>
-Message-Id: <E1OwGz7-0007Cu-CC@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Thu, 16 Sep 2010 18:06:53 +0200
+	Thu, 16 Sep 2010 12:07:50 -0400
+X-Authority-Analysis: v=1.1 cv=8l6A00wGdfxWf8DimOOtudg6dZOi9rXZmlWhmOLJpog= c=1 sm=0 a=MyfHXT5GpaUA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=W0vUJOdyAAAA:8 a=dRyNUfIVAE1akBsrmUIA:9 a=mxeHl28Mf2i2LuSbHSAA:7 a=GKCk2wTLM8w0grWQl4DupwQ4NdYA:4 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10 a=MSl-tDqOz04A:10 wl=env:18 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Thu, 16 Sep 2010 12:07:45 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: JosephChan@via.com.tw, ScottFang@viatech.com.cn,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        security@kernel.org, stable@kernel.org
+Subject: Re: [PATCH] drivers/video/via/ioctl.c: prevent reading
+ uninitialized stack memory
+Message-ID: <20100916160745.GC14318@home.goodmis.org>
+References: <1284587059.6275.101.camel@dan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284587059.6275.101.camel@dan>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Sep 2010, Paul E. McKenney wrote:
-> On Thu, Sep 16, 2010 at 03:30:56PM +0100, David Howells wrote:
-> > Miklos Szeredi <miklos@szeredi.hu> wrote:
-> > 
-> > > Is the rmb() really needed?
-> > > 
-> > > Take this code from fs/namei.c for example:
-> > > 
-> > > 		inode = next.dentry->d_inode;
-> > > 		if (!inode)
-> > > 			goto out_dput;
-> > > 
-> > > 		if (inode->i_op->follow_link) {
-> > > 
-> > > It happily dereferences dentry->d_inode without a barrier after
-> > > checking it for non-null, while that d_inode might have just been
-> > > initialized on another CPU with a freshly created inode.  There's
-> > > absolutely no synchornization with that on this side.
-> > 
-> > Perhaps it's not necessary; once set, how likely is i_op to be changed once
-> > I_NEW is cleared?
+On Wed, Sep 15, 2010 at 05:44:19PM -0400, Dan Rosenberg wrote:
+> The VIAFB_GET_INFO device ioctl allows unprivileged users to read 1968
+> bytes of uninitialized stack memory, because the "reserved" member of
+> the viafb_ioctl_info struct declared on the stack is not altered or
+> zeroed before being copied back to the user.  This patch takes care of
+> it.
 > 
-> Are the path_get()s protecting this?
-
-No, when creating a file the dentry will go from negative to positive
-independently from lookup.  The dentry can get instantiated with an
-inode between the path_get() and dereferencing ->d_inode.
-
+> Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
 > 
-> If there is no protection, then something like rcu_dereference() is
-> needed for the assignment from next.dentry->d_inode.
+> --- linux-2.6.35.4.orig/drivers/video/via/ioctl.c	2010-08-26 19:47:12.000000000 -0400
+> +++ linux-2.6.35.4/drivers/video/via/ioctl.c	2010-09-15 11:53:29.997375748 -0400
+> @@ -25,6 +25,8 @@ int viafb_ioctl_get_viafb_info(u_long ar
+>  {
+>  	struct viafb_ioctl_info viainfo;
+>  
+> +	memset(&viainfo, 0, sizeof(struct viafb_ioctl));
+> +
 
-Do I understand correctly that the problem is that a CPU may have a
-stale cache associated with *inode, one that was loaded before the
-write barrier took effect?
+Again, this could probably be better off as:
 
-Funny that such a bug could stay unnoticed in so often excercised
-code.  Yeah I know it's alpha only.  I wonder how much of this pattern
-exists in the kernel elswhere without the necessary barriers.
+-  	struct viafb_ioctl_info viainfo;
++  	struct viafb_ioctl_info viainfo = {
++  		.viafb_id = VIAID,
++ 		.vendor_id = PCI_VIA_VENDOR_ID,
++	};
 
-Thanks,
-Miklos
+-  	viainfo.viafb_id = VIAID;
+-  	viainfo.vendor_id = PCI_VIA_VENDOR_ID;
+
+-- Steve
+
+>  	viainfo.viafb_id = VIAID;
+>  	viainfo.vendor_id = PCI_VIA_VENDOR_ID;
+>  
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
