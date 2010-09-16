@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756064Ab0IPUDG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 16:03:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43932 "EHLO mail.zytor.com"
+	id S1756079Ab0IPUEY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 16:04:24 -0400
+Received: from kroah.org ([198.145.64.141]:43185 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754428Ab0IPUDE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 16:03:04 -0400
-Message-ID: <4C9277CF.6070209@zytor.com>
-Date: Thu, 16 Sep 2010 13:02:23 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
+	id S1754525Ab0IPUEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 16:04:23 -0400
+Date: Thu, 16 Sep 2010 12:56:01 -0700
+From: Greg KH <greg@kroah.com>
+To: pavan_savoy@ti.com
+Cc: gregkh@suse.de, alan@lxorguk.ukuu.org.uk, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/3] drivers:staging:ti-st: mv headers to ti_wilink_st
+Message-ID: <20100916195601.GG10397@kroah.com>
+References: <1284148738-21643-1-git-send-email-pavan_savoy@ti.com>
+ <1284148738-21643-2-git-send-email-pavan_savoy@ti.com>
+ <1284148738-21643-3-git-send-email-pavan_savoy@ti.com>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Brian Bloniarz <phunge0@hotmail.com>,
-        Charles Butterfield <charles.butterfield@nextcentury.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stefan Becker <chemobejk@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 3/3] PCI: allocate bus resources from the top down
-References: <20100915210818.12365.58732.stgit@bob.kio> <201009151644.38563.bjorn.helgaas@hp.com> <4C915AB2.9090203@zytor.com> <201009161104.15665.bjorn.helgaas@hp.com> <4C925768.7040707@zytor.com> <4C92710D.3040401@kernel.org>
-In-Reply-To: <4C92710D.3040401@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284148738-21643-3-git-send-email-pavan_savoy@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/2010 12:33 PM, Yinghai Lu wrote:
+On Fri, Sep 10, 2010 at 03:58:56PM -0400, pavan_savoy@ti.com wrote:
+> From: Pavan Savoy <pavan_savoy@ti.com>
 > 
-> Those Dell machine BIOS set wrong value in the pci bridge. and it is partial
-> overlapped with reserved range in e820.
-> 
-> Kernel current will honor that HW setting from pci bridge reading at first.
-> 
-> so the best way should be: using e820 reserved range to trim reading from pci or acpi in some cases.
-> 
+> Move all headers to st.h and rename st.h to be ti_wilink_st.h,
+> prepare the file to be moved to include/linux/ directory.
 
-Yes, that's the only sane option.
+Why does the file need to be in include/linux/ at all?  Can't it just
+live in the same directory as the drivers?
 
-	-hpa
+And this patch doesn't rename st.h to be anything else.
+
+thanks,
+
+greg k-h
