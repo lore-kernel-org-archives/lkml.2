@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508Ab0IPQwo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 12:52:44 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:63387 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753491Ab0IPQwn (ORCPT
+	id S1754623Ab0IPQys (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 12:54:48 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:33951 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753491Ab0IPQyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 12:52:43 -0400
-X-Authority-Analysis: v=1.1 cv=0gh5jMB3jHrmQHbUKMg9KP0ZqNkm6dXs7xuA8CfKDuU= c=1 sm=0 a=G6fJhtGuX8gA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=jYQDvjXhX8nxgY1Qnq0A:9 a=9Rr4auapdWiU5qJ75tzP_KwBoT0A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH v2] drivers/net/usb/hso.c: prevent reading
- uninitialized memory
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Dan Rosenberg <drosenberg@vsecurity.com>, j.dumon@option.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        security@kernel.org, davem@davemloft.net, stable@kernel.org
-In-Reply-To: <20100916180710.07821bdd@lxorguk.ukuu.org.uk>
-References: <1284587008.6275.95.camel@dan>
-	 <20100916155745.GB14318@home.goodmis.org>
-	 <20100916180710.07821bdd@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 16 Sep 2010 12:52:40 -0400
-Message-ID: <1284655960.23787.34.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Sep 2010 12:54:46 -0400
+X-Sasl-enc: cXoPjyKJu+IdOQTPJc9b2BkfzVFaHfPIl2U6jiF+jBbu 1284656085
+Date: Thu, 16 Sep 2010 13:54:41 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
+        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
+Subject: Re: [lm-sensors] [PATCH 1/2] hwmon: (adm1031) Replace update_rate
+ sysfs attribute with update_interval
+Message-ID: <20100916165441.GA11371@khazad-dum.debian.net>
+References: <1284602835-7605-1-git-send-email-guenter.roeck@ericsson.com>
+ <1284602835-7605-2-git-send-email-guenter.roeck@ericsson.com>
+ <20100916171443.0322bdb6@hyperion.delvare>
+ <20100916154243.GB25145@khazad-dum.debian.net>
+ <20100916180112.2ce29d2a@hyperion.delvare>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100916180112.2ce29d2a@hyperion.delvare>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-16 at 18:07 +0100, Alan Cox wrote:
-> ->tiocmget;
-> > >  
-> > > +	memset(&icount, 0, sizeof(struct serial_icounter_struct));
-> > > +
-> > 
-> > Move the above to after the spinlocks.
+On Thu, 16 Sep 2010, Jean Delvare wrote:
+> > I'd rather have it in Hz, actually.  I consider that more user-friendly.
+> > But that's just personal preference.
 > 
-> Why - its a local variable ?
-> 
-> Easier to write
-> 
-> 	struct serial_icounter_struct icount = { 0 };
-> 
-> though
+> The problem with Hz is that we need to be able to handle values lower
+> than 1, and mHz as a unit isn't exactly friendly. I would be very fine
+> with Hz (especially as we use it for pwmN_freq already) if we didn't
+> have to support frequencies below 1 Hz. For such low frequencies,
+> period (or interval) is clearer than frequency IMHO.
 
-True, but if we want to micro-optimize, moving it after the spinlocks
-means we do no zero initialization in the tiocmget == 0. Although gcc
-may be smart enough to realize that too.
+We can always use fixed point math... ;-)
 
--- Steve
+I am kidding, I am perfectly aware it is not worth the trouble.
 
+And I agree with you, mHz would be horrible as far as usability goes.  And
+prone to be confused with MHz, too.
 
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
