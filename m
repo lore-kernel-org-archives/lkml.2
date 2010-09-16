@@ -1,37 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755838Ab0IPSBO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 14:01:14 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34378 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755753Ab0IPSBN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 14:01:13 -0400
+	id S1754356Ab0IPSGZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 14:06:25 -0400
+Received: from mga14.intel.com ([143.182.124.37]:26449 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752693Ab0IPSGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 14:06:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,377,1280732400"; 
+   d="scan'208";a="325418964"
+From: Alan Cox <alan@linux.intel.com>
+Subject: [PATCH 0/3] Fix the TIOCGICOUNT problem for good
+To: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org, greg@kroah.com,
+        drosenberg@vsecurity.com
+Date: Thu, 16 Sep 2010 18:21:06 +0100
+Message-ID: <20100916171747.25987.33573.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=hFydeqk_ENGmqEqwqduSeN2gpjMr+VpcN38Xx@mail.gmail.com>
-References: <20100915104855.41de3ebf@lilo> <AANLkTimNsDxeyZL4GVaH4L7YGO-EoRyCMHDtMPWU37hN@mail.gmail.com>
- <1284654451.2275.579.camel@laptop> <AANLkTinihPeUueKhEqUuraW2hcf3FFHjm26RieKQZi0d@mail.gmail.com>
- <1284657194.2275.585.camel@laptop> <AANLkTikquj_2DE4UhTFAoDxL+1g=_BocCQJ5agrwC4NU@mail.gmail.com>
- <1284659227.2275.595.camel@laptop> <AANLkTi=hFydeqk_ENGmqEqwqduSeN2gpjMr+VpcN38Xx@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 16 Sep 2010 11:00:50 -0700
-Message-ID: <AANLkTikjV1Qos4R-84Msqdqiv408mknEWc2PAHtf8fRY@mail.gmail.com>
-Subject: Re: [RFC][PATCH] Cross Memory Attach
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Christopher Yeoh <cyeoh@au1.ibm.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 10:54 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->   But there is no way I'm
-> going to say "oh, HIGHMEM still makes sense in 2010 because the ARM
-> guys are now making all the same mistakes Intel did in 1992".
+Remembering to clear fields is something driver authors are simply never
+going to remember to get right every new driver. Instead take the problem
+away from them and give them a simple interface to do the job.
 
-Off by a couple of years. Intel did it wit the PPro, in 1995,
-actually. But it's still going to be 16 years later by the time ARM
-LPAE actually ships, I guess.
+---
 
-                        Linus
+Alan Cox (3):
+      tty: icount changeover for other main devices
+      tty: Convert the USB drivers to the new icount interface
+      tty: Make tiocgicount a handler
+
+
+ arch/ia64/hp/sim/simserial.c          |   12 -----
+ drivers/char/amiserial.c              |   56 ++++++++++++++-----------
+ drivers/char/cyclades.c               |   49 ++++++++++++----------
+ drivers/char/ip2/ip2main.c            |   71 +++++++++++++++++++-------------
+ drivers/char/mxser.c                  |   62 ++++++++++++++++------------
+ drivers/char/nozomi.c                 |   37 ++++++++---------
+ drivers/char/pcmcia/synclink_cs.c     |   60 ++++++++++++---------------
+ drivers/char/synclink.c               |   73 +++++++++++++++------------------
+ drivers/char/synclink_gt.c            |   55 +++++++++++++------------
+ drivers/char/synclinkmp.c             |   61 +++++++++++++---------------
+ drivers/char/tty_io.c                 |   21 +++++++++
+ drivers/net/usb/hso.c                 |   35 +++++++---------
+ drivers/serial/68360serial.c          |   51 +++++++++++------------
+ drivers/serial/serial_core.c          |   35 +++++++---------
+ drivers/usb/serial/ark3116.c          |   40 +++++++++---------
+ drivers/usb/serial/ftdi_sio.c         |    1 
+ drivers/usb/serial/io_edgeport.c      |   49 ++++++++++++----------
+ drivers/usb/serial/io_tables.h        |    4 ++
+ drivers/usb/serial/io_ti.c            |   29 ++++++++++---
+ drivers/usb/serial/mos7720.c          |   50 +++++++++++++----------
+ drivers/usb/serial/mos7840.c          |   50 +++++++++++++----------
+ drivers/usb/serial/ssu100.c           |   46 +++++++++++----------
+ drivers/usb/serial/ti_usb_3410_5052.c |   37 +++++++++++++----
+ drivers/usb/serial/usb-serial.c       |   13 ++++++
+ include/linux/tty_driver.h            |    9 ++++
+ include/linux/usb/serial.h            |    2 +
+ net/bluetooth/rfcomm/tty.c            |    4 --
+ 27 files changed, 561 insertions(+), 451 deletions(-)
+
+-- 
+Rust greets time a grave to steam, in mire gloom to no more gleam
+Does care die quiet and scarred, Berry red in Barry yard ?
+
+Rusted steel at rest dust all, old sump oil lead is my pall
+long rather to linger there, cold my fire once called me fair
+
+Who knows now when I was new, speed in flow and on I flew
+I turned eyes to run and see, in steam a dream adore me
+
+
