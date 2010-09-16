@@ -1,113 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab0IPRsy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 13:48:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56519 "EHLO mx1.redhat.com"
+	id S1755842Ab0IPRuF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 13:50:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:32868 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755630Ab0IPRsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 13:48:51 -0400
-Date: Thu, 16 Sep 2010 19:44:33 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, oss-security@lists.openwall.com,
-        Solar Designer <solar@openwall.com>,
-        Kees Cook <kees.cook@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Neil Horman <nhorman@tuxdriver.com>, linux-fsdevel@vger.kernel.org,
-        pageexec@freemail.hu, Brad Spengler <spender@grsecurity.net>,
-        Eugene Teo <eugene@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 4/4] oom: don't ignore rss in nascent mm
-Message-ID: <20100916174433.GA4842@redhat.com>
-References: <20100916144930.3BAE.A69D9226@jp.fujitsu.com> <20100916145710.3BBA.A69D9226@jp.fujitsu.com>
+	id S1755572Ab0IPRuD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 13:50:03 -0400
+Message-ID: <4C9258C1.3060906@zytor.com>
+Date: Thu, 16 Sep 2010 10:49:53 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100916145710.3BBA.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/12] BKL: Remove BKL from autofs4
+References: <1284659185-8942-1-git-send-email-arnd@arndb.de> <1284659185-8942-5-git-send-email-arnd@arndb.de>
+In-Reply-To: <1284659185-8942-5-git-send-email-arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16, KOSAKI Motohiro wrote:
->
-> ChangeLog
->  o since v1
->    - Always use thread group leader's ->in_exec_mm.
+On 09/16/2010 10:46 AM, Arnd Bergmann wrote:
+> autofs4 uses the BKL only to guard its ioctl operations.
+> This can be trivially converted to use a mutex, as we have
+> done with most device drivers before.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> ---
+>  fs/autofs4/root.c |   12 +++++++-----
+>  1 files changed, 7 insertions(+), 5 deletions(-)
 
-Confused ;)
+You may want to Cc: the maintainer, Ian Kent.
 
-> +static unsigned long oom_rss_swap_usage(struct task_struct *p)
-> +{
-> +	struct task_struct *t = p;
-> +	struct task_struct *leader = p->group_leader;
-> +	unsigned long points = 0;
-> +
-> +	do {
-> +		task_lock(t);
-> +		if (t->mm) {
-> +			points += get_mm_rss(t->mm);
-> +			points += get_mm_counter(t->mm, MM_SWAPENTS);
-> +			task_unlock(t);
-> +			break;
-> +		}
-> +		task_unlock(t);
-> +	} while_each_thread(p, t);
-> +
-> +	/*
-> +	 * If the process is in execve() processing, we have to concern
-> +	 * about both old and new mm.
-> +	 */
-> +	task_lock(leader);
-> +	if (leader->in_exec_mm) {
-> +		points += get_mm_rss(leader->in_exec_mm);
-> +		points += get_mm_counter(leader->in_exec_mm, MM_SWAPENTS);
-> +	}
-> +	task_unlock(leader);
-> +
-> +	return points;
-> +}
+	-hpa
 
-This patch relies on fact that we can't race with de_thread() (and btw
-the change in de_thread() looks bogus). Then why ->in_exec_mm lives in
-task_struct ?
-
-To me, this looks a bit strange. I think we should either do not use
-->group_leader to hold ->in_exec_mm like your previous patch did, or
-move ->in_exec_mm into signal_struct. The previous 3/4 ensures that
-only one thread can set ->in_exec_mm.
-
-And I don't think oom_rss_swap_usage() should replace find_lock_task_mm()
-in oom_badness(), I mean something like this:
-
-	static unsigned long oom_rss_swap_usage(struct mm_struct *mm)
-	{
-		return get_mm_rss(mm) + get_mm_counter(mm, MM_SWAPENTS);
-	}
-
-	unsigned int oom_badness(struct task_struct *p, ...)
-	{
-		int points = 0;
-
-		if (unlikely(p->signal->in_exec_mm)) {
-			task_lock(p->group_leader);
-			if (p->signal->in_exec_mm)
-				points = oom_rss_swap_usage(p->signal->in_exec_mm);
-			task_unlock(p->group_leader);
-		}
-
-		p = find_lock_task_mm(p);
-		if (!p)
-			return points;
-
-		...
-	}
-
-but this is the matter of taste.
-
-What do you think?
-
-Oleg.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
