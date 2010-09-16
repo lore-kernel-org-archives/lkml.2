@@ -1,42 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262Ab0IPKnh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 06:43:37 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48084 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753085Ab0IPKnf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 06:43:35 -0400
-Date: Thu, 16 Sep 2010 11:43:33 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>
-Subject: Re: linux-next: manual merge of the sound-asoc tree with the
- genesis tree
-Message-ID: <20100916104333.GC7837@rakim.wolfsonmicro.main>
-References: <20100915121128.d8fbc4bb.sfr@canb.auug.org.au>
- <20100915095021.GB1866@rakim.wolfsonmicro.main>
- <Pine.LNX.4.64.1009151344410.31624@axis700.grange>
- <w3pfwxawlt5.wl%kuninori.morimoto.gx@renesas.com>
+	id S1754298Ab0IPKrz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 06:47:55 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:60847 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753254Ab0IPKrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 06:47:53 -0400
+Message-ID: <4C91F5DF.9060001@cn.fujitsu.com>
+Date: Thu, 16 Sep 2010 18:47:59 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <w3pfwxawlt5.wl%kuninori.morimoto.gx@renesas.com>
-X-Cookie: Now I am depressed ...
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andi Kleen <andi@firstfloor.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        "Theodore Ts'o" <tytso@mit.edu>, Chris Mason <chris.mason@oracle.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Btrfs <linux-btrfs@vger.kernel.org>,
+        Linux Ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH] x86_64/lib: improve the performance of memmove
+References: <56957.91.60.149.91.1284619705.squirrel@www.firstfloor.org>	<4C91C44F.40700@cn.fujitsu.com>	<20100916104008.3e1e34b2@basil.nowhere.org>	<4C91E37C.2060309@cn.fujitsu.com> <20100916121141.6eb95a22@basil.nowhere.org>
+In-Reply-To: <20100916121141.6eb95a22@basil.nowhere.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 09:53:42AM +0900, Kuninori Morimoto wrote:
+On Thu, 16 Sep 2010 12:11:41 +0200, Andi Kleen wrote:
+> On Thu, 16 Sep 2010 17:29:32 +0800
+> Miao Xie<miaox@cn.fujitsu.com>  wrote:
+>
+>
+> Ok was a very broken patch. Sorry should have really done some more
+> work on it. Anyways hopefully the corrected version is good for
+> testing.
+>
+> -Andi
+>
 
-> If I (for sound) and Guennadi (for video) would like to add
-> new patches to it in future (in same time),
-> what should I do ?
+title: x86_64/lib: improve the performance of memmove
 
-Ideally the patches will be layering on top of the changes in one tree
-or the other so you can follow the affected tree.  Once the merge window
-is over they should be going via the video route.
+Implement the 64bit memmmove backwards case using string instructions
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
+---
+  arch/x86/lib/memcpy_64.S  |   29 +++++++++++++++++++++++++++++
+  arch/x86/lib/memmove_64.c |    8 ++++----
+  2 files changed, 33 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/lib/memcpy_64.S b/arch/x86/lib/memcpy_64.S
+index bcbcd1e..9de5e9a 100644
+--- a/arch/x86/lib/memcpy_64.S
++++ b/arch/x86/lib/memcpy_64.S
+@@ -141,3 +141,32 @@ ENDPROC(__memcpy)
+  	.byte .Lmemcpy_e - .Lmemcpy_c
+  	.byte .Lmemcpy_e - .Lmemcpy_c
+  	.previous
++
++/*
++ * Copy memory backwards (for memmove)
++ * rdi target
++ * rsi source
++ * rdx count
++ */
++
++ENTRY(memcpy_backwards)
++	CFI_STARTPROC
++	std
++	movq %rdi, %rax
++	movl %edx, %ecx
++	addq %rdx, %rdi
++	addq %rdx, %rsi
++	leaq -8(%rdi), %rdi
++	leaq -8(%rsi), %rsi
++	shrl $3, %ecx
++	andl $7, %edx
++	rep movsq
++	addq $7, %rdi
++	addq $7, %rsi
++	movl %edx, %ecx
++	rep movsb
++	cld
++	ret
++	CFI_ENDPROC
++ENDPROC(memcpy_backwards)
++	
+diff --git a/arch/x86/lib/memmove_64.c b/arch/x86/lib/memmove_64.c
+index 0a33909..6774fd8 100644
+--- a/arch/x86/lib/memmove_64.c
++++ b/arch/x86/lib/memmove_64.c
+@@ -5,16 +5,16 @@
+  #include <linux/string.h>
+  #include <linux/module.h>
+  
++extern void * asmlinkage memcpy_backwards(void *dst, const void *src,
++				        size_t count);
++
+  #undef memmove
+  void *memmove(void *dest, const void *src, size_t count)
+  {
+  	if (dest < src) {
+  		return memcpy(dest, src, count);
+  	} else {
+-		char *p = dest + count;
+-		const char *s = src + count;
+-		while (count--)
+-			*--p = *--s;
++		return memcpy_backwards(dest, src, count);
+  	}
+  	return dest;
+  }
+-- 
+1.7.0.1
+
