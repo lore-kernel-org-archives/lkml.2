@@ -1,45 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933Ab0IPITS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 04:19:18 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:56666 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753285Ab0IPITN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753872Ab0IPITN (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 16 Sep 2010 04:19:13 -0400
-Date: Thu, 16 Sep 2010 09:39:22 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        security@kernel.org, stable@kernel.org
-Subject: Re: [PATCH] drivers/usb/serial/mos*: prevent reading uninitialized
- stack memory
-Message-ID: <20100916093922.197ebe18@lxorguk.ukuu.org.uk>
-In-Reply-To: <1284587056.6275.100.camel@dan>
-References: <1284587056.6275.100.camel@dan>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Received: from mga03.intel.com ([143.182.124.21]:34292 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752766Ab0IPITK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 04:19:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,375,1280732400"; 
+   d="scan'208";a="325220425"
+From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Shirley Ma <mashirle@us.ibm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Avi Kivity <avi@redhat.com>, David Miller <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 16 Sep 2010 16:18:10 +0800
+Subject: RE: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
+ kernel
+Thread-Topic: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
+ kernel
+Thread-Index: ActUvW8Kytee9gNYSJmOHt/hYfeZ0AAuPw4w
+Message-ID: <F2E9EB7348B8264F86B6AB8151CE2D792B8CAA02B1@shsmsx502.ccr.corp.intel.com>
+References: <1284410580.13351.10.camel@localhost.localdomain>
+ <4C8F3C77.7010302@redhat.com>
+ <1284476719.13351.35.camel@localhost.localdomain>
+ <201009141721.13202.arnd@arndb.de> <20100914152231.GA13105@redhat.com>
+ <1284480025.13351.49.camel@localhost.localdomain>
+ <20100914162952.GB13560@redhat.com>
+ <F2E9EB7348B8264F86B6AB8151CE2D792B8C815314@shsmsx502.ccr.corp.intel.com>
+ <20100915095837.GA28016@redhat.com>
+In-Reply-To: <20100915095837.GA28016@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Sep 2010 17:44:16 -0400
-Dan Rosenberg <drosenberg@vsecurity.com> wrote:
+>From: Michael S. Tsirkin [mailto:mst@redhat.com]
+>Sent: Wednesday, September 15, 2010 5:59 PM
+>To: Xin, Xiaohui
+>Cc: Shirley Ma; Arnd Bergmann; Avi Kivity; David Miller; netdev@vger.kernel.org;
+>kvm@vger.kernel.org; linux-kernel@vger.kernel.org
+>Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host kernel
+>
+>On Wed, Sep 15, 2010 at 10:46:02AM +0800, Xin, Xiaohui wrote:
+>> >From: Michael S. Tsirkin [mailto:mst@redhat.com]
+>> >Sent: Wednesday, September 15, 2010 12:30 AM
+>> >To: Shirley Ma
+>> >Cc: Arnd Bergmann; Avi Kivity; Xin, Xiaohui; David Miller; netdev@vger.kernel.org;
+>> >kvm@vger.kernel.org; linux-kernel@vger.kernel.org
+>> >Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host kernel
+>> >
+>> >On Tue, Sep 14, 2010 at 09:00:25AM -0700, Shirley Ma wrote:
+>> >> On Tue, 2010-09-14 at 17:22 +0200, Michael S. Tsirkin wrote:
+>> >> > I would expect this to hurt performance significantly.
+>> >> > We could do this for asynchronous requests only to avoid the
+>> >> > slowdown.
+>> >>
+>> >> Is kiocb in sendmsg helpful here? It is not used now.
+>> >>
+>> >> Shirley
+>> >
+>> >Precisely. This is what the patch from Xin Xiaohui does.  That code
+>> >already seems to do most of what you are trying to do, right?
+>> >
+>> >The main thing missing seems to be macvtap integration, so that we can fall back
+>> >on data copy if zero copy is unavailable?
+>> >How hard would it be to basically link the mp and macvtap modules
+>> >together to get us this functionality? Anyone?
+>> >
+>> Michael,
+>> Is to support macvtap with zero-copy through mp device the functionality
+>> you mentioned above?
+>
+>I have trouble parsing the above question.  At some point Arnd suggested
+>that the mp device functionality would fit nicely as part of the macvtap
+>driver.  It seems to make sense superficially, the advantage if it
+>worked would be that we would get zero copy (mostly) transparently.
+>
+>Do you agree with this goal?
+>
 
-> The TIOCGICOUNT device ioctl in both mos7720.c and mos7840.c allows
-> unprivileged users to read uninitialized stack memory, because the
-> "reserved" member of the serial_icounter_struct struct declared on the
-> stack is not altered or zeroed before being copied back to the user.
-> This patch takes care of it.
+I would say yes.
 
-ACK ... but this is the wrong way to fix these. We'll be squashing new
-ones between here and eternity if we just stick memsets in. It wants
-making a tty operation off the tty ioctl code so that there is one place
-that clears it and copies it to the user.
+>> Before Shirley Ma has suggested to move the zero-copy functionality into
+>> tun/tap device or macvtap device. How do you think about that?
+>> I suspect
+>> there will be a lot of duplicate code in that three drivers except we can extract
+>> code of zero-copy into kernel APIs and vhost APIs.
+>
+>
+>tap would be very hard at this point as it does not bind to a device.
+>macvtap might work, we mainly need to figure out a way to detect that
+>device can do zero copy so the right mode is used.  I think a first step
+>could be to simply link mp code into macvtap module, pass necessary
+>ioctls on, then move some code around as necessary.  This might get rid
+>of code duplication nicely.
 
-I'll have a look at what is needed - I don't think very much.
+I'll look into this to see how much effort would be.
 
-Alan
+>
+>
+>> Do you think that's worth to do and help current process which is blocked too
+>> long than I expected?
+>
+>I think it's nice to have.
+>
+>And if done hopefully this will get the folk working on the macvtap
+>driver to review the code, which will help find all issues faster.
+>
+>I think if you post some performance numbers,
+>this will also help get people excited and looking at the code.
+>
+
+The performance data I have posted before is compared with raw socket on vhost-net.
+But currently, the raw socket backend is removed from the qemu side.
+So I can only compare with tap on vhost-net. But unfortunately, I missed something
+that I even can't bring it up. I was blocked by this for a time.
+
+>I also don't see the process as completely blocked, each review round points
+>out more issues: we aren't going back and forth changing
+>same lines again and again, are we?
+>
+>One thing that might help is increase the frequency of updates,
+>try sending them out sooner.
+>On the other hand 10 new patches each revision is a lot:
+>if there is a part of patchset that has stabilised you can split it out,
+>post once and keep posting the changing part separately.
+>
+>I hope these suggestions help.
+
+Thanks, Michael!
+
+>
+>> >
+>> >--
+>> >MST
