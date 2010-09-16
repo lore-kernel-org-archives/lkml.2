@@ -1,86 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756578Ab0IPWUW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 18:20:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22796 "EHLO mx1.redhat.com"
+	id S1756616Ab0IPWUs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 18:20:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20171 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756541Ab0IPWOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 18:14:51 -0400
+	id S1756505Ab0IPWOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 18:14:48 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Christoph Hellwig <hch@infradead.org>,
         Andreas Gruenbacher <agruen@suse.de>, Nick Piggin <npiggin@kernel.dk>,
         linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 21/34] union-mount: Create prepare_mnt_union() and cleanup_mnt_union()
-Date: Thu, 16 Sep 2010 15:12:12 -0700
-Message-Id: <1284675145-4391-22-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 20/34] union-mount: Create build_root_union()
+Date: Thu, 16 Sep 2010 15:12:11 -0700
+Message-Id: <1284675145-4391-21-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1284675145-4391-1-git-send-email-vaurora@redhat.com>
 References: <1284675145-4391-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-prepare_mnt_union() ties together all the mount-time checks and setup
-for union mounts.  It tests the layers for suitability and builds the
-root union stack.
-
-cleanup_mnt_union() unwinds everything prepare_mnt_union() does.
+During mount(), build_root_union() creates the union stack for the
+root directory.  All other directory union stacks are bootstrapped
+from their parents' union stacks during path lookup.
 
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
 ---
- fs/namespace.c |   43 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 43 insertions(+), 0 deletions(-)
+ fs/namespace.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 48 insertions(+), 0 deletions(-)
 
 diff --git a/fs/namespace.c b/fs/namespace.c
-index 2bb4645..ff83cee 100644
+index e966890..2bb4645 100644
 --- a/fs/namespace.c
 +++ b/fs/namespace.c
-@@ -1512,6 +1512,49 @@ out:
- 	return err;
+@@ -1464,6 +1464,54 @@ static int clone_union_tree(struct vfsmount *topmost, struct path *mntpnt)
+ 	return 0;
  }
  
 +/**
-+ * prepare_mnt_union - do setup necessary for a union mount
++ * build_root_union - Create the union stack for the root dir
 + *
-+ * @topmost_mnt: vfsmount of topmost layer
-+ * @mntpnt: path of requested mountpoint
++ * @topmost_mnt - vfsmount of topmost mount
 + *
-+ * We union every underlying file system that is mounted on the same
-+ * mountpoint (well, pathname), read-only, and not shared.  If we get
-+ * at least one layer, we don't return an error, although we will
-+ * complain in the kernel log if we hit a mount that can't be
-+ * unioned.
-+ *
-+ * Caller needs namespace_sem, but can't have vfsmount_lock.
++ * Build the union stack for the root dir.  Annoyingly, we have to
++ * traverse union "up" from the root of the cloned tree to find the
++ * topmost read-only mount, and then traverse back "down" to build the
++ * stack.
 + */
 +
-+static int prepare_mnt_union(struct vfsmount *topmost_mnt, struct path *mntpnt)
++static int build_root_union(struct vfsmount *topmost_mnt)
 +{
-+	int err;
++	struct path lower, topmost_path;
++	struct vfsmount *mnt, *topmost_ro_mnt;
++	unsigned int i, layers = 1;
++	int err = 0;
 +
-+	err = check_topmost_union_mnt(topmost_mnt, topmost_mnt->mnt_flags);
-+	if (err)
-+		return err;
++	/* Find the topmost read-only mount */
++	topmost_ro_mnt = topmost_mnt->mnt_sb->s_union_lower_mnts;
++	for (mnt = topmost_ro_mnt; mnt; mnt = next_mnt(mnt, topmost_ro_mnt)) {
++		if ((mnt->mnt_parent == topmost_ro_mnt) &&
++		    (mnt->mnt_mountpoint == topmost_ro_mnt->mnt_root)) {
++			topmost_ro_mnt = mnt;
++			layers++;
++		}
++	}
++	topmost_mnt->mnt_sb->s_union_count = layers;
 +
-+	err = clone_union_tree(topmost_mnt, mntpnt);
-+	if (err)
-+		return err;
-+
-+	err = build_root_union(topmost_mnt);
-+	if (err)
-+		goto out;
-+
++	/* Build the root dir's union stack from the top down */
++	topmost_path.mnt = topmost_mnt;
++	topmost_path.dentry = topmost_mnt->mnt_root;
++	mnt = topmost_ro_mnt;
++	for (i = 0; i < layers; i++) {
++		lower.mnt = mntget(mnt);
++		lower.dentry = dget(mnt->mnt_root);
++		err = union_add_dir(&topmost_path, &lower, i);
++		if (err)
++			goto out;
++		mnt = mnt->mnt_parent;
++	}
 +	return 0;
 +out:
-+	put_union_sb(topmost_mnt->mnt_sb);
++	d_free_unions(topmost_path.dentry);
++	topmost_mnt->mnt_sb->s_union_count = 0;
 +	return err;
-+}
-+
-+static void cleanup_mnt_union(struct vfsmount *topmost_mnt)
-+{
-+	d_free_unions(topmost_mnt->mnt_root);
-+	put_union_sb(topmost_mnt->mnt_sb);
 +}
 +
  /*
