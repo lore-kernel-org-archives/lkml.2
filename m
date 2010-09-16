@@ -1,77 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755382Ab0IPOoP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 10:44:15 -0400
-Received: from hera.kernel.org ([140.211.167.34]:39200 "EHLO hera.kernel.org"
+	id S1755392Ab0IPOo7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 10:44:59 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39219 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755354Ab0IPOoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 10:44:14 -0400
-Date: Thu, 16 Sep 2010 14:43:26 GMT
-From: tip-bot for Yinghai Lu <yinghai@kernel.org>
+	id S1754625Ab0IPOo6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 10:44:58 -0400
+Date: Thu, 16 Sep 2010 14:44:10 GMT
+From: tip-bot for Heiko Carstens <heiko.carstens@de.ibm.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        yinghai@kernel.org, peterz@infradead.org, benh@kernel.crashing.org,
-        linux@arm.linux.org.uk, tglx@linutronix.de, sfr@canb.auug.org.au,
-        mingo@elte.hu
+        a.p.zijlstra@chello.nl, efault@gmx.de, heiko.carstens@de.ibm.com,
+        tglx@linutronix.de, tim@klingt.org, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, peterz@infradead.org, benh@kernel.crashing.org,
-        linux@arm.linux.org.uk, tglx@linutronix.de, sfr@canb.auug.org.au,
-        mingo@elte.hu
-In-Reply-To: <4C91C544.5050907@kernel.org>
-References: <4C91C544.5050907@kernel.org>
+        a.p.zijlstra@chello.nl, efault@gmx.de, heiko.carstens@de.ibm.com,
+        tglx@linutronix.de, tim@klingt.org, mingo@elte.hu
+In-Reply-To: <20100916124225.GA2209@osiris.boeblingen.de.ibm.com>
+References: <20100916124225.GA2209@osiris.boeblingen.de.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/memblock] arm, memblock: Fix the sparsemem build
-Message-ID: <tip-7c996361ef0d02ef8c1435902c909d14195adcdc@git.kernel.org>
-Git-Commit-ID: 7c996361ef0d02ef8c1435902c909d14195adcdc
+Subject: [tip:sched/core] sched: Remove branch hints within context_switch()
+Message-ID: <tip-31915ab4cbf507aadab40847cf9989da5e88b090@git.kernel.org>
+Git-Commit-ID: 31915ab4cbf507aadab40847cf9989da5e88b090
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 16 Sep 2010 14:43:26 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 16 Sep 2010 14:44:11 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7c996361ef0d02ef8c1435902c909d14195adcdc
-Gitweb:     http://git.kernel.org/tip/7c996361ef0d02ef8c1435902c909d14195adcdc
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Thu, 16 Sep 2010 00:20:36 -0700
+Commit-ID:  31915ab4cbf507aadab40847cf9989da5e88b090
+Gitweb:     http://git.kernel.org/tip/31915ab4cbf507aadab40847cf9989da5e88b090
+Author:     Heiko Carstens <heiko.carstens@de.ibm.com>
+AuthorDate: Thu, 16 Sep 2010 14:42:25 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 16 Sep 2010 09:35:12 +0200
+CommitDate: Thu, 16 Sep 2010 16:38:34 +0200
 
-arm, memblock: Fix the sparsemem build
+sched: Remove branch hints within context_switch()
 
-Stephen Rothwell reported this build failure:
+With 710390d9 "sched: Optimize branch hint in context_switch()"
+the branch hint logic within context_switch() got inversed.
 
-  arch/arm/mm/init.c: In function 'arm_memory_present':
-  arch/arm/mm/init.c:260: warning: ISO C90 forbids mixed declarations and code
+In fact the hints "if (likely(!mm))" and "if (likely(!prev->mm))"
+mean that it is likely that the previous and next task are kernel
+threads.
 
-Caused by commit 719c1514f2 ("memblock/arm: Use new accessors")
-which forgot a closing brace on a new for_each_memblock() in
-arm_memory_present().
+That assumption is certainly counter intuitive, but Tim has shown
+that at least with his workload this is true. Nevertheless the
+truth is: it depends on the current workload. So just remove the
+annotations which also improves readability.
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-LKML-Reference: <4C91C544.5050907@kernel.org>
+Reported-by: Tim Blechmann <tim@klingt.org>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Mike Galbraith <efault@gmx.de>
+LKML-Reference: <20100916124225.GA2209@osiris.boeblingen.de.ibm.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/arm/mm/init.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ kernel/sched.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-index 8504906..d6022d1 100644
---- a/arch/arm/mm/init.c
-+++ b/arch/arm/mm/init.c
-@@ -249,9 +249,8 @@ static void arm_memory_present(void)
- static void arm_memory_present(void)
- {
- 	struct memblock_region *reg;
--	int i;
+diff --git a/kernel/sched.c b/kernel/sched.c
+index b40b82e..16a1129 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2845,14 +2845,14 @@ context_switch(struct rq *rq, struct task_struct *prev,
+ 	 */
+ 	arch_start_context_switch(prev);
  
--	for_each_memblock(memory, reg) {
-+	for_each_memblock(memory, reg)
- 		memory_present(0, memblock_region_base_pfn(reg),
- 			       memblock_region_end_pfn(reg));
- }
+-	if (likely(!mm)) {
++	if (!mm) {
+ 		next->active_mm = oldmm;
+ 		atomic_inc(&oldmm->mm_count);
+ 		enter_lazy_tlb(oldmm, next);
+ 	} else
+ 		switch_mm(oldmm, mm, next);
+ 
+-	if (likely(!prev->mm)) {
++	if (!prev->mm) {
+ 		prev->active_mm = NULL;
+ 		rq->prev_mm = oldmm;
+ 	}
