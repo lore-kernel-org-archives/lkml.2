@@ -1,122 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754992Ab0IPOjf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 10:39:35 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:60311 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753686Ab0IPOjd (ORCPT
+	id S1755140Ab0IPOl3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 10:41:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10978 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754375Ab0IPOl2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 10:39:33 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: codalist@TELEMANN.coda.cs.cmu.edu
-Subject: Remaining BKL users, what to do
-Date: Thu, 16 Sep 2010 16:32:59 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: autofs@linux.kernel.org, linux-media@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, Christoph Hellwig <hch@infradead.org>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Petr Vandrovec <vandrove@vc.cvut.cz>, Anders Larsen <al@alarsen.net>,
-        Jan Kara <jack@suse.cz>, Evgeniy Dushistov <dushistov@mail.ru>,
-        Ingo Molnar <mingo@elte.hu>, netdev@vger.kernel.org,
-        Samuel Ortiz <samuel@sortiz.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Andrew Hendry <andrew.hendry@gmail.com>
+	Thu, 16 Sep 2010 10:41:28 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Corrado Zoccolo <czoccolo@gmail.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Linux-Kernel <linux-kernel@vger.kernel.org>,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH] cfq: improve fsync performance for small files
+References: <201007202209.04627.czoccolo@gmail.com>
+	<AANLkTinajj76EBUQE6RXeQmZ9AEWU1g3x+pyW3Cmku0x@mail.gmail.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 16 Sep 2010 10:34:49 -0400
+In-Reply-To: <AANLkTinajj76EBUQE6RXeQmZ9AEWU1g3x+pyW3Cmku0x@mail.gmail.com>
+	(Corrado Zoccolo's message of "Sun, 12 Sep 2010 16:40:49 +0200")
+Message-ID: <x491v8tvjsm.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009161632.59210.arnd@arndb.de>
-X-Provags-ID: V02:K0:ZKoCyo3ID5MgoU2rgnSwK8q/WERysvT7/no3xrB/mT1
- Wj3Sqlh6tCJm5OQ+McudokKEbNIke8RfAp9LR8XINZ73HuHiS8
- ttnpiVTLO3ecTePnKsleM+0JNtgrTJp7rWjekYbyowntDz37iN
- 8oNQLCLBdjV8UFUD3CfIrC/CSZj2JQnAU7qgbCSVj40Rk+J+bx
- YteW9ehuy4HLDtI9reEvQ==
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The big kernel lock is gone from almost all code in linux-next, this is
-the status of what I think will happen to the remaining users:
+Corrado Zoccolo <czoccolo@gmail.com> writes:
 
-drivers/gpu/drm/i810/{i810,i830}_dma.c:
-	Fixable, but needs someone with the hardware to test. Can probably be
-	marked CONFIG_BROKEN_ON_SMP if nobody cares.
+> Hi Jens,
+> any comment on this patch, or the problem we are trying to solve?
 
-drivers/media/video (V4L):
-	Mauro is working on it, some drivers get moved to staging while the
-	others get fixed. An easy workaround would be possible by adding
-	per-driver mutexes, but Mauro wants to it properly by locking all
-	the right places.
+Bueller?  Bueller?
 
-fs/adfs:
-	Probably not hard to fix, but needs someone to test it.
-	adfs has only seen janitorial fixes for the last 5 years.
-	Do we know of any users?
-
-fs/autofs:
-	Pretty much dead, replaced by autofs4. I'd suggest moving this
-	to drivers/staging in 2.6.37 and letting it die there.
-
-fs/coda:
-	Coda seems to have an active community, but not all of their
-	code is actually part of linux (pioctl!), while the last official
-	release is missing many of the cleanups that were don in Linux.
-	Not sure what to do, if someone is interested, the best way might
-	be a fresh start with a merger of the mainline linux and the
-	coda.cs.cmu.edu	codebase in drivers/staging.
-	Just removing the BKL without the Coda community seems like a heap
-	of pointless work.
-
-fs/freevxfs:
-	Uses the BKL in readdir and lookup, should be easy to fix. Christoph?
-
-fs/hpfs:
-	Looks fixable, if anyone cares. Maybe it's time for retirement in
-	drivers/staging though. The web page only has a Link to the
-	linux-2.2 version.
-
-fs/lockd:
-	Trond writes that he has someone working on BKL removal here.
-
-fs/locks.c:
-	Patch is under discussion, blocked by work on fs/lockd currently.
-
-fs/ncpfs:
-	Should be fixable if Petr still cares about it. Otherwise suggest
-	moving to drivers/staging if there are no users left.
-
-fs/qnx4:
-	Should be easy to fix, there are only a few places in the code that
-	use the BKL. Anders?
-
-fs/smbfs:
-	Last I heard this was considered obsolete. Should be move it to
-	drivers/staging now?
-
-fs/udf:
-	Not completely trivial, but probably necessary to fix. Project web
-	site is dead, I hope that Jan Kara can be motivated to fix it though.
-
-fs/ufs:
-	Evgeniy Dushistov is maintaining this, I hope he can take care of
-	getting rid of the BKL in UFS.
-
-kernel/trace/blktrace.c:
-	Should be easy. Ingo? Steven?
-
-net/appletalk:
-net/ipx/af_ipx.c:
-net/irda/af_irda.c:
-	Can probably be saved from retirement in drivers/staging if the
-	maintainers still care.
-	
-net/x25:
-	Andrew Hendry has started working on it.
-
-This is all that's left now. I still need to submit a few patches for
-simple file system changes, but it seems we're getting closer to finally
-killing it for good.
-
-	Arnd
+>
+> On Tue, Jul 20, 2010 at 10:09 PM, Corrado Zoccolo <czoccolo@gmail.com> wrote:
+>> Fsync performance for small files achieved by cfq on high-end disks is
+>> lower than what deadline can achieve, due to idling introduced between
+>> the sync write happening in process context and the journal commit.
+>>
+>> Moreover, when competing with a sequential reader, a process writing
+>> small files and fsync-ing them is starved.
+>>
+>> This patch fixes the two problems by:
+>> - marking journal commits as WRITE_SYNC, so that they get the REQ_NOIDLE
+>>  flag set,
+>> - force all queues that have REQ_NOIDLE requests to be put in the noidle
+>>  tree.
+>>
+>> Having the queue associated to the fsync-ing process and the one associated
+>>  to journal commits in the noidle tree allows:
+>> - switching between them without idling,
+>> - fairness vs. competing idling queues, since they will be serviced only
+>>  after the noidle tree expires its slice.
+>>
+>> Acked-by: Vivek Goyal <vgoyal@redhat.com>
+>> Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+>> Tested-by: Jeff Moyer <jmoyer@redhat.com>
+>> Signed-off-by: Corrado Zoccolo <czoccolo@gmail.com>
+>> ---
+>>  block/cfq-iosched.c |   18 ++++--------------
+>>  fs/jbd/commit.c     |    2 +-
+>>  fs/jbd2/commit.c    |    2 +-
+>>  3 files changed, 6 insertions(+), 16 deletions(-)
+>>
+>> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+>> index eb4086f..49dada4 100644
+>> --- a/block/cfq-iosched.c
+>> +++ b/block/cfq-iosched.c
+>> @@ -216,7 +216,6 @@ struct cfq_data {
+>>        enum wl_type_t serving_type;
+>>        unsigned long workload_expires;
+>>        struct cfq_group *serving_group;
+>> -       bool noidle_tree_requires_idle;
+>>
+>>        /*
+>>         * Each priority tree is sorted by next_request position.  These
+>> @@ -2126,7 +2125,6 @@ static void choose_service_tree(struct cfq_data *cfqd, struct cfq_group *cfqg)
+>>        slice = max_t(unsigned, slice, CFQ_MIN_TT);
+>>        cfq_log(cfqd, "workload slice:%d", slice);
+>>        cfqd->workload_expires = jiffies + slice;
+>> -       cfqd->noidle_tree_requires_idle = false;
+>>  }
+>>
+>>  static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd)
+>> @@ -3108,7 +3106,9 @@ cfq_update_idle_window(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+>>        if (cfqq->queued[0] + cfqq->queued[1] >= 4)
+>>                cfq_mark_cfqq_deep(cfqq);
+>>
+>> -       if (!atomic_read(&cic->ioc->nr_tasks) || !cfqd->cfq_slice_idle ||
+>> +       if (cfqq->next_rq && (cfqq->next_rq->cmd_flags & REQ_NOIDLE))
+>> +               enable_idle = 0;
+>> +       else if (!atomic_read(&cic->ioc->nr_tasks) || !cfqd->cfq_slice_idle ||
+>>            (!cfq_cfqq_deep(cfqq) && CFQQ_SEEKY(cfqq)))
+>>                enable_idle = 0;
+>>        else if (sample_valid(cic->ttime_samples)) {
+>> @@ -3421,17 +3421,7 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
+>>                        cfq_slice_expired(cfqd, 1);
+>>                else if (sync && cfqq_empty &&
+>>                         !cfq_close_cooperator(cfqd, cfqq)) {
+>> -                       cfqd->noidle_tree_requires_idle |=
+>> -                               !(rq->cmd_flags & REQ_NOIDLE);
+>> -                       /*
+>> -                        * Idling is enabled for SYNC_WORKLOAD.
+>> -                        * SYNC_NOIDLE_WORKLOAD idles at the end of the tree
+>> -                        * only if we processed at least one !REQ_NOIDLE request
+>> -                        */
+>> -                       if (cfqd->serving_type == SYNC_WORKLOAD
+>> -                           || cfqd->noidle_tree_requires_idle
+>> -                           || cfqq->cfqg->nr_cfqq == 1)
+>> -                               cfq_arm_slice_timer(cfqd);
+>> +                       cfq_arm_slice_timer(cfqd);
+>>                }
+>>        }
+>>
+>> diff --git a/fs/jbd/commit.c b/fs/jbd/commit.c
+>> index 28a9dda..d97a0c6 100644
+>> --- a/fs/jbd/commit.c
+>> +++ b/fs/jbd/commit.c
+>> @@ -317,7 +317,7 @@ void journal_commit_transaction(journal_t *journal)
+>>        int first_tag = 0;
+>>        int tag_flag;
+>>        int i;
+>> -       int write_op = WRITE;
+>> +       int write_op = WRITE_SYNC;
+>>
+>>        /*
+>>         * First job: lock down the current transaction and wait for
+>> diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
+>> index 75716d3..a078744 100644
+>> --- a/fs/jbd2/commit.c
+>> +++ b/fs/jbd2/commit.c
+>> @@ -369,7 +369,7 @@ void jbd2_journal_commit_transaction(journal_t *journal)
+>>        int tag_bytes = journal_tag_bytes(journal);
+>>        struct buffer_head *cbh = NULL; /* For transactional checksums */
+>>        __u32 crc32_sum = ~0;
+>> -       int write_op = WRITE;
+>> +       int write_op = WRITE_SYNC;
+>>
+>>        /*
+>>         * First job: lock down the current transaction and wait for
+>> --
+>> 1.6.2.5
+>>
+>>
+>>
