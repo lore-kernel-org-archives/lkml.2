@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752361Ab0IPIvw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 04:51:52 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:48654 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751601Ab0IPIvv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 04:51:51 -0400
-Date: Thu, 16 Sep 2010 18:51:41 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Arun MURTHY <arun.murthy@stericsson.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Mattias WALLIN <mattias.wallin@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Subject: Re: linux-next: build failure after merge of the final tree (mfd
- tree related)
-Message-Id: <20100916185141.4d471a23.sfr@canb.auug.org.au>
-In-Reply-To: <20100916172322.4f37e912.sfr@canb.auug.org.au>
-References: <20100914134321.5eee798a.sfr@canb.auug.org.au>
-	<F45880696056844FA6A73F415B568C69532D96AC51@EXDCVYMBSTM006.EQ1STM.local>
-	<20100916172322.4f37e912.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__16_Sep_2010_18_51_41_+1000_UU.YaEEk3SNU278y"
+	id S1751711Ab0IPIwU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 04:52:20 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:37967 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752422Ab0IPIvz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 04:51:55 -0400
+Message-ID: <002601cb557c$69292180$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Marc Kleine-Budde" <mkl@pengutronix.de>
+Cc: <arjan@linux.intel.com>, "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>,
+        <yong.y.wang@intel.com>, <gregkh@suse.de>, <qi.wang@intel.com>,
+        <andrew.chih.howe.khor@intel.com>, <meego-dev@meego.com>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <socketcan-core@lists.berlios.de>,
+        "Samuel Ortiz" <sameo@linux.intel.com>,
+        "Barry Song" <21cnbao@gmail.com>,
+        "Christian Pellegrin" <chripell@fsfe.org>,
+        "Wolfram Sang" <w.sang@pengutronix.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Wolfgang Grandegger" <wg@grandegger.com>
+References: <4C8E1773.9090000@dsn.okisemi.com> <4C8E3FDE.2000002@pengutronix.de>
+Subject: Re: [MeeGo-Dev][PATCH v2] Topcliff: Update PCH_CAN driver to 2.6.35
+Date: Thu, 16 Sep 2010 17:51:45 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__16_Sep_2010_18_51_41_+1000_UU.YaEEk3SNU278y
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Marc,
 
-Hi Arun,
+> - Please remove rx-filter handling from the driver completely, simply
+>   receive every can frame
 
-On Thu, 16 Sep 2010 17:23:22 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> > Please find the patch that fixes this build issue @=20
-> > http://git.kernel.org/?p=3Dlinux/kernel/git/sameo/mfd-2.6.git;a=3Dcommi=
-t;h=3Df33bd494862cdc519db1f5d9b3f8214a1dd4c1ff
->=20
-> That patch was in the tree that produced the error above.  The patch you
-> quote is a fix for a different build problem.
+This rx-filter function is for Topcliff's CAN HW function.
+This function is important.
+Could you tell us the reason why should we remove filter function ?
 
-Oops, wrong error.  I need to read better.  Ignore this.
+Thanks, Ohtake(OKISemi)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+----- Original Message ----- 
+From: "Marc Kleine-Budde" <mkl@pengutronix.de>
+To: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>
+Cc: "Wolfgang Grandegger" <wg@grandegger.com>; "David S. Miller" <davem@davemloft.net>; "Wolfram Sang"
+<w.sang@pengutronix.de>; "Christian Pellegrin" <chripell@fsfe.org>; "Barry Song" <21cnbao@gmail.com>; "Samuel Ortiz"
+<sameo@linux.intel.com>; <socketcan-core@lists.berlios.de>; <netdev@vger.kernel.org>; <linux-kernel@vger.kernel.org>;
+<meego-dev@meego.com>; <andrew.chih.howe.khor@intel.com>; <qi.wang@intel.com>; <gregkh@suse.de>;
+<yong.y.wang@intel.com>; "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>; <arjan@linux.intel.com>
+Sent: Tuesday, September 14, 2010 12:14 AM
+Subject: Re: [MeeGo-Dev][PATCH v2] Topcliff: Update PCH_CAN driver to 2.6.35
 
---Signature=_Thu__16_Sep_2010_18_51_41_+1000_UU.YaEEk3SNU278y
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQEcBAEBAgAGBQJMkdqdAAoJEDMEi1NhKgbslaQH/0ffUkrT139BinpKo95+QlEZ
-PyBMKREi5IQypxsHOdekCHBkB9qYtPX4P2H1qsFGy9PIiGws5AJNj5aFfh4ZfPjp
-CHffbfnHEuwBv5Cvr1TWcCToEz4x0qCo64Jnrw+5U+GHGzWIF81us8ary/ayQW6l
-tQnxb4oUUly+nTXuoVUy3+WWQXwM3KigHi3ax6kEzJarBxkRXG1pDy47Yq11Ny+H
-pbkhLDD48F/Rmr6fVD7lIXviUnBoESoipcgO6iWK6jcvdTK2V8a/oWNbN4Fw+k9F
-34nr9H1TfBcYseXcK9IPseQxoveyULeAtB7FAN/8Fj1FvTYWrDPYuVrC7IfDnuU=
-=0yQD
------END PGP SIGNATURE-----
-
---Signature=_Thu__16_Sep_2010_18_51_41_+1000_UU.YaEEk3SNU278y--
