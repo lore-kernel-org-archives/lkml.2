@@ -1,75 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab0IPRpO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 13:45:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39462 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753907Ab0IPRpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 13:45:12 -0400
-Message-ID: <4C925768.7040707@zytor.com>
-Date: Thu, 16 Sep 2010 10:44:08 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Brian Bloniarz <phunge0@hotmail.com>,
-        Charles Butterfield <charles.butterfield@nextcentury.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stefan Becker <chemobejk@gmail.com>,
-        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 3/3] PCI: allocate bus resources from the top down
-References: <20100915210818.12365.58732.stgit@bob.kio> <201009151644.38563.bjorn.helgaas@hp.com> <4C915AB2.9090203@zytor.com> <201009161104.15665.bjorn.helgaas@hp.com>
-In-Reply-To: <201009161104.15665.bjorn.helgaas@hp.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755597Ab0IPRqq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 13:46:46 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:57793 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755578Ab0IPRqo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 13:46:44 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-kernel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, David Woodhouse <dwmw2@infradead.org>
+Subject: [PATCH 10/12] BKL: Remove BKL from jffs2
+Date: Thu, 16 Sep 2010 19:46:23 +0200
+Message-Id: <1284659185-8942-11-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1284659185-8942-1-git-send-email-arnd@arndb.de>
+References: <1284659185-8942-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:A1k/RDHVQFUQ+H2tF3twAPeSFlPz30pKSG3NPwRsOEx
+ AJXjriFfQNMcBPcD7O53ZvBQSreg7HL7i7+SPT6KSlD+w4VszX
+ 0WgeIQVTxLbDxPaMs8+SfbmGu3Epax3TWAGRz2XoV1YG7UrS89
+ 3Bhtj9mMVfce8NrPjAq2IbDcyIBH620HgluD613/mqPGQqd8Dn
+ 58vIUbeYkZBIdC18cE6NQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/2010 10:04 AM, Bjorn Helgaas wrote:
-> It does seem like we should do *something* with E820 reserved areas, but
-> I'm not 100% convinced we should be more strict than Windows.  If we
-> pay attention to things Windows doesn't test, I think we're likely to
-> trip over even more BIOS bugs.
+The BKL is only used in put_super, fill_super and remount_fs that are all
+three protected by the superblocks s_umount rw_semaphore. Therefore it is
+safe to remove the BKL entirely.
 
-Windows have a couple of advantages on us.  They have WHQL; every
-machine needs to pass WHQL or it doesn't get sold.  The other advantage
-is that most manufacturers of Windows desktops don't give a damn about
-anything other than the shipping configuration (Windows version and
-hardware): I have seen machines which fail to boot if you put in a PCI
-UART card.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: David Woodhouse <dwmw2@infradead.org>
+---
+ fs/jffs2/fs.c    |    4 ----
+ fs/jffs2/super.c |   12 +-----------
+ 2 files changed, 1 insertions(+), 15 deletions(-)
 
-> Linux does avoid putting PCI devices in E820 reserved areas ... in
-> some cases.  In this Dell case, the reserved area conflicts with a
-> host bridge window, so we expand the reserved area and insert it as
-> the *parent* of the window.  Since it's the parent, it has no effect
-> on allocations from the window, so we end up putting devices in the
-> reserved area.
-
-OK, so that's a problem.  This isn't really a hideously uncommon use
-case for a reserved region, either: it probably reflects a device used
-by SMM under that particular host bridge.
-
-> I think the problem is that E820 reservations fundamentally don't
-> fit well with the Linux resource manager.  We manage resources as
-> a strict hierarchy of non-overlapping regions, but there's no
-> requirement that E820 reservations have any relationship with actual
-> devices that we discover via ACPI, PCI, etc.
-> 
-> We've been kludging around this with a collection of hacks like
-> reserve_region_with_split() and insert_resource_expand_to_fit(),
-> but I think we're just making an unmaintainable mess.  We should
-> take a step back and think about how to do this cleanly.
-
-Perhaps we should consider reserved regions a separate hierarchy, or we
-should deal with them at the time a new resource is created?
-
-	-hpa
-
+diff --git a/fs/jffs2/fs.c b/fs/jffs2/fs.c
+index 6b2964a..d9beb06 100644
+--- a/fs/jffs2/fs.c
++++ b/fs/jffs2/fs.c
+@@ -21,7 +21,6 @@
+ #include <linux/vmalloc.h>
+ #include <linux/vfs.h>
+ #include <linux/crc32.h>
+-#include <linux/smp_lock.h>
+ #include "nodelist.h"
+ 
+ static int jffs2_flash_setup(struct jffs2_sb_info *c);
+@@ -391,7 +390,6 @@ int jffs2_remount_fs (struct super_block *sb, int *flags, char *data)
+ 	   This also catches the case where it was stopped and this
+ 	   is just a remount to restart it.
+ 	   Flush the writebuffer, if neccecary, else we loose it */
+-	lock_kernel();
+ 	if (!(sb->s_flags & MS_RDONLY)) {
+ 		jffs2_stop_garbage_collect_thread(c);
+ 		mutex_lock(&c->alloc_sem);
+@@ -403,8 +401,6 @@ int jffs2_remount_fs (struct super_block *sb, int *flags, char *data)
+ 		jffs2_start_garbage_collect_thread(c);
+ 
+ 	*flags |= MS_NOATIME;
+-
+-	unlock_kernel();
+ 	return 0;
+ }
+ 
+diff --git a/fs/jffs2/super.c b/fs/jffs2/super.c
+index 58dd9cf..d1ae5df 100644
+--- a/fs/jffs2/super.c
++++ b/fs/jffs2/super.c
+@@ -12,7 +12,6 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
+-#include <linux/smp_lock.h>
+ #include <linux/init.h>
+ #include <linux/list.h>
+ #include <linux/fs.h>
+@@ -148,17 +147,13 @@ static int jffs2_fill_super(struct super_block *sb, void *data, int silent)
+ 	struct jffs2_sb_info *c;
+ 	int ret;
+ 
+-	lock_kernel();
+-
+ 	D1(printk(KERN_DEBUG "jffs2_get_sb_mtd():"
+ 		  " New superblock for device %d (\"%s\")\n",
+ 		  sb->s_mtd->index, sb->s_mtd->name));
+ 
+ 	c = kzalloc(sizeof(*c), GFP_KERNEL);
+-	if (!c) {
+-		unlock_kernel();
++	if (!c)
+ 		return -ENOMEM;
+-	}
+ 
+ 	c->mtd = sb->s_mtd;
+ 	c->os_priv = sb;
+@@ -181,7 +176,6 @@ static int jffs2_fill_super(struct super_block *sb, void *data, int silent)
+ 	sb->s_flags |= MS_POSIXACL;
+ #endif
+ 	ret = jffs2_do_fill_super(sb, data, silent);
+-	unlock_kernel();
+ 	return ret;
+ }
+ 
+@@ -199,8 +193,6 @@ static void jffs2_put_super (struct super_block *sb)
+ 
+ 	D2(printk(KERN_DEBUG "jffs2: jffs2_put_super()\n"));
+ 
+-	lock_kernel();
+-
+ 	if (sb->s_dirt)
+ 		jffs2_write_super(sb);
+ 
+@@ -222,8 +214,6 @@ static void jffs2_put_super (struct super_block *sb)
+ 	if (c->mtd->sync)
+ 		c->mtd->sync(c->mtd);
+ 
+-	unlock_kernel();
+-
+ 	D1(printk(KERN_DEBUG "jffs2_put_super returning\n"));
+ }
+ 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.1
 
