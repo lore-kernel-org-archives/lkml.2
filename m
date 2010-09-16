@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755214Ab0IQCIk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 22:08:40 -0400
-Received: from mga14.intel.com ([143.182.124.37]:55300 "EHLO mga14.intel.com"
+	id S1754484Ab0IQCLE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 22:11:04 -0400
+Received: from mga01.intel.com ([192.55.52.88]:13950 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752327Ab0IQCIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 22:08:39 -0400
+	id S1752091Ab0IQCLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 22:11:02 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.56,380,1280732400"; 
-   d="scan'208";a="325574130"
+   d="scan'208";a="838431880"
 From: ling.ma@intel.com
 To: mingo@elte.hu
 Cc: hpa@zytor.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
         Ma Ling <ling.ma@intel.com>
-Subject: 
-Date: Fri, 17 Sep 2010 03:10:04 +0800
-Message-Id: <1284664204-6062-1-git-send-email-ling.ma@intel.com>
+Subject: [RFC PATCH] [X86/mem] Optimize memmove for small size and unaligned cases
+Date: Fri, 17 Sep 2010 03:12:40 +0800
+Message-Id: <1284664360-6138-1-git-send-email-ling.ma@intel.com>
 X-Mailer: git-send-email 1.6.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
