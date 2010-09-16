@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228Ab0IPBCj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 21:02:39 -0400
-Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:60592 "EHLO
-	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752421Ab0IPBCi (ORCPT
+	id S1752938Ab0IPBSb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 21:18:31 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:56800 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620Ab0IPBSb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 21:02:38 -0400
-Date: Wed, 15 Sep 2010 20:59:19 -0400
-Subject: Re: [PATCH] drivers/media/video/ivtv/ivtvfb.c: prevent reading
- uninitialized stack memory
-Message-ID: <o1tfvx3ftkp8gaxheeq61r4w.1284598759859@email.android.com>
-From: Andy Walls <awalls@md.metrocast.net>
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, security@kernel.org, stable@kernel.org
-Content-Type: text/plain; charset=utf-8
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.0.10011,1.0.148,0.0.0000
- definitions=2010-09-15_19:2010-09-16,2010-09-15,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 phishscore=0
- bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- engine=5.0.0-1005130000 definitions=main-1009150135
+	Wed, 15 Sep 2010 21:18:31 -0400
+Date: Thu, 16 Sep 2010 10:48:19 +0930
+From: Christopher Yeoh <cyeoh@au1.ibm.com>
+To: Bryan Donlan <bdonlan@gmail.com>
+Cc: Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [RFC][PATCH] Cross Memory Attach
+Message-ID: <20100916104819.36d10acb@lilo>
+In-Reply-To: <AANLkTi=rmUUPCm212Sju-wW==5cT4eqqU+FEP_hX-Z_y@mail.gmail.com>
+References: <20100915104855.41de3ebf@lilo>
+	<4C90A6C7.9050607@redhat.com>
+	<AANLkTi=rmUUPCm212Sju-wW==5cT4eqqU+FEP_hX-Z_y@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o8G12oIh026774
 
-Acked-by: Andy Walls <awalls@md.metrocast.net>
+On Wed, 15 Sep 2010 23:46:09 +0900
+Bryan Donlan <bdonlan@gmail.com> wrote:
 
-By tomorrow evening I'll put this in my repo and ask for Mauro to pull it.
+> On Wed, Sep 15, 2010 at 19:58, Avi Kivity <avi@redhat.com> wrote:
+> 
+> > Instead of those two syscalls, how about a vmfd(pid_t pid, ulong
+> > start, ulong len) system call which returns an file descriptor that
+> > represents a portion of the process address space.  You can then
+> > use preadv() and pwritev() to copy memory, and
+> > io_submit(IO_CMD_PREADV) and io_submit(IO_CMD_PWRITEV) for
+> > asynchronous variants (especially useful with a dma engine, since
+> > that adds latency).
+> >
+> > With some care (and use of mmu_notifiers) you can even mmap() your
+> > vmfd and access remote process memory directly.
+> 
+> Rather than introducing a new vmfd() API for this, why not just add
+> implementations for these more efficient operations to the existing
+> /proc/$pid/mem interface?
+
+Perhaps I'm misunderstanding something here, but
+accessing /proc/$pid/mem requires ptracing the target process.
+We can't really have all these MPI processes ptraceing each other
+just to send/receive a message....
 
 Regards,
-Andy
 
-Dan Rosenberg <drosenberg@vsecurity.com> wrote:
-
->The FBIOGET_VBLANK device ioctl allows unprivileged users to read 16
->bytes of uninitialized stack memory, because the "reserved" member of
->the fb_vblank struct declared on the stack is not altered or zeroed
->before being copied back to the user.  This patch takes care of it.
->
->Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
->
->--- linux-2.6.35.4.orig/drivers/media/video/ivtv/ivtvfb.c	2010-08-26 19:47:12.000000000 -0400
->+++ linux-2.6.35.4/drivers/media/video/ivtv/ivtvfb.c	2010-09-15 14:16:46.797375399 -0400
->@@ -458,6 +458,8 @@ static int ivtvfb_ioctl(struct fb_info *
-> 			struct fb_vblank vblank;
-> 			u32 trace;
-> 
->+			memset(&vblank, 0, sizeof(struct fb_vblank));
->+
-> 			vblank.flags = FB_VBLANK_HAVE_COUNT |FB_VBLANK_HAVE_VCOUNT |
-> 					FB_VBLANK_HAVE_VSYNC;
-> 			trace = read_reg(IVTV_REG_DEC_LINE_FIELD) >> 16;
->
->
->
->
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Chris
+-- 
+cyeoh@au.ibm.com
