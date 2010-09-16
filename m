@@ -1,62 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643Ab0IPJ06 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 05:26:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7050 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751768Ab0IPJ05 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 05:26:57 -0400
-Message-ID: <4C91E2CC.9040709@redhat.com>
-Date: Thu, 16 Sep 2010 11:26:36 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.3
+	id S1752912Ab0IPJ33 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 05:29:29 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61352 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751532Ab0IPJ30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 05:29:26 -0400
+Message-ID: <4C91E37C.2060309@cn.fujitsu.com>
+Date: Thu, 16 Sep 2010 17:29:32 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Christopher Yeoh <cyeoh@au1.ibm.com>
-CC: Bryan Donlan <bdonlan@gmail.com>, linux-kernel@vger.kernel.org,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [RFC][PATCH] Cross Memory Attach
-References: <20100915104855.41de3ebf@lilo>	<4C90A6C7.9050607@redhat.com>	<AANLkTi=rmUUPCm212Sju-wW==5cT4eqqU+FEP_hX-Z_y@mail.gmail.com> <20100916104819.36d10acb@lilo>
-In-Reply-To: <20100916104819.36d10acb@lilo>
+To: Andi Kleen <andi@firstfloor.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        "Theodore Ts'o" <tytso@mit.edu>, Chris Mason <chris.mason@oracle.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Btrfs <linux-btrfs@vger.kernel.org>,
+        Linux Ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH] x86_64/lib: improve the performance of memmove
+References: <56957.91.60.149.91.1284619705.squirrel@www.firstfloor.org>	<4C91C44F.40700@cn.fujitsu.com> <20100916104008.3e1e34b2@basil.nowhere.org>
+In-Reply-To: <20100916104008.3e1e34b2@basil.nowhere.org>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 09/16/2010 03:18 AM, Christopher Yeoh wrote:
-> On Wed, 15 Sep 2010 23:46:09 +0900
-> Bryan Donlan<bdonlan@gmail.com>  wrote:
+On Thu, 16 Sep 2010 10:40:08 +0200, Andi Kleen wrote:
+> On Thu, 16 Sep 2010 15:16:31 +0800
+> Miao Xie<miaox@cn.fujitsu.com>  wrote:
 >
-> >  On Wed, Sep 15, 2010 at 19:58, Avi Kivity<avi@redhat.com>  wrote:
-> >
-> >  >  Instead of those two syscalls, how about a vmfd(pid_t pid, ulong
-> >  >  start, ulong len) system call which returns an file descriptor that
-> >  >  represents a portion of the process address space.  You can then
-> >  >  use preadv() and pwritev() to copy memory, and
-> >  >  io_submit(IO_CMD_PREADV) and io_submit(IO_CMD_PWRITEV) for
-> >  >  asynchronous variants (especially useful with a dma engine, since
-> >  >  that adds latency).
-> >  >
-> >  >  With some care (and use of mmu_notifiers) you can even mmap() your
-> >  >  vmfd and access remote process memory directly.
-> >
-> >  Rather than introducing a new vmfd() API for this, why not just add
-> >  implementations for these more efficient operations to the existing
-> >  /proc/$pid/mem interface?
+>> On Thu, 16 Sep 2010 08:48:25 +0200 (cest), Andi Kleen wrote:
+>>>> When the dest and the src do overlap and the memory area is large,
+>>>> memmove of
+>>>> x86_64 is very inefficient, and it led to bad performance, such as
+>>>> btrfs's file
+>>>> deletion performance. This patch improved the performance of
+>>>> memmove on x86_64
+>>>> by using __memcpy_bwd() instead of byte copy when doing large
+>>>> memory area copy
+>>>> (len>   64).
+>>>
+>>>
+>>> I still don't understand why you don't simply use a backwards
+>>> string copy (with std) ? That should be much simpler and
+>>> hopefully be as optimized for kernel copies on recent CPUs.
+>>
+>> But according to the comment of memcpy, some CPUs don't support "REP"
+>> instruction,
 >
-> Perhaps I'm misunderstanding something here, but
-> accessing /proc/$pid/mem requires ptracing the target process.
-> We can't really have all these MPI processes ptraceing each other
-> just to send/receive a message....
+> I think you misread the comment. REP prefixes are in all x86 CPUs.
+> On some very old systems it wasn't optimized very well,
+> but it probably doesn't make too much sense to optimize for those.
+> On newer CPUs in fact REP should be usually faster than
+> an unrolled loop.
 >
+> I'm not sure how optimized the backwards copy is, but most likely
+> it is optimized too.
+>
+> Here's an untested patch that implements backwards copy with string
+> instructions. Could you run it through your test harness?
 
-You could have each process open /proc/self/mem and pass the fd using 
-SCM_RIGHTS.
+Ok, I'll do it.
 
-That eliminates a race; with copy_to_process(), by the time the pid is 
-looked up it might designate a different process.
+> +
+> +/*
+> + * Copy memory backwards (for memmove)
+> + * rdi target
+> + * rsi source
+> + * rdx count
+> + */
+> +
+> +ENTRY(memcpy_backwards):
 
--- 
-error compiling committee.c: too many arguments to function
+s/://
 
+> +	CFI_STARTPROC
+> +	std
+> +	movq %rdi, %rax
+> +	movl %edx, %ecx
+> +	add  %rdx, %rdi
+> +	add  %rdx, %rsi
+
+-	add  %rdx, %rdi
+-	add  %rdx, %rsi
++	addq  %rdx, %rdi
++	addq  %rdx, %rsi
+
+Besides that, the address that %rdi/%rsi pointed to is over the end of
+mempry area that going to be copied, so we must tune the address to be
+correct.
++	leaq -8(%rdi), %rdi
++	leaq -8(%rsi), %rsi
+
+> +	shrl $3, %ecx
+> +	andl $7, %edx
+> +	rep movsq
+
+The same as above.
++	leaq 8(%rdi), %rdi
++	leaq 8(%rsi), %rsi
++	decq %rsi
++	decq %rdi
+
+> +	movl %edx, %ecx
+> +	rep movsb
+> +	cld
+> +	ret
+> +	CFI_ENDPROC
+> +ENDPROC(memcpy_backwards)
+> +	
+> diff --git a/arch/x86/lib/memmove_64.c b/arch/x86/lib/memmove_64.c
+> index 0a33909..6c00304 100644
+> --- a/arch/x86/lib/memmove_64.c
+> +++ b/arch/x86/lib/memmove_64.c
+> @@ -5,16 +5,16 @@
+>   #include<linux/string.h>
+>   #include<linux/module.h>
+>
+> +extern void asmlinkage memcpy_backwards(void *dst, const void *src,
+> +				        size_t count);
+
+The type of the return value must be "void *".
+
+Thanks
+Miao
+
+> +
+>   #undef memmove
+>   void *memmove(void *dest, const void *src, size_t count)
+>   {
+>   	if (dest<  src) {
+>   		return memcpy(dest, src, count);
+>   	} else {
+> -		char *p = dest + count;
+> -		const char *s = src + count;
+> -		while (count--)
+> -			*--p = *--s;
+> +		return memcpy_backwards(dest, src, count);
+>   	}
+>   	return dest;
+>   }
+>
