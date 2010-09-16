@@ -1,69 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379Ab0IPGCO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 02:02:14 -0400
-Received: from cantor.suse.de ([195.135.220.2]:50031 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751549Ab0IPGCN convert rfc822-to-8bit (ORCPT
+	id S1753642Ab0IPGFI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 02:05:08 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:56504 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751976Ab0IPGFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 02:02:13 -0400
-From: Nikanth Karthikesan <knikanth@suse.de>
-Organization: suse.de
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [PATCH] Document the new Anonymous field in smaps.
-Date: Thu, 16 Sep 2010 11:34:59 +0530
-User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-default; KDE/4.3.5; x86_64; ; )
-Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>, Matt Mackall <mpm@selenic.com>,
-        Richard Guenther <rguenther@suse.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Matz <matz@novell.com>, linux-kernel@vger.kernel.org
-References: <AANLkTini3k1hK-9RM6io0mOf4VoDzGpbUEpiv=WHfhEW@mail.gmail.com> <201009160856.25923.knikanth@suse.de> <20100916125147.CA08.A69D9226@jp.fujitsu.com>
-In-Reply-To: <20100916125147.CA08.A69D9226@jp.fujitsu.com>
+	Thu, 16 Sep 2010 02:05:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ekW+xbP7pOJBBqME+e/+y0PIvJ1Gza9VDSIXGeGFcGmd+ZHC+9LnVqMTzeG+RtHUCI
+         Ek/ahF5JhF+AUCYCCcnl+1cfPZHl7yXYygqGoMDYhsvD4B9mmwa3Ewh8atYA5gNbbepB
+         t/WDbBVqFGZGIZ0FuqvUWVr9AdBXn5jCrQN4w=
+Date: Wed, 15 Sep 2010 23:04:56 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>, linux-cris-kernel@axis.com
+Subject: Re: Build regressions/improvements in v2.6.36-rc4
+Message-ID: <20100916060456.GA29795@core.coreip.homeip.net>
+References: <alpine.DEB.2.00.1009152121020.23269@ayla.of.borg>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201009161135.00129.knikanth@suse.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1009152121020.23269@ayla.of.borg>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, I missed to add documentation, when I sent the patch. This depends on
-the patch titled, "[PATCH] Export amount of anonymous memory in a mapping via
-smaps".
+Hi Geert,
 
-Thanks
-Nikanth
+On Wed, Sep 15, 2010 at 09:29:35PM +0200, Geert Uytterhoeven wrote:
+> 	drivers/input/gameport/lightning.c: error: invalid operands to binary & (have 'void *' and 'int'):  => 177, 141, 86
+> 	drivers/input/gameport/ns558.c: error: invalid operands to binary & (have 'void *' and 'int'):  => 84
+> 	drivers/input/touchscreen/mk712.c: error: invalid operands to binary | (have 'void *' and 'int'):  => 129
+
+I think these (and a few more) should be fixed for the patch below (not
+even compiled)...
+
+Thanks.
+
+-- 
+Dmitry
 
 
-Document the new Anonymous field in smaps.
+[CRIS] Convert io macros into inline functions
 
-Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
+This should silence warnings such as:
+
+drivers/input/gameport/lightning.c: error: invalid operands to binary &
+(have 'void *' and 'int'):  => 177, 141, 86
+drivers/input/gameport/ns558.c: error: invalid operands to binary &
+(have 'void *' and 'int'):  => 84
+drivers/input/touchscreen/mk712.c: error: invalid operands to binary |
+(have 'void *' and 'int'):  => 129
+
+Marco argument expansion is a bitch...
+
+This also fixes outsl - size of an 'int' is 4 and not 3.
+
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 ---
 
-diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-index a6aca87..75c7368 100644
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -370,6 +370,7 @@ Shared_Dirty:          0 kB
- Private_Clean:         0 kB
- Private_Dirty:         0 kB
- Referenced:          892 kB
-+Anonymous:             0 kB
- Swap:                  0 kB
- KernelPageSize:        4 kB
- MMUPageSize:           4 kB
-@@ -380,7 +381,10 @@ the amount of the mapping that is currently resident in RAM, the "proportional
- set size” (divide each shared page by the number of processes sharing it), the
- number of clean and dirty shared pages in the mapping, and the number of clean
- and dirty private pages in the mapping.  The "Referenced" indicates the amount
--of memory currently marked as referenced or accessed.
-+of memory currently marked as referenced or accessed. The "Anonymous" shows
-+the amount of mapping that is not associated with a file. Even the private
-+pages in a mapping associated with a file, would become anonymous, when they
-+are modified.
+ arch/cris/include/asm/io.h |   44 ++++++++++++++++++++++++++++++++------------
+ 1 files changed, 32 insertions(+), 12 deletions(-)
+
+
+diff --git a/arch/cris/include/asm/io.h b/arch/cris/include/asm/io.h
+index 32567bc..e248589 100644
+--- a/arch/cris/include/asm/io.h
++++ b/arch/cris/include/asm/io.h
+@@ -127,18 +127,38 @@ static inline void writel(unsigned int b, volatile void __iomem *addr)
+  */
  
- This file is only present if the CONFIG_MMU kernel configuration option is
- enabled.
+ #define IO_SPACE_LIMIT 0xffff
+-#define inb(port) (cris_iops ? cris_iops->read_io(port,NULL,1,1) : 0)
+-#define inw(port) (cris_iops ? cris_iops->read_io(port,NULL,2,1) : 0)
+-#define inl(port) (cris_iops ? cris_iops->read_io(port,NULL,4,1) : 0)
+-#define insb(port,addr,count) (cris_iops ? cris_iops->read_io(port,addr,1,count) : 0)
+-#define insw(port,addr,count) (cris_iops ? cris_iops->read_io(port,addr,2,count) : 0)
+-#define insl(port,addr,count) (cris_iops ? cris_iops->read_io(port,addr,4,count) : 0)
+-#define outb(data,port) if (cris_iops) cris_iops->write_io(port,(void*)(unsigned)data,1,1)
+-#define outw(data,port) if (cris_iops) cris_iops->write_io(port,(void*)(unsigned)data,2,1)
+-#define outl(data,port) if (cris_iops) cris_iops->write_io(port,(void*)(unsigned)data,4,1)
+-#define outsb(port,addr,count) if(cris_iops) cris_iops->write_io(port,(void*)addr,1,count)
+-#define outsw(port,addr,count) if(cris_iops) cris_iops->write_io(port,(void*)addr,2,count)
+-#define outsl(port,addr,count) if(cris_iops) cris_iops->write_io(port,(void*)addr,3,count)
++
++#define BUILDIO(bwl, bw, type)						\
++static inline void out##bwl(type value, int port)			\
++{									\
++	if (cris_iops)							\
++		cris_iops->write_io(port, (void *)(unsigned long)value,	\
++				    sizeof(type), 1);			\
++}									\
++									\
++static inline type in##bwl(int port)					\
++{									\
++	return cris_iops ?						\
++		cris_iops->read_io(port, NULL, sizeof(type), 1) : 0;	\
++}									\
++									\
++static inline void outs##bwl(int port,					\
++			     const void *addr, unsigned long count)	\
++{									\
++	if (cris_iops)							\
++		cris_iops->write_io(port,				\
++				(void *)addr, sizeof(type), count);	\
++}									\
++									\
++static inline void ins##bwl(int port, void *addr, unsigned long count)	\
++{									\
++	if (cris_iops)							\
++		cris_iops->read_io(port, addr, sizeof(type), count);	\
++}
++
++BUILDIO(b, unsigned char)
++BUILDIO(w, unsigned short)
++BUILDIO(l, unsigned int)
+ 
+ /*
+  * Convert a physical pointer to a virtual kernel pointer for /dev/mem
