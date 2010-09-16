@@ -1,109 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756880Ab0IPWne (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 18:43:34 -0400
-Received: from smtp106.sbc.mail.mud.yahoo.com ([68.142.198.104]:48463 "HELO
-	smtp106.sbc.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753387Ab0IPWnc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 18:43:32 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: tamF7yQVM1kK7jeA62arzQAJly115B0PzpnvJTZRFmGczFD
- aQlTS2ERnGlue3DJc7eWhLCGDtnXUGGCDuU_tU79tZqNRtaEYl7IOIbGKERN
- vVooBnYRreFRk57wcejVEF.vAjAd7V_5S4yquZNtOFNwqSWJOSTkHBeHpyQ6
- k9JExnwvgA_19_rkOkGCAbU65PuXXrMXYsv_E1PQGvKyVN0wmwS7o43fvcqY
- NJE6JL0DTil7WK9m8oxiYB04K2tRLi7UwfmdMaAlyXxVcChQu6xoFd_6zqea
- KK7PptSajKNzxx1_PejXeWG3rkVxMRNVd4AeDx4AhF0s72f2KO6yYwUQn
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [PATCH 0/8] Drop host_lock around LLD SHT->queuecommand()
-	caller
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-scsi <linux-scsi@vger.kernel.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        James Smart <james.smart@emulex.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
-        Christoph Hellwig <hch@lst.de>
-In-Reply-To: <1284676521-10737-1-git-send-email-nab@linux-iscsi.org>
-References: <1284676521-10737-1-git-send-email-nab@linux-iscsi.org>
-Content-Type: text/plain
-Date: Thu, 16 Sep 2010 15:39:23 -0700
-Message-Id: <1284676763.13344.108.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1756999Ab0IPWpV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 18:45:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34232 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753364Ab0IPWpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 18:45:15 -0400
+From: Jan Kara <jack@suse.cz>
+To: Jens@suse.cz, "Axboe <axboe"@kernel.dk
+Cc: Christoph Hellwig <hch@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>
+Subject: [PATCH 3/3] bdi: Fix warnings in __mark_inode_dirty for /dev/zero and friends
+Date: Fri, 17 Sep 2010 00:44:11 +0200
+Message-Id: <1284677051-28564-4-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1284677051-28564-1-git-send-email-jack@suse.cz>
+References: <1284677051-28564-1-git-send-email-jack@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-16 at 15:35 -0700, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
-> 
-> Greetings all,
-> 
-> This series contains the first round of a whole-sale conversion for droping
-> struct Scsi_Host->host_lock around struct Scsi_Host->queuecommand() within
-> scsi_dispatch_cmd().  So with this first patch the only part of scsi_dispatch_cmd()
-> that is protected by host_lock is scsi_cmd_get_serial)_.
-> 
-> The patches #2 -> #8 converts libiscsi, libsas, lpfc, qla4xxx, qla2xxx,
-> TCM_Loop, and libfc code to drop their own SHT->queuecommand() internal
-> host_lock unlock() + lock() optimization that certain high performance libs
-> and LLDs have adopted over the years.  The changes involved here are really
-> quite straight forward, but please note that none of this code has been tested
-> with actual hardware yet, and is intended for generating comments for the relivent
-> SCSI LLD driver maintainers and other interested folks.
-> 
-> There are probably still be more LLDs which use this optimization, so please
-> let me know if there is another piece of SHT->queuecommand() caller code that
-> does this legacy optimization and needs to be updated.  I will be sure to
-> CC the right driver maintainers and CC linux-scsi as I come across any more
-> conversions.
-> 
-> Many thanks to Vasu Dev and Tim Chen for their work in this area!!
+Inodes of devices such as /dev/zero can get dirty for example via utime(2)
+syscall or due to atime update. Backing device of such inodes (zero_bdi, etc.)
+is however unable to handle dirty inodes and thus __mark_inode_dirty complains.
+In fact, inode should be rather dirtied against backing device of the
+filesystem holding it. This is generally a good rule except for filesystems
+such as 'bdev' or 'mtd_inodefs'. Inodes in these pseudofilesystems are
+referenced from ordinary filesystem inodes and carry mapping with real data of
+the device. Thus for these inodes we have to use
+inode->i_mapping->backing_dev_info as we did so far. We distinguish these
+filesystems by checking whether sb->s_bdi points to a non-trivial backing
+device or not.
 
-Also just FYI, I have pushed these changes into a branch here:
+Example: Assume we have an ext3 filesystem on /dev/sda1 mounted on /. There's a
+device inode A described by a path "/dev/sdb" on this filesystem. This inode
+will be dirtied against backing device "8:0" after this patch. bdev filesystem
+contains block device inode B coupled with our inode A. When someone modifies a
+page of /dev/sdb, it's B that gets dirtied and the dirtying happens against the
+backing device "8:16". Thus both inodes get filed to a correct bdi list.
 
-http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=shortlog;h=refs/heads/drop-host_lock
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ fs/fs-writeback.c |   23 +++++++++++++++++++++--
+ 1 files changed, 21 insertions(+), 2 deletions(-)
 
-Note that this tree is currently at .36-rc3, but will be jumping to -rc4
-shortly.
-
-Thanks!
-
---nab
-
-> 
-> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-> 
-> Nicholas Bellinger (8):
->   scsi: Drop struct Scsi_Host->host_lock around SHT->queuecommand()
->   libiscsi: Remove host_lock unlock() + lock() from
->     iscsi_queuecommand()
->   libsas: Remove host_lock unlock() + lock() from sas_queuecommand()
->   lpfc: Remove host_lock unlock() + lock() from lpfc_queuecommand()
->   qla4xxx: Remove host_lock unlock() + lock() from
->     qla4xxx_queuecommand()
->   qla2xxx: Remove host_lock unlock() + lock() from
->     qla2xxx_queuecommand()
->   tcm_loop: Remove host_lock unlock() + lock() from
->     tcm_loop_queuecommand()
->   libfc: Remove host_lock unlock() + lock() from fc_queuecommand()
-> 
->  drivers/scsi/libfc/fc_fcp.c                    |    5 +----
->  drivers/scsi/libiscsi.c                        |    4 ----
->  drivers/scsi/libsas/sas_scsi_host.c            |    5 -----
->  drivers/scsi/lpfc/lpfc_scsi.c                  |    2 --
->  drivers/scsi/qla2xxx/qla_os.c                  |    7 ++-----
->  drivers/scsi/qla4xxx/ql4_os.c                  |    8 +-------
->  drivers/scsi/scsi.c                            |    3 ++-
->  drivers/target/tcm_loop/tcm_loop_fabric_scsi.c |    7 -------
->  8 files changed, 6 insertions(+), 35 deletions(-)
-> 
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 49fd41a..7dad208 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -52,8 +52,6 @@ struct wb_writeback_work {
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/writeback.h>
+ 
+-#define inode_to_bdi(inode)	((inode)->i_mapping->backing_dev_info)
+-
+ /*
+  * We don't actually have pdflush, but this one is exported though /proc...
+  */
+@@ -71,6 +69,27 @@ int writeback_in_progress(struct backing_dev_info *bdi)
+ 	return test_bit(BDI_writeback_running, &bdi->state);
+ }
+ 
++static inline struct backing_dev_info *inode_to_bdi(struct inode *inode)
++{
++	struct super_block *sb = inode->i_sb;
++	struct backing_dev_info *bdi = inode->i_mapping->backing_dev_info;
++
++	/*
++	 * For inodes on standard filesystems, we use superblock's bdi. For
++	 * inodes on virtual filesystems, we want to use inode mapping's bdi
++	 * because they can possibly point to something useful (think about
++	 * block_dev filesystem).
++	 */
++	if (sb->s_bdi && sb->s_bdi != &noop_backing_dev_info) {
++		/* Some device inodes could play dirty tricks. Catch them... */
++		WARN(bdi != sb->s_bdi && bdi_cap_writeback_dirty(bdi),
++			"Dirtiable inode bdi %s != sb bdi %s\n",
++			bdi->name, sb->s_bdi->name);
++		return sb->s_bdi;
++	}
++	return bdi;
++}
++
+ /* Wakeup flusher thread or forker thread to fork it. Requires bdi->wb_lock. */
+ static void _bdi_wakeup_flusher(struct backing_dev_info *bdi)
+ {
+-- 
+1.6.4.2
 
