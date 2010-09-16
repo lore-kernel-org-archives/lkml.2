@@ -1,117 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188Ab0IPEmT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 00:42:19 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:37650 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751957Ab0IPEmS (ORCPT
+	id S1752386Ab0IPEpM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 00:45:12 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:62408 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752084Ab0IPEpK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 00:42:18 -0400
+	Thu, 16 Sep 2010 00:45:10 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=agy+PvRUALR/tH/PszzEOPcAg5qEBWVZDUzuWYtFzZc8JaK+h/xeHqUQx4gm4mGAcU
-         5tEej7sBs8Y3zdyFDuxI32+NNMZnuscDLoaNMxZndPNhJSKy8PRciJiAhxEPStQdAXYU
-         lfPoA/I1fRc9yKRvz9arjT/c5nZfJoCqrvpb8=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=oXzuT8kdGVVrAg9AS5HRWlFRlPOBYidsircfSthSJsJMkZqVKxqsFlBpoJWciL8VQh
+         E1pCq3AOzXdASKeHMf4Z67S2Y2voox9kMG7yTpsEPcvNbpZZmVrG8ExP8/TeS1VI3meQ
+         5O+DxVM3SWj3Wvx9N8tlO/mZNyOkXy6N9kgpw=
 MIME-Version: 1.0
-Date: Thu, 16 Sep 2010 12:42:17 +0800
-Message-ID: <AANLkTi=K1xnqt5MAX2uAr+h7t9Hv4e8kaHOn-K_mRjCa@mail.gmail.com>
-Subject: [PATCH] perf: fix exit usage
-From: jovi zhang <bookjovi@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <AANLkTikHfDUh3LdmyA5eMNACFPfi6pqGLFJiyzVm79X_@mail.gmail.com>
+References: <tip-54ff7e595d763d894104d421b103a89f7becf47c@git.kernel.org>
+	<alpine.LFD.2.00.1009151500060.2416@localhost6.localdomain6>
+	<AANLkTineVitetJgKS2AsZUMvuuxDhcPF45dFWK8rtFfd@mail.gmail.com>
+	<AANLkTikHfDUh3LdmyA5eMNACFPfi6pqGLFJiyzVm79X_@mail.gmail.com>
+Date: Thu, 16 Sep 2010 00:45:09 -0400
+Message-ID: <AANLkTi=1SyZe=G1DCPcccnRRsTtqYow-0-92PPqWq=jE@mail.gmail.com>
+Subject: Fwd: [PATCH RFC] x86: hpet: Avoid the readback penalty
+From: John Drescher <drescherjm@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o8G4gXul027445
 
-unify some exit code(using -1), and fix one bug(not exit when fork
-error in builtin-stat.c).
+On Wed, Sep 15, 2010 at 9:54 AM, John Drescher <drescherjm@gmail.com> wrote:
+> On Wed, Sep 15, 2010 at 9:11 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>> On Tue, 14 Sep 2010, tip-bot for Thomas Gleixner wrote:
+>>> x86: hpet: Work around hardware stupidity
+>>
+>> After my brain recovered from yesterdays exposure with the x86 timer
+>> horror, I came up with a different solution for this problem, which
+>> avoids the readback of the compare register completely. It works
+>> nicely on my affected ATI system, but needs some exposure to the other
+>> machines.
+>>
+>> Comments ?
+>>
+>
+> I can test this on my i7 machine in tonight (around 12 hours from now).
 
-Signed-off-by: jovi zhang <bookjovi@gmail.com>
-tools/perf/builtin-stat.c |    7 +++++--
-tools/perf/builtin-top.c  |    6 +++---
-tools/perf/perf.c         |    4 ++--
-3 files changed, 10 insertions(+), 7 deletions(-)
+Seems to work fine on my i7 box. I applied the first patch to
+2.6.36-rc4-git2 then after that I applied the new patch from this
+email. Both patches applied cleanly and I am now running the patched
+kernel without any issue. I turned off the clocksource=acpi_pm
+workaround I had enabled from the original problem.
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index a6b4d44..fe3e044 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -285,12 +285,15 @@ static int run_perf_stat(int argc __used, const
-char **argv)
+jmd1 ~ # uname -a
+Linux jmd1 2.6.36-rc4-git2-no-penalty #3 SMP PREEMPT Wed Sep 15
+21:25:53 EDT 2010 x86_64 Intel(R) Core(TM) i7 CPU 920 @ 2.67GHz
+GenuineIntel GNU/Linux
 
-       if (forks && (pipe(child_ready_pipe) < 0 || pipe(go_pipe) < 0)) {
-               perror("failed to create pipes");
--               exit(1);
-+               exit(-1);
-       }
+John
 
-       if (forks) {
--               if ((child_pid = fork()) < 0)
-+               child_pid = fork();
-+               if (child_pid < 0) {
-                       perror("failed to fork");
-+                       exit(-1);
-+               }
 
-               if (!child_pid) {
-                       close(child_ready_pipe[0]);
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index b513e40..d0e646c 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1047,7 +1047,7 @@ static void event__process_sample(const event_t *self,
-                   RB_EMPTY_ROOT(&al.map->dso->symbols[MAP__FUNCTION])) {
-                       pr_err("The %s file can't be used\n",
-                              symbol_conf.vmlinux_name);
--                       exit(1);
-+                       exit(-1);
-               }
 
-               return;
-@@ -1066,7 +1066,7 @@ static void event__process_sample(const event_t *self,
-                               machine__fprintf_vmlinux_path(machine, stderr);
-                       } else
-                               pr_err(".\n");
--                       exit(1);
-+                       exit(-1);
-               }
-       }
-
-@@ -1439,7 +1439,7 @@ int cmd_top(int argc, const char **argv, const
-char *prefix __used)
-               default_interval = freq;
-       } else {
-               fprintf(stderr, "frequency and count are zero, aborting\n");
--               exit(EXIT_FAILURE);
-+               exit(-1);
-       }
-
-       /*
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index cdd6c03..2d4601f 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -468,7 +468,7 @@ int main(int argc, const char **argv)
-               printf("\n usage: %s\n\n", perf_usage_string);
-               list_common_cmds_help();
-               printf("\n %s\n\n", perf_more_info_string);
--               exit(1);
-+               exit(-1);
-       }
-       cmd = argv[0];
-
-@@ -492,7 +492,7 @@ int main(int argc, const char **argv)
-                       fprintf(stderr, "Expansion of alias '%s' failed; "
-                               "'%s' is not a perf-command\n",
-                               cmd, argv[0]);
--                       exit(1);
-+                       exit(-1);
-               }
-               if (!done_help) {
-                       cmd = argv[0] = help_unknown_cmd(cmd);
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+-- 
+John M. Drescher
