@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356Ab0IPSGZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 14:06:25 -0400
-Received: from mga14.intel.com ([143.182.124.37]:26449 "EHLO mga14.intel.com"
+	id S1755657Ab0IPSGv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 14:06:51 -0400
+Received: from mga11.intel.com ([192.55.52.93]:62286 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752693Ab0IPSGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 14:06:24 -0400
+	id S1755324Ab0IPSGt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 14:06:49 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.56,377,1280732400"; 
-   d="scan'208";a="325418964"
+   d="scan'208";a="838302628"
 From: Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 0/3] Fix the TIOCGICOUNT problem for good
+Subject: [PATCH 1/3] tty: Make tiocgicount a handler
 To: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org, greg@kroah.com,
         drosenberg@vsecurity.com
-Date: Thu, 16 Sep 2010 18:21:06 +0100
-Message-ID: <20100916171747.25987.33573.stgit@localhost.localdomain>
+Date: Thu, 16 Sep 2010 18:21:24 +0100
+Message-ID: <20100916172113.25987.22944.stgit@localhost.localdomain>
+In-Reply-To: <20100916171747.25987.33573.stgit@localhost.localdomain>
+References: <20100916171747.25987.33573.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -23,55 +25,215 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remembering to clear fields is something driver authors are simply never
-going to remember to get right every new driver. Instead take the problem
-away from them and give them a simple interface to do the job.
+Dan Rosenberg noted that various drivers return the struct with uncleared
+fields. Instead of spending forever trying to stomp all the drivers that
+get it wrong (and every new driver) do the job in one place.
 
+This first patch adds the needed operations and hooks them up, including
+the needed USB midlayer and serial core plumbing.
+
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
-Alan Cox (3):
-      tty: icount changeover for other main devices
-      tty: Convert the USB drivers to the new icount interface
-      tty: Make tiocgicount a handler
+ drivers/char/tty_io.c           |   21 +++++++++++++++++++++
+ drivers/serial/serial_core.c    |   35 ++++++++++++++++-------------------
+ drivers/usb/serial/usb-serial.c |   13 +++++++++++++
+ include/linux/tty_driver.h      |    9 +++++++++
+ include/linux/usb/serial.h      |    2 ++
+ 5 files changed, 61 insertions(+), 19 deletions(-)
 
 
- arch/ia64/hp/sim/simserial.c          |   12 -----
- drivers/char/amiserial.c              |   56 ++++++++++++++-----------
- drivers/char/cyclades.c               |   49 ++++++++++++----------
- drivers/char/ip2/ip2main.c            |   71 +++++++++++++++++++-------------
- drivers/char/mxser.c                  |   62 ++++++++++++++++------------
- drivers/char/nozomi.c                 |   37 ++++++++---------
- drivers/char/pcmcia/synclink_cs.c     |   60 ++++++++++++---------------
- drivers/char/synclink.c               |   73 +++++++++++++++------------------
- drivers/char/synclink_gt.c            |   55 +++++++++++++------------
- drivers/char/synclinkmp.c             |   61 +++++++++++++---------------
- drivers/char/tty_io.c                 |   21 +++++++++
- drivers/net/usb/hso.c                 |   35 +++++++---------
- drivers/serial/68360serial.c          |   51 +++++++++++------------
- drivers/serial/serial_core.c          |   35 +++++++---------
- drivers/usb/serial/ark3116.c          |   40 +++++++++---------
- drivers/usb/serial/ftdi_sio.c         |    1 
- drivers/usb/serial/io_edgeport.c      |   49 ++++++++++++----------
- drivers/usb/serial/io_tables.h        |    4 ++
- drivers/usb/serial/io_ti.c            |   29 ++++++++++---
- drivers/usb/serial/mos7720.c          |   50 +++++++++++++----------
- drivers/usb/serial/mos7840.c          |   50 +++++++++++++----------
- drivers/usb/serial/ssu100.c           |   46 +++++++++++----------
- drivers/usb/serial/ti_usb_3410_5052.c |   37 +++++++++++++----
- drivers/usb/serial/usb-serial.c       |   13 ++++++
- include/linux/tty_driver.h            |    9 ++++
- include/linux/usb/serial.h            |    2 +
- net/bluetooth/rfcomm/tty.c            |    4 --
- 27 files changed, 561 insertions(+), 451 deletions(-)
-
--- 
-Rust greets time a grave to steam, in mire gloom to no more gleam
-Does care die quiet and scarred, Berry red in Barry yard ?
-
-Rusted steel at rest dust all, old sump oil lead is my pall
-long rather to linger there, cold my fire once called me fair
-
-Who knows now when I was new, speed in flow and on I flew
-I turned eyes to run and see, in steam a dream adore me
-
+diff --git a/drivers/char/tty_io.c b/drivers/char/tty_io.c
+index e185db3..6873240 100644
+--- a/drivers/char/tty_io.c
++++ b/drivers/char/tty_io.c
+@@ -96,6 +96,7 @@
+ #include <linux/bitops.h>
+ #include <linux/delay.h>
+ #include <linux/seq_file.h>
++#include <linux/serial.h>
+ 
+ #include <linux/uaccess.h>
+ #include <asm/system.h>
+@@ -2511,6 +2512,20 @@ static int tty_tiocmset(struct tty_struct *tty, struct file *file, unsigned int
+ 	return tty->ops->tiocmset(tty, file, set, clear);
+ }
+ 
++static int tty_tiocgicount(struct tty_struct *tty, void __user *arg)
++{
++	int retval = -EINVAL;
++	struct serial_icounter_struct icount;
++	memset(&icount, 0, sizeof(icount));
++	if (tty->ops->get_icount)
++		retval = tty->ops->get_icount(tty, &icount);
++	if (retval != 0)
++		return retval;
++	if (copy_to_user(arg, &icount, sizeof(icount)))
++		return -EFAULT;
++	return 0;
++}	
++
+ struct tty_struct *tty_pair_get_tty(struct tty_struct *tty)
+ {
+ 	if (tty->driver->type == TTY_DRIVER_TYPE_PTY &&
+@@ -2631,6 +2646,12 @@ long tty_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	case TIOCMBIC:
+ 	case TIOCMBIS:
+ 		return tty_tiocmset(tty, file, cmd, p);
++	case TIOCGICOUNT:
++		retval = tty_tiocgicount(tty, p);
++		/* For the moment allow fall through to the old method */
++        	if (retval != -EINVAL)
++			return retval;
++		break;        
+ 	case TCFLSH:
+ 		switch (arg) {
+ 		case TCIFLUSH:
+diff --git a/drivers/serial/serial_core.c b/drivers/serial/serial_core.c
+index bc6cddd..c4ea146 100644
+--- a/drivers/serial/serial_core.c
++++ b/drivers/serial/serial_core.c
+@@ -1074,10 +1074,10 @@ uart_wait_modem_status(struct uart_state *state, unsigned long arg)
+  * NB: both 1->0 and 0->1 transitions are counted except for
+  *     RI where only 0->1 is counted.
+  */
+-static int uart_get_count(struct uart_state *state,
+-			  struct serial_icounter_struct __user *icnt)
++static int uart_get_icount(struct tty_struct *tty,
++			  struct serial_icounter_struct *icount)
+ {
+-	struct serial_icounter_struct icount;
++	struct uart_state *state = tty->driver_data;
+ 	struct uart_icount cnow;
+ 	struct uart_port *uport = state->uart_port;
+ 
+@@ -1085,19 +1085,19 @@ static int uart_get_count(struct uart_state *state,
+ 	memcpy(&cnow, &uport->icount, sizeof(struct uart_icount));
+ 	spin_unlock_irq(&uport->lock);
+ 
+-	icount.cts         = cnow.cts;
+-	icount.dsr         = cnow.dsr;
+-	icount.rng         = cnow.rng;
+-	icount.dcd         = cnow.dcd;
+-	icount.rx          = cnow.rx;
+-	icount.tx          = cnow.tx;
+-	icount.frame       = cnow.frame;
+-	icount.overrun     = cnow.overrun;
+-	icount.parity      = cnow.parity;
+-	icount.brk         = cnow.brk;
+-	icount.buf_overrun = cnow.buf_overrun;
++	icount->cts         = cnow.cts;
++	icount->dsr         = cnow.dsr;
++	icount->rng         = cnow.rng;
++	icount->dcd         = cnow.dcd;
++	icount->rx          = cnow.rx;
++	icount->tx          = cnow.tx;
++	icount->frame       = cnow.frame;
++	icount->overrun     = cnow.overrun;
++	icount->parity      = cnow.parity;
++	icount->brk         = cnow.brk;
++	icount->buf_overrun = cnow.buf_overrun;
+ 
+-	return copy_to_user(icnt, &icount, sizeof(icount)) ? -EFAULT : 0;
++	return 0;
+ }
+ 
+ /*
+@@ -1150,10 +1150,6 @@ uart_ioctl(struct tty_struct *tty, struct file *filp, unsigned int cmd,
+ 	case TIOCMIWAIT:
+ 		ret = uart_wait_modem_status(state, arg);
+ 		break;
+-
+-	case TIOCGICOUNT:
+-		ret = uart_get_count(state, uarg);
+-		break;
+ 	}
+ 
+ 	if (ret != -ENOIOCTLCMD)
+@@ -2295,6 +2291,7 @@ static const struct tty_operations uart_ops = {
+ #endif
+ 	.tiocmget	= uart_tiocmget,
+ 	.tiocmset	= uart_tiocmset,
++	.get_icount	= uart_get_icount,
+ #ifdef CONFIG_CONSOLE_POLL
+ 	.poll_init	= uart_poll_init,
+ 	.poll_get_char	= uart_poll_get_char,
+diff --git a/drivers/usb/serial/usb-serial.c b/drivers/usb/serial/usb-serial.c
+index 7a2177c..e64da74 100644
+--- a/drivers/usb/serial/usb-serial.c
++++ b/drivers/usb/serial/usb-serial.c
+@@ -519,6 +519,18 @@ static int serial_tiocmset(struct tty_struct *tty, struct file *file,
+ 	return -EINVAL;
+ }
+ 
++static int serial_get_icount(struct tty_struct *tty,
++				struct serial_icounter_struct *icount)
++{
++	struct usb_serial_port *port = tty->driver_data;
++
++	dbg("%s - port %d", __func__, port->number);
++
++	if (port->serial->type->get_icount)
++		return port->serial->type->get_icount(tty, icount);
++	return -EINVAL;
++}
++
+ /*
+  * We would be calling tty_wakeup here, but unfortunately some line
+  * disciplines have an annoying habit of calling tty->write from
+@@ -1195,6 +1207,7 @@ static const struct tty_operations serial_ops = {
+ 	.chars_in_buffer =	serial_chars_in_buffer,
+ 	.tiocmget =		serial_tiocmget,
+ 	.tiocmset =		serial_tiocmset,
++	.get_icount = 		serial_get_icount,
+ 	.cleanup = 		serial_cleanup,
+ 	.install = 		serial_install,
+ 	.proc_fops =		&serial_proc_fops,
+diff --git a/include/linux/tty_driver.h b/include/linux/tty_driver.h
+index b086779..db2d227 100644
+--- a/include/linux/tty_driver.h
++++ b/include/linux/tty_driver.h
+@@ -224,6 +224,12 @@
+  *	unless the tty also has a valid tty->termiox pointer.
+  *
+  *	Optional: Called under the termios lock
++ *
++ * int (*get_icount)(struct tty_struct *tty, struct serial_icounter *icount);
++ *
++ *	Called when the device receives a TIOCGICOUNT ioctl. Passed a kernel
++ *	structure to complete. This method is optional and will only be called
++ *	if provided (otherwise EINVAL will be returned).
+  */
+ 
+ #include <linux/fs.h>
+@@ -232,6 +238,7 @@
+ 
+ struct tty_struct;
+ struct tty_driver;
++struct serial_icounter_struct;
+ 
+ struct tty_operations {
+ 	struct tty_struct * (*lookup)(struct tty_driver *driver,
+@@ -268,6 +275,8 @@ struct tty_operations {
+ 			unsigned int set, unsigned int clear);
+ 	int (*resize)(struct tty_struct *tty, struct winsize *ws);
+ 	int (*set_termiox)(struct tty_struct *tty, struct termiox *tnew);
++	int (*get_icount)(struct tty_struct *tty,
++				struct serial_icounter_struct *icount);
+ #ifdef CONFIG_CONSOLE_POLL
+ 	int (*poll_init)(struct tty_driver *driver, int line, char *options);
+ 	int (*poll_get_char)(struct tty_driver *driver, int line);
+diff --git a/include/linux/usb/serial.h b/include/linux/usb/serial.h
+index 55675b1..16d682f 100644
+--- a/include/linux/usb/serial.h
++++ b/include/linux/usb/serial.h
+@@ -271,6 +271,8 @@ struct usb_serial_driver {
+ 	int  (*tiocmget)(struct tty_struct *tty, struct file *file);
+ 	int  (*tiocmset)(struct tty_struct *tty, struct file *file,
+ 			 unsigned int set, unsigned int clear);
++	int  (*get_icount)(struct tty_struct *tty,
++			struct serial_icounter_struct *icount);
+ 	/* Called by the tty layer for port level work. There may or may not
+ 	   be an attached tty at this point */
+ 	void (*dtr_rts)(struct usb_serial_port *port, int on);
 
