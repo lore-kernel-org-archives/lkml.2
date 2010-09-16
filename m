@@ -1,66 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755467Ab0IPOvo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 10:51:44 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54150 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754637Ab0IPOvm (ORCPT
+	id S1755419Ab0IPPCf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 11:02:35 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48724 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752517Ab0IPPCe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 10:51:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=lyJICblBC6ZiNcMERt9hVe3fKW1n3Ftz4F/CTk7PaGFEcqqv3nCVlCrvKWiyqQJojm
-         Ptvip4JQr+V/FmuhR3CwsOFC5JQkYu5qJwTtqNYroGoK9yKPqG9G3/9hLFhv7RqWEgFv
-         aTXu1CS57H8E02rcyeYsfnfXhSPsm2wdZlkl0=
-Date: Thu, 16 Sep 2010 16:51:36 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Stephane Eranian <eranian@google.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, Don Zickus <dzickus@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>
-Subject: Re: [PATCH] perf, x86: catch spurious interrupts after disabling
-	counters
-Message-ID: <20100916145132.GB5352@nowhere>
-References: <20100912095202.GF13563@erda.amd.com> <20100913143713.GK13563@erda.amd.com> <20100914174132.GN13563@erda.amd.com> <20100915162034.GO13563@erda.amd.com> <AANLkTimWoE5XiYSr8jx=RFS5Nb9d4_wWe=c-W3oMj8dH@mail.gmail.com> <20100915203948.GB28455@lenovo> <20100915222712.GU13563@erda.amd.com>
+	Thu, 16 Sep 2010 11:02:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100915222712.GU13563@erda.amd.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100916111714.CA03.A69D9226@jp.fujitsu.com>
+References: <AANLkTik=ZpiCN-5YfWJ6zejSJBknL8Sj4Vtc+X_XpS71@mail.gmail.com>
+ <20100914105147.C996.A69D9226@jp.fujitsu.com> <20100916111714.CA03.A69D9226@jp.fujitsu.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 16 Sep 2010 08:01:30 -0700
+Message-ID: <AANLkTin6-nPh1pc79W9qpzTDsEQrMPiZ45aJ+2LZheCF@mail.gmail.com>
+Subject: Re: [PATCH 2/2] execve: check the VM has enough memory at first
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Roland McGrath <roland@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, oss-security@lists.openwall.com,
+        Solar Designer <solar@openwall.com>,
+        Kees Cook <kees.cook@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Oleg Nesterov <oleg@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        linux-fsdevel@vger.kernel.org, pageexec@freemail.hu,
+        "Brad Spengler <spender@grsecurity.net>, Eugene Teo" 
+	<eugene@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 12:27:12AM +0200, Robert Richter wrote:
-> > On Wed, Sep 15, 2010 at 10:21:10PM +0200, Stephane Eranian wrote:
-> > > When you do perf record foo, it's equivalent to
-> > > perf record -e cycles:uk -F 1000 foo
-> 
-> Yes, thanks.
-> 
-> I am asking because I have observed up to 4 back-to-back nmis from the
-> same counter when enabling an event. The period is not yet adjusted.
-> We should avoid those short sampling periods in the beginning and
-> better start with too long periods. Didn't look at the implementation
-> so far. I know this is not easy to handle because this very much
-> depends on the event we measure.
-> 
-> Maybe we start the counter with a delay and then calculate period =
-> duration - delay, later decreasing the delay until the frequency is
-> adjusted but keeping the total sampling rate more or less constant.
+2010/9/15 KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>:
+>
+> Briefly says, to introduce new limit has bad benefit/risk balance. Sadly.
 
+Well, I mostly agree. That said, I do think we could extend the
+limiter some ways.
 
-Yep, IIRC, the first arming is set with a 1 sample period. So that a first
-calculation can be made on top of the first triggering event time to get
-a better sample period. That avoids the need to start with frequency
-nature assumptions for each event.
+For example, I think the "stack limit / 4" is perfectly sane, but it
+would make total sense to perhaps also take into account the AS and
+RSS limits.
 
-I doubt that can be worked around easily.
+And I do think that your attempt to use __vm_enough_memory() was good.
+It happens to be coded in a way that makes it useless for a one-pass
+model, and some of what it does would be too expensive to do up-front
+when you can't short-circuit it, but I do think that it would probably
+be appropriate to at least try to take the _rough_ code there and use
+it as a limit for maximum stack size too.
 
+For example, we could have a function somewhat like
+
+    unsigned long max_stack_size(void)
+   {
+        unsigned long allowed, used, limit;
+
+        switch (sysctl_overcommit_memory) {
+        case OVERCOMMIT_ALWAYS:
+                allowed = ULONG_MAX;
+                break;
+        case OVERCOMMIT_GUESS:
+                .. maybe we can come up with some upper bound here too ..
+                break;
+        default:
+                allowed = (totalram_pages - hugetlb_total_pages())
+                        * sysctl_overcommit_ratio / 100;
+                if (!cap_sys_admin)
+                        allowed -= allowed / 32;
+                allowed += total_swap_pages;
+                /* Don't let a single process grow too big:
+                   leave 3% of the size of this process for other processes */
+                if (mm)
+                        allowed -= mm->total_vm / 32;
+                /* What is already committed to? */
+                used = percpu_counter_read_positive(&vm_committed_as);
+                if (used > allowed)
+                        return 0;
+                allowed -= used;
+                break;
+        }
+        limit = ACCESS_ONCE(rlim[RLIMIT_STACK].rlim_cur) / 4;
+        if (allowed > limit)
+                allowed = limit;
+        return allowed;
+    }
+
+which we'd call once at the beginning of the execve(), and then
+remember that result and use it instead of the current 'rlimit/4'
+value.
+
+Now, admittedly the OVERCOMMIT_GUESS case is the interesting one, and
+the one that is hard to write efficiently. But maybe we could make
+'nr_free_pages()' cheap enough that doin that whole OVERCOMMIT_GUESS
+"approximate free pages" thing from __vm_enough_memory would work out
+too?
+
+I dunno. It doesn't look hopeless.
+
+                      Linus
