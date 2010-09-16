@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756948Ab0IPWgP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 18:36:15 -0400
-Received: from smtp125.sbc.mail.sp1.yahoo.com ([69.147.65.184]:35405 "HELO
-	smtp125.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756930Ab0IPWgN (ORCPT
+	id S1756971Ab0IPWgZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 18:36:25 -0400
+Received: from smtp109.sbc.mail.mud.yahoo.com ([68.142.198.205]:45387 "HELO
+	smtp109.sbc.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756957Ab0IPWgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 18:36:13 -0400
+	Thu, 16 Sep 2010 18:36:22 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: ecHZ6RMVM1k2yddIgMyrUiOa13HFMF2RSgFXwuTqZ9ANXUg
- wO9xantYhnZ6JXy._4IURRytvonbYGEDH.WZO0tl7mqTPle6MBjaRdIEaozM
- 2ghxeE0I0567aNTu92ETJLGz9mUaY0u0LaafVjw_veJlFhbzqKdk.6uGMA_S
- CGqRJ3mk9JrGzBpCRW4_aWNyGK._r94ItX1aSHZsnwRJDNxYqbge9dW2nK22
- tgMZyPxtNROKC0OuqtmpPx4DrE6.ScnZyKFVkzMP0EuOvCLJUZq6EwsACK.F
- KFPPrwKXKmuPg_RwXl40tONaYobVX6aq41S.Ua.MQKw6Y58bqDuvhCq8J6Tj
- QLtztFOeCyvgfaa9hNw--
+X-YMail-OSG: 42PVPBgVM1k8nPpihjjdB6WC00A4da8XgKap3JmhDdK5HsF
+ YxmlRoiSn.sjyWACL5ihq9a8N29mhKOIsJ3dXaqoynPmYxfGZVk2BKsz18Zw
+ d6p1O6sYCCzGWv_NbMysFeL4eSa_rR5F9OrDP2ML40EpSJ6x_e2Mv5LFtc2C
+ GWm8QpMsh.zHK50LhNxyv1GDitDXc_Lk1TM9P97h6A8T._6Fyhl4fADfwSxJ
+ HZNpgjzAPdQflNWo4lHUMAMpjmF72XH.Syf2JTsHoCg4IaKRP7gQzHpPbviN
+ KgQI._idkhHy9KDejqIHs.tadl6I0aObJfTHHh8.Y660CR5u4ATKAkM.G60p
+ 0D7sMBY5zLpbeNp_O7w--
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -30,9 +30,9 @@ Cc: James Smart <james.smart@emulex.com>,
         Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
         Christoph Hellwig <hch@lst.de>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 6/8] qla2xxx: Remove host_lock unlock() + lock() from qla2xxx_queuecommand()
-Date: Thu, 16 Sep 2010 15:36:11 -0700
-Message-Id: <1284676571-10854-1-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 7/8] tcm_loop: Remove host_lock unlock() + lock() from tcm_loop_queuecommand()
+Date: Thu, 16 Sep 2010 15:36:18 -0700
+Message-Id: <1284676578-10873-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -41,40 +41,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
 This patch removes the now legacy host_lock unlock() + lock() optimization
-from qla_os.c:qla2xxx_queuecommand()
+from tcm_loop_fabric_scsi.c:tcm_loop_queuecommand()
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/scsi/qla2xxx/qla_os.c |    7 ++-----
- 1 files changed, 2 insertions(+), 5 deletions(-)
+ drivers/target/tcm_loop/tcm_loop_fabric_scsi.c |    7 -------
+ 1 files changed, 0 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/scsi/qla2xxx/qla_os.c b/drivers/scsi/qla2xxx/qla_os.c
-index 8c80b49..45c3d28 100644
---- a/drivers/scsi/qla2xxx/qla_os.c
-+++ b/drivers/scsi/qla2xxx/qla_os.c
-@@ -574,11 +574,9 @@ qla2xxx_queuecommand(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *))
- 		goto qc24_target_busy;
- 	}
- 
--	spin_unlock_irq(vha->host->host_lock);
+diff --git a/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c b/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
+index b95ed03..a0a1a55 100644
+--- a/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
++++ b/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
+@@ -324,8 +324,6 @@ static int tcm_loop_queuecommand(
+ 		" scsi_buf_len: %u\n", sc->device->host->host_no,
+ 		sc->device->id, sc->device->channel, sc->device->lun,
+ 		sc->cmnd[0], scsi_bufflen(sc));
 -
- 	sp = qla2x00_get_new_sp(base_vha, fcport, cmd, done);
- 	if (!sp)
--		goto qc24_host_busy_lock;
-+		goto qc24_host_busy;
+-	spin_unlock_irq(host->host_lock);
+ 	/*
+ 	 * Locate the tcm_loop_hba_t pointer 
+ 	 */
+@@ -345,7 +343,6 @@ static int tcm_loop_queuecommand(
+ 	 */
+ 	se_cmd = tcm_loop_allocate_core_cmd(tl_hba, se_tpg, sc);
+ 	if (!(se_cmd)) {
+-		spin_lock_irq(host->host_lock);
+ 		sc->result = host_byte(DID_ERROR);
+ 		(*done)(sc);
+ 		return 0;
+@@ -354,10 +351,6 @@ static int tcm_loop_queuecommand(
+ 	 * Queue up the newly allocated to be processed in TCM thread context.
+ 	*/
+ 	se_cmd->transport_add_cmd_to_queue(se_cmd, TRANSPORT_NEW_CMD_MAP);
+-	/*
+-	 * Reaquire the the struct scsi_host->host_lock before returning
+-	 */
+-	spin_lock_irq(host->host_lock);
+ 	return 0;
+ }
  
- 	rval = ha->isp_ops->start_scsi(sp);
- 	if (rval != QLA_SUCCESS)
-@@ -592,8 +590,7 @@ qc24_host_busy_free_sp:
- 	qla2x00_sp_free_dma(sp);
- 	mempool_free(sp, ha->srb_mempool);
- 
--qc24_host_busy_lock:
--	spin_lock_irq(vha->host->host_lock);
-+qc24_host_busy:
- 	return SCSI_MLQUEUE_HOST_BUSY;
- 
- qc24_target_busy:
 -- 
 1.7.2.3
 
