@@ -1,75 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752456Ab0IPDOl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 23:14:41 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60996 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511Ab0IPDOk (ORCPT
+	id S1753023Ab0IPDUI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 23:20:08 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:35165 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694Ab0IPDUG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 23:14:40 -0400
-Date: Wed, 15 Sep 2010 21:14:36 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: wellsk40@gmail.com
-Cc: linus.walleij@stericsson.com, spi-devel-general@lists.sourceforge.net,
-        sameo@linux.intel.com, rabin.vincent@stericsson.com,
-        srinidhi.kasagar@stericsson.com, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, u.kleine-koenig@pengutronix.de,
-        linux-arm-kernel@lists.infradead.org, tj@kernel.org,
-        Lukasz.Baj@tieto.com, quentinyang05@gmail.com
-Subject: Re: amba_pl022 spi->mode fix/cleanup patches
-Message-ID: <20100916031436.GA7542@angua.secretlab.ca>
-References: <1284135579-13578-1-git-send-email-wellsk40@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284135579-13578-1-git-send-email-wellsk40@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 15 Sep 2010 23:20:06 -0400
+From: Keng-Yu Lin <keng-yu.lin@canonical.com>
+To: mjg59@srcf.ucam.org, len.brown@intel.com, alan-jenkins@tuffmail.co.uk,
+        superm1@ubuntu.com, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Keng-Yu Lin <keng-yu.lin@canonical.com>
+Subject: [PATCH v2] dell-laptop: Add debugfs support
+Date: Thu, 16 Sep 2010 11:19:46 +0800
+Message-Id: <1284607186-13129-1-git-send-email-keng-yu.lin@canonical.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <AANLkTime84o+hJWVDegQWHxcvUiftKW-2psW5tv4a-yR@mail.gmail.com>
+References: <AANLkTime84o+hJWVDegQWHxcvUiftKW-2psW5tv4a-yR@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 10, 2010 at 09:19:34AM -0700, wellsk40@gmail.com wrote:
-> This patch series updates drivers and platforms that depend on the
-> amba_pl022 driver and use the pl022_config_chip structure for
-> setting up the SPI mode and data transfer width.
-> 
-> The SPI configuration (CPOL/CPHA mode, bit send order, data bits per
-> word, and loopback mode) were previously setup as part of board
-> specific data in the pl022_config_chip structure. This has been
-> changed to now use the .mode field in spi_board_info structure (or
-> drivers that setup the mode). The SPI transfer's data width is now
-> configured from spi->bits_per_word.
-> 
-> The SPI driver changes have been previously submitted to the SPI ML.
-> This patch series need to be layered on that patch series.
-> 
-> These changes add or fix the .mode field in the plats/boards that use the
-> driver (u300, ux500, lpc32xx). The patches also move the data width
-> from the board specific area to the driver for mfd/ab8500. As the
-> fields in the pl022_config_chip structure are no longer needed, they
-> are removed in the last patch.
-> 
-> These changes have been tested on the phy3250 platform (lpc32xx). I
-> was able to test the ab8500 driver to some degree, but I only have a
-> standard pl022. I am unable to test u300 and ux500 changes, but the
-> u300 changes compiled fine.
-> 
-> [PATCH 1/5] mfd/ab8500: Setup SPI transfer for 24 bits
-> [PATCH 2/5] ARM: LPC32XX: Add missing SPI mode and remove unused fields
-> [PATCH 3/5] ARM: U300: spi->mode and spi_bits_per_words updates
-> [PATCH 4/5] ARM: Ux500: Change SPI mode and remove unused fields
-> [PATCH 5/5] spi: amba_pl022: Remove unused fields from pl022_config_chip
+Export the status of RF killswitch through debugfs.
 
-There are ordering issues with these patches and the patch they depend
-on.  Basically, as-is it is not bisectable.  The above platforms stop
-working after the SPI driver changes are applied, but before these
-patches are.  You'll need to update the mode field for all the users
-in or before the SPI driver changes patch to preserve bisectability.
-Then you can have subsequent cleanup patches....
+The killswitch status is obtained by the SMI to BIOS. Exporting this status
+through debugfs can help identify the issue with the misbehaving firmware.
 
-Or just squash all the patches into the SPI driver patch.  I'd be
-okay with that in this case because the board changes are well
-contained and easy to understand.
+Signed-off-by: Keng-Yu Lin <keng-yu.lin@canonical.com>
+---
+ drivers/platform/x86/dell-laptop.c |   83 ++++++++++++++++++++++++++++++++++++
+ 1 files changed, 83 insertions(+), 0 deletions(-)
 
-g.
+diff --git a/drivers/platform/x86/dell-laptop.c b/drivers/platform/x86/dell-laptop.c
+index 4413975..1536dd5 100644
+--- a/drivers/platform/x86/dell-laptop.c
++++ b/drivers/platform/x86/dell-laptop.c
+@@ -25,6 +25,8 @@
+ #include <linux/mm.h>
+ #include <linux/i8042.h>
+ #include <linux/slab.h>
++#include <linux/debugfs.h>
++#include <linux/seq_file.h>
+ #include "../../firmware/dcdbas.h"
+ 
+ #define BRIGHTNESS_TOKEN 0x7d
+@@ -325,6 +327,77 @@ static const struct rfkill_ops dell_rfkill_ops = {
+ 	.query = dell_rfkill_query,
+ };
+ 
++#ifdef CONFIG_DEBUG_FS
++static struct dentry *dell_laptop_dir;
++
++static int dell_debugfs_show(struct seq_file *s, void *data)
++{
++	int status;
++
++	get_buffer();
++	dell_send_request(buffer, 17, 11);
++	status = buffer->output[1];
++	release_buffer();
++
++	seq_printf(s, "status:\t0x%X\n", status);
++	seq_printf(s, "Hardware switch supported:   %lu\n",
++		   status & BIT(0));
++	seq_printf(s, "Wifi locator supported:      %lu\n",
++		  (status & BIT(1)) >> 1);
++	seq_printf(s, "Wifi is supported:           %lu\n",
++		  (status & BIT(2)) >> 2);
++	seq_printf(s, "Bluetooth is supported:      %lu\n",
++		  (status & BIT(3)) >> 3);
++	seq_printf(s, "WWAN is supported:           %lu\n",
++		  (status & BIT(4)) >> 4);
++	seq_printf(s, "Wireless keyboard supported: %lu\n",
++		  (status & BIT(5)) >> 5);
++	seq_printf(s, "Wifi is installed:           %lu\n",
++		  (status & BIT(8)) >> 8);
++	seq_printf(s, "Bluetooth is installed:      %lu\n",
++		  (status & BIT(9)) >> 9);
++	seq_printf(s, "WWAN is installed:           %lu\n",
++		  (status & BIT(10)) >> 10);
++	seq_printf(s, "Hardware switch is on:       %lu\n",
++		  (status & BIT(16)) >> 16);
++	seq_printf(s, "Wifi is blocked:             %lu\n",
++		  (status & BIT(17)) >> 17);
++	seq_printf(s, "Bluetooth is blocked:        %lu\n",
++		  (status & BIT(18)) >> 18);
++	seq_printf(s, "WWAN is blocked:             %lu\n",
++		  (status & BIT(19)) >> 19);
++
++	seq_printf(s, "\nhwswitch_state:\t0x%X\n", hwswitch_state);
++	seq_printf(s, "Wifi controlled by switch:      %lu\n",
++		   hwswitch_state & BIT(0));
++	seq_printf(s, "Bluetooth controlled by switch: %lu\n",
++		   hwswitch_state & BIT(0) >> 1);
++	seq_printf(s, "WWAN controlled by switch:      %lu\n",
++		   hwswitch_state & BIT(0) >> 2);
++	seq_printf(s, "Wireless switch config locked:  %lu\n",
++		   hwswitch_state & BIT(0) >> 7);
++	seq_printf(s, "Wifi locator enabled:           %lu\n",
++		   hwswitch_state & BIT(0) >> 8);
++	seq_printf(s, "Wifi locator setting locked:    %lu\n",
++		   hwswitch_state & BIT(0) >> 15);
++
++	return 0;
++}
++
++static int dell_debugfs_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, dell_debugfs_show, inode->i_private);
++}
++
++static const struct file_operations dell_debugfs_fops = {
++	.owner = THIS_MODULE,
++	.open = dell_debugfs_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++#endif
++
+ static void dell_update_rfkill(struct work_struct *ignored)
+ {
+ 	if (wifi_rfkill)
+@@ -556,6 +629,13 @@ static int __init dell_init(void)
+ 		goto fail_filter;
+ 	}
+ 
++#ifdef CONFIG_DEBUG_FS
++	dell_laptop_dir = debugfs_create_dir("dell_laptop", NULL);
++	if (dell_laptop_dir != NULL)
++		debugfs_create_file("rfkill", 0444, dell_laptop_dir, NULL,
++				    &dell_debugfs_fops);
++#endif
++
+ #ifdef CONFIG_ACPI
+ 	/* In the event of an ACPI backlight being available, don't
+ 	 * register the platform controller.
+@@ -615,6 +695,9 @@ fail_platform_driver:
+ 
+ static void __exit dell_exit(void)
+ {
++#ifdef CONFIG_DEBUG_FS
++	debugfs_remove_recursive(dell_laptop_dir);
++#endif
+ 	i8042_remove_filter(dell_laptop_i8042_filter);
+ 	cancel_delayed_work_sync(&dell_rfkill_work);
+ 	backlight_device_unregister(dell_backlight_device);
+-- 
+1.7.1
 
