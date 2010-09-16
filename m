@@ -1,99 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191Ab0IPLR6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 07:17:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32969 "EHLO mx1.redhat.com"
+	id S1754359Ab0IPLY3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 07:24:29 -0400
+Received: from hera.kernel.org ([140.211.167.34]:40133 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752751Ab0IPLR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 07:17:57 -0400
-Date: Thu, 16 Sep 2010 13:17:52 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] kvm: enable irq injection from interrupt context
-Message-ID: <20100916111752.GA3008@redhat.com>
-References: <20100916091054.GA20864@redhat.com>
- <20100916092553.GV3008@redhat.com>
- <4C91E75B.6010704@redhat.com>
- <20100916095310.GG20864@redhat.com>
- <20100916101332.GW3008@redhat.com>
- <20100916101339.GK20864@redhat.com>
- <20100916102047.GY3008@redhat.com>
- <20100916104455.GA22254@redhat.com>
- <20100916105403.GZ3008@redhat.com>
- <20100916105352.GB22254@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100916105352.GB22254@redhat.com>
+	id S1753774Ab0IPLYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 07:24:25 -0400
+From: Tejun Heo <tj@kernel.org>
+To: linux-kernel@vger.kernel.org, oleg@redhat.com
+Cc: dmitry.torokhov@gmail.com, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 1/4] workqueue: implement alloc_ordered_workqueue()
+Date: Thu, 16 Sep 2010 13:24:04 +0200
+Message-Id: <1284636247-4734-2-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1284636247-4734-1-git-send-email-tj@kernel.org>
+References: <1284636247-4734-1-git-send-email-tj@kernel.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 16 Sep 2010 11:24:11 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 12:53:52PM +0200, Michael S. Tsirkin wrote:
-> On Thu, Sep 16, 2010 at 12:54:03PM +0200, Gleb Natapov wrote:
-> > On Thu, Sep 16, 2010 at 12:44:55PM +0200, Michael S. Tsirkin wrote:
-> > > On Thu, Sep 16, 2010 at 12:20:47PM +0200, Gleb Natapov wrote:
-> > > > On Thu, Sep 16, 2010 at 12:13:39PM +0200, Michael S. Tsirkin wrote:
-> > > > > On Thu, Sep 16, 2010 at 12:13:32PM +0200, Gleb Natapov wrote:
-> > > > > > On Thu, Sep 16, 2010 at 11:53:10AM +0200, Michael S. Tsirkin wrote:
-> > > > > > > On Thu, Sep 16, 2010 at 11:46:03AM +0200, Avi Kivity wrote:
-> > > > > > > >  On 09/16/2010 11:25 AM, Gleb Natapov wrote:
-> > > > > > > > >>
-> > > > > > > > >>  MSI only appeared in rhel6, older guests still use level interrupts.
-> > > > > > > > >So they are already slow for other reasons.
-> > > > > > > > >
-> > > > > > > > 
-> > > > > > > > Exactly, for example they need to exit to userspace to ack the
-> > > > > > > > interrupt.  That's far slower than the workqueue.
-> > > > > > > 
-> > > > > > > Well, this is not exactly comparable: you might get
-> > > > > > > same irq asserted multiple times and only deasserted once.
-> > > > > > > 
-> > > > > > Are we talking about level interrupts? Why would you assert level
-> > > > > > triggered interrupt multiple times before deasserting it?
-> > > > > 
-> > > > > User of irqfd has no way to know what current interrupt level is.
-> > > > > So it has to keep asserting.
-> > > > > 
-> > > > Why can't it keep track of current level?
-> > > 
-> > > This breaks the model: eventfd user is unaware of PCI, levels and such:
-> > > it just signals the event.  Remember that asserts are done from e.g. vhost-net,
-> > > deasserts need to be handled by qemu.
-> > > 
-> > eventfd user implements HW and it knows exactly what type of interrupt
-> > this HW generates.
-> 
-> We haver two users: qemu does deasserts, vhost-net does asserts.
-Well this is broken. You want KVM to track level for you and this is
-wrong. KVM does this anyway because it can't relay on devise model
-to behave correctly [0], but in your case it is designed to behave
-incorrectly.
+alloc_ordered_workqueue() creates a workqueue which processes each
+work itemp one by one in the queued order.  This will be used to
+replace create_freezeable_workqueue() and
+create_singlethread_workqueue().
 
-Interrupt type is a device property. PCI devices just happen to be level
-triggered according to PCI spec. What if you want to use vhost-net to
-implement network device which has active-low interrupt line? [1]
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ include/linux/workqueue.h |   18 ++++++++++++++++++
+ 1 files changed, 18 insertions(+), 0 deletions(-)
 
-If you want to split parts that asserts irq and de-asserts it then we
-should have irqfd that tracks line status and knows interrupt line
-polarity.
+diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
+index 25e02c9..07c4892 100644
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -306,6 +306,24 @@ __alloc_workqueue_key(const char *name, unsigned int flags, int max_active,
+ 	__alloc_workqueue_key((name), (flags), (max_active), NULL, NULL)
+ #endif
+ 
++/**
++ * alloc_ordered_workqueue - allocate an ordered workqueue
++ * @name: name of the workqueue
++ * @flags: WQ_* flags (only WQ_FREEZEABLE and WQ_RESCUER are meaningful)
++ *
++ * Allocate an ordered workqueue.  An ordered workqueue executes at
++ * most one work item at any given time in the queued order.  They are
++ * implemented as unbound workqueues with @max_active of one.
++ *
++ * RETURNS:
++ * Pointer to the allocated workqueue on success, %NULL on failure.
++ */
++static inline struct workqueue_struct *
++alloc_ordered_workqueue(const char *name, unsigned int flags)
++{
++	return alloc_workqueue(name, WQ_UNBOUND | flags, 1);
++}
++
+ #define create_workqueue(name)					\
+ 	alloc_workqueue((name), WQ_RESCUER, 1)
+ #define create_freezeable_workqueue(name)			\
+-- 
+1.7.1
 
-> Another application is out of process virtio (sandboxing!).
-It will still assert and de-assert irq at the same code, so it will be
-able to track irq line status.
-
-> Again, pci stuff needs to stay in qemu.
-> 
-
-Nothing to do with PCI whatsoever.
-
-[0] most qemu devices behave incorrectly and trigger level irq more then
-    needed.
-[1] this is how correct PCI device should behave but we override
-    polarity in ACPI, but now incorrect behaviour is deeply designed
-    into vhost-net.
-
---
-			Gleb.
