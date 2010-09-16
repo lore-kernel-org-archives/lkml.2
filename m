@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756874Ab0IPWfh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 18:35:37 -0400
-Received: from smtp102.sbc.mail.ac4.yahoo.com ([76.13.13.241]:42605 "HELO
-	smtp102.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756815Ab0IPWfg (ORCPT
+	id S1756892Ab0IPWfp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 18:35:45 -0400
+Received: from smtp125.sbc.mail.sp1.yahoo.com ([69.147.65.184]:34862 "HELO
+	smtp125.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756877Ab0IPWfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 18:35:36 -0400
+	Thu, 16 Sep 2010 18:35:42 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: hu2CZBkVM1nrcQl0NsIVGk3TEuzOHK6gaM6auBorGvE9oZ4
- gqPEQ_jmvvjr1itpCmIIeoIdnWq169bWGo5NHpMIOylstKFnZbUdHl8ZhbOM
- DGOTV9sHdkQGUa4Ld1z4g0Impbf3RpPyhkq_UHQgxQ5AfGLSvyaHyiFAeFcL
- FzlDsXUx5S3ewm4672jJiZ7vQ8z6XejDMpiD0oekgEQJsDEqgTBxaql5y_nJ
- 562iFGLAA02MKYQQ4RXuAjqgem3Dppx8RbzcbqYjtSthiSxWnC814kk0UNmv
- gdS6M3Ojc5FgAhscgNC6oZCyMubxeCycAWffcpLfheYexCpLV2w--
+X-YMail-OSG: B7zm58UVM1k95W5GUIkfkbG.7fS1EBkpNYzW6F7QczsrFjv
+ _ruNyaN9ThnLT9rqZQUuzlliBjN8x503BnGmFGqJPtBKeIdNozDeMGMBqkZ7
+ IlJfXGfMbeCp67.g1ISnPv6AOWlH1Wd2wtq8UjZApGN7ATHZia5UhF0bU86C
+ PRUvWPfWUQ.oSbPrT6SbKi2I2xZF2rZTlJQZBLDolBePWLFwsAtQ1cH57cUB
+ 88hdIt2_ULB5ybiKQAwMp97rLH8yEl0HuCywxvpbBq9qjHzGTT5U6L_A6Eaw
+ vb7iSCNfaE4CV6mSDOZseKmdkOm4M0HXQF4lhujJDuVzDlB86i5i9KFI59iL
+ QQrd2qvMhSWyvzXucnQ--
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -29,9 +30,9 @@ Cc: James Smart <james.smart@emulex.com>,
         Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
         Christoph Hellwig <hch@lst.de>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 1/8] scsi: Drop struct Scsi_Host->host_lock around SHT->queuecommand()
-Date: Thu, 16 Sep 2010 15:35:29 -0700
-Message-Id: <1284676529-10756-1-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 2/8] libiscsi: Remove host_lock unlock() + lock() from iscsi_queuecommand()
+Date: Thu, 16 Sep 2010 15:35:39 -0700
+Message-Id: <1284676539-10778-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -39,36 +40,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch converts scsi_dispatch_cmd() to only hold struct Scsi_Host->host_lock
-for scsi_cmd_get_serial(), and drops the lock because the call into
-the LLD with host->hostt->queuecommand().
+This patch removes the now legacy host_lock unlock() + lock() optimization
+from libiscsi.c:iscsi_queuecommand()
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/scsi/scsi.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ drivers/scsi/libiscsi.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-index ad0ed21..06e5b3a 100644
---- a/drivers/scsi/scsi.c
-+++ b/drivers/scsi/scsi.c
-@@ -745,6 +745,7 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
- 	 * TODO: kill serial or move to blk layer
- 	 */
- 	scsi_cmd_get_serial(host, cmd); 
-+	spin_unlock_irqrestore(host->host_lock, flags);
+diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
+index 633e090..7e4134e 100644
+--- a/drivers/scsi/libiscsi.c
++++ b/drivers/scsi/libiscsi.c
+@@ -1615,7 +1615,6 @@ int iscsi_queuecommand(struct scsi_cmnd *sc, void (*done)(struct scsi_cmnd *))
  
- 	if (unlikely(host->shost_state == SHOST_DEL)) {
- 		cmd->result = (DID_NO_CONNECT << 16);
-@@ -753,7 +754,7 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
- 		trace_scsi_dispatch_cmd_start(cmd);
- 		rtn = host->hostt->queuecommand(cmd, scsi_done);
+ 	host = sc->device->host;
+ 	ihost = shost_priv(host);
+-	spin_unlock(host->host_lock);
+ 
+ 	cls_session = starget_to_session(scsi_target(sc->device));
+ 	session = cls_session->dd_data;
+@@ -1706,7 +1705,6 @@ int iscsi_queuecommand(struct scsi_cmnd *sc, void (*done)(struct scsi_cmnd *))
+ 
+ 	session->queued_cmdsn++;
+ 	spin_unlock(&session->lock);
+-	spin_lock(host->host_lock);
+ 	return 0;
+ 
+ prepd_reject:
+@@ -1716,7 +1714,6 @@ reject:
+ 	spin_unlock(&session->lock);
+ 	ISCSI_DBG_SESSION(session, "cmd 0x%x rejected (%d)\n",
+ 			  sc->cmnd[0], reason);
+-	spin_lock(host->host_lock);
+ 	return SCSI_MLQUEUE_TARGET_BUSY;
+ 
+ prepd_fault:
+@@ -1733,7 +1730,6 @@ fault:
+ 		scsi_in(sc)->resid = scsi_in(sc)->length;
  	}
--	spin_unlock_irqrestore(host->host_lock, flags);
-+
- 	if (rtn) {
- 		trace_scsi_dispatch_cmd_error(cmd, rtn);
- 		if (rtn != SCSI_MLQUEUE_DEVICE_BUSY &&
+ 	done(sc);
+-	spin_lock(host->host_lock);
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(iscsi_queuecommand);
 -- 
 1.7.2.3
 
