@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445Ab0IPRf1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 13:35:27 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57416 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755353Ab0IPRfZ (ORCPT
+	id S1755494Ab0IPRg3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 13:36:29 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:41801 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754110Ab0IPRg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 13:35:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <1284657194.2275.585.camel@laptop>
-References: <20100915104855.41de3ebf@lilo> <AANLkTimNsDxeyZL4GVaH4L7YGO-EoRyCMHDtMPWU37hN@mail.gmail.com>
- <1284654451.2275.579.camel@laptop> <AANLkTinihPeUueKhEqUuraW2hcf3FFHjm26RieKQZi0d@mail.gmail.com>
- <1284657194.2275.585.camel@laptop>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 16 Sep 2010 10:34:53 -0700
-Message-ID: <AANLkTikquj_2DE4UhTFAoDxL+1g=_BocCQJ5agrwC4NU@mail.gmail.com>
-Subject: Re: [RFC][PATCH] Cross Memory Attach
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Christopher Yeoh <cyeoh@au1.ibm.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 16 Sep 2010 13:36:28 -0400
+X-Authority-Analysis: v=1.1 cv=FR6uSFBUsHpo/LPxUdUfz19YCIdHKFi4UJmy4GdSgrg= c=1 sm=0 a=G6fJhtGuX8gA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=lSXtbPDDt1nP9Sa6TPAA:9 a=Nk1V4vcJLdc1d_TXfNlTpxpnMPwA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH v2] drivers/net/usb/hso.c: prevent reading
+ uninitialized memory
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Dan Rosenberg <drosenberg@vsecurity.com>, j.dumon@option.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        security@kernel.org, davem@davemloft.net, stable@kernel.org
+In-Reply-To: <20100916184735.1699492e@lxorguk.ukuu.org.uk>
+References: <1284587008.6275.95.camel@dan>
+	 <20100916155745.GB14318@home.goodmis.org>
+	 <20100916180710.07821bdd@lxorguk.ukuu.org.uk>
+	 <1284655960.23787.34.camel@gandalf.stny.rr.com>
+	 <20100916184735.1699492e@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 16 Sep 2010 13:36:25 -0400
+Message-ID: <1284658585.23787.43.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 10:13 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->>
->> Over a copy_to/from_user? Not bloody likely.
->
-> Gah, indeed. OK, since its not nested kmap() should indeed work. The
-> alternative is using get_user_pages() on both address spaces, but I
-> guess that makes things unnecessarily complex.
+On Thu, 2010-09-16 at 18:47 +0100, Alan Cox wrote:
 
-.. and perform horribly badly. And since the whole point was to do
-this really efficiently, that's not good.
+> If you want to micro-optimise it you can enumerate the cases that
+> tiocmget can be NULL in that driver..
 
-What *would* work would be to have a fast case that does kmap_atomic()
-together with a copy_to/from_user_atomic(). And when that fast-case
-fails, do the full kmap. Slightly more complex than the suggested
-patch, but not horribly so (just a few more lines, no fundamental
-complexities).
+Heh, I think that's going a bit too far. Of course mico-optimizations
+usually make the system go faster, but not enough to show out of the
+noise, and micro-optimizations most of the time just make the code
+harder to understand and more error prone.
 
-Of course, these days I would seriously suggest against trying to
-optimize the kmap() case. It only matters on crap hardware these days.
-Anybody running HIGHMEM in 2010 and thinks that it makes sense
-deserves the pain the get. We should not complicate the kernel further
-for it, and sane architectures will have a no-op kmap().
+A lot of the patches in this patch set could just do the:
 
-So the real cost there is likely not the kmap as much as the
-set_page_dirty_lock() for the copy_to case. But you'd need to profile
-it to see how big of a hit it is compared to the copy itself.
+	struct foo bar = { 0 };
 
-                           Linus
+This would let gcc optimize what needs to be done, and avoids a function
+call to memset.
+
+-- Steve
+
+
