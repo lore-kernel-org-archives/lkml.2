@@ -1,60 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815Ab0IPGWx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 02:22:53 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:43070 "EHLO comal.ext.ti.com"
+	id S1753867Ab0IPGXA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 02:23:00 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:55785 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752525Ab0IPGWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 02:22:52 -0400
-Date: Thu, 16 Sep 2010 09:22:32 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: "Gadiyar, Anand" <gadiyar@ti.com>
-Cc: "Balbi, Felipe" <balbi@ti.com>, Sergei Shtylyov <sshtylyov@mvista.com>,
-        Ming Lei <tom.leiming@gmail.com>, "greg@kroah.com" <greg@kroah.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: Re: [Discussion] USB: musb-gadget: how to fix ZLP issue in
- musb_g_tx
-Message-ID: <20100916062232.GC3393@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <AANLkTinPVUBNJoOR496KgSy2TT0f6i1f5xEKVhKod2R=@mail.gmail.com>
- <20100915105641.GO3393@legolas.emea.dhcp.ti.com>
- <AANLkTi=gYSsxSHqAur+isj_UinVLC-YWkdmi5j_vkSUV@mail.gmail.com>
- <20100915110745.GP3393@legolas.emea.dhcp.ti.com>
- <4C90C5B7.7050103@ru.mvista.com>
- <20100916060520.GA3393@legolas.emea.dhcp.ti.com>
- <AANLkTi=y-HfvDOvhW-WhLFq5TUCjGA-52cuyByCHMvvV@mail.gmail.com>
+	id S1752335Ab0IPGW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 02:22:59 -0400
+Message-ID: <4C91B7C4.6030802@kernel.dk>
+Date: Thu, 16 Sep 2010 08:23:00 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1; format=flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=y-HfvDOvhW-WhLFq5TUCjGA-52cuyByCHMvvV@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Namhyung Kim <namhyung@gmail.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block: fix an warning of calling blk_rq_aligned()
+References: <20100916133005.56baad7e.sfr@canb.auug.org.au> <1284609357-3076-1-git-send-email-namhyung@gmail.com>
+In-Reply-To: <1284609357-3076-1-git-send-email-namhyung@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 01:15:32AM -0500, Gadiyar, Anand wrote:
->On Thu, Sep 16, 2010 at 11:35 AM, Felipe Balbi <balbi@ti.com> wrote:
->> Hi,
->>
->> On Wed, Sep 15, 2010 at 08:10:15AM -0500, Sergei Shtylyov wrote:
->>>
->>>   I don't see what to rework. The last short packet should still satisfy
->>> (request->actual == request->length) condition, no?
->>
->> of course not, it's short not zero. so the last short packet can be
->> anything from 1 to 511 bytes.
->>
->
->If it's TX, both condtions should automatically be true, right?
+On 2010-09-16 05:55, Namhyung Kim wrote:
+> 2nd argument of blk_rq_aligned() has changed to 'unsigned long' by
+> previous commit 'block: fix an address space warning in blk-map.c'.
+> According to that change, its caller has to be modified. This also
+> removes address space warnings from sparse.
 
-even in mode1 ? I have to revist my docs, but afaict mode1 won't
-transmit last short packet, no matter if it's tx or rx. Could be wrong,
-though.
+Thanks, in the future please ensure that you have all{yes,mod}config
+tested patches you submit.
 
 -- 
-balbi
+Jens Axboe
+
