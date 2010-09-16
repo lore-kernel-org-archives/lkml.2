@@ -1,44 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab0IPQps (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 12:45:48 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:38055 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753491Ab0IPQpq (ORCPT
+	id S1754110Ab0IPQrD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 12:47:03 -0400
+Received: from vms173005pub.verizon.net ([206.46.173.5]:47287 "EHLO
+	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753556Ab0IPQrB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 12:45:46 -0400
-Date: Thu, 16 Sep 2010 18:07:10 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Dan Rosenberg <drosenberg@vsecurity.com>, j.dumon@option.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        security@kernel.org, davem@davemloft.net, stable@kernel.org
-Subject: Re: [PATCH v2] drivers/net/usb/hso.c: prevent reading uninitialized
- memory
-Message-ID: <20100916180710.07821bdd@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100916155745.GB14318@home.goodmis.org>
-References: <1284587008.6275.95.camel@dan>
-	<20100916155745.GB14318@home.goodmis.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Sep 2010 12:47:01 -0400
+Date: Thu, 16 Sep 2010 12:46:36 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: Keng-Yu Lin <keng-yu.lin@canonical.com>
+Cc: mjg59@srcf.ucam.org, len.brown@intel.com, alan-jenkins@tuffmail.co.uk,
+        superm1@ubuntu.com, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] dell-laptop: Add debugfs support
+In-reply-to: <1284607186-13129-1-git-send-email-keng-yu.lin@canonical.com>
+Message-id: <alpine.LFD.2.00.1009161239140.2727@localhost.localdomain>
+References: <AANLkTime84o+hJWVDegQWHxcvUiftKW-2psW5tv4a-yR@mail.gmail.com>
+ <1284607186-13129-1-git-send-email-keng-yu.lin@canonical.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-->tiocmget;
-> >  
-> > +	memset(&icount, 0, sizeof(struct serial_icounter_struct));
-> > +
-> 
-> Move the above to after the spinlocks.
 
-Why - its a local variable ?
+> +#ifdef CONFIG_DEBUG_FS
 
-Easier to write
+Looks like you can delete these.
 
-	struct serial_icounter_struct icount = { 0 };
+Of course you'd want to properly check the return value
+from debugfs_create_dir(), which returns an ERR_PTR
+when CONFIG_DEBUG_FS is not defined. (even though
+few in the kernel seem to be bothering to use IS_ERR() here.)
 
-though
+cheers,
+Len Brown, Intel Open Source Technology Center
