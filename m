@@ -1,67 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab0IPM1U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 08:27:20 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:15620 "EHLO
-	TX2EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753629Ab0IPM1T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 08:27:19 -0400
-X-SpamScore: -21
-X-BigFish: VPS-21(zz1432N98dNzz1202hzz8275bh15d4Rz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L8UAK7-02-66A-02
-X-M-MSG: 
-Date: Thu, 16 Sep 2010 14:28:37 +0200
-From: Borislav Petkov <borislav.petkov@amd.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Nix <nix@esperi.org.uk>,
-        Artur Skawina <art.08.09@gmail.com>,
-        Damien Wyart <damien.wyart@free.fr>,
-        John Drescher <drescherjm@gmail.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: [PATCH RFC] x86: hpet: Avoid the readback penalty
-Message-ID: <20100916122837.GA9097@aftab>
-References: <tip-54ff7e595d763d894104d421b103a89f7becf47c@git.kernel.org>
- <alpine.LFD.2.00.1009151500060.2416@localhost6.localdomain6>
- <20100915144034.GC968@aftab>
+	id S1754600Ab0IPMdF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 08:33:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25706 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753629Ab0IPMdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 08:33:03 -0400
+Date: Thu, 16 Sep 2010 14:33:01 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] kvm: enable irq injection from interrupt context
+Message-ID: <20100916123301.GE3008@redhat.com>
+References: <4C91E75B.6010704@redhat.com>
+ <20100916095310.GG20864@redhat.com>
+ <20100916101332.GW3008@redhat.com>
+ <20100916101339.GK20864@redhat.com>
+ <20100916102047.GY3008@redhat.com>
+ <20100916104455.GA22254@redhat.com>
+ <20100916105403.GZ3008@redhat.com>
+ <20100916105352.GB22254@redhat.com>
+ <20100916111752.GA3008@redhat.com>
+ <20100916121338.GA23779@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100915144034.GC968@aftab>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+In-Reply-To: <20100916121338.GA23779@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > On Tue, 14 Sep 2010, tip-bot for Thomas Gleixner wrote:
-> > > x86: hpet: Work around hardware stupidity
+On Thu, Sep 16, 2010 at 02:13:38PM +0200, Michael S. Tsirkin wrote:
+> > > We haver two users: qemu does deasserts, vhost-net does asserts.
+> > Well this is broken. You want KVM to track level for you and this is
+> > wrong. KVM does this anyway because it can't relay on devise model
+> > to behave correctly [0], but in your case it is designed to behave
+> > incorrectly.
 > > 
-> > After my brain recovered from yesterdays exposure with the x86 timer
-> > horror, I came up with a different solution for this problem, which
-> > avoids the readback of the compare register completely. It works
-> > nicely on my affected ATI system, but needs some exposure to the other
-> > machines.
+> > Interrupt type is a device property. PCI devices just happen to be level
+> > triggered according to PCI spec. What if you want to use vhost-net to
+> > implement network device which has active-low interrupt line? [1]
 > 
-> Will run in on a couple of SBx00 machines I got here.
+> The polarity would have to be reversed in gsi (irq line can be shared,
+> all devices must be active high or low consistently).
+> 
+There are gsi dedicated to PCI. They can be shared only between PCI
+devices.
 
-FWIW, the patch doesn't break my SBx00 mini-farm here. Let me know if
-you need more testing done, otherwise:
+> > If you want to split parts that asserts irq and de-asserts it then we
+> > should have irqfd that tracks line status and knows interrupt line
+> > polarity.
+> 
+> Yes, it can know about polarity even though I think it's cleaner to do this
+> per gsi. But it can not track line status as line is shared with
+> other devices.
+It should track only device's line status.
 
-Tested-by: Borislav Petkov <borislav.petkov@amd.com>
+> 
+> > > Another application is out of process virtio (sandboxing!).
+> > It will still assert and de-assert irq at the same code, so it will be
+> > able to track irq line status.
+> > 
+> > > Again, pci stuff needs to stay in qemu.
+> > > 
+> > 
+> > Nothing to do with PCI whatsoever.
+> > 
+> > [0] most qemu devices behave incorrectly and trigger level irq more then
+> >     needed.
+> 
+> Which devices?
+Most of them. They just call update_irq_status() or something and
+re-assert interrupt regardless of what previous status was.
 
--- 
-Regards/Gruss,
-Boris.
+> pci core tracks line status and will never assert the same
+> line multiple times.
+That's good if pci core does this, but device shouldn't even try it.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+> 
+> > [1] this is how correct PCI device should behave but we override
+> >     polarity in ACPI, but now incorrect behaviour is deeply designed
+> >     into vhost-net.
+> 
+> Not really, vhost net signals an eventfd. What happens then is
+> up to kvm.
+> 
+That is what current broken design does and it works, but if you want to
+save unneeded calls into kvm fix design.
 
+--
+			Gleb.
