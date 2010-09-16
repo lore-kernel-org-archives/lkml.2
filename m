@@ -1,57 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657Ab0IPW0k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 18:26:40 -0400
-Received: from cantor.suse.de ([195.135.220.2]:60239 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753106Ab0IPW0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 18:26:39 -0400
-Date: Thu, 16 Sep 2010 15:26:37 -0700
-From: Mark Fasheh <mfasheh@suse.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, Joel Becker <joel.becker@oracle.com>
-Subject: Re: [PATCH 12/12] BKL: Remove BKL from OCFS2
-Message-ID: <20100916222637.GB32307@wotan.suse.de>
-Reply-To: Mark Fasheh <mfasheh@suse.com>
-References: <1284659185-8942-1-git-send-email-arnd@arndb.de> <1284659185-8942-13-git-send-email-arnd@arndb.de>
+	id S1756391Ab0IPW16 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 18:27:58 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37016 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755134Ab0IPW14 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 18:27:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=liFKmnMYwda2I7rdvv966UE1UOcgbTgaH8i2clPscHdjhzuzG5XTfqMkK5THbSrI5Y
+         0PzEDP8fnosSKWsAMLaJle3qRnbYY1XSPEWMP/WyVA60IoGKrH4gCuGUy0V/X6eV2mTX
+         qBVf66j/8nz+gVzD8FXl+1BEdXc38H7mLMOM8=
+Subject: Re: Regression, bisected: WARNING spam with ipsec since 2.6.35
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
+        David Miller <davem@davemloft.net>
+In-Reply-To: <20100916213138.GA6605@elliptictech.com>
+References: <20100916213138.GA6605@elliptictech.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 17 Sep 2010 00:27:50 +0200
+Message-ID: <1284676070.4784.25.camel@edumazet-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284659185-8942-13-git-send-email-arnd@arndb.de>
-Organization: SUSE Labs, Novell, Inc
-User-Agent: Mutt/1.5.9i
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 07:46:25PM +0200, Arnd Bergmann wrote:
-> The BKL in ocfs2/dlmfs is used in put_super, fill_super and remount_fs
-> that are all three protected by the superblocks s_umount rw_semaphore.
+Le jeudi 16 septembre 2010 à 17:31 -0400, Nick Bowler a écrit :
+> Attempting to use IPSec since 2.6.35 has resulted in WARNINGs (one of
+> them is included further down) being spammed to the kernel log.  The
+> packets seem to be transmitted fine, but the constant printk's degrade
+> performance to the point of uselessness (there are about a half dozen
+> call traces for every packet transmitted).  I've attached the full log
+> after booting the kernel, running the setkey script, and sending a
+> single ping.
+> 
+> This is the setkey script I used to produce the issue:
+> 
+>   add 192.168.0.1 192.168.0.2 esp 0x6B8B4567  -f seq-pad
+>    -E rijndael-cbc 0x643C98696633487374B0DC5119495CFF
+>    -A null;
+>   
+>   add 192.168.0.2 192.168.0.1 esp 0x327B23C6  -f seq-pad
+>    -E rijndael-cbc 0x3D1B58BA507ED7AB2EB141F241B71EFB
+>    -A null;
+>   
+>   spdadd 192.168.0.2 192.168.0.1 any -P out ipsec
+>    esp/transport//require;
+>   spdadd 192.168.0.1 192.168.0.2 any -P in ipsec
+>    esp/transport//require;
+> 
+> and here's the first warning:
+> 
+>   ------------[ cut here ]------------
+>   WARNING: at include/linux/skbuff.h:472 xfrm_output_resume+0x4b8/0x50d()
+>   Hardware name:         
+>   Modules linked in: authenc esp4 deflate zlib_deflate ctr aes_generic des_generic cbc sha256_generic sha1_generic md5 crypto_null af_key autofs4 sunrpc iptable_filter ip_tables ip6t_REJECT xt_tcpudp nf_conntrack_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables x_tables ipv6 loop parport_pc sg psmouse parport evdev skge rng_core button ext4 mbcache jbd2 crc16 sr_mod sd_mod cdrom ata_piix libata ehci_hcd uhci_hcd scsi_mod usbcore dm_mod [last unloaded: scsi_wait_scan]
+>   Pid: 2391, comm: ping Not tainted 2.6.35 #3
+>   Call Trace:
+>    [<c102e21f>] warn_slowpath_common+0x65/0x7a
+>    [<c127ee2e>] ? xfrm_output_resume+0x4b8/0x50d
+>    [<c102e243>] warn_slowpath_null+0xf/0x13
+>    [<c127ee2e>] xfrm_output_resume+0x4b8/0x50d
+>    [<c127ee90>] xfrm_output2+0xd/0xf
+>    [<c127ef57>] xfrm_output+0xc5/0xce
+>    [<c1277f55>] xfrm4_output_finish+0xa1/0xa4
+>    [<c1277fe0>] xfrm4_output+0x88/0x8f
+>    [<c124ce58>] ip_local_out+0x50/0x53
+>    [<c124d0c4>] ip_push_pending_frames+0x269/0x2b2
+>    [<c126578f>] raw_sendmsg+0x614/0x691
+>    [<c1051c01>] ? trace_hardirqs_on_caller+0x1e/0x121
+>    [<c126d46c>] inet_sendmsg+0xbd/0xc6
+>    [<c1223f62>] sock_sendmsg+0xa5/0xbb
+>    [<c108deb6>] ? might_fault+0x6e/0x88
+>    [<c108deb6>] ? might_fault+0x6e/0x88
+>    [<c122bd43>] ? verify_iovec+0x3e/0x6b
+>    [<c1224368>] sys_sendmsg+0x149/0x196
+>    [<c1023c2b>] ? get_parent_ip+0xb/0x31
+>    [<c107e377>] ? unlock_page+0x3b/0x3e
+>    [<c108f99a>] ? handle_mm_fault+0x219/0x49b
+>    [<c1053d13>] ? lock_release_non_nested+0x86/0x221
+>    [<c108deb6>] ? might_fault+0x6e/0x88
+>    [<c108deb6>] ? might_fault+0x6e/0x88
+>    [<c12255ba>] sys_socketcall+0x146/0x18b
+>    [<c110b4b4>] ? trace_hardirqs_on_thunk+0xc/0x10
+>    [<c1002690>] sysenter_do_call+0x12/0x36
+>   ---[ end trace c8ae605bd7809dcc ]---
+> 
+> Bisection implicates the following commit:
+> 
+>   8764ab2ca7ab5055e1ca80f9cfa4970c34acb804 is the first bad commit
+>   commit 8764ab2ca7ab5055e1ca80f9cfa4970c34acb804
+>   Author: Steffen Klassert <steffen.klassert@secunet.com>
+>   Date:   Fri Jun 4 01:57:38 2010 +0000
+>   
+>       net: check for refcount if pop a stacked dst_entry
+>       
+>       xfrm triggers a warning if dst_pop() drops a refcount
+>       on a noref dst. This patch changes dst_pop() to
+>       skb_dst_pop(). skb_dst_pop() drops the refcnt only
+>       on a refcounted dst. Also we don't clone the child
+>       dst_entry, so it is not refcounted and we can use
+>       skb_dst_set_noref() in xfrm_output_one().
+>       
+>       Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+>       Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+>       Signed-off-by: David S. Miller <davem@davemloft.net>
+>   
+>   :040000 040000 3f0e1574919d0e581b3e9537a4d59ce397a926f1 f272ab5b895c46b3166d321a2da759c2a6e08ae0 M	include
+>   :040000 040000 a4fbff22e9ae9f57f4f8c5416f5a7be186635cab eb04849588cbe4b2b99030c2aa59e3433187c6df M	net
+>   
+>   git bisect start
+>   # bad: [9c03f1622af051004416dd3e24d8a0fa31e34178] Merge ssh://master.kernel.org/home/hpa/tree/sec
+>   git bisect bad 9c03f1622af051004416dd3e24d8a0fa31e34178
+>   # bad: [9fe6206f400646a2322096b56c59891d530e8d51] Linux 2.6.35
+>   git bisect bad 9fe6206f400646a2322096b56c59891d530e8d51
+>   # good: [e40152ee1e1c7a63f4777791863215e3faa37a86] Linus 2.6.34
+>   git bisect good e40152ee1e1c7a63f4777791863215e3faa37a86
+>   # good: [e0bc5d4a54938eedcde14005210e6c08aa9727e4] Merge branch 'i2c-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging
+>   git bisect good e0bc5d4a54938eedcde14005210e6c08aa9727e4
+>   # good: [d30fda355188272430d3865db2ff9e24b4135ae3] posix-cpu-timers: avoid "task->signal != NULL" checks
+>   git bisect good d30fda355188272430d3865db2ff9e24b4135ae3
+>   # good: [9a9620db07b27700a4de9e86985735fffb78e2f8] Merge branch 'linux_next' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/i7core
+>   git bisect good 9a9620db07b27700a4de9e86985735fffb78e2f8
+>   # bad: [985b823b919273fe1327d56d2196b4f92e5d0fae] drm/i915: fix hibernation since i915 self-reclaim fixes
+>   git bisect bad 985b823b919273fe1327d56d2196b4f92e5d0fae
+>   # bad: [b5edfefc65526b34960bbff3477ded477b0328f6] Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6
+>   git bisect bad b5edfefc65526b34960bbff3477ded477b0328f6
+>   # bad: [fcdcddbcbbd39a3363bd48414bfe44553b6d698a] microblaze: Fix sg_dma_len() regression
+>   git bisect bad fcdcddbcbbd39a3363bd48414bfe44553b6d698a
+>   # bad: [ed7dc1dfbcef301407a1e3138a49dc94e5a19d0a] Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-2.6
+>   git bisect bad ed7dc1dfbcef301407a1e3138a49dc94e5a19d0a
+>   # good: [90ec7819737d42a0ad1c2df1ff56016facae3c6e] Merge git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6-for-linus
+>   git bisect good 90ec7819737d42a0ad1c2df1ff56016facae3c6e
+>   # good: [a1868dc2878e61778b9d6d8c61d5368e51d68a29] ixgbe: return IXGBE_ERR_RAR_INDEX when out of range
+>   git bisect good a1868dc2878e61778b9d6d8c61d5368e51d68a29
+>   # good: [7926e0bfbbc5ff81ddad0fda831eef7060e40997] Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2
+>   git bisect good 7926e0bfbbc5ff81ddad0fda831eef7060e40997
+>   # bad: [ca739481662137b8f717bc21f16719cda3c33d6b] ixgbe: only check pfc bits in hang logic if pfc is enabled
+>   git bisect bad ca739481662137b8f717bc21f16719cda3c33d6b
+>   # good: [51a0d38de26226f2779912d92f155b93d539da9a] mac80211: fix dialog token allocator
+>   git bisect good 51a0d38de26226f2779912d92f155b93d539da9a
+>   # bad: [8764ab2ca7ab5055e1ca80f9cfa4970c34acb804] net: check for refcount if pop a stacked dst_entry
+>   git bisect bad 8764ab2ca7ab5055e1ca80f9cfa4970c34acb804
+>   # good: [4f4aeb7fd0f7e6ca008bb2147ba36cee13876595] Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6
+>   git bisect good 4f4aeb7fd0f7e6ca008bb2147ba36cee13876595
+> 
 
-Those look good, thanks.
+Thanks Nick !
+
+CC netdev
+
+ip_local_out() is called with rcu_read_lock() from ip_queue_xmit()
+but not from other call sites.
+
+I suspect following patch is needed, before further changes.
 
 
-> The use in ocfs2_control_open is evidently unrelated and the function
-> is protected by ocfs2_control_lock.
+[PATCH] xfrm: dont assume rcu_read_lock in xfrm_output_one()
 
-<snip>
+ip_local_out() is called with rcu_read_lock() held from ip_queue_xmit()
+but not from other call sites.
 
-> @@ -612,12 +611,10 @@ static int ocfs2_control_open(struct inode *inode, struct file *file)
->  		return -ENOMEM;
->  	p->op_this_node = -1;
->  
-> -	lock_kernel();
->  	mutex_lock(&ocfs2_control_lock);
->  	file->private_data = p;
->  	list_add(&p->op_list, &ocfs2_control_private_list);
->  	mutex_unlock(&ocfs2_control_lock);
-> -	unlock_kernel();
->  
->  	return 0;
->  }
+Reported-and-bisected-by: Nick Bowler <nbowler@elliptictech.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+---
+ net/xfrm/xfrm_output.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-My guess is that this one is good to go too. Joel?
-	--Mark
+diff --git a/net/xfrm/xfrm_output.c b/net/xfrm/xfrm_output.c
+index a3cca0a..64f2ae1 100644
+--- a/net/xfrm/xfrm_output.c
++++ b/net/xfrm/xfrm_output.c
+@@ -101,7 +101,7 @@ resume:
+ 			err = -EHOSTUNREACH;
+ 			goto error_nolock;
+ 		}
+-		skb_dst_set_noref(skb, dst);
++		skb_dst_set(skb, dst_clone(dst));
+ 		x = dst->xfrm;
+ 	} while (x && !(x->outer_mode->flags & XFRM_MODE_FLAG_TUNNEL));
+ 
 
---
-Mark Fasheh
+
