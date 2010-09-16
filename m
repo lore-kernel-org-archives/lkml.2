@@ -1,92 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994Ab0IPRFA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 13:05:00 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:47456 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753296Ab0IPRE6 (ORCPT
+	id S1754372Ab0IPRGn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 13:06:43 -0400
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:32875 "HELO
+	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752475Ab0IPRGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 13:04:58 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 3/3] PCI: allocate bus resources from the top down
-Date: Thu, 16 Sep 2010 11:04:14 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Brian Bloniarz <phunge0@hotmail.com>,
-        Charles Butterfield <charles.butterfield@nextcentury.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stefan Becker <chemobejk@gmail.com>,
-        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-References: <20100915210818.12365.58732.stgit@bob.kio> <201009151644.38563.bjorn.helgaas@hp.com> <4C915AB2.9090203@zytor.com>
-In-Reply-To: <4C915AB2.9090203@zytor.com>
+	Thu, 16 Sep 2010 13:06:42 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: 2bpqh9AVM1lnrjOFScvaLZoa_3JqVzVmF54j0IAVNk1VqN6
+ WCSbOFM5q8I9cBTQBRAoDdAWIkAJ6zVLdFJTTQcbfYJedBkf7sb1fMGgETtn
+ v6MJjd9ZeQ4HCgo.W649AX3ZM.9V.1f_OuyX6zemX4VSWPn4NR9jIZ7HB_Le
+ Ng9v9Rk2R7uK2LJLsVRffGb_Rp0UQqnrj3ItZh7QL6P4en8mx2r1hgBP6Yoi
+ dvsEWLGuP6WLUEHjYI1j.482lPNAk
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 16 Sep 2010 12:06:38 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: robm@fastmail.fm, linux-kernel@vger.kernel.org,
+        Bron Gondwana <brong@fastmail.fm>, linux-mm <linux-mm@kvack.org>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: Default zone_reclaim_mode = 1 on NUMA kernel is bad for
+ file/email/web servers
+In-Reply-To: <20100916184240.3BC9.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1009161153210.22849@router.home>
+References: <1284349152.15254.1394658481@webmail.messagingengine.com> <20100916184240.3BC9.A69D9226@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009161104.15665.bjorn.helgaas@hp.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 15, 2010 05:45:54 pm H. Peter Anvin wrote:
-> On 09/15/2010 03:44 PM, Bjorn Helgaas wrote:
-> > 
-> > I'd like to do that, but I don't see a good way to do it yet.
-> > 
-> > We saw the problem on a T3500, a T3400, and a T4500, and I'm sure there
-> > are others.  So I don't know how to identify the affected machines.
-> > 
-> > And I don't know how to identify the invalid ranges, because I suspect
-> > it depends on the memory size.  I think it would be quite unusual for
-> > a window to start 1MB under the nice 256MB boundary, but I'm not sure
-> > I'm ready to say that's always illegal.
-> > 
-> > On these machines, the [mem 0xbff00000-0xbfffffff] area is actually
-> > reported as reserved in the E820 map, and I first thought we could
-> > simply rely on that.  But I'm not really comfortable with that either,
-> > because I don't think there's a dependable relationship between those
-> > E820 entries and ACPI and PCI devices.  For one thing, I experimented
-> > with Windows, and it happily places PCI devices in reserved areas,
-> > and I think we're likely to trip over more BIOS bugs if we rely on
-> > something Windows doesn't.
-> > 
-> > I suspect Windows would blow up, too, if we could somehow fill up the
-> > rest of the window and force it to allocate the bottom.  But since
-> > it's only a 1MB area, I think that would be very difficult to do
-> > unless there's some way to tweak PCI BARs before booting Windows.
-> 
-> If we put PCI devices in E820 RESERVED areas that's a bug, plain and
-> simple.  We should absolutely not doing so!
-> 
-> To some degree I don't care if Windows does or not ... that is the
-> documented mechanism for reserving address space, and we should respect
-> that.  Furthermore, we use the same mechanism internally for reserving
-> address space.
+On Thu, 16 Sep 2010, KOSAKI Motohiro wrote:
 
-It does seem like we should do *something* with E820 reserved areas, but
-I'm not 100% convinced we should be more strict than Windows.  If we
-pay attention to things Windows doesn't test, I think we're likely to
-trip over even more BIOS bugs.
+> > So over the last couple of weeks, I've noticed that our shiny new IMAP
+> > servers (Dual Xeon E5520 + Intel S5520UR MB) with 48G of RAM haven't
+> > been performing as well as expected, and there were some big oddities.
+> > Namely two things stuck out:
+> >
+> > 1. There was free memory. There's 20T of data on these machines. The
+> >    kernel should have used lots of memory for caching, but for some
+> >    reason, it wasn't. cache ~ 2G, buffers ~ 25G, unused ~ 5G
 
-Linux does avoid putting PCI devices in E820 reserved areas ... in
-some cases.  In this Dell case, the reserved area conflicts with a
-host bridge window, so we expand the reserved area and insert it as
-the *parent* of the window.  Since it's the parent, it has no effect
-on allocations from the window, so we end up putting devices in the
-reserved area.
+This means that that the memory allocations did only occur on a single
+processor? And with zone reclaim it only used one node since the page
+cache was reclaimed?
 
-I think the problem is that E820 reservations fundamentally don't
-fit well with the Linux resource manager.  We manage resources as
-a strict hierarchy of non-overlapping regions, but there's no
-requirement that E820 reservations have any relationship with actual
-devices that we discover via ACPI, PCI, etc.
+> > Having very little knowledge of what this actually does, I'd just
+> > like to point out that from a users point of view, it's really
+> > annoying for your machine to be crippled by a default kernel setting
+> > that's pretty obscure.
 
-We've been kludging around this with a collection of hacks like
-reserve_region_with_split() and insert_resource_expand_to_fit(),
-but I think we're just making an unmaintainable mess.  We should
-take a step back and think about how to do this cleanly.
+Thats an issue of the NUMA BIOS information. Kernel defaults to zone
+reclaim if the cost of accessing remote memory vs local memory crosses
+a certain threshhold which usually impacts performance.
 
-Bjorn
+> Yes, sadly intel motherboard turn on zone_reclaim_mode by default. and
+> current zone_reclaim_mode doesn't fit file/web server usecase ;-)
+
+Or one could also say that the web servers are not designed to properly
+distribute the load on a complex NUMA based memory architecture of todays
+Intel machines.
+
+> So, I've created new proof concept patch. This doesn't disable zone_reclaim
+> at all. Instead, distinguish for file cache and for anon allocation and
+> only file cache doesn't use zone-reclaim.
+
+zone reclaim was intended to only be applicable to unmapped file cache in
+order to be low impact.  Now you just want to apply it to anonymous pages?
+
+> That said, high-end hpc user often turn on cpuset.memory_spread_page and
+> they avoid this issue. But, why don't we consider avoid it by default?
+
+Well as you say setting memory spreading on would avoid the issue.
+
+So would enabling memory interleave in the BIOS to get the machine to not
+consider the memory distances but average out the NUMA effects.
+
+
