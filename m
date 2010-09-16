@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431Ab0IPCbu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 22:31:50 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:55905 "EHLO smtps.tip.net.au"
+	id S1753458Ab0IPCb6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 22:31:58 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:55915 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752350Ab0IPCbt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 22:31:49 -0400
-Date: Thu, 16 Sep 2010 12:31:44 +1000
+	id S1752480Ab0IPCb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 22:31:56 -0400
+Date: Thu, 16 Sep 2010 12:31:52 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Dominik Brodowski <linux@dominikbrodowski.net>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
         Joe Perches <joe@perches.com>, David Miller <davem@davemloft.net>,
         <netdev@vger.kernel.org>
 Subject: linux-next: manual merge of the pcmcia tree with the net tree
-Message-Id: <20100916123144.d34aa46f.sfr@canb.auug.org.au>
+Message-Id: <20100916123152.61d6e10a.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__16_Sep_2010_12_31_52_+1000_wV9LWLOtLJgb=iHu"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Thu__16_Sep_2010_12_31_52_+1000_wV9LWLOtLJgb=iHu
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
 Hi Dominik,
 
 Today's linux-next merge of the pcmcia tree got a conflict in
-drivers/net/pcmcia/smc91c92_cs.c between commit
-636b8116d4e116eca1ac978f546b16fadfc15a6c ("drivers/net/pcmcia: Use
-pr_<level> and netdev_<level>") from the net tree and commit
-ba0ff6e64dab1a2492d88fdcc40b4eddabd8b451 ("pcmcia: split up
-modify_configuration() into two fixup functions") from the pcmcia tree.
+drivers/net/pcmcia/pcnet_cs.c between commit
+7136e11e0cf520ab3fc7b55a20e60c2ec5ea88e1 ("pcnet_cs: Use pr_fmt and
+pr_<level>") from the net tree and commit
+b76dc0546709aef18f123847680108c2fd33f203 ("pcmcia pcnet_cs: try setting
+io_lines to 16 if card setup fails") from the pcmcia tree.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
--- 
+The latter used dev_notice/info (and moved the code) where the former
+used pr_notice, so I used the latter.
+--=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-diff --cc drivers/net/pcmcia/smc91c92_cs.c
-index 3d1c549,0af2fc8..0000000
---- a/drivers/net/pcmcia/smc91c92_cs.c
-+++ b/drivers/net/pcmcia/smc91c92_cs.c
-@@@ -819,13 -792,10 +794,10 @@@ static int check_sig(struct pcmcia_devi
-      }
-  
-      if (width) {
-- 	    modconf_t mod = {
-- 		    .Attributes = CONF_IO_CHANGE_WIDTH,
-- 	    };
- -	    printk(KERN_INFO "smc91c92_cs: using 8-bit IO window.\n");
- +	    pr_info("using 8-bit IO window\n");
-  
-  	    smc91c92_suspend(link);
-- 	    pcmcia_modify_configuration(link, &mod);
-+ 	    pcmcia_fixup_iowidth(link);
-  	    smc91c92_resume(link);
-  	    return check_sig(link);
-      }
+--Signature=_Thu__16_Sep_2010_12_31_52_+1000_wV9LWLOtLJgb=iHu
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMkYGYAAoJEDMEi1NhKgbs5PwH/RO8WGsdtjiL+QtZaeeV8CQV
+1shJDcr8YCwtWnYvNPBsX8aYy3HuVGG5MXEct1Uwi6LChWfH1XfftvtJ1NlmEvvk
+smdTyoSDORPjaYrPTvVq3ZEAxL4ttx0pNPzq0m+alMsGnHYsKySY0ZrXr6DFXvp3
+iNWOhaGIG/FNg3LxqmQG4HO0j2c+rNhSzY+IJJm0sRaJlTp3rGwh8S0jUWruxb8F
+g1AcpLyjntZ0kMAGZUqSs0SNxH+M3dY/2xMfmeSlV8GdrDfMcCP3Ja9CmydQuPJn
+9F03I0ZSvFiGeFf26mc4Cywfw/MiGLy6AObioRn6UFut492i9iWFIGt78ekSxOA=
+=O/0W
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__16_Sep_2010_12_31_52_+1000_wV9LWLOtLJgb=iHu--
