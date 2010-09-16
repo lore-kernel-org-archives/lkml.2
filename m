@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255Ab0IPH76 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 03:59:58 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:36351 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751504Ab0IPH75 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 03:59:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=HrdaUazCU+TSJeWT6HLpxPBkDZ4UeRmPbrY10usVN4h+HvqhtvEO3F0GGLcLCeiRch
-         k1kpwowqXg5kbh2EvZadVMM2v3vC7vwrDuy6QYF9W/6Tn0LL1e7iDoEJMC1Hs61KfzVN
-         5e0f5KINT8Xl+pu6h9Zg1OVZAO/F0ZVO85ruk=
-Date: Thu, 16 Sep 2010 16:59:49 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 7/8] writeback: Do not sleep on the congestion queue if
- there are no congested BDIs
-Message-ID: <20100916075949.GA16115@barrios-desktop>
-References: <1284553671-31574-1-git-send-email-mel@csn.ul.ie>
- <1284553671-31574-8-git-send-email-mel@csn.ul.ie>
+	id S1753529Ab0IPIAK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 04:00:10 -0400
+Received: from hera.kernel.org ([140.211.167.34]:36688 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751504Ab0IPIAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 04:00:03 -0400
+Message-ID: <4C91CE6E.5030500@kernel.org>
+Date: Thu, 16 Sep 2010 09:59:42 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100825 Lightning/1.0b2 Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284553671-31574-8-git-send-email-mel@csn.ul.ie>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: caiqian@redhat.com
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        kexec <kexec@lists.infradead.org>, graff.yang@gmail.com,
+        Marcelo Tosatti <mtosatti@redhat.com>, dhowells@redhat.com,
+        sonic.adi@gmail.com, Avi Kivity <avi@redhat.com>,
+        Chris Lalancette <clalance@redhat.com>, stable@kernel.org,
+        Cliff Wickman <cpw@sgi.com>
+Subject: Re: [PATCH] fix kvm kdump regression
+References: <1301046921.1075601284613078206.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <1301046921.1075601284613078206.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 16 Sep 2010 07:59:44 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 15, 2010 at 01:27:50PM +0100, Mel Gorman wrote:
-> If congestion_wait() is called with no BDI congested, the caller will sleep
-> for the full timeout and this may be an unnecessary sleep. This patch adds
-> a wait_iff_congested() that checks congestion and only sleeps if a BDI is
-> congested else, it calls cond_resched() to ensure the caller is not hogging
-> the CPU longer than its quota but otherwise will not sleep.
+On 09/16/2010 06:57 AM, caiqian@redhat.com wrote:
+> 020ec6537aa65c18e9084c568d7b94727f2026fd introduced a regression that an empty vmcore was generated during kdump on a kvm guest.
+> ioremap: invalid physical address db74000000000000
+> ------------[ cut here ]------------
+> WARNING: at arch/x86/mm/ioremap.c:83 __ioremap_caller+0x307/0x380()
+> Hardware name: KVM
+> Modules linked in:
+> Pid: 1, comm: swapper Not tainted 2.6.36-rc2-mm1+ #2
+> Call Trace:
+>  [<ffffffff8105f48f>] warn_slowpath_common+0x7f/0xc0
+>  [<ffffffff8103052e>] ? copy_oldmem_page+0x4e/0xc0
+>  [<ffffffff8105f4ea>] warn_slowpath_null+0x1a/0x20
+>  [<ffffffff8103f0a7>] __ioremap_caller+0x307/0x380
+>  [<ffffffff8103f1f7>] ioremap_nocache+0x17/0x20
+>  [<ffffffff8103052e>] copy_oldmem_page+0x4e/0xc0
+>  [<ffffffff811af4ca>] read_from_oldmem+0x7a/0xb0
+>  [<ffffffff81c4f70b>] merge_note_headers_elf64.clone.1+0x6c/0x21f
+>  [<ffffffff8103056e>] ? copy_oldmem_page+0x8e/0xc0
+>  [<ffffffff811af4ca>] ? read_from_oldmem+0x7a/0xb0
+>  [<ffffffff81c4fa5b>] vmcore_init+0x19d/0x396
+>  [<ffffffff81c4f8be>] ? vmcore_init+0x0/0x396
+>  [<ffffffff81002053>] do_one_initcall+0x43/0x190
+>  [<ffffffff81c278ab>] kernel_init+0x2a0/0x330
+>  [<ffffffff8100be84>] kernel_thread_helper+0x4/0x10
+>  [<ffffffff81c2760b>] ? kernel_init+0x0/0x330
+>  [<ffffffff8100be80>] ? kernel_thread_helper+0x0/0x10
+> ---[ end trace 93d72a36b9146f22 ]---
+> Kdump: vmcore not initialized
 > 
-> This is aimed at reducing some of the major desktop stalls reported during
-> IO. For example, while kswapd is operating, it calls congestion_wait()
-> but it could just have been reclaiming clean page cache pages with no
-> congestion. Without this patch, it would sleep for a full timeout but after
-> this patch, it'll just call schedule() if it has been on the CPU too long.
-> Similar logic applies to direct reclaimers that are not making enough
-> progress.
-
-I confused due to kswapd you mentioned.
-This patch affects only direct reclaim.
-Please, complete the description. 
-
-"This patch affects direct reclaimer to reduce stall"
-Otherwise, looks good to me. 
-
+> This patch fixed it by reverting a chunk of the above commit and 9983b6f0cf8263e51bcf4c8a9dc0c1ef175b3c60 which is based on it.
 > 
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> Signed-off-by: CAI Qian <caiqian@redhat.com>
+
+Sorry about the delay but I'm prepping a debug patch.  Let's root
+cause and see if it can be fixed without reverting it as there are
+further changes which depend on the commit and we'll have to hunt it
+down anyway.
+
+Thanks.
 
 -- 
-Kind regards,
-Minchan Kim
+tejun
