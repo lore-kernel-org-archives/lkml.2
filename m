@@ -1,99 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756505Ab0IPWVt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 18:21:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24785 "EHLO mx1.redhat.com"
+	id S1755852Ab0IPWOV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 18:14:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57550 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756004Ab0IPWOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 18:14:25 -0400
+	id S1754858Ab0IPWOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 18:14:18 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Christoph Hellwig <hch@infradead.org>,
         Andreas Gruenbacher <agruen@suse.de>, Nick Piggin <npiggin@kernel.dk>,
         linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 12/34] union-mount: Create d_free_unions()
-Date: Thu, 16 Sep 2010 15:12:03 -0700
-Message-Id: <1284675145-4391-13-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 02/34] VFS: Add CL_NO_SHARED flag to clone_mnt()/copy_tree()
+Date: Thu, 16 Sep 2010 15:11:53 -0700
+Message-Id: <1284675145-4391-3-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1284675145-4391-1-git-send-email-vaurora@redhat.com>
 References: <1284675145-4391-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-d_free_unions() frees the union stack associated with a directory.
+Passing the CL_NO_SHARED flag to clone_mnt() causes the clone to fail
+if the source mnt is shared.
 
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
 ---
- fs/union.c |   25 +++++++++++++++++++++++++
- fs/union.h |    7 +++++++
- 2 files changed, 32 insertions(+), 0 deletions(-)
+ fs/namespace.c |    3 +++
+ fs/pnode.h     |    1 +
+ 2 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/fs/union.c b/fs/union.c
-index 52a5c28..a191bef 100644
---- a/fs/union.c
-+++ b/fs/union.c
-@@ -21,6 +21,7 @@
- #include <linux/mount.h>
- #include <linux/fs_struct.h>
- #include <linux/slab.h>
-+#include <linux/namei.h>
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 5566524..eeb4c22 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -562,6 +562,9 @@ static struct vfsmount *clone_mnt(struct vfsmount *old, struct dentry *root,
+ 	struct vfsmount *mnt;
+ 	int err;
  
- #include "union.h"
- 
-@@ -40,3 +41,27 @@ static struct union_stack *union_alloc(struct path *topmost)
- 
- 	return kzalloc(sizeof(struct path) * layers, GFP_KERNEL);
- }
++	if ((flag & CL_NO_SHARED) && (IS_MNT_SHARED(old)))
++		return ERR_PTR(-EINVAL);
 +
-+/**
-+ * d_free_unions - free all unions for this dentry
-+ *
-+ * @dentry - topmost dentry in the union stack to remove
-+ *
-+ * This must be called when freeing a dentry.
-+ */
-+void d_free_unions(struct dentry *topmost)
-+{
-+	struct path *path;
-+	unsigned int i, layers = topmost->d_sb->s_union_count;
-+
-+	if (!IS_DIR_UNIONED(topmost))
-+		return;
-+
-+	for (i = 0; i < layers; i++) {
-+		path = union_find_dir(topmost, i);
-+		if (path->mnt)
-+			path_put(path);
-+	}
-+	kfree(topmost->d_union_stack);
-+	topmost->d_union_stack = NULL;
-+}
-diff --git a/fs/union.h b/fs/union.h
-index e242451..353f78d 100644
---- a/fs/union.h
-+++ b/fs/union.h
-@@ -49,6 +49,10 @@ struct union_stack {
- 	struct path u_dirs[0];
- };
+ 	mnt = alloc_vfsmnt(old->mnt_devname);
+ 	if (!mnt)
+ 		return ERR_PTR(-ENOMEM);
+diff --git a/fs/pnode.h b/fs/pnode.h
+index 1ea4ae1..bcb3c47 100644
+--- a/fs/pnode.h
++++ b/fs/pnode.h
+@@ -22,6 +22,7 @@
+ #define CL_COPY_ALL 		0x04
+ #define CL_MAKE_SHARED 		0x08
+ #define CL_PRIVATE 		0x10
++#define CL_NO_SHARED 		0x20
  
-+#define IS_DIR_UNIONED(dentry)	((dentry)->d_union_stack)
-+
-+extern void d_free_unions(struct dentry *);
-+
- static inline struct path *union_find_dir(struct dentry *dentry,
- 					  unsigned int layer) {
- 	BUG_ON(layer >= dentry->d_sb->s_union_count);
-@@ -57,6 +61,9 @@ static inline struct path *union_find_dir(struct dentry *dentry,
- 
- #else /* CONFIG_UNION_MOUNT */
- 
-+#define IS_DIR_UNIONED(x)		(0)
-+
-+#define d_free_unions(x)		do { } while (0)
- #define union_find_dir(x, y)		({ BUG(); (NULL); })
- 
- #endif	/* CONFIG_UNION_MOUNT */
+ static inline void set_mnt_shared(struct vfsmount *mnt)
+ {
 -- 
 1.6.3.3
 
