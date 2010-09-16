@@ -1,93 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947Ab0IPTAq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 15:00:46 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:36869 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753988Ab0IPTAp (ORCPT
+	id S1754641Ab0IPTLL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 15:11:11 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:39563 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753139Ab0IPTLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 15:00:45 -0400
-From: Will Drewry <wad@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Roland McGrath <roland@redhat.com>,
-        Neil Horman <nhorman@tuxdriver.com>, Andi Kleen <andi@firstfloor.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        containers@lists.linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        Will Drewry <wad@chromium.org>
-Subject: [PATCH][RFC] fs/exec.c: provide the correct process pid to the pipe helper
-Date: Thu, 16 Sep 2010 13:59:59 -0500
-Message-Id: <1284663599-3549-1-git-send-email-wad@chromium.org>
+	Thu, 16 Sep 2010 15:11:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:message-id:x-mailer;
+        b=GXgf37iC1vYV18Eq1YzdM2CXij4dsAPwMdGxK580LBkA7vISo46l+yafpPtNBBtV64
+         51iExwNHhA4xu5jnes9Xqae8G/BP+RqfmXO6BaPBrDoegVoJUyAqifX9YShTKlSQTUDK
+         m2HdpGjhjVEyRL3lYeMAa2AmEW4AWFh3P9F1g=
+From: Maurice Dawson <mauricedawson2699@gmail.com>
+To: gregkh@suse.de, reodge@gmail.com, arun.thomas@gmail.com, segooon@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] Staging: comedi: fix printk() coding style issue in adl_pci9111.c
+Date: Thu, 16 Sep 2010 20:10:49 +0100
+Message-Id: <1284664249-2786-1-git-send-email-mauricedawson2699@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-format_corename uses task_tgid_vnr to provide the numeric pid of a
-core-dumping process.  For file-based coredumps, this is perfectly
-satisfactory.  However, when the core_pattern contains a pipe, the
-substituted PID is invalid in the namespace of the core_pattern pipe
-helper, the init namespace.
+This is a patch to the adl_pci9111.c file that fixes all, printk() should
+include KERN-facility level, warnings found by the checkpatch.pl tool
 
-By changing this, any core collector may now find the process in the
-init namespace /proc.  This helps with VFS namespacing too since the
-mount root is available via /proc.  Unfortunately, it does not help in
-cases of more complex namespacing, like net namespaces.  For that, the
-helper thread will need to be migrated to the core-dump namespaces.
-
-I have a separate patch series which implements migrating the
-____call_usermodehelper thread to the coredump namespace, but it adds a
-fair amount of complexity which might be better handled by someone who
-understands that code.  I'm happy to mail it out as well though (it
-works, but I don't assign a namespaced pid which may open up issues on
-its own).
-
-Any and all comments, feedback will be appreciated!
-
-Signed-off-by: Will Drewry <wad@chromium.org>
+Signed-off-by: Maurice Dawson <mauricedawson2699@gmail.com>
 ---
- fs/exec.c |   11 +++++++++--
- 1 files changed, 9 insertions(+), 2 deletions(-)
+ drivers/staging/comedi/drivers/adl_pci9111.c |   17 ++++++++++-------
+ 1 files changed, 10 insertions(+), 7 deletions(-)
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 828dd24..0b8a874 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1467,6 +1467,13 @@ static int format_corename(char *corename, long signr)
- 	char *const out_end = corename + CORENAME_MAX_SIZE;
- 	int rc;
- 	int pid_in_pattern = 0;
-+	pid_t pid = task_tgid_vnr(current);
-+
-+	/* The pipe helper runs in the init namespace and should
-+	 * receive the matching pid until that changes.
-+	 */
-+	if (ispipe)
-+		pid = task_tgid_nr(current);
+diff --git a/drivers/staging/comedi/drivers/adl_pci9111.c b/drivers/staging/comedi/drivers/adl_pci9111.c
+index 18103b6..fc48bae 100644
+--- a/drivers/staging/comedi/drivers/adl_pci9111.c
++++ b/drivers/staging/comedi/drivers/adl_pci9111.c
+@@ -1292,7 +1292,8 @@ static int pci9111_attach(struct comedi_device *dev,
+ 		return -ENOMEM;
+ 	/*  Probe the device to determine what device in the series it is. */
  
- 	/* Repeat as long as we have more pattern to process and more output
- 	   space */
-@@ -1489,7 +1496,7 @@ static int format_corename(char *corename, long signr)
- 			case 'p':
- 				pid_in_pattern = 1;
- 				rc = snprintf(out_ptr, out_end - out_ptr,
--					      "%d", task_tgid_vnr(current));
-+					      "%d", pid);
- 				if (rc > out_end - out_ptr)
- 					goto out;
- 				out_ptr += rc;
-@@ -1568,7 +1575,7 @@ static int format_corename(char *corename, long signr)
- 	 * the filename. Do not do this for piped commands. */
- 	if (!ispipe && !pid_in_pattern && core_uses_pid) {
- 		rc = snprintf(out_ptr, out_end - out_ptr,
--			      ".%d", task_tgid_vnr(current));
-+			      ".%d", pid);
- 		if (rc > out_end - out_ptr)
- 			goto out;
- 		out_ptr += rc;
+-	printk("comedi%d: " PCI9111_DRIVER_NAME " driver\n", dev->minor);
++	printk(KERN_ERR "comedi%d: " PCI9111_DRIVER_NAME " driver\n",
++								dev->minor);
+ 
+ 	for_each_pci_dev(pci_device) {
+ 		if (pci_device->vendor == PCI_VENDOR_ID_ADLINK) {
+@@ -1325,13 +1326,14 @@ static int pci9111_attach(struct comedi_device *dev,
+ 		}
+ 	}
+ 
+-	printk("comedi%d: no supported board found! (req. bus/slot : %d/%d)\n",
+-	       dev->minor, it->options[0], it->options[1]);
++	printk(KERN_ERR
++		"comedi%d: no supported board found! (req. bus/slot : %d/%d)\n",
++			dev->minor, it->options[0], it->options[1]);
+ 	return -EIO;
+ 
+ found:
+ 
+-	printk("comedi%d: found %s (b:s:f=%d:%d:%d) , irq=%d\n",
++	printk(KERN_ERR "comedi%d: found %s (b:s:f=%d:%d:%d) , irq=%d\n",
+ 	       dev->minor,
+ 	       pci9111_boards[i].name,
+ 	       pci_device->bus->number,
+@@ -1362,7 +1364,7 @@ found:
+ 	io_base = pci_resource_start(pci_device, 2);
+ 	io_range = pci_resource_len(pci_device, 2);
+ 
+-	printk("comedi%d: 6503 registers at address 0x%4lx [0x%4lx]\n",
++	printk(KERN_ERR "comedi%d: 6503 registers at address 0x%4lx [0x%4lx]\n",
+ 	       dev->minor, io_base, io_range);
+ 
+ 	dev->iobase = io_base;
+@@ -1380,8 +1382,9 @@ found:
+ 	if (pci_device->irq > 0) {
+ 		if (request_irq(pci_device->irq, pci9111_interrupt,
+ 				IRQF_SHARED, PCI9111_DRIVER_NAME, dev) != 0) {
+-			printk("comedi%d: unable to allocate irq  %u\n",
+-			       dev->minor, pci_device->irq);
++			printk(KERN_ERR
++				"comedi%d: unable to allocate irq  %u\n",
++					dev->minor, pci_device->irq);
+ 			return -EINVAL;
+ 		}
+ 	}
 -- 
 1.7.0.4
 
