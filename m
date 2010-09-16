@@ -1,48 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593Ab0IPXrr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 19:47:47 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:54609 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750826Ab0IPXrq (ORCPT
+	id S1754843Ab0IPX4D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 19:56:03 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:30024 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754475Ab0IPX4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 19:47:46 -0400
-Date: Thu, 16 Sep 2010 19:47:42 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Jens@suse.cz, "Axboe <axboe"@kernel.dk,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 0/3] BDI handling fixes
-Message-ID: <20100916234742.GA26030@infradead.org>
-References: <1284677051-28564-1-git-send-email-jack@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284677051-28564-1-git-send-email-jack@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 16 Sep 2010 19:56:01 -0400
+Message-ID: <000401cb55fa$b6709e90$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Wolfgang Grandegger" <wg@grandegger.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        "Wolfram Sang" <w.sang@pengutronix.de>,
+        "Christian Pellegrin" <chripell@fsfe.org>,
+        "Barry Song" <21cnbao@gmail.com>,
+        "Samuel Ortiz" <sameo@linux.intel.com>,
+        <socketcan-core@lists.berlios.de>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <meego-dev@meego.com>,
+        <andrew.chih.howe.khor@intel.com>, <qi.wang@intel.com>,
+        <gregkh@suse.de>, <yong.y.wang@intel.com>,
+        "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>,
+        <arjan@linux.intel.com>, "Marc Kleine-Budde" <mkl@pengutronix.de>
+References: <4C8E1773.9090000@dsn.okisemi.com> <4C8E3FDE.2000002@pengutronix.de> <002601cb557c$69292180$66f8800a@maildom.okisemi.com> <4C91DF20.7040807@grandegger.com>
+Subject: Re: [MeeGo-Dev][PATCH v2] Topcliff: Update PCH_CAN driver to 2.6.35
+Date: Fri, 17 Sep 2010 08:55:54 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 17, 2010 at 12:44:08AM +0200, Jan Kara wrote:
-> 
->   Hi,
-> 
->   series of these three patches fixes the warning in __mark_inode_dirty()
-> which happens when I do e.g. touch /dev/zero. The first two patches should
-> be obvious enough and probably worth merging independently of the third
-> patch. The third patch is upto a discussion whether we want to solve the
-> problem that way or differently. Christoph, I know we spoke at LSF that
-> inode_to_bdi() could be a per-sb method but the current version of the
-> patch seems clean enough to me that we could maybe go even without the
-> special callback?
+Hi Wolfgang Grandegger
 
-Feel free to go with the simpler one.  But what I think really needs to
-be changes is the no writeback flag - it's exactly the wrong way around.
+According to your policy, we will remove filter processing so that
+all packets can be received.
 
-Instead just add a flag to allow writeback for the block device and
-fs-specific bdi structures.
+Thanks, Ohtake(OKISemi)
+----- Original Message ----- 
+From: "Wolfgang Grandegger" <wg@grandegger.com>
+To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+Cc: "Marc Kleine-Budde" <mkl@pengutronix.de>; <arjan@linux.intel.com>; "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>;
+<yong.y.wang@intel.com>; <gregkh@suse.de>; <qi.wang@intel.com>; <andrew.chih.howe.khor@intel.com>;
+<meego-dev@meego.com>; <linux-kernel@vger.kernel.org>; <netdev@vger.kernel.org>; <socketcan-core@lists.berlios.de>;
+"Samuel Ortiz" <sameo@linux.intel.com>; "Barry Song" <21cnbao@gmail.com>; "Christian Pellegrin" <chripell@fsfe.org>;
+"Wolfram Sang" <w.sang@pengutronix.de>; "David S. Miller" <davem@davemloft.net>
+Sent: Thursday, September 16, 2010 6:10 PM
+Subject: Re: [MeeGo-Dev][PATCH v2] Topcliff: Update PCH_CAN driver to 2.6.35
+
+
+> On 09/16/2010 10:51 AM, Masayuki Ohtake wrote:
+> > Hi Marc,
+> >
+> >> - Please remove rx-filter handling from the driver completely, simply
+> >>   receive every can frame
+> >
+> > This rx-filter function is for Topcliff's CAN HW function.
+> > This function is important.
+> > Could you tell us the reason why should we remove filter function ?
+>
+> We do not (yet) support the filtering capability of the CAN controller
+> hardware. Therefore please configure the hardware filter to accept *any*
+> CAN message like all other drivers do, e.g.:
+>
+> http://lxr.linux.no/#linux+v2.6.35.4/drivers/net/can/sja1000/sja1000.c#L249
+>
+> Wolfgang.
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
 
