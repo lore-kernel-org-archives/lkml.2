@@ -1,118 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756793Ab0IPWRS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 18:17:18 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:37762 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756782Ab0IPWRP (ORCPT
+	id S1756844Ab0IPWSA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 18:18:00 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:57501 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756797Ab0IPWRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 18:17:15 -0400
-Date: Thu, 16 Sep 2010 23:17:13 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: linux-arch@vger.kernel.org
-Cc: Russell King <rmk@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH] really nasty sigreturn bug on arm
-Message-ID: <20100916221713.GW31363@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	Thu, 16 Sep 2010 18:17:19 -0400
+From: Alexander Shishkin <virtuoso@slind.org>
+To: linux-kernel@vger.kernel.org
+Cc: John Stultz <johnstul@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        Greg KH <gregkh@suse.de>, Chris Friesen <chris.friesen@genband.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Alexander Shishkin <virtuoso@slind.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Andreas Schwab <schwab@linux-m68k.org>, Christoph Hellwig <hch@lst.de>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH 4/7] wire up sys_time_change_notify() on powerpc
+Date: Fri, 17 Sep 2010 01:10:46 +0300
+Message-Id: <1284675049-23479-5-git-send-email-virtuoso@slind.org>
+X-Mailer: git-send-email 1.7.2.1.45.gb66c2
+In-Reply-To: <1284675049-23479-1-git-send-email-virtuoso@slind.org>
+References: <1284675049-23479-1-git-send-email-virtuoso@slind.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[It's a part of long and growing series I'll be posting shortly, but
-this one goes out of order due to sheer nastiness of the observed
-behaviour.  Linus, PLEASE DO NOT APPLY until rmk is OK with it; the
-fix touches the guts of syscall glue on arm and I really, really
-want the people familiar with that area to review the damn thing
-before it goes anywhere near the tree]
-
-If a signal hits us outside of a syscall and another gets delivered
-when we are in sigreturn (e.g. because it had been in sa_mask for
-the first one and got sent to us while we'd been in the first handler),
-we have a chance of returning from the second handler to location one
-insn prior to where we ought to return.  If r0 happens to contain -513
-(-ERESTARTNOINTR), sigreturn will get confused into doing restart
-syscall song and dance.
-
-Incredible joy to debug, since it manifests as random, infrequent and
-very hard to reproduce double execution of instructions in userland
-code...
-
-The fix is simple - mark it "don't bother with restarts" in wrapper,
-i.e. set r8 to 0 in sys_sigreturn and sys_rt_sigreturn wrappers,
-suppressing the syscall restart handling on return from these guys.
-They can't legitimately return a restart-worthy error anyway.
-
-Testcase:
-	#include <unistd.h>
-	#include <signal.h>
-	#include <stdlib.h>
-	#include <sys/time.h>
-	#include <errno.h>
-
-	void f(int n)
-	{
-		__asm__ __volatile__(
-			"ldr r0, [%0]\n"
-			"b 1f\n"
-			"b 2f\n"
-			"1:b .\n"
-			"2:\n" : : "r"(&n));
-	}
-
-	void handler1(int sig) { }
-	void handler2(int sig) { raise(1); }
-	void handler3(int sig) { exit(0); }
-
-	main()
-	{
-		struct sigaction s = {.sa_handler = handler2};
-		struct itimerval t1 = { .it_value = {1} };
-		struct itimerval t2 = { .it_value = {2} };
-
-		signal(1, handler1);
-
-		sigemptyset(&s.sa_mask);
-		sigaddset(&s.sa_mask, 1);
-		sigaction(SIGALRM, &s, NULL);
-
-		signal(SIGVTALRM, handler3);
-
-		setitimer(ITIMER_REAL, &t1, NULL);
-		setitimer(ITIMER_VIRTUAL, &t2, NULL);
-
-		f(-513); /* -ERESTARTNOINTR */
-
-		write(1, "buggered\n", 9);
-		return 1;
-	}
-
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Andreas Schwab <schwab@linux-m68k.org>
+CC: Alexander Shishkin <virtuoso@slind.org>
+CC: Christoph Hellwig <hch@lst.de>
+CC: Jesper Nilsson <jesper.nilsson@axis.com>
+CC: linuxppc-dev@lists.ozlabs.org
+CC: linux-kernel@vger.kernel.org
 ---
- arch/arm/kernel/entry-common.S |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ arch/powerpc/include/asm/systbl.h |    1 +
+ arch/powerpc/include/asm/unistd.h |    3 ++-
+ 2 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
-index f05a35a..34e5860 100644
---- a/arch/arm/kernel/entry-common.S
-+++ b/arch/arm/kernel/entry-common.S
-@@ -418,11 +418,13 @@ ENDPROC(sys_clone_wrapper)
+diff --git a/arch/powerpc/include/asm/systbl.h b/arch/powerpc/include/asm/systbl.h
+index 3d21266..124b610 100644
+--- a/arch/powerpc/include/asm/systbl.h
++++ b/arch/powerpc/include/asm/systbl.h
+@@ -329,3 +329,4 @@ COMPAT_SYS(rt_tgsigqueueinfo)
+ SYSCALL(fanotify_init)
+ COMPAT_SYS(fanotify_mark)
+ SYSCALL_SPU(prlimit64)
++SYSCALL(time_change_notify)
+diff --git a/arch/powerpc/include/asm/unistd.h b/arch/powerpc/include/asm/unistd.h
+index 597e6f9..6ab64da 100644
+--- a/arch/powerpc/include/asm/unistd.h
++++ b/arch/powerpc/include/asm/unistd.h
+@@ -348,10 +348,11 @@
+ #define __NR_fanotify_init	323
+ #define __NR_fanotify_mark	324
+ #define __NR_prlimit64		325
++#define __NR_time_change_notify	326
  
- sys_sigreturn_wrapper:
- 		add	r0, sp, #S_OFF
-+		mov	why, #0
- 		b	sys_sigreturn
- ENDPROC(sys_sigreturn_wrapper)
+ #ifdef __KERNEL__
  
- sys_rt_sigreturn_wrapper:
- 		add	r0, sp, #S_OFF
-+		mov	why, #0
- 		b	sys_rt_sigreturn
- ENDPROC(sys_rt_sigreturn_wrapper)
+-#define __NR_syscalls		326
++#define __NR_syscalls		327
  
+ #define __NR__exit __NR_exit
+ #define NR_syscalls	__NR_syscalls
 -- 
-1.5.6.5
+1.7.2.1.45.gb66c2
 
