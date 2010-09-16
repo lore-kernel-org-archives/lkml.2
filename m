@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486Ab0IPMt1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 08:49:27 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:45939 "HELO
+	id S1754522Ab0IPMyH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 08:54:07 -0400
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:47369 "HELO
 	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753774Ab0IPMtZ (ORCPT
+	by vger.kernel.org with SMTP id S1754224Ab0IPMyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 08:49:25 -0400
+	Thu, 16 Sep 2010 08:54:05 -0400
 DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
 	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=F5cPPPbzgoZ5eOFzxGjx5kigWFocwmxC6X/m+G6Y/lH9XMHMBG6lmc9Xn+ussH4M9TQbQ9aAyWik/p9pDK9cBrJEYPwlvNyyeGMvqdqQsaWIKCAntNKv27K2pruMHxa4;
-Date: Thu, 16 Sep 2010 14:49:17 +0200
+	b=ipa+O12/M/TCXPXZWthA0fndSgUNEUVO9FDtW4J+j7JemTQxwTL5frz72Uov1CGYiiJJ/5MWgdIxOkEfjfj/s41Dq5D5xSkZG0+WJbDCMFwBmgAQHh9EuxWx3kRjWtUM;
+Date: Thu, 16 Sep 2010 14:53:55 +0200
 From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: tim.gardner@canonical.com
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: MCP limit log messages, 2.6.36-rc4
-Message-ID: <20100916144917.54d5f2b0@jbarnes-x201>
-In-Reply-To: <4C911C60.4030105@canonical.com>
-References: <4C9106C1.4080505@canonical.com>
-	<4C911C60.4030105@canonical.com>
+To: minskey guo <chaohong.guo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, chaohong.guo@intel.com,
+        minskey guo <chaohong_guo@linux.intel.com>
+Subject: Re: [PATCH]  NULL pointer might be used in ips_monitor()
+Message-ID: <20100916145355.24a55114@jbarnes-x201>
+In-Reply-To: <1284613588-5199-1-git-send-email-chaohong.guo@linux.intel.com>
+References: <1284613588-5199-1-git-send-email-chaohong.guo@linux.intel.com>
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -28,49 +28,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Sep 2010 13:20:00 -0600
-Tim Gardner <tim.gardner@canonical.com> wrote:
+On Thu, 16 Sep 2010 13:06:28 +0800
+minskey guo <chaohong.guo@linux.intel.com> wrote:
 
-> On 09/15/2010 11:47 AM, Tim Gardner wrote:
-> > I've been getting regular MCP limit log messages on a Dell Studio
-> > 1458 (i5 CPU) with an A02 BIOS. With the attached debug hack it
-> > prints the following values:
-> >
-> > [ 33.605098] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power
-> > 30123, limit 1023
-> > [ 38.597998] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power
-> > 21697, limit 1023
-> > [ 43.590917] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power
-> > 15390, limit 1023
-> > [ 48.583821] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power
-> > 43370, limit 1023
-> > [ 53.576740] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power
-> > 64728, limit 1023
-> >
-> > This is an idle machine which starts printing these messages about
-> > 30 seconds after boot. Any thoughts?
-> >
-> > rtg
+> From: minskey guo <chaohong_guo@linux.intel.com>
 > 
-> More clues:
+>  The patch is to enable creating ips_adjust thread before ips_monitor
+>  executes because the latter will kthread_stop() or wake up the former
+>  via ips->adjust pointer. Otherwise, it is possible that ips->adjust
+> is NULL when kthread_stop() or wake_up_process() is called in
+> ips_monitor()
 > 
-> [   13.426064] intel ips 0000:00:1f.6: Warning: CPU TDP doesn't match 
-> expected value (found 25, expected 35)
-> [   13.426086] intel ips 0000:00:1f.6: PCI INT C -> GSI 18 (level,
-> low) -> IRQ 18
-> [   13.426933] intel ips 0000:00:1f.6: IPS driver initialized, MCP
-> temp limit 95
-> 
+>  Besides, some trival changes:
+>    a) correct an define of register bits;
+>    b) old_cpu_power sample should not be divided by 65535
+>    c) handling on error path in ips_get_i915_syms()
 
-Oh interesting, this looks like a slightly different problem than some
-others have been seeing.  The power limit is listed at 1023 but the
-reported value is looking at least 100x over that, so we may have a
-reporting vs limit unit mismatch here.
-
-I'm looking into finding a way to enable the thermal device which would
-fix another problem we have with bogus thermal limits and reporting,
-but yours is a separate problem.  I'll take a look at the sources and
-double check my unit calculations...
+Excellent, thanks for the fixes.  Can you split up the patch into
+individual fixes and send them over to the platform driver list and
+Matthew Garrett?  You can add my acked-by on them.
 
 Thanks,
 -- 
