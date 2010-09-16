@@ -1,129 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab0IPAw7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 20:52:59 -0400
-Received: from hera.kernel.org ([140.211.167.34]:43032 "EHLO hera.kernel.org"
+	id S1753255Ab0IPAxk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 20:53:40 -0400
+Received: from hera.kernel.org ([140.211.167.34]:43050 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753281Ab0IPAw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 20:52:57 -0400
-Date: Thu, 16 Sep 2010 00:52:33 GMT
+	id S1752123Ab0IPAxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 20:53:39 -0400
+Date: Thu, 16 Sep 2010 00:52:56 GMT
 From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         suresh.b.siddha@intel.com, tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         suresh.b.siddha@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <20100827181049.095067319@sbsiddha-MOBL3.sc.intel.com>
-References: <20100827181049.095067319@sbsiddha-MOBL3.sc.intel.com>
+In-Reply-To: <20100827181049.173087246@sbsiddha-MOBL3.sc.intel.com>
+References: <20100827181049.173087246@sbsiddha-MOBL3.sc.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/x2apic] x86, intr-remap: Remove IRTE setup duplicate code
-Message-ID: <tip-62a92f4c69cd1d9361ad8c16be1dd16e6821bc15@git.kernel.org>
-Git-Commit-ID: 62a92f4c69cd1d9361ad8c16be1dd16e6821bc15
+Subject: [tip:x86/x2apic] x86, x2apic: Simplify apic init in SMP and UP builds
+Message-ID: <tip-fa47f7e52874683a9659df2f1f143105f676dc0f@git.kernel.org>
+Git-Commit-ID: fa47f7e52874683a9659df2f1f143105f676dc0f
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 16 Sep 2010 00:52:34 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 16 Sep 2010 00:52:56 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  62a92f4c69cd1d9361ad8c16be1dd16e6821bc15
-Gitweb:     http://git.kernel.org/tip/62a92f4c69cd1d9361ad8c16be1dd16e6821bc15
+Commit-ID:  fa47f7e52874683a9659df2f1f143105f676dc0f
+Gitweb:     http://git.kernel.org/tip/fa47f7e52874683a9659df2f1f143105f676dc0f
 Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-AuthorDate: Fri, 27 Aug 2010 11:09:49 -0700
+AuthorDate: Fri, 27 Aug 2010 11:09:50 -0700
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 15 Sep 2010 17:36:45 -0700
+CommitDate: Wed, 15 Sep 2010 17:37:10 -0700
 
-x86, intr-remap: Remove IRTE setup duplicate code
+x86, x2apic: Simplify apic init in SMP and UP builds
 
-Remove IRTE setup duplicate code with prepare_irte().
+Move enable_IR_x2apic() inside the default_setup_apic_routing(),
+and for SMP platforms, move the default_setup_apic_routing() after
+smp_sanity_check(). This cleans up the code that tries to avoid multiple
+calls to default_setup_apic_routing() when smp_sanity_check() fails (which
+goes through the APIC_init_uniprocessor() path).
 
 Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-LKML-Reference: <20100827181049.095067319@sbsiddha-MOBL3.sc.intel.com>
+LKML-Reference: <20100827181049.173087246@sbsiddha-MOBL3.sc.intel.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/irq_remapping.h |   27 +++++++++++++++++++++++++++
- arch/x86/kernel/apic/io_apic.c       |   27 ++-------------------------
- 2 files changed, 29 insertions(+), 25 deletions(-)
+ arch/x86/kernel/apic/apic.c     |    3 ---
+ arch/x86/kernel/apic/probe_64.c |    3 +++
+ arch/x86/kernel/smpboot.c       |    4 ++--
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
-index f275e22..8d84150 100644
---- a/arch/x86/include/asm/irq_remapping.h
-+++ b/arch/x86/include/asm/irq_remapping.h
-@@ -3,4 +3,31 @@
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index e3b534c..8cf86fb 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1665,10 +1665,7 @@ int __init APIC_init_uniprocessor(void)
+ 	}
+ #endif
  
- #define IRTE_DEST(dest) ((x2apic_mode) ? dest : dest << 8)
+-#ifndef CONFIG_SMP
+-	enable_IR_x2apic();
+ 	default_setup_apic_routing();
+-#endif
  
-+#ifdef CONFIG_INTR_REMAP
-+static inline void prepare_irte(struct irte *irte, int vector,
-+			        unsigned int dest)
-+{
-+	memset(irte, 0, sizeof(*irte));
+ 	verify_local_APIC();
+ 	connect_bsp_APIC();
+diff --git a/arch/x86/kernel/apic/probe_64.c b/arch/x86/kernel/apic/probe_64.c
+index 83e9be4..f9e4e6a 100644
+--- a/arch/x86/kernel/apic/probe_64.c
++++ b/arch/x86/kernel/apic/probe_64.c
+@@ -54,6 +54,9 @@ static int apicid_phys_pkg_id(int initial_apic_id, int index_msb)
+  */
+ void __init default_setup_apic_routing(void)
+ {
 +
-+	irte->present = 1;
-+	irte->dst_mode = apic->irq_dest_mode;
-+	/*
-+	 * Trigger mode in the IRTE will always be edge, and for IO-APIC, the
-+	 * actual level or edge trigger will be setup in the IO-APIC
-+	 * RTE. This will help simplify level triggered irq migration.
-+	 * For more details, see the comments (in io_apic.c) explainig IO-APIC
-+	 * irq migration in the presence of interrupt-remapping.
-+	*/
-+	irte->trigger_mode = 0;
-+	irte->dlvry_mode = apic->irq_delivery_mode;
-+	irte->vector = vector;
-+	irte->dest_id = IRTE_DEST(dest);
-+	irte->redir_hint = 1;
-+}
-+#else
-+static void prepare_irte(struct irte *irte, int vector, unsigned int dest)
-+{
-+}
-+#endif
++	enable_IR_x2apic();
 +
- #endif	/* _ASM_X86_IRQ_REMAPPING_H */
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 90f8a75..e8c95a2 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1377,22 +1377,7 @@ int setup_ioapic_entry(int apic_id, int irq,
- 		if (index < 0)
- 			panic("Failed to allocate IRTE for ioapic %d\n", apic_id);
+ #ifdef CONFIG_X86_X2APIC
+ 	if (x2apic_mode
+ #ifdef CONFIG_X86_UV
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 8b3bfc4..87a8c6b 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1109,8 +1109,6 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
+ 	}
+ 	set_cpu_sibling_map(0);
  
--		memset(&irte, 0, sizeof(irte));
--
--		irte.present = 1;
--		irte.dst_mode = apic->irq_dest_mode;
--		/*
--		 * Trigger mode in the IRTE will always be edge, and the
--		 * actual level or edge trigger will be setup in the IO-APIC
--		 * RTE. This will help simplify level triggered irq migration.
--		 * For more details, see the comments above explainig IO-APIC
--		 * irq migration in the presence of interrupt-remapping.
--		 */
--		irte.trigger_mode = 0;
--		irte.dlvry_mode = apic->irq_delivery_mode;
--		irte.vector = vector;
--		irte.dest_id = IRTE_DEST(destination);
--		irte.redir_hint = 1;
-+		prepare_irte(&irte, vector, destination);
+-	enable_IR_x2apic();
+-	default_setup_apic_routing();
  
- 		/* Set source-id of interrupt request */
- 		set_ioapic_sid(&irte, apic_id);
-@@ -3336,15 +3321,7 @@ static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
- 		ir_index = map_irq_to_irte_handle(irq, &sub_handle);
- 		BUG_ON(ir_index == -1);
+ 	if (smp_sanity_check(max_cpus) < 0) {
+ 		printk(KERN_INFO "SMP disabled\n");
+@@ -1118,6 +1116,8 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
+ 		goto out;
+ 	}
  
--		memset (&irte, 0, sizeof(irte));
--
--		irte.present = 1;
--		irte.dst_mode = apic->irq_dest_mode;
--		irte.trigger_mode = 0; /* edge */
--		irte.dlvry_mode = apic->irq_delivery_mode;
--		irte.vector = cfg->vector;
--		irte.dest_id = IRTE_DEST(dest);
--		irte.redir_hint = 1;
-+		prepare_irte(&irte, cfg->vector, dest);
- 
- 		/* Set source-id of interrupt request */
- 		if (pdev)
++	default_setup_apic_routing();
++
+ 	preempt_disable();
+ 	if (read_apic_id() != boot_cpu_physical_apicid) {
+ 		panic("Boot APIC ID in local APIC unexpected (%d vs %d)",
