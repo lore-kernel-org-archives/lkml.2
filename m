@@ -1,991 +1,317 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755884Ab0IPSHO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 14:07:14 -0400
-Received: from mga11.intel.com ([192.55.52.93]:13018 "EHLO mga11.intel.com"
+	id S1755550Ab0IPSHz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 14:07:55 -0400
+Received: from www.tglx.de ([62.245.132.106]:50368 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755550Ab0IPSHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 14:07:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,377,1280732400"; 
-   d="scan'208";a="607582689"
-From: Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 3/3] tty: icount changeover for other main devices
-To: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org, greg@kroah.com,
-        drosenberg@vsecurity.com
-Date: Thu, 16 Sep 2010 18:21:52 +0100
-Message-ID: <20100916172147.25987.72021.stgit@localhost.localdomain>
-In-Reply-To: <20100916171747.25987.33573.stgit@localhost.localdomain>
-References: <20100916171747.25987.33573.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	id S1754013Ab0IPSHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 14:07:53 -0400
+Date: Thu, 16 Sep 2010 20:07:39 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Vasily Khoruzhick <anarsoul@gmail.com>
+cc: Sitsofe Wheeler <sitsofe@yahoo.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: Interrupt latency on some 945GM platforms
+In-Reply-To: <201009161803.10531.anarsoul@gmail.com>
+Message-ID: <alpine.LFD.2.00.1009162004500.2416@localhost6.localdomain6>
+References: <201009132336.17310.anarsoul@gmail.com> <201009141529.53179.anarsoul@gmail.com> <20100914224111.GA14467@sucs.org> <201009161803.10531.anarsoul@gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-1764317131-1284660460=:2416"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Again basically cut and paste
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+---1463795968-1764317131-1284660460=:2416
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+
+Vasily,
+
+On Thu, 16 Sep 2010, Vasily Khoruzhick wrote:
+
+> В сообщении от 15 of September 2010 01:41:11 автор Sitsofe Wheeler написал:
+> > > >     processor.max_cstate=2
+> > > 
+> > > Nope, it doesn't work with max_cstate=2
+> > 
+> > Perhaps intel_idle is being used? Any mention of it in dmesg?
+> 
+> Sitsofe, maybe you misunderstood me, I mean with max_cstate=1 graphics is 
+> smooth, with higher values (i.e. max_cstate=2) graphics is jerky.
+> 
+> Btw, Jesse, any comments/solutions/workarounds except one with 
+> processor.max_cstate=1 in kernel commandline? Should I file a bug on fdo 
+> bugzilla?
+
+we fixed a HPET related bug a few days ago, which might be the cause
+for your problem as well.
+
+Thanks,
+
+	tglx
 ---
+commit 54ff7e595d763d894104d421b103a89f7becf47c
+Author: Thomas Gleixner <tglx@linutronix.de>
+Date:   Tue Sep 14 22:10:21 2010 +0200
 
- arch/ia64/hp/sim/simserial.c      |   12 +-----
- drivers/char/amiserial.c          |   56 ++++++++++++++++------------
- drivers/char/cyclades.c           |   49 +++++++++++++------------
- drivers/char/ip2/ip2main.c        |   71 ++++++++++++++++++++++--------------
- drivers/char/mxser.c              |   62 ++++++++++++++++++-------------
- drivers/char/nozomi.c             |   37 +++++++++----------
- drivers/char/pcmcia/synclink_cs.c |   60 ++++++++++++++----------------
- drivers/char/synclink.c           |   73 +++++++++++++++++--------------------
- drivers/char/synclink_gt.c        |   55 +++++++++++++++-------------
- drivers/char/synclinkmp.c         |   61 ++++++++++++++-----------------
- drivers/serial/68360serial.c      |   51 +++++++++++++-------------
- net/bluetooth/rfcomm/tty.c        |    4 --
- 12 files changed, 297 insertions(+), 294 deletions(-)
+    x86: hpet: Work around hardware stupidity
+    
+    This more or less reverts commits 08be979 (x86: Force HPET
+    readback_cmp for all ATI chipsets) and 30a564be (x86, hpet: Restrict
+    read back to affected ATI chipsets) to the status of commit 8da854c
+    (x86, hpet: Erratum workaround for read after write of HPET
+    comparator).
+    
+    The delta to commit 8da854c is mostly comments and the change from
+    WARN_ONCE to printk_once as we know the call path of this function
+    already.
+    
+    This needs really in depth explanation:
+    
+    First of all the HPET design is a complete failure. Having a counter
+    compare register which generates an interrupt on matching values
+    forces the software to do at least one superfluous readback of the
+    counter register.
+    
+    While it is nice in theory to program "absolute" time events it is
+    practically useless because the timer runs at some absurd frequency
+    which can never be matched to real world units. So we are forced to
+    calculate a relative delta and this forces a readout of the actual
+    counter value, adding the delta and programming the compare
+    register. When the delta is small enough we run into the danger that
+    we program a compare value which is already in the past. Due to the
+    compare for equal nature of HPET we need to read back the counter
+    value after writing the compare rehgister (btw. this is necessary for
+    absolute timeouts as well) to make sure that we did not miss the timer
+    event. We try to work around that by setting the minimum delta to a
+    value which is larger than the theoretical time which elapses between
+    the counter readout and the compare register write, but that's only
+    true in theory. A NMI or SMI which hits between the readout and the
+    write can easily push us beyond that limit. This would result in
+    waiting for the next HPET timer interrupt until the 32bit wraparound
+    of the counter happens which takes about 306 seconds.
+    
+    So we designed the next event function to look like:
+    
+       match = read_cnt() + delta;
+       write_compare_ref(match);
+       return read_cnt() < match ? 0 : -ETIME;
+    
+    At some point we got into trouble with certain ATI chipsets. Even the
+    above "safe" procedure failed. The reason was that the write to the
+    compare register was delayed probably for performance reasons. The
+    theory was that they wanted to avoid the synchronization of the write
+    with the HPET clock, which is understandable. So the write does not
+    hit the compare register directly instead it goes to some intermediate
+    register which is copied to the real compare register in sync with the
+    HPET clock. That opens another window for hitting the dreaded "wait
+    for a wraparound" problem.
+    
+    To work around that "optimization" we added a read back of the compare
+    register which either enforced the update of the just written value or
+    just delayed the readout of the counter enough to avoid the issue. We
+    unfortunately never got any affirmative info from ATI/AMD about this.
+    
+    One thing is sure, that we nuked the performance "optimization" that
+    way completely and I'm pretty sure that the result is worse than
+    before some HW folks came up with those.
+    
+    Just for paranoia reasons I added a check whether the read back
+    compare register value was the same as the value we wrote right
+    before. That paranoia check triggered a couple of years after it was
+    added on an Intel ICH9 chipset. Venki added a workaround (commit
+    8da854c) which was reading the compare register twice when the first
+    check failed. We considered this to be a penalty in general and
+    restricted the readback (thus the wasted CPU cycles) to the known to
+    be affected ATI chipsets.
+    
+    This turned out to be a utterly wrong decision. 2.6.35 testers
+    experienced massive problems and finally one of them bisected it down
+    to commit 30a564be which spured some further investigation.
+    
+    Finally we got confirmation that the write to the compare register can
+    be delayed by up to two HPET clock cycles which explains the problems
+    nicely. All we can do about this is to go back to Venki's initial
+    workaround in a slightly modified version.
+    
+    Just for the record I need to say, that all of this could have been
+    avoided if hardware designers and of course the HPET committee would
+    have thought about the consequences for a split second. It's out of my
+    comprehension why designing a working timer is so hard. There are two
+    ways to achieve it:
+    
+     1) Use a counter wrap around aware compare_reg <= counter_reg
+        implementation instead of the easy compare_reg == counter_reg
+    
+        Downsides:
+    
+    	- It needs more silicon.
+    
+    	- It needs a readout of the counter to apply a relative
+    	  timeout. This is necessary as the counter does not run in
+    	  any useful (and adjustable) frequency and there is no
+    	  guarantee that the counter which is used for timer events is
+    	  the same which is used for reading the actual time (and
+    	  therefor for calculating the delta)
+    
+        Upsides:
+    
+    	- None
+    
+      2) Use a simple down counter for relative timer events
+    
+        Downsides:
+    
+    	- Absolute timeouts are not possible, which is not a problem
+    	  at all in the context of an OS and the expected
+    	  max. latencies/jitter (also see Downsides of #1)
+    
+       Upsides:
+    
+    	- It needs less or equal silicon.
+    
+    	- It works ALWAYS
+    
+    	- It is way faster than a compare register based solution (One
+    	  write versus one write plus at least one and up to four
+    	  reads)
+    
+    I would not be so grumpy about all of this, if I would not have been
+    ignored for many years when pointing out these flaws to various
+    hardware folks. I really hate timers (at least those which seem to be
+    designed by janitors).
+    
+    Though finally we got a reasonable explanation plus a solution and I
+    want to thank all the folks involved in chasing it down and providing
+    valuable input to this.
+    
+    Bisected-by: Nix <nix@esperi.org.uk>
+    Reported-by: Artur Skawina <art.08.09@gmail.com>
+    Reported-by: Damien Wyart <damien.wyart@free.fr>
+    Reported-by: John Drescher <drescherjm@gmail.com>
+    Cc: Venkatesh Pallipadi <venki@google.com>
+    Cc: Ingo Molnar <mingo@elte.hu>
+    Cc: H. Peter Anvin <hpa@zytor.com>
+    Cc: Arjan van de Ven <arjan@linux.intel.com>
+    Cc: Andreas Herrmann <andreas.herrmann3@amd.com>
+    Cc: Borislav Petkov <borislav.petkov@amd.com>
+    Cc: stable@kernel.org
+    Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+    Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
-
-diff --git a/arch/ia64/hp/sim/simserial.c b/arch/ia64/hp/sim/simserial.c
-index 1e8d71a..13633da 100644
---- a/arch/ia64/hp/sim/simserial.c
-+++ b/arch/ia64/hp/sim/simserial.c
-@@ -395,7 +395,7 @@ static int rs_ioctl(struct tty_struct *tty, struct file * file,
+diff --git a/arch/x86/include/asm/hpet.h b/arch/x86/include/asm/hpet.h
+index 004e6e2..1d5c08a 100644
+--- a/arch/x86/include/asm/hpet.h
++++ b/arch/x86/include/asm/hpet.h
+@@ -68,7 +68,6 @@ extern unsigned long force_hpet_address;
+ extern u8 hpet_blockid;
+ extern int hpet_force_user;
+ extern u8 hpet_msi_disable;
+-extern u8 hpet_readback_cmp;
+ extern int is_hpet_enabled(void);
+ extern int hpet_enable(void);
+ extern void hpet_disable(void);
+diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
+index e5cc7e8..ebdb85c 100644
+--- a/arch/x86/kernel/early-quirks.c
++++ b/arch/x86/kernel/early-quirks.c
+@@ -18,7 +18,6 @@
+ #include <asm/apic.h>
+ #include <asm/iommu.h>
+ #include <asm/gart.h>
+-#include <asm/hpet.h>
+ 
+ static void __init fix_hypertransport_config(int num, int slot, int func)
  {
- 	if ((cmd != TIOCGSERIAL) && (cmd != TIOCSSERIAL) &&
- 	    (cmd != TIOCSERCONFIG) && (cmd != TIOCSERGSTRUCT) &&
--	    (cmd != TIOCMIWAIT) && (cmd != TIOCGICOUNT)) {
-+	    (cmd != TIOCMIWAIT)) {
- 		if (tty->flags & (1 << TTY_IO_ERROR))
- 		    return -EIO;
- 	}
-@@ -433,16 +433,6 @@ static int rs_ioctl(struct tty_struct *tty, struct file * file,
- 		case TIOCMIWAIT:
- 			printk(KERN_INFO "rs_ioctl: TIOCMIWAIT: called\n");
- 			return 0;
--		/*
--		 * Get counter of input serial line interrupts (DCD,RI,DSR,CTS)
--		 * Return: write counters to the user passed counter struct
--		 * NB: both 1->0 and 0->1 transitions are counted except for
--		 *     RI where only 0->1 is counted.
--		 */
--		case TIOCGICOUNT:
--			printk(KERN_INFO "rs_ioctl: TIOCGICOUNT called\n");
--			return 0;
--
- 		case TIOCSERGWILD:
- 		case TIOCSERSWILD:
- 			/* "setserial -W" is called in Debian boot */
-diff --git a/drivers/char/amiserial.c b/drivers/char/amiserial.c
-index a11c8c9..3f2861a 100644
---- a/drivers/char/amiserial.c
-+++ b/drivers/char/amiserial.c
-@@ -1263,6 +1263,36 @@ static int rs_break(struct tty_struct *tty, int break_state)
- 	return 0;
+@@ -192,21 +191,6 @@ static void __init ati_bugs_contd(int num, int slot, int func)
  }
- 
-+/* 
-+ * Get counter of input serial line interrupts (DCD,RI,DSR,CTS)
-+ * Return: write counters to the user passed counter struct
-+ * NB: both 1->0 and 0->1 transitions are counted except for
-+ *     RI where only 0->1 is counted.
-+ */
-+static int rs_get_icount(struct tty_struct *tty,
-+				struct serial_icounter_struct *icount)
-+{
-+	struct async_struct *info = tty->driver_data;
-+	struct async_icount cnow;
-+	unsigned long flags;
-+
-+	local_irq_save(flags);
-+	cnow = info->state->icount;
-+	local_irq_restore(flags);
-+	icount->cts = cnow.cts;
-+	icount->dsr = cnow.dsr;
-+	icount->rng = cnow.rng;
-+	icount->dcd = cnow.dcd;
-+	icount->rx = cnow.rx;
-+	icount->tx = cnow.tx;
-+	icount->frame = cnow.frame;
-+	icount->overrun = cnow.overrun;
-+	icount->parity = cnow.parity;
-+	icount->brk = cnow.brk;
-+	icount->buf_overrun = cnow.buf_overrun;
-+
-+	return 0;
-+}
- 
- static int rs_ioctl(struct tty_struct *tty, struct file * file,
- 		    unsigned int cmd, unsigned long arg)
-@@ -1332,31 +1362,6 @@ static int rs_ioctl(struct tty_struct *tty, struct file * file,
- 			}
- 			/* NOTREACHED */
- 
--		/* 
--		 * Get counter of input serial line interrupts (DCD,RI,DSR,CTS)
--		 * Return: write counters to the user passed counter struct
--		 * NB: both 1->0 and 0->1 transitions are counted except for
--		 *     RI where only 0->1 is counted.
--		 */
--		case TIOCGICOUNT:
--			local_irq_save(flags);
--			cnow = info->state->icount;
--			local_irq_restore(flags);
--			icount.cts = cnow.cts;
--			icount.dsr = cnow.dsr;
--			icount.rng = cnow.rng;
--			icount.dcd = cnow.dcd;
--			icount.rx = cnow.rx;
--			icount.tx = cnow.tx;
--			icount.frame = cnow.frame;
--			icount.overrun = cnow.overrun;
--			icount.parity = cnow.parity;
--			icount.brk = cnow.brk;
--			icount.buf_overrun = cnow.buf_overrun;
--
--			if (copy_to_user(argp, &icount, sizeof(icount)))
--				return -EFAULT;
--			return 0;
- 		case TIOCSERGWILD:
- 		case TIOCSERSWILD:
- 			/* "setserial -W" is called in Debian boot */
-@@ -1958,6 +1963,7 @@ static const struct tty_operations serial_ops = {
- 	.wait_until_sent = rs_wait_until_sent,
- 	.tiocmget = rs_tiocmget,
- 	.tiocmset = rs_tiocmset,
-+	.get_icount = rs_get_icount,
- 	.proc_fops = &rs_proc_fops,
- };
- 
-diff --git a/drivers/char/cyclades.c b/drivers/char/cyclades.c
-index 27aad94..3714b70 100644
---- a/drivers/char/cyclades.c
-+++ b/drivers/char/cyclades.c
-@@ -2790,29 +2790,6 @@ cy_ioctl(struct tty_struct *tty, struct file *file,
- 		 * NB: both 1->0 and 0->1 transitions are counted except for
- 		 *     RI where only 0->1 is counted.
- 		 */
--	case TIOCGICOUNT: {
--		struct serial_icounter_struct sic = { };
--
--		spin_lock_irqsave(&info->card->card_lock, flags);
--		cnow = info->icount;
--		spin_unlock_irqrestore(&info->card->card_lock, flags);
--
--		sic.cts = cnow.cts;
--		sic.dsr = cnow.dsr;
--		sic.rng = cnow.rng;
--		sic.dcd = cnow.dcd;
--		sic.rx = cnow.rx;
--		sic.tx = cnow.tx;
--		sic.frame = cnow.frame;
--		sic.overrun = cnow.overrun;
--		sic.parity = cnow.parity;
--		sic.brk = cnow.brk;
--		sic.buf_overrun = cnow.buf_overrun;
--
--		if (copy_to_user(argp, &sic, sizeof(sic)))
--			ret_val = -EFAULT;
--		break;
--	}
- 	default:
- 		ret_val = -ENOIOCTLCMD;
- 	}
-@@ -2823,6 +2800,31 @@ cy_ioctl(struct tty_struct *tty, struct file *file,
- 	return ret_val;
- }				/* cy_ioctl */
- 
-+static int cy_get_icount(struct tty_struct *tty,
-+				struct serial_icounter_struct *sic)
-+{				
-+	struct cyclades_port *info = tty->driver_data;
-+	struct cyclades_icount cnow;	/* Used to snapshot */
-+	unsigned long flags;
-+	
-+	spin_lock_irqsave(&info->card->card_lock, flags);
-+	cnow = info->icount;
-+	spin_unlock_irqrestore(&info->card->card_lock, flags);
-+
-+	sic->cts = cnow.cts;
-+	sic->dsr = cnow.dsr;
-+	sic->rng = cnow.rng;
-+	sic->dcd = cnow.dcd;
-+	sic->rx = cnow.rx;
-+	sic->tx = cnow.tx;
-+	sic->frame = cnow.frame;
-+	sic->overrun = cnow.overrun;
-+	sic->parity = cnow.parity;
-+	sic->brk = cnow.brk;
-+	sic->buf_overrun = cnow.buf_overrun;
-+	return 0;
-+}
-+
- /*
-  * This routine allows the tty driver to be notified when
-  * device's termios settings have changed.  Note that a
-@@ -4084,6 +4086,7 @@ static const struct tty_operations cy_ops = {
- 	.wait_until_sent = cy_wait_until_sent,
- 	.tiocmget = cy_tiocmget,
- 	.tiocmset = cy_tiocmset,
-+	.get_icount = cy_get_icount,
- 	.proc_fops = &cyclades_proc_fops,
- };
- 
-diff --git a/drivers/char/ip2/ip2main.c b/drivers/char/ip2/ip2main.c
-index d4b71e8..b0d353e 100644
---- a/drivers/char/ip2/ip2main.c
-+++ b/drivers/char/ip2/ip2main.c
-@@ -183,6 +183,8 @@ static void ip2_hangup(PTTY);
- static int  ip2_tiocmget(struct tty_struct *tty, struct file *file);
- static int  ip2_tiocmset(struct tty_struct *tty, struct file *file,
- 			 unsigned int set, unsigned int clear);
-+static int get_icount(struct tty_struct *tty,
-+		struct serial_icounter_struct *icount);
- 
- static void set_irq(int, int);
- static void ip2_interrupt_bh(struct work_struct *work);
-@@ -454,6 +456,7 @@ static const struct tty_operations ip2_ops = {
- 	.hangup          = ip2_hangup,
- 	.tiocmget	 = ip2_tiocmget,
- 	.tiocmset	 = ip2_tiocmset,
-+	.get_icount	 = ip2_get_icount,
- 	.proc_fops	 = &ip2_proc_fops,
- };
- 
-@@ -2297,34 +2300,6 @@ ip2_ioctl ( PTTY tty, struct file *pFile, UINT cmd, ULONG arg )
- 		break;
- 
- 	/*
--	 * Get counter of input serial line interrupts (DCD,RI,DSR,CTS)
--	 * Return: write counters to the user passed counter struct
--	 * NB: both 1->0 and 0->1 transitions are counted except for RI where
--	 * only 0->1 is counted. The controller is quite capable of counting
--	 * both, but this done to preserve compatibility with the standard
--	 * serial driver.
--	 */
--	case TIOCGICOUNT:
--		ip2trace (CHANN, ITRC_IOCTL, 11, 1, rc );
--
--		write_lock_irqsave(&pB->read_fifo_spinlock, flags);
--		cnow = pCh->icount;
--		write_unlock_irqrestore(&pB->read_fifo_spinlock, flags);
--		p_cuser = argp;
--		rc = put_user(cnow.cts, &p_cuser->cts);
--		rc = put_user(cnow.dsr, &p_cuser->dsr);
--		rc = put_user(cnow.rng, &p_cuser->rng);
--		rc = put_user(cnow.dcd, &p_cuser->dcd);
--		rc = put_user(cnow.rx, &p_cuser->rx);
--		rc = put_user(cnow.tx, &p_cuser->tx);
--		rc = put_user(cnow.frame, &p_cuser->frame);
--		rc = put_user(cnow.overrun, &p_cuser->overrun);
--		rc = put_user(cnow.parity, &p_cuser->parity);
--		rc = put_user(cnow.brk, &p_cuser->brk);
--		rc = put_user(cnow.buf_overrun, &p_cuser->buf_overrun);
--		break;
--
--	/*
- 	 * The rest are not supported by this driver. By returning -ENOIOCTLCMD they
- 	 * will be passed to the line discipline for it to handle.
- 	 */
-@@ -2348,6 +2323,46 @@ ip2_ioctl ( PTTY tty, struct file *pFile, UINT cmd, ULONG arg )
- 	return rc;
- }
- 
-+static int get_icount(struct tty_struct *tty,
-+		struct serial_icounter_struct *icount)
-+{
-+	i2ChanStrPtr pCh = DevTable[tty->index];
-+	i2eBordStrPtr pB;
-+	struct async_icount cnow;	/* kernel counter temp */
-+	unsigned long flags;
-+
-+	if ( pCh == NULL )
-+		return -ENODEV;
-+
-+	pB = pCh->pMyBord;
-+
-+	/*
-+	 * Get counter of input serial line interrupts (DCD,RI,DSR,CTS)
-+	 * Return: write counters to the user passed counter struct
-+	 * NB: both 1->0 and 0->1 transitions are counted except for RI where
-+	 * only 0->1 is counted. The controller is quite capable of counting
-+	 * both, but this done to preserve compatibility with the standard
-+	 * serial driver.
-+	 */
-+
-+	write_lock_irqsave(&pB->read_fifo_spinlock, flags);
-+	cnow = pCh->icount;
-+	write_unlock_irqrestore(&pB->read_fifo_spinlock, flags);
-+
-+	icount->cts = cnow.cts;
-+	icount->dsr = cnow.dsr;
-+	icount->rng = cnow.rng;
-+	icount->dcd = cnow.dcd;
-+	icount->rx = cnow.rx;
-+	icount->tx = cnow.tx;
-+	icount->frame = cnow.frame;
-+	icount->overrun = cnow.overrun;
-+	icount->parity = cnow.parity;
-+	icount->brk = cnow.brk;
-+	icount->buf_overrun = cnow.buf_overrun;
-+	return 0;
-+}
-+
- /******************************************************************************/
- /* Function:   GetSerialInfo()                                                */
- /* Parameters: Pointer to channel structure                                   */
-diff --git a/drivers/char/mxser.c b/drivers/char/mxser.c
-index 9d243de..463df27 100644
---- a/drivers/char/mxser.c
-+++ b/drivers/char/mxser.c
-@@ -1700,7 +1700,7 @@ static int mxser_ioctl(struct tty_struct *tty, struct file *file,
- 		return 0;
- 	}
- 
--	if (cmd != TIOCGSERIAL && cmd != TIOCMIWAIT && cmd != TIOCGICOUNT &&
-+	if (cmd != TIOCGSERIAL && cmd != TIOCMIWAIT &&
- 			test_bit(TTY_IO_ERROR, &tty->flags))
- 		return -EIO;
- 
-@@ -1730,32 +1730,6 @@ static int mxser_ioctl(struct tty_struct *tty, struct file *file,
- 
- 		return wait_event_interruptible(info->port.delta_msr_wait,
- 				mxser_cflags_changed(info, arg, &cnow));
--	/*
--	 * Get counter of input serial line interrupts (DCD,RI,DSR,CTS)
--	 * Return: write counters to the user passed counter struct
--	 * NB: both 1->0 and 0->1 transitions are counted except for
--	 *     RI where only 0->1 is counted.
--	 */
--	case TIOCGICOUNT: {
--		struct serial_icounter_struct icnt = { 0 };
--		spin_lock_irqsave(&info->slock, flags);
--		cnow = info->icount;
--		spin_unlock_irqrestore(&info->slock, flags);
--
--		icnt.frame = cnow.frame;
--		icnt.brk = cnow.brk;
--		icnt.overrun = cnow.overrun;
--		icnt.buf_overrun = cnow.buf_overrun;
--		icnt.parity = cnow.parity;
--		icnt.rx = cnow.rx;
--		icnt.tx = cnow.tx;
--		icnt.cts = cnow.cts;
--		icnt.dsr = cnow.dsr;
--		icnt.rng = cnow.rng;
--		icnt.dcd = cnow.dcd;
--
--		return copy_to_user(argp, &icnt, sizeof(icnt)) ? -EFAULT : 0;
--	}
- 	case MOXA_HighSpeedOn:
- 		return put_user(info->baud_base != 115200 ? 1 : 0, (int __user *)argp);
- 	case MOXA_SDS_RSTICOUNTER:
-@@ -1828,6 +1802,39 @@ static int mxser_ioctl(struct tty_struct *tty, struct file *file,
- 	return 0;
- }
- 
-+	/*
-+	 * Get counter of input serial line interrupts (DCD,RI,DSR,CTS)
-+	 * Return: write counters to the user passed counter struct
-+	 * NB: both 1->0 and 0->1 transitions are counted except for
-+	 *     RI where only 0->1 is counted.
-+	 */
-+
-+static int mxser_get_icount(struct tty_struct *tty,
-+		struct serial_icounter_struct *icount)
-+
-+{
-+	struct mxser_port *info = tty->driver_data;
-+	struct async_icount cnow;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&info->slock, flags);
-+	cnow = info->icount;
-+	spin_unlock_irqrestore(&info->slock, flags);
-+
-+	icount->frame = cnow.frame;
-+	icount->brk = cnow.brk;
-+	icount->overrun = cnow.overrun;
-+	icount->buf_overrun = cnow.buf_overrun;
-+	icount->parity = cnow.parity;
-+	icount->rx = cnow.rx;
-+	icount->tx = cnow.tx;
-+	icount->cts = cnow.cts;
-+	icount->dsr = cnow.dsr;
-+	icount->rng = cnow.rng;
-+	icount->dcd = cnow.dcd;
-+	return 0;
-+}
-+
- static void mxser_stoprx(struct tty_struct *tty)
- {
- 	struct mxser_port *info = tty->driver_data;
-@@ -2326,6 +2333,7 @@ static const struct tty_operations mxser_ops = {
- 	.wait_until_sent = mxser_wait_until_sent,
- 	.tiocmget = mxser_tiocmget,
- 	.tiocmset = mxser_tiocmset,
-+	.get_icount = mxser_get_icount,
- };
- 
- struct tty_port_operations mxser_port_ops = {
-diff --git a/drivers/char/nozomi.c b/drivers/char/nozomi.c
-index 817169c..dd3f9b1 100644
---- a/drivers/char/nozomi.c
-+++ b/drivers/char/nozomi.c
-@@ -1804,24 +1804,24 @@ static int ntty_cflags_changed(struct port *port, unsigned long flags,
- 	return ret;
- }
- 
--static int ntty_ioctl_tiocgicount(struct port *port, void __user *argp)
-+static int ntty_tiocgicount(struct tty_struct *tty,
-+				struct serial_icounter_struct *icount)
- {
-+	struct port *port = tty->driver_data;
- 	const struct async_icount cnow = port->tty_icount;
--	struct serial_icounter_struct icount;
--
--	icount.cts = cnow.cts;
--	icount.dsr = cnow.dsr;
--	icount.rng = cnow.rng;
--	icount.dcd = cnow.dcd;
--	icount.rx = cnow.rx;
--	icount.tx = cnow.tx;
--	icount.frame = cnow.frame;
--	icount.overrun = cnow.overrun;
--	icount.parity = cnow.parity;
--	icount.brk = cnow.brk;
--	icount.buf_overrun = cnow.buf_overrun;
--
--	return copy_to_user(argp, &icount, sizeof(icount)) ? -EFAULT : 0;
-+
-+	icount->cts = cnow.cts;
-+	icount->dsr = cnow.dsr;
-+	icount->rng = cnow.rng;
-+	icount->dcd = cnow.dcd;
-+	icount->rx = cnow.rx;
-+	icount->tx = cnow.tx;
-+	icount->frame = cnow.frame;
-+	icount->overrun = cnow.overrun;
-+	icount->parity = cnow.parity;
-+	icount->brk = cnow.brk;
-+	icount->buf_overrun = cnow.buf_overrun;
-+	return 0;
- }
- 
- static int ntty_ioctl(struct tty_struct *tty, struct file *file,
-@@ -1840,9 +1840,7 @@ static int ntty_ioctl(struct tty_struct *tty, struct file *file,
- 		rval = wait_event_interruptible(port->tty_wait,
- 				ntty_cflags_changed(port, arg, &cprev));
- 		break;
--	} case TIOCGICOUNT:
--		rval = ntty_ioctl_tiocgicount(port, argp);
--		break;
-+	}
- 	default:
- 		DBG1("ERR: 0x%08X, %d", cmd, cmd);
- 		break;
-@@ -1922,6 +1920,7 @@ static const struct tty_operations tty_ops = {
- 	.chars_in_buffer = ntty_chars_in_buffer,
- 	.tiocmget = ntty_tiocmget,
- 	.tiocmset = ntty_tiocmset,
-+	.get_icount = ntty_tiocgicount,
- 	.install = ntty_install,
- 	.cleanup = ntty_cleanup,
- };
-diff --git a/drivers/char/pcmcia/synclink_cs.c b/drivers/char/pcmcia/synclink_cs.c
-index 9ecd6be..8e7c781 100644
---- a/drivers/char/pcmcia/synclink_cs.c
-+++ b/drivers/char/pcmcia/synclink_cs.c
-@@ -2215,6 +2215,32 @@ static int mgslpc_break(struct tty_struct *tty, int break_state)
- 	return 0;
- }
- 
-+static int mgslpc_get_icount(struct tty_struct *tty,
-+				struct serial_icounter_struct *icount)
-+{
-+	MGSLPC_INFO * info = (MGSLPC_INFO *)tty->driver_data;
-+	struct mgsl_icount cnow;	/* kernel counter temps */
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&info->lock,flags);
-+	cnow = info->icount;
-+	spin_unlock_irqrestore(&info->lock,flags);
-+
-+	icount->cts = cnow.cts;
-+	icount->dsr = cnow.dsr;
-+	icount->rng = cnow.rng;
-+	icount->dcd = cnow.dcd;
-+	icount->rx = cnow.rx;
-+	icount->tx = cnow.tx;
-+	icount->frame = cnow.frame;
-+	icount->overrun = cnow.overrun;
-+	icount->parity = cnow.parity;
-+	icount->brk = cnow.brk;
-+	icount->buf_overrun = cnow.buf_overrun;
-+
-+	return 0;
-+}
-+
- /* Service an IOCTL request
-  *
-  * Arguments:
-@@ -2230,11 +2256,7 @@ static int mgslpc_ioctl(struct tty_struct *tty, struct file * file,
- 			unsigned int cmd, unsigned long arg)
- {
- 	MGSLPC_INFO * info = (MGSLPC_INFO *)tty->driver_data;
--	int error;
--	struct mgsl_icount cnow;	/* kernel counter temps */
--	struct serial_icounter_struct __user *p_cuser;	/* user space */
- 	void __user *argp = (void __user *)arg;
--	unsigned long flags;
- 
- 	if (debug_level >= DEBUG_LEVEL_INFO)
- 		printk("%s(%d):mgslpc_ioctl %s cmd=%08X\n", __FILE__,__LINE__,
-@@ -2244,7 +2266,7 @@ static int mgslpc_ioctl(struct tty_struct *tty, struct file * file,
- 		return -ENODEV;
- 
- 	if ((cmd != TIOCGSERIAL) && (cmd != TIOCSSERIAL) &&
--	    (cmd != TIOCMIWAIT) && (cmd != TIOCGICOUNT)) {
-+	    (cmd != TIOCMIWAIT)) {
- 		if (tty->flags & (1 << TTY_IO_ERROR))
- 		    return -EIO;
- 	}
-@@ -2274,34 +2296,6 @@ static int mgslpc_ioctl(struct tty_struct *tty, struct file * file,
- 		return wait_events(info, argp);
- 	case TIOCMIWAIT:
- 		return modem_input_wait(info,(int)arg);
--	case TIOCGICOUNT:
--		spin_lock_irqsave(&info->lock,flags);
--		cnow = info->icount;
--		spin_unlock_irqrestore(&info->lock,flags);
--		p_cuser = argp;
--		PUT_USER(error,cnow.cts, &p_cuser->cts);
--		if (error) return error;
--		PUT_USER(error,cnow.dsr, &p_cuser->dsr);
--		if (error) return error;
--		PUT_USER(error,cnow.rng, &p_cuser->rng);
--		if (error) return error;
--		PUT_USER(error,cnow.dcd, &p_cuser->dcd);
--		if (error) return error;
--		PUT_USER(error,cnow.rx, &p_cuser->rx);
--		if (error) return error;
--		PUT_USER(error,cnow.tx, &p_cuser->tx);
--		if (error) return error;
--		PUT_USER(error,cnow.frame, &p_cuser->frame);
--		if (error) return error;
--		PUT_USER(error,cnow.overrun, &p_cuser->overrun);
--		if (error) return error;
--		PUT_USER(error,cnow.parity, &p_cuser->parity);
--		if (error) return error;
--		PUT_USER(error,cnow.brk, &p_cuser->brk);
--		if (error) return error;
--		PUT_USER(error,cnow.buf_overrun, &p_cuser->buf_overrun);
--		if (error) return error;
--		return 0;
- 	default:
- 		return -ENOIOCTLCMD;
- 	}
-diff --git a/drivers/char/synclink.c b/drivers/char/synclink.c
-index a2a5800..0ebae80 100644
---- a/drivers/char/synclink.c
-+++ b/drivers/char/synclink.c
-@@ -2925,6 +2925,38 @@ static int mgsl_break(struct tty_struct *tty, int break_state)
- 	
- }	/* end of mgsl_break() */
- 
-+/* 
-+ * Get counter of input serial line interrupts (DCD,RI,DSR,CTS)
-+ * Return: write counters to the user passed counter struct
-+ * NB: both 1->0 and 0->1 transitions are counted except for
-+ *     RI where only 0->1 is counted.
-+ */
-+static int msgl_get_icount(struct tty_struct *tty,
-+				struct serial_icounter_struct *icount)
-+
-+{
-+	struct mgsl_struct * info = tty->driver_data;
-+	struct mgsl_icount cnow;	/* kernel counter temps */
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&info->irq_spinlock,flags);
-+	cnow = info->icount;
-+	spin_unlock_irqrestore(&info->irq_spinlock,flags);
-+
-+	icount->cts = cnow.cts;
-+	icount->dsr = cnow.dsr;
-+	icount->rng = cnow.rng;
-+	icount->dcd = cnow.dcd;
-+	icount->rx = cnow.rx;
-+	icount->tx = cnow.tx;
-+	icount->frame = cnow.frame;
-+	icount->overrun = cnow.overrun;
-+	icount->parity = cnow.parity;
-+	icount->brk = cnow.brk;
-+	icount->buf_overrun = cnow.buf_overrun;
-+	return 0;
-+}
-+
- /* mgsl_ioctl()	Service an IOCTL request
-  * 	
-  * Arguments:
-@@ -2949,7 +2981,7 @@ static int mgsl_ioctl(struct tty_struct *tty, struct file * file,
- 		return -ENODEV;
- 
- 	if ((cmd != TIOCGSERIAL) && (cmd != TIOCSSERIAL) &&
--	    (cmd != TIOCMIWAIT) && (cmd != TIOCGICOUNT)) {
-+	    (cmd != TIOCMIWAIT)) {
- 		if (tty->flags & (1 << TTY_IO_ERROR))
- 		    return -EIO;
- 	}
-@@ -2959,11 +2991,7 @@ static int mgsl_ioctl(struct tty_struct *tty, struct file * file,
- 
- static int mgsl_ioctl_common(struct mgsl_struct *info, unsigned int cmd, unsigned long arg)
- {
--	int error;
--	struct mgsl_icount cnow;	/* kernel counter temps */
- 	void __user *argp = (void __user *)arg;
--	struct serial_icounter_struct __user *p_cuser;	/* user space */
--	unsigned long flags;
- 	
- 	switch (cmd) {
- 		case MGSL_IOCGPARAMS:
-@@ -2992,40 +3020,6 @@ static int mgsl_ioctl_common(struct mgsl_struct *info, unsigned int cmd, unsigne
- 		case TIOCMIWAIT:
- 			return modem_input_wait(info,(int)arg);
- 
--		/* 
--		 * Get counter of input serial line interrupts (DCD,RI,DSR,CTS)
--		 * Return: write counters to the user passed counter struct
--		 * NB: both 1->0 and 0->1 transitions are counted except for
--		 *     RI where only 0->1 is counted.
--		 */
--		case TIOCGICOUNT:
--			spin_lock_irqsave(&info->irq_spinlock,flags);
--			cnow = info->icount;
--			spin_unlock_irqrestore(&info->irq_spinlock,flags);
--			p_cuser = argp;
--			PUT_USER(error,cnow.cts, &p_cuser->cts);
--			if (error) return error;
--			PUT_USER(error,cnow.dsr, &p_cuser->dsr);
--			if (error) return error;
--			PUT_USER(error,cnow.rng, &p_cuser->rng);
--			if (error) return error;
--			PUT_USER(error,cnow.dcd, &p_cuser->dcd);
--			if (error) return error;
--			PUT_USER(error,cnow.rx, &p_cuser->rx);
--			if (error) return error;
--			PUT_USER(error,cnow.tx, &p_cuser->tx);
--			if (error) return error;
--			PUT_USER(error,cnow.frame, &p_cuser->frame);
--			if (error) return error;
--			PUT_USER(error,cnow.overrun, &p_cuser->overrun);
--			if (error) return error;
--			PUT_USER(error,cnow.parity, &p_cuser->parity);
--			if (error) return error;
--			PUT_USER(error,cnow.brk, &p_cuser->brk);
--			if (error) return error;
--			PUT_USER(error,cnow.buf_overrun, &p_cuser->buf_overrun);
--			if (error) return error;
--			return 0;
- 		default:
- 			return -ENOIOCTLCMD;
- 	}
-@@ -4328,6 +4322,7 @@ static const struct tty_operations mgsl_ops = {
- 	.hangup = mgsl_hangup,
- 	.tiocmget = tiocmget,
- 	.tiocmset = tiocmset,
-+	.get_icount = msgl_get_icount,
- 	.proc_fops = &mgsl_proc_fops,
- };
- 
-diff --git a/drivers/char/synclink_gt.c b/drivers/char/synclink_gt.c
-index e63b830..1746d91 100644
---- a/drivers/char/synclink_gt.c
-+++ b/drivers/char/synclink_gt.c
-@@ -1032,9 +1032,6 @@ static int ioctl(struct tty_struct *tty, struct file *file,
- 		 unsigned int cmd, unsigned long arg)
- {
- 	struct slgt_info *info = tty->driver_data;
--	struct mgsl_icount cnow;	/* kernel counter temps */
--	struct serial_icounter_struct __user *p_cuser;	/* user space */
--	unsigned long flags;
- 	void __user *argp = (void __user *)arg;
- 	int ret;
- 
-@@ -1043,7 +1040,7 @@ static int ioctl(struct tty_struct *tty, struct file *file,
- 	DBGINFO(("%s ioctl() cmd=%08X\n", info->device_name, cmd));
- 
- 	if ((cmd != TIOCGSERIAL) && (cmd != TIOCSSERIAL) &&
--	    (cmd != TIOCMIWAIT) && (cmd != TIOCGICOUNT)) {
-+	    (cmd != TIOCMIWAIT)) {
- 		if (tty->flags & (1 << TTY_IO_ERROR))
- 		    return -EIO;
- 	}
-@@ -1053,24 +1050,6 @@ static int ioctl(struct tty_struct *tty, struct file *file,
- 		return wait_mgsl_event(info, argp);
- 	case TIOCMIWAIT:
- 		return modem_input_wait(info,(int)arg);
--	case TIOCGICOUNT:
--		spin_lock_irqsave(&info->lock,flags);
--		cnow = info->icount;
--		spin_unlock_irqrestore(&info->lock,flags);
--		p_cuser = argp;
--		if (put_user(cnow.cts, &p_cuser->cts) ||
--		    put_user(cnow.dsr, &p_cuser->dsr) ||
--		    put_user(cnow.rng, &p_cuser->rng) ||
--		    put_user(cnow.dcd, &p_cuser->dcd) ||
--		    put_user(cnow.rx, &p_cuser->rx) ||
--		    put_user(cnow.tx, &p_cuser->tx) ||
--		    put_user(cnow.frame, &p_cuser->frame) ||
--		    put_user(cnow.overrun, &p_cuser->overrun) ||
--		    put_user(cnow.parity, &p_cuser->parity) ||
--		    put_user(cnow.brk, &p_cuser->brk) ||
--		    put_user(cnow.buf_overrun, &p_cuser->buf_overrun))
--			return -EFAULT;
--		return 0;
- 	case MGSL_IOCSGPIO:
- 		return set_gpio(info, argp);
- 	case MGSL_IOCGGPIO:
-@@ -1117,6 +1096,33 @@ static int ioctl(struct tty_struct *tty, struct file *file,
- 	return ret;
- }
- 
-+static int get_icount(struct tty_struct *tty,
-+				struct serial_icounter_struct *icount)
-+
-+{
-+	struct slgt_info *info = tty->driver_data;
-+	struct mgsl_icount cnow;	/* kernel counter temps */
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&info->lock,flags);
-+	cnow = info->icount;
-+	spin_unlock_irqrestore(&info->lock,flags);
-+
-+	icount->cts = cnow.cts;
-+	icount->dsr = cnow.dsr;
-+	icount->rng = cnow.rng;
-+	icount->dcd = cnow.dcd;
-+	icount->rx = cnow.rx;
-+	icount->tx = cnow.tx;
-+	icount->frame = cnow.frame;
-+	icount->overrun = cnow.overrun;
-+	icount->parity = cnow.parity;
-+	icount->brk = cnow.brk;
-+	icount->buf_overrun = cnow.buf_overrun;
-+
-+	return 0;
-+}
-+
- /*
-  * support for 32 bit ioctl calls on 64 bit systems
-  */
-@@ -1206,10 +1212,6 @@ static long slgt_compat_ioctl(struct tty_struct *tty, struct file *file,
- 	case MGSL_IOCSGPIO:
- 	case MGSL_IOCGGPIO:
- 	case MGSL_IOCWAITGPIO:
--	case TIOCGICOUNT:
--		rc = ioctl(tty, file, cmd, (unsigned long)(compat_ptr(arg)));
--		break;
--
- 	case MGSL_IOCSTXIDLE:
- 	case MGSL_IOCTXENABLE:
- 	case MGSL_IOCRXENABLE:
-@@ -3642,6 +3644,7 @@ static const struct tty_operations ops = {
- 	.hangup = hangup,
- 	.tiocmget = tiocmget,
- 	.tiocmset = tiocmset,
-+	.get_icount = get_icount,
- 	.proc_fops = &synclink_gt_proc_fops,
- };
- 
-diff --git a/drivers/char/synclinkmp.c b/drivers/char/synclinkmp.c
-index e56caf7..2f9eb4b 100644
---- a/drivers/char/synclinkmp.c
-+++ b/drivers/char/synclinkmp.c
-@@ -1258,10 +1258,6 @@ static int ioctl(struct tty_struct *tty, struct file *file,
- 		 unsigned int cmd, unsigned long arg)
- {
- 	SLMP_INFO *info = tty->driver_data;
--	int error;
--	struct mgsl_icount cnow;	/* kernel counter temps */
--	struct serial_icounter_struct __user *p_cuser;	/* user space */
--	unsigned long flags;
- 	void __user *argp = (void __user *)arg;
- 
- 	if (debug_level >= DEBUG_LEVEL_INFO)
-@@ -1272,7 +1268,7 @@ static int ioctl(struct tty_struct *tty, struct file *file,
- 		return -ENODEV;
- 
- 	if ((cmd != TIOCGSERIAL) && (cmd != TIOCSSERIAL) &&
--	    (cmd != TIOCMIWAIT) && (cmd != TIOCGICOUNT)) {
-+	    (cmd != TIOCMIWAIT)) {
- 		if (tty->flags & (1 << TTY_IO_ERROR))
- 		    return -EIO;
- 	}
-@@ -1310,40 +1306,38 @@ static int ioctl(struct tty_struct *tty, struct file *file,
- 		 * NB: both 1->0 and 0->1 transitions are counted except for
- 		 *     RI where only 0->1 is counted.
- 		 */
--	case TIOCGICOUNT:
--		spin_lock_irqsave(&info->lock,flags);
--		cnow = info->icount;
--		spin_unlock_irqrestore(&info->lock,flags);
--		p_cuser = argp;
--		PUT_USER(error,cnow.cts, &p_cuser->cts);
--		if (error) return error;
--		PUT_USER(error,cnow.dsr, &p_cuser->dsr);
--		if (error) return error;
--		PUT_USER(error,cnow.rng, &p_cuser->rng);
--		if (error) return error;
--		PUT_USER(error,cnow.dcd, &p_cuser->dcd);
--		if (error) return error;
--		PUT_USER(error,cnow.rx, &p_cuser->rx);
--		if (error) return error;
--		PUT_USER(error,cnow.tx, &p_cuser->tx);
--		if (error) return error;
--		PUT_USER(error,cnow.frame, &p_cuser->frame);
--		if (error) return error;
--		PUT_USER(error,cnow.overrun, &p_cuser->overrun);
--		if (error) return error;
--		PUT_USER(error,cnow.parity, &p_cuser->parity);
--		if (error) return error;
--		PUT_USER(error,cnow.brk, &p_cuser->brk);
--		if (error) return error;
--		PUT_USER(error,cnow.buf_overrun, &p_cuser->buf_overrun);
--		if (error) return error;
--		return 0;
- 	default:
- 		return -ENOIOCTLCMD;
- 	}
- 	return 0;
- }
- 
-+static int get_icount(struct tty_struct *tty,
-+				struct serial_icounter_struct *icount)
-+{
-+	SLMP_INFO *info = tty->driver_data;
-+	struct mgsl_icount cnow;	/* kernel counter temps */
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&info->lock,flags);
-+	cnow = info->icount;
-+	spin_unlock_irqrestore(&info->lock,flags);
-+
-+	icount->cts = cnow.cts;
-+	icount->dsr = cnow.dsr;
-+	icount->rng = cnow.rng;
-+	icount->dcd = cnow.dcd;
-+	icount->rx = cnow.rx;
-+	icount->tx = cnow.tx;
-+	icount->frame = cnow.frame;
-+	icount->overrun = cnow.overrun;
-+	icount->parity = cnow.parity;
-+	icount->brk = cnow.brk;
-+	icount->buf_overrun = cnow.buf_overrun;
-+
-+	return 0;
-+}
-+
- /*
-  * /proc fs routines....
-  */
-@@ -3909,6 +3903,7 @@ static const struct tty_operations ops = {
- 	.hangup = hangup,
- 	.tiocmget = tiocmget,
- 	.tiocmset = tiocmset,
-+	.get_icount = get_icount,
- 	.proc_fops = &synclinkmp_proc_fops,
- };
- 
-diff --git a/drivers/serial/68360serial.c b/drivers/serial/68360serial.c
-index 0dff3bb..2ed6312 100644
---- a/drivers/serial/68360serial.c
-+++ b/drivers/serial/68360serial.c
-@@ -1381,6 +1381,30 @@ static void send_break(ser_info_t *info, unsigned int duration)
- }
- 
- 
-+/* 
-+ * Get counter of input serial line interrupts (DCD,RI,DSR,CTS)
-+ * Return: write counters to the user passed counter struct
-+ * NB: both 1->0 and 0->1 transitions are counted except for
-+ *     RI where only 0->1 is counted.
-+ */
-+static int rs_360_get_icount(struct tty_struct *tty,
-+				struct serial_icounter_struct *icount)
-+{
-+	ser_info_t *info = (ser_info_t *)tty->driver_data;
-+	struct async_icount cnow; 
-+
-+	local_irq_disable();
-+	cnow = info->state->icount;
-+	local_irq_enable();
-+
-+	icount->cts = cnow.cts;
-+	icount->dsr = cnow.dsr;
-+	icount->rng = cnow.rng;
-+	icount->dcd = cnow.dcd;
-+
-+	return 0;
-+}
-+
- static int rs_360_ioctl(struct tty_struct *tty, struct file * file,
- 		    unsigned int cmd, unsigned long arg)
- {
-@@ -1394,7 +1418,7 @@ static int rs_360_ioctl(struct tty_struct *tty, struct file * file,
- 	if (serial_paranoia_check(info, tty->name, "rs_ioctl"))
- 		return -ENODEV;
- 
--	if ((cmd != TIOCMIWAIT) && (cmd != TIOCGICOUNT)) {
-+	if (cmd != TIOCMIWAIT) {
- 		if (tty->flags & (1 << TTY_IO_ERROR))
- 		    return -EIO;
- 	}
-@@ -1477,31 +1501,6 @@ static int rs_360_ioctl(struct tty_struct *tty, struct file * file,
- 			return 0;
  #endif
  
--		/* 
--		 * Get counter of input serial line interrupts (DCD,RI,DSR,CTS)
--		 * Return: write counters to the user passed counter struct
--		 * NB: both 1->0 and 0->1 transitions are counted except for
--		 *     RI where only 0->1 is counted.
--		 */
--		case TIOCGICOUNT:
--			local_irq_disable();
--			cnow = info->state->icount;
--			local_irq_enable();
--			p_cuser = (struct serial_icounter_struct *) arg;
--/* 			error = put_user(cnow.cts, &p_cuser->cts); */
--/* 			if (error) return error; */
--/* 			error = put_user(cnow.dsr, &p_cuser->dsr); */
--/* 			if (error) return error; */
--/* 			error = put_user(cnow.rng, &p_cuser->rng); */
--/* 			if (error) return error; */
--/* 			error = put_user(cnow.dcd, &p_cuser->dcd); */
--/* 			if (error) return error; */
+-/*
+- * Force the read back of the CMP register in hpet_next_event()
+- * to work around the problem that the CMP register write seems to be
+- * delayed. See hpet_next_event() for details.
+- *
+- * We do this on all SMBUS incarnations for now until we have more
+- * information about the affected chipsets.
+- */
+-static void __init ati_hpet_bugs(int num, int slot, int func)
+-{
+-#ifdef CONFIG_HPET_TIMER
+-	hpet_readback_cmp = 1;
+-#endif
+-}
 -
--			put_user(cnow.cts, &p_cuser->cts);
--			put_user(cnow.dsr, &p_cuser->dsr);
--			put_user(cnow.rng, &p_cuser->rng);
--			put_user(cnow.dcd, &p_cuser->dcd);
--			return 0;
+ #define QFLAG_APPLY_ONCE 	0x1
+ #define QFLAG_APPLIED		0x2
+ #define QFLAG_DONE		(QFLAG_APPLY_ONCE|QFLAG_APPLIED)
+@@ -236,8 +220,6 @@ static struct chipset early_qrk[] __initdata = {
+ 	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs },
+ 	{ PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_SBX00_SMBUS,
+ 	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs_contd },
+-	{ PCI_VENDOR_ID_ATI, PCI_ANY_ID,
+-	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_hpet_bugs },
+ 	{}
+ };
  
- 		default:
- 			return -ENOIOCTLCMD;
-diff --git a/net/bluetooth/rfcomm/tty.c b/net/bluetooth/rfcomm/tty.c
-index befc3a5..84c2a4d 100644
---- a/net/bluetooth/rfcomm/tty.c
-+++ b/net/bluetooth/rfcomm/tty.c
-@@ -844,10 +844,6 @@ static int rfcomm_tty_ioctl(struct tty_struct *tty, struct file *filp, unsigned
- 		BT_DBG("TIOCMIWAIT");
- 		break;
+diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+index 351f9c0..410fdb3 100644
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -35,7 +35,6 @@
+ unsigned long				hpet_address;
+ u8					hpet_blockid; /* OS timer block num */
+ u8					hpet_msi_disable;
+-u8					hpet_readback_cmp;
  
--	case TIOCGICOUNT:
--		BT_DBG("TIOCGICOUNT");
--		break;
+ #ifdef CONFIG_PCI_MSI
+ static unsigned long			hpet_num_timers;
+@@ -395,23 +394,27 @@ static int hpet_next_event(unsigned long delta,
+ 	 * at that point and we would wait for the next hpet interrupt
+ 	 * forever. We found out that reading the CMP register back
+ 	 * forces the transfer so we can rely on the comparison with
+-	 * the counter register below.
++	 * the counter register below. If the read back from the
++	 * compare register does not match the value we programmed
++	 * then we might have a real hardware problem. We can not do
++	 * much about it here, but at least alert the user/admin with
++	 * a prominent warning.
+ 	 *
+-	 * That works fine on those ATI chipsets, but on newer Intel
+-	 * chipsets (ICH9...) this triggers due to an erratum: Reading
+-	 * the comparator immediately following a write is returning
+-	 * the old value.
++	 * An erratum on some chipsets (ICH9,..), results in
++	 * comparator read immediately following a write returning old
++	 * value. Workaround for this is to read this value second
++	 * time, when first read returns old value.
+ 	 *
+-	 * We restrict the read back to the affected ATI chipsets (set
+-	 * by quirks) and also run it with hpet=verbose for debugging
+-	 * purposes.
++	 * In fact the write to the comparator register is delayed up
++	 * to two HPET cycles so the workaround we tried to restrict
++	 * the readback to those known to be borked ATI chipsets
++	 * failed miserably. So we give up on optimizations forever
++	 * and penalize all HPET incarnations unconditionally.
+ 	 */
+-	if (hpet_readback_cmp || hpet_verbose) {
+-		u32 cmp = hpet_readl(HPET_Tn_CMP(timer));
 -
- 	case TIOCGSERIAL:
- 		BT_ERR("TIOCGSERIAL is not supported");
- 		return -ENOIOCTLCMD;
+-		if (cmp != cnt)
++	if (unlikely((u32)hpet_readl(HPET_Tn_CMP(timer)) != cnt)) {
++		if (hpet_readl(HPET_Tn_CMP(timer)) != cnt)
+ 			printk_once(KERN_WARNING
+-			    "hpet: compare register read back failed.\n");
++				"hpet: compare register read back failed.\n");
+ 	}
+ 
+ 	return (s32)(hpet_readl(HPET_COUNTER) - cnt) >= 0 ? -ETIME : 0;
 
+---1463795968-1764317131-1284660460=:2416--
