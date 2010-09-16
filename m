@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756903Ab0IPWfw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 18:35:52 -0400
-Received: from smtp126.sbc.mail.sp1.yahoo.com ([69.147.65.185]:36149 "HELO
-	smtp126.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756877Ab0IPWft (ORCPT
+	id S1756927Ab0IPWgL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 18:36:11 -0400
+Received: from smtp107.sbc.mail.mud.yahoo.com ([68.142.198.105]:42162 "HELO
+	smtp107.sbc.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756884Ab0IPWgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 18:35:49 -0400
+	Thu, 16 Sep 2010 18:36:08 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: zGj3zC8VM1kcfImawMFXEuJsQ1mH8RpXgQFLQxUvr6O6I9q
- yDs2hPfMXDBLAOJ7GbJ3EUk2ZY86z3Xms2xkUn2nceY398qKFViyDF1St7uh
- LTpIcTb.tuZPVIIA3qXCj7FFX91.yiVxr9N.lfJhyKykO6bdQ_5hAaUAx7qG
- Hg9tonaA38mAZp42lQJkq9a1UnVSQxre9vA0HBJUWb1nKmtvqeDfdKaAhmXg
- l8t0U8yuuFUHbx3lyD3otbDiVEQcXdYtRZDvXb73Ur0gp2ZKJ6nc4mRQDKeu
- xmLYYJpTsf2JJe4GEakHloYLWHW2_E26NvyO6VbHFoiFGT4F6XP02E2x0I2U
- 5y1WUVa3.OvKJm_FCvw--
+X-YMail-OSG: VJ3v5bgVM1l3edtVOpk7fAmQOmRNKt1YnJTrilDf6nIF_p8
+ Msx6N1cWQAAAdghzRisK3KNfDePhOghJ5WUKsKg55l.swh9cGpCqi4MAbh.L
+ 7BlhUxRq0CPrwxGfA1CwWfVaSGfYxlWxQDeC_RtBQLQAJYM1s3HSkvAJvqcI
+ 89o2CAUM6B.eyq21t1KKIggEuXrEZ9TvfWlrYLMaMeq6_auKbR.E8gtTj1jv
+ Kgrmwfl3MOY8pM6v2aaS4kH.glJ7zfLBHsz0QOXyQnU3_LuDb9QpR0ex0St2
+ u6.EE5NWqxpKmE4DrlSRgtcmfv8qyJF_zmu.f3hWee0gxOL2ti8NlLw--
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -30,9 +29,9 @@ Cc: James Smart <james.smart@emulex.com>,
         Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
         Christoph Hellwig <hch@lst.de>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3/8] libsas: Remove host_lock unlock() + lock() from sas_queuecommand()
-Date: Thu, 16 Sep 2010 15:35:47 -0700
-Message-Id: <1284676547-10797-1-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 5/8] qla4xxx: Remove host_lock unlock() + lock() from qla4xxx_queuecommand()
+Date: Thu, 16 Sep 2010 15:36:02 -0700
+Message-Id: <1284676562-10835-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -41,43 +40,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
 This patch removes the now legacy host_lock unlock() + lock() optimization
-from sas_scsi_host.c:sas_queuecommand()
+from ql4_os.c:qla4xxx_queuecommand()
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/scsi/libsas/sas_scsi_host.c |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
+ drivers/scsi/qla4xxx/ql4_os.c |    8 +-------
+ 1 files changed, 1 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/scsi/libsas/sas_scsi_host.c b/drivers/scsi/libsas/sas_scsi_host.c
-index f0cfba9..bc1c97c 100644
---- a/drivers/scsi/libsas/sas_scsi_host.c
-+++ b/drivers/scsi/libsas/sas_scsi_host.c
-@@ -202,18 +202,14 @@ int sas_queue_up(struct sas_task *task)
-  */
- int sas_queuecommand(struct scsi_cmnd *cmd,
- 		     void (*scsi_done)(struct scsi_cmnd *))
--	__releases(host->host_lock)
- 	__acquires(dev->sata_dev.ap->lock)
- 	__releases(dev->sata_dev.ap->lock)
--	__acquires(host->host_lock)
- {
- 	int res = 0;
- 	struct domain_device *dev = cmd_to_domain_dev(cmd);
- 	struct Scsi_Host *host = cmd->device->host;
- 	struct sas_internal *i = to_sas_internal(host->transportt);
+diff --git a/drivers/scsi/qla4xxx/ql4_os.c b/drivers/scsi/qla4xxx/ql4_os.c
+index 370d40f..cfbe8b5 100644
+--- a/drivers/scsi/qla4xxx/ql4_os.c
++++ b/drivers/scsi/qla4xxx/ql4_os.c
+@@ -511,26 +511,20 @@ static int qla4xxx_queuecommand(struct scsi_cmnd *cmd,
+ 	    test_bit(DPC_RESET_HA_FW_CONTEXT, &ha->dpc_flags))
+ 		goto qc_host_busy;
  
--	spin_unlock_irq(host->host_lock);
+-	spin_unlock_irq(ha->host->host_lock);
 -
- 	{
- 		struct sas_ha_struct *sas_ha = dev->port->ha;
- 		struct sas_task *task;
-@@ -254,7 +250,6 @@ int sas_queuecommand(struct scsi_cmnd *cmd,
- 		}
- 	}
- out:
--	spin_lock_irq(host->host_lock);
- 	return res;
- }
+ 	srb = qla4xxx_get_new_srb(ha, ddb_entry, cmd, done);
+ 	if (!srb)
+-		goto qc_host_busy_lock;
++		goto qc_host_busy;
+ 
+ 	rval = qla4xxx_send_command_to_isp(ha, srb);
+ 	if (rval != QLA_SUCCESS)
+ 		goto qc_host_busy_free_sp;
+ 
+-	spin_lock_irq(ha->host->host_lock);
+ 	return 0;
+ 
+ qc_host_busy_free_sp:
+ 	qla4xxx_srb_free_dma(ha, srb);
+ 	mempool_free(srb, ha->srb_mempool);
+ 
+-qc_host_busy_lock:
+-	spin_lock_irq(ha->host->host_lock);
+-
+ qc_host_busy:
+ 	return SCSI_MLQUEUE_HOST_BUSY;
  
 -- 
 1.7.2.3
