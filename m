@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761Ab0IPPEE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 11:04:04 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:60276 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751780Ab0IPPEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 11:04:02 -0400
-Date: Thu, 16 Sep 2010 08:03:57 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: Re: memory barrier question
-Message-ID: <20100916150356.GD2462@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <E1OwEjQ-0006wS-MU@pomaz-ex.szeredi.hu>
- <E1Ovt6F-0005CS-RU@pomaz-ex.szeredi.hu>
- <3777.1284638136@redhat.com>
- <6383.1284647456@redhat.com>
+	id S1755428Ab0IPPES (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 11:04:18 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:43040 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754912Ab0IPPEQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 11:04:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=iBS22LpGUadla7nW8s7fw2n3xDu8ArksorE7nISsScYVCEBDVjKcnjE3I6UZrRjXB/
+         Nu0PVdw4TV/2gH4MM6yWEIQj/kCLYxM4PIwZwVwhcMe+T7QPKEgYLYpprfKjV1SE76Pg
+         iVBssKrZkqFkceiOD4LY/Fy4eXUaRatnakMyY=
+From: Vasily Khoruzhick <anarsoul@gmail.com>
+To: Sitsofe Wheeler <sitsofe@yahoo.com>
+Subject: Re: Interrupt latency on some 945GM platforms
+Date: Thu, 16 Sep 2010 18:03:04 +0300
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4-git2-anarsoul; KDE/4.5.1; i686; ; )
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+References: <201009132336.17310.anarsoul@gmail.com> <201009141529.53179.anarsoul@gmail.com> <20100914224111.GA14467@sucs.org>
+In-Reply-To: <20100914224111.GA14467@sucs.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6383.1284647456@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: multipart/signed;
+  boundary="nextPart1556634.LA4EyHkQqI";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009161803.10531.anarsoul@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 03:30:56PM +0100, David Howells wrote:
-> Miklos Szeredi <miklos@szeredi.hu> wrote:
-> 
-> > Is the rmb() really needed?
-> > 
-> > Take this code from fs/namei.c for example:
-> > 
-> > 		inode = next.dentry->d_inode;
-> > 		if (!inode)
-> > 			goto out_dput;
-> > 
-> > 		if (inode->i_op->follow_link) {
-> > 
-> > It happily dereferences dentry->d_inode without a barrier after
-> > checking it for non-null, while that d_inode might have just been
-> > initialized on another CPU with a freshly created inode.  There's
-> > absolutely no synchornization with that on this side.
-> 
-> Perhaps it's not necessary; once set, how likely is i_op to be changed once
-> I_NEW is cleared?
+--nextPart1556634.LA4EyHkQqI
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Are the path_get()s protecting this?
+=D0=92 =D1=81=D0=BE=D0=BE=D0=B1=D1=89=D0=B5=D0=BD=D0=B8=D0=B8 =D0=BE=D1=82 =
+15 of September 2010 01:41:11 =D0=B0=D0=B2=D1=82=D0=BE=D1=80 Sitsofe Wheele=
+r =D0=BD=D0=B0=D0=BF=D0=B8=D1=81=D0=B0=D0=BB:
+> > >     processor.max_cstate=3D2
+> >=20
+> > Nope, it doesn't work with max_cstate=3D2
+>=20
+> Perhaps intel_idle is being used? Any mention of it in dmesg?
 
-If there is no protection, then something like rcu_dereference() is
-needed for the assignment from next.dentry->d_inode.
+Sitsofe, maybe you misunderstood me, I mean with max_cstate=3D1 graphics is=
+=20
+smooth, with higher values (i.e. max_cstate=3D2) graphics is jerky.
 
-> > Isn't the fact that we check the pointer for being non-null (together
-> > with locking/barrier on the other side) enough to ensure that it's
-> > safe to dereference it?
-> 
-> It's possible that since there's a dependency between the variables on the
-> reading CPU that the barrier is not required.
-> 
-> I think I have to refer that question to Paul.
+Btw, Jesse, any comments/solutions/workarounds except one with=20
+processor.max_cstate=3D1 in kernel commandline? Should I file a bug on fdo=
+=20
+bugzilla?
 
-We would need either one of the rcu_dereference() or smp_read_barrier_depends()
-APIs to enforce the dependency, for example, against the compiler.
+--nextPart1556634.LA4EyHkQqI
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-							Thanx, Paul
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
+
+iEYEABECAAYFAkySMa4ACgkQRM6pQpltKE46DACfeD/4oJLLWf5k1dXQjfgQVwOn
+gtcAn0fLjhj8tgNqzjQ9YQVlVXbY2X3m
+=b6ik
+-----END PGP SIGNATURE-----
+
+--nextPart1556634.LA4EyHkQqI--
