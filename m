@@ -1,103 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802Ab0IPHwf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 03:52:35 -0400
-Received: from ebb05.tieto.com ([131.207.168.36]:55032 "EHLO ebb05.tieto.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752085Ab0IPHwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 03:52:34 -0400
-X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Sep 2010 03:52:33 EDT
-X-AuditID: 83cfa824-b7b16ae000000a21-06-4c91c93bac06
-From: Yang Ruirui <ruirui.r.yang@tieto.com>
-Organization: Tieto China
-To: Alex Elder <aelder@sgi.com>, <xfs@oss.sgi.com>,
-        <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: -mm: xfs lockdep warning
-Date: Thu, 16 Sep 2010 15:46:16 +0800
-User-Agent: KMail/1.11.4 (Linux/2.6.36-rc4-mm1; KDE/4.2.4; x86_64; ; )
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1752964Ab0IPHzS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 03:55:18 -0400
+Received: from relay.atmel.no ([194.19.124.36]:35040 "EHLO relay.atmel.no"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752266Ab0IPHzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 03:55:16 -0400
+Date: Thu, 16 Sep 2010 09:55:00 +0200
+From: Haavard Skinnemoen <haavard.skinnemoen@atmel.com>
+To: Chris Ball <cjb@laptop.org>
+Cc: linux-mmc@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mmc: Reduce fOD to 200 kHz if possible
+Message-ID: <20100916095500.7e79fc0f@hskinnemoen-d830>
+In-Reply-To: <20100915135719.GA1677@void.printf.net>
+References: <1284541140-7328-1-git-send-email-haavard.skinnemoen@atmel.com>
+	<20100915135719.GA1677@void.printf.net>
+Organization: Atmel
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201009161546.16909.ruirui.r.yang@tieto.com>
-X-Brightmail-Tracker: AAAAARYGMzY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Chris Ball <cjb@laptop.org> wrote:
+> Hi Haavard,
+> 
+> On Wed, Sep 15, 2010 at 10:59:00AM +0200, Haavard Skinnemoen wrote:
+> > Since the identification frequency was increased to 400 kHz, my
+> > ATSTK1000 board has not been able to initialize any MMC or SD cards.
+> > Reducing the identification mode frequency to 200 kHz fixes the problem.
+> 
+> Good news -- there's already a patch to fix this in -mm.
+> 
+> Please test http://article.gmane.org/gmane.linux.kernel.commits.mm/62969
+> and let us know whether it works for you.
 
-I got following lockdep warning, xfs related?
+It does, sort of. I get this:
 
-[  604.416384] =================================
-[  604.416625] [ INFO: inconsistent lock state ]
-[  604.416625] 2.6.36-rc4-mm1 #2
-[  604.416625] ---------------------------------
-[  604.416625] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
-[  604.416625] kswapd0/418 [HC0[0]:SC0[0]:HE1:SE1] takes:
-[  604.416625]  (&(&ip->i_iolock)->mr_lock#2){++++?+}, at: [<ffffffff812046df>] xfs_ilock+0x94/0x137
-[  604.416625] {RECLAIM_FS-ON-W} state was registered at:
-[  604.416625]   [<ffffffff81065571>] mark_held_locks+0x4d/0x6b
-[  604.416625]   [<ffffffff81065641>] lockdep_trace_alloc+0xb2/0xd7
-[  604.416625]   [<ffffffff810ee215>] kmem_cache_alloc+0x2a/0x126
-[  604.416625]   [<ffffffff81225d5b>] kmem_zone_alloc+0x67/0xaf
-[  604.416625]   [<ffffffff81225db2>] kmem_zone_zalloc+0xf/0x30
-[  604.416625]   [<ffffffff8121dd73>] _xfs_trans_alloc+0x22/0x5f
-[  604.416625]   [<ffffffff8121ef9f>] xfs_trans_alloc+0x9d/0xaa
-[  604.416625]   [<ffffffff8122520c>] xfs_setattr+0x3d2/0x8b4
-[  604.416625]   [<ffffffff8122eea4>] xfs_vn_setattr+0x16/0x1a
-[  604.416625]   [<ffffffff81106ec7>] notify_change+0x18f/0x27d
-[  604.416625]   [<ffffffff810f1de1>] do_truncate+0x6a/0x88
-[  604.416625]   [<ffffffff810fd7ff>] do_last+0x588/0x58f
-[  604.416625]   [<ffffffff810fda43>] do_filp_open+0x23d/0x5db
-[  604.416625]   [<ffffffff810f1055>] do_sys_open+0x5a/0xf0
-[  604.416625]   [<ffffffff810f1114>] sys_open+0x1b/0x1d
-[  604.416625]   [<ffffffff81002b82>] system_call_fastpath+0x16/0x1b
-[  604.416625] irq event stamp: 144829
-[  604.416625] hardirqs last  enabled at (144829): [<ffffffff815c96ba>] _raw_spin_unlock_irqrestore+0x46/0x55
-[  604.416625] hardirqs last disabled at (144828): [<ffffffff815c910b>] _raw_spin_lock_irqsave+0x24/0x58
-[  604.416625] softirqs last  enabled at (142796): [<ffffffff8103fc97>] __do_softirq+0x1b6/0x1c7
-[  604.416625] softirqs last disabled at (142791): [<ffffffff81003afc>] call_softirq+0x1c/0x28
-[  604.416625] 
-[  604.416625] other info that might help us debug this:
-[  604.416625] 1 lock held by kswapd0/418:
-[  604.416625]  #0:  (shrinker_rwsem){++++..}, at: [<ffffffff810c682c>] shrink_slab+0x38/0x164
-[  604.416625] 
-[  604.416625] stack backtrace:
-[  604.416625] Pid: 418, comm: kswapd0 Not tainted 2.6.36-rc4-mm1 #2
-[  604.416625] Call Trace:
-[  604.416625]  [<ffffffff810652b0>] valid_state+0x18b/0x19e
-[  604.416625]  [<ffffffff8100db7b>] ? save_stack_trace+0x2a/0x48
-[  604.416625]  [<ffffffff81065ca9>] ? check_usage_forwards+0x0/0x7e
-[  604.416625]  [<ffffffff810653c9>] mark_lock+0x106/0x261
-[  604.416625]  [<ffffffff81364cef>] ? radix_tree_tag_clear+0xa5/0x108
-[  604.416625]  [<ffffffff8106676f>] __lock_acquire+0x3bb/0xe1f
-[  604.416625]  [<ffffffff810671c4>] ? __lock_acquire+0xe10/0xe1f
-[  604.416625]  [<ffffffff8100db7b>] ? save_stack_trace+0x2a/0x48
-[  604.416625]  [<ffffffff810671c4>] ? __lock_acquire+0xe10/0xe1f
-[  604.416625]  [<ffffffff81364ecd>] ? radix_tree_delete+0xad/0x1b7
-[  604.416625]  [<ffffffff810672ab>] lock_acquire+0xd8/0x104
-[  604.416625]  [<ffffffff812046df>] ? xfs_ilock+0x94/0x137
-[  604.416625]  [<ffffffff810586cf>] down_write_nested+0x4a/0x6d
-[  604.416625]  [<ffffffff812046df>] ? xfs_ilock+0x94/0x137
-[  604.416625]  [<ffffffff812046df>] xfs_ilock+0x94/0x137
-[  604.416625]  [<ffffffff81231c9f>] xfs_reclaim_inode+0x277/0x2c1
-[  604.416625]  [<ffffffff81232608>] xfs_inode_ag_walk+0x8e/0xe9
-[  604.416625]  [<ffffffff81231a28>] ? xfs_reclaim_inode+0x0/0x2c1
-[  604.416625]  [<ffffffff812326c7>] xfs_inode_ag_iterator+0x64/0xc3
-[  604.416625]  [<ffffffff81231a28>] ? xfs_reclaim_inode+0x0/0x2c1
-[  604.416625]  [<ffffffff81232762>] xfs_reclaim_inode_shrink+0x3c/0x83
-[  604.416625]  [<ffffffff810c68d5>] shrink_slab+0xe1/0x164
-[  604.416625]  [<ffffffff810c6f3c>] kswapd+0x5e4/0x864
-[  604.416625]  [<ffffffff8105499e>] ? autoremove_wake_function+0x0/0x38
-[  604.416625]  [<ffffffff810c6958>] ? kswapd+0x0/0x864
-[  604.416625]  [<ffffffff8105452d>] kthread+0x81/0x89
-[  604.416625]  [<ffffffff81003a04>] kernel_thread_helper+0x4/0x10
-[  604.416625]  [<ffffffff81096ee2>] ? watchdog+0x0/0x281
-[  604.416625]  [<ffffffff815c9ad0>] ? restore_args+0x0/0x30
-[  604.416625]  [<ffffffff810544ac>] ? kthread+0x0/0x89
-[  604.416625]  [<ffffffff81003a00>] ? kernel_thread_helper+0x0/0x10
---
-Thanks
-Yang Ruirui
+atmel_mci atmel_mci.0: Atmel MCI controller at 0xfff02400 irq 28, 1 slots
+mmc0: mmc_rescan: trying to init card at 400000 Hz
+Freeing init memory: 916K (90000000 - 900e5000)
+mmc0: mmc_rescan: trying to init card at 300000 Hz
+mmc0: mmc_rescan: trying to init card at 200000 Hz
+mmc0: mmc_rescan: trying to init card at 136719 Hz
+mmc0: host does not support reading read-only switch. assuming write-enable.
+mmc0: new SD card at address 1234
+mmcblk0: mmc0:1234 SD1GB 972 MiB 
+ mmcblk0: p1
+
+which is mostly ok, since it does succeed at initializing the card
+eventually, but it is somewhat surprising that it needs to go all the
+way down to 136 kHz. Usually, it works fine at 200 kHz.
+
+On the other hand, I did try something else before testing the 200 kHz
+patch: I enabled the internal pull-ups on the MMC lines. Turning them
+off again makes the card initialization fail at 200 kHz.
+
+So please ignore my patch, and let's go for Hein's patch instead.
+
+Haavard
