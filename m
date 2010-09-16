@@ -1,49 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753412Ab0IPIMC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 04:12:02 -0400
-Received: from hera.kernel.org ([140.211.167.34]:32974 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752085Ab0IPIL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 04:11:59 -0400
-Message-ID: <4C91D132.6090607@kernel.org>
-Date: Thu, 16 Sep 2010 10:11:30 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100825 Lightning/1.0b2 Thunderbird/3.1.3
+	id S1752802Ab0IPINt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 04:13:49 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:60470 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752125Ab0IPINq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 04:13:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Tsyonnains2Ro1nBaYwAu8o0Bd4Ci4QqivYJzR7mndZ27+6dFrn7roOZM28G2vrEu+
+         iGR86Ho4K2cDH3zVYJkGYXWhUQc/F6UMWzgthxlFbhB2uPyA+cpBcq54efKyfRBGcRyO
+         Wdh7/efswvnmNKzcRYg56ZthzpYfogei8ofh4=
+Date: Thu, 16 Sep 2010 17:13:38 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH 8/8] writeback: Do not sleep on the congestion queue if
+ there are no congested BDIs or if significant congestion is not being
+ encountered in the current zone
+Message-ID: <20100916081338.GB16115@barrios-desktop>
+References: <1284553671-31574-1-git-send-email-mel@csn.ul.ie>
+ <1284553671-31574-9-git-send-email-mel@csn.ul.ie>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [RFC][PATCH] PM / Runtime: Use alloc_workqueue() for creating
- PM workqueue
-References: <201009152156.30749.rjw@sisk.pl>
-In-Reply-To: <201009152156.30749.rjw@sisk.pl>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 16 Sep 2010 08:11:32 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284553671-31574-9-git-send-email-mel@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Rafael.
+On Wed, Sep 15, 2010 at 01:27:51PM +0100, Mel Gorman wrote:
+> If wait_iff_congested() is called with no BDI congested, the function simply
+> calls cond_resched(). In the event there is significant writeback happening
+> in the zone that is being reclaimed, this can be a poor decision as reclaim
+> would succeed once writeback was completed. Without any backoff logic,
+> younger clean pages can be reclaimed resulting in more reclaim overall and
+> poor performance.
 
-On 09/15/2010 09:56 PM, Rafael J. Wysocki wrote:
-> I'm not sure about that WQ_RESCUER thing.  Can you please tell me what
-> exactly it is for?
+I agree. 
 
-It's to guarantee forward progress for workqueues which process work
-items which may be used to reclaim memory.  It reserves a rescue
-worker thread to be used under memory pressure.  I finished workqueue
-documentation a few days ago and sent pull request to Linus.
+> 
+> This patch tracks how many pages backed by a congested BDI were found during
+> scanning. If all the dirty pages encountered on a list isolated from the
+> LRU belong to a congested BDI, the zone is marked congested until the zone
 
-  http://git.kernel.org/?p=linux/kernel/git/tj/wq.git;a=blob;f=Documentation/workqueue.txt;h=e4498a2872c37a0b3b156ddc7ad7135d030d224d;hb=c54fce6eff197d9c57c97afbf6c9722ce434fc8f
+I am not sure it works well. 
+We just met the condition once but we backoff it until high watermark.
+(ex, 32 isolated dirty pages == 32 pages on congestioned bdi)
+First impression is rather _aggressive_.
 
-So, for pm_wq, there's no reason to use WQ_RESUER.
-alloc_workqueue("pm", WQ_FREEZEABLE, 0) should do it.
+How about more checking?
+For example, if above pattern continues repeately above some threshold,
+we can regard "zone is congested" and then if the pattern isn't repeated 
+during some threshold, we can regard "zone isn't congested any more.".
 
-Thanks for doing it.
+> reaches the high watermark.  wait_iff_congested() then checks both the
+> number of congested BDIs and if the current zone is one that has encounted
+> congestion recently, it will sleep on the congestion queue. Otherwise it
+> will call cond_reched() to yield the processor if necessary.
+> 
+> The end result is that waiting on the congestion queue is avoided when
+> necessary but when significant congestion is being encountered,
+> reclaimers and page allocators will back off.
+> 
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> ---
+>  include/linux/backing-dev.h |    2 +-
+>  include/linux/mmzone.h      |    8 ++++
+>  mm/backing-dev.c            |   23 ++++++++----
+>  mm/page_alloc.c             |    4 +-
+>  mm/vmscan.c                 |   83 +++++++++++++++++++++++++++++++++++++------
+>  5 files changed, 98 insertions(+), 22 deletions(-)
+> 
+> diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+> index 72bb510..f1b402a 100644
+> --- a/include/linux/backing-dev.h
+> +++ b/include/linux/backing-dev.h
+> +static enum bdi_queue_status may_write_to_queue(struct backing_dev_info *bdi,
+
+<snip>
+
+>  			      struct scan_control *sc)
+>  {
+> +	enum bdi_queue_status ret = QUEUEWRITE_DENIED;
+> +
+>  	if (current->flags & PF_SWAPWRITE)
+> -		return 1;
+> +		return QUEUEWRITE_ALLOWED;
+>  	if (!bdi_write_congested(bdi))
+> -		return 1;
+> +		return QUEUEWRITE_ALLOWED;
+> +	else
+> +		ret = QUEUEWRITE_CONGESTED;
+>  	if (bdi == current->backing_dev_info)
+> -		return 1;
+> +		return QUEUEWRITE_ALLOWED;
+>  
+>  	/* lumpy reclaim for hugepage often need a lot of write */
+>  	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
+> -		return 1;
+> -	return 0;
+> +		return QUEUEWRITE_ALLOWED;
+> +	return ret;
+>  }
+
+The function can't return QUEUEXXX_DENIED.
+It can affect disable_lumpy_reclaim. 
+
+>  
+>  /*
+> @@ -352,6 +362,8 @@ static void handle_write_error(struct address_space *mapping,
+>  typedef enum {
+>  	/* failed to write page out, page is locked */
+>  	PAGE_KEEP,
+> +	/* failed to write page out due to congestion, page is locked */
+> +	PAGE_KEEP_CONGESTED,
+>  	/* move page to the active list, page is locked */
+>  	PAGE_ACTIVATE,
+>  	/* page has been sent to the disk successfully, page is unlocked */
+> @@ -401,9 +413,14 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
+>  	}
+>  	if (mapping->a_ops->writepage == NULL)
+>  		return PAGE_ACTIVATE;
+> -	if (!may_write_to_queue(mapping->backing_dev_info, sc)) {
+> +	switch (may_write_to_queue(mapping->backing_dev_info, sc)) {
+> +	case QUEUEWRITE_CONGESTED:
+> +		return PAGE_KEEP_CONGESTED;
+> +	case QUEUEWRITE_DENIED:
+>  		disable_lumpy_reclaim_mode(sc);
+>  		return PAGE_KEEP;
+> +	case QUEUEWRITE_ALLOWED:
+> +		;
+>  	}
+>  
+>  	if (clear_page_dirty_for_io(page)) {
+> @@ -682,11 +699,14 @@ static noinline_for_stack void free_page_list(struct list_head *free_pages)
+>   * shrink_page_list() returns the number of reclaimed pages
+>   */
+>  static unsigned long shrink_page_list(struct list_head *page_list,
+> +				      struct zone *zone,
+>  				      struct scan_control *sc)
+>  {
+>  	LIST_HEAD(ret_pages);
+>  	LIST_HEAD(free_pages);
+>  	int pgactivate = 0;
+> +	unsigned long nr_dirty = 0;
+> +	unsigned long nr_congested = 0;
+>  	unsigned long nr_reclaimed = 0;
+>  
+>  	cond_resched();
+> @@ -706,6 +726,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>  			goto keep;
+>  
+>  		VM_BUG_ON(PageActive(page));
+> +		VM_BUG_ON(page_zone(page) != zone);
+>  
+>  		sc->nr_scanned++;
+>  
+> @@ -783,6 +804,8 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>  		}
+>  
+>  		if (PageDirty(page)) {
+> +			nr_dirty++;
+> +
+>  			if (references == PAGEREF_RECLAIM_CLEAN)
+>  				goto keep_locked;
+>  			if (!may_enter_fs)
+> @@ -792,6 +815,8 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>  
+>  			/* Page is dirty, try to write it out here */
+>  			switch (pageout(page, mapping, sc)) {
+> +			case PAGE_KEEP_CONGESTED:
+> +				nr_congested++;
+>  			case PAGE_KEEP:
+>  				goto keep_locked;
+>  			case PAGE_ACTIVATE:
+> @@ -903,6 +928,15 @@ keep_lumpy:
+>  		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
+>  	}
+>  
+> +	/*
+> +	 * Tag a zone as congested if all the dirty pages encountered were
+> +	 * backed by a congested BDI. In this case, reclaimers should just
+> +	 * back off and wait for congestion to clear because further reclaim
+> +	 * will encounter the same problem
+> +	 */
+> +	if (nr_dirty == nr_congested)
+> +		zone_set_flag(zone, ZONE_CONGESTED);
+> +
+>  	free_page_list(&free_pages);
+>  
+>  	list_splice(&ret_pages, page_list);
+> @@ -1387,12 +1421,12 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+>  
+>  	spin_unlock_irq(&zone->lru_lock);
+>  
+> -	nr_reclaimed = shrink_page_list(&page_list, sc);
+> +	nr_reclaimed = shrink_page_list(&page_list, zone, sc);
+>  
+>  	/* Check if we should syncronously wait for writeback */
+>  	if (should_reclaim_stall(nr_taken, nr_reclaimed, priority, sc)) {
+>  		set_lumpy_reclaim_mode(priority, sc, true);
+> -		nr_reclaimed += shrink_page_list(&page_list, sc);
+> +		nr_reclaimed += shrink_page_list(&page_list, zone, sc);
+>  	}
+>  
+>  	local_irq_disable();
+> @@ -1940,8 +1974,26 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+>  
+>  		/* Take a nap, wait for some writeback to complete */
+>  		if (!sc->hibernation_mode && sc->nr_scanned &&
+> -		    priority < DEF_PRIORITY - 2)
+> -			congestion_wait(BLK_RW_ASYNC, HZ/10);
+> +		    priority < DEF_PRIORITY - 2) {
+> +			struct zone *active_zone = NULL;
+> +			unsigned long max_writeback = 0;
+> +			for_each_zone_zonelist(zone, z, zonelist,
+> +					gfp_zone(sc->gfp_mask)) {
+> +				unsigned long writeback;
+> +
+> +				/* Initialise for first zone */
+> +				if (active_zone == NULL)
+> +					active_zone = zone;
+> +
+> +				writeback = zone_page_state(zone, NR_WRITEBACK);
+> +				if (writeback > max_writeback) {
+> +					max_writeback = writeback;
+> +					active_zone = zone;
+> +				}
+> +			}
+> +
+> +			wait_iff_congested(active_zone, BLK_RW_ASYNC, HZ/10);
+> +		}
+
+Other place just considers preferred zone. 
+What is the rationale that consider max writeback zone in all zone of zonelist to 
+call wait_iff_congeested?
+Maybe max writeback zone can be much slow bdi but this process could be not related
+to the bdi. It can make random stall by point of view of this proces.
+
+>  	}
+>  
+>  out:
+> @@ -2251,6 +2303,15 @@ loop_again:
+>  				if (!zone_watermark_ok(zone, order,
+>  					    min_wmark_pages(zone), end_zone, 0))
+>  					has_under_min_watermark_zone = 1;
+> +			} else {
+> +				/*
+> +				 * If a zone reaches its high watermark,
+> +				 * consider it to be no longer congested. It's
+> +				 * possible there are dirty pages backed by
+> +				 * congested BDIs but as pressure is relieved,
+> +				 * spectulatively avoid congestion waits
+> +				 */
+> +				zone_clear_flag(zone, ZONE_CONGESTED);
+>  			}
+>  
+>  		}
+> -- 
+> 1.7.1
+> 
 
 -- 
-tejun
+Kind regards,
+Minchan Kim
