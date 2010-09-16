@@ -1,158 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756446Ab0IPWWW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 18:22:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50795 "EHLO mx1.redhat.com"
+	id S1756634Ab0IPWWX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 18:22:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52876 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755761Ab0IPWOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755714Ab0IPWOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Sep 2010 18:14:20 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Christoph Hellwig <hch@infradead.org>,
         Andreas Gruenbacher <agruen@suse.de>, Nick Piggin <npiggin@kernel.dk>,
         linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 08/34] union-mount: Create union_stack structure
-Date: Thu, 16 Sep 2010 15:11:59 -0700
-Message-Id: <1284675145-4391-9-git-send-email-vaurora@redhat.com>
+        Jan Blunck <jblunck@suse.de>, Valerie Aurora <vaurora@redhat.com>
+Subject: [PATCH 06/34] union-mount: Introduce MNT_UNION and MS_UNION flags
+Date: Thu, 16 Sep 2010 15:11:57 -0700
+Message-Id: <1284675145-4391-7-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1284675145-4391-1-git-send-email-vaurora@redhat.com>
 References: <1284675145-4391-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct union_stack records the stack of directories unioned at this
-directory.  A union_stack is an array of struct paths, dynamically
-allocated when the dentry for the topmost directory is created.  The
-topmost dentry contains a pointer to the union_stack.
+From: Jan Blunck <jblunck@suse.de>
 
+Add per mountpoint flag for Union Mount support. You need additional patches
+to util-linux for that to work - see:
+
+git://git.kernel.org/pub/scm/utils/util-linux-ng/val/util-linux-ng.git
+
+Signed-off-by: Jan Blunck <jblunck@suse.de>
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
 ---
- fs/dcache.c            |    3 ++
- fs/union.h             |   54 ++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/dcache.h |   22 +++++++++++++++++-
- 3 files changed, 77 insertions(+), 2 deletions(-)
- create mode 100644 fs/union.h
+ fs/namespace.c        |    5 ++++-
+ include/linux/fs.h    |    1 +
+ include/linux/mount.h |    1 +
+ 3 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 2cd367a..85e2737 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -959,6 +959,9 @@ struct dentry *d_alloc(struct dentry * parent, const struct qstr *name)
- 	INIT_LIST_HEAD(&dentry->d_lru);
- 	INIT_LIST_HEAD(&dentry->d_subdirs);
- 	INIT_LIST_HEAD(&dentry->d_alias);
-+#ifdef CONFIG_UNION_MOUNT
-+	dentry->d_union_stack = NULL;
-+#endif
+diff --git a/fs/namespace.c b/fs/namespace.c
+index cbaa3ea..f8d7d11 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -824,6 +824,7 @@ static void show_mnt_opts(struct seq_file *m, struct vfsmount *mnt)
+ 		{ MNT_NODIRATIME, ",nodiratime" },
+ 		{ MNT_RELATIME, ",relatime" },
+ 		{ MNT_STRICTATIME, ",strictatime" },
++		{ MNT_UNION, ",union" },
+ 		{ 0, NULL }
+ 	};
+ 	const struct proc_fs_info *fs_infop;
+@@ -2047,10 +2048,12 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
+ 		mnt_flags &= ~(MNT_RELATIME | MNT_NOATIME);
+ 	if (flags & MS_RDONLY)
+ 		mnt_flags |= MNT_READONLY;
++	if (flags & MS_UNION)
++		mnt_flags |= MNT_UNION;
  
- 	if (parent) {
- 		dentry->d_parent = dget(parent);
-diff --git a/fs/union.h b/fs/union.h
-new file mode 100644
-index 0000000..38b26fd
---- /dev/null
-+++ b/fs/union.h
-@@ -0,0 +1,54 @@
-+ /*
-+ * VFS-based union mounts for Linux
-+ *
-+ * Copyright (C) 2004-2007 IBM Corporation, IBM Deutschland Entwicklung GmbH.
-+ * Copyright (C) 2007-2009 Novell Inc.
-+ * Copyright (C) 2009-2010 Red Hat, Inc.
-+ *
-+ *   Author(s): Jan Blunck (j.blunck@tu-harburg.de)
-+ *              Valerie Aurora <vaurora@redhat.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+#ifndef __LINUX_UNION_H
-+#define __LINUX_UNION_H
-+#ifdef __KERNEL__
-+
-+#ifdef CONFIG_UNION_MOUNT
-+
-+/*
-+ * WARNING! Confusing terminology alert.
-+ *
-+ * Note that the directions "up" and "down" in union mounts are the
-+ * opposite of "up" and "down" in normal VFS operation terminology.
-+ * "up" in the rest of the VFS means "towards the root of the mount
-+ * tree."  If you mount B on top of A, following B "up" will get you
-+ * A.  In union mounts, "up" means "towards the most recently mounted
-+ * layer of the union stack."  If you union mount B on top of A,
-+ * following A "up" will get you to B.  Another way to put it is that
-+ * "up" in the VFS means going from this mount towards the direction
-+ * of its mnt->mnt_parent pointer, but "up" in union mounts means
-+ * going in the opposite direction (until you run out of union
-+ * layers).
-+ */
-+
-+/*
-+ * The union_stack structure.  It is an array of struct paths of
-+ * directories below the topmost directory in a unioned directory, The
-+ * topmost dentry has a pointer to this structure.  The topmost dentry
-+ * can only be part of one union, so we can reference it from the
-+ * dentry, but lower dentries can be part of multiple union stacks.
-+ *
-+ * The number of dirs actually allocated is kept in the superblock,
-+ * s_union_count.
-+ */
-+struct union_stack {
-+	struct path u_dirs[0];
-+};
-+
-+#endif	/* CONFIG_UNION_MOUNT */
-+#endif	/* __KERNEL__ */
-+#endif	/* __LINUX_UNION_H */
-diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-index 0904716..ed8ef47 100644
---- a/include/linux/dcache.h
-+++ b/include/linux/dcache.h
-@@ -79,12 +79,28 @@ full_name_hash(const unsigned char *name, unsigned int len)
-  * Try to keep struct dentry aligned on 64 byte cachelines (this will
-  * give reasonable cacheline footprint with larger lines without the
-  * large memory footprint increase).
-+ *
-+ * XXX DNAME_INLINE_LEN_MIN is kind of pitiful on 64bit + union
-+ * mounts.  May be worth tuning up, but either we go to 256 bytes and
-+ * a wasteful 88 bytes of d_iname, or we lose 64-byte aligment.
-  */
- #ifdef CONFIG_64BIT
-+
-+#ifdef CONFIG_UNION_MOUNT
-+#define DNAME_INLINE_LEN_MIN 24 /* 192 bytes */
-+#else
- #define DNAME_INLINE_LEN_MIN 32 /* 192 bytes */
-+#endif /* CONFIG_UNION_MOUNT */
-+
-+#else
-+
-+#ifdef CONFIG_UNION_MOUNT
-+#define DNAME_INLINE_LEN_MIN 36 /* 128 bytes */
- #else
- #define DNAME_INLINE_LEN_MIN 40 /* 128 bytes */
--#endif
-+#endif /* CONFIG_UNION_MOUNT */
-+
-+#endif /* CONFIG_64BIT */
+ 	flags &= ~(MS_NOSUID | MS_NOEXEC | MS_NODEV | MS_ACTIVE |
+ 		   MS_NOATIME | MS_NODIRATIME | MS_RELATIME| MS_KERNMOUNT |
+-		   MS_STRICTATIME);
++		   MS_STRICTATIME | MS_UNION);
  
- struct dentry {
- 	atomic_t d_count;
-@@ -100,7 +116,9 @@ struct dentry {
- 	struct hlist_node d_hash;	/* lookup hash list */
- 	struct dentry *d_parent;	/* parent directory */
- 	struct qstr d_name;
--
-+#ifdef CONFIG_UNION_MOUNT
-+	struct union_stack *d_union_stack;	/* dirs in union stack */
-+#endif
- 	struct list_head d_lru;		/* LRU list */
- 	/*
- 	 * d_child and d_rcu can share memory
+ 	if (flags & MS_REMOUNT)
+ 		retval = do_remount(&path, flags & ~MS_REMOUNT, mnt_flags,
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 7dcb95b..2e3d745 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -192,6 +192,7 @@ struct inodes_stat_t {
+ #define MS_REMOUNT	32	/* Alter flags of a mounted FS */
+ #define MS_MANDLOCK	64	/* Allow mandatory locks on an FS */
+ #define MS_DIRSYNC	128	/* Directory modifications are synchronous */
++#define MS_UNION	256	/* Merge namespace with FS mounted below */
+ #define MS_NOATIME	1024	/* Do not update access times. */
+ #define MS_NODIRATIME	2048	/* Do not update directory access times */
+ #define MS_BIND		4096
+diff --git a/include/linux/mount.h b/include/linux/mount.h
+index b300cf8..4014ff1 100644
+--- a/include/linux/mount.h
++++ b/include/linux/mount.h
+@@ -47,6 +47,7 @@ struct mnt_namespace;
+ 
+ #define MNT_INTERNAL	0x4000
+ #define MNT_HARD_READONLY	0x8000	/* has a hard read-only ref on the sb */
++#define MNT_UNION	0x10000		/* top layer of a union mount */
+ 
+ struct vfsmount {
+ 	struct list_head mnt_hash;
 -- 
 1.6.3.3
 
