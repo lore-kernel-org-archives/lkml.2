@@ -1,111 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202Ab0IPQu1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 12:50:27 -0400
-Received: from mail2.shareable.org ([80.68.89.115]:59843 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753927Ab0IPQu0 (ORCPT
+	id S1754637Ab0IPQue (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 12:50:34 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:32931 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754250Ab0IPQub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 12:50:26 -0400
-Date: Thu, 16 Sep 2010 17:50:18 +0100
-From: Jamie Lokier <jamie@shareable.org>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: paulmck@linux.vnet.ibm.com, dhowells@redhat.com,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: memory barrier question
-Message-ID: <20100916165018.GA26539@shareable.org>
-References: <E1OwEjQ-0006wS-MU@pomaz-ex.szeredi.hu> <E1Ovt6F-0005CS-RU@pomaz-ex.szeredi.hu> <3777.1284638136@redhat.com> <6383.1284647456@redhat.com> <20100916150356.GD2462@linux.vnet.ibm.com> <E1OwGz7-0007Cu-CC@pomaz-ex.szeredi.hu>
+	Thu, 16 Sep 2010 12:50:31 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=Ydt6iDNWRoih+dyGayniIieZUTQMmCTwfb6NF5QeIDTfywONcK4t+RtrnVV0ArGIj
+	QTlXQDKb3kUYOh0qkp61Q==
+Date: Thu, 16 Sep 2010 09:50:24 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hughd@tigran.mtv.corp.google.com
+To: Nikanth Karthikesan <knikanth@suse.de>
+cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Matt Mackall <mpm@selenic.com>, Richard Guenther <rguenther@suse.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michael Matz <matz@novell.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Document the new Anonymous field in smaps.
+In-Reply-To: <201009161135.00129.knikanth@suse.de>
+Message-ID: <alpine.DEB.2.00.1009160940330.24798@tigran.mtv.corp.google.com>
+References: <AANLkTini3k1hK-9RM6io0mOf4VoDzGpbUEpiv=WHfhEW@mail.gmail.com> <201009160856.25923.knikanth@suse.de> <20100916125147.CA08.A69D9226@jp.fujitsu.com> <201009161135.00129.knikanth@suse.de>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1OwGz7-0007Cu-CC@pomaz-ex.szeredi.hu>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+Content-Type: MULTIPART/MIXED; BOUNDARY="380388936-1970376381-1284655827=:24798"
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Miklos Szeredi wrote:
-> On Thu, 16 Sep 2010, Paul E. McKenney wrote:
-> > On Thu, Sep 16, 2010 at 03:30:56PM +0100, David Howells wrote:
-> > > Miklos Szeredi <miklos@szeredi.hu> wrote:
-> > > 
-> > > > Is the rmb() really needed?
-> > > > 
-> > > > Take this code from fs/namei.c for example:
-> > > > 
-> > > > 		inode = next.dentry->d_inode;
-> > > > 		if (!inode)
-> > > > 			goto out_dput;
-> > > > 
-> > > > 		if (inode->i_op->follow_link) {
-> > > > 
-> > > > It happily dereferences dentry->d_inode without a barrier after
-> > > > checking it for non-null, while that d_inode might have just been
-> > > > initialized on another CPU with a freshly created inode.  There's
-> > > > absolutely no synchornization with that on this side.
-> > > 
-> > > Perhaps it's not necessary; once set, how likely is i_op to be changed once
-> > > I_NEW is cleared?
-> > 
-> > Are the path_get()s protecting this?
-> 
-> No, when creating a file the dentry will go from negative to positive
-> independently from lookup.  The dentry can get instantiated with an
-> inode between the path_get() and dereferencing ->d_inode.
-> 
-> > 
-> > If there is no protection, then something like rcu_dereference() is
-> > needed for the assignment from next.dentry->d_inode.
-> 
-> Do I understand correctly that the problem is that a CPU may have a
-> stale cache associated with *inode, one that was loaded before the
-> write barrier took effect?
-> 
-> Funny that such a bug could stay unnoticed in so often excercised
-> code.  Yeah I know it's alpha only.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-When I first saw read_barrier_depends(), I thought it must be Alpha's
-speculative execution, fetching memory out of order and confirming
-it's valid later.  I was really surprised to find out it's not that -
-it's a quirk of the Alpha's cache/forwarding protocol.  Others
-presumably don't have it because they were designed with awareness of
-this coding pattern.
+--380388936-1970376381-1284655827=:24798
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-But...
+On Thu, 16 Sep 2010, Nikanth Karthikesan wrote:
 
-I wonder if it can happen on IA64 with it's funky memory-alias
-compiler optimisations.
+> Sorry, I missed to add documentation, when I sent the patch. This depends=
+ on
+> the patch titled, "[PATCH] Export amount of anonymous memory in a mapping=
+ via
+> smaps".
+>=20
+> Thanks
+> Nikanth
+>=20
+>=20
+> Document the new Anonymous field in smaps.
+>=20
+> Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
 
-I wonder if it can happen on x86 and others, if the compiler decides
-this is a valid transformation (it is with a single CPU):
+Thanks for adding this, but...
 
-Original code:
+>=20
+> ---
+>=20
+> diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesyste=
+ms/proc.txt
+> index a6aca87..75c7368 100644
+> --- a/Documentation/filesystems/proc.txt
+> +++ b/Documentation/filesystems/proc.txt
+> @@ -370,6 +370,7 @@ Shared_Dirty:          0 kB
+>  Private_Clean:         0 kB
+>  Private_Dirty:         0 kB
+>  Referenced:          892 kB
+> +Anonymous:             0 kB
+>  Swap:                  0 kB
+>  KernelPageSize:        4 kB
+>  MMUPageSize:           4 kB
+> @@ -380,7 +381,10 @@ the amount of the mapping that is currently resident=
+ in RAM, the "proportional
+>  set size=E2=80=9D (divide each shared page by the number of processes sh=
+aring it), the
+>  number of clean and dirty shared pages in the mapping, and the number of=
+ clean
+>  and dirty private pages in the mapping.  The "Referenced" indicates the =
+amount
+> -of memory currently marked as referenced or accessed.
+> +of memory currently marked as referenced or accessed. The "Anonymous" sh=
+ows
+> +the amount of mapping that is not associated with a file. Even the priva=
+te
+> +pages in a mapping associated with a file, would become anonymous, when =
+they
+> +are modified.
 
-    foo = global_ptr_to_foo;
-    foo_x = foo->x;
+=2E.. unfortunately it needs rewording, because you're describing it well
+with respect to MAP_SHARED versus MAP_PRIVATE, but /proc/pid/smaps has a
+different definition of whether pages are shared or private, just depending
+on their mapcount at the instant.
 
-    bar = global_ptr_to_bar;
-    bar_y = bar->y;
-    // use bar_y;
+Indeed, adding a comment on that would be helpful too, if you've time.
 
-Transformed by compiler:
-
-    foo = global_ptr_to_foo;
-    foo_x = foo->x;
-
-    bar = global_ptr_to_bar;
-    bar_y = (__typeof__(bar->y))foo_x;
-    if ((void *)bar != (void *)foo)
-        bar_y = bar->y;
-
-    // use bar_y;
-
-In other words, without a barrier, the compiler doesn't have to order
-the executed bar->y dereference *instruction* after the bar =
-global_ptr_to_bar instruction.  Thus making it a compiler property,
-not a CPU one.
-
-There is no danger of dereferencing NULL in that example, but
-dereferencing the values from the wrong object is just as wrong.
-
--- Jamie
+> =20
+>  This file is only present if the CONFIG_MMU kernel configuration option =
+is
+>  enabled.
+--380388936-1970376381-1284655827=:24798--
