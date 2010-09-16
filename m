@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755936Ab0IPSvJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 14:51:09 -0400
-Received: from www.tglx.de ([62.245.132.106]:54850 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754585Ab0IPSvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755919Ab0IPSvH (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 16 Sep 2010 14:51:07 -0400
-Date: Thu, 16 Sep 2010 20:50:50 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Vasily Khoruzhick <anarsoul@gmail.com>
-cc: Sitsofe Wheeler <sitsofe@yahoo.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: Interrupt latency on some 945GM platforms
-In-Reply-To: <201009162142.10629.anarsoul@gmail.com>
-Message-ID: <alpine.LFD.2.00.1009162049450.2416@localhost6.localdomain6>
-References: <201009132336.17310.anarsoul@gmail.com> <alpine.LFD.2.00.1009162004500.2416@localhost6.localdomain6> <201009162131.03365.anarsoul@gmail.com> <201009162142.10629.anarsoul@gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+Received: from mx2.fusionio.com ([64.244.102.31]:36625 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752683Ab0IPSvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 14:51:05 -0400
+X-Greylist: delayed 1098 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Sep 2010 14:51:05 EDT
+X-ASG-Debug-ID: 1284661963-08b707560001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4C9262C4.9050006@fusionio.com>
+Date: Thu, 16 Sep 2010 20:32:36 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-127545824-1284663051=:2416"
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        "codalist@coda.cs.cmu.edu" <codalist@TELEMANN.coda.cs.cmu.edu>,
+        "autofs@linux.kernel.org" <autofs@linux.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Petr Vandrovec <vandrove@vc.cvut.cz>, Anders Larsen <al@alarsen.net>,
+        Jan Kara <jack@suse.cz>, Evgeniy Dushistov <dushistov@mail.ru>,
+        Ingo Molnar <mingo@elte.hu>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Samuel Ortiz <samuel@sortiz.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Hendry <andrew.hendry@gmail.com>
+Subject: Re: Remaining BKL users, what to do
+References: <201009161632.59210.arnd@arndb.de> <1284648549.23787.26.camel@gandalf.stny.rr.com>
+X-ASG-Orig-Subj: Re: Remaining BKL users, what to do
+In-Reply-To: <1284648549.23787.26.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1284661963
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.41014
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
----1463795968-127545824-1284663051=:2416
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-
-On Thu, 16 Sep 2010, Vasily Khoruzhick wrote:
-
-> В сообщении от 16 of September 2010 21:30:58 автор Vasily Khoruzhick написал:
-> > В сообщении от 16 of September 2010 21:07:39 автор Thomas Gleixner написал:
-> > > > Btw, Jesse, any comments/solutions/workarounds except one with
-> > > > processor.max_cstate=1 in kernel commandline? Should I file a bug on
-> > > > fdo bugzilla?
-> > > 
-> > > we fixed a HPET related bug a few days ago, which might be the cause
-> > > for your problem as well.
-> > 
-> > Nope, it doesn't help :(
+On 2010-09-16 16:49, Steven Rostedt wrote:
+> On Thu, 2010-09-16 at 16:32 +0200, Arnd Bergmann wrote:
+>> The big kernel lock is gone from almost all code in linux-next, this is
+>> the status of what I think will happen to the remaining users:
 > 
-> Btw, I suspect hpet is not related, I disabled hpet completely in kernel 
-> config but issue is still here (clocksource is acpi_pm)
+>> kernel/trace/blktrace.c:
+>> 	Should be easy. Ingo? Steven?
+>>
+> 
+> Jens,
+> 
+> Git blame shows this to be your code (copied from block/blktrace.c from
+> years past).
+> 
+> Is the lock_kernel() needed here? (although Arnd did add it in 62c2a7d9)
 
-Ok. The problematic part of HPET was not the clocksource, it was the
-clock event device which failed to deliver interrupts occasionally. It
-was worth a try at least.
+It isn't, it can be removed.
 
-Thanks,
+-- 
+Jens Axboe
 
-	tglx
----1463795968-127545824-1284663051=:2416--
+
+Confidentiality Notice: This e-mail message, its contents and any attachments to it are confidential to the intended recipient, and may contain information that is privileged and/or exempt from disclosure under applicable law. If you are not the intended recipient, please immediately notify the sender and destroy the original e-mail message and any attachments (and any copies that may have been made) from your system or otherwise. Any unauthorized use, copying, disclosure or distribution of this information is strictly prohibited.
