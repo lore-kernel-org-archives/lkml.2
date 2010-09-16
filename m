@@ -1,44 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510Ab0IPFxB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 01:53:01 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46426 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752408Ab0IPFxA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 01:53:00 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 0/4] oom fixes for 2.6.36
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, oss-security@lists.openwall.com,
-        Solar Designer <solar@openwall.com>,
-        Kees Cook <kees.cook@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Oleg Nesterov <oleg@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        linux-fsdevel@vger.kernel.org, pageexec@freemail.hu,
-        Brad Spengler <spender@grsecurity.net>, Eugene Teo <eugene@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, David Rientjes <rientjes@google.com>
-Message-Id: <20100916144930.3BAE.A69D9226@jp.fujitsu.com>
+	id S1753558Ab0IPFxJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 01:53:09 -0400
+Received: from ozlabs.org ([203.10.76.45]:54469 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753555Ab0IPFxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 01:53:06 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH] virtio_blk: remove BKL leftovers
+Date: Thu, 16 Sep 2010 15:22:52 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; i686; ; )
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org
+References: <20100914232723.GA14175@lst.de>
+In-Reply-To: <20100914232723.GA14175@lst.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 16 Sep 2010 14:52:56 +0900 (JST)
+Message-Id: <201009161522.53064.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 15 Sep 2010 08:57:23 am Christoph Hellwig wrote:
+> Remove the BKL usage added in "block: push down BKL into .locked_ioctl".
+> Virtio-blk doesn't use the BKL for anything, and doesn't implement any
+> ioctl command by itself, but only uses the generic scsi_cmd_ioctl
+> which is fine without the BKL.
+> 
+> Signed-off-by: Christoph Hellwig <hch@lst.de>
 
-patch 1 and 2 fix crappy ABI breakage issue since 2.6.36-rc1.
-patch 3 and 4 fix oom dodging issue by using execve
-
-  1) oom: remove totalpage normalization from oom_badness()
-  2) Revert "oom: deprecate oom_adj tunable"
-  3) move cred_guard_mutex from task_struct to signal_struct
-  4) oom: don't ignore rss in nascent mm
-
-
-
-
+Applied,
+Thanks!
+Rusty.
