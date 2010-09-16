@@ -1,65 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661Ab0IPXhk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 19:37:40 -0400
-Received: from mail-da-3.dns-solutions.net ([69.12.112.3]:58278 "HELO
-	mail-da-3.dns-solutions.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754395Ab0IPXhh (ORCPT
+	id S1754765Ab0IPXh6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 19:37:58 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59867 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753281Ab0IPXh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 19:37:37 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Sep 2010 19:37:37 EDT
-From: "Joshua Hintze" <joshh@imsar.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: PATA IDE is slower in newer versions of kernel
-Date: Thu, 16 Sep 2010 17:30:51 -0600
-Message-ID: <00d401cb55f7$33a78210$9af68630$@com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+	Thu, 16 Sep 2010 19:37:56 -0400
+Date: Thu, 16 Sep 2010 16:37:35 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Naohiro Aota <naota@elisp.net>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Jiri Kosina <jkosina@suse.cz>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Daniel Mack <daniel@caiaq.de>, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] bsg: call idr_pre_get() outside the lock.
+Message-Id: <20100916163735.ed8dbb51.akpm@linux-foundation.org>
+In-Reply-To: <m2eidda6bq.fsf@elisp.net>
+References: <m2eidda6bq.fsf@elisp.net>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: ActV9zHDLVs33MBcStCtH/cComYPDg==
-Content-Language: en-us
-x-cr-hashedpuzzle: xT4= 7T4= AJ6g AQ58 BBMU BeKQ CQ2b DS8Y FZMS GCzY GVxy G1/r IfKb IrV5 KPFw KcDU;1;bABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA=;Sosha1_v1;7;{B27C10AA-4023-4F31-811A-60345BE422F0};agBvAHMAaABoAEAAaQBtAHMAYQByAC4AYwBvAG0A;Thu, 16 Sep 2010 23:30:49 GMT;UABBAFQAQQAgAEkARABFACAAaQBzACAAcwBsAG8AdwBlAHIAIABpAG4AIABuAGUAdwBlAHIAIAB2AGUAcgBzAGkAbwBuAHMAIABvAGYAIABrAGUAcgBuAGUAbAA=
-x-cr-puzzleid: {B27C10AA-4023-4F31-811A-60345BE422F0}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, 
+On Wed, 01 Sep 2010 23:26:01 +0900
+Naohiro Aota <naota@elisp.net> wrote:
 
-I've been digging into this for a couple weeks now. I have an embedded board
-that runs Linux Kernel 2.6.10 that is connected to a SSD over a PATA
-connection. Data is transferred using UDMA4 speeds and I get a nice
-sustained write speed of about 20 MBps which is adequate for us. 
+> The idr_pre_get() kernel-doc says "This function should be called
+> prior to locking and calling the idr_get_new* functions.", but the
+> idr_pre_get() calling in bsg_register_queue() is put inside
+> mutex_lock(). Let's fix it.
+> 
 
-I have recently taken the plunge to update to a newer version of the kernel
-starting at 2.6.32 (also tried 2.6.33) and what I am seeing writes speeds
-drop to about 18 MBps peak with large jumps going from 8 MBps->16 MBs for
-sustained throughput.
+The idr_pre_get() kerneldoc is wrong.  Or at least, misleading.
 
-I decided to read up on the ATA specification and I connected a logic
-analyzer to the PATA bus and here is what is happening...after a large chunk
-of data is written to the device, instead of the device pausing the transfer
-by asserting DDMARDY it actual initiates a device data-out termination by
-pulling DMARQ low.
+The way this all works is that we precharge the tree via idr_pre_get()
+and we do this outside locks so we can use GFP_KERNEL.  Then we take
+the lock (a spinlock!) and then try to add an element to the tree,
+which will consume objects from the pool which was prefilled by
+idr_pre_get().
 
-The old kernel 2.6.10 responds to this by strobing the STOP line 8 times
-within 800uS and the device releases DMARQ shortly afterwards. On the newer
-kernels the strobing of the STOP line takes near 8mS of time. Since the hard
-drive only release DMARQ after this 8 pulse strobe I believe this is the
-cause of the slower write speeds on the newer kernels. This whole process
-happens thousands of times when writing megs of data. So those extra 7mS
-begin to add up fast.
+There's an obvious race here where someone else can get in and steal
+objects from the prefilled pool.  We can fix that with a retry loop:
 
-My problem is I've been digging through the ide.c/ide-dma.c and other code
-but I'm not exactly sure where the code would jump to upon a device
-initiated termination on a data-out dma transfer.
 
-My guess is ide_dma_intr(...). Is this correct?
+again:
+	if (idr_pre_get(..., GFP_KERNEL) == NULL)
+		return -ENOMEM;		/* We're really out-of-memory */
+	spin_lock(lock);
+	if (idr_get_new(...) == -EAGAIN) {
+		spin_unlock(lock);
+		goto again;		/* Someone stole our preallocation! */
+	}
+	...
 
-Any other areas I could look at?
+this way we avoid the false -ENOMEM which the race would have caused. 
+We only declare -ENOMEM when we're REALLY out of memory.
 
-Thanks in advance.
 
+But none of this is needed when a sleeping lock is used (as long as the
+sleeping lock isn't taken on the the VM pageout path, of course).  In
+that case we can use the sleeping lock to prevent the above race.
+
+> diff --git a/block/bsg.c b/block/bsg.c
+> index 82d5882..5fd8dd1 100644
+> --- a/block/bsg.c
+> +++ b/block/bsg.c
+> @@ -1010,13 +1010,11 @@ int bsg_register_queue(struct request_queue *q, struct device *parent,
+>  	bcd = &q->bsg_dev;
+>  	memset(bcd, 0, sizeof(*bcd));
+>  
+> -	mutex_lock(&bsg_mutex);
+> -
+>  	ret = idr_pre_get(&bsg_minor_idr, GFP_KERNEL);
+> -	if (!ret) {
+> -		ret = -ENOMEM;
+> -		goto unlock;
+> -	}
+> +	if (!ret)
+> +		return -ENOMEM;
+> +
+> +	mutex_lock(&bsg_mutex);
+>  
+>  	ret = idr_get_new(&bsg_minor_idr, bcd, &minor);
+>  	if (ret < 0)
+
+So the old code was OK.
+
+The new code, however, is not OK because it is vulnerable to the above
+race wherein another CPU or thread comes in and steals all of this
+thread's preallocation.
 
