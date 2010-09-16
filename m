@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756892Ab0IPWfp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 18:35:45 -0400
-Received: from smtp125.sbc.mail.sp1.yahoo.com ([69.147.65.184]:34862 "HELO
-	smtp125.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756877Ab0IPWfm (ORCPT
+	id S1756912Ab0IPWf7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 18:35:59 -0400
+Received: from smtp126.sbc.mail.sp1.yahoo.com ([69.147.65.185]:36285 "HELO
+	smtp126.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755765Ab0IPWf5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 18:35:42 -0400
+	Thu, 16 Sep 2010 18:35:57 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: B7zm58UVM1k95W5GUIkfkbG.7fS1EBkpNYzW6F7QczsrFjv
- _ruNyaN9ThnLT9rqZQUuzlliBjN8x503BnGmFGqJPtBKeIdNozDeMGMBqkZ7
- IlJfXGfMbeCp67.g1ISnPv6AOWlH1Wd2wtq8UjZApGN7ATHZia5UhF0bU86C
- PRUvWPfWUQ.oSbPrT6SbKi2I2xZF2rZTlJQZBLDolBePWLFwsAtQ1cH57cUB
- 88hdIt2_ULB5ybiKQAwMp97rLH8yEl0HuCywxvpbBq9qjHzGTT5U6L_A6Eaw
- vb7iSCNfaE4CV6mSDOZseKmdkOm4M0HXQF4lhujJDuVzDlB86i5i9KFI59iL
- QQrd2qvMhSWyvzXucnQ--
+X-YMail-OSG: ywfP1zEVM1kpUu5cCIislWmq8xPD3MwOZpElnngvdy6AE63
+ P92Ag14UIDJCwnB9UOYSCAvuYnH7YwWnlqhTq8sVCGrFZ.G0Haq0b7IZZq1t
+ EjjoPnn9tSOttRB7pLSL01Z8T32IHQiJ_WREn.Qe5ImKYIu8MNQ2_t9CW21W
+ pdy4GBwurx62EqLI.HKdc_klkzubTcuMyXnKHEiMdxJ1IrY23aPBlHjUL4gH
+ NS9vp3FQNkl4eGeY8yb_SumLAW0vdmyLK8lvz26ZuivaskD9eQA99arHSn0N
+ v3ha636710NBYc9hIbJOWM9xkdKuNrb4l3x06yGrOXTCaFDfdQ1eAQWBCarv
+ ls3oOxjfX3Lp25oN6Ag--
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -30,9 +30,9 @@ Cc: James Smart <james.smart@emulex.com>,
         Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
         Christoph Hellwig <hch@lst.de>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 2/8] libiscsi: Remove host_lock unlock() + lock() from iscsi_queuecommand()
-Date: Thu, 16 Sep 2010 15:35:39 -0700
-Message-Id: <1284676539-10778-1-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 4/8] lpfc: Remove host_lock unlock() + lock() from lpfc_queuecommand()
+Date: Thu, 16 Sep 2010 15:35:54 -0700
+Message-Id: <1284676554-10816-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -41,49 +41,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
 This patch removes the now legacy host_lock unlock() + lock() optimization
-from libiscsi.c:iscsi_queuecommand()
+from lpfc_scsi.c:lpfc_queuecommand()
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/scsi/libiscsi.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+ drivers/scsi/lpfc/lpfc_scsi.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
-index 633e090..7e4134e 100644
---- a/drivers/scsi/libiscsi.c
-+++ b/drivers/scsi/libiscsi.c
-@@ -1615,7 +1615,6 @@ int iscsi_queuecommand(struct scsi_cmnd *sc, void (*done)(struct scsi_cmnd *))
- 
- 	host = sc->device->host;
- 	ihost = shost_priv(host);
--	spin_unlock(host->host_lock);
- 
- 	cls_session = starget_to_session(scsi_target(sc->device));
- 	session = cls_session->dd_data;
-@@ -1706,7 +1705,6 @@ int iscsi_queuecommand(struct scsi_cmnd *sc, void (*done)(struct scsi_cmnd *))
- 
- 	session->queued_cmdsn++;
- 	spin_unlock(&session->lock);
--	spin_lock(host->host_lock);
- 	return 0;
- 
- prepd_reject:
-@@ -1716,7 +1714,6 @@ reject:
- 	spin_unlock(&session->lock);
- 	ISCSI_DBG_SESSION(session, "cmd 0x%x rejected (%d)\n",
- 			  sc->cmnd[0], reason);
--	spin_lock(host->host_lock);
- 	return SCSI_MLQUEUE_TARGET_BUSY;
- 
- prepd_fault:
-@@ -1733,7 +1730,6 @@ fault:
- 		scsi_in(sc)->resid = scsi_in(sc)->length;
+diff --git a/drivers/scsi/lpfc/lpfc_scsi.c b/drivers/scsi/lpfc/lpfc_scsi.c
+index 2e51aa6..4b085f6 100644
+--- a/drivers/scsi/lpfc/lpfc_scsi.c
++++ b/drivers/scsi/lpfc/lpfc_scsi.c
+@@ -3023,11 +3023,9 @@ lpfc_queuecommand(struct scsi_cmnd *cmnd, void (*done) (struct scsi_cmnd *))
+ 		goto out_host_busy_free_buf;
  	}
- 	done(sc);
--	spin_lock(host->host_lock);
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(iscsi_queuecommand);
+ 	if (phba->cfg_poll & ENABLE_FCP_RING_POLLING) {
+-		spin_unlock(shost->host_lock);
+ 		lpfc_sli_handle_fast_ring_event(phba,
+ 			&phba->sli.ring[LPFC_FCP_RING], HA_R0RE_REQ);
+ 
+-		spin_lock(shost->host_lock);
+ 		if (phba->cfg_poll & DISABLE_FCP_RING_INT)
+ 			lpfc_poll_rearm_timer(phba);
+ 	}
 -- 
 1.7.2.3
 
