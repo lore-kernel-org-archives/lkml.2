@@ -1,100 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755419Ab0IPPCf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 11:02:35 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48724 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752517Ab0IPPCe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 11:02:34 -0400
+	id S1754761Ab0IPPEE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 11:04:04 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:60276 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751780Ab0IPPEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 11:04:02 -0400
+Date: Thu, 16 Sep 2010 08:03:57 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: memory barrier question
+Message-ID: <20100916150356.GD2462@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <E1OwEjQ-0006wS-MU@pomaz-ex.szeredi.hu>
+ <E1Ovt6F-0005CS-RU@pomaz-ex.szeredi.hu>
+ <3777.1284638136@redhat.com>
+ <6383.1284647456@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20100916111714.CA03.A69D9226@jp.fujitsu.com>
-References: <AANLkTik=ZpiCN-5YfWJ6zejSJBknL8Sj4Vtc+X_XpS71@mail.gmail.com>
- <20100914105147.C996.A69D9226@jp.fujitsu.com> <20100916111714.CA03.A69D9226@jp.fujitsu.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 16 Sep 2010 08:01:30 -0700
-Message-ID: <AANLkTin6-nPh1pc79W9qpzTDsEQrMPiZ45aJ+2LZheCF@mail.gmail.com>
-Subject: Re: [PATCH 2/2] execve: check the VM has enough memory at first
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Roland McGrath <roland@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, oss-security@lists.openwall.com,
-        Solar Designer <solar@openwall.com>,
-        Kees Cook <kees.cook@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Oleg Nesterov <oleg@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        linux-fsdevel@vger.kernel.org, pageexec@freemail.hu,
-        "Brad Spengler <spender@grsecurity.net>, Eugene Teo" 
-	<eugene@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6383.1284647456@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/9/15 KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>:
->
-> Briefly says, to introduce new limit has bad benefit/risk balance. Sadly.
+On Thu, Sep 16, 2010 at 03:30:56PM +0100, David Howells wrote:
+> Miklos Szeredi <miklos@szeredi.hu> wrote:
+> 
+> > Is the rmb() really needed?
+> > 
+> > Take this code from fs/namei.c for example:
+> > 
+> > 		inode = next.dentry->d_inode;
+> > 		if (!inode)
+> > 			goto out_dput;
+> > 
+> > 		if (inode->i_op->follow_link) {
+> > 
+> > It happily dereferences dentry->d_inode without a barrier after
+> > checking it for non-null, while that d_inode might have just been
+> > initialized on another CPU with a freshly created inode.  There's
+> > absolutely no synchornization with that on this side.
+> 
+> Perhaps it's not necessary; once set, how likely is i_op to be changed once
+> I_NEW is cleared?
 
-Well, I mostly agree. That said, I do think we could extend the
-limiter some ways.
+Are the path_get()s protecting this?
 
-For example, I think the "stack limit / 4" is perfectly sane, but it
-would make total sense to perhaps also take into account the AS and
-RSS limits.
+If there is no protection, then something like rcu_dereference() is
+needed for the assignment from next.dentry->d_inode.
 
-And I do think that your attempt to use __vm_enough_memory() was good.
-It happens to be coded in a way that makes it useless for a one-pass
-model, and some of what it does would be too expensive to do up-front
-when you can't short-circuit it, but I do think that it would probably
-be appropriate to at least try to take the _rough_ code there and use
-it as a limit for maximum stack size too.
+> > Isn't the fact that we check the pointer for being non-null (together
+> > with locking/barrier on the other side) enough to ensure that it's
+> > safe to dereference it?
+> 
+> It's possible that since there's a dependency between the variables on the
+> reading CPU that the barrier is not required.
+> 
+> I think I have to refer that question to Paul.
 
-For example, we could have a function somewhat like
+We would need either one of the rcu_dereference() or smp_read_barrier_depends()
+APIs to enforce the dependency, for example, against the compiler.
 
-    unsigned long max_stack_size(void)
-   {
-        unsigned long allowed, used, limit;
-
-        switch (sysctl_overcommit_memory) {
-        case OVERCOMMIT_ALWAYS:
-                allowed = ULONG_MAX;
-                break;
-        case OVERCOMMIT_GUESS:
-                .. maybe we can come up with some upper bound here too ..
-                break;
-        default:
-                allowed = (totalram_pages - hugetlb_total_pages())
-                        * sysctl_overcommit_ratio / 100;
-                if (!cap_sys_admin)
-                        allowed -= allowed / 32;
-                allowed += total_swap_pages;
-                /* Don't let a single process grow too big:
-                   leave 3% of the size of this process for other processes */
-                if (mm)
-                        allowed -= mm->total_vm / 32;
-                /* What is already committed to? */
-                used = percpu_counter_read_positive(&vm_committed_as);
-                if (used > allowed)
-                        return 0;
-                allowed -= used;
-                break;
-        }
-        limit = ACCESS_ONCE(rlim[RLIMIT_STACK].rlim_cur) / 4;
-        if (allowed > limit)
-                allowed = limit;
-        return allowed;
-    }
-
-which we'd call once at the beginning of the execve(), and then
-remember that result and use it instead of the current 'rlimit/4'
-value.
-
-Now, admittedly the OVERCOMMIT_GUESS case is the interesting one, and
-the one that is hard to write efficiently. But maybe we could make
-'nr_free_pages()' cheap enough that doin that whole OVERCOMMIT_GUESS
-"approximate free pages" thing from __vm_enough_memory would work out
-too?
-
-I dunno. It doesn't look hopeless.
-
-                      Linus
+							Thanx, Paul
