@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755428Ab0IPPES (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 11:04:18 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:43040 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754912Ab0IPPEQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 11:04:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=iBS22LpGUadla7nW8s7fw2n3xDu8ArksorE7nISsScYVCEBDVjKcnjE3I6UZrRjXB/
-         Nu0PVdw4TV/2gH4MM6yWEIQj/kCLYxM4PIwZwVwhcMe+T7QPKEgYLYpprfKjV1SE76Pg
-         iVBssKrZkqFkceiOD4LY/Fy4eXUaRatnakMyY=
-From: Vasily Khoruzhick <anarsoul@gmail.com>
-To: Sitsofe Wheeler <sitsofe@yahoo.com>
-Subject: Re: Interrupt latency on some 945GM platforms
-Date: Thu, 16 Sep 2010 18:03:04 +0300
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4-git2-anarsoul; KDE/4.5.1; i686; ; )
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-References: <201009132336.17310.anarsoul@gmail.com> <201009141529.53179.anarsoul@gmail.com> <20100914224111.GA14467@sucs.org>
-In-Reply-To: <20100914224111.GA14467@sucs.org>
+	id S1755470Ab0IPPFz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 11:05:55 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44023 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752531Ab0IPPFw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 11:05:52 -0400
+Date: Thu, 16 Sep 2010 17:04:59 +0200
+From: Jan Kara <jack@suse.cz>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: codalist@TELEMANN.coda.cs.cmu.edu, autofs@linux.kernel.org,
+        linux-media@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Christoph Hellwig <hch@infradead.org>,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Petr Vandrovec <vandrove@vc.cvut.cz>, Anders Larsen <al@alarsen.net>,
+        Jan Kara <jack@suse.cz>, Evgeniy Dushistov <dushistov@mail.ru>,
+        Ingo Molnar <mingo@elte.hu>, netdev@vger.kernel.org,
+        Samuel Ortiz <samuel@sortiz.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Andrew Hendry <andrew.hendry@gmail.com>
+Subject: Re: Remaining BKL users, what to do
+Message-ID: <20100916150459.GA8437@quack.suse.cz>
+References: <201009161632.59210.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1556634.LA4EyHkQqI";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009161803.10531.anarsoul@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201009161632.59210.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1556634.LA4EyHkQqI
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Thu 16-09-10 16:32:59, Arnd Bergmann wrote:
+> The big kernel lock is gone from almost all code in linux-next, this is
+> the status of what I think will happen to the remaining users:
+...
+> fs/ncpfs:
+> 	Should be fixable if Petr still cares about it. Otherwise suggest
+> 	moving to drivers/staging if there are no users left.
+  I think some people still use this...
 
-=D0=92 =D1=81=D0=BE=D0=BE=D0=B1=D1=89=D0=B5=D0=BD=D0=B8=D0=B8 =D0=BE=D1=82 =
-15 of September 2010 01:41:11 =D0=B0=D0=B2=D1=82=D0=BE=D1=80 Sitsofe Wheele=
-r =D0=BD=D0=B0=D0=BF=D0=B8=D1=81=D0=B0=D0=BB:
-> > >     processor.max_cstate=3D2
-> >=20
-> > Nope, it doesn't work with max_cstate=3D2
->=20
-> Perhaps intel_idle is being used? Any mention of it in dmesg?
+> fs/udf:
+> 	Not completely trivial, but probably necessary to fix. Project web
+> 	site is dead, I hope that Jan Kara can be motivated to fix it though.
+  Yeah, I can have a look at it.
 
-Sitsofe, maybe you misunderstood me, I mean with max_cstate=3D1 graphics is=
-=20
-smooth, with higher values (i.e. max_cstate=3D2) graphics is jerky.
+								Honza
 
-Btw, Jesse, any comments/solutions/workarounds except one with=20
-processor.max_cstate=3D1 in kernel commandline? Should I file a bug on fdo=
-=20
-bugzilla?
-
---nextPart1556634.LA4EyHkQqI
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-
-iEYEABECAAYFAkySMa4ACgkQRM6pQpltKE46DACfeD/4oJLLWf5k1dXQjfgQVwOn
-gtcAn0fLjhj8tgNqzjQ9YQVlVXbY2X3m
-=b6ik
------END PGP SIGNATURE-----
-
---nextPart1556634.LA4EyHkQqI--
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
