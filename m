@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755134Ab0IPPaL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 11:30:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53717 "EHLO mx1.redhat.com"
+	id S1755236Ab0IPPfZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 11:35:25 -0400
+Received: from mail.perches.com ([173.55.12.10]:2093 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754236Ab0IPPaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 11:30:10 -0400
-Date: Thu, 16 Sep 2010 17:24:11 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] kvm: enable irq injection from interrupt context
-Message-ID: <20100916152411.GE24850@redhat.com>
-References: <20100916105352.GB22254@redhat.com>
- <20100916111752.GA3008@redhat.com>
- <20100916121338.GA23779@redhat.com>
- <20100916123301.GE3008@redhat.com>
- <20100916125717.GA24284@redhat.com>
- <20100916131823.GH3008@redhat.com>
- <20100916135137.GB24850@redhat.com>
- <20100916140615.GJ3008@redhat.com>
- <20100916142335.GC24850@redhat.com>
- <20100916145117.GK3008@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100916145117.GK3008@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1755108Ab0IPPfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 11:35:24 -0400
+Subject: [PATCH V2 3/5] scripts/get_maintainer.pl: Don't search MAINTAINERS
+ for keywords or emails
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <cover.1284636516.git.joe@perches.com>
+References: <cover.1284636516.git.joe@perches.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 16 Sep 2010 08:35:21 -0700
+Message-ID: <1284651321.10223.130.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 04:51:17PM +0200, Gleb Natapov wrote:
-> > > What for? Device emulation should do de-assert.
-> > 
-> > Sorry, but at this point I have no idea what you call device emulation.
-> The same thing everyone calls device emulation. In case of virtio-net it
-> is in hw/virtio-net.c. If vhost-net is in use device emulation is split
-> between userspace and kernel, but it is still just device emulation.
+Keyword matching uses K: patterns from MAINTAINERS, so if
+looking for the MAINTAINERS maintainer, don't search MAINTAINERS
+for pattern matches.  MAINTAINERS also has rather a lot of email
+addresses and is easily searched using grep "^M:", so skip it.
 
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/get_maintainer.pl |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-case in point, virtio net does not know about pci at all,
-so it can not deassert.
+diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
+index 65c6acf..36e889f 100755
+--- a/scripts/get_maintainer.pl
++++ b/scripts/get_maintainer.pl
+@@ -304,7 +304,7 @@ foreach my $file (@ARGV) {
+     }
+     if ($from_filename) {
+ 	push(@files, $file);
+-	if (-f $file && ($keywords || $file_emails)) {
++	if ($file ne "MAINTAINERS" && -f $file && ($keywords || $file_emails)) {
+ 	    open(my $f, '<', $file)
+ 		or die "$P: Can't open $file: $!\n";
+ 	    my $text = do { local($/) ; <$f> };
 
-> > qemu has code to de-assert. vhost has code to assert.
-> Good. So qemu will de-assert. So what do you mean by
-> "KVM would need to find all irqfd objects mapped to gsi and notify
-> them on deassert"
-> 
-> > I would like to optimize level interrupts and stop driving
-> > scheduler insane if at all possible.
-> > 
-> Worthy goal. Do it in irqfd. Irqfd shouldn't call kvm_set_irq() if irq
-> level hasn't changed.
-
-Right. Then it needs to know about deasserts. It does not get this
-information, so when kvm gets deassert ioctl it should
-locate irqfd object and set level to 0.
-See?
-
--- 
-MST
 
