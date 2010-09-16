@@ -1,68 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab0IPKyG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 06:54:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49583 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752224Ab0IPKyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 06:54:05 -0400
-Date: Thu, 16 Sep 2010 12:54:03 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] kvm: enable irq injection from interrupt context
-Message-ID: <20100916105403.GZ3008@redhat.com>
-References: <20100915185417.GA3924@redhat.com>
- <20100916090256.GU3008@redhat.com>
- <20100916091054.GA20864@redhat.com>
- <20100916092553.GV3008@redhat.com>
- <4C91E75B.6010704@redhat.com>
- <20100916095310.GG20864@redhat.com>
- <20100916101332.GW3008@redhat.com>
- <20100916101339.GK20864@redhat.com>
- <20100916102047.GY3008@redhat.com>
- <20100916104455.GA22254@redhat.com>
+	id S1753392Ab0IPK70 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 06:59:26 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59857 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751532Ab0IPK7Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 06:59:25 -0400
+Date: Thu, 16 Sep 2010 11:59:21 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH] Regulator: LP3972 PMIC regulator driver
+Message-ID: <20100916105921.GD7837@rakim.wolfsonmicro.main>
+References: <1284626929.12168.3.camel@mola>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100916104455.GA22254@redhat.com>
+In-Reply-To: <1284626929.12168.3.camel@mola>
+X-Cookie: Now I am depressed ...
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 12:44:55PM +0200, Michael S. Tsirkin wrote:
-> On Thu, Sep 16, 2010 at 12:20:47PM +0200, Gleb Natapov wrote:
-> > On Thu, Sep 16, 2010 at 12:13:39PM +0200, Michael S. Tsirkin wrote:
-> > > On Thu, Sep 16, 2010 at 12:13:32PM +0200, Gleb Natapov wrote:
-> > > > On Thu, Sep 16, 2010 at 11:53:10AM +0200, Michael S. Tsirkin wrote:
-> > > > > On Thu, Sep 16, 2010 at 11:46:03AM +0200, Avi Kivity wrote:
-> > > > > >  On 09/16/2010 11:25 AM, Gleb Natapov wrote:
-> > > > > > >>
-> > > > > > >>  MSI only appeared in rhel6, older guests still use level interrupts.
-> > > > > > >So they are already slow for other reasons.
-> > > > > > >
-> > > > > > 
-> > > > > > Exactly, for example they need to exit to userspace to ack the
-> > > > > > interrupt.  That's far slower than the workqueue.
-> > > > > 
-> > > > > Well, this is not exactly comparable: you might get
-> > > > > same irq asserted multiple times and only deasserted once.
-> > > > > 
-> > > > Are we talking about level interrupts? Why would you assert level
-> > > > triggered interrupt multiple times before deasserting it?
-> > > 
-> > > User of irqfd has no way to know what current interrupt level is.
-> > > So it has to keep asserting.
-> > > 
-> > Why can't it keep track of current level?
-> 
-> This breaks the model: eventfd user is unaware of PCI, levels and such:
-> it just signals the event.  Remember that asserts are done from e.g. vhost-net,
-> deasserts need to be handled by qemu.
-> 
-eventfd user implements HW and it knows exactly what type of interrupt
-this HW generates.
+On Thu, Sep 16, 2010 at 04:48:49PM +0800, Axel Lin wrote:
+> This patch adds regulator drivers for National Semiconductors LP3972 PMIC.
+> This LP3972 PMIC controller has 3 DC/DC voltage converters and 5 low drop-out
+> (LDO) regulators. LP3972 PMIC controller uses I2C interface.
 
---
-			Gleb.
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+
+but a few things below which it'd be good to fix up incrementally.
+
+> +#define LP3972_LDO_VOL_MIN_IDX(x) (((x) == 4) ? 0x05 : 0x00)
+> +#define LP3972_LDO_VOL_MAX_IDX(x) ((x) ? (((x) == 4) ? 0x1f : 0x0f) : 0x0c)
+
+I suspect that writing these out as inline functions without the ternery
+operator would be rather more legible.
+
+> +	ret = i2c_smbus_read_byte_data(i2c, reg);
+> +	if (ret < 0)
+> +		return -EIO;
+
+Better to return the actual error you got.
+
+> +static u8 lp3972_reg_read(struct lp3972 *lp3972, u8 reg)
+> +{
+> +	u16 val = 0;
+> +
+> +	mutex_lock(&lp3972->io_lock);
+> +
+> +	lp3972_i2c_read(lp3972->i2c, reg, 1, &val);
+> +
+> +	dev_dbg(lp3972->dev, "reg read 0x%02x -> 0x%02x\n", (int)reg,
+> +		(unsigned)val&0xff);
+
+Some spaces here would be helpful for legiblility.
+
+> +	switch (ldo) {
+> +	case LP3972_LDO1:
+> +	case LP3972_LDO5:
+> +		shift = LP3972_LDO_VOL_CHANGE_SHIFT(ldo);
+> +		ret = lp3972_set_bits(lp3972, LP3972_VOL_CHANGE_REG,
+> +			LP3972_VOL_CHANGE_FLAG_MASK << shift,
+> +			LP3972_VOL_CHANGE_FLAG_GO << shift);
+> +		if (ret)
+> +			return ret;
+> +
+> +		ret = lp3972_set_bits(lp3972, LP3972_VOL_CHANGE_REG,
+> +			LP3972_VOL_CHANGE_FLAG_MASK << shift, 0);
+> +		break;
+> +	}
+
+A comment explaining why it's OK to only handle these two LDOs here
+would be helpful.
+
+> +	reg &= LP3972_BUCK_VOL_MASK;
+> +	if (reg <= LP3972_BUCK_VOL_MAX_IDX(buck))
+> +		val = 1000 * buck_voltage_map[buck][reg];
+> +	else {
+> +		val = 0;
+> +		dev_warn(&dev->dev, "chip reported incorrect voltage value.\n");
+
+Logging the value would be useful for diagnostics.
+
+> +static int setup_regulators(struct lp3972 *lp3972,
+> +	struct lp3972_platform_data *pdata)
+
+This could be flagged as __devinit.
+
+> +	/* Detect LP3972 */
+> +	ret = lp3972_i2c_read(i2c, LP3972_SYS_CONTROL1_REG, 1, &val);
+> +	if (ret == 0 && (val & SYS_CONTROL1_INIT_MASK) != SYS_CONTROL1_INIT_VAL)
+> +		ret = -ENODEV;
+> +	if (ret < 0) {
+> +		dev_err(&i2c->dev, "failed to detect device\n");
+> +		goto err_detect;
+
+Again, logging the rejected value is useful.
