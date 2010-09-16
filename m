@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755520Ab0IPP5t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 11:57:49 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:57921 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754944Ab0IPP5r (ORCPT
+	id S1755503Ab0IPQBZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 12:01:25 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:35993 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754429Ab0IPQBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 11:57:47 -0400
-X-Authority-Analysis: v=1.1 cv=FR6uSFBUsHpo/LPxUdUfz19YCIdHKFi4UJmy4GdSgrg= c=1 sm=0 a=G6fJhtGuX8gA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=_QOhAC9u1-2zpYMG7LUA:9 a=ztAy1r9PiXXcBQFZoDcA:7 a=4G4r9oUBAH3AUVEbZC6Anma7Ls0A:4 a=CjuIK1q_8ugA:10 a=MSl-tDqOz04A:10 wl=env:18 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Date: Thu, 16 Sep 2010 11:57:45 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: j.dumon@option.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        security@kernel.org, davem@davemloft.net, stable@kernel.org
-Subject: Re: [PATCH v2] drivers/net/usb/hso.c: prevent reading
- uninitialized memory
-Message-ID: <20100916155745.GB14318@home.goodmis.org>
-References: <1284587008.6275.95.camel@dan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284587008.6275.95.camel@dan>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 16 Sep 2010 12:01:24 -0400
+Date: Thu, 16 Sep 2010 18:01:12 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: Re: [lm-sensors] [PATCH 1/2] hwmon: (adm1031) Replace update_rate 
+ sysfs attribute with update_interval
+Message-ID: <20100916180112.2ce29d2a@hyperion.delvare>
+In-Reply-To: <20100916154243.GB25145@khazad-dum.debian.net>
+References: <1284602835-7605-1-git-send-email-guenter.roeck@ericsson.com>
+	<1284602835-7605-2-git-send-email-guenter.roeck@ericsson.com>
+	<20100916171443.0322bdb6@hyperion.delvare>
+	<20100916154243.GB25145@khazad-dum.debian.net>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 15, 2010 at 05:43:28PM -0400, Dan Rosenberg wrote:
-> Fixed formatting (tabs and line breaks).
+On Thu, 16 Sep 2010 12:42:43 -0300, Henrique de Moraes Holschuh wrote:
+> On Thu, 16 Sep 2010, Jean Delvare wrote:
+> > On Wed, 15 Sep 2010 19:07:14 -0700, Guenter Roeck wrote:
+> > > The attribute reflects an interval, not a rate.
+> > > 
+> > > Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> > > ---
+> > >  Documentation/hwmon/sysfs-interface |   12 +++++-----
+> > >  drivers/hwmon/adm1031.c             |   43 +++++++++++++++++++---------------
+> > >  2 files changed, 30 insertions(+), 25 deletions(-)
+> > > 
+> > > diff --git a/Documentation/hwmon/sysfs-interface b/Documentation/hwmon/sysfs-interface
+> > > index ff45d1f..df0cdd2 100644
+> > > --- a/Documentation/hwmon/sysfs-interface
+> > > +++ b/Documentation/hwmon/sysfs-interface
+> > > @@ -91,13 +91,13 @@ name		The chip name.
+> > >  		I2C devices get this attribute created automatically.
+> > >  		RO
+> > >  
+> > > -update_rate	The rate at which the chip will update readings.
+> > > -		Unit: millisecond
+> > > +update_interval	The interval at which the chip or driver will update readings.
+> > 
+> > I think I prefer the original wording. The attribute is really about
+> > setting the register refresh rate at the hardware level. The fact that
 > 
-> The TIOCGICOUNT device ioctl allows unprivileged users to read
-> uninitialized stack memory, because the "reserved" member of the
-> serial_icounter_struct struct declared on the stack in hso_get_count()
-> is not altered or zeroed before being copied back to the user.  This
-> patch takes care of it.
+> Only, it doesn't set any rates in the hardware.  It sets the period
+> (interval).
 > 
-> Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-> 
-> --- linux-2.6.35.4.orig/drivers/net/usb/hso.c	2010-08-26 19:47:12.000000000 -0400
-> +++ linux-2.6.35.4/drivers/net/usb/hso.c	2010-09-14 21:26:18.477585183 -0400
-> @@ -1653,6 +1653,8 @@ static int hso_get_count(struct hso_seri
->  	struct uart_icount cnow;
->  	struct hso_tiocmget  *tiocmget = serial->tiocmget;
->  
-> +	memset(&icount, 0, sizeof(struct serial_icounter_struct));
-> +
+> If the unit of update_rate is changed to Hz, and the driver does
+> hardware_timer_milliseconds = 1000/update_rate_Hz, THEN it will be
+> correct to call it a rate...
 
-Move the above to after the spinlocks.
+I agree. My point was really only about "chip or driver" vs. "chip".
 
--- Steve
+> I'd rather have it in Hz, actually.  I consider that more user-friendly.
+> But that's just personal preference.
 
->  	if (!tiocmget)
->  		 return -ENOENT;
->  	spin_lock_irq(&serial->serial_lock);
-> 
+The problem with Hz is that we need to be able to handle values lower
+than 1, and mHz as a unit isn't exactly friendly. I would be very fine
+with Hz (especially as we use it for pwmN_freq already) if we didn't
+have to support frequencies below 1 Hz. For such low frequencies,
+period (or interval) is clearer than frequency IMHO.
+
+-- 
+Jean Delvare
