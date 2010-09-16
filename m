@@ -1,185 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756084Ab0IPUPQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 16:15:16 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33424 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752417Ab0IPUPP (ORCPT
+	id S1756162Ab0IPUPa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 16:15:30 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:33761 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756131Ab0IPUP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 16:15:15 -0400
-Date: Thu, 16 Sep 2010 13:14:32 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH][-mm] memcg : memory cgroup cpu hotplug support update.
-Message-Id: <20100916131432.049118bd.akpm@linux-foundation.org>
-In-Reply-To: <20100916144618.852b7e9a.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100916144618.852b7e9a.kamezawa.hiroyu@jp.fujitsu.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Sep 2010 16:15:29 -0400
+Date: Thu, 16 Sep 2010 14:15:26 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: christophe leroy <christophe.leroy@c-s.fr>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH] spi_mpc8xxx: fix buffer overrun when sending
+ only/receiving only more than PAGE_SIZE bytes
+Message-ID: <20100916201526.GB11972@angua.secretlab.ca>
+References: <20100916070525.4882CC7391@messagerie.si.c-s.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100916070525.4882CC7391@messagerie.si.c-s.fr>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Sep 2010 14:46:18 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+On Thu, Sep 16, 2010 at 09:05:25AM +0200, christophe leroy wrote:
+> This patch applies to 2.6.34.7 and 2.6.35.4
+> It fixes an issue when sending only or receiving only more than PAGE_SIZE bytes
+> 
+> Signed-off-by: christophe leroy <christophe.leroy@c-s.fr>
 
-> This is onto The mm-of-the-moment snapshot 2010-09-15-16-21.
+applied to merge-spi branch, thanks.
+
+g.
+
 > 
-> ==
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> Now, memory cgroup uses for_each_possible_cpu() for percpu stat handling.
-> It's just because cpu hotplug handler doesn't handle them.
-> On the other hand, per-cpu usage counter cache is maintained per cpu and
-> it's cpu hotplug aware.
-> 
-> This patch adds a cpu hotplug hanlder and replaces for_each_possible_cpu()
-> with for_each_online_cpu(). And this merges new callbacks with old
-> callbacks.(IOW, memcg has only one cpu-hotplug handler.)
-> 
-> For this purpose, mem_cgroup_walk_all() is added.
-> 
-> ...
-> 
-> @@ -537,7 +540,7 @@ static s64 mem_cgroup_read_stat(struct m
->  	int cpu;
->  	s64 val = 0;
+> diff -urN c/drivers/spi/spi_mpc8xxx.c d/drivers/spi/spi_mpc8xxx.c
+> --- c/drivers/spi/spi_mpc8xxx.c	2010-09-08 16:44:03.000000000 +0200
+> +++ d/drivers/spi/spi_mpc8xxx.c	2010-09-08 16:44:14.000000000 +0200
+> @@ -393,11 +393,17 @@
 >  
-> -	for_each_possible_cpu(cpu)
-> +	for_each_online_cpu(cpu)
->  		val += per_cpu(mem->stat->count[idx], cpu);
-
-Can someone remind me again why all this code couldn't use
-percpu-counters?
-
->  	return val;
->  }
-> @@ -700,6 +703,35 @@ static inline bool mem_cgroup_is_root(st
->  	return (mem == root_mem_cgroup);
->  }
+>  	xfer_ofs = mspi->xfer_in_progress->len - mspi->count;
 >  
-> +static int mem_cgroup_walk_all(void *data,
-> +		int (*func)(struct mem_cgroup *, void *))
-> +{
-> +	int found, ret, nextid;
-> +	struct cgroup_subsys_state *css;
-> +	struct mem_cgroup *mem;
-> +
-> +	nextid = 1;
-> +	do {
-> +		ret = 0;
-> +		mem = NULL;
-> +
-> +		rcu_read_lock();
-> +		css = css_get_next(&mem_cgroup_subsys, nextid,
-> +				&root_mem_cgroup->css, &found);
-> +		if (css && css_tryget(css))
-> +			mem = container_of(css, struct mem_cgroup, css);
-> +		rcu_read_unlock();
-> +
-> +		if (mem) {
-> +			ret = (*func)(mem, data);
-> +			css_put(&mem->css);
-> +		}
-> +		nextid = found + 1;
-> +	} while (!ret && css);
-> +
-> +	return ret;
-> +}
-
-It would be better to convert `void *data' to `unsigned cpu' within the
-caller of this function rather than adding the typecast to each
-function which this function calls.  So this becomes
-
-static int mem_cgroup_walk_all(unsigned cpu,
-		int (*func)(struct mem_cgroup *memcg, unsigned cpu))
-
-
-> +/*
-> + * CPU Hotplug handling.
-> + */
-> +static int synchronize_move_stat(struct mem_cgroup *mem, void *data)
-> +{
-> +	long cpu = (long)data;
-> +	s64 x = this_cpu_read(mem->stat->count[MEM_CGROUP_ON_MOVE]);
-> +	/* All cpus should have the same value */
-> +	per_cpu(mem->stat->count[MEM_CGROUP_ON_MOVE], cpu) = x;
-> +	return 0;
-> +}
-> +
-> +static int drain_all_percpu(struct mem_cgroup *mem, void *data)
-> +{
-> +	long cpu = (long)(data);
-> +	int i;
-> +	/* Drain data from dying cpu and move to local cpu */
-> +	for (i = 0; i < MEM_CGROUP_STAT_DATA; i++) {
-> +		s64 data = per_cpu(mem->stat->count[i], cpu);
-> +		per_cpu(mem->stat->count[i], cpu) = 0;
-> +		this_cpu_add(mem->stat->count[i], data);
-> +	}
-> +	/* Reset Move Count */
-> +	per_cpu(mem->stat->count[MEM_CGROUP_ON_MOVE], cpu) = 0;
-> +	return 0;
-> +}
-
-Some nice comments would be nice.
-
-I don't immediately see anything which guarantees that preemption (and
-cpu migration) are disabled here.  It would be an odd thing to permit
-migration within a cpu-hotplug handler, but where did we guarantee it?
-
-Also, the code appears to assume that the current CPU is the one which
-is being onlined.  What guaranteed that?  This is not the case for
-enable_nonboot_cpus().
-
-It's conventional to put a blank line between end-of-locals and
-start-of-code.  This patch ignored that convention rather a lot.
-
-The comments in this patch Have Rather Strange Capitalisation Decisions.
-
-> +static int __cpuinit memcg_cpuhotplug_callback(struct notifier_block *nb,
-> +					unsigned long action,
-> +					void *hcpu)
-> +{
-> +	long cpu = (unsigned long)hcpu;
-> +	struct memcg_stock_pcp *stock;
-> +
-> +	if (action == CPU_ONLINE) {
-> +		mem_cgroup_walk_all((void *)cpu, synchronize_move_stat);
-
-More typecasts which can go away if we make the above change to
-mem_cgroup_walk_all().
-
-> +		return NOTIFY_OK;
-> +	}
-> +	if ((action != CPU_DEAD) || (action != CPU_DEAD_FROZEN))
-> +		return NOTIFY_OK;
-> +
-> +	/* Drain counters...for all memcgs. */
-> +	mem_cgroup_walk_all((void *)cpu, drain_all_percpu);
-> +
-> +	/* Drain Cached resources */
-> +	stock = &per_cpu(memcg_stock, cpu);
-> +	drain_stock(stock);
-> +
-> +	return NOTIFY_OK;
-> +}
-> +
->  static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *mem, int node)
->  {
->  	struct mem_cgroup_per_node *pn;
-> @@ -4224,7 +4302,7 @@ mem_cgroup_create(struct cgroup_subsys *
->  						&per_cpu(memcg_stock, cpu);
->  			INIT_WORK(&stock->work, drain_local_stock);
->  		}
-> -		hotcpu_notifier(memcg_stock_cpu_callback, 0);
-> +		hotcpu_notifier(memcg_cpuhotplug_callback, 0);
->  	} else {
->  		parent = mem_cgroup_from_cont(cont->parent);
->  		mem->use_hierarchy = parent->use_hierarchy;
+> -	out_be32(&rx_bd->cbd_bufaddr, mspi->rx_dma + xfer_ofs);
+> +	if (mspi->rx_dma == mspi->dma_dummy_rx)
+> +		out_be32(&rx_bd->cbd_bufaddr, mspi->rx_dma);
+> +	else
+> +		out_be32(&rx_bd->cbd_bufaddr, mspi->rx_dma + xfer_ofs);
+>  	out_be16(&rx_bd->cbd_datlen, 0);
+>  	out_be16(&rx_bd->cbd_sc, BD_SC_EMPTY | BD_SC_INTRPT | BD_SC_WRAP);
+>  
+> -	out_be32(&tx_bd->cbd_bufaddr, mspi->tx_dma + xfer_ofs);
+> +	if (mspi->tx_dma == mspi->dma_dummy_tx)
+> +		out_be32(&tx_bd->cbd_bufaddr, mspi->tx_dma);
+> +	else
+> +		out_be32(&tx_bd->cbd_bufaddr, mspi->tx_dma + xfer_ofs);
+>  	out_be16(&tx_bd->cbd_datlen, xfer_len);
+>  	out_be16(&tx_bd->cbd_sc, BD_SC_READY | BD_SC_INTRPT | BD_SC_WRAP |
+>  				 BD_SC_LAST);
