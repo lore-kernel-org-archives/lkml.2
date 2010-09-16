@@ -1,103 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753671Ab0IPQkZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 12:40:25 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:26667 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753154Ab0IPQkY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 12:40:24 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=V9IL4QJPBF4t7sS6HSvfzh6+kU/K/UtebaCJaXT/anblgK565bNmBRAcs5z9jhBBi
-	C2eWGHvGq4n1zOrVAD2bA==
-Date: Thu, 16 Sep 2010 09:40:10 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hughd@tigran.mtv.corp.google.com
-To: Nikanth Karthikesan <knikanth@suse.de>
-cc: Matt Mackall <mpm@selenic.com>, Richard Guenther <rguenther@suse.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Matz <matz@novell.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Export amount of anonymous memory in a mapping via
- smaps
-In-Reply-To: <201009160856.25923.knikanth@suse.de>
-Message-ID: <alpine.DEB.2.00.1009160927110.24798@tigran.mtv.corp.google.com>
-References: <20100915134724.C9EE.A69D9226@jp.fujitsu.com> <1284579969.21906.451.camel@calx> <AANLkTini3k1hK-9RM6io0mOf4VoDzGpbUEpiv=WHfhEW@mail.gmail.com> <201009160856.25923.knikanth@suse.de>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	id S1753865Ab0IPQmE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 12:42:04 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:44716 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753109Ab0IPQmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 12:42:03 -0400
+To: kexec@lists.infradead.org, mingo@elte.hu
+Subject: [PATCH] x86: saving vmcore with non-lazy freeing of vmas 
+Cc: linux-kernel@vger.kernel.org
+Message-Id: <E1OwHZ4-0005WK-Tw@eag09.americas.sgi.com>
+From: Cliff Wickman <cpw@sgi.com>
+Date: Thu, 16 Sep 2010 11:44:02 -0500
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Sep 2010, Nikanth Karthikesan wrote:
+From: Cliff Wickman <cpw@sgi.com>
 
-> Export the number of anonymous pages in a mapping via smaps.
-> 
-> Even the private pages in a mapping backed by a file, would be marked as
-> anonymous, when they are modified. Export this information to user-space via
-> smaps.
-> 
-> Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
+During the reading of /proc/vmcore the kernel is doing ioremap()/iounmap()
+repeatedly. And the buildup of un-flushed vm_area_struct's is causing
+a great deal of overhead. (rb_next() is chewing up most of that time).
 
-Acked-by: Hugh Dickins <hughd@google.com>
+This solution is to provide function set_iounmap_nonlazy(). It causes a
+subsequent call to iounmap() to immediately purge the vma area (with
+try_purge_vmap_area_lazy()).
 
-but I'd prefer if we added a little more justification, such as:
+With this patch we have seen the time for writing a 250MB compressed dump
+drop from 71 seconds to 44 seconds.
 
-Exporting this count will help gdb to make a better decision on which
-areas need to be dumped in its coredump; and should be useful to others
-studying the memory usage of a process.
+Diffed against 2.6.36-rc3
 
-> 
-> ---
-> 
-> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-> index 439fc1f..3c18fc8 100644
-> --- a/fs/proc/task_mmu.c
-> +++ b/fs/proc/task_mmu.c
-> @@ -326,6 +326,7 @@ struct mem_size_stats {
->  	unsigned long private_clean;
->  	unsigned long private_dirty;
->  	unsigned long referenced;
-> +	unsigned long anonymous;
->  	unsigned long swap;
->  	u64 pss;
->  };
-> @@ -356,6 +357,9 @@ static int smaps_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
->  		if (!page)
->  			continue;
->  
-> +		if (PageAnon(page))
-> +			mss->anonymous += PAGE_SIZE;
-> +
->  		mss->resident += PAGE_SIZE;
->  		/* Accumulate the size in pages that have been accessed. */
->  		if (pte_young(ptent) || PageReferenced(page))
-> @@ -409,6 +413,7 @@ static int show_smap(struct seq_file *m, void *v)
->  		   "Private_Clean:  %8lu kB\n"
->  		   "Private_Dirty:  %8lu kB\n"
->  		   "Referenced:     %8lu kB\n"
-> +		   "Anonymous:      %8lu kB\n"
->  		   "Swap:           %8lu kB\n"
->  		   "KernelPageSize: %8lu kB\n"
->  		   "MMUPageSize:    %8lu kB\n",
-> @@ -420,6 +425,7 @@ static int show_smap(struct seq_file *m, void *v)
->  		   mss.private_clean >> 10,
->  		   mss.private_dirty >> 10,
->  		   mss.referenced >> 10,
-> +		   mss.anonymous >> 10,
->  		   mss.swap >> 10,
->  		   vma_kernel_pagesize(vma) >> 10,
->  		   vma_mmu_pagesize(vma) >> 10);
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-> 
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+
+---
+ arch/x86/include/asm/io.h       |    1 +
+ arch/x86/kernel/crash_dump_64.c |    1 +
+ mm/vmalloc.c                    |    9 +++++++++
+ 3 files changed, 11 insertions(+)
+
+Index: linus.current/arch/x86/kernel/crash_dump_64.c
+===================================================================
+--- linus.current.orig/arch/x86/kernel/crash_dump_64.c
++++ linus.current/arch/x86/kernel/crash_dump_64.c
+@@ -46,6 +46,7 @@ ssize_t copy_oldmem_page(unsigned long p
+ 	} else
+ 		memcpy(buf, vaddr + offset, csize);
+ 
++	set_iounmap_nonlazy();
+ 	iounmap(vaddr);
+ 	return csize;
+ }
+Index: linus.current/mm/vmalloc.c
+===================================================================
+--- linus.current.orig/mm/vmalloc.c
++++ linus.current/mm/vmalloc.c
+@@ -517,6 +517,15 @@ static atomic_t vmap_lazy_nr = ATOMIC_IN
+ static void purge_fragmented_blocks_allcpus(void);
+ 
+ /*
++ * called before a call to iounmap() if the caller wants vm_area_struct's
++ * immediately freed.
++ */
++void set_iounmap_nonlazy(void)
++{
++	atomic_set(&vmap_lazy_nr, lazy_max_pages()+1);
++}
++
++/*
+  * Purges all lazily-freed vmap areas.
+  *
+  * If sync is 0 then don't purge if there is already a purge in progress.
+Index: linus.current/arch/x86/include/asm/io.h
+===================================================================
+--- linus.current.orig/arch/x86/include/asm/io.h
++++ linus.current/arch/x86/include/asm/io.h
+@@ -206,6 +206,7 @@ static inline void __iomem *ioremap(reso
+ 
+ extern void iounmap(volatile void __iomem *addr);
+ 
++extern void set_iounmap_nonlazy(void);
+ 
+ #ifdef __KERNEL__
+ 
