@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755513Ab0IPScJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 14:32:09 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:61128 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754449Ab0IPScH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 14:32:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=At8uTW+at4Sdbf/rjaa5pXU9ZS5Ia/64UwFn/kymYEDPEqq40lyDI361ivsVQUMe/2
-         o522hIZb78YK2DcMzQzzV08oSpTxdh6DVdbMkYoEFX8mePeMvW4iIV7lSkWTa5z9thuz
-         cX/b9BUecc1eH+zo5lQ4rzJTVhVowdsixgM4U=
-From: Vasily Khoruzhick <anarsoul@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Interrupt latency on some 945GM platforms
-Date: Thu, 16 Sep 2010 21:30:58 +0300
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4-git2-anarsoul; KDE/4.5.1; i686; ; )
-Cc: Sitsofe Wheeler <sitsofe@yahoo.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-References: <201009132336.17310.anarsoul@gmail.com> <201009161803.10531.anarsoul@gmail.com> <alpine.LFD.2.00.1009162004500.2416@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1009162004500.2416@localhost6.localdomain6>
+	id S1755337Ab0IPSdm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 14:33:42 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:54342 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753139Ab0IPSdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 14:33:41 -0400
+Message-ID: <4C926303.9090206@kernel.dk>
+Date: Thu, 16 Sep 2010 20:33:39 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1731822.tHHF88TaAc";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: Jan Kara <jack@suse.cz>
+CC: linux-kernel@vger.kernel.org, tj@kernel.org
+Subject: Re: [PATCH] block: Fix race during disk initialization
+References: <1284661217-22783-1-git-send-email-jack@suse.cz>
+In-Reply-To: <1284661217-22783-1-git-send-email-jack@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009162131.03365.anarsoul@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1731822.tHHF88TaAc
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On 2010-09-16 20:20, Jan Kara wrote:
+> When a new disk is being discovered, add_disk() first ties the bdev to gendisk
+> (via register_disk()->blkdev_get()) and only after that calls
+> bdi_register_bdev(). Because register_disk() also creates disk's kobject, it
+> can happen that userspace manages to open and modify the device's data (or
+> inode) before its BDI is properly initialized leading to a warning in
+> __mark_inode_dirty().
+> 
+> Fix the problem by registering BDI early enough.
+> 
+> This patch addresses https://bugzilla.kernel.org/show_bug.cgi?id=16312
+> 
+> Reported-by: Larry Finger <Larry.Finger@lwfinger.net>
+> Signed-off-by: Jan Kara <jack@suse.cz>
+> ---
+>  block/genhd.c |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
+> 
+>  Jens, would you consider merging this fix? The kernel boots with it but
+> I'm not too familiar with this area of kernel so there can be something subtle
+> I've missed. So please review. Thanks.
 
-=D0=92 =D1=81=D0=BE=D0=BE=D0=B1=D1=89=D0=B5=D0=BD=D0=B8=D0=B8 =D0=BE=D1=82 =
-16 of September 2010 21:07:39 =D0=B0=D0=B2=D1=82=D0=BE=D1=80 Thomas Gleixne=
-r =D0=BD=D0=B0=D0=BF=D0=B8=D1=81=D0=B0=D0=BB:
+It looks sane. How about we add it to the .37 lineup and mark it for
+stable backport?
 
-> > Btw, Jesse, any comments/solutions/workarounds except one with
-> > processor.max_cstate=3D1 in kernel commandline? Should I file a bug on =
-fdo
-> > bugzilla?
->=20
-> we fixed a HPET related bug a few days ago, which might be the cause
-> for your problem as well.
+-- 
+Jens Axboe
 
-Nope, it doesn't help :(
-
-Regards
-Vasily
-
---nextPart1731822.tHHF88TaAc
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-
-iEYEABECAAYFAkySYmcACgkQRM6pQpltKE4xqQCfZbgVfzLsn4kC1DH7RuLwqn5d
-/J0AoI6lJ6F1nJtQ9SqMjCYwixwyXQGN
-=gzdZ
------END PGP SIGNATURE-----
-
---nextPart1731822.tHHF88TaAc--
