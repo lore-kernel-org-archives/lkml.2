@@ -1,18 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411Ab0IPOtQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 10:49:16 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:62053 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755085Ab0IPOtO (ORCPT
+	id S1755435Ab0IPOux (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 10:50:53 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:46064 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754584Ab0IPOuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 10:49:14 -0400
-X-Authority-Analysis: v=1.1 cv=FR6uSFBUsHpo/LPxUdUfz19YCIdHKFi4UJmy4GdSgrg= c=1 sm=0 a=B_dWoPQBlxEA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=uBodtYNTShapA0tpeJ0A:9 a=ThQf8NeovQm7NfeKpph_i2u4uy8A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: Remaining BKL users, what to do
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Arnd Bergmann <arnd@arndb.de>, Jens Axboe <jaxboe@fusionio.com>
+	Thu, 16 Sep 2010 10:50:51 -0400
+Date: Thu, 16 Sep 2010 16:07:59 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
 Cc: codalist@TELEMANN.coda.cs.cmu.edu, autofs@linux.kernel.org,
         linux-media@vger.kernel.org, dri-devel@lists.freedesktop.org,
         Christoph Hellwig <hch@infradead.org>,
@@ -25,33 +22,27 @@ Cc: codalist@TELEMANN.coda.cs.cmu.edu, autofs@linux.kernel.org,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         Andrew Hendry <andrew.hendry@gmail.com>
+Subject: Re: Remaining BKL users, what to do
+Message-ID: <20100916160759.4411786c@lxorguk.ukuu.org.uk>
 In-Reply-To: <201009161632.59210.arnd@arndb.de>
 References: <201009161632.59210.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 16 Sep 2010 10:49:09 -0400
-Message-ID: <1284648549.23787.26.camel@gandalf.stny.rr.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-16 at 16:32 +0200, Arnd Bergmann wrote:
-> The big kernel lock is gone from almost all code in linux-next, this is
-> the status of what I think will happen to the remaining users:
+> net/appletalk:
+> net/ipx/af_ipx.c:
+> net/irda/af_irda.c:
+> 	Can probably be saved from retirement in drivers/staging if the
+> 	maintainers still care.
 
-> kernel/trace/blktrace.c:
-> 	Should be easy. Ingo? Steven?
-> 
+IPX and Appletalk both have active users. They also look fairly fixable
+as the lock_kernel just maps to a stack private mutex, or in several
+cases can simply be dropped - its just a push down legacy.
 
-Jens,
-
-Git blame shows this to be your code (copied from block/blktrace.c from
-years past).
-
-Is the lock_kernel() needed here? (although Arnd did add it in 62c2a7d9)
-
--- Steve
-
-
+IRDA may well be a candidate for staging
