@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117Ab0IPUFG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 16:05:06 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:54007 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754525Ab0IPUFE (ORCPT
+	id S1756105Ab0IPUGB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 16:06:01 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:60385 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754525Ab0IPUF7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 16:05:04 -0400
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Neil Brown <nfbrown@novell.com>,
-        linux-nfs@vger.kernel.org
-Subject: Re: [PATCH RFC] x86: hpet: Avoid the readback penalty
-References: <tip-54ff7e595d763d894104d421b103a89f7becf47c@git.kernel.org>
-	<alpine.LFD.2.00.1009151500060.2416@localhost6.localdomain6>
-From: Nix <nix@esperi.org.uk>
-Emacs: freely redistributable; void where prohibited by law.
-Date: Thu, 16 Sep 2010 21:04:50 +0100
-In-Reply-To: <alpine.LFD.2.00.1009151500060.2416@localhost6.localdomain6> (Thomas Gleixner's message of "Wed, 15 Sep 2010 15:11:57 +0200 (CEST)")
-Message-ID: <87d3sdfo9p.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) XEmacs/21.5-b29 (linux)
+	Thu, 16 Sep 2010 16:05:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=rUxeiYwqldNXf91rvG+YHqjWY9xZ3S7QCpvvC1yFCB7Vlvd5T6szNY4RO1rn4gruad
+         uFmvmUnpZl05p4slZNoUDrf0bR3L/lN0FqOv6uYJuA1XI9gdzN+9ywmCsNqy+U+nMqSN
+         qJ1mxyy1s4Y3ULfMqj3pTudCGqBpVP5BK6x/Y=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: 2.6.36-rc4/iwl: warning triggered in net/mac80211/scan.c:266
+Date: Thu, 16 Sep 2010 22:05:53 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4; KDE/4.4.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org, "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        Reinette Chatre <reinette.chatre@intel.com>,
+        "Wey-Yi Guy" <wey-yi.w.guy@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>
+References: <20100914142814.GA8744@redhat.com>
+In-Reply-To: <20100914142814.GA8744@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-DCC-HP_X86_64_4CPU-Metrics: spindle 1245; Body=4 Fuz1=4 Fuz2=4
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201009162205.54034.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 Sep 2010, Thomas Gleixner said:
+On wtorek, 14 września 2010 o 16:28:15 Michael S. Tsirkin wrote:
+> I am running 2.6.36-rc4 on T60 with an iwlagn wireless card:
+> 03:00.0 Network controller: Intel Corporation PRO/Wireless 5100 AGN
+> [Shiloh] Network Connection
+> 
+> I was compiling a large file which stressed the box heavily, and the
+> following warning in net/mac80211/scan.c triggered:
 
-> On Tue, 14 Sep 2010, tip-bot for Thomas Gleixner wrote:
->> x86: hpet: Work around hardware stupidity
->
-> After my brain recovered from yesterdays exposure with the x86 timer
-> horror, I came up with a different solution for this problem, which
-> avoids the readback of the compare register completely. It works
-> nicely on my affected ATI system, but needs some exposure to the other
-> machines.
->
-> Comments ?
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=18692
+for your bug report, please add your address to the CC list in there, thanks!
 
-Works for me. (I still have boot problems, but these seem to be
-NFS-related: -ESTALE from an apparently random subset of my mount points
-at initial mount time. Restarting rpc.mountd on the server fixes
-it. This is with nfs-utils 1.2.2, but I see it right up to 60abb98, that
-being the most recent version I tested. This doesn't happen if the
-client is running 2.6.34.x, as far as I can tell. It also doesn't happen
-with all my 2.6.35.x clients. Sigh. I hate bugs like this.)
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
