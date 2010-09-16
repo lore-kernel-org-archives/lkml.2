@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093Ab0IPDaP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 23:30:15 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:34343 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751748Ab0IPDaN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 23:30:13 -0400
-Date: Thu, 16 Sep 2010 13:30:05 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namhyung Kim <namhyung@gmail.com>
-Subject: linux-next: build warning after merge of the block tree
-Message-Id: <20100916133005.56baad7e.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1752995Ab0IPDpR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 23:45:17 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:60654 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1752386Ab0IPDpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 23:45:15 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19jtUE2R89jXarxjR1kIaNXYZHzElaoG4F+YI4DF7
+	lWbBeka9bvWoCw
+Subject: Re: 2.6.32.y stable kernel regression with taskset
+From: Mike Galbraith <efault@gmx.de>
+To: Yinghai Lu <yinghai.lu@oracle.com>
+Cc: Greg KH <gregkh@suse.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        John Wright <john.wright@hp.com>
+In-Reply-To: <4C9114A6.6040500@oracle.com>
+References: <4C9114A6.6040500@oracle.com>
+Content-Type: text/plain
+Date: Thu, 16 Sep 2010 05:45:12 +0200
+Message-Id: <1284608712.7403.10.camel@marge.simson.net>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__16_Sep_2010_13_30_05_+1000_sBzu4CN3R9s/K__Z"
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__16_Sep_2010_13_30_05_+1000_sBzu4CN3R9s/K__Z
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2010-09-15 at 11:47 -0700, Yinghai Lu wrote:
+> found problem with cpuscaling test.
+> 
+> Under 2.6.32.21   Userspace gov  
+> min freq load test time is nearly the same as max freq load test time around  ~16 seconds
+> 
+> under 2.6.18-194
+> min freq load test time is ~40 seconds
+> max freq load test time	  is ~ 17 seconds
+> 
+> the test is 
+> 1. set governor for one cpu to userspace
+> 2. set freq to min for that cpu
+> 3. using taskset to put load test only on that cpu, and get the time for load test.
+> 
+> so that mean taskset did not put load test on cpu that we want. and other cpu still have ondemand governor and load test get done much faster
+> 
+> git bisect report:
+> 
+> c6fc81afa2d7ef2f775e48672693d8a0a8a7325d is the first bad commit
+> commit c6fc81afa2d7ef2f775e48672693d8a0a8a7325d
+> Author: John Wright <john.wright@hp.com>
+> Date:   Tue Apr 13 16:55:37 2010 -0600
+> 
+>     sched: Fix a race between ttwu() and migrate_task()
 
-Hi Jens,
+Known issue.  There's a sched series for 32-stable in the pipeline.
 
-After merging the block tree, today's linux-next build (powerpc
-ppc64_defconfig) produced this warning:
+	-Mike
 
-drivers/scsi/sg.c: In function 'sg_start_req':
-drivers/scsi/sg.c:1660: warning: passing argument 2 of 'blk_rq_aligned' mak=
-es integer from pointer without a cast
-include/linux/blkdev.h:1045: note: expected 'long unsigned int' but argumen=
-t is of type 'void *'
-
-Introduced by commit 144177991ca624841ddbd1e7edff958fc0f6d1fe ("block:
-fix an address space warning in blk-map.c").
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__16_Sep_2010_13_30_05_+1000_sBzu4CN3R9s/K__Z
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMkY89AAoJEDMEi1NhKgbsQpgIAI+WlfLXjOhAy5KXkIoTeyI7
-/cZTYRyqHHwgg0+UO3tcnKnNoNYQR8Lz1rPwV9uLgPEcJIDpnMaAixzT8iUYEJ2i
-wYeU4ewsjLIN+xwDVH3XKJkIO6z54b/ZeRHZJnAc1PGFfKyqq4rh0ooxNJbCDxUf
-GAm+2oV4PtdcrmHOrUy74pRK2eSD8fD1OnApFFUT8XynaIDnVUwh5zcT9L1A9ZPq
-df0+exfh2ttBOhNQrXIRSHbD7R8rv2gI5ZUfhPRHMAtfF81rd7FO51lLB9XbWXEo
-+3fQXKOEb8IvOrQ2rcyTB00iPcwhaB9sIkT7P/JQ81CG15zXy1ah2caGuS3ecwo=
-=DfEM
------END PGP SIGNATURE-----
-
---Signature=_Thu__16_Sep_2010_13_30_05_+1000_sBzu4CN3R9s/K__Z--
