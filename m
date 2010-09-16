@@ -1,87 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754918Ab0IPPSn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 11:18:43 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:49046 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754396Ab0IPPSl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 11:18:41 -0400
-Date: Thu, 16 Sep 2010 16:18:28 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 8/8] writeback: Do not sleep on the congestion queue if
-	there are no congested BDIs or if significant congestion is not
-	being encountered in the current zone
-Message-ID: <20100916151827.GA11405@csn.ul.ie>
-References: <1284553671-31574-1-git-send-email-mel@csn.ul.ie> <1284553671-31574-9-git-send-email-mel@csn.ul.ie> <20100916081338.GB16115@barrios-desktop> <20100916091824.GB15709@csn.ul.ie> <20100916141147.GC16115@barrios-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100916141147.GC16115@barrios-desktop>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1755164Ab0IPPTd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 11:19:33 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:39991 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754798Ab0IPPTb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 11:19:31 -0400
+Date: Thu, 16 Sep 2010 17:19:21 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, lm-sensors@lm-sensors.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] hwmon: (lm95241) Replace rate sysfs attribute with
+ update_interval
+Message-ID: <20100916171921.0410aad7@hyperion.delvare>
+In-Reply-To: <1284602835-7605-3-git-send-email-guenter.roeck@ericsson.com>
+References: <1284602835-7605-1-git-send-email-guenter.roeck@ericsson.com>
+	<1284602835-7605-3-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > <snip>
-> > > 
-> > > >  			      struct scan_control *sc)
-> > > >  {
-> > > > +	enum bdi_queue_status ret = QUEUEWRITE_DENIED;
-> > > > +
-> > > >  	if (current->flags & PF_SWAPWRITE)
-> > > > -		return 1;
-> > > > +		return QUEUEWRITE_ALLOWED;
-> > > >  	if (!bdi_write_congested(bdi))
-> > > > -		return 1;
-> > > > +		return QUEUEWRITE_ALLOWED;
-> > > > +	else
-> > > > +		ret = QUEUEWRITE_CONGESTED;
-> > > >  	if (bdi == current->backing_dev_info)
-> > > > -		return 1;
-> > > > +		return QUEUEWRITE_ALLOWED;
-> > > >  
-> > > >  	/* lumpy reclaim for hugepage often need a lot of write */
-> > > >  	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
-> > > > -		return 1;
-> > > > -	return 0;
-> > > > +		return QUEUEWRITE_ALLOWED;
-> > > > +	return ret;
-> > > >  }
-> > > 
-> > > The function can't return QUEUEXXX_DENIED.
-> > > It can affect disable_lumpy_reclaim. 
-> > > 
-> > 
-> > Yes, but that change was made in "vmscan: Narrow the scenarios lumpy
-> > reclaim uses synchrounous reclaim". Maybe I am misunderstanding your
-> > objection.
+On Wed, 15 Sep 2010 19:07:15 -0700, Guenter Roeck wrote:
+> update_interval is the matching attribute defined in the hwmon sysfs ABI.
+> Use it.
 > 
-> I means current may_write_to_queue never returns QUEUEWRITE_DENIED.
-> What's the role of it?
-> 
+> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 
-As of now, little point because QUEUEWRITE_CONGESTED implies denied. I was allowing
-the possibility of distinguishing between these cases in the future depending
-on what happened with wait_iff_congested(). I will drop it for simplicity
-and reintroduce it when or if there is a distinction between
-denied and congested.
+Applied, thanks.
 
-> In addition, we don't need disable_lumpy_reclaim_mode() in pageout.
-> That's because both PAGE_KEEP and PAGE_KEEP_CONGESTED go to keep_locked
-> and calls disable_lumpy_reclaim_mode at last. 
-> 
-
-True, good spot.
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Jean Delvare
