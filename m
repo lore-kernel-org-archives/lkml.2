@@ -1,56 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755887Ab0IPRtc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 13:49:32 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44812 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755822Ab0IPRta (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 13:49:30 -0400
+	id S1755875Ab0IPRsy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 13:48:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56519 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755630Ab0IPRsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 13:48:51 -0400
+Date: Thu, 16 Sep 2010 19:44:33 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, oss-security@lists.openwall.com,
+        Solar Designer <solar@openwall.com>,
+        Kees Cook <kees.cook@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Neil Horman <nhorman@tuxdriver.com>, linux-fsdevel@vger.kernel.org,
+        pageexec@freemail.hu, Brad Spengler <spender@grsecurity.net>,
+        Eugene Teo <eugene@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 4/4] oom: don't ignore rss in nascent mm
+Message-ID: <20100916174433.GA4842@redhat.com>
+References: <20100916144930.3BAE.A69D9226@jp.fujitsu.com> <20100916145710.3BBA.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1009161209240.22849@router.home>
-References: <1284490101-2362-1-git-send-email-penberg@kernel.org>
- <1284490101-2362-2-git-send-email-penberg@kernel.org> <alpine.DEB.2.00.1009141243290.1470@chino.kir.corp.google.com>
- <AANLkTinj2P_QbdgdLS3BweSMDzhQH5g4p2B3SqS=CNYc@mail.gmail.com>
- <alpine.DEB.2.00.1009141320090.7123@chino.kir.corp.google.com>
- <4C8FE263.5070101@kernel.org> <alpine.DEB.2.00.1009141646350.26982@chino.kir.corp.google.com>
- <1097CAA8-8234-4FE2-BAA1-9C7D9FA01CEC@mit.edu> <alpine.DEB.2.00.1009151322370.29425@chino.kir.corp.google.com>
- <20100915222509.GE3730@thunk.org> <alpine.DEB.2.00.1009151537080.15256@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1009161209240.22849@router.home>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 16 Sep 2010 10:49:01 -0700
-Message-ID: <AANLkTinPEWHmPsjyfJ-nez9yCdHKgCU3oVhNo0gdMpj6@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] SLUB: Mark merged slab caches in /proc/slabinfo
-To: Christoph Lameter <cl@linux.com>
-Cc: David Rientjes <rientjes@google.com>, "Ted Ts'o" <tytso@mit.edu>,
-        Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100916145710.3BBA.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 10:39 AM, Christoph Lameter <cl@linux.com> wrote:
+On 09/16, KOSAKI Motohiro wrote:
 >
-> The main point of merging slabs is to reduce memory footprint and
-> avoid the overhead of managing more slab caches. Performance is a side
-> effect that may come about due to a reduced cache footprint if multiple
-> caches that are mapped to the same merged cache are used in the same
-> context.
+> ChangeLog
+>  o since v1
+>    - Always use thread group leader's ->in_exec_mm.
 
-The thing is, if we were to be able to separate the _accounting_ from
-the allocation, we'd get the best of both worlds.
+Confused ;)
 
-Maybe slub could have separate 'struct kmem_cache' structures for each
-slab, and not merge at that level, but then have a merged _allocator_.
-We already have a level of indirection there due to the whole per-cpu
-front-end, so maybe it wouldn't even cause any extra pointer chasing.
+> +static unsigned long oom_rss_swap_usage(struct task_struct *p)
+> +{
+> +	struct task_struct *t = p;
+> +	struct task_struct *leader = p->group_leader;
+> +	unsigned long points = 0;
+> +
+> +	do {
+> +		task_lock(t);
+> +		if (t->mm) {
+> +			points += get_mm_rss(t->mm);
+> +			points += get_mm_counter(t->mm, MM_SWAPENTS);
+> +			task_unlock(t);
+> +			break;
+> +		}
+> +		task_unlock(t);
+> +	} while_each_thread(p, t);
+> +
+> +	/*
+> +	 * If the process is in execve() processing, we have to concern
+> +	 * about both old and new mm.
+> +	 */
+> +	task_lock(leader);
+> +	if (leader->in_exec_mm) {
+> +		points += get_mm_rss(leader->in_exec_mm);
+> +		points += get_mm_counter(leader->in_exec_mm, MM_SWAPENTS);
+> +	}
+> +	task_unlock(leader);
+> +
+> +	return points;
+> +}
 
-That would allow slabtop etc to show the number of actual allocations
-at the granularity that we want (ie you'd see who is the real user),
-but still then use the same slab pages and avoid the slab
-fragmentation.
+This patch relies on fact that we can't race with de_thread() (and btw
+the change in de_thread() looks bogus). Then why ->in_exec_mm lives in
+task_struct ?
 
-How painful would it be to try to re-organize things like this?
-Impossible? Very hard? Or just "need to think about it a bit"?
+To me, this looks a bit strange. I think we should either do not use
+->group_leader to hold ->in_exec_mm like your previous patch did, or
+move ->in_exec_mm into signal_struct. The previous 3/4 ensures that
+only one thread can set ->in_exec_mm.
 
-                                    Linus
+And I don't think oom_rss_swap_usage() should replace find_lock_task_mm()
+in oom_badness(), I mean something like this:
+
+	static unsigned long oom_rss_swap_usage(struct mm_struct *mm)
+	{
+		return get_mm_rss(mm) + get_mm_counter(mm, MM_SWAPENTS);
+	}
+
+	unsigned int oom_badness(struct task_struct *p, ...)
+	{
+		int points = 0;
+
+		if (unlikely(p->signal->in_exec_mm)) {
+			task_lock(p->group_leader);
+			if (p->signal->in_exec_mm)
+				points = oom_rss_swap_usage(p->signal->in_exec_mm);
+			task_unlock(p->group_leader);
+		}
+
+		p = find_lock_task_mm(p);
+		if (!p)
+			return points;
+
+		...
+	}
+
+but this is the matter of taste.
+
+What do you think?
+
+Oleg.
+
