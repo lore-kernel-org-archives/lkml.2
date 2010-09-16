@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721Ab0IPGxb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 02:53:31 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:60736 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752683Ab0IPGx3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 02:53:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=aH3jvQ7TWUYHQrF56eZOIogCPEzmEcFkGaO4hDNYvSYcMibBRWHDAB4bp5RR/V2fN5
-         FqGvbzUvgNAMfPoCnBY0djv7CGSUGK7M/AO+cytxV8BFASs/Z7ISscuxstwlx7fikgmG
-         dpunTggtwMEcahpqbNbX1F8zs1K8vl2DhcZWk=
-Date: Thu, 16 Sep 2010 10:53:24 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, Don Zickus <dzickus@redhat.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>
-Subject: Re: [PATCH] perf, x86: catch spurious interrupts after disabling
-	counters
-Message-ID: <20100916065324.GA6470@lenovo>
-References: <20100912095202.GF13563@erda.amd.com> <20100913143713.GK13563@erda.amd.com> <20100914174132.GN13563@erda.amd.com> <20100915162034.GO13563@erda.amd.com> <20100915164610.GA5959@lenovo> <AANLkTim5knbg8GdUAYyx_i5WQUwnez8tHkU1SfiJJ+L7@mail.gmail.com> <20100915170222.GB5959@lenovo> <20100915172805.GR13563@erda.amd.com> <20100915174012.GC5959@lenovo> <20100915221041.GT13563@erda.amd.com>
+	id S1753853Ab0IPGyx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 02:54:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45956 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752331Ab0IPGyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 02:54:52 -0400
+Date: Thu, 16 Sep 2010 12:24:39 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: linux-next: manual merge of the bkl-llseek tree with the rr tree
+Message-ID: <20100916065438.GE2429@amit-laptop.redhat.com>
+References: <20100915132646.4aef58f8.sfr@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100915221041.GT13563@erda.amd.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100915132646.4aef58f8.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 12:10:41AM +0200, Robert Richter wrote:
-> On 15.09.10 13:40:12, Cyrill Gorcunov wrote:
-> > Yeah, already noted from your previous email. Perhaps we might
-> > do a bit simplier approach then -- in nmi handler were we mark
-> > "next nmi" we could take into account not "one next" nmi but
-> > sum of handled counters minus one being just handled (of course
-> > cleaning this counter if new "non spurious" nmi came in), can't
-> > say I like this approach but just a thought.
+On (Wed) Sep 15 2010 [13:26:46], Stephen Rothwell wrote:
+> Hi Arnd,
 > 
-> If we disable a counter, it might still trigger an interrupt which we
-> cannot detect. Thus, if a running counter is deactivated, we must
-> count it as handled in the nmi handler.
+> Today's linux-next merge of the bkl-llseek tree got a conflict in
+> drivers/char/virtio_console.c between commit
+> a0e1acd65fa6c2da3b039a67ac30cc3b73466c37 ("virtio: console: Send SIGIO to
+> processes that request it for host events") from the rr tree and commit
+> 7f09912dd2169ca9ce56c5e3428c7b4c5e92e727 ("llseek: automatically
+> add .llseek fop") from the bkl-llseek tree.
 > 
-> Working with a sum is not possible, because a disabled counter may or
-> *may not* trigger an interrupt. We cannot predict the number of
-> counters that will be handled.
-> 
-> Dealing with the "next nmi" is also not handy here. Spurious nmis are
-> caused then stopping a counter. Since this is done outside the nmi
-> handler, we would then start touching the "next nmi" also outside the
-> handler. This might be more complex because we then have to deal with
-> locking or atomic access. We shouldn't do that.
-> 
-> -Robert
->
+> Just context changes.  I fixed it up (see below) and can carry the fix as
+> necessary.
 
-OK, I see what you mean Robert. Btw, when you reorder cpu_active_mask access
-and wrmsr did you try also additional read after write of msr? ie like
+Thanks, this looks correct.
 
-	wrmsr
-	barrier() // just to be sure gcc would not reorder it
-	rdmsr
-	clear cpu_active_mask
+Arnd, the device is supposed to be non-seekable so I'll add a
+nonseekable_open() to the open() call.
 
-wonders if it did the trick
+So I guess the llseek operation should ne no_llseek instead of
+noop_llseek.  Will you change that in your patchset?  Should I do that
+in the patch I'll queue up?
 
-	-- Cyrill
+> diff --cc drivers/char/virtio_console.c
+> index f7adfd3,524907b..0000000
+> --- a/drivers/char/virtio_console.c
+> +++ b/drivers/char/virtio_console.c
+> @@@ -824,7 -728,7 +824,8 @@@ static const struct file_operations por
+>   	.write = port_fops_write,
+>   	.poll  = port_fops_poll,
+>   	.release = port_fops_release,
+>  +	.fasync = port_fops_fasync,
+> + 	.llseek = noop_llseek,/* read and write both use no f_pos */
+>   };
+>   
+>   /*
+
+		Amit
