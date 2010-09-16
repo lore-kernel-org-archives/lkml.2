@@ -1,47 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753786Ab0IPGFm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 02:05:42 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:42505 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752083Ab0IPGFl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 02:05:41 -0400
-Date: Thu, 16 Sep 2010 09:05:20 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: "Balbi, Felipe" <balbi@ti.com>, Ming Lei <tom.leiming@gmail.com>,
-        "greg@kroah.com" <greg@kroah.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        "Gadiyar, Anand" <gadiyar@ti.com>, Mike Frysinger <vapier@gentoo.org>
-Subject: Re: [Discussion] USB: musb-gadget: how to fix ZLP issue in
- musb_g_tx
-Message-ID: <20100916060520.GA3393@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <AANLkTinPVUBNJoOR496KgSy2TT0f6i1f5xEKVhKod2R=@mail.gmail.com>
- <20100915105641.GO3393@legolas.emea.dhcp.ti.com>
- <AANLkTi=gYSsxSHqAur+isj_UinVLC-YWkdmi5j_vkSUV@mail.gmail.com>
- <20100915110745.GP3393@legolas.emea.dhcp.ti.com>
- <4C90C5B7.7050103@ru.mvista.com>
+	id S1753296Ab0IPGMy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 02:12:54 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:42263 "EHLO
+	mx01.colomx.prod.int.phx2.redhat.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751240Ab0IPGMx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 02:12:53 -0400
+Date: Thu, 16 Sep 2010 02:12:45 -0400 (EDT)
+From: Jason Wang <jasowang@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <1191794336.2270351284617565643.JavaMail.root@zmail05.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <20100914131552.GA1937@redhat.com>
+Subject: Re: [PATCH] vhost-net: fix range checking in mrg bufs case
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <4C90C5B7.7050103@ru.mvista.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.5.72]
+X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.21_GA_3150.RHEL4_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Tested-by: Jason Wang <jasowang@redhat.com>
 
-On Wed, Sep 15, 2010 at 08:10:15AM -0500, Sergei Shtylyov wrote:
->    I don't see what to rework. The last short packet should still satisfy
->(request->actual == request->length) condition, no?
+----- "Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-of course not, it's short not zero. so the last short packet can be
-anything from 1 to 511 bytes.
-
--- 
-balbi
+> In mergeable buffer case, we use headcount, log_num
+> and seg as indexes in same-size arrays, and
+> we know that headcount <= seg and
+> log_num equals either 0 or seg.
+> 
+> Therefore, the right thing to do is range-check seg,
+> not headcount as we do now: these will be different
+> if guest chains s/g descriptors (this does not
+> happen now, but we can not trust the guest).
+> 
+> Long term, we should add BUG_ON checks to verify
+> two other indexes are what we think they should be.
+> 
+> Reported-by: Jason Wang <jasowang@redhat.com>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+> 
+> Dave, I'll queue this on my tree, no need to bother.
+> 
+>  drivers/vhost/net.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index 6400cd5..f095de6 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -245,7 +245,7 @@ static int get_rx_bufs(struct vhost_virtqueue
+> *vq,
+>  	int r, nlogs = 0;
+>  
+>  	while (datalen > 0) {
+> -		if (unlikely(headcount >= VHOST_NET_MAX_SG)) {
+> +		if (unlikely(seg >= VHOST_NET_MAX_SG)) {
+>  			r = -ENOBUFS;
+>  			goto err;
+>  		}
+> -- 
+> 1.7.3.rc1.5.ge5969
+> _______________________________________________
+> Virtualization mailing list
+> Virtualization@lists.linux-foundation.org
+> https://lists.linux-foundation.org/mailman/listinfo/virtualization
