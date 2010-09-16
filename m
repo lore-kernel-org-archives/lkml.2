@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756641Ab0IPWPK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 18:15:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33461 "EHLO mx2.suse.de"
+	id S1756694Ab0IPWPZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 18:15:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8946 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756514Ab0IPWPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 18:15:07 -0400
-Date: Fri, 17 Sep 2010 00:14:16 +0200
-From: Jan Kara <jack@suse.cz>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org, tj@kernel.org
-Subject: Re: [PATCH] block: Fix race during disk initialization
-Message-ID: <20100916221416.GA28059@quack.suse.cz>
-References: <1284661217-22783-1-git-send-email-jack@suse.cz>
- <4C926303.9090206@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C926303.9090206@kernel.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756514Ab0IPWPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 18:15:22 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Christoph Hellwig <hch@infradead.org>,
+        Andreas Gruenbacher <agruen@suse.de>, Nick Piggin <npiggin@kernel.dk>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Valerie Aurora <vaurora@redhat.com>
+Subject: [PATCH 29/34] union-mount: Return files found in lower layers in __union_lookup()
+Date: Thu, 16 Sep 2010 15:12:20 -0700
+Message-Id: <1284675145-4391-30-git-send-email-vaurora@redhat.com>
+In-Reply-To: <1284675145-4391-1-git-send-email-vaurora@redhat.com>
+References: <1284675145-4391-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 16-09-10 20:33:39, Jens Axboe wrote:
-> On 2010-09-16 20:20, Jan Kara wrote:
-> > When a new disk is being discovered, add_disk() first ties the bdev to gendisk
-> > (via register_disk()->blkdev_get()) and only after that calls
-> > bdi_register_bdev(). Because register_disk() also creates disk's kobject, it
-> > can happen that userspace manages to open and modify the device's data (or
-> > inode) before its BDI is properly initialized leading to a warning in
-> > __mark_inode_dirty().
-> > 
-> > Fix the problem by registering BDI early enough.
-> > 
-> > This patch addresses https://bugzilla.kernel.org/show_bug.cgi?id=16312
-> > 
-> > Reported-by: Larry Finger <Larry.Finger@lwfinger.net>
-> > Signed-off-by: Jan Kara <jack@suse.cz>
-> > ---
-> >  block/genhd.c |    6 ++++--
-> >  1 files changed, 4 insertions(+), 2 deletions(-)
-> > 
-> >  Jens, would you consider merging this fix? The kernel boots with it but
-> > I'm not too familiar with this area of kernel so there can be something subtle
-> > I've missed. So please review. Thanks.
-> 
-> It looks sane. How about we add it to the .37 lineup and mark it for
-> stable backport?
-  OK with me. Thanks.
+If we find a file during union lookup, don't look in any lower layers
+and replace the topmost path with the file's path.
 
-								Honza
+Signed-off-by: Valerie Aurora <vaurora@redhat.com>
+---
+ fs/namei.c |   23 +++++++++++++++++++++++
+ 1 files changed, 23 insertions(+), 0 deletions(-)
+
+diff --git a/fs/namei.c b/fs/namei.c
+index f6ad8b3..c6696d8 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -798,11 +798,34 @@ static int __lookup_union(struct nameidata *nd, struct qstr *name,
+ 			continue;
+ 		}
+ 
++		/*
++		 * Files block everything below them.  Special case:
++		 * If we find a file below a directory (which makes no
++		 * sense), just ignore the file and return the
++		 * directory above it.
++		 */
++		if (!S_ISDIR(lower.dentry->d_inode->i_mode)) {
++			if (topmost->dentry->d_inode &&
++			    S_ISDIR(topmost->dentry->d_inode->i_mode))
++				goto out_lookup_done;
++			goto out_found_file;
++		}
++
+ 		/* XXX - do nothing, more in later patches */
+ 		path_put(&lower);
+ 	}
+ 	return 0;
+ 
++out_found_file:
++	/*
++	 * Swap out the positive lower dentry with the negative upper
++	 * dentry for this file.  Note that the matching mntput() is done
++	 * in link_path_walk().
++	 */
++	dput(topmost->dentry);
++	*topmost = lower;
++	return 0;
++
+ out_lookup_done:
+ 	path_put(&lower);
+ 	return 0;
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.6.3.3
+
