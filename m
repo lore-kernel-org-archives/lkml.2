@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553Ab0IPRz2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 13:55:28 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33493 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753907Ab0IPRz1 (ORCPT
+	id S1755605Ab0IPR4L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 13:56:11 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:57375 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754202Ab0IPR4K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 13:55:27 -0400
+	Thu, 16 Sep 2010 13:56:10 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 04/12] BKL: Remove BKL from autofs4
+Date: Thu, 16 Sep 2010 19:55:48 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-next-20100910+; KDE/4.5.1; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Ian Kent <raven@themaw.net>,
+        autofs@linux.kernel.org
+References: <1284659185-8942-1-git-send-email-arnd@arndb.de> <1284659185-8942-5-git-send-email-arnd@arndb.de> <4C9258C1.3060906@zytor.com>
+In-Reply-To: <4C9258C1.3060906@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <1284659227.2275.595.camel@laptop>
-References: <20100915104855.41de3ebf@lilo> <AANLkTimNsDxeyZL4GVaH4L7YGO-EoRyCMHDtMPWU37hN@mail.gmail.com>
- <1284654451.2275.579.camel@laptop> <AANLkTinihPeUueKhEqUuraW2hcf3FFHjm26RieKQZi0d@mail.gmail.com>
- <1284657194.2275.585.camel@laptop> <AANLkTikquj_2DE4UhTFAoDxL+1g=_BocCQJ5agrwC4NU@mail.gmail.com>
- <1284659227.2275.595.camel@laptop>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 16 Sep 2010 10:54:29 -0700
-Message-ID: <AANLkTi=hFydeqk_ENGmqEqwqduSeN2gpjMr+VpcN38Xx@mail.gmail.com>
-Subject: Re: [RFC][PATCH] Cross Memory Attach
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Christopher Yeoh <cyeoh@au1.ibm.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009161955.48854.arnd@arndb.de>
+X-Provags-ID: V02:K0:QDHS6XA4OaEqXWW0FwfQ65ZYcBJyUqeFyDM6okFymPE
+ VvqPoJpiW28OcbOfXKHdn0BaUDTYLiIlaRKImr8f2HOmsn0/oS
+ WFhIv8miKqF6BpuOhUqDIimANQ9flnTflh6JdmAjk6xwEulspe
+ mrUkAU12ZWzR7hOcU/0Rm/1FXCO8NPxDi9aFhC2eaLeKirC2l9
+ tskHSfjlw0rFh9mMbIGLg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 10:47 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, 2010-09-16 at 10:34 -0700, Linus Torvalds wrote:
->>
->> Of course, these days I would seriously suggest against trying to
->> optimize the kmap() case. It only matters on crap hardware these days.
->> Anybody running HIGHMEM in 2010 and thinks that it makes sense
->> deserves the pain the get. We should not complicate the kernel further
->> for it, and sane architectures will have a no-op kmap().
->
-> OK, fully agreed. Someone ought to tell ARM though :-)
+On Thursday 16 September 2010 19:49:53 H. Peter Anvin wrote:
+> On 09/16/2010 10:46 AM, Arnd Bergmann wrote:
+> > autofs4 uses the BKL only to guard its ioctl operations.
+> > This can be trivially converted to use a mutex, as we have
+> > done with most device drivers before.
+> > 
+> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> > Cc: "H. Peter Anvin" <hpa@zytor.com>
+> > ---
+> >  fs/autofs4/root.c |   12 +++++++-----
+> >  1 files changed, 7 insertions(+), 5 deletions(-)
+> 
+> You may want to Cc: the maintainer, Ian Kent.
 
-You know what? I don't care. If the fact that ARM is messing up means
-that they will never be able to do well in the micro-server space,
-that's _their_ problem.
+Ah, sorry about this. I looked at the wrong MAINTAINERS entry.
 
-I fought HIGHMEM tooth and nail when it appeared originally. I lost,
-because we really didn't have any choice. But there is no way I'm
-going to say "oh, HIGHMEM still makes sense in 2010 because the ARM
-guys are now making all the same mistakes Intel did in 1992". Because
-these days we _do_ have a choice.
+I also forgot to Cc you about autofs3, adding more to the confusion. ;)
 
-And all the rumors are that there will be a 64-bit ARM too. So their
-PAE mess will be out before, but nobody sane should really consider it
-a primary issue. It will work, but it will work suboptimally.  That's
-what you get when you have bad hardware design.
+Do you think the time has come to move autofs3 to drivers/staging
+as we deprecate the BKL?
 
-                       Linus
+	Arnd
