@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876Ab0IPWRX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 18:17:23 -0400
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:57527 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756772Ab0IPWRV (ORCPT
+	id S1756836Ab0IPWR0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 18:17:26 -0400
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:51887 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756826Ab0IPWRY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 18:17:21 -0400
+	Thu, 16 Sep 2010 18:17:24 -0400
 From: Alexander Shishkin <virtuoso@slind.org>
 To: linux-kernel@vger.kernel.org
 Cc: John Stultz <johnstul@us.ibm.com>,
@@ -16,15 +16,15 @@ Cc: John Stultz <johnstul@us.ibm.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
         Alexander Shishkin <virtuoso@slind.org>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Robin Getz <robin.getz@analog.com>, Philippe Gerum <rpm@xenomai.org>,
-        "David S. Miller" <davem@davemloft.net>, Yi Li <yi.li@analog.com>,
-        uclinux-dist-devel@blackfin.uclinux.org
-Subject: [PATCH 5/7] wire up sys_time_change_notify() on blackfin
-Date: Fri, 17 Sep 2010 01:10:47 +0300
-Message-Id: <1284675049-23479-6-git-send-email-virtuoso@slind.org>
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        David Howells <dhowells@redhat.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Christoph Hellwig <hch@lst.de>, linux-s390@vger.kernel.org
+Subject: [PATCH 7/7] wire up sys_time_change_notify() on s390
+Date: Fri, 17 Sep 2010 01:10:49 +0300
+Message-Id: <1284675049-23479-8-git-send-email-virtuoso@slind.org>
 X-Mailer: git-send-email 1.7.2.1.45.gb66c2
 In-Reply-To: <1284675049-23479-1-git-send-email-virtuoso@slind.org>
 References: <1284675049-23479-1-git-send-email-virtuoso@slind.org>
@@ -33,49 +33,60 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
-CC: Mike Frysinger <vapier@gentoo.org>
-CC: Alexander Shishkin <virtuoso@slind.org>
-CC: Arjan van de Ven <arjan@linux.intel.com>
-CC: Paul Mackerras <paulus@samba.org>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Robin Getz <robin.getz@analog.com>
-CC: Philippe Gerum <rpm@xenomai.org>
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Yi Li <yi.li@analog.com>
-CC: uclinux-dist-devel@blackfin.uclinux.org
+Acked-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+CC: Heiko Carstens <heiko.carstens@de.ibm.com>
+CC: linux390@de.ibm.com
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Jesper Nilsson <jesper.nilsson@axis.com>
+CC: David Howells <dhowells@redhat.com>
+CC: Christian Borntraeger <borntraeger@de.ibm.com>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Christoph Hellwig <hch@lst.de>
+CC: linux-s390@vger.kernel.org
 CC: linux-kernel@vger.kernel.org
 ---
- arch/blackfin/include/asm/unistd.h |    3 ++-
- arch/blackfin/mach-common/entry.S  |    1 +
- 2 files changed, 3 insertions(+), 1 deletions(-)
+ arch/s390/include/asm/unistd.h    |    3 ++-
+ arch/s390/kernel/compat_wrapper.S |    6 ++++++
+ arch/s390/kernel/syscalls.S       |    1 +
+ 3 files changed, 9 insertions(+), 1 deletions(-)
 
-diff --git a/arch/blackfin/include/asm/unistd.h b/arch/blackfin/include/asm/unistd.h
-index 14fcd25..e58cfaf 100644
---- a/arch/blackfin/include/asm/unistd.h
-+++ b/arch/blackfin/include/asm/unistd.h
-@@ -392,8 +392,9 @@
- #define __NR_fanotify_init	371
- #define __NR_fanotify_mark	372
- #define __NR_prlimit64		373
-+#define __NR_time_change_notify	374
+diff --git a/arch/s390/include/asm/unistd.h b/arch/s390/include/asm/unistd.h
+index 1049ef2..f815a2d 100644
+--- a/arch/s390/include/asm/unistd.h
++++ b/arch/s390/include/asm/unistd.h
+@@ -272,7 +272,8 @@
+ #define __NR_fanotify_init	332
+ #define __NR_fanotify_mark	333
+ #define __NR_prlimit64		334
+-#define NR_syscalls 335
++#define __NR_time_change_notify	335
++#define NR_syscalls 336
  
--#define __NR_syscall		374
-+#define __NR_syscall		375
- #define NR_syscalls		__NR_syscall
- 
- /* Old optional stuff no one actually uses */
-diff --git a/arch/blackfin/mach-common/entry.S b/arch/blackfin/mach-common/entry.S
-index af1bffa..2771e3b 100644
---- a/arch/blackfin/mach-common/entry.S
-+++ b/arch/blackfin/mach-common/entry.S
-@@ -1631,6 +1631,7 @@ ENTRY(_sys_call_table)
- 	.long _sys_fanotify_init
- 	.long _sys_fanotify_mark
- 	.long _sys_prlimit64
-+	.long _sys_time_change_notify
- 
- 	.rept NR_syscalls-(.-_sys_call_table)/4
- 	.long _sys_ni_syscall
+ /* 
+  * There are some system calls that are not present on 64 bit, some
+diff --git a/arch/s390/kernel/compat_wrapper.S b/arch/s390/kernel/compat_wrapper.S
+index 8e60fb2..4570418 100644
+--- a/arch/s390/kernel/compat_wrapper.S
++++ b/arch/s390/kernel/compat_wrapper.S
+@@ -1877,3 +1877,9 @@ sys_prlimit64_wrapper:
+ 	llgtr	%r4,%r4			# const struct rlimit64 __user *
+ 	llgtr	%r5,%r5			# struct rlimit64 __user *
+ 	jg	sys_prlimit64		# branch to system call
++
++	.globl sys_time_change_notify_wrapper
++sys_time_change_notify_wrapper:
++	lgfr	%r2,%r2			# int
++	llgfr	%r3,%r3			# unsigned int
++	jg	sys_time_change_notify	# branch to system call
+diff --git a/arch/s390/kernel/syscalls.S b/arch/s390/kernel/syscalls.S
+index a8fee1b..50ca1a7 100644
+--- a/arch/s390/kernel/syscalls.S
++++ b/arch/s390/kernel/syscalls.S
+@@ -343,3 +343,4 @@ SYSCALL(sys_perf_event_open,sys_perf_event_open,sys_perf_event_open_wrapper)
+ SYSCALL(sys_fanotify_init,sys_fanotify_init,sys_fanotify_init_wrapper)
+ SYSCALL(sys_fanotify_mark,sys_fanotify_mark,sys_fanotify_mark_wrapper)
+ SYSCALL(sys_prlimit64,sys_prlimit64,sys_prlimit64_wrapper)
++SYSCALL(sys_time_change_notify,sys_time_change_notify,sys_time_change_notify_wrapper) /* 335 */
 -- 
 1.7.2.1.45.gb66c2
 
