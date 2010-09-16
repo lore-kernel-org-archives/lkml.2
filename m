@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752329Ab0IPH1k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 03:27:40 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:47482 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750727Ab0IPH1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 03:27:39 -0400
-Date: Thu, 16 Sep 2010 17:27:32 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: linux-next: build failure after merge of the final tree (tip
- tree related)
-Message-Id: <20100916172732.ce21cd1b.sfr@canb.auug.org.au>
-In-Reply-To: <4C91C544.5050907@kernel.org>
-References: <20100914002932.850d02f3.sfr@canb.auug.org.au>
-	<20100916163218.e09be473.sfr@canb.auug.org.au>
-	<20100916063922.GA17596@elte.hu>
-	<20100916170939.22e38e4c.sfr@canb.auug.org.au>
-	<4C91C544.5050907@kernel.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1752269Ab0IPHdQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 03:33:16 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:54452 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813Ab0IPHdP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 03:33:15 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 16 Sep 2010 16:28:07 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: balbir@linux.vnet.ibm.com, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [PATCH][-mm] memcg : memory cgroup cpu hotplug support update.
+Message-Id: <20100916162807.d2ae50be.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100916161727.04a1f905.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100916144618.852b7e9a.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100916062159.GF22371@balbir.in.ibm.com>
+	<20100916152204.6c457936.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100916161727.04a1f905.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__16_Sep_2010_17_27_32_+1000_4fYV7em_/zyE5GWy"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__16_Sep_2010_17_27_32_+1000_4fYV7em_/zyE5GWy
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 16 Sep 2010 16:17:27 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-Hi Yinghai,
+> On Thu, 16 Sep 2010 15:22:04 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>  
+> > This naming is from mem_cgroup_walk_tree(). Now we have
+> > 
+> >   mem_cgroup_walk_tree();
+> >   mem_cgroup_walk_all();
+> > 
+> > Rename both ? But it should be in separated patch.
+> > 
+> 
+> Considering a bit ...but..
+> 
+> #define for_each_mem_cgroup(mem) \
+> 	for (mem = mem_cgroup_get_first(); \
+> 	     mem; \
+> 	     mem = mem_cgroup_get_next(mem);) \
+> 
+> seems to need some helper functions. I'll consider about this clean up
+> but it requires some amount of patch because css_get()/css_put()/rcu...etc..
+> are problematic.
 
-On Thu, 16 Sep 2010 00:20:36 -0700 Yinghai Lu <yinghai@kernel.org> wrote:
->
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
+Hmm...css_put() at break from loop is a problem...
 
-I did not write this patch ...
+Do you have anything good idea to handle "exit-from-loop" operation
+with dropping reference count ? I don't like "the caller must take care of"
+approach.
 
-> @@ -249,9 +249,8 @@ static void arm_memory_present(void)
->  static void arm_memory_present(void)
->  {
->  	struct memblock_region *reg;
-> -	int i;
-> =20
-> -	for_each_memblock(memory, reg) {
-> +	for_each_memblock(memory, reg)
->  		memory_present(0, memblock_region_base_pfn(reg),
->  			       memblock_region_end_pfn(reg));
->  }
+Thanks,
+-Kame
 
-That looks good (but I have not tested it).  Thanks
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__16_Sep_2010_17_27_32_+1000_4fYV7em_/zyE5GWy
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMkcbkAAoJEDMEi1NhKgbsEHoH/A8//9pRCoeXtc12WKOUaOFv
-818QxPw0tiIX3n4yzYg2KcFSdjyttZDHyWQDynW3On3DS/9qqxUnGQxKjDIHOMgE
-WOh5gIZhbCIHynTrzoQuDvt4v05n8zoRgIXk6Uy5Ihl+mVrAWJ5mlqrgO+uQR8B9
-wrfLYZytPnIEdu3P/a79n/XTdui8wetaIfE05XAa6laSrXdyqZMUktLyhM2/l3DN
-8V/G+BkbjFGepcfZmIuQRffZmROFG5TdgNk4w9dxEMC8ZaC9N6KH/7Ac73GSkRzM
-esKmtevSBKOgkaAvLFriM4gbb3oxepVKE+bpOD5KwQfdyuzX3mEAX82Sw7wdj8w=
-=CKY5
------END PGP SIGNATURE-----
-
---Signature=_Thu__16_Sep_2010_17_27_32_+1000_4fYV7em_/zyE5GWy--
