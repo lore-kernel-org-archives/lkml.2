@@ -1,72 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296Ab0IPGMy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 02:12:54 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:42263 "EHLO
-	mx01.colomx.prod.int.phx2.redhat.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751240Ab0IPGMx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 02:12:53 -0400
-Date: Thu, 16 Sep 2010 02:12:45 -0400 (EDT)
-From: Jason Wang <jasowang@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <1191794336.2270351284617565643.JavaMail.root@zmail05.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <20100914131552.GA1937@redhat.com>
-Subject: Re: [PATCH] vhost-net: fix range checking in mrg bufs case
+	id S1753564Ab0IPGPV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 02:15:21 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:40889 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751549Ab0IPGPT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 02:15:19 -0400
+Date: Wed, 15 Sep 2010 23:15:14 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Kulikov Vasiliy <segooon@gmail.com>, kernel-janitors@vger.kernel.org,
+        Neil Brown <neilb@suse.de>, Jens Axboe <jaxboe@fusionio.com>,
+        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] md: do not use ++ in rcu_dereference() argument
+Message-ID: <20100916061514.GD2463@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1283711539-7123-1-git-send-email-segooon@gmail.com>
+ <20100910034603.GA2612@linux.vnet.ibm.com>
+ <20100914003351.GA8300@linux.vnet.ibm.com>
+ <201009151428.32348.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.5.72]
-X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.21_GA_3150.RHEL4_64)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201009151428.32348.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tested-by: Jason Wang <jasowang@redhat.com>
+On Wed, Sep 15, 2010 at 02:28:32PM +0200, Arnd Bergmann wrote:
+> On Tuesday 14 September 2010, Paul E. McKenney wrote:
+> >    The current version of the __rcu_access_pointer(),
+> > __rcu_dereference_check(), and __rcu_dereference_protected() macros
+> > evaluate their "p" argument three times, not counting typeof()s.  This is
+> > bad news if that argument contains a side effect.  This commit therefore
+> > evaluates this argument only once in normal kernel builds.  However, the
+> > straightforward approach defeats sparse's RCU-pointer checking, so this
+> > commit also adds a KBUILD_CHECKSRC symbol defined when running a checker. 
+> > Therefore, when this new KBUILD_CHECKSRC symbol is defined, the additional
+> > pair of evaluations of the "p" argument are performed in order to permit
+> > sparse to detect misuse of RCU-protected pointers.
+> 
+> In general, I don't like the idea much because that means we're passing
+> semantically different code into sparse and gcc. Of course if my other
+> patch doesn't work, we might need to do it after all.
 
------ "Michael S. Tsirkin" <mst@redhat.com> wrote:
+Agreed in principle, but please see below.
 
-> In mergeable buffer case, we use headcount, log_num
-> and seg as indexes in same-size arrays, and
-> we know that headcount <= seg and
-> log_num equals either 0 or seg.
+> > diff --git a/Makefile b/Makefile
+> > index f3bdff8..1c4984d 100644
+> > --- a/Makefile
+> > +++ b/Makefile
+> > @@ -330,7 +330,7 @@ PERL                = perl
+> >  CHECK          = sparse
+> >  
+> >  CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
+> > -                 -Wbitwise -Wno-return-void $(CF)
+> > +                 -Wbitwise -Wno-return-void -DKBUILD_CHECKSRC $(CF)
+> >  CFLAGS_MODULE   =
+> >  AFLAGS_MODULE   =
+> >  LDFLAGS_MODULE  =
 > 
-> Therefore, the right thing to do is range-check seg,
-> not headcount as we do now: these will be different
-> if guest chains s/g descriptors (this does not
-> happen now, but we can not trust the guest).
+> sparse already define __CHECKER__ itself, no need to define another symbol.
+
+Good point, will fix if we are in fact sticking with this solution.
+
+> > +#ifdef KBUILD_CHECKSRC
+> > +#define rcu_dereference_sparse(p, space) \
+> > +       ((void)(((typeof(*p) space *)p) == p))
+> > +#else /* #ifdef KBUILD_CHECKSRC */
+> > +#define rcu_dereference_sparse(p, space)
+> > +#endif /* #else #ifdef KBUILD_CHECKSRC */
 > 
-> Long term, we should add BUG_ON checks to verify
-> two other indexes are what we think they should be.
+> Did you see a problem with my macro?
 > 
-> Reported-by: Jason Wang <jasowang@redhat.com>
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
+> #define rcu_dereference_sparse(p, space) \
+>        ((void)(((typeof(*p) space *)NULL) == ((typeof(p))NULL)))
+
+I don't see a specific problem with it.  However, I am not sure that
+it really does what we want, and you indicated some doubts when you
+posted it.  So I opted for something that very obviously will work.
+If you can assure me that sparse will interpret the typeof()s and
+space casts properly, I have no problem going with your version.
+
+> I think this should warn in all the cases we want it to, but have no side-effects.
+
+I still note a tone of uncertainty in the above sentence.  ;-)
+
+> >  #define __rcu_access_pointer(p, space) \
+> >         ({ \
+> >                 typeof(*p) *_________p1 = (typeof(*p)*__force )ACCESS_ONCE(p); \
+> > -               (void) (((typeof (*p) space *)p) == p); \
+> > +               rcu_dereference_sparse(p, space); \
+> >                 ((typeof(*p) __force __kernel *)(_________p1)); \
+> >         })
+> >  #define __rcu_dereference_check(p, c, space) \
+> >         ({ \
+> >                 typeof(*p) *_________p1 = (typeof(*p)*__force )ACCESS_ONCE(p); \
+> >                 rcu_lockdep_assert(c); \
+> > -               (void) (((typeof (*p) space *)p) == p); \
+> > +               rcu_dereference_sparse(p, space); \
+> >                 smp_read_barrier_depends(); \
+> >                 ((typeof(*p) __force __kernel *)(_________p1)); \
+> >         })
+> >  #define __rcu_dereference_protected(p, c, space) \
+> >         ({ \
+> >                 rcu_lockdep_assert(c); \
+> > -               (void) (((typeof (*p) space *)p) == p); \
+> > +               rcu_dereference_sparse(p, space); \
+> >                 ((typeof(*p) __force __kernel *)(p)); \
+> >         })
+> >  
 > 
-> Dave, I'll queue this on my tree, no need to bother.
+> This part might be useful in any case, to better document what the cast and
+> compare does, and to prevent the three users from diverging.
+
+And it would probably make sense to pull the rcu_dereference_sparse()
+into the macro, for that matter.
+
+> >diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
+> >index 439ddab..adb09cb 100644
+> >--- a/kernel/rcutorture.c
+> >+++ b/kernel/rcutorture.c
 > 
->  drivers/vhost/net.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> index 6400cd5..f095de6 100644
-> --- a/drivers/vhost/net.c
-> +++ b/drivers/vhost/net.c
-> @@ -245,7 +245,7 @@ static int get_rx_bufs(struct vhost_virtqueue
-> *vq,
->  	int r, nlogs = 0;
->  
->  	while (datalen > 0) {
-> -		if (unlikely(headcount >= VHOST_NET_MAX_SG)) {
-> +		if (unlikely(seg >= VHOST_NET_MAX_SG)) {
->  			r = -ENOBUFS;
->  			goto err;
->  		}
-> -- 
-> 1.7.3.rc1.5.ge5969
-> _______________________________________________
-> Virtualization mailing list
-> Virtualization@lists.linux-foundation.org
-> https://lists.linux-foundation.org/mailman/listinfo/virtualization
+> This didn't seem to belong here.
+
+Yep, I really should put this in a separate commit.
+
+							Thanx, Paul
