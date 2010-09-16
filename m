@@ -1,169 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404Ab0IPLrW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 07:47:22 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:55112 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753295Ab0IPLrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 07:47:21 -0400
-Message-ID: <4C9203C7.4050705@cn.fujitsu.com>
-Date: Thu, 16 Sep 2010 19:47:19 +0800
-From: Miao Xie <miaox@cn.fujitsu.com>
-Reply-To: miaox@cn.fujitsu.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        "Theodore Ts'o" <tytso@mit.edu>, Chris Mason <chris.mason@oracle.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH] x86_64/lib: improve the performance of memmove
-References: <56957.91.60.149.91.1284619705.squirrel@www.firstfloor.org>	<4C91C44F.40700@cn.fujitsu.com>	<20100916104008.3e1e34b2@basil.nowhere.org>	<4C91E37C.2060309@cn.fujitsu.com> <20100916121141.6eb95a22@basil.nowhere.org> <4C91F5DF.9060001@cn.fujitsu.com>
-In-Reply-To: <4C91F5DF.9060001@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754492Ab0IPLz4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 07:55:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27087 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753461Ab0IPLzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 07:55:55 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <E1Ovt6F-0005CS-RU@pomaz-ex.szeredi.hu>
+References: <E1Ovt6F-0005CS-RU@pomaz-ex.szeredi.hu>
+To: Miklos Szeredi <miklos@szeredi.hu>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: memory barrier question
+Date: Thu, 16 Sep 2010 12:55:36 +0100
+Message-ID: <3777.1284638136@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Sep 2010 18:47:59 +0800
-, Miao Xie wrote:
-> On Thu, 16 Sep 2010 12:11:41 +0200, Andi Kleen wrote:
->> On Thu, 16 Sep 2010 17:29:32 +0800
->> Miao Xie<miaox@cn.fujitsu.com> wrote:
->>
->>
->> Ok was a very broken patch. Sorry should have really done some more
->> work on it. Anyways hopefully the corrected version is good for
->> testing.
->>
->> -Andi
+Miklos Szeredi <miklos@szeredi.hu> wrote:
 
-The test result is following:
-Len	Src Unalign	Dest Unalign	Patch applied	Without Patch	
----	-----------	------------	-------------	-------------
-8	0		0		0s 421117us	0s 70203us
-8	0		3		0s 252622us	0s 42114us
-8	0		7		0s 252663us	0s 42111us
-8	3		0		0s 252666us	0s 42114us
-8	3		3		0s 252667us	0s 42113us
-8	3		7		0s 252667us	0s 42112us
-32	0		0		0s 252672us	0s 114301us
-32	0		3		0s 252676us	0s 114306us
-32	0		7		0s 252663us	0s 114300us
-32	3		0		0s 252661us	0s 114305us
-32	3		3		0s 252663us	0s 114300us
-32	3		7		0s 252668us	0s 114304us
-64	0		0		0s 252672us	0s 236119us
-64	0		3		0s 264671us	0s 236120us
-64	0		7		0s 264702us	0s 236127us
-64	3		0		0s 270701us	0s 236128us
-64	3		3		0s 287236us	0s 236809us
-64	3		7		0s 287257us	0s 236123us
+> Consider the following example:
+> 
+> Start:
+> 	p = NULL;
+> 	x = 0;
+> 
+> CPU1:
+> 	atomic_inc(&x);
+> 	p = &x;
+> 
+> CPU2:
+> 	if (p)
+> 		z = atomic_read(p);
+> 
+> Is it possible to end up with z == 0?
 
-According to the above result, old version is better than the new one when the
-memory area is small.
+I think so.  I'm not sure that you can assume that CPU1 does its two
+'operations' in the same order.  You can guarantee that the read of x,
+increment, and write of x will be done in an order, and that no one else will
+see an intermediate state, but you can't guarantee that CPU2 will see x
+changed before p is changed.
 
-Len	Src Unalign	Dest Unalign	Patch applied	Without Patch	
----	-----------	------------	-------------	-------------
-256	0		0		0s 281886us	0s 813660us
-256	0		3		0s 332169us	0s 813645us
-256	0		7		0s 342961us	0s 813639us
-256	3		0		0s 305305us	0s 813634us
-256	3		3		0s 386939us	0s 813638us
-256	3		7		0s 370511us	0s 814335us
-512	0		0		0s 310716us	1s 584677us
-512	0		3		0s 456420us	1s 583353us
-512	0		7		0s 468236us	1s 583248us
-512	3		0		0s 493987us	1s 583659us
-512	3		3		0s 588041us	1s 584294us
-512	3		7		0s 605489us	1s 583650us
-1024	0		0		0s 406971us	3s 123644us
-1024	0		3		0s 748419us	3s 126514us
-1024	0		7		0s 756153us	3s 127178us
-1024	3		0		0s 854681us	3s 130013us
-1024	3		3		1s 46828us	3s 140190us
-1024	3		7		1s 35886us	3s 135508us
+In Documentation/memory-barriers.txt, it says:
 
-the new version is better when the memory area is large.
+	The following also do _not_ imply memory barriers, and so may require
+	explicit memory barriers under some circumstances
+	(smp_mb__before_atomic_dec() for instance):
 
-Thanks!
-Miao
+		atomic_add();
+		atomic_sub();
+		atomic_inc();
+		atomic_dec();
 
->>
->
-> title: x86_64/lib: improve the performance of memmove
->
-> Implement the 64bit memmmove backwards case using string instructions
->
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
-> ---
-> arch/x86/lib/memcpy_64.S | 29 +++++++++++++++++++++++++++++
-> arch/x86/lib/memmove_64.c | 8 ++++----
-> 2 files changed, 33 insertions(+), 4 deletions(-)
->
-> diff --git a/arch/x86/lib/memcpy_64.S b/arch/x86/lib/memcpy_64.S
-> index bcbcd1e..9de5e9a 100644
-> --- a/arch/x86/lib/memcpy_64.S
-> +++ b/arch/x86/lib/memcpy_64.S
-> @@ -141,3 +141,32 @@ ENDPROC(__memcpy)
-> .byte .Lmemcpy_e - .Lmemcpy_c
-> .byte .Lmemcpy_e - .Lmemcpy_c
-> .previous
-> +
-> +/*
-> + * Copy memory backwards (for memmove)
-> + * rdi target
-> + * rsi source
-> + * rdx count
-> + */
-> +
-> +ENTRY(memcpy_backwards)
-> + CFI_STARTPROC
-> + std
-> + movq %rdi, %rax
-> + movl %edx, %ecx
-> + addq %rdx, %rdi
-> + addq %rdx, %rsi
-> + leaq -8(%rdi), %rdi
-> + leaq -8(%rsi), %rsi
-> + shrl $3, %ecx
-> + andl $7, %edx
-> + rep movsq
-> + addq $7, %rdi
-> + addq $7, %rsi
-> + movl %edx, %ecx
-> + rep movsb
-> + cld
-> + ret
-> + CFI_ENDPROC
-> +ENDPROC(memcpy_backwards)
-> +
-> diff --git a/arch/x86/lib/memmove_64.c b/arch/x86/lib/memmove_64.c
-> index 0a33909..6774fd8 100644
-> --- a/arch/x86/lib/memmove_64.c
-> +++ b/arch/x86/lib/memmove_64.c
-> @@ -5,16 +5,16 @@
-> #include <linux/string.h>
-> #include <linux/module.h>
->
-> +extern void * asmlinkage memcpy_backwards(void *dst, const void *src,
-> + size_t count);
-> +
-> #undef memmove
-> void *memmove(void *dest, const void *src, size_t count)
-> {
-> if (dest < src) {
-> return memcpy(dest, src, count);
-> } else {
-> - char *p = dest + count;
-> - const char *s = src + count;
-> - while (count--)
-> - *--p = *--s;
-> + return memcpy_backwards(dest, src, count);
-> }
-> return dest;
-> }
+so you need _two_ memory barriers, e.g.:
 
+	CPU1:
+		atomic_inc(&x);
+		smp_mb__after_atomic_inc()
+		p = &x;
+
+	CPU2:
+		q = p;
+		smp_rmb();
+		if (q)
+			z = atomic_read(q);
+
+Note that atomic_inc() may imply a suitable memory barrier on some arches, and
+so has special variant barrier functions of its own.
+
+> What if there's a lock/unlock before setting "p"?
+
+If there's a lock+unlock between, then this counts as a full memory barrier:
+
+	CPU1:
+		atomic_inc(&x);
+		spin_lock(&foo);
+		spin_unlock(&foo);
+		p = &x;
+
+but you still need the matching smp_rmb() on CPU2.
+
+> What if there's a write barrier before setting "p"?
+
+That's fine, but you still need the matching smp_rmb() on CPU2.
+
+David
