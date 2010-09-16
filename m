@@ -1,93 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339Ab0IPXWO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 19:22:14 -0400
-Received: from smtp104.sbc.mail.re3.yahoo.com ([66.196.96.80]:47652 "HELO
-	smtp104.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752337Ab0IPXWN (ORCPT
+	id S1754493Ab0IPXXS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 19:23:18 -0400
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:3789 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752542Ab0IPXXR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 19:22:13 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: b4LehfYVM1nW.yyZ1vLYq4WrQX30.Xfkj6Jg.hHUQ0DLywV
- QmUwdP5OJXDSIEcrtgxuvv6A.1zBvc_9Eny8j4e8dKzJcJAXsEFexwbj2DT9
- YJBL7UXMT6DS50WPXS0PKn2yAgDbdDwB06lpTCwqTJFVfSD3eOjFsxRdyyz_
- W0VzGIyuE7w1D_9BxhTsvBM7yzXJ2yLCtKMiPHiUaGf7p2ypdNSthj2FVipG
- v_6K30w7AGdPHWOsgQFnKuiQL_U8S2Q296BTB0k9IPryBt1cFO9mYP6n73_a
- Tq2Pb9L7b14cuf6Uqo1.96QpUx3pQP2ard4CmIhZ_FjKnDL7ZE2pPDM1wZ6l
- dHJBDCxrStonCBTW2Z7e2LXSrzqe0.IoYaxJbNeBL1_7iub.RnRxPhfCg33u
- sCdHKI8vLJ9.Gov3_B7826yOgWlJvlorBTAWV0QJTmZVoxZ3YddI-
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [PATCH 0/8] Drop host_lock around LLD SHT->queuecommand()
-	caller
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-scsi <linux-scsi@vger.kernel.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        James Smart <james.smart@emulex.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
-        Christoph Hellwig <hch@lst.de>, Jeff Garzik <jeff@garzik.org>
-In-Reply-To: <1284678103.13344.111.camel@haakon2.linux-iscsi.org>
-References: <1284676521-10737-1-git-send-email-nab@linux-iscsi.org>
-	 <1284678103.13344.111.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain
-Date: Thu, 16 Sep 2010 16:18:02 -0700
-Message-Id: <1284679082.13344.117.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	Thu, 16 Sep 2010 19:23:17 -0400
+From: Dmitry Torokhov <dtor@vmware.com>
+Organization: VMware, Inc.
+To: Chetan Loke <chetanloke@gmail.com>
+Subject: Re: [PATCH] VMware Balloon: rename module
+Date: Thu, 16 Sep 2010 16:23:14 -0700
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4+; KDE/4.4.5; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+References: <AANLkTikWmwVvWzRMK7yvtyqYbd4OeeR1nLsP1OAxbnJg@mail.gmail.com>
+In-Reply-To: <AANLkTikWmwVvWzRMK7yvtyqYbd4OeeR1nLsP1OAxbnJg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201009161623.14722.dtor@vmware.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-16 at 16:01 -0700, Nicholas A. Bellinger wrote:
-> On Thu, 2010-09-16 at 15:35 -0700, Nicholas A. Bellinger wrote:
-> > From: Nicholas Bellinger <nab@linux-iscsi.org>
+Hi Chetan,
+
+On Thursday, September 16, 2010 04:05:28 pm Chetan Loke wrote:
+> > From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> > owner@vger.kernel.org] On Behalf Of Dmitry Torokhov
+> > Sent: September 16, 2010 6:01 PM
+> > To: linux-kernel@vger.kernel.org
+> > Cc: pv-drivers@vmware.com; Andrew Morton
+> > Subject: [PATCH] VMware Balloon: rename module
 > > 
-> > Greetings all,
 > > 
-> > This series contains the first round of a whole-sale conversion for droping
-> > struct Scsi_Host->host_lock around struct Scsi_Host->queuecommand() within
-> > scsi_dispatch_cmd().  So with this first patch the only part of scsi_dispatch_cmd()
-> > that is protected by host_lock is scsi_cmd_get_serial)_.
 > > 
-> > The patches #2 -> #8 converts libiscsi, libsas, lpfc, qla4xxx, qla2xxx,
-> > TCM_Loop, and libfc code to drop their own SHT->queuecommand() internal
-> > host_lock unlock() + lock() optimization that certain high performance libs
-> > and LLDs have adopted over the years.  The changes involved here are really
-> > quite straight forward, but please note that none of this code has been tested
-> > with actual hardware yet, and is intended for generating comments for the relivent
-> > SCSI LLD driver maintainers and other interested folks.
-> > 
-> > There are probably still be more LLDs which use this optimization, so please
-> > let me know if there is another piece of SHT->queuecommand() caller code that
-> > does this legacy optimization and needs to be updated.  I will be sure to
-> > CC the right driver maintainers and CC linux-scsi as I come across any more
-> > conversions.
+> > In an effort to minimize customer confusion we want to unify naming
+> > convention for VMware-provided kernel modules. This change renames
+> > the balloon driver from vmware_ballon to vmw_balloon.
 > 
-> Hi Guys,
+> What will vmtools name its vmware_balloon driver to? vmw_balloon, correct?
+
+That is the plan.
+
 > 
-> drivers/scsi/fnic needs the conversion as well..  Here is that patch;
+> > +	vmballoon_wq = create_freezeable_workqueue("vmmemctl");
 > 
-> http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=commitdiff;h=3c886b2ab6faccbe2803094deb7a9647199e5118
+> minor change - vmware_vmmemctl?
+
+I do not think this needs to be changed; it does not have to match
+the module name, plus, given Tejun's changes, it will all be generic
+[worker/u:X] soon anyway.
+
 > 
+> I might've seen a debugfs entry too.
 
-Ok, after doing some more digging the BusLogic and the ever important
-libata SCSI glue code use the legacy host_lock unlock() -> do_work ->
-lock() optimization as well.  Here are those patches (jgarzik CC'ed):
+I still plan on keeping it as "vmmemctl" so we do not have to change
+scripts too often. The move in module names prompted by complaints
+that name changes when user requests tools to clobber distribution-
+provided modules.
 
-buslogic: Remove host_lock unlock() + lock() from BusLogic_QueueCommand()
-http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=commitdiff;h=b465dfeb8e6950faa9c074681c72ca0a6c21276c
+> 
+> 
+> side note - is it possible to extend the balloon driver to get a
+> notification on other events? like CPUs, NICs? Just an event is what
+> I'm looking for. No action need to be taken in the guest.
 
-libata: Remove host_lock unlock() + lock() from ata_scsi_queuecmd()
-http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=commitdiff;h=29f2ded8876910d7eb84e4d270188de6f8a8c8ee
+No, balloon driver should be limited to ballooning. I think the data
+you are looking for can be retrieved via GuestSDK (and I believe we
+are adding balloon_target to the available data).
 
-Thanks!
+Thanks.
 
---nab
-
+-- 
+Dmitry
