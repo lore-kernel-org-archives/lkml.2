@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897Ab0IPIX2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 04:23:28 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:43910 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752802Ab0IPIX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 04:23:26 -0400
-Date: Thu, 16 Sep 2010 09:23:12 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 7/8] writeback: Do not sleep on the congestion queue if
-	there are no congested BDIs
-Message-ID: <20100916082312.GA15709@csn.ul.ie>
-References: <1284553671-31574-1-git-send-email-mel@csn.ul.ie> <1284553671-31574-8-git-send-email-mel@csn.ul.ie> <20100916075949.GA16115@barrios-desktop>
+	id S1751768Ab0IPI3N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 04:29:13 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:53184 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413Ab0IPI3L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 04:29:11 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Subject: Re: [PATCH] Remove BKL from fs/locks.c
+Date: Thu, 16 Sep 2010 10:28:56 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-next-20100910+; KDE/4.5.1; x86_64; ; )
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Matthew Wilcox <willy@linux.intel.com>, Christoph Hellwig <hch@lst.de>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, John Kacur <jkacur@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+References: <201009142206.54130.arnd@arndb.de> <1284501356.10782.139.camel@heimdal.trondhjem.org> <20100915204203.GA27837@fieldses.org>
+In-Reply-To: <20100915204203.GA27837@fieldses.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100916075949.GA16115@barrios-desktop>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009161028.56837.arnd@arndb.de>
+X-Provags-ID: V02:K0:f7GBQqkzPHgeV/03NNYTsH6p70pjrpRJIoe8oZeEolR
+ T51hMkfTuVlqvAqaJQSd05OolcL2kaW1Mry6RJjbeuXU2QAUnI
+ kvme+O43UI8tf4AMKLlU8gi/9WHHnZtgspQj2KOkqtPj9ILxrw
+ 8We29c6Wjrn/gaFEAQTYZPhk4u+ahIyLk2nB6BJQgoKocm81G4
+ 4JlO/SSqoWObilIrOtEtQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 04:59:49PM +0900, Minchan Kim wrote:
-> On Wed, Sep 15, 2010 at 01:27:50PM +0100, Mel Gorman wrote:
-> > If congestion_wait() is called with no BDI congested, the caller will sleep
-> > for the full timeout and this may be an unnecessary sleep. This patch adds
-> > a wait_iff_congested() that checks congestion and only sleeps if a BDI is
-> > congested else, it calls cond_resched() to ensure the caller is not hogging
-> > the CPU longer than its quota but otherwise will not sleep.
-> > 
-> > This is aimed at reducing some of the major desktop stalls reported during
-> > IO. For example, while kswapd is operating, it calls congestion_wait()
-> > but it could just have been reclaiming clean page cache pages with no
-> > congestion. Without this patch, it would sleep for a full timeout but after
-> > this patch, it'll just call schedule() if it has been on the CPU too long.
-> > Similar logic applies to direct reclaimers that are not making enough
-> > progress.
+On Wednesday 15 September 2010 22:42:03 J. Bruce Fields wrote:
+> Looking over the server code....  The only code I see under the BKL is:
 > 
-> I confused due to kswapd you mentioned.
-> This patch affects only direct reclaim.
-> Please, complete the description. 
-> 
+>         - a few lease callbacks in fs/nfsd/nfs4state.c, none of which
+>           sleep at this point, so all should be fine under a spinlock or
+>           whatever we want.
+>         - fs/nfsd/nfs4state.c:check_for_locks(), which explicitly takes
+>           the BKL itself.  All it does, though, is walk the lock list
+>           for a given file and check whether any of them have a given
+>           owner.  It would be trivial to put it under some other lock
+>           and/or move it to locks.c.
 
-My bad, when the description was first written, both were affected and I
-neglected to correct the description. I'm still debating with myself as
-to whether the kswapd congestion_wait() should be wait_iff_congested()
-or not.
+Ok. In the version of the patch I sent out yesterday, I came to the
+same conclusion and put both of these under lock_flocks(), which
+is still the BKL but can be converted to a spinlock after we have
+sorted out ceph and lockd. If you and others are fine with this patch,
+I'll add it to my bkl/config series.
 
-Thanks
+Note that walking the i_flock list needs to use lock_flocks()
+(or the BKL), not a private lock. I guess that's what you are saying
+anyway, just making sure.
 
-> "This patch affects direct reclaimer to reduce stall"
-> Otherwise, looks good to me. 
-> 
-> > 
-> > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-> 
-> -- 
-> Kind regards,
-> Minchan Kim
-> 
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+	Arnd
