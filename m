@@ -1,95 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756277Ab0IPVox (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 17:44:53 -0400
-Received: from anguilla.debian.or.at ([86.59.21.37]:45698 "EHLO
-	anguilla.debian.or.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750986Ab0IPVow (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 17:44:52 -0400
-X-Greylist: delayed 526 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Sep 2010 17:44:52 EDT
-Date: Thu, 16 Sep 2010 23:36:03 +0200
-From: Peter Palfrader <peter@palfrader.org>
-To: stable@kernel.org
-Cc: Tejun Heo <tj@kernel.org>, Huang Shijie <shijie8@gmail.com>,
-        akpm@linux-foundation.org, linux-mm@kvack.org,
-        lkml <linux-kernel@vger.kernel.org>, stable@kernel.org
-Subject: breaks 2.6.32.21+ (was: [PATCH] percpu: fix a memory leak in
-	pcpu_extend_area_map())
-Message-ID: <20100916213603.GW6447@anguilla.noreply.org>
-Mail-Followup-To: Peter Palfrader <peter@palfrader.org>, stable@kernel.org,
-	Tejun Heo <tj@kernel.org>, Huang Shijie <shijie8@gmail.com>,
-	akpm@linux-foundation.org, linux-mm@kvack.org,
-	lkml <linux-kernel@vger.kernel.org>
-References: <1281261197-8816-1-git-send-email-shijie8@gmail.com> <4C5EA651.7080009@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <4C5EA651.7080009@kernel.org>
-X-PGP: 1024D/94C09C7F 5B00 C96D 5D54 AEE1 206B  AF84 DE7A AF6E 94C0 9C7F
-X-Request-PGP: http://www.palfrader.org/keys/94C09C7F.asc
-X-Accept-Language: de, en
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756319Ab0IPVwr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 17:52:47 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:35250 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754843Ab0IPVwq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 17:52:46 -0400
+Date: Fri, 17 Sep 2010 07:52:42 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Daniel Walker <dwalker@fifo99.com>
+Cc: Sundar R IYER <sundar.iyer@stericsson.com>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Russell King <rmk@arm.linux.org.uk>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: FW: next build fails
+Message-Id: <20100917075242.e0bc4b54.sfr@canb.auug.org.au>
+In-Reply-To: <1284656407.2411.5.camel@c-dwalke-linux.qualcomm.com>
+References: <33A307AF30D7BF4F811B1568FE7A9B18043784FF99@EXDCVYMBSTM006.EQ1STM.local>
+	<20100916164442.df749cc1.sfr@canb.auug.org.au>
+	<1284656407.2411.5.camel@c-dwalke-linux.qualcomm.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+Hi Daniel,
 
-The patch quoted below seems to have made it into Greg's stable-queue
-for 2.6.32.
+On Thu, 16 Sep 2010 10:00:07 -0700 Daniel Walker <dwalker@fifo99.com> wrote:
+>
+> __v7_ca9mp_proc_info should just duplicate __v7_proc_info (the one below
+> it) ..
 
-I tried building a kernel based on 2.6.32.21 plus all the patches
-currently in that queue.  The resulting kernel unfortunately didn't
-boot for me, neither as a 32 nor as 64 bit x86 kernel.
+Do you mean this:
 
-I have put up a screenshot of a trace at
-http://asteria.noreply.org/~weasel/volatile/2010-09-16-SrLl9JHtDTg/trace-64bit.png
-since the kernel fortunately also died in kvm - unfortunately only the
-last 60 lines are easily available.  If you need more I could try to set
-up some serial console thing to catch more.
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 17 Sep 2010 07:48:25 +1000
+Subject: [PATCH] ARM: fix build failure for legacy PMD_FLAGS
 
-Bisecting led to this patch and reverting "percpu: fix a memory leak in
-pcpu_extend_area_map()" makes the kernel boot for me again.
+[Updated with advice from Daniel Walker <dwalker@fifo99.com>: sfr]
 
-> From 206c53730b8b1707becca7a868ea8d14ebee24d2 Mon Sep 17 00:00:00 2001
-> From: Huang Shijie <shijie8@gmail.com>
-> Date: Sun, 8 Aug 2010 14:39:07 +0200
-> 
-> The original code did not free the old map.  This patch fixes it.
-> 
-> tj: use @old as memcpy source instead of @chunk->map, and indentation
->     and description update
-> 
-> Signed-off-by: Huang Shijie <shijie8@gmail.com>
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> ---
-> Patch applied to percpu#for-linus w/ some updates.  Thanks a lot for
-> catching this.
-> 
->  mm/percpu.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/percpu.c b/mm/percpu.c
-> index e61dc2c..a1830d8 100644
-> --- a/mm/percpu.c
-> +++ b/mm/percpu.c
-> @@ -393,7 +393,9 @@ static int pcpu_extend_area_map(struct pcpu_chunk *chunk, int new_alloc)
->  		goto out_unlock;
-> 
->  	old_size = chunk->map_alloc * sizeof(chunk->map[0]);
-> -	memcpy(new, chunk->map, old_size);
-> +	old = chunk->map;
-> +
-> +	memcpy(new, old, old_size);
-> 
->  	chunk->map_alloc = new_alloc;
->  	chunk->map = new;
+Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+Signed-off-by: Sundar Iyer <sundar.iyer@stericsson.com>
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ arch/arm/mm/proc-v7.S |   10 ++++++++--
+ 1 files changed, 8 insertions(+), 2 deletions(-)
 
-Cheers,
-Peter
+diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
+index 820f6ba..fc8828b 100644
+--- a/arch/arm/mm/proc-v7.S
++++ b/arch/arm/mm/proc-v7.S
+@@ -334,10 +334,16 @@ cpu_elf_name:
+ __v7_ca9mp_proc_info:
+ 	.long	0x410fc090		@ Required ID value
+ 	.long	0xff0ffff0		@ Mask for ID
+-	.long   PMD_TYPE_SECT | \
++	ALT_SMP(.long \
++		PMD_TYPE_SECT | \
+ 		PMD_SECT_AP_WRITE | \
+ 		PMD_SECT_AP_READ | \
+-		PMD_FLAGS
++		PMD_FLAGS_SMP)
++	ALT_UP(.long \
++		PMD_TYPE_SECT | \
++		PMD_SECT_AP_WRITE | \
++		PMD_SECT_AP_READ | \
++		PMD_FLAGS_UP)
+ 	.long   PMD_TYPE_SECT | \
+ 		PMD_SECT_XN | \
+ 		PMD_SECT_AP_WRITE | \
 -- 
-                           |  .''`.  ** Debian GNU/Linux **
-      Peter Palfrader      | : :' :      The  universal
- http://www.palfrader.org/ | `. `'      Operating System
-                           |   `-    http://www.debian.org/
+1.7.1
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
