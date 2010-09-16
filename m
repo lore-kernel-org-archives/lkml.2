@@ -1,46 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755737Ab0IPR7e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 13:59:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11661 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755485Ab0IPR7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 13:59:33 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1284653939.2275.578.camel@laptop>
-References: <1284653939.2275.578.camel@laptop> <E1Ovt6F-0005CS-RU@pomaz-ex.szeredi.hu> <3777.1284638136@redhat.com>
+	id S1755838Ab0IPSBO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 14:01:14 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34378 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755753Ab0IPSBN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 14:01:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <AANLkTi=hFydeqk_ENGmqEqwqduSeN2gpjMr+VpcN38Xx@mail.gmail.com>
+References: <20100915104855.41de3ebf@lilo> <AANLkTimNsDxeyZL4GVaH4L7YGO-EoRyCMHDtMPWU37hN@mail.gmail.com>
+ <1284654451.2275.579.camel@laptop> <AANLkTinihPeUueKhEqUuraW2hcf3FFHjm26RieKQZi0d@mail.gmail.com>
+ <1284657194.2275.585.camel@laptop> <AANLkTikquj_2DE4UhTFAoDxL+1g=_BocCQJ5agrwC4NU@mail.gmail.com>
+ <1284659227.2275.595.camel@laptop> <AANLkTi=hFydeqk_ENGmqEqwqduSeN2gpjMr+VpcN38Xx@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 16 Sep 2010 11:00:50 -0700
+Message-ID: <AANLkTikjV1Qos4R-84Msqdqiv408mknEWc2PAHtf8fRY@mail.gmail.com>
+Subject: Re: [RFC][PATCH] Cross Memory Attach
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: dhowells@redhat.com, Miklos Szeredi <miklos@szeredi.hu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: memory barrier question
-Date: Thu, 16 Sep 2010 18:59:14 +0100
-Message-ID: <18367.1284659954@redhat.com>
+Cc: Christopher Yeoh <cyeoh@au1.ibm.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> wrote:
+On Thu, Sep 16, 2010 at 10:54 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>   But there is no way I'm
+> going to say "oh, HIGHMEM still makes sense in 2010 because the ARM
+> guys are now making all the same mistakes Intel did in 1992".
 
-> Therefore:
-> 
->   A = 5
->   LOCK
-> 
->   UNLOCK
->   B = 6
-> 
-> May be observed as:
-> 
->    LOCK
->    B = 6
->    A = 5
->    UNLOCK
+Off by a couple of years. Intel did it wit the PPro, in 1995,
+actually. But it's still going to be 16 years later by the time ARM
+LPAE actually ships, I guess.
 
-Yeah, you're right.
-
-David
+                        Linus
