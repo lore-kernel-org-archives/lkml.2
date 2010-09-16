@@ -1,162 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257Ab0IPOGS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 10:06:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49228 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755134Ab0IPOGR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 10:06:17 -0400
-Date: Thu, 16 Sep 2010 16:06:15 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] kvm: enable irq injection from interrupt context
-Message-ID: <20100916140615.GJ3008@redhat.com>
-References: <20100916102047.GY3008@redhat.com>
- <20100916104455.GA22254@redhat.com>
- <20100916105403.GZ3008@redhat.com>
- <20100916105352.GB22254@redhat.com>
- <20100916111752.GA3008@redhat.com>
- <20100916121338.GA23779@redhat.com>
- <20100916123301.GE3008@redhat.com>
- <20100916125717.GA24284@redhat.com>
- <20100916131823.GH3008@redhat.com>
- <20100916135137.GB24850@redhat.com>
+	id S1755232Ab0IPOL7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 10:11:59 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46051 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754092Ab0IPOL6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 10:11:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=LGs33yhBYMHgJ3pJdmc5ouDxJQ0E4ZTsD2UlBZd9KyQRcJDkLduYgCMK+jQ1eanCJw
+         n8D63FocE1XLOu9yx4sNVpA+DI4ZC+JR0qDROYNuDnZZVqPBy5UWGg+Q5NMSjsiWMqs0
+         TNLjqKNyIRr6cjKIU5gXvcnHtyk3ariBD6p94=
+Date: Thu, 16 Sep 2010 23:11:47 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH 8/8] writeback: Do not sleep on the congestion queue if
+ there are no congested BDIs or if significant congestion is not being
+ encountered in the current zone
+Message-ID: <20100916141147.GC16115@barrios-desktop>
+References: <1284553671-31574-1-git-send-email-mel@csn.ul.ie>
+ <1284553671-31574-9-git-send-email-mel@csn.ul.ie>
+ <20100916081338.GB16115@barrios-desktop>
+ <20100916091824.GB15709@csn.ul.ie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100916135137.GB24850@redhat.com>
+In-Reply-To: <20100916091824.GB15709@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 03:51:37PM +0200, Michael S. Tsirkin wrote:
-> On Thu, Sep 16, 2010 at 03:18:23PM +0200, Gleb Natapov wrote:
-> > On Thu, Sep 16, 2010 at 02:57:17PM +0200, Michael S. Tsirkin wrote:
-> > > On Thu, Sep 16, 2010 at 02:33:01PM +0200, Gleb Natapov wrote:
-> > > > On Thu, Sep 16, 2010 at 02:13:38PM +0200, Michael S. Tsirkin wrote:
-> > > > > > > We haver two users: qemu does deasserts, vhost-net does asserts.
-> > > > > > Well this is broken. You want KVM to track level for you and this is
-> > > > > > wrong. KVM does this anyway because it can't relay on devise model
-> > > > > > to behave correctly [0], but in your case it is designed to behave
-> > > > > > incorrectly.
-> > > > > > 
-> > > > > > Interrupt type is a device property. PCI devices just happen to be level
-> > > > > > triggered according to PCI spec. What if you want to use vhost-net to
-> > > > > > implement network device which has active-low interrupt line? [1]
-> > > > > 
-> > > > > The polarity would have to be reversed in gsi (irq line can be shared,
-> > > > > all devices must be active high or low consistently).
-> > > > > 
-> > > > There are gsi dedicated to PCI. They can be shared only between PCI
-> > > > devices.
-> > > > 
-> > > > > > If you want to split parts that asserts irq and de-asserts it then we
-> > > > > > should have irqfd that tracks line status and knows interrupt line
-> > > > > > polarity.
-> > > > > 
-> > > > > Yes, it can know about polarity even though I think it's cleaner to do this
-> > > > > per gsi. But it can not track line status as line is shared with
-> > > > > other devices.
-> > > > It should track only device's line status.
-> > > 
-> > > There is no such thing as device's line status on real hardware, either.
-> > > Devices do not drive INT# high: they drive it low (all the time)
-> > > or do not drive it at all.
-> > Same thing, other naming. Device either drive it low (irq_set(1)) or
-> > not (irq_set(0)).
-> 
-> Well, if I drive it low any number of times it should hae no effect.
-> 
-There is no meaning of "driving low the line multiple times" on real HW.
-You either drive it low or not. We try to emulate this with individual
-"drive low/high" events in software.
-
-> > > 
-> > > Or consider express, the spec explicitly says:
-> > > "Note: Duplicate Assert_INTx/Deassert_INTx Messages have no effect, but
-> > >  are not errors."
-> > > 
-> > > > > 
-> > > > > > > Another application is out of process virtio (sandboxing!).
-> > > > > > It will still assert and de-assert irq at the same code, so it will be
-> > > > > > able to track irq line status.
-> > > > > > 
-> > > > > > > Again, pci stuff needs to stay in qemu.
-> > > > > > > 
-> > > > > > 
-> > > > > > Nothing to do with PCI whatsoever.
-> > > > > > 
-> > > > > > [0] most qemu devices behave incorrectly and trigger level irq more then
-> > > > > >     needed.
-> > > > > 
-> > > > > Which devices?
-> > > > Most of them. They just call update_irq_status() or something and
-> > > > re-assert interrupt regardless of what previous status was.
-> > > 
-> > > At least for PCI devices, these calls do nothing if status does not change.
-> > I am not sure what code are you locking at. e1000 device emulation
-> > doesn't check previous line status before calling qemu_set_irq().
-> 
-> Right. If you dig through useless levels of indirection, you will
-> see that each PCI device has 4 pin levels, when one of these
-> changes this makes it up level to the parent bus, and so on.
-Yes. Qemu PCI level does it right. Ideally device would not even invoke 
-this logic if interrupt status haven't changed.
-
-> 
-> > > 
-> > > > > pci core tracks line status and will never assert the same
-> > > > > line multiple times.
-> > > > That's good if pci core does this, but device shouldn't even try it.
-> > > 
-> > > I disagree. We don't want to duplicate a ton of code all over
-> > > the codebase.
-> > > 
-> > So abstract it into a function. It shouldn't be part of PCI emulation.
-> 
-> I don't know what you mean by this, send a patch and we can discuss?
-I don't care enough to send patch.  Just remember previous irq status
-and do not call qemu_set_irq() if it doesn't change. Three lines of
-code.
-
-> Note that when I patches PCI interrupt handling for compliance
-> I made it mimic hardware as closely as possible: devices
-> can send any # of assert/deassert messages, bus discards duplicates.
-> 
-Qemu PCI code is correct as far as I can see. Not all devices are connected
-via PCI and there is not need to go through couple of layer of
-indirection to figure out that nothing should be done.
-
-
-> > > > > 
-> > > > > > [1] this is how correct PCI device should behave but we override
-> > > > > >     polarity in ACPI, but now incorrect behaviour is deeply designed
-> > > > > >     into vhost-net.
-> > > > > 
-> > > > > Not really, vhost net signals an eventfd. What happens then is
-> > > > > up to kvm.
-> > > > > 
-> > > > That is what current broken design does and it works, but if you want to
-> > > > save unneeded calls into kvm fix design.
-> > > 
-> > > The interface seems clean enough: vhost handles virtio ring, qemu/kvm handle pci.
-> > > Making vhost aware of pci breaks this, I would not call that fixing the
-> > > design.
-> > > 
-> > Once again. Nothing to do with PCI, everything to do with device
-> > emulation. And I propose to abstract interrupt assertion part into
-> > irqfd, not into vhost.
+On Thu, Sep 16, 2010 at 10:18:24AM +0100, Mel Gorman wrote:
+> On Thu, Sep 16, 2010 at 05:13:38PM +0900, Minchan Kim wrote:
+> > On Wed, Sep 15, 2010 at 01:27:51PM +0100, Mel Gorman wrote:
+> > > If wait_iff_congested() is called with no BDI congested, the function simply
+> > > calls cond_resched(). In the event there is significant writeback happening
+> > > in the zone that is being reclaimed, this can be a poor decision as reclaim
+> > > would succeed once writeback was completed. Without any backoff logic,
+> > > younger clean pages can be reclaimed resulting in more reclaim overall and
+> > > poor performance.
 > > 
-> > --
-> > 			Gleb.
+> > I agree. 
+> > 
+> > > 
+> > > This patch tracks how many pages backed by a congested BDI were found during
+> > > scanning. If all the dirty pages encountered on a list isolated from the
+> > > LRU belong to a congested BDI, the zone is marked congested until the zone
+> > 
+> > I am not sure it works well. 
 > 
-> This could work. KVM would need to find all irqfd
-> objects mapped to gsi and notify them on deassert.
-> No idea how hard this is.
+> Check the competion times for the micro-mapped-file-stream benchmark in
+> the leader mail. Backing off like this is faster overall for some
+> workloads.
 > 
-What for? Device emulation should do de-assert.
+> > We just met the condition once but we backoff it until high watermark.
+> 
+> Reaching the high watermark is considered to be a relieving of pressure.
+> 
+> > (ex, 32 isolated dirty pages == 32 pages on congestioned bdi)
+> > First impression is rather _aggressive_.
+> > 
+> 
+> Yes, it is. I intended to start with something quite aggressive that is
+> close to existing behaviour and then experiment with alternatives.
 
---
-			Gleb.
+Agree. 
+
+> 
+> For example, I considered clearing zone congestion when but nr_bdi_congested
+> drops to 0. This would be less aggressive in terms of congestion waiting but
+> it is further from todays behaviour. I felt it would be best to introduce
+> wait_iff_congested() in one kernel cycle but wait to a later cycle to deviate
+> a lot from congestion_wait().
+
+Fair enough. 
+
+> 
+> > How about more checking?
+> > For example, if above pattern continues repeately above some threshold,
+> > we can regard "zone is congested" and then if the pattern isn't repeated 
+> > during some threshold, we can regard "zone isn't congested any more.".
+> > 
+> 
+> I also considered these options and got stuck at what the "some
+> threshold" is and how to record the history. Should it be recorded on a
+> per BDI basis for example? I think all these questions can be answered
+> but should be in a different cycle.
+> 
+> > > reaches the high watermark.  wait_iff_congested() then checks both the
+> > > number of congested BDIs and if the current zone is one that has encounted
+> > > congestion recently, it will sleep on the congestion queue. Otherwise it
+> > > will call cond_reched() to yield the processor if necessary.
+> > > 
+> > > The end result is that waiting on the congestion queue is avoided when
+> > > necessary but when significant congestion is being encountered,
+> > > reclaimers and page allocators will back off.
+> > > 
+> > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> > > ---
+> > >  include/linux/backing-dev.h |    2 +-
+> > >  include/linux/mmzone.h      |    8 ++++
+> > >  mm/backing-dev.c            |   23 ++++++++----
+> > >  mm/page_alloc.c             |    4 +-
+> > >  mm/vmscan.c                 |   83 +++++++++++++++++++++++++++++++++++++------
+> > >  5 files changed, 98 insertions(+), 22 deletions(-)
+> > > 
+> > > diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+> > > index 72bb510..f1b402a 100644
+> > > --- a/include/linux/backing-dev.h
+> > > +++ b/include/linux/backing-dev.h
+> > > +static enum bdi_queue_status may_write_to_queue(struct backing_dev_info *bdi,
+> > 
+> > <snip>
+> > 
+> > >  			      struct scan_control *sc)
+> > >  {
+> > > +	enum bdi_queue_status ret = QUEUEWRITE_DENIED;
+> > > +
+> > >  	if (current->flags & PF_SWAPWRITE)
+> > > -		return 1;
+> > > +		return QUEUEWRITE_ALLOWED;
+> > >  	if (!bdi_write_congested(bdi))
+> > > -		return 1;
+> > > +		return QUEUEWRITE_ALLOWED;
+> > > +	else
+> > > +		ret = QUEUEWRITE_CONGESTED;
+> > >  	if (bdi == current->backing_dev_info)
+> > > -		return 1;
+> > > +		return QUEUEWRITE_ALLOWED;
+> > >  
+> > >  	/* lumpy reclaim for hugepage often need a lot of write */
+> > >  	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
+> > > -		return 1;
+> > > -	return 0;
+> > > +		return QUEUEWRITE_ALLOWED;
+> > > +	return ret;
+> > >  }
+> > 
+> > The function can't return QUEUEXXX_DENIED.
+> > It can affect disable_lumpy_reclaim. 
+> > 
+> 
+> Yes, but that change was made in "vmscan: Narrow the scenarios lumpy
+> reclaim uses synchrounous reclaim". Maybe I am misunderstanding your
+> objection.
+
+I means current may_write_to_queue never returns QUEUEWRITE_DENIED.
+What's the role of it?
+
+In addition, we don't need disable_lumpy_reclaim_mode() in pageout.
+That's because both PAGE_KEEP and PAGE_KEEP_CONGESTED go to keep_locked
+and calls disable_lumpy_reclaim_mode at last. 
+
+-- 
+Kind regards,
+Minchan Kim
