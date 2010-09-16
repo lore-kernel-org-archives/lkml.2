@@ -1,92 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755773Ab0IPRtQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 13:49:16 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:54993 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754293Ab0IPRqm (ORCPT
+	id S1755887Ab0IPRtc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 13:49:32 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44812 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755822Ab0IPRta (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 13:46:42 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        linux-usb@vger.kernel.org
-Subject: [PATCH 07/12] BKL: Remove BKL from USB gadgetfs
-Date: Thu, 16 Sep 2010 19:46:20 +0200
-Message-Id: <1284659185-8942-8-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1284659185-8942-1-git-send-email-arnd@arndb.de>
-References: <1284659185-8942-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:hOWS7Glb5Qv751N6++ciIqH/WNxOpEfjOLzsvt4Tich
- FFogr4ovDX5gQGUmuIBDx4f/pz6B/fsAU9WYoGBXBh5f4yz9HJ
- 0ymhkS9Klc77Pi2PlgT0XdJnGWAV0ehJU9Xb9IoapnO85GElNv
- HOzKU1wVi7m6ivq7wRTmd0j/Rt4ebFwtLoGfzQ5HIvlN96cb9h
- qE4yaIJBs5OP5FyJztXCw==
+	Thu, 16 Sep 2010 13:49:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1009161209240.22849@router.home>
+References: <1284490101-2362-1-git-send-email-penberg@kernel.org>
+ <1284490101-2362-2-git-send-email-penberg@kernel.org> <alpine.DEB.2.00.1009141243290.1470@chino.kir.corp.google.com>
+ <AANLkTinj2P_QbdgdLS3BweSMDzhQH5g4p2B3SqS=CNYc@mail.gmail.com>
+ <alpine.DEB.2.00.1009141320090.7123@chino.kir.corp.google.com>
+ <4C8FE263.5070101@kernel.org> <alpine.DEB.2.00.1009141646350.26982@chino.kir.corp.google.com>
+ <1097CAA8-8234-4FE2-BAA1-9C7D9FA01CEC@mit.edu> <alpine.DEB.2.00.1009151322370.29425@chino.kir.corp.google.com>
+ <20100915222509.GE3730@thunk.org> <alpine.DEB.2.00.1009151537080.15256@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1009161209240.22849@router.home>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 16 Sep 2010 10:49:01 -0700
+Message-ID: <AANLkTinPEWHmPsjyfJ-nez9yCdHKgCU3oVhNo0gdMpj6@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] SLUB: Mark merged slab caches in /proc/slabinfo
+To: Christoph Lameter <cl@linux.com>
+Cc: David Rientjes <rientjes@google.com>, "Ted Ts'o" <tytso@mit.edu>,
+        Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The BKL is only used in fill_super, which is  protected by the superblocks
-s_umount rw_semaphore. Therefore it is safe to remove the BKL entirely.
+On Thu, Sep 16, 2010 at 10:39 AM, Christoph Lameter <cl@linux.com> wrote:
+>
+> The main point of merging slabs is to reduce memory footprint and
+> avoid the overhead of managing more slab caches. Performance is a side
+> effect that may come about due to a reduced cache footprint if multiple
+> caches that are mapped to the same merged cache are used in the same
+> context.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: David Brownell <dbrownell@users.sourceforge.net>
-Cc: linux-usb@vger.kernel.org
----
- drivers/usb/gadget/inode.c |   13 ++-----------
- 1 files changed, 2 insertions(+), 11 deletions(-)
+The thing is, if we were to be able to separate the _accounting_ from
+the allocation, we'd get the best of both worlds.
 
-diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
-index 82a88d3..3f1d771 100644
---- a/drivers/usb/gadget/inode.c
-+++ b/drivers/usb/gadget/inode.c
-@@ -33,7 +33,6 @@
- #include <linux/sched.h>
- #include <linux/slab.h>
- #include <linux/poll.h>
--#include <linux/smp_lock.h>
- 
- #include <linux/device.h>
- #include <linux/moduleparam.h>
-@@ -2043,19 +2042,13 @@ gadgetfs_fill_super (struct super_block *sb, void *opts, int silent)
- 	struct dentry	*d;
- 	struct dev_data	*dev;
- 
--	lock_kernel();
--
--	if (the_device) {
--		unlock_kernel();
-+	if (the_device)
- 		return -ESRCH;
--	}
- 
- 	/* fake probe to determine $CHIP */
- 	(void) usb_gadget_register_driver (&probe_driver);
--	if (!CHIP) {
--		unlock_kernel();
-+	if (!CHIP)
- 		return -ENODEV;
--	}
- 
- 	/* superblock */
- 	sb->s_blocksize = PAGE_CACHE_SIZE;
-@@ -2092,7 +2085,6 @@ gadgetfs_fill_super (struct super_block *sb, void *opts, int silent)
- 	 * from binding to a controller.
- 	 */
- 	the_device = dev;
--	unlock_kernel();
- 	return 0;
- 
- enomem3:
-@@ -2102,7 +2094,6 @@ enomem2:
- enomem1:
- 	iput (inode);
- enomem0:
--	unlock_kernel();
- 	return -ENOMEM;
- }
- 
--- 
-1.7.1
+Maybe slub could have separate 'struct kmem_cache' structures for each
+slab, and not merge at that level, but then have a merged _allocator_.
+We already have a level of indirection there due to the whole per-cpu
+front-end, so maybe it wouldn't even cause any extra pointer chasing.
 
+That would allow slabtop etc to show the number of actual allocations
+at the granularity that we want (ie you'd see who is the real user),
+but still then use the same slab pages and avoid the slab
+fragmentation.
+
+How painful would it be to try to re-organize things like this?
+Impossible? Very hard? Or just "need to think about it a bit"?
+
+                                    Linus
