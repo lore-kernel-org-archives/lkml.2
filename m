@@ -1,36 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755866Ab0IPSpp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 14:45:45 -0400
-Received: from kroah.org ([198.145.64.141]:48433 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754070Ab0IPSpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 14:45:44 -0400
-Date: Thu, 16 Sep 2010 11:44:46 -0700
-From: Greg KH <greg@kroah.com>
-To: Alan Cox <alan@linux.intel.com>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        drosenberg@vsecurity.com
-Subject: Re: [PATCH 0/3] Fix the TIOCGICOUNT problem for good
-Message-ID: <20100916184446.GA8803@kroah.com>
-References: <20100916171747.25987.33573.stgit@localhost.localdomain>
+	id S1755640Ab0IPSsx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 14:48:53 -0400
+Received: from hemera.binary-island.eu ([97.107.138.233]:33015 "EHLO
+	hemera.binary-island.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754070Ab0IPSsw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 14:48:52 -0400
+From: Matthias Dahl <ml_kernel@mortal-soul.de>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched: Improve latencies under load by decreasing minimum
+Date: Thu, 16 Sep 2010 20:48:50 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35.4; KDE/4.5.1; x86_64; ; )
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        mathieu.desnoyers@efficios.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100916171747.25987.33573.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-Id: <201009162048.50941.ml_kernel@mortal-soul.de>
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 06:21:06PM +0100, Alan Cox wrote:
-> Remembering to clear fields is something driver authors are simply never
-> going to remember to get right every new driver. Instead take the problem
-> away from them and give them a simple interface to do the job.
+Hi.
 
-Looks good.  But is it ok if I keep the one driver patch I have now for
-.36 and queue this up for .37?  I'll handle the merge conflicts myself.
+I don't know if this is relevant but I just tried this ontop 2.6.35.4 while
+investigating a different problem and it was quite easy to produce audio
+buffer underruns while doing some compile job in the background.
 
-thanks,
+To be exact: I had vlc (1.1 git) play back several flac files and was compiling
+qt 4.7 in the background as a test w/ -j5 on an i7 860 . The result was that w/
+the decreased granularity it caused noticeable audio buffer underruns while it
+worked just fine w/ the default granularity (nothing else touched).
 
-greg k-h
+Just wanted to report this early on and hope it helps.
+
+So long,
+matthias.
+
+PS. Please cc' as I am not subscribed. Thanks a lot.
