@@ -1,47 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176Ab0IPODt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 10:03:49 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:45004 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752601Ab0IPODs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 10:03:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=tir2qnKvQGlxtURVeeJpbV8L8cbOa/YQMuot/lcf01l8gcRgKJ3vah260tS+Pnz6yI
-         1Wj1laNcbyS/5T8diY9r5tqZbSedcGqWRSvvpNrTgy5YRqOZ/2MNGkspexQXhk86wIgU
-         HahJUDf6CErmLal9p1rW+VtsNfp51BxHy6VUg=
-Subject: Re: [PATCH] block: fix an warning of calling blk_rq_aligned()
-From: Namhyung Kim <namhyung@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <4C91B7C4.6030802@kernel.dk>
-References: <20100916133005.56baad7e.sfr@canb.auug.org.au>
-	 <1284609357-3076-1-git-send-email-namhyung@gmail.com>
-	 <4C91B7C4.6030802@kernel.dk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 16 Sep 2010 23:03:36 +0900
-Message-ID: <1284645816.1682.1.camel@leonhard>
+	id S1755216Ab0IPOFF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 10:05:05 -0400
+Received: from tex.lwn.net ([70.33.254.29]:54329 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752601Ab0IPOFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 10:05:04 -0400
+Date: Thu, 16 Sep 2010 08:04:56 -0600
+From: Jonathan Corbet <corbet@lwn.net>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: torvalds@linux-foundation.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] viafb security fix
+Message-ID: <20100916080456.0f50ec6a@bike.lwn.net>
+In-Reply-To: <4C9162BA.6000307@gmx.de>
+References: <4C9162BA.6000307@gmx.de>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.21.7; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010-09-16 (목), 08:23 +0200, Jens Axboe:
-> Thanks, in the future please ensure that you have all{yes,mod}config
-> tested patches you submit.
-> 
+On Thu, 16 Sep 2010 02:20:10 +0200
+Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
 
-OK. Sorry for the inconvenience.
+> It contains a single patch to initialize the memory before it is copied to 
+> userspace. As this issue could be a security flaw it would be good to have this 
+> patch in the next release.
 
--- 
-Regards,
-Namhyung Kim
+This one seems worth directing toward the stable tree as well.
 
-
+jon
