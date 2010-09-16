@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756008Ab0IPTgO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 15:36:14 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:28494 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752517Ab0IPTgM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 15:36:12 -0400
-Message-ID: <4C92719E.5070103@oracle.com>
-Date: Thu, 16 Sep 2010 12:35:58 -0700
-From: Yinghai Lu <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	id S1756004Ab0IPTjr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 15:39:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15699 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754628Ab0IPTjq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 15:39:46 -0400
+Date: Thu, 16 Sep 2010 21:35:43 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Roland McGrath <roland@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>, Andi Kleen <andi@firstfloor.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        containers@lists.linux-foundation.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH][RFC] fs/exec.c: provide the correct process pid to the
+	pipe helper
+Message-ID: <20100916193543.GA11016@redhat.com>
+References: <1284663599-3549-1-git-send-email-wad@chromium.org>
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Wright <john.wright@hp.com>
-Subject: Re: 2.6.32.y stable kernel regression with taskset
-References: <4C9114A6.6040500@oracle.com> <1284608712.7403.10.camel@marge.simson.net> <20100916144216.GA4794@suse.de>
-In-Reply-To: <20100916144216.GA4794@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284663599-3549-1-git-send-email-wad@chromium.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/2010 07:42 AM, Greg KH wrote:
-> On Thu, Sep 16, 2010 at 05:45:12AM +0200, Mike Galbraith wrote:
->> On Wed, 2010-09-15 at 11:47 -0700, Yinghai Lu wrote:
->>> found problem with cpuscaling test.
->>>
->>> Under 2.6.32.21   Userspace gov  
->>> min freq load test time is nearly the same as max freq load test time around  ~16 seconds
->>>
->>> under 2.6.18-194
->>> min freq load test time is ~40 seconds
->>> max freq load test time	  is ~ 17 seconds
->>>
->>> the test is 
->>> 1. set governor for one cpu to userspace
->>> 2. set freq to min for that cpu
->>> 3. using taskset to put load test only on that cpu, and get the time for load test.
->>>
->>> so that mean taskset did not put load test on cpu that we want. and other cpu still have ondemand governor and load test get done much faster
->>>
->>> git bisect report:
->>>
->>> c6fc81afa2d7ef2f775e48672693d8a0a8a7325d is the first bad commit
->>> commit c6fc81afa2d7ef2f775e48672693d8a0a8a7325d
->>> Author: John Wright <john.wright@hp.com>
->>> Date:   Tue Apr 13 16:55:37 2010 -0600
->>>
->>>     sched: Fix a race between ttwu() and migrate_task()
->>
->> Known issue.  There's a sched series for 32-stable in the pipeline.
-> 
-> Yes, sorry, I'm working my way through to them, hope to have them
-> finished and applied soon.
-> 
+On 09/16, Will Drewry wrote:
+>
+> --- a/fs/exec.c
+> +++ b/fs/exec.c
+> @@ -1467,6 +1467,13 @@ static int format_corename(char *corename, long signr)
+>  	char *const out_end = corename + CORENAME_MAX_SIZE;
+>  	int rc;
+>  	int pid_in_pattern = 0;
+> +	pid_t pid = task_tgid_vnr(current);
+> +
+> +	/* The pipe helper runs in the init namespace and should
+> +	 * receive the matching pid until that changes.
+> +	 */
+> +	if (ispipe)
+> +		pid = task_tgid_nr(current);
 
-why not just revert that patch?
+Agreed, it doesn't make sense to pass the "local" pid to the init ns.
 
-wonder if SLES11SP1 or RHEL 6 have this patch or not.
-
-Yinghai
+Oleg.
 
