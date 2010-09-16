@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625Ab0IPMLW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 08:11:22 -0400
-Received: from mail.perches.com ([173.55.12.10]:2085 "EHLO mail.perches.com"
+	id S1754749Ab0IPMLu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 08:11:50 -0400
+Received: from mail.perches.com ([173.55.12.10]:2082 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754462Ab0IPMLO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 08:11:14 -0400
+	id S1753581Ab0IPMLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 08:11:13 -0400
 From: Joe Perches <joe@perches.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 4/5] scripts/get_maintainer.pl: Add default --git-fallback, remove default --git
-Date: Thu, 16 Sep 2010 05:11:11 -0700
-Message-Id: <268d6a9a48af6f6ad270caf1b745e1e21b3ab2e4.1284636516.git.joe@perches.com>
+Subject: [PATCH 1/5] scripts/get_maintainer.pl: Add --git-blame --rolestats "Authored lines" information
+Date: Thu, 16 Sep 2010 05:11:08 -0700
+Message-Id: <ae06c2eb4c95d24b5e69c35d2a409dae6b173c44.1284636516.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.rc1
 In-Reply-To: <cover.1284636516.git.joe@perches.com>
 References: <cover.1284636516.git.joe@perches.com>
@@ -19,116 +19,187 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding commit signers when there is a listed MAINTAINER for a file
-can make the output list longer than necessary.
+> > Something based on percentage of the driver written rather than log
+> > entry counts might also be interesting.
+> There is a --git-blame option, but it uses a count of file commits
+> active in the file rather than % of lines authored.
 
-Change the --git default from on to off.
+When options --git-blame and --rolestats are specified, add
+the maintainers with the qualifying --git-min-percent amount
+of lines authored of the complete file.  Does not add more
+authors than specified by --git-max-maintainers.
 
-Add a new --git-fallback option (default on) used to add commit signers
-only when there is no MAINTAINER for a file.
+For anyone using hg, this option works but is _very_ slow.
+It's orders of magnitude slower than git slow.
 
-git history is used when --git-fallback is enabled and the pattern
-directory depth is not the same as the file directory depth.
+The get_maintainer.pl version was incremented to 0.25.
+
+This can be used with or without --git.
 
 For instance:
 
-X86 ARCHITECTURE (32-BIT AND 64-BIT)
-M:	Thomas Gleixner <tglx@linutronix.de>
-M:	Ingo Molnar <mingo@redhat.com>
-M:	"H. Peter Anvin" <hpa@zytor.com>
-M:	x86@kernel.org
-T:	git git://git.kernel.org/pub/scm/linux/kernel/git/x86/linux-2.6-x86.git
-S:	Maintained
-F:	Documentation/x86/
-F:	arch/x86/
+$ ./scripts/get_maintainer.pl --git-blame --nogit --rolestats -f lib/bitmap.c
+Paul Jackson <pj@sgi.com> (authored lines:406/613=66%,commits:7/20=35%)
+Akinobu Mita <mita@miraclelinux.com> (authored lines:87/613=14%,commits:3/20=15%)
+Reinette Chatre <reinette.chatre@linux.intel.com> (authored lines:42/613=7%)
+Andrew Morton <akpm@linux-foundation.org> (commits:16/20=80%)
+Paul Mundt <lethal@linux-sh.org> (commits:3/20=15%)
+Randy Dunlap <randy.dunlap@oracle.com> (commits:2/20=10%)
 
-If using "./scripts/get_maintainer -f arch/x86/lib/atomic64_32.c", the pattern
-for "arch/x86/" does not match the directory depth of "arch/x86/lib"
-so the MAINTAINERS entries and git history is used to produce:
-
-$ ./scripts/get_maintainer.pl -f --rolestats arch/x86/lib/atomic64_32.c
-Thomas Gleixner <tglx@linutronix.de> (maintainer:X86 ARCHITECTURE...)
-Ingo Molnar <mingo@redhat.com> (maintainer:X86 ARCHITECTURE...)
-"H. Peter Anvin" <hpa@zytor.com> (maintainer:X86 ARCHITECTURE...,commit_signer:1/1=100%)
-x86@kernel.org (maintainer:X86 ARCHITECTURE...)
-Luca Barbieri <luca@luca-barbieri.com> (commit_signer:1/1=100%)
+$ ./scripts/get_maintainer.pl --git-blame --git --rolestats -f lib/bitmap.c
+Andrew Morton <akpm@linux-foundation.org> (commit_signer:4/5=80%,commits:16/20=80%)
+Akinobu Mita <akinobu.mita@gmail.com> (commit_signer:2/5=40%,authored lines:87/613=14%,commits:3/20=15%)
+Jack Steiner <steiner@sgi.com> (commit_signer:1/5=20%)
+Ben Hutchings <ben@decadent.org.uk> (commit_signer:1/5=20%)
+Lee Schermerhorn <lee.schermerhorn@hp.com> (commit_signer:1/5=20%)
+Paul Jackson <pj@sgi.com> (authored lines:406/613=66%,commits:7/20=35%)
+Reinette Chatre <reinette.chatre@linux.intel.com> (authored lines:42/613=7%)
+Paul Mundt <lethal@linux-sh.org> (commits:3/20=15%)
+Randy Dunlap <randy.dunlap@oracle.com> (commits:2/20=10%)
 linux-kernel@vger.kernel.org (open list)
-
-Luca Barbieri is added because he signed the only commit to
-arch/x86/lib/atomic64_32.c during the last year and he meets the
-other default qualifications.
-	--git-min-percent (default:10)
-	--git-min-signatures (default:1)
-
-If current users of ./scripts/get_maintainers.pl have scripts
-that use --nogit that expect git history to be excluded, those
-scripts should be updated to include --nogit-fallback or a
-.get_maintainer.conf file should be created with --nogit-fallback.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- scripts/get_maintainer.pl |   11 +++++++++--
- 1 files changed, 9 insertions(+), 2 deletions(-)
+ scripts/get_maintainer.pl |   60 ++++++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 57 insertions(+), 3 deletions(-)
 
 diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
-index 36e889f..ac20d58 100755
+index b228198..a91ae63 100755
 --- a/scripts/get_maintainer.pl
 +++ b/scripts/get_maintainer.pl
-@@ -24,9 +24,10 @@ my $email_maintainer = 1;
- my $email_list = 1;
- my $email_subscriber_list = 0;
- my $email_git_penguin_chiefs = 0;
--my $email_git = 1;
-+my $email_git = 0;
- my $email_git_all_signature_types = 0;
- my $email_git_blame = 0;
-+my $email_git_fallback = 1;
- my $email_git_min_signatures = 1;
- my $email_git_max_maintainers = 5;
- my $email_git_min_percent = 5;
-@@ -138,6 +139,7 @@ if (!GetOptions(
- 		'git!' => \$email_git,
- 		'git-all-signature-types!' => \$email_git_all_signature_types,
- 		'git-blame!' => \$email_git_blame,
-+		'git-fallback!' => \$email_git_fallback,
- 		'git-chief-penguins!' => \$email_git_penguin_chiefs,
- 		'git-min-signatures=i' => \$email_git_min_signatures,
- 		'git-max-maintainers=i' => \$email_git_max_maintainers,
-@@ -371,6 +373,7 @@ my @status = ();
- foreach my $file (@files) {
+@@ -13,7 +13,7 @@
+ use strict;
  
-     my %hash;
-+    my $exact_pattern_match = 0;
-     my $tvi = find_first_section();
-     while ($tvi < @typevalue) {
- 	my $start = find_starting_index($tvi);
-@@ -405,6 +408,8 @@ foreach my $file (@files) {
- 			    my $value_pd = ($value =~ tr@/@@);
- 			    my $file_pd = ($file  =~ tr@/@@);
- 			    $value_pd++ if (substr($value,-1,1) ne "/");
-+			    $value_pd = -1 if ($value =~ /^\.\*/);
-+			    $exact_pattern_match = 1 if ($value_pd >= $file_pd);
- 			    if ($pattern_depth == 0 ||
- 				(($file_pd - $value_pd) < $pattern_depth)) {
- 				$hash{$tvi} = $value_pd;
-@@ -439,7 +444,8 @@ foreach my $file (@files) {
- 	}
+ my $P = $0;
+-my $V = '0.24';
++my $V = '0.25';
+ 
+ use Getopt::Long qw(:config no_auto_abbrev);
+ 
+@@ -88,6 +88,7 @@ my %VCS_cmds_git = (
+     "available" => '(which("git") ne "") && (-d ".git")',
+     "find_signers_cmd" => "git log --no-color --since=\$email_git_since -- \$file",
+     "find_commit_signers_cmd" => "git log --no-color -1 \$commit",
++    "find_commit_author_cmd" => "git log -1 --format=\"%an <%ae>\" \$commit",
+     "blame_range_cmd" => "git blame -l -L \$diff_start,+\$diff_length \$file",
+     "blame_file_cmd" => "git blame -l \$file",
+     "commit_pattern" => "^commit [0-9a-f]{40,40}",
+@@ -101,6 +102,7 @@ my %VCS_cmds_hg = (
+ 	"hg log --date=\$email_hg_since" .
+ 		" --template='commit {node}\\n{desc}\\n' -- \$file",
+     "find_commit_signers_cmd" => "hg log --template='{desc}\\n' -r \$commit",
++    "find_commit_author_cmd" => "hg log -l 1 --template='{author}\\n' -r \$commit",
+     "blame_range_cmd" => "",		# not supported
+     "blame_file_cmd" => "hg blame -c \$file",
+     "commit_pattern" => "^commit [0-9a-f]{40,40}",
+@@ -1014,6 +1016,9 @@ sub vcs_find_signers {
+     if (!$email_git_penguin_chiefs) {
+ 	@lines = grep(!/${penguin_chiefs}/i, @lines);
+     }
++
++    return (0, @lines) if !@lines;
++
+     # cut -f2- -d":"
+     s/.*:\s*(.+)\s*/$1/ for (@lines);
+ 
+@@ -1027,6 +1032,28 @@ sub vcs_find_signers {
+     return ($commits, @lines);
+ }
+ 
++sub vcs_find_author {
++    my ($cmd) = @_;
++    my @lines = ();
++
++    @lines = &{$VCS_cmds{"execute_cmd"}}($cmd);
++
++    if (!$email_git_penguin_chiefs) {
++	@lines = grep(!/${penguin_chiefs}/i, @lines);
++    }
++
++    return @lines if !@lines;
++
++## Reformat email addresses (with names) to avoid badly written signatures
++
++    foreach my $line (@lines) {
++	my ($name, $address) = parse_email($line);
++	$line = format_email($name, $address, 1);
++    }
++
++    return @lines;
++}
++
+ sub vcs_save_commits {
+     my ($cmd) = @_;
+     my @lines = ();
+@@ -1084,6 +1111,10 @@ sub vcs_blame {
+ 	@commits = vcs_save_commits($cmd);
      }
  
--    if ($email && $email_git) {
-+    if ($email &&
-+	($email_git || ($email_git_fallback && !$exact_pattern_match))) {
- 	vcs_file_signoffs($file);
++    foreach my $commit (@commits) {
++	$commit =~ s/^\^//g;
++    }
++
+     return @commits;
+ }
+ 
+@@ -1121,6 +1152,8 @@ sub vcs_assign {
+ 	@lines = mailmap(@lines);
      }
  
-@@ -540,6 +546,7 @@ MAINTAINER field selection options:
-     --git => include recent git \*-by: signers
-     --git-all-signature-types => include signers regardless of signature type
-         or use only ${signaturePattern} signers (default: $email_git_all_signature_types)
-+    --git-fallback => use git when no exact MAINTAINERS pattern (default: $email_git_fallback)
-     --git-chief-penguins => include ${penguin_chiefs}
-     --git-min-signatures => number of signatures required (default: $email_git_min_signatures)
-     --git-max-maintainers => maximum maintainers to add (default: $email_git_max_maintainers)
++    return if (@lines <= 0);
++
+     @lines = sort(@lines);
+ 
+     # uniq -c
+@@ -1165,14 +1198,17 @@ sub vcs_file_blame {
+     my ($file) = @_;
+ 
+     my @signers = ();
++    my @all_commits = ();
+     my @commits = ();
+     my $total_commits;
++    my $total_lines;
+ 
+     return if (!vcs_exists());
+ 
+-    @commits = vcs_blame($file);
+-    @commits = uniq(@commits);
++    @all_commits = vcs_blame($file);
++    @commits = uniq(@all_commits);
+     $total_commits = @commits;
++    $total_lines = @all_commits;
+ 
+     foreach my $commit (@commits) {
+ 	my $commit_count;
+@@ -1182,10 +1218,28 @@ sub vcs_file_blame {
+ 	$cmd =~ s/(\$\w+)/$1/eeg;	#interpolate $cmd
+ 
+ 	($commit_count, @commit_signers) = vcs_find_signers($cmd);
++
+ 	push(@signers, @commit_signers);
+     }
+ 
+     if ($from_filename) {
++	if ($output_rolestats) {
++	    my @blame_signers;
++	    foreach my $commit (@commits) {
++		my $i;
++		my $cmd = $VCS_cmds{"find_commit_author_cmd"};
++		$cmd =~ s/(\$\w+)/$1/eeg;	#interpolate $cmd
++		my @author = vcs_find_author($cmd);
++		next if !@author;
++		my $count = grep(/$commit/, @all_commits);
++		for ($i = 0; $i < $count ; $i++) {
++		    push(@blame_signers, $author[0]);
++		}
++	    }
++	    if (@blame_signers) {
++		vcs_assign("authored lines", $total_lines, @blame_signers);
++	    }
++	}
+ 	vcs_assign("commits", $total_commits, @signers);
+     } else {
+ 	vcs_assign("modified commits", $total_commits, @signers);
 -- 
 1.7.3.rc1
 
