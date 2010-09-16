@@ -1,43 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227Ab0IPMrO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 08:47:14 -0400
-Received: from mailfe08.swip.net ([212.247.154.225]:40850 "EHLO swip.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752257Ab0IPMrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 08:47:13 -0400
-X-Cloudmark-Score: 0.000000 []
-X-Cloudmark-Analysis: v=1.1 cv=1CaHf1y8KCnZwQGPpxlMvS9eQdJFbtI71s633RdLVzE= c=1 sm=1 a=Dyoqhi_TatcA:10 a=Vwru4m-cbOwA:10 a=WHsXhg87phMA:10 a=Cfj4BQAnxiAA:10 a=ha4Nj4busiUA:10 a=eB7GkQxtJXb3snj+/5UxaQ==:17 a=69EAbJreAAAA:8 a=S66RcdOlT70WbWvI64AA:9 a=7EtuGz0Kj1Gc9tVPycWms74SNxMA:4 a=Ft8UYL4EG9YA:10 a=EfJqPEOeqlMA:10 a=cmC6wDXMmaOF4R6o:21 a=7Yr31XdGJV7RryOi:21 a=eB7GkQxtJXb3snj+/5UxaQ==:117
-X-Reverse-Check: address rejected with reverse-check
-Reply-To: <claims.015@hotmail.com>
-From: "Microsoft" <info@uknl.com>
-Subject: Email selected
-Date: Thu, 16 Sep 2010 18:17:06 +0530
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
+	id S1754486Ab0IPMt1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 08:49:27 -0400
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:45939 "HELO
+	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753774Ab0IPMtZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 08:49:25 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=F5cPPPbzgoZ5eOFzxGjx5kigWFocwmxC6X/m+G6Y/lH9XMHMBG6lmc9Xn+ussH4M9TQbQ9aAyWik/p9pDK9cBrJEYPwlvNyyeGMvqdqQsaWIKCAntNKv27K2pruMHxa4;
+Date: Thu, 16 Sep 2010 14:49:17 +0200
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: tim.gardner@canonical.com
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: MCP limit log messages, 2.6.36-rc4
+Message-ID: <20100916144917.54d5f2b0@jbarnes-x201>
+In-Reply-To: <4C911C60.4030105@canonical.com>
+References: <4C9106C1.4080505@canonical.com>
+	<4C911C60.4030105@canonical.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 100916-0, 09/16/2010), Outbound message
-X-Antivirus-Status: Clean
-Message-ID: <auto-000021934632@mailfe08.swip.net>
-To: unlisted-recipients:; (no To-header on input)
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 195.83.197.141 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 15 Sep 2010 13:20:00 -0600
+Tim Gardner <tim.gardner@canonical.com> wrote:
 
-Your Email Id has won 1,000,000.00 GBP in the British MICROSOFT Promo 2010. send your 
+> On 09/15/2010 11:47 AM, Tim Gardner wrote:
+> > I've been getting regular MCP limit log messages on a Dell Studio
+> > 1458 (i5 CPU) with an A02 BIOS. With the attached debug hack it
+> > prints the following values:
+> >
+> > [ 33.605098] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power
+> > 30123, limit 1023
+> > [ 38.597998] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power
+> > 21697, limit 1023
+> > [ 43.590917] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power
+> > 15390, limit 1023
+> > [ 48.583821] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power
+> > 43370, limit 1023
+> > [ 53.576740] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power
+> > 64728, limit 1023
+> >
+> > This is an idle machine which starts printing these messages about
+> > 30 seconds after boot. Any thoughts?
+> >
+> > rtg
+> 
+> More clues:
+> 
+> [   13.426064] intel ips 0000:00:1f.6: Warning: CPU TDP doesn't match 
+> expected value (found 25, expected 35)
+> [   13.426086] intel ips 0000:00:1f.6: PCI INT C -> GSI 18 (level,
+> low) -> IRQ 18
+> [   13.426933] intel ips 0000:00:1f.6: IPS driver initialized, MCP
+> temp limit 95
+> 
 
-Names.
-Address.
-Sex.
-Age.
-Tel.
-Occupation.
+Oh interesting, this looks like a slightly different problem than some
+others have been seeing.  The power limit is listed at 1023 but the
+reported value is looking at least 100x over that, so we may have a
+reporting vs limit unit mismatch here.
 
-to our claims department: claims.015@hotmail.com
-+447010039919.
+I'm looking into finding a way to enable the thermal device which would
+fix another problem we have with bogus thermal limits and reporting,
+but yours is a separate problem.  I'll take a look at the sources and
+double check my unit calculations...
+
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
