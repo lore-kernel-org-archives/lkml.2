@@ -1,139 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756565Ab0IPWOx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 18:14:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2726 "EHLO mx1.redhat.com"
+	id S1756584Ab0IPWO6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 18:14:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54471 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756473Ab0IPWOt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 18:14:49 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Christoph Hellwig <hch@infradead.org>,
-        Andreas Gruenbacher <agruen@suse.de>, Nick Piggin <npiggin@kernel.dk>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 19/34] union-mount: Add clone_union_tree() and put_union_sb()
-Date: Thu, 16 Sep 2010 15:12:10 -0700
-Message-Id: <1284675145-4391-20-git-send-email-vaurora@redhat.com>
-In-Reply-To: <1284675145-4391-1-git-send-email-vaurora@redhat.com>
-References: <1284675145-4391-1-git-send-email-vaurora@redhat.com>
+	id S1756473Ab0IPWO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 18:14:56 -0400
+Subject: Audit: add support to match lsm labels on user audit messages
+From: Eric Paris <eparis@redhat.com>
+To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
+Cc: viro@zeniv.linux.org.uk, eparis@redhat.com, akpm@linux-foundation.org,
+        mitr@redhat.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 16 Sep 2010 18:14:11 -0400
+Message-ID: <1284675251.2695.10.camel@dhcp231-112.rdu.redhat.com>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A union mount clones the vfsmount tree of all of the read-only layers
-of the union and keeps a reference to it in the vfsmount of the
-topmost layer of the union.
+From: Miloslav Trmac <mitr@redhat.com>
 
-clone_union_tree() takes the path of the proposed union mountpoint and
-attempts to clones every vfsmount mounted at that same pathname, as
-well as their submounts.  All these mounts must be read-only, not
-slave, and not shared.
+Add support for matching by security label (e.g. SELinux context) of
+the sender of an user-space audit record.
 
-put_union_sb() unwinds everything clone_union_tree() does.  It is
-called when the superblock is deactivated.  Thus, you can lazy unmount
-a union mount and when the last reference goes away, the union will be
-torn down.
+The audit filter code already allows user space to configure such
+filters, but they were ignored during evaluation.  This patch implements
+evaluation of these filters.
 
-Signed-off-by: Valerie Aurora <vaurora@redhat.com>
+For example, after application of this patch, PAM authentication logs
+caused by cron can be disabled using
+	auditctl -a user,never -F subj_type=crond_t
+
+Signed-off-by: Miloslav Trmac <mitr@redhat.com>
+Acked-by: Eric Paris <eparis@redhat.com>
 ---
- fs/namespace.c        |   71 +++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/mount.h |    2 +
- 2 files changed, 73 insertions(+), 0 deletions(-)
 
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 62c2f7a..e966890 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -1393,6 +1393,77 @@ static int check_topmost_union_mnt(struct vfsmount *topmost_mnt, int mnt_flags)
- 	return 0;
- }
- 
-+void put_union_sb(struct super_block *sb)
-+{
-+       struct vfsmount *mnt = sb->s_union_lower_mnts;
-+       LIST_HEAD(umount_list);
-+
-+       if (!mnt)
-+               return;
-+       spin_lock(&vfsmount_lock);
-+       umount_tree(mnt, 0, &umount_list);
-+       spin_unlock(&vfsmount_lock);
-+       release_mounts(&umount_list);
-+       sb->s_union_lower_mnts = 0;
-+       sb->s_union_count = 0;
-+}
-+
-+/**
-+ * clone_union_tree - Clone all union-able mounts at this mountpoint
-+ *
-+ * @topmost - vfsmount of topmost layer
-+ * @mntpnt - target of union mount
-+ *
-+ * Given the target mountpoint of a union mount, clone all the mounts
-+ * at that mountpoint (well, pathname) that qualify as a union lower
-+ * layer.  Increment the hard readonly count of the lower layer
-+ * superblocks.
-+ *
-+ * Returns error if any of the mounts or submounts mounted on or below
-+ * this pathname are unsuitable for union mounting.  This means you
-+ * can't construct a union mount at the root of an existing mount
-+ * without unioning it.
-+ *
-+ * XXX - Maybe should take # of layers to go down as an argument. But
-+ * how to pass this in through mount options?  All solutions look
-+ * ugly.  Currently you express your intention through mounting file
-+ * systems on the same mountpoint, which is pretty elegant.
-+ */
-+
-+static int clone_union_tree(struct vfsmount *topmost, struct path *mntpnt)
-+{
-+	struct vfsmount *mnt, *cloned_tree;
-+
-+	if (!IS_ROOT(mntpnt->dentry)) {
-+		printk(KERN_INFO "union mount: mount point must be a root dir\n");
-+		return -EINVAL;
-+	}
-+
-+	/* Look for the "lowest" layer to union. */
-+	mnt = mntpnt->mnt;
-+	while (mnt->mnt_parent->mnt_root == mnt->mnt_mountpoint) {
-+		/* Got root (mnt)? */
-+		if (mnt->mnt_parent == mnt)
+This patch was actually sent to list back on Nov 9, 2009 but
+accidentally got dropped on the floor.  I am resending the patch in
+hopes that it will not get lost for the next merge window.
+
+ kernel/auditfilter.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
+index a706040..50307c1 100644
+--- a/kernel/auditfilter.c
++++ b/kernel/auditfilter.c
+@@ -1259,6 +1259,18 @@ static int audit_filter_user_rules(struct netlink_skb_parms *cb,
+ 		case AUDIT_LOGINUID:
+ 			result = audit_comparator(cb->loginuid, f->op, f->val);
+ 			break;
++		case AUDIT_SUBJ_USER:
++		case AUDIT_SUBJ_ROLE:
++		case AUDIT_SUBJ_TYPE:
++		case AUDIT_SUBJ_SEN:
++		case AUDIT_SUBJ_CLR:
++			if (f->lsm_rule)
++				result = security_audit_rule_match(cb->sid,
++								   f->type,
++								   f->op,
++								   f->lsm_rule,
++								   NULL);
 +			break;
-+		mnt = mnt->mnt_parent;
-+	}
-+	/*
-+	 * Clone all the read-only mounts and submounts, only if they
-+	 * are not shared or slave, and increment the hard read-only
-+	 * users count on each one.  If this can't be done for every
-+	 * mount and submount below this one, fail.
-+	 */
-+	cloned_tree = copy_tree(mnt, mnt->mnt_root,
-+				CL_COPY_ALL | CL_PRIVATE |
-+				CL_NO_SHARED | CL_NO_SLAVE |
-+				CL_MAKE_HARD_READONLY);
-+	if (IS_ERR(cloned_tree))
-+		return PTR_ERR(cloned_tree);
-+
-+	topmost->mnt_sb->s_union_lower_mnts = cloned_tree;
-+	return 0;
-+}
-+
- /*
-  *  @source_mnt : mount tree to be attached
-  *  @nd         : place the mount tree @source_mnt is attached
-diff --git a/include/linux/mount.h b/include/linux/mount.h
-index 4014ff1..5643835 100644
---- a/include/linux/mount.h
-+++ b/include/linux/mount.h
-@@ -138,4 +138,6 @@ extern void mark_mounts_for_expiry(struct list_head *mounts);
+ 		}
  
- extern dev_t name_to_dev_t(char *name);
- 
-+extern void put_union_sb(struct super_block *sb);
-+
- #endif /* _LINUX_MOUNT_H */
--- 
-1.6.3.3
+ 		if (!result)
 
