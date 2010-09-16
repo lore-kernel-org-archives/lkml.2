@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919Ab0IPSvH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 14:51:07 -0400
-Received: from mx2.fusionio.com ([64.244.102.31]:36625 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752683Ab0IPSvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 14:51:05 -0400
-X-Greylist: delayed 1098 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Sep 2010 14:51:05 EDT
-X-ASG-Debug-ID: 1284661963-08b707560001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4C9262C4.9050006@fusionio.com>
-Date: Thu, 16 Sep 2010 20:32:36 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1755925Ab0IPSyu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 14:54:50 -0400
+Received: from torres.zugschlus.de ([85.214.131.164]:37253 "EHLO
+	torres.zugschlus.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753139Ab0IPSyt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 14:54:49 -0400
+Date: Thu, 16 Sep 2010 20:54:48 +0200
+From: Marc Haber <mh+linux-kernel@zugschlus.de>
+To: linux-kernel@vger.kernel.org
+Subject: Kernel configuration influence on local APIC
+Message-ID: <20100916185448.GA25947@torres.zugschlus.de>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        "codalist@coda.cs.cmu.edu" <codalist@TELEMANN.coda.cs.cmu.edu>,
-        "autofs@linux.kernel.org" <autofs@linux.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Petr Vandrovec <vandrove@vc.cvut.cz>, Anders Larsen <al@alarsen.net>,
-        Jan Kara <jack@suse.cz>, Evgeniy Dushistov <dushistov@mail.ru>,
-        Ingo Molnar <mingo@elte.hu>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Samuel Ortiz <samuel@sortiz.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Hendry <andrew.hendry@gmail.com>
-Subject: Re: Remaining BKL users, what to do
-References: <201009161632.59210.arnd@arndb.de> <1284648549.23787.26.camel@gandalf.stny.rr.com>
-X-ASG-Orig-Subj: Re: Remaining BKL users, what to do
-In-Reply-To: <1284648549.23787.26.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1284661963
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.41014
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-09-16 16:49, Steven Rostedt wrote:
-> On Thu, 2010-09-16 at 16:32 +0200, Arnd Bergmann wrote:
->> The big kernel lock is gone from almost all code in linux-next, this is
->> the status of what I think will happen to the remaining users:
-> 
->> kernel/trace/blktrace.c:
->> 	Should be easy. Ingo? Steven?
->>
-> 
-> Jens,
-> 
-> Git blame shows this to be your code (copied from block/blktrace.c from
-> years past).
-> 
-> Is the lock_kernel() needed here? (although Arnd did add it in 62c2a7d9)
+Hi,
 
-It isn't, it can be removed.
+I have a system that needs the "lapic" option on the kernel command
+line when I run the system with the 2.6.35.4 kernel that I use on most
+of my servers. However, when I use grml as a rescue system on the box,
+the system runs fine without this kernel command line.
+
+The daily grml image that I have been trying is from last week and
+uses a 2.6.35.4 image as well. The grml system has
+[    0.000000] ACPI: LAPIC (acpi_id[0x01] lapic_id[0x00] enabled)
+[    0.000000] ACPI: LAPIC (acpi_id[0x02] lapic_id[0x02] enabled)
+[    0.000000] ACPI: LAPIC (acpi_id[0x03] lapic_id[0x04] enabled)
+[    0.000000] ACPI: LAPIC (acpi_id[0x04] lapic_id[0x06] enabled)
+[    0.000000] ACPI: LAPIC (acpi_id[0x05] lapic_id[0x84] disabled)
+[    0.000000] ACPI: LAPIC (acpi_id[0x06] lapic_id[0x85] disabled)
+[    0.000000] ACPI: LAPIC (acpi_id[0x07] lapic_id[0x86] disabled)
+[    0.000000] ACPI: LAPIC (acpi_id[0x08] lapic_id[0x87] disabled)
+[    0.000000] ACPI: LAPIC_NMI (acpi_id[0xff] dfl dfl lint[0x1])
+in its dmesg, but CONFIG_X86_LOCAL_APIC=y is set - does that mean that
+the lapic is disabled on grml?
+
+What do I lose when I run the server without the lapic, and which
+kernel setting should I play with to get the productive kernel to work
+with the lapic enabled?
+
+Greetings
+Marc
 
 -- 
-Jens Axboe
-
-
-Confidentiality Notice: This e-mail message, its contents and any attachments to it are confidential to the intended recipient, and may contain information that is privileged and/or exempt from disclosure under applicable law. If you are not the intended recipient, please immediately notify the sender and destroy the original e-mail message and any attachments (and any copies that may have been made) from your system or otherwise. Any unauthorized use, copying, disclosure or distribution of this information is strictly prohibited.
+-----------------------------------------------------------------------------
+Marc Haber         | "I don't trust Computers. They | Mailadresse im Header
+Mannheim, Germany  |  lose things."    Winona Ryder | Fon: *49 621 72739834
+Nordisch by Nature |  How to make an American Quilt | Fax: *49 3221 2323190
