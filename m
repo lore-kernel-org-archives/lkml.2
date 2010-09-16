@@ -1,87 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753793Ab0IPXPY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 19:15:24 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:55344 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750826Ab0IPXPX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 19:15:23 -0400
-Subject: Re: [PATCH 1/7] notify userspace about time changes
-From: john stultz <johnstul@us.ibm.com>
-To: Alexander Shishkin <virtuoso@slind.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        Greg KH <gregkh@suse.de>, Chris Friesen <chris.friesen@genband.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
-        John Kacur <jkacur@redhat.com>
-In-Reply-To: <20100916225843.GB10463@shisha.kicks-ass.net>
-References: <1284675049-23479-1-git-send-email-virtuoso@slind.org>
-	 <1284675049-23479-2-git-send-email-virtuoso@slind.org>
-	 <1284676240.2669.41.camel@localhost.localdomain>
-	 <20100916225843.GB10463@shisha.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 16 Sep 2010 16:15:12 -0700
-Message-ID: <1284678912.2669.92.camel@localhost.localdomain>
+	id S1754339Ab0IPXWO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 19:22:14 -0400
+Received: from smtp104.sbc.mail.re3.yahoo.com ([66.196.96.80]:47652 "HELO
+	smtp104.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752337Ab0IPXWN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 19:22:13 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: b4LehfYVM1nW.yyZ1vLYq4WrQX30.Xfkj6Jg.hHUQ0DLywV
+ QmUwdP5OJXDSIEcrtgxuvv6A.1zBvc_9Eny8j4e8dKzJcJAXsEFexwbj2DT9
+ YJBL7UXMT6DS50WPXS0PKn2yAgDbdDwB06lpTCwqTJFVfSD3eOjFsxRdyyz_
+ W0VzGIyuE7w1D_9BxhTsvBM7yzXJ2yLCtKMiPHiUaGf7p2ypdNSthj2FVipG
+ v_6K30w7AGdPHWOsgQFnKuiQL_U8S2Q296BTB0k9IPryBt1cFO9mYP6n73_a
+ Tq2Pb9L7b14cuf6Uqo1.96QpUx3pQP2ard4CmIhZ_FjKnDL7ZE2pPDM1wZ6l
+ dHJBDCxrStonCBTW2Z7e2LXSrzqe0.IoYaxJbNeBL1_7iub.RnRxPhfCg33u
+ sCdHKI8vLJ9.Gov3_B7826yOgWlJvlorBTAWV0QJTmZVoxZ3YddI-
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [PATCH 0/8] Drop host_lock around LLD SHT->queuecommand()
+	caller
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-scsi <linux-scsi@vger.kernel.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
+        Christoph Hellwig <hch@lst.de>, Jeff Garzik <jeff@garzik.org>
+In-Reply-To: <1284678103.13344.111.camel@haakon2.linux-iscsi.org>
+References: <1284676521-10737-1-git-send-email-nab@linux-iscsi.org>
+	 <1284678103.13344.111.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain
+Date: Thu, 16 Sep 2010 16:18:02 -0700
+Message-Id: <1284679082.13344.117.camel@haakon2.linux-iscsi.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-09-17 at 01:58 +0300, Alexander Shishkin wrote:
-> On Thu, Sep 16, 2010 at 03:30:40 -0700, john stultz wrote:
-> > On Fri, 2010-09-17 at 01:10 +0300, Alexander Shishkin wrote:
-> > > Certain userspace applications (like "clock" desktop applets or cron) might
-> > > want to be notified when some other application changes the system time. It
-> > > might also be important for an application to be able to distinguish between
-> > > its own and somebody else's time changes.
-> > > 
-> > > This patch implements a notification interface via eventfd mechanism. Proccess
-> > > wishing to be notified about time changes should create an eventfd and pass it
-> > > to time_change_notify() syscall along with notification options.
-> > > After that, any calls to settimeofday()/stime()/adjtimex() made by other
-> > > processes will be signalled to this eventfd. Credits for suggesting the eventfd
-> > > mechanism for this purpose go to Kirill Shutemov.
+On Thu, 2010-09-16 at 16:01 -0700, Nicholas A. Bellinger wrote:
+> On Thu, 2010-09-16 at 15:35 -0700, Nicholas A. Bellinger wrote:
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
 > > 
-> > One thing I have thought of since the last time you posted this, maybe
-> > it would be worth adding a clockid field to the syscall?
+> > Greetings all,
 > > 
-> > Basically, we're looking at extending the posix clocks interfaces to
-> > allow for additional clock hardware to be exposed (See the discussion on
-> > PTP and my CLOCK_RTC patch today for examples and details).
+> > This series contains the first round of a whole-sale conversion for droping
+> > struct Scsi_Host->host_lock around struct Scsi_Host->queuecommand() within
+> > scsi_dispatch_cmd().  So with this first patch the only part of scsi_dispatch_cmd()
+> > that is protected by host_lock is scsi_cmd_get_serial)_.
 > > 
-> > So it seems possible that folks would want a similar interface to catch
-> > updates to non CLOCK_REALTIME clocks.
+> > The patches #2 -> #8 converts libiscsi, libsas, lpfc, qla4xxx, qla2xxx,
+> > TCM_Loop, and libfc code to drop their own SHT->queuecommand() internal
+> > host_lock unlock() + lock() optimization that certain high performance libs
+> > and LLDs have adopted over the years.  The changes involved here are really
+> > quite straight forward, but please note that none of this code has been tested
+> > with actual hardware yet, and is intended for generating comments for the relivent
+> > SCSI LLD driver maintainers and other interested folks.
 > > 
-> > Does this seem reasonable?
+> > There are probably still be more LLDs which use this optimization, so please
+> > let me know if there is another piece of SHT->queuecommand() caller code that
+> > does this legacy optimization and needs to be updated.  I will be sure to
+> > CC the right driver maintainers and CC linux-scsi as I come across any more
+> > conversions.
 > 
-> The whole idea seems interesting, I'll try to add this in the next iteration
-> of this patchset.
+> Hi Guys,
+> 
+> drivers/scsi/fnic needs the conversion as well..  Here is that patch;
+> 
+> http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=commitdiff;h=3c886b2ab6faccbe2803094deb7a9647199e5118
+> 
 
-Very cool!
+Ok, after doing some more digging the BusLogic and the ever important
+libata SCSI glue code use the legacy host_lock unlock() -> do_work ->
+lock() optimization as well.  Here are those patches (jgarzik CC'ed):
 
-> The first thing that comes it mind is -- are there going to be additional
-> events that the user might like to be notified of, like rtc_set_alarm()?
-> Doesn't seem too likely, though.
+buslogic: Remove host_lock unlock() + lock() from BusLogic_QueueCommand()
+http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=commitdiff;h=b465dfeb8e6950faa9c074681c72ca0a6c21276c
 
-Well, the posix interface patch is trying to abstract over the hardware
-details like rtc_set_alarm.
+libata: Remove host_lock unlock() + lock() from ata_scsi_queuecmd()
+http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=commitdiff;h=29f2ded8876910d7eb84e4d270188de6f8a8c8ee
 
-So instead it would be timer_create/timer_settime/etc. These interfaces
-deal with timer structures that are per-process, so I don't think we
-need a notification hook for them.
+Thanks!
 
-thanks
--john
-
-
-
+--nab
 
