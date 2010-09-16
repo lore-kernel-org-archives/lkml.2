@@ -1,117 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123Ab0IPHXa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 03:23:30 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:33637 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750727Ab0IPHX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 03:23:29 -0400
-Date: Thu, 16 Sep 2010 17:23:22 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Arun MURTHY <arun.murthy@stericsson.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Mattias WALLIN <mattias.wallin@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Subject: Re: linux-next: build failure after merge of the final tree (mfd
+	id S1752393Ab0IPHXy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 03:23:54 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:19912 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024Ab0IPHXx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 03:23:53 -0400
+Message-ID: <4C91C544.5050907@kernel.org>
+Date: Thu, 16 Sep 2010 00:20:36 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Ingo Molnar <mingo@elte.hu>
+CC: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: linux-next: build failure after merge of the final tree (tip
  tree related)
-Message-Id: <20100916172322.4f37e912.sfr@canb.auug.org.au>
-In-Reply-To: <F45880696056844FA6A73F415B568C69532D96AC51@EXDCVYMBSTM006.EQ1STM.local>
-References: <20100914134321.5eee798a.sfr@canb.auug.org.au>
-	<F45880696056844FA6A73F415B568C69532D96AC51@EXDCVYMBSTM006.EQ1STM.local>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__16_Sep_2010_17_23_22_+1000_F0Ih/9eYtQrJmb7z"
+References: <20100914002932.850d02f3.sfr@canb.auug.org.au>	<20100916163218.e09be473.sfr@canb.auug.org.au>	<20100916063922.GA17596@elte.hu> <20100916170939.22e38e4c.sfr@canb.auug.org.au>
+In-Reply-To: <20100916170939.22e38e4c.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__16_Sep_2010_17_23_22_+1000_F0Ih/9eYtQrJmb7z
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Stephen Rothwell <sfr@canb.auug.org.au>
 
-Hi Arun,
+[PATCH] arm,memblock: Fix compiling with sparsemem
 
-On Thu, 16 Sep 2010 09:15:22 +0200 Arun MURTHY <arun.murthy@stericsson.com>=
- wrote:
->
-> > > After merging the final tree, today's linux-next build (powerpc
-> > > allyesconfig) failed like this:
+Stephen Rothwell found:
+
+> > > arch/arm/mm/init.c: In function 'arm_memory_present':
+> > > arch/arm/mm/init.c:260: warning: ISO C90 forbids mixed declarations and code
+> > > arch/arm/mm/init.c:338: error: invalid storage class for function 'free_area'
+> > > arch/arm/mm/init.c:357: error: invalid storage class for function 'free_memmap'
+> > > arch/arm/mm/init.c:386: error: invalid storage class for function 'free_unused_memmap'
+> > > arch/arm/mm/init.c:601: error: invalid storage class for function 'keepinitrd_setup'
+> > > arch/arm/mm/init.c:606: error: initializer element is not constant
+> > > arch/arm/mm/init.c:606: error: (near initialization for '__setup_keepinitrd_setup.setup_func')
+> > > arch/arm/mm/init.c:606: error: expected declaration or statement at end of input
+> > > arch/arm/mm/init.c:252: warning: unused variable 'i'
 > > >
-> > > drivers/mfd/built-in.o: In function `__crc_pwm_free':
-> > > (*ABS*+0x24ba6d1e): multiple definition of `__crc_pwm_free'
-> > > drivers/mfd/built-in.o: In function `.pwm_free':
-> > > (.text+0x1ab3c): multiple definition of `.pwm_free'
-> > > drivers/misc/built-in.o:(.text+0x2620c): first defined here
-> > > drivers/mfd/built-in.o: In function `__crc_pwm_request':
-> > > (*ABS*+0xc1f4ec93): multiple definition of `__crc_pwm_request'
-> > > drivers/mfd/built-in.o: In function `__crc_pwm_enable':
-> > > (*ABS*+0x9d09808d): multiple definition of `__crc_pwm_enable'
-> > > drivers/mfd/built-in.o: In function `.pwm_enable':
-> > > (.text+0x1abc8): multiple definition of `.pwm_enable'
-> > > drivers/misc/built-in.o:(.text+0x26278): first defined here
-> > > drivers/mfd/built-in.o: In function `.pwm_request':
-> > > (.text+0x1a774): multiple definition of `.pwm_request'
-> > > drivers/misc/built-in.o:(.text+0x2604c): first defined here
-> > > drivers/mfd/built-in.o: In function `pwm_config':
-> > > (.opd+0x1ce0): multiple definition of `pwm_config'
-> > > drivers/misc/built-in.o:(.opd+0x3000): first defined here
-> > > drivers/mfd/built-in.o: In function `pwm_free':
-> > > (.opd+0x1d28): multiple definition of `pwm_free'
-> > > drivers/misc/built-in.o:(.opd+0x2fd0): first defined here
-> > > drivers/mfd/built-in.o: In function `pwm_request':
-> > > (.opd+0x1cf8): multiple definition of `pwm_request'
-> > > drivers/misc/built-in.o:(.opd+0x2f58): first defined here
-> > > drivers/mfd/built-in.o: In function `__crc_pwm_disable':
-> > > (*ABS*+0xb0493b18): multiple definition of `__crc_pwm_disable'
-> > > drivers/mfd/built-in.o: In function `.pwm_disable':
-> > > (.text+0x1aa24): multiple definition of `.pwm_disable'
-> > > drivers/misc/built-in.o:(.text+0x2613c): first defined here
-> > > drivers/mfd/built-in.o: In function `pwm_enable':
-> > > (.opd+0x1d40): multiple definition of `pwm_enable'
-> > > drivers/misc/built-in.o:(.opd+0x2fe8): first defined here
-> > > drivers/mfd/built-in.o: In function `.pwm_config':
-> > > (.text+0x1a648): multiple definition of `.pwm_config'
-> > > drivers/misc/built-in.o:(.text+0x26358): first defined here
-> > > drivers/mfd/built-in.o: In function `pwm_disable':
-> > > (.opd+0x1d10): multiple definition of `pwm_disable'
-> > > drivers/misc/built-in.o:(.opd+0x2fb8): first defined here
-> > > drivers/mfd/built-in.o: In function `__crc_pwm_config':
-> > > (*ABS*+0xc23f5b9): multiple definition of `__crc_pwm_config'
-> > >
-> > > Caused by commit 03f582a93ecca6e9584b622570022abf08ed03ec ("misc: Add
-> > > ab8500 pwm driver").  I have reverted that commit for today.
-> > >
-> Please find the patch that fixes this build issue @=20
-> http://git.kernel.org/?p=3Dlinux/kernel/git/sameo/mfd-2.6.git;a=3Dcommit;=
-h=3Df33bd494862cdc519db1f5d9b3f8214a1dd4c1ff
+> > > Caused by commit 719c1514f2fef5f01fcfa2bba81b7bb079c7c6a1 ("memblock/arm:
+> > > Use new accessors") which forgot a closing brace on a new
+> > > for_each_memblock() in arm_memory_present().
 
-That patch was in the tree that produced the error above.  The patch you
-quote is a fix for a different build problem.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+---
+ arch/arm/mm/init.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---Signature=_Thu__16_Sep_2010_17_23_22_+1000_F0Ih/9eYtQrJmb7z
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMkcXqAAoJEDMEi1NhKgbslYYH/A2VQJoI4JV0Z5HF5ABydAzz
-6yA7pwqkqv4yKmZyUFfl9dkyd9THwgoeWoUf/yQdLUXqjh5w6w3SCyKA7rqpyWOq
-5CK977JWo2qTZnKxFWjKnCDPula2RZJvAzHvruMUE9rmTQnNpvV+FeLXhT6bTThY
-1BZWiMcExZ0IbdHXMQ1kmfWeiIkbXJYBrxtfA00cnUoFTrXGF/sPrwLYFGcX4d6C
-GPJuV1sPXaoo3BNCodFpnxw3ycDo1Ko+AOetquQLxocMMsqw6+UAWekPd61q798N
-swtygHFIrTOvTnPxKI3rF4VWzApVai+HwvzSdNWibJevWjxcPSJeKhvytPUyikE=
-=G4vX
------END PGP SIGNATURE-----
-
---Signature=_Thu__16_Sep_2010_17_23_22_+1000_F0Ih/9eYtQrJmb7z--
+Index: linux-2.6/arch/arm/mm/init.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mm/init.c
++++ linux-2.6/arch/arm/mm/init.c
+@@ -249,9 +249,8 @@ static void arm_memory_present(void)
+ static void arm_memory_present(void)
+ {
+ 	struct memblock_region *reg;
+-	int i;
+ 
+-	for_each_memblock(memory, reg) {
++	for_each_memblock(memory, reg)
+ 		memory_present(0, memblock_region_base_pfn(reg),
+ 			       memblock_region_end_pfn(reg));
+ }
