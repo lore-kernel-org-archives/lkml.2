@@ -1,78 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843Ab0IPX4D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 19:56:03 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:30024 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754475Ab0IPX4B (ORCPT
+	id S1754906Ab0IPX5Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 19:57:25 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37158 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754475Ab0IPX5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 19:56:01 -0400
-Message-ID: <000401cb55fa$b6709e90$66f8800a@maildom.okisemi.com>
-From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-To: "Wolfgang Grandegger" <wg@grandegger.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        "Wolfram Sang" <w.sang@pengutronix.de>,
-        "Christian Pellegrin" <chripell@fsfe.org>,
-        "Barry Song" <21cnbao@gmail.com>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        <socketcan-core@lists.berlios.de>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <meego-dev@meego.com>,
-        <andrew.chih.howe.khor@intel.com>, <qi.wang@intel.com>,
-        <gregkh@suse.de>, <yong.y.wang@intel.com>,
-        "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>,
-        <arjan@linux.intel.com>, "Marc Kleine-Budde" <mkl@pengutronix.de>
-References: <4C8E1773.9090000@dsn.okisemi.com> <4C8E3FDE.2000002@pengutronix.de> <002601cb557c$69292180$66f8800a@maildom.okisemi.com> <4C91DF20.7040807@grandegger.com>
-Subject: Re: [MeeGo-Dev][PATCH v2] Topcliff: Update PCH_CAN driver to 2.6.35
-Date: Fri, 17 Sep 2010 08:55:54 +0900
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
+	Thu, 16 Sep 2010 19:57:24 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
+Message-ID: <4C92AEA6.1090203@jp.fujitsu.com>
+Date: Fri, 17 Sep 2010 08:56:22 +0900
+From: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.9) Gecko/20100825 Thunderbird/3.1.3
+MIME-Version: 1.0
+To: Rogier Wolff <R.E.Wolff@BitWizard.nl>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Sudden "hangs"....
+References: <20100916143304.GA14874@bitwizard.nl>
+In-Reply-To: <20100916143304.GA14874@bitwizard.nl>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfgang Grandegger
+Hi,
 
-According to your policy, we will remove filter processing so that
-all packets can be received.
-
-Thanks, Ohtake(OKISemi)
------ Original Message ----- 
-From: "Wolfgang Grandegger" <wg@grandegger.com>
-To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-Cc: "Marc Kleine-Budde" <mkl@pengutronix.de>; <arjan@linux.intel.com>; "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>;
-<yong.y.wang@intel.com>; <gregkh@suse.de>; <qi.wang@intel.com>; <andrew.chih.howe.khor@intel.com>;
-<meego-dev@meego.com>; <linux-kernel@vger.kernel.org>; <netdev@vger.kernel.org>; <socketcan-core@lists.berlios.de>;
-"Samuel Ortiz" <sameo@linux.intel.com>; "Barry Song" <21cnbao@gmail.com>; "Christian Pellegrin" <chripell@fsfe.org>;
-"Wolfram Sang" <w.sang@pengutronix.de>; "David S. Miller" <davem@davemloft.net>
-Sent: Thursday, September 16, 2010 6:10 PM
-Subject: Re: [MeeGo-Dev][PATCH v2] Topcliff: Update PCH_CAN driver to 2.6.35
-
-
-> On 09/16/2010 10:51 AM, Masayuki Ohtake wrote:
-> > Hi Marc,
-> >
-> >> - Please remove rx-filter handling from the driver completely, simply
-> >>   receive every can frame
-> >
-> > This rx-filter function is for Topcliff's CAN HW function.
-> > This function is important.
-> > Could you tell us the reason why should we remove filter function ?
+(2010/09/16 23:33), Rogier Wolff wrote:
 >
-> We do not (yet) support the filtering capability of the CAN controller
-> hardware. Therefore please configure the hardware filter to accept *any*
-> CAN message like all other drivers do, e.g.:
+> Hi,
 >
-> http://lxr.linux.no/#linux+v2.6.35.4/drivers/net/can/sja1000/sja1000.c#L249
+> It seems my home workstation hangs on a "mkdir" once every morning for
+> about half a minute. It'll freeze whatever I'm doing and continue
+> happily 30 seconds later, but I can't figure out what's going on
+> because it's frozen...
 >
-> Wolfgang.
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> My server did it just now and I was able to grab some more
+> debugging info.....
+>
+> obelix:~>  time mkdir /recover3/testdir
+> 0.000u 0.004s 2:11.83 0.0%      0+0k 0+0io 5pf+0w
+> obelix:~>
+>
+> Over two minutes to make a directory! (I have the impression that
+> the wait is for something to finish, so if I had started the mkdir
+> a minute earlier, it would've taken a minute longer).
+>
+> The process:
+> 28649 root      20   0     0    0    0 D  6.3  0.0   0:11.69 flush-9:0
+>
+> was in "top", and as shown here in "disk wait" mode.
+>
+> While this is going on, "vmstat 1"  shows:
+>
+> procs -----------memory---------- ---swap-- -----io---- -system-- ----cpu----
+>   r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa
+>   0  1   5368  12764 324804 1616932    0    0   464     0  244  477  0  2  0 98
+>   0  1   5368  12764 324556 1617168    0    0   448     0  255  474  0  1  0 99
+>   0  1   5368  12764 324952 1616832    0    0   472     0  257  487  0  1  0 99
+
+It seems normal data. I suggest you to do the check dmesg and
+iostat to confirm whether something wrong is occuring on your
+disk which you issued mkdir.
+
+Thanks,
+Satoru
+
+>
+> ... about 400 kbytes of IO per second. This is similar to the
+> single-disk machine at home.
+>
+> The server runs:
+>
+> Linux version 2.6.34 (wolff@abra2) (gcc version 4.1.2 20061115 (prerelease) (Debian 4.1.1-21)) #5 SMP Tue Jun 1 14:44:01 CEST 2010
+>
+> at home I run:
+> Linux version 2.6.28-19-generic (buildd@palmer) (gcc version 4.3.3 (Ubuntu 4.3.3-5ubuntu4) ) #61-Ubuntu SMP Wed May 26 23:35:15 UTC 2010
+>
+>
+> Does anybody know what's going on?
+>
+> 	Roger.
+>
 >
 
 
