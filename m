@@ -1,62 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755350Ab0IPOlr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 10:41:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44445 "EHLO mx2.suse.de"
+	id S1755186Ab0IPOnz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 10:43:55 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39174 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755287Ab0IPOlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 10:41:46 -0400
-Date: Thu, 16 Sep 2010 07:42:16 -0700
-From: Greg KH <gregkh@suse.de>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Yinghai Lu <yinghai.lu@oracle.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Wright <john.wright@hp.com>
-Subject: Re: 2.6.32.y stable kernel regression with taskset
-Message-ID: <20100916144216.GA4794@suse.de>
-References: <4C9114A6.6040500@oracle.com> <1284608712.7403.10.camel@marge.simson.net>
+	id S1754625Ab0IPOnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 10:43:53 -0400
+Date: Thu, 16 Sep 2010 14:43:04 GMT
+From: tip-bot for Yinghai Lu <yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        yinghai@kernel.org, peterz@infradead.org, Yinghai@kernel.org,
+        benh@kernel.crashing.org, tglx@linutronix.de, sfr@canb.auug.org.au,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, peterz@infradead.org, Yinghai@kernel.org,
+        benh@kernel.crashing.org, tglx@linutronix.de, sfr@canb.auug.org.au,
+        mingo@elte.hu
+In-Reply-To: <4C912709.2090201@kernel.org>
+References: <4C912709.2090201@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/memblock] memblock: Fix section mismatch warnings
+Message-ID: <tip-3661ca66a42e306aaf53246fb75aec1ea01be0f0@git.kernel.org>
+Git-Commit-ID: 3661ca66a42e306aaf53246fb75aec1ea01be0f0
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1284608712.7403.10.camel@marge.simson.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 16 Sep 2010 14:43:05 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 05:45:12AM +0200, Mike Galbraith wrote:
-> On Wed, 2010-09-15 at 11:47 -0700, Yinghai Lu wrote:
-> > found problem with cpuscaling test.
-> > 
-> > Under 2.6.32.21   Userspace gov  
-> > min freq load test time is nearly the same as max freq load test time around  ~16 seconds
-> > 
-> > under 2.6.18-194
-> > min freq load test time is ~40 seconds
-> > max freq load test time	  is ~ 17 seconds
-> > 
-> > the test is 
-> > 1. set governor for one cpu to userspace
-> > 2. set freq to min for that cpu
-> > 3. using taskset to put load test only on that cpu, and get the time for load test.
-> > 
-> > so that mean taskset did not put load test on cpu that we want. and other cpu still have ondemand governor and load test get done much faster
-> > 
-> > git bisect report:
-> > 
-> > c6fc81afa2d7ef2f775e48672693d8a0a8a7325d is the first bad commit
-> > commit c6fc81afa2d7ef2f775e48672693d8a0a8a7325d
-> > Author: John Wright <john.wright@hp.com>
-> > Date:   Tue Apr 13 16:55:37 2010 -0600
-> > 
-> >     sched: Fix a race between ttwu() and migrate_task()
-> 
-> Known issue.  There's a sched series for 32-stable in the pipeline.
+Commit-ID:  3661ca66a42e306aaf53246fb75aec1ea01be0f0
+Gitweb:     http://git.kernel.org/tip/3661ca66a42e306aaf53246fb75aec1ea01be0f0
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Wed, 15 Sep 2010 13:05:29 -0700
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 15 Sep 2010 22:17:13 +0200
 
-Yes, sorry, I'm working my way through to them, hope to have them
-finished and applied soon.
+memblock: Fix section mismatch warnings
 
-thanks,
+Stephen found a bunch of section mismatch warnings with the
+new memblock changes.
 
-greg k-h
+Use __init_memblock to replace __init in memblock.c and remove
+__init in memblock.h. We should not use __init in header files.
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Tested-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Yinghai Lu <Yinghai@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+LKML-Reference: <4C912709.2090201@kernel.org>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ include/linux/memblock.h |   24 ++++++++++++------------
+ mm/memblock.c            |   14 +++++++-------
+ 2 files changed, 19 insertions(+), 19 deletions(-)
+
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index 7d28527..5096458 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -51,39 +51,39 @@ u64 memblock_find_in_range(u64 start, u64 end, u64 size, u64 align);
+ int memblock_free_reserved_regions(void);
+ int memblock_reserve_reserved_regions(void);
+ 
+-extern void __init memblock_init(void);
+-extern void __init memblock_analyze(void);
++extern void memblock_init(void);
++extern void memblock_analyze(void);
+ extern long memblock_add(phys_addr_t base, phys_addr_t size);
+ extern long memblock_remove(phys_addr_t base, phys_addr_t size);
+-extern long __init memblock_free(phys_addr_t base, phys_addr_t size);
+-extern long __init memblock_reserve(phys_addr_t base, phys_addr_t size);
++extern long memblock_free(phys_addr_t base, phys_addr_t size);
++extern long memblock_reserve(phys_addr_t base, phys_addr_t size);
+ 
+ /* The numa aware allocator is only available if
+  * CONFIG_ARCH_POPULATES_NODE_MAP is set
+  */
+-extern phys_addr_t __init memblock_alloc_nid(phys_addr_t size, phys_addr_t align,
++extern phys_addr_t memblock_alloc_nid(phys_addr_t size, phys_addr_t align,
+ 					int nid);
+-extern phys_addr_t __init memblock_alloc_try_nid(phys_addr_t size, phys_addr_t align,
++extern phys_addr_t memblock_alloc_try_nid(phys_addr_t size, phys_addr_t align,
+ 					    int nid);
+ 
+-extern phys_addr_t __init memblock_alloc(phys_addr_t size, phys_addr_t align);
++extern phys_addr_t memblock_alloc(phys_addr_t size, phys_addr_t align);
+ 
+ /* Flags for memblock_alloc_base() amd __memblock_alloc_base() */
+ #define MEMBLOCK_ALLOC_ANYWHERE	(~(phys_addr_t)0)
+ #define MEMBLOCK_ALLOC_ACCESSIBLE	0
+ 
+-extern phys_addr_t __init memblock_alloc_base(phys_addr_t size,
++extern phys_addr_t memblock_alloc_base(phys_addr_t size,
+ 					 phys_addr_t align,
+ 					 phys_addr_t max_addr);
+-extern phys_addr_t __init __memblock_alloc_base(phys_addr_t size,
++extern phys_addr_t __memblock_alloc_base(phys_addr_t size,
+ 					   phys_addr_t align,
+ 					   phys_addr_t max_addr);
+-extern phys_addr_t __init memblock_phys_mem_size(void);
++extern phys_addr_t memblock_phys_mem_size(void);
+ extern phys_addr_t memblock_end_of_DRAM(void);
+-extern void __init memblock_enforce_memory_limit(phys_addr_t memory_limit);
++extern void memblock_enforce_memory_limit(phys_addr_t memory_limit);
+ extern int memblock_is_memory(phys_addr_t addr);
+ extern int memblock_is_region_memory(phys_addr_t base, phys_addr_t size);
+-extern int __init memblock_is_reserved(phys_addr_t addr);
++extern int memblock_is_reserved(phys_addr_t addr);
+ extern int memblock_is_region_reserved(phys_addr_t base, phys_addr_t size);
+ 
+ extern void memblock_dump_all(void);
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 65e3ba8d..d5d63ac 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -125,8 +125,8 @@ static phys_addr_t __init memblock_find_region(phys_addr_t start, phys_addr_t en
+ 	return MEMBLOCK_ERROR;
+ }
+ 
+-static phys_addr_t __init memblock_find_base(phys_addr_t size, phys_addr_t align,
+-					phys_addr_t start, phys_addr_t end)
++static phys_addr_t __init_memblock memblock_find_base(phys_addr_t size,
++			phys_addr_t align, phys_addr_t start, phys_addr_t end)
+ {
+ 	long i;
+ 
+@@ -439,12 +439,12 @@ long __init_memblock memblock_remove(phys_addr_t base, phys_addr_t size)
+ 	return __memblock_remove(&memblock.memory, base, size);
+ }
+ 
+-long __init memblock_free(phys_addr_t base, phys_addr_t size)
++long __init_memblock memblock_free(phys_addr_t base, phys_addr_t size)
+ {
+ 	return __memblock_remove(&memblock.reserved, base, size);
+ }
+ 
+-long __init memblock_reserve(phys_addr_t base, phys_addr_t size)
++long __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
+ {
+ 	struct memblock_type *_rgn = &memblock.reserved;
+ 
+@@ -671,12 +671,12 @@ int __init memblock_is_reserved(phys_addr_t addr)
+ 	return memblock_search(&memblock.reserved, addr) != -1;
+ }
+ 
+-int memblock_is_memory(phys_addr_t addr)
++int __init_memblock memblock_is_memory(phys_addr_t addr)
+ {
+ 	return memblock_search(&memblock.memory, addr) != -1;
+ }
+ 
+-int memblock_is_region_memory(phys_addr_t base, phys_addr_t size)
++int __init_memblock memblock_is_region_memory(phys_addr_t base, phys_addr_t size)
+ {
+ 	int idx = memblock_search(&memblock.reserved, base);
+ 
+@@ -693,7 +693,7 @@ int __init_memblock memblock_is_region_reserved(phys_addr_t base, phys_addr_t si
+ }
+ 
+ 
+-void __init memblock_set_current_limit(phys_addr_t limit)
++void __init_memblock memblock_set_current_limit(phys_addr_t limit)
+ {
+ 	memblock.current_limit = limit;
+ }
