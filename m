@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755023Ab0IPRa5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 13:30:57 -0400
-Received: from hornet.saude.df.gov.br ([200.193.236.52]:60474 "HELO
-	hornet.saude.df.gov.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753865Ab0IPRa4 (ORCPT
+	id S1755445Ab0IPRf1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 13:35:27 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57416 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755353Ab0IPRfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 13:30:56 -0400
-X-Greylist: delayed 598 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Sep 2010 13:30:55 EDT
-Message-ID: <901d7a07fa56cb1f42a1f8a82202b68d.squirrel@webmail.saude.df.gov.br>
-Date: Thu, 16 Sep 2010 14:20:54 -0300
-Subject: 
-From: "Maintenance Webmail Team" <inwebupdate@info.com>
-Reply-To: webupdate95@yahoo.com
-User-Agent: SquirrelMail/1.4.20
+	Thu, 16 Sep 2010 13:35:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AkerSMTPGW-ServerID: 1b31fa4650093ce8c85b907eaedeb2b6b5a78651
-X-AkerSMTPGW-MessageID: 6b4ee824b3b161b89f90fa30c2ccc2db320dae21-0o
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <1284657194.2275.585.camel@laptop>
+References: <20100915104855.41de3ebf@lilo> <AANLkTimNsDxeyZL4GVaH4L7YGO-EoRyCMHDtMPWU37hN@mail.gmail.com>
+ <1284654451.2275.579.camel@laptop> <AANLkTinihPeUueKhEqUuraW2hcf3FFHjm26RieKQZi0d@mail.gmail.com>
+ <1284657194.2275.585.camel@laptop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 16 Sep 2010 10:34:53 -0700
+Message-ID: <AANLkTikquj_2DE4UhTFAoDxL+1g=_BocCQJ5agrwC4NU@mail.gmail.com>
+Subject: Re: [RFC][PATCH] Cross Memory Attach
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Christopher Yeoh <cyeoh@au1.ibm.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Sep 16, 2010 at 10:13 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>
+>> Over a copy_to/from_user? Not bloody likely.
+>
+> Gah, indeed. OK, since its not nested kmap() should indeed work. The
+> alternative is using get_user_pages() on both address spaces, but I
+> guess that makes things unnecessarily complex.
 
+.. and perform horribly badly. And since the whole point was to do
+this really efficiently, that's not good.
 
-Dear   Email account owner,
+What *would* work would be to have a fast case that does kmap_atomic()
+together with a copy_to/from_user_atomic(). And when that fast-case
+fails, do the full kmap. Slightly more complex than the suggested
+patch, but not horribly so (just a few more lines, no fundamental
+complexities).
 
+Of course, these days I would seriously suggest against trying to
+optimize the kmap() case. It only matters on crap hardware these days.
+Anybody running HIGHMEM in 2010 and thinks that it makes sense
+deserves the pain the get. We should not complicate the kernel further
+for it, and sane architectures will have a no-op kmap().
 
-This Email is from Customer Care and we are sending it to evary
-Email user accounts Owner for safey.we are having
-congestions due to the web mail data abase in order to help
-prevent the ongoing internet email spam and for effective email use.
-In order to complete your verification and
-upgrading so as to help us fight the ongoing
-email spam. Kindly fill in this required
-information for the upgrading.
+So the real cost there is likely not the kmap as much as the
+set_page_dirty_lock() for the copy_to case. But you'd need to profile
+it to see how big of a hit it is compared to the copy itself.
 
-Your Full Names:
-Username:
-Password:
-Retype Password:
-
-After following the instructions in the sheet,your account will not
-be interrupted and will continue as normal.Thanks for your attention
- to this request.we apologize for any inconveniences.
-
-Warning!!! Account owner that refuses to update his/her account after 24HRS
-of receiving this warning will lose his or her account permanently
-
-sincerely,
-
-Maintenance Webmail Team.
-Warning Code :ID67565434
-
-
-
+                           Linus
