@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673Ab0IPNEq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 09:04:46 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:36162 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752974Ab0IPNEp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 09:04:45 -0400
-Subject: Re: [PATCH] Regulator: LP3972 PMIC regulator driver
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-In-Reply-To: <20100916105921.GD7837@rakim.wolfsonmicro.main>
-References: <1284626929.12168.3.camel@mola>
-	 <20100916105921.GD7837@rakim.wolfsonmicro.main>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 16 Sep 2010 14:04:37 +0100
-Message-ID: <1284642277.21170.13.camel@vega>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1754588Ab0IPNOQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 09:14:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63398 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753571Ab0IPNOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 09:14:15 -0400
+Message-ID: <4C921823.5080602@redhat.com>
+Date: Thu, 16 Sep 2010 15:14:11 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.3
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Gleb Natapov <gleb@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] kvm: enable irq injection from interrupt context
+References: <20100916095310.GG20864@redhat.com> <20100916101332.GW3008@redhat.com> <20100916101339.GK20864@redhat.com> <20100916102047.GY3008@redhat.com> <20100916104455.GA22254@redhat.com> <20100916105403.GZ3008@redhat.com> <20100916105352.GB22254@redhat.com> <20100916111752.GA3008@redhat.com> <20100916121338.GA23779@redhat.com> <20100916123301.GE3008@redhat.com> <20100916125717.GA24284@redhat.com>
+In-Reply-To: <20100916125717.GA24284@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-16 at 11:59 +0100, Mark Brown wrote:
-> On Thu, Sep 16, 2010 at 04:48:49PM +0800, Axel Lin wrote:
-> > This patch adds regulator drivers for National Semiconductors LP3972
-> PMIC.
-> > This LP3972 PMIC controller has 3 DC/DC voltage converters and 5 low
-> drop-out
-> > (LDO) regulators. LP3972 PMIC controller uses I2C interface.
-> 
-> > Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> 
-> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com> 
+  On 09/16/2010 02:57 PM, Michael S. Tsirkin wrote:
+> >
+> >  >  >  If you want to split parts that asserts irq and de-asserts it then we
+> >  >  >  should have irqfd that tracks line status and knows interrupt line
+> >  >  >  polarity.
+> >  >
+> >  >  Yes, it can know about polarity even though I think it's cleaner to do this
+> >  >  per gsi. But it can not track line status as line is shared with
+> >  >  other devices.
+> >  It should track only device's line status.
+>
+> There is no such thing as device's line status on real hardware, either.
+> Devices do not drive INT# high: they drive it low (all the time)
+> or do not drive it at all.
+>
 
-Applied.
-
-Thanks
-
-Liam
+That's just an implementation detail.  Devices either assert INT# or 
+they do not.  Tying the wires together constitutes an AND gate.  This 
+gate has to be modelled somewhere, currently it's in qemu's pci emulation.
 
 -- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
+error compiling committee.c: too many arguments to function
 
