@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753013Ab0IPQKM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 12:10:12 -0400
-Received: from de01.mail.all-tld.net ([195.140.232.8]:64205 "EHLO
-	de01.mail.all-tld.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751780Ab0IPQKK convert rfc822-to-8bit (ORCPT
+	id S1753204Ab0IPQL4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 12:11:56 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:37072 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475Ab0IPQLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 12:10:10 -0400
-Date: Thu, 16 Sep 2010 18:09:10 +0200
-From: Anders Larsen <al@alarsen.net>
-Subject: Re: Remaining BKL users, what to do
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: codalist@TELEMANN.coda.cs.cmu.edu, autofs@linux.kernel.org,
-        linux-media@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Petr Vandrovec <vandrove@vc.cvut.cz>, Jan Kara <jack@suse.cz>,
-        Evgeniy Dushistov <dushistov@mail.ru>, Ingo Molnar <mingo@elte.hu>,
-        netdev@vger.kernel.org, Samuel Ortiz <samuel@sortiz.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Andrew Hendry <andrew.hendry@gmail.com>
-References: <201009161632.59210.arnd@arndb.de>
-In-Reply-To: <201009161632.59210.arnd@arndb.de> (from arnd@arndb.de on Thu
-	Sep 16 16:32:59 2010)
-X-Mailer: Balsa 2.3.14
-Message-Id: <1284653350l.20726l.1l@i-dmzi_al.realan.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-X-ALL-TLD-GmbH-Information: AEV Virus and Spam Secure Mail System
-X-ALL-TLD-GmbH-VirusScanner: Found to be clean
-X-ALL-TLD-GmbH-SpamCheck: 
-X-MailScanner-From: al@alarsen.net
+	Thu, 16 Sep 2010 12:11:55 -0400
+Date: Thu, 16 Sep 2010 09:11:25 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for September 16 (do_mounts.c)
+Message-Id: <20100916091125.f12cc17c.randy.dunlap@oracle.com>
+In-Reply-To: <20100916152805.c9f31656.sfr@canb.auug.org.au>
+References: <20100916152805.c9f31656.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-09-16 16:32:59, Arnd Bergmann wrote:
-> The big kernel lock is gone from almost all code in linux-next, this is
-> the status of what I think will happen to the remaining users:
+On Thu, 16 Sep 2010 15:28:05 +1000 Stephen Rothwell wrote:
 
-> fs/qnx4:
-> 	Should be easy to fix, there are only a few places in the code that
-> 	use the BKL. Anders?
+> Hi all,
+> 
+> Changes since 20100915:
 
-Will do.
 
-Cheers
-Anders
+When CONFIG_BLOCK is not enabled:
 
+init/do_mounts.c:71: error: implicit declaration of function 'dev_to_part'
+init/do_mounts.c:71: warning: initialization makes pointer from integer without a cast
+init/do_mounts.c:73: error: dereferencing pointer to incomplete type
+init/do_mounts.c:76: error: dereferencing pointer to incomplete type
+init/do_mounts.c:76: error: dereferencing pointer to incomplete type
+init/do_mounts.c:102: error: implicit declaration of function 'part_pack_uuid'
+init/do_mounts.c:104: error: 'block_class' undeclared (first use in this function)
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
