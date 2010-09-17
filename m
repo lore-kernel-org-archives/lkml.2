@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472Ab0IQQ7m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 12:59:42 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63723 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435Ab0IQQ7l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 12:59:41 -0400
+	id S1754532Ab0IQREN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 13:04:13 -0400
+Received: from kroah.org ([198.145.64.141]:43394 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752314Ab0IQREJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 13:04:09 -0400
+Date: Fri, 17 Sep 2010 10:01:33 -0700
+From: Greg KH <greg@kroah.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Ian Kent <raven@themaw.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, autofs@linux.kernel.org
+Subject: Re: [PATCH 04/12] BKL: Remove BKL from autofs4
+Message-ID: <20100917170133.GA13570@kroah.com>
+References: <1284659185-8942-1-git-send-email-arnd@arndb.de>
+ <201009161955.48854.arnd@arndb.de>
+ <1284687191.3083.8.camel@localhost>
+ <201009170917.29522.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <20100917160554.GB14186@core.coreip.homeip.net>
-References: <1282222699.1236.21.camel@yio.site> <AANLkTikpCt-RjK87qb0cwdu_uUSfR-Dn_0d5PYhETM5T@mail.gmail.com>
- <20100917160554.GB14186@core.coreip.homeip.net>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Fri, 17 Sep 2010 18:59:24 +0200
-Message-ID: <AANLkTinFjnt7zm3YmOAASR6YEn+6CSWcbNV3R4=scnSh@mail.gmail.com>
-Subject: Re: [PATCH] uinput: add devname alias to allow module on-demand load
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201009170917.29522.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 17, 2010 at 18:05, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Fri, Sep 17, 2010 at 11:53:43AM +0200, Kay Sievers wrote:
->> On Thu, Aug 19, 2010 at 14:58, Kay Sievers <kay.sievers@vrfy.org> wrote:
->> > From: Kay Sievers <kay.sievers@vrfy.org>
->> > Subject: uinput: add devname alias to allow module on-demand load
->> >
->> > Recent modprobe and udev versions allow to create device nodes
->> > for modules which are not loaded. Only the first access will cause
->> > the in-kernel module loader to pull-in the module. Systems which
->> > never access the device node will not needlessly load the module,
->> > and no longer need init scripts or other facilities to unconditionally
->> > load it.
->>
->> Dmitry?
+On Fri, Sep 17, 2010 at 09:17:29AM +0200, Arnd Bergmann wrote:
+> On Friday 17 September 2010 03:33:11 Ian Kent wrote:
+> > On Thu, 2010-09-16 at 19:55 +0200, Arnd Bergmann wrote:
+> > > Ah, sorry about this. I looked at the wrong MAINTAINERS entry.
+> > > 
+> > > I also forgot to Cc you about autofs3, adding more to the confusion. ;)
+> > > 
+> > > Do you think the time has come to move autofs3 to drivers/staging
+> > > as we deprecate the BKL?
+> > 
+> > Umm ... what's this process, the drivers/staging?
+> 
+> We use drivers/staging now both for getting code into the kernel
+> and for getting it out of there. Moving autofs3 to drivers/staging/autofs/
+> would serve as a last warning to everyone using it, but users could
+> still use it while it's there. If anyone is interested, they can submit
+> fixes (BKL removal and whatever else is needed) to get it back into
+> the mainline. If it doesn't happen, Greg would finally remove it two
+> kernel releases later.
+> 
+> My hope is that we can move all modules that still use the BKL after
+> 2.6.37 to drivers/staging, unless we have someone already working
+> on the patches.
 
-> [dtor@hammer work]$ git describe --contains 8905aaafb4b5d9764c5b4b54c7d03eb41bb0a7e9
-> v2.6.36-rc3~19^2~2
+That sounds fine with me, send me patches whenever you want to and I
+will gladly take them.
 
-Awesome!
-So much for stupidly waiting-for-reply instead of just checking the reality. :)
+thanks,
 
-Thanks,
-Kay
+greg k-h
