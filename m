@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967Ab0IQSVr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 14:21:47 -0400
-Received: from smtp103.sbc.mail.ac4.yahoo.com ([76.13.13.242]:22719 "HELO
-	smtp103.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755241Ab0IQSVp (ORCPT
+	id S1755987Ab0IQSV6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 14:21:58 -0400
+Received: from smtp101.sbc.mail.re3.yahoo.com ([66.196.96.84]:39093 "HELO
+	smtp101.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754325Ab0IQSVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 14:21:45 -0400
+	Fri, 17 Sep 2010 14:21:55 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: fh8d0hcVM1kpVn2O5jvg2XuS0lJNC2_AXmc0jl5yqkg09BN
- QIfvWCbrCJUmmjCd_h9yY2DeqjQlAHyJtIHJIjv1wClr5vfkQIy400XrC_Ba
- Hsa9zAC1Wt.9MaMBajN.0d6M5ggBoO6WWj.1wEXUaJywRTL2t_65R81Jb4Rz
- UqvxJ3z6ScxmunXF2Ft_BUo0BpFPIOEM1BwhC3W7LtoiqlvqiMvq0PmAsCTj
- XJlO2WLlSO.VkvUu17yc4M_6Wpyu9DIe6oed2IWegz4N5Pr2z8UAOIYu3jOm
- Kr91LFp1gcI3LNCa1wTVY6Q4gwJoGJgSfGOcKJpoD7TAkWuRnRA--
+X-YMail-OSG: 8NKj_K0VM1kswxVgd_0zKptiITLQcSUg4MUegIhQpDp1YrI
+ rIPjMDYHjdUJYQCetNcoLyp6BUVqeErFKYZPIX2QS4VgDyzreNHrBHo89aVY
+ tnC0hvCVwaQnqbaHLQmMm6okWtAPFuIAOr1j8T7rzSbvM0FIEkZaa9yduE3g
+ m_fJXoquV5KyVtyU_y9LZV.HVt8b8a8OoV6rdM.._NbLFGCFnYyyrwL0WXYL
+ lpqF9GoxlwRQuig14LvQC4TtA8b9DTOH01VGT5r63XkF1kzRV935dw4YcAl8
+ oybi7v10OQ1wMJzyF8ERmn0vzbv.dYYGFljGe_By.KZTqL1oQBxXdyoSd2zx
+ p1HniXtx3xIzWGSAVj8GnNsYfXYcBjhqOZbLLfKyVotQMPQbTzr6l6E0PMAj
+ 0flO98FgIdwKO7ysoIqXsgRrPi2tsQ1hptP9lkhUnNKY1cL_2N7x9yiuP_Az
+ YlmAyb0pO4thz
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -29,9 +32,9 @@ Cc: James Smart <james.smart@emulex.com>,
         Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
         Christoph Hellwig <hch@lst.de>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH v2 00/11] Drop host_lock usage from scsi_dispatch_cmd()
-Date: Fri, 17 Sep 2010 11:21:37 -0700
-Message-Id: <1284747697-20840-1-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH v2 01/11] scsi: Convert struct Scsi_Host->cmd_serial_number to atomic_t
+Date: Fri, 17 Sep 2010 11:21:49 -0700
+Message-Id: <1284747709-20862-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -39,74 +42,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Greetings all,
+This patch converts struct Scsi_Host->cmd_serial_number to an atomic_t so that
+scsi_cmd_get_serial() can be safely called without struct Scsi_Host->host_lock
+in scsi_dispatch_cmd().  This patch also adds a struct Scsi_Host->use_serial_number
+to signal serial_number usage, but this is now disabled by default in
+scsi_host_alloc().
 
-This series contains the second round of a whole-sale conversion for completely
-dropping struct Scsi_Host->host_lock usage within scsi_dispatch_cmd() for
-the ML internal scsi_cmd_get_serial() and external SHT->queuecommand() LLD callers.
-
-The main changes from comments from v1 -> v2 are:
-
-	*) Make scsi_cmd_get_serial() use atomic_t and disable it's usage by default.
-	*) Drop struct Scsi_Host->host_lock usage in scsi_dispatch_cmd()
-
-For the v2 series, patch #1 converts struct Scsi_Host->cmd_serial_number to
-atomic_t and adds struct Scsi_Host->use_serial_number to enabled usage.  This
-patch also follows Joe Eykholt suggestion of using a +2 for each scsi_cmd_get_serial()
-to ensure that the counter always wraps to a non-zero value.
-
-Patch #2 completely removes host_lock usage from scsi_dispatch_cmd().
-
-Patch #3 -> #6 remove the legacy host_lock lock() -> do_work() -> unlock()
-optimization from generic libiscsi, libsas, libfc and libata ->queuecommand()
-callers respectively.
-
-And patches #7 -> #11 do the same conversion legacy host_lock lock() -> do_work() ->
-unlock() for lpfc, qla4xxx, qla2xxx, fnic, and buslogic LLDs specific ->queuecommand()
-callers.
-
-There may still be more LLDs which use this optimization, so please let me know if
-there is another piece of SHT->queuecommand() caller code that does this legacy
-optimization not in this list that need to be updated.  I will be sure to CC
-the right driver maintainers and CC linux-scsi as I come across any more
-conversions.
-
-Many thanks to James Bottomley, Andi Keen, Joe Eykholt, Vasu Dev and
-Tim Chen for their code and comments!
+One special item in scsi_cmd_get_serial() recommended by Joe Eykholt is to
+start struct Scsi_Host->cmd_serial_number at 1, and increment each serial_number
+by 2 so that the serial is odd, and wraps to 1 instead of 0.
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+---
+ drivers/scsi/hosts.c     |    4 ++++
+ drivers/scsi/scsi.c      |   13 ++++++++++---
+ include/scsi/scsi_host.h |    8 +++++---
+ 3 files changed, 19 insertions(+), 6 deletions(-)
 
-Nicholas Bellinger (11):
-  scsi: Convert struct Scsi_Host->cmd_serial_number to atomic_t
-  scsi: Drop struct Scsi_Host->host_lock usage in scsi_dispatch_cmd()
-  libiscsi: Remove host_lock unlock() + lock() from
-    iscsi_queuecommand()
-  libsas: Remove host_lock unlock() + lock() from sas_queuecommand()
-  libfc: Remove host_lock unlock() + lock() from fc_queuecommand()
-  libata: Remove host_lock unlock() + lock() from ata_scsi_queuecmd()
-  lpfc: Remove host_lock unlock() + lock() from lpfc_queuecommand()
-  qla4xxx: Remove host_lock unlock() + lock() from
-    qla4xxx_queuecommand()
-  qla2xxx: Remove host_lock unlock() + lock() from
-    qla2xxx_queuecommand()
-  fnic: Remove host_lock unlock() + lock() from fnic_queuecommand()
-  buslogic: Remove host_lock unlock() + lock() from
-    BusLogic_QueueCommand()
-
- drivers/ata/libata-scsi.c           |    2 --
- drivers/scsi/BusLogic.c             |    4 ----
- drivers/scsi/fnic/fnic_scsi.c       |    9 ---------
- drivers/scsi/hosts.c                |    4 ++++
- drivers/scsi/libfc/fc_fcp.c         |    5 +----
- drivers/scsi/libiscsi.c             |    4 ----
- drivers/scsi/libsas/sas_scsi_host.c |    5 -----
- drivers/scsi/lpfc/lpfc_scsi.c       |    2 --
- drivers/scsi/qla2xxx/qla_os.c       |    7 ++-----
- drivers/scsi/qla4xxx/ql4_os.c       |    8 +-------
- drivers/scsi/scsi.c                 |   17 +++++++++++------
- include/scsi/scsi_host.h            |    8 +++++---
- 12 files changed, 24 insertions(+), 51 deletions(-)
-
+diff --git a/drivers/scsi/hosts.c b/drivers/scsi/hosts.c
+index 8a8f803..aff1c9c 100644
+--- a/drivers/scsi/hosts.c
++++ b/drivers/scsi/hosts.c
+@@ -380,6 +380,10 @@ struct Scsi_Host *scsi_host_alloc(struct scsi_host_template *sht, int privsize)
+ 	shost->unchecked_isa_dma = sht->unchecked_isa_dma;
+ 	shost->use_clustering = sht->use_clustering;
+ 	shost->ordered_tag = sht->ordered_tag;
++	/*
++	 * Set the default shost->cmd_serial_number to 1.
++	 */
++	atomic_set(&shost->cmd_serial_number, 1);
+ 
+ 	if (sht->supported_mode == MODE_UNKNOWN)
+ 		/* means we didn't set it ... default to INITIATOR */
+diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+index ad0ed21..4724ce7 100644
+--- a/drivers/scsi/scsi.c
++++ b/drivers/scsi/scsi.c
+@@ -636,9 +636,16 @@ void scsi_log_completion(struct scsi_cmnd *cmd, int disposition)
+  */
+ static inline void scsi_cmd_get_serial(struct Scsi_Host *host, struct scsi_cmnd *cmd)
+ {
+-	cmd->serial_number = host->cmd_serial_number++;
+-	if (cmd->serial_number == 0) 
+-		cmd->serial_number = host->cmd_serial_number++;
++	/*
++	 * The use of per struct scsi_cmnd->serial_number is disabled by default
++	 */
++	if (!(host->use_serial_number))
++		return;
++	/*
++	 * Increment the host->cmd_serial_number by 2 so cmd->serial_number
++	 * is always odd and wraps to 1 instead of 0.
++	 */
++	cmd->serial_number = atomic_add_return(2, &host->cmd_serial_number);
+ }
+ 
+ /**
+diff --git a/include/scsi/scsi_host.h b/include/scsi/scsi_host.h
+index b7bdecb..b08d0f2 100644
+--- a/include/scsi/scsi_host.h
++++ b/include/scsi/scsi_host.h
+@@ -602,10 +602,9 @@ struct Scsi_Host {
+ 	short unsigned int max_sectors;
+ 	unsigned long dma_boundary;
+ 	/* 
+-	 * Used to assign serial numbers to the cmds.
+-	 * Protected by the host lock.
++	 * Used to assign serial numbers to the cmds in scsi_cmd_get_serial()
+ 	 */
+-	unsigned long cmd_serial_number;
++	atomic_t cmd_serial_number;
+ 	
+ 	unsigned active_mode:2;
+ 	unsigned unchecked_isa_dma:1;
+@@ -636,6 +635,9 @@ struct Scsi_Host {
+ 	/* Asynchronous scan in progress */
+ 	unsigned async_scan:1;
+ 
++	/* Signal usage of per struct scsi_cmnd->serial_number */
++	unsigned use_serial_number:1;
++
+ 	/*
+ 	 * Optional work queue to be utilized by the transport
+ 	 */
 -- 
 1.7.2.3
 
