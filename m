@@ -1,60 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815Ab0IQROd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 13:14:33 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54404 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703Ab0IQROc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 13:14:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=rEHXZ6i9Jb1jGvk6iWcUiM4XI/Q3K8aD24rUZSU0Dqfrb1T+Y+9moDx6pnwZqgYAcS
-         uu7JLF1YpdQDRpEnno1Qf7u2u1TDggdWZWF/94LWrZYcj7qXEY6dbZ7P4YGnmJPGTLuY
-         Tjq0liE6IH4PNM6HyDOKhoiL6VAlEgrwmK7yk=
-Message-ID: <4C93A227.7040807@gmail.com>
-Date: Fri, 17 Sep 2010 10:15:19 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
-MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>
-CC: trivial@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] scripts/kconfig/gconf.glade Update broken web addresses.
-References: <1284407756-4195-1-git-send-email-justinmattock@gmail.com> <4C9381C2.7050608@suse.cz>
-In-Reply-To: <4C9381C2.7050608@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755467Ab0IQRPp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 13:15:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39409 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752299Ab0IQRPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 13:15:43 -0400
+Date: Fri, 17 Sep 2010 13:15:14 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Ram Pai <linuxram@us.ibm.com>
+Cc: Ram Pai <ram.n.pai@gmail.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andreas Gruenbacher <agruen@suse.de>, Nick Piggin <npiggin@kernel.dk>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 03/34] VFS: Add CL_NO_SLAVE flag to clone_mnt()/copy_tree()
+Message-ID: <20100917171514.GA32258@shell>
+References: <1284675145-4391-1-git-send-email-vaurora@redhat.com> <1284675145-4391-4-git-send-email-vaurora@redhat.com> <AANLkTim1bbGrrPcFHThx3XOm8GmudQFSmFUs3NAXT5yC@mail.gmail.com> <20100917043401.GD8926@ram-laptop>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100917043401.GD8926@ram-laptop>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/2010 07:57 AM, Michal Marek wrote:
-> On 13.9.2010 21:55, Justin P. Mattock wrote:
->> As discussed, remove the DOCTYPE declaration since libglade validates
->> the file against itself..
->>
->> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
->> Signed-off-by: Michal Marek<mmarek@suse.cz>
->> ---
->>   scripts/kconfig/gconf.glade |    1 -
->>   1 files changed, 0 insertions(+), 1 deletions(-)
->>
->> diff --git a/scripts/kconfig/gconf.glade b/scripts/kconfig/gconf.glade
->> index d52b0a7..aa483cb 100644
->> --- a/scripts/kconfig/gconf.glade
->> +++ b/scripts/kconfig/gconf.glade
->> @@ -1,5 +1,4 @@
->>   <?xml version="1.0" standalone="no"?>  <!--*- mode: xml -*-->
->> -<!DOCTYPE glade-interface SYSTEM "http://glade.gnome.org/glade-2.0.dtd">
+On Thu, Sep 16, 2010 at 09:34:01PM -0700, Ram Pai wrote:
+> On Thu, Sep 16, 2010 at 05:09:58PM -0700, Ram Pai wrote:
+> > On Thu, Sep 16, 2010 at 3:11 PM, Valerie Aurora <vaurora@redhat.com> wrote:
+> > 
+> > > Passing the CL_NO_SLAVE flag to clone_mnt() causes the clone
+> > > to fail if the source mnt is a slave.
+> > >
+> > > Signed-off-by: Valerie Aurora <vaurora@redhat.com>
+> > > ---
+> > >  fs/namespace.c |    3 +++
+> > >  fs/pnode.h     |    1 +
+> > >  2 files changed, 4 insertions(+), 0 deletions(-)
+> > >
+> > > diff --git a/fs/namespace.c b/fs/namespace.c
+> > > index eeb4c22..6956062 100644
+> > > --- a/fs/namespace.c
+> > > +++ b/fs/namespace.c
+> > > @@ -565,6 +565,9 @@ static struct vfsmount *clone_mnt(struct vfsmount *old,
+> > > struct dentry *root,
+> > >        if ((flag & CL_NO_SHARED) && (IS_MNT_SHARED(old)))
+> > >                return ERR_PTR(-EINVAL);
+> > >
+> > > +       if ((flag & CL_NO_SLAVE) && (IS_MNT_SLAVE(old)))
+> > > +               return ERR_PTR(-EINVAL);
+> > > +
+> > >
+> > 
+> > 
+> > its been a while and my memory may have corroded.  But I dont think this
+> > check is needed. Because cloning a 'slave mount' makes the mount a 'private
+> > mount' and not a 'slave mount'.
 >
-> Applied.
->
-> Michal
->
+> There is one case where a 'slave mount' when cloned can generate a 'slave mount', and
+> that is when the 'slave mount' is also a 'shared mount'. So the above check has to
+> be
+> 
+>        if ((flag & CL_NO_SLAVE) && (IS_MNT_SLAVE(old) && IS_MNT_SHARED(old)))
+>                return ERR_PTR(-EINVAL);
 
+Hey Ram,
 
-alright!!
+I added this flag for union mounts. Union mounts can't deal with
+namespace changes in the read-only layers, so we don't allow union of
+read-only mounts that are the target of propagation events (shared or
+slave).
 
-Justin P. Mattock
+We could automatically convert all slave or shared mounts into private
+mounts when we clone the mounts, but that would surprise an
+administrator who carefully set up their shared or slave read-only
+mounts before unioning them.  So instead of silently converting slave
+or shared to private, we error out.  Does that make sense?
+
+All that being said, I debated how to do this cleanly and I'm still
+not satisfied.  My goal is to both check and clone the proposed
+read-only layers in one pass.  Without these flags, I had to do four
+passes:
+
+1. Find the "lowest" read-only mount at this mountpoint.
+2. Check each mount for read-only, not shared, not slave.
+3. Clone the subtree starting at the "lowest" mount.
+4. Recheck the cloned tree for rules in #2.
+
+One of the reasons I had to do it this way is that you can't hold
+vfsmount_lock while calling copy_tree(), so the mount flags can change
+between the first check in #2 and the copy_tree() in #3.  Also
+sb->s_flag can change.  One of the problems with the current code is
+that it can't deal with cloning existing union mounts, which we need
+if we are to make bind mounts work (see do_loopback()).
+
+Anyway, if you have any ideas, I'm all ears.
+
+Thanks for reviewing,
+
+-VAL
