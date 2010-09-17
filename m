@@ -1,47 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891Ab0IQFeX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 01:34:23 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59599
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750860Ab0IQFeW (ORCPT
+	id S1754628Ab0IQFep (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 01:34:45 -0400
+Received: from smtp102.sbc.mail.ac4.yahoo.com ([76.13.13.241]:26894 "HELO
+	smtp102.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750860Ab0IQFem (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 01:34:22 -0400
-Date: Thu, 16 Sep 2010 22:34:41 -0700 (PDT)
-Message-Id: <20100916.223441.93463391.davem@davemloft.net>
-To: drosenberg@vsecurity.com
-Cc: grundler@parisc-linux.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, kyle@mcmartin.ca, jeffm@suse.com,
-        security@kernel.org
-Subject: Re: [PATCH v4] drivers/net/tulip/de4x5.c: fix union member name in
- DE4X5_GET_REG ioctl
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1284701436.2565.6.camel@dan>
-References: <1284699944.2565.4.camel@dan>
-	<20100916.222740.135972127.davem@davemloft.net>
-	<1284701436.2565.6.camel@dan>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 17 Sep 2010 01:34:42 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: BlVPh6wVM1kggkRiSiY3eyREMs6sLVHxolDkIZ6gelc5qEL
+ NriTka5eUy4xSMyjUTt4XwPVHEdiXcaG41O_tvmJADHchX_nztwkDbyxo5ML
+ wBfrDETk183imiVc2Cce2.VgB4ipJaB0Bi3rCSTAtVC9L8yBa_GSLnYK9W2b
+ zrVT9iRg7Q5sOeAyHYm88A1zZG33wBySrG1SQfQ1KG5QF04yE8C2gKNYDfgl
+ fXY5jtNwFLJZN.GJZkbwamX.O4.L1zI3ziQc78UcB8XwtLwF4jP3SCdjQFyw
+ gP4ZskgMXAq8qH1HOoPjn0xR0jIzAeJLvyNWVngh_H3gCiZTLuA--
+X-Yahoo-Newman-Property: ymail-3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: Hannes Reinecke <hare@suse.de>, Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        Joe Eykholt <jeykholt@cisco.com>, Boaz Harrosh <bharrosh@panasas.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 0/3] tcm: Add native 32-byte CDB support
+Date: Thu, 16 Sep 2010 22:34:34 -0700
+Message-Id: <1284701674-18323-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-Date: Fri, 17 Sep 2010 01:30:36 -0400
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-> Tiring doesn't begin to describe it.  Formatting undamaged.
+Greetings jejb, mkp and Co,
 
-:-)  Thanks.
+This patch series adds support for native 32-byte CDB processing into TCM Core,
+TCM subsystem plugins, and TCM_Loop virtual SCSI LLD.
 
-> This was previously reported as a security issue due to leakage of
-> uninitialized stack memory.  Jeff Mahoney pointed out that this is
-> incorrect since the copied data is from a union (rather than a struct).
-> Therefore, this patch is only under consideration for the sake of
-> correctness, and is not security relevant. 
-> 
-> Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-> Acked-by: Grant Grundler <grundler@parisc-linux.org>
+The first patch adds the new TCM_MAX_COMMAND_SIZE=32 defintion and adds the necessary
+LBA + transfer length extraction and generation methods for 32-byte CDBs following
+SBC-4.  This includes converting FILEIO, IBLOCK, PSCSI, RAMDISK and STGT subsystem
+plugins to use the new TCM_MAX_COMMAND_SIZE value for their own per struct se_task
+context descriptor internal inline CDB size defines.
 
-Applied.
+The second patch adds proper VARIABLE_LENGTH_CMD support together with XDWRITE_READ_32
+emulation following the recent patch adding support for XDWRITE_READ_10.
+
+And the third and final patch updates the TCM_Loop fabric module to signal the
+Linux/SCSI midlayer that we are now capable of processing up to 32-byte CDBs.
+
+Also, I ended up adding support for XDWRITE_READ_32 into Tomo's sgv4-utils.git in
+order to test this series.  Please have look and let me know what you think Tomo!
+
+http://linux-iscsi.org/builds/user/nab/0001-sgv4_xdwriteread-Add-support-for-XDWRITEREAD_32.patch
+
+Many thanks to jejb and mkp for answering my questions about > 16 byte CDB support!
+
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+
+Nicholas Bellinger (3):
+  tcm: Add native 32-byte CDB support
+  tcm: Add VARIABLE_LENGTH_CMD support w/ XDWRITE_READ_32 emulation
+  tcm_loop: Enable 32-byte CDB support in virtual SCSI LLD
+
+ drivers/target/target_core_file.h       |    2 +-
+ drivers/target/target_core_iblock.h     |    2 +-
+ drivers/target/target_core_pscsi.c      |    2 +-
+ drivers/target/target_core_pscsi.h      |    2 +-
+ drivers/target/target_core_rd.h         |    2 +-
+ drivers/target/target_core_scdb.c       |   38 ++++++++++++
+ drivers/target/target_core_scdb.h       |    2 +
+ drivers/target/target_core_stgt.h       |    2 +-
+ drivers/target/target_core_transport.c  |   94 +++++++++++++++++++++++++++----
+ drivers/target/tcm_loop/tcm_loop_core.h |    2 +-
+ include/target/target_core_base.h       |   13 ++++
+ 11 files changed, 142 insertions(+), 19 deletions(-)
+
