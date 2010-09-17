@@ -1,82 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628Ab0IQFep (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 01:34:45 -0400
-Received: from smtp102.sbc.mail.ac4.yahoo.com ([76.13.13.241]:26894 "HELO
-	smtp102.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750860Ab0IQFem (ORCPT
+	id S1754395Ab0IQFef (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 01:34:35 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:33767 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753996Ab0IQFec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 01:34:42 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: BlVPh6wVM1kggkRiSiY3eyREMs6sLVHxolDkIZ6gelc5qEL
- NriTka5eUy4xSMyjUTt4XwPVHEdiXcaG41O_tvmJADHchX_nztwkDbyxo5ML
- wBfrDETk183imiVc2Cce2.VgB4ipJaB0Bi3rCSTAtVC9L8yBa_GSLnYK9W2b
- zrVT9iRg7Q5sOeAyHYm88A1zZG33wBySrG1SQfQ1KG5QF04yE8C2gKNYDfgl
- fXY5jtNwFLJZN.GJZkbwamX.O4.L1zI3ziQc78UcB8XwtLwF4jP3SCdjQFyw
- gP4ZskgMXAq8qH1HOoPjn0xR0jIzAeJLvyNWVngh_H3gCiZTLuA--
-X-Yahoo-Newman-Property: ymail-3
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: Hannes Reinecke <hare@suse.de>, Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Joe Eykholt <jeykholt@cisco.com>, Boaz Harrosh <bharrosh@panasas.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 0/3] tcm: Add native 32-byte CDB support
-Date: Thu, 16 Sep 2010 22:34:34 -0700
-Message-Id: <1284701674-18323-1-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.5.6.5
+	Fri, 17 Sep 2010 01:34:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=pw5RHNAx/Nukd249ZvXFF1G8eaFGvfR9pJGr3ChIvOkE8fHpd19PD0HN61KtLzv0VX
+         rR/z/+tgGFhoC1BGHLL7xA9ln2WwCadBgiaSM74tcLPWyeyWvrWzN8bVm5fu6DM0bLFW
+         Dzpwnk+3v8sHhTOcVJyGGuWvDK7+sBTtQkoGY=
+Subject: Re: linux-next: build failure after merge of the rcu tree
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: sfr@canb.auug.org.au, paulmck@linux.vnet.ibm.com,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+In-Reply-To: <20100916.213939.24608537.davem@davemloft.net>
+References: <20100917124238.aa0596cb.sfr@canb.auug.org.au>
+	 <20100916.213939.24608537.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 17 Sep 2010 07:34:26 +0200
+Message-ID: <1284701666.4784.36.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+Le jeudi 16 septembre 2010 à 21:39 -0700, David Miller a écrit :
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Fri, 17 Sep 2010 12:42:38 +1000
+> 
+> > Subject: [PATCH] net: include inetdevice.h for rcu_dereference_raw api change
+> > 
+> > rcu_dereference_raw() now needs to know the type of its argument.
+> > 
+> > Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> 
+> I've tossed this into net-next-2.6, thanks!
 
-Greetings jejb, mkp and Co,
+Thanks guys
 
-This patch series adds support for native 32-byte CDB processing into TCM Core,
-TCM subsystem plugins, and TCM_Loop virtual SCSI LLD.
 
-The first patch adds the new TCM_MAX_COMMAND_SIZE=32 defintion and adds the necessary
-LBA + transfer length extraction and generation methods for 32-byte CDBs following
-SBC-4.  This includes converting FILEIO, IBLOCK, PSCSI, RAMDISK and STGT subsystem
-plugins to use the new TCM_MAX_COMMAND_SIZE value for their own per struct se_task
-context descriptor internal inline CDB size defines.
-
-The second patch adds proper VARIABLE_LENGTH_CMD support together with XDWRITE_READ_32
-emulation following the recent patch adding support for XDWRITE_READ_10.
-
-And the third and final patch updates the TCM_Loop fabric module to signal the
-Linux/SCSI midlayer that we are now capable of processing up to 32-byte CDBs.
-
-Also, I ended up adding support for XDWRITE_READ_32 into Tomo's sgv4-utils.git in
-order to test this series.  Please have look and let me know what you think Tomo!
-
-http://linux-iscsi.org/builds/user/nab/0001-sgv4_xdwriteread-Add-support-for-XDWRITEREAD_32.patch
-
-Many thanks to jejb and mkp for answering my questions about > 16 byte CDB support!
-
-Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-
-Nicholas Bellinger (3):
-  tcm: Add native 32-byte CDB support
-  tcm: Add VARIABLE_LENGTH_CMD support w/ XDWRITE_READ_32 emulation
-  tcm_loop: Enable 32-byte CDB support in virtual SCSI LLD
-
- drivers/target/target_core_file.h       |    2 +-
- drivers/target/target_core_iblock.h     |    2 +-
- drivers/target/target_core_pscsi.c      |    2 +-
- drivers/target/target_core_pscsi.h      |    2 +-
- drivers/target/target_core_rd.h         |    2 +-
- drivers/target/target_core_scdb.c       |   38 ++++++++++++
- drivers/target/target_core_scdb.h       |    2 +
- drivers/target/target_core_stgt.h       |    2 +-
- drivers/target/target_core_transport.c  |   94 +++++++++++++++++++++++++++----
- drivers/target/tcm_loop/tcm_loop_core.h |    2 +-
- include/target/target_core_base.h       |   13 ++++
- 11 files changed, 142 insertions(+), 19 deletions(-)
 
