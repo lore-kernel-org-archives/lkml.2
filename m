@@ -1,72 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751679Ab0IQEeK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 00:34:10 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:35597 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846Ab0IQEeI (ORCPT
+	id S1751973Ab0IQEjV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 00:39:21 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:46675
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750724Ab0IQEjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 00:34:08 -0400
-Date: Thu, 16 Sep 2010 21:34:01 -0700
-From: Ram Pai <linuxram@us.ibm.com>
-To: Valerie Aurora <vaurora@redhat.com>
-Cc: Ram Pai <ram.n.pai@gmail.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andreas Gruenbacher <agruen@suse.de>, Nick Piggin <npiggin@kernel.dk>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 03/34] VFS: Add CL_NO_SLAVE flag to
- clone_mnt()/copy_tree()
-Message-ID: <20100917043401.GD8926@ram-laptop>
-Reply-To: Ram Pai <linuxram@us.ibm.com>
-References: <1284675145-4391-1-git-send-email-vaurora@redhat.com>
- <1284675145-4391-4-git-send-email-vaurora@redhat.com>
- <AANLkTim1bbGrrPcFHThx3XOm8GmudQFSmFUs3NAXT5yC@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTim1bbGrrPcFHThx3XOm8GmudQFSmFUs3NAXT5yC@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 17 Sep 2010 00:39:20 -0400
+Date: Thu, 16 Sep 2010 21:39:39 -0700 (PDT)
+Message-Id: <20100916.213939.24608537.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: paulmck@linux.vnet.ibm.com, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
+        netdev@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the rcu tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100917124238.aa0596cb.sfr@canb.auug.org.au>
+References: <20100917124238.aa0596cb.sfr@canb.auug.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 05:09:58PM -0700, Ram Pai wrote:
-> On Thu, Sep 16, 2010 at 3:11 PM, Valerie Aurora <vaurora@redhat.com> wrote:
-> 
-> > Passing the CL_NO_SLAVE flag to clone_mnt() causes the clone
-> > to fail if the source mnt is a slave.
-> >
-> > Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-> > ---
-> >  fs/namespace.c |    3 +++
-> >  fs/pnode.h     |    1 +
-> >  2 files changed, 4 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/fs/namespace.c b/fs/namespace.c
-> > index eeb4c22..6956062 100644
-> > --- a/fs/namespace.c
-> > +++ b/fs/namespace.c
-> > @@ -565,6 +565,9 @@ static struct vfsmount *clone_mnt(struct vfsmount *old,
-> > struct dentry *root,
-> >        if ((flag & CL_NO_SHARED) && (IS_MNT_SHARED(old)))
-> >                return ERR_PTR(-EINVAL);
-> >
-> > +       if ((flag & CL_NO_SLAVE) && (IS_MNT_SLAVE(old)))
-> > +               return ERR_PTR(-EINVAL);
-> > +
-> >
-> 
-> 
-> its been a while and my memory may have corroded.  But I dont think this
-> check is needed. Because cloning a 'slave mount' makes the mount a 'private
-> mount' and not a 'slave mount'.
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 17 Sep 2010 12:42:38 +1000
 
-There is one case where a 'slave mount' when cloned can generate a 'slave mount', and
-that is when the 'slave mount' is also a 'shared mount'. So the above check has to
-be
+> Subject: [PATCH] net: include inetdevice.h for rcu_dereference_raw api change
+> 
+> rcu_dereference_raw() now needs to know the type of its argument.
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
-       if ((flag & CL_NO_SLAVE) && (IS_MNT_SLAVE(old) && IS_MNT_SHARED(old)))
-               return ERR_PTR(-EINVAL);
-
-RP
+I've tossed this into net-next-2.6, thanks!
