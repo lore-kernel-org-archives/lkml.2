@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753593Ab0IQMHH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 08:07:07 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59707 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753157Ab0IQMHE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 08:07:04 -0400
-Date: Fri, 17 Sep 2010 13:07:02 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Jeongbae Seo'" <jeongbae.seo@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Changhwan Youn'" <chaos.youn@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, lrg@slimlogic.co.uk
-Subject: Re: [PATCH] regulator: Add support samsung power domain
-Message-ID: <20100917120702.GB4322@rakim.wolfsonmicro.main>
-References: <1284717532-9992-1-git-send-email-kgene.kim@samsung.com>
- <20100917113050.GA4322@rakim.wolfsonmicro.main>
- <007b01cb565d$db4376d0$91ca6470$%szyprowski@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <007b01cb565d$db4376d0$91ca6470$%szyprowski@samsung.com>
-X-Cookie: I can't drive 55.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753586Ab0IQMNc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 08:13:32 -0400
+Received: from cantor.suse.de ([195.135.220.2]:53539 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752867Ab0IQMNa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 08:13:30 -0400
+Subject: Re: [PATCH 1/8] scsi: Drop struct Scsi_Host->host_lock around
+ SHT->queuecommand()
+From: James Bottomley <James.Bottomley@suse.de>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
+        Christoph Hellwig <hch@lst.de>
+In-Reply-To: <20100917072022.GB2644@gargoyle.ger.corp.intel.com>
+References: <1284676529-10756-1-git-send-email-nab@linux-iscsi.org>
+	 <1284691571.26423.50.camel@mulgrave.site>
+	 <20100917072022.GB2644@gargoyle.ger.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 17 Sep 2010 08:13:12 -0400
+Message-ID: <1284725592.26423.60.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 17, 2010 at 01:45:36PM +0200, Marek Szyprowski wrote:
+On Fri, 2010-09-17 at 09:20 +0200, Andi Kleen wrote:
+> > So at least from where I stand, my object is to reduce the number of
+> > times we take and release the lock, which this doesn't do.  As I said
+> > before: we need to figure out the rest, which likely includes an atomic
+> > for the serial number (which is almost unused).  I think the check
+> 
+> If it's unused it should be removed, make optional.
+> Atomics are a scalability problem too and not much cheaper than spinlocks.
 
-> The approach with merging power domains with clocks have some disadvantages.
-> In some cases the clock gating and power gating should be distinguished.
+I don't disagree with the idea of removing it, especially as it has so
+few users, but replacing the host lock with an atomic here would still
+vastly reduce the contention, which is the initial complaint.  The
+contention occurs because the host lock is so widely used for other
+things.  The way to reduce that contention is firstly to reduce the
+length of code covered by the lock and also reduce the actual number of
+places where the lock is taken.  Compared with host lock's current vast
+footprint, and atomic here is tiny.
 
-This is not what I suggested.  I suggested using runtime PM instead of
-the regulator API to manage blocks.
+James
 
-> Just assume an IP like a video codec. It has it's own internal state machine.
-> It gets reset when the ip is power gated, but it is preserved during clock
-> gating. The driver might want to do a clock gating when it is waiting for a
-> new frame to decode, but should do power gating only when the device has
 
-There's nothing stopping the drivers enabling and disabling the clocks
-for themselves while they're active, all the rumtime PM stuff I've seen
-for this does is ensure that the clocks are enabled and disabled when
-the device is enabled and disabled.  This matches what you're saying
-above - clearly, if the device is power gated there's no need to provide
-a clock for it - and with aggressive runtime PM it's pretty much exactly
-what a lot of devices end up needing.
-
-> been closed. Having a set of fake clocks just for power gating imho doesn't
-> look good.
-
-Who said use the clock API?
