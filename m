@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755067Ab0IQG77 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 02:59:59 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:33657 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753126Ab0IQG76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 02:59:58 -0400
-Date: Fri, 17 Sep 2010 08:59:51 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Matt Helsley <matthltc@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prasad <prasad@linux.vnet.ibm.com>
-Subject: Re: [GIT PULL] hw_breakpoint fixes
-Message-ID: <20100917065950.GA5402@elte.hu>
-References: <1284691702-32269-1-git-send-regression-fweisbec@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284691702-32269-1-git-send-regression-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1754956Ab0IQHFZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 03:05:25 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:37067 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752733Ab0IQHFX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 03:05:23 -0400
+From: "Ian Munsie" <imunsie@au1.ibm.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Ian Munsie <imunsie@au1.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Paris <eparis@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] powerpc: define a compat_sys_recv cond_syscall
+Date: Fri, 17 Sep 2010 17:05:03 +1000
+Message-Id: <1284707103-4097-1-git-send-email-imunsie@au1.ibm.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20100903132410.ede593ed.sfr@canb.auug.org.au>
+References: <20100903132410.ede593ed.sfr@canb.auug.org.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Stephen Rothwell <sfr@canb.auug.org.au>
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+Since compat_sys_recv is an optionl syscall if the kernel is compiled
+without networking we need a cond_syscall defined for it since it is now
+wired up directly on PowerPC.
 
-> Ingo,
-> 
-> Please pull the perf/urgent branch that can be found at:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-> 	perf/urgent
-> 
-> Thanks,
-> 	Frederic
-> ---
-> 
-> Frederic Weisbecker (1):
->       x86: Fix instruction breakpoint encoding
-> 
-> Matt Helsley (1):
->       hw breakpoints: Fix pid namespace bug
-> 
-> 
->  arch/x86/include/asm/hw_breakpoint.h |    2 +-
->  arch/x86/kernel/hw_breakpoint.c      |   40 ++++++++++++++++-----------------
->  kernel/hw_breakpoint.c               |    3 +-
->  3 files changed, 22 insertions(+), 23 deletions(-)
+Other architectures that wire up the socket calls directly as syscalls
+do not run into this issue either because they don't have to deal with
+the 32bit compat versions of the syscalls or just don't wire up that
+particular compat syscall directly.
 
-Pulled, thanks a lot Frederic!
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+---
+ kernel/sys_ni.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-	Ingo
+diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
+index bad369e..c782fe9 100644
+--- a/kernel/sys_ni.c
++++ b/kernel/sys_ni.c
+@@ -50,6 +50,7 @@ cond_syscall(compat_sys_sendmsg);
+ cond_syscall(sys_recvmsg);
+ cond_syscall(sys_recvmmsg);
+ cond_syscall(compat_sys_recvmsg);
++cond_syscall(compat_sys_recv);
+ cond_syscall(compat_sys_recvfrom);
+ cond_syscall(compat_sys_recvmmsg);
+ cond_syscall(sys_socketcall);
+-- 
+1.7.1
+
