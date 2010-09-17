@@ -1,196 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753746Ab0IQL2u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 07:28:50 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60817 "EHLO hera.kernel.org"
+	id S1753638Ab0IQL3h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 07:29:37 -0400
+Received: from hera.kernel.org ([140.211.167.34]:60848 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753687Ab0IQL2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 07:28:46 -0400
-Date: Fri, 17 Sep 2010 11:28:14 GMT
+	id S1752123Ab0IQL3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 07:29:36 -0400
+Date: Fri, 17 Sep 2010 11:29:01 GMT
 From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, eranian@google.com,
-        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@redhat.com, yinghai@kernel.org, a.p.zijlstra@chello.nl,
         robert.richter@amd.com, tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
-        paulus@samba.org, linux-kernel@vger.kernel.org, robert.richter@amd.com,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20100917093009.410784731@chello.nl>
-References: <20100917093009.410784731@chello.nl>
+        linux-kernel@vger.kernel.org, robert.richter@amd.com,
+        yinghai@kernel.org, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <20100917093009.519845633@chello.nl>
+References: <20100917093009.519845633@chello.nl>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Complete software pmu grouping
-Message-ID: <tip-b04243ef7006cda301819f54ee7ce0a3632489e3@git.kernel.org>
-Git-Commit-ID: b04243ef7006cda301819f54ee7ce0a3632489e3
+Subject: [tip:perf/core] perf: Undo the per cpu-context timer stuff
+Message-ID: <tip-e9d2b064149ff7ef4acbc65a1b9374ac8b218d3e@git.kernel.org>
+Git-Commit-ID: e9d2b064149ff7ef4acbc65a1b9374ac8b218d3e
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 17 Sep 2010 11:28:15 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 17 Sep 2010 11:29:01 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b04243ef7006cda301819f54ee7ce0a3632489e3
-Gitweb:     http://git.kernel.org/tip/b04243ef7006cda301819f54ee7ce0a3632489e3
+Commit-ID:  e9d2b064149ff7ef4acbc65a1b9374ac8b218d3e
+Gitweb:     http://git.kernel.org/tip/e9d2b064149ff7ef4acbc65a1b9374ac8b218d3e
 Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Fri, 17 Sep 2010 11:28:48 +0200
+AuthorDate: Fri, 17 Sep 2010 11:28:50 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
 CommitDate: Fri, 17 Sep 2010 12:48:48 +0200
 
-perf: Complete software pmu grouping
+perf: Undo the per cpu-context timer stuff
 
-Aside from allowing software events into a !software group,
-allow adding !software events to pure software groups.
-
-Once we've moved the software group and attached the first
-!software event, the group will no longer be a pure software
-group and hence no longer be eligible for movement, at which
-point the straight ctx comparison is correct again.
+Revert the timer per cpu-context timers because of unfortunate
+nohz interaction. Fixing that would have been somewhat ugly, so
+go back to driving things from the regular tick. Provide a
+jiffies interval feature for people who want slower rotations.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
 Cc: Robert Richter <robert.richter@amd.com>
-Cc: Paul Mackerras <paulus@samba.org>
-LKML-Reference: <20100917093009.410784731@chello.nl>
+Cc: Yinghai Lu <yinghai@kernel.org>
+LKML-Reference: <20100917093009.519845633@chello.nl>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- include/linux/perf_event.h |    6 ++++
- kernel/perf_event.c        |   65 ++++++++++++++++++++++++++++++++++++++++---
- 2 files changed, 66 insertions(+), 5 deletions(-)
+ include/linux/perf_event.h |    6 ++-
+ kernel/perf_event.c        |   79 +++++++++++++++++++++++++++----------------
+ kernel/sched.c             |    2 +
+ 3 files changed, 55 insertions(+), 32 deletions(-)
 
 diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 39d8860..165287f 100644
+index 165287f..61b1e2d 100644
 --- a/include/linux/perf_event.h
 +++ b/include/linux/perf_event.h
-@@ -804,12 +804,18 @@ struct perf_event {
- #endif /* CONFIG_PERF_EVENTS */
+@@ -870,8 +870,8 @@ struct perf_cpu_context {
+ 	struct perf_event_context	*task_ctx;
+ 	int				active_oncpu;
+ 	int				exclusive;
+-	u64				timer_interval;
+-	struct hrtimer			timer;
++	struct list_head		rotation_list;
++	int				jiffies_interval;
  };
  
-+enum perf_event_context_type {
-+	task_context,
-+	cpu_context,
-+};
-+
- /**
-  * struct perf_event_context - event context structure
-  *
-  * Used as a container for task events and CPU events as well:
-  */
- struct perf_event_context {
-+	enum perf_event_context_type	type;
- 	struct pmu			*pmu;
- 	/*
- 	 * Protect the states of the events in the list,
+ struct perf_output_handle {
+@@ -1065,6 +1065,7 @@ extern int perf_swevent_get_recursion_context(void);
+ extern void perf_swevent_put_recursion_context(int rctx);
+ extern void perf_event_enable(struct perf_event *event);
+ extern void perf_event_disable(struct perf_event *event);
++extern void perf_event_task_tick(void);
+ #else
+ static inline void
+ perf_event_task_sched_in(struct task_struct *task)			{ }
+@@ -1099,6 +1100,7 @@ static inline int  perf_swevent_get_recursion_context(void)		{ return -1; }
+ static inline void perf_swevent_put_recursion_context(int rctx)		{ }
+ static inline void perf_event_enable(struct perf_event *event)		{ }
+ static inline void perf_event_disable(struct perf_event *event)		{ }
++static inline void perf_event_task_tick(void)				{ }
+ #endif
+ 
+ #define perf_output_put(handle, x) \
 diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index ce95617..6d7eef5 100644
+index 27332e5..baae136 100644
 --- a/kernel/perf_event.c
 +++ b/kernel/perf_event.c
-@@ -5184,6 +5184,7 @@ int perf_pmu_register(struct pmu *pmu)
+@@ -77,23 +77,22 @@ void perf_pmu_enable(struct pmu *pmu)
+ 		pmu->pmu_enable(pmu);
+ }
  
- 		cpuctx = per_cpu_ptr(pmu->pmu_cpu_context, cpu);
- 		__perf_event_init_context(&cpuctx->ctx);
-+		cpuctx->ctx.type = cpu_context;
- 		cpuctx->ctx.pmu = pmu;
- 		cpuctx->timer_interval = TICK_NSEC;
- 		hrtimer_init(&cpuctx->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-@@ -5517,7 +5518,8 @@ SYSCALL_DEFINE5(perf_event_open,
- 		struct perf_event_attr __user *, attr_uptr,
- 		pid_t, pid, int, cpu, int, group_fd, unsigned long, flags)
++static DEFINE_PER_CPU(struct list_head, rotation_list);
++
++/*
++ * perf_pmu_rotate_start() and perf_rotate_context() are fully serialized
++ * because they're strictly cpu affine and rotate_start is called with IRQs
++ * disabled, while rotate_context is called from IRQ context.
++ */
+ static void perf_pmu_rotate_start(struct pmu *pmu)
  {
--	struct perf_event *event, *group_leader = NULL, *output_event = NULL;
-+	struct perf_event *group_leader = NULL, *output_event = NULL;
-+	struct perf_event *event, *sibling;
- 	struct perf_event_attr attr;
- 	struct perf_event_context *ctx;
- 	struct file *event_file = NULL;
-@@ -5525,6 +5527,7 @@ SYSCALL_DEFINE5(perf_event_open,
- 	struct task_struct *task = NULL;
- 	struct pmu *pmu;
- 	int event_fd;
-+	int move_group = 0;
- 	int fput_needed = 0;
- 	int err;
+ 	struct perf_cpu_context *cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
++	struct list_head *head = &__get_cpu_var(rotation_list);
  
-@@ -5574,8 +5577,29 @@ SYSCALL_DEFINE5(perf_event_open,
- 	 * any hardware group.
- 	 */
- 	pmu = event->pmu;
--	if ((pmu->task_ctx_nr == perf_sw_context) && group_leader)
--		pmu = group_leader->pmu;
-+
-+	if (group_leader &&
-+	    (is_software_event(event) != is_software_event(group_leader))) {
-+		if (is_software_event(event)) {
-+			/*
-+			 * If event and group_leader are not both a software
-+			 * event, and event is, then group leader is not.
-+			 *
-+			 * Allow the addition of software events to !software
-+			 * groups, this is safe because software events never
-+			 * fail to schedule.
-+			 */
-+			pmu = group_leader->pmu;
-+		} else if (is_software_event(group_leader) &&
-+			   (group_leader->group_flags & PERF_GROUP_SOFTWARE)) {
-+			/*
-+			 * In case the group is a pure software group, and we
-+			 * try to add a hardware event, move the whole group to
-+			 * the hardware context.
-+			 */
-+			move_group = 1;
-+		}
-+	}
+-	if (hrtimer_active(&cpuctx->timer))
+-		return;
++	WARN_ON(!irqs_disabled());
  
- 	if (pid != -1)
- 		task = find_lively_task_by_vpid(pid);
-@@ -5605,8 +5629,14 @@ SYSCALL_DEFINE5(perf_event_open,
- 		 * Do not allow to attach to a group in a different
- 		 * task or CPU context:
- 		 */
--		if (group_leader->ctx != ctx)
--			goto err_context;
-+		if (move_group) {
-+			if (group_leader->ctx->type != ctx->type)
-+				goto err_context;
-+		} else {
-+			if (group_leader->ctx != ctx)
-+				goto err_context;
-+		}
-+
- 		/*
- 		 * Only a group leader can be exclusive or pinned
- 		 */
-@@ -5626,9 +5656,34 @@ SYSCALL_DEFINE5(perf_event_open,
- 		goto err_context;
+-	__hrtimer_start_range_ns(&cpuctx->timer,
+-			ns_to_ktime(cpuctx->timer_interval), 0,
+-			HRTIMER_MODE_REL_PINNED, 0);
+-}
+-
+-static void perf_pmu_rotate_stop(struct pmu *pmu)
+-{
+-	struct perf_cpu_context *cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
+-
+-	hrtimer_cancel(&cpuctx->timer);
++	if (list_empty(&cpuctx->rotation_list))
++		list_add(&cpuctx->rotation_list, head);
+ }
+ 
+ static void get_ctx(struct perf_event_context *ctx)
+@@ -1607,36 +1606,33 @@ static void rotate_ctx(struct perf_event_context *ctx)
+ }
+ 
+ /*
+- * Cannot race with ->pmu_rotate_start() because this is ran from hardirq
+- * context, and ->pmu_rotate_start() is called with irqs disabled (both are
+- * cpu affine, so there are no SMP races).
++ * perf_pmu_rotate_start() and perf_rotate_context() are fully serialized
++ * because they're strictly cpu affine and rotate_start is called with IRQs
++ * disabled, while rotate_context is called from IRQ context.
+  */
+-static enum hrtimer_restart perf_event_context_tick(struct hrtimer *timer)
++static void perf_rotate_context(struct perf_cpu_context *cpuctx)
+ {
+-	enum hrtimer_restart restart = HRTIMER_NORESTART;
+-	struct perf_cpu_context *cpuctx;
++	u64 interval = (u64)cpuctx->jiffies_interval * TICK_NSEC;
+ 	struct perf_event_context *ctx = NULL;
+-	int rotate = 0;
+-
+-	cpuctx = container_of(timer, struct perf_cpu_context, timer);
++	int rotate = 0, remove = 1;
+ 
+ 	if (cpuctx->ctx.nr_events) {
+-		restart = HRTIMER_RESTART;
++		remove = 0;
+ 		if (cpuctx->ctx.nr_events != cpuctx->ctx.nr_active)
+ 			rotate = 1;
  	}
  
-+	if (move_group) {
-+		struct perf_event_context *gctx = group_leader->ctx;
+ 	ctx = cpuctx->task_ctx;
+ 	if (ctx && ctx->nr_events) {
+-		restart = HRTIMER_RESTART;
++		remove = 0;
+ 		if (ctx->nr_events != ctx->nr_active)
+ 			rotate = 1;
+ 	}
+ 
+ 	perf_pmu_disable(cpuctx->ctx.pmu);
+-	perf_ctx_adjust_freq(&cpuctx->ctx, cpuctx->timer_interval);
++	perf_ctx_adjust_freq(&cpuctx->ctx, interval);
+ 	if (ctx)
+-		perf_ctx_adjust_freq(ctx, cpuctx->timer_interval);
++		perf_ctx_adjust_freq(ctx, interval);
+ 
+ 	if (!rotate)
+ 		goto done;
+@@ -1654,10 +1650,24 @@ static enum hrtimer_restart perf_event_context_tick(struct hrtimer *timer)
+ 		task_ctx_sched_in(ctx, EVENT_FLEXIBLE);
+ 
+ done:
++	if (remove)
++		list_del_init(&cpuctx->rotation_list);
 +
-+		mutex_lock(&gctx->mutex);
-+		perf_event_remove_from_context(group_leader);
-+		list_for_each_entry(sibling, &group_leader->sibling_list,
-+				    group_entry) {
-+			perf_event_remove_from_context(sibling);
-+			put_ctx(gctx);
-+		}
-+		mutex_unlock(&gctx->mutex);
-+		put_ctx(gctx);
+ 	perf_pmu_enable(cpuctx->ctx.pmu);
+-	hrtimer_forward_now(timer, ns_to_ktime(cpuctx->timer_interval));
++}
++
++void perf_event_task_tick(void)
++{
++	struct list_head *head = &__get_cpu_var(rotation_list);
++	struct perf_cpu_context *cpuctx, *tmp;
+ 
+-	return restart;
++	WARN_ON(!irqs_disabled());
++
++	list_for_each_entry_safe(cpuctx, tmp, head, rotation_list) {
++		if (cpuctx->jiffies_interval == 1 ||
++				!(jiffies % cpuctx->jiffies_interval))
++			perf_rotate_context(cpuctx);
 +	}
+ }
+ 
+ static int event_enable_on_exec(struct perf_event *event,
+@@ -5186,9 +5196,8 @@ int perf_pmu_register(struct pmu *pmu)
+ 		__perf_event_init_context(&cpuctx->ctx);
+ 		cpuctx->ctx.type = cpu_context;
+ 		cpuctx->ctx.pmu = pmu;
+-		cpuctx->timer_interval = TICK_NSEC;
+-		hrtimer_init(&cpuctx->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+-		cpuctx->timer.function = perf_event_context_tick;
++		cpuctx->jiffies_interval = 1;
++		INIT_LIST_HEAD(&cpuctx->rotation_list);
+ 	}
+ 
+ got_cpu_context:
+@@ -6229,6 +6238,7 @@ static void __init perf_event_init_all_cpus(void)
+ 	for_each_possible_cpu(cpu) {
+ 		swhash = &per_cpu(swevent_htable, cpu);
+ 		mutex_init(&swhash->hlist_mutex);
++		INIT_LIST_HEAD(&per_cpu(rotation_list, cpu));
+ 	}
+ }
+ 
+@@ -6248,6 +6258,15 @@ static void __cpuinit perf_event_init_cpu(int cpu)
+ }
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
++static void perf_pmu_rotate_stop(struct pmu *pmu)
++{
++	struct perf_cpu_context *cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
 +
- 	event->filp = event_file;
- 	WARN_ON_ONCE(ctx->parent_ctx);
- 	mutex_lock(&ctx->mutex);
++	WARN_ON(!irqs_disabled());
 +
-+	if (move_group) {
-+		perf_install_in_context(ctx, group_leader, cpu);
-+		get_ctx(ctx);
-+		list_for_each_entry(sibling, &group_leader->sibling_list,
-+				    group_entry) {
-+			perf_install_in_context(ctx, sibling, cpu);
-+			get_ctx(ctx);
-+		}
-+	}
++	list_del_init(&cpuctx->rotation_list);
++}
 +
- 	perf_install_in_context(ctx, event, cpu);
- 	++ctx->generation;
- 	mutex_unlock(&ctx->mutex);
+ static void __perf_event_exit_context(void *__info)
+ {
+ 	struct perf_event_context *ctx = __info;
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 1c3ea7a..794819e 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -3584,6 +3584,8 @@ void scheduler_tick(void)
+ 	curr->sched_class->task_tick(rq, curr, 0);
+ 	raw_spin_unlock(&rq->lock);
+ 
++	perf_event_task_tick();
++
+ #ifdef CONFIG_SMP
+ 	rq->idle_at_tick = idle_cpu(cpu);
+ 	trigger_load_balance(rq, cpu);
