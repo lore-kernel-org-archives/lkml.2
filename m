@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755025Ab0IQW22 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 18:28:28 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54387 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754233Ab0IQW20 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 18:28:26 -0400
-Message-ID: <4C93EB1A.7020203@ti.com>
-Date: Fri, 17 Sep 2010 17:26:34 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1755009Ab0IQWb2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 18:31:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34768 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754272Ab0IQWb1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 18:31:27 -0400
+Message-ID: <4C93EC2C.1000402@redhat.com>
+Date: Fri, 17 Sep 2010 12:31:08 -1000
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>,
-        linux-doc <linux-doc@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "Chikkature Rajashekar, Madhusudhan" <madhu.cr@ti.com>,
-        "Aguirre, Sergio" <saaguirre@ti.com>, Andi Kleen <ak@linux.intel.com>,
-        linux-pm <linux-pm@lists.linux-foundation.org>,
-        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
-        Eduardo Valentin <eduardo.valentin@nokia.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "Gopinath, Thara" <thara@ti.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        "Granados Dorado, Roberto" <x0095451@ti.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Romit Dasgupta <ro.mit@ti.com>, Tero Kristo <Tero.Kristo@nokia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Premi, Sanjeev" <premi@ti.com>
-Subject: Re: [linux-pm] [PATCH] opp: introduce library for device-specific
- OPPs
-References: <1284686973-13993-1-git-send-email-nm@ti.com> <20100917153643.GC29739@sirena.org.uk> <4C938EE2.1010307@ti.com> <201009180022.51011.rjw@sisk.pl>
-In-Reply-To: <201009180022.51011.rjw@sisk.pl>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Jan Kiszka <jan.kiszka@web.de>
+CC: Glauber Costa <glommer@redhat.com>, kvm@vger.kernel.org,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [KVM timekeeping 10/35] Fix deep C-state TSC desynchronization
+References: <1282291669-25709-1-git-send-email-zamsden@redhat.com> <1282291669-25709-11-git-send-email-zamsden@redhat.com> <4C8F3C03.50306@siemens.com> <4C904685.9090402@redhat.com> <4C907F3D.6070709@web.de> <20100915123215.GC3688@mothafucka.localdomain> <4C911002.8060807@web.de> <4C93E734.4040208@redhat.com>
+In-Reply-To: <4C93E734.4040208@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael J. Wysocki had written, on 09/17/2010 05:22 PM, the following:
-> On Friday, September 17, 2010, Nishanth Menon wrote:
->> Mark Brown had written, on 09/17/2010 10:36 AM, the following:
->>> On Thu, Sep 16, 2010 at 08:29:33PM -0500, Nishanth Menon wrote:
+On 09/17/2010 12:09 PM, Zachary Amsden wrote:
+> On 09/15/2010 08:27 AM, Jan Kiszka wrote:
+>> Am 15.09.2010 14:32, Glauber Costa wrote:
+>>> On Wed, Sep 15, 2010 at 10:09:33AM +0200, Jan Kiszka wrote:
+>>>>> In any case, I'll proceed with the forcing of unstable TSC and HPET
+>>>>> clocksource and see what happens.
+>>>> I tried that before, but it did not trigger the issue that kvm-clock
+>>>> guests no longer boot properly. This only happens if the TSC is marked
+>>>> unstable.
+>>> even artificially marked unstable ?
 >>>
->>>> +struct opp_def {
->>>> +	unsigned long freq;
->>>> +	unsigned long u_volt;
->>>> +
->>>> +	bool enabled;
->>>> +};
->>> It might be clearer to use some term other than enabled in the code -
->>> when reading I wasn't immediately sure if enabled meant that it was
->>> available to be selected or if it was the active operating point.  How
->>> about 'allowed' (though I'm not 100% happy with that)?
->> ;).. The opp is enabled or disabled if it is populated, it is implicit 
->> as being available but not enabled- how about active? this would change 
->> the opp_enable/disable functions to opp_activate, opp_deactivate..
-> 
-> Would that mean that "active" is the one currently in use?
+>> Yes. As soon as I hack tsc_unstable to 1, things go wrong. When I hack
+>> it back to 0, guest that wants kvm-clock boots again and seem to run 
+>> fine.
+>>
+>> This is issue #2, I guess. Issue #2 remains that the TSC is marked
+>> unstable. I have the feeling that this is bogus, maybe due to lacking
+>> suspend/resume awareness? The tsc clocksource does
+>>
+>>     clocksource_tsc.cycle_last = 0;
+>>
+>> on resume...
+>>
+>> Jan
+>>
+>
+> I have now reproduced this exactly.  Shouldn't be long before I have a 
+> solution.
 
-I like the idea Phil pointed out[1] on using "available" instead.. 
-opp_enable and disable will make the OPP available or not. does this 
-sound better?
 
-[1] http://marc.info/?l=linux-arm-kernel&m=128474217132058&w=2
--- 
-Regards,
-Nishanth Menon
+Actually, here is what I am seeing: the guest proceeds - in SUPER SLOW 
+MO... the effect of this patch negates time when the guest is not 
+running.  If the guest is not running because it is idle, negating time 
+is the wrong thing to do.  Left to sit, the boot process still proceeds, 
+but it goes so slow, you can grow a beard in that time.
+
+Instead, we need wallclock awareness to be preserved.  Should be easy to 
+work in one of my later patches which does this.
+
+Zach
