@@ -1,53 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755538Ab0IQPy3 (ORCPT <rfc822;w@1wt.eu>);
+	id S1755573Ab0IQPyb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 11:54:31 -0400
+Received: from mail.bspu.unibel.by ([195.50.2.21]:32904 "EHLO mail"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755548Ab0IQPy3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 Sep 2010 11:54:29 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51270 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755067Ab0IQPy1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 11:54:27 -0400
-Date: Fri, 17 Sep 2010 16:54:25 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: mahatma@eu.by
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org
-Subject: Re: i2c: Re: #2 (Re: More modaliases + patchtool))
-Message-ID: <20100917155424.GA29596@rakim.wolfsonmicro.main>
-References: <4C6BE292.3060307@bspu.unibel.by>
- <201008191020.52861.rusty@rustcorp.com.au>
- <4C6D26BC.9040805@bspu.unibel.by>
- <201009111144.34078.rusty@rustcorp.com.au>
- <4C936EA5.2040506@bspu.unibel.by>
- <20100917140647.GA18367@opensource.wolfsonmicro.com>
- <4C938D9D.4070709@bspu.unibel.by>
+Message-ID: <4C938F72.2020409@bspu.unibel.by>
+Date: Fri, 17 Sep 2010 18:55:30 +0300
+From: Dzianis Kahanovich <mahatma@bspu.unibel.by>
+Reply-To: mahatma@eu.by
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b6pre) Gecko/20100902 SeaMonkey/2.1b1pre
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4C938D9D.4070709@bspu.unibel.by>
-X-Cookie: BOFH excuse
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: acpi (signed): Re: #2 (Re: More modaliases + patchtool))
+References: <4C6BE292.3060307@bspu.unibel.by> <201008191020.52861.rusty@rustcorp.com.au> <4C6D26BC.9040805@bspu.unibel.by> <201009111144.34078.rusty@rustcorp.com.au>
+In-Reply-To: <201009111144.34078.rusty@rustcorp.com.au>
+Content-Type: multipart/mixed;
+ boundary="------------010303030504090908040100"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 17, 2010 at 06:47:41PM +0300, Dzianis Kahanovich wrote:
-> Mark Brown пишет:
-> 
-> >> + 1 attach for "next" branch.
+This is a multi-part message in MIME format.
+--------------010303030504090908040100
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 
-> > Again, please try to follow the process in SubmittingPatches for sending
-> > patches.
+...
+1 repeat - same, but signed.
 
-> One thing (patch) per message?
 
-The bits about CCing the relevant maintainers and the actual format of
-the e-mail (subject line, patch in the body of the message and adding
-text not for the actual changelog after the ---).
 
-> > This change is OK but should be moved next to the actual table.
 
-> This means - after:
-> static const struct i2c_device_id tlv320dac33_i2c_id[] = {
+--------------010303030504090908040100
+Content-Type: text/plain;
+ name="mods-acpi.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="mods-acpi.patch"
 
-Yes.
+Fix lost ACPI modaliases
+
+Signed-off-by: Dzianis Kahanovich <mahatma@eu.by>
+
+--- linux-2.6.36-rc4-git3/drivers/platform/x86/intel_menlow.c	2010-09-17 12:30:30.000000000 +0300
++++ b/drivers/platform/x86/intel_menlow.c	2010-09-17 12:38:56.376753809 +0300
+@@ -536,5 +536,8 @@ static void __exit intel_menlow_module_e
+ 	intel_menlow_unregister_sensor();
+ }
+ 
++
++MODULE_DEVICE_TABLE(acpi, intel_menlow_memory_ids);
++
+ module_init(intel_menlow_module_init);
+ module_exit(intel_menlow_module_exit);
+--- linux-2.6.36-rc4-git3/drivers/staging/quickstart/quickstart.c	2010-09-17 12:30:31.000000000 +0300
++++ b/drivers/staging/quickstart/quickstart.c	2010-09-17 12:39:02.903030634 +0300
+@@ -470,5 +470,8 @@ fail_pfdrv_reg:
+ 	return ret;
+ }
+ 
++
++MODULE_DEVICE_TABLE(acpi, quickstart_device_ids);
++
+ module_init(quickstart_init);
+ module_exit(quickstart_exit);
+--- linux-2.6.36-rc4-git3/drivers/char/sonypi.c	2010-08-02 01:11:14.000000000 +0300
++++ b/drivers/char/sonypi.c	2010-09-17 12:38:43.182861196 +0300
+@@ -1565,5 +1565,10 @@ static void __exit sonypi_exit(void)
+ 	printk(KERN_INFO "sonypi: removed.\n");
+ }
+ 
++
++#ifdef CONFIG_ACPI
++MODULE_DEVICE_TABLE(acpi, sonypi_device_ids);
++#endif
++
+ module_init(sonypi_init);
+ module_exit(sonypi_exit);
+
+--------------010303030504090908040100--
