@@ -1,50 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab0IQXni (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 19:43:38 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:47613
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752611Ab0IQXnh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 19:43:37 -0400
-Date: Fri, 17 Sep 2010 16:43:56 -0700 (PDT)
-Message-Id: <20100917.164356.22528384.davem@davemloft.net>
-To: herbert@gondor.hengli.com.au
-Cc: bandan.das@stratus.com, bunk@kernel.org, eric.dumazet@gmail.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, kaber@trash.net
-Subject: Re: [PATCH net-next-2.6] net/ipv4: push IP options to CB in
- ip_fragment
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100917065117.GA9577@gondor.apana.org.au>
-References: <20100903044941.GA28300@gondor.apana.org.au>
-	<20100915173209.GB9086@stratus.com>
-	<20100917065117.GA9577@gondor.apana.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1753633Ab0IQXq6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 19:46:58 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48385 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752830Ab0IQXq5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 19:46:57 -0400
+Date: Fri, 17 Sep 2010 23:46:33 GMT
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        lenb@kernel.org, arjan@linux.intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        lenb@kernel.org, arjan@linux.intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <tip-*@git.kernel.org>
+References: <tip-*@git.kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/idle] x86, mwait: Move mwait constants to a common header file
+Message-ID: <tip-bc83cccc761953f878088cdfa682de0970b5561f@git.kernel.org>
+Git-Commit-ID: bc83cccc761953f878088cdfa682de0970b5561f
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 17 Sep 2010 23:46:34 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
-Date: Fri, 17 Sep 2010 14:51:17 +0800
+Commit-ID:  bc83cccc761953f878088cdfa682de0970b5561f
+Gitweb:     http://git.kernel.org/tip/bc83cccc761953f878088cdfa682de0970b5561f
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Fri, 17 Sep 2010 15:36:40 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 17 Sep 2010 15:36:40 -0700
 
-> On Wed, Sep 15, 2010 at 01:32:09PM -0400, Bandan Das wrote:
->>
->> Sorry for the late response. Here's a patch that I put up based on Herbert's
->> suggestions. I ofcourse don't see the problem anymore after 
->> commit 87f94b4e91dc042620c527f3c30c37e5127ef757 but a generic helper such as this 
->> can be used anytime the bridge code is sending a packet over to the IP layer. 
->> Compile tested only but based on responses, will test it before submitting a 
->> final change. Also added it at two places where I know we do send a packet over to
->> the IP layer. I will add it at other places later as I come across them.
-> 
-> Looks fine to me.
+x86, mwait: Move mwait constants to a common header file
 
-Bandan, please submit this formally with proper commit message,
-signoff, also the new function you added needs a minor coding
-style fix, there needs to be a space after "if" and the openning
-left parenthesis.
+We have MWAIT constants spread across three different .c files, for no
+good reason.  Move them all into a common header file.
 
-Thanks.
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Reviewed-by: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Len Brown <lenb@kernel.org>
+LKML-Reference: <tip-*@git.kernel.org>
+---
+ arch/x86/include/asm/mwait.h  |   15 +++++++++++++++
+ arch/x86/kernel/acpi/cstate.c |   11 +----------
+ drivers/acpi/acpi_pad.c       |    7 +------
+ drivers/idle/intel_idle.c     |    9 +--------
+ 4 files changed, 18 insertions(+), 24 deletions(-)
+
+diff --git a/arch/x86/include/asm/mwait.h b/arch/x86/include/asm/mwait.h
+new file mode 100644
+index 0000000..bcdff99
+--- /dev/null
++++ b/arch/x86/include/asm/mwait.h
+@@ -0,0 +1,15 @@
++#ifndef _ASM_X86_MWAIT_H
++#define _ASM_X86_MWAIT_H
++
++#define MWAIT_SUBSTATE_MASK		0xf
++#define MWAIT_CSTATE_MASK		0xf
++#define MWAIT_SUBSTATE_SIZE		4
++#define MWAIT_MAX_NUM_CSTATES		8
++
++#define CPUID_MWAIT_LEAF		5
++#define CPUID5_ECX_EXTENSIONS_SUPPORTED 0x1
++#define CPUID5_ECX_INTERRUPT_BREAK	0x2
++
++#define MWAIT_ECX_INTERRUPT_BREAK	0x1
++
++#endif /* _ASM_X86_MWAIT_H */
+diff --git a/arch/x86/kernel/acpi/cstate.c b/arch/x86/kernel/acpi/cstate.c
+index fb7a5f0..bcc4add 100644
+--- a/arch/x86/kernel/acpi/cstate.c
++++ b/arch/x86/kernel/acpi/cstate.c
+@@ -13,6 +13,7 @@
+ 
+ #include <acpi/processor.h>
+ #include <asm/acpi.h>
++#include <asm/mwait.h>
+ 
+ /*
+  * Initialize bm_flags based on the CPU cache properties
+@@ -65,16 +66,6 @@ static struct cstate_entry *cpu_cstate_entry;	/* per CPU ptr */
+ 
+ static short mwait_supported[ACPI_PROCESSOR_MAX_POWER];
+ 
+-#define MWAIT_SUBSTATE_MASK	(0xf)
+-#define MWAIT_CSTATE_MASK	(0xf)
+-#define MWAIT_SUBSTATE_SIZE	(4)
+-
+-#define CPUID_MWAIT_LEAF (5)
+-#define CPUID5_ECX_EXTENSIONS_SUPPORTED (0x1)
+-#define CPUID5_ECX_INTERRUPT_BREAK	(0x2)
+-
+-#define MWAIT_ECX_INTERRUPT_BREAK	(0x1)
+-
+ #define NATIVE_CSTATE_BEYOND_HALT	(2)
+ 
+ static long acpi_processor_ffh_cstate_probe_cpu(void *_cx)
+diff --git a/drivers/acpi/acpi_pad.c b/drivers/acpi/acpi_pad.c
+index b76848c..ca2694d 100644
+--- a/drivers/acpi/acpi_pad.c
++++ b/drivers/acpi/acpi_pad.c
+@@ -30,18 +30,13 @@
+ #include <linux/slab.h>
+ #include <acpi/acpi_bus.h>
+ #include <acpi/acpi_drivers.h>
++#include <asm/mwait.h>
+ 
+ #define ACPI_PROCESSOR_AGGREGATOR_CLASS	"acpi_pad"
+ #define ACPI_PROCESSOR_AGGREGATOR_DEVICE_NAME "Processor Aggregator"
+ #define ACPI_PROCESSOR_AGGREGATOR_NOTIFY 0x80
+ static DEFINE_MUTEX(isolated_cpus_lock);
+ 
+-#define MWAIT_SUBSTATE_MASK	(0xf)
+-#define MWAIT_CSTATE_MASK	(0xf)
+-#define MWAIT_SUBSTATE_SIZE	(4)
+-#define CPUID_MWAIT_LEAF (5)
+-#define CPUID5_ECX_EXTENSIONS_SUPPORTED (0x1)
+-#define CPUID5_ECX_INTERRUPT_BREAK	(0x2)
+ static unsigned long power_saving_mwait_eax;
+ 
+ static unsigned char tsc_detected_unstable;
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+index a10152b..065c804 100755
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -59,18 +59,11 @@
+ #include <linux/hrtimer.h>	/* ktime_get_real() */
+ #include <trace/events/power.h>
+ #include <linux/sched.h>
++#include <asm/mwait.h>
+ 
+ #define INTEL_IDLE_VERSION "0.4"
+ #define PREFIX "intel_idle: "
+ 
+-#define MWAIT_SUBSTATE_MASK	(0xf)
+-#define MWAIT_CSTATE_MASK	(0xf)
+-#define MWAIT_SUBSTATE_SIZE	(4)
+-#define MWAIT_MAX_NUM_CSTATES	8
+-#define CPUID_MWAIT_LEAF (5)
+-#define CPUID5_ECX_EXTENSIONS_SUPPORTED (0x1)
+-#define CPUID5_ECX_INTERRUPT_BREAK	(0x2)
+-
+ static struct cpuidle_driver intel_idle_driver = {
+ 	.name = "intel_idle",
+ 	.owner = THIS_MODULE,
