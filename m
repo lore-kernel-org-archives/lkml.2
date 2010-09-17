@@ -1,80 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754183Ab0IQNrl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 09:47:41 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59965 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752474Ab0IQNrj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 09:47:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
-         :mime-version:content-type:content-transfer-encoding;
-        b=Z6CUi7PiKHMfGJNo2CKCq/+U+Qgf26vh+LRhANTsjqMhnnFJyJ33igpY+JmrTBGVgz
-         2TXVQzZ8atF++a45g3IF8eMyf+DDvCSF9qf/4/crGEXkny6lbjA2KZZZ198yHWd5hZfT
-         OiSUSRwsTvtO5v2RC5ES01nsatAC1e6B1niKg=
-Date: Fri, 17 Sep 2010 15:47:32 +0200
-From: Alejandro Riveira =?UTF-8?B?RmVybsOhbmRleg==?= 
-	<ariveira@gmail.com>
-To: "Joshua Hintze" <joshh@imsar.com>
-Cc: <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org
-Subject: Re: PATA IDE is slower in newer versions of kernel
-Message-ID: <20100917154732.330c4b1b@varda>
-In-Reply-To: <00d401cb55f7$33a78210$9af68630$@com>
-References: <00d401cb55f7$33a78210$9af68630$@com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754101Ab0IQNsv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 09:48:51 -0400
+Received: from hera.kernel.org ([140.211.167.34]:33826 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752159Ab0IQNsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 09:48:50 -0400
+Message-ID: <4C937177.1090909@kernel.org>
+Date: Fri, 17 Sep 2010 15:47:35 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: Peter Palfrader <peter@palfrader.org>, stable@kernel.org,
+        Huang Shijie <shijie8@gmail.com>, akpm@linux-foundation.org,
+        linux-mm@kvack.org, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [stable] breaks 2.6.32.21+
+References: <1281261197-8816-1-git-send-email-shijie8@gmail.com> <4C5EA651.7080009@kernel.org> <20100916213603.GW6447@anguilla.noreply.org> <20100916231307.GB24617@kroah.com>
+In-Reply-To: <20100916231307.GB24617@kroah.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 17 Sep 2010 13:47:37 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-El Thu, 16 Sep 2010 17:30:51 -0600
-"Joshua Hintze" <joshh@imsar.com> escribió:
+On 09/17/2010 01:13 AM, Greg KH wrote:
+> Odd, someone just reported the same problem for .35-stable as well.
+> 
+> Tejun, what's going on here?
 
- [ Just CC linux-ide ]
+Please drop it.  The memory leak was introduced after 2.6.36-rc1.  I
+got confused which commit was in which kernel.  I'll be more careful
+with stable cc's.  Sorry about that.
 
-> Hello, 
-> 
-> I've been digging into this for a couple weeks now. I have an embedded board
-> that runs Linux Kernel 2.6.10 that is connected to a SSD over a PATA
-> connection. Data is transferred using UDMA4 speeds and I get a nice
-> sustained write speed of about 20 MBps which is adequate for us. 
-> 
-> I have recently taken the plunge to update to a newer version of the kernel
-> starting at 2.6.32 (also tried 2.6.33) and what I am seeing writes speeds
-> drop to about 18 MBps peak with large jumps going from 8 MBps->16 MBs for
-> sustained throughput.
-> 
-> I decided to read up on the ATA specification and I connected a logic
-> analyzer to the PATA bus and here is what is happening...after a large chunk
-> of data is written to the device, instead of the device pausing the transfer
-> by asserting DDMARDY it actual initiates a device data-out termination by
-> pulling DMARQ low.
-> 
-> The old kernel 2.6.10 responds to this by strobing the STOP line 8 times
-> within 800uS and the device releases DMARQ shortly afterwards. On the newer
-> kernels the strobing of the STOP line takes near 8mS of time. Since the hard
-> drive only release DMARQ after this 8 pulse strobe I believe this is the
-> cause of the slower write speeds on the newer kernels. This whole process
-> happens thousands of times when writing megs of data. So those extra 7mS
-> begin to add up fast.
-> 
-> My problem is I've been digging through the ide.c/ide-dma.c and other code
-> but I'm not exactly sure where the code would jump to upon a device
-> initiated termination on a data-out dma transfer.
-> 
-> My guess is ide_dma_intr(...). Is this correct?
-> 
-> Any other areas I could look at?
-> 
-> Thanks in advance.
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+tejun
