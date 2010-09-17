@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655Ab0IQL2n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 07:28:43 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:60199 "HELO
-	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753618Ab0IQL2m convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 07:28:42 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:X-User-Agent:References:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding:Subject:From:Date:To:CC:Message-ID:X-Identified-User;
-	b=A5oBz5EOnOGYX0Z0GM7yPY4YGBZXCpXzErKJ4Az+7EB6R0Rn6BqeWuRPVnfwRhbm1NLyBHS3kp5kbI6U+gF3nWqFa5dTs8Fp118nSO1XvC/bK8OqFZD9MZB+UJOcC4NK;
-X-User-Agent: K-9 Mail for Android
-References: <201009132336.17310.anarsoul@gmail.com> <20100914224111.GA14467@sucs.org> <201009161803.10531.anarsoul@gmail.com> <201009171002.09187.simon.farnsworth@onelan.co.uk>
-In-Reply-To: <201009171002.09187.simon.farnsworth@onelan.co.uk>
+	id S1753814Ab0IQL3F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 07:29:05 -0400
+Received: from hera.kernel.org ([140.211.167.34]:60830 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753790Ab0IQL3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 07:29:02 -0400
+Date: Fri, 17 Sep 2010 11:28:37 GMT
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@redhat.com, robert.richter@amd.com, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, robert.richter@amd.com,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20100917093009.461794357@chello.nl>
+References: <20100917093009.461794357@chello.nl>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf: Fix perf_event_exit_cpu_context()
+Message-ID: <tip-917bdd1c9b7b0f4c22f2504c2f0c1074c8ab9df7@git.kernel.org>
+Git-Commit-ID: 917bdd1c9b7b0f4c22f2504c2f0c1074c8ab9df7
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 8BIT
-Subject: Re: [Intel-gfx] Interrupt latency on some 945GM platforms
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-Date: Fri, 17 Sep 2010 13:30:26 -0300
-To: Simon Farnsworth <simon.farnsworth@onelan.co.uk>,
-        intel-gfx@lists.freedesktop.org
-CC: Vasily Khoruzhick <anarsoul@gmail.com>,
-        Sitsofe Wheeler <sitsofe@yahoo.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Message-ID: <4b4d1e0a-b1ad-40f1-a829-6d4726d2b2d3@email.android.com>
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 195.83.197.130 authed with jbarnes@virtuousgeek.org}
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 17 Sep 2010 11:28:38 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yeah if that works we could definitely add some qos calls to the driver.  When vblanks are alive we'd need a latency less tha the refresh rate, and when commands are oustanding we'd probably want it even lower.
+Commit-ID:  917bdd1c9b7b0f4c22f2504c2f0c1074c8ab9df7
+Gitweb:     http://git.kernel.org/tip/917bdd1c9b7b0f4c22f2504c2f0c1074c8ab9df7
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Fri, 17 Sep 2010 11:28:49 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Fri, 17 Sep 2010 12:48:48 +0200
 
-Vasily, can you try the qos workaround on your machine and see if it works too?
+perf: Fix perf_event_exit_cpu_context()
 
-Thanks,
+Use the right cpu-context.. spotted by preempt warning on
+hot-unplug
 
-"Simon Farnsworth" <simon.farnsworth@onelan.co.uk> wrote:
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Robert Richter <robert.richter@amd.com>
+LKML-Reference: <20100917093009.461794357@chello.nl>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/perf_event.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
->On Thursday 16 September 2010, Vasily Khoruzhick <anarsoul@gmail.com> wrote:
->> В сообщении от 15 of September 2010 01:41:11 автор Sitsofe Wheeler написал:
->> > > >     processor.max_cstate=2
->> > > 
->> > > Nope, it doesn't work with max_cstate=2
->> > 
->> > Perhaps intel_idle is being used? Any mention of it in dmesg?
->> 
->> Sitsofe, maybe you misunderstood me, I mean with max_cstate=1 graphics is
->> smooth, with higher values (i.e. max_cstate=2) graphics is jerky.
->> 
->> Btw, Jesse, any comments/solutions/workarounds except one with
->> processor.max_cstate=1 in kernel commandline? Should I file a bug on fdo
->> bugzilla?
->
->This looks like a problem I've seen on some hardware.
->
->My workaround has been to use the pm_qos /dev/cpu_dma_latency interface to 
->request a maximum latency of 1ms (value chosen as definitely small enough - a 
->larger value may be better, but I don't care about power saving at runtime on 
->my kit).
->
->If it's happening on other kit, perhaps the i915 driver should make a suitable 
->pm_qos request itself. Jesse, can you comment?
->-- 
->Simon Farnsworth
->Software Engineer
->ONELAN Limited
->http://www.onelan.com/
->
-
--- 
-Jesse Barnes, Intel Open Source Technology Center
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 6d7eef5..27332e5 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -6269,14 +6269,13 @@ static void perf_event_exit_cpu_context(int cpu)
+ 
+ 	idx = srcu_read_lock(&pmus_srcu);
+ 	list_for_each_entry_rcu(pmu, &pmus, entry) {
+-		ctx = &this_cpu_ptr(pmu->pmu_cpu_context)->ctx;
++		ctx = &per_cpu_ptr(pmu->pmu_cpu_context, cpu)->ctx;
+ 
+ 		mutex_lock(&ctx->mutex);
+ 		smp_call_function_single(cpu, __perf_event_exit_context, ctx, 1);
+ 		mutex_unlock(&ctx->mutex);
+ 	}
+ 	srcu_read_unlock(&pmus_srcu, idx);
+-
+ }
+ 
+ static void perf_event_exit_cpu(int cpu)
