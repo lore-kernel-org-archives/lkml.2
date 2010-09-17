@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754274Ab0IQU7w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 16:59:52 -0400
-Received: from www.tglx.de ([62.245.132.106]:46276 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750782Ab0IQU7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 16:59:51 -0400
-Date: Fri, 17 Sep 2010 22:59:46 +0200
-From: "Hans J. Koch" <hjk@linutronix.de>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, "Hans J. Koch" <hjk@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] Uio enhancements
-Message-ID: <20100917205946.GF2522@local>
-References: <m1y6b48973.fsf@fess.ebiederm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1y6b48973.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754474Ab0IQVAA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 17:00:00 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34978 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754396Ab0IQU75 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 16:59:57 -0400
+Date: Fri, 17 Sep 2010 13:59:42 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Anton Blanchard <anton@samba.org>
+Cc: Nitin Gupta <ngupta@vflare.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Minchan Kim <minchan.kim@gmail.com>, Greg KH <greg@kroah.com>,
+        Linux Driver Project <devel@driverdev.osuosl.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 03/10] Use percpu stats
+Message-Id: <20100917135942.33844110.akpm@linux-foundation.org>
+In-Reply-To: <20100901035135.GC18958@kryten>
+References: <1281374816-904-1-git-send-email-ngupta@vflare.org>
+	<1281374816-904-4-git-send-email-ngupta@vflare.org>
+	<20100901035135.GC18958@kryten>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 14, 2010 at 11:35:28AM -0700, Eric W. Biederman wrote:
-> 
-> Looking through my patch queue I stumbled upon some uio changes
-> that I have been using for a while and I forgot to push upstream.
-> 
-> Ultimately I am working on making uio devices hoptlugable, but I figure
-> I should get these enhancements in first.
-> 
-> Eric W. Biederman (5):
->       uio: Fix lack of locking in init_uio_class
->       uio: Don't clear driver data
->       uio: Cleanup irq handling.
->       uio: Support 2^MINOR_BITS minors
->       uio: Statically allocate uio_class and use class .dev_attrs.
+On Wed, 1 Sep 2010 13:51:35 +1000
+Anton Blanchard <anton@samba.org> wrote:
 
-Looks good to me, thanks a lot for your contribution!
-
-Thanks,
-Hans
-
+> 
+> Hi,
+> 
+> > Also remove references to removed stats (ex: good_comress).
+> 
+> I'm getting an oops when running mkfs on zram:
+> 
+> NIP [d0000000030e0340] .zram_inc_stat+0x58/0x84 [zram]
+> [c00000006d58f720] [d0000000030e091c] .zram_make_request+0xa8/0x6a0 [zram]
+> [c00000006d58f840] [c00000000035795c] .generic_make_request+0x390/0x434
+> [c00000006d58f950] [c000000000357b14] .submit_bio+0x114/0x140
+> [c00000006d58fa20] [c000000000361778] .blkdev_issue_discard+0x1ac/0x250
+> [c00000006d58fb10] [c000000000361f68] .blkdev_ioctl+0x358/0x7fc
+> [c00000006d58fbd0] [c0000000001c1c1c] .block_ioctl+0x6c/0x90
+> [c00000006d58fc70] [c0000000001984c4] .do_vfs_ioctl+0x660/0x6d4
+> [c00000006d58fd70] [c0000000001985a0] .SyS_ioctl+0x68/0xb0
+> 
+> Since disksize no longer starts as 0 it looks like we can call
+> zram_make_request before the device has been initialised. The patch below
+> fixes the immediate problem but this would go away if we move the
+> initialisation function elsewhere (as suggested in another thread).
+> 
+> Signed-off-by: Anton Blanchard <anton@samba.org>
 > ---
->  drivers/uio/uio.c          |  165 +++++++++++++++++++-------------------------
->  include/linux/uio_driver.h |    2 +-
->  2 files changed, 71 insertions(+), 96 deletions(-)
+> 
+> Index: powerpc.git/drivers/staging/zram/zram_drv.c
+> ===================================================================
+> --- powerpc.git.orig/drivers/staging/zram/zram_drv.c	2010-09-01 12:35:14.286515175 +1000
+> +++ powerpc.git/drivers/staging/zram/zram_drv.c	2010-09-01 12:35:24.167930504 +1000
+> @@ -441,6 +441,12 @@ static int zram_make_request(struct requ
+>  	int ret = 0;
+>  	struct zram *zram = queue->queuedata;
+>  
+> +	if (unlikely(!zram->init_done)) {
+> +		set_bit(BIO_UPTODATE, &bio->bi_flags);
+> +		bio_endio(bio, 0);
+> +		return 0;
+> +	}
+> +
+>  	if (unlikely(!valid_io_request(zram, bio))) {
+>  		zram_inc_stat(zram, ZRAM_STAT_INVALID_IO);
+>  		bio_io_error(bio);
+
+So... what happened with this and your other bugfix in
+zram_reset_device()?
