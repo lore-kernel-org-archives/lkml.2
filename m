@@ -1,103 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755450Ab0IQCzn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 22:55:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39669 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753267Ab0IQCzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 22:55:42 -0400
-Subject: Re: [PATCH] bsg: call idr_pre_get() outside the lock.
-From: James Bottomley <James.Bottomley@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Naohiro Aota <naota@elisp.net>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Jiri Kosina <jkosina@suse.cz>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Daniel Mack <daniel@caiaq.de>, linux-scsi@vger.kernel.org
-In-Reply-To: <20100916163735.ed8dbb51.akpm@linux-foundation.org>
-References: <m2eidda6bq.fsf@elisp.net>
-	 <20100916163735.ed8dbb51.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 16 Sep 2010 22:55:30 -0400
-Message-ID: <1284692130.26423.53.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	id S1755610Ab0IQC5d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 22:57:33 -0400
+Received: from isp6.4u.com.gh ([80.87.72.6]:50713 "HELO isp6.4u.com.gh"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751178Ab0IQC5a convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 22:57:30 -0400
+Message-ID: <825aeaf92cd3f4bdd967083970d4a7ff.squirrel@webmail.4u.com.gh>
+Date: Fri, 17 Sep 2010 02:55:50 -0000 (UTC)
+Subject: Business  Proposal?
+From: "Mr. Vincent Cheng" <info@cheng.org>
+To: info@mail.com
+Reply-To: mrchengvich43@yahoo.com.hk
+User-Agent: SquirrelMail/1.4.17
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+X-Priority: 3 (Normal)
+Importance: Normal
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-16 at 16:37 -0700, Andrew Morton wrote:
-> On Wed, 01 Sep 2010 23:26:01 +0900
-> Naohiro Aota <naota@elisp.net> wrote:
-> 
-> > The idr_pre_get() kernel-doc says "This function should be called
-> > prior to locking and calling the idr_get_new* functions.", but the
-> > idr_pre_get() calling in bsg_register_queue() is put inside
-> > mutex_lock(). Let's fix it.
-> > 
-> 
-> The idr_pre_get() kerneldoc is wrong.  Or at least, misleading.
-> 
-> The way this all works is that we precharge the tree via idr_pre_get()
-> and we do this outside locks so we can use GFP_KERNEL.  Then we take
-> the lock (a spinlock!) and then try to add an element to the tree,
-> which will consume objects from the pool which was prefilled by
-> idr_pre_get().
-> 
-> There's an obvious race here where someone else can get in and steal
-> objects from the prefilled pool.  We can fix that with a retry loop:
-> 
-> 
-> again:
-> 	if (idr_pre_get(..., GFP_KERNEL) == NULL)
-> 		return -ENOMEM;		/* We're really out-of-memory */
-> 	spin_lock(lock);
-> 	if (idr_get_new(...) == -EAGAIN) {
-> 		spin_unlock(lock);
-> 		goto again;		/* Someone stole our preallocation! */
-> 	}
-> 	...
-> 
-> this way we avoid the false -ENOMEM which the race would have caused. 
-> We only declare -ENOMEM when we're REALLY out of memory.
-> 
-> 
-> But none of this is needed when a sleeping lock is used (as long as the
-> sleeping lock isn't taken on the the VM pageout path, of course).  In
-> that case we can use the sleeping lock to prevent the above race.
-> 
-> > diff --git a/block/bsg.c b/block/bsg.c
-> > index 82d5882..5fd8dd1 100644
-> > --- a/block/bsg.c
-> > +++ b/block/bsg.c
-> > @@ -1010,13 +1010,11 @@ int bsg_register_queue(struct request_queue *q, struct device *parent,
-> >  	bcd = &q->bsg_dev;
-> >  	memset(bcd, 0, sizeof(*bcd));
-> >  
-> > -	mutex_lock(&bsg_mutex);
-> > -
-> >  	ret = idr_pre_get(&bsg_minor_idr, GFP_KERNEL);
-> > -	if (!ret) {
-> > -		ret = -ENOMEM;
-> > -		goto unlock;
-> > -	}
-> > +	if (!ret)
-> > +		return -ENOMEM;
-> > +
-> > +	mutex_lock(&bsg_mutex);
-> >  
-> >  	ret = idr_get_new(&bsg_minor_idr, bcd, &minor);
-> >  	if (ret < 0)
-> 
-> So the old code was OK.
-> 
-> The new code, however, is not OK because it is vulnerable to the above
-> race wherein another CPU or thread comes in and steals all of this
-> thread's preallocation.
+Hi,
 
-Hmm, you're right ... I've dropped the patch.
+I am Mr. Vincent Cheng; I  have a Business  Proposal of  $30,500,000.00 
+for  you .
 
-James
+ I will  need you to assist me  in  transferring this funds to a secured
+account.
 
+If  interested,  please reply to this email, mrchengvich43@yahoo.com.hk
+Regards,
+
+Vincent Cheng.
 
