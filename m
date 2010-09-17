@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800Ab0IQN5g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 09:57:36 -0400
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:49093 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751124Ab0IQN5f (ORCPT
+	id S1754081Ab0IQOC2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 10:02:28 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:37645 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124Ab0IQOC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 09:57:35 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: j3iRyj0VM1lv_A_M.2VzqnF5WgHzpb.1aCxwxWmroRiPWKo
- uLxqred9fqC_br3LZRsaFDCjaVTVs3cMvZp1.qbfoRtz4ridadeiPYdMZlOH
- nQBUJJfSFyX2pq033XHWcRwMoZMT5jFzr4eROblmLJvdhuHeECgbHGwtO4AT
- Aaih5rgTmLQE985xY5l9Iftf9Sjnt9wHMcfyOAME9NfKOssp_hPU8fqCsbrI
- I
-X-Yahoo-Newman-Property: ymail-3
-Date: Fri, 17 Sep 2010 08:56:06 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Robert Mueller <robm@fastmail.fm>
-cc: Shaohua Li <shaohua.li@intel.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bron Gondwana <brong@fastmail.fm>, linux-mm <linux-mm@kvack.org>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: Default zone_reclaim_mode = 1 on NUMA kernel is bad for
- file/email/web servers
-In-Reply-To: <1284708756.2702.1395472601@webmail.messagingengine.com>
-Message-ID: <alpine.DEB.2.00.1009170851200.11900@router.home>
-References: <1284349152.15254.1394658481@webmail.messagingengine.com> <20100916184240.3BC9.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1009161153210.22849@router.home> <1284684653.10161.1395434085@webmail.messagingengine.com> <1284703264.3408.1.camel@sli10-conroe.sh.intel.com>
- <1284708756.2702.1395472601@webmail.messagingengine.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 17 Sep 2010 10:02:27 -0400
+Date: Fri, 17 Sep 2010 10:02:19 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Anton Altaparmakov <aia21@cam.ac.uk>, Jan Kara <jack@suse.cz>,
+        codalist@TELEMANN.coda.cs.cmu.edu, autofs@linux.kernel.org,
+        linux-media@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Petr Vandrovec <vandrove@vc.cvut.cz>, Anders Larsen <al@alarsen.net>,
+        Evgeniy Dushistov <dushistov@mail.ru>, Ingo Molnar <mingo@elte.hu>,
+        netdev@vger.kernel.org, Samuel Ortiz <samuel@sortiz.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Andrew Hendry <andrew.hendry@gmail.com>
+Subject: Re: Remaining BKL users, what to do
+Message-ID: <20100917140219.GA9454@infradead.org>
+References: <201009161632.59210.arnd@arndb.de>
+ <201009171245.41930.arnd@arndb.de>
+ <20100917133231.GA9411@infradead.org>
+ <201009171550.49282.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201009171550.49282.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Sep 2010, Robert Mueller wrote:
+On Fri, Sep 17, 2010 at 03:50:49PM +0200, Arnd Bergmann wrote:
+> On Friday 17 September 2010, Christoph Hellwig wrote:
+> > 
+> > On Fri, Sep 17, 2010 at 12:45:41PM +0200, Arnd Bergmann wrote:
+> > > ncpfs: replace BKL with lock_super
+> > 
+> > Err, no.  lock_super is just as much on it's way out as the BKL.  We've
+> > managed to move it down from the VFS into a few remaining filesystems
+> > and now need to get rid of those users.  Please don't add any new ones.
+> 
+> Ok. I guess that's also a NAK for my the isofs patch I posted yesterday
+> then. Do you have any suggestions for an alternative approach?
 
-> > > I don't think this is any fault of how the software works. It's a
-> > > *very* standard "pre-fork child processes, allocate incoming
-> > > connections to a child process, open and mmap one or more files to
-> > > read data from them". That's not exactly a weird programming model,
-> > > and it's bad that the kernel is handling that case very badly with
-> > > everything default.
-> >
-> > maybe you incoming connection always happen on one CPU and you do the
-> > page allocation in that cpu, so some nodes use out of memory but
-> > others have a lot free. Try bind the child process to different nodes
-> > might help.
->
-> There's are 5000+ child processes (it's a cyrus IMAP server). Neither
-> the parent of any of the children are bound to any particular CPU. It
-> uses a standard fcntl lock to make sure only one spare child at a time
-> calls accept(). I don't think that's the problem.
-
->From the first look that seems to be the problem. You do not need to be
-bound to a particular cpu, the scheduler will just leave a single process
-on the same cpu by default. If you then allocate all memory only from this
-process then you get the scenario that you described.
-
-There should be multiple processes allocating memory from all processors
-to take full advantage of fast local memory. If you cannot do that then
-the only choice is to reduce performance by some sort of interleaving
-either at the Bios or OS level. OS level interleaving only for this
-particular application would be best because then the OS can at least
-allocate its own data in memory local to the processors.
-
+Just add a per-sb mutex inside the filesystem.  Given that lock_super
+isn't used by the VFS anymore that's actually equivalent.
 
