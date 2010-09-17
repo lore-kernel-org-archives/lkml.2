@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754959Ab0IQGws (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 02:52:48 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48521
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753391Ab0IQGwr (ORCPT
+	id S1755020Ab0IQG6c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 02:58:32 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:50048 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753023Ab0IQG6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 02:52:47 -0400
-Date: Thu, 16 Sep 2010 23:53:05 -0700 (PDT)
-Message-Id: <20100916.235305.233408955.davem@davemloft.net>
-To: w@1wt.eu
-Cc: drosenberg@vsecurity.com, security@kernel.org, grundler@parisc-linux.org,
-        netdev@vger.kernel.org, jeffm@suse.com, linux-kernel@vger.kernel.org,
-        kyle@mcmartin.ca
-Subject: Re: [Security] [PATCH v4] drivers/net/tulip/de4x5.c: fix union
- member name in DE4X5_GET_REG ioctl
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100917063602.GA2341@1wt.eu>
-References: <1284701436.2565.6.camel@dan>
-	<20100916.223441.93463391.davem@davemloft.net>
-	<20100917063602.GA2341@1wt.eu>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 17 Sep 2010 02:58:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=d8ZrKZiNta2kxzJUbj33cgrU9YxxuOVXZ6SZXDh1BXYllrFUi0EWPMiDgkQTrPy9RE
+         LUMBRy37ogS8rrj6g18TlZbh4XvOPGLp0J2fA930jYVlZwopZR850W2AT57szLbI+TVJ
+         zAH6lcAQ4pzHBI8iJbNESOVIPJ+WWVLX3O1NM=
+MIME-Version: 1.0
+Date: Fri, 17 Sep 2010 14:58:30 +0800
+Message-ID: <AANLkTintKaxaAKarDPFgpDLQMVomhThYtZecp5R5Mi62@mail.gmail.com>
+Subject: A simple question of sys_
+From: Rofail Qu <rofail@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Willy Tarreau <w@1wt.eu>
-Date: Fri, 17 Sep 2010 08:36:02 +0200
+How to use macro IS_ERR() ?
 
-> On Thu, Sep 16, 2010 at 10:34:41PM -0700, David Miller wrote:
->> From: Dan Rosenberg <drosenberg@vsecurity.com>
->> Date: Fri, 17 Sep 2010 01:30:36 -0400
->> 
->> > Tiring doesn't begin to describe it.  Formatting undamaged.
->> 
->> :-)  Thanks.
->> 
->> > This was previously reported as a security issue due to leakage of
->> > uninitialized stack memory.  Jeff Mahoney pointed out that this is
->> > incorrect since the copied data is from a union (rather than a struct).
->> > Therefore, this patch is only under consideration for the sake of
->> > correctness, and is not security relevant. 
->> > 
->> > Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
->> > Acked-by: Grant Grundler <grundler@parisc-linux.org>
->> 
->> Applied.
-> 
-> David, just for the record, as was already reported on the list, this
-> fix is finally more a cleanup than a security fix because "tmp" is a
-> union and not a struct, so tmp.addr == tmp.lval.
+It defines as,
+...
+#define IS_ERR_VALUE(x) unlikely((x) >= (unsigned long)-MAX_ERRNO)
+static inline long __must_check IS_ERR(const void *ptr)
+{
+	return IS_ERR_VALUE((unsigned long)ptr);
+}
+...
+so when pass x as a pointer and x>=-MAX_ERRNO (including NULL or any
+valid address),
+IS_ERR() will return true!
+IS_ERR(x) seems to use on judge if "x" is a valid error number, right?
 
-I can read, thanks :-)
+So in sys_execve(),
+...
+        long error;
+	char* filename;
 
-That's why I applied it to net-next-2.6 and not net-2.6
+	filename = getname(name);
+	error = PTR_ERR(filename);
+	if (IS_ERR(filename))     // <== should be IS_ERR((void *)error) or other?
+		return error;
+	error = do_execve(filename, argv, envp, regs);
+...
+
+Where i am wrong?
+Thanks.
