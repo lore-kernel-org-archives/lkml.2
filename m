@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab0IQAzU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 20:55:20 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:36268 "EHLO ogre.sisk.pl"
+	id S1755425Ab0IQBAb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 21:00:31 -0400
+Received: from mga09.intel.com ([134.134.136.24]:6172 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754091Ab0IQAzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 20:55:19 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Subject: Re: PM / Wakeup: Introduce wakeup source objects and event statistics (v2)
-Date: Fri, 17 Sep 2010 02:54:19 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <Pine.LNX.4.44L0.1009101119060.1651-100000@iolanthe.rowland.org> <201009150031.36070.rjw@sisk.pl> <87eict5hhx.fsf@deeprootsystems.com>
-In-Reply-To: <87eict5hhx.fsf@deeprootsystems.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1754091Ab0IQBAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 21:00:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,379,1280732400"; 
+   d="scan'208";a="555286117"
+Subject: Re: [PATCH] x86_64/lib: improve the performance of memmove
+From: ykzhao <yakui.zhao@intel.com>
+To: "miaox@cn.fujitsu.com" <miaox@cn.fujitsu.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        "Theodore Ts'o" <tytso@mit.edu>, Chris Mason <chris.mason@oracle.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Btrfs <linux-btrfs@vger.kernel.org>,
+        Linux Ext4 <linux-ext4@vger.kernel.org>
+In-Reply-To: <4C91C44F.40700@cn.fujitsu.com>
+References: <56957.91.60.149.91.1284619705.squirrel@www.firstfloor.org>
+	 <4C91C44F.40700@cn.fujitsu.com>
+Content-Type: text/plain
+Organization: Intel Open Source Technology Center
+Date: Fri, 17 Sep 2010 08:55:18 +0800
+Message-Id: <1284684918.13201.114.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.1 (2.22.1-2.fc9) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009170254.19753.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 17, 2010, Kevin Hilman wrote:
-> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
-> 
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > Subject: PM / Wakeup: Introduce wakeup source objects and event statistics (v2)
+On Thu, 2010-09-16 at 15:16 +0800, Miao Xie wrote:
+> On Thu, 16 Sep 2010 08:48:25 +0200 (cest), Andi Kleen wrote:
+> >> When the dest and the src do overlap and the memory area is large, memmove
+> >> of
+> >> x86_64 is very inefficient, and it led to bad performance, such as btrfs's
+> >> file
+> >> deletion performance. This patch improved the performance of memmove on
+> >> x86_64
+> >> by using __memcpy_bwd() instead of byte copy when doing large memory area
+> >> copy
+> >> (len>  64).
 > >
-> > Introduce struct wakeup_source for representing system wakeup sources
-> > within the kernel and for collecting statistics related to them.
-> > Make the recently introduced helper functions pm_wakeup_event(),
-> > pm_stay_awake() and pm_relax() use struct wakeup_source objects
-> > internally, so that wakeup statistics associated with wakeup devices
-> > can be collected and reported in a consistent way (the definition of
-> > pm_relax() is changed, which is harmless, because this function is
-> > not called directly by anyone yet).  Introduce new wakeup-related
-> > sysfs device attributes in /sys/devices/.../power for reporting the
-> > device wakeup statistics.
 > >
-> > Change the global wakeup events counters event_count and
-> > events_in_progress into atomic variables, so that it is not necessary
-> > to acquire a global spinlock in pm_wakeup_event(), pm_stay_awake()
-> > and pm_relax(), which should allow us to avoid lock contention in
-> > these functions on SMP systems with many wakeup devices.
-> >
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > I still don't understand why you don't simply use a backwards
+> > string copy (with std) ? That should be much simpler and
+> > hopefully be as optimized for kernel copies on recent CPUs.
 > 
-> Hi Rafael,
+> But according to the comment of memcpy, some CPUs don't support "REP" instruction,
+
+Where do you find that the "REP" instruction is not supported on some
+CPUs? The comment in arch/x86/lib/memcpy_64.s only states that some CPUs
+will run faster when using string copy instruction. 
+  
+> so I think we must implement a backwards string copy by other method for those CPUs,
+> But that implement is complex, so I write it as a function -- __memcpy_bwd().
+
+Will you please look at tip/x86/ tree(mem branch)? The memory copy on
+x86_64 is already optimized. 
+
+thanks.
+    Yakui
 > 
-> This looks like a really useful feature.
+> Thanks!
+> Miao
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Great!
-
-> Was doing some experiments with this on OMAP, and found a minor
-> cut-and-paste bug in the Documentation file:
-> 
-> [...]
-> 
-> > +What:		/sys/devices/.../power/wakeup_max_time_ms
-> > +Date:		September 2010
-> > +Contact:	Rafael J. Wysocki <rjw@sisk.pl>
-> > +Description:
-> > +		The /sys/devices/.../wakeup_max_time_ms attribute contains
-> > +		the maximum time of processing a single wakeup event associated
-> > +		with the device, in milliseconds.  This attribute is read-only.
-> > +		If the device is not enabled to wake up the system from sleep
-> > +		states, this attribute is empty.
-> > +
-> > +What:		/sys/devices/.../power/wakeup_max_time_ms
->                                                       ^^^
-> s/max/last/ for this one.
-
-Ah, thanks a lot.
-
-> > +Date:		September 2010
-> > +Contact:	Rafael J. Wysocki <rjw@sisk.pl>
-> > +Description:
-> > +		The /sys/devices/.../wakeup_last_time_ms attribute contains
-> > +		the value of the monotonic clock corresponding to the time of
-> > +		signaling the last wakeup event associated with the device, in
-> > +		milliseconds.  This attribute is read-only.  If the device is
-> > +		not enabled to wake up the system from sleep states, this
-> > +		attribute is empty.
-
-Rafael
