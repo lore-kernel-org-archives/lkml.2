@@ -1,111 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754914Ab0IQXBw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 19:01:52 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:51895 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751934Ab0IQXBv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 19:01:51 -0400
-X-Sasl-enc: jJ+lyjRdEPpKqOY6WkjNMNsgPmozjCo5qsIpyTWKiJ/A 1284764510
-Date: Sat, 18 Sep 2010 09:01:48 +1000
-From: Bron Gondwana <brong@fastmail.fm>
-To: Christoph Lameter <cl@linux.com>
-Cc: Bron Gondwana <brong@fastmail.fm>, Robert Mueller <robm@fastmail.fm>,
-        Shaohua Li <shaohua.li@intel.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: Default zone_reclaim_mode = 1 on NUMA kernel is bad for
- file/email/web servers
-Message-ID: <20100917230148.GA10636@brong.net>
-References: <1284349152.15254.1394658481@webmail.messagingengine.com>
- <20100916184240.3BC9.A69D9226@jp.fujitsu.com>
- <alpine.DEB.2.00.1009161153210.22849@router.home>
- <1284684653.10161.1395434085@webmail.messagingengine.com>
- <1284703264.3408.1.camel@sli10-conroe.sh.intel.com>
- <1284708756.2702.1395472601@webmail.messagingengine.com>
- <alpine.DEB.2.00.1009170851200.11900@router.home>
- <20100917140916.GA8474@brong.net>
- <alpine.DEB.2.00.1009170916130.11900@router.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1009170916130.11900@router.home>
-Organization: brong.net
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755020Ab0IQXEa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 19:04:30 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45072
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752472Ab0IQXE3 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 19:04:29 -0400
+Date: Fri, 17 Sep 2010 16:04:47 -0700 (PDT)
+Message-Id: <20100917.160447.146098756.davem@davemloft.net>
+To: remi@remlab.net
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        remi.denis-courmont@nokia.com, ebiederm@xmission.com,
+        stable@kernel.org
+Subject: Re: [PATCH stable-2.6.32] Phonet: disable network namespace support
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1284763006-22075-1-git-send-email-remi@remlab.net>
+References: <1284763006-22075-1-git-send-email-remi@remlab.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 17, 2010 at 09:22:00AM -0500, Christoph Lameter wrote:
-> On Sat, 18 Sep 2010, Bron Gondwana wrote:
+From: Rémi Denis-Courmont <remi@remlab.net>
+Date: Sat, 18 Sep 2010 01:36:46 +0300
+
+> From: Rémi Denis-Courmont <remi.denis-courmont@nokia.com>
 > 
-> > > From the first look that seems to be the problem. You do not need to be
-> > > bound to a particular cpu, the scheduler will just leave a single process
-> > > on the same cpu by default. If you then allocate all memory only from this
-> > > process then you get the scenario that you described.
-> >
-> > Huh?  Which bit of forking server makes you think one process is allocating
-> > lots of memory?  They're opening and reading from files.  Unless you're
-> > calling the kernel a "single process".
+> Network namespace in the Phonet socket stack causes an OOPS when a
+> namespace is destroyed. This occurs as the loopback exit_net handler is
+> called after the Phonet exit_net handler, and re-enters the Phonet
+> stack. I cannot think of any nice way to fix this in kernel <= 2.6.32.
 > 
-> I have no idea what your app does. 
+> For lack of a better solution, disable namespace support completely.
+> If you need that, upgrade to a newer kernel.
+> 
+> Signed-off-by: Rémi Denis-Courmont <remi.denis-courmont@nokia.com>
+> Cc: Eric W. Biederman <ebiederm@xmission.com>
 
-Ok - Cyrus IMAPd has been around for ages.  It's an open source email
-server built on a very traditional single-process model.
+"lkml" address fixed, and -stable CC: added this time, please don't
+omit that if you want to submit stable networking patches that have no
+upstream counterpart.
 
-* a master process which reads config files and manages the other process
-* multiple imapd processes, one per connection
-* multiple pop3d processes, one per connection
-* multiple lmtpd processes, one per connection
-* periodical "cleanup" processes.
+Acked-by: David S. Miller <davem@davemloft.net>
 
-Each of these is started by the lightweight master forking and then
-execing the appropriate daemon.
-
-In our configuration we run 20 separate "master" processes, each
-managing a single disk partition's worth of email.  The reason
-for this is reduced locking contention for the central mailboxes
-database, and also better replication concurrency, because each
-instance runs a single replication process - so replication is
-sequential.
-
-> The data that I glanced over looks as
-> if most allocations happen for a particular memory node
-
-Sorry, which data?
-
-> and since the
-> memory is optimized to be local to that node other memory is not used
-> intensively. This can occur because of allocations through one process /
-> thread that is always running on the same cpu and therefore always
-> allocates from the memory node local to that cpu.
-
-As Rob said, there are thousands of independent processes, each opening
-a single mailbox (3 separate metadata files plus possibly hundreds of
-individual email files).  It's likely that diffenent processes will open
-the same mailbox over time - for example an email client opening multiple
-concurrent connections, and at the same time an lmtpd connecting and
-delivering new emails to the mailbox.
-
-> It can also happen f.e. if a driver always allocates memory local to the
-> I/O bus that it is using.
-
-None of what we're doing is super weird advanced stuff, it's a vanilla
-forking daemon where a single process run and does stuff on behalf of
-a user.  The only slightly interesting things:
-
-1) each "service" has a single lock file, and all the idle processes of
-   that type (i.e. imapd) block on that lock while they're waiting for
-   a connection.  This is to avoid thundering herd on operating systems
-   which aren't nice about it.  The winner does the accept and handles
-   the connection.
-2) once it's finished processing a request, the process will wait for
-   another connection rather than closing.
-
-Nothing sounds like what you're talking about (one giant process that's
-all on one CPU), and I don't know why you keep talking about it.  It's
-nothing like what we're running on these machines.
-
-Bron.
+> ---
+>  net/phonet/af_phonet.c  |    4 ++++
+>  net/phonet/pn_dev.c     |   12 ++++++++++--
+>  net/phonet/pn_netlink.c |    9 ++++++++-
+>  3 files changed, 22 insertions(+), 3 deletions(-)
+> 
+> diff --git a/net/phonet/af_phonet.c b/net/phonet/af_phonet.c
+> index f60c0c2..519ff9d 100644
+> --- a/net/phonet/af_phonet.c
+> +++ b/net/phonet/af_phonet.c
+> @@ -67,6 +67,8 @@ static int pn_socket_create(struct net *net, struct socket *sock, int protocol)
+>  	struct phonet_protocol *pnp;
+>  	int err;
+>  
+> +	if (!net_eq(net, &init_net))
+> +		return -EAFNOSUPPORT;
+>  	if (!capable(CAP_SYS_ADMIN))
+>  		return -EPERM;
+>  
+> @@ -353,6 +355,8 @@ static int phonet_rcv(struct sk_buff *skb, struct net_device *dev,
+>  	struct sockaddr_pn sa;
+>  	u16 len;
+>  
+> +	if (!net_eq(net, &init_net))
+> +		goto out;
+>  	/* check we have at least a full Phonet header */
+>  	if (!pskb_pull(skb, sizeof(struct phonethdr)))
+>  		goto out;
+> diff --git a/net/phonet/pn_dev.c b/net/phonet/pn_dev.c
+> index 5f42f30..5a2275c 100644
+> --- a/net/phonet/pn_dev.c
+> +++ b/net/phonet/pn_dev.c
+> @@ -246,7 +246,11 @@ static struct notifier_block phonet_device_notifier = {
+>  /* Per-namespace Phonet devices handling */
+>  static int phonet_init_net(struct net *net)
+>  {
+> -	struct phonet_net *pnn = kmalloc(sizeof(*pnn), GFP_KERNEL);
+> +	struct phonet_net *pnn;
+> +
+> +	if (!net_eq(net, &init_net))
+> +		return 0;
+> +	pnn = kmalloc(sizeof(*pnn), GFP_KERNEL);
+>  	if (!pnn)
+>  		return -ENOMEM;
+>  
+> @@ -263,9 +267,13 @@ static int phonet_init_net(struct net *net)
+>  
+>  static void phonet_exit_net(struct net *net)
+>  {
+> -	struct phonet_net *pnn = net_generic(net, phonet_net_id);
+> +	struct phonet_net *pnn;
+>  	struct net_device *dev;
+>  
+> +	if (!net_eq(net, &init_net))
+> +		return;
+> +	pnn = net_generic(net, phonet_net_id);
+> +
+>  	rtnl_lock();
+>  	for_each_netdev(net, dev)
+>  		phonet_device_destroy(dev);
+> diff --git a/net/phonet/pn_netlink.c b/net/phonet/pn_netlink.c
+> index d21fd35..7acab1e 100644
+> --- a/net/phonet/pn_netlink.c
+> +++ b/net/phonet/pn_netlink.c
+> @@ -68,6 +68,8 @@ static int addr_doit(struct sk_buff *skb, struct nlmsghdr *nlh, void *attr)
+>  	int err;
+>  	u8 pnaddr;
+>  
+> +	if (!net_eq(net, &init_net))
+> +		return -EOPNOTSUPP;
+>  	if (!capable(CAP_SYS_ADMIN))
+>  		return -EPERM;
+>  
+> @@ -124,12 +126,16 @@ nla_put_failure:
+>  
+>  static int getaddr_dumpit(struct sk_buff *skb, struct netlink_callback *cb)
+>  {
+> +	struct net *net = sock_net(skb->sk);
+>  	struct phonet_device_list *pndevs;
+>  	struct phonet_device *pnd;
+>  	int dev_idx = 0, dev_start_idx = cb->args[0];
+>  	int addr_idx = 0, addr_start_idx = cb->args[1];
+>  
+> -	pndevs = phonet_device_list(sock_net(skb->sk));
+> +	if (!net_eq(net, &init_net))
+> +		goto skip;
+> +
+> +	pndevs = phonet_device_list(net);
+>  	spin_lock_bh(&pndevs->lock);
+>  	list_for_each_entry(pnd, &pndevs->list, list) {
+>  		u8 addr;
+> @@ -154,6 +160,7 @@ static int getaddr_dumpit(struct sk_buff *skb, struct netlink_callback *cb)
+>  
+>  out:
+>  	spin_unlock_bh(&pndevs->lock);
+> +skip:
+>  	cb->args[0] = dev_idx;
+>  	cb->args[1] = addr_idx;
+>  
+> -- 
+> 1.7.0.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
