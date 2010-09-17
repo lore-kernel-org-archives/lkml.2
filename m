@@ -1,121 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002Ab0IQVpk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 17:45:40 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:47494 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752897Ab0IQVpj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 17:45:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100917211508.GF19949@x200.localdomain>
-References: <AANLkTinORYZOYk9xsST+J=zxgeZPr2BNw3S=dvPPTcdn@mail.gmail.com>
-	<20100917200428.GD19949@x200.localdomain>
-	<AANLkTiny67-sKAwn3ipHBDEMx9NJujznNOjAeyZZXj_j@mail.gmail.com>
-	<AANLkTim0dCDGeC+sLFLSH1Ezb=2UHP6dn=EPBhxBQ4-P@mail.gmail.com>
-	<20100917211508.GF19949@x200.localdomain>
-Date: Fri, 17 Sep 2010 15:45:38 -0600
-X-Google-Sender-Auth: lKhoTzbx8CgsdQ-xhZc9t0XRmsQ
-Message-ID: <AANLkTikr7of6M142qTDkUx=2z-SUHWqOZd6hnC+BnEG4@mail.gmail.com>
-Subject: Re: [Qemu-devel] Re: ACPI error when mapping a 2GB BAR w/ 4GB of RAM
-From: Cam Macdonell <cam@cs.ualberta.ca>
-To: Chris Wright <chrisw@redhat.com>
-Cc: "qemu-devel@nongnu.org Developers" <qemu-devel@nongnu.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752897Ab0IQVtn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 17:49:43 -0400
+Received: from gate.crashing.org ([63.228.1.57]:42686 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752125Ab0IQVtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 17:49:42 -0400
+Subject: Re: memory barrier question
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        paulmck@linux.vnet.ibm.com, dhowells@redhat.com,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+In-Reply-To: <E1OwI5H-0007LR-DC@pomaz-ex.szeredi.hu>
+References: <E1OwEjQ-0006wS-MU@pomaz-ex.szeredi.hu>
+	 <E1Ovt6F-0005CS-RU@pomaz-ex.szeredi.hu> <3777.1284638136@redhat.com>
+	 <6383.1284647456@redhat.com> <20100916150356.GD2462@linux.vnet.ibm.com>
+	 <E1OwGz7-0007Cu-CC@pomaz-ex.szeredi.hu>
+	 <20100916163708.GG2462@linux.vnet.ibm.com>
+	 <E1OwHkg-0007IX-DH@pomaz-ex.szeredi.hu>
+	 <1284656978.26423.11.camel@mulgrave.site>
+	 <E1OwI5H-0007LR-DC@pomaz-ex.szeredi.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 18 Sep 2010 07:49:08 +1000
+Message-ID: <1284760148.30449.107.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 17, 2010 at 3:15 PM, Chris Wright <chrisw@redhat.com> wrote:
-> * Cam Macdonell (cam@cs.ualberta.ca) wrote:
->> On Fri, Sep 17, 2010 at 2:52 PM, Cam Macdonell <cam@cs.ualberta.ca> wrote:
->> > On Fri, Sep 17, 2010 at 2:04 PM, Chris Wright <chrisw@redhat.com> wrote:
->> >> * Cam Macdonell (cam@cs.ualberta.ca) wrote:
->> >>> After fixing the resource_size_t return value with
->> >>> pci_resource_alignment, I see one other strange behaviour only when
->> >>> using 4GB of RAM and a 2GB BAR.  I haven't found any other combination
->> >>> of RAM/BAR size that triggers this bug.  I am using 2.6.36-rc3.
->> >>>
->> >>> ACPI Error: The DSDT has been corrupted or replaced - old, new headers
->> >>> below (20100702/tbutils-372)
->> >>> ACPI: DSDT (null) 01F15 (v01   BXPC   BXDSDT 00000001 INTL 20090123)
->> >>> ACPI:      (null) 00000 (v00                 00000000      00000000)
->> >>> ACPI Error: Please send DMI info to linux-acpi@vger.kernel.org
->> >>> If system does not work as expected, please boot with acpi=copy_dsdt
->> >>> (20100702/tbutils-378)
->> >>> ACPI: PCI Interrupt Link [LNKC] disabled and referenced, BIOS bug
->> >>> ACPI Exception: AE_AML_INVALID_RESOURCE_TYPE, Evaluating _CRS
->> >>> (20100702/pci_link-283)
->> >>> ACPI: Unable to set IRQ for PCI Interrupt Link [LNKC]. Try pci=noacpi
->> >>> or acpi=off
->> >>> virtio-pci 0000:00:03.0: PCI INT A: no GSI - using ISA IRQ 11
->> >>> Non-volatile memory driver v1.3
->> >>> Linux agpgart interface v0.103
->> >>> Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
->> >>
->> >> IIRC,  the pci hole is only 1.5G in the BIOS, can you verify that
->> >> seabios is doing the right thing?
->> >
->> > I'm not sure what the right thing for seabios to do is.  Here is the
->> > seabios output related to the device.
->> >
->> > PCI: bus=0 devfn=0x20: vendor_id=0x1af4 device_id=0x1110
->> > region 0: 0xf2040000
->> > init smm
->> > init boot device ordering
->> >
->> > <snip>
->> >
->> > Attempting to init PCI bdf 00:04.0 (vd 1af4:1110)
->> > Attempting to map option rom on dev 00:04.0
->> > Option rom sizing returned 0 0
->> > Checking rom 0x000c9800 (sig aa55 size 17)
->> > Checking rom 0x000cc000 (sig aa55 size 2)
->> > Checking rom 0x000c9000 (sig aa55 size 4)
->> > Checking rom 0x000c9800 (sig aa55 size 17)
->> > Checking rom 0x000cc000 (sig aa55 size 2)
->> > Mapping hd drive 0x000fdb50 to 0
->> > Running option rom at c980:0003
->> > Running option rom at cc00:0003
->> > pmm_malloc zone=0x000f515c handle=ffffffff size=36 align=10
->> > ret=0x000fdaf0 (detail=0x7ffefca0)
->> > ebda moved from 9fc00 to 9f400
->> > pmm_malloc zone=0x000f5154 handle=ffffffff size=2048 align=10
->> > ret=0x0009f800 (detail=0x7ffefb40)
->> > finalize PMM
->> > malloc finalize
->> >
->> > when using a BAR of 2GB or less, there is an additional write to the
->> > PCI space of the device, which may be from the bios
->> >
->> > pci_write_config: (val) 0xffffffff -> 0x18 (addr)
->> > pci_read_config: (val) 0x80000004 <- 0x18 (addr)
->> > pci_write_config: (val) 0x4 -> 0x18 (addr)
->> > pci_write_config: (val) 0x3 -> 0x4 (addr)
->> > pci_read_config: (val) 0x0 <- 0x1c (addr)
->> > pci_write_config: (val) 0xffffffff -> 0x1c (addr)
->> > IVSHMEM: guest pci addr = ffffffff00000000, guest h/w addr =
->> > 4312137728, size = 80000000
->> >
->> > so is it succeeding with smaller sizes (> 2GB) because it fits in the
->> > bios' pci hole?
->>
->> sorry that should be "< 2GB".
->
-> It seems most likely...< 2GB also means <= 1GB (which would fit in
-> the hole).  Although, I have to admit, I'm not sure how seabios handles
-> the hole nowadays.
->
-> What about 2GB with 32bit BAR?
 
-The bios seems to ignore it and the guest can't map it as it cannot
-find an alignment for it.  Seems strange since with 1GB of RAM and 2GB
-BAR, everything should map below 4GB.
+> Right but in the concrete namei example I can't see how a compiler
+> optimization can make a difference.  The order of the loads is quite
+> clear:
+> 
+>    LOAD inode = next.dentry->inode
+>    if (inode != NULL)
+>    	LOAD inode->f_op
+> 
+> What is there the compiler can optimize?
 
->
-> thanks,
-> -chris
->
->
+Those two loads depend on each other, I don't think any implementation
+can re-order them. In fact, such data dependency is typically what is
+used to avoid having barriers in some cases. The second load cannot be
+issued until the value from the first one is returned.
+
+Cheers,
+Ben.
+
+
