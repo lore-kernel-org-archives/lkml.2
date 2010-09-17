@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123Ab0IQWcN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 18:32:13 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:43382 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754871Ab0IQWcM (ORCPT
+	id S1755386Ab0IQWcc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 18:32:32 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:23113 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755293Ab0IQWca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 18:32:12 -0400
-Subject: [PATCH v2 0/4] PCI: allocate space top-down, not bottom-up
+	Fri, 17 Sep 2010 18:32:30 -0400
+Subject: [PATCH v2 4/4] PCI: allocate bus resources from the top down
 To: Jesse Barnes <jbarnes@virtuousgeek.org>
 From: Bjorn Helgaas <bjorn.helgaas@hp.com>
 Cc: Brian Bloniarz <phunge0@hotmail.com>,
@@ -18,8 +18,10 @@ Cc: Brian Bloniarz <phunge0@hotmail.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@elte.hu>
-Date: Fri, 17 Sep 2010 16:32:06 -0600
-Message-ID: <20100917223109.24687.17697.stgit@bob.kio>
+Date: Fri, 17 Sep 2010 16:32:28 -0600
+Message-ID: <20100917223227.24687.69631.stgit@bob.kio>
+In-Reply-To: <20100917223109.24687.17697.stgit@bob.kio>
+References: <20100917223109.24687.17697.stgit@bob.kio>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -28,64 +30,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we move PCI devices, we currently allocate space bottom-up, i.e., we look
-at PCI bus resources in the order we found them, we look at gaps between child
-resources bottom-up, and we align the new space at the bottom of an available
-region.
 
-On x86, we move PCI devices more than we used to because we now pay attention
-to the PCI host bridge windows from ACPI.  For example, when we find a device
-that's outside all the known host bridge windows, we try to move it into a
-window, and we look for space starting at the bottom.
+Allocate space from the highest-address PCI bus resource first, then work
+downward.
 
-Windows does similar device moves, but it looks for space top-down rather than
-bottom-up.  Since most machines are better-tested with Windows than Linux, this
-difference means that Linux is more likely to trip over BIOS bugs in the PCI
-host bridge window descriptions than Windows is.
+Previously, we looked for space in PCI host bridge windows in the order
+we discovered the windows.  For example, given the following windows
+(discovered via an ACPI _CRS method):
 
-We've had several reports of Dell machines where the BIOS leaves the AHCI
-controller outside the host bridge windows (BIOS bug #1), *and* the lowest
-host bridge window includes an area that doesn't actually reach PCI (BIOS
-bug #2).  The result is that Windows (which moves AHCI to the top of a window)
-works fine, while Linux (which moves AHCI to the bottom, buggy, area) doesn't
-work.
+    pci_root PNP0A03:00: host bridge window [mem 0x000a0000-0x000bffff]
+    pci_root PNP0A03:00: host bridge window [mem 0x000c0000-0x000effff]
+    pci_root PNP0A03:00: host bridge window [mem 0x000f0000-0x000fffff]
+    pci_root PNP0A03:00: host bridge window [mem 0xbff00000-0xf7ffffff]
+    pci_root PNP0A03:00: host bridge window [mem 0xff980000-0xff980fff]
+    pci_root PNP0A03:00: host bridge window [mem 0xff97c000-0xff97ffff]
+    pci_root PNP0A03:00: host bridge window [mem 0xfed20000-0xfed9ffff]
 
-These patches change Linux to allocate space more like Windows does:
+we attempted to allocate from [mem 0x000a0000-0x000bffff] first, then
+[mem 0x000c0000-0x000effff], and so on.
 
-    1) The x86 pcibios_align_resource() will choose space from the
-       end of an available area, not the beginning.
+With this patch, we allocate from [mem 0xff980000-0xff980fff] first, then
+[mem 0xff97c000-0xff97ffff], [mem 0xfed20000-0xfed9ffff], etc.
 
-    2) In the generic allocate_resource() path, we'll look for space
-       between existing children from the top, not from the bottom.
+Allocating top-down follows Windows practice, so we're less likely to
+trip over BIOS defects in the _CRS description.
 
-    3) When pci_bus_alloc_resource() looks for available space, it
-       will start from the highest window, not the first one we found.
+On the machine above (a Dell T3500), the [mem 0xbff00000-0xbfffffff] region
+doesn't actually work and is likely a BIOS defect.  The symptom is that we
+move the AHCI controller to 0xbff00000, which leads to "Boot has failed,
+sleeping forever," a BUG in ahci_stop_engine(), or some other boot failure.
 
-This series fixes a 2.6.34 regression that prevents many Dell Precision
-workstations from booting:
-
-    https://bugzilla.kernel.org/show_bug.cgi?id=16228
-
-Changes from v1 to v2:
-    - Moved check for allocating before the available area from
-      pcibios_align_resource() to find_resource().  Better to do it
-      after the alignment callback is done, and make it generic.
-    - Fixed pcibios_align_resource() alignment.  If we start from the
-      end of the available area, we must align *downward*, not upward.
-    - Fixed pcibios_align_resource() ISA alias avoidance.  Again, since
-      the starting point is the end of the area, we must align downward
-      when we avoid aliased areas.
-
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=16228#c43
+Reference: https://bugzilla.redhat.com/show_bug.cgi?id=620313
+Reference: https://bugzilla.redhat.com/show_bug.cgi?id=629933
+Reported-by: Brian Bloniarz <phunge0@hotmail.com>
+Reported-and-tested-by: Stefan Becker <chemobejk@gmail.com>
+Reported-by: Denys Vlasenko <dvlasenk@redhat.com>
+Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
 ---
 
-Bjorn Helgaas (4):
-      resources: ensure alignment callback doesn't allocate below available start
-      x86/PCI: allocate space from the end of a region, not the beginning
-      resources: allocate space within a region from the top down
-      PCI: allocate bus resources from the top down
+ drivers/pci/bus.c |   53 ++++++++++++++++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 48 insertions(+), 5 deletions(-)
 
 
- arch/x86/pci/i386.c |   18 ++++++++++++-----
- drivers/pci/bus.c   |   53 ++++++++++++++++++++++++++++++++++++++++++++++-----
- kernel/resource.c   |   50 +++++++++++++++++++++++++++++++-----------------
- 3 files changed, 92 insertions(+), 29 deletions(-)
+diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+index 7f0af0e..172bf26 100644
+--- a/drivers/pci/bus.c
++++ b/drivers/pci/bus.c
+@@ -64,6 +64,49 @@ void pci_bus_remove_resources(struct pci_bus *bus)
+ 	}
+ }
+ 
++/*
++ * Find the highest-address bus resource below the cursor "res".  If the
++ * cursor is NULL, return the highest resource.
++ */
++static struct resource *pci_bus_find_resource_prev(struct pci_bus *bus,
++						   unsigned int type,
++						   struct resource *res)
++{
++	struct resource *r, *prev = NULL;
++	int i;
++
++	pci_bus_for_each_resource(bus, r, i) {
++		if (!r)
++			continue;
++
++		if ((r->flags & IORESOURCE_TYPE_BITS) != type)
++			continue;
++
++		/* If this resource is at or past the cursor, skip it */
++		if (res) {
++			if (r == res)
++				continue;
++			if (r->end > res->end)
++				continue;
++			if (r->end == res->end && r->start > res->start)
++				continue;
++		}
++
++		if (!prev)
++			prev = r;
++
++		/*
++		 * A small resource is higher than a large one that ends at
++		 * the same address.
++		 */
++		if (r->end > prev->end ||
++		    (r->end == prev->end && r->start > prev->start))
++			prev = r;
++	}
++
++	return prev;
++}
++
+ /**
+  * pci_bus_alloc_resource - allocate a resource from a parent bus
+  * @bus: PCI bus
+@@ -89,9 +132,10 @@ pci_bus_alloc_resource(struct pci_bus *bus, struct resource *res,
+ 					  resource_size_t),
+ 		void *alignf_data)
+ {
+-	int i, ret = -ENOMEM;
++	int ret = -ENOMEM;
+ 	struct resource *r;
+ 	resource_size_t max = -1;
++	unsigned int type = res->flags & IORESOURCE_TYPE_BITS;
+ 
+ 	type_mask |= IORESOURCE_IO | IORESOURCE_MEM;
+ 
+@@ -99,10 +143,9 @@ pci_bus_alloc_resource(struct pci_bus *bus, struct resource *res,
+ 	if (!(res->flags & IORESOURCE_MEM_64))
+ 		max = PCIBIOS_MAX_MEM_32;
+ 
+-	pci_bus_for_each_resource(bus, r, i) {
+-		if (!r)
+-			continue;
+-
++	/* Look for space at highest addresses first */
++	r = pci_bus_find_resource_prev(bus, type, NULL);
++	for ( ; r; r = pci_bus_find_resource_prev(bus, type, r)) {
+ 		/* type_mask must match */
+ 		if ((res->flags ^ r->flags) & type_mask)
+ 			continue;
+
