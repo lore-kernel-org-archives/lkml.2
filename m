@@ -1,45 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755148Ab0IQQh7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 12:37:59 -0400
-Received: from kroah.org ([198.145.64.141]:46048 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754864Ab0IQQh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 12:37:58 -0400
-Date: Fri, 17 Sep 2010 09:36:36 -0700
-From: Greg KH <greg@kroah.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Peter Palfrader <peter@palfrader.org>, stable@kernel.org,
-        Huang Shijie <shijie8@gmail.com>, akpm@linux-foundation.org,
-        linux-mm@kvack.org, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [stable] breaks 2.6.32.21+
-Message-ID: <20100917163636.GA2916@kroah.com>
-References: <1281261197-8816-1-git-send-email-shijie8@gmail.com>
- <4C5EA651.7080009@kernel.org>
- <20100916213603.GW6447@anguilla.noreply.org>
- <20100916231307.GB24617@kroah.com>
- <4C937177.1090909@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C937177.1090909@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752478Ab0IQQmJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 12:42:09 -0400
+Received: from smtp108.sbc.mail.gq1.yahoo.com ([67.195.14.111]:20023 "HELO
+	smtp108.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751752Ab0IQQmH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 12:42:07 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: 2j0pBLsVM1lcZ2RquZw0I1feglv1POO7hxcfqlP3Qbiq5fA
+ wyx1M1zGlsZSOTMtrqMtatrLKyniQ8Hp0pvwLf8vEdyqIjENVz99KveW_g2M
+ SwThuc_oGnALNsK3gnHBHZ_jZwsympfbRlOQTSwkotEPP8kj4ilVZQqn7Y8a
+ 9h_Id4me4kBou1X_LwtbUhbVDhrn8pHgpy_kMsEiVgVoRBQvvu67pjIcT7Ge
+ lQOsFuoTsG3kDxNO_aHFpDwvyv6fORudH1P8i7jY9LKGZp447ydkFQ..nTQr
+ YcLLEE07ljXiWzyLvpV1SUcpgaF5zATb_I25nfijYO5..ZVrSqhmkHqI6
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [PATCH 1/8] scsi: Drop struct Scsi_Host->host_lock around
+	SHT->queuecommand()
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Andi Kleen <ak@linux.intel.com>, linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
+        Christoph Hellwig <hch@lst.de>
+In-Reply-To: <1284735438.26423.81.camel@mulgrave.site>
+References: <1284676529-10756-1-git-send-email-nab@linux-iscsi.org>
+	 <1284691571.26423.50.camel@mulgrave.site>
+	 <20100917072022.GB2644@gargoyle.ger.corp.intel.com>
+	 <1284725592.26423.60.camel@mulgrave.site>
+	 <4C9379AA.4000103@linux.intel.com>
+	 <1284735438.26423.81.camel@mulgrave.site>
+Content-Type: text/plain
+Date: Fri, 17 Sep 2010 09:37:58 -0700
+Message-Id: <1284741478.13344.154.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 17, 2010 at 03:47:35PM +0200, Tejun Heo wrote:
-> On 09/17/2010 01:13 AM, Greg KH wrote:
-> > Odd, someone just reported the same problem for .35-stable as well.
+On Fri, 2010-09-17 at 10:57 -0400, James Bottomley wrote:
+> On Fri, 2010-09-17 at 16:22 +0200, Andi Kleen wrote:
+> > > I don't disagree with the idea of removing it, especially as it has so
+> > > few users, but replacing the host lock with an atomic here would still
+> > > vastly reduce the contention, which is the initial complaint.  The
 > > 
-> > Tejun, what's going on here?
+> > Actually the complaint is the overhead of the spin lock. This can be 
+> > either caused
+> > by contention or by cache line bounce time.
 > 
-> Please drop it.  The memory leak was introduced after 2.6.36-rc1.  I
-> got confused which commit was in which kernel.  I'll be more careful
-> with stable cc's.  Sorry about that.
+> The original complaint was contention.  My desire is to reduce the
+> locked path coverage, so I saw an opportunity.
+> 
+> What I was actually thinking of for the atomic is that we'd let it range
+> [1..INT_MAX] so a zero was an indicator of no use of this.  Then the
+> actual code could become
+> 
+> if (atomic_read(x)) {
+> 	do {
+> 		y = atomic_add_return(1, x);
+> 	} while (y == 0);
+> }
 
-No problem, now dropped.
+The conversion of struct scsi_cmnd->serial_number to atomic_t and the
+above code for scsi_cmd_get_serial() sounds perfectly reasonable to me.
 
-thanks,
+I will take a look at this conversion and respin a complete set of
+patches for review a bit later today.
 
-greg k-h
+Thanks!
+
+--nab
+
+> 
+> So "fast" cards not using the serial number set a zero there (we'd
+> default initialise to one), the line is shared so no bouncing (because
+> it's never updated).  This should satisfy everyone.
+> 
+> > > contention occurs because the host lock is so widely used for other
+> > > things.  The way to reduce that contention is firstly to reduce the
+> > > length of code covered by the lock and also reduce the actual number of
+> > > places where the lock is taken.  Compared with host lock's current vast
+> > > footprint, and atomic here is tiny.
+> > 
+> > That assumes that it's contention that is the problem and not simply 
+> > bounce time.
+> 
+> That's what the patch and data that started this whole thread showed,
+> yes ... but I think actual bounce in the spinlock is also a problem ...
+> we just don't have data to show it.
+> 
+> James
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
