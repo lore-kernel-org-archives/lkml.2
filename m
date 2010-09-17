@@ -1,104 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685Ab0IQMZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 08:25:27 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:53662 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1753370Ab0IQMZ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 08:25:26 -0400
-X-Authenticated: #1587495
-X-Provags-ID: V01U2FsdGVkX19K+0R+7jVKg1cc5CFxJWku9ktkOXW/aRwXJek5WU
-	ovVSwkkwB4IEFX
-From: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
-To: Huang Shijie <shijie8@gmail.com>
-Subject: Re: Patch "percpu: fix a memory leak in pcpu_extend_area_map()" has been added to the 2.6.35-stable tree
-Date: Fri, 17 Sep 2010 14:25:08 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-4.slh.12-aptosid-686; KDE/4.4.5; i686; ; )
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, tj@kernel.org,
-        stable@kernel.org
-References: <12845915543097@site> <201009162339.05158.s.L-H@gmx.de> <AANLkTikhf-qz5bHT=V1P-Osyxhhgx+2OJgjqVWzEsOGn@mail.gmail.com>
-In-Reply-To: <AANLkTikhf-qz5bHT=V1P-Osyxhhgx+2OJgjqVWzEsOGn@mail.gmail.com>
+	id S1753802Ab0IQM1e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 08:27:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17137 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753676Ab0IQM1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 08:27:32 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] IPR: Remove spurious volatiles
+To: brking@us.ibm.com, wayneb@linux.vnet.ibm.com, James.Bottomley@suse.de
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Date: Fri, 17 Sep 2010 13:27:19 +0100
+Message-ID: <20100917122719.3125.16739.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009171425.20738.s.L-H@gmx.de>
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+The IPR driver has some spurious volatiles in it.  It's not entirely clear why
+they are there, but if it's to prevent readl() calls from being merged,
+reordered or discarded due to unused return value, then readl() must be wrong.
 
-On Friday 17 September 2010, Huang Shijie wrote:
-> hi :
-> 
->     I think this maybe caused by the kfree/vfree.
->     I do not have any AMD machine. Could you add some log to debug it
-> ?  such as in pcpu_extend_area_map():
-> 
->         ================================
-[...]
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -390,7 +390,9 @@ static int pcpu_extend_area_map(struct p
- 		goto out_unlock;
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ drivers/scsi/ipr.c |   30 +++++++++++++-----------------
+ 1 files changed, 13 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/scsi/ipr.c b/drivers/scsi/ipr.c
+index 5256858..f0a80ad 100644
+--- a/drivers/scsi/ipr.c
++++ b/drivers/scsi/ipr.c
+@@ -645,8 +645,6 @@ struct ipr_cmnd *ipr_get_free_ipr_cmnd(struct ipr_ioa_cfg *ioa_cfg)
+ static void ipr_mask_and_clear_interrupts(struct ipr_ioa_cfg *ioa_cfg,
+ 					  u32 clr_ints)
+ {
+-	volatile u32 int_reg;
+-
+ 	/* Stop new interrupts */
+ 	ioa_cfg->allow_interrupts = 0;
  
- 	old_size = chunk->map_alloc * sizeof(chunk->map[0]);
--	memcpy(new, chunk->map, old_size);
-+	old = chunk->map;
-+
-+	memcpy(new, old, old_size);
- 
- 	/*
- 	 * map_alloc < PCPU_DFL_MAP_ALLOC indicates that the chunk is
-@@ -410,8 +412,11 @@ out_unlock:
- 	 * pcpu_mem_free() might end up calling vfree() which uses
- 	 * IRQ-unsafe lock and thus can't be called under pcpu_lock.
- 	 */
-+	printk(KERN_INFO "[ %s ] line : %d\n", __func__, __LINE__);
- 	pcpu_mem_free(old, old_size);
-+	printk(KERN_INFO "[ %s ] line : %d\n", __func__, __LINE__);
- 	pcpu_mem_free(new, new_size);
-+	printk(KERN_INFO "[ %s ] line : %d\n", __func__, __LINE__);
- 
- 	return 0;
+@@ -660,7 +658,7 @@ static void ipr_mask_and_clear_interrupts(struct ipr_ioa_cfg *ioa_cfg,
+ 	if (ioa_cfg->sis64)
+ 		writel(~0, ioa_cfg->regs.clr_interrupt_reg);
+ 	writel(clr_ints, ioa_cfg->regs.clr_interrupt_reg32);
+-	int_reg = readl(ioa_cfg->regs.sense_interrupt_reg);
++	readl(ioa_cfg->regs.sense_interrupt_reg);
  }
->         ================================
->   The system will print the log before it hung.
+ 
+ /**
+@@ -2564,7 +2562,7 @@ static u32 ipr_get_max_scsi_speed(struct ipr_ioa_cfg *ioa_cfg, u8 bus, u8 bus_wi
+  **/
+ static int ipr_wait_iodbg_ack(struct ipr_ioa_cfg *ioa_cfg, int max_delay)
+ {
+-	volatile u32 pcii_reg;
++	u32 pcii_reg;
+ 	int delay = 1;
+ 
+ 	/* Read interrupt reg until IOA signals IO Debug Acknowledge */
+@@ -2624,7 +2622,7 @@ static int ipr_get_ldump_data_section(struct ipr_ioa_cfg *ioa_cfg,
+ 				      u32 start_addr,
+ 				      __be32 *dest, u32 length_in_words)
+ {
+-	volatile u32 temp_pcii_reg;
++	u32 temp_pcii_reg;
+ 	int i, delay = 0;
+ 
+ 	if (ioa_cfg->sis64)
+@@ -4905,7 +4903,7 @@ static int ipr_eh_abort(struct scsi_cmnd * scsi_cmd)
+ static irqreturn_t ipr_handle_other_interrupt(struct ipr_ioa_cfg *ioa_cfg)
+ {
+ 	irqreturn_t rc = IRQ_HANDLED;
+-	volatile u32 int_reg, int_mask_reg;
++	u32 int_reg, int_mask_reg;
+ 
+ 	int_mask_reg = readl(ioa_cfg->regs.sense_interrupt_mask_reg32);
+ 	int_reg = readl(ioa_cfg->regs.sense_interrupt_reg32) & ~int_mask_reg;
+@@ -4991,7 +4989,7 @@ static irqreturn_t ipr_isr(int irq, void *devp)
+ {
+ 	struct ipr_ioa_cfg *ioa_cfg = (struct ipr_ioa_cfg *)devp;
+ 	unsigned long lock_flags = 0;
+-	volatile u32 int_reg;
++	u32 int_reg;
+ 	u32 ioasc;
+ 	u16 cmd_index;
+ 	int num_hrrq = 0;
+@@ -7211,7 +7209,7 @@ static int ipr_reset_next_stage(struct ipr_cmnd *ipr_cmd)
+ {
+ 	unsigned long stage, stage_time;
+ 	u32 feedback;
+-	volatile u32 int_reg;
++	u32 int_reg;
+ 	struct ipr_ioa_cfg *ioa_cfg = ipr_cmd->ioa_cfg;
+ 	u64 maskval = 0;
+ 
+@@ -7269,8 +7267,8 @@ static int ipr_reset_next_stage(struct ipr_cmnd *ipr_cmd)
+ static int ipr_reset_enable_ioa(struct ipr_cmnd *ipr_cmd)
+ {
+ 	struct ipr_ioa_cfg *ioa_cfg = ipr_cmd->ioa_cfg;
+-	volatile u32 int_reg;
+-	volatile u64 maskval;
++	u32 int_reg;
++	u64 maskval;
+ 
+ 	ENTER;
+ 	ipr_cmd->job_step = ipr_ioafp_identify_hrrq;
+@@ -7440,7 +7438,6 @@ static void ipr_get_unit_check_buffer(struct ipr_ioa_cfg *ioa_cfg)
+ static int ipr_reset_restore_cfg_space(struct ipr_cmnd *ipr_cmd)
+ {
+ 	struct ipr_ioa_cfg *ioa_cfg = ipr_cmd->ioa_cfg;
+-	volatile u32 int_reg;
+ 	int rc;
+ 
+ 	ENTER;
+@@ -7462,7 +7459,7 @@ static int ipr_reset_restore_cfg_space(struct ipr_cmnd *ipr_cmd)
+ 	if (ioa_cfg->sis64) {
+ 		/* Set the adapter to the correct endian mode. */
+ 		writel(IPR_ENDIAN_SWAP_KEY, ioa_cfg->regs.endian_swap_reg);
+-		int_reg = readl(ioa_cfg->regs.endian_swap_reg);
++		readl(ioa_cfg->regs.endian_swap_reg);
+ 	}
+ 
+ 	if (ioa_cfg->ioa_unit_checked) {
+@@ -7596,7 +7593,7 @@ static int ipr_reset_slot_reset(struct ipr_cmnd *ipr_cmd)
+  **/
+ static int ipr_reset_allowed(struct ipr_ioa_cfg *ioa_cfg)
+ {
+-	volatile u32 temp_reg;
++	u32 temp_reg;
+ 
+ 	temp_reg = readl(ioa_cfg->regs.sense_interrupt_reg);
+ 	return ((temp_reg & IPR_PCII_CRITICAL_OPERATION) == 0);
+@@ -8469,7 +8466,6 @@ static int __devinit ipr_test_msi(struct ipr_ioa_cfg *ioa_cfg,
+ 				  struct pci_dev *pdev)
+ {
+ 	int rc;
+-	volatile u32 int_reg;
+ 	unsigned long lock_flags = 0;
+ 
+ 	ENTER;
+@@ -8479,7 +8475,7 @@ static int __devinit ipr_test_msi(struct ipr_ioa_cfg *ioa_cfg,
+ 	ioa_cfg->msi_received = 0;
+ 	ipr_mask_and_clear_interrupts(ioa_cfg, ~IPR_PCII_IOA_TRANS_TO_OPER);
+ 	writel(IPR_PCII_IO_DEBUG_ACKNOWLEDGE, ioa_cfg->regs.clr_interrupt_mask_reg32);
+-	int_reg = readl(ioa_cfg->regs.sense_interrupt_mask_reg);
++	readl(ioa_cfg->regs.sense_interrupt_mask_reg);
+ 	spin_unlock_irqrestore(ioa_cfg->host->host_lock, lock_flags);
+ 
+ 	rc = request_irq(pdev->irq, ipr_test_intr, 0, IPR_NAME, ioa_cfg);
+@@ -8490,7 +8486,7 @@ static int __devinit ipr_test_msi(struct ipr_ioa_cfg *ioa_cfg,
+ 		dev_info(&pdev->dev, "IRQ assigned: %d\n", pdev->irq);
+ 
+ 	writel(IPR_PCII_IO_DEBUG_ACKNOWLEDGE, ioa_cfg->regs.sense_interrupt_reg32);
+-	int_reg = readl(ioa_cfg->regs.sense_interrupt_reg);
++	readl(ioa_cfg->regs.sense_interrupt_reg);
+ 	wait_event_timeout(ioa_cfg->msi_wait_q, ioa_cfg->msi_received, HZ);
+ 	ipr_mask_and_clear_interrupts(ioa_cfg, ~IPR_PCII_IOA_TRANS_TO_OPER);
+ 
+@@ -8527,7 +8523,7 @@ static int __devinit ipr_probe_ioa(struct pci_dev *pdev,
+ 	unsigned long ipr_regs_pci;
+ 	void __iomem *ipr_regs;
+ 	int rc = PCIBIOS_SUCCESSFUL;
+-	volatile u32 mask, uproc, interrupts;
++	u32 mask, uproc, interrupts;
+ 
+ 	ENTER;
+ 
 
-Unfortunately those printk lines aren't reached and the systems freezes
-earlier.
-
-> Best Regards.
-> Huang Shijie
-> 
-> 
-> 2010/9/17 Stefan Lippers-Hollmann <s.L-H@gmx.de>:
-[...]
-> >> to the 2.6.35-stable tree which can be found at:
-> >>     http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
-> > [...]
-> >> From a002d148426f40bc2b7dc066982eb177cdebeaaa Mon Sep 17 00:00:00 2001
-> >> From: Huang Shijie <shijie8@gmail.com>
-> >> Date: Sun, 8 Aug 2010 14:39:07 +0200
-> >> Subject: percpu: fix a memory leak in pcpu_extend_area_map()
-[...]
-> > This patch, as part of the current -stable queue-2.6.35, breaks booting for
-> > me on nforce4/ AMD64 X2. Unfortunately it fails even before the serial
-> > console is initialized and the only messages shown on screen are:
-> >
-> > Decompressing Linux... Parsing ELF... done.
-> > Booting kernel.
-
-I'm still stuck on those lines, before the system freezes, but I can 
-reproduce the same issues in Intel Q9550/ ICH10 (x86_64) and Intel 
-Pentium M (Banias)/ ICH4-M.
-
-All systems use current Debian/ unstable (gcc-4.4 4.4.4-14, binutils 
-2.20.1-14) and are booted by grub2 (grub-pc 1.98+20100804-4). 
-Queue-2.6.35 with this patch backed out and current linux-2.6 HEAD 
-(v2.6.36-rc4-134-g03a7ab0) are working fine on all tested systems.
-
-Regards
-	Stefan Lippers-Hollmann
