@@ -1,458 +1,324 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400Ab0IQKzG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 06:55:06 -0400
-Received: from mail.bspu.unibel.by ([195.50.2.21]:52411 "EHLO mail"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752299Ab0IQKzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 06:55:05 -0400
-Message-ID: <4C934913.9010704@bspu.unibel.by>
-Date: Fri, 17 Sep 2010 13:55:15 +0300
-From: Dzianis Kahanovich <mahatma@bspu.unibel.by>
-Reply-To: mahatma@eu.by
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b6pre) Gecko/20100902 SeaMonkey/2.1b1pre
+	id S1752601Ab0IQLAQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 07:00:16 -0400
+Received: from www.tglx.de ([62.245.132.106]:32932 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751660Ab0IQLAO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 07:00:14 -0400
+Date: Fri, 17 Sep 2010 12:59:49 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: John Stultz <john.stultz@linaro.org>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        David Brownell <david-b@pacbell.net>,
+        Richard Cochran <richardcochran@gmail.com>
+Subject: Re: [PATCH] Posix CLOCK_RTC interface proof of concept
+In-Reply-To: <1284666092-23347-1-git-send-email-john.stultz@linaro.org>
+Message-ID: <alpine.LFD.2.00.1009171154430.2416@localhost6.localdomain6>
+References: <1284666092-23347-1-git-send-email-john.stultz@linaro.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: pci: Re: #2 (Re: More modaliases + patchtool))
-References: <4C6BE292.3060307@bspu.unibel.by> <201008191020.52861.rusty@rustcorp.com.au> <4C6D26BC.9040805@bspu.unibel.by> <201009111144.34078.rusty@rustcorp.com.au>
-In-Reply-To: <201009111144.34078.rusty@rustcorp.com.au>
-Content-Type: multipart/mixed;
- boundary="------------020408070901070004030903"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------020408070901070004030903
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+On Thu, 16 Sep 2010, John Stultz wrote:
+> This patch is provided as a proof of concept, and is not submitted
+> for inclusion. There are still a number of issues I'd like to decide
+> upon before submitting any similar change.
+> 
+> 1) This implementation does not block the direct RTC alarm control via
+> sysfs or chardev ioctl. It just creates a parallel interface, which
+> means there are race issues if both methods are used at the same time.
+> 
+> I'd prefer to embed the posix timer list below the sysfs/ioctl
+> interfaces, so those interfaces are in effect virtualized. Instead
+> of directly accessing the hardware, alarms set via that interface
+> would be only one of many possible timers managed in the timer list
+> by the kernel. This will provide ABI compatibility, but will cause
+> some heavy churn in the generic RTC management code.
 
-Rusty Russell wrote:
+Right.
+ 
+> 2) While not commonly seen on PC/server hardware, many architectures
+> allow for multiple RTC devices on a system. I'm not completely
+> aware of the utility of multiple RTCs (other then allowing
+> multiple apps to trigger multiple wake events without a kernel managed
+> timer list), but I'm willing to be enlightened.
 
-> I think the best way to split this patch is by bus type.  Drop the #ifdef's
-> if you think it's a good idea, do some compile testing, then forward to the
-> specific maintainers for each type.  I'm happy to do that for you if you
-> want (though these kind of patches are Morton-worthy IMHO).
+AFAICT it's mostly due to lousy RTC implementations in SoC devices
+where an external RTC is way better in terms of power consuption.
+ 
+> To resolve this, we could create a somewhat meta CLOCK_RTC, which
+> really sets timers against CLOCK_REALTIME, but upon suspend
+> sets a relative alarm on the RTC for time interval remaining
+> on the next timer. This would probably need to be in addition to
+> the per-RTC interface, as we still need the per-RTC kernel
+> managed timer list to avoid races.
 
-About compile testing: I build all possible modules for x86 (32 & 64) on my
-builds (distro-like) to reduse various PC configuration. Basic version of this
-script used before.
+CLOCK_RTC should really operate in the CLOCK_REALTIME domain. We can
+expose the raw value via sysfs for those who are interested in it.
 
-Are I must check bools vs. tristates or just look to C-code?
+We do not need extra magic on suspend. Relative timers do not care
+about the time domain.
+ 
+> 3) Adding the posix time interface makes it easier to have finer
+> grained capability management to decide what applications can
+> set a alarm timer. While this is great for creating applications
+> that can wake servers up from suspend mode, and simplifying the
+> wakeup infrastructure on cell phones, some systems may not
+> want applications being able to set wakeup timers. I can
+> imagine the "laptop in well insulated carry-on luggage" case
+> that comes up occasional being one of them. So some additional
+> thought and policy may be needed to decide when non-user-triggered
+> wake events should be masked or not in suspend.
 
-I prepare PCI patch without checking for bools. All staging modules looks
-unstrict (not walking deep) to relating with PCI. All normal modules is strict
-PCI. I keep #ifdef in staging only. Also 2 new modules coming from linux-next
-branch (1+1 - strict and unstrict), second attachment.
+Yeah, we need some central policy control for this.
+ 
+> diff --git a/drivers/rtc/posix.c b/drivers/rtc/posix.c
 
-PS Are the better to inline patches vs. attachment?
+I'd prefer to move this to kernel/time/
 
--- 
-WBR, Dzianis Kahanovich AKA Denis Kaganovich, http://mahatma.bspu.unibel.by/
+> new file mode 100644
+> index 0000000..65e6bfc
+> --- /dev/null
+> +++ b/drivers/rtc/posix.c
+> @@ -0,0 +1,448 @@
+> +/*
+> + * RTC posix-clock/timer interface
+> + *
+> + * Copyright (C) 2010 IBM Corperation
+> + *
+> + * Author: John Stultz <john.stultz@linaro.org>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/spinlock.h>
+> +#include <linux/posix-timers.h>
+> +#include <linux/rbtree.h>
+> +#include <linux/rtc.h>
+> +#include <linux/slab.h>
+> +
+> +struct rtc_device *rtc;
+> +
+> +/*
+> + * Timer list structures.
+> + */
+> +static DEFINE_SPINLOCK(rtctimer_lock);
+> +struct rb_root timer_head;
 
---------------020408070901070004030903
-Content-Type: text/plain;
- name="mods-pci.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="mods-pci.patch"
+static
 
---- linux-2.6.36-rc4-git3/arch/x86/kernel/cpu/cpufreq/gx-suspmod.c	2010-09-17 12:30:29.000000000 +0300
-+++ b/arch/x86/kernel/cpu/cpufreq/gx-suspmod.c	2010-09-17 12:38:40.552737804 +0300
-@@ -512,6 +512,9 @@ MODULE_AUTHOR("Hiroshi Miura <miura@da-c
- MODULE_DESCRIPTION("Cpufreq driver for Cyrix MediaGX and NatSemi Geode");
- MODULE_LICENSE("GPL");
- 
-+
-+MODULE_DEVICE_TABLE(pci, gx_chipset_tbl);
-+
- module_init(cpufreq_gx_init);
- module_exit(cpufreq_gx_exit);
- 
---- linux-2.6.36-rc4-git3/drivers/dma/pch_dma.c	2010-09-17 12:30:30.000000000 +0300
-+++ b/drivers/dma/pch_dma.c	2010-09-17 12:38:44.102591039 +0300
-@@ -949,6 +949,9 @@ static void __exit pch_dma_exit(void)
- 	pci_unregister_driver(&pch_dma_driver);
- }
- 
-+
-+MODULE_DEVICE_TABLE(pci, pch_dma_id_table);
-+
- module_init(pch_dma_init);
- module_exit(pch_dma_exit);
- 
---- linux-2.6.36-rc4-git3/drivers/gpu/drm/i810/i810_drv.c	2010-09-17 12:30:30.000000000 +0300
-+++ b/drivers/gpu/drm/i810/i810_drv.c	2010-09-17 12:38:45.012486229 +0300
-@@ -89,6 +89,9 @@ static void __exit i810_exit(void)
- 	drm_exit(&driver);
- }
- 
-+
-+MODULE_DEVICE_TABLE(pci, pciidlist);
-+
- module_init(i810_init);
- module_exit(i810_exit);
- 
---- linux-2.6.36-rc4-git3/drivers/gpu/drm/i830/i830_drv.c	2010-09-17 12:30:30.000000000 +0300
-+++ b/drivers/gpu/drm/i830/i830_drv.c	2010-09-17 12:38:45.034555412 +0300
-@@ -100,6 +100,9 @@ static void __exit i830_exit(void)
- 	drm_exit(&driver);
- }
- 
-+
-+MODULE_DEVICE_TABLE(pci, pciidlist);
-+
- module_init(i830_init);
- module_exit(i830_exit);
- 
---- linux-2.6.36-rc4-git3/drivers/gpu/drm/mga/mga_drv.c	2010-09-17 12:30:30.000000000 +0300
-+++ b/drivers/gpu/drm/mga/mga_drv.c	2010-09-17 12:38:45.050928774 +0300
-@@ -100,6 +100,9 @@ static void __exit mga_exit(void)
- 	drm_exit(&driver);
- }
- 
-+
-+MODULE_DEVICE_TABLE(pci, pciidlist);
-+
- module_init(mga_init);
- module_exit(mga_exit);
- 
---- linux-2.6.36-rc4-git3/drivers/gpu/drm/r128/r128_drv.c	2010-09-17 12:30:30.000000000 +0300
-+++ b/drivers/gpu/drm/r128/r128_drv.c	2010-09-17 12:38:45.067342225 +0300
-@@ -102,6 +102,9 @@ static void __exit r128_exit(void)
- 	drm_exit(&driver);
- }
- 
-+
-+MODULE_DEVICE_TABLE(pci, pciidlist);
-+
- module_init(r128_init);
- module_exit(r128_exit);
- 
---- linux-2.6.36-rc4-git3/drivers/gpu/drm/savage/savage_drv.c	2010-08-02 01:11:14.000000000 +0300
-+++ b/drivers/gpu/drm/savage/savage_drv.c	2010-09-17 12:38:45.084696946 +0300
-@@ -80,6 +80,9 @@ static void __exit savage_exit(void)
- 	drm_exit(&driver);
- }
- 
-+
-+MODULE_DEVICE_TABLE(pci, pciidlist);
-+
- module_init(savage_init);
- module_exit(savage_exit);
- 
---- linux-2.6.36-rc4-git3/drivers/gpu/drm/sis/sis_drv.c	2010-09-17 12:30:30.000000000 +0300
-+++ b/drivers/gpu/drm/sis/sis_drv.c	2010-09-17 12:38:45.112711105 +0300
-@@ -108,6 +108,9 @@ static void __exit sis_exit(void)
- 	drm_exit(&driver);
- }
- 
-+
-+MODULE_DEVICE_TABLE(pci, pciidlist);
-+
- module_init(sis_init);
- module_exit(sis_exit);
- 
---- linux-2.6.36-rc4-git3/drivers/gpu/drm/tdfx/tdfx_drv.c	2010-08-02 01:11:14.000000000 +0300
-+++ b/drivers/gpu/drm/tdfx/tdfx_drv.c	2010-09-17 12:38:45.196631648 +0300
-@@ -76,6 +76,9 @@ static void __exit tdfx_exit(void)
- 	drm_exit(&driver);
- }
- 
-+
-+MODULE_DEVICE_TABLE(pci, pciidlist);
-+
- module_init(tdfx_init);
- module_exit(tdfx_exit);
- 
---- linux-2.6.36-rc4-git3/drivers/gpu/drm/via/via_drv.c	2010-08-02 01:11:14.000000000 +0300
-+++ b/drivers/gpu/drm/via/via_drv.c	2010-09-17 12:38:45.292629401 +0300
-@@ -88,6 +88,9 @@ static void __exit via_exit(void)
- 	drm_exit(&driver);
- }
- 
-+
-+MODULE_DEVICE_TABLE(pci, pciidlist);
-+
- module_init(via_init);
- module_exit(via_exit);
- 
---- linux-2.6.36-rc4-git3/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c	2010-09-17 12:30:30.000000000 +0300
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c	2010-09-17 12:38:45.364383102 +0300
-@@ -781,6 +781,9 @@ static void __exit vmwgfx_exit(void)
- 	drm_exit(&driver);
- }
- 
-+
-+MODULE_DEVICE_TABLE(pci, vmw_pci_id_list);
-+
- module_init(vmwgfx_init);
- module_exit(vmwgfx_exit);
- 
---- linux-2.6.36-rc4-git3/drivers/i2c/busses/scx200_acb.c	2010-08-02 01:11:14.000000000 +0300
-+++ b/drivers/i2c/busses/scx200_acb.c	2010-09-17 12:38:47.445753894 +0300
-@@ -653,5 +653,8 @@ static void __exit scx200_acb_cleanup(vo
- 	mutex_unlock(&scx200_acb_list_mutex);
- }
- 
-+
-+MODULE_DEVICE_TABLE(pci, scx200_pci);
-+
- module_init(scx200_acb_init);
- module_exit(scx200_acb_cleanup);
---- linux-2.6.36-rc4-git3/drivers/media/dvb/mantis/hopper_cards.c	2010-08-02 01:11:14.000000000 +0300
-+++ b/drivers/media/dvb/mantis/hopper_cards.c	2010-09-17 12:38:51.187348039 +0300
-@@ -268,6 +268,9 @@ static void __devexit hopper_exit(void)
- 	return pci_unregister_driver(&hopper_pci_driver);
- }
- 
-+
-+MODULE_DEVICE_TABLE(pci, hopper_pci_table);
-+
- module_init(hopper_init);
- module_exit(hopper_exit);
- 
---- linux-2.6.36-rc4-git3/drivers/media/dvb/mantis/mantis_cards.c	2010-08-02 01:11:14.000000000 +0300
-+++ b/drivers/media/dvb/mantis/mantis_cards.c	2010-09-17 12:38:51.201361079 +0300
-@@ -298,6 +298,9 @@ static void __devexit mantis_exit(void)
- 	return pci_unregister_driver(&mantis_pci_driver);
- }
- 
-+
-+MODULE_DEVICE_TABLE(pci, mantis_pci_table);
-+
- module_init(mantis_init);
- module_exit(mantis_exit);
- 
---- linux-2.6.36-rc4-git3/drivers/media/dvb/ttpci/budget-patch.c	2010-08-02 01:11:14.000000000 +0300
-+++ b/drivers/media/dvb/ttpci/budget-patch.c	2010-09-17 12:38:51.231761563 +0300
-@@ -664,6 +664,9 @@ static struct saa7146_extension budget_e
- 	.irq_func       = ttpci_budget_irq10_handler,
- };
- 
-+
-+MODULE_DEVICE_TABLE(pci, pci_tbl);
-+
- module_init(budget_patch_init);
- module_exit(budget_patch_exit);
- 
---- linux-2.6.36-rc4-git3/drivers/media/video/stradis.c	2010-08-02 01:11:14.000000000 +0300
-+++ b/drivers/media/video/stradis.c	2010-09-17 12:38:51.607895138 +0300
-@@ -2209,5 +2209,8 @@ static void __exit stradis_exit(void)
- 	printk(KERN_INFO "stradis: module cleanup complete\n");
- }
- 
-+
-+MODULE_DEVICE_TABLE(pci, stradis_pci_tbl);
-+
- module_init(stradis_init);
- module_exit(stradis_exit);
---- linux-2.6.36-rc4-git3/drivers/parisc/superio.c	2010-08-02 01:11:14.000000000 +0300
-+++ b/drivers/parisc/superio.c	2010-09-17 12:38:56.221711538 +0300
-@@ -513,5 +513,8 @@ static void __exit superio_exit(void)
- 	pci_unregister_driver(&superio_driver);
- }
- 
-+
-+MODULE_DEVICE_TABLE(pci, superio_tbl);
-+
- module_init(superio_modinit);
- module_exit(superio_exit);
---- linux-2.6.36-rc4-git3/drivers/pci/ioapic.c	2010-08-02 01:11:14.000000000 +0300
-+++ b/drivers/pci/ioapic.c	2010-09-17 12:38:56.262393634 +0300
-@@ -123,5 +123,8 @@ static void __exit ioapic_exit(void)
- 	pci_unregister_driver(&ioapic_driver);
- }
- 
-+
-+MODULE_DEVICE_TABLE(pci, ioapic_devices);
-+
- module_init(ioapic_init);
- module_exit(ioapic_exit);
---- linux-2.6.36-rc4-git3/drivers/serial/mfd.c	2010-09-17 12:30:30.000000000 +0300
-+++ b/drivers/serial/mfd.c	2010-09-17 12:38:58.265303502 +0300
-@@ -1491,6 +1491,9 @@ static void __exit hsu_pci_exit(void)
- 	kfree(phsu);
- }
- 
-+
-+MODULE_DEVICE_TABLE(pci, pci_ids);
-+
- module_init(hsu_pci_init);
- module_exit(hsu_pci_exit);
- 
---- linux-2.6.36-rc4-git3/drivers/spi/dw_spi_pci.c	2010-08-02 01:11:14.000000000 +0300
-+++ b/drivers/spi/dw_spi_pci.c	2010-09-17 12:38:58.652691529 +0300
-@@ -164,6 +164,9 @@ static void __exit mrst_spi_exit(void)
- 	pci_unregister_driver(&dw_spi_driver);
- }
- 
-+
-+MODULE_DEVICE_TABLE(pci, pci_ids);
-+
- module_init(mrst_spi_init);
- module_exit(mrst_spi_exit);
- 
---- linux-2.6.36-rc4-git3/drivers/uio/uio_sercos3.c	2010-09-17 12:30:31.000000000 +0300
-+++ b/drivers/uio/uio_sercos3.c	2010-09-17 12:39:03.099643106 +0300
-@@ -236,6 +236,9 @@ static void __exit sercos3_exit_module(v
- 	pci_unregister_driver(&sercos3_pci_driver);
- }
- 
-+
-+MODULE_DEVICE_TABLE(pci, sercos3_pci_ids);
-+
- module_init(sercos3_init_module);
- module_exit(sercos3_exit_module);
- 
---- linux-2.6.36-rc4-git3/drivers/video/i810/i810_main.c	2010-08-02 01:11:14.000000000 +0300
-+++ b/drivers/video/i810/i810_main.c	2010-09-17 12:39:05.272728173 +0300
-@@ -2220,4 +2220,7 @@ module_exit(i810fb_exit);
- 
- #endif /* MODULE */
- 
-+
-+MODULE_DEVICE_TABLE(pci, i810fb_pci_tbl);
-+
- module_init(i810fb_init);
---- linux-2.6.36-rc4-git3/drivers/video/sstfb.c	2010-08-02 01:11:14.000000000 +0300
-+++ b/drivers/video/sstfb.c	2010-09-17 12:39:05.542940314 +0300
-@@ -1511,6 +1511,9 @@ static void __devexit sstfb_exit(void)
- }
- 
- 
-+
-+MODULE_DEVICE_TABLE(pci, sstfb_id_tbl);
-+
- module_init(sstfb_init);
- module_exit(sstfb_exit);
- 
---- linux-2.6.36-rc4-git3/drivers/video/sunxvr2500.c	2010-08-02 01:11:14.000000000 +0300
-+++ b/drivers/video/sunxvr2500.c	2010-09-17 12:39:05.632422590 +0300
-@@ -265,6 +265,9 @@ static void __exit s3d_exit(void)
- 	pci_unregister_driver(&s3d_driver);
- }
- 
-+
-+MODULE_DEVICE_TABLE(pci, s3d_pci_table);
-+
- module_init(s3d_init);
- module_exit(s3d_exit);
- 
---- linux-2.6.36-rc4-git3/drivers/video/sunxvr500.c	2010-08-02 01:11:14.000000000 +0300
-+++ b/drivers/video/sunxvr500.c	2010-09-17 12:39:05.708587535 +0300
-@@ -449,6 +449,9 @@ static void __exit e3d_exit(void)
- 	pci_unregister_driver(&e3d_driver);
- }
- 
-+
-+MODULE_DEVICE_TABLE(pci, e3d_pci_table);
-+
- module_init(e3d_init);
- module_exit(e3d_exit);
- 
---- linux-2.6.36-rc4-git3/drivers/video/vermilion/vermilion.c	2010-08-02 01:11:14.000000000 +0300
-+++ b/drivers/video/vermilion/vermilion.c	2010-09-17 12:39:05.835126408 +0300
-@@ -1177,6 +1177,9 @@ void vmlfb_unregister_subsys(struct vml_
- 
- EXPORT_SYMBOL_GPL(vmlfb_unregister_subsys);
- 
-+
-+MODULE_DEVICE_TABLE(pci, vml_ids);
-+
- module_init(vmlfb_init);
- module_exit(vmlfb_cleanup);
- 
---- linux-2.6.36-rc4-git3/drivers/staging/sm7xx/smtcfb.c	2010-09-17 12:30:31.000000000 +0300
-+++ b/drivers/staging/sm7xx/smtcfb.c	2010-09-17 12:39:02.072627718 +0300
-@@ -1135,6 +1135,11 @@ static void __exit smtcfb_exit(void)
- 	pci_unregister_driver(&smtcfb_driver);
- }
- 
-+
-+#ifdef CONFIG_PCI
-+MODULE_DEVICE_TABLE(pci, smtcfb_pci_table);
-+#endif
-+
- module_init(smtcfb_init);
- module_exit(smtcfb_exit);
- 
---- linux-2.6.36-rc4-git3/drivers/staging/vme/boards/vme_vmivme7805.c	2010-08-02 01:11:14.000000000 +0300
-+++ b/drivers/staging/vme/boards/vme_vmivme7805.c	2010-09-17 12:39:02.368818072 +0300
-@@ -118,6 +118,11 @@ MODULE_DESCRIPTION("VMIVME-7805 board su
- MODULE_AUTHOR("Arthur Benilov <arthur.benilov@iba-group.com>");
- MODULE_LICENSE("GPL");
- 
-+
-+#ifdef CONFIG_PCI
-+MODULE_DEVICE_TABLE(pci, vmic_ids);
-+#endif
-+
- module_init(vmic_init);
- module_exit(vmic_exit);
- 
---- linux-2.6.36-rc4-git3/drivers/staging/vme/bridges/vme_ca91cx42.c	2010-09-17 12:30:31.000000000 +0300
-+++ b/drivers/staging/vme/bridges/vme_ca91cx42.c	2010-09-17 12:39:02.390100661 +0300
-@@ -1836,5 +1836,10 @@ module_param(geoid, int, 0);
- MODULE_DESCRIPTION("VME driver for the Tundra Universe II VME bridge");
- MODULE_LICENSE("GPL");
- 
-+
-+#ifdef CONFIG_PCI
-+MODULE_DEVICE_TABLE(pci, ca91cx42_ids);
-+#endif
-+
- module_init(ca91cx42_init);
- module_exit(ca91cx42_exit);
---- linux-2.6.36-rc4-git3/drivers/staging/vme/bridges/vme_tsi148.c	2010-09-17 12:30:31.000000000 +0300
-+++ b/drivers/staging/vme/bridges/vme_tsi148.c	2010-09-17 12:39:02.406718051 +0300
-@@ -2637,5 +2637,10 @@ module_param(geoid, int, 0);
- MODULE_DESCRIPTION("VME driver for the Tundra Tempe VME bridge");
- MODULE_LICENSE("GPL");
- 
-+
-+#ifdef CONFIG_PCI
-+MODULE_DEVICE_TABLE(pci, tsi148_ids);
-+#endif
-+
- module_init(tsi148_init);
- module_exit(tsi148_exit);
+> +struct rb_node *next_timer;
 
---------------020408070901070004030903
-Content-Type: text/plain;
- name="mods-pci_next_2010917.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="mods-pci_next_2010917.patch"
+Ditto
 
---- linux-2.6.36-rc4-next-20100917/drivers/usb/otg/langwell_otg.c	2010-09-17 13:11:34.646802996 +0300
-+++ b/drivers/usb/otg/langwell_otg.c	2010-09-17 13:17:14.765649883 +0300
-@@ -2399,6 +2399,11 @@ static int __init langwell_otg_init(void
- {
- 	return pci_register_driver(&otg_pci_driver);
- }
-+
-+#ifdef CONFIG_PCI
-+MODULE_DEVICE_TABLE(pci, pci_ids);
-+#endif
-+
- module_init(langwell_otg_init);
- 
- static void __exit langwell_otg_cleanup(void)
---- linux-2.6.36-rc4-next-20100917/drivers/misc/pch_phub.c	2010-09-17 13:11:33.476802996 +0300
-+++ b/drivers/misc/pch_phub.c	2010-09-17 13:17:19.873954434 +0300
-@@ -710,6 +710,9 @@ static void __exit pch_phub_pci_exit(voi
- 	pci_unregister_driver(&pch_phub_driver);
- }
- 
-+
-+MODULE_DEVICE_TABLE(pci, pch_phub_pcidev_id);
-+
- module_init(pch_phub_pci_init);
- module_exit(pch_phub_pci_exit);
- 
+> +
+> +
+> +/**
+> + * timespec_to_time - Convert timespec to time.
+> + * @ts: a timespec
+> + *
+> + * Helper function that converts timespec -> time.
+> + * Rounds any nanoseconds up to the next second.
+> + */
+> +static time_t timespec_to_time(struct timespec ts)
+> +{
+> +	time_t time = ts.tv_sec;
+> +	if (ts.tv_nsec)
+> +		time++;
+> +
+> +	return time;
+> +}
+> +
+> +/**
+> + * time_to_timespec - Convert time to timespec
+> + * @t: a time_t
+> + *
+> + * Helper function that converts time -> timespec
+> + */
+> +static struct timespec time_to_timespec(time_t t)
+> +{
+> +	struct timespec ts;
+> +	ts.tv_sec = t;
+> +	ts.tv_nsec = 0;
+> +	return ts;
+> +}
 
---------------020408070901070004030903--
+Those should go where the other conversion routines are as
+well. That's kernel/time.c, but we should move all these helper and
+conversion functions into kernel/time/lib.c
+
+> +/**
+> + * rtctimer_add_list - Add a timer to the timerlist
+> + * @t: Pointer to timer to be added.
+> + *
+> + * The rtctimer_lock must be held when calling.
+> + */
+> +static void rtctimer_add_list(struct k_itimer *t)
+> +{
+> +	struct rb_node **p = &timer_head.rb_node;
+> +	struct rb_node *parent = NULL;
+> +	struct k_itimer *ptr;
+> +
+> +	time_t expires = timespec_to_time(t->it.simple.it.it_value);
+> +
+> +	while (*p) {
+> +		time_t time;
+> +		parent = *p;
+> +		ptr = rb_entry(parent, struct k_itimer, it.simple.list);
+> +		time = timespec_to_time(ptr->it.simple.it.it_value);
+> +		if (expires < time)
+> +			p = &(*p)->rb_left;
+> +		else
+> +			p = &(*p)->rb_right;
+> +	}
+> +	rb_link_node(&t->it.simple.list, parent, p);
+> +	rb_insert_color(&t->it.simple.list, &timer_head);
+> +
+> +	if (!next_timer ||
+> +		expires < rb_entry(next_timer, struct k_itimer,
+> +				it.simple.list)->it.simple.it.it_value.tv_sec)
+> +		next_timer = &t->it.simple.list;
+
+That's basically a copy of enqueue_hrtimer(). Can't we use
+k_itimer.it.real for this and reuse the related functions in
+hrtimer.c? Not sure if it's worth the trouble though.
+
+> +/**
+> + * no_nsleep - posix nsleep dummy interface
+> + * @which_clock: ignored
+> + * @flags: ignored
+> + * @tsave: ignored
+> + * @rmtp: ignored
+> + *
+> + * We don't implement nsleep, so this stub returns an error.
+
+Why don't we implement that ?
+
+> + */
+> +static int no_nsleep(const clockid_t which_clock, int flags,
+> +		     struct timespec *tsave, struct timespec __user *rmtp)
+> +{
+> +	return -EOPNOTSUPP;
+> +}
+
+do_posix_clock_nonanosleep() already implements the NOTSUP function.
+
+> +
+> +struct rtc_task irqhandler;
+
+static 
+
+Please move that to the other local variables
+
+> +/**
+> + * rtc_handle_irq - RTC alarm interrupt callback
+> + * @data: ignored
+> + *
+> + * This function is called when the RTC interrupt triggers.
+> + * It runs through the timer list, expiring timers,
+> + * then programs the alarm to fire on the next event.
+> + */
+> +void rtc_handle_irq(void *data)
+
+static
+
+> +{
+> +	unsigned long flags;
+> +	struct rtc_time tm;
+> +	unsigned long now;
+> +	struct k_itimer *ptr;
+> +	struct rtc_wkalrm alrm;
+
+  alrm is only used in the if (ptr) patch below, move it there
+
+> +
+> +	spin_lock_irqsave(&rtctimer_lock, flags);
+> +
+> +	/* read the clock */
+> +	rtc_read_time(rtc, &tm);
+> +	rtc_tm_to_time(&tm, &now);
+> +
+> +	/* expire timers */
+> +	ptr = rtctimer_get_next();
+> +	while (ptr) {
+> +		time_t exp = timespec_to_time(ptr->it.simple.it.it_value);
+> +		if (now < exp)
+> +			break;
+> +		if (posix_timer_event(ptr, 0) != 0)
+> +			ptr->it_overrun++;
+> +
+> +		rtctimer_del_list(ptr);
+> +		if (ptr->it.simple.it.it_interval.tv_sec ||
+> +				ptr->it.simple.it.it_interval.tv_nsec) {
+> +			/* Handle interval timers */
+> +			ptr->it.simple.it.it_value =
+> +				timespec_add(ptr->it.simple.it.it_value,
+> +					ptr->it.simple.it.it_interval);
+> +			rtctimer_add_list(ptr);
+> +		} else
+> +			ptr->it.simple.enabled = 0;
+> +
+> +		ptr = rtctimer_get_next();
+> +	}
+> +
+> +	/* Set the alarm to fire on the next event */
+> +	ptr = rtctimer_get_next();
+> +	if (ptr) {
+> +		time_t exp = timespec_to_time(ptr->it.simple.it.it_value);
+
+  New line before code please.
+
+> +		rtc_time_to_tm(exp, &alrm.time);
+> +		alrm.enabled = 1;
+> +		rtc_set_alarm(rtc, &alrm);
+> +	}
+> +
+> +	spin_unlock_irqrestore(&rtctimer_lock, flags);
+> +}
+> +
+> +
+> +
+> +static int __init is_rtc(struct device *dev, void *name_ptr)
+> +{
+> +	*(const char **)name_ptr = dev_name(dev);
+> +	return 1;
+> +}
+> +
+> +
+> +/**
+> + * init_rtc_posix_timers - Set up the RTC posix interface
+> + *
+> + * This function sets up and installs the RTC posix interface.
+> + * Locates an RTC device that is usable, registers an irq handler,
+> + * and installs the rtc k_clock.
+> + */
+> +static __init int init_rtc_posix_timers(void)
+> +{
+> +	char *str = NULL;
+> +	int ret;
+> +	struct k_clock rtc_clock = {
+> +		.clock_getres = rtc_clock_getres,
+> +		.clock_get = rtc_clock_get,
+> +		.clock_set = rtc_clock_set,
+> +		.timer_create = rtc_timer_create,
+> +		.timer_set = rtc_timer_set,
+> +		.timer_del = rtc_timer_del,
+> +		.timer_get = rtc_timer_get,
+> +		.nsleep = no_nsleep,
+> +	};
+> +
+> +	/* Dig up an RTC device */
+> +	class_find_device(rtc_class, NULL, &str, is_rtc);
+
+Hmm. How does that work when the rtc is loaded as a module after this?
+
+Thanks,
+
+	tglx
