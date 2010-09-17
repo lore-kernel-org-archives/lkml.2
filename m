@@ -1,96 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508Ab0IQV6e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 17:58:34 -0400
-Received: from cantor.suse.de ([195.135.220.2]:45681 "EHLO mx1.suse.de"
+	id S1754229Ab0IQWCx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 18:02:53 -0400
+Received: from mga02.intel.com ([134.134.136.20]:54909 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750844Ab0IQV6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 17:58:32 -0400
-From: Thomas Renninger <trenn@suse.de>
-To: Jean Pihet <jean.pihet@newoldbits.com>
-Subject: Re: [PATCH] tracing, perf: add more power related events
-Date: Fri, 17 Sep 2010 23:58:17 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.34.4-0.1.99.9.f8e4270-desktop; KDE/4.4.4; x86_64; ; )
-Cc: Ingo Molnar <mingo@elte.hu>, Arjan van de Ven <arjan@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
-        arjan@infradead.org, Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-kernel@vger.kernel.org, discuss@lesswatts.org,
-        linux-pm@lists.linux-foundation.org, linux-omap@vger.kernel.org,
-        linux-perf-users@vger.kernel.org, linux-trace-users@vger.kernel.org
-References: <AANLkTinUmbSUUuxUzc8++pcb9gd1CZFdyTQFrveTBXyV@mail.gmail.com> <201009171508.46471.trenn@suse.de> <AANLkTi=W_Lo2m=hkA2F48oUziqGzt4Tr8y6KhfgqRnbz@mail.gmail.com>
-In-Reply-To: <AANLkTi=W_Lo2m=hkA2F48oUziqGzt4Tr8y6KhfgqRnbz@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1752125Ab0IQWCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 18:02:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,384,1280732400"; 
+   d="scan'208";a="555619246"
+Subject: [patch] sched: use group weight, idle cpu metrics to fix
+ imbalances during idle
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Nikhil Rao <ncrao@google.com>,
+        Venkatesh Pallipadi <venki@google.com>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Fri, 17 Sep 2010 15:02:32 -0700
+Message-Id: <1284760952.2676.11.camel@sbsiddha-MOBL3.sc.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009172358.18652.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some patches for cleanup...
-compile tested only...
-Should not break existing user space apps, but they should
-get converted asap to use power_swtich_state...
+Currently we consider a sched domain to be well balanced when the imbalance
+is less than the domain's imablance_pct. As the number of cores and threads
+are increasing, current values of imbalance_pct (for example 25% for a
+NUMA domain) are not enough to detect imbalances like:
 
+a) On a WSM-EP system (two sockets, each having 6 cores and 12 logical threads),
+24 cpu-hogging tasks get scheduled as 13 on one socket and 11 on another
+socket. Leading to an idle HT cpu.
+
+b) On a hypothetial 2 socket NHM-EX system (each socket having 8 cores and
+16 logical threads), 16 cpu-hogging tasks can get scheduled as 9 on one
+socket and 7 on another socket. Leaving one core in a socket idle
+whereas in another socket we have a core having both its HT siblings busy.
+
+While this issue can be fixed by decreasing the domain's imbalance_pct
+(by making it a function of number of logical cpus in the domain), it
+can potentially cause more task migrations across sched groups in an
+overloaded case.
+
+Fix this by using imbalance_pct only during newly_idle and busy
+load balancing. And during idle load balancing, check if there
+is an imbalance in number of idle cpu's across the busiest and this
+sched_group or if the busiest group has more tasks than its weight that
+the idle cpu in this_group can pull.
+
+Reported-by: Nikhil Rao <ncrao@google.com>
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 ---
 
-power-trace: Rename power frequency to power_switch_state
+ include/linux/sched.h |    1 +
+ kernel/sched.c        |    2 ++
+ kernel/sched_fair.c   |   34 +++++++++++++++++++++++++++++++---
+ 3 files changed, 34 insertions(+), 3 deletions(-)
 
-this interface/function is not intended for frequency changes
-only, but should get used for any P- (processor frequency),
-C- (processor sleep), T- (processor throttling), or S- (machine sleep)
-state.
-
-Since it's used in cpufreq.c which must be compiled in
-and not in acpi-cpufreq.c anymore there is no need to export it
-for modules.
-
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-
----
- drivers/cpufreq/cpufreq.c    |    1 +
- include/trace/events/power.h |    7 +++++++
- kernel/trace/power-traces.c  |    1 -
- 3 files changed, 8 insertions(+), 1 deletion(-)
-
-Index: linux-2.6.35-master/drivers/cpufreq/cpufreq.c
-===================================================================
---- linux-2.6.35-master.orig/drivers/cpufreq/cpufreq.c
-+++ linux-2.6.35-master/drivers/cpufreq/cpufreq.c
-@@ -354,6 +354,7 @@ void cpufreq_notify_transition(struct cp
- 		adjust_jiffies(CPUFREQ_POSTCHANGE, freqs);
- 		dprintk("FREQ: %lu - CPU: %lu", (unsigned long)freqs->new,
- 			(unsigned long)freqs->cpu);
-+		trace_power_switch_state(POWER_PSTATE, freqs->new, freqs->cpu);
- 		trace_power_frequency(POWER_PSTATE, freqs->new, freqs->cpu);
- 		srcu_notifier_call_chain(&cpufreq_transition_notifier_list,
- 				CPUFREQ_POSTCHANGE, freqs);
-Index: linux-2.6.35-master/include/trace/events/power.h
-===================================================================
---- linux-2.6.35-master.orig/include/trace/events/power.h
-+++ linux-2.6.35-master/include/trace/events/power.h
-@@ -38,6 +38,13 @@ DECLARE_EVENT_CLASS(power,
- 		(unsigned long)__entry->state, (unsigned long)__entry->cpu_id)
- );
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 1e2a6db..acc589c 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -852,6 +852,7 @@ struct sched_group {
+ 	 * single CPU.
+ 	 */
+ 	unsigned int cpu_power, cpu_power_orig;
++	unsigned int group_weight;
  
-+DEFINE_EVENT(power, power_switch_state,
+ 	/*
+ 	 * The CPUs this group covers.
+diff --git a/kernel/sched.c b/kernel/sched.c
+index ed09d4f..d12f66b 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -6790,6 +6790,8 @@ static void init_sched_groups_power(int cpu, struct sched_domain *sd)
+ 	if (cpu != group_first_cpu(sd->groups))
+ 		return;
+ 
++	sd->groups->group_weight = cpumask_weight(sched_group_cpus(sd->groups));
 +
-+	TP_PROTO(unsigned int type, unsigned int state, unsigned int cpu_id),
-+
-+	TP_ARGS(type, state, cpu_id)
-+);
-+
- DEFINE_EVENT(power, power_start,
+ 	child = sd->child;
  
- 	TP_PROTO(unsigned int type, unsigned int state, unsigned int cpu_id),
-Index: linux-2.6.35-master/kernel/trace/power-traces.c
-===================================================================
---- linux-2.6.35-master.orig/kernel/trace/power-traces.c
-+++ linux-2.6.35-master/kernel/trace/power-traces.c
-@@ -13,5 +13,4 @@
- #define CREATE_TRACE_POINTS
- #include <trace/events/power.h>
+ 	sd->groups->cpu_power = 0;
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index a171138..a17a2f0 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -2030,12 +2030,15 @@ struct sd_lb_stats {
+ 	unsigned long this_load;
+ 	unsigned long this_load_per_task;
+ 	unsigned long this_nr_running;
++	unsigned int  this_idle_cpus;
  
--EXPORT_TRACEPOINT_SYMBOL_GPL(power_frequency);
+ 	/* Statistics of the busiest group */
++	unsigned int  busiest_idle_cpus;
+ 	unsigned long max_load;
+ 	unsigned long busiest_load_per_task;
+ 	unsigned long busiest_nr_running;
+ 	unsigned long busiest_group_capacity;
++	unsigned int  busiest_group_weight;
  
+ 	int group_imb; /* Is there imbalance in this sd */
+ #if defined(CONFIG_SCHED_MC) || defined(CONFIG_SCHED_SMT)
+@@ -2057,6 +2060,8 @@ struct sg_lb_stats {
+ 	unsigned long sum_nr_running; /* Nr tasks running in the group */
+ 	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
+ 	unsigned long group_capacity;
++	unsigned long idle_cpus;
++	unsigned long group_weight;
+ 	int group_imb; /* Is there an imbalance in the group ? */
+ };
+ 
+@@ -2415,7 +2420,8 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
+ 		sgs->group_load += load;
+ 		sgs->sum_nr_running += rq->nr_running;
+ 		sgs->sum_weighted_load += weighted_cpuload(i);
+-
++		if (idle_cpu(i))
++			sgs->idle_cpus++;
+ 	}
+ 
+ 	/*
+@@ -2454,6 +2460,7 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
+ 		DIV_ROUND_CLOSEST(group->cpu_power, SCHED_LOAD_SCALE);
+ 	if (!sgs->group_capacity)
+ 		sgs->group_capacity = fix_small_capacity(sd, group);
++	sgs->group_weight = group->group_weight;
+ }
+ 
+ /**
+@@ -2552,12 +2559,15 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
+ 			sds->this = sg;
+ 			sds->this_nr_running = sgs.sum_nr_running;
+ 			sds->this_load_per_task = sgs.sum_weighted_load;
++			sds->this_idle_cpus = sgs.idle_cpus;
+ 		} else if (update_sd_pick_busiest(sd, sds, sg, &sgs, this_cpu)) {
+ 			sds->max_load = sgs.avg_load;
+ 			sds->busiest = sg;
+ 			sds->busiest_nr_running = sgs.sum_nr_running;
++			sds->busiest_idle_cpus = sgs.idle_cpus;
+ 			sds->busiest_group_capacity = sgs.group_capacity;
+ 			sds->busiest_load_per_task = sgs.sum_weighted_load;
++			sds->busiest_group_weight = sgs.group_weight;
+ 			sds->group_imb = sgs.group_imb;
+ 		}
+ 
+@@ -2824,8 +2834,26 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
+ 	if (sds.this_load >= sds.avg_load)
+ 		goto out_balanced;
+ 
+-	if (100 * sds.max_load <= sd->imbalance_pct * sds.this_load)
+-		goto out_balanced;
++	/*
++ 	 * In the CPU_NEWLY_IDLE, use imbalance_pct to be conservative.
++ 	 * And to check for busy balance use !idle_cpu instead of
++ 	 * CPU_NOT_IDLE. This is because HT siblings will use CPU_NOT_IDLE
++ 	 * even when they are idle.
++ 	 */
++	if (idle == CPU_NEWLY_IDLE || !idle_cpu(this_cpu)) {
++		if (100 * sds.max_load <= sd->imbalance_pct * sds.this_load)
++			goto out_balanced;
++	} else {
++		/*
++		 * This cpu is idle. If the busiest group load doesn't
++		 * have more tasks than the number of available cpu's and
++		 * there is no imbalance between this and busiest group
++		 * wrt to idle cpu's, it is balanced.
++		 */
++		if ((sds.this_idle_cpus  <= sds.busiest_idle_cpus + 1) &&
++		    sds.busiest_nr_running <= sds.busiest_group_weight)
++			goto out_balanced;
++	}
+ 
+ 	/* Looks like there is an imbalance. Compute it */
+ 	calculate_imbalance(&sds, this_cpu, imbalance);
+
+
