@@ -1,37 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755180Ab0IQPHW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 11:07:22 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:59053 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754016Ab0IQPHV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 11:07:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=Zxewjv7YSUMZlx9Lq8jQqbWhwE7NNmkygr67U4M80grcWgbHgTy7MVdqCMKndV1Teb
-         d8EvfXWxSZPsnM+T9FSDIvp2d57n13l0tziR6iHUpr2SvZ6UYjo19nN1ULsf92VHNj9L
-         S+C62fmIulO3HBaTws44HAj+moxXeQm4ND42A=
-MIME-Version: 1.0
-Date: Fri, 17 Sep 2010 17:07:20 +0200
-Message-ID: <AANLkTi=pxciY2jJePYPDzaRjsyGo3pQTeip0AJSqrzzh@mail.gmail.com>
-Subject: 2.6.35.4+current stable queue: hangs at boot, bisected
-From: Giangiacomo Mariotti <gg.mariotti@gmail.com>
-To: shijie8@gmail.com, tj@kernel.org
-Cc: linux-kernel@vger.kernel.org, gregkh@suse.de
-Content-Type: text/plain; charset=UTF-8
+	id S1755314Ab0IQPJj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 11:09:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30568 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755165Ab0IQPJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 11:09:37 -0400
+Date: Fri, 17 Sep 2010 11:09:04 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
+        tglx@linutronix.de, rostedt@goodmis.org, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com
+Message-Id: <e3a3383fc370ac7086625bebe89d9480d7caf372.1284733808.git.jbaron@redhat.com>
+In-Reply-To: <cover.1284733808.git.jbaron@redhat.com>
+References: <cover.1284733808.git.jbaron@redhat.com>
+Subject: [PATCH 04/10] jump label v11: initialize workqueue tracepoints *before* they are registered
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-    Linux kernel 2.6.35.4+patches in stable-queue hangs at boot, right
-after selecting it on grub. The cursor blinks and there's no output
-whatsoever. I've bisected the problem to the patch
-"percpu-fix-a-memory-leak-in-pcpu_extend_area_map.patch". Without it
-and applying all the others, the kernel works again. If you need more
-info, let me know.
+Initialize the workqueue data structures *before* they are registered
+so that they are ready for callbacks.
 
+Signed-off-by: Jason Baron <jbaron@redhat.com>
+---
+ kernel/trace/trace_workqueue.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/trace/trace_workqueue.c b/kernel/trace/trace_workqueue.c
+index a7cc379..209b379 100644
+--- a/kernel/trace/trace_workqueue.c
++++ b/kernel/trace/trace_workqueue.c
+@@ -263,6 +263,11 @@ int __init trace_workqueue_early_init(void)
+ {
+ 	int ret, cpu;
+ 
++	for_each_possible_cpu(cpu) {
++		spin_lock_init(&workqueue_cpu_stat(cpu)->lock);
++		INIT_LIST_HEAD(&workqueue_cpu_stat(cpu)->list);
++	}
++
+ 	ret = register_trace_workqueue_insertion(probe_workqueue_insertion, NULL);
+ 	if (ret)
+ 		goto out;
+@@ -279,11 +284,6 @@ int __init trace_workqueue_early_init(void)
+ 	if (ret)
+ 		goto no_creation;
+ 
+-	for_each_possible_cpu(cpu) {
+-		spin_lock_init(&workqueue_cpu_stat(cpu)->lock);
+-		INIT_LIST_HEAD(&workqueue_cpu_stat(cpu)->list);
+-	}
+-
+ 	return 0;
+ 
+ no_creation:
 -- 
-Giangiacomo
+1.7.1
+
