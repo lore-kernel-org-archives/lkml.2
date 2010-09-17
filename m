@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753292Ab0IQREL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 13:04:11 -0400
-Received: from kroah.org ([198.145.64.141]:43398 "EHLO coco.kroah.org"
+	id S1754679Ab0IQRGy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 13:06:54 -0400
+Received: from smtp.nokia.com ([147.243.1.47]:28037 "EHLO mgw-sa01.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752191Ab0IQREK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 13:04:10 -0400
-Date: Fri, 17 Sep 2010 10:01:49 -0700
-From: Greg KH <greg@kroah.com>
-To: David Miller <davem@davemloft.net>
-Cc: alan@linux.intel.com, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, drosenberg@vsecurity.com
-Subject: Re: [PATCH 0/3] Fix the TIOCGICOUNT problem for good
-Message-ID: <20100917170149.GB13570@kroah.com>
-References: <20100916171747.25987.33573.stgit@localhost.localdomain>
- <20100916.215639.172549193.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100916.215639.172549193.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752094Ab0IQRGx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 13:06:53 -0400
+Date: Fri, 17 Sep 2010 20:06:40 +0300 (EEST)
+Message-Id: <20100917.200640.71092280.Hiroshi.DOYU@nokia.com>
+To: catalin.marinas@arm.com
+Cc: linux-kernel@vger.kernel.org, ext-phil.2.carmody@nokia.com,
+        linux-omap@vger.kernel.org
+Subject: Re: [RFC][PATCH 0/1] kmemleak: Fix false positive with alias
+From: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+In-Reply-To: <1284740327.32322.24.camel@e102109-lin.cambridge.arm.com>
+References: <20100629.074423.71111160.Hiroshi.DOYU@nokia.com>
+	<20100810.184903.214240645.Hiroshi.DOYU@nokia.com>
+	<1284740327.32322.24.camel@e102109-lin.cambridge.arm.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 09:56:39PM -0700, David Miller wrote:
-> From: Alan Cox <alan@linux.intel.com>
-> Date: Thu, 16 Sep 2010 18:21:06 +0100
+Hi Catalin,
+
+From: ext Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [RFC][PATCH 0/1] kmemleak: Fix false positive with alias
+Date: Fri, 17 Sep 2010 18:18:47 +0200
+
+> On Tue, 2010-08-10 at 18:49 +0300, Hiroshi DOYU wrote:
+>> Now there's not much difference with the attached patch, a new version
+>> of alias.
+>> 
+>> / # modprobe kmemleak-special-test use_alias=0
+>> / # time echo scan > /sys/kernel/debug/kmemleak
+>> real    0m 2.30s
+>> user    0m 0.00s
+>> sys     0m 2.30s
+>> 
+>> / # modprobe kmemleak-special-test use_alias=1
+>> / # time echo scan > /sys/kernel/debug/kmemleak
+>> real    0m 3.91s
+>> user    0m 0.00s
+>> sys     0m 3.91s
 > 
-> > Remembering to clear fields is something driver authors are simply never
-> > going to remember to get right every new driver. Instead take the problem
-> > away from them and give them a simple interface to do the job.
-> > 
-> > ---
-> > 
-> > Alan Cox (3):
-> >       tty: icount changeover for other main devices
-> >       tty: Convert the USB drivers to the new icount interface
-> >       tty: Make tiocgicount a handler
+> So to understand - the first case is memory scanning without any aliases
+> configured. The second case is the alias scanning using a separate
+> prio_tree. The impact seems to be quite big.
 > 
-> This is a good plan for the next merge window, but for the current
-> -rc series and -stable we'd better just fix the individual cases.
+> But I wouldn't complicate the code with the callback mechanism,
+> especially when loadable modules are considered. Is the pointer
+> conversion always linear? Maybe we can just add an offset to the
+> scan_area structure that is used for conversion rather than a callback.
+>
+> Another advantage of the linear offset would be that we can avoid the
+> call for removing the conversion.
+> 
+> Is this feasible for your needs?
 
-Agreed, that's the plan now.
+The formula is:
 
-thanks,
+  new_value = virt_to_phys(original address) | each attributes;
 
-greg k-h
+Attribute bits must be ingored. So the conversion is:
+
+  new_value &= ~each attributes;
+  original address = phys_to_virt(new_value);
+
+Could adding an offset to the scan_area solve this case?
+
+> No point really in making it too
+> generic if the simple offset would (hopefully) do.
+
+I guess other iommu pagetable may be same?
