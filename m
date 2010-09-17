@@ -1,128 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876Ab0IQW4y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 18:56:54 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:29127 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752478Ab0IQW4x (ORCPT
+	id S1754914Ab0IQXBw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 19:01:52 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:51895 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751934Ab0IQXBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 18:56:53 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH 1/2] PNPACPI: cope with invalid device IDs
-Date: Fri, 17 Sep 2010 16:56:08 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
-Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>
-References: <20100605022058.25768.77560.stgit@localhost.localdomain> <201009171637.32127.bjorn.helgaas@hp.com> <201009171549.42276.dmitry.torokhov@gmail.com>
-In-Reply-To: <201009171549.42276.dmitry.torokhov@gmail.com>
+	Fri, 17 Sep 2010 19:01:51 -0400
+X-Sasl-enc: jJ+lyjRdEPpKqOY6WkjNMNsgPmozjCo5qsIpyTWKiJ/A 1284764510
+Date: Sat, 18 Sep 2010 09:01:48 +1000
+From: Bron Gondwana <brong@fastmail.fm>
+To: Christoph Lameter <cl@linux.com>
+Cc: Bron Gondwana <brong@fastmail.fm>, Robert Mueller <robm@fastmail.fm>,
+        Shaohua Li <shaohua.li@intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: Default zone_reclaim_mode = 1 on NUMA kernel is bad for
+ file/email/web servers
+Message-ID: <20100917230148.GA10636@brong.net>
+References: <1284349152.15254.1394658481@webmail.messagingengine.com>
+ <20100916184240.3BC9.A69D9226@jp.fujitsu.com>
+ <alpine.DEB.2.00.1009161153210.22849@router.home>
+ <1284684653.10161.1395434085@webmail.messagingengine.com>
+ <1284703264.3408.1.camel@sli10-conroe.sh.intel.com>
+ <1284708756.2702.1395472601@webmail.messagingengine.com>
+ <alpine.DEB.2.00.1009170851200.11900@router.home>
+ <20100917140916.GA8474@brong.net>
+ <alpine.DEB.2.00.1009170916130.11900@router.home>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009171656.11239.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1009170916130.11900@router.home>
+Organization: brong.net
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 17, 2010 04:49:39 pm Dmitry Torokhov wrote:
-> On Friday, September 17, 2010 03:37:31 pm Bjorn Helgaas wrote:
-> > On Friday, June 04, 2010 08:24:04 pm Dmitry Torokhov wrote:
-> > > If primary ID (HID) is invalid try locating first valid ID on compatible
-> > > ID list before giving up.
-> > > 
-> > > This helps, for example, to recognize i8042 AUX port on Sony Vaio VPCZ1
-> > > which uses SNYSYN0003 as HID. Without the patch users are forced to
-> > > boot with i8042.nopnp to make use of their touchpads.
-> > 
-> > Sorry, we seem to have dropped the ball on this.  Looking at it again,
-> > 
-> > I have another question below:
-> > >  drivers/pnp/pnpacpi/core.c |   29 ++++++++++++++++++++++++-----
-> > >  1 files changed, 24 insertions(+), 5 deletions(-)
-> > > 
-> > > diff --git a/drivers/pnp/pnpacpi/core.c b/drivers/pnp/pnpacpi/core.c
-> > > index f7ff628..2029cb5 100644
-> > > --- a/drivers/pnp/pnpacpi/core.c
-> > > +++ b/drivers/pnp/pnpacpi/core.c
-> > > @@ -28,7 +28,7 @@
-> > > 
-> > >  #include "../base.h"
-> > >  #include "pnpacpi.h"
-> > > 
-> > > -static int num = 0;
-> > > +static int num;
-> > > 
-> > >  /* We need only to blacklist devices that have already an acpi driver
-> > >  that
-> > >  
-> > >   * can't use pnp layer. We don't need to blacklist device that are
-> > >   directly
-> > > 
-> > > @@ -157,11 +157,24 @@ struct pnp_protocol pnpacpi_protocol = {
-> > > 
-> > >  };
-> > >  EXPORT_SYMBOL(pnpacpi_protocol);
-> > > 
-> > > +static char *pnpacpi_get_id(struct acpi_device *device)
-> > > +{
-> > > +	struct acpi_hardware_id *id;
-> > > +
-> > > +	list_for_each_entry(id, &device->pnp.ids, list) {
-> > > +		if (ispnpidacpi(id->id))
-> > > +			return id->id;
-> > > +	}
-> > > +
-> > > +	return NULL;
-> > > +}
-> > > +
-> > > 
-> > >  static int __init pnpacpi_add_device(struct acpi_device *device)
-> > >  {
-> > >  
-> > >  	acpi_handle temp = NULL;
-> > >  	acpi_status status;
-> > >  	struct pnp_dev *dev;
-> > > 
-> > > +	char *pnpid;
-> > > 
-> > >  	struct acpi_hardware_id *id;
-> > >  	
-> > >  	/*
-> > > 
-> > > @@ -169,11 +182,17 @@ static int __init pnpacpi_add_device(struct
-> > > acpi_device *device)
-> > > 
-> > >  	 * driver should not be loaded.
-> > >  	 */
-> > >  	
-> > >  	status = acpi_get_handle(device->handle, "_CRS", &temp);
-> > > 
-> > > -	if (ACPI_FAILURE(status) || !ispnpidacpi(acpi_device_hid(device)) ||
-> > > -	    is_exclusive_device(device) || (!device->status.present))
-> > > +	if (ACPI_FAILURE(status))
-> > > +		return 0;
-> > > +
-> > > +	pnpid = pnpacpi_get_id(device);
-> > > +	if (!pnpid)
-> > > +		return 0;
-> > > +
-> > > +	if (!is_exclusive_device(device) || !device->status.present)
-> > > 
-> > >  		return 0;
-> > 
-> > Doesn't this change the sense of the is_exclusive_device() test?
+On Fri, Sep 17, 2010 at 09:22:00AM -0500, Christoph Lameter wrote:
+> On Sat, 18 Sep 2010, Bron Gondwana wrote:
 > 
-> Yes, it does, "!" shoudl be dropped.
+> > > From the first look that seems to be the problem. You do not need to be
+> > > bound to a particular cpu, the scheduler will just leave a single process
+> > > on the same cpu by default. If you then allocate all memory only from this
+> > > process then you get the scenario that you described.
+> >
+> > Huh?  Which bit of forking server makes you think one process is allocating
+> > lots of memory?  They're opening and reading from files.  Unless you're
+> > calling the kernel a "single process".
 > 
-> OTOH maybe we should keep the "primary" ID as is (so SYNSYN0003 would
-> still be _the_ id) but only refuse device if none of it's IDs (neither
-> _HID nor _CID) satisfy ispnpidacpi() requirements.
+> I have no idea what your app does. 
 
-I think we *should* keep the entire SYNSYN0003 ID, but I don't think
-we currently can because we use a fixed-length array to store it.
-I haven't had time or motivation to fix that yet.
+Ok - Cyrus IMAPd has been around for ages.  It's an open source email
+server built on a very traditional single-process model.
 
-Do you want to post an update fixing the is_exclusive_device() thing?
+* a master process which reads config files and manages the other process
+* multiple imapd processes, one per connection
+* multiple pop3d processes, one per connection
+* multiple lmtpd processes, one per connection
+* periodical "cleanup" processes.
 
-Bjorn
+Each of these is started by the lightweight master forking and then
+execing the appropriate daemon.
+
+In our configuration we run 20 separate "master" processes, each
+managing a single disk partition's worth of email.  The reason
+for this is reduced locking contention for the central mailboxes
+database, and also better replication concurrency, because each
+instance runs a single replication process - so replication is
+sequential.
+
+> The data that I glanced over looks as
+> if most allocations happen for a particular memory node
+
+Sorry, which data?
+
+> and since the
+> memory is optimized to be local to that node other memory is not used
+> intensively. This can occur because of allocations through one process /
+> thread that is always running on the same cpu and therefore always
+> allocates from the memory node local to that cpu.
+
+As Rob said, there are thousands of independent processes, each opening
+a single mailbox (3 separate metadata files plus possibly hundreds of
+individual email files).  It's likely that diffenent processes will open
+the same mailbox over time - for example an email client opening multiple
+concurrent connections, and at the same time an lmtpd connecting and
+delivering new emails to the mailbox.
+
+> It can also happen f.e. if a driver always allocates memory local to the
+> I/O bus that it is using.
+
+None of what we're doing is super weird advanced stuff, it's a vanilla
+forking daemon where a single process run and does stuff on behalf of
+a user.  The only slightly interesting things:
+
+1) each "service" has a single lock file, and all the idle processes of
+   that type (i.e. imapd) block on that lock while they're waiting for
+   a connection.  This is to avoid thundering herd on operating systems
+   which aren't nice about it.  The winner does the accept and handles
+   the connection.
+2) once it's finished processing a request, the process will wait for
+   another connection rather than closing.
+
+Nothing sounds like what you're talking about (one giant process that's
+all on one CPU), and I don't know why you keep talking about it.  It's
+nothing like what we're running on these machines.
+
+Bron.
