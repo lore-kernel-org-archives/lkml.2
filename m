@@ -1,22 +1,22 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299Ab0IETyp (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sun, 5 Sep 2010 15:54:45 -0400
-Received: from outgoing.x10hosting.com ([173.236.28.162]:40996 "HELO
-	outgoing.x10hosting.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753579Ab0IETyj (ORCPT
+	id S1753488Ab0IQKci (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Fri, 17 Sep 2010 06:32:38 -0400
+Received: from fsuj26.rz.uni-jena.de ([141.35.1.28]:57265 "EHLO
+	fsuj26.rz.uni-jena.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753023Ab0IQKch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 15:54:39 -0400
-Message-ID: <69b340816e06b7027704e37a1bac35e6.squirrel@josematt.x10.mx>
-Date: Sun, 5 Sep 2010 14:54:38 -0500
-Subject: Hello
-From: "rose isaac" <roseling55isaac@gmx.com>
-Reply-To: roseling55isaac@gmx.com
-User-Agent: SquirrelMail/1.4.20
+	Fri, 17 Sep 2010 06:32:37 -0400
+X-Greylist: delayed 16800 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Sep 2010 06:32:37 EDT
+Message-ID: <1284702569.4c93016964a7f@webmail.uni-jena.de>
+Date: Fri, 17 Sep 2010 07:49:29 +0200
+From: Kristin Georgy <Kristin.Georgy@uni-jena.de>
+Reply-to: diamondfinanceloanagency@yahoo.com.hk
+Subject: Loan Offer
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+User-Agent: Internet Messaging Program (IMP) 3.2.3
+X-Originating-IP: 82.128.17.131
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,8 +24,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
+Hello, I am Mr.Chris Preston,General Consultant (DIAMOND FINANCE
+SERVICE) a private Loan lender and a cooperate financial body for
+real estate and any kinds of business financing. We also offer Loans
+to individuals, Firms and cooperate bodies at 3% interest rate
+We offer any kind of loans.
 
-please how are you! hope you are fine  and in good condition of please
-will like you to  write me back because i have something VERY important to
-tell you, i hope to hear from you soon!Rose
+If interested contact us with the following details
+via email below:
 
+Full Name:...............................
+Location:.................................
+Sex......................................
+Marital status:...........................
+country...................................
+Phone / Fax:.............................
+Amount Needed:..............( We pay in USD ).
+Contact E-mail:...........................
+Occupation:..............................
+Purpose  Of  Loan........................
+Loan Duration ...........................
+
+
+Email: privateloanlender@w.cn
+Mr.Chris Preston.
+General Consultant
+DIAMOND FINANCE SERVICE.
+Email: privateloanlender@w.cn
+
+----------------------------------------------------------------
+This mail was sent through http://webmail.uni-jena.de
