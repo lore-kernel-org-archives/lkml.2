@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755842Ab0IQQYj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 12:24:39 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:46119 "EHLO mx3.mail.elte.hu"
+	id S1754569Ab0IQQby (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 12:31:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36464 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754586Ab0IQQYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 12:24:37 -0400
-Date: Fri, 17 Sep 2010 18:24:12 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Thomas Renninger <trenn@suse.de>
-Cc: Jean Pihet <jean.pihet@newoldbits.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
-        arjan@infradead.org, Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-kernel@vger.kernel.org, discuss@lesswatts.org,
-        linux-pm@lists.linux-foundation.org, linux-omap@vger.kernel.org,
-        linux-perf-users@vger.kernel.org, linux-trace-users@vger.kernel.org
-Subject: Re: [PATCH] tracing, perf: add more power related events
-Message-ID: <20100917162412.GB3341@elte.hu>
-References: <AANLkTinUmbSUUuxUzc8++pcb9gd1CZFdyTQFrveTBXyV@mail.gmail.com>
- <AANLkTi=W_Lo2m=hkA2F48oUziqGzt4Tr8y6KhfgqRnbz@mail.gmail.com>
- <20100917142459.GA28124@elte.hu>
- <201009171736.14170.trenn@suse.de>
+	id S1752573Ab0IQQbx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 12:31:53 -0400
+Date: Fri, 17 Sep 2010 09:21:42 -0700
+From: Greg KH <gregkh@suse.de>
+To: Tim Gardner <tim.gardner@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Brett Rudley <brudley@broadcom.com>,
+        Henry Ptasinski <henryp@broadcom.com>, Nohee Ko <noheek@broadcom.com>
+Subject: Re: [PATCH] staging: brcm80211: Make CFLAGS explicit
+Message-ID: <20100917162142.GA30385@suse.de>
+References: <1284736810-2940-1-git-send-email-tim.gardner@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201009171736.14170.trenn@suse.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0002]
+In-Reply-To: <1284736810-2940-1-git-send-email-tim.gardner@canonical.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Sep 17, 2010 at 09:20:10AM -0600, Tim Gardner wrote:
+> Its too easy to confuse the obscurely named WLC_LOW/WLC_HIGH CFLAG
+> macros.
 
-* Thomas Renninger <trenn@suse.de> wrote:
+True, but doesn't this change how the code is being built?  Why make
+this change?
 
-> On Friday 17 September 2010 16:24:59 Ingo Molnar wrote:
-> > 
-> > * Jean Pihet <jean.pihet@newoldbits.com> wrote:
-> > 
-> > > > Apropos documentation..., are the power trace events documented
-> > > > somewhere?
-> > >
-> > > No. We need something like Documentation/trace/events-kmem.txt. I
-> > > can write that with for the new power API.
-> > Such a patch introducing events-power.txt would be most welcome!
-> Better wait a bit...
-> As soon as it exists, things are harder to change.
-> As long as there isn't an API documented, there doesn't exist one
-> (yes we want to have perf timechart, etc. still functional/compatible,
-> but still, better let's do not the same mistake with some quick shots).
+> 
+> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> Cc: Brett Rudley <brudley@broadcom.com>
+> Cc: Henry Ptasinski <henryp@broadcom.com>
+> Cc: Nohee Ko <noheek@broadcom.com>
+> ---
+>  drivers/staging/brcm80211/Makefile |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/staging/brcm80211/Makefile b/drivers/staging/brcm80211/Makefile
+> index 05a4103..7a77e7f 100644
+> --- a/drivers/staging/brcm80211/Makefile
+> +++ b/drivers/staging/brcm80211/Makefile
+> @@ -15,8 +15,9 @@
+>  # OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+>  # CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+>  
+> -EXTRA_CFLAGS := -DBCMDBG -DWLC_HIGH -DSTA -DWME -DWL11N -DDBAND -DBCMDMA32 -DBCMNVRAMR -Idrivers/staging/brcm80211/sys -Idrivers/staging/brcm80211/phy -Idrivers/staging/brcm80211/util -Idrivers/staging/brcm80211/include -Wall -Wstrict-prototypes -Werror -Wmissing-prototypes
+> +EXTRA_CFLAGS := -DBCMDBG -DWME -DWL11N -DDBAND -DBCMDMA32 -DBCMNVRAMR -Idrivers/staging/brcm80211/sys -Idrivers/staging/brcm80211/phy -Idrivers/staging/brcm80211/util -Idrivers/staging/brcm80211/include -Wall -Wstrict-prototypes -Werror -Wmissing-prototypes
 
-Music to my ears ;-) I was waiting for ACPI side feedback to all this, 
-so whatever we do it would be nice to cover ARM and x86 as well - and in 
-a single coherent framework.
+how about 2 patches here, one to break it out into one flag per line so
+we can see what is really happening here, and then one patch to make the
+change you are asking for.
 
-[ You dont even have to document it, as good code is self-explanatory ;-) ]
+>  
+> +USB_CFLAGS := -DWLC_HIGH
 
-Thanks,
+Are you sure about this?  Why set this when I don't see anything ever
+using it?
 
-	Ingo
+What problem are you trying to fix here.
+
+totally confused,
+
+greg k-h
