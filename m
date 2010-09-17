@@ -1,34 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996Ab0IQB2C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 21:28:02 -0400
-Received: from mga14.intel.com ([143.182.124.37]:22301 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753031Ab0IQB2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 21:28:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,379,1280732400"; 
-   d="scan'208";a="325564476"
-Subject: Re: [PATCH 0/8] Drop host_lock around LLD SHT->queuecommand()
- caller
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        James Smart <james.smart@emulex.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
-        Christoph Hellwig <hch@lst.de>
-In-Reply-To: <1284676521-10737-1-git-send-email-nab@linux-iscsi.org>
-References: <1284676521-10737-1-git-send-email-nab@linux-iscsi.org>
+	id S1752604Ab0IQBb0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 21:31:26 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:36048 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752186Ab0IQBbZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 21:31:25 -0400
+X-Sasl-enc: Ob+1pS+EF5skAY2z7R2LJtIJpdhXF/qrotze7dmkMHE9 1284687084
+Subject: Re: [PATCH 04/12] BKL: Remove BKL from autofs4
+From: Ian Kent <raven@themaw.net>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        autofs@linux.kernel.org
+In-Reply-To: <4C926DFC.1090600@zytor.com>
+References: <1284659185-8942-1-git-send-email-arnd@arndb.de>
+	 <1284659185-8942-5-git-send-email-arnd@arndb.de>
+	 <4C9258C1.3060906@zytor.com> <201009161955.48854.arnd@arndb.de>
+	 <4C926DFC.1090600@zytor.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 16 Sep 2010 18:29:09 -0700
-Message-ID: <1284686949.7280.99.camel@schen9-DESK>
+Date: Fri, 17 Sep 2010 09:31:19 +0800
+Message-ID: <1284687079.3083.7.camel@localhost>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
@@ -36,19 +28,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-16 at 15:35 -0700, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
+On Thu, 2010-09-16 at 12:20 -0700, H. Peter Anvin wrote:
+> On 09/16/2010 10:55 AM, Arnd Bergmann wrote:
+> > On Thursday 16 September 2010 19:49:53 H. Peter Anvin wrote:
+> >> On 09/16/2010 10:46 AM, Arnd Bergmann wrote:
+> >>> autofs4 uses the BKL only to guard its ioctl operations.
+> >>> This can be trivially converted to use a mutex, as we have
+> >>> done with most device drivers before.
+> >>>
+> >>> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> >>> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> >>> ---
+> >>>  fs/autofs4/root.c |   12 +++++++-----
+> >>>  1 files changed, 7 insertions(+), 5 deletions(-)
+> >>
+> >> You may want to Cc: the maintainer, Ian Kent.
+> > 
+> > Ah, sorry about this. I looked at the wrong MAINTAINERS entry.
+> > 
+> > I also forgot to Cc you about autofs3, adding more to the confusion. ;)
+> > 
+> > Do you think the time has come to move autofs3 to drivers/staging
+> > as we deprecate the BKL?
+> > 
 > 
-> Greetings all,
-> 
-> This series contains the first round of a whole-sale conversion for droping
-> struct Scsi_Host->host_lock around struct Scsi_Host->queuecommand() within
-> scsi_dispatch_cmd().  So with this first patch the only part of scsi_dispatch_cmd()
-> that is protected by host_lock is scsi_cmd_get_serial)_.
-> 
+> I'm leaving that up to Ian.  I have offered for years to just plain kill
+> off autofs3.
 
-Maybe we can change the host->cmd_serial_number to atomic and totally
-avoid the need to take host_lock.
+Yeah, my bad, again.
+Now I want to wait for David Howells VFS automount series, which we're
+working on now, since that will be a significant change.
 
-Tim
+> 
+> 	-hpa
+
 
