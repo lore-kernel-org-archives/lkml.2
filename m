@@ -1,111 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917Ab0IQIYA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 04:24:00 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:51480 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752354Ab0IQIXz (ORCPT
+	id S1753496Ab0IQIZO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 04:25:14 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:33365 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753154Ab0IQIZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 04:23:55 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4C932591.5090101@jp.fujitsu.com>
-Date: Fri, 17 Sep 2010 17:23:45 +0900
-From: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: netdev@vger.kernel.org, davem@davemloft.net, izumi.taku@jp.fujitsu.com,
-        kaneshige.kenji@jp.fujitsu.com, acme@ghostprotocols.net,
-        fweisbec@gmail.com, mingo@elte.hu, rostedt@goodmis.org
-Subject: [PATCH -tip] perf: Document of netdev-times perf script
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Fri, 17 Sep 2010 04:25:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=i9lPMQJ2bGuqD04PTC2YhIpsoIBl7/etmSndVqxKu8sBz+lxfOH02+dcFYl4TZcYoT
+         TUAnnTeLbOjR5CA1PHyEo4x5f4/p146SxBUamnIckW/7gBqZK0lrH3+3DL7zitMlGKKG
+         eive89lqhH0h/1jtmeh7w2P23OxAnlQrkEeaQ=
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>
+Subject: [PATCH 5/9] staging: otus: '&pointer[0]' to 'pointer' fix
+Date: Fri, 17 Sep 2010 11:24:47 +0300
+Message-Id: <bb9258227c56217c7717f2f6257cc19f286df585.1284711623.git.andy.shevchenko@gmail.com>
+X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <20100916225346.GA14448@kroah.com>
+References: <20100916225346.GA14448@kroah.com>
+In-Reply-To: <668ce39e9bd64e2a285367e2cc0963d678d1b501.1284711623.git.andy.shevchenko@gmail.com>
+References: <668ce39e9bd64e2a285367e2cc0963d678d1b501.1284711623.git.andy.shevchenko@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a document of netdev-times which is used by perf.
-This document shows how to use it.
-
-Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
 ---
- tools/perf/Documentation/netdev-times.txt |   70 +++++++++++++++++++++++++++++
- 1 files changed, 70 insertions(+), 0 deletions(-)
+ drivers/staging/otus/ioctl.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/Documentation/netdev-times.txt b/tools/perf/Documentation/netdev-times.txt
-new file mode 100644
-index 0000000..a905650
---- /dev/null
-+++ b/tools/perf/Documentation/netdev-times.txt
-@@ -0,0 +1,70 @@
-+netdev-times(1)
-+===============
-+
-+NAME
-+----
-+netdev-times - Tool to analysis packets processing
-+
-+SYNOPSIS
-+--------
-+'perf trace record netdev-times' [<script>]
-+or
-+'perf trace report netdev-times' [<options>]
-+
-+DESCRIPTION
-+-----------
-+This script shows packets processing and processed time.
-+There are two steps to use it:
-+
-+ 'perf trace record netdev-times' [<script>] to record the events
-+ which relates to packets processing.
-+
-+ 'perf trace report netdev-times' [<options>] to report a time-chart of
-+ pakcets processing and processed time.
-+
-+OPTIONS
-+-------
-+tx::
-+	Show only transmited packets processing.
-+
-+rx::
-+	Show only received packets procssing.
-+
-+dev=<device>::
-+	Show processing on the specified device.
-+
-+debug::
-+	Work with debug mode. It shows buffer status.
-+
-+EXAMPLES
-+--------
-+If you want to use this, you need to record a perf.data like following.
-+
-+ # perf trace record netdev-times [<script>]
-+
-+If you set script, perf gathers events until it ends.
-+If not, you must do Ctrl-C to stop recording.
-+
-+And if you want a report from the recorded data,
-+
-+ # perf trace report netdev-times [<options>]
-+
-+If you use some options, you can limit an output.
-+For example, if you want to show a process of received packets associated
-+with eth4,
-+
-+#perf trace report netdev-times rx dev=eth4
-+106133.171439sec cpu=0
-+  irq_entry(+0.000msec irq=24:eth4)
-+         |
-+  softirq_entry(+0.006msec)
-+         |
-+         |---netif_receive_skb(+0.010msec skb=f2d15900 len=100)
-+         |            |
-+         |      skb_copy_datagram_iovec(+0.039msec 10291::10291)
-+         |
-+  napi_poll_exit(+0.022msec eth4)
-+
-+SEE ALSO
-+--------
-+linkperf:perf-record[1], linkperf:perf-report[1], linkperf:perf-trace[1]
+diff --git a/drivers/staging/otus/ioctl.c b/drivers/staging/otus/ioctl.c
+index 405bd29..a403d9c 100644
+--- a/drivers/staging/otus/ioctl.c
++++ b/drivers/staging/otus/ioctl.c
+@@ -2188,7 +2188,7 @@ int usbdrv_wpa_ioctl(struct net_device *dev, struct athr_wlan_param *zdparm)
+ 		printk(KERN_ERR "usbdrv_wpa_ioctl: ZD_CMD_SET_MLME\n");
+ 
+ 		/* Translate STA's address */
+-		sprintf(mac_addr, "%pM", &zdparm->sta_addr[0]);
++		sprintf(mac_addr, "%pM", zdparm->sta_addr);
+ 
+ 		switch (zdparm->u.mlme.cmd) {
+ 		case MLME_STA_DEAUTH:
+-- 
+1.7.2.2
 
