@@ -1,105 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755494Ab0IQCnK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 22:43:10 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:47262 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754722Ab0IQCnI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 22:43:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=AwImH+DM/BsBINRSH2oSG+b426KZMnGJjZumzSb4em5pSsH7ZR+Fom6jiTblb7VndD
-         UoUHKHpjBIs7VifV2pUCA0blcf8NpMhfpYHD0nAztTGfiBl6kkZR5aKPDayQmI4NJYID
-         yroIL3c6msOdHVd9NZIQoWazaGDXd5j73NC+I=
-MIME-Version: 1.0
-In-Reply-To: <201009162339.05158.s.L-H@gmx.de>
-References: <12845915543097@site>
-	<201009162339.05158.s.L-H@gmx.de>
-Date: Fri, 17 Sep 2010 10:43:07 +0800
-Message-ID: <AANLkTikhf-qz5bHT=V1P-Osyxhhgx+2OJgjqVWzEsOGn@mail.gmail.com>
-Subject: Re: Patch "percpu: fix a memory leak in pcpu_extend_area_map()" has
- been added to the 2.6.35-stable tree
-From: Huang Shijie <shijie8@gmail.com>
-To: Stefan Lippers-Hollmann <s.L-H@gmx.de>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, tj@kernel.org,
-        stable@kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1755129Ab0IQCq0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 22:46:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39527 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752833Ab0IQCqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 22:46:25 -0400
+Subject: Re: [PATCH 1/8] scsi: Drop struct Scsi_Host->host_lock around
+ SHT->queuecommand()
+From: James Bottomley <James.Bottomley@suse.de>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
+        Christoph Hellwig <hch@lst.de>
+In-Reply-To: <1284676529-10756-1-git-send-email-nab@linux-iscsi.org>
+References: <1284676529-10756-1-git-send-email-nab@linux-iscsi.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 16 Sep 2010 22:46:11 -0400
+Message-ID: <1284691571.26423.50.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi :
+On Thu, 2010-09-16 at 15:35 -0700, Nicholas A. Bellinger wrote:
+> From: Nicholas Bellinger <nab@linux-iscsi.org>
+> 
+> This patch converts scsi_dispatch_cmd() to only hold struct Scsi_Host->host_lock
+> for scsi_cmd_get_serial(), and drops the lock because the call into
+> the LLD with host->hostt->queuecommand().
+> 
+> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> ---
+>  drivers/scsi/scsi.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+> index ad0ed21..06e5b3a 100644
+> --- a/drivers/scsi/scsi.c
+> +++ b/drivers/scsi/scsi.c
+> @@ -745,6 +745,7 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+>  	 * TODO: kill serial or move to blk layer
+>  	 */
+>  	scsi_cmd_get_serial(host, cmd); 
+> +	spin_unlock_irqrestore(host->host_lock, flags);
 
-    I think this maybe caused by the kfree/vfree.
-    I do not have any AMD machine. Could you add some log to debug it
-?  such as in pcpu_extend_area_map():
+So at least from where I stand, my object is to reduce the number of
+times we take and release the lock, which this doesn't do.  As I said
+before: we need to figure out the rest, which likely includes an atomic
+for the serial number (which is almost unused).  I think the check
+against SHOST_DEL is fine unlocked.
 
-        ================================
-        printk(KERN_INFO "[ %s ] line : %d\n", __func__, __LINE__);
-	pcpu_mem_free(old, old_size);
-        printk(KERN_INFO "[ %s ] line : %d\n", __func__, __LINE__);
-        pcpu_mem_free(new, new_size);
-        printk(KERN_INFO "[ %s ] line : %d\n", __func__, __LINE__);
-
-        ================================
-  The system will print the log before it hung.
-
-Best Regards.
-Huang Shijie
+James
 
 
-2010/9/17 Stefan Lippers-Hollmann <s.L-H@gmx.de>:
-> Hi
->
-> On Thursday 16 September 2010, gregkh@suse.de wrote:
->> This is a note to let you know that I've just added the patch titled
->>     percpu: fix a memory leak in pcpu_extend_area_map()
->> to the 2.6.35-stable tree which can be found at:
->>     http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
-> [...]
->> From a002d148426f40bc2b7dc066982eb177cdebeaaa Mon Sep 17 00:00:00 2001
->> From: Huang Shijie <shijie8@gmail.com>
->> Date: Sun, 8 Aug 2010 14:39:07 +0200
->> Subject: percpu: fix a memory leak in pcpu_extend_area_map()
->>
->> From: Huang Shijie <shijie8@gmail.com>
->>
->> commit a002d148426f40bc2b7dc066982eb177cdebeaaa upstream.
->>
->> The original code did not free the old map.  This patch fixes it.
->>
->> tj: use @old as memcpy source instead of @chunk->map, and indentation
->>     and description update
->
-> This patch, as part of the current -stable queue-2.6.35, breaks booting for
-> me on nforce4/ AMD64 X2. Unfortunately it fails even before the serial
-> console is initialized and the only messages shown on screen are:
->
-> Decompressing Linux... Parsing ELF... done.
-> Booting kernel.
->
-> [...]
->> --- a/mm/percpu.c
->> +++ b/mm/percpu.c
->> @@ -390,7 +390,9 @@ static int pcpu_extend_area_map(struct p
->>               goto out_unlock;
->>
->>       old_size = chunk->map_alloc * sizeof(chunk->map[0]);
->> -     memcpy(new, chunk->map, old_size);
->> +     old = chunk->map;
->> +
->> +     memcpy(new, old, old_size);
->>
->>       /*
->>        * map_alloc < PCPU_DFL_MAP_ALLOC indicates that the chunk is
->
-> Reverting just this patch from the current queue-2.6.35 fixes the issue for
-> me; gzipped kernel config (amd64) attached.
->
-> Regards
->        Stefan Lippers-Hollmann
->
