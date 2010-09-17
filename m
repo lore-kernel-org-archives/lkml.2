@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755987Ab0IQSV6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 14:21:58 -0400
-Received: from smtp101.sbc.mail.re3.yahoo.com ([66.196.96.84]:39093 "HELO
-	smtp101.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754325Ab0IQSVz (ORCPT
+	id S1756016Ab0IQSWJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 14:22:09 -0400
+Received: from smtp105.sbc.mail.ac4.yahoo.com ([76.13.13.244]:32746 "HELO
+	smtp105.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755995Ab0IQSWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 14:21:55 -0400
+	Fri, 17 Sep 2010 14:22:04 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: 8NKj_K0VM1kswxVgd_0zKptiITLQcSUg4MUegIhQpDp1YrI
- rIPjMDYHjdUJYQCetNcoLyp6BUVqeErFKYZPIX2QS4VgDyzreNHrBHo89aVY
- tnC0hvCVwaQnqbaHLQmMm6okWtAPFuIAOr1j8T7rzSbvM0FIEkZaa9yduE3g
- m_fJXoquV5KyVtyU_y9LZV.HVt8b8a8OoV6rdM.._NbLFGCFnYyyrwL0WXYL
- lpqF9GoxlwRQuig14LvQC4TtA8b9DTOH01VGT5r63XkF1kzRV935dw4YcAl8
- oybi7v10OQ1wMJzyF8ERmn0vzbv.dYYGFljGe_By.KZTqL1oQBxXdyoSd2zx
- p1HniXtx3xIzWGSAVj8GnNsYfXYcBjhqOZbLLfKyVotQMPQbTzr6l6E0PMAj
- 0flO98FgIdwKO7ysoIqXsgRrPi2tsQ1hptP9lkhUnNKY1cL_2N7x9yiuP_Az
- YlmAyb0pO4thz
+X-YMail-OSG: QnNNnmsVM1nGEJM_sr58ApJ1ZDKD1ZuF4jHRZ9oRyosxxQ7
+ nu6oDSxl8ZuzgbrbCt5yvjURVFrzsboAaVG6SkanFH7liZ3edS6lql7Wesa.
+ merOY9ZR3.JsuTD.7X1jpEm0uKLQY70ADN5ESl7Lkk_JnZJJE4obCzusvDO7
+ _XhsXmeM_bAOvJTqggSgy2358gLlptxoUZ9Dbu553Hp5ugOOfvYnv.PsLaR5
+ _IJJDuHzmPns5pEtOnDlWQRH9RrsDdxxq8VKnJDwDMWOlKPS8jKM._no3m8J
+ Urv60GfM7hY5TvwLXByyS_1gNzqWV7uSAYq6PtnQqQcr0imGeRYlT67XNCHu
+ eLCeFvpUgRE.BBmtKXA--
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -32,9 +30,9 @@ Cc: James Smart <james.smart@emulex.com>,
         Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
         Christoph Hellwig <hch@lst.de>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH v2 01/11] scsi: Convert struct Scsi_Host->cmd_serial_number to atomic_t
-Date: Fri, 17 Sep 2010 11:21:49 -0700
-Message-Id: <1284747709-20862-1-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH v2 02/11] scsi: Drop struct Scsi_Host->host_lock usage in scsi_dispatch_cmd()
+Date: Fri, 17 Sep 2010 11:21:59 -0700
+Message-Id: <1284747719-20881-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -42,89 +40,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch converts struct Scsi_Host->cmd_serial_number to an atomic_t so that
-scsi_cmd_get_serial() can be safely called without struct Scsi_Host->host_lock
-in scsi_dispatch_cmd().  This patch also adds a struct Scsi_Host->use_serial_number
-to signal serial_number usage, but this is now disabled by default in
-scsi_host_alloc().
-
-One special item in scsi_cmd_get_serial() recommended by Joe Eykholt is to
-start struct Scsi_Host->cmd_serial_number at 1, and increment each serial_number
-by 2 so that the serial is odd, and wraps to 1 instead of 0.
+This patch converts scsi_dispatch_cmd() to no longer lock() + unlock()
+struct Scsi_Host->host_lock while calling scsi_cmd_get_serial() and
+SHT->queuecommand() dispatcher.  This patch follows commit 5900e428420d
+which means we can now safely call scsi_cmd_get_serial() without the
+host_lock held.
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/scsi/hosts.c     |    4 ++++
- drivers/scsi/scsi.c      |   13 ++++++++++---
- include/scsi/scsi_host.h |    8 +++++---
- 3 files changed, 19 insertions(+), 6 deletions(-)
+ drivers/scsi/scsi.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/scsi/hosts.c b/drivers/scsi/hosts.c
-index 8a8f803..aff1c9c 100644
---- a/drivers/scsi/hosts.c
-+++ b/drivers/scsi/hosts.c
-@@ -380,6 +380,10 @@ struct Scsi_Host *scsi_host_alloc(struct scsi_host_template *sht, int privsize)
- 	shost->unchecked_isa_dma = sht->unchecked_isa_dma;
- 	shost->use_clustering = sht->use_clustering;
- 	shost->ordered_tag = sht->ordered_tag;
-+	/*
-+	 * Set the default shost->cmd_serial_number to 1.
-+	 */
-+	atomic_set(&shost->cmd_serial_number, 1);
- 
- 	if (sht->supported_mode == MODE_UNKNOWN)
- 		/* means we didn't set it ... default to INITIATOR */
 diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-index ad0ed21..4724ce7 100644
+index 4724ce7..d1aa209 100644
 --- a/drivers/scsi/scsi.c
 +++ b/drivers/scsi/scsi.c
-@@ -636,9 +636,16 @@ void scsi_log_completion(struct scsi_cmnd *cmd, int disposition)
-  */
- static inline void scsi_cmd_get_serial(struct Scsi_Host *host, struct scsi_cmnd *cmd)
+@@ -658,7 +658,6 @@ static inline void scsi_cmd_get_serial(struct Scsi_Host *host, struct scsi_cmnd
+ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
  {
--	cmd->serial_number = host->cmd_serial_number++;
--	if (cmd->serial_number == 0) 
--		cmd->serial_number = host->cmd_serial_number++;
-+	/*
-+	 * The use of per struct scsi_cmnd->serial_number is disabled by default
-+	 */
-+	if (!(host->use_serial_number))
-+		return;
-+	/*
-+	 * Increment the host->cmd_serial_number by 2 so cmd->serial_number
-+	 * is always odd and wraps to 1 instead of 0.
-+	 */
-+	cmd->serial_number = atomic_add_return(2, &host->cmd_serial_number);
- }
+ 	struct Scsi_Host *host = cmd->device->host;
+-	unsigned long flags = 0;
+ 	unsigned long timeout;
+ 	int rtn = 0;
  
- /**
-diff --git a/include/scsi/scsi_host.h b/include/scsi/scsi_host.h
-index b7bdecb..b08d0f2 100644
---- a/include/scsi/scsi_host.h
-+++ b/include/scsi/scsi_host.h
-@@ -602,10 +602,9 @@ struct Scsi_Host {
- 	short unsigned int max_sectors;
- 	unsigned long dma_boundary;
- 	/* 
--	 * Used to assign serial numbers to the cmds.
--	 * Protected by the host lock.
-+	 * Used to assign serial numbers to the cmds in scsi_cmd_get_serial()
- 	 */
--	unsigned long cmd_serial_number;
-+	atomic_t cmd_serial_number;
- 	
- 	unsigned active_mode:2;
- 	unsigned unchecked_isa_dma:1;
-@@ -636,6 +635,9 @@ struct Scsi_Host {
- 	/* Asynchronous scan in progress */
- 	unsigned async_scan:1;
+@@ -744,7 +743,6 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+ 		goto out;
+ 	}
  
-+	/* Signal usage of per struct scsi_cmnd->serial_number */
-+	unsigned use_serial_number:1;
-+
+-	spin_lock_irqsave(host->host_lock, flags);
  	/*
- 	 * Optional work queue to be utilized by the transport
- 	 */
+ 	 * AK: unlikely race here: for some reason the timer could
+ 	 * expire before the serial number is set up below.
+@@ -760,7 +758,7 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+ 		trace_scsi_dispatch_cmd_start(cmd);
+ 		rtn = host->hostt->queuecommand(cmd, scsi_done);
+ 	}
+-	spin_unlock_irqrestore(host->host_lock, flags);
++
+ 	if (rtn) {
+ 		trace_scsi_dispatch_cmd_error(cmd, rtn);
+ 		if (rtn != SCSI_MLQUEUE_DEVICE_BUSY &&
 -- 
 1.7.2.3
 
