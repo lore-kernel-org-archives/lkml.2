@@ -1,48 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041Ab0IQPDh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 11:03:37 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:39164 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754824Ab0IQPDf (ORCPT
+	id S1755180Ab0IQPHW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 11:07:22 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:59053 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754016Ab0IQPHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 11:03:35 -0400
+	Fri, 17 Sep 2010 11:07:21 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=sCW3jHU6zLNfonB1ezya74KzOhoGsmGCYyrH0RQJdwTj3Gs4FMekTqtAGukeXqo38s
-         mpiwM/bE4v+iu0WWFQmNddOBWqcDLCCWYlxBOi4q4LkoesdA54X1MszVt8Gf1sQlPLIr
-         QT72pywmr+ayZz7jYXCzkNB9Gr/XDelMcX6Zk=
-Subject: Re: Regression, bisected: WARNING spam with ipsec since 2.6.35
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
-        David Miller <davem@davemloft.net>
-In-Reply-To: <20100917141920.GA9280@elliptictech.com>
-References: <20100916213138.GA6605@elliptictech.com>
-	 <1284676070.4784.25.camel@edumazet-laptop>
-	 <20100917141920.GA9280@elliptictech.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 17 Sep 2010 17:03:30 +0200
-Message-ID: <1284735810.3391.85.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=Zxewjv7YSUMZlx9Lq8jQqbWhwE7NNmkygr67U4M80grcWgbHgTy7MVdqCMKndV1Teb
+         d8EvfXWxSZPsnM+T9FSDIvp2d57n13l0tziR6iHUpr2SvZ6UYjo19nN1ULsf92VHNj9L
+         S+C62fmIulO3HBaTws44HAj+moxXeQm4ND42A=
+MIME-Version: 1.0
+Date: Fri, 17 Sep 2010 17:07:20 +0200
+Message-ID: <AANLkTi=pxciY2jJePYPDzaRjsyGo3pQTeip0AJSqrzzh@mail.gmail.com>
+Subject: 2.6.35.4+current stable queue: hangs at boot, bisected
+From: Giangiacomo Mariotti <gg.mariotti@gmail.com>
+To: shijie8@gmail.com, tj@kernel.org
+Cc: linux-kernel@vger.kernel.org, gregkh@suse.de
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 17 septembre 2010 à 10:19 -0400, Nick Bowler a écrit :
-> On 2010-09-17 00:27 +0200, Eric Dumazet wrote:
-> > I suspect following patch is needed, before further changes.
-> > 
-> > [PATCH] xfrm: dont assume rcu_read_lock in xfrm_output_one()
-> 
-> Yup, that makes the warnings go away.  Thanks.
-> 
+Hi,
+    Linux kernel 2.6.35.4+patches in stable-queue hangs at boot, right
+after selecting it on grub. The cursor blinks and there's no output
+whatsoever. I've bisected the problem to the patch
+"percpu-fix-a-memory-leak-in-pcpu_extend_area_map.patch". Without it
+and applying all the others, the kernel works again. If you need more
+info, let me know.
 
-Thanks for testing.
-
-
-
+-- 
+Giangiacomo
