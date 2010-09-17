@@ -1,257 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196Ab0IQP2t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 11:28:49 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:55542 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754380Ab0IQP2r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 11:28:47 -0400
-X-Authority-Analysis: v=1.1 cv=2ipXt8Ao/PPbK329gQN1nC6XU/V8QMABDttguNTIlb0= c=1 sm=0 a=9nV7qiHO8IIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=5koX4MaKYlLvq6bZrWwA:9 a=Kmke6y2lVEhZaD4X1BsA:7 a=peicfVW20tDoGQ5-uu-roB0-7s0A:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 01/10] jump label v11: make dynamic no-op selection
- available outside of ftrace
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jason Baron <jbaron@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
-        hpa@zytor.com, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com
-In-Reply-To: <96259ae74172dcac99c0020c249743c523a92e18.1284733808.git.jbaron@redhat.com>
-References: <cover.1284733808.git.jbaron@redhat.com>
-	 <96259ae74172dcac99c0020c249743c523a92e18.1284733808.git.jbaron@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 17 Sep 2010 11:28:44 -0400
-Message-ID: <1284737324.23787.79.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+	id S1755314Ab0IQP3N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 11:29:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34133 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755262Ab0IQP3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 11:29:10 -0400
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Jean Pihet <jean.pihet@newoldbits.com>
+Subject: Re: [PATCH] tracing, perf: add more power related events
+Date: Fri, 17 Sep 2010 17:29:02 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.31.5-0.1-desktop; KDE/4.4.3; x86_64; ; )
+Cc: Ingo Molnar <mingo@elte.hu>, Arjan van de Ven <arjan@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
+        arjan@infradead.org, Kevin Hilman <khilman@deeprootsystems.com>,
+        linux-kernel@vger.kernel.org, discuss@lesswatts.org,
+        linux-pm@lists.linux-foundation.org, linux-omap@vger.kernel.org,
+        linux-perf-users@vger.kernel.org, linux-trace-users@vger.kernel.org
+References: <AANLkTinUmbSUUuxUzc8++pcb9gd1CZFdyTQFrveTBXyV@mail.gmail.com> <201009171508.46471.trenn@suse.de> <AANLkTi=W_Lo2m=hkA2F48oUziqGzt4Tr8y6KhfgqRnbz@mail.gmail.com>
+In-Reply-To: <AANLkTi=W_Lo2m=hkA2F48oUziqGzt4Tr8y6KhfgqRnbz@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201009171729.02569.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-09-17 at 11:08 -0400, Jason Baron wrote:
-> Move Steve's code for finding the best 5-byte no-op from ftrace.c to alternative.c.
-> The idea is that other consumers (in this case jump label) want to make use of
-> that code.
+On Friday 17 September 2010 16:05:51 Jean Pihet wrote:
+> Hi Thomas,
 > 
-> Signed-off-by: Jason Baron <jbaron@redhat.com>
-
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-
--- Steve
-
-> ---
->  arch/x86/include/asm/alternative.h |    8 ++++
->  arch/x86/kernel/alternative.c      |   64 ++++++++++++++++++++++++++++++++++++
->  arch/x86/kernel/ftrace.c           |   63 +----------------------------------
->  arch/x86/kernel/setup.c            |    6 +++
->  4 files changed, 79 insertions(+), 62 deletions(-)
+> On Fri, Sep 17, 2010 at 3:08 PM, Thomas Renninger <trenn@suse.de> wrote:
+> > Hi,
+> >
+> > I had a quick look at this and it's amazing how broken
+> > the whole power event tracing interfaces are.
+> > It's not your fault, Jean, they always were and adding your stuff is
+> > fine.
+> That is the whole point! This code needs a serious clean-up and reorganization.
+> The patch I submitted is now merged in the tip tree, but the can be
+> corrected once the new power trace API is agreed on.
+Your generic patch is ok. Not that sure about the clock stuff.
+How many different clocks do exist on ARM/OMAP?
+Possibly this can all go into a:
+power_switch_state(type=, state=)
+interface and you define some ARM specific static ones like:
++       POWER_NONE      = 0,
++       POWER_CSTATE    = 1,    /* C-State */
++       POWER_PSTATE    = 2,    /* Fequency change or DVFS */
++       POWER_SSTATE    = 3,    /* Suspend */
++       POWER_OMAP_CLOCK_1   = 4,    /* OMAP clock XY */
++       POWER_OMAP_CLOCK_2   = 5,    /* OMAP clock XYZ */
+...
 > 
-> diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
-> index bc6abb7..27a35b6 100644
-> --- a/arch/x86/include/asm/alternative.h
-> +++ b/arch/x86/include/asm/alternative.h
-> @@ -180,4 +180,12 @@ static inline void apply_paravirt(struct paravirt_patch_site *start,
->  extern void *text_poke(void *addr, const void *opcode, size_t len);
->  extern void *text_poke_smp(void *addr, const void *opcode, size_t len);
->  
-> +#if defined(CONFIG_DYNAMIC_FTRACE)
-> +#define IDEAL_NOP_SIZE_5 5
-> +extern unsigned char ideal_nop5[IDEAL_NOP_SIZE_5];
-> +extern void arch_init_ideal_nop5(void);
-> +#else
-> +static inline void arch_init_ideal_nop5(void) {}
-> +#endif
-> +
->  #endif /* _ASM_X86_ALTERNATIVE_H */
-> diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-> index f65ab8b..1849d80 100644
-> --- a/arch/x86/kernel/alternative.c
-> +++ b/arch/x86/kernel/alternative.c
-> @@ -641,3 +641,67 @@ void *__kprobes text_poke_smp(void *addr, const void *opcode, size_t len)
->  	return addr;
->  }
->  
-> +#if defined(CONFIG_DYNAMIC_FTRACE)
-> +
-> +unsigned char ideal_nop5[IDEAL_NOP_SIZE_5];
-> +
-> +void __init arch_init_ideal_nop5(void)
-> +{
-> +	extern const unsigned char ftrace_test_p6nop[];
-> +	extern const unsigned char ftrace_test_nop5[];
-> +	extern const unsigned char ftrace_test_jmp[];
-> +	int faulted = 0;
-> +
-> +	/*
-> +	 * There is no good nop for all x86 archs.
-> +	 * We will default to using the P6_NOP5, but first we
-> +	 * will test to make sure that the nop will actually
-> +	 * work on this CPU. If it faults, we will then
-> +	 * go to a lesser efficient 5 byte nop. If that fails
-> +	 * we then just use a jmp as our nop. This isn't the most
-> +	 * efficient nop, but we can not use a multi part nop
-> +	 * since we would then risk being preempted in the middle
-> +	 * of that nop, and if we enabled tracing then, it might
-> +	 * cause a system crash.
-> +	 *
-> +	 * TODO: check the cpuid to determine the best nop.
-> +	 */
-> +	asm volatile (
-> +		"ftrace_test_jmp:"
-> +		"jmp ftrace_test_p6nop\n"
-> +		"nop\n"
-> +		"nop\n"
-> +		"nop\n"  /* 2 byte jmp + 3 bytes */
-> +		"ftrace_test_p6nop:"
-> +		P6_NOP5
-> +		"jmp 1f\n"
-> +		"ftrace_test_nop5:"
-> +		".byte 0x66,0x66,0x66,0x66,0x90\n"
-> +		"1:"
-> +		".section .fixup, \"ax\"\n"
-> +		"2:	movl $1, %0\n"
-> +		"	jmp ftrace_test_nop5\n"
-> +		"3:	movl $2, %0\n"
-> +		"	jmp 1b\n"
-> +		".previous\n"
-> +		_ASM_EXTABLE(ftrace_test_p6nop, 2b)
-> +		_ASM_EXTABLE(ftrace_test_nop5, 3b)
-> +		: "=r"(faulted) : "0" (faulted));
-> +
-> +	switch (faulted) {
-> +	case 0:
-> +		pr_info("converting mcount calls to 0f 1f 44 00 00\n");
-> +		memcpy(ideal_nop5, ftrace_test_p6nop, IDEAL_NOP_SIZE_5);
-> +		break;
-> +	case 1:
-> +		pr_info("converting mcount calls to 66 66 66 66 90\n");
-> +		memcpy(ideal_nop5, ftrace_test_nop5, IDEAL_NOP_SIZE_5);
-> +		break;
-> +	case 2:
-> +		pr_info("converting mcount calls to jmp . + 5\n");
-> +		memcpy(ideal_nop5, ftrace_test_jmp, IDEAL_NOP_SIZE_5);
-> +		break;
-> +	}
-> +
-> +}
-> +#endif
-> diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-> index cd37469..3afb33f 100644
-> --- a/arch/x86/kernel/ftrace.c
-> +++ b/arch/x86/kernel/ftrace.c
-> @@ -257,14 +257,9 @@ do_ftrace_mod_code(unsigned long ip, void *new_code)
->  	return mod_code_status;
->  }
->  
-> -
-> -
-> -
-> -static unsigned char ftrace_nop[MCOUNT_INSN_SIZE];
-> -
->  static unsigned char *ftrace_nop_replace(void)
->  {
-> -	return ftrace_nop;
-> +	return ideal_nop5;
->  }
->  
->  static int
-> @@ -338,62 +333,6 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
->  
->  int __init ftrace_dyn_arch_init(void *data)
->  {
-> -	extern const unsigned char ftrace_test_p6nop[];
-> -	extern const unsigned char ftrace_test_nop5[];
-> -	extern const unsigned char ftrace_test_jmp[];
-> -	int faulted = 0;
-> -
-> -	/*
-> -	 * There is no good nop for all x86 archs.
-> -	 * We will default to using the P6_NOP5, but first we
-> -	 * will test to make sure that the nop will actually
-> -	 * work on this CPU. If it faults, we will then
-> -	 * go to a lesser efficient 5 byte nop. If that fails
-> -	 * we then just use a jmp as our nop. This isn't the most
-> -	 * efficient nop, but we can not use a multi part nop
-> -	 * since we would then risk being preempted in the middle
-> -	 * of that nop, and if we enabled tracing then, it might
-> -	 * cause a system crash.
-> -	 *
-> -	 * TODO: check the cpuid to determine the best nop.
-> -	 */
-> -	asm volatile (
-> -		"ftrace_test_jmp:"
-> -		"jmp ftrace_test_p6nop\n"
-> -		"nop\n"
-> -		"nop\n"
-> -		"nop\n"  /* 2 byte jmp + 3 bytes */
-> -		"ftrace_test_p6nop:"
-> -		P6_NOP5
-> -		"jmp 1f\n"
-> -		"ftrace_test_nop5:"
-> -		".byte 0x66,0x66,0x66,0x66,0x90\n"
-> -		"1:"
-> -		".section .fixup, \"ax\"\n"
-> -		"2:	movl $1, %0\n"
-> -		"	jmp ftrace_test_nop5\n"
-> -		"3:	movl $2, %0\n"
-> -		"	jmp 1b\n"
-> -		".previous\n"
-> -		_ASM_EXTABLE(ftrace_test_p6nop, 2b)
-> -		_ASM_EXTABLE(ftrace_test_nop5, 3b)
-> -		: "=r"(faulted) : "0" (faulted));
-> -
-> -	switch (faulted) {
-> -	case 0:
-> -		pr_info("converting mcount calls to 0f 1f 44 00 00\n");
-> -		memcpy(ftrace_nop, ftrace_test_p6nop, MCOUNT_INSN_SIZE);
-> -		break;
-> -	case 1:
-> -		pr_info("converting mcount calls to 66 66 66 66 90\n");
-> -		memcpy(ftrace_nop, ftrace_test_nop5, MCOUNT_INSN_SIZE);
-> -		break;
-> -	case 2:
-> -		pr_info("converting mcount calls to jmp . + 5\n");
-> -		memcpy(ftrace_nop, ftrace_test_jmp, MCOUNT_INSN_SIZE);
-> -		break;
-> -	}
-> -
->  	/* The return code is retured via data */
->  	*(unsigned long *)data = 0;
->  
-> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-> index 1427c36..fb37842 100644
-> --- a/arch/x86/kernel/setup.c
-> +++ b/arch/x86/kernel/setup.c
-> @@ -112,6 +112,7 @@
->  #include <asm/numa_64.h>
->  #endif
->  #include <asm/mce.h>
-> +#include <asm/alternative.h>
->  
->  /*
->   * end_pfn only includes RAM, while max_pfn_mapped includes all e820 entries.
-> @@ -689,6 +690,7 @@ void __init setup_arch(char **cmdline_p)
->  {
->  	int acpi = 0;
->  	int k8 = 0;
-> +	unsigned long flags;
->  
->  #ifdef CONFIG_X86_32
->  	memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
-> @@ -1036,6 +1038,10 @@ void __init setup_arch(char **cmdline_p)
->  	x86_init.oem.banner();
->  
->  	mcheck_init();
-> +
-> +	local_irq_save(flags);
-> +	arch_init_ideal_nop5();
-> +	local_irq_restore(flags);
->  }
->  
->  #ifdef CONFIG_X86_32
+> > Some questions, maybe I've overseen something:
+> >
+> > Why does this event:
+> > DEFINE_EVENT(power, power_frequency,
+> > exist and takes a C-/P-state, now also an S-state type as argument?
+> There is no clear link between the POWER_ types enum and the API, that
+> needs to change.
+Yep. At least for the frequency (P-state) and idle (C-state) states
+I have a reasonable solution, see below.
+> 
+> > It should be named more generic, like:
+> > DEFINE_EVENT(power, power_switch,
+> > then it could get invoked when any P-/C-/S-/X- state
+> > switch happened.
+> Agree. We need some better definitions for the events and at the same
+> time a more flexible way to pass extra arguments (e.g. like a return
+> code or the real HW state in case the desired state is not reached).
+> Also it is required to be able to track sub-states.
+> The idea is to identify the C-states latency in the low power entry
+> and exit paths, using 2 new macros in the enum and a sub state
+> argument. Cf. http://omappedia.org/images/b/b9/Pytimechart_screenshot9_rs.jpg
+> (from http://omappedia.org/wiki/Power_Management_Debug_and_Profiling).
+IMO one does not need an exit path, see below.
+ 
+> > What kind of hack is this:
+> > TRACE_EVENT(power_end,
+> > showing up as:
+> > power_end: dummy=65535
+> > What ends here?
+> > I know it's a workaround/hack for userspace apps to be
+> > able to detect leaving of a sleep state, but how would someone
+> > know or how would someone describe this in a proper API documentation?
+> That was a hack, it is now gone. The new power_end only takes the
+> cpu_id argument.
+The CPU/machine/device always is in a C-/P-/T-/S- whatever state.
+Typically 0 means it's in a non-power saving state.
+So issueing a power_switch_state(type=X, state=0)
+would be the exit path. There is no need for a separate:
+power_end(type=X) call.
+Compare with my S-state ACPI example, I'll send in a minute.
 
+> > Apropos documentation..., are the power trace events documented
+> > somewhere?
+> No. We need something like Documentation/trace/events-kmem.txt. I can
+> write that with for the new power API.
+> 
+> > At least the state should still be passed, then the _start/_end thing
+> > can be reused by something else than C-states.
+> >
+> > I can't see the use of having _start/_end events at all.
+> > You are always in a state, having one:
+> > power_switch
+> > as suggested above, is enough to track everything.
+> Most of the events can be converted to power_switch, but not all.
+> Example: you need to know when the suspend ends.
+power_switch_state(type=POWER_SSTATE, state=0)
 
+> >
+> > Examples:
+> >
+> > Today's C-state tracking:
+> > power_start: type=1 state=1  -> C1 entered
+> > power_end: dummy=65535       -> C-state left
+> > power_start: type=1 state=2  -> C2 entered
+> > power_end: dummy=65535       -> C-state left
+> > would then be:
+> > power_switch: type=1 state=1  -> C1 entered
+> > power_switch: type=1 state=0  -> C0 entered -> means C1 left...
+> > power_switch: type=1 state=2  -> C2 entered
+> > power_switch: type=1 state=0  -> C0 entered -> means C2 left...
+> > ...
+> >
+> > Todays P-state tracking:
+> > power_frequency: type=2 state=125000000     -> P-state change to 125 MHz
+> > power_frequency: type=2 state=90000000      -> P-state change to 90 MHz
+> > would then be:
+> > power_switch: type=2 state=125000000       -> P-state change to 125 MHz
+> > power_switch: type=2 state=90000000        -> P-state change to 90 MHz
+> >
+> > The S-state and T-state tracking would fit into that without
+> > modification.
+> > Thinking one step further, a possibility to track D-states would
+> What are the T- and D- states?
+T-states are processor throttling. Should only get used in critical
+thermal conditions, fits nice into this interface.
+
+D-states are device states, defined in ACPI from D0 (no power savings
+active, up to D3 (max powersavings active). It's up to the device what
+it's doing with it.
+This one does not fit into a generic power_switch_state, because:
+   - you want a connection to the device exported
+   - possibly you want to be smarter than ACPI and tell what exactly
+     a device switches off.
+I'd leave device specific events out of the discussion for now.
+
+> > need an additional field, a pointer to the device, best a sysfs path
+> > or similar.
+> Agree on that. As said above I would like to have extra args.
+> 
+> > Jean, I do not think tracing the S-state with power_start is a
+> > good idea. Best would be the power_frequency gets renamed
+> 
+> >(yes, breaks
+> > userspace, but those have to be adjusted)
+> BTW I can patch pytimechart. What other tools have to change? powertop ...?
+That would be great.
+AFAIK the code use trace/perf events in powertop is not yet released.
+
+> > and used for P- and S-
+> > state tracking (and C-state tracking as well, but this would need
+> > additional userspace modifications).
+> OK
+> 
+> > How do you track when the S-states end?
+> Two options: 1) have new arguments that indicates enter/exit and a
+> sub-state; 2) a new event fot the exit.
+> I am in favor of 1 which is more generic.
+See above, I'd use:
+power_switch_state(type=POWER_SSTATE, state=0)
+
+I'll post patches to get C-states and S-states making use of
+a generic:
+power_switch_state(...)
+function with still providing old events to not break existing
+tools.
+
+    Thomas
