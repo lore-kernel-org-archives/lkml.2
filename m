@@ -1,36 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374Ab0IQU35 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 16:29:57 -0400
-Received: from mail.comu.edu.tr ([193.255.97.15]:35618 "EHLO mail.comu.edu.tr"
+	id S1753504Ab0IQUco (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 16:32:44 -0400
+Received: from www.tglx.de ([62.245.132.106]:42804 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752302Ab0IQU34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 16:29:56 -0400
-X-Greylist: delayed 389 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Sep 2010 16:29:56 EDT
-X-Antivirus-MYDOMAIN-Mail-From: info@bt.com via mail.comu.edu.tr
-X-Antivirus-MYDOMAIN: 1.25-st-qms (Clear:RC:1(193.255.97.15):. Processed in 0.027081 secs Process 13873)
-Message-ID: <8c9c20005a13d701d4a9a3d0317117e6.squirrel@webmail.comu.edu.tr>
-Date: Fri, 17 Sep 2010 22:07:56 +0300 (EEST)
-Subject: YOU HAVE BEEN AWARDED
-From: "UNF Grant Donation" <info@bt.com>
-Reply-To: robinclaimsdesk@xnmsn.com
-User-Agent: SquirrelMail/1.4.16
+	id S1752693Ab0IQUcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 16:32:43 -0400
+Date: Fri, 17 Sep 2010 22:32:35 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+cc: Greg Kroah-Hartman <gregkh@suse.de>, "Hans J. Koch" <hjk@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] uio: Fix lack of locking in init_uio_class
+In-Reply-To: <m1sk1c895g.fsf@fess.ebiederm.org>
+Message-ID: <alpine.LFD.2.00.1009172231580.2416@localhost6.localdomain6>
+References: <m1y6b48973.fsf@fess.ebiederm.org> <m1sk1c895g.fsf@fess.ebiederm.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your email ID was awarded 1,000,000.00 USD in the UNF Grant Donation. Send
-us email about your full info.
-Name:...........................
-Country:........................
-Sex:............................
-Age/Tell Number:................
 
-Contact Person: Mr. Robin Steve email; robin.claimsdesk@xnmsn.com
 
+On Tue, 14 Sep 2010, Eric W. Biederman wrote:
+
+> 
+> There is no locking in init_uio_class so multiple
+> drivers can race and create multiple uio classes.
+> 
+> Fix this by simplifying the code.   In particular always
+> register the uio class during module_init and make things
+> simpler.
+> 
+> Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
+
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
