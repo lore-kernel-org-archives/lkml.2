@@ -1,97 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755228Ab0IQPJe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 11:09:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32385 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755134Ab0IQPJc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 11:09:32 -0400
-Date: Fri, 17 Sep 2010 11:08:47 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
-        tglx@linutronix.de, rostedt@goodmis.org, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com
-Message-Id: <cover.1284733808.git.jbaron@redhat.com>
-Subject: [PATCH 00/10] jump label v11
+	id S1755284Ab0IQPSB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 11:18:01 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:32776 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755020Ab0IQPRs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 11:17:48 -0400
+From: Will Drewry <wad@chromium.org>
+To: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Roland McGrath <roland@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        containers@lists.linux-foundation.org, Eugene Teo <eteo@redhat.com>,
+        Tejun Heo <tj@kernel.org>, Serge Hallyn <serue@us.ibm.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>, linux-fsdevel@vger.kernel.org,
+        Will Drewry <wad@chromium.org>
+Subject: [PATCH 2/2] exec: move core_pattern pipe helper into the crashing namespace
+Date: Fri, 17 Sep 2010 10:16:58 -0500
+Message-Id: <1284736618-27153-2-git-send-email-wad@chromium.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <20100917152639.0e88341a@basil.nowhere.org>
+References: <20100917152639.0e88341a@basil.nowhere.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Presently, a core_pattern pipe endpoint will be run in the init
+namespace.  It will receive the virtual pid (task_tgid_vnr->%p) of the
+core dumping process but will have no access to that processes /proc
+without walking the init namespace /proc looking through all the global
+pids until it finds the one it thinks matches.
 
-updates in -v11:
+One option for implementing this I've already posed:
+  https://patchwork.kernel.org/patch/185912/
+However, it's unclear if it is desirable for the core_pattern to run
+outside the namespace.  In particular, it can easily access the mounts
+via /proc/[pid_nr]/root, but if there is a net namespace, it will not
+have access.  (Originally introduced in 2007 in commit
+b488893a390edfe027bae7a46e9af8083e740668 )
 
--consolidated core jump label changes into a single patch
--updated sparc64 patch from David Miller
--various cleanups
+Instead, this change implements the more complex option two.  It
+migrates the ____call_usermodehelper() thread into the same namespaces
+as the dumping process.  It does not assign a pid in that namespace so
+the collector will appear to be pid 0.  (Using alloc_pid and change_pid
+are options though. I avoided it because kernel_thread's returned pid
+will then mismatch the actual threads pid.)
 
-Thanks to Steve Rostedt for helping me clean up the ftrace changes found in
-patch 1/10.
+Signed-off-by: Will Drewry <wad@chromium.org>
+---
+ fs/exec.c |   56 +++++++++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 53 insertions(+), 3 deletions(-)
 
-thanks,
-
--Jason
-
-David S. Miller (1):
-  jump label: add sparc64 support
-
-Jason Baron (9):
-  jump label: x86 - make dynamic no-op selection available outside of ftrace
-  jump label: make text_poke_early() globally visisble
-  jump label: base patch
-  jump label: initialize workqueue tracepoints *before* they are registered
-  jump label: jump_label_text_reserved() to reserve our jump points
-  jump label: tracepoint support
-  jump label: convert dynamic debug to use jump labels
-  jump label: x86 support
-  jump label: add docs
-
-
- Documentation/jump-label.txt        |  148 ++++++++++++
- Makefile                            |    5 +
- arch/Kconfig                        |    3 +
- arch/sparc/Kconfig                  |    1 +
- arch/sparc/include/asm/jump_label.h |   32 +++
- arch/sparc/kernel/Makefile          |    2 +
- arch/sparc/kernel/jump_label.c      |   46 ++++
- arch/sparc/kernel/module.c          |    6 +
- arch/x86/Kconfig                    |    1 +
- arch/x86/include/asm/alternative.h  |   11 +
- arch/x86/include/asm/jump_label.h   |   47 ++++
- arch/x86/kernel/Makefile            |    2 +-
- arch/x86/kernel/alternative.c       |   68 ++++++-
- arch/x86/kernel/ftrace.c            |   63 +-----
- arch/x86/kernel/jump_label.c        |   49 ++++
- arch/x86/kernel/kprobes.c           |    3 +-
- arch/x86/kernel/module.c            |    3 +
- arch/x86/kernel/setup.c             |    6 +
- include/asm-generic/vmlinux.lds.h   |   10 +
- include/linux/dynamic_debug.h       |   39 ++--
- include/linux/jump_label.h          |   64 ++++++
- include/linux/module.h              |    5 +-
- include/linux/tracepoint.h          |    5 +-
- kernel/Makefile                     |    2 +-
- kernel/jump_label.c                 |  421 +++++++++++++++++++++++++++++++++++
- kernel/kprobes.c                    |    4 +-
- kernel/module.c                     |    6 +
- kernel/trace/trace_workqueue.c      |   10 +-
- kernel/tracepoint.c                 |   14 +-
- lib/dynamic_debug.c                 |   42 +----
- scripts/Makefile.lib                |   11 +-
- scripts/basic/Makefile              |    2 +-
- scripts/basic/hash.c                |   64 ------
- scripts/gcc-goto.sh                 |    5 +
- 34 files changed, 991 insertions(+), 209 deletions(-)
- create mode 100644 Documentation/jump-label.txt
- create mode 100644 arch/sparc/include/asm/jump_label.h
- create mode 100644 arch/sparc/kernel/jump_label.c
- create mode 100644 arch/x86/include/asm/jump_label.h
- create mode 100644 arch/x86/kernel/jump_label.c
- create mode 100644 include/linux/jump_label.h
- create mode 100644 kernel/jump_label.c
- delete mode 100644 scripts/basic/hash.c
- create mode 100644 scripts/gcc-goto.sh
+diff --git a/fs/exec.c b/fs/exec.c
+index 828dd24..3b82607 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -51,6 +51,7 @@
+ #include <linux/audit.h>
+ #include <linux/tracehook.h>
+ #include <linux/kmod.h>
++#include <linux/nsproxy.h>
+ #include <linux/fsnotify.h>
+ #include <linux/fs_struct.h>
+ #include <linux/pipe_fs_i.h>
+@@ -65,6 +66,12 @@ char core_pattern[CORENAME_MAX_SIZE] = "core";
+ unsigned int core_pipe_limit;
+ int suid_dumpable = 0;
+ 
++struct coredump_pipe_params {
++	struct coredump_params *params;
++	struct nsproxy *nsproxy;
++	struct fs_struct *fs;
++};
++
+ /* The maximal length of core_pattern is also specified in sysctl.c */
+ 
+ static LIST_HEAD(formats);
+@@ -1819,8 +1826,34 @@ static int umh_pipe_setup(struct subprocess_info *info)
+ {
+ 	struct file *rp, *wp;
+ 	struct fdtable *fdt;
+-	struct coredump_params *cp = (struct coredump_params *)info->data;
+-	struct files_struct *cf = current->files;
++	struct coredump_pipe_params *pipe_params =
++		(struct coredump_pipe_params *)info->data;
++	struct coredump_params *cp = pipe_params->params;
++	struct task_struct *tsk = current;
++	struct files_struct *cf = tsk->files;
++	struct fs_struct *cfs = tsk->fs;
++
++	/* Migrate this thread into the crashing namespaces, but
++	 * don't change its pid struct to avoid breaking any other
++	 * dependencies.  This will mean the process is pid=0 if it
++	 * was migrated into a pid namespace.
++	 */
++	if (pipe_params->nsproxy && pipe_params->fs) {
++		int kill;
++		switch_task_namespaces(tsk, pipe_params->nsproxy);
++		pipe_params->nsproxy = NULL;
++
++		task_lock(tsk);
++		tsk->fs = pipe_params->fs;
++		task_unlock(tsk);
++		pipe_params->fs = NULL;
++		/* Clean up the previous fs struct */
++		write_lock(&cfs->lock);
++		kill = !--cfs->users;
++		write_unlock(&cfs->lock);
++		if (kill)
++			free_fs_struct(cfs);
++	}
+ 
+ 	wp = create_write_pipe(0);
+ 	if (IS_ERR(wp))
+@@ -1911,6 +1944,7 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
+  	if (ispipe) {
+ 		int dump_count;
+ 		char **helper_argv;
++		struct coredump_pipe_params pipe_params = { .params = &cprm };
+ 
+ 		if (cprm.limit == 1) {
+ 			/*
+@@ -1950,10 +1984,26 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
+ 			goto fail_dropcount;
+ 		}
+ 
++		/* Run the core_collector in the crashing namespaces */
++		if (copy_namespaces_unattached(0, current,
++			&pipe_params.nsproxy, &pipe_params.fs)) {
++			printk(KERN_WARNING "%s failed to copy namespaces\n",
++			       __func__);
++			argv_free(helper_argv);
++			goto fail_dropcount;
++		}
++
+ 		retval = call_usermodehelper_fns(helper_argv[0], helper_argv,
+ 					NULL, UMH_WAIT_EXEC, umh_pipe_setup,
+-					NULL, &cprm);
++					NULL, &pipe_params);
+ 		argv_free(helper_argv);
++		/* nsproxy and fs will survive if call_usermodehelper_fns hits
++		 * ENOMEM prior to creating a new thread.
++		 */
++		if (pipe_params.nsproxy)
++			put_nsproxy(pipe_params.nsproxy);
++		if (pipe_params.fs)  /* not in use by anything else */
++			free_fs_struct(pipe_params.fs);
+ 		if (retval) {
+  			printk(KERN_INFO "Core dump to %s pipe failed\n",
+ 			       corename);
+-- 
+1.7.0.4
 
