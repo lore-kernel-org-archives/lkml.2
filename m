@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647Ab0IQNgs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 09:36:48 -0400
-Received: from mail.bspu.unibel.by ([195.50.2.21]:44446 "EHLO mail"
+	id S1754347Ab0IQNhc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 09:37:32 -0400
+Received: from mail.bspu.unibel.by ([195.50.2.21]:44455 "EHLO mail"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752125Ab0IQNgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 09:36:47 -0400
-Message-ID: <4C936EEF.70508@bspu.unibel.by>
-Date: Fri, 17 Sep 2010 16:36:47 +0300
+	id S1752244Ab0IQNhb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 09:37:31 -0400
+Message-ID: <4C936F3B.70500@bspu.unibel.by>
+Date: Fri, 17 Sep 2010 16:38:03 +0300
 From: Dzianis Kahanovich <mahatma@bspu.unibel.by>
 Reply-To: mahatma@eu.by
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b6pre) Gecko/20100902 SeaMonkey/2.1b1pre
@@ -16,71 +16,66 @@ To: Rusty Russell <rusty@rustcorp.com.au>
 CC: linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: dio: Re: #2 (Re: More modaliases + patchtool))
+Subject: acpi: Re: #2 (Re: More modaliases + patchtool))
 References: <4C6BE292.3060307@bspu.unibel.by> <201008191020.52861.rusty@rustcorp.com.au> <4C6D26BC.9040805@bspu.unibel.by> <201009111144.34078.rusty@rustcorp.com.au>
 In-Reply-To: <201009111144.34078.rusty@rustcorp.com.au>
 Content-Type: multipart/mixed;
- boundary="------------040602060700000706000604"
+ boundary="------------050508010108090607050100"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a multi-part message in MIME format.
---------------040602060700000706000604
+--------------050508010108090607050100
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 
 ...
 
 
---------------040602060700000706000604
+
+
+--------------050508010108090607050100
 Content-Type: text/plain;
- name="mods-dio.patch"
+ name="mods-acpi.patch"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: attachment;
- filename="mods-dio.patch"
+ filename="mods-acpi.patch"
 
-Fix lost DIO modaliases
-
-Signed-off-by: Dzianis Kahanovich <mahatma@eu.by>
-
---- linux-2.6.36-rc4-git3/drivers/serial/8250_hp300.c	2010-08-02 01:11:14.000000000 +0300
-+++ b/drivers/serial/8250_hp300.c	2010-09-17 12:38:57.712780474 +0300
-@@ -320,6 +320,11 @@ static void __exit hp300_8250_exit(void)
- #endif
+--- linux-2.6.36-rc4-git3/drivers/platform/x86/intel_menlow.c	2010-09-17 12:30:30.000000000 +0300
++++ b/drivers/platform/x86/intel_menlow.c	2010-09-17 12:38:56.376753809 +0300
+@@ -536,5 +536,8 @@ static void __exit intel_menlow_module_e
+ 	intel_menlow_unregister_sensor();
  }
  
 +
-+#ifdef CONFIG_DIO
-+MODULE_DEVICE_TABLE(dio, hpdca_dio_tbl);
++MODULE_DEVICE_TABLE(acpi, intel_menlow_memory_ids);
++
+ module_init(intel_menlow_module_init);
+ module_exit(intel_menlow_module_exit);
+--- linux-2.6.36-rc4-git3/drivers/staging/quickstart/quickstart.c	2010-09-17 12:30:31.000000000 +0300
++++ b/drivers/staging/quickstart/quickstart.c	2010-09-17 12:39:02.903030634 +0300
+@@ -470,5 +470,8 @@ fail_pfdrv_reg:
+ 	return ret;
+ }
+ 
++
++MODULE_DEVICE_TABLE(acpi, quickstart_device_ids);
++
+ module_init(quickstart_init);
+ module_exit(quickstart_exit);
+--- linux-2.6.36-rc4-git3/drivers/char/sonypi.c	2010-08-02 01:11:14.000000000 +0300
++++ b/drivers/char/sonypi.c	2010-09-17 12:38:43.182861196 +0300
+@@ -1565,5 +1565,10 @@ static void __exit sonypi_exit(void)
+ 	printk(KERN_INFO "sonypi: removed.\n");
+ }
+ 
++
++#ifdef CONFIG_ACPI
++MODULE_DEVICE_TABLE(acpi, sonypi_device_ids);
 +#endif
 +
- module_init(hp300_8250_init);
- module_exit(hp300_8250_exit);
- MODULE_DESCRIPTION("HP DCA/APCI serial driver");
---- linux-2.6.36-rc4-git3/drivers/video/hpfb.c	2010-08-02 01:11:14.000000000 +0300
-+++ b/drivers/video/hpfb.c	2010-09-17 12:39:05.182624032 +0300
-@@ -411,6 +411,9 @@ void __exit hpfb_cleanup_module(void)
- 	dio_unregister_driver(&hpfb_driver);
- }
- 
-+
-+MODULE_DEVICE_TABLE(dio, hpfb_dio_tbl);
-+
- module_init(hpfb_init);
- module_exit(hpfb_cleanup_module);
- 
---- linux-2.6.36-rc4-git3/drivers/net/hplance.c	2010-08-02 01:11:14.000000000 +0300
-+++ b/drivers/net/hplance.c	2010-09-17 12:38:54.454135462 +0300
-@@ -236,6 +236,9 @@ static void __exit hplance_cleanup_modul
-         dio_unregister_driver(&hplance_driver);
- }
- 
-+
-+MODULE_DEVICE_TABLE(dio, hplance_dio_tbl);
-+
- module_init(hplance_init_module);
- module_exit(hplance_cleanup_module);
- 
+ module_init(sonypi_init);
+ module_exit(sonypi_exit);
 
---------------040602060700000706000604--
+--------------050508010108090607050100--
