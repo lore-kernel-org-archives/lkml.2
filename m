@@ -1,79 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278Ab0IQCmn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 22:42:43 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:52715 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752833Ab0IQCmm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 22:42:42 -0400
-Date: Fri, 17 Sep 2010 12:42:38 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Subject: linux-next: build failure after merge of the rcu tree
-Message-Id: <20100917124238.aa0596cb.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755494Ab0IQCnK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 22:43:10 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:47262 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754722Ab0IQCnI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 22:43:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=AwImH+DM/BsBINRSH2oSG+b426KZMnGJjZumzSb4em5pSsH7ZR+Fom6jiTblb7VndD
+         UoUHKHpjBIs7VifV2pUCA0blcf8NpMhfpYHD0nAztTGfiBl6kkZR5aKPDayQmI4NJYID
+         yroIL3c6msOdHVd9NZIQoWazaGDXd5j73NC+I=
+MIME-Version: 1.0
+In-Reply-To: <201009162339.05158.s.L-H@gmx.de>
+References: <12845915543097@site>
+	<201009162339.05158.s.L-H@gmx.de>
+Date: Fri, 17 Sep 2010 10:43:07 +0800
+Message-ID: <AANLkTikhf-qz5bHT=V1P-Osyxhhgx+2OJgjqVWzEsOGn@mail.gmail.com>
+Subject: Re: Patch "percpu: fix a memory leak in pcpu_extend_area_map()" has
+ been added to the 2.6.35-stable tree
+From: Huang Shijie <shijie8@gmail.com>
+To: Stefan Lippers-Hollmann <s.L-H@gmx.de>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, tj@kernel.org,
+        stable@kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+hi :
 
-After merging the rcu tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+    I think this maybe caused by the kfree/vfree.
+    I do not have any AMD machine. Could you add some log to debug it
+?  such as in pcpu_extend_area_map():
 
-net/core/dev.c: In function 'netdev_run_todo':
-net/core/dev.c:5294: error: dereferencing pointer to incomplete type
-net/core/dev.c:5294: warning: type defaults to 'int' in declaration of '_________p1'
-net/core/dev.c:5294: error: dereferencing pointer to incomplete type
-net/core/dev.c:5294: warning: type defaults to 'int' in declaration of 'type name'
-net/core/dev.c:5294: error: dereferencing pointer to incomplete type
-net/core/dev.c:5294: warning: type defaults to 'int' in declaration of 'type name'
-net/core/dev.c:5294: warning: comparison of distinct pointer types lacks a cast
-net/core/dev.c:5294: error: dereferencing pointer to incomplete type
-net/core/dev.c:5294: warning: type defaults to 'int' in declaration of 'type name'
+        ================================
+        printk(KERN_INFO "[ %s ] line : %d\n", __func__, __LINE__);
+	pcpu_mem_free(old, old_size);
+        printk(KERN_INFO "[ %s ] line : %d\n", __func__, __LINE__);
+        pcpu_mem_free(new, new_size);
+        printk(KERN_INFO "[ %s ] line : %d\n", __func__, __LINE__);
 
-Caused by commit ca5ecddfa8fcbd948c95530e7e817cee9fb43a3d ("rcu: define
-__rcu address space modifier for sparse") interacting with commit
-95ae6b228f814fc0528d0506ee9f18ac333d6851 ("ipv4: ip_ptr cleanups") from
-the net tree.
+        ================================
+  The system will print the log before it hung.
 
-rcu_dereference_raw() now needs to know the type of the object its
-argument points to.  I added the following merge fix (which could be
-applied to the net tree anyway).
+Best Regards.
+Huang Shijie
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 17 Sep 2010 12:36:36 +1000
-Subject: [PATCH] net: include inetdevice.h for rcu_dereference_raw api change
 
-rcu_dereference_raw() now needs to know the type of its argument.
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- net/core/dev.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/net/core/dev.c b/net/core/dev.c
-index c6d837a..cadd28c 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -129,6 +129,7 @@
- #include <linux/random.h>
- #include <trace/events/napi.h>
- #include <linux/pci.h>
-+#include <linux/inetdevice.h>
- 
- #include "net-sysfs.h"
- 
--- 
-1.7.1
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+2010/9/17 Stefan Lippers-Hollmann <s.L-H@gmx.de>:
+> Hi
+>
+> On Thursday 16 September 2010, gregkh@suse.de wrote:
+>> This is a note to let you know that I've just added the patch titled
+>>     percpu: fix a memory leak in pcpu_extend_area_map()
+>> to the 2.6.35-stable tree which can be found at:
+>>     http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
+> [...]
+>> From a002d148426f40bc2b7dc066982eb177cdebeaaa Mon Sep 17 00:00:00 2001
+>> From: Huang Shijie <shijie8@gmail.com>
+>> Date: Sun, 8 Aug 2010 14:39:07 +0200
+>> Subject: percpu: fix a memory leak in pcpu_extend_area_map()
+>>
+>> From: Huang Shijie <shijie8@gmail.com>
+>>
+>> commit a002d148426f40bc2b7dc066982eb177cdebeaaa upstream.
+>>
+>> The original code did not free the old map.  This patch fixes it.
+>>
+>> tj: use @old as memcpy source instead of @chunk->map, and indentation
+>>     and description update
+>
+> This patch, as part of the current -stable queue-2.6.35, breaks booting for
+> me on nforce4/ AMD64 X2. Unfortunately it fails even before the serial
+> console is initialized and the only messages shown on screen are:
+>
+> Decompressing Linux... Parsing ELF... done.
+> Booting kernel.
+>
+> [...]
+>> --- a/mm/percpu.c
+>> +++ b/mm/percpu.c
+>> @@ -390,7 +390,9 @@ static int pcpu_extend_area_map(struct p
+>>               goto out_unlock;
+>>
+>>       old_size = chunk->map_alloc * sizeof(chunk->map[0]);
+>> -     memcpy(new, chunk->map, old_size);
+>> +     old = chunk->map;
+>> +
+>> +     memcpy(new, old, old_size);
+>>
+>>       /*
+>>        * map_alloc < PCPU_DFL_MAP_ALLOC indicates that the chunk is
+>
+> Reverting just this patch from the current queue-2.6.35 fixes the issue for
+> me; gzipped kernel config (amd64) attached.
+>
+> Regards
+>        Stefan Lippers-Hollmann
+>
