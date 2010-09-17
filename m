@@ -1,52 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877Ab0IQI1M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 04:27:12 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:63415 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752710Ab0IQIZF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 04:25:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=TE1We6m3mujgBvm5GBF6gLCOvnziD/RsWtX5nnNsUeVek/ngv4V5STzkiGD0u6+Gak
-         WC4A3Q8ZML+akEYifmCG5NESoSyauHgQo55qU+8bb7wUArcKRktDDd83r+4kfRYg/8ET
-         ar+Xt4lfwwDhw+nO8PFmoiYda3N12Di1uNwOU=
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>
-Subject: [PATCH 3/9] staging: cxt1e1: '&pointer[0]' to 'pointer' fix
-Date: Fri, 17 Sep 2010 11:24:45 +0300
-Message-Id: <268ead0b2dead55f39d2d2a1c09b165a2f73bd7f.1284711623.git.andy.shevchenko@gmail.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <20100916225346.GA14448@kroah.com>
-References: <20100916225346.GA14448@kroah.com>
-In-Reply-To: <668ce39e9bd64e2a285367e2cc0963d678d1b501.1284711623.git.andy.shevchenko@gmail.com>
-References: <668ce39e9bd64e2a285367e2cc0963d678d1b501.1284711623.git.andy.shevchenko@gmail.com>
+	id S1753031Ab0IQI3V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 04:29:21 -0400
+Received: from hera.kernel.org ([140.211.167.34]:59344 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752266Ab0IQI3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 04:29:18 -0400
+Date: Fri, 17 Sep 2010 08:28:20 GMT
+From: tip-bot for Matt Helsley <matthltc@us.ibm.com>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
+        mingo@redhat.com, will.deacon@arm.com, a.p.zijlstra@chello.nl,
+        matthltc@us.ibm.com, mahesh@linux.vnet.ibm.com, fweisbec@gmail.com,
+        rostedt@goodmis.org, stable@kernel.org, tglx@linutronix.de,
+        mingo@elte.hu, greenrd@greenrd.org, prasad@linux.vnet.ibm.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        will.deacon@arm.com, matthltc@us.ibm.com, mahesh@linux.vnet.ibm.com,
+        fweisbec@gmail.com, rostedt@goodmis.org, stable@kernel.org,
+        tglx@linutronix.de, prasad@linux.vnet.ibm.com, greenrd@greenrd.org,
+        mingo@elte.hu
+In-Reply-To: <f63454af09fb1915717251570423eb9ddd338340.1284407762.git.matthltc@us.ibm.com>
+References: <f63454af09fb1915717251570423eb9ddd338340.1284407762.git.matthltc@us.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] hw breakpoints: Fix pid namespace bug
+Message-ID: <tip-068e35eee9ef98eb4cab55181977e24995d273be@git.kernel.org>
+Git-Commit-ID: 068e35eee9ef98eb4cab55181977e24995d273be
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 17 Sep 2010 08:28:22 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
+Commit-ID:  068e35eee9ef98eb4cab55181977e24995d273be
+Gitweb:     http://git.kernel.org/tip/068e35eee9ef98eb4cab55181977e24995d273be
+Author:     Matt Helsley <matthltc@us.ibm.com>
+AuthorDate: Mon, 13 Sep 2010 13:01:18 -0700
+Committer:  Frederic Weisbecker <fweisbec@gmail.com>
+CommitDate: Fri, 17 Sep 2010 04:42:59 +0200
+
+hw breakpoints: Fix pid namespace bug
+
+Hardware breakpoints can't be registered within pid namespaces
+because tsk->pid is passed rather than the pid in the current
+namespace.
+
+(See https://bugzilla.kernel.org/show_bug.cgi?id=17281 )
+
+This is a quick fix demonstrating the problem but is not the
+best method of solving the problem since passing pids internally
+is not the best way to avoid pid namespace bugs. Subsequent patches
+will show a better solution.
+
+Much thanks to Frederic Weisbecker <fweisbec@gmail.com> for doing
+the bulk of the work finding this bug.
+
+Reported-by: Robin Green <greenrd@greenrd.org>
+Signed-off-by: Matt Helsley <matthltc@us.ibm.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Prasad <prasad@linux.vnet.ibm.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+Cc: 2.6.33-2.6.35 <stable@kernel.org>
+LKML-Reference: <f63454af09fb1915717251570423eb9ddd338340.1284407762.git.matthltc@us.ibm.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- drivers/staging/cxt1e1/sbeproc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/hw_breakpoint.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/cxt1e1/sbeproc.c b/drivers/staging/cxt1e1/sbeproc.c
-index af8fce4..c3eed4b 100644
---- a/drivers/staging/cxt1e1/sbeproc.c
-+++ b/drivers/staging/cxt1e1/sbeproc.c
-@@ -143,7 +143,7 @@ sbecom_proc_get_sbe_info (char *buffer, char **start, off_t offset,
-     len += sprintf (buffer + len, "Hardware ID:   0x%02X\n", ci->hdw_bid);
-     len += sprintf (buffer + len, "Board SN:      %06X\n", bip->brd_sn);
- 	len += sprintf(buffer + len, "Board MAC:     %pMF\n",
--		&bip->brd_mac_addr[0]);
-+		bip->brd_mac_addr);
-     len += sprintf (buffer + len, "Ports:         %d\n", ci->max_port);
-     len += sprintf (buffer + len, "Channels:      %d\n", bip->brd_chan_cnt);
- #if 1
--- 
-1.7.2.2
-
+diff --git a/kernel/hw_breakpoint.c b/kernel/hw_breakpoint.c
+index d71a987..c7c2aed 100644
+--- a/kernel/hw_breakpoint.c
++++ b/kernel/hw_breakpoint.c
+@@ -433,7 +433,8 @@ register_user_hw_breakpoint(struct perf_event_attr *attr,
+ 			    perf_overflow_handler_t triggered,
+ 			    struct task_struct *tsk)
+ {
+-	return perf_event_create_kernel_counter(attr, -1, tsk->pid, triggered);
++	return perf_event_create_kernel_counter(attr, -1, task_pid_vnr(tsk),
++						triggered);
+ }
+ EXPORT_SYMBOL_GPL(register_user_hw_breakpoint);
+ 
