@@ -1,46 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708Ab0IQUcv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 16:32:51 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:12209 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753559Ab0IQUct (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 16:32:49 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6109"; a="54746768"
-Message-ID: <4C93D071.5050803@codeaurora.org>
-Date: Fri, 17 Sep 2010 13:32:49 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1753587Ab0IQUeF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 16:34:05 -0400
+Received: from www.tglx.de ([62.245.132.106]:42833 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752693Ab0IQUeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 16:34:03 -0400
+Date: Fri, 17 Sep 2010 22:33:57 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+cc: Greg Kroah-Hartman <gregkh@suse.de>, "Hans J. Koch" <hjk@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] uio: Don't clear driver data
+In-Reply-To: <m1occ0894p.fsf@fess.ebiederm.org>
+Message-ID: <alpine.LFD.2.00.1009172232530.2416@localhost6.localdomain6>
+References: <m1y6b48973.fsf@fess.ebiederm.org> <m1occ0894p.fsf@fess.ebiederm.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: markgross@thegnar.org
-CC: Kevin Hilman <khilman@deeprootsystems.com>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <james.bottomley@suse.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: Re: [PATCH] pm_qos: Add system bus performance parameter
-References: <20100827064153.GB3414@gvim.org> <b3ebe52382d37d37e93021c33cb4d6d9.squirrel@codeaurora.org> <20100828020540.GB8341@gvim.org> <4C787AA9.4090906@codeaurora.org> <20100828225255.GA12402@gvim.org> <878w3o3p55.fsf@deeprootsystems.com> <20100831184030.GB9305@gvim.org> <4C7D844C.5050403@codeaurora.org> <20100901142804.GA13985@gvim.org> <4C7F1BF2.4050200@codeaurora.org> <20100902140922.GB2818@gvim.org>
-In-Reply-To: <20100902140922.GB2818@gvim.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mark gross wrote:
->> Ok. Who is going to add the summation "comparator"? I can write a
->> patch for the system bus thruput parameter.
+
+
+On Tue, 14 Sep 2010, Eric W. Biederman wrote:
+
 > 
-> I'll do a patch by monday as an RFC but, I'm wondering if we want it in
-> the main line vrs an implementation that scales by bus integrated into
-> the driver model per what Kevin has been talking about....
+> Currently uio sets it's driver data to NULL just as it is unregistering
+> attributes.  sysfs maks the guaranatee that it will not call attributes
+  
+  s/maks/makes/
+
+> after device_destroy is called so this is unncessary and leads to lots
+> of unnecessary code in uio.c
 > 
+> Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
 
-Mark, Any updates?
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
 
--Saravana
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
