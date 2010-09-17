@@ -1,145 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755623Ab0IQCsc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 22:48:32 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41806 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755392Ab0IQCs3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 22:48:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
-         :in-reply-to:references;
-        b=UbUSmFWBy186jlNcIqTSjXXWo0vzo2jOk7Ub1pXnx2HLfsCjaEcGCK/2ZHKD4Enlke
-         0F0hbyNE9UlQvXj7WDWUjbP66/BmzsX/q/X4UWy/cmg2jTmhRJoMYAsxjTlLQv5gXC0V
-         7QVQj0a6hfQGmy8Pip2kN/V9LE5wK3wChKt+M=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Kelvie Wong <kelvie@ieee.org>, Prasad <prasad@linux.vnet.ibm.com>,
-        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 1/2] x86: Fix instruction breakpoint encoding
-Date: Fri, 17 Sep 2010 04:48:21 +0200
-Message-Id: <1284691702-32269-2-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-regression
-X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
-In-Reply-To: <1284691702-32269-1-git-send-regression-fweisbec@gmail.com>
-References: <1284691702-32269-1-git-send-regression-fweisbec@gmail.com>
+	id S1755450Ab0IQCzn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 22:55:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39669 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753267Ab0IQCzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 22:55:42 -0400
+Subject: Re: [PATCH] bsg: call idr_pre_get() outside the lock.
+From: James Bottomley <James.Bottomley@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Naohiro Aota <naota@elisp.net>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Jiri Kosina <jkosina@suse.cz>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Daniel Mack <daniel@caiaq.de>, linux-scsi@vger.kernel.org
+In-Reply-To: <20100916163735.ed8dbb51.akpm@linux-foundation.org>
+References: <m2eidda6bq.fsf@elisp.net>
+	 <20100916163735.ed8dbb51.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 16 Sep 2010 22:55:30 -0400
+Message-ID: <1284692130.26423.53.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lengths and types of breakpoints are encoded in a half byte
-into CPU registers. However when we extract these values
-and store them, we add a high half byte part to them: 0x40 to the
-length and 0x80 to the type.
-When that gets reloaded to the CPU registers, the high part
-is masked.
+On Thu, 2010-09-16 at 16:37 -0700, Andrew Morton wrote:
+> On Wed, 01 Sep 2010 23:26:01 +0900
+> Naohiro Aota <naota@elisp.net> wrote:
+> 
+> > The idr_pre_get() kernel-doc says "This function should be called
+> > prior to locking and calling the idr_get_new* functions.", but the
+> > idr_pre_get() calling in bsg_register_queue() is put inside
+> > mutex_lock(). Let's fix it.
+> > 
+> 
+> The idr_pre_get() kerneldoc is wrong.  Or at least, misleading.
+> 
+> The way this all works is that we precharge the tree via idr_pre_get()
+> and we do this outside locks so we can use GFP_KERNEL.  Then we take
+> the lock (a spinlock!) and then try to add an element to the tree,
+> which will consume objects from the pool which was prefilled by
+> idr_pre_get().
+> 
+> There's an obvious race here where someone else can get in and steal
+> objects from the prefilled pool.  We can fix that with a retry loop:
+> 
+> 
+> again:
+> 	if (idr_pre_get(..., GFP_KERNEL) == NULL)
+> 		return -ENOMEM;		/* We're really out-of-memory */
+> 	spin_lock(lock);
+> 	if (idr_get_new(...) == -EAGAIN) {
+> 		spin_unlock(lock);
+> 		goto again;		/* Someone stole our preallocation! */
+> 	}
+> 	...
+> 
+> this way we avoid the false -ENOMEM which the race would have caused. 
+> We only declare -ENOMEM when we're REALLY out of memory.
+> 
+> 
+> But none of this is needed when a sleeping lock is used (as long as the
+> sleeping lock isn't taken on the the VM pageout path, of course).  In
+> that case we can use the sleeping lock to prevent the above race.
+> 
+> > diff --git a/block/bsg.c b/block/bsg.c
+> > index 82d5882..5fd8dd1 100644
+> > --- a/block/bsg.c
+> > +++ b/block/bsg.c
+> > @@ -1010,13 +1010,11 @@ int bsg_register_queue(struct request_queue *q, struct device *parent,
+> >  	bcd = &q->bsg_dev;
+> >  	memset(bcd, 0, sizeof(*bcd));
+> >  
+> > -	mutex_lock(&bsg_mutex);
+> > -
+> >  	ret = idr_pre_get(&bsg_minor_idr, GFP_KERNEL);
+> > -	if (!ret) {
+> > -		ret = -ENOMEM;
+> > -		goto unlock;
+> > -	}
+> > +	if (!ret)
+> > +		return -ENOMEM;
+> > +
+> > +	mutex_lock(&bsg_mutex);
+> >  
+> >  	ret = idr_get_new(&bsg_minor_idr, bcd, &minor);
+> >  	if (ret < 0)
+> 
+> So the old code was OK.
+> 
+> The new code, however, is not OK because it is vulnerable to the above
+> race wherein another CPU or thread comes in and steals all of this
+> thread's preallocation.
 
-While making the instruction breakpoints available for perf,
-I zapped that high part on instruction breakpoint encoding
-and that broke the arch -> generic translation used by ptrace
-instruction breakpoints. Writing dr7 to set an inst breakpoint
-was then failing.
+Hmm, you're right ... I've dropped the patch.
 
-There is no apparent reason for these high parts so we could get
-rid of them altogether. That's an invasive change though so let's
-do that later and for now fix the problem by restoring that inst
-breakpoint high part encoding in this sole patch.
+James
 
-Reported-by: Kelvie Wong <kelvie@ieee.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Prasad <prasad@linux.vnet.ibm.com>
-Cc: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
-Cc: Will Deacon <will.deacon@arm.com>
----
- arch/x86/include/asm/hw_breakpoint.h |    2 +-
- arch/x86/kernel/hw_breakpoint.c      |   40 ++++++++++++++++-----------------
- 2 files changed, 20 insertions(+), 22 deletions(-)
-
-diff --git a/arch/x86/include/asm/hw_breakpoint.h b/arch/x86/include/asm/hw_breakpoint.h
-index 528a11e..824ca07 100644
---- a/arch/x86/include/asm/hw_breakpoint.h
-+++ b/arch/x86/include/asm/hw_breakpoint.h
-@@ -20,7 +20,7 @@ struct arch_hw_breakpoint {
- #include <linux/list.h>
- 
- /* Available HW breakpoint length encodings */
--#define X86_BREAKPOINT_LEN_X		0x00
-+#define X86_BREAKPOINT_LEN_X		0x40
- #define X86_BREAKPOINT_LEN_1		0x40
- #define X86_BREAKPOINT_LEN_2		0x44
- #define X86_BREAKPOINT_LEN_4		0x4c
-diff --git a/arch/x86/kernel/hw_breakpoint.c b/arch/x86/kernel/hw_breakpoint.c
-index a474ec3..ff15c9d 100644
---- a/arch/x86/kernel/hw_breakpoint.c
-+++ b/arch/x86/kernel/hw_breakpoint.c
-@@ -206,11 +206,27 @@ int arch_check_bp_in_kernelspace(struct perf_event *bp)
- int arch_bp_generic_fields(int x86_len, int x86_type,
- 			   int *gen_len, int *gen_type)
- {
--	/* Len */
--	switch (x86_len) {
--	case X86_BREAKPOINT_LEN_X:
-+	/* Type */
-+	switch (x86_type) {
-+	case X86_BREAKPOINT_EXECUTE:
-+		if (x86_len != X86_BREAKPOINT_LEN_X)
-+			return -EINVAL;
-+
-+		*gen_type = HW_BREAKPOINT_X;
- 		*gen_len = sizeof(long);
-+		return 0;
-+	case X86_BREAKPOINT_WRITE:
-+		*gen_type = HW_BREAKPOINT_W;
- 		break;
-+	case X86_BREAKPOINT_RW:
-+		*gen_type = HW_BREAKPOINT_W | HW_BREAKPOINT_R;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	/* Len */
-+	switch (x86_len) {
- 	case X86_BREAKPOINT_LEN_1:
- 		*gen_len = HW_BREAKPOINT_LEN_1;
- 		break;
-@@ -229,21 +245,6 @@ int arch_bp_generic_fields(int x86_len, int x86_type,
- 		return -EINVAL;
- 	}
- 
--	/* Type */
--	switch (x86_type) {
--	case X86_BREAKPOINT_EXECUTE:
--		*gen_type = HW_BREAKPOINT_X;
--		break;
--	case X86_BREAKPOINT_WRITE:
--		*gen_type = HW_BREAKPOINT_W;
--		break;
--	case X86_BREAKPOINT_RW:
--		*gen_type = HW_BREAKPOINT_W | HW_BREAKPOINT_R;
--		break;
--	default:
--		return -EINVAL;
--	}
--
- 	return 0;
- }
- 
-@@ -316,9 +317,6 @@ int arch_validate_hwbkpt_settings(struct perf_event *bp)
- 	ret = -EINVAL;
- 
- 	switch (info->len) {
--	case X86_BREAKPOINT_LEN_X:
--		align = sizeof(long) -1;
--		break;
- 	case X86_BREAKPOINT_LEN_1:
- 		align = 0;
- 		break;
--- 
-1.6.2.3
 
