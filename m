@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754930Ab0IQGim (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 02:38:42 -0400
-Received: from 1wt.eu ([62.212.114.60]:45045 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752425Ab0IQGik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 02:38:40 -0400
-Date: Fri, 17 Sep 2010 08:37:54 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: David Miller <davem@davemloft.net>
-Cc: security@kernel.org, grundler@parisc-linux.org, netdev@vger.kernel.org,
-        drosenberg@vsecurity.com, jeffm@suse.com, linux-kernel@vger.kernel.org,
-        kyle@mcmartin.ca
-Subject: Re: [Security] [PATCH v4] drivers/net/tulip/de4x5.c: fix union member name in DE4X5_GET_REG ioctl
-Message-ID: <20100917063754.GB2341@1wt.eu>
-References: <1284699944.2565.4.camel@dan> <20100916.222740.135972127.davem@davemloft.net> <1284701436.2565.6.camel@dan> <20100916.223441.93463391.davem@davemloft.net> <20100917063602.GA2341@1wt.eu>
-Mime-Version: 1.0
+	id S1754602Ab0IQGvc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 02:51:32 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:44538 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826Ab0IQGvb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 02:51:31 -0400
+Date: Fri, 17 Sep 2010 14:51:17 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Bandan Das <bandan.das@stratus.com>
+Cc: bunk@kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        David Miller <davem@davemloft.net>, NetDev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Patrick McHardy <kaber@trash.net>
+Subject: Re: [PATCH net-next-2.6] net/ipv4: push IP options to CB in
+	ip_fragment
+Message-ID: <20100917065117.GA9577@gondor.apana.org.au>
+References: <20100830200917.GA10754@stratus.com> <1283204118.2405.32.camel@edumazet-laptop> <20100830232147.GB10754@stratus.com> <1283232031.2405.38.camel@edumazet-laptop> <20100831082444.GB29281@gondor.apana.org.au> <1283246271.2550.35.camel@edumazet-laptop> <20100831123641.GA31017@gondor.apana.org.au> <20100901165743.GB17843@stratus.com> <20100903044941.GA28300@gondor.apana.org.au> <20100915173209.GB9086@stratus.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100917063602.GA2341@1wt.eu>
-User-Agent: Mutt/1.4.2.3i
+In-Reply-To: <20100915173209.GB9086@stratus.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 17, 2010 at 08:36:02AM +0200, Willy Tarreau wrote:
-> On Thu, Sep 16, 2010 at 10:34:41PM -0700, David Miller wrote:
-> > From: Dan Rosenberg <drosenberg@vsecurity.com>
-> > Date: Fri, 17 Sep 2010 01:30:36 -0400
-> > 
-> > > Tiring doesn't begin to describe it.  Formatting undamaged.
-> > 
-> > :-)  Thanks.
-> > 
-> > > This was previously reported as a security issue due to leakage of
-> > > uninitialized stack memory.  Jeff Mahoney pointed out that this is
-> > > incorrect since the copied data is from a union (rather than a struct).
-> > > Therefore, this patch is only under consideration for the sake of
-> > > correctness, and is not security relevant. 
-> > > 
-> > > Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-> > > Acked-by: Grant Grundler <grundler@parisc-linux.org>
-> > 
-> > Applied.
-> 
-> David, just for the record, as was already reported on the list, this
-> fix is finally more a cleanup than a security fix because "tmp" is a
-> union and not a struct, so tmp.addr == tmp.lval.
+On Wed, Sep 15, 2010 at 01:32:09PM -0400, Bandan Das wrote:
+>
+> Sorry for the late response. Here's a patch that I put up based on Herbert's
+> suggestions. I ofcourse don't see the problem anymore after 
+> commit 87f94b4e91dc042620c527f3c30c37e5127ef757 but a generic helper such as this 
+> can be used anytime the bridge code is sending a packet over to the IP layer. 
+> Compile tested only but based on responses, will test it before submitting a 
+> final change. Also added it at two places where I know we do send a packet over to
+> the IP layer. I will add it at other places later as I come across them.
 
-sorry, that was already explained in the commit message, next time
-I'll read it fully before replying :-(
+Looks fine to me.
 
-Willy
-
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
