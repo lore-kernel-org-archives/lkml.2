@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755916Ab0IQSDm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 14:03:42 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:3318 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755116Ab0IQSDl convert rfc822-to-8bit (ORCPT
+	id S1755924Ab0IQSGB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 14:06:01 -0400
+Received: from relay01.mx.bawue.net ([193.7.176.67]:54547 "EHLO
+	relay01.mx.bawue.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755893Ab0IQSGA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 14:03:41 -0400
-X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
-From: "Brett Rudley" <brudley@broadcom.com>
-To: "tim.gardner@canonical.com" <tim.gardner@canonical.com>,
-        "Greg KH" <gregkh@suse.de>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Henry Ptasinski" <henryp@broadcom.com>,
-        "Nohee Ko" <noheek@broadcom.com>
-Date: Fri, 17 Sep 2010 11:03:14 -0700
-Subject: RE: [PATCH] staging: brcm80211: Make CFLAGS explicit
-Thread-Topic: [PATCH] staging: brcm80211: Make CFLAGS explicit
-Thread-Index: ActWkAPfq2x3IsvGS4WbvxJooAWrJwAAEZPA
-Message-ID: <7A94256FD72B884D9E7C55586C3CBCEE12BEC65BEC@SJEXCHCCR01.corp.ad.broadcom.com>
-References: <1284736810-2940-1-git-send-email-tim.gardner@canonical.com>
- <20100917162142.GA30385@suse.de> <4C93A8F9.9090108@canonical.com>
-In-Reply-To: <4C93A8F9.9090108@canonical.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-cr-hashedpuzzle: Bv5l DPxA Fx7F H1Tm JKO9 JfiJ LUtT MuWK OuOO VME/
- XBJO XHCi YtfY ZHYK ZH26
- cCpi;3;ZwByAGUAZwBrAGgAQABzAHUAcwBlAC4AZABlADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AHQAaQBtAC4AZwBhAHIAZABuAGUAcgBAAGMAYQBuAG8AbgBpAGMAYQBsAC4AYwBvAG0A;Sosha1_v1;7;{00511298-511F-4A94-BEC7-247428752C37};YgByAHUAZABsAGUAeQBAAGIAcgBvAGEAZABjAG8AbQAuAGMAbwBtAA==;Fri,
- 17 Sep 2010 18:03:14
- GMT;UgBFADoAIABbAFAAQQBUAEMASABdACAAcwB0AGEAZwBpAG4AZwA6ACAAYgByAGMAbQA4ADAAMgAxADEAOgAgAE0AYQBrAGUAIABDAEYATABBAEcAUwAgAGUAeABwAGwAaQBjAGkAdAA=
-x-cr-puzzleid: {00511298-511F-4A94-BEC7-247428752C37}
-acceptlanguage: en-US
+	Fri, 17 Sep 2010 14:06:00 -0400
+Date: Fri, 17 Sep 2010 20:05:53 +0200
+From: Nils Radtke <lkml@think-future.de>
+To: Maciej Rutecki <maciej.rutecki@gmail.com>
+Cc: Linux Kernel-Liste <linux-kernel@vger.kernel.org>
+Subject: Re: INFO: inconsistent lock state
+Message-ID: <20100917180553.GC11576@localhost>
+Reply-To: lkml@think-future.de
+References: <20100913145102.GI25129@localhost>
+ <201009162018.16966.maciej.rutecki@gmail.com>
 MIME-Version: 1.0
-X-WSS-ID: 608D72E33N0395250-01-01
-Content-Type: text/plain;
- charset=us-ascii
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8BIT
+In-Reply-To: <201009162018.16966.maciej.rutecki@gmail.com>
+X-Bkp: p2mi
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+  Hi,
 
-In a split mac dongle, the HIGH code runs on the host processor while the LOW code runs on the dongle and the two talk across an RPC API over SDIO or USB.
+  That msg appeared on one of our notebooks, one which is very
+  prone to panic. Because of that I switched the lock checking 
+  on for .35.4 . The machine tends to die of sucking the batts 
+  empty while sleeping over night (that batt is ok..). Or it dies
+  when resuming from suspend or when using Xorg (submitted already
+  a bunch of reports on various issues, this beast is picky).
 
-On a NIC both HIGH and LOW run on the host and the RPC API remains identical but the APIs become function straight calls.
- 
-This lets us use the same code and API in both models.
+  .35.4 is the first .35 running on this machine. Sorry, I just
+  checked, I only activated it for .35.4 . Config for .34 had 
+  it still disabled.
 
-Getting some documentation out on this is in TODO list.  
+  Amongst others, those are now active:
+  CONFIG_DEBUG_SPINLOCK=y
+  CONFIG_DEBUG_MUTEXES=y
+  CONFIG_DEBUG_LOCK_ALLOC=y
+  CONFIG_PROVE_LOCKING=y
 
-Brett
+  Would you mind giving advice on which else debug parameter 
+  to activate w/o performance loss (it's a productive work place)?
 
-> What does WLC_LOW and WLC_HIGH mean anyway?
-> 
-> rtg
-> --
-> Tim Gardner tim.gardner@canonical.com
+          Cheers,
+
+              Nils
 
 
+On Thu 2010-09-16 @ 08-18-16PM +0200, Maciej Rutecki wrote: 
+# On poniedziałek, 13 września 2010 o 16:51:02 Nils Radtke wrote:
+# >   Hi,
+# > 
+# >   Got this in the logs:
+# > 
+# > PM: Adding info for No Bus:vcs7
+# > PM: Adding info for No Bus:vcsa7
+# > initialized framebuffer f62c8580 with backing bo f62c0080
+# > 
+# > =================================
+# > [ INFO: inconsistent lock state ]
+# > 2.6.35.4 #11
+# 
+# Older versions works OK? eg. 2.6.35 or 2.6.34?
+# 
+# -- 
+# Maciej Rutecki
+# http://www.maciek.unixy.pl
+
+-- 
