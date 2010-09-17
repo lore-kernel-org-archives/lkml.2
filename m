@@ -1,46 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755761Ab0IQRlA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 13:41:00 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:37530 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753282Ab0IQRk6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 13:40:58 -0400
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: miklos@szeredi.hu, miklos@szeredi.hu, hch@infradead.org,
-        viro@zeniv.linux.org.uk, adilger@sun.com, corbet@lwn.net,
-        neilb@suse.de, npiggin@kernel.dk, hooanon05@yahoo.co.jp,
-        bfields@fieldses.org, miklos@szeredi.hu, linux-fsdevel@vger.kernel.org,
-        sfrench@us.ibm.com, philippe.deniel@CEA.FR,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V19 00/15] Generic name to handle and open by handle syscalls
-In-Reply-To: <E1Ov26Q-0000Hd-IT@pomaz-ex.szeredi.hu>
-References: <1282906982-26918-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <m31v95zweh.fsf@linux.vnet.ibm.com> <E1OswT5-000709-U9@pomaz-ex.szeredi.hu> <m3d3spvhdn.fsf@linux.vnet.ibm.com> <E1OsyA1-0007Ct-KS@pomaz-ex.szeredi.hu> <m3r5gyepho.fsf@linux.vnet.ibm.com> <E1Ov26Q-0000Hd-IT@pomaz-ex.szeredi.hu>
-User-Agent: Notmuch/0.3.1-58-g6607fd6 (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
-Date: Fri, 17 Sep 2010 23:10:15 +0530
-Message-ID: <m3y6b0s1z4.fsf@linux.vnet.ibm.com>
+	id S1754938Ab0IQRof (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 13:44:35 -0400
+Received: from mail.tpi.com ([70.99.223.143]:3622 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754600Ab0IQRoe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 13:44:34 -0400
+Message-ID: <4C93A8F9.9090108@canonical.com>
+Date: Fri, 17 Sep 2010 11:44:25 -0600
+From: Tim Gardner <tim.gardner@canonical.com>
+Reply-To: tim.gardner@canonical.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100826 Thunderbird/3.0.7
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Greg KH <gregkh@suse.de>
+CC: linux-kernel@vger.kernel.org, Brett Rudley <brudley@broadcom.com>,
+        Henry Ptasinski <henryp@broadcom.com>, Nohee Ko <noheek@broadcom.com>
+Subject: Re: [PATCH] staging: brcm80211: Make CFLAGS explicit
+References: <1284736810-2940-1-git-send-email-tim.gardner@canonical.com> <20100917162142.GA30385@suse.de>
+In-Reply-To: <20100917162142.GA30385@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Sep 2010 08:01:18 +0200, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> On Mon, 13 Sep 2010, Aneesh Kumar K. V wrote:
-> > d) we can drop stat, chown and xattr syscall because they are introduced
-> >    specially for symlinks as we don't allow open on symlinks.
-> > e) It would be nice to have handle based stat syscall to avoid two
-> >    syscall overhead for fetching file attributes when implementing a
-> >    file server, where fetching file attribute is a common operation. 
-> 
-> Syscall overhead is generally insignificant compared to other effects.
-> The server can also cache open files for commonly used handles.
-> 
+On 09/17/2010 10:21 AM, Greg KH wrote:
+> On Fri, Sep 17, 2010 at 09:20:10AM -0600, Tim Gardner wrote:
+>> Its too easy to confuse the obscurely named WLC_LOW/WLC_HIGH CFLAG
+>> macros.
+>
+> True, but doesn't this change how the code is being built?  Why make
+> this change?
+>
+>>
+>> Signed-off-by: Tim Gardner<tim.gardner@canonical.com>
+>> Cc: Brett Rudley<brudley@broadcom.com>
+>> Cc: Henry Ptasinski<henryp@broadcom.com>
+>> Cc: Nohee Ko<noheek@broadcom.com>
+>> ---
+>>   drivers/staging/brcm80211/Makefile |    3 ++-
+>>   1 files changed, 2 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/staging/brcm80211/Makefile b/drivers/staging/brcm80211/Makefile
+>> index 05a4103..7a77e7f 100644
+>> --- a/drivers/staging/brcm80211/Makefile
+>> +++ b/drivers/staging/brcm80211/Makefile
+>> @@ -15,8 +15,9 @@
+>>   # OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+>>   # CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+>>
+>> -EXTRA_CFLAGS := -DBCMDBG -DWLC_HIGH -DSTA -DWME -DWL11N -DDBAND -DBCMDMA32 -DBCMNVRAMR -Idrivers/staging/brcm80211/sys -Idrivers/staging/brcm80211/phy -Idrivers/staging/brcm80211/util -Idrivers/staging/brcm80211/include -Wall -Wstrict-prototypes -Werror -Wmissing-prototypes
+>> +EXTRA_CFLAGS := -DBCMDBG -DWME -DWL11N -DDBAND -DBCMDMA32 -DBCMNVRAMR -Idrivers/staging/brcm80211/sys -Idrivers/staging/brcm80211/phy -Idrivers/staging/brcm80211/util -Idrivers/staging/brcm80211/include -Wall -Wstrict-prototypes -Werror -Wmissing-prototypes
+>
+> how about 2 patches here, one to break it out into one flag per line so
+> we can see what is really happening here, and then one patch to make the
+> change you are asking for.
+>
+>>
+>> +USB_CFLAGS := -DWLC_HIGH
+>
+> Are you sure about this?  Why set this when I don't see anything ever
+> using it?
+>
+> What problem are you trying to fix here.
+>
+> totally confused,
+>
+> greg k-h
+>
 
-For some client/server file system an open would require communication to
-the server where as we can get stat result based on the values
-cached on the client if we support handle based stat.
+Well, when groveling through the code you can see a bunch of '#ifdef 
+WLC_HIGH_ONLY' which I initially assumed was defined because of 
+'-DWLC_HIGH' in EXTRA_CFLAGS. This is quite misleading if you don't 
+notice 'PCI_CFLAGS := -DWLC_LOW' a bit later in the Makefile (which I 
+didn't for quite awhile). Specifying both macros in EXTRA_CFLAGS seems 
+unnecessary.
 
--aneesh
+The macro magic happens in brcm80211/sys/wlc_cfg.h:
+
+/* Keep WLC_HIGH_ONLY, WLC_SPLIT for USB extension later on */
+#if !defined(WLC_LOW)
+#define WLC_HIGH_ONLY
+#endif
+#if !defined(WLC_LOW)
+#define WLC_SPLIT
+#endif
+
+What does WLC_LOW and WLC_HIGH mean anyway?
+
+rtg
+-- 
+Tim Gardner tim.gardner@canonical.com
