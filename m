@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439Ab0IQPp7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 11:45:59 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:50702 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350Ab0IQPp6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 11:45:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:subject:from:to:user-agent:mime-version
-         :content-type:content-transfer-encoding:x-priority:importance;
-        b=EfL3NDIAEFv9FCUXE1qSn3i6jggzFFHQFXbEDf0LYLHF6SldYKC1OR6YtkDlV1lqbH
-         TqKISJP7JFduFpOU8ZGmICj6w9CyvUmmpGwMyDx7qdZrgib0iPhx/UNwwX7M3VsWmuFr
-         sA4fzvqvdDaIzjX7dZamhruRSp1MBeSmgMLiI=
-Message-ID: <5cb62a8f48f639af132dfd4a1543750d.squirrel@localhost>
-Date: Fri, 17 Sep 2010 10:45:54 -0500
-Subject: Rescan/resize/reallocate PCI device BAR when it changes?
-From: david.hagood@gmail.com
-To: linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.20
+	id S1755470Ab0IQPqm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 11:46:42 -0400
+Received: from mail.bspu.unibel.by ([195.50.2.21]:46563 "EHLO mail"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752350Ab0IQPql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 11:46:41 -0400
+Message-ID: <4C938D9D.4070709@bspu.unibel.by>
+Date: Fri, 17 Sep 2010 18:47:41 +0300
+From: Dzianis Kahanovich <mahatma@bspu.unibel.by>
+Reply-To: mahatma@eu.by
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b6pre) Gecko/20100902 SeaMonkey/2.1b1pre
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org
+Subject: Re: i2c: Re: #2 (Re: More modaliases + patchtool))
+References: <4C6BE292.3060307@bspu.unibel.by> <201008191020.52861.rusty@rustcorp.com.au> <4C6D26BC.9040805@bspu.unibel.by> <201009111144.34078.rusty@rustcorp.com.au> <4C936EA5.2040506@bspu.unibel.by> <20100917140647.GA18367@opensource.wolfsonmicro.com>
+In-Reply-To: <20100917140647.GA18367@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a PCI device which can, at run time, change the size of the BARs it
-makes visible (e.g. a BAR which was disabled can become enabled, a BAR
-that was 64kiByte becomes 128kiByte, etc.
+Mark Brown пишет:
 
-I would like to get the kernel to reallocate the resources for that device
-without having to shut the device down and reload the device driver - the
-device driver will "know" how to handle this sort of event (actually, the
-driver will be the one that caused the event).
+>> + 1 attach for "next" branch.
+> 
+> Again, please try to follow the process in SubmittingPatches for sending
+> patches.
 
-I've tried various combinations of pci_scan_bus, pci_request_resources,
-etc. to no avail: I can see the hardware change size, but the kernel data
-structures for the PCI device steadfastly remain unchanged.
+One thing (patch) per message?
 
-This is a fairly common issue for us embedded programmers: we have things
-like FPGAs and microprocessors as endpoints that, as the device driver
-finishes programming them, will suddenly have a need for different sized
-BARs.
+Yes, I just speculate in this point on fact there are same patch for "next"
+branch and may be intrpreted as one ;). Sorry.
 
-I realize that in some cases, it may not be possible to simply resize
-things (e.g. not enough resources exist within the space allocated for the
-bridge the device lives on to resize things), and I am prepared to handle
-such events.
+>> --- linux-2.6.36-rc4-git3/sound/soc/codecs/tlv320dac33.c	2010-09-17 12:30:31.000000000 +0300
+>> +++ b/sound/soc/codecs/tlv320dac33.c	2010-09-17 12:39:07.801200070 +0300
+>> @@ -1712,6 +1712,9 @@ static int __init dac33_module_init(void
+>>  	}
+>>  	return 0;
+>>  }
+>> +
+>> +MODULE_DEVICE_TABLE(i2c, tlv320dac33_i2c_id);
+>> +
+> 
+> This change is OK but should be moved next to the actual table.
 
+This means - after:
+static const struct i2c_device_id tlv320dac33_i2c_id[] = {
+...
+}
 
+?
+
+IMHO I just copyed style of some of (now not remember) module example in
+script. OK.
+
+Thanks, next time I will carry out your recomendations. But may be not in
+script (2) - current way most simple and safe.
+
+-- 
+WBR, Dzianis Kahanovich AKA Denis Kaganovich, http://mahatma.bspu.unibel.by/
