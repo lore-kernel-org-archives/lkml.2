@@ -1,501 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484Ab0IQCLE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 22:11:04 -0400
-Received: from mga01.intel.com ([192.55.52.88]:13950 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752091Ab0IQCLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 22:11:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,380,1280732400"; 
-   d="scan'208";a="838431880"
-From: ling.ma@intel.com
-To: mingo@elte.hu
-Cc: hpa@zytor.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        Ma Ling <ling.ma@intel.com>
-Subject: [RFC PATCH] [X86/mem] Optimize memmove for small size and unaligned cases
-Date: Fri, 17 Sep 2010 03:12:40 +0800
-Message-Id: <1284664360-6138-1-git-send-email-ling.ma@intel.com>
-X-Mailer: git-send-email 1.6.5.2
+	id S1755338Ab0IQCh1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 22:37:27 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33669 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754935Ab0IQCh0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 22:37:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=BKJBikRyay6Q0B1hNb9F57Cm42nCn9/wp+PSH+yjXJrxb2RqYRgb6qMZfK9vWxs9mg
+         dlr9q1fpgyB+wlbDxrG8wx3+ZlWY4OD+L69OZpWbBXMJyc1Z8SBjXOBafVPfEmXtZ0zS
+         TFwRUyg5eMUZ3aefyW2nbkTHyuCgRV0ncEyUQ=
+MIME-Version: 1.0
+Date: Thu, 16 Sep 2010 22:37:24 -0400
+Message-ID: <AANLkTimFUgZoKBXk_weOG_AMtW8Y0g6Q8-QvH8hnfv8z@mail.gmail.com>
+Subject: additional esx events (was Re: [PATCH] VMware Balloon: rename module)
+From: Chetan Loke <chetanloke@gmail.com>
+To: Dmitry Torokhov <dtor@vmware.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ma Ling <ling.ma@intel.com>
+On Thu, Sep 16, 2010 at 8:31 PM, Dmitry Torokhov <dtor@vmware.com> wrote:
+>> >> side note - is it possible to extend the balloon driver to get a
+>> >> notification on other events? like CPUs, NICs? Just an event is what
+>> >> I'm looking for. No action need to be taken in the guest.
+>> >
+>> > No, balloon driver should be limited to ballooning. I think the data
+>> > you are looking for can be retrieved via GuestSDK (and I believe we
+>> > are adding balloon_target to the available data).
+>>
+>> No. I think the guestSDK provides the guest, it's personal view of the
+>> world, no?
+>> http://www.vmware.com/support/developer/guest-sdk/
+>
+> Right since guest is supposed to be isolated.
 
-movs instruction will combine data to accelerate moving data,
-however we need to concern two cases about it.
+pv != isolation and ballooning isn't either ;). But let's not get into that.
 
-1. movs instruction need long lantency to startup,
-   so here we use general mov instruction to copy data.
-2. movs instruction is not good for unaligned case,
-   even if src offset is 0x10, dest offset is 0x0,
-   we avoid and handle the case by general mov instruction.
 
-Signed-off-by: Ma Ling <ling.ma@intel.com>
----
- arch/x86/lib/memcpy_32.c  |  213 ++++++++++++++++++++++++++++++++++++------
- arch/x86/lib/memmove_64.c |  225 ++++++++++++++++++++++++++++++++++++---------
- 2 files changed, 362 insertions(+), 76 deletions(-)
+>
+> There is vSphere SDK that shoudl allow you to connect to the hostd and
+> get more information about the host/VC:
+>
+> http://www.vmware.com/support/developer/viperltoolkit/
+>
+perl API? why? vmware_balloon driver already has the hooks. So a
+parallel driver can have the same
+basic implementation. I'm not looking for any fancy notifications.
+Even if we emit sysfs nodes, it's
+perfectly fine. It will be a one-way read only channel.I am willing to test it.
 
-diff --git a/arch/x86/lib/memcpy_32.c b/arch/x86/lib/memcpy_32.c
-index 81130d4..b908a59 100644
---- a/arch/x86/lib/memcpy_32.c
-+++ b/arch/x86/lib/memcpy_32.c
-@@ -22,36 +22,187 @@ EXPORT_SYMBOL(memset);
- 
- void *memmove(void *dest, const void *src, size_t n)
- {
--	int d0, d1, d2;
--
--	if (dest < src) {
--		if ((dest + n) < src)
--			 return memcpy(dest, src, n);
--		else
--			__asm__ __volatile__(
--				"rep\n\t"
--				"movsb\n\t"
--				: "=&c" (d0), "=&S" (d1), "=&D" (d2)
--				:"0" (n),
--				 "1" (src),
--				 "2" (dest)
--				:"memory");
--	} else {
--		if((src + n) < dest)
--			return memcpy(dest, src, n);
--		else
--			__asm__ __volatile__(
--				"std\n\t"
--				"rep\n\t"
--				"movsb\n\t"
--				"cld"
--				: "=&c" (d0), "=&S" (d1), "=&D" (d2)
--				:"0" (n),
--				 "1" (n-1+src),
--				 "2" (n-1+dest)
--				:"memory");
--	}
--
--	return dest;
-+	int d0,d1,d2,d3,d4,d5;
-+	char *ret = dest;
-+
-+	__asm__ __volatile__(
-+		/* Handle more 16bytes in loop */
-+		"cmp $0x10, %0\n\t"
-+		"jb	1f\n\t"
-+
-+		/* Decide forward/backward copy mode */
-+		"cmp %2, %1\n\t"
-+		"jb	2f\n\t"
-+
-+		/*
-+		 * movs instruction have many startup latency
-+		 * so we handle small size by general register.
-+		 */
-+		"cmp  $680, %0\n\t"
-+		"jb 3f\n\t"
-+		/*
-+		 * movs instruction is only good for aligned case.
-+		 */
-+		"mov %1, %3\n\t"
-+		"xor %2, %3\n\t"
-+		"and $0xff, %3\n\t"
-+		"jz 4f\n\t"
-+		"3:\n\t"
-+		"sub $0x10, %0\n\t"
-+
-+		/*
-+		 * We gobble 16byts forward in each loop.
-+		 */
-+		"3:\n\t"
-+		"sub $0x10, %0\n\t"
-+		"mov 0*4(%1), %3\n\t"
-+		"mov 1*4(%1), %4\n\t"
-+		"mov  %3, 0*4(%2)\n\t"
-+		"mov  %4, 1*4(%2)\n\t"
-+		"mov 2*4(%1), %3\n\t"
-+		"mov 3*4(%1), %4\n\t"
-+		"mov  %3, 2*4(%2)\n\t"
-+		"mov  %4, 3*4(%2)\n\t"
-+		"lea  0x10(%1), %1\n\t"
-+		"lea  0x10(%2), %2\n\t"
-+		"jae 3b\n\t"
-+		"add $0x10, %0\n\t"
-+		"jmp 1f\n\t"
-+
-+		/*
-+		 * Handle data forward by movs.
-+		 */
-+		".p2align 4\n\t"
-+		"4:\n\t"
-+		"mov -4(%1, %0), %3\n\t"
-+		"lea -4(%2, %0), %4\n\t"
-+		"shr $2, %0\n\t"
-+		"rep movsl\n\t"
-+		"mov %3, (%4)\n\t"
-+		"jmp 11f\n\t"
-+		/*
-+		 * Handle data backward by movs.
-+		 */
-+		".p2align 4\n\t"
-+		"6:\n\t"
-+		"mov (%1), %3\n\t"
-+		"mov %2, %4\n\t"
-+		"lea -4(%1, %0), %1\n\t"
-+		"lea -4(%2, %0), %2\n\t"
-+		"shr $2, %0\n\t"
-+		"std\n\t"
-+		"rep movsl\n\t"
-+		"mov %3,(%4)\n\t"
-+		"cld\n\t"
-+		"jmp 11f\n\t"
-+
-+		/*
-+		 * Start to prepare for backward copy.
-+		 */
-+		".p2align 4\n\t"
-+		"2:\n\t"
-+		"cmp  $680, %0\n\t"
-+		"jb 5f\n\t"
-+		"mov %1, %3\n\t"
-+		"xor %2, %3\n\t"
-+		"and $0xff, %3\n\t"
-+		"jz 6b\n\t"
-+
-+		/*
-+		 * Calculate copy position to tail.
-+		 */
-+		"5:\n\t"
-+		"add %0, %1\n\t"
-+		"add %0, %2\n\t"
-+		"sub $0x10, %0\n\t"
-+
-+		/*
-+		 * We gobble 16byts backward in each loop.
-+		 */
-+		"7:\n\t"
-+		"sub $0x10, %0\n\t"
-+
-+		"mov -1*4(%1), %3\n\t"
-+		"mov -2*4(%1), %4\n\t"
-+		"mov  %3, -1*4(%2)\n\t"
-+		"mov  %4, -2*4(%2)\n\t"
-+		"mov -3*4(%1), %3\n\t"
-+		"mov -4*4(%1), %4\n\t"
-+		"mov  %3, -3*4(%2)\n\t"
-+		"mov  %4, -4*4(%2)\n\t"
-+		"lea  -0x10(%1), %1\n\t"
-+		"lea  -0x10(%2), %2\n\t"
-+		"jae 7b\n\t"
-+		/*
-+		 * Calculate copy position to head.
-+		 */
-+		"add $0x10, %0\n\t"
-+		"sub %0, %1\n\t"
-+		"sub %0, %2\n\t"
-+
-+		/*
-+		 * Move data from 8 bytes to 15 bytes.
-+		 */
-+		".p2align 4\n\t"
-+		"1:\n\t"
-+		"cmp $8, %0\n\t"
-+		"jb 8f\n\t"
-+		"mov 0*4(%1), %3\n\t"
-+		"mov 1*4(%1), %4\n\t"
-+		"mov -2*4(%1, %0), %5\n\t"
-+		"mov -1*4(%1, %0), %1\n\t"
-+
-+		"mov  %3, 0*4(%2)\n\t"
-+		"mov  %4, 1*4(%2)\n\t"
-+		"mov  %5, -2*4(%2, %0)\n\t"
-+		"mov  %1, -1*4(%2, %0)\n\t"
-+		"jmp 11f\n\t"
-+
-+		/*
-+		 * Move data from 4 bytes to 7 bytes.
-+		 */
-+		".p2align 4\n\t"
-+		"8:\n\t"
-+		"cmp $4, %0\n\t"
-+		"jb 9f\n\t"
-+		"mov 0*4(%1), %3\n\t"
-+		"mov -1*4(%1, %0), %4\n\t"
-+		"mov  %3, 0*4(%2)\n\t"
-+		"mov  %4, -1*4(%2, %0)\n\t"
-+		"jmp 11f\n\t"
-+
-+		/*
-+		 * Move data from 2 bytes to 3 bytes.
-+		 */
-+		".p2align 4\n\t"
-+		"9:\n\t"
-+		"cmp $2, %0\n\t"
-+		"jb 10f\n\t"
-+		"movw 0*2(%1), %%dx\n\t"
-+		"movw -1*2(%1, %0), %%bx\n\t"
-+		"movw %%dx, 0*2(%2)\n\t"
-+		"movw %%bx, -1*2(%2, %0)\n\t"
-+		"jmp 11f\n\t"
-+
-+		/*
-+		 * Move data for 1 byte.
-+		 */
-+		".p2align 4\n\t"
-+		"10:\n\t"
-+		"cmp $1, %0\n\t"
-+		"jb 11f\n\t"
-+		"movb (%1), %%cl\n\t"
-+		"movb %%cl, (%2)\n\t"
-+		".p2align 4\n\t"
-+		"11:"
-+		: "=&c" (d0), "=&S" (d1), "=&D" (d2),
-+		  "=r" (d3),"=r" (d4), "=r"(d5)
-+		:"0" (n),
-+		 "1" (src),
-+		 "2" (dest)
-+		:"memory");
-+
-+	return ret;
-+
- }
- EXPORT_SYMBOL(memmove);
-diff --git a/arch/x86/lib/memmove_64.c b/arch/x86/lib/memmove_64.c
-index ecacc4b..6d0f0ec 100644
---- a/arch/x86/lib/memmove_64.c
-+++ b/arch/x86/lib/memmove_64.c
-@@ -8,50 +8,185 @@
- #undef memmove
- void *memmove(void *dest, const void *src, size_t count)
- {
--	unsigned long d0, d1, d2, d3;
--	if (dest < src) {
--		if ((dest + count) < src)
--			 return memcpy(dest, src, count);
--		else
--			__asm__ __volatile__(
--				"movq %0, %3\n\t"
--				"shr $3, %0\n\t"
--				"andq $7, %3\n\t"
--				"rep\n\t"
--				"movsq\n\t"
--				"movq %3, %0\n\t"
--				"rep\n\t"
--				"movsb"
--				: "=&c" (d0), "=&S" (d1), "=&D" (d2), "=r" (d3)
--				:"0" (count),
--				 "1" (src),
--				 "2" (dest)
--				:"memory");
--	} else {
--		if((src + count) < dest)
--			return memcpy(dest, src, count);
--		else
--			__asm__ __volatile__(
--				"movq %0, %3\n\t"
--				"lea -8(%1, %0), %1\n\t"
--				"lea -8(%2, %0), %2\n\t"
--				"shr $3, %0\n\t"
--				"andq $7, %3\n\t"
--				"std\n\t"
--				"rep\n\t"
--				"movsq\n\t"
--				"lea 7(%1), %1\n\t"
--				"lea 7(%2), %2\n\t"
--				"movq %3, %0\n\t"
--				"rep\n\t"
--				"movsb\n\t"
--				"cld"
--				: "=&c" (d0), "=&S" (d1), "=&D" (d2), "=r" (d3)
--				:"0" (count),
--				 "1" (src),
--				 "2" (dest)
--				:"memory");
--	}
--	return dest;
-+	unsigned long d0,d1,d2,d3,d4,d5,d6,d7;
-+	char *ret;
-+
-+	__asm__ __volatile__(
-+		/* Handle more 32bytes in loop */
-+		"mov %2, %3\n\t"
-+		"cmp $0x20, %0\n\t"
-+		"jb	1f\n\t"
-+
-+		/* Decide forward/backward copy mode */
-+		"cmp %2, %1\n\t"
-+		"jb	2f\n\t"
-+
-+		/*
-+		 * movsq instruction have many startup latency
-+		 * so we handle small size by general register.
-+		 */
-+		"cmp  $680, %0\n\t"
-+		"jb 3f\n\t"
-+		/*
-+		 * movsq instruction is only good for aligned case.
-+		 */
-+		"cmpb %%dil, %%sil\n\t"
-+		"je 4f\n\t"
-+		"3:\n\t"
-+		"sub $0x20, %0\n\t"
-+		/*
-+		 * We gobble 32byts forward in each loop.
-+		 */
-+		"5:\n\t"
-+		"sub $0x20, %0\n\t"
-+		"movq 0*8(%1), %4\n\t"
-+		"movq 1*8(%1), %5\n\t"
-+		"movq 2*8(%1), %6\n\t"
-+		"movq 3*8(%1), %7\n\t"
-+		"leaq 4*8(%1), %1\n\t"
-+
-+		"movq %4, 0*8(%2)\n\t"
-+		"movq %5, 1*8(%2)\n\t"
-+		"movq %6, 2*8(%2)\n\t"
-+		"movq %7, 3*8(%2)\n\t"
-+		"leaq 4*8(%2), %2\n\t"
-+		"jae 5b\n\t"
-+		"addq $0x20, %0\n\t"
-+		"jmp 1f\n\t"
-+		/*
-+		 * Handle data forward by movsq.
-+		 */
-+		".p2align 4\n\t"
-+		"4:\n\t"
-+		"movq %0, %8\n\t"
-+		"movq -8(%1, %0), %4\n\t"
-+		"lea -8(%2, %0), %5\n\t"
-+		"shrq $3, %8\n\t"
-+		"rep movsq\n\t"
-+		"movq %4, (%5)\n\t"
-+		"jmp 13f\n\t"
-+		/*
-+		 * Handle data backward by movsq.
-+		 */
-+		".p2align 4\n\t"
-+		"7:\n\t"
-+		"movq %0, %8\n\t"
-+		"movq (%1), %4\n\t"
-+		"movq %2, %5\n\t"
-+		"leaq -8(%1, %0), %1\n\t"
-+		"leaq -8(%2, %0), %2\n\t"
-+		"shrq $3, %8\n\t"
-+		"std\n\t"
-+		"rep movsq\n\t"
-+		"cld\n\t"
-+		"movq %4, (%5)\n\t"
-+		"jmp 13f\n\t"
-+
-+		/*
-+		 * Start to prepare for backward copy.
-+		 */
-+		".p2align 4\n\t"
-+		"2:\n\t"
-+		"cmp $680, %0\n\t"
-+		"jb 6f \n\t"
-+		"cmp %%dil, %%sil\n\t"
-+		"je 7b \n\t"
-+		"6:\n\t"
-+		/*
-+		 * Calculate copy position to tail.
-+		 */
-+		"addq %0, %1\n\t"
-+		"addq %0, %2\n\t"
-+		"subq $0x20, %0\n\t"
-+		/*
-+		 * We gobble 32byts backward in each loop.
-+		 */
-+		"8:\n\t"
-+		"subq $0x20, %0\n\t"
-+		"movq -1*8(%1), %4\n\t"
-+		"movq -2*8(%1), %5\n\t"
-+		"movq -3*8(%1), %6\n\t"
-+		"movq -4*8(%1), %7\n\t"
-+		"leaq -4*8(%1), %1\n\t"
-+
-+		"movq %4, -1*8(%2)\n\t"
-+		"movq %5, -2*8(%2)\n\t"
-+		"movq %6, -3*8(%2)\n\t"
-+		"movq %7, -4*8(%2)\n\t"
-+		"leaq -4*8(%2), %2\n\t"
-+		"jae 8b\n\t"
-+		/*
-+		 * Calculate copy position to head.
-+		 */
-+		"addq $0x20, %0\n\t"
-+		"subq %0, %1\n\t"
-+		"subq %0, %2\n\t"
-+		"1:\n\t"
-+		"cmpq $16, %0\n\t"
-+		"jb 9f\n\t"
-+		/*
-+		 * Move data from 16 bytes to 31 bytes.
-+		 */
-+		"movq 0*8(%1), %4\n\t"
-+		"movq 1*8(%1), %5\n\t"
-+		"movq -2*8(%1, %0), %6\n\t"
-+		"movq -1*8(%1, %0), %7\n\t"
-+		"movq %4, 0*8(%2)\n\t"
-+		"movq %5, 1*8(%2)\n\t"
-+		"movq %6, -2*8(%2, %0)\n\t"
-+		"movq %7, -1*8(%2, %0)\n\t"
-+		"jmp 13f\n\t"
-+		".p2align 4\n\t"
-+		"9:\n\t"
-+		"cmpq $8, %0\n\t"
-+		"jb 10f\n\t"
-+		/*
-+		 * Move data from 8 bytes to 15 bytes.
-+		 */
-+		"movq 0*8(%1), %4\n\t"
-+		"movq -1*8(%1, %0), %5\n\t"
-+		"movq %4, 0*8(%2)\n\t"
-+		"movq %5, -1*8(%2, %0)\n\t"
-+		"jmp 13f\n\t"
-+		"10:\n\t"
-+		"cmpq $4, %0\n\t"
-+		"jb 11f\n\t"
-+		/*
-+		 * Move data from 4 bytes to 7 bytes.
-+		 */
-+		"movl (%1), %4d\n\t"
-+		"movl -4(%1, %0), %5d\n\t"
-+		"movl %4d, (%2)\n\t"
-+		"movl %5d, -4(%2, %0)\n\t"
-+		"jmp 13f\n\t"
-+		"11:\n\t"
-+		"cmp $2, %0\n\t"
-+		"jb 12f\n\t"
-+		/*
-+		 * Move data from 2 bytes to 3 bytes.
-+		 */
-+		"movw (%1), %4w\n\t"
-+		"movw -2(%1, %0), %5w\n\t"
-+		"movw %4w, (%2)\n\t"
-+		"movw %5w, -2(%2, %0)\n\t"
-+		"jmp 13f\n\t"
-+		"12:\n\t"
-+		"cmp $1, %0\n\t"
-+		"jb 13f\n\t"
-+		/*
-+		 * Move data for 1 byte.
-+		 */
-+		"movb (%1), %4b\n\t"
-+		"movb %4b, (%2)\n\t"
-+		"13:\n\t"
-+		: "=&d" (d0), "=&S" (d1), "=&D" (d2), "=&a" (ret) ,
-+		  "=r"(d3), "=r"(d4), "=r"(d5), "=r"(d6), "=&c" (d7)
-+		:"0" (count),
-+		 "1" (src),
-+		 "2" (dest)
-+		:"memory");
-+
-+		return ret;
-+
- }
- EXPORT_SYMBOL(memmove);
--- 
-1.6.5.2
+>
+>>
+>> ballooning is an indirect hint that an external event has happened
+>> within the hypervisor. I'm looking for similar external events.
+>> guestSDK gives nothing. Because right now there is now way for a
+>> vmware-guest to cooperate or be a good citizen if it
+>> doesn't know what's happening in the esx-hypervisor. Now whether to
+>> add these events in the balloon driver is another thing.
+>> A separate driver is ok too.
+>
+> I spoke with resource management team regarding this idea of a VM
+> "helping" ESX and they felt that this task is better left to the
+> ESX's memory scheduler. The VM in question will not know all the
+> data needed (it might be confined to a separate resource pool, etc)
+> to make good decision.
 
+ok, so its not just about freeing resources but I've agents(within
+VMs) running on esx hypervisor.
+So by getting CPU/NIC/Memory events I can log those and raise soft alarms to
+a central monitoring node.
+
+
+>
+> Still you could use Guest SDK - if you see balloon target rising you
+> may start unlocking memory you grabbed.
+>
+ballooning does nothing to guests who have mmap'd memory and drivers
+who have pinned down pages.
+And forcibly releasing(aka soft illegal OOM?) someone else's mmap'd
+memory will never be allowed.
+Anyways, the use case is also for monitoring and not just for freeing resources.
+
+
+> Dmitry
+
+regards
+Chetan Loke
