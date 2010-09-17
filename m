@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754918Ab0IQWXv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 18:23:51 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:40502 "EHLO ogre.sisk.pl"
+	id S1754940Ab0IQW1Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 18:27:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48157 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754600Ab0IQWXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 18:23:49 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Nishanth Menon <nm@ti.com>
-Subject: Re: [linux-pm] [PATCH] opp: introduce library for device-specific OPPs
-Date: Sat, 18 Sep 2010 00:22:50 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-arm" <linux-arm-kernel@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>,
-        "linux-doc" <linux-doc@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "Chikkature Rajashekar, Madhusudhan" <madhu.cr@ti.com>,
-        "Aguirre, Sergio" <saaguirre@ti.com>, Andi Kleen <ak@linux.intel.com>,
-        "linux-pm" <linux-pm@lists.linux-foundation.org>,
-        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
-        Eduardo Valentin <eduardo.valentin@nokia.com>,
-        "linux-omap" <linux-omap@vger.kernel.org>,
-        "Gopinath, Thara" <thara@ti.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        "Granados Dorado, Roberto" <x0095451@ti.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Romit Dasgupta <ro.mit@ti.com>, Tero Kristo <Tero.Kristo@nokia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Premi, Sanjeev" <premi@ti.com>
-References: <1284686973-13993-1-git-send-email-nm@ti.com> <20100917153643.GC29739@sirena.org.uk> <4C938EE2.1010307@ti.com>
-In-Reply-To: <4C938EE2.1010307@ti.com>
+	id S1754600Ab0IQW1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 18:27:14 -0400
+From: Thomas Renninger <trenn@suse.de>
+To: Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] tracing, perf: add more power related events
+Date: Sat, 18 Sep 2010 00:26:58 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.34.4-0.1.99.9.f8e4270-desktop; KDE/4.4.4; x86_64; ; )
+Cc: Jean Pihet <jean.pihet@newoldbits.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
+        arjan@infradead.org, Kevin Hilman <khilman@deeprootsystems.com>,
+        linux-kernel@vger.kernel.org, discuss@lesswatts.org,
+        linux-pm@lists.linux-foundation.org, linux-omap@vger.kernel.org,
+        linux-perf-users@vger.kernel.org, linux-trace-users@vger.kernel.org
+References: <AANLkTinUmbSUUuxUzc8++pcb9gd1CZFdyTQFrveTBXyV@mail.gmail.com> <201009171736.14170.trenn@suse.de> <20100917162412.GB3341@elte.hu>
+In-Reply-To: <20100917162412.GB3341@elte.hu>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009180022.51011.rjw@sisk.pl>
+Message-Id: <201009180026.59482.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 17, 2010, Nishanth Menon wrote:
-> Mark Brown had written, on 09/17/2010 10:36 AM, the following:
-> > On Thu, Sep 16, 2010 at 08:29:33PM -0500, Nishanth Menon wrote:
-> > 
-> >> +struct opp_def {
-> >> +	unsigned long freq;
-> >> +	unsigned long u_volt;
-> >> +
-> >> +	bool enabled;
-> >> +};
-> > 
-> > It might be clearer to use some term other than enabled in the code -
-> > when reading I wasn't immediately sure if enabled meant that it was
-> > available to be selected or if it was the active operating point.  How
-> > about 'allowed' (though I'm not 100% happy with that)?
-> ;).. The opp is enabled or disabled if it is populated, it is implicit 
-> as being available but not enabled- how about active? this would change 
-> the opp_enable/disable functions to opp_activate, opp_deactivate..
+On Friday 17 September 2010 18:24:12 Ingo Molnar wrote:
+> 
+> * Thomas Renninger <trenn@suse.de> wrote:
+> 
+> > On Friday 17 September 2010 16:24:59 Ingo Molnar wrote:
 
-Would that mean that "active" is the one currently in use?
+> [ You dont even have to document it, as good code is self-explanatory ;-) ]
+I recently posted a patch exporting some things through /sys/kernel/debug/...
+Greg complained that a file for Documentation/ABI/{testing,stable}/* is missing
+and I fully agree.
+If different userspace apps should make use of this (in above case nobody
+than my debug userspace tool will...) and this should be called something like an API,
+it should be documented and if something changes, it should
+first be marked deprecated, etc.
 
-Rafael
+     Thomas
