@@ -1,137 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919Ab0IQNAo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 09:00:44 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:41395 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752040Ab0IQNAn convert rfc822-to-8bit (ORCPT
+	id S1753933Ab0IQNGP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 09:06:15 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:10401 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752902Ab0IQNGO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 09:00:43 -0400
+	Fri, 17 Sep 2010 09:06:14 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
+        d=google.com; s=beta;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=ZBV7ESbOMFTCn0CKT2+wNDAfDC6QS3Oey2i5fSzSjY+HyCIy6PeXQbKGWcH7J4w08P
-         6lLrJ8j2Z3Kg0MZyBrj3PLk2qPXo4QgrZeC5bOsiOedtNocGVcNn6rShnMiD0VYrm2bI
-         +cbA8xb3Mc884uR5MFoWNxqjDDGN2IM53Jhn0=
+         :cc:content-type:content-transfer-encoding;
+        b=iSEqlI8Zb8ATMlPb68pv0oPNuNNelqZqhci0Zja/MDmcEiHhx4vOfPL/vdXVQsosd6
+         TzFpjosNNJfSyjNJs3Pw==
 MIME-Version: 1.0
-In-Reply-To: <AANLkTim6d0KeuegVy2Z6UrSiXDnoymav1b9K7btsByi-@mail.gmail.com>
-References: <AANLkTim6d0KeuegVy2Z6UrSiXDnoymav1b9K7btsByi-@mail.gmail.com>
-Date: Fri, 17 Sep 2010 18:30:42 +0530
-Message-ID: <AANLkTi=5aEL=YWihgasexK17_oq9uFq7gG+em9ThWk-e@mail.gmail.com>
-Subject: mmap issue.
-From: naveen yadav <yad.naveen@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20100915162034.GO13563@erda.amd.com>
+References: <1284118900.402.35.camel@laptop>
+	<20100910132741.GB4879@redhat.com>
+	<20100910144634.GA1060@elte.hu>
+	<20100910155659.GD13563@erda.amd.com>
+	<20100911094157.GA11521@elte.hu>
+	<20100911114404.GE13563@erda.amd.com>
+	<20100911124537.GA22850@elte.hu>
+	<20100912095202.GF13563@erda.amd.com>
+	<20100913143713.GK13563@erda.amd.com>
+	<20100914174132.GN13563@erda.amd.com>
+	<20100915162034.GO13563@erda.amd.com>
+Date: Fri, 17 Sep 2010 15:06:09 +0200
+Message-ID: <AANLkTikdRh48rf19d3vsd8pEJO0Tvqbnw9_Yd7FaQ3yB@mail.gmail.com>
+Subject: Re: [PATCH] perf, x86: catch spurious interrupts after disabling counters
+From: Stephane Eranian <eranian@google.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Don Zickus <dzickus@redhat.com>,
+        "gorcunov@gmail.com" <gorcunov@gmail.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+Robert.
 
-I am facing some issue while using mmap .
-
-Issue 1.msync(ptr, PageSize, MS_ASYNC) if i pass MS_SYNC it fail with
-bad option.
-Issue 2. If i run the above program on target(ARM). the value is not changing
-
-parent leaving critical section: -369098746
-parent leaving critical section: -369098746
-msync completed successfully
-parent leaving critical section: -369098746
-parent entered critical section -369098746
+Does it mean that with this patch, we don't need Don's back-to-back NMI patch
+anymore?
 
 
-
-Thanks
-
-But same program work well on Host machine.
-
-parent leaving critical section: 12344
-parent leaving critical section: 1000
-msync completed successfully
-parent leaving critical section: 1000
-parent leaving critical section: 1000
-
-
-
-#include <stdio.h>
-#include <semaphore.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <errno.h>
-#define SEM_NAME "mysem"
-#define _SC_PAGE_SIZE 4096
-int count = 100;
-
-
-int main()
-{
-    int i, nloop = 1;
-    sem_t *mutex;
-    int fd, *ptr=NULL;
-    int PageSize;
-    fd = open ("/dev/mem", O_RDWR|O_SYNC);
-    if (fd < 0) {
-        printf("Failed while opening the memory descriptor\n");
-        printf("Error is = %d\n", errno);
-    }
-    printf("\n============ PRIOR MAPPING ===========\n");
-    char comm[50];
-    sprintf(comm,"cat /proc/%d/maps",(int)getpid());
-    system(comm);
-    printf("============== PRIOR MAPPING =========\n\n");
-
-/*    if ( (PageSize = sysconf(_SC_PAGE_SIZE)) < 0) {
-       printf("sysconf() Error=");
-       return -1;
-   }
-*/
-       PageSize=4096;
-
-    printf("\n============ PRIOR MAPPIN1 ===========\n");
-    ptr = (int*)(mmap(NULL, PageSize, PROT_READ|PROT_WRITE,
-MAP_SHARED, fd, 0));
-
-    printf("\n============ PRIOR MAPPIN2 ===========\n");
-    if (ptr == MAP_FAILED) {
-        printf("MMAP failed\n");
-        printf("value of errno is %d\n", errno);
-        exit(0);
-    }
-
-
-  printf ("[%s] Mapped_buff_addr: [%8p]\n", __FUNCTION__, ptr);
-    printf("\n============ NEW MAPPING ===========\n");
-    //char comm[20];
-    sprintf(comm,"cat /proc/%d/maps",(int)getpid());
-    system(comm);
-    printf("============== NEW MAPPING =========\n\n");
-    printf("parent leaving critical section: %d\n", *ptr);
-    *ptr = 1000;
-    printf("parent leaving critical section: %d\n", *ptr);
-    mutex = sem_open((SEM_NAME), O_CREAT | O_EXCL, S_IRWXU, 1);
-    sem_unlink(SEM_NAME);
-    setbuf(stdout, NULL); /* stdout is unbuffered */
-    if (msync(ptr, PageSize, MS_ASYNC) < 0) { //naveen change to Async
-        printf("Value of errno is %d\n", errno);
-        printf("Value of page size is %d\n", PageSize);
-        perror ("msync failed:");
-        exit(0);
-    }
-    else {
-        printf("msync completed successfully\n");
-    }
-    /* parent */
-    for (i = 0; i < nloop; i++) {
-        sem_wait(mutex);
-       printf("parent leaving critical section: %d\n", *ptr);
-        sleep(2);
-        printf("parent leaving critical section: %d\n", *ptr);
-        sem_post(mutex);
-    }
-    close(fd);
-    return 0;
-}
+On Wed, Sep 15, 2010 at 6:20 PM, Robert Richter <robert.richter@amd.com> wrote:
+> On 14.09.10 19:41:32, Robert Richter wrote:
+>> I found the reason why we get the unknown nmi. For some reason
+>> cpuc->active_mask in x86_pmu_handle_irq() is zero. Thus, no counters
+>> are handled when we get an nmi. It seems there is somewhere a race
+>> accessing the active_mask. So far I don't have a fix available.
+>> Changing x86_pmu_stop() did not help:
+>
+> The patch below for tip/perf/urgent fixes this.
+>
+> -Robert
+>
+> From 4206a086f5b37efc1b4d94f1d90b55802b299ca0 Mon Sep 17 00:00:00 2001
+> From: Robert Richter <robert.richter@amd.com>
+> Date: Wed, 15 Sep 2010 16:12:59 +0200
+> Subject: [PATCH] perf, x86: catch spurious interrupts after disabling counters
+>
+> Some cpus still deliver spurious interrupts after disabling a counter.
+> This caused 'undelivered NMI' messages. This patch fixes this.
+>
+> Signed-off-by: Robert Richter <robert.richter@amd.com>
+> ---
+> Â arch/x86/kernel/cpu/perf_event.c | Â  13 ++++++++++++-
+> Â 1 files changed, 12 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> index 3efdf28..df7aabd 100644
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -102,6 +102,7 @@ struct cpu_hw_events {
+> Â  Â  Â  Â  */
+> Â  Â  Â  Â struct perf_event Â  Â  Â  *events[X86_PMC_IDX_MAX]; /* in counter order */
+> Â  Â  Â  Â unsigned long Â  Â  Â  Â  Â  active_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
+> + Â  Â  Â  unsigned long Â  Â  Â  Â  Â  running[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
+> Â  Â  Â  Â int Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  enabled;
+>
+> Â  Â  Â  Â int Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  n_events;
+> @@ -1010,6 +1011,7 @@ static int x86_pmu_start(struct perf_event *event)
+> Â  Â  Â  Â x86_perf_event_set_period(event);
+> Â  Â  Â  Â cpuc->events[idx] = event;
+> Â  Â  Â  Â __set_bit(idx, cpuc->active_mask);
+> + Â  Â  Â  __set_bit(idx, cpuc->running);
+> Â  Â  Â  Â x86_pmu.enable(event);
+> Â  Â  Â  Â perf_event_update_userpage(event);
+>
+> @@ -1141,8 +1143,17 @@ static int x86_pmu_handle_irq(struct pt_regs *regs)
+> Â  Â  Â  Â cpuc = &__get_cpu_var(cpu_hw_events);
+>
+> Â  Â  Â  Â for (idx = 0; idx < x86_pmu.num_counters; idx++) {
+> - Â  Â  Â  Â  Â  Â  Â  if (!test_bit(idx, cpuc->active_mask))
+> + Â  Â  Â  Â  Â  Â  Â  if (!test_bit(idx, cpuc->active_mask)) {
+> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  if (__test_and_clear_bit(idx, cpuc->running))
+> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  /*
+> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â * Though we deactivated the counter
+> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â * some cpus might still deliver
+> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â * spurious interrupts. Catching them
+> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â * here.
+> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â */
+> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  handled++;
+> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â continue;
+> + Â  Â  Â  Â  Â  Â  Â  }
+>
+> Â  Â  Â  Â  Â  Â  Â  Â event = cpuc->events[idx];
+> Â  Â  Â  Â  Â  Â  Â  Â hwc = &event->hw;
+> --
+> 1.7.2.2
+>
+>
+>
+>
+>
+> --
+> Advanced Micro Devices, Inc.
+> Operating System Research Center
+>
+>
