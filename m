@@ -1,58 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602Ab0IQNy3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 09:54:29 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:57493 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754535Ab0IQNy1 (ORCPT
+	id S1754616Ab0IQN5j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 09:57:39 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:18742 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124Ab0IQN5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 09:54:27 -0400
-Date: Fri, 17 Sep 2010 14:54:15 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: mahatma@eu.by
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, lrg@slimlogic.co.uk,
-        kuninori.morimoto.gx@renesas.com
-Subject: Re: platform: Re: #2 (Re: More modaliases + patchtool))
-Message-ID: <20100917135410.GB29739@sirena.org.uk>
-References: <4C6BE292.3060307@bspu.unibel.by> <201008191020.52861.rusty@rustcorp.com.au> <4C6D26BC.9040805@bspu.unibel.by> <201009111144.34078.rusty@rustcorp.com.au> <4C93702D.4030500@bspu.unibel.by>
+	Fri, 17 Sep 2010 09:57:37 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH] acpi: handle ACPI0007 Device in acpi_early_set_pdc
+Date: Fri, 17 Sep 2010 07:56:52 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Lin Ming <ming.m.lin@intel.com>,
+        Bob Moore <robert.moore@intel.com>
+References: <4C89906B.1050406@kernel.org> <201009131128.42519.bjorn.helgaas@hp.com> <4C931714.2080905@kernel.org>
+In-Reply-To: <4C931714.2080905@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C93702D.4030500@bspu.unibel.by>
-X-Cookie: Many suitcases look alike.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009170756.53100.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 17, 2010 at 04:42:05PM +0300, Dzianis Kahanovich wrote:
-> ...
-> Last (14 buses)
-
-Please do try to follow the recommendations in SubmittingPatches,
-including those regarding the formatting of your mails and CCing
-relevant maintainers and lists.
-
-> Fix lost PLATFORM modalias
+On Friday, September 17, 2010 01:21:56 am Yinghai Lu wrote:
+> On 09/13/2010 10:28 AM, Bjorn Helgaas wrote:
+> > On Friday, September 10, 2010 08:06:26 pm Yinghai Lu wrote:
+> > 
+> > I timed the original on a 64-CPU box where the namespace walk cost
+> > should be relatively high, and the walk you added takes about 0.01
+> > seconds.  The one already there took about 0.03 seconds, so neither
+> > costs very much.
+> > 
+> > And I don't like the fact that the patch below changes the ACPI CA
+> > and it only partly implements acpi_get_devices(), since it ignores
+> > _CID and _STA.
 > 
-> Signed-off-by: Dzianis Kahanovich <mahatma@eu.by>
+> please check this one. it still keep _STA etc.
+
+I think you missed this line in my previous response:
+
+> > But I do see your point, and having seen the patch
+> > below, I prefer the original one-line version.
+
+The patch below is better, because it doesn't reimplement quite
+so much stuff, but it still changes the CA, and I think the end
+result is still quite confusing to read.
+
+So I still prefer the original one-line version.
+
+Bjorn
+
+> [PATCH -v3] acpi: Handle ACPI0007 Device in acpi_early_set_pdc
 > 
-> --- linux-2.6.36-rc4-git3/sound/soc/sh/fsi.c	2010-09-17 12:30:32.000000000 +0300
-> +++ b/sound/soc/sh/fsi.c	2010-09-17 12:39:08.026437283 +0300
-> @@ -1250,6 +1250,9 @@ static void __exit fsi_mobile_exit(void)
+> After
+> | commit d8191fa4a33fdc817277da4f2b7f771ff605a41c
+> | Author: Alex Chiang <achiang@hp.com>
+> | Date:   Mon Feb 22 12:11:39 2010 -0700
+> |
+> |    ACPI: processor: driver doesn't need to evaluate _PDC
+> |
+> |    Now that the early _PDC evaluation path knows how to correctly
+> |    evaluate _PDC on only physically present processors, there's no
+> |    need for the processor driver to evaluate it later when it loads.
+> |
+> |    To cover the hotplug case, push _PDC evaluation down into the
+> |    hotplug paths.
+> 
+> only cpu with Processor Statement get processed with _PDC
+> 
+> If bios is using Device object instead of Processor statement.
+> SSDTs for Pstate/Cstate/Tstate can not be loaded dynamically.
+> 
+> Need to try to scan ACPI0007 in addition to Processor.
+> 
+> That commit is between 2.6.34-rc1 and 2.6.34-rc2, so stable tree for 2.6.34+
+> need this patch.
+> 
+> -v2: add 47 lines instead of 1 line to walk namespace one time only.
+> -v3: Let acpi_match_device_hid() call acpi_ns_get_device_callback()
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
+> ---
+>  drivers/acpi/acpica/nsxfeval.c |   41 +++++++++++++++++++++++++++++++++++++++++
+>  drivers/acpi/processor_core.c  |    8 +++++---
+>  include/acpi/acpixf.h          |    2 ++
+>  3 files changed, 48 insertions(+), 3 deletions(-)
+> 
+> Index: linux-2.6/drivers/acpi/processor_core.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/acpi/processor_core.c
+> +++ linux-2.6/drivers/acpi/processor_core.c
+> @@ -189,7 +189,7 @@ int acpi_get_cpuid(acpi_handle handle, i
+>  EXPORT_SYMBOL_GPL(acpi_get_cpuid);
+>  #endif
+>  
+> -static bool processor_physically_present(acpi_handle handle)
+> +static bool is_processor_and_physically_present(acpi_handle handle)
 >  {
->  	platform_driver_unregister(&fsi_driver);
+>  	int cpuid, type;
+>  	u32 acpi_id;
+> @@ -211,6 +211,8 @@ static bool processor_physically_present
+>  		acpi_id = object.processor.proc_id;
+>  		break;
+>  	case ACPI_TYPE_DEVICE:
+> +		if (acpi_match_device_hid(handle, "ACPI0007") != AE_OK)
+> +			return false;
+>  		status = acpi_evaluate_integer(handle, "_UID", NULL, &tmp);
+>  		if (ACPI_FAILURE(status))
+>  			return false;
+> @@ -334,7 +336,7 @@ EXPORT_SYMBOL_GPL(acpi_processor_set_pdc
+>  static acpi_status
+>  early_init_pdc(acpi_handle handle, u32 lvl, void *context, void **rv)
+>  {
+> -	if (processor_physically_present(handle) == false)
+> +	if (is_processor_and_physically_present(handle) == false)
+>  		return AE_OK;
+>  
+>  	acpi_processor_set_pdc(handle);
+> @@ -349,7 +351,7 @@ void __init acpi_early_processor_set_pdc
+>  	 */
+>  	dmi_check_system(processor_idle_dmi_table);
+>  
+> -	acpi_walk_namespace(ACPI_TYPE_PROCESSOR, ACPI_ROOT_OBJECT,
+> +	acpi_walk_namespace(ACPI_TYPE_ANY, ACPI_ROOT_OBJECT,
+>  			    ACPI_UINT32_MAX,
+>  			    early_init_pdc, NULL, NULL, NULL);
 >  }
+> Index: linux-2.6/drivers/acpi/acpica/nsxfeval.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/acpi/acpica/nsxfeval.c
+> +++ linux-2.6/drivers/acpi/acpica/nsxfeval.c
+> @@ -642,6 +642,47 @@ acpi_ns_get_device_callback(acpi_handle
+>  	return (status);
+>  }
+>  
+> +static acpi_status
+> +acpi_match_device_hid_callback(acpi_handle obj_handle,
+> +			    u32 nesting_level,
+> +			    void *context, void **return_value)
+> +{
+> +	*return_value = (void *)0xff;
 > +
-> +MODULE_DEVICE_TABLE(platform, fsi_id_table);
+> +	return AE_OK;
+> +}
 > +
-
-The normal style for this stuff would be to put the MODULE_DEVICE_TABLE()
-next to the actual table.  I will apply a version of your patch with the
-addition moved.
+> +/*******************************************************************************
+> + *
+> + * FUNCTION:    acpi_match_device_hid
+> + *
+> + * PARAMETERS:  handle and HID to be compared
+> + *
+> + * RETURN:      AE_OK mean found match one
+> + *
+> + * DESCRIPTION: check if device coresponding to handle has HID
+> + *
+> + ******************************************************************************/
+> +acpi_status acpi_match_device_hid(acpi_handle obj_handle, const char *HID)
+> +{
+> +	struct acpi_get_devices_info info;
+> +	void *return_value = NULL;
+> +
+> +	ACPI_FUNCTION_TRACE(acpi_match_device_hid);
+> +
+> +	info.hid = HID;
+> +	info.context = NULL;
+> +	info.user_function = acpi_match_device_hid_callback;
+> +
+> +	acpi_ns_get_device_callback(obj_handle, ACPI_UINT32_MAX,
+> +				    &info, &return_value);
+> +
+> +	if (!return_value)
+> +		return AE_NOT_FOUND;
+> +
+> +	return AE_OK;
+> +}
+> +
+>  /*******************************************************************************
+>   *
+>   * FUNCTION:    acpi_get_devices
+> Index: linux-2.6/include/acpi/acpixf.h
+> ===================================================================
+> --- linux-2.6.orig/include/acpi/acpixf.h
+> +++ linux-2.6/include/acpi/acpixf.h
+> @@ -160,6 +160,8 @@ acpi_walk_namespace(acpi_object_type typ
+>  		    acpi_walk_callback post_order_visit,
+>  		    void *context, void **return_value);
+>  
+> +acpi_status acpi_match_device_hid(acpi_handle obj_handle, const char *HID);
+> +
+>  acpi_status
+>  acpi_get_devices(const char *HID,
+>  		 acpi_walk_callback user_function,
+> 
