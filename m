@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600Ab0IQLtO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 07:49:14 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:61131 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818Ab0IQLtN convert rfc822-to-8bit (ORCPT
+	id S1753593Ab0IQMHH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 08:07:07 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59707 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753157Ab0IQMHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 07:49:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=IYh9b1C3ta06mV3+rl+l0Nz5wQwMjIEQToI7B76sUgvNt+7JNjRo0VyZgl+fnVjgQ5
-         j/b450EtJsWnXc5Kv8V7e+D1atJ2CdFqW0mmSPwgcAzWDumJG/0jmz7tJg3ESGO4lsSz
-         ou8jRlgr56Bu9Js+Y+Zu77tNQlbejPABBDPbg=
+	Fri, 17 Sep 2010 08:07:04 -0400
+Date: Fri, 17 Sep 2010 13:07:02 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Jeongbae Seo'" <jeongbae.seo@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Changhwan Youn'" <chaos.youn@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, lrg@slimlogic.co.uk
+Subject: Re: [PATCH] regulator: Add support samsung power domain
+Message-ID: <20100917120702.GB4322@rakim.wolfsonmicro.main>
+References: <1284717532-9992-1-git-send-email-kgene.kim@samsung.com>
+ <20100917113050.GA4322@rakim.wolfsonmicro.main>
+ <007b01cb565d$db4376d0$91ca6470$%szyprowski@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <20100917063537.GA4534@balbir.in.ibm.com>
-References: <20100916144618.852b7e9a.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100916062159.GF22371@balbir.in.ibm.com>
-	<20100916152204.6c457936.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100916161727.04a1f905.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100917063537.GA4534@balbir.in.ibm.com>
-Date: Fri, 17 Sep 2010 20:49:09 +0900
-Message-ID: <AANLkTikWqPf_SfYn7fzL7ROGqCY=ZZR5mUzr7sah+TOd@mail.gmail.com>
-Subject: Re: [PATCH][-mm] memcg : memory cgroup cpu hotplug support update.
-From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-To: balbir@linux.vnet.ibm.com
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <007b01cb565d$db4376d0$91ca6470$%szyprowski@samsung.com>
+X-Cookie: I can't drive 55.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/9/17 Balbir Singh <balbir@linux.vnet.ibm.com>:
-> * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-09-16 16:17:27]:
->
->> On Thu, 16 Sep 2010 15:22:04 +0900
->> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
->>
->> > This naming is from mem_cgroup_walk_tree(). Now we have
->> >
->> >   mem_cgroup_walk_tree();
->> >   mem_cgroup_walk_all();
->> >
->> > Rename both ? But it should be in separated patch.
->> >
->>
->> Considering a bit ...but..
->>
->> #define for_each_mem_cgroup(mem) \
->>       for (mem = mem_cgroup_get_first(); \
->>            mem; \
->>            mem = mem_cgroup_get_next(mem);) \
->>
->> seems to need some helper functions. I'll consider about this clean up
->> but it requires some amount of patch because css_get()/css_put()/rcu...etc..
->> are problematic.
->>
->
-> Why does this need to be a macro (I know we use this for lists and
-> other places), assuming for now we don't use the iterator pattern, we
-> can rename mem_cgroup_walk_all() to for_each_mem_cgroup().
->
+On Fri, Sep 17, 2010 at 01:45:36PM +0200, Marek Szyprowski wrote:
 
-When I see for_each in the kernel source, I expect iterator and macro.
-When I see "walk" in the kernel source, I expect callback and visit function.
+> The approach with merging power domains with clocks have some disadvantages.
+> In some cases the clock gating and power gating should be distinguished.
 
-Thanks,
--Kame
+This is not what I suggested.  I suggested using runtime PM instead of
+the regulator API to manage blocks.
+
+> Just assume an IP like a video codec. It has it's own internal state machine.
+> It gets reset when the ip is power gated, but it is preserved during clock
+> gating. The driver might want to do a clock gating when it is waiting for a
+> new frame to decode, but should do power gating only when the device has
+
+There's nothing stopping the drivers enabling and disabling the clocks
+for themselves while they're active, all the rumtime PM stuff I've seen
+for this does is ensure that the clocks are enabled and disabled when
+the device is enabled and disabled.  This matches what you're saying
+above - clearly, if the device is power gated there's no need to provide
+a clock for it - and with aggressive runtime PM it's pretty much exactly
+what a lot of devices end up needing.
+
+> been closed. Having a set of fake clocks just for power gating imho doesn't
+> look good.
+
+Who said use the clock API?
