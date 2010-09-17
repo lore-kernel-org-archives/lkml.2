@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab0IQRHi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 13:07:38 -0400
-Received: from tn-76-7-162-101.sta.embarqhsd.net ([76.7.162.101]:55942 "EHLO
-	animx.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752835Ab0IQRHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 13:07:37 -0400
-X-Greylist: delayed 1211 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Sep 2010 13:07:37 EDT
-Date: Fri, 17 Sep 2010 12:47:23 -0400
-From: Wakko Warner <wakko@animx.eu.org>
-To: Rogier Wolff <R.E.Wolff@BitWizard.nl>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Sudden "hangs"....
-Message-ID: <20100917164723.GA13770@animx.eu.org>
-Mail-Followup-To: Rogier Wolff <R.E.Wolff@BitWizard.nl>,
-	linux-kernel@vger.kernel.org
-References: <20100916143304.GA14874@bitwizard.nl>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100916143304.GA14874@bitwizard.nl>
-User-Agent: Mutt/1.5.6+20040907i
+	id S1755564Ab0IQRHq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 13:07:46 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48502 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755302Ab0IQRHp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 13:07:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=CT7kZsVDQmB9UZMV56TNOrKMBCBgSFIQ9fV71fp800OCRvSabaLRtbdLgtn+ZIMuo/
+         jEYyzJtc0MVDS+QnjRShtJOuQNmbBeMfsbpn4jR7uFJfFUenx9t97PilQBIKdJAOTgQt
+         Jw0jwe6ZtFOdmQA5ZvgwUqYOcDi3dW3g/izjY=
+MIME-Version: 1.0
+In-Reply-To: <20100917175724.79c9b8db@lxorguk.ukuu.org.uk>
+References: <AANLkTikrgooRh3tv+TCE-dNbwENcAss4EUnr4T4=Mgi6@mail.gmail.com>
+	<20100917175724.79c9b8db@lxorguk.ukuu.org.uk>
+Date: Sat, 18 Sep 2010 01:07:44 +0800
+Message-ID: <AANLkTinFWTouTszRu46r88AyvMti-t5C-+TwdE8-XGYP@mail.gmail.com>
+Subject: Re: What is happening to my harddisk?
+From: Peter Teoh <htmldeveloper@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rogier Wolff wrote:
-> It seems my home workstation hangs on a "mkdir" once every morning for
-> about half a minute. It'll freeze whatever I'm doing and continue
-> happily 30 seconds later, but I can't figure out what's going on
-> because it's frozen...
+On Sat, Sep 18, 2010 at 12:57 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> Ignoring those related to CD (sr devices), can someone please explain
+>> to me what is happening, and what device does ata7 mapped to?
+>
+> Your CD drive appears to freaked.
+>
+You are right.   My CD drive has nothing inside, which is why I did
+not suspect anything.   But now even after putting a CD inside, "k3b"
+still cannot recognize the CD. Hm.......Thanks for the reply.
 
-One of my volumes was doing this.  As someone mentioned earlier, check your
-kernel log to see if you have a disk error.  On mine, I had no errors.  The
-activity led for that volume would be on solid until the mkdir completed. 
-My fix was to create a new directory and move everything over and remove the
-old directory.  Obviously this won't work if you're having problems with
-more than 1 directory or the offending directory is the root of the volume.
-
-Just for information, this volume I have is on a single disk created on the
-whole disk (no lvm nor partition).
 
 -- 
- Microsoft has beaten Volkswagen's world record.  Volkswagen only created 22
- million bugs.
+Regards,
+Peter Teoh
