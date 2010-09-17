@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382Ab0IQTjF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 15:39:05 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:40121 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752135Ab0IQTjD (ORCPT
+	id S1753473Ab0IQTsE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 15:48:04 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:1105 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752835Ab0IQTsD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 15:39:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=QoRE9QRXoWA8iBg04A+J2CYCS2ieSTzEGlq8OUyceBpFXd55yWLRqyd5NgvcOakNhz
-         +ns6NLkWsIuSBukNMabw==
+	Fri, 17 Sep 2010 15:48:03 -0400
+X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
+From: "Brett Rudley" <brudley@broadcom.com>
+To: "tim.gardner@canonical.com" <tim.gardner@canonical.com>
+cc: "Greg KH" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Henry Ptasinski" <henryp@broadcom.com>,
+        "Nohee Ko" <noheek@broadcom.com>
+Date: Fri, 17 Sep 2010 11:39:53 -0700
+Subject: RE: [PATCH] staging: brcm80211: Make CFLAGS explicit
+Thread-Topic: [PATCH] staging: brcm80211: Make CFLAGS explicit
+Thread-Index: ActWlunGguE28IjYSaqwNkE6hd+AAQAABnqA
+Message-ID: <7A94256FD72B884D9E7C55586C3CBCEE12BEC65C1F@SJEXCHCCR01.corp.ad.broadcom.com>
+References: <1284736810-2940-1-git-send-email-tim.gardner@canonical.com>
+ <20100917162142.GA30385@suse.de> <4C93A8F9.9090108@canonical.com>
+ <7A94256FD72B884D9E7C55586C3CBCEE12BEC65BEC@SJEXCHCCR01.corp.ad.broadcom.com>
+ <4C93B486.8050706@canonical.com>
+In-Reply-To: <4C93B486.8050706@canonical.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-cr-hashedpuzzle: 0lE= D/7H FHBP GRk5 Lua0 MoCn M40w Qtwh REZo YQv+
+ Z0YQ cKsg eX04 fGZu fTJL
+ hH3K;3;ZwByAGUAZwBrAGgAQABzAHUAcwBlAC4AZABlADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AHQAaQBtAC4AZwBhAHIAZABuAGUAcgBAAGMAYQBuAG8AbgBpAGMAYQBsAC4AYwBvAG0A;Sosha1_v1;7;{2AC5BB31-DD8A-44C6-A0DF-05CB9979B9DD};YgByAHUAZABsAGUAeQBAAGIAcgBvAGEAZABjAG8AbQAuAGMAbwBtAA==;Fri,
+ 17 Sep 2010 18:39:53
+ GMT;UgBFADoAIABbAFAAQQBUAEMASABdACAAcwB0AGEAZwBpAG4AZwA6ACAAYgByAGMAbQA4ADAAMgAxADEAOgAgAE0AYQBrAGUAIABDAEYATABBAEcAUwAgAGUAeABwAGwAaQBjAGkAdAA=
+x-cr-puzzleid: {2AC5BB31-DD8A-44C6-A0DF-05CB9979B9DD}
+acceptlanguage: en-US
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimXnjnkNgwtEVpXKYMxXgmBdye=Gtjeggd4N9UA@mail.gmail.com>
-References: <AANLkTimXnjnkNgwtEVpXKYMxXgmBdye=Gtjeggd4N9UA@mail.gmail.com>
-Date: Fri, 17 Sep 2010 14:38:59 -0500
-Message-ID: <AANLkTimRSjqewc_mC5vwdXy1t4Ax5rAf5svpOTbUEF7o@mail.gmail.com>
-Subject: Re: [PATCH] Move "struct net" declaration inside the __KERNEL__ macro guard
-From: Ollie Wild <aaw@google.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: netdev@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Marmaros <davem@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+X-WSS-ID: 608D1A4247864138-04-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Resending with a proper signoff.)
+ 
+> Don't you have the orientation inverted? WLC_LOW is defined for a
+> PCI NIC.
 
-This patch reduces namespace pollution by moving the "struct net" declaration
-out of the userspace-facing portion of linux/netlink.h.  It has no impact on
-the kernel, and the declaration is not referenced anywhere outside the
-__KERNEL__ macro guard.
+Both LOW and HIGH are used for NIC.  That is to say everything runs on the host.
 
-(This came up because we have several C++ applications which use "net" as a
-namespace name.)
+On splitmac dongle, only the HIGH runs on the host while the LOW runs on the dongle.
 
-Ollie
+Both models run the HIGH code on the host.
 
-Signed-off-by: Ollie Wild <aaw@google.com>
+Brett
 
----
- include/linux/netlink.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/netlink.h b/include/linux/netlink.h
-index 59d0669..1235669 100644
---- a/include/linux/netlink.h
-+++ b/include/linux/netlink.h
-@@ -27,8 +27,6 @@
-
- #define MAX_LINKS 32
-
--struct net;
--
- struct sockaddr_nl {
-      sa_family_t     nl_family;      /* AF_NETLINK   */
-      unsigned short  nl_pad;         /* zero         */
-@@ -151,6 +149,8 @@ struct nlattr {
- #include <linux/capability.h>
- #include <linux/skbuff.h>
-
-+struct net;
-+
- static inline struct nlmsghdr *nlmsg_hdr(const struct sk_buff *skb)
- {
-      return (struct nlmsghdr *)skb->data;
---
-1.7.0.4
