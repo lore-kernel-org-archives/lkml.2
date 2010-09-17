@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657Ab0IQUHI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 16:07:08 -0400
-Received: from fanny.its.uu.se ([130.238.4.241]:34597 "EHLO fanny.its.uu.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751450Ab0IQUHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 16:07:06 -0400
-MIME-Version: 1.0
+	id S1752942Ab0IQUYc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 16:24:32 -0400
+Received: from tn-76-7-162-101.sta.embarqhsd.net ([76.7.162.101]:46678 "EHLO
+	animx.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751561Ab0IQUYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 16:24:31 -0400
+Date: Fri, 17 Sep 2010 16:24:29 -0400
+From: Wakko Warner <wakko@animx.eu.org>
+To: Richard Mittendorfer <delist@gmx.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Radeon KMS r100 and STR problems
+Message-ID: <20100917202429.GA5091@animx.eu.org>
+Mail-Followup-To: Richard Mittendorfer <delist@gmx.net>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <20100917202647.aa4b6300.delist@gmx.net>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <19603.51810.601209.98683@pilspetsen.it.uu.se>
-Date: Fri, 17 Sep 2010 22:06:58 +0200
-From: Mikael Pettersson <mikpe@it.uu.se>
-To: naveen yadav <yad.naveen@gmail.com>
-Cc: Christoph Lameter <cl@linux.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, robm@fastmail.fm,
-        linux-kernel@vger.kernel.org, Bron Gondwana <brong@fastmail.fm>,
-        linux-mm <linux-mm@kvack.org>, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: Issue in using mmap on ARM target
-In-Reply-To: <AANLkTi=VS34cbaH9TNA9aZ7mVavoTaAiAwMfuRXSxbd8@mail.gmail.com>
-References: <AANLkTi=VS34cbaH9TNA9aZ7mVavoTaAiAwMfuRXSxbd8@mail.gmail.com>
-X-Mailer: VM 7.17 under Emacs 20.7.1
+Content-Disposition: inline
+In-Reply-To: <20100917202647.aa4b6300.delist@gmx.net>
+User-Agent: Mutt/1.5.6+20040907i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-naveen yadav writes:
- > Hi all,
- > 
- > I am facing one issue when executing below progmra on ARM target. The
- > same program work well on X86 host machine,
- > 
- > When execute on Host(x86). the result are as expected.
- > [root@localhost naveen]# ./a.out  0000 b 2
- > /dev/mem opened.
- > Memory mapped at address 0xb7f00000.
- > Value at address 0x0 (0xb7f00000): 0x24
- > Written 0x2; readback 0x2
- > 
- > But when execute on Target:
- > # ./a.out 0 w 20
- > /dev/mem opened.
- > Memory mapped at address 0x40003000.
- > Value at address 0x0 (0x40003000): 0xEA000006
- > Written 0x14; readback 0xEA000006
- > #
- > The value does not change. any idea ....
+Richard Mittendorfer wrote:
+> Radeon KMS and STR on a X32
+> 
+> 01:00.0 VGA compatible controller: ATI Technologies Inc Radeon Mobility M6 LY
+> 01:00.0 0300: 1002:4c59
+> 2.6.36-rc4, Debian Squeeze
 
-You might have better luck getting an informed answer by posting
-to linux-arm-kernel@lists.infradead.org instead.
+> Most of the time: Backlight comes on, screen remains black, box hangs,
+> networking in isn't possible (likely due to NM), but  also SysRq
+> doesn't do. Hardly ever: Vertical lines, messed up screen, but text (as
+> well as mouse movement when switching to Xorg) "is there". One out of
+> ~10 tries I saw this when suspending at the console (echo mem>/s/p/state).
+> Rebooting blindly was possible then and the logger was able to capture the 
+> messages below.
+
+I'd like to add that I've a similar problem with a Mobility M7 with any
+kernel with radeon KMS.  One difference is that only the screen is hosed.  I
+am still able to use the keyboard and I can connect to it over the network.
+
+-- 
+ Microsoft has beaten Volkswagen's world record.  Volkswagen only created 22
+ million bugs.
