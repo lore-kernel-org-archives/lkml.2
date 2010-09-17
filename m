@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755271Ab0IQPla (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 11:41:30 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:59780 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755067Ab0IQPl3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 11:41:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=c3bbzQE9+qJD9fde9ZqDnx0oHT2yk4PA4+EHbq7rJH8s9XuSseTdoi3OkVgnVoNNek
-         XsjxtAWW3vJSccISGnuIoax8r4E7sW2wcRU50MWjccnvKPuFihitpGQT48efPlR4DTh/
-         t5Vlpis9LKM52QpF30wxOmaQhuX/Vns/YjPNs=
-Date: Fri, 17 Sep 2010 18:07:45 +0200
-From: Andreas Herrmann <herrmann.der.user@googlemail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <borislav.petkov@amd.com>,
-        Hans Rosenfeld <hans.rosenfeld@amd.com>
-Subject: [PATCH 1/3] x86, cacheinfo: Fix dependency of AMD L3 CID
-Message-ID: <20100917160744.GF4958@loge.amd.com>
-References: <20100917155904.GA4958@loge.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100917155904.GA4958@loge.amd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755369Ab0IQPoi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 11:44:38 -0400
+Received: from fifo99.com ([67.223.236.141]:43172 "EHLO fifo99.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754833Ab0IQPoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 11:44:37 -0400
+Subject: Re: FW: next build fails
+From: Daniel Walker <dwalker@fifo99.com>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Sundar R IYER <sundar.iyer@stericsson.com>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100917103520.GA30330@flint.arm.linux.org.uk>
+References: <33A307AF30D7BF4F811B1568FE7A9B18043784FF99@EXDCVYMBSTM006.EQ1STM.local>
+	 <20100916164442.df749cc1.sfr@canb.auug.org.au>
+	 <1284656407.2411.5.camel@c-dwalke-linux.qualcomm.com>
+	 <20100917075242.e0bc4b54.sfr@canb.auug.org.au>
+	 <1284674337.2411.53.camel@c-dwalke-linux.qualcomm.com>
+	 <20100917080439.7c35775a.sfr@canb.auug.org.au>
+	 <1284674935.2411.54.camel@c-dwalke-linux.qualcomm.com>
+	 <20100917103520.GA30330@flint.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 17 Sep 2010 08:44:24 -0700
+Message-ID: <1284738264.4177.25.camel@m0nster>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
+On Fri, 2010-09-17 at 11:35 +0100, Russell King wrote:
+> On Thu, Sep 16, 2010 at 03:08:55PM -0700, Daniel Walker wrote:
+> > On Fri, 2010-09-17 at 08:04 +1000, Stephen Rothwell wrote:
+> > > Hi Daniel,
+> > > 
+> > > On Thu, 16 Sep 2010 14:58:57 -0700 Daniel Walker <dwalker@fifo99.com> wrote:
+> > > >
+> > > > Yeah, exactly .. This is what I did to update my patch .. Do you want to
+> > > > include this, or should I update my version and my tree.. Ultimately my
+> > > > version has to go into Russell's tree..
+> > > 
+> > > Well, you can't really update that in your tree until after your tree is
+> > > merged with Russell's, right (since ALT_UP etc are not defined in your
+> > > tree)?  In that case, I need to do the fix when I merge your tree into
+> > > linux-next (and so with Russell's tree).
+> > 
+> > Right, I see what your saying .. Ok, thanks.
+> 
+> There is another way to handle this - we shouldn't be tinkering with
+> the aux control register on non-ARM cores (as we don't know what the
+> bits on such cores do) we could view this as a bug fix, and put it
+> into -rc.
 
-L3 cache index disable code uses PCI accesses to AMD northbridge functions.
-Currently the code is #ifdef CONFIG_CPU_SUP_AMD.
-But it should be #if (defined(CONFIG_CPU_SUP_AMD) && defined(CONFIG_PCI))
-which in the end is a dependency to K8_NB.
+Yeah, it does seem to fit that category ..
 
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
----
- arch/x86/kernel/cpu/intel_cacheinfo.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+> I'd prefer to do that - so could you send the original patch you posted
+> to lakml to the patch system please?
 
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index 898c2f4..2521cdc 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -306,7 +306,7 @@ struct _cache_attr {
- 	ssize_t (*store)(struct _cpuid4_info *, const char *, size_t count);
- };
- 
--#ifdef CONFIG_CPU_SUP_AMD
-+#ifdef CONFIG_K8_NB
- 
- /*
-  * L3 cache descriptors
-@@ -556,12 +556,12 @@ static struct _cache_attr cache_disable_0 = __ATTR(cache_disable_0, 0644,
- static struct _cache_attr cache_disable_1 = __ATTR(cache_disable_1, 0644,
- 		show_cache_disable_1, store_cache_disable_1);
- 
--#else	/* CONFIG_CPU_SUP_AMD */
-+#else	/* CONFIG_K8_NB */
- static void __cpuinit
- amd_check_l3_disable(struct _cpuid4_info_regs *this_leaf, int index)
- {
- };
--#endif /* CONFIG_CPU_SUP_AMD */
-+#endif /* CONFIG_K8_NB */
- 
- static int
- __cpuinit cpuid4_cache_lookup_regs(int index,
-@@ -1000,7 +1000,7 @@ static struct attribute *default_attrs[] = {
- 
- static struct attribute *default_l3_attrs[] = {
- 	DEFAULT_SYSFS_CACHE_ATTRS,
--#ifdef CONFIG_CPU_SUP_AMD
-+#ifdef CONFIG_K8_NB
- 	&cache_disable_0.attr,
- 	&cache_disable_1.attr,
- #endif
--- 
-1.6.4.4
+Ok, I submitted it to your patch system (I'm assuming that's what you
+mean by "patch system above").
+
+http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6398/1
+
+Daniel
 
