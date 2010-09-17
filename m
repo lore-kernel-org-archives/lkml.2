@@ -1,252 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243Ab0IQPWa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 11:22:30 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57503 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753955Ab0IQPW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 11:22:29 -0400
-Message-ID: <4C93879F.6000201@kernel.org>
-Date: Fri, 17 Sep 2010 17:22:07 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: CAI Qian <caiqian@redhat.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, dhowells@redhat.com,
-        graff yang <graff.yang@gmail.com>, sonic adi <sonic.adi@gmail.com>,
-        kexec <kexec@lists.infradead.org>,
-        Chris Lalancette <clalance@redhat.com>
-Subject: Re: kvm kdump regression
-References: <391574593.869121284452994336.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <391574593.869121284452994336.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
+	id S1755196Ab0IQP2t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 11:28:49 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:55542 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754380Ab0IQP2r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 11:28:47 -0400
+X-Authority-Analysis: v=1.1 cv=2ipXt8Ao/PPbK329gQN1nC6XU/V8QMABDttguNTIlb0= c=1 sm=0 a=9nV7qiHO8IIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=5koX4MaKYlLvq6bZrWwA:9 a=Kmke6y2lVEhZaD4X1BsA:7 a=peicfVW20tDoGQ5-uu-roB0-7s0A:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 01/10] jump label v11: make dynamic no-op selection
+ available outside of ftrace
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jason Baron <jbaron@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
+        hpa@zytor.com, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com
+In-Reply-To: <96259ae74172dcac99c0020c249743c523a92e18.1284733808.git.jbaron@redhat.com>
+References: <cover.1284733808.git.jbaron@redhat.com>
+	 <96259ae74172dcac99c0020c249743c523a92e18.1284733808.git.jbaron@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 17 Sep 2010 11:28:44 -0400
+Message-ID: <1284737324.23787.79.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 17 Sep 2010 15:22:09 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, 2010-09-17 at 11:08 -0400, Jason Baron wrote:
+> Move Steve's code for finding the best 5-byte no-op from ftrace.c to alternative.c.
+> The idea is that other consumers (in this case jump label) want to make use of
+> that code.
+> 
+> Signed-off-by: Jason Baron <jbaron@redhat.com>
 
-Can you please apply the following patch, reproduce the problem and
-report the kernel log?
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-Thanks.
+-- Steve
 
-diff --git a/arch/x86/kernel/crash_dump_64.c b/arch/x86/kernel/crash_dump_64.c
-index 045b36c..8ac45a4 100644
---- a/arch/x86/kernel/crash_dump_64.c
-+++ b/arch/x86/kernel/crash_dump_64.c
-@@ -13,6 +13,7 @@
- /* Stores the physical address of elf header of crash image. */
- unsigned long long elfcorehdr_addr = ELFCORE_ADDR_MAX;
+> ---
+>  arch/x86/include/asm/alternative.h |    8 ++++
+>  arch/x86/kernel/alternative.c      |   64 ++++++++++++++++++++++++++++++++++++
+>  arch/x86/kernel/ftrace.c           |   63 +----------------------------------
+>  arch/x86/kernel/setup.c            |    6 +++
+>  4 files changed, 79 insertions(+), 62 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
+> index bc6abb7..27a35b6 100644
+> --- a/arch/x86/include/asm/alternative.h
+> +++ b/arch/x86/include/asm/alternative.h
+> @@ -180,4 +180,12 @@ static inline void apply_paravirt(struct paravirt_patch_site *start,
+>  extern void *text_poke(void *addr, const void *opcode, size_t len);
+>  extern void *text_poke_smp(void *addr, const void *opcode, size_t len);
+>  
+> +#if defined(CONFIG_DYNAMIC_FTRACE)
+> +#define IDEAL_NOP_SIZE_5 5
+> +extern unsigned char ideal_nop5[IDEAL_NOP_SIZE_5];
+> +extern void arch_init_ideal_nop5(void);
+> +#else
+> +static inline void arch_init_ideal_nop5(void) {}
+> +#endif
+> +
+>  #endif /* _ASM_X86_ALTERNATIVE_H */
+> diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+> index f65ab8b..1849d80 100644
+> --- a/arch/x86/kernel/alternative.c
+> +++ b/arch/x86/kernel/alternative.c
+> @@ -641,3 +641,67 @@ void *__kprobes text_poke_smp(void *addr, const void *opcode, size_t len)
+>  	return addr;
+>  }
+>  
+> +#if defined(CONFIG_DYNAMIC_FTRACE)
+> +
+> +unsigned char ideal_nop5[IDEAL_NOP_SIZE_5];
+> +
+> +void __init arch_init_ideal_nop5(void)
+> +{
+> +	extern const unsigned char ftrace_test_p6nop[];
+> +	extern const unsigned char ftrace_test_nop5[];
+> +	extern const unsigned char ftrace_test_jmp[];
+> +	int faulted = 0;
+> +
+> +	/*
+> +	 * There is no good nop for all x86 archs.
+> +	 * We will default to using the P6_NOP5, but first we
+> +	 * will test to make sure that the nop will actually
+> +	 * work on this CPU. If it faults, we will then
+> +	 * go to a lesser efficient 5 byte nop. If that fails
+> +	 * we then just use a jmp as our nop. This isn't the most
+> +	 * efficient nop, but we can not use a multi part nop
+> +	 * since we would then risk being preempted in the middle
+> +	 * of that nop, and if we enabled tracing then, it might
+> +	 * cause a system crash.
+> +	 *
+> +	 * TODO: check the cpuid to determine the best nop.
+> +	 */
+> +	asm volatile (
+> +		"ftrace_test_jmp:"
+> +		"jmp ftrace_test_p6nop\n"
+> +		"nop\n"
+> +		"nop\n"
+> +		"nop\n"  /* 2 byte jmp + 3 bytes */
+> +		"ftrace_test_p6nop:"
+> +		P6_NOP5
+> +		"jmp 1f\n"
+> +		"ftrace_test_nop5:"
+> +		".byte 0x66,0x66,0x66,0x66,0x90\n"
+> +		"1:"
+> +		".section .fixup, \"ax\"\n"
+> +		"2:	movl $1, %0\n"
+> +		"	jmp ftrace_test_nop5\n"
+> +		"3:	movl $2, %0\n"
+> +		"	jmp 1b\n"
+> +		".previous\n"
+> +		_ASM_EXTABLE(ftrace_test_p6nop, 2b)
+> +		_ASM_EXTABLE(ftrace_test_nop5, 3b)
+> +		: "=r"(faulted) : "0" (faulted));
+> +
+> +	switch (faulted) {
+> +	case 0:
+> +		pr_info("converting mcount calls to 0f 1f 44 00 00\n");
+> +		memcpy(ideal_nop5, ftrace_test_p6nop, IDEAL_NOP_SIZE_5);
+> +		break;
+> +	case 1:
+> +		pr_info("converting mcount calls to 66 66 66 66 90\n");
+> +		memcpy(ideal_nop5, ftrace_test_nop5, IDEAL_NOP_SIZE_5);
+> +		break;
+> +	case 2:
+> +		pr_info("converting mcount calls to jmp . + 5\n");
+> +		memcpy(ideal_nop5, ftrace_test_jmp, IDEAL_NOP_SIZE_5);
+> +		break;
+> +	}
+> +
+> +}
+> +#endif
+> diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+> index cd37469..3afb33f 100644
+> --- a/arch/x86/kernel/ftrace.c
+> +++ b/arch/x86/kernel/ftrace.c
+> @@ -257,14 +257,9 @@ do_ftrace_mod_code(unsigned long ip, void *new_code)
+>  	return mod_code_status;
+>  }
+>  
+> -
+> -
+> -
+> -static unsigned char ftrace_nop[MCOUNT_INSN_SIZE];
+> -
+>  static unsigned char *ftrace_nop_replace(void)
+>  {
+> -	return ftrace_nop;
+> +	return ideal_nop5;
+>  }
+>  
+>  static int
+> @@ -338,62 +333,6 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
+>  
+>  int __init ftrace_dyn_arch_init(void *data)
+>  {
+> -	extern const unsigned char ftrace_test_p6nop[];
+> -	extern const unsigned char ftrace_test_nop5[];
+> -	extern const unsigned char ftrace_test_jmp[];
+> -	int faulted = 0;
+> -
+> -	/*
+> -	 * There is no good nop for all x86 archs.
+> -	 * We will default to using the P6_NOP5, but first we
+> -	 * will test to make sure that the nop will actually
+> -	 * work on this CPU. If it faults, we will then
+> -	 * go to a lesser efficient 5 byte nop. If that fails
+> -	 * we then just use a jmp as our nop. This isn't the most
+> -	 * efficient nop, but we can not use a multi part nop
+> -	 * since we would then risk being preempted in the middle
+> -	 * of that nop, and if we enabled tracing then, it might
+> -	 * cause a system crash.
+> -	 *
+> -	 * TODO: check the cpuid to determine the best nop.
+> -	 */
+> -	asm volatile (
+> -		"ftrace_test_jmp:"
+> -		"jmp ftrace_test_p6nop\n"
+> -		"nop\n"
+> -		"nop\n"
+> -		"nop\n"  /* 2 byte jmp + 3 bytes */
+> -		"ftrace_test_p6nop:"
+> -		P6_NOP5
+> -		"jmp 1f\n"
+> -		"ftrace_test_nop5:"
+> -		".byte 0x66,0x66,0x66,0x66,0x90\n"
+> -		"1:"
+> -		".section .fixup, \"ax\"\n"
+> -		"2:	movl $1, %0\n"
+> -		"	jmp ftrace_test_nop5\n"
+> -		"3:	movl $2, %0\n"
+> -		"	jmp 1b\n"
+> -		".previous\n"
+> -		_ASM_EXTABLE(ftrace_test_p6nop, 2b)
+> -		_ASM_EXTABLE(ftrace_test_nop5, 3b)
+> -		: "=r"(faulted) : "0" (faulted));
+> -
+> -	switch (faulted) {
+> -	case 0:
+> -		pr_info("converting mcount calls to 0f 1f 44 00 00\n");
+> -		memcpy(ftrace_nop, ftrace_test_p6nop, MCOUNT_INSN_SIZE);
+> -		break;
+> -	case 1:
+> -		pr_info("converting mcount calls to 66 66 66 66 90\n");
+> -		memcpy(ftrace_nop, ftrace_test_nop5, MCOUNT_INSN_SIZE);
+> -		break;
+> -	case 2:
+> -		pr_info("converting mcount calls to jmp . + 5\n");
+> -		memcpy(ftrace_nop, ftrace_test_jmp, MCOUNT_INSN_SIZE);
+> -		break;
+> -	}
+> -
+>  	/* The return code is retured via data */
+>  	*(unsigned long *)data = 0;
+>  
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index 1427c36..fb37842 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -112,6 +112,7 @@
+>  #include <asm/numa_64.h>
+>  #endif
+>  #include <asm/mce.h>
+> +#include <asm/alternative.h>
+>  
+>  /*
+>   * end_pfn only includes RAM, while max_pfn_mapped includes all e820 entries.
+> @@ -689,6 +690,7 @@ void __init setup_arch(char **cmdline_p)
+>  {
+>  	int acpi = 0;
+>  	int k8 = 0;
+> +	unsigned long flags;
+>  
+>  #ifdef CONFIG_X86_32
+>  	memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
+> @@ -1036,6 +1038,10 @@ void __init setup_arch(char **cmdline_p)
+>  	x86_init.oem.banner();
+>  
+>  	mcheck_init();
+> +
+> +	local_irq_save(flags);
+> +	arch_init_ideal_nop5();
+> +	local_irq_restore(flags);
+>  }
+>  
+>  #ifdef CONFIG_X86_32
 
-+void per_cpu_ptr_to_phys_failed(void *addr);
- /**
-  * copy_oldmem_page - copy one page from "oldmem"
-  * @pfn: page frame number to be copied
-@@ -35,8 +36,10 @@ ssize_t copy_oldmem_page(unsigned long pfn, char *buf,
- 		return 0;
 
- 	vaddr = ioremap(pfn << PAGE_SHIFT, PAGE_SIZE);
--	if (!vaddr)
-+	if (!vaddr) {
-+		per_cpu_ptr_to_phys_failed(vaddr);
- 		return -ENOMEM;
-+	}
-
- 	if (userbuf) {
- 		if (copy_to_user(buf, vaddr + offset, csize)) {
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 932eaee..3bbffb0 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -6540,6 +6540,8 @@ static void __init ata_parse_force_param(void)
- 	ata_force_tbl_size = idx;
- }
-
-+void per_cpu_ptr_to_phys_failed(void *addr);
-+
- static int __init ata_init(void)
- {
- 	int rc = -ENOMEM;
-@@ -6553,6 +6555,7 @@ static int __init ata_init(void)
- 	}
-
- 	printk(KERN_DEBUG "libata version " DRV_VERSION " loaded.\n");
-+	per_cpu_ptr_to_phys_failed(0x1234);
- 	return 0;
- }
-
-diff --git a/mm/percpu-vm.c b/mm/percpu-vm.c
-index 7d9c1d0..357569a 100644
---- a/mm/percpu-vm.c
-+++ b/mm/percpu-vm.c
-@@ -415,6 +415,7 @@ static struct pcpu_chunk *pcpu_create_chunk(void)
- {
- 	struct pcpu_chunk *chunk;
- 	struct vm_struct **vms;
-+	int i;
-
- 	chunk = pcpu_alloc_chunk();
- 	if (!chunk)
-@@ -429,6 +430,13 @@ static struct pcpu_chunk *pcpu_create_chunk(void)
-
- 	chunk->data = vms;
- 	chunk->base_addr = vms[0]->addr - pcpu_group_offsets[0];
-+	chunk->chunkno = ++chunkno;
-+	printk("XXX chunk %d allocated base_addr=%p\n",
-+	       chunk->chunkno, chunk->base_addr);
-+	printk("XXX VMS:");
-+	for (i = 0; i < pcpu_nr_groups; i++)
-+		printk(" %zu@%p", vms[i]->size, vms[i]->addr);
-+	printk("\n");
- 	return chunk;
- }
-
-diff --git a/mm/percpu.c b/mm/percpu.c
-index 58c572b..8ef744d 100644
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -90,7 +90,10 @@
- 			 (unsigned long)__per_cpu_start)
- #endif
-
-+static int chunkno;
-+
- struct pcpu_chunk {
-+	int			chunkno;
- 	struct list_head	list;		/* linked to pcpu_slot lists */
- 	int			free_size;	/* free bytes in the chunk */
- 	int			contig_hint;	/* max contiguous size hint */
-@@ -176,6 +179,40 @@ static struct list_head *pcpu_slot __read_mostly; /* chunk list slots */
- static void pcpu_reclaim(struct work_struct *work);
- static DECLARE_WORK(pcpu_reclaim_work, pcpu_reclaim);
-
-+void pcpu_dump_chunk(struct pcpu_chunk *chunk)
-+{
-+	int i, contig = 0, free = 0;
-+
-+	printk("XXX   %d(f=%d,c=%d,u=%d,a=%d)", chunk->chunkno,
-+	       chunk->free_size, chunk->contig_hint,
-+	       chunk->map_used, chunk->map_alloc);
-+	for (i = 0; i < chunk->map_used; i++) {
-+		if (chunk->map[i] > 0) {
-+			free += chunk->map[i];
-+			contig = max(contig, chunk->map[i]);
-+		}
-+		printk(" %d", chunk->map[i]);
-+	}
-+	printk(" free=%d contig=%d%s\n", free, contig,
-+	       (free != chunk->free_size || contig != chunk->contig_hint) ?
-+	       " MISMATCH!" : "");
-+}
-+
-+void pcpu_dump_chunk_slots(void)
-+{
-+	struct pcpu_chunk *chunk;
-+	int i;
-+
-+	printk("XXX percpu allocator dump\n");
-+	for (i = 0; i < pcpu_nr_slots; i++) {
-+		if (list_empty(&pcpu_slot[i]))
-+			continue;
-+		printk("XXX  SLOT[%02d]\n", i);
-+		list_for_each_entry(chunk, &pcpu_slot[i], list)
-+			pcpu_dump_chunk(chunk);
-+	}
-+}
-+
- static bool pcpu_addr_in_first_chunk(void *addr)
- {
- 	void *first_start = pcpu_first_chunk->base_addr;
-@@ -1011,6 +1048,19 @@ phys_addr_t per_cpu_ptr_to_phys(void *addr)
- 		return page_to_phys(pcpu_addr_to_page(addr));
- }
-
-+void per_cpu_ptr_to_phys_failed(void *addr)
-+{
-+	phys_addr_t phys;
-+	unsigned long flags;
-+
-+	phys = per_cpu_ptr_to_phys(addr);
-+	printk("XXX per_cpu_ptry_to_phys(%p) returned invalid address 0x%llx\n",
-+	       addr, (unsigned long long)phys);
-+	spin_lock_irqsave(&pcpu_lock, flags);
-+	pcpu_dump_chunk_slots();
-+	spin_unlock_irqrestore(&pcpu_lock, flags);
-+}
-+
- /**
-  * pcpu_alloc_alloc_info - allocate percpu allocation info
-  * @nr_groups: the number of groups
-@@ -1426,6 +1476,11 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
- 	pcpu_chunk_struct_size = sizeof(struct pcpu_chunk) +
- 		BITS_TO_LONGS(pcpu_unit_pages) * sizeof(unsigned long);
-
-+	printk("XXX CPU->UNIT M/O");
-+	for_each_possible_cpu(cpu)
-+		printk(" %d:%lx", unit_map[cpu], unit_off[cpu]);
-+	printk("\n");
-+
- 	/*
- 	 * Allocate chunk slots.  The additional last slot is for
- 	 * empty chunks.
-@@ -1435,6 +1490,10 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
- 	for (i = 0; i < pcpu_nr_slots; i++)
- 		INIT_LIST_HEAD(&pcpu_slot[i]);
-
-+	printk("XXX ss=%zu up=%d us=%d ns=%d rs=%zd ds=%zd\n",
-+	       ai->static_size, pcpu_unit_pages, pcpu_unit_size,
-+	       pcpu_nr_slots, ai->reserved_size, dyn_size);
-+
- 	/*
- 	 * Initialize static chunk.  If reserved_size is zero, the
- 	 * static chunk covers static area + dynamic allocation area
-@@ -1454,6 +1513,7 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
- 		schunk->free_size = ai->reserved_size;
- 		pcpu_reserved_chunk = schunk;
- 		pcpu_reserved_chunk_limit = ai->static_size + ai->reserved_size;
-+		schunk->chunkno = -1;
- 	} else {
- 		schunk->free_size = dyn_size;
- 		dyn_size = 0;			/* dynamic area covered */
-@@ -1483,6 +1543,12 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
- 	pcpu_first_chunk = dchunk ?: schunk;
- 	pcpu_chunk_relocate(pcpu_first_chunk, -1);
-
-+	if (pcpu_reserved_chunk) {
-+		printk("XXX reserved chunk\n");
-+		pcpu_dump_chunk(pcpu_reserved_chunk);
-+	}
-+	pcpu_dump_chunk_slots();
-+
- 	/* we're done */
- 	pcpu_base_addr = base_addr;
- 	return 0;
-@@ -1592,6 +1658,7 @@ int __init pcpu_embed_first_chunk(size_t reserved_size, size_t dyn_size,
- 			goto out_free_areas;
- 		}
- 		areas[group] = ptr;
-+		printk("XXX areas[%d]=%p\n", group, areas[group]);
-
- 		base = min(ptr, base);
-
-@@ -1608,12 +1675,15 @@ int __init pcpu_embed_first_chunk(size_t reserved_size, size_t dyn_size,
- 	}
-
- 	/* base address is now known, determine group base offsets */
-+	printk("XXX base_addr=%p", base);
- 	max_distance = 0;
- 	for (group = 0; group < ai->nr_groups; group++) {
- 		ai->groups[group].base_offset = areas[group] - base;
- 		max_distance = max_t(size_t, max_distance,
- 				     ai->groups[group].base_offset);
-+		printk(" %lx", ai->groups[group].base_offset);
- 	}
-+	printk("\n");
- 	max_distance += ai->unit_size;
-
- 	/* warn if maximum distance is further than 75% of vmalloc space */
