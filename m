@@ -1,126 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593Ab0IQODL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 10:03:11 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:32827 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753119Ab0IQODK (ORCPT
+	id S1754684Ab0IQODO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 10:03:14 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:38612 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753315Ab0IQODL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 10:03:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=jQhqseQ+vGT+ojyoCojdedJM502iRW5QSHDh+Pzbu/QMbOXsvdmzSurXGi4F26ZjB0
-         2DhBKVVey+h1ut3/cftPV8L/MSCjUQpZ4aZ8+PhSi6NlWcyd4MIapRMRUmvFZdmykP6/
-         3qWZwcYLk+lmxQmnDQQfm9+Hj+w07wHJoCDlk=
+	Fri, 17 Sep 2010 10:03:11 -0400
+Date: Fri, 17 Sep 2010 10:03:10 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Kevin Hilman <khilman@deeprootsystems.com>,
+        Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: PM / Wakeup: Introduce wakeup source objects and event statistics
+ (v2)
+In-Reply-To: <201009170254.19753.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1009171000100.1589-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Date: Fri, 17 Sep 2010 19:33:08 +0530
-Message-ID: <AANLkTi=VS34cbaH9TNA9aZ7mVavoTaAiAwMfuRXSxbd8@mail.gmail.com>
-Subject: Issue in using mmap on ARM target
-From: naveen yadav <yad.naveen@gmail.com>
-To: Christoph Lameter <cl@linux.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, robm@fastmail.fm,
-        linux-kernel@vger.kernel.org, Bron Gondwana <brong@fastmail.fm>,
-        linux-mm <linux-mm@kvack.org>, Mel Gorman <mel@csn.ul.ie>
-Content-Type: multipart/mixed; boundary=001517503cc8c6819c0490750558
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001517503cc8c6819c0490750558
-Content-Type: text/plain; charset=ISO-8859-1
+On Fri, 17 Sep 2010, Rafael J. Wysocki wrote:
 
-Hi all,
+> > Was doing some experiments with this on OMAP, and found a minor
+> > cut-and-paste bug in the Documentation file:
+> > 
+> > [...]
+> > 
+> > > +What:		/sys/devices/.../power/wakeup_max_time_ms
+> > > +Date:		September 2010
+> > > +Contact:	Rafael J. Wysocki <rjw@sisk.pl>
+> > > +Description:
+> > > +		The /sys/devices/.../wakeup_max_time_ms attribute contains
+> > > +		the maximum time of processing a single wakeup event associated
+> > > +		with the device, in milliseconds.  This attribute is read-only.
+> > > +		If the device is not enabled to wake up the system from sleep
+> > > +		states, this attribute is empty.
+> > > +
+> > > +What:		/sys/devices/.../power/wakeup_max_time_ms
+> >                                                       ^^^
+> > s/max/last/ for this one.
+> 
+> Ah, thanks a lot.
 
-I am facing one issue when executing below progmra on ARM target. The
-same program work well on X86 host machine,
+There was another copy & paste errors in that file, a 
+"wakeup_active_count" that should be "wakeup_hit_count".
 
-When execute on Host(x86). the result are as expected.
-[root@localhost naveen]# ./a.out  0000 b 2
-/dev/mem opened.
-Memory mapped at address 0xb7f00000.
-Value at address 0x0 (0xb7f00000): 0x24
-Written 0x2; readback 0x2
+Alan Stern
 
-But when execute on Target:
-# ./a.out 0 w 20
-/dev/mem opened.
-Memory mapped at address 0x40003000.
-Value at address 0x0 (0x40003000): 0xEA000006
-Written 0x14; readback 0xEA000006
-#
-The value does not change. any idea ....
-
-
-Kind regards
-
---001517503cc8c6819c0490750558
-Content-Type: application/octet-stream; name="devmem2.c"
-Content-Disposition: attachment; filename="devmem2.c"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_ge74bdj80
-
-LyoKICogZGV2bWVtMi5jOiBTaW1wbGUgcHJvZ3JhbSB0byByZWFkL3dyaXRlIGZyb20vdG8gYW55
-IGxvY2F0aW9uIGluIG1lbW9yeS4KICoKICogIENvcHlyaWdodCAoQykgMjAwMCwgSmFuLURlcmsg
-QmFra2VyIChqZGJAbGFydG1ha2VyLm5sKQogKgogKgogKiBUaGlzIHNvZnR3YXJlIGhhcyBiZWVu
-IGRldmVsb3BlZCBmb3IgdGhlIExBUlQgY29tcHV0aW5nIGJvYXJkCiAqIChodHRwOi8vd3d3Lmxh
-cnQudHVkZWxmdC5ubC8pLiBUaGUgZGV2ZWxvcG1lbnQgaGFzIGJlZW4gc3BvbnNvcmVkIGJ5CiAq
-IHRoZSBNb2JpbGUgTXVsdGlNZWRpYSBDb21tdW5pY2F0aW9ucyAoaHR0cDovL3d3dy5tbWMudHVk
-ZWxmdC5ubC8pCiAqIGFuZCBVYmlxdWl0b3VzIENvbW11bmljYXRpb25zIChodHRwOi8vd3d3LnVi
-aWNvbS50dWRlbGZ0Lm5sLykKICogcHJvamVjdHMuCiAqCiAqCiAqIFRoaXMgcHJvZ3JhbSBpcyBm
-cmVlIHNvZnR3YXJlOyB5b3UgY2FuIHJlZGlzdHJpYnV0ZSBpdCBhbmQvb3IgbW9kaWZ5CiAqIGl0
-IHVuZGVyIHRoZSB0ZXJtcyBvZiB0aGUgR05VIEdlbmVyYWwgUHVibGljIExpY2Vuc2UgYXMgcHVi
-bGlzaGVkIGJ5CiAqIHRoZSBGcmVlIFNvZnR3YXJlIEZvdW5kYXRpb247IGVpdGhlciB2ZXJzaW9u
-IDIgb2YgdGhlIExpY2Vuc2UsIG9yCiAqIChhdCB5b3VyIG9wdGlvbikgYW55IGxhdGVyIHZlcnNp
-b24uCiAqCiAqIFRoaXMgcHJvZ3JhbSBpcyBkaXN0cmlidXRlZCBpbiB0aGUgaG9wZSB0aGF0IGl0
-IHdpbGwgYmUgdXNlZnVsLAogKiBidXQgV0lUSE9VVCBBTlkgV0FSUkFOVFk7IHdpdGhvdXQgZXZl
-biB0aGUgaW1wbGllZCB3YXJyYW50eSBvZgogKiBNRVJDSEFOVEFCSUxJVFkgb3IgRklUTkVTUyBG
-T1IgQSBQQVJUSUNVTEFSIFBVUlBPU0UuICBTZWUgdGhlCiAqIEdOVSBHZW5lcmFsIFB1YmxpYyBM
-aWNlbnNlIGZvciBtb3JlIGRldGFpbHMuCiAqIAogKiBZb3Ugc2hvdWxkIGhhdmUgcmVjZWl2ZWQg
-YSBjb3B5IG9mIHRoZSBHTlUgR2VuZXJhbCBQdWJsaWMgTGljZW5zZQogKiBhbG9uZyB3aXRoIHRo
-aXMgcHJvZ3JhbTsgaWYgbm90LCB3cml0ZSB0byB0aGUgRnJlZSBTb2Z0d2FyZQogKiBGb3VuZGF0
-aW9uLCBJbmMuLCA1OSBUZW1wbGUgUGxhY2UsIFN1aXRlIDMzMCwgQm9zdG9uLCBNQSAgMDIxMTEt
-MTMwNyAgVVNBCiAqCiAqLwoKI2luY2x1ZGUgPHN0ZGlvLmg+CiNpbmNsdWRlIDxzdGRsaWIuaD4K
-I2luY2x1ZGUgPHVuaXN0ZC5oPgojaW5jbHVkZSA8c3RyaW5nLmg+CiNpbmNsdWRlIDxlcnJuby5o
-PgojaW5jbHVkZSA8c2lnbmFsLmg+CiNpbmNsdWRlIDxmY250bC5oPgojaW5jbHVkZSA8Y3R5cGUu
-aD4KI2luY2x1ZGUgPHRlcm1pb3MuaD4KI2luY2x1ZGUgPHN5cy90eXBlcy5oPgojaW5jbHVkZSA8
-c3lzL21tYW4uaD4KICAKI2RlZmluZSBGQVRBTCBkbyB7IGZwcmludGYoc3RkZXJyLCAiRXJyb3Ig
-YXQgbGluZSAlZCwgZmlsZSAlcyAoJWQpIFslc11cbiIsIFwKICBfX0xJTkVfXywgX19GSUxFX18s
-IGVycm5vLCBzdHJlcnJvcihlcnJubykpOyBleGl0KDEpOyB9IHdoaWxlKDApCiAKI2RlZmluZSBN
-QVBfU0laRSA0MDk2VUwKI2RlZmluZSBNQVBfTUFTSyAoTUFQX1NJWkUgLSAxKQoKaW50IG1haW4o
-aW50IGFyZ2MsIGNoYXIgKiphcmd2KSB7CiAgICBpbnQgZmQ7CiAgICB2b2lkICptYXBfYmFzZSwg
-KnZpcnRfYWRkcjsgCgl1bnNpZ25lZCBsb25nIHJlYWRfcmVzdWx0LCB3cml0ZXZhbDsKCW9mZl90
-IHRhcmdldDsKCWludCBhY2Nlc3NfdHlwZSA9ICd3JzsKCQoJaWYoYXJnYyA8IDIpIHsKCQlmcHJp
-bnRmKHN0ZGVyciwgIlxuVXNhZ2U6XHQlcyB7IGFkZHJlc3MgfSBbIHR5cGUgWyBkYXRhIF0gXVxu
-IgoJCQkiXHRhZGRyZXNzIDogbWVtb3J5IGFkZHJlc3MgdG8gYWN0IHVwb25cbiIKCQkJIlx0dHlw
-ZSAgICA6IGFjY2VzcyBvcGVyYXRpb24gdHlwZSA6IFtiXXl0ZSwgW2hdYWxmd29yZCwgW3ddb3Jk
-XG4iCgkJCSJcdGRhdGEgICAgOiBkYXRhIHRvIGJlIHdyaXR0ZW5cblxuIiwKCQkJYXJndlswXSk7
-CgkJZXhpdCgxKTsKCX0KCXRhcmdldCA9IHN0cnRvdWwoYXJndlsxXSwgMCwgMCk7CgoJaWYoYXJn
-YyA+IDIpCgkJYWNjZXNzX3R5cGUgPSB0b2xvd2VyKGFyZ3ZbMl1bMF0pOwoKCiAgICBpZigoZmQg
-PSBvcGVuKCIvZGV2L21lbSIsIE9fUkRXUiB8IE9fU1lOQykpID09IC0xKSBGQVRBTDsKICAgIHBy
-aW50ZigiL2Rldi9tZW0gb3BlbmVkLlxuIik7IAogICAgZmZsdXNoKHN0ZG91dCk7CiAgICAKICAg
-IC8qIE1hcCBvbmUgcGFnZSAqLwogICAgbWFwX2Jhc2UgPSBtbWFwKDAsIE1BUF9TSVpFLCBQUk9U
-X1JFQUQgfCBQUk9UX1dSSVRFLCBNQVBfU0hBUkVELCBmZCwgdGFyZ2V0ICYgfk1BUF9NQVNLKTsK
-ICAgIGlmKG1hcF9iYXNlID09ICh2b2lkICopIC0xKSBGQVRBTDsKICAgIHByaW50ZigiTWVtb3J5
-IG1hcHBlZCBhdCBhZGRyZXNzICVwLlxuIiwgbWFwX2Jhc2UpOyAKICAgIGZmbHVzaChzdGRvdXQp
-OwogICAgCiAgICB2aXJ0X2FkZHIgPSBtYXBfYmFzZSArICh0YXJnZXQgJiBNQVBfTUFTSyk7CiAg
-ICBzd2l0Y2goYWNjZXNzX3R5cGUpIHsKCQljYXNlICdiJzoKCQkJcmVhZF9yZXN1bHQgPSAqKCh1
-bnNpZ25lZCBjaGFyICopIHZpcnRfYWRkcik7CgkJCWJyZWFrOwoJCWNhc2UgJ2gnOgoJCQlyZWFk
-X3Jlc3VsdCA9ICooKHVuc2lnbmVkIHNob3J0ICopIHZpcnRfYWRkcik7CgkJCWJyZWFrOwoJCWNh
-c2UgJ3cnOgoJCQlyZWFkX3Jlc3VsdCA9ICooKHVuc2lnbmVkIGxvbmcgKikgdmlydF9hZGRyKTsK
-CQkJYnJlYWs7CgkJZGVmYXVsdDoKCQkJZnByaW50ZihzdGRlcnIsICJJbGxlZ2FsIGRhdGEgdHlw
-ZSAnJWMnLlxuIiwgYWNjZXNzX3R5cGUpOwoJCQlleGl0KDIpOwoJfQogICAgcHJpbnRmKCJWYWx1
-ZSBhdCBhZGRyZXNzIDB4JVggKCVwKTogMHglWFxuIiwgdGFyZ2V0LCB2aXJ0X2FkZHIsIHJlYWRf
-cmVzdWx0KTsgCiAgICBmZmx1c2goc3Rkb3V0KTsKCglpZihhcmdjID4gMykgewoJCXdyaXRldmFs
-ID0gc3RydG91bChhcmd2WzNdLCAwLCAwKTsKCQlzd2l0Y2goYWNjZXNzX3R5cGUpIHsKCQkJY2Fz
-ZSAnYic6CgkJCQkqKCh1bnNpZ25lZCBjaGFyICopIHZpcnRfYWRkcikgPSB3cml0ZXZhbDsKCQkJ
-CXJlYWRfcmVzdWx0ID0gKigodW5zaWduZWQgY2hhciAqKSB2aXJ0X2FkZHIpOwoJCQkJYnJlYWs7
-CgkJCWNhc2UgJ2gnOgoJCQkJKigodW5zaWduZWQgc2hvcnQgKikgdmlydF9hZGRyKSA9IHdyaXRl
-dmFsOwoJCQkJcmVhZF9yZXN1bHQgPSAqKCh1bnNpZ25lZCBzaG9ydCAqKSB2aXJ0X2FkZHIpOwoJ
-CQkJYnJlYWs7CgkJCWNhc2UgJ3cnOgoJCQkJKigodW5zaWduZWQgbG9uZyAqKSB2aXJ0X2FkZHIp
-ID0gd3JpdGV2YWw7CgkJCQlyZWFkX3Jlc3VsdCA9ICooKHVuc2lnbmVkIGxvbmcgKikgdmlydF9h
-ZGRyKTsKCQkJCWJyZWFrOwoJCX0KCQlwcmludGYoIldyaXR0ZW4gMHglWDsgcmVhZGJhY2sgMHgl
-WFxuIiwgd3JpdGV2YWwsIHJlYWRfcmVzdWx0KTsgCgkJZmZsdXNoKHN0ZG91dCk7Cgl9CgkKCWlm
-KG11bm1hcChtYXBfYmFzZSwgTUFQX1NJWkUpID09IC0xKSBGQVRBTDsKICAgIGNsb3NlKGZkKTsK
-ICAgIHJldHVybiAwOwp9Cgo=
---001517503cc8c6819c0490750558--
