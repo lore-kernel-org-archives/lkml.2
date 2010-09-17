@@ -1,125 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215Ab0IQPRt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 11:17:49 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:32776 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753284Ab0IQPRr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 11:17:47 -0400
-From: Will Drewry <wad@chromium.org>
-To: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Roland McGrath <roland@redhat.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        containers@lists.linux-foundation.org, Eugene Teo <eteo@redhat.com>,
-        Tejun Heo <tj@kernel.org>, Serge Hallyn <serue@us.ibm.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, linux-fsdevel@vger.kernel.org,
-        Will Drewry <wad@chromium.org>
-Subject: [PATCH 1/2] nsproxy: add copy_namespaces_unattached
-Date: Fri, 17 Sep 2010 10:16:57 -0500
-Message-Id: <1284736618-27153-1-git-send-email-wad@chromium.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <20100917152639.0e88341a@basil.nowhere.org>
-References: <20100917152639.0e88341a@basil.nowhere.org>
+	id S1755243Ab0IQPWa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 11:22:30 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57503 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753955Ab0IQPW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 11:22:29 -0400
+Message-ID: <4C93879F.6000201@kernel.org>
+Date: Fri, 17 Sep 2010 17:22:07 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: CAI Qian <caiqian@redhat.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, dhowells@redhat.com,
+        graff yang <graff.yang@gmail.com>, sonic adi <sonic.adi@gmail.com>,
+        kexec <kexec@lists.infradead.org>,
+        Chris Lalancette <clalance@redhat.com>
+Subject: Re: kvm kdump regression
+References: <391574593.869121284452994336.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <391574593.869121284452994336.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 17 Sep 2010 15:22:09 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This changes adds copy_namespaces_unattached which provides similar
-behavior to copy_namespaces() for clone, but is meant for use when a
-new namespace needs to be derived from an existing process outside
-of process creation.
+Hello,
 
-The next patch in this series shows this function used in fs/exec.c to
-insert the core_pattern pipe thread into the crashed processes
-namespaces.
+Can you please apply the following patch, reproduce the problem and
+report the kernel log?
 
-This patch is similar to the setns patches floated earlier this year,
-but the goal is less lofty though not incompatible!
+Thanks.
 
-Any and all input, thoughts, etc will be appreciated.
+diff --git a/arch/x86/kernel/crash_dump_64.c b/arch/x86/kernel/crash_dump_64.c
+index 045b36c..8ac45a4 100644
+--- a/arch/x86/kernel/crash_dump_64.c
++++ b/arch/x86/kernel/crash_dump_64.c
+@@ -13,6 +13,7 @@
+ /* Stores the physical address of elf header of crash image. */
+ unsigned long long elfcorehdr_addr = ELFCORE_ADDR_MAX;
 
-Signed-off-by: Will Drewry <wad@chromium.org>
----
- include/linux/nsproxy.h |    2 ++
- kernel/nsproxy.c        |   39 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 41 insertions(+), 0 deletions(-)
++void per_cpu_ptr_to_phys_failed(void *addr);
+ /**
+  * copy_oldmem_page - copy one page from "oldmem"
+  * @pfn: page frame number to be copied
+@@ -35,8 +36,10 @@ ssize_t copy_oldmem_page(unsigned long pfn, char *buf,
+ 		return 0;
 
-diff --git a/include/linux/nsproxy.h b/include/linux/nsproxy.h
-index 7b370c7..4c823d2 100644
---- a/include/linux/nsproxy.h
-+++ b/include/linux/nsproxy.h
-@@ -63,6 +63,8 @@ static inline struct nsproxy *task_nsproxy(struct task_struct *tsk)
+ 	vaddr = ioremap(pfn << PAGE_SHIFT, PAGE_SIZE);
+-	if (!vaddr)
++	if (!vaddr) {
++		per_cpu_ptr_to_phys_failed(vaddr);
+ 		return -ENOMEM;
++	}
+
+ 	if (userbuf) {
+ 		if (copy_to_user(buf, vaddr + offset, csize)) {
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index 932eaee..3bbffb0 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -6540,6 +6540,8 @@ static void __init ata_parse_force_param(void)
+ 	ata_force_tbl_size = idx;
  }
- 
- int copy_namespaces(unsigned long flags, struct task_struct *tsk);
-+int copy_namespaces_unattached(unsigned long flags, struct task_struct *tsk,
-+			       struct nsproxy **nsproxy, struct fs_struct **fs);
- void exit_task_namespaces(struct task_struct *tsk);
- void switch_task_namespaces(struct task_struct *tsk, struct nsproxy *new);
- void free_nsproxy(struct nsproxy *ns);
-diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index f74e6c0..ddaea4d 100644
---- a/kernel/nsproxy.c
-+++ b/kernel/nsproxy.c
-@@ -22,6 +22,7 @@
- #include <linux/pid_namespace.h>
- #include <net/net_namespace.h>
- #include <linux/ipc_namespace.h>
-+#include <linux/fs_struct.h>
- 
- static struct kmem_cache *nsproxy_cachep;
- 
-@@ -161,6 +162,44 @@ out:
- 	return err;
+
++void per_cpu_ptr_to_phys_failed(void *addr);
++
+ static int __init ata_init(void)
+ {
+ 	int rc = -ENOMEM;
+@@ -6553,6 +6555,7 @@ static int __init ata_init(void)
+ 	}
+
+ 	printk(KERN_DEBUG "libata version " DRV_VERSION " loaded.\n");
++	per_cpu_ptr_to_phys_failed(0x1234);
+ 	return 0;
  }
- 
-+/**
-+ * copy_namespaces_unattached: creates a new nsproxy and fs from a given task
-+ * @flags:	clone flags to change namespace creation/copy behavior
-+ * @tsk:	task's namespace to base the nsproxy and fs on
-+ * @nsproxy:	pointer which will contain the newly created nsproxy
-+ * @fs:		pointer which will contain the newly created fs_struct
-+ *
-+ * Returns 0 on success and non-zero on failure.
-+ *
-+ * This function should aid in migrating processes across namespaces when after
-+ * creation.
-+ */
-+int copy_namespaces_unattached(unsigned long flags, struct task_struct *tsk,
-+			       struct nsproxy **nsproxy, struct fs_struct **fs)
+
+diff --git a/mm/percpu-vm.c b/mm/percpu-vm.c
+index 7d9c1d0..357569a 100644
+--- a/mm/percpu-vm.c
++++ b/mm/percpu-vm.c
+@@ -415,6 +415,7 @@ static struct pcpu_chunk *pcpu_create_chunk(void)
+ {
+ 	struct pcpu_chunk *chunk;
+ 	struct vm_struct **vms;
++	int i;
+
+ 	chunk = pcpu_alloc_chunk();
+ 	if (!chunk)
+@@ -429,6 +430,13 @@ static struct pcpu_chunk *pcpu_create_chunk(void)
+
+ 	chunk->data = vms;
+ 	chunk->base_addr = vms[0]->addr - pcpu_group_offsets[0];
++	chunk->chunkno = ++chunkno;
++	printk("XXX chunk %d allocated base_addr=%p\n",
++	       chunk->chunkno, chunk->base_addr);
++	printk("XXX VMS:");
++	for (i = 0; i < pcpu_nr_groups; i++)
++		printk(" %zu@%p", vms[i]->size, vms[i]->addr);
++	printk("\n");
+ 	return chunk;
+ }
+
+diff --git a/mm/percpu.c b/mm/percpu.c
+index 58c572b..8ef744d 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -90,7 +90,10 @@
+ 			 (unsigned long)__per_cpu_start)
+ #endif
+
++static int chunkno;
++
+ struct pcpu_chunk {
++	int			chunkno;
+ 	struct list_head	list;		/* linked to pcpu_slot lists */
+ 	int			free_size;	/* free bytes in the chunk */
+ 	int			contig_hint;	/* max contiguous size hint */
+@@ -176,6 +179,40 @@ static struct list_head *pcpu_slot __read_mostly; /* chunk list slots */
+ static void pcpu_reclaim(struct work_struct *work);
+ static DECLARE_WORK(pcpu_reclaim_work, pcpu_reclaim);
+
++void pcpu_dump_chunk(struct pcpu_chunk *chunk)
 +{
-+	int err = 0;
-+	if (!fs || !nsproxy) {
-+		err = -EINVAL;
-+		goto out;
-+	}
++	int i, contig = 0, free = 0;
 +
-+	*fs = copy_fs_struct(tsk->fs);
-+	if (!*fs) {
-+		err = -ENOMEM;
-+		goto out;
++	printk("XXX   %d(f=%d,c=%d,u=%d,a=%d)", chunk->chunkno,
++	       chunk->free_size, chunk->contig_hint,
++	       chunk->map_used, chunk->map_alloc);
++	for (i = 0; i < chunk->map_used; i++) {
++		if (chunk->map[i] > 0) {
++			free += chunk->map[i];
++			contig = max(contig, chunk->map[i]);
++		}
++		printk(" %d", chunk->map[i]);
 +	}
-+
-+	*nsproxy = create_new_namespaces(flags, tsk, *fs);
-+	if (IS_ERR(*nsproxy)) {
-+		err = PTR_ERR(*nsproxy);
-+		free_fs_struct(*fs);
-+		goto out;
-+	}
-+
-+out:
-+	return err;
++	printk(" free=%d contig=%d%s\n", free, contig,
++	       (free != chunk->free_size || contig != chunk->contig_hint) ?
++	       " MISMATCH!" : "");
 +}
 +
- void free_nsproxy(struct nsproxy *ns)
++void pcpu_dump_chunk_slots(void)
++{
++	struct pcpu_chunk *chunk;
++	int i;
++
++	printk("XXX percpu allocator dump\n");
++	for (i = 0; i < pcpu_nr_slots; i++) {
++		if (list_empty(&pcpu_slot[i]))
++			continue;
++		printk("XXX  SLOT[%02d]\n", i);
++		list_for_each_entry(chunk, &pcpu_slot[i], list)
++			pcpu_dump_chunk(chunk);
++	}
++}
++
+ static bool pcpu_addr_in_first_chunk(void *addr)
  {
- 	if (ns->mnt_ns)
--- 
-1.7.0.4
+ 	void *first_start = pcpu_first_chunk->base_addr;
+@@ -1011,6 +1048,19 @@ phys_addr_t per_cpu_ptr_to_phys(void *addr)
+ 		return page_to_phys(pcpu_addr_to_page(addr));
+ }
 
++void per_cpu_ptr_to_phys_failed(void *addr)
++{
++	phys_addr_t phys;
++	unsigned long flags;
++
++	phys = per_cpu_ptr_to_phys(addr);
++	printk("XXX per_cpu_ptry_to_phys(%p) returned invalid address 0x%llx\n",
++	       addr, (unsigned long long)phys);
++	spin_lock_irqsave(&pcpu_lock, flags);
++	pcpu_dump_chunk_slots();
++	spin_unlock_irqrestore(&pcpu_lock, flags);
++}
++
+ /**
+  * pcpu_alloc_alloc_info - allocate percpu allocation info
+  * @nr_groups: the number of groups
+@@ -1426,6 +1476,11 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+ 	pcpu_chunk_struct_size = sizeof(struct pcpu_chunk) +
+ 		BITS_TO_LONGS(pcpu_unit_pages) * sizeof(unsigned long);
+
++	printk("XXX CPU->UNIT M/O");
++	for_each_possible_cpu(cpu)
++		printk(" %d:%lx", unit_map[cpu], unit_off[cpu]);
++	printk("\n");
++
+ 	/*
+ 	 * Allocate chunk slots.  The additional last slot is for
+ 	 * empty chunks.
+@@ -1435,6 +1490,10 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+ 	for (i = 0; i < pcpu_nr_slots; i++)
+ 		INIT_LIST_HEAD(&pcpu_slot[i]);
+
++	printk("XXX ss=%zu up=%d us=%d ns=%d rs=%zd ds=%zd\n",
++	       ai->static_size, pcpu_unit_pages, pcpu_unit_size,
++	       pcpu_nr_slots, ai->reserved_size, dyn_size);
++
+ 	/*
+ 	 * Initialize static chunk.  If reserved_size is zero, the
+ 	 * static chunk covers static area + dynamic allocation area
+@@ -1454,6 +1513,7 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+ 		schunk->free_size = ai->reserved_size;
+ 		pcpu_reserved_chunk = schunk;
+ 		pcpu_reserved_chunk_limit = ai->static_size + ai->reserved_size;
++		schunk->chunkno = -1;
+ 	} else {
+ 		schunk->free_size = dyn_size;
+ 		dyn_size = 0;			/* dynamic area covered */
+@@ -1483,6 +1543,12 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+ 	pcpu_first_chunk = dchunk ?: schunk;
+ 	pcpu_chunk_relocate(pcpu_first_chunk, -1);
+
++	if (pcpu_reserved_chunk) {
++		printk("XXX reserved chunk\n");
++		pcpu_dump_chunk(pcpu_reserved_chunk);
++	}
++	pcpu_dump_chunk_slots();
++
+ 	/* we're done */
+ 	pcpu_base_addr = base_addr;
+ 	return 0;
+@@ -1592,6 +1658,7 @@ int __init pcpu_embed_first_chunk(size_t reserved_size, size_t dyn_size,
+ 			goto out_free_areas;
+ 		}
+ 		areas[group] = ptr;
++		printk("XXX areas[%d]=%p\n", group, areas[group]);
+
+ 		base = min(ptr, base);
+
+@@ -1608,12 +1675,15 @@ int __init pcpu_embed_first_chunk(size_t reserved_size, size_t dyn_size,
+ 	}
+
+ 	/* base address is now known, determine group base offsets */
++	printk("XXX base_addr=%p", base);
+ 	max_distance = 0;
+ 	for (group = 0; group < ai->nr_groups; group++) {
+ 		ai->groups[group].base_offset = areas[group] - base;
+ 		max_distance = max_t(size_t, max_distance,
+ 				     ai->groups[group].base_offset);
++		printk(" %lx", ai->groups[group].base_offset);
+ 	}
++	printk("\n");
+ 	max_distance += ai->unit_size;
+
+ 	/* warn if maximum distance is further than 75% of vmalloc space */
