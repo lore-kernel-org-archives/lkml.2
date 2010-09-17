@@ -1,38 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753805Ab0IQUhc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 16:37:32 -0400
-Received: from www.tglx.de ([62.245.132.106]:35463 "EHLO www.tglx.de"
+	id S1753559Ab0IQUrt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 16:47:49 -0400
+Received: from claw.goop.org ([74.207.240.146]:38365 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753034Ab0IQUhb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 16:37:31 -0400
-Date: Fri, 17 Sep 2010 22:37:26 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-cc: Greg Kroah-Hartman <gregkh@suse.de>, "Hans J. Koch" <hjk@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] uio: Statically allocate uio_class and use class
- .dev_attrs.
-In-Reply-To: <m18w34891v.fsf@fess.ebiederm.org>
-Message-ID: <alpine.LFD.2.00.1009172237080.2416@localhost6.localdomain6>
-References: <m1y6b48973.fsf@fess.ebiederm.org> <m18w34891v.fsf@fess.ebiederm.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752804Ab0IQUrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 16:47:48 -0400
+Message-ID: <4C93D3F0.3030307@goop.org>
+Date: Fri, 17 Sep 2010 13:47:44 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: memblock vs early_res
+Content-Type: multipart/mixed;
+ boundary="------------010901040706080900090606"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Sep 2010, Eric W. Biederman wrote:
-> 
-> Instead of adding uio class attributes manually after the uio device has
-> been created and we have sent a uevent to userspace, use the class
-> attribute mechanism.  This removes races and makes the code simpler.
-> 
-> At the same time don't bother to dynamically allocate a struct class for
-> uio, just declare one statically.  Less code is needed and it is easier
-> to set the class parameters.tune the class
-> 
-> Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
+This is a multi-part message in MIME format.
+--------------010901040706080900090606
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+ Hi Yinghai,
+
+I have the patch below floating around in my tree to make sure that
+early-reserved highmem is honoured when freeing unreserved memory.  I
+was trying to rebase it to current linux-next and noticed that all the
+early_res stuff has been replaced with memblock.
+
+Is this still an issue?  What would the memblock version of this patch
+look like?
+
+Thanks,
+    J
+
+
+--------------010901040706080900090606
+Content-Type: text/plain;
+ name="early_res-highmem.patch"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="early_res-highmem.patch"
+
+RnJvbSAwYTFjMjM0YTlmYWJjYzJlNzFkYzdhNmRhN2FlMWNiMDczMjA3MjgxIE1vbiBTZXAg
+MTcgMDA6MDA6MDAgMjAwMQpGcm9tOiBHaWFubHVjYSBHdWlkYSA8Z2lhbmx1Y2EuZ3VpZGFA
+Y2l0cml4LmNvbT4KRGF0ZTogU3VuLCAyIEF1ZyAyMDA5IDAxOjI1OjQ4ICswMTAwClN1Ympl
+Y3Q6IFtQQVRDSF0geDg2LzMyOiBob25vciByZXNlcnZhdGlvbnMgb2YgaGlnaCBtZW1vcnkK
+Ck1ha2UgaGlnaCBtZW1vcnkgaW5pdGlhbGl6YXRpb24gaG9ub3IgZWFybHkgcmVzZXJ2ZWQg
+cmFuZ2VzLgoKU2lnbmVkLW9mZi1ieTogR2lhbmx1Y2EgR3VpZGEgPGdpYW5sdWNhLmd1aWRh
+QGNpdHJpeC5jb20+ClNpZ25lZC1vZmYtYnk6IEplcmVteSBGaXR6aGFyZGluZ2UgPGplcmVt
+eS5maXR6aGFyZGluZ2VAY2l0cml4LmNvbT4KCmRpZmYgLS1naXQgYS9hcmNoL3g4Ni9tbS9p
+bml0XzMyLmMgYi9hcmNoL3g4Ni9tbS9pbml0XzMyLmMKaW5kZXggYmNhNzkwOS4uNTczYmM3
+ZiAxMDA2NDQKLS0tIGEvYXJjaC94ODYvbW0vaW5pdF8zMi5jCisrKyBiL2FyY2gveDg2L21t
+L2luaXRfMzIuYwpAQCAtNDMyLDIyICs0MzIsNDUgQEAgc3RhdGljIGludCBfX2luaXQgYWRk
+X2hpZ2hwYWdlc193b3JrX2ZuKHVuc2lnbmVkIGxvbmcgc3RhcnRfcGZuLAogewogCWludCBu
+b2RlX3BmbjsKIAlzdHJ1Y3QgcGFnZSAqcGFnZTsKKwlwaHlzX2FkZHJfdCBjaHVua19lbmQs
+IGNodW5rX21heDsKIAl1bnNpZ25lZCBsb25nIGZpbmFsX3N0YXJ0X3BmbiwgZmluYWxfZW5k
+X3BmbjsKLQlzdHJ1Y3QgYWRkX2hpZ2hwYWdlc19kYXRhICpkYXRhOwotCi0JZGF0YSA9IChz
+dHJ1Y3QgYWRkX2hpZ2hwYWdlc19kYXRhICopZGF0YXg7CisJc3RydWN0IGFkZF9oaWdocGFn
+ZXNfZGF0YSAqZGF0YSA9IChzdHJ1Y3QgYWRkX2hpZ2hwYWdlc19kYXRhICopZGF0YXg7CiAK
+IAlmaW5hbF9zdGFydF9wZm4gPSBtYXgoc3RhcnRfcGZuLCBkYXRhLT5zdGFydF9wZm4pOwog
+CWZpbmFsX2VuZF9wZm4gPSBtaW4oZW5kX3BmbiwgZGF0YS0+ZW5kX3Bmbik7CiAJaWYgKGZp
+bmFsX3N0YXJ0X3BmbiA+PSBmaW5hbF9lbmRfcGZuKQogCQlyZXR1cm4gMDsKIAotCWZvciAo
+bm9kZV9wZm4gPSBmaW5hbF9zdGFydF9wZm47IG5vZGVfcGZuIDwgZmluYWxfZW5kX3BmbjsK
+LQkgICAgIG5vZGVfcGZuKyspIHsKLQkJaWYgKCFwZm5fdmFsaWQobm9kZV9wZm4pKQotCQkJ
+Y29udGludWU7Ci0JCXBhZ2UgPSBwZm5fdG9fcGFnZShub2RlX3Bmbik7Ci0JCWFkZF9vbmVf
+aGlnaHBhZ2VfaW5pdChwYWdlKTsKKwljaHVua19lbmQgPSBQRk5fUEhZUyhmaW5hbF9zdGFy
+dF9wZm4pOworCWNodW5rX21heCA9IFBGTl9QSFlTKGZpbmFsX2VuZF9wZm4pOworCisJLyoK
+KwkgKiBDaGVjayBmb3IgcmVzZXJ2ZWQgYXJlYXMuCisJICovCisJZm9yICg7OykgeworCQlw
+aHlzX2FkZHJfdCBjaHVua19zdGFydDsKKwkJY2h1bmtfc3RhcnQgPSBlYXJseV9yZXNfbmV4
+dF9mcmVlKGNodW5rX2VuZCk7CisJCQorCQkvKgorCQkgKiBSZXNlcnZlZCBhcmVhLiBKdXN0
+IGNvdW50IGhpZ2ggbWVtIHBhZ2VzLgorCQkgKi8KKwkJZm9yIChub2RlX3BmbiA9IFBGTl9E
+T1dOKGNodW5rX2VuZCk7CisJCSAgICAgbm9kZV9wZm4gPCBQRk5fRE9XTihjaHVua19zdGFy
+dCk7IG5vZGVfcGZuKyspIHsKKwkJCWlmIChwZm5fdmFsaWQobm9kZV9wZm4pKQorCQkJCXRv
+dGFsaGlnaF9wYWdlcysrOworCQl9CisKKwkJaWYgKGNodW5rX3N0YXJ0ID49IGNodW5rX21h
+eCkKKwkJCWJyZWFrOworCisJCWNodW5rX2VuZCA9IGVhcmx5X3Jlc19uZXh0X3Jlc2VydmVk
+KGNodW5rX3N0YXJ0LCBjaHVua19tYXgpOworCQlmb3IgKG5vZGVfcGZuID0gUEZOX0RPV04o
+Y2h1bmtfc3RhcnQpOworCQkgICAgIG5vZGVfcGZuIDwgUEZOX0RPV04oY2h1bmtfZW5kKTsg
+bm9kZV9wZm4rKykgeworCQkJaWYgKCFwZm5fdmFsaWQobm9kZV9wZm4pKQorCQkJCWNvbnRp
+bnVlOworCQkJcGFnZSA9IHBmbl90b19wYWdlKG5vZGVfcGZuKTsKKwkJCWFkZF9vbmVfaGln
+aHBhZ2VfaW5pdChwYWdlKTsKKwkJfQogCX0KIAogCXJldHVybiAwOwpAQCAtNDYxLDcgKzQ4
+NCw2IEBAIHZvaWQgX19pbml0IGFkZF9oaWdocGFnZXNfd2l0aF9hY3RpdmVfcmVnaW9ucyhp
+bnQgbmlkLCB1bnNpZ25lZCBsb25nIHN0YXJ0X3BmbiwKIAogCWRhdGEuc3RhcnRfcGZuID0g
+c3RhcnRfcGZuOwogCWRhdGEuZW5kX3BmbiA9IGVuZF9wZm47Ci0KIAl3b3JrX3dpdGhfYWN0
+aXZlX3JlZ2lvbnMobmlkLCBhZGRfaGlnaHBhZ2VzX3dvcmtfZm4sICZkYXRhKTsKIH0KIApk
+aWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51eC9lYXJseV9yZXMuaCBiL2luY2x1ZGUvbGludXgv
+ZWFybHlfcmVzLmgKaW5kZXggMjljMDlmNS4uMzczMTdlMSAxMDA2NDQKLS0tIGEvaW5jbHVk
+ZS9saW51eC9lYXJseV9yZXMuaAorKysgYi9pbmNsdWRlL2xpbnV4L2Vhcmx5X3Jlcy5oCkBA
+IC04LDYgKzgsOSBAQCBleHRlcm4gdm9pZCBmcmVlX2Vhcmx5KHU2NCBzdGFydCwgdTY0IGVu
+ZCk7CiB2b2lkIGZyZWVfZWFybHlfcGFydGlhbCh1NjQgc3RhcnQsIHU2NCBlbmQpOwogZXh0
+ZXJuIHZvaWQgZWFybHlfcmVzX3RvX2Jvb3RtZW0odTY0IHN0YXJ0LCB1NjQgZW5kKTsKIAor
+ZXh0ZXJuIHU2NCBlYXJseV9yZXNfbmV4dF9mcmVlKHU2NCBzdGFydCk7CitleHRlcm4gdTY0
+IGVhcmx5X3Jlc19uZXh0X3Jlc2VydmVkKHU2NCBhZGRyLCB1NjQgbWF4KTsKKwogdm9pZCBy
+ZXNlcnZlX2Vhcmx5X3dpdGhvdXRfY2hlY2sodTY0IHN0YXJ0LCB1NjQgZW5kLCBjaGFyICpu
+YW1lKTsKIHU2NCBmaW5kX2Vhcmx5X2FyZWEodTY0IGVpX3N0YXJ0LCB1NjQgZWlfbGFzdCwg
+dTY0IHN0YXJ0LCB1NjQgZW5kLAogCQkJIHU2NCBzaXplLCB1NjQgYWxpZ24pOwpkaWZmIC0t
+Z2l0IGEva2VybmVsL2Vhcmx5X3Jlcy5jIGIva2VybmVsL2Vhcmx5X3Jlcy5jCmluZGV4IDdi
+ZmFlODguLmI2NjNjNjIgMTAwNjQ0Ci0tLSBhL2tlcm5lbC9lYXJseV9yZXMuYworKysgYi9r
+ZXJuZWwvZWFybHlfcmVzLmMKQEAgLTQ0LDYgKzQ0LDM2IEBAIHN0YXRpYyBpbnQgX19pbml0
+IGZpbmRfb3ZlcmxhcHBlZF9lYXJseSh1NjQgc3RhcnQsIHU2NCBlbmQpCiAJcmV0dXJuIGk7
+CiB9CiAKK3U2NCBfX2luaXQgZWFybHlfcmVzX25leHRfZnJlZSh1NjQgYWRkcikKK3sKKwlp
+bnQgaTsKKwl1NjQgZW5kID0gYWRkcjsKKwlzdHJ1Y3QgZWFybHlfcmVzICpyOworCisJZm9y
+IChpID0gMDsgaSA8IG1heF9lYXJseV9yZXM7IGkrKykgeworCQlyID0gJmVhcmx5X3Jlc1tp
+XTsKKwkJaWYgKGFkZHIgPj0gci0+c3RhcnQgJiYgYWRkciA8IHItPmVuZCkgeworCQkJZW5k
+ID0gci0+ZW5kOworCQkJYnJlYWs7CisJCX0KKwl9CisJcmV0dXJuIGVuZDsKK30KKwordTY0
+IF9faW5pdCBlYXJseV9yZXNfbmV4dF9yZXNlcnZlZCh1NjQgYWRkciwgdTY0IG1heCkKK3sK
+KwlpbnQgaTsKKwlzdHJ1Y3QgZWFybHlfcmVzICpyOworCXU2NCBuZXh0X3JlcyA9IG1heDsK
+KworCWZvciAoaSA9IDA7IGkgPCBtYXhfZWFybHlfcmVzICYmIGVhcmx5X3Jlc1tpXS5lbmQ7
+IGkrKykgeworCQlyID0gJmVhcmx5X3Jlc1tpXTsKKwkJaWYgKChyLT5zdGFydCA+PSBhZGRy
+KSAmJiAoci0+c3RhcnQgPCBuZXh0X3JlcykpCisJCQluZXh0X3JlcyA9IHItPnN0YXJ0Owor
+CX0KKwlyZXR1cm4gbmV4dF9yZXM7Cit9CisKIC8qCiAgKiBEcm9wIHRoZSBpLXRoIHJhbmdl
+IGZyb20gdGhlIGVhcmx5IHJlc2VydmF0aW9uIG1hcCwKICAqIGJ5IGNvcHlpbmcgYW55IGhp
+Z2hlciByYW5nZXMgZG93biBvbmUgb3ZlciBpdCwgYW5kCg==
+--------------010901040706080900090606--
