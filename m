@@ -1,86 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136Ab0IQWew (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 18:34:52 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48006 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754824Ab0IQWeu (ORCPT
+	id S1755186Ab0IQWiQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 18:38:16 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:4225 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754380Ab0IQWiP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 18:34:50 -0400
-Date: Fri, 17 Sep 2010 15:34:40 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Gustavo F. Padovan" <padovan@profusion.mobi>
-Cc: linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, marcel@holtmann.org
-Subject: Re: Possible regression with skb_clone() in 2.6.36
-Message-Id: <20100917153440.474b93e4.akpm@linux-foundation.org>
-In-Reply-To: <1283209824-8795-1-git-send-email-padovan@profusion.mobi>
-References: <1283209824-8795-1-git-send-email-padovan@profusion.mobi>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 17 Sep 2010 18:38:15 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH 1/2] PNPACPI: cope with invalid device IDs
+Date: Fri, 17 Sep 2010 16:37:31 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
+Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>
+References: <20100605022058.25768.77560.stgit@localhost.localdomain> <20100605022404.25768.77841.stgit@localhost.localdomain>
+In-Reply-To: <20100605022404.25768.77841.stgit@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201009171637.32127.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Aug 2010 20:10:23 -0300
-"Gustavo F. Padovan" <padovan@profusion.mobi> wrote:
-
-> I've been experiencing some problems when running the L2CAP Streaming mode in
-> 2.6.36. The system quickly runs in an Out Of Memory condition and crash. That
-> wasn't happening before, so I think we may have a regression here (I didn't find
-> where yet). The crash log is below.
-
-So 2.6.35 was OK?
-
-> The following patch does not fix the regression, but shows that removing the
-> skb_clone() call from l2cap_streaming_send() makes the problem goes away. The
-> patch is good anyway since it saves memory and time when sending Streaming mode
-> packets.
-
-How does "make it go away" differ from "fix the regression" :)
-
-But yes, if we don't understand the source of the bug then it may well
-still be there.  Did you make any progress in understanding the cause?
-
+On Friday, June 04, 2010 08:24:04 pm Dmitry Torokhov wrote:
+> If primary ID (HID) is invalid try locating first valid ID on compatible
+> ID list before giving up.
 > 
-> [ 5066.137533] Bluetooth: L2CAP ver 2.15
-> [ 5066.137873] Bluetooth: L2CAP socket layer initialized
-> [ 5066.545179] Bluetooth: RFCOMM TTY layer initialized
-> [ 5066.545879] Bluetooth: RFCOMM socket layer initialized
-> [ 5066.546582] Bluetooth: RFCOMM ver 1.11
-> [ 5092.268021] l2test invoked oom-killer: gfp_mask=0x4d0, order=0, oom_adj=0, oom_score_adj=0
-> [ 5092.268872] Pid: 3897, comm: l2test Not tainted 2.6.36-rc3 #5
-> [ 5092.269863] Call Trace:
-> [ 5092.270265]  [<ffffffff8138b6a6>] ? _raw_spin_unlock+0x26/0x30
-> [ 5092.270878]  [<ffffffff810c0827>] T.427+0x77/0x1e0
-> [ 5092.271874]  [<ffffffff811b85e7>] ? security_real_capable_noaudit+0x37/0x60
-> [ 5092.272956]  [<ffffffff810c0e3a>] out_of_memory+0x2ca/0x2f0
-> [ 5092.273894]  [<ffffffff810c3d43>] __alloc_pages_nodemask+0x693/0x6b0
-> [ 5092.274871]  [<ffffffff810ea3e6>] cache_alloc_refill+0x2d6/0x5c0
-> [ 5092.275864]  [<ffffffff810ea805>] __kmalloc+0x135/0x150
-> [ 5092.276876]  [<ffffffff8130f2ae>] __alloc_skb+0x6e/0x150
-> [ 5092.277865]  [<ffffffff810d3a00>] ? might_fault+0x40/0x90
-> [ 5092.278652]  [<ffffffff8130ace2>] sock_alloc_send_pskb+0x1c2/0x320
-> [ 5092.278927]  [<ffffffff810d3a00>] ? might_fault+0x40/0x90
-> [ 5092.279864]  [<ffffffff81312add>] ? memcpy_fromiovec+0x6d/0x90
-> [ 5092.280864]  [<ffffffff8130ae50>] sock_alloc_send_skb+0x10/0x20
-> [ 5092.281867]  [<ffffffffa00e600f>] l2cap_create_iframe_pdu+0x9f/0x2c0 [l2cap]
-> [ 5092.282865]  [<ffffffffa00e84b9>] l2cap_sock_sendmsg+0x5d9/0x910 [l2cap]
-> [ 5092.283932]  [<ffffffff8138ba3c>] ? restore_args+0x0/0x30
-> [ 5092.284865]  [<ffffffff8130725b>] sock_sendmsg+0xdb/0x100
-> [ 5092.285652]  [<ffffffff8138ba3c>] ? restore_args+0x0/0x30
-> [ 5092.285864]  [<ffffffff8138ba3c>] ? restore_args+0x0/0x30
-> [ 5092.286864]  [<ffffffff813073c0>] sys_sendto+0xf0/0x130
-> [ 5092.287864]  [<ffffffff8138b60b>] ? _raw_spin_unlock_irq+0x2b/0x40
-> [ 5092.288872]  [<ffffffff81093cfd>] ? trace_hardirqs_on_caller+0x13d/0x180
-> [ 5092.289927]  [<ffffffff81093d4d>] ? trace_hardirqs_on+0xd/0x10
-> [ 5092.290864]  [<ffffffff810d3a00>] ? might_fault+0x40/0x90
-> [ 5092.291649]  [<ffffffff810d3a00>] ? might_fault+0x40/0x90
-> [ 5092.291864]  [<ffffffff810d3a00>] ? might_fault+0x40/0x90
-> [ 5092.292864]  [<ffffffff8130740f>] sys_send+0xf/0x20
-> [ 5092.293870]  [<ffffffff8132ccd6>] compat_sys_socketcall+0x146/0x1f0
-> [ 5092.294875]  [<ffffffff81053ee4>] sysenter_dispatch+0x7/0x30
+> This helps, for example, to recognize i8042 AUX port on Sony Vaio VPCZ1
+> which uses SNYSYN0003 as HID. Without the patch users are forced to
+> boot with i8042.nopnp to make use of their touchpads.
 
-That's a pretty serious regression.
+Sorry, we seem to have dropped the ball on this.  Looking at it again,
+I have another question below:
+
+>  drivers/pnp/pnpacpi/core.c |   29 ++++++++++++++++++++++++-----
+>  1 files changed, 24 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/pnp/pnpacpi/core.c b/drivers/pnp/pnpacpi/core.c
+> index f7ff628..2029cb5 100644
+> --- a/drivers/pnp/pnpacpi/core.c
+> +++ b/drivers/pnp/pnpacpi/core.c
+> @@ -28,7 +28,7 @@
+>  #include "../base.h"
+>  #include "pnpacpi.h"
+>  
+> -static int num = 0;
+> +static int num;
+>  
+>  /* We need only to blacklist devices that have already an acpi driver that
+>   * can't use pnp layer. We don't need to blacklist device that are directly
+> @@ -157,11 +157,24 @@ struct pnp_protocol pnpacpi_protocol = {
+>  };
+>  EXPORT_SYMBOL(pnpacpi_protocol);
+>  
+> +static char *pnpacpi_get_id(struct acpi_device *device)
+> +{
+> +	struct acpi_hardware_id *id;
+> +
+> +	list_for_each_entry(id, &device->pnp.ids, list) {
+> +		if (ispnpidacpi(id->id))
+> +			return id->id;
+> +	}
+> +
+> +	return NULL;
+> +}
+> +
+>  static int __init pnpacpi_add_device(struct acpi_device *device)
+>  {
+>  	acpi_handle temp = NULL;
+>  	acpi_status status;
+>  	struct pnp_dev *dev;
+> +	char *pnpid;
+>  	struct acpi_hardware_id *id;
+>  
+>  	/*
+> @@ -169,11 +182,17 @@ static int __init pnpacpi_add_device(struct acpi_device *device)
+>  	 * driver should not be loaded.
+>  	 */
+>  	status = acpi_get_handle(device->handle, "_CRS", &temp);
+> -	if (ACPI_FAILURE(status) || !ispnpidacpi(acpi_device_hid(device)) ||
+> -	    is_exclusive_device(device) || (!device->status.present))
+> +	if (ACPI_FAILURE(status))
+> +		return 0;
+> +
+> +	pnpid = pnpacpi_get_id(device);
+> +	if (!pnpid)
+> +		return 0;
+> +
+> +	if (!is_exclusive_device(device) || !device->status.present)
+>  		return 0;
+
+Doesn't this change the sense of the is_exclusive_device() test?
+
+Looks good to me otherwise.
+
+Bjorn
+
+> -	dev = pnp_alloc_dev(&pnpacpi_protocol, num, acpi_device_hid(device));
+> +	dev = pnp_alloc_dev(&pnpacpi_protocol, num, pnpid);
+>  	if (!dev)
+>  		return -ENOMEM;
+>  
+> @@ -204,7 +223,7 @@ static int __init pnpacpi_add_device(struct acpi_device *device)
+>  		pnpacpi_parse_resource_option_data(dev);
+>  
+>  	list_for_each_entry(id, &device->pnp.ids, list) {
+> -		if (!strcmp(id->id, acpi_device_hid(device)))
+> +		if (!strcmp(id->id, pnpid))
+>  			continue;
+>  		if (!ispnpidacpi(id->id))
+>  			continue;
+> 
+> 
