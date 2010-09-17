@@ -1,62 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989Ab0IQNHJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 09:07:09 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:43775 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752902Ab0IQNHI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 09:07:08 -0400
-Subject: Re: [PATCH -tip -v5] irq_work: generic hard-irq context callbacks
-From: Peter Zijlstra <peterz@infradead.org>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        paulus <paulus@samba.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, dhowells <dhowells@redhat.com>,
-        Russell King <rmk@arm.linux.org.uk>, Kyle McMartin <kyle@mcmartin.ca>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        davem <davem@davemloft.net>, Linux-Arch <linux-arch@vger.kernel.org>
-In-Reply-To: <1284689131.32373.63.camel@yhuang-dev>
-References: <1284689131.32373.63.camel@yhuang-dev>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 17 Sep 2010 15:06:42 +0200
-Message-ID: <1284728802.28028.470.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1754012Ab0IQNIy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 09:08:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56840 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752040Ab0IQNIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 09:08:52 -0400
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Jean Pihet <jean.pihet@newoldbits.com>
+Subject: Re: [PATCH] tracing, perf: add more power related events
+Date: Fri, 17 Sep 2010 15:08:45 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.31.5-0.1-desktop; KDE/4.4.3; x86_64; ; )
+Cc: Ingo Molnar <mingo@elte.hu>, Arjan van de Ven <arjan@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
+        arjan@infradead.org, Kevin Hilman <khilman@deeprootsystems.com>,
+        linux-kernel@vger.kernel.org, discuss@lesswatts.org,
+        linux-pm@lists.linux-foundation.org, linux-omap@vger.kernel.org,
+        linux-perf-users@vger.kernel.org, linux-trace-users@vger.kernel.org
+References: <AANLkTinUmbSUUuxUzc8++pcb9gd1CZFdyTQFrveTBXyV@mail.gmail.com> <20100909075403.GA10798@elte.hu> <AANLkTimCy8pB6JZ2bkGutTou8-oXc1yjweqCxVrLw=Kk@mail.gmail.com>
+In-Reply-To: <AANLkTimCy8pB6JZ2bkGutTou8-oXc1yjweqCxVrLw=Kk@mail.gmail.com>
+MIME-Version: 1.0
+X-Length: 4445
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009171508.46471.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-09-17 at 10:05 +0800, Huang Ying wrote:
-> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> 
-> In order for other NMI context users that want to run things from
-> hard-IRQ context, extract the perf_event callback mechanism.
-> 
-> Huang Ying: some fixes
+Hi,
 
-I got complaints about a lacking changelog, how about something like the
-below?
+I had a quick look at this and it's amazing how broken
+the whole power event tracing interfaces are.
+It's not your fault, Jean, they always were and adding your stuff is 
+fine.
 
----
+Some questions, maybe I've overseen something:
 
-Provide a mechanism that allows running code in IRQ context. It is most
-useful for NMI code that needs to interact with the rest of the system
--- like wakeup a task to drain buffers.
+Why does this event:
+DEFINE_EVENT(power, power_frequency,
+exist and takes a C-/P-state, now also an S-state type as argument?
 
-Perf currently has such a mechanism, so extract that and provide it as a
-generic feature, independent of perf so that others may also benefit.
+It should be named more generic, like:
+DEFINE_EVENT(power, power_switch,
+then it could get invoked when any P-/C-/S-/X- state
+switch happened.
 
-The IRQ context callback is generated through self-IPIs where possible,
-or on architectures like powerpc which have soft-disabled IRQs, its ran
-on the soft-enable path.
+What kind of hack is this:
+TRACE_EVENT(power_end,
+showing up as:
+power_end: dummy=65535
+What ends here?
+I know it's a workaround/hack for userspace apps to be
+able to detect leaving of a sleep state, but how would someone
+know or how would someone describe this in a proper API documentation?
+Apropos documentation..., are the power trace events documented 
+somewhere?
 
-Architectures that don't have anything like this get to do with a
-callback from the timer tick. These architectures can call
-irq_run_work() at the tail of any IRQ handlers that might enqueue such
-work (like the perf IRQ handler) to avoid undue latencies in processing
-the work.
+At least the state should still be passed, then the _start/_end thing 
+can be reused by something else than C-states.
 
----
+I can't see the use of having _start/_end events at all.
+You are always in a state, having one:
+power_switch
+as suggested above, is enough to track everything.
+
+Examples:
+
+Today's C-state tracking:
+power_start: type=1 state=1  -> C1 entered
+power_end: dummy=65535       -> C-state left
+power_start: type=1 state=2  -> C2 entered
+power_end: dummy=65535       -> C-state left
+would then be:
+power_switch: type=1 state=1  -> C1 entered
+power_switch: type=1 state=0  -> C0 entered -> means C1 left...
+power_switch: type=1 state=2  -> C2 entered
+power_switch: type=1 state=0  -> C0 entered -> means C2 left...
+...
+
+Todays P-state tracking:
+power_frequency: type=2 state=125000000     -> P-state change to 125 MHz
+power_frequency: type=2 state=90000000      -> P-state change to 90 MHz
+would then be:
+power_switch: type=2 state=125000000       -> P-state change to 125 MHz
+power_switch: type=2 state=90000000        -> P-state change to 90 MHz
+
+The S-state and T-state tracking would fit into that without 
+modification.
+Thinking one step further, a possibility to track D-states would
+need an additional field, a pointer to the device, best a sysfs path
+or similar.
+
+Jean, I do not think tracing the S-state with power_start is a
+good idea. Best would be the power_frequency gets renamed (yes, breaks
+userspace, but those have to be adjusted) and used for P- and S-
+state tracking (and C-state tracking as well, but this would need
+additional userspace modifications).
+How do you track when the S-states end?
+
+        Thomas
+
