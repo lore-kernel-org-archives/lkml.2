@@ -1,57 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208Ab0IQTIj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 15:08:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31573 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756151Ab0IQTIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 15:08:37 -0400
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753163Ab0IQTh4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 15:37:56 -0400
+Received: from smtp103.sbc.mail.ac4.yahoo.com ([76.13.13.242]:32999 "HELO
+	smtp103.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752135Ab0IQThz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 15:37:55 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: EdpRs0wVM1k7152LLD9yLO.yeMaHDZ1Yu24B93htkDXaj0j
+ 2OkkkThRiTsM_A6M2G82DhxXAWTj6V2n64TNvwIiuzrId5X5E4yMvi.W53BE
+ ENK6jST.acy4IBH1t51iqab3RLyp_DnzvVy_5nub.PUcxLV95ZsKEA3YM8y5
+ JPYFxkYZzGVBNn9ds6diqn8wHScYdkebLAo826bzLENsKg1JqC16kAsJI4Mr
+ BWFqLPVnTmmnHe40vMX694N_TKjbm1J0vxk08Sk3G4kc3Aqszh9QZNAKa7VQ
+ nJy0gcXTyE7DUrGimDZaFqjEcwG_ncDWdPPt7sj96ZWPLcH4XuQ--
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [PATCH v2 01/11] scsi: Convert struct
+	Scsi_Host->cmd_serial_number to atomic_t
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Joe Eykholt <jeykholt@cisco.com>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Christoph Hellwig <hch@lst.de>
+In-Reply-To: <4C93BB8E.2080501@cisco.com>
+References: <1284747709-20862-1-git-send-email-nab@linux-iscsi.org>
+	 <4C93BB8E.2080501@cisco.com>
+Content-Type: text/plain
+Date: Fri, 17 Sep 2010 12:33:43 -0700
+Message-Id: <1284752023.13344.183.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
-To: ebiederm@xmission.com (Eric W. Biederman)
-X-Fcc: ~/Mail/linus
-Cc: Oleg Nesterov <oleg@redhat.com>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Neil Horman <nhorman@tuxdriver.com>, Andi Kleen <andi@firstfloor.org>,
-        containers@lists.linux-foundation.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH][RFC] fs/exec.c: provide the correct process pid to the pipe helper
-In-Reply-To: Eric W. Biederman's message of  Thursday, 16 September 2010 13:12:31 -0700 <m1zkvh4fdc.fsf@fess.ebiederm.org>
-References: <1284663599-3549-1-git-send-email-wad@chromium.org>
-	<20100916193543.GA11016@redhat.com>
-	<m1zkvh4fdc.fsf@fess.ebiederm.org>
-Emacs: ballast for RAM.
-Message-Id: <20100917190800.D2C4B403E8@magilla.sf.frob.com>
-Date: Fri, 17 Sep 2010 12:08:00 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> That said I don't think this is a complete fix.  We also potentially
-> have the same issue with the uts namespace and the user namespace.
+On Fri, 2010-09-17 at 12:03 -0700, Joe Eykholt wrote:
+> On 9/17/10 11:21 AM, Nicholas A. Bellinger wrote:
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> > 
+> > This patch converts struct Scsi_Host->cmd_serial_number to an atomic_t so that
+> > scsi_cmd_get_serial() can be safely called without struct Scsi_Host->host_lock
+> > in scsi_dispatch_cmd().  This patch also adds a struct Scsi_Host->use_serial_number
+> > to signal serial_number usage, but this is now disabled by default in
+> > scsi_host_alloc().
+> > 
+> > One special item in scsi_cmd_get_serial() recommended by Joe Eykholt is to
+> > start struct Scsi_Host->cmd_serial_number at 1, and increment each serial_number
+> > by 2 so that the serial is odd, and wraps to 1 instead of 0.
+> > 
+> > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> > ---
+> >  drivers/scsi/hosts.c     |    4 ++++
+> >  drivers/scsi/scsi.c      |   13 ++++++++++---
+> >  include/scsi/scsi_host.h |    8 +++++---
+> >  3 files changed, 19 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/drivers/scsi/hosts.c b/drivers/scsi/hosts.c
+> > index 8a8f803..aff1c9c 100644
+> > --- a/drivers/scsi/hosts.c
+> > +++ b/drivers/scsi/hosts.c
+> > @@ -380,6 +380,10 @@ struct Scsi_Host *scsi_host_alloc(struct scsi_host_template *sht, int privsize)
+> >  	shost->unchecked_isa_dma = sht->unchecked_isa_dma;
+> >  	shost->use_clustering = sht->use_clustering;
+> >  	shost->ordered_tag = sht->ordered_tag;
+> > +	/*
+> > +	 * Set the default shost->cmd_serial_number to 1.
+> > +	 */
+> 
+> Comment not necessary.
 
-True.
+<nod>
 
-> I believe the core file holds all of this information relative to the
-> process that is dying, one elf note or other so we don't need to worry
-> about information loss.
+> 
+> > +	atomic_set(&shost->cmd_serial_number, 1);
+> >  
+> >  	if (sht->supported_mode == MODE_UNKNOWN)
+> >  		/* means we didn't set it ... default to INITIATOR */
+> > diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+> > index ad0ed21..4724ce7 100644
+> > --- a/drivers/scsi/scsi.c
+> > +++ b/drivers/scsi/scsi.c
+> > @@ -636,9 +636,16 @@ void scsi_log_completion(struct scsi_cmnd *cmd, int disposition)
+> >   */
+> >  static inline void scsi_cmd_get_serial(struct Scsi_Host *host, struct scsi_cmnd *cmd)
+> >  {
+> > -	cmd->serial_number = host->cmd_serial_number++;
+> > -	if (cmd->serial_number == 0) 
+> > -		cmd->serial_number = host->cmd_serial_number++;
+> > +	/*
+> > +	 * The use of per struct scsi_cmnd->serial_number is disabled by default
+> > +	 */
+> > +	if (!(host->use_serial_number))
+> > +		return;
+> > +	/*
+> > +	 * Increment the host->cmd_serial_number by 2 so cmd->serial_number
+> > +	 * is always odd and wraps to 1 instead of 0.
+> > +	 */
+> > +	cmd->serial_number = atomic_add_return(2, &host->cmd_serial_number);
+> >  }
+> >  
+> >  /**
+> > diff --git a/include/scsi/scsi_host.h b/include/scsi/scsi_host.h
+> > index b7bdecb..b08d0f2 100644
+> > --- a/include/scsi/scsi_host.h
+> > +++ b/include/scsi/scsi_host.h
+> > @@ -602,10 +602,9 @@ struct Scsi_Host {
+> >  	short unsigned int max_sectors;
+> >  	unsigned long dma_boundary;
+> >  	/* 
+> > -	 * Used to assign serial numbers to the cmds.
+> > -	 * Protected by the host lock.
+> > +	 * Used to assign serial numbers to the cmds in scsi_cmd_get_serial()
+> >  	 */
+> > -	unsigned long cmd_serial_number;
+> > +	atomic_t cmd_serial_number;
+> >  	
+> >  	unsigned active_mode:2;
+> >  	unsigned unchecked_isa_dma:1;
+> > @@ -636,6 +635,9 @@ struct Scsi_Host {
+> >  	/* Asynchronous scan in progress */
+> >  	unsigned async_scan:1;
+> >  
+> > +	/* Signal usage of per struct scsi_cmnd->serial_number */
+> > +	unsigned use_serial_number:1;
+> > +
+> >  	/*
+> >  	 * Optional work queue to be utilized by the transport
+> >  	 */
+> 
+> Simple code is so much fun to critique!   So here goes:
+> 
+> This patch would break any drivers that care about serial_numbers
+> because it never sets use_serial_number in any drivers.  So that should
+> be done in the same patch so it's bisect-able.
+> 
 
-That's correct (see linux/elfcore.h, pr_*id fields in prstatus and prpsinfo).
+<nod>
 
-> I can imagine that it would be nice to have different core patterns
-> depending on where you are in the process tree, so a container can
-> do something different than the system outside of the container.  Are
-> you thinking along those lines, or are you imagining something else?
+> How about instead of adding use_serial_number, let's just have the
+> drivers that want a serial number call scsi_cmd_get_serial()
+> and stop calling it from scsi_dispatch_cmd()?
 
-I agree.  The format string being part of the pid_ns makes sense to me.  
-(I don't have any ideas about the interface for setting it.)
-Of course, then what would make most sense is for the pipe handler to
-run in the innermost namespace that set its own format, rather than in
-the global ns.
+This makes sense to me...
+
+>    AFAICT, it's only
+> used in debug messages in some drivers.  I didn't find other usages
+> but didn't do an exhaustive search.
+
+This is the same conclusion that I reached when I had a first glance,
+that ->serial_number is only used for informational purposes in about
+1/2 dozen or so mostly old and semi-obsecure LLDs.
+
+James and Co, would this be acceptable to move scsi_cmd_get_serial()
+directly into LLD SHT->queuecommand() callers for the old drivers that
+still use struct scsi_cmnd->serial_number for whatever purposes..?
+
+>   If the drivers do it themselves,
+> maybe they're already under a lock when they get the serial number
+> and then we wouldn't need the atomic.
+> 
+
+Yeah, not sure on this part yet..
+
+> Thanks for using my increment by 2 idea.
 
 
-Thanks,
-Roland
+Thanks Joe!
+
+--nab
+
+
