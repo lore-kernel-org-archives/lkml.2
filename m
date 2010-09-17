@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab0IQFsx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 01:48:53 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:58245 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752192Ab0IQFsw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 01:48:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=n0tfmnQZCnyDqwqlzc8jS5+Te5nWYW7+/eIe447IDDS8/YU6K48kKaMcZmhz0BqpHk
-         vi9Thmz9OOQUA7/Z0a7kOUsHuZvhRY6FKIjFen+ZIasKur0KUQR/D/7MbuXBauUBtwmn
-         rbOGdd3GV7ApH2JRfFSK+A+6UWh0/gtMo7IQU=
-MIME-Version: 1.0
-In-Reply-To: <4C861A09.5020203@ladisch.de>
-References: <AANLkTiktFQWvz-TzewKYEd1wtEbe3cVFjFca4dFtUTCV@mail.gmail.com>
-	<4C85F0E3.2050908@ladisch.de>
-	<AANLkTi=-=88y=6kvV-WC3b5Pw7cf_ZoPaxhUnYugQK81@mail.gmail.com>
-	<4C860043.9000501@ladisch.de>
-	<AANLkTimbDOb-iJgRmpEb29GVfP-K0_6TtvPSF7eK-2ts@mail.gmail.com>
-	<4C861A09.5020203@ladisch.de>
-Date: Fri, 17 Sep 2010 11:18:51 +0530
-Message-ID: <AANLkTinrtwMnvutZV+NSOyu9O8iXdRvBnUF7EBs-M4cM@mail.gmail.com>
-Subject: Re: Hungry for hardware timers
-From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: "the arch/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754815Ab0IQGBe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 02:01:34 -0400
+Received: from mga11.intel.com ([192.55.52.93]:63963 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753545Ab0IQGBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 02:01:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,380,1280732400"; 
+   d="scan'208";a="838480685"
+Subject: Re: Default zone_reclaim_mode = 1 on NUMA kernel is bad for
+ file/email/web servers
+From: Shaohua Li <shaohua.li@intel.com>
+To: "robm@fastmail.fm" <robm@fastmail.fm>
+Cc: Christoph Lameter <cl@linux.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bron Gondwana <brong@fastmail.fm>, linux-mm <linux-mm@kvack.org>,
+        Mel Gorman <mel@csn.ul.ie>
+In-Reply-To: <1284684653.10161.1395434085@webmail.messagingengine.com>
+References: <1284349152.15254.1394658481@webmail.messagingengine.com>
+	 <20100916184240.3BC9.A69D9226@jp.fujitsu.com>
+	 <alpine.DEB.2.00.1009161153210.22849@router.home>
+	 <1284684653.10161.1395434085@webmail.messagingengine.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 17 Sep 2010 14:01:04 +0800
+Message-ID: <1284703264.3408.1.camel@sli10-conroe.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, 2010-09-17 at 08:50 +0800, Robert Mueller wrote:
+> > > > Having very little knowledge of what this actually does, I'd just
+> > > > like to point out that from a users point of view, it's really
+> > > > annoying for your machine to be crippled by a default kernel
+> > > > setting that's pretty obscure.
+> >
+> > Thats an issue of the NUMA BIOS information. Kernel defaults to zone
+> > reclaim if the cost of accessing remote memory vs local memory crosses
+> > a certain threshhold which usually impacts performance.
+> 
+> We use what I thought was a fairly standard server type motherboard and
+> CPU combination, and I was surprised that things were so badly broken
+> for a standard usage scenario with a vanilla kernel with a default
+> configuration.
+> 
+> I'd point out that the cost of a remote memory access is many, many
+> orders of magnitude less than having to go back to disk! The problem is
+> that with zone_reclaim_mode = 1 it seems lots of memory was being wasted
+> that could be used as disk cache.
+> 
+> > > Yes, sadly intel motherboard turn on zone_reclaim_mode by
+> > > default. and current zone_reclaim_mode doesn't fit file/web
+> > > server usecase ;-)
+> >
+> > Or one could also say that the web servers are not designed to
+> > properly distribute the load on a complex NUMA based memory
+> > architecture of todays Intel machines.
+> 
+> I don't think this is any fault of how the software works. It's a *very*
+> standard "pre-fork child processes, allocate incoming connections to a
+> child process, open and mmap one or more files to read data from them".
+> That's not exactly a weird programming model, and it's bad that the
+> kernel is handling that case very badly with everything default.
+maybe you incoming connection always happen on one CPU and you do the
+page allocation in that cpu, so some nodes use out of memory but others
+have a lot free. Try bind the child process to different nodes might
+help.
 
-Sorry for delay.
-
-On Tue, Sep 7, 2010 at 4:25 PM, Clemens Ladisch <clemens@ladisch.de> wrote:
-> Jaswinder Singh Rajput wrote:
->
->> What will be IRQ # for T2.
->
-> Just check while hpet_example is running ...
->
-
-$ cat /proc/interrupts | grep hpet
- 20:         24          0   IO-APIC-fasteoi   hpet2
-
-I am planning to use hpet2 from modules. But currently it seems
-hpet_readl() and hpet_writel() are not accessible from outside the
-kernel. Is there any plans to export them.
-
-Thanks,
---
-Jaswinder Singh.
