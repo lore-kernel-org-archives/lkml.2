@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091Ab0IQFAl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 01:00:41 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42375
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750860Ab0IQFAk (ORCPT
+	id S1752573Ab0IQFFt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 01:05:49 -0400
+Received: from mx1.vsecurity.com ([209.67.252.12]:49798 "EHLO
+	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751537Ab0IQFFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 01:00:40 -0400
-Date: Thu, 16 Sep 2010 22:00:59 -0700 (PDT)
-Message-Id: <20100916.220059.215549902.davem@davemloft.net>
-To: chris.snook@gmail.com
-Cc: akpm@linux-foundation.org, joe@perches.com, linux-kernel@vger.kernel.org,
-        atl1-devel@lists.sourceforge.net, jcliburn@gmail.com,
-        jie.yang@atheros.com, netdev@vger.kernel.org
-Subject: Re: [PATCH] MAINTAINERS: move atlx discussions to netdev
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100916210830.GB25481@fourier.jnsq.org>
-References: <20100916210830.GB25481@fourier.jnsq.org>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Fri, 17 Sep 2010 01:05:48 -0400
+Subject: [PATCH v3] drivers/net/tulip/de4x5.c: fix union member name in
+ DE4X5_GET_REG ioctl
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+To: David Miller <davem@davemloft.net>
+Cc: grundler@parisc-linux.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, kyle@mcmartin.ca, jeffm@suse.com,
+        security@kernel.org
+In-Reply-To: <20100916.215313.180410528.davem@davemloft.net>
+References: <1284586998.6275.94.camel@dan>
+	 <20100916.215313.180410528.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 17 Sep 2010 01:05:44 -0400
+Message-ID: <1284699944.2565.4.camel@dan>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chris Snook <chris.snook@gmail.com>
-Date: Thu, 16 Sep 2010 17:08:30 -0400
+Now with descriptive title, as requested.
 
-> From: Chris Snook <chris.snook@gmail.com>
-> 
-> The atlx drivers are sufficiently mature that we no longer need a separate
-> mailing list for them.  Move the discussion to netdev, so we can decommission
-> atl1-devel, which is now mostly spam.
-> 
-> Signed-off-by: Chris Snook <chris.snook@gmail.com>
+This was previously reported as a security issue due to leakage of
+uninitialized stack memory.  Jeff Mahoney pointed out that this is
+incorrect since the copied data is from a union (rather than a struct).
+Therefore, this patch is only under consideration for the sake of
+correctness, and is not security relevant. 
 
-Applied, please CC: netdev on networking MAINTAINER patches in the future.
+Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+Acked-by: Grant Grundler <grundler@parisc-linux.org>
 
-Thanks.
+--- linux-2.6.35.4.orig/drivers/net/tulip/de4x5.c       2010-08-26 19:47:12.000000000 -0400
++++ linux-2.6.35.4/drivers/net/tulip/de4x5.c    2010-09-14 21:26:52.499474207 -0400
+@@ -5474,7 +5474,7 @@ de4x5_ioctl(struct net_device *dev, stru
+        tmp.lval[6] = inl(DE4X5_STRR); j+=4;
+        tmp.lval[7] = inl(DE4X5_SIGR); j+=4;
+        ioc->len = j;
+-       if (copy_to_user(ioc->data, tmp.addr, ioc->len)) return -EFAULT;
++       if (copy_to_user(ioc->data, tmp.lval, ioc->len)) return -EFAULT;
+        break;
+ 
+ #define DE4X5_DUMP              0x0f /* Dump the DE4X5 Status */
 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index e7c528f..8e904c8 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -1135,7 +1135,7 @@ ATLX ETHERNET DRIVERS
->  M:	Jay Cliburn <jcliburn@gmail.com>
->  M:	Chris Snook <chris.snook@gmail.com>
->  M:	Jie Yang <jie.yang@atheros.com>
-> -L:	atl1-devel@lists.sourceforge.net
-> +L:	netdev@vger.kernel.org
->  W:	http://sourceforge.net/projects/atl1
->  W:	http://atl1.sourceforge.net
->  S:	Maintained
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
+
+
