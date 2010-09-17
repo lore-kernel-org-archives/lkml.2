@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756145Ab0IQSXE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 14:23:04 -0400
-Received: from smtp101.sbc.mail.ac4.yahoo.com ([76.13.13.240]:23803 "HELO
-	smtp101.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755911Ab0IQSXB (ORCPT
+	id S1756178Ab0IQSXX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 14:23:23 -0400
+Received: from smtp103.sbc.mail.ac4.yahoo.com ([76.13.13.242]:24038 "HELO
+	smtp103.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755911Ab0IQSXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 14:23:01 -0400
+	Fri, 17 Sep 2010 14:23:19 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: wlEiyMwVM1lZKMeoXwhQGFOqhgOLv2zel.PJRCPqBBjTxWC
- KQu9cCahxlZQmbrO4XemG2f2yUwJrNMMq68Owo5Lx05dcc_j91nNFuic9.Eo
- UAboPm4RAO2Ih8yjDhjulj3pp92rIJaRvZYW.t4qsAwtMxe21XE7GIUXCj0t
- FPVUN.tKrsGfDDFKEeyxp07ZuizykcCsYjDXO.aa6PNTnHdD2rzIzn_o3HCD
- zSz9KaUs9c_a._a4VhK4Y7ewINWPBpact7JgMFYCHOoP651uzvKGgoZaOwUj
- L56j_162URWiR4QQXnjt5x7SfbCDnW1SGRkDh7FRIOtpJwerEFA--
+X-YMail-OSG: bM57cxMVM1kHJr9AVGG9oqpBjITbwI5LJQBGxDxxAa9QsjB
+ yURN9wyJyMXHCNt.Z4BUGaFMpkh3zynsj_YyjBkbFhgiod4xHAhLdC71jjdZ
+ b_J0mvr.AJqHOnV1rG94o44rpZn9Pnr6chOlbp62do_ia0jnBtb5bLlvvNOk
+ 6n3f6qgH.zDxnXWgcRdNAsF3LiyiDW8iAIKFoW9Qif2CqiUF8_aQ4LwmlqYX
+ ns.cYaeT7c322SZ7p3fKLIwF15iD_PaiFlxKe32EKtGWOmhPsr17Bj5E8DTU
+ 6S.yFjuLHpnhCq2ySmLILfV7UAp3KY71tLIrR72T5R8oJldA75Wq929a2kKb
+ b5mW6Pgv7m3O.uKbt4Q--
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -29,9 +30,9 @@ Cc: James Smart <james.smart@emulex.com>,
         Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
         Christoph Hellwig <hch@lst.de>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH v2 08/11] qla4xxx: Remove host_lock unlock() + lock() from qla4xxx_queuecommand()
-Date: Fri, 17 Sep 2010 11:22:55 -0700
-Message-Id: <1284747775-20995-1-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH v2 10/11] fnic: Remove host_lock unlock() + lock() from fnic_queuecommand()
+Date: Fri, 17 Sep 2010 11:23:13 -0700
+Message-Id: <1284747794-21033-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -40,44 +41,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
 This patch removes the now legacy host_lock unlock() + lock() optimization
-from ql4_os.c:qla4xxx_queuecommand()
+fnic_scsi.c:fnic_queuecommand()
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/scsi/qla4xxx/ql4_os.c |    8 +-------
- 1 files changed, 1 insertions(+), 7 deletions(-)
+ drivers/scsi/fnic/fnic_scsi.c |    9 ---------
+ 1 files changed, 0 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/scsi/qla4xxx/ql4_os.c b/drivers/scsi/qla4xxx/ql4_os.c
-index 370d40f..cfbe8b5 100644
---- a/drivers/scsi/qla4xxx/ql4_os.c
-+++ b/drivers/scsi/qla4xxx/ql4_os.c
-@@ -511,26 +511,20 @@ static int qla4xxx_queuecommand(struct scsi_cmnd *cmd,
- 	    test_bit(DPC_RESET_HA_FW_CONTEXT, &ha->dpc_flags))
- 		goto qc_host_busy;
+diff --git a/drivers/scsi/fnic/fnic_scsi.c b/drivers/scsi/fnic/fnic_scsi.c
+index 198cbab..7cf3372 100644
+--- a/drivers/scsi/fnic/fnic_scsi.c
++++ b/drivers/scsi/fnic/fnic_scsi.c
+@@ -373,13 +373,6 @@ int fnic_queuecommand(struct scsi_cmnd *sc, void (*done)(struct scsi_cmnd *))
+ 	if (lp->state != LPORT_ST_READY || !(lp->link_up))
+ 		return SCSI_MLQUEUE_HOST_BUSY;
  
--	spin_unlock_irq(ha->host->host_lock);
+-	/*
+-	 * Release host lock, use driver resource specific locks from here.
+-	 * Don't re-enable interrupts in case they were disabled prior to the
+-	 * caller disabling them.
+-	 */
+-	spin_unlock(lp->host->host_lock);
 -
- 	srb = qla4xxx_get_new_srb(ha, ddb_entry, cmd, done);
- 	if (!srb)
--		goto qc_host_busy_lock;
-+		goto qc_host_busy;
+ 	/* Get a new io_req for this SCSI IO */
+ 	fnic = lport_priv(lp);
  
- 	rval = qla4xxx_send_command_to_isp(ha, srb);
- 	if (rval != QLA_SUCCESS)
- 		goto qc_host_busy_free_sp;
- 
--	spin_lock_irq(ha->host->host_lock);
- 	return 0;
- 
- qc_host_busy_free_sp:
- 	qla4xxx_srb_free_dma(ha, srb);
- 	mempool_free(srb, ha->srb_mempool);
- 
--qc_host_busy_lock:
--	spin_lock_irq(ha->host->host_lock);
--
- qc_host_busy:
- 	return SCSI_MLQUEUE_HOST_BUSY;
+@@ -452,8 +445,6 @@ int fnic_queuecommand(struct scsi_cmnd *sc, void (*done)(struct scsi_cmnd *))
+ 		}
+ 	}
+ out:
+-	/* acquire host lock before returning to SCSI */
+-	spin_lock(lp->host->host_lock);
+ 	return ret;
+ }
  
 -- 
 1.7.2.3
