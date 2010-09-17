@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755450Ab0IQPon (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 11:44:43 -0400
-Received: from delorie.com ([65.175.133.15]:40598 "EHLO delorie.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755392Ab0IQPok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 11:44:40 -0400
-X-Greylist: delayed 2120 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Sep 2010 11:44:39 EDT
-Date: Fri, 17 Sep 2010 11:09:06 -0400
-Message-Id: <201009171509.o8HF96DL013464@envy.delorie.com>
-From: DJ Delorie <dj@delorie.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>, Johan Hovold <jhovold@gmail.com>,
-        Alan Cox <alan@linux.intel.com>,
-        Craig Shelley <craig@microtron.org.uk>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-CC: dj@delorie.com
-Subject: [PATCH] USB: cp210x: Add Renesas RX-Stick device ID
+	id S1755439Ab0IQPp7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 11:45:59 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:50702 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752350Ab0IQPp6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 11:45:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:subject:from:to:user-agent:mime-version
+         :content-type:content-transfer-encoding:x-priority:importance;
+        b=EfL3NDIAEFv9FCUXE1qSn3i6jggzFFHQFXbEDf0LYLHF6SldYKC1OR6YtkDlV1lqbH
+         TqKISJP7JFduFpOU8ZGmICj6w9CyvUmmpGwMyDx7qdZrgib0iPhx/UNwwX7M3VsWmuFr
+         sA4fzvqvdDaIzjX7dZamhruRSp1MBeSmgMLiI=
+Message-ID: <5cb62a8f48f639af132dfd4a1543750d.squirrel@localhost>
+Date: Fri, 17 Sep 2010 10:45:54 -0500
+Subject: Rescan/resize/reallocate PCI device BAR when it changes?
+From: david.hagood@gmail.com
+To: linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.20
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RX610 development board by Renesas
+I have a PCI device which can, at run time, change the size of the BARs it
+makes visible (e.g. a BAR which was disabled can become enabled, a BAR
+that was 64kiByte becomes 128kiByte, etc.
 
-Bus 001 Device 024: ID 045b:0053 Hitachi, Ltd
-Device Descriptor:
-  bLength                18
-  bDescriptorType         1
-  bcdUSB               1.10
-  bDeviceClass            0 (Defined at Interface level)
-  bDeviceSubClass         0
-  bDeviceProtocol         0
-  bMaxPacketSize0        64
-  idVendor           0x045b Hitachi, Ltd
-  idProduct          0x0053
-  bcdDevice            1.00
-  iManufacturer           1 Silicon Labs
-  iProduct                2 RX-Stick
-  iSerial                 3 0001
-  . . .
+I would like to get the kernel to reallocate the resources for that device
+without having to shut the device down and reload the device driver - the
+device driver will "know" how to handle this sort of event (actually, the
+driver will be the one that caused the event).
 
-http://am.renesas.com/rx610stick
+I've tried various combinations of pci_scan_bus, pci_request_resources,
+etc. to no avail: I can see the hardware change size, but the kernel data
+structures for the PCI device steadfastly remain unchanged.
 
-Signed-off-by: DJ Delorie <dj@delorie.com>
----
- drivers/usb/serial/cp210x.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+This is a fairly common issue for us embedded programmers: we have things
+like FPGAs and microprocessors as endpoints that, as the device driver
+finishes programming them, will suddenly have a need for different sized
+BARs.
 
-diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
-index 4f1744c..f72afa9 100644
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -54,6 +54,7 @@ static int cp210x_carrier_raised(struct usb_serial_port *p);
- static int debug;
- 
- static const struct usb_device_id id_table[] = {
-+	{ USB_DEVICE(0x045B, 0x0053) }, /* Renesas RX610 RX-Stick */
- 	{ USB_DEVICE(0x0471, 0x066A) }, /* AKTAKOM ACE-1001 cable */
- 	{ USB_DEVICE(0x0489, 0xE000) }, /* Pirelli Broadband S.p.A, DP-L10 SIP/GSM Mobile */
- 	{ USB_DEVICE(0x0489, 0xE003) }, /* Pirelli Broadband S.p.A, DP-L10 SIP/GSM Mobile */
--- 
-1.6.6.1
+I realize that in some cases, it may not be possible to simply resize
+things (e.g. not enough resources exist within the space allocated for the
+bridge the device lives on to resize things), and I am prepared to handle
+such events.
+
 
