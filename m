@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab0IQBAb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 21:00:31 -0400
-Received: from mga09.intel.com ([134.134.136.24]:6172 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754091Ab0IQBAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 21:00:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,379,1280732400"; 
-   d="scan'208";a="555286117"
-Subject: Re: [PATCH] x86_64/lib: improve the performance of memmove
-From: ykzhao <yakui.zhao@intel.com>
-To: "miaox@cn.fujitsu.com" <miaox@cn.fujitsu.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        "Theodore Ts'o" <tytso@mit.edu>, Chris Mason <chris.mason@oracle.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Ext4 <linux-ext4@vger.kernel.org>
-In-Reply-To: <4C91C44F.40700@cn.fujitsu.com>
-References: <56957.91.60.149.91.1284619705.squirrel@www.firstfloor.org>
-	 <4C91C44F.40700@cn.fujitsu.com>
-Content-Type: text/plain
-Organization: Intel Open Source Technology Center
-Date: Fri, 17 Sep 2010 08:55:18 +0800
-Message-Id: <1284684918.13201.114.camel@localhost.localdomain>
+	id S1755474Ab0IQBPn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 21:15:43 -0400
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:39091 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754172Ab0IQBPm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 21:15:42 -0400
+Subject: [GIT PATCHES FOR 2.6.36] Two small fixes for Conexant TV chip
+ drivers
+From: Andy Walls <awalls@md.metrocast.net>
+To: linux-media@vger.kernel.org
+Cc: Dan Rosenberg <drosenberg@vsecurity.com>, stable@kernel.org,
+        security@kernel.org, linux-kernel@vger.kernel.org,
+        "Igor M. Liplianin" <liplianin@me.by>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 16 Sep 2010 21:14:54 -0400
+Message-ID: <1284686094.2056.41.camel@morgan.silverblock.net>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.1 (2.22.1-2.fc9) 
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.0.10011,1.0.148,0.0.0000
+ definitions=2010-09-17_01:2010-09-16,2010-09-17,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 phishscore=0
+ bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ engine=5.0.0-1005130000 definitions=main-1009160144
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-16 at 15:16 +0800, Miao Xie wrote:
-> On Thu, 16 Sep 2010 08:48:25 +0200 (cest), Andi Kleen wrote:
-> >> When the dest and the src do overlap and the memory area is large, memmove
-> >> of
-> >> x86_64 is very inefficient, and it led to bad performance, such as btrfs's
-> >> file
-> >> deletion performance. This patch improved the performance of memmove on
-> >> x86_64
-> >> by using __memcpy_bwd() instead of byte copy when doing large memory area
-> >> copy
-> >> (len>  64).
-> >
-> >
-> > I still don't understand why you don't simply use a backwards
-> > string copy (with std) ? That should be much simpler and
-> > hopefully be as optimized for kernel copies on recent CPUs.
-> 
-> But according to the comment of memcpy, some CPUs don't support "REP" instruction,
+Mauro,
 
-Where do you find that the "REP" instruction is not supported on some
-CPUs? The comment in arch/x86/lib/memcpy_64.s only states that some CPUs
-will run faster when using string copy instruction. 
-  
-> so I think we must implement a backwards string copy by other method for those CPUs,
-> But that implement is complex, so I write it as a function -- __memcpy_bwd().
+Please pull the following two small changes for 2.6.36 and later
+kernels.  Thanks go to Igor M. Liplianin for reporting the cx25840 bug
+and Dan Rosenberg for fixing the possible information leak in the ivtvfb
+driver.
 
-Will you please look at tip/x86/ tree(mem branch)? The memory copy on
-x86_64 is already optimized. 
+The following changes since commit 67ac062a5138ed446a821051fddd798a01478f85:
 
-thanks.
-    Yakui
-> 
-> Thanks!
-> Miao
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+  V4L/DVB: Fix regression for BeholdTV Columbus (2010-08-24 10:39:32 -0300)
+
+are available in the git repository at:
+  ssh://linuxtv.org/git/awalls/media_tree.git cx-fixes-36
+
+Andy Walls (1):
+      cx25840: Fix typo in volume control initialization: 65335 vs. 65535
+
+Dan Rosenberg (1):
+      ivtvfb: prevent reading uninitialized stack memory
+
+ drivers/media/video/cx25840/cx25840-core.c |    2 +-
+ drivers/media/video/ivtv/ivtvfb.c          |    2 ++
+ 2 files changed, 3 insertions(+), 1 deletions(-)
+
+Regards,
+Andy
 
