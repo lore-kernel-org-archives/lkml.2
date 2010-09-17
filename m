@@ -1,156 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755386Ab0IQWcc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 18:32:32 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:23113 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755293Ab0IQWca (ORCPT
+	id S1755136Ab0IQWew (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 18:34:52 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48006 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754824Ab0IQWeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 18:32:30 -0400
-Subject: [PATCH v2 4/4] PCI: allocate bus resources from the top down
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: Brian Bloniarz <phunge0@hotmail.com>,
-        Charles Butterfield <charles.butterfield@nextcentury.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stefan Becker <chemobejk@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-Date: Fri, 17 Sep 2010 16:32:28 -0600
-Message-ID: <20100917223227.24687.69631.stgit@bob.kio>
-In-Reply-To: <20100917223109.24687.17697.stgit@bob.kio>
-References: <20100917223109.24687.17697.stgit@bob.kio>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Fri, 17 Sep 2010 18:34:50 -0400
+Date: Fri, 17 Sep 2010 15:34:40 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Gustavo F. Padovan" <padovan@profusion.mobi>
+Cc: linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, marcel@holtmann.org
+Subject: Re: Possible regression with skb_clone() in 2.6.36
+Message-Id: <20100917153440.474b93e4.akpm@linux-foundation.org>
+In-Reply-To: <1283209824-8795-1-git-send-email-padovan@profusion.mobi>
+References: <1283209824-8795-1-git-send-email-padovan@profusion.mobi>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 30 Aug 2010 20:10:23 -0300
+"Gustavo F. Padovan" <padovan@profusion.mobi> wrote:
 
-Allocate space from the highest-address PCI bus resource first, then work
-downward.
+> I've been experiencing some problems when running the L2CAP Streaming mode in
+> 2.6.36. The system quickly runs in an Out Of Memory condition and crash. That
+> wasn't happening before, so I think we may have a regression here (I didn't find
+> where yet). The crash log is below.
 
-Previously, we looked for space in PCI host bridge windows in the order
-we discovered the windows.  For example, given the following windows
-(discovered via an ACPI _CRS method):
+So 2.6.35 was OK?
 
-    pci_root PNP0A03:00: host bridge window [mem 0x000a0000-0x000bffff]
-    pci_root PNP0A03:00: host bridge window [mem 0x000c0000-0x000effff]
-    pci_root PNP0A03:00: host bridge window [mem 0x000f0000-0x000fffff]
-    pci_root PNP0A03:00: host bridge window [mem 0xbff00000-0xf7ffffff]
-    pci_root PNP0A03:00: host bridge window [mem 0xff980000-0xff980fff]
-    pci_root PNP0A03:00: host bridge window [mem 0xff97c000-0xff97ffff]
-    pci_root PNP0A03:00: host bridge window [mem 0xfed20000-0xfed9ffff]
+> The following patch does not fix the regression, but shows that removing the
+> skb_clone() call from l2cap_streaming_send() makes the problem goes away. The
+> patch is good anyway since it saves memory and time when sending Streaming mode
+> packets.
 
-we attempted to allocate from [mem 0x000a0000-0x000bffff] first, then
-[mem 0x000c0000-0x000effff], and so on.
+How does "make it go away" differ from "fix the regression" :)
 
-With this patch, we allocate from [mem 0xff980000-0xff980fff] first, then
-[mem 0xff97c000-0xff97ffff], [mem 0xfed20000-0xfed9ffff], etc.
+But yes, if we don't understand the source of the bug then it may well
+still be there.  Did you make any progress in understanding the cause?
 
-Allocating top-down follows Windows practice, so we're less likely to
-trip over BIOS defects in the _CRS description.
+> 
+> [ 5066.137533] Bluetooth: L2CAP ver 2.15
+> [ 5066.137873] Bluetooth: L2CAP socket layer initialized
+> [ 5066.545179] Bluetooth: RFCOMM TTY layer initialized
+> [ 5066.545879] Bluetooth: RFCOMM socket layer initialized
+> [ 5066.546582] Bluetooth: RFCOMM ver 1.11
+> [ 5092.268021] l2test invoked oom-killer: gfp_mask=0x4d0, order=0, oom_adj=0, oom_score_adj=0
+> [ 5092.268872] Pid: 3897, comm: l2test Not tainted 2.6.36-rc3 #5
+> [ 5092.269863] Call Trace:
+> [ 5092.270265]  [<ffffffff8138b6a6>] ? _raw_spin_unlock+0x26/0x30
+> [ 5092.270878]  [<ffffffff810c0827>] T.427+0x77/0x1e0
+> [ 5092.271874]  [<ffffffff811b85e7>] ? security_real_capable_noaudit+0x37/0x60
+> [ 5092.272956]  [<ffffffff810c0e3a>] out_of_memory+0x2ca/0x2f0
+> [ 5092.273894]  [<ffffffff810c3d43>] __alloc_pages_nodemask+0x693/0x6b0
+> [ 5092.274871]  [<ffffffff810ea3e6>] cache_alloc_refill+0x2d6/0x5c0
+> [ 5092.275864]  [<ffffffff810ea805>] __kmalloc+0x135/0x150
+> [ 5092.276876]  [<ffffffff8130f2ae>] __alloc_skb+0x6e/0x150
+> [ 5092.277865]  [<ffffffff810d3a00>] ? might_fault+0x40/0x90
+> [ 5092.278652]  [<ffffffff8130ace2>] sock_alloc_send_pskb+0x1c2/0x320
+> [ 5092.278927]  [<ffffffff810d3a00>] ? might_fault+0x40/0x90
+> [ 5092.279864]  [<ffffffff81312add>] ? memcpy_fromiovec+0x6d/0x90
+> [ 5092.280864]  [<ffffffff8130ae50>] sock_alloc_send_skb+0x10/0x20
+> [ 5092.281867]  [<ffffffffa00e600f>] l2cap_create_iframe_pdu+0x9f/0x2c0 [l2cap]
+> [ 5092.282865]  [<ffffffffa00e84b9>] l2cap_sock_sendmsg+0x5d9/0x910 [l2cap]
+> [ 5092.283932]  [<ffffffff8138ba3c>] ? restore_args+0x0/0x30
+> [ 5092.284865]  [<ffffffff8130725b>] sock_sendmsg+0xdb/0x100
+> [ 5092.285652]  [<ffffffff8138ba3c>] ? restore_args+0x0/0x30
+> [ 5092.285864]  [<ffffffff8138ba3c>] ? restore_args+0x0/0x30
+> [ 5092.286864]  [<ffffffff813073c0>] sys_sendto+0xf0/0x130
+> [ 5092.287864]  [<ffffffff8138b60b>] ? _raw_spin_unlock_irq+0x2b/0x40
+> [ 5092.288872]  [<ffffffff81093cfd>] ? trace_hardirqs_on_caller+0x13d/0x180
+> [ 5092.289927]  [<ffffffff81093d4d>] ? trace_hardirqs_on+0xd/0x10
+> [ 5092.290864]  [<ffffffff810d3a00>] ? might_fault+0x40/0x90
+> [ 5092.291649]  [<ffffffff810d3a00>] ? might_fault+0x40/0x90
+> [ 5092.291864]  [<ffffffff810d3a00>] ? might_fault+0x40/0x90
+> [ 5092.292864]  [<ffffffff8130740f>] sys_send+0xf/0x20
+> [ 5092.293870]  [<ffffffff8132ccd6>] compat_sys_socketcall+0x146/0x1f0
+> [ 5092.294875]  [<ffffffff81053ee4>] sysenter_dispatch+0x7/0x30
 
-On the machine above (a Dell T3500), the [mem 0xbff00000-0xbfffffff] region
-doesn't actually work and is likely a BIOS defect.  The symptom is that we
-move the AHCI controller to 0xbff00000, which leads to "Boot has failed,
-sleeping forever," a BUG in ahci_stop_engine(), or some other boot failure.
-
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=16228#c43
-Reference: https://bugzilla.redhat.com/show_bug.cgi?id=620313
-Reference: https://bugzilla.redhat.com/show_bug.cgi?id=629933
-Reported-by: Brian Bloniarz <phunge0@hotmail.com>
-Reported-and-tested-by: Stefan Becker <chemobejk@gmail.com>
-Reported-by: Denys Vlasenko <dvlasenk@redhat.com>
-Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
----
-
- drivers/pci/bus.c |   53 ++++++++++++++++++++++++++++++++++++++++++++++++-----
- 1 files changed, 48 insertions(+), 5 deletions(-)
-
-
-diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-index 7f0af0e..172bf26 100644
---- a/drivers/pci/bus.c
-+++ b/drivers/pci/bus.c
-@@ -64,6 +64,49 @@ void pci_bus_remove_resources(struct pci_bus *bus)
- 	}
- }
- 
-+/*
-+ * Find the highest-address bus resource below the cursor "res".  If the
-+ * cursor is NULL, return the highest resource.
-+ */
-+static struct resource *pci_bus_find_resource_prev(struct pci_bus *bus,
-+						   unsigned int type,
-+						   struct resource *res)
-+{
-+	struct resource *r, *prev = NULL;
-+	int i;
-+
-+	pci_bus_for_each_resource(bus, r, i) {
-+		if (!r)
-+			continue;
-+
-+		if ((r->flags & IORESOURCE_TYPE_BITS) != type)
-+			continue;
-+
-+		/* If this resource is at or past the cursor, skip it */
-+		if (res) {
-+			if (r == res)
-+				continue;
-+			if (r->end > res->end)
-+				continue;
-+			if (r->end == res->end && r->start > res->start)
-+				continue;
-+		}
-+
-+		if (!prev)
-+			prev = r;
-+
-+		/*
-+		 * A small resource is higher than a large one that ends at
-+		 * the same address.
-+		 */
-+		if (r->end > prev->end ||
-+		    (r->end == prev->end && r->start > prev->start))
-+			prev = r;
-+	}
-+
-+	return prev;
-+}
-+
- /**
-  * pci_bus_alloc_resource - allocate a resource from a parent bus
-  * @bus: PCI bus
-@@ -89,9 +132,10 @@ pci_bus_alloc_resource(struct pci_bus *bus, struct resource *res,
- 					  resource_size_t),
- 		void *alignf_data)
- {
--	int i, ret = -ENOMEM;
-+	int ret = -ENOMEM;
- 	struct resource *r;
- 	resource_size_t max = -1;
-+	unsigned int type = res->flags & IORESOURCE_TYPE_BITS;
- 
- 	type_mask |= IORESOURCE_IO | IORESOURCE_MEM;
- 
-@@ -99,10 +143,9 @@ pci_bus_alloc_resource(struct pci_bus *bus, struct resource *res,
- 	if (!(res->flags & IORESOURCE_MEM_64))
- 		max = PCIBIOS_MAX_MEM_32;
- 
--	pci_bus_for_each_resource(bus, r, i) {
--		if (!r)
--			continue;
--
-+	/* Look for space at highest addresses first */
-+	r = pci_bus_find_resource_prev(bus, type, NULL);
-+	for ( ; r; r = pci_bus_find_resource_prev(bus, type, r)) {
- 		/* type_mask must match */
- 		if ((res->flags ^ r->flags) & type_mask)
- 			continue;
-
+That's a pretty serious regression.
