@@ -1,96 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab0IQSBP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 14:01:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39322 "EHLO mx2.suse.de"
+	id S1755916Ab0IQSDm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 14:03:42 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:3318 "EHLO mms2.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755884Ab0IQSBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 14:01:14 -0400
-Date: Fri, 17 Sep 2010 10:58:38 -0700
-From: Greg KH <gregkh@suse.de>
-To: Tim Gardner <tim.gardner@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Brett Rudley <brudley@broadcom.com>,
-        Henry Ptasinski <henryp@broadcom.com>, Nohee Ko <noheek@broadcom.com>
-Subject: Re: [PATCH] staging: brcm80211: Make CFLAGS explicit
-Message-ID: <20100917175838.GA20101@suse.de>
+	id S1755116Ab0IQSDl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 14:03:41 -0400
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+From: "Brett Rudley" <brudley@broadcom.com>
+To: "tim.gardner@canonical.com" <tim.gardner@canonical.com>,
+        "Greg KH" <gregkh@suse.de>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Henry Ptasinski" <henryp@broadcom.com>,
+        "Nohee Ko" <noheek@broadcom.com>
+Date: Fri, 17 Sep 2010 11:03:14 -0700
+Subject: RE: [PATCH] staging: brcm80211: Make CFLAGS explicit
+Thread-Topic: [PATCH] staging: brcm80211: Make CFLAGS explicit
+Thread-Index: ActWkAPfq2x3IsvGS4WbvxJooAWrJwAAEZPA
+Message-ID: <7A94256FD72B884D9E7C55586C3CBCEE12BEC65BEC@SJEXCHCCR01.corp.ad.broadcom.com>
 References: <1284736810-2940-1-git-send-email-tim.gardner@canonical.com>
- <20100917162142.GA30385@suse.de>
- <4C93A8F9.9090108@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+ <20100917162142.GA30385@suse.de> <4C93A8F9.9090108@canonical.com>
 In-Reply-To: <4C93A8F9.9090108@canonical.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-cr-hashedpuzzle: Bv5l DPxA Fx7F H1Tm JKO9 JfiJ LUtT MuWK OuOO VME/
+ XBJO XHCi YtfY ZHYK ZH26
+ cCpi;3;ZwByAGUAZwBrAGgAQABzAHUAcwBlAC4AZABlADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AHQAaQBtAC4AZwBhAHIAZABuAGUAcgBAAGMAYQBuAG8AbgBpAGMAYQBsAC4AYwBvAG0A;Sosha1_v1;7;{00511298-511F-4A94-BEC7-247428752C37};YgByAHUAZABsAGUAeQBAAGIAcgBvAGEAZABjAG8AbQAuAGMAbwBtAA==;Fri,
+ 17 Sep 2010 18:03:14
+ GMT;UgBFADoAIABbAFAAQQBUAEMASABdACAAcwB0AGEAZwBpAG4AZwA6ACAAYgByAGMAbQA4ADAAMgAxADEAOgAgAE0AYQBrAGUAIABDAEYATABBAEcAUwAgAGUAeABwAGwAaQBjAGkAdAA=
+x-cr-puzzleid: {00511298-511F-4A94-BEC7-247428752C37}
+acceptlanguage: en-US
+MIME-Version: 1.0
+X-WSS-ID: 608D72E33N0395250-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 17, 2010 at 11:44:25AM -0600, Tim Gardner wrote:
-> On 09/17/2010 10:21 AM, Greg KH wrote:
-> >On Fri, Sep 17, 2010 at 09:20:10AM -0600, Tim Gardner wrote:
-> >>Its too easy to confuse the obscurely named WLC_LOW/WLC_HIGH CFLAG
-> >>macros.
-> >
-> >True, but doesn't this change how the code is being built?  Why make
-> >this change?
-> >
-> >>
-> >>Signed-off-by: Tim Gardner<tim.gardner@canonical.com>
-> >>Cc: Brett Rudley<brudley@broadcom.com>
-> >>Cc: Henry Ptasinski<henryp@broadcom.com>
-> >>Cc: Nohee Ko<noheek@broadcom.com>
-> >>---
-> >>  drivers/staging/brcm80211/Makefile |    3 ++-
-> >>  1 files changed, 2 insertions(+), 1 deletions(-)
-> >>
-> >>diff --git a/drivers/staging/brcm80211/Makefile b/drivers/staging/brcm80211/Makefile
-> >>index 05a4103..7a77e7f 100644
-> >>--- a/drivers/staging/brcm80211/Makefile
-> >>+++ b/drivers/staging/brcm80211/Makefile
-> >>@@ -15,8 +15,9 @@
-> >>  # OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
-> >>  # CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-> >>
-> >>-EXTRA_CFLAGS := -DBCMDBG -DWLC_HIGH -DSTA -DWME -DWL11N -DDBAND -DBCMDMA32 -DBCMNVRAMR -Idrivers/staging/brcm80211/sys -Idrivers/staging/brcm80211/phy -Idrivers/staging/brcm80211/util -Idrivers/staging/brcm80211/include -Wall -Wstrict-prototypes -Werror -Wmissing-prototypes
-> >>+EXTRA_CFLAGS := -DBCMDBG -DWME -DWL11N -DDBAND -DBCMDMA32 -DBCMNVRAMR -Idrivers/staging/brcm80211/sys -Idrivers/staging/brcm80211/phy -Idrivers/staging/brcm80211/util -Idrivers/staging/brcm80211/include -Wall -Wstrict-prototypes -Werror -Wmissing-prototypes
-> >
-> >how about 2 patches here, one to break it out into one flag per line so
-> >we can see what is really happening here, and then one patch to make the
-> >change you are asking for.
-> >
-> >>
-> >>+USB_CFLAGS := -DWLC_HIGH
-> >
-> >Are you sure about this?  Why set this when I don't see anything ever
-> >using it?
-> >
-> >What problem are you trying to fix here.
-> >
-> >totally confused,
-> >
-> >greg k-h
-> >
-> 
-> Well, when groveling through the code you can see a bunch of '#ifdef
-> WLC_HIGH_ONLY' which I initially assumed was defined because of
-> '-DWLC_HIGH' in EXTRA_CFLAGS. This is quite misleading if you don't
-> notice 'PCI_CFLAGS := -DWLC_LOW' a bit later in the Makefile (which
-> I didn't for quite awhile). Specifying both macros in EXTRA_CFLAGS
-> seems unnecessary.
-> 
-> The macro magic happens in brcm80211/sys/wlc_cfg.h:
-> 
-> /* Keep WLC_HIGH_ONLY, WLC_SPLIT for USB extension later on */
-> #if !defined(WLC_LOW)
-> #define WLC_HIGH_ONLY
-> #endif
-> #if !defined(WLC_LOW)
-> #define WLC_SPLIT
-> #endif
-> 
+
+In a split mac dongle, the HIGH code runs on the host processor while the LOW code runs on the dongle and the two talk across an RPC API over SDIO or USB.
+
+On a NIC both HIGH and LOW run on the host and the RPC API remains identical but the APIs become function straight calls.
+ 
+This lets us use the same code and API in both models.
+
+Getting some documentation out on this is in TODO list.  
+
+Brett
+
 > What does WLC_LOW and WLC_HIGH mean anyway?
+> 
+> rtg
+> --
+> Tim Gardner tim.gardner@canonical.com
 
-Who knows, but why create USB_CFLAGS, as that's not used by anything.
-
-Henry, Brett, Nohee?
 
