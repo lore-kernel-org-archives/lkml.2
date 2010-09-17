@@ -1,65 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603Ab0IQRSp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 13:18:45 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:59377 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754586Ab0IQRSo (ORCPT
+	id S1755695Ab0IQRYn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 13:24:43 -0400
+Received: from sj-iport-4.cisco.com ([171.68.10.86]:8985 "EHLO
+	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754374Ab0IQRYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 13:18:44 -0400
-Date: Fri, 17 Sep 2010 10:18:28 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: sedat.dilek@gmail.com
-Cc: Sedat Dilek <sedat.dilek@googlemail.com>,
-        LKML <linux-kernel@vger.kernel.org>, axboe@kernel.dk
-Subject: Re: [linux-next] fs/ocfs2/file.c:201: error: =?UTF-8?B?4oCYQkxL?=
- =?UTF-8?B?REVWX0lGTF9XQUlU4oCZ?= undeclared (first use in this function)
-Message-Id: <20100917101828.813e4515.randy.dunlap@oracle.com>
-In-Reply-To: <AANLkTimeZyZstBR4ZRxJg3OaP_aibLqQtYw2dTJ7cq7c@mail.gmail.com>
-References: <AANLkTimeZyZstBR4ZRxJg3OaP_aibLqQtYw2dTJ7cq7c@mail.gmail.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Fri, 17 Sep 2010 13:24:41 -0400
+Authentication-Results: sj-iport-4.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AsMFAA9Bk0yrR7H+/2dsb2JhbACUNo1vcagZnDmCc4JNBIRMhWeEdw
+X-IronPort-AV: E=Sophos;i="4.56,383,1280707200"; 
+   d="scan'208";a="188266401"
+Message-ID: <4C93A459.1000009@cisco.com>
+Date: Fri, 17 Sep 2010 10:24:41 -0700
+From: Joe Eykholt <jeykholt@cisco.com>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.5; en-US; rv:1.9.2.9) Gecko/20100825 Lightning/1.0b2 Thunderbird/3.1.3
+MIME-Version: 1.0
+To: linux-iscsi-target-dev@googlegroups.com
+CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Andi Kleen <ak@linux.intel.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH 1/8] scsi: Drop struct Scsi_Host->host_lock around	SHT->queuecommand()
+References: <1284676529-10756-1-git-send-email-nab@linux-iscsi.org>	 <1284691571.26423.50.camel@mulgrave.site>	 <20100917072022.GB2644@gargoyle.ger.corp.intel.com>	 <1284725592.26423.60.camel@mulgrave.site>	 <4C9379AA.4000103@linux.intel.com>	 <1284735438.26423.81.camel@mulgrave.site> <1284741478.13344.154.camel@haakon2.linux-iscsi.org>
+In-Reply-To: <1284741478.13344.154.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Sep 2010 17:36:43 +0200 Sedat Dilek wrote:
 
-> Hi,
-> 
-> I pulled linux-2.6-block/for-next into mainline.
-> 
-> The build breaks, the issue is known [1] (but I didnt see a patch):
 
-Just a verbal patch, yes.
+On 9/17/10 9:37 AM, Nicholas A. Bellinger wrote:
+> On Fri, 2010-09-17 at 10:57 -0400, James Bottomley wrote:
+>> On Fri, 2010-09-17 at 16:22 +0200, Andi Kleen wrote:
+>>>> I don't disagree with the idea of removing it, especially as it has so
+>>>> few users, but replacing the host lock with an atomic here would still
+>>>> vastly reduce the contention, which is the initial complaint.  The
+>>>
+>>> Actually the complaint is the overhead of the spin lock. This can be 
+>>> either caused
+>>> by contention or by cache line bounce time.
+>>
+>> The original complaint was contention.  My desire is to reduce the
+>> locked path coverage, so I saw an opportunity.
+>>
+>> What I was actually thinking of for the atomic is that we'd let it range
+>> [1..INT_MAX] so a zero was an indicator of no use of this.  Then the
+>> actual code could become
+>>
+>> if (atomic_read(x)) {
+>> 	do {
+>> 		y = atomic_add_return(1, x);
+>> 	} while (y == 0);
+>> }
 
-> [ build.log ]
-> ...
-> /home/sd/src/linux-2.6/linux-2.6.36-rc4/debian/build/source_i386_none/fs/ocfs2/file.c:201:
-> error: ‘BLKDEV_IFL_WAIT’ undeclared (first use in this function)
-> /home/sd/src/linux-2.6/linux-2.6.36-rc4/debian/build/source_i386_none/fs/ocfs2/file.c:201:
-> error: (Each undeclared identifier is reported only once
-> /home/sd/src/linux-2.6/linux-2.6.36-rc4/debian/build/source_i386_none/fs/ocfs2/file.c:201:
-> error: for each function it appears in.)
-> /home/sd/src/linux-2.6/linux-2.6.36-rc4/debian/build/source_i386_none/fs/ocfs2/file.c:201:
-> error: too many arguments to function ‘blkdev_issue_flush’
->   CC [M]  net/rxrpc/ar-error.o
->   CC [M]  drivers/scsi/scsi_error.o
-> make[3]: *** [sub-make] Error 2
-> make[2]: *** [all] Error 2
-> 
-> Regards,
-> - Sedat -
-> 
-> [1] http://www.spinics.net/lists/linux-next/msg11970.html
-> 
-> P.S.: Is there an email-address for linux-next (did not see in MAINTAINERS)?
+A tiny trick I like to use is to start a serial number at 1 and
+increment by 2 so its always odd and then never wraps to 0.
+That eliminates the check for 0 (and the curly brackets).
 
-http://vger.kernel.org/vger-lists.html#linux-next
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+> The conversion of struct scsi_cmnd->serial_number to atomic_t and the
+> above code for scsi_cmd_get_serial() sounds perfectly reasonable to me.
+> 
+> I will take a look at this conversion and respin a complete set of
+> patches for review a bit later today.
+> 
+> Thanks!
+> 
+> --nab
+> 
+>>
+>> So "fast" cards not using the serial number set a zero there (we'd
+>> default initialise to one), the line is shared so no bouncing (because
+>> it's never updated).  This should satisfy everyone.
+>>
+>>>> contention occurs because the host lock is so widely used for other
+>>>> things.  The way to reduce that contention is firstly to reduce the
+>>>> length of code covered by the lock and also reduce the actual number of
+>>>> places where the lock is taken.  Compared with host lock's current vast
+>>>> footprint, and atomic here is tiny.
+>>>
+>>> That assumes that it's contention that is the problem and not simply 
+>>> bounce time.
+>>
+>> That's what the patch and data that started this whole thread showed,
+>> yes ... but I think actual bounce in the spinlock is also a problem ...
+>> we just don't have data to show it.
+>>
+>> James
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
