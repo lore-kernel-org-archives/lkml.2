@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab0IQAlT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 20:41:19 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:35560 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754091Ab0IQAlS (ORCPT
+	id S1755007Ab0IQAuz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 20:50:55 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:51143 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753997Ab0IQAuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 20:41:18 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Arve =?iso-8859-1?Q?Hj=F8nnev?= =?iso-8859-1?Q?=E5g?= 
-	<arve@android.com>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: PM / Wakeup: Introduce wakeup source objects and event statistics (v2)
-Organization: Deep Root Systems, LLC
-References: <Pine.LNX.4.44L0.1009101119060.1651-100000@iolanthe.rowland.org>
-	<201009110029.31843.rjw@sisk.pl> <201009150031.36070.rjw@sisk.pl>
-Date: Thu, 16 Sep 2010 17:41:14 -0700
-In-Reply-To: <201009150031.36070.rjw@sisk.pl> (Rafael J. Wysocki's message of
-	"Wed, 15 Sep 2010 00:31:35 +0200")
-Message-ID: <87eict5hhx.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	Thu, 16 Sep 2010 20:50:54 -0400
+Message-Id: <1284684653.10161.1395434085@webmail.messagingengine.com>
+X-Sasl-Enc: rUcIa4Lui6oCm93zstogAlBPplgBnvCoDWC0OcgUutBW 1284684653
+From: "Robert Mueller" <robm@fastmail.fm>
+To: "Christoph Lameter" <cl@linux.com>,
+        "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, "Bron Gondwana" <brong@fastmail.fm>,
+        "linux-mm" <linux-mm@kvack.org>, "Mel Gorman" <mel@csn.ul.ie>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: MessagingEngine.com Webmail Interface
+References: <1284349152.15254.1394658481@webmail.messagingengine.com>
+ <20100916184240.3BC9.A69D9226@jp.fujitsu.com>
+ <alpine.DEB.2.00.1009161153210.22849@router.home>
+Subject: Re: Default zone_reclaim_mode = 1 on NUMA kernel is bad for
+ file/email/web servers
+In-Reply-To: <alpine.DEB.2.00.1009161153210.22849@router.home>
+Reply-To: robm@fastmail.fm
+Date: Fri, 17 Sep 2010 10:50:53 +1000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Rafael J. Wysocki" <rjw@sisk.pl> writes:
 
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> Subject: PM / Wakeup: Introduce wakeup source objects and event statistics (v2)
+> > > Having very little knowledge of what this actually does, I'd just
+> > > like to point out that from a users point of view, it's really
+> > > annoying for your machine to be crippled by a default kernel
+> > > setting that's pretty obscure.
 >
-> Introduce struct wakeup_source for representing system wakeup sources
-> within the kernel and for collecting statistics related to them.
-> Make the recently introduced helper functions pm_wakeup_event(),
-> pm_stay_awake() and pm_relax() use struct wakeup_source objects
-> internally, so that wakeup statistics associated with wakeup devices
-> can be collected and reported in a consistent way (the definition of
-> pm_relax() is changed, which is harmless, because this function is
-> not called directly by anyone yet).  Introduce new wakeup-related
-> sysfs device attributes in /sys/devices/.../power for reporting the
-> device wakeup statistics.
+> Thats an issue of the NUMA BIOS information. Kernel defaults to zone
+> reclaim if the cost of accessing remote memory vs local memory crosses
+> a certain threshhold which usually impacts performance.
+
+We use what I thought was a fairly standard server type motherboard and
+CPU combination, and I was surprised that things were so badly broken
+for a standard usage scenario with a vanilla kernel with a default
+configuration.
+
+I'd point out that the cost of a remote memory access is many, many
+orders of magnitude less than having to go back to disk! The problem is
+that with zone_reclaim_mode = 1 it seems lots of memory was being wasted
+that could be used as disk cache.
+
+> > Yes, sadly intel motherboard turn on zone_reclaim_mode by
+> > default. and current zone_reclaim_mode doesn't fit file/web
+> > server usecase ;-)
 >
-> Change the global wakeup events counters event_count and
-> events_in_progress into atomic variables, so that it is not necessary
-> to acquire a global spinlock in pm_wakeup_event(), pm_stay_awake()
-> and pm_relax(), which should allow us to avoid lock contention in
-> these functions on SMP systems with many wakeup devices.
->
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> Or one could also say that the web servers are not designed to
+> properly distribute the load on a complex NUMA based memory
+> architecture of todays Intel machines.
 
-Hi Rafael,
+I don't think this is any fault of how the software works. It's a *very*
+standard "pre-fork child processes, allocate incoming connections to a
+child process, open and mmap one or more files to read data from them".
+That's not exactly a weird programming model, and it's bad that the
+kernel is handling that case very badly with everything default.
 
-This looks like a really useful feature.  Was doing some experiments
-with this on OMAP, and found a minor cut-and-paste bug in the
-Documentation file:
+> So would enabling memory interleave in the BIOS to get the machine to
+> not consider the memory distances but average out the NUMA effects.
 
-[...]
+We'll see if the BIOS has an option for that and try it out. I'd like to
+document for others that encounter this problem ways around it.
 
-> +What:		/sys/devices/.../power/wakeup_max_time_ms
-> +Date:		September 2010
-> +Contact:	Rafael J. Wysocki <rjw@sisk.pl>
-> +Description:
-> +		The /sys/devices/.../wakeup_max_time_ms attribute contains
-> +		the maximum time of processing a single wakeup event associated
-> +		with the device, in milliseconds.  This attribute is read-only.
-> +		If the device is not enabled to wake up the system from sleep
-> +		states, this attribute is empty.
-> +
-> +What:		/sys/devices/.../power/wakeup_max_time_ms
-                                                      ^^^
-s/max/last/ for this one.
-
-> +Date:		September 2010
-> +Contact:	Rafael J. Wysocki <rjw@sisk.pl>
-> +Description:
-> +		The /sys/devices/.../wakeup_last_time_ms attribute contains
-> +		the value of the monotonic clock corresponding to the time of
-> +		signaling the last wakeup event associated with the device, in
-> +		milliseconds.  This attribute is read-only.  If the device is
-> +		not enabled to wake up the system from sleep states, this
-> +		attribute is empty.
-
-Kevin
+Rob
