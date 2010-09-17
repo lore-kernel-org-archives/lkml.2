@@ -1,47 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755751Ab0IQDUr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 23:20:47 -0400
-Received: from verein.lst.de ([213.95.11.210]:38933 "EHLO verein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753290Ab0IQDUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 23:20:46 -0400
-Date: Fri, 17 Sep 2010 05:20:21 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        James Smart <james.smart@emulex.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH 1/8] scsi: Drop struct Scsi_Host->host_lock around SHT->queuecommand()
-Message-ID: <20100917032021.GB25217@lst.de>
-References: <1284676529-10756-1-git-send-email-nab@linux-iscsi.org> <1284691571.26423.50.camel@mulgrave.site>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284691571.26423.50.camel@mulgrave.site>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+	id S1755660Ab0IQDhc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 23:37:32 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:49349 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751673Ab0IQDhb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 23:37:31 -0400
+Message-ID: <4C92E283.4090802@cn.fujitsu.com>
+Date: Fri, 17 Sep 2010 11:37:39 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: ykzhao <yakui.zhao@intel.com>
+CC: Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        "Theodore Ts'o" <tytso@mit.edu>, Chris Mason <chris.mason@oracle.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Btrfs <linux-btrfs@vger.kernel.org>,
+        Linux Ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH] x86_64/lib: improve the performance of memmove
+References: <56957.91.60.149.91.1284619705.squirrel@www.firstfloor.org>	 <4C91C44F.40700@cn.fujitsu.com> <1284684918.13201.114.camel@localhost.localdomain>
+In-Reply-To: <1284684918.13201.114.camel@localhost.localdomain>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 10:46:11PM -0400, James Bottomley wrote:
-> So at least from where I stand, my object is to reduce the number of
-> times we take and release the lock, which this doesn't do.  As I said
-> before: we need to figure out the rest, which likely includes an atomic
-> for the serial number (which is almost unused).  I think the check
-> against SHOST_DEL is fine unlocked.
+On Fri, 17 Sep 2010 08:55:18 +0800, ykzhao wrote:
+> On Thu, 2010-09-16 at 15:16 +0800, Miao Xie wrote:
+>> On Thu, 16 Sep 2010 08:48:25 +0200 (cest), Andi Kleen wrote:
+>>>> When the dest and the src do overlap and the memory area is large, memmove
+>>>> of
+>>>> x86_64 is very inefficient, and it led to bad performance, such as btrfs's
+>>>> file
+>>>> deletion performance. This patch improved the performance of memmove on
+>>>> x86_64
+>>>> by using __memcpy_bwd() instead of byte copy when doing large memory area
+>>>> copy
+>>>> (len>   64).
+>>>
+>>>
+>>> I still don't understand why you don't simply use a backwards
+>>> string copy (with std) ? That should be much simpler and
+>>> hopefully be as optimized for kernel copies on recent CPUs.
+>>
+>> But according to the comment of memcpy, some CPUs don't support "REP" instruction,
+> 
+> Where do you find that the "REP" instruction is not supported on some
+> CPUs? The comment in arch/x86/lib/memcpy_64.s only states that some CPUs
+> will run faster when using string copy instruction.
 
+Sorry! I misread the comment.
 
-The check by itself for sure is.  But I wonder whether we make any
-assumptions about it not changing while we are in ->queuecommand, which
-isn't nessecarily the case after this patch.
+>> so I think we must implement a backwards string copy by other method for those CPUs,
+>> But that implement is complex, so I write it as a function -- __memcpy_bwd().
+> 
+> Will you please look at tip/x86/ tree(mem branch)? The memory copy on
+> x86_64 is already optimized.
+
+Thanks for your reminding! It is very helpful.
+Miao
+ 
+> thanks.
+>      Yakui
+>>
+>> Thanks!
+>> Miao
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
+> 
+
