@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532Ab0IQREN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 13:04:13 -0400
-Received: from kroah.org ([198.145.64.141]:43394 "EHLO coco.kroah.org"
+	id S1753292Ab0IQREL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 13:04:11 -0400
+Received: from kroah.org ([198.145.64.141]:43398 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752314Ab0IQREJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 13:04:09 -0400
-Date: Fri, 17 Sep 2010 10:01:33 -0700
+	id S1752191Ab0IQREK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 13:04:10 -0400
+Date: Fri, 17 Sep 2010 10:01:49 -0700
 From: Greg KH <greg@kroah.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Ian Kent <raven@themaw.net>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, autofs@linux.kernel.org
-Subject: Re: [PATCH 04/12] BKL: Remove BKL from autofs4
-Message-ID: <20100917170133.GA13570@kroah.com>
-References: <1284659185-8942-1-git-send-email-arnd@arndb.de>
- <201009161955.48854.arnd@arndb.de>
- <1284687191.3083.8.camel@localhost>
- <201009170917.29522.arnd@arndb.de>
+To: David Miller <davem@davemloft.net>
+Cc: alan@linux.intel.com, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, drosenberg@vsecurity.com
+Subject: Re: [PATCH 0/3] Fix the TIOCGICOUNT problem for good
+Message-ID: <20100917170149.GB13570@kroah.com>
+References: <20100916171747.25987.33573.stgit@localhost.localdomain>
+ <20100916.215639.172549193.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201009170917.29522.arnd@arndb.de>
+In-Reply-To: <20100916.215639.172549193.davem@davemloft.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 17, 2010 at 09:17:29AM +0200, Arnd Bergmann wrote:
-> On Friday 17 September 2010 03:33:11 Ian Kent wrote:
-> > On Thu, 2010-09-16 at 19:55 +0200, Arnd Bergmann wrote:
-> > > Ah, sorry about this. I looked at the wrong MAINTAINERS entry.
-> > > 
-> > > I also forgot to Cc you about autofs3, adding more to the confusion. ;)
-> > > 
-> > > Do you think the time has come to move autofs3 to drivers/staging
-> > > as we deprecate the BKL?
+On Thu, Sep 16, 2010 at 09:56:39PM -0700, David Miller wrote:
+> From: Alan Cox <alan@linux.intel.com>
+> Date: Thu, 16 Sep 2010 18:21:06 +0100
+> 
+> > Remembering to clear fields is something driver authors are simply never
+> > going to remember to get right every new driver. Instead take the problem
+> > away from them and give them a simple interface to do the job.
 > > 
-> > Umm ... what's this process, the drivers/staging?
+> > ---
+> > 
+> > Alan Cox (3):
+> >       tty: icount changeover for other main devices
+> >       tty: Convert the USB drivers to the new icount interface
+> >       tty: Make tiocgicount a handler
 > 
-> We use drivers/staging now both for getting code into the kernel
-> and for getting it out of there. Moving autofs3 to drivers/staging/autofs/
-> would serve as a last warning to everyone using it, but users could
-> still use it while it's there. If anyone is interested, they can submit
-> fixes (BKL removal and whatever else is needed) to get it back into
-> the mainline. If it doesn't happen, Greg would finally remove it two
-> kernel releases later.
-> 
-> My hope is that we can move all modules that still use the BKL after
-> 2.6.37 to drivers/staging, unless we have someone already working
-> on the patches.
+> This is a good plan for the next merge window, but for the current
+> -rc series and -stable we'd better just fix the individual cases.
 
-That sounds fine with me, send me patches whenever you want to and I
-will gladly take them.
+Agreed, that's the plan now.
 
 thanks,
 
