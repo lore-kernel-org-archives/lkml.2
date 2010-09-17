@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755482Ab0IQPr1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 11:47:27 -0400
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:19750 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754133Ab0IQPr0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 11:47:26 -0400
-From: Dmitry Torokhov <dtor@vmware.com>
-Organization: VMware, Inc.
-To: Chetan Loke <chetanloke@gmail.com>
-Subject: Re: additional esx events (was Re: [PATCH] VMware Balloon: rename module)
-Date: Fri, 17 Sep 2010 08:47:26 -0700
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4+; KDE/4.4.5; x86_64; ; )
-Cc: "pv-drivers@vmware.com" <pv-drivers@vmware.com>
-References: <AANLkTimFUgZoKBXk_weOG_AMtW8Y0g6Q8-QvH8hnfv8z@mail.gmail.com>
-In-Reply-To: <AANLkTimFUgZoKBXk_weOG_AMtW8Y0g6Q8-QvH8hnfv8z@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009170847.26491.dtor@vmware.com>
+	id S1755352Ab0IQPuJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 11:50:09 -0400
+Received: from mail.tpi.com ([70.99.223.143]:4913 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753258Ab0IQPuI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 11:50:08 -0400
+X-Greylist: delayed 1752 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Sep 2010 11:50:08 EDT
+From: Tim Gardner <tim.gardner@canonical.com>
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org, Tim Gardner <tim.gardner@canonical.com>,
+        Brett Rudley <brudley@broadcom.com>,
+        Henry Ptasinski <henryp@broadcom.com>, Nohee Ko <noheek@broadcom.com>
+Subject: [PATCH] staging: brcm80211: Make CFLAGS explicit
+Date: Fri, 17 Sep 2010 09:20:10 -0600
+Message-Id: <1284736810-2940-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[BCC-ing akpm and LKML since they are probably not interested in ESX too much]
+Its too easy to confuse the obscurely named WLC_LOW/WLC_HIGH CFLAG
+macros.
 
-On Thursday, September 16, 2010 07:37:24 pm Chetan Loke wrote:
-> On Thu, Sep 16, 2010 at 8:31 PM, Dmitry Torokhov <dtor@vmware.com> wrote:
-> 
-> > There is vSphere SDK that shoudl allow you to connect to the hostd and
-> > get more information about the host/VC:
-> > 
-> > http://www.vmware.com/support/developer/viperltoolkit/
-> 
-> perl API? why? vmware_balloon driver already has the hooks. So a
-> parallel driver can have the same
-> basic implementation. I'm not looking for any fancy notifications.
-> Even if we emit sysfs nodes, it's
-> perfectly fine. It will be a one-way read only channel.I am willing to test
-> it.
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+Cc: Brett Rudley <brudley@broadcom.com>
+Cc: Henry Ptasinski <henryp@broadcom.com>
+Cc: Nohee Ko <noheek@broadcom.com>
+---
+ drivers/staging/brcm80211/Makefile |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-I do not understand why we should try jamming into the kernel something that
-can be implemented in userspace. Balloon is in the kernel because it is
-privileged operation that affects correctness of the VM handling (if we are
-told that certain page can be ballooned and it was a lie VM may crash), but
-monitoring-type application can and should use different communication
-channels.
-
-Thanks.
-
+diff --git a/drivers/staging/brcm80211/Makefile b/drivers/staging/brcm80211/Makefile
+index 05a4103..7a77e7f 100644
+--- a/drivers/staging/brcm80211/Makefile
++++ b/drivers/staging/brcm80211/Makefile
+@@ -15,8 +15,9 @@
+ # OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+ # CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ 
+-EXTRA_CFLAGS := -DBCMDBG -DWLC_HIGH -DSTA -DWME -DWL11N -DDBAND -DBCMDMA32 -DBCMNVRAMR -Idrivers/staging/brcm80211/sys -Idrivers/staging/brcm80211/phy -Idrivers/staging/brcm80211/util -Idrivers/staging/brcm80211/include -Wall -Wstrict-prototypes -Werror -Wmissing-prototypes
++EXTRA_CFLAGS := -DBCMDBG -DWME -DWL11N -DDBAND -DBCMDMA32 -DBCMNVRAMR -Idrivers/staging/brcm80211/sys -Idrivers/staging/brcm80211/phy -Idrivers/staging/brcm80211/util -Idrivers/staging/brcm80211/include -Wall -Wstrict-prototypes -Werror -Wmissing-prototypes
+ 
++USB_CFLAGS := -DWLC_HIGH
+ PCI_CFLAGS := -DWLC_LOW
+ 
+ BRCM80211_OFILES := \
 -- 
-Dmitry
+1.7.0.4
+
