@@ -1,115 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755395Ab0IQAxX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Sep 2010 20:53:23 -0400
-Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:58584 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754107Ab0IQAxW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Sep 2010 20:53:22 -0400
-Date: Fri, 17 Sep 2010 10:52:27 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Yang Ruirui <ruirui.r.yang@tieto.com>
-Cc: Alex Elder <aelder@sgi.com>, xfs@oss.sgi.com, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, hch@infradead.org
-Subject: Re: -mm: xfs lockdep warning
-Message-ID: <20100917005227.GJ24409@dastard>
-References: <201009161546.16909.ruirui.r.yang@tieto.com>
+	id S1755454Ab0IQAzU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Sep 2010 20:55:20 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:36268 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754091Ab0IQAzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Sep 2010 20:55:19 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Subject: Re: PM / Wakeup: Introduce wakeup source objects and event statistics (v2)
+Date: Fri, 17 Sep 2010 02:54:19 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <Pine.LNX.4.44L0.1009101119060.1651-100000@iolanthe.rowland.org> <201009150031.36070.rjw@sisk.pl> <87eict5hhx.fsf@deeprootsystems.com>
+In-Reply-To: <87eict5hhx.fsf@deeprootsystems.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201009161546.16909.ruirui.r.yang@tieto.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009170254.19753.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 03:46:16PM +0800, Yang Ruirui wrote:
-> Hi,
+On Friday, September 17, 2010, Kevin Hilman wrote:
+> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
 > 
-> I got following lockdep warning, xfs related?
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > Subject: PM / Wakeup: Introduce wakeup source objects and event statistics (v2)
+> >
+> > Introduce struct wakeup_source for representing system wakeup sources
+> > within the kernel and for collecting statistics related to them.
+> > Make the recently introduced helper functions pm_wakeup_event(),
+> > pm_stay_awake() and pm_relax() use struct wakeup_source objects
+> > internally, so that wakeup statistics associated with wakeup devices
+> > can be collected and reported in a consistent way (the definition of
+> > pm_relax() is changed, which is harmless, because this function is
+> > not called directly by anyone yet).  Introduce new wakeup-related
+> > sysfs device attributes in /sys/devices/.../power for reporting the
+> > device wakeup statistics.
+> >
+> > Change the global wakeup events counters event_count and
+> > events_in_progress into atomic variables, so that it is not necessary
+> > to acquire a global spinlock in pm_wakeup_event(), pm_stay_awake()
+> > and pm_relax(), which should allow us to avoid lock contention in
+> > these functions on SMP systems with many wakeup devices.
+> >
+> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> Hi Rafael,
+> 
+> This looks like a really useful feature.
 
-It's a false positive.
+Great!
 
-> [  604.416384] =================================
-> [  604.416625] [ INFO: inconsistent lock state ]
-> [  604.416625] 2.6.36-rc4-mm1 #2
-> [  604.416625] ---------------------------------
-> [  604.416625] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
-> [  604.416625] kswapd0/418 [HC0[0]:SC0[0]:HE1:SE1] takes:
-> [  604.416625]  (&(&ip->i_iolock)->mr_lock#2){++++?+}, at: [<ffffffff812046df>] xfs_ilock+0x94/0x137
-> [  604.416625] {RECLAIM_FS-ON-W} state was registered at:
-> [  604.416625]   [<ffffffff81065571>] mark_held_locks+0x4d/0x6b
-> [  604.416625]   [<ffffffff81065641>] lockdep_trace_alloc+0xb2/0xd7
-> [  604.416625]   [<ffffffff810ee215>] kmem_cache_alloc+0x2a/0x126
-> [  604.416625]   [<ffffffff81225d5b>] kmem_zone_alloc+0x67/0xaf
-> [  604.416625]   [<ffffffff81225db2>] kmem_zone_zalloc+0xf/0x30
-> [  604.416625]   [<ffffffff8121dd73>] _xfs_trans_alloc+0x22/0x5f
-> [  604.416625]   [<ffffffff8121ef9f>] xfs_trans_alloc+0x9d/0xaa
-> [  604.416625]   [<ffffffff8122520c>] xfs_setattr+0x3d2/0x8b4
-> [  604.416625]   [<ffffffff8122eea4>] xfs_vn_setattr+0x16/0x1a
-> [  604.416625]   [<ffffffff81106ec7>] notify_change+0x18f/0x27d
-> [  604.416625]   [<ffffffff810f1de1>] do_truncate+0x6a/0x88
-> [  604.416625]   [<ffffffff810fd7ff>] do_last+0x588/0x58f
-> [  604.416625]   [<ffffffff810fda43>] do_filp_open+0x23d/0x5db
-> [  604.416625]   [<ffffffff810f1055>] do_sys_open+0x5a/0xf0
-> [  604.416625]   [<ffffffff810f1114>] sys_open+0x1b/0x1d
-> [  604.416625]   [<ffffffff81002b82>] system_call_fastpath+0x16/0x1b
-> [  604.416625] irq event stamp: 144829
-> [  604.416625] hardirqs last  enabled at (144829): [<ffffffff815c96ba>] _raw_spin_unlock_irqrestore+0x46/0x55
-> [  604.416625] hardirqs last disabled at (144828): [<ffffffff815c910b>] _raw_spin_lock_irqsave+0x24/0x58
-> [  604.416625] softirqs last  enabled at (142796): [<ffffffff8103fc97>] __do_softirq+0x1b6/0x1c7
-> [  604.416625] softirqs last disabled at (142791): [<ffffffff81003afc>] call_softirq+0x1c/0x28
-> [  604.416625] 
-> [  604.416625] other info that might help us debug this:
-> [  604.416625] 1 lock held by kswapd0/418:
-> [  604.416625]  #0:  (shrinker_rwsem){++++..}, at: [<ffffffff810c682c>] shrink_slab+0x38/0x164
-> [  604.416625] 
-> [  604.416625] stack backtrace:
-> [  604.416625] Pid: 418, comm: kswapd0 Not tainted 2.6.36-rc4-mm1 #2
-> [  604.416625] Call Trace:
-> [  604.416625]  [<ffffffff810652b0>] valid_state+0x18b/0x19e
-> [  604.416625]  [<ffffffff8100db7b>] ? save_stack_trace+0x2a/0x48
-> [  604.416625]  [<ffffffff81065ca9>] ? check_usage_forwards+0x0/0x7e
-> [  604.416625]  [<ffffffff810653c9>] mark_lock+0x106/0x261
-> [  604.416625]  [<ffffffff81364cef>] ? radix_tree_tag_clear+0xa5/0x108
-> [  604.416625]  [<ffffffff8106676f>] __lock_acquire+0x3bb/0xe1f
-> [  604.416625]  [<ffffffff810671c4>] ? __lock_acquire+0xe10/0xe1f
-> [  604.416625]  [<ffffffff8100db7b>] ? save_stack_trace+0x2a/0x48
-> [  604.416625]  [<ffffffff810671c4>] ? __lock_acquire+0xe10/0xe1f
-> [  604.416625]  [<ffffffff81364ecd>] ? radix_tree_delete+0xad/0x1b7
-> [  604.416625]  [<ffffffff810672ab>] lock_acquire+0xd8/0x104
-> [  604.416625]  [<ffffffff812046df>] ? xfs_ilock+0x94/0x137
-> [  604.416625]  [<ffffffff810586cf>] down_write_nested+0x4a/0x6d
-> [  604.416625]  [<ffffffff812046df>] ? xfs_ilock+0x94/0x137
-> [  604.416625]  [<ffffffff812046df>] xfs_ilock+0x94/0x137
-> [  604.416625]  [<ffffffff81231c9f>] xfs_reclaim_inode+0x277/0x2c1
-> [  604.416625]  [<ffffffff81232608>] xfs_inode_ag_walk+0x8e/0xe9
-> [  604.416625]  [<ffffffff81231a28>] ? xfs_reclaim_inode+0x0/0x2c1
-> [  604.416625]  [<ffffffff812326c7>] xfs_inode_ag_iterator+0x64/0xc3
-> [  604.416625]  [<ffffffff81231a28>] ? xfs_reclaim_inode+0x0/0x2c1
-> [  604.416625]  [<ffffffff81232762>] xfs_reclaim_inode_shrink+0x3c/0x83
-> [  604.416625]  [<ffffffff810c68d5>] shrink_slab+0xe1/0x164
-> [  604.416625]  [<ffffffff810c6f3c>] kswapd+0x5e4/0x864
-> [  604.416625]  [<ffffffff8105499e>] ? autoremove_wake_function+0x0/0x38
-> [  604.416625]  [<ffffffff810c6958>] ? kswapd+0x0/0x864
-> [  604.416625]  [<ffffffff8105452d>] kthread+0x81/0x89
-> [  604.416625]  [<ffffffff81003a04>] kernel_thread_helper+0x4/0x10
-> [  604.416625]  [<ffffffff81096ee2>] ? watchdog+0x0/0x281
-> [  604.416625]  [<ffffffff815c9ad0>] ? restore_args+0x0/0x30
-> [  604.416625]  [<ffffffff810544ac>] ? kthread+0x0/0x89
-> [  604.416625]  [<ffffffff81003a00>] ? kernel_thread_helper+0x0/0x10
+> Was doing some experiments with this on OMAP, and found a minor
+> cut-and-paste bug in the Documentation file:
+> 
+> [...]
+> 
+> > +What:		/sys/devices/.../power/wakeup_max_time_ms
+> > +Date:		September 2010
+> > +Contact:	Rafael J. Wysocki <rjw@sisk.pl>
+> > +Description:
+> > +		The /sys/devices/.../wakeup_max_time_ms attribute contains
+> > +		the maximum time of processing a single wakeup event associated
+> > +		with the device, in milliseconds.  This attribute is read-only.
+> > +		If the device is not enabled to wake up the system from sleep
+> > +		states, this attribute is empty.
+> > +
+> > +What:		/sys/devices/.../power/wakeup_max_time_ms
+>                                                       ^^^
+> s/max/last/ for this one.
 
-Christoph, this implies an inode that has been marked for reclaim
-that has not passed through xfs_fs_evict_inode() after being
-initialised. If it went through the eviction process, the iolock
-would have been re-initialised to a different context. Can you think
-of any path that can get here without going through ->evict? I can't
-off the top of my head...
+Ah, thanks a lot.
 
-Cheers,
+> > +Date:		September 2010
+> > +Contact:	Rafael J. Wysocki <rjw@sisk.pl>
+> > +Description:
+> > +		The /sys/devices/.../wakeup_last_time_ms attribute contains
+> > +		the value of the monotonic clock corresponding to the time of
+> > +		signaling the last wakeup event associated with the device, in
+> > +		milliseconds.  This attribute is read-only.  If the device is
+> > +		not enabled to wake up the system from sleep states, this
+> > +		attribute is empty.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Rafael
