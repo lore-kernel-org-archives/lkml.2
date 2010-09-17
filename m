@@ -1,85 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966Ab0IQJeJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 05:34:09 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:48971 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751657Ab0IQJeH (ORCPT
+	id S1753905Ab0IQJe5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 05:34:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55269 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752412Ab0IQJeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 05:34:07 -0400
-Message-Id: <20100917093009.360420946@chello.nl>
+	Fri, 17 Sep 2010 05:34:08 -0400
+Message-Id: <20100917093009.308453028@chello.nl>
 User-Agent: quilt/0.47-1
-Date: Fri, 17 Sep 2010 11:28:47 +0200
+Date: Fri, 17 Sep 2010 11:28:46 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
-        Robert Richter <robert.richter@amd.com>,
+        Robert Richter <robert.richter@amd.com>, Tejun Heo <tj@kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 3/6] perf_events: Fix broken event grouping
+Subject: [PATCH 2/6] perf: Avoid RCU vs preemption assumptions
 References: <20100917092844.651383640@chello.nl>
-Content-Disposition: inline; filename=stephane-perf_events-fix_broken_event_grouping.patch
+Content-Disposition: inline; filename=perf-fix-preempt-iteration.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Author: Stephane Eranian <eranian@google.com>
+The per-pmu per-cpu context patch converted things from get_cpu_var() to
+this_cpu_ptr(), but that only works if rcu_read_lock() actually disables
+preemption, and since there is no such guarantee, we need to fix that.
 
-Events were not grouped anymore. The reason was that in
-perf_event_open(), the field event->group_leader was
-initialized before the function looked up the group_fd
-to find the event leader. This patch fixes this by
-reordering the code correctly.
+Use the newly introduced {get,put}_cpu_ptr().
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: Tejun Heo <tj@kernel.org>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <4c90ea16.21edd80a.4b94.2495@mx.google.com>
 ---
- kernel/perf_event.c |   15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+ kernel/perf_event.c |   18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
 
 Index: linux-2.6/kernel/perf_event.c
 ===================================================================
 --- linux-2.6.orig/kernel/perf_event.c
 +++ linux-2.6/kernel/perf_event.c
-@@ -5543,17 +5543,11 @@ SYSCALL_DEFINE5(perf_event_open,
- 	if (event_fd < 0)
- 		return event_fd;
+@@ -3814,18 +3814,20 @@ static void perf_event_task_event(struct
  
--	event = perf_event_alloc(&attr, cpu, group_leader, NULL, NULL);
--	if (IS_ERR(event)) {
--		err = PTR_ERR(event);
--		goto err_fd;
--	}
--
- 	if (group_fd != -1) {
- 		group_leader = perf_fget_light(group_fd, &fput_needed);
- 		if (IS_ERR(group_leader)) {
- 			err = PTR_ERR(group_leader);
--			goto err_alloc;
-+			goto err_fd;
+ 	rcu_read_lock();
+ 	list_for_each_entry_rcu(pmu, &pmus, entry) {
+-		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
++		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
+ 		perf_event_task_ctx(&cpuctx->ctx, task_event);
+ 
+ 		ctx = task_event->task_ctx;
+ 		if (!ctx) {
+ 			ctxn = pmu->task_ctx_nr;
+ 			if (ctxn < 0)
+-				continue;
++				goto next;
+ 			ctx = rcu_dereference(current->perf_event_ctxp[ctxn]);
  		}
- 		group_file = group_leader->filp;
- 		if (flags & PERF_FLAG_FD_OUTPUT)
-@@ -5562,6 +5556,12 @@ SYSCALL_DEFINE5(perf_event_open,
- 			group_leader = NULL;
+ 		if (ctx)
+ 			perf_event_task_ctx(ctx, task_event);
++next:
++		put_cpu_ptr(pmu->pmu_cpu_context);
  	}
+ 	rcu_read_unlock();
+ }
+@@ -3947,16 +3949,18 @@ static void perf_event_comm_event(struct
  
-+	event = perf_event_alloc(&attr, cpu, group_leader, NULL, NULL);
-+	if (IS_ERR(event)) {
-+		err = PTR_ERR(event);
-+		goto err_fd;
-+	}
-+
- 	/*
- 	 * Special case software events and allow them to be part of
- 	 * any hardware group.
-@@ -5643,7 +5643,6 @@ SYSCALL_DEFINE5(perf_event_open,
- 	put_ctx(ctx);
- err_group_fd:
- 	fput_light(group_file, fput_needed);
--err_alloc:
- 	free_event(event);
- err_fd:
- 	put_unused_fd(event_fd);
+ 	rcu_read_lock();
+ 	list_for_each_entry_rcu(pmu, &pmus, entry) {
+-		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
++		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
+ 		perf_event_comm_ctx(&cpuctx->ctx, comm_event);
+ 
+ 		ctxn = pmu->task_ctx_nr;
+ 		if (ctxn < 0)
+-			continue;
++			goto next;
+ 
+ 		ctx = rcu_dereference(current->perf_event_ctxp[ctxn]);
+ 		if (ctx)
+ 			perf_event_comm_ctx(ctx, comm_event);
++next:
++		put_cpu_ptr(pmu->pmu_cpu_context);
+ 	}
+ 	rcu_read_unlock();
+ }
+@@ -4130,19 +4134,21 @@ static void perf_event_mmap_event(struct
+ 
+ 	rcu_read_lock();
+ 	list_for_each_entry_rcu(pmu, &pmus, entry) {
+-		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
++		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
+ 		perf_event_mmap_ctx(&cpuctx->ctx, mmap_event,
+ 					vma->vm_flags & VM_EXEC);
+ 
+ 		ctxn = pmu->task_ctx_nr;
+ 		if (ctxn < 0)
+-			continue;
++			goto next;
+ 
+ 		ctx = rcu_dereference(current->perf_event_ctxp[ctxn]);
+ 		if (ctx) {
+ 			perf_event_mmap_ctx(ctx, mmap_event,
+ 					vma->vm_flags & VM_EXEC);
+ 		}
++next:
++		put_cpu_ptr(pmu->pmu_cpu_context);
+ 	}
+ 	rcu_read_unlock();
+ 
 
 
