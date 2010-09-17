@@ -1,155 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755020Ab0IQXEa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 19:04:30 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45072
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752472Ab0IQXE3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 19:04:29 -0400
-Date: Fri, 17 Sep 2010 16:04:47 -0700 (PDT)
-Message-Id: <20100917.160447.146098756.davem@davemloft.net>
-To: remi@remlab.net
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        remi.denis-courmont@nokia.com, ebiederm@xmission.com,
-        stable@kernel.org
-Subject: Re: [PATCH stable-2.6.32] Phonet: disable network namespace support
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1284763006-22075-1-git-send-email-remi@remlab.net>
-References: <1284763006-22075-1-git-send-email-remi@remlab.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1754759Ab0IQXGZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 19:06:25 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:34404 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752168Ab0IQXGY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 19:06:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=XKwCIiYiPuwaV5psmuox5mi0BO9wdAJk+FoEzuAXtUB7qxgvcweS2oDNWXd+/Z1/7l
+         XQCkCgyHuKy1+LmZakKVrXSGx//vaqwPGe3709KTxcDQt8Sy0Gg6b3o3cBNc7VG0vPfH
+         MFE4SgLEQRW1OXzQ/EyiLtRnuV30dn3rv7mtw=
+Subject: Re: [git pull] FireWire fixes
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+In-Reply-To: <tkrat.b186ea3830d71c45@s5r6.in-berlin.de>
+References: <tkrat.b186ea3830d71c45@s5r6.in-berlin.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 18 Sep 2010 01:06:13 +0200
+Message-ID: <1284764773.2804.7.camel@maxim-laptop>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rémi Denis-Courmont <remi@remlab.net>
-Date: Sat, 18 Sep 2010 01:36:46 +0300
+On Fri, 2010-09-17 at 14:47 +0200, Stefan Richter wrote: 
+> Linus, please pull from the for-linus branch at
+> 
+>     git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6.git for-linus
+> 
+> to receive a hardware quirk entry and a small makefile correction.
+> Thanks.
+> 
+> Heikki Lindholm (1):
+>       firewire: ohci: activate cycle timer register quirk on Ricoh chips
+That did it, the strange oops I had with new firewire stack is gone.
+(I have the Ricoh chip in the laptop)
 
-> From: Rémi Denis-Courmont <remi.denis-courmont@nokia.com>
-> 
-> Network namespace in the Phonet socket stack causes an OOPS when a
-> namespace is destroyed. This occurs as the loopback exit_net handler is
-> called after the Phonet exit_net handler, and re-enters the Phonet
-> stack. I cannot think of any nice way to fix this in kernel <= 2.6.32.
-> 
-> For lack of a better solution, disable namespace support completely.
-> If you need that, upgrade to a newer kernel.
-> 
-> Signed-off-by: Rémi Denis-Courmont <remi.denis-courmont@nokia.com>
-> Cc: Eric W. Biederman <ebiederm@xmission.com>
 
-"lkml" address fixed, and -stable CC: added this time, please don't
-omit that if you want to submit stable networking patches that have no
-upstream counterpart.
+However the new stack is still very much unusable:
 
-Acked-by: David S. Miller <davem@davemloft.net>
+Running new stack on the laptop + old stack on the desktop gave me about
+18-30 Mbit/s speeds varying all the time.
+Running both with the new stack results in corrupted packets and sftp
+exits immediately.
 
-> ---
->  net/phonet/af_phonet.c  |    4 ++++
->  net/phonet/pn_dev.c     |   12 ++++++++++--
->  net/phonet/pn_netlink.c |    9 ++++++++-
->  3 files changed, 22 insertions(+), 3 deletions(-)
+The problems I so hoped to be fixed in new stack still persist:
+
+Cable disconection/reconnection still results in the link loss till
+ifconfig down/up.
+
+Suspend/resume also results in the link loss.
+
+Driver still has panics on some occasions.
+
+Best regards,
+Maxim Levitsky
+
+
+
+
 > 
-> diff --git a/net/phonet/af_phonet.c b/net/phonet/af_phonet.c
-> index f60c0c2..519ff9d 100644
-> --- a/net/phonet/af_phonet.c
-> +++ b/net/phonet/af_phonet.c
-> @@ -67,6 +67,8 @@ static int pn_socket_create(struct net *net, struct socket *sock, int protocol)
->  	struct phonet_protocol *pnp;
->  	int err;
->  
-> +	if (!net_eq(net, &init_net))
-> +		return -EAFNOSUPPORT;
->  	if (!capable(CAP_SYS_ADMIN))
->  		return -EPERM;
->  
-> @@ -353,6 +355,8 @@ static int phonet_rcv(struct sk_buff *skb, struct net_device *dev,
->  	struct sockaddr_pn sa;
->  	u16 len;
->  
-> +	if (!net_eq(net, &init_net))
-> +		goto out;
->  	/* check we have at least a full Phonet header */
->  	if (!pskb_pull(skb, sizeof(struct phonethdr)))
->  		goto out;
-> diff --git a/net/phonet/pn_dev.c b/net/phonet/pn_dev.c
-> index 5f42f30..5a2275c 100644
-> --- a/net/phonet/pn_dev.c
-> +++ b/net/phonet/pn_dev.c
-> @@ -246,7 +246,11 @@ static struct notifier_block phonet_device_notifier = {
->  /* Per-namespace Phonet devices handling */
->  static int phonet_init_net(struct net *net)
->  {
-> -	struct phonet_net *pnn = kmalloc(sizeof(*pnn), GFP_KERNEL);
-> +	struct phonet_net *pnn;
-> +
-> +	if (!net_eq(net, &init_net))
-> +		return 0;
-> +	pnn = kmalloc(sizeof(*pnn), GFP_KERNEL);
->  	if (!pnn)
->  		return -ENOMEM;
->  
-> @@ -263,9 +267,13 @@ static int phonet_init_net(struct net *net)
->  
->  static void phonet_exit_net(struct net *net)
->  {
-> -	struct phonet_net *pnn = net_generic(net, phonet_net_id);
-> +	struct phonet_net *pnn;
->  	struct net_device *dev;
->  
-> +	if (!net_eq(net, &init_net))
-> +		return;
-> +	pnn = net_generic(net, phonet_net_id);
-> +
->  	rtnl_lock();
->  	for_each_netdev(net, dev)
->  		phonet_device_destroy(dev);
-> diff --git a/net/phonet/pn_netlink.c b/net/phonet/pn_netlink.c
-> index d21fd35..7acab1e 100644
-> --- a/net/phonet/pn_netlink.c
-> +++ b/net/phonet/pn_netlink.c
-> @@ -68,6 +68,8 @@ static int addr_doit(struct sk_buff *skb, struct nlmsghdr *nlh, void *attr)
->  	int err;
->  	u8 pnaddr;
->  
-> +	if (!net_eq(net, &init_net))
-> +		return -EOPNOTSUPP;
->  	if (!capable(CAP_SYS_ADMIN))
->  		return -EPERM;
->  
-> @@ -124,12 +126,16 @@ nla_put_failure:
->  
->  static int getaddr_dumpit(struct sk_buff *skb, struct netlink_callback *cb)
->  {
-> +	struct net *net = sock_net(skb->sk);
->  	struct phonet_device_list *pndevs;
->  	struct phonet_device *pnd;
->  	int dev_idx = 0, dev_start_idx = cb->args[0];
->  	int addr_idx = 0, addr_start_idx = cb->args[1];
->  
-> -	pndevs = phonet_device_list(sock_net(skb->sk));
-> +	if (!net_eq(net, &init_net))
-> +		goto skip;
-> +
-> +	pndevs = phonet_device_list(net);
->  	spin_lock_bh(&pndevs->lock);
->  	list_for_each_entry(pnd, &pndevs->list, list) {
->  		u8 addr;
-> @@ -154,6 +160,7 @@ static int getaddr_dumpit(struct sk_buff *skb, struct netlink_callback *cb)
->  
->  out:
->  	spin_unlock_bh(&pndevs->lock);
-> +skip:
->  	cb->args[0] = dev_idx;
->  	cb->args[1] = addr_idx;
->  
-> -- 
-> 1.7.0.4
+> Stefan Richter (1):
+>       firewire: nosy: fix build when CONFIG_FIREWIRE=N
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>  drivers/Makefile        |    2 +-
+>  drivers/firewire/ohci.c |    1 +
+>  2 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> 
+> Full log and diff:
+> 
+> commit 8702d33aa6e6d753ef99163afe48aba1323374ef
+> Author: Stefan Richter <stefanr@s5r6.in-berlin.de>
+> Date:   Wed Sep 15 13:02:44 2010 +0200
+> 
+>     firewire: nosy: fix build when CONFIG_FIREWIRE=N
+>     
+>     drivers/firewire/nosy* is a stand-alone driver that does not depend on
+>     CONFIG_FIREWIRE.  Hence let make descend into drivers/firewire/ also
+>     if that option is off.
+>     
+>     The stand-alone driver drivers/ieee1394/init_ohci1394_dma*  will soon be
+>     moved into drivers/firewire/ too and will require the same makefile fix.
+>     
+>     Side effect:
+>     As mentioned in https://bugzilla.novell.com/show_bug.cgi?id=586172#c24
+>     this influences the order in which either firewire-ohci or ohci1394 is
+>     going to be bound to an OHCI-1394 controller in case of a modular build
+>     of both drivers if no modprobe blacklist entries are configured.
+>     However, a user of such a setup cannot expect deterministic behavior
+>     anyway.  The Kconfig help and the migration guide at
+>     ieee1394.wiki.kernel.org recommend blacklist entries when a dual
+>     IEEE 1394 stack build is being used.  (The coexistence period of the two
+>     stacks is planned to end soon.)
+>     
+>     Cc: Michal Marek <mmarek@suse.cz>
+>     Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+> 
+> diff --git a/drivers/Makefile b/drivers/Makefile
+> index 91874e0..0bbb456 100644
+> --- a/drivers/Makefile
+> +++ b/drivers/Makefile
+> @@ -50,7 +50,7 @@ obj-$(CONFIG_SPI)		+= spi/
+>  obj-y				+= net/
+>  obj-$(CONFIG_ATM)		+= atm/
+>  obj-$(CONFIG_FUSION)		+= message/
+> -obj-$(CONFIG_FIREWIRE)		+= firewire/
+> +obj-y				+= firewire/
+>  obj-y				+= ieee1394/
+>  obj-$(CONFIG_UIO)		+= uio/
+>  obj-y				+= cdrom/
+> 
+> commit 970f4be85ae6ecf97b711a3a2a1d5cecd3ea0534
+> Author: Heikki Lindholm <holin@iki.fi>
+> Date:   Mon Sep 6 22:30:45 2010 +0300
+> 
+>     firewire: ohci: activate cycle timer register quirk on Ricoh chips
+>     
+>     The Ricoh FireWire controllers appear to have the non-atomic cycle
+>     timer register access bug, so, activate the driver workaround by
+>     default.
+>     
+>     The behaviour was observed on:
+>     Ricoh Co Ltd R5C552 IEEE 1394 Controller [1180:0552] and
+>     Ricoh Co Ltd R5C832 IEEE 1394 Controller [1180:0832] (rev 04).
+>     
+>     Signed-off-by: Heikki Lindholm <holin@iki.fi>
+>     Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+> 
+> diff --git a/drivers/firewire/ohci.c b/drivers/firewire/ohci.c
+> index be29b0b..1b05896 100644
+> --- a/drivers/firewire/ohci.c
+> +++ b/drivers/firewire/ohci.c
+> @@ -263,6 +263,7 @@ static const struct {
+>  	{PCI_VENDOR_ID_JMICRON,	PCI_DEVICE_ID_JMICRON_JMB38X_FW, QUIRK_NO_MSI},
+>  	{PCI_VENDOR_ID_NEC,	PCI_ANY_ID,	QUIRK_CYCLE_TIMER},
+>  	{PCI_VENDOR_ID_VIA,	PCI_ANY_ID,	QUIRK_CYCLE_TIMER},
+> +	{PCI_VENDOR_ID_RICOH,	PCI_ANY_ID,	QUIRK_CYCLE_TIMER},
+>  	{PCI_VENDOR_ID_APPLE,	PCI_DEVICE_ID_APPLE_UNI_N_FW, QUIRK_BE_HEADERS},
+>  };
+>  
+> 
+
+
