@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708Ab0IQHJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 03:09:57 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43942 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751633Ab0IQHJ4 convert rfc822-to-8bit (ORCPT
+	id S1754532Ab0IQHRh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 03:17:37 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:58532 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212Ab0IQHRg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 03:09:56 -0400
-Subject: Re: [PATCH] x86: fix duplicate calls of the nmi handler
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
-        Don Zickus <dzickus@redhat.com>,
-        "gorcunov@gmail.com" <gorcunov@gmail.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>
-In-Reply-To: <AANLkTimuG3N-qPvB-af=afgJbo5aVBCd6ozxkLFNz78K@mail.gmail.com>
-References: <1283454469-1909-1-git-send-email-dzickus@redhat.com>
-	 <1284118900.402.35.camel@laptop> <20100910132741.GB4879@redhat.com>
-	 <20100910144634.GA1060@elte.hu> <20100910155659.GD13563@erda.amd.com>
-	 <1284658950.2275.591.camel@laptop>
-	 <AANLkTimuG3N-qPvB-af=afgJbo5aVBCd6ozxkLFNz78K@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 17 Sep 2010 09:09:38 +0200
-Message-ID: <1284707378.3764.2173.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Fri, 17 Sep 2010 03:17:36 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ian Kent <raven@themaw.net>
+Subject: Re: [PATCH 04/12] BKL: Remove BKL from autofs4
+Date: Fri, 17 Sep 2010 09:17:29 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-next-20100910+; KDE/4.5.1; x86_64; ; )
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        autofs@linux.kernel.org, Greg KH <greg@kroah.com>
+References: <1284659185-8942-1-git-send-email-arnd@arndb.de> <201009161955.48854.arnd@arndb.de> <1284687191.3083.8.camel@localhost>
+In-Reply-To: <1284687191.3083.8.camel@localhost>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009170917.29522.arnd@arndb.de>
+X-Provags-ID: V02:K0:dz+pk0bAa3XOV951+uNBnvkMNatOOhhgm4XmRaXjxZy
+ tYgmgtyJtZoE2nyzOAISZP2Q4/GPBg6OD4QGVNAxkYYSmV0FFv
+ 1f7LdKiEpMpHCaGGEG0Jbz8ggxzP88zVDw9jiZjjqP3wayCTpJ
+ LjdrJQ8RgcYZnD0tzfh//Tl06PJc426cfKzPmWtUz4LUsmRjGy
+ WkyzRmua0d2sh+nU6GT8A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-16 at 22:18 +0200, Stephane Eranian wrote:
+On Friday 17 September 2010 03:33:11 Ian Kent wrote:
+> On Thu, 2010-09-16 at 19:55 +0200, Arnd Bergmann wrote:
+> > Ah, sorry about this. I looked at the wrong MAINTAINERS entry.
+> > 
+> > I also forgot to Cc you about autofs3, adding more to the confusion. ;)
+> > 
+> > Do you think the time has come to move autofs3 to drivers/staging
+> > as we deprecate the BKL?
 > 
-> Why not just have one level, NMI, and use the priority field to position
-> handlers correctly? 
+> Umm ... what's this process, the drivers/staging?
 
-My point exactly.. I just don't know the history of this code, I had a
-quick peek at git but it seems to predate .12, I'll try and dig through
-the hysterical tree later today.
+We use drivers/staging now both for getting code into the kernel
+and for getting it out of there. Moving autofs3 to drivers/staging/autofs/
+would serve as a last warning to everyone using it, but users could
+still use it while it's there. If anyone is interested, they can submit
+fixes (BKL removal and whatever else is needed) to get it back into
+the mainline. If it doesn't happen, Greg would finally remove it two
+kernel releases later.
 
+My hope is that we can move all modules that still use the BKL after
+2.6.37 to drivers/staging, unless we have someone already working
+on the patches.
 
+	Arnd
