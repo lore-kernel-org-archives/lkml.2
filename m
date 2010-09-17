@@ -1,102 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755467Ab0IQRPp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 13:15:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39409 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752299Ab0IQRPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 13:15:43 -0400
-Date: Fri, 17 Sep 2010 13:15:14 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Ram Pai <linuxram@us.ibm.com>
-Cc: Ram Pai <ram.n.pai@gmail.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andreas Gruenbacher <agruen@suse.de>, Nick Piggin <npiggin@kernel.dk>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 03/34] VFS: Add CL_NO_SLAVE flag to clone_mnt()/copy_tree()
-Message-ID: <20100917171514.GA32258@shell>
-References: <1284675145-4391-1-git-send-email-vaurora@redhat.com> <1284675145-4391-4-git-send-email-vaurora@redhat.com> <AANLkTim1bbGrrPcFHThx3XOm8GmudQFSmFUs3NAXT5yC@mail.gmail.com> <20100917043401.GD8926@ram-laptop>
+	id S1755603Ab0IQRSp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 13:18:45 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:59377 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754586Ab0IQRSo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 13:18:44 -0400
+Date: Fri, 17 Sep 2010 10:18:28 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: sedat.dilek@gmail.com
+Cc: Sedat Dilek <sedat.dilek@googlemail.com>,
+        LKML <linux-kernel@vger.kernel.org>, axboe@kernel.dk
+Subject: Re: [linux-next] fs/ocfs2/file.c:201: error: =?UTF-8?B?4oCYQkxL?=
+ =?UTF-8?B?REVWX0lGTF9XQUlU4oCZ?= undeclared (first use in this function)
+Message-Id: <20100917101828.813e4515.randy.dunlap@oracle.com>
+In-Reply-To: <AANLkTimeZyZstBR4ZRxJg3OaP_aibLqQtYw2dTJ7cq7c@mail.gmail.com>
+References: <AANLkTimeZyZstBR4ZRxJg3OaP_aibLqQtYw2dTJ7cq7c@mail.gmail.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100917043401.GD8926@ram-laptop>
-User-Agent: Mutt/1.4.2.2i
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 09:34:01PM -0700, Ram Pai wrote:
-> On Thu, Sep 16, 2010 at 05:09:58PM -0700, Ram Pai wrote:
-> > On Thu, Sep 16, 2010 at 3:11 PM, Valerie Aurora <vaurora@redhat.com> wrote:
-> > 
-> > > Passing the CL_NO_SLAVE flag to clone_mnt() causes the clone
-> > > to fail if the source mnt is a slave.
-> > >
-> > > Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-> > > ---
-> > >  fs/namespace.c |    3 +++
-> > >  fs/pnode.h     |    1 +
-> > >  2 files changed, 4 insertions(+), 0 deletions(-)
-> > >
-> > > diff --git a/fs/namespace.c b/fs/namespace.c
-> > > index eeb4c22..6956062 100644
-> > > --- a/fs/namespace.c
-> > > +++ b/fs/namespace.c
-> > > @@ -565,6 +565,9 @@ static struct vfsmount *clone_mnt(struct vfsmount *old,
-> > > struct dentry *root,
-> > >        if ((flag & CL_NO_SHARED) && (IS_MNT_SHARED(old)))
-> > >                return ERR_PTR(-EINVAL);
-> > >
-> > > +       if ((flag & CL_NO_SLAVE) && (IS_MNT_SLAVE(old)))
-> > > +               return ERR_PTR(-EINVAL);
-> > > +
-> > >
-> > 
-> > 
-> > its been a while and my memory may have corroded.  But I dont think this
-> > check is needed. Because cloning a 'slave mount' makes the mount a 'private
-> > mount' and not a 'slave mount'.
->
-> There is one case where a 'slave mount' when cloned can generate a 'slave mount', and
-> that is when the 'slave mount' is also a 'shared mount'. So the above check has to
-> be
+On Fri, 17 Sep 2010 17:36:43 +0200 Sedat Dilek wrote:
+
+> Hi,
 > 
->        if ((flag & CL_NO_SLAVE) && (IS_MNT_SLAVE(old) && IS_MNT_SHARED(old)))
->                return ERR_PTR(-EINVAL);
+> I pulled linux-2.6-block/for-next into mainline.
+> 
+> The build breaks, the issue is known [1] (but I didnt see a patch):
 
-Hey Ram,
+Just a verbal patch, yes.
 
-I added this flag for union mounts. Union mounts can't deal with
-namespace changes in the read-only layers, so we don't allow union of
-read-only mounts that are the target of propagation events (shared or
-slave).
+> [ build.log ]
+> ...
+> /home/sd/src/linux-2.6/linux-2.6.36-rc4/debian/build/source_i386_none/fs/ocfs2/file.c:201:
+> error: ‘BLKDEV_IFL_WAIT’ undeclared (first use in this function)
+> /home/sd/src/linux-2.6/linux-2.6.36-rc4/debian/build/source_i386_none/fs/ocfs2/file.c:201:
+> error: (Each undeclared identifier is reported only once
+> /home/sd/src/linux-2.6/linux-2.6.36-rc4/debian/build/source_i386_none/fs/ocfs2/file.c:201:
+> error: for each function it appears in.)
+> /home/sd/src/linux-2.6/linux-2.6.36-rc4/debian/build/source_i386_none/fs/ocfs2/file.c:201:
+> error: too many arguments to function ‘blkdev_issue_flush’
+>   CC [M]  net/rxrpc/ar-error.o
+>   CC [M]  drivers/scsi/scsi_error.o
+> make[3]: *** [sub-make] Error 2
+> make[2]: *** [all] Error 2
+> 
+> Regards,
+> - Sedat -
+> 
+> [1] http://www.spinics.net/lists/linux-next/msg11970.html
+> 
+> P.S.: Is there an email-address for linux-next (did not see in MAINTAINERS)?
 
-We could automatically convert all slave or shared mounts into private
-mounts when we clone the mounts, but that would surprise an
-administrator who carefully set up their shared or slave read-only
-mounts before unioning them.  So instead of silently converting slave
-or shared to private, we error out.  Does that make sense?
+http://vger.kernel.org/vger-lists.html#linux-next
 
-All that being said, I debated how to do this cleanly and I'm still
-not satisfied.  My goal is to both check and clone the proposed
-read-only layers in one pass.  Without these flags, I had to do four
-passes:
-
-1. Find the "lowest" read-only mount at this mountpoint.
-2. Check each mount for read-only, not shared, not slave.
-3. Clone the subtree starting at the "lowest" mount.
-4. Recheck the cloned tree for rules in #2.
-
-One of the reasons I had to do it this way is that you can't hold
-vfsmount_lock while calling copy_tree(), so the mount flags can change
-between the first check in #2 and the copy_tree() in #3.  Also
-sb->s_flag can change.  One of the problems with the current code is
-that it can't deal with cloning existing union mounts, which we need
-if we are to make bind mounts work (see do_loopback()).
-
-Anyway, if you have any ideas, I'm all ears.
-
-Thanks for reviewing,
-
--VAL
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
