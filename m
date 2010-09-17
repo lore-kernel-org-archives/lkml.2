@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346Ab0IQGBO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 02:01:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43490 "EHLO mx2.suse.de"
+	id S1754214Ab0IQGLu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 02:11:50 -0400
+Received: from mga11.intel.com ([192.55.52.93]:29968 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752710Ab0IQGBM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 02:01:12 -0400
-From: Nikanth Karthikesan <knikanth@suse.de>
-Organization: suse.de
-To: Hugh Dickins <hughd@google.com>
-Subject: [PATCH v2] Document the new Anonymous field in smaps.
-Date: Fri, 17 Sep 2010 11:34:02 +0530
-User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-default; KDE/4.3.5; x86_64; ; )
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Matt Mackall <mpm@selenic.com>, Richard Guenther <rguenther@suse.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Matz <matz@novell.com>, linux-kernel@vger.kernel.org
-References: <AANLkTini3k1hK-9RM6io0mOf4VoDzGpbUEpiv=WHfhEW@mail.gmail.com> <201009161135.00129.knikanth@suse.de> <alpine.DEB.2.00.1009160940330.24798@tigran.mtv.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1009160940330.24798@tigran.mtv.corp.google.com>
+	id S1753015Ab0IQGLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 02:11:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,380,1280732400"; 
+   d="scan'208";a="838483047"
+Message-ID: <4C9305C8.60609@linux.intel.com>
+Date: Fri, 17 Sep 2010 14:08:08 +0800
+From: Minskey Guo <chaohong_guo@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100702 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201009171134.02771.knikanth@suse.de>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: minskey guo <chaohong.guo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        chaohong.guo@intel.com
+Subject: Re: [PATCH]  NULL pointer might be used in ips_monitor()
+References: <1284613588-5199-1-git-send-email-chaohong.guo@linux.intel.com> <20100916145355.24a55114@jbarnes-x201>
+In-Reply-To: <20100916145355.24a55114@jbarnes-x201>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the new Anonymous field in smaps.
+On 09/16/2010 08:53 PM, Jesse Barnes wrote:
+> On Thu, 16 Sep 2010 13:06:28 +0800
+> minskey guo<chaohong.guo@linux.intel.com>  wrote:
+>
+>    
+>> From: minskey guo<chaohong_guo@linux.intel.com>
+>>
+>>   The patch is to enable creating ips_adjust thread before ips_monitor
+>>   executes because the latter will kthread_stop() or wake up the former
+>>   via ips->adjust pointer. Otherwise, it is possible that ips->adjust
+>> is NULL when kthread_stop() or wake_up_process() is called in
+>> ips_monitor()
+>>
+>>   Besides, some trival changes:
+>>     a) correct an define of register bits;
+>>     b) old_cpu_power sample should not be divided by 65535
+>>     c) handling on error path in ips_get_i915_syms()
+>>      
+> Excellent, thanks for the fixes.  Can you split up the patch into
+> individual fixes and send them over to the platform driver list and
+> Matthew Garrett?  You can add my acked-by on them.
+>
+> Thanks,
+>    
 
-Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
 
----
+Ok.  I split it into 4 patches,  and sent to platform driver list:
+platform-driver-x86@vger.kernel.org.
 
-diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-index a6aca87..b430576 100644
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -370,17 +370,24 @@ Shared_Dirty:          0 kB
- Private_Clean:         0 kB
- Private_Dirty:         0 kB
- Referenced:          892 kB
-+Anonymous:             0 kB
- Swap:                  0 kB
- KernelPageSize:        4 kB
- MMUPageSize:           4 kB
- 
--The first  of these lines shows  the same information  as is displayed for the
--mapping in /proc/PID/maps.  The remaining lines show  the size of the mapping,
-+The first of these lines shows the same information as is displayed for the
-+mapping in /proc/PID/maps. The remaining lines show the size of the mapping,
- the amount of the mapping that is currently resident in RAM, the "proportional
- set size” (divide each shared page by the number of processes sharing it), the
- number of clean and dirty shared pages in the mapping, and the number of clean
--and dirty private pages in the mapping.  The "Referenced" indicates the amount
--of memory currently marked as referenced or accessed.
-+and dirty private pages in the mapping. Even pages which are part of
-+MAP_SHARED mappings, but has only a single pte mapped i.e., used exclusively
-+by a process is accounted as private and not as shared. The "Referenced"
-+indicates the amount of memory currently marked as referenced or accessed. The
-+"Anonymous" shows the number of pages that is not associated with a file. Even
-+mappings associated with a file can have anonymous pages. When the mapping is
-+MAP_PRIVATE and its pages are modified, the pages are COWed and marked as
-+anonymous.
- 
- This file is only present if the CONFIG_MMU kernel configuration option is
- enabled.
+
+-minskey
