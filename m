@@ -1,95 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565Ab0IQE16 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 00:27:58 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:57263 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750788Ab0IQE15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 00:27:57 -0400
-Date: Fri, 17 Sep 2010 14:27:48 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ian Munsie <imunsie@au1.ibm.com>
-Subject: Re: linux-next: build failure after merge of the final tree
- (powerpc related)
-Message-Id: <20100917142748.1d47bd6d.sfr@canb.auug.org.au>
-In-Reply-To: <20100903132410.ede593ed.sfr@canb.auug.org.au>
-References: <20100903132410.ede593ed.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__17_Sep_2010_14_27_48_+1000_5RblX4xH0R2VcO7d"
+	id S1751679Ab0IQEeK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 00:34:10 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:35597 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750846Ab0IQEeI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 00:34:08 -0400
+Date: Thu, 16 Sep 2010 21:34:01 -0700
+From: Ram Pai <linuxram@us.ibm.com>
+To: Valerie Aurora <vaurora@redhat.com>
+Cc: Ram Pai <ram.n.pai@gmail.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andreas Gruenbacher <agruen@suse.de>, Nick Piggin <npiggin@kernel.dk>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 03/34] VFS: Add CL_NO_SLAVE flag to
+ clone_mnt()/copy_tree()
+Message-ID: <20100917043401.GD8926@ram-laptop>
+Reply-To: Ram Pai <linuxram@us.ibm.com>
+References: <1284675145-4391-1-git-send-email-vaurora@redhat.com>
+ <1284675145-4391-4-git-send-email-vaurora@redhat.com>
+ <AANLkTim1bbGrrPcFHThx3XOm8GmudQFSmFUs3NAXT5yC@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTim1bbGrrPcFHThx3XOm8GmudQFSmFUs3NAXT5yC@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__17_Sep_2010_14_27_48_+1000_5RblX4xH0R2VcO7d
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Sep 16, 2010 at 05:09:58PM -0700, Ram Pai wrote:
+> On Thu, Sep 16, 2010 at 3:11 PM, Valerie Aurora <vaurora@redhat.com> wrote:
+> 
+> > Passing the CL_NO_SLAVE flag to clone_mnt() causes the clone
+> > to fail if the source mnt is a slave.
+> >
+> > Signed-off-by: Valerie Aurora <vaurora@redhat.com>
+> > ---
+> >  fs/namespace.c |    3 +++
+> >  fs/pnode.h     |    1 +
+> >  2 files changed, 4 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/fs/namespace.c b/fs/namespace.c
+> > index eeb4c22..6956062 100644
+> > --- a/fs/namespace.c
+> > +++ b/fs/namespace.c
+> > @@ -565,6 +565,9 @@ static struct vfsmount *clone_mnt(struct vfsmount *old,
+> > struct dentry *root,
+> >        if ((flag & CL_NO_SHARED) && (IS_MNT_SHARED(old)))
+> >                return ERR_PTR(-EINVAL);
+> >
+> > +       if ((flag & CL_NO_SLAVE) && (IS_MNT_SLAVE(old)))
+> > +               return ERR_PTR(-EINVAL);
+> > +
+> >
+> 
+> 
+> its been a while and my memory may have corroded.  But I dont think this
+> check is needed. Because cloning a 'slave mount' makes the mount a 'private
+> mount' and not a 'slave mount'.
 
-Hi Ben,
+There is one case where a 'slave mount' when cloned can generate a 'slave mount', and
+that is when the 'slave mount' is also a 'shared mount'. So the above check has to
+be
 
-On Fri, 3 Sep 2010 13:24:10 +1000 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
->
-> After merging the final tree, today's linux-next build
-> (powerpc64 allnoconfig) failed like this:
->=20
-> arch/powerpc/kernel/built-in.o: In function `.sys_call_table':
-> (.text+0x8d48): undefined reference to `.compat_sys_recv'
->=20
-> Caused by commit 86250b9d12caa1a3dee12a7cf638b7dd70eaadb6 ("powerpc: Wire
-> up direct socket system calls").
->=20
-> I have applied this patch for today:
->=20
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Fri, 3 Sep 2010 13:19:04 +1000
-> Subject: [PATCH] powerpc: define a compat_sys_recv cond_syscall
->=20
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  kernel/sys_ni.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->=20
-> diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
-> index bad369e..c782fe9 100644
-> --- a/kernel/sys_ni.c
-> +++ b/kernel/sys_ni.c
-> @@ -50,6 +50,7 @@ cond_syscall(compat_sys_sendmsg);
->  cond_syscall(sys_recvmsg);
->  cond_syscall(sys_recvmmsg);
->  cond_syscall(compat_sys_recvmsg);
-> +cond_syscall(compat_sys_recv);
->  cond_syscall(compat_sys_recvfrom);
->  cond_syscall(compat_sys_recvmmsg);
->  cond_syscall(sys_socketcall);
-> --=20
-> 1.7.1
+       if ((flag & CL_NO_SLAVE) && (IS_MNT_SLAVE(old) && IS_MNT_SHARED(old)))
+               return ERR_PTR(-EINVAL);
 
-Ping?
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__17_Sep_2010_14_27_48_+1000_5RblX4xH0R2VcO7d
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMku5EAAoJEDMEi1NhKgbs6EEH/Ax31SmMd7ToBM1TPgWSTCzI
-M71EnjcR44X9kEdZyEc0iGek4rPBuMkY9JdnKq7AGND95GYGgCXlUhada4v90NKG
-yt1FToE7VxqqEnT5U9yhTmONNFQ4bLT7W/yc76CO8s4X7YiuPJrv332KBBmbi2fh
-G8USUYgfrrOPNEoDixjaXdLwUfVUE422DxX2hMjSuaFOwbir9YAJSlfqJFfPU52r
-75WLZtgLYZuGwMOJx/b+HH/NhITyimYx5OPay/8BSlHbGauV1wwQu7dJe2/lqwtw
-sXizvbzdCxbNrmkkvvetJJEirA1rSdW3fwNRhnbTBM/j6xQ4mOPXZ3s7NxENQD8=
-=9teI
------END PGP SIGNATURE-----
-
---Signature=_Fri__17_Sep_2010_14_27_48_+1000_5RblX4xH0R2VcO7d--
+RP
