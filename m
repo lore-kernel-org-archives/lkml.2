@@ -1,177 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755482Ab0IQPKB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 11:10:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755165Ab0IQPJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 11:09:58 -0400
-Date: Fri, 17 Sep 2010 11:09:25 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
-        tglx@linutronix.de, rostedt@goodmis.org, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com
-Message-Id: <3b5b071fcdb2afb7f67cacecfa78b14c740278a7.1284733808.git.jbaron@redhat.com>
-In-Reply-To: <cover.1284733808.git.jbaron@redhat.com>
-References: <cover.1284733808.git.jbaron@redhat.com>
-Subject: [PATCH 09/10] jump label 11: add sparc64 support
+	id S1755523Ab0IQPK2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 11:10:28 -0400
+Received: from usindmx04.hds.com ([207.126.252.15]:42524 "EHLO
+	usindmx04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755490Ab0IQPKH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 11:10:07 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "xiyou.wangcong@gmail.com" <xiyou.wangcong@gmail.com>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "simon.kagstrom@netinsight.net" <simon.kagstrom@netinsight.net>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>
+Date: Fri, 17 Sep 2010 11:08:48 -0400
+Subject: RE: [PATCH] Fix kexec abort due to IPI from panic().
+Thread-Topic: [PATCH] Fix kexec abort due to IPI from panic().
+Thread-Index: ActV9NeRGIQilg9bRH6SmEJa3/stIgAhGvTA
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C09821A9E@USINDEVS01.corp.hds.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C0979C90E@USINDEVS01.corp.hds.com>
+ <m1wrql2sf1.fsf@fess.ebiederm.org>
+In-Reply-To: <m1wrql2sf1.fsf@fess.ebiederm.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-add sparc64 support
+Hi Eric,
 
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Jason Baron <jbaron@redhat.com>
----
- arch/sparc/Kconfig                  |    1 +
- arch/sparc/include/asm/jump_label.h |   32 ++++++++++++++++++++++++
- arch/sparc/kernel/Makefile          |    2 +
- arch/sparc/kernel/jump_label.c      |   46 +++++++++++++++++++++++++++++++++++
- arch/sparc/kernel/module.c          |    6 ++++
- 5 files changed, 87 insertions(+), 0 deletions(-)
- create mode 100644 arch/sparc/include/asm/jump_label.h
- create mode 100644 arch/sparc/kernel/jump_label.c
+Thank you for your quick response!
 
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index 491e9d6..a81b04e 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -30,6 +30,7 @@ config SPARC
- 	select PERF_USE_VMALLOC
- 	select HAVE_DMA_ATTRS
- 	select HAVE_DMA_API_DEBUG
-+	select HAVE_ARCH_JUMP_LABEL if !CC_OPTIMIZE_FOR_SIZE
- 
- config SPARC32
- 	def_bool !64BIT
-diff --git a/arch/sparc/include/asm/jump_label.h b/arch/sparc/include/asm/jump_label.h
-new file mode 100644
-index 0000000..62e66d7
---- /dev/null
-+++ b/arch/sparc/include/asm/jump_label.h
-@@ -0,0 +1,32 @@
-+#ifndef _ASM_SPARC_JUMP_LABEL_H
-+#define _ASM_SPARC_JUMP_LABEL_H
-+
-+#ifdef __KERNEL__
-+
-+#include <linux/types.h>
-+#include <asm/system.h>
-+
-+#define JUMP_LABEL_NOP_SIZE 4
-+
-+#define JUMP_LABEL(key, label)					\
-+	do {							\
-+		asm goto("1:\n\t"				\
-+			 "nop\n\t"				\
-+			 "nop\n\t"				\
-+			 ".pushsection __jump_table,  \"a\"\n\t"\
-+			 ".word 1b, %l[" #label "], %c0\n\t"	\
-+			 ".popsection \n\t"			\
-+			 : :  "i" (key) :  : label);\
-+	} while (0)
-+
-+#endif /* __KERNEL__ */
-+
-+typedef u32 jump_label_t;
-+
-+struct jump_entry {
-+	jump_label_t code;
-+	jump_label_t target;
-+	jump_label_t key;
-+};
-+
-+#endif
-diff --git a/arch/sparc/kernel/Makefile b/arch/sparc/kernel/Makefile
-index 0c2dc1f..599398f 100644
---- a/arch/sparc/kernel/Makefile
-+++ b/arch/sparc/kernel/Makefile
-@@ -119,3 +119,5 @@ obj-$(CONFIG_COMPAT)    += $(audit--y)
- 
- pc--$(CONFIG_PERF_EVENTS) := perf_event.o
- obj-$(CONFIG_SPARC64)	+= $(pc--y)
-+
-+obj-$(CONFIG_SPARC64)	+= jump_label.o
-diff --git a/arch/sparc/kernel/jump_label.c b/arch/sparc/kernel/jump_label.c
-new file mode 100644
-index 0000000..00b3fcb
---- /dev/null
-+++ b/arch/sparc/kernel/jump_label.c
-@@ -0,0 +1,46 @@
-+#include <linux/kernel.h>
-+#include <linux/types.h>
-+#include <linux/mutex.h>
-+#include <linux/cpu.h>
-+
-+#include <linux/jump_label.h>
-+#include <linux/memory.h>
-+
-+#ifdef HAVE_JUMP_LABEL
-+
-+void arch_jump_label_transform(struct jump_entry *entry, enum jump_label_type type)
-+{
-+	u32 val;
-+	u32 *insn = (u32 *) (unsigned long) entry->code;
-+
-+	if (type == JUMP_LABEL_ENABLE) {
-+		s32 off = (s32)entry->target - (s32)entry->code;
-+
-+#ifdef CONFIG_SPARC64
-+		/* ba,pt %xcc, . + (off << 2) */
-+		val = 0x10680000 | ((u32) off >> 2);
-+#else
-+		/* ba . + (off << 2) */
-+		val = 0x10800000 | ((u32) off >> 2);
-+#endif
-+	} else {
-+		val = 0x01000000;
-+	}
-+
-+	get_online_cpus();
-+	mutex_lock(&text_mutex);
-+	*insn = val;
-+	flushi(insn);
-+	mutex_unlock(&text_mutex);
-+	put_online_cpus();
-+}
-+
-+void arch_jump_label_text_poke_early(jump_label_t addr)
-+{
-+	u32 *insn_p = (u32 *) (unsigned long) addr;
-+
-+	*insn_p = 0x01000000;
-+	flushi(insn_p);
-+}
-+
-+#endif
-diff --git a/arch/sparc/kernel/module.c b/arch/sparc/kernel/module.c
-index f848aad..ee3c7dd 100644
---- a/arch/sparc/kernel/module.c
-+++ b/arch/sparc/kernel/module.c
-@@ -18,6 +18,9 @@
- #include <asm/spitfire.h>
- 
- #ifdef CONFIG_SPARC64
-+
-+#include <linux/jump_label.h>
-+
- static void *module_map(unsigned long size)
- {
- 	struct vm_struct *area;
-@@ -227,6 +230,9 @@ int module_finalize(const Elf_Ehdr *hdr,
- 		    const Elf_Shdr *sechdrs,
- 		    struct module *me)
- {
-+	/* make jump label nops */
-+	jump_label_apply_nops(me);
-+
- 	/* Cheetah's I-cache is fully coherent.  */
- 	if (tlb_type == spitfire) {
- 		unsigned long va;
--- 
-1.7.1
+>Disabling interrupts is fine,
 
+Thanks!
+
+>However that call to kmsg_dump(KMSG_DUMP_KEXEC) is a bug as it introduces locks 
+>into a path that should not be taking locks.
+
+I'd like to find a way that kexec coexists with kmsg_dump(KMSG_DUMP_KEXEC) because 
+kmsg_dump is a useful troubleshooting feature as well.
+
+So, I will improve kmsg_dump(KMSG_DUMP_KEXEC) if there are some bugs.
+Could you please let me know your concern?
+It is helpful for me if you have an example scenario kexec fails.
+
+>Nothing in the crash_kexec path should even have the option of blocking.
+
+Do you mean I need to change kmsg_dump(KMSG_DUMP_KEXEC) to lockless?
+
+Seiji
