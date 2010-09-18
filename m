@@ -1,213 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757824Ab0IRTtR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:49:17 -0400
-Received: from kroah.org ([198.145.64.141]:51489 "EHLO coco.kroah.org"
+	id S1757754Ab0IRTrz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:47:55 -0400
+Received: from kroah.org ([198.145.64.141]:51524 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753281Ab0IRTBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:01:50 -0400
+	id S1755722Ab0IRTBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:01:53 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:58 2010
-Message-Id: <20100918185958.114994801@clark.site>
+Message-Id: <20100918185958.454635714@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:58:26 -0700
+Date: Sat, 18 Sep 2010 11:58:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        Arnd Bergmann <arnd@arndb.de>, Fenghua Yu <fenghua.yu@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Helge Deller <deller@gmx.de>, James Bottomley <jejb@parisc-linux.org>,
-        Kyle McMartin <kyle@mcmartin.ca>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, Ralf Baechle <ralf@linux-mips.org>
-Subject: [062/123] compat: Make compat_alloc_user_space() incorporate the access_ok()
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Greg KH <greg@kroah.com>, Mike Galbraith <efault@gmx.de>
+Subject: [066/123] sched: Consolidate select_task_rq() callers
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=compat-make-compat_alloc_user_space-incorporate-the-access_ok.patch
+Content-Disposition: inline; filename=sched-consolidate-select_task_rq-callers.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: H. Peter Anvin <hpa@linux.intel.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-commit c41d68a513c71e35a14f66d71782d27a79a81ea6 upstream.
+commit 970b13bacba14a8cef6f642861947df1d175b0b3 upstream
 
-compat_alloc_user_space() expects the caller to independently call
-access_ok() to verify the returned area.  A missing call could
-introduce problems on some architectures.
+sched: Consolidate select_task_rq() callers
 
-This patch incorporates the access_ok() check into
-compat_alloc_user_space() and also adds a sanity check on the length.
-The existing compat_alloc_user_space() implementations are renamed
-arch_compat_alloc_user_space() and are used as part of the
-implementation of the new global function.
+Small cleanup.
 
-This patch assumes NULL will cause __get_user()/__put_user() to either
-fail or access userspace on all architectures.  This should be
-followed by checking the return value of compat_access_user_space()
-for NULL in the callers, at which time the access_ok() in the callers
-can also be removed.
-
-Reported-by: Ben Hawkes <hawkes@sota.gen.nz>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
-Acked-by: David S. Miller <davem@davemloft.net>
-Acked-by: Ingo Molnar <mingo@elte.hu>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Acked-by: Tony Luck <tony.luck@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Helge Deller <deller@gmx.de>
-Cc: James Bottomley <jejb@parisc-linux.org>
-Cc: Kyle McMartin <kyle@mcmartin.ca>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <new-submission>
+[ v2: build fix ]
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- arch/ia64/include/asm/compat.h    |    2 +-
- arch/mips/include/asm/compat.h    |    2 +-
- arch/parisc/include/asm/compat.h  |    2 +-
- arch/powerpc/include/asm/compat.h |    2 +-
- arch/s390/include/asm/compat.h    |    2 +-
- arch/sparc/include/asm/compat.h   |    2 +-
- arch/x86/include/asm/compat.h     |    2 +-
- include/linux/compat.h            |    2 ++
- kernel/compat.c                   |   22 ++++++++++++++++++++++
- 9 files changed, 31 insertions(+), 7 deletions(-)
+ kernel/sched.c |   14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
---- a/arch/ia64/include/asm/compat.h
-+++ b/arch/ia64/include/asm/compat.h
-@@ -198,7 +198,7 @@ ptr_to_compat(void __user *uptr)
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2333,6 +2333,14 @@ void task_oncpu_function_call(struct tas
+ 	preempt_enable();
  }
  
- static __inline__ void __user *
--compat_alloc_user_space (long len)
-+arch_compat_alloc_user_space (long len)
- {
- 	struct pt_regs *regs = task_pt_regs(current);
- 	return (void __user *) (((regs->r12 & 0xffffffff) & -16) - len);
---- a/arch/mips/include/asm/compat.h
-+++ b/arch/mips/include/asm/compat.h
-@@ -144,7 +144,7 @@ static inline compat_uptr_t ptr_to_compa
- 	return (u32)(unsigned long)uptr;
- }
- 
--static inline void __user *compat_alloc_user_space(long len)
-+static inline void __user *arch_compat_alloc_user_space(long len)
- {
- 	struct pt_regs *regs = (struct pt_regs *)
- 		((unsigned long) current_thread_info() + THREAD_SIZE - 32) - 1;
---- a/arch/parisc/include/asm/compat.h
-+++ b/arch/parisc/include/asm/compat.h
-@@ -146,7 +146,7 @@ static inline compat_uptr_t ptr_to_compa
- 	return (u32)(unsigned long)uptr;
- }
- 
--static __inline__ void __user *compat_alloc_user_space(long len)
-+static __inline__ void __user *arch_compat_alloc_user_space(long len)
- {
- 	struct pt_regs *regs = &current->thread.regs;
- 	return (void __user *)regs->gr[30];
---- a/arch/powerpc/include/asm/compat.h
-+++ b/arch/powerpc/include/asm/compat.h
-@@ -133,7 +133,7 @@ static inline compat_uptr_t ptr_to_compa
- 	return (u32)(unsigned long)uptr;
- }
- 
--static inline void __user *compat_alloc_user_space(long len)
-+static inline void __user *arch_compat_alloc_user_space(long len)
- {
- 	struct pt_regs *regs = current->thread.regs;
- 	unsigned long usp = regs->gpr[1];
---- a/arch/s390/include/asm/compat.h
-+++ b/arch/s390/include/asm/compat.h
-@@ -180,7 +180,7 @@ static inline int is_compat_task(void)
- 
- #endif
- 
--static inline void __user *compat_alloc_user_space(long len)
-+static inline void __user *arch_compat_alloc_user_space(long len)
- {
- 	unsigned long stack;
- 
---- a/arch/sparc/include/asm/compat.h
-+++ b/arch/sparc/include/asm/compat.h
-@@ -166,7 +166,7 @@ static inline compat_uptr_t ptr_to_compa
- 	return (u32)(unsigned long)uptr;
- }
- 
--static inline void __user *compat_alloc_user_space(long len)
-+static inline void __user *arch_compat_alloc_user_space(long len)
- {
- 	struct pt_regs *regs = current_thread_info()->kregs;
- 	unsigned long usp = regs->u_regs[UREG_I6];
---- a/arch/x86/include/asm/compat.h
-+++ b/arch/x86/include/asm/compat.h
-@@ -204,7 +204,7 @@ static inline compat_uptr_t ptr_to_compa
- 	return (u32)(unsigned long)uptr;
- }
- 
--static inline void __user *compat_alloc_user_space(long len)
-+static inline void __user *arch_compat_alloc_user_space(long len)
- {
- 	struct pt_regs *regs = task_pt_regs(current);
- 	return (void __user *)regs->sp - len;
---- a/include/linux/compat.h
-+++ b/include/linux/compat.h
-@@ -309,5 +309,7 @@ asmlinkage long compat_sys_newfstatat(un
- asmlinkage long compat_sys_openat(unsigned int dfd, const char __user *filename,
- 				  int flags, int mode);
- 
-+extern void __user *compat_alloc_user_space(unsigned long len);
-+
- #endif /* CONFIG_COMPAT */
- #endif /* _LINUX_COMPAT_H */
---- a/kernel/compat.c
-+++ b/kernel/compat.c
-@@ -25,6 +25,7 @@
- #include <linux/posix-timers.h>
- #include <linux/times.h>
- #include <linux/ptrace.h>
-+#include <linux/module.h>
- 
- #include <asm/uaccess.h>
- 
-@@ -1136,3 +1137,24 @@ compat_sys_sysinfo(struct compat_sysinfo
- 
- 	return 0;
- }
-+
-+/*
-+ * Allocate user-space memory for the duration of a single system call,
-+ * in order to marshall parameters inside a compat thunk.
-+ */
-+void __user *compat_alloc_user_space(unsigned long len)
++#ifdef CONFIG_SMP
++static inline
++int select_task_rq(struct task_struct *p, int sd_flags, int wake_flags)
 +{
-+	void __user *ptr;
-+
-+	/* If len would occupy more than half of the entire compat space... */
-+	if (unlikely(len > (((compat_uptr_t)~0) >> 1)))
-+		return NULL;
-+
-+	ptr = arch_compat_alloc_user_space(len);
-+
-+	if (unlikely(!access_ok(VERIFY_WRITE, ptr, len)))
-+		return NULL;
-+
-+	return ptr;
++	return p->sched_class->select_task_rq(p, sd_flags, wake_flags);
 +}
-+EXPORT_SYMBOL_GPL(compat_alloc_user_space);
++#endif
++
+ /***
+  * try_to_wake_up - wake up a thread
+  * @p: the to-be-woken-up thread
+@@ -2386,7 +2394,7 @@ static int try_to_wake_up(struct task_st
+ 	p->state = TASK_WAKING;
+ 	task_rq_unlock(rq, &flags);
+ 
+-	cpu = p->sched_class->select_task_rq(p, SD_BALANCE_WAKE, wake_flags);
++	cpu = select_task_rq(p, SD_BALANCE_WAKE, wake_flags);
+ 	if (cpu != orig_cpu)
+ 		set_task_cpu(p, cpu);
+ 
+@@ -2601,7 +2609,7 @@ void sched_fork(struct task_struct *p, i
+ 		p->sched_class = &fair_sched_class;
+ 
+ #ifdef CONFIG_SMP
+-	cpu = p->sched_class->select_task_rq(p, SD_BALANCE_FORK, 0);
++	cpu = select_task_rq(p, SD_BALANCE_FORK, 0);
+ #endif
+ 	set_task_cpu(p, cpu);
+ 
+@@ -3170,7 +3178,7 @@ out:
+ void sched_exec(void)
+ {
+ 	int new_cpu, this_cpu = get_cpu();
+-	new_cpu = current->sched_class->select_task_rq(current, SD_BALANCE_EXEC, 0);
++	new_cpu = select_task_rq(current, SD_BALANCE_EXEC, 0);
+ 	put_cpu();
+ 	if (new_cpu != this_cpu)
+ 		sched_migrate_task(current, new_cpu);
 
 
