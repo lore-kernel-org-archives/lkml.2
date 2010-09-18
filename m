@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757327Ab0IRTQv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:16:51 -0400
-Received: from kroah.org ([198.145.64.141]:43998 "EHLO coco.kroah.org"
+	id S1757341Ab0IRTRE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:17:04 -0400
+Received: from kroah.org ([198.145.64.141]:43994 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757310Ab0IRTQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:16:41 -0400
+	id S1757306Ab0IRTQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:16:40 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:08 2010
-Message-Id: <20100918191308.334221972@clark.site>
+Message-Id: <20100918191308.252021070@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:13:47 -0700
+Date: Sat, 18 Sep 2010 12:13:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Chris Wilson <chris@chris-wilson.co.uk>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [129/129] drm: Only decouple the old_fb from the crtc is we call mode_set*
+        Adam Jackson <ajax@redhat.com>
+Subject: [128/129] Revert "drm/i915: Allow LVDS on pipe A on gen4+"
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,40 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 356ad3cd616185631235ffb48b3efbf39f9923b3 upstream.
+commit 12e8ba25ef52f19e7a42e61aecb3c1fef83b2a82 upstream.
 
-Otherwise when disabling the output we switch to the new fb (which is
-likely NULL) and skip the call to mode_set -- leaking driver private
-state on the old_fb.
+This reverts commit 0f3ee801b332d6ff22285386675fe5aaedf035c3.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=29857
-Reported-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+Enabling LVDS on pipe A was causing excessive wakeups on otherwise idle
+systems due to i915 interrupts. So restrict the LVDS to pipe B once more,
+whilst the issue is properly diagnosed.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=16307
+Reported-and-tested-by: Enrico Bandiello <enban@postal.uv.es>
+Poked-by: Florian Mickler <florian@mickler.org>
 Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Cc: Adam Jackson <ajax@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/drm_crtc_helper.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/intel_lvds.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/gpu/drm/drm_crtc_helper.c
-+++ b/drivers/gpu/drm/drm_crtc_helper.c
-@@ -610,13 +610,13 @@ int drm_crtc_helper_set_config(struct dr
- 		mode_changed = true;
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -988,8 +988,6 @@ void intel_lvds_init(struct drm_device *
  
- 	if (mode_changed) {
--		old_fb = set->crtc->fb;
--		set->crtc->fb = set->fb;
- 		set->crtc->enabled = (set->mode != NULL);
- 		if (set->mode != NULL) {
- 			DRM_DEBUG_KMS("attempting to set mode from"
- 					" userspace\n");
- 			drm_mode_debug_printmodeline(set->mode);
-+			old_fb = set->crtc->fb;
-+			set->crtc->fb = set->fb;
- 			if (!drm_crtc_helper_set_mode(set->crtc, set->mode,
- 						      set->x, set->y,
- 						      old_fb)) {
+ 	intel_encoder->clone_mask = (1 << INTEL_LVDS_CLONE_BIT);
+ 	intel_encoder->crtc_mask = (1 << 1);
+-	if (IS_I965G(dev))
+-		intel_encoder->crtc_mask |= (1 << 0);
+ 	drm_encoder_helper_add(encoder, &intel_lvds_helper_funcs);
+ 	drm_connector_helper_add(connector, &intel_lvds_connector_helper_funcs);
+ 	connector->display_info.subpixel_order = SubPixelHorizontalRGB;
 
 
