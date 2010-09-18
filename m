@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757465Ab0IRTdJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:33:09 -0400
-Received: from kroah.org ([198.145.64.141]:43368 "EHLO coco.kroah.org"
+	id S1757472Ab0IRTde (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:33:34 -0400
+Received: from kroah.org ([198.145.64.141]:43363 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756776Ab0IRTPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756769Ab0IRTPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 18 Sep 2010 15:15:08 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:01 2010
-Message-Id: <20100918191300.979583535@clark.site>
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:00 2010
+Message-Id: <20100918191300.894154332@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:12:21 -0700
+Date: Sat, 18 Sep 2010 12:12:20 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Luke Lowrey <luke@chamsys.co.uk>
-Subject: [043/129] USB: ftdi_sio: Added custom PIDs for ChamSys products
+        Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [042/129] usb: allow drivers to use allocated bandwidth until unbound
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,57 +27,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luke Lowrey <luke@chamsys.co.uk>
+From: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
 
-commit 657373883417b2618023fd4135d251ba06a2c30a upstream.
+commit 0791971ba8fbc44e4f476079f856335ed45e6324 upstream.
 
-Added the 0xDAF8 to 0xDAFF PID range for ChamSys limited USB interface/wing products
+When using the remove sysfs file, the device configuration is set to -1
+(unconfigured). This eventually unbind drivers with the bandwidth_mutex
+held. Some drivers may call functions that hold said mutex, like
+usb_reset_device. This is the case for rtl8187, for example. This will
+lead to the same process holding the mutex twice, which deadlocks.
 
-Signed-off-by: Luke Lowrey <luke@chamsys.co.uk>
+Besides, according to Alan Stern:
+"The deadlock problem probably could be handled somehow, but there's a
+separate issue: Until the usb_disable_device call finishes unbinding
+the drivers, the drivers are free to continue using their allocated
+bandwidth.  We musn't change the bandwidth allocations until after the
+unbinding is done.  So this patch is indeed necessary."
+
+Unbinding the driver before holding the bandwidth_mutex solves the
+problem. If any operation after that fails, drivers are not bound again.
+But that would be a problem anyway that the user may solve resetting the
+device configuration to one that works, just like he would need to do in
+most other failure cases.
+
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    8 ++++++++
- drivers/usb/serial/ftdi_sio_ids.h |   12 ++++++++++++
- 2 files changed, 20 insertions(+)
+ drivers/usb/core/message.c |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -753,6 +753,14 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, SEGWAY_RMP200_PID) },
- 	{ USB_DEVICE(IONICS_VID, IONICS_PLUGCOMPUTER_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
-+	{ USB_DEVICE(FTDI_VID, FTDI_CHAMSYS_24_MASTER_WING_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_CHAMSYS_PC_WING_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_CHAMSYS_USB_DMX_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_CHAMSYS_MIDI_TIMECODE_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_CHAMSYS_MINI_WING_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_CHAMSYS_MAXI_WING_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_CHAMSYS_MEDIA_WING_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_CHAMSYS_WING_PID) },
- 	{ },					/* Optional parameter entry */
- 	{ }					/* Terminating entry */
- };
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -135,6 +135,18 @@
- #define FTDI_NDI_AURORA_SCU_PID		0xDA74	/* NDI Aurora SCU */
+--- a/drivers/usb/core/message.c
++++ b/drivers/usb/core/message.c
+@@ -1724,6 +1724,15 @@ free_interfaces:
+ 	if (ret)
+ 		goto free_interfaces;
  
- /*
-+ * ChamSys Limited (www.chamsys.co.uk) USB wing/interface product IDs
-+ */
-+#define FTDI_CHAMSYS_24_MASTER_WING_PID        0xDAF8
-+#define FTDI_CHAMSYS_PC_WING_PID       0xDAF9
-+#define FTDI_CHAMSYS_USB_DMX_PID       0xDAFA
-+#define FTDI_CHAMSYS_MIDI_TIMECODE_PID 0xDAFB
-+#define FTDI_CHAMSYS_MINI_WING_PID     0xDAFC
-+#define FTDI_CHAMSYS_MAXI_WING_PID     0xDAFD
-+#define FTDI_CHAMSYS_MEDIA_WING_PID    0xDAFE
-+#define FTDI_CHAMSYS_WING_PID  0xDAFF
++	/* if it's already configured, clear out old state first.
++	 * getting rid of old interfaces means unbinding their drivers.
++	 */
++	if (dev->state != USB_STATE_ADDRESS)
++		usb_disable_device(dev, 1);	/* Skip ep0 */
 +
-+/*
-  * Westrex International devices submitted by Cory Lee
-  */
- #define FTDI_WESTREX_MODEL_777_PID	0xDC00	/* Model 777 */
++	/* Get rid of pending async Set-Config requests for this device */
++	cancel_async_set_config(dev);
++
+ 	/* Make sure we have bandwidth (and available HCD resources) for this
+ 	 * configuration.  Remove endpoints from the schedule if we're dropping
+ 	 * this configuration to set configuration 0.  After this point, the
+@@ -1733,20 +1742,11 @@ free_interfaces:
+ 	mutex_lock(&hcd->bandwidth_mutex);
+ 	ret = usb_hcd_alloc_bandwidth(dev, cp, NULL, NULL);
+ 	if (ret < 0) {
+-		usb_autosuspend_device(dev);
+ 		mutex_unlock(&hcd->bandwidth_mutex);
++		usb_autosuspend_device(dev);
+ 		goto free_interfaces;
+ 	}
+ 
+-	/* if it's already configured, clear out old state first.
+-	 * getting rid of old interfaces means unbinding their drivers.
+-	 */
+-	if (dev->state != USB_STATE_ADDRESS)
+-		usb_disable_device(dev, 1);	/* Skip ep0 */
+-
+-	/* Get rid of pending async Set-Config requests for this device */
+-	cancel_async_set_config(dev);
+-
+ 	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
+ 			      USB_REQ_SET_CONFIGURATION, 0, configuration, 0,
+ 			      NULL, 0, USB_CTRL_SET_TIMEOUT);
+@@ -1761,8 +1761,8 @@ free_interfaces:
+ 	if (!cp) {
+ 		usb_set_device_state(dev, USB_STATE_ADDRESS);
+ 		usb_hcd_alloc_bandwidth(dev, NULL, NULL, NULL);
+-		usb_autosuspend_device(dev);
+ 		mutex_unlock(&hcd->bandwidth_mutex);
++		usb_autosuspend_device(dev);
+ 		goto free_interfaces;
+ 	}
+ 	mutex_unlock(&hcd->bandwidth_mutex);
 
 
