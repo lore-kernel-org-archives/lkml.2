@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757525Ab0IRTjr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:39:47 -0400
-Received: from kroah.org ([198.145.64.141]:43176 "EHLO coco.kroah.org"
+	id S1757545Ab0IRTj7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:39:59 -0400
+Received: from kroah.org ([198.145.64.141]:43173 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756626Ab0IRTOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:14:46 -0400
+	id S1755939Ab0IRTOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:14:45 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:12:58 2010
-Message-Id: <20100918191258.121261712@clark.site>
+Message-Id: <20100918191258.041916440@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:11:48 -0700
+Date: Sat, 18 Sep 2010 12:11:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mark Lord <mlord@pobox.com>, Jeff Garzik <jgarzik@redhat.com>
-Subject: [010/129] libata-sff: remove harmful BUG_ON from ata_bmdma_qc_issue
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [009/129] ALSA: hda - Rename iMic to Int Mic on Lenovo NB0763
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Lord <kernel@teksavvy.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 55ee67f837882f28a900705a2ca1af257ab6c53d upstream.
+commit 150b432f448281d5518f5229d240923f9a9c5459 upstream.
 
-Remove harmful BUG_ON() from ata_bmdma_qc_issue(),
-as it casts too wide of a net and breaks sata_mv.
-It also crashes the kernel while doing the BUG_ON().
+The non-standard name "iMic" makes PulseAudio ignore the microphone.
+BugLink: https://launchpad.net/bugs/605101
 
-There's already a WARN_ON_ONCE() further down to catch
-the case of POLLING for a BMDMA operation.
-
-Signed-off-by: Mark Lord <mlord@pobox.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/libata-sff.c |    4 ----
- 1 file changed, 4 deletions(-)
+ sound/pci/hda/patch_realtek.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/ata/libata-sff.c
-+++ b/drivers/ata/libata-sff.c
-@@ -2735,10 +2735,6 @@ unsigned int ata_bmdma_qc_issue(struct a
- {
- 	struct ata_port *ap = qc->ap;
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -7005,7 +7005,7 @@ static struct hda_input_mux alc883_lenov
+ 	.num_items = 4,
+ 	.items = {
+ 		{ "Mic", 0x0 },
+-		{ "iMic", 0x1 },
++		{ "Int Mic", 0x1 },
+ 		{ "Line", 0x2 },
+ 		{ "CD", 0x4 },
+ 	},
+@@ -8575,8 +8575,8 @@ static struct snd_kcontrol_new alc883_le
+ 	HDA_CODEC_MUTE("CD Playback Switch", 0x0b, 0x04, HDA_INPUT),
+ 	HDA_CODEC_VOLUME("Mic Playback Volume", 0x0b, 0x0, HDA_INPUT),
+ 	HDA_CODEC_MUTE("Mic Playback Switch", 0x0b, 0x0, HDA_INPUT),
+-	HDA_CODEC_VOLUME("iMic Playback Volume", 0x0b, 0x1, HDA_INPUT),
+-	HDA_CODEC_MUTE("iMic Playback Switch", 0x0b, 0x1, HDA_INPUT),
++	HDA_CODEC_VOLUME("Int Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
++	HDA_CODEC_MUTE("Int Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
+ 	{ } /* end */
+ };
  
--	/* see ata_dma_blacklisted() */
--	BUG_ON((ap->flags & ATA_FLAG_PIO_POLLING) &&
--	       qc->tf.protocol == ATAPI_PROT_DMA);
--
- 	/* defer PIO handling to sff_qc_issue */
- 	if (!ata_is_dma(qc->tf.protocol))
- 		return ata_sff_qc_issue(qc);
 
 
