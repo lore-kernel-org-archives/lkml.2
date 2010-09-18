@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756903Ab0IRTci (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:32:38 -0400
-Received: from kroah.org ([198.145.64.141]:43379 "EHLO coco.kroah.org"
+	id S1756670Ab0IRTOw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:14:52 -0400
+Received: from kroah.org ([198.145.64.141]:43195 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756710Ab0IRTPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:15:10 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:01 2010
-Message-Id: <20100918191301.263173354@clark.site>
+	id S1756644Ab0IRTOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:14:48 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:12:58 2010
+Message-Id: <20100918191258.374189339@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:12:24 -0700
+Date: Sat, 18 Sep 2010 12:11:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>
-Subject: [046/129] ima: always maintain counters
+        Dave Chinner <dchinner@redhat.com>
+Subject: [013/129] writeback: write_cache_pages doesnt terminate at nr_to_write <= 0
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,99 +25,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+From: Dave Chinner <dchinner@redhat.com>
 
-commit e950598d43dce8d97e7d5270808393425d1e5cbd upstream.
+commit 546a1924224078c6f582e68f890b05b387b42653 upstream.
 
-commit 8262bb85da allocated the inode integrity struct (iint) before any
-inodes were created. Only after IMA was initialized in late_initcall were
-the counters updated. This patch updates the counters, whether or not IMA
-has been initialized, to resolve 'imbalance' messages.
+I noticed XFS writeback in 2.6.36-rc1 was much slower than it should have
+been. Enabling writeback tracing showed:
 
-This patch fixes the bug as reported in bugzilla: 15673.  When the i915
-is builtin, the ring_buffer is initialized before IMA, causing the
-imbalance message on suspend.
+    flush-253:16-8516  [007] 1342952.351608: wbc_writepage: bdi 253:16: towrt=1024 skip=0 mode=0 kupd=0 bgrd=1 reclm=0 cyclic=1 more=0 older=0x0 start=0x0 end=0x0
+    flush-253:16-8516  [007] 1342952.351654: wbc_writepage: bdi 253:16: towrt=1023 skip=0 mode=0 kupd=0 bgrd=1 reclm=0 cyclic=1 more=0 older=0x0 start=0x0 end=0x0
+    flush-253:16-8516  [000] 1342952.369520: wbc_writepage: bdi 253:16: towrt=0 skip=0 mode=0 kupd=0 bgrd=1 reclm=0 cyclic=1 more=0 older=0x0 start=0x0 end=0x0
+    flush-253:16-8516  [000] 1342952.369542: wbc_writepage: bdi 253:16: towrt=-1 skip=0 mode=0 kupd=0 bgrd=1 reclm=0 cyclic=1 more=0 older=0x0 start=0x0 end=0x0
+    flush-253:16-8516  [000] 1342952.369549: wbc_writepage: bdi 253:16: towrt=-2 skip=0 mode=0 kupd=0 bgrd=1 reclm=0 cyclic=1 more=0 older=0x0 start=0x0 end=0x0
 
-Reported-by: Thomas Meyer <thomas@m3y3r.de>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Tested-by: Thomas Meyer <thomas@m3y3r.de>
-Tested-by: David Safford<safford@watson.ibm.com>
-Signed-off-by: James Morris <jmorris@namei.org>
+Writeback is not terminating in background writeback if ->writepage is
+returning with wbc->nr_to_write == 0, resulting in sub-optimal single page
+writeback on XFS.
+
+Fix the write_cache_pages loop to terminate correctly when this situation
+occurs and so prevent this sub-optimal background writeback pattern. This
+improves sustained sequential buffered write performance from around
+250MB/s to 750MB/s for a 100GB file on an XFS filesystem on my 8p test VM.
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- security/integrity/ima/ima.h      |    1 +
- security/integrity/ima/ima_iint.c |    4 +++-
- security/integrity/ima/ima_main.c |    8 +++++---
- 3 files changed, 9 insertions(+), 4 deletions(-)
+ mm/page-writeback.c |   26 ++++++++++----------------
+ 1 file changed, 10 insertions(+), 16 deletions(-)
 
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -35,6 +35,7 @@ enum tpm_pcrs { TPM_PCR0 = 0, TPM_PCR8 =
- #define IMA_MEASURE_HTABLE_SIZE (1 << IMA_HASH_BITS)
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -949,22 +949,16 @@ continue_unlock:
+ 				}
+ 			}
  
- /* set during initialization */
-+extern int iint_initialized;
- extern int ima_initialized;
- extern int ima_used_chip;
- extern char *ima_hash;
---- a/security/integrity/ima/ima_iint.c
-+++ b/security/integrity/ima/ima_iint.c
-@@ -22,9 +22,10 @@
- 
- RADIX_TREE(ima_iint_store, GFP_ATOMIC);
- DEFINE_SPINLOCK(ima_iint_lock);
--
- static struct kmem_cache *iint_cache __read_mostly;
- 
-+int iint_initialized = 0;
-+
- /* ima_iint_find_get - return the iint associated with an inode
-  *
-  * ima_iint_find_get gets a reference to the iint. Caller must
-@@ -141,6 +142,7 @@ static int __init ima_iintcache_init(voi
- 	iint_cache =
- 	    kmem_cache_create("iint_cache", sizeof(struct ima_iint_cache), 0,
- 			      SLAB_PANIC, init_once);
-+	iint_initialized = 1;
- 	return 0;
- }
- security_initcall(ima_iintcache_init);
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -148,12 +148,14 @@ void ima_counts_get(struct file *file)
- 	struct ima_iint_cache *iint;
- 	int rc;
- 
--	if (!ima_initialized || !S_ISREG(inode->i_mode))
-+	if (!iint_initialized || !S_ISREG(inode->i_mode))
- 		return;
- 	iint = ima_iint_find_get(inode);
- 	if (!iint)
- 		return;
- 	mutex_lock(&iint->mutex);
-+	if (!ima_initialized)
-+		goto out;
- 	rc = ima_must_measure(iint, inode, MAY_READ, FILE_CHECK);
- 	if (rc < 0)
- 		goto out;
-@@ -213,7 +215,7 @@ void ima_file_free(struct file *file)
- 	struct inode *inode = file->f_dentry->d_inode;
- 	struct ima_iint_cache *iint;
- 
--	if (!ima_initialized || !S_ISREG(inode->i_mode))
-+	if (!iint_initialized || !S_ISREG(inode->i_mode))
- 		return;
- 	iint = ima_iint_find_get(inode);
- 	if (!iint)
-@@ -230,7 +232,7 @@ static int process_measurement(struct fi
- {
- 	struct inode *inode = file->f_dentry->d_inode;
- 	struct ima_iint_cache *iint;
--	int rc;
-+	int rc = 0;
- 
- 	if (!ima_initialized || !S_ISREG(inode->i_mode))
- 		return 0;
+-			if (wbc->nr_to_write > 0) {
+-				if (--wbc->nr_to_write == 0 &&
+-				    wbc->sync_mode == WB_SYNC_NONE) {
+-					/*
+-					 * We stop writing back only if we are
+-					 * not doing integrity sync. In case of
+-					 * integrity sync we have to keep going
+-					 * because someone may be concurrently
+-					 * dirtying pages, and we might have
+-					 * synced a lot of newly appeared dirty
+-					 * pages, but have not synced all of the
+-					 * old dirty pages.
+-					 */
+-					done = 1;
+-					break;
+-				}
++			/*
++			 * We stop writing back only if we are not doing
++			 * integrity sync. In case of integrity sync we have to
++			 * keep going until we have written all the pages
++			 * we tagged for writeback prior to entering this loop.
++			 */
++			if (--wbc->nr_to_write <= 0 &&
++			    wbc->sync_mode == WB_SYNC_NONE) {
++				done = 1;
++				break;
+ 			}
+ 		}
+ 		pagevec_release(&pvec);
 
 
