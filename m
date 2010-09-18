@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756543Ab0IRTKH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:10:07 -0400
-Received: from kroah.org ([198.145.64.141]:51805 "EHLO coco.kroah.org"
+	id S1756121Ab0IRTKh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:10:37 -0400
+Received: from kroah.org ([198.145.64.141]:51798 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756104Ab0IRTCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:02:20 -0400
+	id S1754742Ab0IRTCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:02:19 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:00:01 2010
-Message-Id: <20100918190001.730346214@clark.site>
+Message-Id: <20100918190001.641957040@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:59:08 -0700
+Date: Sat, 18 Sep 2010 11:59:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Greg KH <greg@kroah.com>, Daniel J Blueman <daniel.blueman@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>
-Subject: [104/123] sched: apply RCU protection to wake_affine()
+        Greg KH <greg@kroah.com>, Mike Galbraith <efault@gmx.de>
+Subject: [103/123] sched: Remove unnecessary RCU exclusion
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=sched-apply-rcu-protection-to-wake_affine.patch
+Content-Disposition: inline; filename=sched-remove-unnecessary-rcu-exclusion.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel J Blueman <daniel.blueman@gmail.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-commit f3b577dec1f2ce32d2db6d2ca6badff7002512af upstream
+commit fb58bac5c75bfff8bbf7d02071a10a62f32fe28b upstream
 
-The task_group() function returns a pointer that must be protected
-by either RCU, the ->alloc_lock, or the cgroup lock (see the
-rcu_dereference_check() in task_subsys_state(), which is invoked by
-task_group()).  The wake_affine() function currently does none of these,
-which means that a concurrent update would be within its rights to free
-the structure returned by task_group().  Because wake_affine() uses this
-structure only to compute load-balancing heuristics, there is no reason
-to acquire either of the two locks.
+As Nick pointed out, and realized by myself when doing:
+   sched: Fix balance vs hotplug race
+the patch:
+   sched: for_each_domain() vs RCU
 
-Therefore, this commit introduces an RCU read-side critical section that
-starts before the first call to task_group() and ends after the last use
-of the "tg" pointer returned from task_group().  Thanks to Li Zefan for
-pointing out the need to extend the RCU read-side critical section from
-that proposed by the original patch.
+is wrong, sched_domains are freed after synchronize_sched(), which
+means disabling preemption is enough.
 
-Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reported-by: Nick Piggin <npiggin@suse.de>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <new-submission>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- kernel/sched_fair.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/sched_fair.c |    9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
 --- a/kernel/sched_fair.c
 +++ b/kernel/sched_fair.c
-@@ -1250,6 +1250,7 @@ static int wake_affine(struct sched_doma
- 	 * effect of the currently running task from the load
- 	 * of the current CPU:
- 	 */
-+	rcu_read_lock();
- 	if (sync) {
- 		tg = task_group(current);
- 		weight = current->se.load.weight;
-@@ -1275,6 +1276,7 @@ static int wake_affine(struct sched_doma
- 	balanced = !this_load ||
- 		100*(this_load + effective_load(tg, this_cpu, weight, weight)) <=
- 		imbalance*(load + effective_load(tg, prev_cpu, 0, weight));
-+	rcu_read_unlock();
+@@ -1410,7 +1410,6 @@ select_task_rq_fair(struct rq *rq, struc
+ 		new_cpu = prev_cpu;
+ 	}
  
- 	/*
- 	 * If the currently running task will sleep within
+-	rcu_read_lock();
+ 	for_each_domain(cpu, tmp) {
+ 		if (!(tmp->flags & SD_LOAD_BALANCE))
+ 			continue;
+@@ -1500,10 +1499,8 @@ select_task_rq_fair(struct rq *rq, struc
+ 		}
+ 	}
+ 
+-	if (affine_sd && wake_affine(affine_sd, p, sync)) {
+-		new_cpu = cpu;
+-		goto out;
+-	}
++	if (affine_sd && wake_affine(affine_sd, p, sync))
++		return cpu;
+ 
+ 	while (sd) {
+ 		int load_idx = sd->forkexec_idx;
+@@ -1544,8 +1541,6 @@ select_task_rq_fair(struct rq *rq, struc
+ 		/* while loop will break here if sd == NULL */
+ 	}
+ 
+-out:
+-	rcu_read_unlock();
+ 	return new_cpu;
+ }
+ #endif /* CONFIG_SMP */
 
 
