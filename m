@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755338Ab0IRIuX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 04:50:23 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59336 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754630Ab0IRIuW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 04:50:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=NiNR9pwVw8bRZ2N8jO0UUWEjs0Ry6MA08aShvp5sq+xXQd4fHjRVBpUXmFsypJ9W7a
-         HHUX6SbyUIE6xWRrwEfJ5uWCeQAtydz6YhbITYHhXj0m6vT7eOituUvcNDAeGr086sZk
-         KX4szw202CVrZyr85mnsnMEQxke5Bn7Q8OI0M=
+	id S1755334Ab0IRJEb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 05:04:31 -0400
+Received: from dtp.xs4all.nl ([80.101.171.8]:59365 "HELO abra2.bitwizard.nl"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1755256Ab0IRJEa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 05:04:30 -0400
+Date: Sat, 18 Sep 2010 11:04:28 +0200
+From: Rogier Wolff <R.E.Wolff@BitWizard.nl>
+To: Rogier Wolff <R.E.Wolff@BitWizard.nl>, linux-kernel@vger.kernel.org
+Subject: Re: Sudden "hangs"....
+Message-ID: <20100918090427.GJ31391@bitwizard.nl>
+References: <20100916143304.GA14874@bitwizard.nl> <20100917164723.GA13770@animx.eu.org>
 MIME-Version: 1.0
-In-Reply-To: <201009180954.52965.wolfgang@iksw-muees.de>
-References: <711BBECDEF81BA439A6038E213C1DF140957B9F8@ism-mail03.corp.ad.wrs.com>
-	<711BBECDEF81BA439A6038E213C1DF140957BD3D@ism-mail03.corp.ad.wrs.com>
-	<AANLkTimbHMvgsT809X44zAnYQEvSEbCtNc-eqHuxW8uK@mail.gmail.com>
-	<201009180954.52965.wolfgang@iksw-muees.de>
-Date: Sat, 18 Sep 2010 16:50:20 +0800
-Message-ID: <AANLkTikj01UhkiVrGJg4jgoOtXZ6dJjnwTsskDUVLD_H@mail.gmail.com>
-Subject: Re: USB: free coherent buffer into atomic context
-From: Ming Lei <tom.leiming@gmail.com>
-To: =?ISO-8859-1?Q?Wolfgang_M=FCes?= <wolfgang@iksw-muees.de>
-Cc: linux-usb <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100917164723.GA13770@animx.eu.org>
+Organization: BitWizard.nl
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC linux-kernel
+On Fri, Sep 17, 2010 at 12:47:23PM -0400, Wakko Warner wrote:
+> Rogier Wolff wrote:
+> > It seems my home workstation hangs on a "mkdir" once every morning for
+> > about half a minute. It'll freeze whatever I'm doing and continue
+> > happily 30 seconds later, but I can't figure out what's going on
+> > because it's frozen...
+> 
+> One of my volumes was doing this.  As someone mentioned earlier, check your
+> kernel log to see if you have a disk error.
 
-2010/9/18 Wolfgang Mües <wolfgang@iksw-muees.de>:
-> Hi,
+I work at "harddisk-recovery.nl". I know how to recognize bad disks. You can
+recognize a bad block in the vmstat output in that the bi and bo numbers
+go to zero for at least 10 seconds. This doesn't happen, as you can see
+in the original post. 
 
-Thanks for your reply.
+> On mine, I had no errors.  The activity led for that volume would be
+> on solid until the mkdir completed. 
 
->
-> Am Freitag, 17. September 2010 16:59:25 schrieb Ming Lei:
->> The warning only means dma_free_coherent is called with irq disabled.
->> It is not very difficult to fix the warning in usb hcd, but I need to know
->>  why the WARN_ON below is added into dma_free_coherent.
->>
->>            WARN_ON(irqs_disabled());
->>
->> Anyone know the reason?
->
-> Hmm... Coherent buffers are ment to be kept for the whole time a driver
+Besides that I can't see the activity led from my chair. But vmstat shows
+that it would be solid indeed. 
 
-Documentation/DMA_API.txt
+> My fix was to create a new
+> directory and move everything over and remove the old directory.
+> Obviously this won't work if you're having problems with more than 1
+> directory or the offending directory is the root of the volume.
 
-        Consistent memory is memory for which a write by either the
-        device or the processor can immediately be read by the processor
-        or device without having to worry about caching effects.
+This helps for the "very big directory" case. Directories are never
+shrunk. So if a directory has become very large because of thousands
+of files at one point in time, you can reduce that with the move-all-files
+trick. 
 
-IMO, it is not necessary for a coherent buffer to be kept for
-the whole time a driver operates on a device. Also, coherent buffer
-is very limited in some arch(such as ARM), maybe we should use it
-more dynamically, instead of keeping it for long time.
+When it happened and I recognized the effect, I typed the "time mkdir"
+command. I just chose the root of the partition for this. The directory
+there is NOT large: 
 
-> operates on a device. If such a buffer is freed in an interrupt context (== a
+drwxrwsr-x 32 root hdr 4096 2010-09-17 22:05 .
 
-irqs_disabled() doesn't mean the buffer is freed in an interrupt context.
+In fact it is as small as possible. 
 
-> momentary action), this is most likely a bug in the driver. At least it is a
-> misuse of the concept of coherent buffers.
+IMHO, the hint is that the flush process for the device ends up in
+top. Now if I understand the word "flush" correctly I'd expect it to
+write dirty buffers to the device. In this case, vmstat however
+reports mostly data coming INTO the computer. So why would the flush
+process need to READ data from the device?
 
-If it is only a misuse, seems WARN_ON can be removed.
 
-Sorry, I still don't get the real reason why WARN_ON(irqs_disabled()) is
-added in dma_free_coherent.
+
+	Roger. 
 
 -- 
-Lei Ming
+** R.E.Wolff@BitWizard.nl ** http://www.BitWizard.nl/ ** +31-15-2600998 **
+**    Delftechpark 26 2628 XH  Delft, The Netherlands. KVK: 27239233    **
+*-- BitWizard writes Linux device drivers for any device you may have! --*
+Q: It doesn't work. A: Look buddy, doesn't work is an ambiguous statement. 
+Does it sit on the couch all day? Is it unemployed? Please be specific! 
+Define 'it' and what it isn't doing. --------- Adapted from lxrbot FAQ
