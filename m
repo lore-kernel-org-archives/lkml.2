@@ -1,54 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757218Ab0IRTQV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:16:21 -0400
-Received: from kroah.org ([198.145.64.141]:43870 "EHLO coco.kroah.org"
+	id S1756326Ab0IRTLk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:11:40 -0400
+Received: from kroah.org ([198.145.64.141]:51768 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756217Ab0IRTQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:16:20 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:06 2010
-Message-Id: <20100918191306.659286659@clark.site>
+	id S1756047Ab0IRTCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:02:16 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:00:01 2010
+Message-Id: <20100918190001.303004620@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:13:27 -0700
+Date: Sat, 18 Sep 2010 11:59:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anton Vorontsov <cbouatmailru@gmail.com>
-Subject: [109/129] apm_power: Add missing break statement
-In-Reply-To: <20100918191317.GA11386@kroah.com>
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Greg KH <greg@kroah.com>, Mike Galbraith <efault@gmx.de>
+Subject: [099/123] sched: Fix TASK_WAKING vs fork deadlock
+References: <20100918185724.290702750@clark.site>
+Content-Disposition: inline; filename=sched-fix-task_waking-vs-fork-deadlock.patch
+In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-stable review patch.  If anyone has any objections, please let us know.
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-------------------
+commit 0017d735092844118bef006696a750a0e4ef6ebd upstream
 
-From: Anton Vorontsov <cbouatmailru@gmail.com>
+Oleg noticed a few races with the TASK_WAKING usage on fork.
 
-commit 1d220334d6a8a711149234dc5f98d34ae02226b8 upstream.
+ - since TASK_WAKING is basically a spinlock, it should be IRQ safe
+ - since we set TASK_WAKING (*) without holding rq->lock it could
+   be there still is a rq->lock holder, thereby not actually
+   providing full serialization.
 
-The missing break statement causes wrong capacity calculation for
-batteries that report energy.
+(*) in fact we clear PF_STARTING, which in effect enables TASK_WAKING.
 
-Reported-by: d binderman <dcb314@hotmail.com>
-Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
+Cure the second issue by not setting TASK_WAKING in sched_fork(), but
+only temporarily in wake_up_new_task() while calling select_task_rq().
+
+Cure the first by holding rq->lock around the select_task_rq() call,
+this will disable IRQs, this however requires that we push down the
+rq->lock release into select_task_rq_fair()'s cgroup stuff.
+
+Because select_task_rq_fair() still needs to drop the rq->lock we
+cannot fully get rid of TASK_WAKING.
+
+Reported-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <new-submission>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/power/apm_power.c |    1 +
- 1 file changed, 1 insertion(+)
+ include/linux/sched.h   |    3 +-
+ kernel/sched.c          |   65 +++++++++++++++++-------------------------------
+ kernel/sched_fair.c     |    8 ++++-
+ kernel/sched_idletask.c |    3 +-
+ kernel/sched_rt.c       |    5 +--
+ 5 files changed, 36 insertions(+), 48 deletions(-)
 
---- a/drivers/power/apm_power.c
-+++ b/drivers/power/apm_power.c
-@@ -233,6 +233,7 @@ static int calculate_capacity(enum apm_s
- 		empty_design_prop = POWER_SUPPLY_PROP_ENERGY_EMPTY_DESIGN;
- 		now_prop = POWER_SUPPLY_PROP_ENERGY_NOW;
- 		avg_prop = POWER_SUPPLY_PROP_ENERGY_AVG;
-+		break;
- 	case SOURCE_VOLTAGE:
- 		full_prop = POWER_SUPPLY_PROP_VOLTAGE_MAX;
- 		empty_prop = POWER_SUPPLY_PROP_VOLTAGE_MIN;
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1082,7 +1082,8 @@ struct sched_class {
+ 	void (*put_prev_task) (struct rq *rq, struct task_struct *p);
+ 
+ #ifdef CONFIG_SMP
+-	int  (*select_task_rq)(struct task_struct *p, int sd_flag, int flags);
++	int  (*select_task_rq)(struct rq *rq, struct task_struct *p,
++			       int sd_flag, int flags);
+ 
+ 	unsigned long (*load_balance) (struct rq *this_rq, int this_cpu,
+ 			struct rq *busiest, unsigned long max_load_move,
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -944,14 +944,10 @@ static inline void finish_lock_switch(st
+ /*
+  * Check whether the task is waking, we use this to synchronize against
+  * ttwu() so that task_cpu() reports a stable number.
+- *
+- * We need to make an exception for PF_STARTING tasks because the fork
+- * path might require task_rq_lock() to work, eg. it can call
+- * set_cpus_allowed_ptr() from the cpuset clone_ns code.
+  */
+ static inline int task_is_waking(struct task_struct *p)
+ {
+-	return unlikely((p->state == TASK_WAKING) && !(p->flags & PF_STARTING));
++	return unlikely(p->state == TASK_WAKING);
+ }
+ 
+ /*
+@@ -2373,9 +2369,9 @@ static int select_fallback_rq(int cpu, s
+  * The caller (fork, wakeup) owns TASK_WAKING, ->cpus_allowed is stable.
+  */
+ static inline
+-int select_task_rq(struct task_struct *p, int sd_flags, int wake_flags)
++int select_task_rq(struct rq *rq, struct task_struct *p, int sd_flags, int wake_flags)
+ {
+-	int cpu = p->sched_class->select_task_rq(p, sd_flags, wake_flags);
++	int cpu = p->sched_class->select_task_rq(rq, p, sd_flags, wake_flags);
+ 
+ 	/*
+ 	 * In order not to call set_task_cpu() on a blocking task we need
+@@ -2450,17 +2446,10 @@ static int try_to_wake_up(struct task_st
+ 	if (p->sched_class->task_waking)
+ 		p->sched_class->task_waking(rq, p);
+ 
+-	__task_rq_unlock(rq);
+-
+-	cpu = select_task_rq(p, SD_BALANCE_WAKE, wake_flags);
+-	if (cpu != orig_cpu) {
+-		/*
+-		 * Since we migrate the task without holding any rq->lock,
+-		 * we need to be careful with task_rq_lock(), since that
+-		 * might end up locking an invalid rq.
+-		 */
++	cpu = select_task_rq(rq, p, SD_BALANCE_WAKE, wake_flags);
++	if (cpu != orig_cpu)
+ 		set_task_cpu(p, cpu);
+-	}
++	__task_rq_unlock(rq);
+ 
+ 	rq = cpu_rq(cpu);
+ 	spin_lock(&rq->lock);
+@@ -2638,11 +2627,11 @@ void sched_fork(struct task_struct *p, i
+ 
+ 	__sched_fork(p);
+ 	/*
+-	 * We mark the process as waking here. This guarantees that
++	 * We mark the process as running here. This guarantees that
+ 	 * nobody will actually run it, and a signal or other external
+ 	 * event cannot wake it up and insert it on the runqueue either.
+ 	 */
+-	p->state = TASK_WAKING;
++	p->state = TASK_RUNNING;
+ 
+ 	/*
+ 	 * Revert to default priority/policy on fork if requested.
+@@ -2709,28 +2698,25 @@ void wake_up_new_task(struct task_struct
+ 	int cpu = get_cpu();
+ 
+ #ifdef CONFIG_SMP
++	rq = task_rq_lock(p, &flags);
++	p->state = TASK_WAKING;
++
+ 	/*
+ 	 * Fork balancing, do it here and not earlier because:
+ 	 *  - cpus_allowed can change in the fork path
+ 	 *  - any previously selected cpu might disappear through hotplug
+ 	 *
+-	 * We still have TASK_WAKING but PF_STARTING is gone now, meaning
+-	 * ->cpus_allowed is stable, we have preemption disabled, meaning
+-	 * cpu_online_mask is stable.
++	 * We set TASK_WAKING so that select_task_rq() can drop rq->lock
++	 * without people poking at ->cpus_allowed.
+ 	 */
+-	cpu = select_task_rq(p, SD_BALANCE_FORK, 0);
++	cpu = select_task_rq(rq, p, SD_BALANCE_FORK, 0);
+ 	set_task_cpu(p, cpu);
+-#endif
+-
+-	/*
+-	 * Since the task is not on the rq and we still have TASK_WAKING set
+-	 * nobody else will migrate this task.
+-	 */
+-	rq = cpu_rq(cpu);
+-	spin_lock_irqsave(&rq->lock, flags);
+ 
+-	BUG_ON(p->state != TASK_WAKING);
+ 	p->state = TASK_RUNNING;
++	task_rq_unlock(rq, &flags);
++#endif
++
++	rq = task_rq_lock(p, &flags);
+ 	update_rq_clock(rq);
+ 	activate_task(rq, p, 0);
+ 	trace_sched_wakeup_new(rq, p, 1);
+@@ -3215,19 +3201,15 @@ void sched_exec(void)
+ {
+ 	struct task_struct *p = current;
+ 	struct migration_req req;
+-	int dest_cpu, this_cpu;
+ 	unsigned long flags;
+ 	struct rq *rq;
+-
+-	this_cpu = get_cpu();
+-	dest_cpu = p->sched_class->select_task_rq(p, SD_BALANCE_EXEC, 0);
+-	if (dest_cpu == this_cpu) {
+-		put_cpu();
+-		return;
+-	}
++	int dest_cpu;
+ 
+ 	rq = task_rq_lock(p, &flags);
+-	put_cpu();
++	dest_cpu = p->sched_class->select_task_rq(rq, p, SD_BALANCE_EXEC, 0);
++	if (dest_cpu == smp_processor_id())
++		goto unlock;
++
+ 	/*
+ 	 * select_task_rq() can race against ->cpus_allowed
+ 	 */
+@@ -3245,6 +3227,7 @@ void sched_exec(void)
+ 
+ 		return;
+ 	}
++unlock:
+ 	task_rq_unlock(rq, &flags);
+ }
+ 
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -1392,7 +1392,8 @@ find_idlest_cpu(struct sched_group *grou
+  *
+  * preempt must be disabled.
+  */
+-static int select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
++static int
++select_task_rq_fair(struct rq *rq, struct task_struct *p, int sd_flag, int wake_flags)
+ {
+ 	struct sched_domain *tmp, *affine_sd = NULL, *sd = NULL;
+ 	int cpu = smp_processor_id();
+@@ -1492,8 +1493,11 @@ static int select_task_rq_fair(struct ta
+ 				  cpumask_weight(sched_domain_span(sd))))
+ 			tmp = affine_sd;
+ 
+-		if (tmp)
++		if (tmp) {
++			spin_unlock(&rq->lock);
+ 			update_shares(tmp);
++			spin_lock(&rq->lock);
++		}
+ 	}
+ 
+ 	if (affine_sd && wake_affine(affine_sd, p, sync)) {
+--- a/kernel/sched_idletask.c
++++ b/kernel/sched_idletask.c
+@@ -6,7 +6,8 @@
+  */
+ 
+ #ifdef CONFIG_SMP
+-static int select_task_rq_idle(struct task_struct *p, int sd_flag, int flags)
++static int
++select_task_rq_idle(struct rq *rq, struct task_struct *p, int sd_flag, int flags)
+ {
+ 	return task_cpu(p); /* IDLE tasks as never migrated */
+ }
+--- a/kernel/sched_rt.c
++++ b/kernel/sched_rt.c
+@@ -942,10 +942,9 @@ static void yield_task_rt(struct rq *rq)
+ #ifdef CONFIG_SMP
+ static int find_lowest_rq(struct task_struct *task);
+ 
+-static int select_task_rq_rt(struct task_struct *p, int sd_flag, int flags)
++static int
++select_task_rq_rt(struct rq *rq, struct task_struct *p, int sd_flag, int flags)
+ {
+-	struct rq *rq = task_rq(p);
+-
+ 	if (sd_flag != SD_BALANCE_WAKE)
+ 		return smp_processor_id();
+ 
 
 
