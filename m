@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755162Ab0IRIAS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 04:00:18 -0400
-Received: from mailhost-h5-p1.netultra.net ([195.5.209.34]:55203 "EHLO
-	smtp-delay1.nerim.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754611Ab0IRIAR (ORCPT
+	id S1755244Ab0IRI1K (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 04:27:10 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:56850 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754877Ab0IRI1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 04:00:17 -0400
-X-Greylist: delayed 613 seconds by postgrey-1.27 at vger.kernel.org; Sat, 18 Sep 2010 04:00:17 EDT
-Date: Sat, 18 Sep 2010 09:49:39 +0200
-From: Damien Wyart <damien.wyart@free.fr>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Nix <nix@esperi.org.uk>,
-        Artur Skawina <art.08.09@gmail.com>,
-        John Drescher <drescherjm@gmail.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: [PATCH RFC] x86: hpet: Avoid the readback penalty
-Message-ID: <20100918074939.GA3275@brouette>
-References: <tip-54ff7e595d763d894104d421b103a89f7becf47c@git.kernel.org>
- <alpine.LFD.2.00.1009151500060.2416@localhost6.localdomain6>
+	Sat, 18 Sep 2010 04:27:08 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Subject: Re: New compat_alloc_user_space() GPLness and fglrx
+Date: Sat, 18 Sep 2010 10:26:57 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-next-20100910+; KDE/4.5.1; x86_64; ; )
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "Greg Kroah-Hartman" <gregkh@suse.de>
+References: <20100918014232.GA17699@khazad-dum.debian.net>
+In-Reply-To: <20100918014232.GA17699@khazad-dum.debian.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1009151500060.2416@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009181026.58002.arnd@arndb.de>
+X-Provags-ID: V02:K0:kd9XduqW/YCctutNr7n/CwBsk6dl09ddP3kbHhPzbtA
+ cucAQPa/lNJr9JCq5BzTuUG+z02NBbnwDjHPCY2vYYgF0Mpr6B
+ DWYfcoAjYXfVCaN8oumWqf4QQZhOLo7cBlqQFYVPhQBUWxcy66
+ sRRuSWi74/Wi0VR2W7b020YMiAOorpoax7By23NdvlCSyYttQ0
+ k6Skr2z7Lo9GuCh39GW0Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Thomas Gleixner <tglx@linutronix.de> [2010-09-15 15:11]:
-> > x86: hpet: Work around hardware stupidity
+On Saturday 18 September 2010 03:42:32 Henrique de Moraes Holschuh wrote:
+> promotes compat_alloc_user_space() to EXPORT_SYMBOL_GPL, and moves it from
+> asm/compat.h to linux/compat.h.
+> 
+> This breaks AMD/ATI's proprietary fglrx GPU driver, which wants to use
+> compat_alloc_user_space(), and expects to find it in asm/compat.h.
+> 
+> Fixing this on the fglrx side is easy enough, one can simply audit the two
+> or three call sites in the fglrx glue and make sure they can use
+> arch_compat_alloc_user_space() safely.
+> 
+> But such a fix doesn't look right.  IMHO, either we don't want any non-GPL
+> module touching *_compat_alloc_user_space and compat_alloc_user_space, or it
+> would be better to let them use compat_alloc_user_space() in the interest of
+> overall security...
 
-> After my brain recovered from yesterdays exposure with the x86 timer
-> horror, I came up with a different solution for this problem, which
-> avoids the readback of the compare register completely. It works
-> nicely on my affected ATI system, but needs some exposure to the other
-> machines.
+Right, don't use arch_compat_alloc_user_space(), that would be worse.
 
-Comments for this different solution seemed fine, but it seems only the
-first one was commited into mainline and then stable. Is this intended?
+compat_alloc_user_space is still a horrible hack and shouldn't be used
+at all if possible. Just fix the code to either not require compat
+ioctl handling or split out the common code from the native ioctl
+function and pass it a kernel data structure, which you copy from user
+space in different ways depending on where you come from.
 
-
-Thanks,
-
-Damien
+	Arnd
