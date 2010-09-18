@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756938Ab0IRTPe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:15:34 -0400
-Received: from kroah.org ([198.145.64.141]:43571 "EHLO coco.kroah.org"
+	id S1756945Ab0IRT1b (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:27:31 -0400
+Received: from kroah.org ([198.145.64.141]:43590 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756923Ab0IRTPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:15:32 -0400
+	id S1756923Ab0IRTPg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:15:36 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:03 2010
-Message-Id: <20100918191303.349633894@clark.site>
+Message-Id: <20100918191303.699285863@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:12:48 -0700
+Date: Sat, 18 Sep 2010 12:12:52 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>
-Subject: [070/129] libata: skip EH autopsy and recovery during suspend
+        Li Zefan <lizf@cn.fujitsu.com>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [074/129] tracing: Fix a race in function profile
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,78 +25,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <htejun@gmail.com>
+From: Li Zefan <lizf@cn.fujitsu.com>
 
-commit e2f3d75fc0e4a0d03c61872bad39ffa2e74a04ff upstream.
+commit 3aaba20f26f58843e8f20611e5c0b1c06954310f upstream.
 
-For some mysterious reason, certain hardware reacts badly to usual EH
-actions while the system is going for suspend.  As the devices won't
-be needed until the system is resumed, ask EH to skip usual autopsy
-and recovery and proceed directly to suspend.
+While we are reading trace_stat/functionX and someone just
+disabled function_profile at that time, we can trigger this:
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Tested-by: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+	divide error: 0000 [#1] PREEMPT SMP
+	...
+	EIP is at function_stat_show+0x90/0x230
+	...
+
+This fix just takes the ftrace_profile_lock and checks if
+rec->counter is 0. If it's 0, we know the profile buffer
+has been reset.
+
+Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+LKML-Reference: <4C723644.4040708@cn.fujitsu.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/libata-core.c |   14 +++++++++++++-
- drivers/ata/libata-eh.c   |    4 ++++
- include/linux/libata.h    |    1 +
- 3 files changed, 18 insertions(+), 1 deletion(-)
+ kernel/trace/ftrace.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -5434,6 +5434,7 @@ static int ata_host_request_pm(struct at
-  */
- int ata_host_suspend(struct ata_host *host, pm_message_t mesg)
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -381,12 +381,19 @@ static int function_stat_show(struct seq
  {
-+	unsigned int ehi_flags = ATA_EHI_QUIET;
- 	int rc;
- 
- 	/*
-@@ -5442,7 +5443,18 @@ int ata_host_suspend(struct ata_host *ho
- 	 */
- 	ata_lpm_enable(host);
- 
--	rc = ata_host_request_pm(host, mesg, 0, ATA_EHI_QUIET, 1);
-+	/*
-+	 * On some hardware, device fails to respond after spun down
-+	 * for suspend.  As the device won't be used before being
-+	 * resumed, we don't need to touch the device.  Ask EH to skip
-+	 * the usual stuff and proceed directly to suspend.
-+	 *
-+	 * http://thread.gmane.org/gmane.linux.ide/46764
-+	 */
-+	if (mesg.event == PM_EVENT_SUSPEND)
-+		ehi_flags |= ATA_EHI_NO_AUTOPSY | ATA_EHI_NO_RECOVERY;
+ 	struct ftrace_profile *rec = v;
+ 	char str[KSYM_SYMBOL_LEN];
++	int ret = 0;
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+-	static DEFINE_MUTEX(mutex);
+ 	static struct trace_seq s;
+ 	unsigned long long avg;
+ 	unsigned long long stddev;
+ #endif
++	mutex_lock(&ftrace_profile_lock);
 +
-+	rc = ata_host_request_pm(host, mesg, 0, ehi_flags, 1);
- 	if (rc == 0)
- 		host->dev->power.power_state = mesg;
- 	return rc;
---- a/drivers/ata/libata-eh.c
-+++ b/drivers/ata/libata-eh.c
-@@ -3234,6 +3234,10 @@ static int ata_eh_skip_recovery(struct a
- 	if (link->flags & ATA_LFLAG_DISABLED)
- 		return 1;
++	/* we raced with function_profile_reset() */
++	if (unlikely(rec->counter == 0)) {
++		ret = -EBUSY;
++		goto out;
++	}
  
-+	/* skip if explicitly requested */
-+	if (ehc->i.flags & ATA_EHI_NO_RECOVERY)
-+		return 1;
-+
- 	/* thaw frozen port and recover failed devices */
- 	if ((ap->pflags & ATA_PFLAG_FROZEN) || ata_link_nr_enabled(link))
- 		return 0;
---- a/include/linux/libata.h
-+++ b/include/linux/libata.h
-@@ -335,6 +335,7 @@ enum {
- 	ATA_EHI_HOTPLUGGED	= (1 << 0),  /* could have been hotplugged */
- 	ATA_EHI_NO_AUTOPSY	= (1 << 2),  /* no autopsy */
- 	ATA_EHI_QUIET		= (1 << 3),  /* be quiet */
-+	ATA_EHI_NO_RECOVERY	= (1 << 4),  /* no recovery */
+ 	kallsyms_lookup(rec->ip, NULL, NULL, NULL, str);
+ 	seq_printf(m, "  %-30.30s  %10lu", str, rec->counter);
+@@ -408,7 +415,6 @@ static int function_stat_show(struct seq
+ 		do_div(stddev, (rec->counter - 1) * 1000);
+ 	}
  
- 	ATA_EHI_DID_SOFTRESET	= (1 << 16), /* already soft-reset this port */
- 	ATA_EHI_DID_HARDRESET	= (1 << 17), /* already soft-reset this port */
+-	mutex_lock(&mutex);
+ 	trace_seq_init(&s);
+ 	trace_print_graph_duration(rec->time, &s);
+ 	trace_seq_puts(&s, "    ");
+@@ -416,11 +422,12 @@ static int function_stat_show(struct seq
+ 	trace_seq_puts(&s, "    ");
+ 	trace_print_graph_duration(stddev, &s);
+ 	trace_print_seq(m, &s);
+-	mutex_unlock(&mutex);
+ #endif
+ 	seq_putc(m, '\n');
++out:
++	mutex_unlock(&ftrace_profile_lock);
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ static void ftrace_profile_reset(struct ftrace_profile_stat *stat)
 
 
