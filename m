@@ -1,242 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756626Ab0IRTnP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:43:15 -0400
-Received: from kroah.org ([198.145.64.141]:51662 "EHLO coco.kroah.org"
+	id S1755908Ab0IRTCE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:02:04 -0400
+Received: from kroah.org ([198.145.64.141]:51170 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755407Ab0IRTCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:02:06 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:00:00 2010
-Message-Id: <20100918190000.013797329@clark.site>
+	id S1754508Ab0IRTBV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:01:21 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:54 2010
+Message-Id: <20100918185954.441670147@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:58:48 -0700
+Date: Sat, 18 Sep 2010 11:57:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Greg KH <greg@kroah.com>, Mike Galbraith <efault@gmx.de>
-Subject: [084/123] sched: Remove the cfs_rq dependency from set_task_cpu()
+        Dan Carpenter <error27@gmail.com>
+Subject: [019/123] USB: ehci-ppc-of: problems in unwind
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=sched-remove-the-cfs_rq-dependency-from-set_task_cpu.patch
+Content-Disposition: inline; filename=usb-ehci-ppc-of-problems-in-unwind.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Dan Carpenter <error27@gmail.com>
 
-commit 88ec22d3edb72b261f8628226cd543589a6d5e1b upstream
+commit 08a3b3b1c2e622e378d9086aee9e2e42ce37591d upstream.
 
-In order to remove the cfs_rq dependency from set_task_cpu() we
-need to ensure the task is cfs_rq invariant for all callsites.
+The iounmap(ehci->ohci_hcctrl_reg); should be the first thing we do
+because the ioremap() was the last thing we did.  Also if we hit any of
+the goto statements in the original code then it would have led to a
+NULL dereference of "ehci".  This bug was introduced in: 796bcae7361c
+"USB: powerpc: Workaround for the PPC440EPX USBH_23 errata [take 3]"
 
-The simple approach is to substract cfs_rq->min_vruntime from
-se->vruntime on dequeue, and add cfs_rq->min_vruntime on
-enqueue.
+I modified the few lines in front a little so that my code didn't
+obscure the return success code path.
 
-However, this has the downside of breaking FAIR_SLEEPERS since
-we loose the old vruntime as we only maintain the relative
-position.
-
-To solve this, we observe that we only migrate runnable tasks,
-we do this using deactivate_task(.sleep=0) and
-activate_task(.wakeup=0), therefore we can restrain the
-min_vruntime invariance to that state.
-
-The only other case is wakeup balancing, since we want to
-maintain the old vruntime we cannot make it relative on dequeue,
-but since we don't migrate inactive tasks, we can do so right
-before we activate it again.
-
-This is where we need the new pre-wakeup hook, we need to call
-this while still holding the old rq->lock. We could fold it into
-->select_task_rq(), but since that has multiple callsites and
-would obfuscate the locking requirements, that seems like a
-fudge.
-
-This leaves the fork() case, simply make sure that ->task_fork()
-leaves the ->vruntime in a relative state.
-
-This covers all cases where set_task_cpu() gets called, and
-ensures it sees a relative vruntime.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Mike Galbraith <efault@gmx.de>
-LKML-Reference: <20091216170518.191697025@chello.nl>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Reviewed-by: Grant Likely <grant.likely@secretlab.ca>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- include/linux/sched.h |    2 +-
- kernel/sched.c        |    6 +-----
- kernel/sched_fair.c   |   50 ++++++++++++++++++++++++++++++++++++++++++++------
- 3 files changed, 46 insertions(+), 12 deletions(-)
 
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1118,7 +1118,7 @@ struct sched_class {
- 					 struct task_struct *task);
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
--	void (*moved_group) (struct task_struct *p);
-+	void (*moved_group) (struct task_struct *p, int on_rq);
- #endif
- };
- 
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2063,8 +2063,6 @@ task_hot(struct task_struct *p, u64 now,
- void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
- {
- 	int old_cpu = task_cpu(p);
--	struct cfs_rq *old_cfsrq = task_cfs_rq(p),
--		      *new_cfsrq = cpu_cfs_rq(old_cfsrq, new_cpu);
- 
- #ifdef CONFIG_SCHED_DEBUG
- 	/*
-@@ -2082,8 +2080,6 @@ void set_task_cpu(struct task_struct *p,
- 		perf_sw_event(PERF_COUNT_SW_CPU_MIGRATIONS,
- 				     1, 1, NULL, 0);
- 	}
--	p->se.vruntime -= old_cfsrq->min_vruntime -
--					 new_cfsrq->min_vruntime;
- 
- 	__set_task_cpu(p, new_cpu);
- }
-@@ -10144,7 +10140,7 @@ void sched_move_task(struct task_struct
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	if (tsk->sched_class->moved_group)
--		tsk->sched_class->moved_group(tsk);
-+		tsk->sched_class->moved_group(tsk, on_rq);
- #endif
- 
- 	if (unlikely(running))
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -488,6 +488,7 @@ __update_curr(struct cfs_rq *cfs_rq, str
- 	curr->sum_exec_runtime += delta_exec;
- 	schedstat_add(cfs_rq, exec_clock, delta_exec);
- 	delta_exec_weighted = calc_delta_fair(delta_exec, curr);
-+
- 	curr->vruntime += delta_exec_weighted;
- 	update_min_vruntime(cfs_rq);
- }
-@@ -743,16 +744,26 @@ place_entity(struct cfs_rq *cfs_rq, stru
- 	se->vruntime = vruntime;
- }
- 
-+#define ENQUEUE_WAKEUP	1
-+#define ENQUEUE_MIGRATE 2
-+
- static void
--enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int wakeup)
-+enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
- {
- 	/*
-+	 * Update the normalized vruntime before updating min_vruntime
-+	 * through callig update_curr().
-+	 */
-+	if (!(flags & ENQUEUE_WAKEUP) || (flags & ENQUEUE_MIGRATE))
-+		se->vruntime += cfs_rq->min_vruntime;
-+
-+	/*
- 	 * Update run-time statistics of the 'current'.
- 	 */
- 	update_curr(cfs_rq);
- 	account_entity_enqueue(cfs_rq, se);
- 
--	if (wakeup) {
-+	if (flags & ENQUEUE_WAKEUP) {
- 		place_entity(cfs_rq, se, 0);
- 		enqueue_sleeper(cfs_rq, se);
- 	}
-@@ -806,6 +817,14 @@ dequeue_entity(struct cfs_rq *cfs_rq, st
- 		__dequeue_entity(cfs_rq, se);
- 	account_entity_dequeue(cfs_rq, se);
- 	update_min_vruntime(cfs_rq);
-+
-+	/*
-+	 * Normalize the entity after updating the min_vruntime because the
-+	 * update can refer to the ->curr item and we need to reflect this
-+	 * movement in our normalized position.
-+	 */
-+	if (!sleep)
-+		se->vruntime -= cfs_rq->min_vruntime;
- }
- 
- /*
-@@ -1016,13 +1035,19 @@ static void enqueue_task_fair(struct rq
- {
- 	struct cfs_rq *cfs_rq;
- 	struct sched_entity *se = &p->se;
-+	int flags = 0;
-+
-+	if (wakeup)
-+		flags |= ENQUEUE_WAKEUP;
-+	if (p->state == TASK_WAKING)
-+		flags |= ENQUEUE_MIGRATE;
- 
- 	for_each_sched_entity(se) {
- 		if (se->on_rq)
- 			break;
- 		cfs_rq = cfs_rq_of(se);
--		enqueue_entity(cfs_rq, se, wakeup);
--		wakeup = 1;
-+		enqueue_entity(cfs_rq, se, flags);
-+		flags = ENQUEUE_WAKEUP;
+---
+ drivers/usb/host/ehci-ppc-of.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
+
+--- a/drivers/usb/host/ehci-ppc-of.c
++++ b/drivers/usb/host/ehci-ppc-of.c
+@@ -192,17 +192,19 @@ ehci_hcd_ppc_of_probe(struct of_device *
  	}
  
- 	hrtick_update(rq);
-@@ -1098,6 +1123,14 @@ static void yield_task_fair(struct rq *r
+ 	rv = usb_add_hcd(hcd, irq, 0);
+-	if (rv == 0)
+-		return 0;
++	if (rv)
++		goto err_ehci;
  
- #ifdef CONFIG_SMP
- 
-+static void task_waking_fair(struct rq *rq, struct task_struct *p)
-+{
-+	struct sched_entity *se = &p->se;
-+	struct cfs_rq *cfs_rq = cfs_rq_of(se);
++	return 0;
 +
-+	se->vruntime -= cfs_rq->min_vruntime;
-+}
-+
- #ifdef CONFIG_FAIR_GROUP_SCHED
- /*
-  * effective_load() calculates the load change as seen from the root_task_group
-@@ -1943,6 +1976,8 @@ static void task_fork_fair(struct task_s
- 		resched_task(rq->curr);
- 	}
++err_ehci:
++	if (ehci->has_amcc_usb23)
++		iounmap(ehci->ohci_hcctrl_reg);
+ 	iounmap(hcd->regs);
+ err_ioremap:
+ 	irq_dispose_mapping(irq);
+ err_irq:
+ 	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+-
+-	if (ehci->has_amcc_usb23)
+-		iounmap(ehci->ohci_hcctrl_reg);
+ err_rmr:
+ 	usb_put_hcd(hcd);
  
-+	se->vruntime -= cfs_rq->min_vruntime;
-+
- 	spin_unlock_irqrestore(&rq->lock, flags);
- }
- 
-@@ -1996,12 +2031,13 @@ static void set_curr_task_fair(struct rq
- }
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
--static void moved_group_fair(struct task_struct *p)
-+static void moved_group_fair(struct task_struct *p, int on_rq)
- {
- 	struct cfs_rq *cfs_rq = task_cfs_rq(p);
- 
- 	update_curr(cfs_rq);
--	place_entity(cfs_rq, &p->se, 1);
-+	if (!on_rq)
-+		place_entity(cfs_rq, &p->se, 1);
- }
- #endif
- 
-@@ -2041,6 +2077,8 @@ static const struct sched_class fair_sch
- 	.move_one_task		= move_one_task_fair,
- 	.rq_online		= rq_online_fair,
- 	.rq_offline		= rq_offline_fair,
-+
-+	.task_waking		= task_waking_fair,
- #endif
- 
- 	.set_curr_task          = set_curr_task_fair,
 
 
