@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757414Ab0IRT21 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:28:27 -0400
-Received: from kroah.org ([198.145.64.141]:43557 "EHLO coco.kroah.org"
+	id S1756894Ab0IRTP2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:15:28 -0400
+Received: from kroah.org ([198.145.64.141]:43543 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756903Ab0IRTPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:15:30 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:03 2010
-Message-Id: <20100918191303.179306089@clark.site>
+	id S1756839Ab0IRTP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:15:26 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:02 2010
+Message-Id: <20100918191302.922124155@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:12:46 -0700
+Date: Sat, 18 Sep 2010 12:12:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Robert Richter <robert.richter@amd.com>
-Subject: [068/129] oprofile, x86: fix init_sysfs() function stub
+        Dan Carpenter <error27@gmail.com>
+Subject: [065/129] sysfs: checking for NULL instead of ERR_PTR
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robert Richter <robert.richter@amd.com>
+From: Dan Carpenter <error27@gmail.com>
 
-commit 269f45c25028c75fe10e6d9be86e7202ab461fbc upstream.
+commit 57f9bdac2510cd7fda58e4a111d250861eb1ebeb upstream.
 
-The use of the return value of init_sysfs() with commit
+d_path() returns an ERR_PTR and it doesn't return NULL.
 
- 10f0412 oprofile, x86: fix init_sysfs error handling
-
-discovered the following build error for !CONFIG_PM:
-
- .../linux/arch/x86/oprofile/nmi_int.c: In function ‘op_nmi_init’:
- .../linux/arch/x86/oprofile/nmi_int.c:784: error: expected expression before ‘do’
- make[2]: *** [arch/x86/oprofile/nmi_int.o] Error 1
- make[1]: *** [arch/x86/oprofile] Error 2
-
-This patch fixes this.
-
-Reported-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/oprofile/nmi_int.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ fs/sysfs/file.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/oprofile/nmi_int.c
-+++ b/arch/x86/oprofile/nmi_int.c
-@@ -585,8 +585,10 @@ static void exit_sysfs(void)
- }
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -340,7 +340,7 @@ static int sysfs_open_file(struct inode
+ 	char *p;
  
- #else
--#define init_sysfs() do { } while (0)
--#define exit_sysfs() do { } while (0)
-+
-+static inline int  init_sysfs(void) { return 0; }
-+static inline void exit_sysfs(void) { }
-+
- #endif /* CONFIG_PM */
+ 	p = d_path(&file->f_path, last_sysfs_file, sizeof(last_sysfs_file));
+-	if (p)
++	if (!IS_ERR(p))
+ 		memmove(last_sysfs_file, p, strlen(p) + 1);
  
- static int __init p4_init(char **cpu_type)
+ 	/* need attr_sd for attr and ops, its parent for kobj */
 
 
