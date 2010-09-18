@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755791Ab0IRStQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 14:49:16 -0400
-Received: from kroah.org ([198.145.64.141]:38920 "EHLO coco.kroah.org"
+	id S1755702Ab0IRStM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 14:49:12 -0400
+Received: from kroah.org ([198.145.64.141]:38974 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753521Ab0IRSse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 14:48:34 -0400
+	id S1755368Ab0IRSsj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 14:48:39 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:46:21 2010
-Message-Id: <20100918184621.064344908@clark.site>
+Message-Id: <20100918184621.707307122@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:44:58 -0700
+Date: Sat, 18 Sep 2010 11:45:05 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [02/11] ath9k_hw: fix parsing of HT40 5 GHz CTLs
+        Guillem Jover <guillem@hadrons.org>, Riku Voipio <riku.voipio@iki.fi>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [09/11] hwmon: (f75375s) Do not overwrite values read from registers
 In-Reply-To: <20100918184651.GA14224@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luis R. Rodriguez <lrodriguez@atheros.com>
+From: Guillem Jover <guillem@hadrons.org>
 
-commit 904879748d7439a6dabdc6be9aad983e216b027d upstream.
+commit c3b327d60bbba3f5ff8fd87d1efc0e95eb6c121b upstream.
 
-The 5 GHz CTL indexes were not being read for all hardware
-devices due to the masking out through the CTL_MODE_M mask
-being one bit too short. Without this the calibrated regulatory
-maximum values were not being picked up when devices operate
-on 5 GHz in HT40 mode. The final output power used for Atheros
-devices is the minimum between the calibrated CTL values and
-what CRDA provides.
+All bits in the values read from registers to be used for the next
+write were getting overwritten, avoid doing so to not mess with the
+current configuration.
 
-Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Guillem Jover <guillem@hadrons.org>
+Cc: Riku Voipio <riku.voipio@iki.fi>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath9k/ath9k.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hwmon/f75375s.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/ath9k/ath9k.h
-+++ b/drivers/net/wireless/ath9k/ath9k.h
-@@ -554,7 +554,7 @@ enum ath9k_cipher {
+--- a/drivers/hwmon/f75375s.c
++++ b/drivers/hwmon/f75375s.c
+@@ -298,7 +298,7 @@ static int set_pwm_enable_direct(struct
+ 		return -EINVAL;
  
- #define SD_NO_CTL               0xE0
- #define NO_CTL                  0xff
--#define CTL_MODE_M              7
-+#define CTL_MODE_M              0xf
- #define CTL_11A                 0
- #define CTL_11B                 1
- #define CTL_11G                 2
+ 	fanmode = f75375_read8(client, F75375_REG_FAN_TIMER);
+-	fanmode = ~(3 << FAN_CTRL_MODE(nr));
++	fanmode &= ~(3 << FAN_CTRL_MODE(nr));
+ 
+ 	switch (val) {
+ 	case 0: /* Full speed */
+@@ -350,7 +350,7 @@ static ssize_t set_pwm_mode(struct devic
+ 
+ 	mutex_lock(&data->update_lock);
+ 	conf = f75375_read8(client, F75375_REG_CONFIG1);
+-	conf = ~(1 << FAN_CTRL_LINEAR(nr));
++	conf &= ~(1 << FAN_CTRL_LINEAR(nr));
+ 
+ 	if (val == 0)
+ 		conf |= (1 << FAN_CTRL_LINEAR(nr)) ;
 
 
