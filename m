@@ -1,103 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756447Ab0IRTGN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:06:13 -0400
-Received: from kroah.org ([198.145.64.141]:51922 "EHLO coco.kroah.org"
+	id S1756440Ab0IRTF6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:05:58 -0400
+Received: from kroah.org ([198.145.64.141]:51926 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756213Ab0IRTCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:02:30 -0400
+	id S1756219Ab0IRTCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:02:31 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:00:03 2010
-Message-Id: <20100918190003.026745319@clark.site>
+Message-Id: <20100918190003.110047560@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:59:23 -0700
+Date: Sat, 18 Sep 2010 11:59:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [119/123] SUNRPC: Fix race corrupting rpc upcall
+        Dan Carpenter <error27@gmail.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [120/123] i915: return -EFAULT if copy_to_user fails
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=sunrpc-fix-race-corrupting-rpc-upcall.patch
+Content-Disposition: inline; filename=i915-return-efault-if-copy_to_user-fails.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Dan Carpenter <error27@gmail.com>
 
-commit 5a67657a2e90c9e4a48518f95d4ba7777aa20fbb upstream.
+commit 9927a403ca8c97798129953fa9cbb5dc259c7cb9 upstream.
 
-If rpc_queue_upcall() adds a new upcall to the rpci->pipe list just
-after rpc_pipe_release calls rpc_purge_list(), but before it calls
-gss_pipe_release (as rpci->ops->release_pipe(inode)), then the latter
-will free a message without deleting it from the rpci->pipe list.
+copy_to_user returns the number of bytes remaining to be copied, but we
+want to return a negative error code here.  These are returned to
+userspace.
 
-We will be left with a freed object on the rpc->pipe list.  Most
-frequent symptoms are kernel crashes in rpc.gssd system calls on the
-pipe in question.
-
-Reported-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/sunrpc/auth_gss/auth_gss.c |    9 +++++----
- net/sunrpc/rpc_pipe.c          |    6 +++---
- 2 files changed, 8 insertions(+), 7 deletions(-)
+ drivers/gpu/drm/i915/i915_dma.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
---- a/net/sunrpc/auth_gss/auth_gss.c
-+++ b/net/sunrpc/auth_gss/auth_gss.c
-@@ -717,17 +717,18 @@ gss_pipe_release(struct inode *inode)
- 	struct rpc_inode *rpci = RPC_I(inode);
- 	struct gss_upcall_msg *gss_msg;
- 
-+restart:
- 	spin_lock(&inode->i_lock);
--	while (!list_empty(&rpci->in_downcall)) {
-+	list_for_each_entry(gss_msg, &rpci->in_downcall, list) {
- 
--		gss_msg = list_entry(rpci->in_downcall.next,
--				struct gss_upcall_msg, list);
-+		if (!list_empty(&gss_msg->msg.list))
-+			continue;
- 		gss_msg->msg.errno = -EPIPE;
- 		atomic_inc(&gss_msg->count);
- 		__gss_unhash_msg(gss_msg);
- 		spin_unlock(&inode->i_lock);
- 		gss_release_msg(gss_msg);
--		spin_lock(&inode->i_lock);
-+		goto restart;
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -683,8 +683,10 @@ static int i915_batchbuffer(struct drm_d
+ 		ret = copy_from_user(cliprects, batch->cliprects,
+ 				     batch->num_cliprects *
+ 				     sizeof(struct drm_clip_rect));
+-		if (ret != 0)
++		if (ret != 0) {
++			ret = -EFAULT;
+ 			goto fail_free;
++		}
  	}
- 	spin_unlock(&inode->i_lock);
  
---- a/net/sunrpc/rpc_pipe.c
-+++ b/net/sunrpc/rpc_pipe.c
-@@ -47,7 +47,7 @@ static void rpc_purge_list(struct rpc_in
- 		return;
- 	do {
- 		msg = list_entry(head->next, struct rpc_pipe_msg, list);
--		list_del(&msg->list);
-+		list_del_init(&msg->list);
- 		msg->errno = err;
- 		destroy_msg(msg);
- 	} while (!list_empty(head));
-@@ -207,7 +207,7 @@ rpc_pipe_release(struct inode *inode, st
- 	if (msg != NULL) {
- 		spin_lock(&inode->i_lock);
- 		msg->errno = -EAGAIN;
--		list_del(&msg->list);
-+		list_del_init(&msg->list);
- 		spin_unlock(&inode->i_lock);
- 		rpci->ops->destroy_msg(msg);
+ 	mutex_lock(&dev->struct_mutex);
+@@ -725,8 +727,10 @@ static int i915_cmdbuffer(struct drm_dev
+ 		return -ENOMEM;
+ 
+ 	ret = copy_from_user(batch_data, cmdbuf->buf, cmdbuf->sz);
+-	if (ret != 0)
++	if (ret != 0) {
++		ret = -EFAULT;
+ 		goto fail_batch_free;
++	}
+ 
+ 	if (cmdbuf->num_cliprects) {
+ 		cliprects = kcalloc(cmdbuf->num_cliprects,
+@@ -737,8 +741,10 @@ static int i915_cmdbuffer(struct drm_dev
+ 		ret = copy_from_user(cliprects, cmdbuf->cliprects,
+ 				     cmdbuf->num_cliprects *
+ 				     sizeof(struct drm_clip_rect));
+-		if (ret != 0)
++		if (ret != 0) {
++			ret = -EFAULT;
+ 			goto fail_clip_free;
++		}
  	}
-@@ -267,7 +267,7 @@ rpc_pipe_read(struct file *filp, char __
- 	if (res < 0 || msg->len == msg->copied) {
- 		filp->private_data = NULL;
- 		spin_lock(&inode->i_lock);
--		list_del(&msg->list);
-+		list_del_init(&msg->list);
- 		spin_unlock(&inode->i_lock);
- 		rpci->ops->destroy_msg(msg);
- 	}
+ 
+ 	mutex_lock(&dev->struct_mutex);
 
 
