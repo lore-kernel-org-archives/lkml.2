@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757252Ab0IRTQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:16:27 -0400
-Received: from kroah.org ([198.145.64.141]:43902 "EHLO coco.kroah.org"
+	id S1757309Ab0IRTRj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:17:39 -0400
+Received: from kroah.org ([198.145.64.141]:43967 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756217Ab0IRTQZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:16:25 -0400
+	id S1757290Ab0IRTQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:16:36 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:07 2010
-Message-Id: <20100918191307.081234318@clark.site>
+Message-Id: <20100918191307.911201661@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:13:32 -0700
+Date: Sat, 18 Sep 2010 12:13:42 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [114/129] drm/radeon/kms: fix a regression on r7xx AGP due to the HDP flush fix
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [124/129] drm/i915: Allocate the PCI resource for the MCHBAR
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,137 +26,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 87cbf8f2c5d1b1fc4642c3dc0bb6efc587479603 upstream.
+commit a25c25c2a2aa55e609099a9f74453c518aec29a6 upstream.
 
-commit: 812d046915f48236657f02c06d7dc47140e9ceda
-drm/radeon/kms/r7xx: add workaround for hw issue with HDP flush
-breaks on AGP boards since there is no VRAM gart table.
+We were failing when trying to allocate the resource for MMIO of the
+MCHBAR because we forgot to specify what type of resource we wanted.
 
-This patch fixes the issue by creating a VRAM scratch page so that
-can be used on both AGP and PCIE.
-
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=29834
-
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/r600.c   |    2 -
- drivers/gpu/drm/radeon/radeon.h |    6 ++++
- drivers/gpu/drm/radeon/rv770.c  |   52 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 59 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_dma.c |   20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -3526,7 +3526,7 @@ void r600_ioctl_wait_idle(struct radeon_
- 	 * rather than write to HDP_REG_COHERENCY_FLUSH_CNTL
- 	 */
- 	if ((rdev->family >= CHIP_RV770) && (rdev->family <= CHIP_RV740)) {
--		void __iomem *ptr = (void *)rdev->gart.table.vram.ptr;
-+		void __iomem *ptr = (void *)rdev->vram_scratch.ptr;
- 		u32 tmp;
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -883,7 +883,7 @@ intel_alloc_mchbar_resource(struct drm_d
+ 	int reg = IS_I965G(dev) ? MCHBAR_I965 : MCHBAR_I915;
+ 	u32 temp_lo, temp_hi = 0;
+ 	u64 mchbar_addr;
+-	int ret = 0;
++	int ret;
  
- 		WREG32(HDP_DEBUG1, 0);
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -997,6 +997,11 @@ int radeon_gem_set_tiling_ioctl(struct d
- int radeon_gem_get_tiling_ioctl(struct drm_device *dev, void *data,
- 				struct drm_file *filp);
+ 	if (IS_I965G(dev))
+ 		pci_read_config_dword(dev_priv->bridge_dev, reg + 4, &temp_hi);
+@@ -893,22 +893,23 @@ intel_alloc_mchbar_resource(struct drm_d
+ 	/* If ACPI doesn't have it, assume we need to allocate it ourselves */
+ #ifdef CONFIG_PNP
+ 	if (mchbar_addr &&
+-	    pnp_range_reserved(mchbar_addr, mchbar_addr + MCHBAR_SIZE)) {
+-		ret = 0;
+-		goto out;
+-	}
++	    pnp_range_reserved(mchbar_addr, mchbar_addr + MCHBAR_SIZE))
++		return 0;
+ #endif
  
-+/* VRAM scratch page for HDP bug */
-+struct r700_vram_scratch {
-+	struct radeon_bo		*robj;
-+	volatile uint32_t		*ptr;
-+};
+ 	/* Get some space for it */
+-	ret = pci_bus_alloc_resource(dev_priv->bridge_dev->bus, &dev_priv->mch_res,
++	dev_priv->mch_res.name = "i915 MCHBAR";
++	dev_priv->mch_res.flags = IORESOURCE_MEM;
++	ret = pci_bus_alloc_resource(dev_priv->bridge_dev->bus,
++				     &dev_priv->mch_res,
+ 				     MCHBAR_SIZE, MCHBAR_SIZE,
+ 				     PCIBIOS_MIN_MEM,
+-				     0,   pcibios_align_resource,
++				     0, pcibios_align_resource,
+ 				     dev_priv->bridge_dev);
+ 	if (ret) {
+ 		DRM_DEBUG_DRIVER("failed bus alloc: %d\n", ret);
+ 		dev_priv->mch_res.start = 0;
+-		goto out;
++		return ret;
+ 	}
  
- /*
-  * Core structure, functions and helpers.
-@@ -1060,6 +1065,7 @@ struct radeon_device {
- 	const struct firmware *pfp_fw;	/* r6/700 PFP firmware */
- 	const struct firmware *rlc_fw;	/* r6/700 RLC firmware */
- 	struct r600_blit r600_blit;
-+	struct r700_vram_scratch vram_scratch;
- 	int msi_enabled; /* msi enabled */
- 	struct r600_ih ih; /* r6/700 interrupt ring */
- 	struct workqueue_struct *wq;
---- a/drivers/gpu/drm/radeon/rv770.c
-+++ b/drivers/gpu/drm/radeon/rv770.c
-@@ -889,6 +889,54 @@ static void rv770_gpu_init(struct radeon
+ 	if (IS_I965G(dev))
+@@ -917,8 +918,7 @@ intel_alloc_mchbar_resource(struct drm_d
  
+ 	pci_write_config_dword(dev_priv->bridge_dev, reg,
+ 			       lower_32_bits(dev_priv->mch_res.start));
+-out:
+-	return ret;
++	return 0;
  }
  
-+static int rv770_vram_scratch_init(struct radeon_device *rdev)
-+{
-+	int r;
-+	u64 gpu_addr;
-+
-+	if (rdev->vram_scratch.robj == NULL) {
-+		r = radeon_bo_create(rdev, NULL, RADEON_GPU_PAGE_SIZE,
-+					true, RADEON_GEM_DOMAIN_VRAM,
-+					&rdev->vram_scratch.robj);
-+		if (r) {
-+			return r;
-+		}
-+	}
-+
-+	r = radeon_bo_reserve(rdev->vram_scratch.robj, false);
-+	if (unlikely(r != 0))
-+		return r;
-+	r = radeon_bo_pin(rdev->vram_scratch.robj,
-+			  RADEON_GEM_DOMAIN_VRAM, &gpu_addr);
-+	if (r) {
-+		radeon_bo_unreserve(rdev->vram_scratch.robj);
-+		return r;
-+	}
-+	r = radeon_bo_kmap(rdev->vram_scratch.robj,
-+				(void **)&rdev->vram_scratch.ptr);
-+	if (r)
-+		radeon_bo_unpin(rdev->vram_scratch.robj);
-+	radeon_bo_unreserve(rdev->vram_scratch.robj);
-+
-+	return r;
-+}
-+
-+static void rv770_vram_scratch_fini(struct radeon_device *rdev)
-+{
-+	int r;
-+
-+	if (rdev->vram_scratch.robj == NULL) {
-+		return;
-+	}
-+	r = radeon_bo_reserve(rdev->vram_scratch.robj, false);
-+	if (likely(r == 0)) {
-+		radeon_bo_kunmap(rdev->vram_scratch.robj);
-+		radeon_bo_unpin(rdev->vram_scratch.robj);
-+		radeon_bo_unreserve(rdev->vram_scratch.robj);
-+	}
-+	radeon_bo_unref(&rdev->vram_scratch.robj);
-+}
-+
- int rv770_mc_init(struct radeon_device *rdev)
- {
- 	u32 tmp;
-@@ -954,6 +1002,9 @@ static int rv770_startup(struct radeon_d
- 		if (r)
- 			return r;
- 	}
-+	r = rv770_vram_scratch_init(rdev);
-+	if (r)
-+		return r;
- 	rv770_gpu_init(rdev);
- 	r = r600_blit_init(rdev);
- 	if (r) {
-@@ -1179,6 +1230,7 @@ void rv770_fini(struct radeon_device *rd
- 	r600_irq_fini(rdev);
- 	radeon_irq_kms_fini(rdev);
- 	rv770_pcie_gart_fini(rdev);
-+	rv770_vram_scratch_fini(rdev);
- 	radeon_gem_fini(rdev);
- 	radeon_fence_driver_fini(rdev);
- 	radeon_clocks_fini(rdev);
+ /* Setup MCHBAR if possible, return true if we should disable it again */
 
 
