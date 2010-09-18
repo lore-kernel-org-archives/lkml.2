@@ -1,65 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757885Ab0IRTwm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:52:42 -0400
-Received: from kroah.org ([198.145.64.141]:51397 "EHLO coco.kroah.org"
+	id S1757890Ab0IRTww (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:52:52 -0400
+Received: from kroah.org ([198.145.64.141]:51388 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754274Ab0IRTBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:01:43 -0400
+	id S1755210Ab0IRTBm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:01:42 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:57 2010
-Message-Id: <20100918185957.184922275@clark.site>
+Message-Id: <20100918185957.102784789@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:58:15 -0700
+Date: Sat, 18 Sep 2010 11:58:14 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Gary King <gking@nvidia.com>, Tejun Heo <tj@kernel.org>,
-        Russell King <rmk@arm.linux.org.uk>, Jens Axboe <axboe@kernel.dk>
-Subject: [051/123] bounce: call flush_dcache_page() after bounce_copy_vec()
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Eric Miao <eric.y.miao@gmail.com>
+Subject: [050/123] mmc: fix the use of kunmap_atomic() in tmio_mmc.h
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=bounce-call-flush_dcache_page-after-bounce_copy_vec.patch
+Content-Disposition: inline; filename=mmc-fix-the-use-of-kunmap_atomic-in-tmio_mmc.h.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gary King <gking@nvidia.com>
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 
-commit ac8456d6f9a3011c824176bd6084d39e5f70a382 upstream.
+commit 5600efb1bc2745d93ae0bc08130117a84f2b9d69 upstream.
 
-I have been seeing problems on Tegra 2 (ARMv7 SMP) systems with HIGHMEM
-enabled on 2.6.35 (plus some patches targetted at 2.6.36 to perform cache
-maintenance lazily), and the root cause appears to be that the mm bouncing
-code is calling flush_dcache_page before it copies the bounce buffer into
-the bio.
+kunmap_atomic() takes the cookie, returned by the kmap_atomic() as its
+argument and not the page address, used as an argument to kmap_atomic().
+This patch fixes the compile error:
 
-The bounced page needs to be flushed after data is copied into it, to
-ensure that architecture implementations can synchronize instruction and
-data caches if necessary.
+In file included from drivers/mmc/host/tmio_mmc.c:37:
+drivers/mmc/host/tmio_mmc.h: In function 'tmio_mmc_kunmap_atomic':
+drivers/mmc/host/tmio_mmc.h:192: error: negative width in bit-field '<anonymous>'
 
-Signed-off-by: Gary King <gking@nvidia.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Russell King <rmk@arm.linux.org.uk>
-Acked-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Acked-by: Eric Miao <eric.y.miao@gmail.com>
+Tested-by: Magnus Damm <damm@opensource.se>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/bounce.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mmc/host/tmio_mmc.c |    7 ++++---
+ drivers/mmc/host/tmio_mmc.h |    8 +++-----
+ 2 files changed, 7 insertions(+), 8 deletions(-)
 
---- a/mm/bounce.c
-+++ b/mm/bounce.c
-@@ -115,8 +115,8 @@ static void copy_to_high_bio_irq(struct
- 		 */
- 		vfrom = page_address(fromvec->bv_page) + tovec->bv_offset;
- 
--		flush_dcache_page(tovec->bv_page);
- 		bounce_copy_vec(tovec, vfrom);
-+		flush_dcache_page(tovec->bv_page);
+--- a/drivers/mmc/host/tmio_mmc.c
++++ b/drivers/mmc/host/tmio_mmc.c
+@@ -161,6 +161,7 @@ tmio_mmc_start_command(struct tmio_mmc_h
+ static inline void tmio_mmc_pio_irq(struct tmio_mmc_host *host)
+ {
+ 	struct mmc_data *data = host->data;
++	void *sg_virt;
+ 	unsigned short *buf;
+ 	unsigned int count;
+ 	unsigned long flags;
+@@ -170,8 +171,8 @@ static inline void tmio_mmc_pio_irq(stru
+ 		return;
  	}
+ 
+-	buf = (unsigned short *)(tmio_mmc_kmap_atomic(host, &flags) +
+-	      host->sg_off);
++	sg_virt = tmio_mmc_kmap_atomic(host->sg_ptr, &flags);
++	buf = (unsigned short *)(sg_virt + host->sg_off);
+ 
+ 	count = host->sg_ptr->length - host->sg_off;
+ 	if (count > data->blksz)
+@@ -188,7 +189,7 @@ static inline void tmio_mmc_pio_irq(stru
+ 
+ 	host->sg_off += count;
+ 
+-	tmio_mmc_kunmap_atomic(host, &flags);
++	tmio_mmc_kunmap_atomic(sg_virt, &flags);
+ 
+ 	if (host->sg_off == host->sg_ptr->length)
+ 		tmio_mmc_next_sg(host);
+--- a/drivers/mmc/host/tmio_mmc.h
++++ b/drivers/mmc/host/tmio_mmc.h
+@@ -197,19 +197,17 @@ static inline int tmio_mmc_next_sg(struc
+ 	return --host->sg_len;
+ }
+ 
+-static inline char *tmio_mmc_kmap_atomic(struct tmio_mmc_host *host,
++static inline char *tmio_mmc_kmap_atomic(struct scatterlist *sg,
+ 	unsigned long *flags)
+ {
+-	struct scatterlist *sg = host->sg_ptr;
+-
+ 	local_irq_save(*flags);
+ 	return kmap_atomic(sg_page(sg), KM_BIO_SRC_IRQ) + sg->offset;
+ }
+ 
+-static inline void tmio_mmc_kunmap_atomic(struct tmio_mmc_host *host,
++static inline void tmio_mmc_kunmap_atomic(void *virt,
+ 	unsigned long *flags)
+ {
+-	kunmap_atomic(sg_page(host->sg_ptr), KM_BIO_SRC_IRQ);
++	kunmap_atomic(virt, KM_BIO_SRC_IRQ);
+ 	local_irq_restore(*flags);
  }
  
 
