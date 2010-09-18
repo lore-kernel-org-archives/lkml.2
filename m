@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756879Ab0IRTPY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:15:24 -0400
-Received: from kroah.org ([198.145.64.141]:43422 "EHLO coco.kroah.org"
+	id S1756868Ab0IRTPW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:15:22 -0400
+Received: from kroah.org ([198.145.64.141]:43429 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756839Ab0IRTPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756812Ab0IRTPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 18 Sep 2010 15:15:17 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:02 2010
-Message-Id: <20100918191302.086002473@clark.site>
+Message-Id: <20100918191302.166507869@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:12:33 -0700
+Date: Sat, 18 Sep 2010 12:12:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Takashi Iwai <tiwai@suse.de>
-Subject: [055/129] ALSA: seq/oss - Fix double-free at error path of snd_seq_oss_open()
+Subject: [056/129] ALSA: usb - Release capture substream URBs properly
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,54 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Takashi Iwai <tiwai@suse.de>
 
-commit 27f7ad53829f79e799a253285318bff79ece15bd upstream.
+commit 76195fb096ca6db2f8bbaffb96e3025aaf1649a0 upstream.
 
-The error handling in snd_seq_oss_open() has several bad codes that
-do dereferecing released pointers and double-free of kmalloc'ed data.
-The object dp is release in free_devinfo() that is called via
-private_free callback.  The rest shouldn't touch this object any more.
+Due to the wrong "return" in the loop, a capture substream won't be
+released at disconnection properly if the device is capture only and has
+no playback substream.  This caused Oops occasionally at the device
+reconnection.
 
-The patch changes delete_port() to call kfree() in any case, and gets
-rid of unnecessary calls of destructors in snd_seq_oss_open().
-
-Fixes CVE-2010-3080.
-
-Reported-and-tested-by: Tavis Ormandy <taviso@cmpxchg8b.com>
+Reported-by: Kim Minhyoung <minhyoung.kim@lge.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/core/seq/oss/seq_oss_init.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ sound/usb/card.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/core/seq/oss/seq_oss_init.c
-+++ b/sound/core/seq/oss/seq_oss_init.c
-@@ -281,13 +281,10 @@ snd_seq_oss_open(struct file *file, int
- 	return 0;
- 
-  _error:
--	snd_seq_oss_writeq_delete(dp->writeq);
--	snd_seq_oss_readq_delete(dp->readq);
- 	snd_seq_oss_synth_cleanup(dp);
- 	snd_seq_oss_midi_cleanup(dp);
--	delete_port(dp);
- 	delete_seq_queue(dp->queue);
--	kfree(dp);
-+	delete_port(dp);
- 
- 	return rc;
- }
-@@ -350,8 +347,10 @@ create_port(struct seq_oss_devinfo *dp)
- static int
- delete_port(struct seq_oss_devinfo *dp)
- {
--	if (dp->port < 0)
-+	if (dp->port < 0) {
-+		kfree(dp);
- 		return 0;
-+	}
- 
- 	debug_printk(("delete_port %i\n", dp->port));
- 	return snd_seq_event_port_detach(dp->cseq, dp->port);
+--- a/sound/usb/card.c
++++ b/sound/usb/card.c
+@@ -126,7 +126,7 @@ static void snd_usb_stream_disconnect(st
+ 	for (idx = 0; idx < 2; idx++) {
+ 		subs = &as->substream[idx];
+ 		if (!subs->num_formats)
+-			return;
++			continue;
+ 		snd_usb_release_substream_urbs(subs, 1);
+ 		subs->interface = -1;
+ 	}
 
 
