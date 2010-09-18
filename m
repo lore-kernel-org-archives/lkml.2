@@ -1,35 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757528Ab0IRTlZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:41:25 -0400
-Received: from infernal.debian.net ([87.230.26.131]:51115 "EHLO
-	infernal.debian.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755982Ab0IRTlX (ORCPT
+	id S1757555Ab0IRTlk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:41:40 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:39380 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756249Ab0IRTlg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:41:23 -0400
-Date: Sat, 18 Sep 2010 21:41:17 +0200
-From: Andreas Bombe <aeb@debian.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Alex Riesen <raa.lkml@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Guillaume Chazarain <guichaz@gmail.com>, Mat <jackdachef@gmail.com>
-Subject: Re: OOPS in hiddev_open on connecting "Logitech MX620 Laser
- Cordless Mouse"
-Message-ID: <20100918194117.GA4465@amos.infernal>
-References: <AANLkTikOowB=8=3cnJ0QgJNfBsVeMUrkNT0E0uH2LDXL@mail.gmail.com>
- <alpine.LNX.2.00.1009181954010.26813@pobox.suse.cz>
+	Sat, 18 Sep 2010 15:41:36 -0400
+Date: Sat, 18 Sep 2010 20:41:35 +0100
+To: linux-arch@vger.kernel.org
+Subject: [PATCH 1/5] frv: restart_block.fn needs to be reset on sigreturn
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org
+User-Agent: Heirloom mailx 12.4 7/29/08
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1009181954010.26813@pobox.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+Message-Id: <E1Ox3Hz-0006R7-As@ZenIV.linux.org.uk>
+From: Al Viro <viro@ftp.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 18, 2010 at 07:56:40PM +0200, Jiri Kosina wrote:
-> Does reverting of commit 8fe294caf8c868edd9046251824a0af91991bf43 fix the 
-> problem please?
 
-It does here.
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+ arch/frv/kernel/signal.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/arch/frv/kernel/signal.c b/arch/frv/kernel/signal.c
+index 0974c0e..7fc2961 100644
+--- a/arch/frv/kernel/signal.c
++++ b/arch/frv/kernel/signal.c
+@@ -121,6 +121,9 @@ static int restore_sigcontext(struct sigcontext __user *sc, int *_gr8)
+ 	struct user_context *user = current->thread.user;
+ 	unsigned long tbr, psr;
+ 
++	/* Always make any pending restarted system calls return -EINTR */
++	current_thread_info()->restart_block.fn = do_no_restart_syscall;
++
+ 	tbr = user->i.tbr;
+ 	psr = user->i.psr;
+ 	if (copy_from_user(user, &sc->sc_context, sizeof(sc->sc_context)))
+-- 
+1.5.6.5
+
+
