@@ -1,153 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756016Ab0IRUlp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 16:41:45 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:65446 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753440Ab0IRUlo (ORCPT
+	id S1755975Ab0IRUgX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 16:36:23 -0400
+Received: from smtp103.sbc.mail.ne1.yahoo.com ([98.138.84.214]:45819 "HELO
+	smtp103.sbc.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751887Ab0IRUgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 16:41:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=Eii4CvzCGmVIqQQbSr5yg/PvIrmlVcl45qwcUmrqYHOgh1zSY92iH311PXN2iqcdC6
-         kN8BKjYx5CLDqKZy8xG2AuSwTGrMdBnFC+B8xOAX8YzNudDxfhWAmFiXM6xPcjlAhi1L
-         2ZuHQhrsb+H2D5IfJCNQ5aFvQYJbFRyRGYuEY=
-Date: Sat, 18 Sep 2010 22:41:12 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Nils Radtke <lkml@Think-Future.com>
-Cc: gregkh@suse.de, kernel-janitors@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: wlan-ng: p80211netdev.c cleanup
-Message-ID: <20100918204112.GA6236@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Nils Radtke <lkml@Think-Future.com>, gregkh@suse.de,
-	kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
-	linux-kernel@vger.kernel.org
-References: <1284834652-26171-1-git-send-email-lkml@Think-Future.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284834652-26171-1-git-send-email-lkml@Think-Future.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sat, 18 Sep 2010 16:36:21 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: NJPnovkVM1k9YWyXsJ27fFTC4.by75UwjXaVh2RePVKncqE
+ Lc5dToiE94T5w.dGBzE88HE0CuOon_8vlH9SRz1KwVITF4OV75_U5TYbSb_1
+ RCdkyh5Znx6WZqzN0OGHS8.LkSIBiU.uphQOZaM1PDUTO0ZRDlA0NWGoLpKx
+ A7WtwsgnzUcW2U7Yok0GhQ3uNASgzWOSgPJZ23aCPfV62gPCNxQkvds1NxQq
+ Dze_MwRN4vE65swRmM2zLRfNHbITVQs3SqAICnZYCCJi0a5AtJwstflwQyya
+ m0yCkVyY8R..A3fCYqUJ4eas44sdKHPdyQ8qT4.AKtnL17cMKKO9zBDYp
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [ANNOUNCE] TCM/LIO v4.0.0-rc4 for 2.6.36-rc4
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        James.Bottomley@suse.de, michaelc@cs.wisc.edu, bharrosh@panasas.com,
+        konrad@darnok.org, jeykholt@cisco.com, hare@suse.de, hch@lst.de,
+        James.Smart@Emulex.Com, andrew.vasquez@qlogic.com,
+        philipp.reisner@linbit.com, martin.petersen@oracle.com,
+        vasu.dev@linux.intel.com, Joel Becker <joel.becker@oracle.com>,
+        Linux-fsdevel <linux-fsdevel@vger.kernel.org>
+In-Reply-To: <20100918125729D.fujita.tomonori@lab.ntt.co.jp>
+References: <1284754930.13344.216.camel@haakon2.linux-iscsi.org>
+	 <20100918125729D.fujita.tomonori@lab.ntt.co.jp>
+Content-Type: text/plain
+Date: Sat, 18 Sep 2010 13:32:12 -0700
+Message-Id: <1284841932.13344.339.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 18, 2010 at 08:30:52PM +0200, Nils Radtke wrote:
-> diff --git a/drivers/staging/wlan-ng/p80211netdev.c b/drivers/staging/wlan-ng/p80211netdev.c
-> index aa1792c..8104e11 100644
-> --- a/drivers/staging/wlan-ng/p80211netdev.c
-> +++ b/drivers/staging/wlan-ng/p80211netdev.c
-> @@ -176,25 +176,30 @@ static struct net_device_stats *p80211knetdev_get_stats(netdevice_t * netdev)
->  ----------------------------------------------------------------*/
->  static int p80211knetdev_open(netdevice_t *netdev)
->  {
-> -	int result = 0;		/* success */
-> +	int ret = 0;
+On Sat, 2010-09-18 at 13:00 +0900, FUJITA Tomonori wrote:
+> On Fri, 17 Sep 2010 13:22:10 -0700
+> "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
+> 
+> > It is my great pleasure to announce that TCM/LIO v4.0.0-rc4 for v2.6.36-rc4 has
+> > been tagged and pushed into lio-core-2.6.git/lio-4.0.  The last weeks have been
+> > really very busy and many gracious thanks go out to all of the individuals who
+> > made comments and helped bring together this v4.0.0-rc4 release.  A list of the
+> > major changes includes:
+> 
+> Have you addressed all the non-SCSI obstacles to mainline inclusion?
+> Sorry, I can't track TCM thread but I thought that you got some sysfs
+> issues at least?
 
-If it was new code then I also would have prefered "ret" I suppose, but
-really it's not a good idea to rename things for no reason.
+So the only remaining item outside of drivers/target/ code that needs to
+be addressed for .37 is the symlink referencing counting bit.  This is
+the case where a struct config_group with symlinks that use a
+destination that is in a struct config_group *above* where the source
+link struct config_group lives, and currently makes it impossible to
+signal (from theconfigfs consumer perspective) the destination symlink
+that the parent struct config_group is being dropped with rmdir().
 
->  	wlandevice_t *wlandev = netdev->ml_priv;
->  
->  	/* Check to make sure the MSD is running */
-> -	if (wlandev->msdstate != WLAN_MSD_RUNNING)
-> -		return -ENODEV;
-> +	if (wlandev->msdstate != WLAN_MSD_RUNNING) {
-> +		ret = -ENODEV;
-> +		goto end;
-> +	}
+Joel and I have been discussing potential resoultions here:
 
-It's better to just return directly.  This code makes me wonder what
-happens after I goto end, but actually nothing happens.  So it's
-a little annoying.
+http://marc.info/?l=linux-fsdevel&m=128414860505481&w=2
 
->  
->  	/* Tell the MSD to open */
-> -	if (wlandev->open != NULL) {
-> -		result = wlandev->open(wlandev);
-> -		if (result == 0) {
-> -			netif_start_queue(wlandev->netdev);
-> -			wlandev->state = WLAN_DEVICE_OPEN;
-> -		}
-> -	} else {
-> -		result = -EAGAIN;
-> +	if (wlandev->open == NULL) {
-> +		printk(KERN_ERR "Sorry, got wlandev->open == NULL.\n");
+but we have yet to come to a resolution, and the ->check_link() patch is
+still in use in lio-core-2.6.git/lio-4.0 code.
 
-This printk is not needed.  I haven't looked at this code, but if the
-user can trigger this error message then it can be used to flood
-/var/log/messages and cause a denial of service attack.
+The possibilities that have been discussed so far include:
 
->  
-> -	return result;
-> +	ret = wlandev->open(wlandev);
-> +	if (ret) {
+*) Include the original struct config_item_operations->check_link()
+patch and require the configfs customer to be aware of this case when
+fs/configfs/symlink.c:configfs_unlink().  At this point this still works
+OK for me, but I do acknowledge that making the configfs consumer aware
+of this issue is really not the proper right long term solution.
 
-This test is reversed (we return zero on success).  It should be:
-	if (ret)
-		return ret;
-And then the other stuff can be pulled in an indent level.
+*) Use refcounting for the symlinks inside of the configfs consumer.  I
+asked Joel about how to do this in his last response, but I have not yet
+heard back from him.   Joel, would you be so kind as to elaborate on
+what you meant by this..?
 
-> +		netif_start_queue(wlandev->netdev);
-> +		wlandev->state = WLAN_DEVICE_OPEN;
-> +	}
-> +
-> +end:
-> +	return ret;
->  }
+*) Make fs/configfs/symlink.c code handle this specific "destination
+link outside of parent struct config_group" symlink reference count case
+internally instead of requiring configfs consumers be aware of the
+issue.
 
-The other function had many of the same issues.
+At this point I am still leaning towards #3 (with Joel's blessing) as
+the cleanest  long term solution, but I am still happy to persue #2 for
+fabric independent configfs handlers target_core_fabric_configfs.c code
+for the .37 merge.  I am still open suggestions (again, with Joel's
+blessing) about how to get this item properly resolved.
 
-The change log for this should have been something like:
-	This is a cleanup of p80211knetdev_open().  I rearranged the
-	to unify all the return paths so there was just one return
-	statement.  I also changed the if statements so I could pull 
-	the code in one indent level and simplify things a bit.  And I
-	added a couple printk() to the let the user know about errors.
+> 
+> If so, can you tell me where I can find reviewable patchset?
 
-(Except that adding printk()s is a functional change so it goes into a
-separate patch instead of hidden inside a "cleanup" patch.  But you get
-the idea).
+So the RFC cuts have been going into a seperate tree here:
 
-It's always dangerous writing patches when you can't test them. Most of
-my patches are one liners because and when people ask me to rewrite them
-in a more complicated way I tell them I don't feel comfortable doing
-that because I can't test it.
+http://git.kernel.org/?p=linux/kernel/git/nab/lio-4.0.git;a=summary
 
-Really though my advice is to start out by fixing bugs instead of
-focusing on cleanup.  I've fixed many of the interesting buffer
-overflows in main kernel but if you run smatch on staging then there are
-a bunch remaining.  Even reading through the false positives is good
-practise for reading code.
+Mike has requested an RFC v2 for him to review TCM Core and TCM_Loop
+v4.0.0-rc4 changes.  So I will be respinning this tree with the latest
+changes from lio-core-2.6.git/lio-4.0 and re-posting in the next days.
 
-Here's one the wlan-ng driver that you were working on:
+> I really hope that you drop stuff from the patchset that isn't a must for
+> target support (e.g. queuecommand lock stuff). If you keep adding
+> something new to tha patchset, it's really difficult to review it.
+> --
 
-drivers/staging/wlan-ng/prism2fw.c +594 mkpdrlist(9)
-	error: buffer overflow 'pda16' 512 <= 512
-drivers/staging/wlan-ng/prism2fw.c +634 mkpdrlist(49)
-	error: buffer overflow 'pda16' 512 <= 512
+Indeed, I plan to keep the drop-host_lock stuff a logically seperate item,
+and the TCM_Loop ->queuecommand() caller in the upcoming RFC v2 patches
+will still contain the original host_lock unlock() -> do_work() -> lock()
+optimization in use by many mainline LLDs today.  I will plan to send a
+seperate patch to James depending how/when the drop-host_lock stuff is merged.
 
-   592          curroff = 0;
-   593          while (curroff < (HFA384x_PDA_LEN_MAX / 2) &&
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-	We check that the array offset is within bounds here
+Many thanks for your comments Tomo-san!
 
-   594                 le16_to_cpu(pda16[curroff + 1]) != HFA384x_PDR_END_OF_PDA) {
-                                         ^^^^^^^^^^^
-	and then we add one here which puts us out of bounds.
-
-   595                  pda->rec[pda->nrec] = (hfa384x_pdrec_t *) &(pda16[curroff]);
-   596  
-
-Fixing overflows is way more interesting than cleanup patches.  So don't
-resend this patch.  The original code works and it's not even that ugly.
-You are a true hacker and have more awesome things to do.  That's my
-advice to newbie hackers.
-
-regards,
-dan carpenter
+--nab
 
