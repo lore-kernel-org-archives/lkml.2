@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757370Ab0IRT1Q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:27:16 -0400
-Received: from kroah.org ([198.145.64.141]:43599 "EHLO coco.kroah.org"
+	id S1756938Ab0IRTPe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:15:34 -0400
+Received: from kroah.org ([198.145.64.141]:43571 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756945Ab0IRTPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:15:37 -0400
+	id S1756923Ab0IRTPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:15:32 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:03 2010
-Message-Id: <20100918191303.780249524@clark.site>
+Message-Id: <20100918191303.349633894@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:12:53 -0700
+Date: Sat, 18 Sep 2010 12:12:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Wright <chrisw@sous-sol.org>, Tavis Ormandy <taviso@google.com>,
-        Eugene Teo <eugene@redhat.com>, vendor-sec@lst.de,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [075/129] tracing: Do not allow llseek to set_ftrace_filter
+        Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>
+Subject: [070/129] libata: skip EH autopsy and recovery during suspend
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,54 +25,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Tejun Heo <htejun@gmail.com>
 
-commit 9c55cb12c1c172e2d51e85fbb5a4796ca86b77e7 upstream.
+commit e2f3d75fc0e4a0d03c61872bad39ffa2e74a04ff upstream.
 
-Reading the file set_ftrace_filter does three things.
+For some mysterious reason, certain hardware reacts badly to usual EH
+actions while the system is going for suspend.  As the devices won't
+be needed until the system is resumed, ask EH to skip usual autopsy
+and recovery and proceed directly to suspend.
 
-1) shows whether or not filters are set for the function tracer
-2) shows what functions are set for the function tracer
-3) shows what triggers are set on any functions
-
-3 is independent from 1 and 2.
-
-The way this file currently works is that it is a state machine,
-and as you read it, it may change state. But this assumption breaks
-when you use lseek() on the file. The state machine gets out of sync
-and the t_show() may use the wrong pointer and cause a kernel oops.
-
-Luckily, this will only kill the app that does the lseek, but the app
-dies while holding a mutex. This prevents anyone else from using the
-set_ftrace_filter file (or any other function tracing file for that matter).
-
-A real fix for this is to rewrite the code, but that is too much for
-a -rc release or stable. This patch simply disables llseek on the
-set_ftrace_filter() file for now, and we can do the proper fix for the
-next major release.
-
-Reported-by: Robert Swiecki <swiecki@google.com>
-Cc: Chris Wright <chrisw@sous-sol.org>
-Cc: Tavis Ormandy <taviso@google.com>
-Cc: Eugene Teo <eugene@redhat.com>
-Cc: vendor-sec@lst.de
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Tested-by: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/trace/ftrace.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/ata/libata-core.c |   14 +++++++++++++-
+ drivers/ata/libata-eh.c   |    4 ++++
+ include/linux/libata.h    |    1 +
+ 3 files changed, 18 insertions(+), 1 deletion(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2417,7 +2417,7 @@ static const struct file_operations ftra
- 	.open = ftrace_filter_open,
- 	.read = seq_read,
- 	.write = ftrace_filter_write,
--	.llseek = ftrace_regex_lseek,
-+	.llseek = no_llseek,
- 	.release = ftrace_filter_release,
- };
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -5434,6 +5434,7 @@ static int ata_host_request_pm(struct at
+  */
+ int ata_host_suspend(struct ata_host *host, pm_message_t mesg)
+ {
++	unsigned int ehi_flags = ATA_EHI_QUIET;
+ 	int rc;
  
+ 	/*
+@@ -5442,7 +5443,18 @@ int ata_host_suspend(struct ata_host *ho
+ 	 */
+ 	ata_lpm_enable(host);
+ 
+-	rc = ata_host_request_pm(host, mesg, 0, ATA_EHI_QUIET, 1);
++	/*
++	 * On some hardware, device fails to respond after spun down
++	 * for suspend.  As the device won't be used before being
++	 * resumed, we don't need to touch the device.  Ask EH to skip
++	 * the usual stuff and proceed directly to suspend.
++	 *
++	 * http://thread.gmane.org/gmane.linux.ide/46764
++	 */
++	if (mesg.event == PM_EVENT_SUSPEND)
++		ehi_flags |= ATA_EHI_NO_AUTOPSY | ATA_EHI_NO_RECOVERY;
++
++	rc = ata_host_request_pm(host, mesg, 0, ehi_flags, 1);
+ 	if (rc == 0)
+ 		host->dev->power.power_state = mesg;
+ 	return rc;
+--- a/drivers/ata/libata-eh.c
++++ b/drivers/ata/libata-eh.c
+@@ -3234,6 +3234,10 @@ static int ata_eh_skip_recovery(struct a
+ 	if (link->flags & ATA_LFLAG_DISABLED)
+ 		return 1;
+ 
++	/* skip if explicitly requested */
++	if (ehc->i.flags & ATA_EHI_NO_RECOVERY)
++		return 1;
++
+ 	/* thaw frozen port and recover failed devices */
+ 	if ((ap->pflags & ATA_PFLAG_FROZEN) || ata_link_nr_enabled(link))
+ 		return 0;
+--- a/include/linux/libata.h
++++ b/include/linux/libata.h
+@@ -335,6 +335,7 @@ enum {
+ 	ATA_EHI_HOTPLUGGED	= (1 << 0),  /* could have been hotplugged */
+ 	ATA_EHI_NO_AUTOPSY	= (1 << 2),  /* no autopsy */
+ 	ATA_EHI_QUIET		= (1 << 3),  /* be quiet */
++	ATA_EHI_NO_RECOVERY	= (1 << 4),  /* no recovery */
+ 
+ 	ATA_EHI_DID_SOFTRESET	= (1 << 16), /* already soft-reset this port */
+ 	ATA_EHI_DID_HARDRESET	= (1 << 17), /* already soft-reset this port */
 
 
