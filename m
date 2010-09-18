@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755625Ab0IRTBv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:01:51 -0400
-Received: from kroah.org ([198.145.64.141]:51132 "EHLO coco.kroah.org"
+	id S1755782Ab0IRTBy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:01:54 -0400
+Received: from kroah.org ([198.145.64.141]:51162 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754403Ab0IRTBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:01:16 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:53 2010
-Message-Id: <20100918185953.836249689@clark.site>
+	id S1754492Ab0IRTBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:01:19 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:54 2010
+Message-Id: <20100918185954.259380885@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:57:36 -0700
+Date: Sat, 18 Sep 2010 11:57:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hank Janssen <hjanssen@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [012/123] staging: hv: Fixed bounce kmap problem by using correct index
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [017/123] ath9k_hw: fix parsing of HT40 5 GHz CTLs
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=staging-hv-fixed-bounce-kmap-problem-by-using-correct-index.patch
+Content-Disposition: inline; filename=ath9k_hw-fix-parsing-of-ht40-5-ghz-ctls.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hank Janssen <hjanssen@microsoft.com>
+From: Luis R. Rodriguez <lrodriguez@atheros.com>
 
-commit 0c47a70a9a8a6d1ec37a53d2f9cb82f8b8ef8aa2 upstream.
+commit 904879748d7439a6dabdc6be9aad983e216b027d upstream.
 
-Fixed bounce offset kmap problem by using correct index.
-The symptom of the problem is that in some NAS appliances this problem
-represents Itself by a unresponsive VM under a load with many clients writing
-small files.
+The 5 GHz CTL indexes were not being read for all hardware
+devices due to the masking out through the CTL_MODE_M mask
+being one bit too short. Without this the calibrated regulatory
+maximum values were not being picked up when devices operate
+on 5 GHz in HT40 mode. The final output power used for Atheros
+devices is the minimum between the calibrated CTL values and
+what CRDA provides.
 
-Signed-off-by:Hank Janssen <hjanssen@microsoft.com>
-Signed-off-by:Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/hv/storvsc_drv.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/ath/ath9k/eeprom.h |    2 +-
+ drivers/net/wireless/ath/regd.h         |    1 -
+ 2 files changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -532,7 +532,7 @@ static unsigned int copy_to_bounce_buffe
+--- a/drivers/net/wireless/ath/ath9k/eeprom.h
++++ b/drivers/net/wireless/ath/ath9k/eeprom.h
+@@ -60,7 +60,7 @@
  
- 		ASSERT(orig_sgl[i].offset + orig_sgl[i].length <= PAGE_SIZE);
- 
--		if (j == 0)
-+		if (bounce_addr == 0)
- 			bounce_addr = (unsigned long)kmap_atomic(sg_page((&bounce_sgl[j])), KM_IRQ0);
- 
- 		while (srclen) {
-@@ -593,7 +593,7 @@ static unsigned int copy_from_bounce_buf
- 		destlen = orig_sgl[i].length;
- 		ASSERT(orig_sgl[i].offset + orig_sgl[i].length <= PAGE_SIZE);
- 
--		if (j == 0)
-+		if (bounce_addr == 0)
- 			bounce_addr = (unsigned long)kmap_atomic(sg_page((&bounce_sgl[j])), KM_IRQ0);
- 
- 		while (destlen) {
+ #define SD_NO_CTL               0xE0
+ #define NO_CTL                  0xff
+-#define CTL_MODE_M              7
++#define CTL_MODE_M              0xf
+ #define CTL_11A                 0
+ #define CTL_11B                 1
+ #define CTL_11G                 2
+--- a/drivers/net/wireless/ath/regd.h
++++ b/drivers/net/wireless/ath/regd.h
+@@ -31,7 +31,6 @@ enum ctl_group {
+ #define NO_CTL 0xff
+ #define SD_NO_CTL               0xE0
+ #define NO_CTL                  0xff
+-#define CTL_MODE_M              7
+ #define CTL_11A                 0
+ #define CTL_11B                 1
+ #define CTL_11G                 2
 
 
