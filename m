@@ -1,128 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755320Ab0IRIma (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 04:42:30 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:46199 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754630Ab0IRIm2 (ORCPT
+	id S1755338Ab0IRIuX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 04:50:23 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59336 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754630Ab0IRIuW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 04:42:28 -0400
-Date: Sat, 18 Sep 2010 09:42:27 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: linux-kernel@vger.kernel.org
-Cc: Richard Henderson <rth@twiddle.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arch@vger.kernel.org
-Subject: [PATCH 4/4] alpha: deal with multiple simultaneously pending signals
- sanely
-Message-ID: <20100918084227.GD31363@ZenIV.linux.org.uk>
+	Sat, 18 Sep 2010 04:50:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=NiNR9pwVw8bRZ2N8jO0UUWEjs0Ry6MA08aShvp5sq+xXQd4fHjRVBpUXmFsypJ9W7a
+         HHUX6SbyUIE6xWRrwEfJ5uWCeQAtydz6YhbITYHhXj0m6vT7eOituUvcNDAeGr086sZk
+         KX4szw202CVrZyr85mnsnMEQxke5Bn7Q8OI0M=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <201009180954.52965.wolfgang@iksw-muees.de>
+References: <711BBECDEF81BA439A6038E213C1DF140957B9F8@ism-mail03.corp.ad.wrs.com>
+	<711BBECDEF81BA439A6038E213C1DF140957BD3D@ism-mail03.corp.ad.wrs.com>
+	<AANLkTimbHMvgsT809X44zAnYQEvSEbCtNc-eqHuxW8uK@mail.gmail.com>
+	<201009180954.52965.wolfgang@iksw-muees.de>
+Date: Sat, 18 Sep 2010 16:50:20 +0800
+Message-ID: <AANLkTikj01UhkiVrGJg4jgoOtXZ6dJjnwTsskDUVLD_H@mail.gmail.com>
+Subject: Re: USB: free coherent buffer into atomic context
+From: Ming Lei <tom.leiming@gmail.com>
+To: =?ISO-8859-1?Q?Wolfgang_M=FCes?= <wolfgang@iksw-muees.de>
+Cc: linux-usb <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unlike the other targets, alpha sets _one_ sigframe and
-buggers off until the next syscall/interrupt, even if
-more signals are pending.  It leads to quite a few unpleasant
-inconsistencies, starting with SIGSEGV potentially arriving
-not where it should and including e.g. mess with sigsuspend();
-consider two pending signals blocked until sigsuspend()
-unblocks them.  We pick the first one; then, if we are hit
-by interrupt while in the handler, we process the second one
-as well.  If we are not, and if no syscalls had been made,
-we get out of the first handler and leave the second signal
-pending; normally sigreturn() would've picked it anyway, but
-here it starts with restoring the original mask and voila -
-the second signal is blocked again.  On everything else we
-get both delivered consistently.
+CC linux-kernel
 
-It's actually easy to fix; the only thing to watch out for
-is prevention of double syscall restart.  Fortunately, the
-idea I've nicked from arm fix by rmk works just fine...
+2010/9/18 Wolfgang Mües <wolfgang@iksw-muees.de>:
+> Hi,
 
-Testcase demonstrating the behaviour in question; on alpha
-we get one or both flags set (usually one), on everything
-else both are always set.
-	#include <signal.h>
-	#include <stdio.h>
-	int had1, had2;
-	void f1(int sig) { had1 = 1; }
-	void f2(int sig) { had2 = 1; }
-	main()
-	{
-		sigset_t set1, set2;
-		sigemptyset(&set1);
-		sigemptyset(&set2);
-		sigaddset(&set2, 1);
-		sigaddset(&set2, 2);
-		signal(1, f1);
-		signal(2, f2);
-		sigprocmask(SIG_SETMASK, &set2, NULL);
-		raise(1);
-		raise(2);
-		sigsuspend(&set1);
-		printf("had1:%d had2:%d\n", had1, had2);
-	}
+Thanks for your reply.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
----
- arch/alpha/kernel/entry.S |   16 +++++++++++-----
- 1 files changed, 11 insertions(+), 5 deletions(-)
+>
+> Am Freitag, 17. September 2010 16:59:25 schrieb Ming Lei:
+>> The warning only means dma_free_coherent is called with irq disabled.
+>> It is not very difficult to fix the warning in usb hcd, but I need to know
+>>  why the WARN_ON below is added into dma_free_coherent.
+>>
+>>            WARN_ON(irqs_disabled());
+>>
+>> Anyone know the reason?
+>
+> Hmm... Coherent buffers are ment to be kept for the whole time a driver
 
-diff --git a/arch/alpha/kernel/entry.S b/arch/alpha/kernel/entry.S
-index a3e9cd8..ab1ee0a 100644
---- a/arch/alpha/kernel/entry.S
-+++ b/arch/alpha/kernel/entry.S
-@@ -317,14 +317,14 @@ ret_from_sys_call:
- 	ldq	$0, SP_OFF($sp)
- 	and	$0, 8, $0
- 	beq	$0, restore_all
--ret_from_reschedule:
-+ret_to_user:
- 	/* Make sure need_resched and sigpending don't change between
- 		sampling and the rti.  */
- 	lda	$16, 7
- 	call_pal PAL_swpipl
- 	ldl	$5, TI_FLAGS($8)
- 	and	$5, _TIF_WORK_MASK, $2
--	bne	$5, work_pending
-+	bne	$2, work_pending
- restore_all:
- 	RESTORE_ALL
- 	call_pal PAL_rti
-@@ -363,7 +363,7 @@ $ret_success:
-  *       $8: current.
-  *      $19: The old syscall number, or zero if this is not a return
-  *           from a syscall that errored and is possibly restartable.
-- *      $20: Error indication.
-+ *      $20: The old a3 value
-  */
- 
- 	.align	4
-@@ -392,12 +392,18 @@ $work_resched:
- 
- $work_notifysig:
- 	mov	$sp, $16
--	br	$1, do_switch_stack
-+	bsr	$1, do_switch_stack
- 	mov	$sp, $17
- 	mov	$5, $18
-+	mov	$19, $9		/* save old syscall number */
-+	mov	$20, $10	/* save old a3 */
-+	and	$5, _TIF_SIGPENDING, $2
-+	cmovne	$2, 0, $9	/* we don't want double syscall restarts */
- 	jsr	$26, do_notify_resume
-+	mov	$9, $19
-+	mov	$10, $20
- 	bsr	$1, undo_switch_stack
--	br	restore_all
-+	br	ret_to_user
- .end work_pending
- 
- /*
+Documentation/DMA_API.txt
+
+        Consistent memory is memory for which a write by either the
+        device or the processor can immediately be read by the processor
+        or device without having to worry about caching effects.
+
+IMO, it is not necessary for a coherent buffer to be kept for
+the whole time a driver operates on a device. Also, coherent buffer
+is very limited in some arch(such as ARM), maybe we should use it
+more dynamically, instead of keeping it for long time.
+
+> operates on a device. If such a buffer is freed in an interrupt context (== a
+
+irqs_disabled() doesn't mean the buffer is freed in an interrupt context.
+
+> momentary action), this is most likely a bug in the driver. At least it is a
+> misuse of the concept of coherent buffers.
+
+If it is only a misuse, seems WARN_ON can be removed.
+
+Sorry, I still don't get the real reason why WARN_ON(irqs_disabled()) is
+added in dma_free_coherent.
+
 -- 
-1.5.6.5
-
+Lei Ming
