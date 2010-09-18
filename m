@@ -1,127 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab0IRJZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 05:25:58 -0400
-Received: from web137402.mail.in.yahoo.com ([121.101.151.149]:41767 "HELO
-	web137402.mail.in.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755314Ab0IRJZ5 (ORCPT
+	id S1755369Ab0IRJ2B (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 05:28:01 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:59896 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755276Ab0IRJ2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 05:25:57 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.co.in;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type;
-  b=jngAhRqZy+mPvtGc4i+cHYT4D627prJHrw//fvj1NTXxDSXKV8ClSeItNSQwq3l/6tO5b4i+oEpnN9OoYhf5jg2gD/EwwmjINQ4hVXTVz4/P7JkIvSjliA0qAg0V1eg5LzRq47ngruV3Cu8yWhhNF6kBLnT9A5PVoMo+FTQPgsI=;
-Message-ID: <809346.96921.qm@web137402.mail.in.yahoo.com>
-X-YMail-OSG: b2h10LgVM1lIYnYY_8ctNbR8XaQHv0cSO0nwbLpgms7wSRa
- xXK67uCad1SYOXCkOCUARI0XH.kGJ6gxHnj.wS7adoK3QytvxmMsUIlO1xw8
- YDRFhPUORd7420uP1fvitF7M7wJ.Ub2sVW6IBtSKZBlwvjmX.THS7jhB2sNp
- Bl06aqoZ7Ef.CaOxIJWWnZP7mr3xMi9YBouAL5p35zoVj8mK6IwHgPgUkAFy
- vCzVR6cUBBI1DJvZ_5zzOav87BnBcxT7JHwVuPZwoOP8r8PVei0s4Wvk5Gvw
- fcDMXC_KOEM01ubSFI0GL.D8wmEuCTEdC
-X-Mailer: YahooMailRC/497 YahooMailWebService/0.8.105.279950
-Date: Sat, 18 Sep 2010 14:55:50 +0530 (IST)
-From: vaibhav agarwal <vaibhav_agrwal@yahoo.co.in>
-Subject: Kernel panic in 2.6.36-rc4 after suspend/resume
-To: linux-kernel@vger.kernel.org
+	Sat, 18 Sep 2010 05:28:00 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v4 1/2] init: add sys-wrapper.h
+Date: Sat, 18 Sep 2010 11:27:46 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: Namhyung Kim <namhyung@gmail.com>, Sam Ravnborg <sam@ravnborg.org>,
+        Phillip Lougher <phillip@lougher.demon.co.uk>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+References: <1283268619-10728-1-git-send-email-namhyung@gmail.com> <1283268619-10728-2-git-send-email-namhyung@gmail.com> <20100917144024.33e66e53.akpm@linux-foundation.org>
+In-Reply-To: <20100917144024.33e66e53.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="0-467617078-1284801950=:96921"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009181127.47063.arnd@arndb.de>
+X-Provags-ID: V02:K0:n2VWznjm/+YnIsqsg6N8FIvhrgkUd7HFV7BFUqWdHuP
+ +BuLQY7hZZUWaY/bXerwydQfq+vPAtRyN1fwd9CBi+ZlbQF9fB
+ LcuRJEL0zmJ1sVZ9phVkHwDBt1Hs9yz2nc/I0t0oEbEb7s4ZF3
+ NJech7rHBDIqPhOJXJtqRi1KnHQT3JzCYR7EEosKaD4ToExN2c
+ ZE+ekoVYOyqQfSYGwVWAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0-467617078-1284801950=:96921
-Content-Type: text/plain; charset=us-ascii
+On Friday 17 September 2010, Andrew Morton wrote:
+> > -     int err = sys_mount(name, "/root", fs, flags, data);
+> > +     int err = kernel_sys_mount(name, "/root", fs, flags, data);
+> 
+> It would be good if we could arrange for all kernel syscalls to use
+> the wrappers.  ie: cause a direct call to sys_mount() to not compile?
+> 
+> I don't know how practical that would be.
 
-Hi,
+One common reason to call a sys_* function is to implement another
+system call, e.g. sys_socketcall calling sys_socket or
+compat_sys_timer_create calling sys_timer_create.
 
-I am using kernel 2.6.34-rc4 directly taken from kernel.org. After suspend to 
-ram if I leave it for few hours and resume then kernel panic happens (screen of 
-death). If I suspend and resume immediately then it works fine.
+I think in those cases we don't really want to go through another
+wrapper.
 
-I have hand copied the message and attached in this mail. Let me know what other 
-
-information is needed from my side.
-I can file bug in kernel bugzilla if needed. As per kernel oops docs, I am 
-sending a mail here.
-
-(Its a intel Dual Core machine)
-
--vaibhav
-
-
-
-      
---0-467617078-1284801950=:96921
-Content-Type: application/octet-stream; name="2.6.36-rc4-oops"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="2.6.36-rc4-oops"
-
-TW9kdWxlcyBsaW5rZWQgaW46IGJ0dXNiIGk5MTUgZHJtX2ttc19oZWxwZXIg
-ZHJtIGkyY19hbGdvX2JpdCBzY28gYWNwaV9jcHVmcmVxIG1wZXJmIHJmY29t
-bSBibmVwIGNwdWZyZXFfcG93ZXJzYXZlIGwyY2FwIGNyYzE2IGJsdWV0b290
-aCBjcHVmcmVxX3VzZXJzcGFjZSBjcHVmcmVxX2NvbnNlcnZhdGl2ZSBjcHVm
-cmVxX3N0YXRzIG5mc2QgZXhwb3J0ZnMgbmZzIGxvY2tkIGZzY2FjaGUgbmZz
-X2FjbCBhdXRoX3JwY2dzcyBzdW5ycGMgYWVzXzE1ODYgYWVzX2dlbmVyaWMg
-ZnVzZSBsb29wIGFyYzQgZWNiIGF0aDlrIG1hYzgwMjExIHNuZF9oZGFfY29k
-ZWNfaW50ZWxoZG1pIGF0aDlrIGNvbW1vbiBzbmRfaGRhX2NvZGVjX3JlYWx0
-ZWsgYXRoOWtfaHcgYXRoIHNuZF9oZGFfY29kZWMgc25kX2h3ZGVwIGNmZzkw
-MjExIHNuZF9wY21fb3NzIHNuZF9taXhlcl9vc3Mgc25kX3BjbSBpbnRlbF9h
-Z3Agc25kX3NlcV9taWRpIGptYjM4eF9tcyB1dmN2aWRlbyB2aWRlb2RldiBz
-bmRfcmF3bWlkaSBzbmRfc2VxX21pZGlfZXZlbnQgam95ZGV2IHY0bDFfY29t
-cGF0IHJma2lsbCBtZW1zdGljayBzbmRfc2VxIHNocGNocCBldmRldiB0cG1f
-dGlzIHRwbSBhZ3BwYXJ0IHRwbV9iaW9zIHZpZGVvIGJhdHRlcnkgcHJvY2Vz
-c29yIGFjIHNuZF90aW1lciBzbmRfc2VxX2RldmljZSBwc21vdXNlIHNuZCBz
-ZXJpb19yYXcgcGNzcGtyIGkyY19pODAxIGkyY19jb3JlIHNvdW5kY29yZSBw
-Y2lfaG90cGx1ZyBvdXRwdXQgc25kX3BhZ2VfYWxsb2Mgd21pIGJ1dHRvbiBl
-eHQzIGpiZCBtYmNhY2hlIHNnIHNyX21vZCBjZHJvbSBjcmNfdDEwZGlmIHVo
-Y2lfaGNkIGFoY2kgbGliYWhjaSBsaWJhdGEgZWhjaV9oY2Qgc2RoY2lfcGNp
-IHNkaGNpIGF0bDFlIHRoZXJtYWwgbW1jX2NvcmUgbGVkX2NsYXNzIHNjc2lf
-bW9kIHRoZXJtYWxfc3lzIHVzYmNvcmUgbmxzX2Jhc2UgW2xhc3QgdW5sb2Fk
-ZWQ6IHNjc2lfd2FpdF9zY2FuXQoKUGlkOiAwLCBjb21tOiBzd2FwcGVyIE5v
-dCB0YWludGVkIDIuNi4zNi1yYzQtY3VzdG9tICMxOCBBc3BpcmUgNDczNlog
-ICAgL0FzcGlyZSA0NzM2WgpFSVA6IDAwNjA6WzxmODNkZTY1Mz5dIEVmbGFn
-czogMDAwMTAyMDYgQ1BVOiAwCkVJUCBpcyBheSBzdGFfYWRkYmFfcmVzcF90
-aW1lcl9leHBpcmVkKzB4MTcvMHgyOCBbbWF4ODAyMTFdCkVBWDogZjRiOGZm
-NmMgRUJTOiBmMzZiNzg0OCBFQ1g6IDA1MmYwMDAwIEVEWDogMDAwMDAwOTQK
-RVNJOiBjMDRmZDM0MCBFREk6IDAwMDAwMDAxIEVCUDogMDAwMDAxMDAgRVNQ
-OiBjMDQzMWVlYwogRFM6IDAwN2IgRVM6IDAwN2IgRlM6IDAwZDggR1M6IDAw
-MDAgU1M6IDAwNjgKUHJvY2VzcyBzd2FwcGVyIChwaWQ6IDAsIHRpPWMwNDMw
-MDAwIHRhc2s9YzA0M2ZmMjAgdGFzay50aT1jMDQzMDAwMCkKU3RhY2s6CiBj
-MDEzOTA4ZiBjMDQzMWYwYyBmODNkZTYzYyBjMDRmZGI1MCBjMDRmZGQ1MCBj
-MDRmZGY1MCBjMDRmZTE1MCBmNGI5MDFhMAo8MD4gYzA0MzFmMGMgYzA0MzFm
-MGMgMDAwMDAwNDYgMDAwMDAwMDQgMDAwMDAwMDEgMDAwMDAxMDAgYzAxMzNl
-YjQgMDAwMDAwMDEKPDA+IDAwMDAwMDBhIGMwNDM1YTA0IGMwNGMxZGVjIDAw
-MDAwMDAwIDAwMDAwMDQ2IDAwMDAwMDAwIDAwMDAwMDAwIGMwNDMxZjcwCkNh
-bGwgVHJhY2U6CiBbPGMwMTM5MDhmPl0gPyBydW5fdGltZXJfc29mdGlycSsw
-eDE2Zi8weDIxMwogWzxmODNkZTYzYz5dID8gc3RhX2FkZGJhX3Jlc3BfdGlt
-ZXJfZXhwaXJlZCsweDAvMHgyOCBbbWFjODAyMTFdCiBbPGMwMTMzZWI0Pl0g
-PyBfX2RvX3NvZnRpcnErMHhiMS8weDE1NgogWzxjMDEzM2Y4Nz5dID8gZG9f
-c29mdGlycSsweDJlLzB4MzgKIFs8YzAxMzQwODU+XSA/IGlycV9leGl0KzB4
-MjYvMHg1OAogWzxjMDEwNDNkMD5dID8gZG9fSVJRKzB4N2QvMHg4ZQogWzxj
-MDEwMzNhOT5dID8gY29tbW9uX2ludGVycnVwdCsweDI5LzB4MzAKIFs8Zjg1
-MzRmOWQ+XSA/IGFjcGlfaWRsZV9lbnRlcl9zaW1wbGUrMHhlYy8weDEyOSBb
-cHJvY2Vzc29yXQogWzxjMDJiMzRhZT5dID8gY3B1aWRsZV9pZGxlX2NhbGwr
-MHg3Ny8weGQ1CiBbPGMwMTAyMWM2Pl0gPyBjcHVfaWRsZSsweDQ5LzB4OGIK
-IFs8YzA0Njg4M2U+XSA/IHN0YXJ0X2tlcm5lbCsweDJkNC8weDJkNwpDb2Rl
-OiBlOCAyZiBjNCBmNyBjNyBlYiAwNSBiZCBlYSBmZiBmZiBmZiA1ZSA4OSBl
-OCA1YiA1ZSA1ZiA1ZCBjMyAwZiBiNiAxMCAyOSBkMCAyZCBhMCAwMSAwMCAw
-MCA4ZCA4YyA5MCA0YyAwMSAwMCAwMCA4YiAwOSA4NSBjOSA3NCAxMCA8ZjY+
-IDQxIDRjIDAyIDc1IDBhIDA1IGIwIDAxIDAwIDAwIGU5IDVmIGZmIGZmIGZm
-IGMzIDU1IDg5IGNkIDU3CkVJUDogWzxmODNkZTY1Mz5dIHN0YV9hZGRiYV9y
-ZXNwX2V4cGlyZWQrMHgxNy8weDI4IFttYXg4MDIxMV0gU1M6RVNQIDAwNjg6
-YzA0MzFlZWMKQ1IyOiAwMDAwMDAwMDA1MmYwMDRjCi0tLVsgZW5kIHRyYWNl
-IGM3Y2MxZDhjOTM4MWMzN2MgXS0tLQpLZXJuZWwgcGFuaWMgLSBub3Qgc3lu
-Y2luZzogRmF0YWwgZXhjZXB0aW9uIGluIGludGVycnVwdApQaWQ6IDAsIGNv
-bW06IHN3YXBwZXIgVGFpbnRlZDogRyAgICAgICAgRCAgICAgICAyLjYuMzYt
-cmM0LWN1c3RvbSAjMTgKQ2FsbCBUcmFjZToKIFs8YzAzNTkxYmE+XSA/IHBh
-bmljKzB4NGQvMHgxM2EKIFs8YzAxMDU2OTI+XSA/IG9vcHNfZW5kKzB4OGUv
-MHg5OQogWzxjMDExZDZjND5dID8gbm9fY29udGV4dCsweDEwZC8weDExNgog
-WzxjMDExZGExMz5dID8gZG9fcGFnZV9mYXVsdCsweDAvMHgyNGQKIFs8YzAx
-MWQ3ZDI+XSA/IGJhZF9hcmVhX25vc2VtYXBob3JlKzB4YS8weGMKIFs8YzAz
-NWIzMTY+XSA/IGVycm9yX2NvZGUrMHg1YS8weDYwCiBbPGMwMTFkYTEzPl0g
-PyBkb19wYWdlX2ZhdWx0KzB4MC8weDI0ZAogWzxmODNkZTY1Mz5dID8gc3Rh
-X2FkZGJhX3Jlc3BfdGltZXJfZXhwaXJlZCsweDE3LzB4MjggW21hYzgwMjEx
-XQogWzxjMDEzOTA4Zj5dID8gcnVuX3RpbWVyX3NvZnRpcnErMHgxNmYvMHgy
-MTMK
-
---0-467617078-1284801950=:96921--
+	Arnd
