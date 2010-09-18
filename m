@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756889Ab0IRT3y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:29:54 -0400
-Received: from kroah.org ([198.145.64.141]:43457 "EHLO coco.kroah.org"
+	id S1756915Ab0IRTaP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:30:15 -0400
+Received: from kroah.org ([198.145.64.141]:43453 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756840Ab0IRTPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:15:21 -0400
+	id S1756848Ab0IRTPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:15:20 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:02 2010
-Message-Id: <20100918191302.503093195@clark.site>
+Message-Id: <20100918191302.423359289@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:12:38 -0700
+Date: Sat, 18 Sep 2010 12:12:37 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel Mack <daniel@caiaq.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [060/129] ALSA: usb-audio: Assume first control interface is for audio
+        Takashi Iwai <tiwai@suse.de>
+Subject: [059/129] ALSA: hda - Fix wrong HP pin detection in snd_hda_parse_pin_def_config()
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <daniel@caiaq.de>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 7b6717e144de6592e614fd7fc3b914b6bf686a9d upstream.
+commit 122661b67899980f1372812d907e73ebcfb3d037 upstream.
 
-For devices with more than one control interface, let's assume the first
-one contains the audio controls. Unfortunately, there is no field in any
-of the descriptors to tell us whether a control interface is for audio
-or MIDI controls, so a better check is not easy to implement.
+snd_hda_parse_pin_def_config() has some workaround for re-assigning
+some pins declared as headphones to line-outs.  This didn't work properly
+for some cases because it used memmove() stupidly wrongly.
 
-On a composite device with audio and MIDI functions, for example, the
-code currently overwrites chip->ctrl_intf, causing operations on the
-control interface to fail if they are issued after the device probe.
+Reference: Novell bnc#637263
+	https://bugzilla.novell.com/show_bug.cgi?id=637263
 
-Signed-off-by: Daniel Mack <daniel@caiaq.de>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/usb/card.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ sound/pci/hda/hda_codec.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/usb/card.c
-+++ b/sound/usb/card.c
-@@ -466,7 +466,13 @@ static void *snd_usb_audio_probe(struct
- 			goto __error;
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -4360,7 +4360,7 @@ int snd_hda_parse_pin_def_config(struct
+ 			cfg->hp_outs--;
+ 			memmove(cfg->hp_pins + i, cfg->hp_pins + i + 1,
+ 				sizeof(cfg->hp_pins[0]) * (cfg->hp_outs - i));
+-			memmove(sequences_hp + i - 1, sequences_hp + i,
++			memmove(sequences_hp + i, sequences_hp + i + 1,
+ 				sizeof(sequences_hp[0]) * (cfg->hp_outs - i));
+ 		}
  	}
- 
--	chip->ctrl_intf = alts;
-+	/*
-+	 * For devices with more than one control interface, we assume the
-+	 * first contains the audio controls. We might need a more specific
-+	 * check here in the future.
-+	 */
-+	if (!chip->ctrl_intf)
-+		chip->ctrl_intf = alts;
- 
- 	if (err > 0) {
- 		/* create normal USB audio interfaces */
 
 
