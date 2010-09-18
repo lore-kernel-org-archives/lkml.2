@@ -1,124 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726Ab0IRVpU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 17:45:20 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43974 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751654Ab0IRVpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 17:45:18 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: vaibhav_agrwal@yahoo.co.in
-Subject: Re: Fw: Kernel panic in 2.6.36-rc4 after suspend/resume
-Date: Sat, 18 Sep 2010 23:44:12 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
-References: <20100918214733.GA5223@kryptos.lan>
-In-Reply-To: <20100918214733.GA5223@kryptos.lan>
+	id S1753878Ab0IRWRV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 18:17:21 -0400
+Received: from skyboo.net ([82.160.187.4]:38200 "EHLO skyboo.net"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753601Ab0IRWRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 18:17:20 -0400
+Message-ID: <4C953A66.3070003@skyboo.net>
+Date: Sun, 19 Sep 2010 00:17:10 +0200
+From: Mariusz Bialonczyk <manio@skyboo.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: linux-kernel@vger.kernel.org
+References: <4C940D5C.4090408@skyboo.net>
+In-Reply-To: <4C940D5C.4090408@skyboo.net>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009182344.12498.rjw@sisk.pl>
+X-SA-Exim-Connect-IP: 2001:470:1f0b:1af:f000::2
+X-SA-Exim-Mail-From: manio@skyboo.net
+Subject: Re: PROBLEM: GPT partition table + RAID: kernel could not load init
+ while root filesystem is mounted
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:26:47 +0000)
+X-SA-Exim-Scanned: Yes (on skyboo.net)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, September 18, 2010, Josh Cartwright wrote:
-> <Forwarding to relevant maintainers (get_maintainer.pl -f net/mac80211/agg-tx.c)>
-> 
-> From: vaibhav agarwal <vaibhav_agrwal@yahoo.co.in>
-> Subject: Re: Kernel panic in 2.6.36-rc4 after suspend/resume
-> Date: Sat, 18 Sep 2010 15:09:29 +0530 (IST)
-> To: linux-kernel@vger.kernel.org
-> X-Mailer: YahooMailRC/497 YahooMailWebService/0.8.105.279950
-> 
-> Hi,
-> 
-> I am using kernel 2.6.34-rc4 directly taken from kernel.org. After suspend to 
-> ram if I leave it for few hours and resume then kernel panic happens (screen of 
-> death). If I suspend and resume immediately then it works fine.
-> 
-> I have hand copied the message and attached in this mail. Let me know what other 
-> 
-> 
-> information is needed from my side.
-> I can file bug in kernel bugzilla if needed.
+On 09/18/2010 02:52 AM, manio wrote:
+> Hello
+> I am trying to migrate from old root filesystem (linux raid1 on disks
+> with msdos partition table) to new (4K sector) disks with GPT partition
+> table (also raid1). I am using raid autodetection (i have superblock
+> v0.90 on all raid devices) and i am passing /dev/mdX as a root device to
+> the kernel. When i am passing root=/dev/md10 (old disks with msdos
+> partition tables) booting process is fine (i am pasting relevant info):
+>
+> [ 6.695241] raid1: raid set md10 active with 2 out of 2 mirrors
+> [ 6.695280] md10: detected capacity change from 0 to 6999572480
+> [ 6.695332] md: ... autorun DONE.
+> [ 6.695407] md10: unknown partition table
+> [ 6.696236] EXT3-fs (md10): error: couldn't mount because of unsupported
+> optional features (240)
+> [ 6.696508] EXT2-fs (md10): error: couldn't mount because of unsupported
+> optional features (240)
+> [ 6.743086] EXT4-fs (md10): mounted filesystem with ordered data mode
+> [ 6.743185] VFS: Mounted root (ext4 filesystem) readonly on device 9:10.
+> [ 6.743227] Freeing unused kernel memory: 424k freed
+> ..... now comes INIT - and it boots correctly
+>
+> BUT (!) the problem is when i am trying to pass root=/dev/md0 (raid1 on
+> new disks with GPT partition tables). Then it seems like kernel cannot
+> run /sbin/init from my ext4 root partition. The root filesystem seems to
+> be mounted OK:
+>
+> md: ... autorun DONE.
+> md0: unknown partition table
+> EXT3-fs (md0): error: couldn't mount because of unsupported optional
+> features (240)
+> EXT2-fs (md0): error: couldn't mount because of unsupported optional
+> features (240)
+> EXT4-fs (md0): mounted filesystem with ordered data mode
+> VFS: Mounted root (ext4 filesystem) readonly on device 9:0.
+> Freeing unused kernel memory: 424k freed
+>
+> ..... now there is some USB init debug info and it stop :(
+> /sbin/init is not launched and it seems like the kernel hung :(
+> i was waiting several minutes then - and nothing happend.
 
-Yes, please.
+after some investigation i am almost sure that the problem is with
+kernel_execve() - i put some debug info and i can see that last call
+from init/main.c is:
+run_init_process("/sbin/init");
+i was checking the boot partition - it is same correct ext4 filesystem
+with same contents - the only difference between them is the partition
+table - the problem is on GPT, while on msdos partition table it calls
+INIT correctly after kernel_execve call. On GPT it hungs - maybe it is
+not jumping into correct location?
+Strange thing is - that the root filesystem in both cases is mounted,
+so why it has trouble to run /sbin/init in GPT case?
 
-> As per kernel oops docs, I am sending a mail here.
-> 
-> (Its a intel Dual Core machine)
+Last time i forgot to mention that i am using kernel 2.6.36-rc4 but i
+was also testing it on 2.6.34 with same results.
+I am using x86_64 architecture.
 
-I think that sta_addba_resp_timer_expired() is a red herring.  More likely the
-problem is related to cpuidle.  Apparently, the suspend-resume cycle causes
-the ACPI cpuidle driver to malfunction.
-
-Thanks,
-Rafael
-
- 
-> Modules linked in: btusb i915 drm_kms_helper drm i2c_algo_bit sco acpi_cpufreq 
-> mperf rfcomm bnep cpufreq_powersave l2cap crc16 bluetooth cpufreq_userspace 
-> cpufreq_conservative cpufreq_stats nfsd exportfs nfs lockd fscache nfs_acl 
-> auth_rpcgss sunrpc aes_1586 aes_generic fuse loop arc4 ecb ath9k mac80211 
-> snd_hda_codec_intelhdmi ath9k common snd_hda_codec_realtek ath9k_hw ath 
-> snd_hda_codec snd_hwdep cfg90211 snd_pcm_oss snd_mixer_oss snd_pcm intel_agp 
-> snd_seq_midi jmb38x_ms uvcvideo videodev snd_rawmidi snd_seq_midi_event joydev 
-> v4l1_compat rfkill memstick snd_seq shpchp evdev tpm_tis tpm agppart tpm_bios 
-> video battery processor ac snd_timer snd_seq_device psmouse snd serio_raw pcspkr 
-> i2c_i801 i2c_core soundcore pci_hotplug output snd_page_alloc wmi button ext3 
-> jbd mbcache sg sr_mod cdrom crc_t10dif uhci_hcd ahci libahci libata ehci_hcd 
-> sdhci_pci sdhci atl1e thermal mmc_core led_class scsi_mod thermal_sys usbcore 
-> nls_base [last unloaded: scsi_wait_scan]
-> 
-> Pid: 0, comm: swapper Not tainted 2.6.36-rc4-custom #18 Aspire 4736Z    /Aspire 
-> 4736Z
-> EIP: 0060:[<f83de653>] Eflags: 00010206 CPU: 0
-> EIP is ay sta_addba_resp_timer_expired+0x17/0x28 [max80211]
-> EAX: f4b8ff6c EBS: f36b7848 ECX: 052f0000 EDX: 00000094
-> ESI: c04fd340 EDI: 00000001 EBP: 00000100 ESP: c0431eec
->  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
-> Process swapper (pid: 0, ti=c0430000 task=c043ff20 task.ti=c0430000)
-> Stack:
->  c013908f c0431f0c f83de63c c04fdb50 c04fdd50 c04fdf50 c04fe150 f4b901a0
-> <0> c0431f0c c0431f0c 00000046 00000004 00000001 00000100 c0133eb4 00000001
-> <0> 0000000a c0435a04 c04c1dec 00000000 00000046 00000000 00000000 c0431f70
-> Call Trace:
->  [<c013908f>] ? run_timer_softirq+0x16f/0x213
->  [<f83de63c>] ? sta_addba_resp_timer_expired+0x0/0x28 [mac80211]
->  [<c0133eb4>] ? __do_softirq+0xb1/0x156
->  [<c0133f87>] ? do_softirq+0x2e/0x38
->  [<c0134085>] ? irq_exit+0x26/0x58
->  [<c01043d0>] ? do_IRQ+0x7d/0x8e
->  [<c01033a9>] ? common_interrupt+0x29/0x30
->  [<f8534f9d>] ? acpi_idle_enter_simple+0xec/0x129 [processor]
->  [<c02b34ae>] ? cpuidle_idle_call+0x77/0xd5
->  [<c01021c6>] ? cpu_idle+0x49/0x8b
->  [<c046883e>] ? start_kernel+0x2d4/0x2d7
-> Code: e8 2f c4 f7 c7 eb 05 bd ea ff ff ff 5e 89 e8 5b 5e 5f 5d c3 0f b6 10 29 d0 
-> 2d a0 01 00 00 8d 8c 90 4c 01 00 00 8b 09 85 c9 74 10 <f6> 41 4c 02 75 0a 05 b0 
-> 01 00 00 e9 5f ff ff ff c3 55 89 cd 57
-> EIP: [<f83de653>] sta_addba_resp_expired+0x17/0x28 [max80211] SS:ESP 
-> 0068:c0431eec
-> CR2: 00000000052f004c
-> ---[ end trace c7cc1d8c9381c37c ]---
-> Kernel panic - not syncing: Fatal exception in interrupt
-> Pid: 0, comm: swapper Tainted: G        D       2.6.36-rc4-custom #18
-> Call Trace:
->  [<c03591ba>] ? panic+0x4d/0x13a
->  [<c0105692>] ? oops_end+0x8e/0x99
->  [<c011d6c4>] ? no_context+0x10d/0x116
->  [<c011da13>] ? do_page_fault+0x0/0x24d
->  [<c011d7d2>] ? bad_area_nosemaphore+0xa/0xc
->  [<c035b316>] ? error_code+0x5a/0x60
->  [<c011da13>] ? do_page_fault+0x0/0x24d
->  [<f83de653>] ? sta_addba_resp_timer_expired+0x17/0x28 [mac80211]
->  [<c013908f>] ? run_timer_softirq+0x16f/0x213
-> 
+regards,
+-- 
+Mariusz Bialonczyk
+jabber/e-mail: manio@skyboo.net
+http://manio.skyboo.net
