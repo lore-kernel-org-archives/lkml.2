@@ -1,72 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757614Ab0IRTnu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:43:50 -0400
-Received: from mail-da-3.dns-solutions.net ([69.12.112.3]:62679 "HELO
-	mail-da-3.dns-solutions.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753609Ab0IRTns convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:43:48 -0400
-From: "Joshua Hintze" <joshh@imsar.com>
-To: "'Maxim Levitsky'" <maximlevitsky@gmail.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-ide@vger.kernel.org>
-References: <00d401cb55f7$33a78210$9af68630$@com>	 <20100917154732.330c4b1b@varda>  <010901cb5754$ae6735a0$0b35a0e0$@com> <1284837774.12425.1.camel@localhost.localdomain>
-In-Reply-To: <1284837774.12425.1.camel@localhost.localdomain>
-Subject: RE: PATA IDE is slower in newer versions of kernel
-Date: Sat, 18 Sep 2010 13:43:40 -0600
-Message-ID: <010d01cb5769$cbca3380$635e9a80$@com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: ActXaTHdDUmVGf9aTRGXy+kGeyMJRQAAHcvg
-Content-Language: en-us
+	id S1757632Ab0IRTny (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:43:54 -0400
+Received: from kroah.org ([198.145.64.141]:51644 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755897Ab0IRTCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:02:03 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:59 2010
+Message-Id: <20100918185959.762346087@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Sat, 18 Sep 2010 11:58:45 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Greg KH <greg@kroah.com>, Mike Galbraith <efault@gmx.de>
+Subject: [081/123] sched: Fix sched_exec() balancing
+References: <20100918185724.290702750@clark.site>
+Content-Disposition: inline; filename=sched-fix-sched_exec-balancing.patch
+In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks,
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-I'm not sure what you mean by bisect, other than just the definition of the word. I am breaking this problem down adding printks etc.  I think I'm finally beginng to understand how this works :)
+commit 3802290628348674985d14914f9bfee7b9084548 upstream
 
-Josh
+sched: Fix sched_exec() balancing
 
+Since we access ->cpus_allowed without holding rq->lock we need
+a retry loop to validate the result, this comes for near free
+when we merge sched_migrate_task() into sched_exec() since that
+already does the needed check.
 
------Original Message-----
-From: linux-ide-owner@vger.kernel.org [mailto:linux-ide-owner@vger.kernel.org] On Behalf Of Maxim Levitsky
-Sent: Saturday, September 18, 2010 1:23 PM
-To: Joshua Hintze
-Cc: linux-kernel@vger.kernel.org; linux-ide@vger.kernel.org
-Subject: RE: PATA IDE is slower in newer versions of kernel
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Mike Galbraith <efault@gmx.de>
+LKML-Reference: <20091216170517.884743662@chello.nl>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ kernel/sched.c |   45 +++++++++++++++++++++++----------------------
+ 1 file changed, 23 insertions(+), 22 deletions(-)
 
-On Sat, 2010-09-18 at 11:12 -0600, Joshua Hintze wrote:
-> Some updated information. I created a screen capture of what I am seeing. First is the logic analyzer when the newer linux kernel is writing slow to the PATA port.
-> 
-> http://i56.tinypic.com/oqhrug.png
-> 
-> Notice in the above link how there is a lot of activating and then large gaps of no activity. After about 9 mS the STOP line is strobed a few times and then DMARQ finally returns to normal operating. The link below shows the picture of an old 2.6.10 kernel where write speeds are much faster.
-> 
-> http://i51.tinypic.com/a9wiur.png
-> 
-> In the above image notice how the wait time is considerable less 100's of microseconds before the stop lines get strobed.
-> 
-> I'm dedicated to continue working on the problem, I just need to advice from the linux community. I've tried different I/O schedulers such as noop and anticipatory and I'm studying the ide-dma code but still lost to where this is happening.
-> 
-> Thanks!
-> 
-Maybe you can just bisect this?
-Just a general advice, I don't know ide subsystem at all.
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2322,7 +2322,7 @@ void task_oncpu_function_call(struct tas
+  *
+  *  - fork, @p is stable because it isn't on the tasklist yet
+  *
+- *  - exec, @p is unstable XXX
++ *  - exec, @p is unstable, retry loop
+  *
+  *  - wake-up, we serialize ->cpus_allowed against TASK_WAKING so
+  *             we should be good.
+@@ -3133,21 +3133,36 @@ static void double_rq_unlock(struct rq *
+ }
+ 
+ /*
+- * If dest_cpu is allowed for this process, migrate the task to it.
+- * This is accomplished by forcing the cpu_allowed mask to only
+- * allow dest_cpu, which will force the cpu onto dest_cpu. Then
+- * the cpu_allowed mask is restored.
++ * sched_exec - execve() is a valuable balancing opportunity, because at
++ * this point the task has the smallest effective memory and cache footprint.
+  */
+-static void sched_migrate_task(struct task_struct *p, int dest_cpu)
++void sched_exec(void)
+ {
++	struct task_struct *p = current;
+ 	struct migration_req req;
++	int dest_cpu, this_cpu;
+ 	unsigned long flags;
+ 	struct rq *rq;
+ 
++again:
++	this_cpu = get_cpu();
++	dest_cpu = select_task_rq(p, SD_BALANCE_EXEC, 0);
++	if (dest_cpu == this_cpu) {
++		put_cpu();
++		return;
++	}
++
+ 	rq = task_rq_lock(p, &flags);
++	put_cpu();
++
++	/*
++	 * select_task_rq() can race against ->cpus_allowed
++	 */
+ 	if (!cpumask_test_cpu(dest_cpu, &p->cpus_allowed)
+-	    || unlikely(!cpu_active(dest_cpu)))
+-		goto out;
++	    || unlikely(!cpu_active(dest_cpu))) {
++		task_rq_unlock(rq, &flags);
++		goto again;
++	}
+ 
+ 	/* force the process onto the specified CPU */
+ 	if (migrate_task(p, dest_cpu, &req)) {
+@@ -3162,24 +3177,10 @@ static void sched_migrate_task(struct ta
+ 
+ 		return;
+ 	}
+-out:
+ 	task_rq_unlock(rq, &flags);
+ }
+ 
+ /*
+- * sched_exec - execve() is a valuable balancing opportunity, because at
+- * this point the task has the smallest effective memory and cache footprint.
+- */
+-void sched_exec(void)
+-{
+-	int new_cpu, this_cpu = get_cpu();
+-	new_cpu = select_task_rq(current, SD_BALANCE_EXEC, 0);
+-	put_cpu();
+-	if (new_cpu != this_cpu)
+-		sched_migrate_task(current, new_cpu);
+-}
+-
+-/*
+  * pull_task - move a task from a remote runqueue to the local runqueue.
+  * Both runqueues must be locked.
+  */
 
-Best regards,
-	Maxim Levitsky
-
---
-To unsubscribe from this list: send the line "unsubscribe linux-ide" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-No virus found in this incoming message.
-Checked by AVG - www.avg.com 
-Version: 9.0.851 / Virus Database: 271.1.1/3132 - Release Date: 09/18/10 00:34:00
 
