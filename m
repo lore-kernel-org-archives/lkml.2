@@ -1,173 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754998Ab0IRMsv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 08:48:51 -0400
-Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:31285 "EHLO
-	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754172Ab0IRMsu (ORCPT
+	id S1755243Ab0IRMvG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 08:51:06 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:43352 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753089Ab0IRMvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 08:48:50 -0400
-Subject: Re: [PATCH] drm/edid: Don't repeatedly log hex dumps of bad EDIDs
- by default
-From: Andy Walls <awalls@md.metrocast.net>
-To: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Dave Airlie <airlied@redhat.com>, David Airlie <airlied@linux.ie>
-In-Reply-To: <20100918115043.GB2953@joi.lan>
-References: <1284764006.13604.21.camel@morgan.silverblock.net>
-	 <20100918115043.GB2953@joi.lan>
+	Sat, 18 Sep 2010 08:51:04 -0400
+Subject: Re: [RFC PATCH] hid-magicmouse: Map inputs rather than munging
+ input devices
+From: Chase Douglas <chase.douglas@canonical.com>
+To: Michael Poole <mdpoole@troilus.org>
+Cc: Jiri Slaby <jirislaby@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Henrik Rydberg <rydberg@euromail.se>, Tejun Heo <tj@kernel.org>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1283699801.26830.4.camel@graviton>
+References: <1283306184-28833-1-git-send-email-chase.douglas@canonical.com>
+	 <1283306184-28833-2-git-send-email-chase.douglas@canonical.com>
+	 <4C7E94F6.9050806@gmail.com>
+	 <AANLkTi=z5s8mbjG54930Lxj-O9Of2fXHE6kDJhijyOb7@mail.gmail.com>
+	 <4C7F6E26.2030301@gmail.com>
+	 <AANLkTikb=eNzek-vQ=d3jZxitsbtJ5gD6BNDipAUpUcJ@mail.gmail.com>
+	 <4C80DB38.9040101@gmail.com>  <1283699801.26830.4.camel@graviton>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 18 Sep 2010 08:48:26 -0400
-Message-ID: <1284814106.2053.51.camel@morgan.silverblock.net>
+Date: Sat, 18 Sep 2010 14:50:32 +0200
+Message-ID: <1284814232.2257.6.camel@mini>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.0.10011,1.0.148,0.0.0000
- definitions=2010-09-17_13:2010-09-18,2010-09-17,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 phishscore=0
- bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- engine=5.0.0-1005130000 definitions=main-1009180035
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-09-18 at 13:50 +0200, Marcin Slusarz wrote:
-> On Fri, Sep 17, 2010 at 06:53:26PM -0400, Andy Walls wrote:
-> > On my system, every 10 seconds drm_edid_block_valid() gets called 4
-> > times by radeon_dvi_detect().  This results in 4 instances of a
-> > multi-line hex dump of the same EDID (non-)data being logged every 10
-> > seconds.
-> > 
-> > Silence the hex dump from drm_edid_block_valid() unless a drm_debug
-> > module parameter flag is set.
-> > 
-> > Signed-of-by: Andy Walls <awalls@md.metrocast.net>
-> > 
-> > diff --git a/drivers/gpu/drm/drm_edid.c b/drivers/gpu/drm/drm_edid.c
-> > index dce5c4a..33a748c 100644
-> > --- a/drivers/gpu/drm/drm_edid.c
-> > +++ b/drivers/gpu/drm/drm_edid.c
-> > @@ -173,9 +173,12 @@ drm_edid_block_valid(u8 *raw_edid)
-> >  
-> >  bad:
-> >         if (raw_edid) {
-> > -               DRM_ERROR("Raw EDID:\n");
-> > -               print_hex_dump_bytes(KERN_ERR, DUMP_PREFIX_NONE, raw_edid, EDID_LENGTH);
-> > -               printk("\n");
-> > +               DRM_DEBUG("Raw EDID:\n");
-> > +               if (drm_debug & DRM_UT_CORE) {
-> > +                       print_hex_dump_bytes(KERN_ERR, DUMP_PREFIX_NONE,
-> > +                                            raw_edid, EDID_LENGTH);
-> > +                       printk("\n");
-> > +               }
-> >         }
-> >         return 0;
-> >  }
-> > 
+On Sun, 2010-09-05 at 11:16 -0400, Michael Poole wrote:
+> Let the HID core handle input device setup and HID-compliant reports.
+> This driver then only has to worry about the non-standard reports.
 > 
-> Why not print it only once on original error level?
-> Something like:
-> static bool printed = false;
-> if (!printed) {
-> 	...
-> 	printed = true;
-> }
+> Signed-off-by: Michael Poole <mdpoole@troilus.org>
+
+I have tested this patch and it does prevent the magic trackpad from
+panicking the machine on device removal. I am acking this patch because
+it resolves the issue and the changes are reasonable when looking at the
+driver. I do not know much about the internal HID layer, so I have no
+comment on the overall approach taken.
+
+Acked-by: Chase Douglas <chase.douglas@canonical.com>
+
+When pushing to the input tree, I suggest rebasing the magic trackpad
+enablement patch after this patch so someone bisecting commits won't hit
+the panic.
+
+Thanks Michael!
+
+> ---
+> Jiri (Slaby), is this the kind of change you had in mind for getting rid
+> of the input device setup for hid-magicmouse?
 > 
-> It has the same effect for you (no spamming by default) and it's still provide some information.
-
-That's acceptable to me.  I'm assuming that if the radeon.ko and drm.ko
-modules get loaded early (from initrd), that the log instance will still
-be in the dmesg ring buffer for when the OS can finally log dmesg to
-disk.
-
-I'm still getting spammed every 10 seconds.  It's just not as bad now:
-
-        Sep 17 11:56:26 morgan kernel: [drm:drm_edid_is_valid] *ERROR* Raw EDID:
-        Sep 17 11:56:26 morgan kernel:
-        Sep 17 11:56:26 morgan kernel: [drm:drm_edid_is_valid] *ERROR* Raw EDID:
-        Sep 17 11:56:26 morgan kernel:
-        Sep 17 11:56:26 morgan kernel: [drm:drm_edid_is_valid] *ERROR* Raw EDID:
-        Sep 17 11:56:26 morgan kernel:
-        Sep 17 11:56:26 morgan kernel: [drm:drm_edid_is_valid] *ERROR* Raw EDID:
-        Sep 17 11:56:26 morgan kernel:
-        Sep 17 11:56:26 morgan kernel: radeon 0000:01:05.0: DVI-D-1: EDID invalid.
-        Sep 17 11:56:26 morgan kernel: [drm:radeon_dvi_detect] *ERROR* DVI-D-1: probed a monitor but no|invalid EDID
-        Sep 17 11:56:26 morgan kernel: [drm:drm_edid_is_valid] *ERROR* Raw EDID:
-        Sep 17 11:56:26 morgan kernel:
-        Sep 17 11:56:26 morgan kernel: [drm:drm_edid_is_valid] *ERROR* Raw EDID:
-        Sep 17 11:56:26 morgan kernel:
-        Sep 17 11:56:26 morgan kernel: [drm:drm_edid_is_valid] *ERROR* Raw EDID:
-        Sep 17 11:56:26 morgan kernel:
-        Sep 17 11:56:26 morgan kernel: [drm:drm_edid_is_valid] *ERROR* Raw EDID:
-        Sep 17 11:56:26 morgan kernel:
-        Sep 17 11:56:26 morgan kernel: radeon 0000:01:05.0: DVI-D-1: EDID invalid.
-        Sep 17 11:56:26 morgan kernel: [drm:radeon_dvi_detect] *ERROR* DVI-D-1: probed a monitor but no|invalid EDID
-
-
-My MSI-7302 motherboard apparently has a graphics chipset that supports
-DVI, but the motherboard has no physical DVI connector - only a VGA
-connector.  The invalid EDID data is just junk, and not real data from
-that I2C(?) bus.   lspci output on the PCIe graphics chipset is below.
-
-If there's any easy way to just stop all the spam about the DVI
-connector, I'd be interested.
-
-Regards,
-Andy
-
-
-# lspci -tvnn
--[0000:00]-+-00.0  ATI Technologies Inc RS690 Host Bridge [1002:7911]
-           +-01.0-[01]----05.0  ATI Technologies Inc Radeon 2100 [1002:796e]
-           +-04.0-[02]----00.0  Conexant Systems, Inc. Device [14f1:8880]
-           +-05.0-[03]----00.0  Realtek Semiconductor Co., Ltd. RTL8111/8168B PCI Express Gigabit Ethernet controller [10ec:8168]
-           +-11.0  ATI Technologies Inc SB700/SB800 SATA Controller [IDE mode] [1002:4390]
-           +-12.0  ATI Technologies Inc SB700/SB800 USB OHCI0 Controller [1002:4397]
-           +-12.1  ATI Technologies Inc SB700 USB OHCI1 Controller [1002:4398]
-           +-12.2  ATI Technologies Inc SB700/SB800 USB EHCI Controller [1002:4396]
-           +-13.0  ATI Technologies Inc SB700/SB800 USB OHCI0 Controller [1002:4397]
-           +-13.1  ATI Technologies Inc SB700 USB OHCI1 Controller [1002:4398]
-           +-13.2  ATI Technologies Inc SB700/SB800 USB EHCI Controller [1002:4396]
-           +-14.0  ATI Technologies Inc SBx00 SMBus Controller [1002:4385]
-           +-14.1  ATI Technologies Inc SB700/SB800 IDE Controller [1002:439c]
-           +-14.2  ATI Technologies Inc SBx00 Azalia (Intel HDA) [1002:4383]
-           +-14.3  ATI Technologies Inc SB700/SB800 LPC host controller [1002:439d]
-           +-14.4-[04]----02.0  Internext Compression Inc iTVC15 MPEG-2 Encoder [4444:0803]
-           +-14.5  ATI Technologies Inc SB700/SB800 USB OHCI2 Controller [1002:4399]
-           +-18.0  Advanced Micro Devices [AMD] K8 [Athlon64/Opteron] HyperTransport Technology Configuration [1022:1100]
-           +-18.1  Advanced Micro Devices [AMD] K8 [Athlon64/Opteron] Address Map [1022:1101]
-           +-18.2  Advanced Micro Devices [AMD] K8 [Athlon64/Opteron] DRAM Controller [1022:1102]
-           \-18.3  Advanced Micro Devices [AMD] K8 [Athlon64/Opteron] Miscellaneous Control [1022:1103]
-
-# lspci -vnn
-00:00.0 Host bridge [0600]: ATI Technologies Inc RS690 Host Bridge [1002:7911]
-	Subsystem: ATI Technologies Inc Device [1002:7910]
-	Flags: bus master, 66MHz, medium devsel, latency 0
-
-00:01.0 PCI bridge [0604]: ATI Technologies Inc RS690 PCI to PCI Bridge (Internal gfx) [1002:7912] (prog-if 00 [Normal decode])
-	Flags: bus master, 66MHz, medium devsel, latency 64
-	Bus: primary=00, secondary=01, subordinate=01, sec-latency=64
-	I/O behind bridge: 0000d000-0000dfff
-	Memory behind bridge: fe600000-fe7fffff
-	Prefetchable memory behind bridge: 00000000d8000000-00000000dfffffff
-	Capabilities: [44] HyperTransport: MSI Mapping Enable+ Fixed+
-	Capabilities: [b0] Subsystem: ATI Technologies Inc RS690 PCI to PCI Bridge (Internal gfx) [1002:7912]
-	Kernel modules: shpchp
-[...]
-01:05.0 VGA compatible controller [0300]: ATI Technologies Inc Radeon 2100 [1002:796e] (prog-if 00 [VGA controller])
-	Subsystem: Micro-Star International Co., Ltd. Device [1462:7302]
-	Flags: bus master, fast devsel, latency 64, IRQ 28
-	Memory at d8000000 (64-bit, prefetchable) [size=128M]
-	Memory at fe7f0000 (64-bit, non-prefetchable) [size=64K]
-	I/O ports at d000 [size=256]
-	Memory at fe600000 (32-bit, non-prefetchable) [size=1M]
-	Expansion ROM at <unassigned> [disabled]
-	Capabilities: [50] Power Management version 2
-	Capabilities: [80] MSI: Enable+ Count=1/1 Maskable- 64bit+
-	Kernel driver in use: radeon
-	Kernel modules: radeon
-[...]
-
-
-
+> (This applies on top of commit a462230e16 from the magicmouse branch at
+> git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git.)
+> 
+>  drivers/hid/hid-magicmouse.c |   87
+> +++++++++++------------------------------
+>  1 files changed, 24 insertions(+), 63 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
+> index 8791a08..3778f9b 100644
+> --- a/drivers/hid/hid-magicmouse.c
+> +++ b/drivers/hid/hid-magicmouse.c
+> @@ -278,14 +278,12 @@ static int magicmouse_raw_event(struct hid_device
+> *hdev,
+>  	struct input_dev *input = msc->input;
+>  	int x = 0, y = 0, ii, clicks = 0, npoints;
+>  
+> +	/* Slightly paranoid, but "input" only gets set when our
+> +	 * input_mapping sees the right field. */
+> +	if (!input)
+> +		return 0;
+> +
+>  	switch (data[0]) {
+> -	case 0x10:
+> -		if (size != 6)
+> -			return 0;
+> -		x = (__s16)(data[2] | data[3] << 8);
+> -		y = (__s16)(data[4] | data[5] << 8);
+> -		clicks = data[1];
+> -		break;
+>  	case TRACKPAD_REPORT_ID:
+>  		/* Expect four bytes of prefix, and N*9 bytes of touch data. */
+>  		if (size < 4 || ((size - 4) % 9) != 0)
+> @@ -343,13 +341,6 @@ static int magicmouse_raw_event(struct hid_device
+> *hdev,
+>  		magicmouse_raw_event(hdev, report, data + 2 + data[1],
+>  			size - 2 - data[1]);
+>  		break;
+> -	case 0x20: /* Theoretically battery status (0-100), but I have
+> -		    * never seen it -- maybe it is only upon request.
+> -		    */
+> -	case 0x60: /* Unknown, maybe laser on/off. */
+> -	case 0x61: /* Laser reflection status change.
+> -		    * data[1]: 0 = spotted, 1 = lost
+> -		    */
+>  	default:
+>  		return 0;
+>  	}
+> @@ -377,36 +368,8 @@ static int magicmouse_raw_event(struct hid_device
+> *hdev,
+>  	return 1;
+>  }
+>  
+> -static int magicmouse_input_open(struct input_dev *dev)
+> -{
+> -	struct hid_device *hid = input_get_drvdata(dev);
+> -
+> -	return hid->ll_driver->open(hid);
+> -}
+> -
+> -static void magicmouse_input_close(struct input_dev *dev)
+> -{
+> -	struct hid_device *hid = input_get_drvdata(dev);
+> -
+> -	hid->ll_driver->close(hid);
+> -}
+> -
+>  static void magicmouse_setup_input(struct input_dev *input, struct
+> hid_device *hdev)
+>  {
+> -	input_set_drvdata(input, hdev);
+> -	input->event = hdev->ll_driver->hidinput_input_event;
+> -	input->open = magicmouse_input_open;
+> -	input->close = magicmouse_input_close;
+> -
+> -	input->name = hdev->name;
+> -	input->phys = hdev->phys;
+> -	input->uniq = hdev->uniq;
+> -	input->id.bustype = hdev->bus;
+> -	input->id.vendor = hdev->vendor;
+> -	input->id.product = hdev->product;
+> -	input->id.version = hdev->version;
+> -	input->dev.parent = hdev->dev.parent;
+> -
+>  	__set_bit(EV_KEY, input->evbit);
+>  
+>  	if (input->id.product == USB_DEVICE_ID_APPLE_MAGICMOUSE) {
+> @@ -466,11 +429,22 @@ static void magicmouse_setup_input(struct
+> input_dev *input, struct hid_device *h
+>  	}
+>  }
+>  
+> +static int magicmouse_input_mapping(struct hid_device *hdev,
+> +		struct hid_input *hi, struct hid_field *field,
+> +		struct hid_usage *usage, unsigned long **bit, int *max)
+> +{
+> +	struct magicmouse_sc *msc = hid_get_drvdata(hdev);
+> +
+> +	if (!msc->input)
+> +		msc->input = hi->input;
+> +
+> +	return 0;
+> +}
+> +
+>  static int magicmouse_probe(struct hid_device *hdev,
+>  	const struct hid_device_id *id)
+>  {
+>  	__u8 feature[] = { 0xd7, 0x01 };
+> -	struct input_dev *input;
+>  	struct magicmouse_sc *msc;
+>  	struct hid_report *report;
+>  	int ret;
+> @@ -500,8 +474,12 @@ static int magicmouse_probe(struct hid_device
+> *hdev,
+>  		goto err_free;
+>  	}
+>  
+> -	/* we are handling the input ourselves */
+> -	hidinput_disconnect(hdev);
+> +	/* We do this after HID maps its inputs so that the
+> +	 * Magic Mouse's HID-compliant report gets the right
+> +	 * button and axis IDs.
+> +	 */
+> +	if (msc->input)
+> +		magicmouse_setup_input(msc->input, hdev);
+>  
+>  	if (id->product == USB_DEVICE_ID_APPLE_MAGICMOUSE)
+>  		report = hid_register_report(hdev, HID_INPUT_REPORT,
+> @@ -528,24 +506,7 @@ static int magicmouse_probe(struct hid_device
+> *hdev,
+>  		goto err_stop_hw;
+>  	}
+>  
+> -	input = input_allocate_device();
+> -	if (!input) {
+> -		dev_err(&hdev->dev, "can't alloc input device\n");
+> -		ret = -ENOMEM;
+> -		goto err_stop_hw;
+> -	}
+> -	magicmouse_setup_input(input, hdev);
+> -
+> -	ret = input_register_device(input);
+> -	if (ret) {
+> -		dev_err(&hdev->dev, "input device registration failed\n");
+> -		goto err_input;
+> -	}
+> -	msc->input = input;
+> -
+>  	return 0;
+> -err_input:
+> -	input_free_device(input);
+>  err_stop_hw:
+>  	hid_hw_stop(hdev);
+>  err_free:
+> @@ -558,7 +519,6 @@ static void magicmouse_remove(struct hid_device
+> *hdev)
+>  	struct magicmouse_sc *msc = hid_get_drvdata(hdev);
+>  
+>  	hid_hw_stop(hdev);
+> -	input_unregister_device(msc->input);
+>  	kfree(msc);
+>  }
+>  
+> @@ -577,6 +537,7 @@ static struct hid_driver magicmouse_driver = {
+>  	.probe = magicmouse_probe,
+>  	.remove = magicmouse_remove,
+>  	.raw_event = magicmouse_raw_event,
+> +	.input_mapping = magicmouse_input_mapping,
+>  };
+>  
+>  static int __init magicmouse_init(void)
 
