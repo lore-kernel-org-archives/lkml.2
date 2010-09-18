@@ -1,122 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756400Ab0IRTCs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:02:48 -0400
-Received: from kroah.org ([198.145.64.141]:51703 "EHLO coco.kroah.org"
+	id S1756415Ab0IRTCt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:02:49 -0400
+Received: from kroah.org ([198.145.64.141]:51752 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754632Ab0IRTCK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:02:10 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:00:00 2010
-Message-Id: <20100918190000.518403525@clark.site>
+	id S1754681Ab0IRTCP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:02:15 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:00:01 2010
+Message-Id: <20100918190001.133213725@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:58:54 -0700
+Date: Sat, 18 Sep 2010 11:59:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Greg KH <greg@kroah.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>
-Subject: [090/123] sched: Implement head queueing for sched_rt
+        Greg KH <greg@kroah.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Mike Galbraith <efault@gmx.de>
+Subject: [097/123] sched: _cpu_down(): Dont play with current->cpus_allowed
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=sched-implement-head-queueing-for-sched_rt.patch
+Content-Disposition: inline; filename=sched-_cpu_down-don-t-play-with-current-cpus_allowed.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 37dad3fce97f01e5149d69de0833d8452c0e862e upstream
+commit 6a1bdc1b577ebcb65f6603c57f8347309bc4ab13 upstream
 
-The ability of enqueueing a task to the head of a SCHED_FIFO priority
-list is required to fix some violations of POSIX scheduling policy.
+_cpu_down() changes the current task's affinity and then recovers it at
+the end. The problems are well known: we can't restore old_allowed if it
+was bound to the now-dead-cpu, and we can race with the userspace which
+can change cpu-affinity during unplug.
 
-Implement the functionality in sched_rt.
+_cpu_down() should not play with current->cpus_allowed at all. Instead,
+take_cpu_down() can migrate the caller of _cpu_down() after __cpu_disable()
+removes the dying cpu from cpu_online_mask.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Tested-by: Carsten Emde <cbe@osadl.org>
-Tested-by: Mathias Weber <mathias.weber.mw1@roche.com>
-LKML-Reference: <20100120171629.772169931@linutronix.de>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <20100315091023.GA9148@redhat.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- kernel/sched_rt.c |   19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+ include/linux/sched.h |    1 +
+ kernel/cpu.c          |   18 ++++++------------
+ kernel/sched.c        |    2 +-
+ 3 files changed, 8 insertions(+), 13 deletions(-)
 
---- a/kernel/sched_rt.c
-+++ b/kernel/sched_rt.c
-@@ -194,7 +194,7 @@ static inline struct rt_rq *group_rt_rq(
- 	return rt_se->my_q;
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1887,6 +1887,7 @@ extern void sched_clock_idle_sleep_event
+ extern void sched_clock_idle_wakeup_event(u64 delta_ns);
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
++extern void move_task_off_dead_cpu(int dead_cpu, struct task_struct *p);
+ extern void idle_task_exit(void);
+ #else
+ static inline void idle_task_exit(void) {}
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -163,6 +163,7 @@ static inline void check_for_tasks(int c
  }
  
--static void enqueue_rt_entity(struct sched_rt_entity *rt_se);
-+static void enqueue_rt_entity(struct sched_rt_entity *rt_se, bool head);
- static void dequeue_rt_entity(struct sched_rt_entity *rt_se);
- 
- static void sched_rt_rq_enqueue(struct rt_rq *rt_rq)
-@@ -204,7 +204,7 @@ static void sched_rt_rq_enqueue(struct r
- 
- 	if (rt_rq->rt_nr_running) {
- 		if (rt_se && !on_rt_rq(rt_se))
--			enqueue_rt_entity(rt_se);
-+			enqueue_rt_entity(rt_se, false);
- 		if (rt_rq->highest_prio.curr < curr->prio)
- 			resched_task(curr);
- 	}
-@@ -803,7 +803,7 @@ void dec_rt_tasks(struct sched_rt_entity
- 	dec_rt_group(rt_se, rt_rq);
- }
- 
--static void __enqueue_rt_entity(struct sched_rt_entity *rt_se)
-+static void __enqueue_rt_entity(struct sched_rt_entity *rt_se, bool head)
+ struct take_cpu_down_param {
++	struct task_struct *caller;
+ 	unsigned long mod;
+ 	void *hcpu;
+ };
+@@ -171,6 +172,7 @@ struct take_cpu_down_param {
+ static int __ref take_cpu_down(void *_param)
  {
- 	struct rt_rq *rt_rq = rt_rq_of_se(rt_se);
- 	struct rt_prio_array *array = &rt_rq->active;
-@@ -819,7 +819,10 @@ static void __enqueue_rt_entity(struct s
- 	if (group_rq && (rt_rq_throttled(group_rq) || !group_rq->rt_nr_running))
- 		return;
+ 	struct take_cpu_down_param *param = _param;
++	unsigned int cpu = (unsigned long)param->hcpu;
+ 	int err;
  
--	list_add_tail(&rt_se->run_list, queue);
-+	if (head)
-+		list_add(&rt_se->run_list, queue);
-+	else
-+		list_add_tail(&rt_se->run_list, queue);
- 	__set_bit(rt_se_prio(rt_se), array->bitmap);
+ 	/* Ensure this CPU doesn't handle any more interrupts. */
+@@ -181,6 +183,8 @@ static int __ref take_cpu_down(void *_pa
+ 	raw_notifier_call_chain(&cpu_chain, CPU_DYING | param->mod,
+ 				param->hcpu);
  
- 	inc_rt_tasks(rt_se, rt_rq);
-@@ -856,11 +859,11 @@ static void dequeue_rt_stack(struct sche
- 	}
- }
- 
--static void enqueue_rt_entity(struct sched_rt_entity *rt_se)
-+static void enqueue_rt_entity(struct sched_rt_entity *rt_se, bool head)
++	if (task_cpu(param->caller) == cpu)
++		move_task_off_dead_cpu(cpu, param->caller);
+ 	/* Force idle task to run as soon as we yield: it should
+ 	   immediately notice cpu is offline and die quickly. */
+ 	sched_idle_next();
+@@ -191,10 +195,10 @@ static int __ref take_cpu_down(void *_pa
+ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
  {
- 	dequeue_rt_stack(rt_se);
- 	for_each_sched_rt_entity(rt_se)
--		__enqueue_rt_entity(rt_se);
-+		__enqueue_rt_entity(rt_se, head);
- }
+ 	int err, nr_calls = 0;
+-	cpumask_var_t old_allowed;
+ 	void *hcpu = (void *)(long)cpu;
+ 	unsigned long mod = tasks_frozen ? CPU_TASKS_FROZEN : 0;
+ 	struct take_cpu_down_param tcd_param = {
++		.caller = current,
+ 		.mod = mod,
+ 		.hcpu = hcpu,
+ 	};
+@@ -205,9 +209,6 @@ static int __ref _cpu_down(unsigned int
+ 	if (!cpu_online(cpu))
+ 		return -EINVAL;
  
- static void dequeue_rt_entity(struct sched_rt_entity *rt_se)
-@@ -871,7 +874,7 @@ static void dequeue_rt_entity(struct sch
- 		struct rt_rq *rt_rq = group_rt_rq(rt_se);
- 
- 		if (rt_rq && rt_rq->rt_nr_running)
--			__enqueue_rt_entity(rt_se);
-+			__enqueue_rt_entity(rt_se, false);
+-	if (!alloc_cpumask_var(&old_allowed, GFP_KERNEL))
+-		return -ENOMEM;
+-
+ 	cpu_hotplug_begin();
+ 	set_cpu_active(cpu, false);
+ 	err = __raw_notifier_call_chain(&cpu_chain, CPU_DOWN_PREPARE | mod,
+@@ -224,10 +225,6 @@ static int __ref _cpu_down(unsigned int
+ 		goto out_release;
  	}
+ 
+-	/* Ensure that we are not runnable on dying cpu */
+-	cpumask_copy(old_allowed, &current->cpus_allowed);
+-	set_cpus_allowed_ptr(current, cpu_active_mask);
+-
+ 	err = __stop_machine(take_cpu_down, &tcd_param, cpumask_of(cpu));
+ 	if (err) {
+ 		set_cpu_active(cpu, true);
+@@ -236,7 +233,7 @@ static int __ref _cpu_down(unsigned int
+ 					    hcpu) == NOTIFY_BAD)
+ 			BUG();
+ 
+-		goto out_allowed;
++		goto out_release;
+ 	}
+ 	BUG_ON(cpu_online(cpu));
+ 
+@@ -254,8 +251,6 @@ static int __ref _cpu_down(unsigned int
+ 
+ 	check_for_tasks(cpu);
+ 
+-out_allowed:
+-	set_cpus_allowed_ptr(current, old_allowed);
+ out_release:
+ 	cpu_hotplug_done();
+ 	if (!err) {
+@@ -263,7 +258,6 @@ out_release:
+ 					    hcpu) == NOTIFY_BAD)
+ 			BUG();
+ 	}
+-	free_cpumask_var(old_allowed);
+ 	return err;
  }
  
-@@ -886,7 +889,7 @@ enqueue_task_rt(struct rq *rq, struct ta
- 	if (wakeup)
- 		rt_se->timeout = 0;
- 
--	enqueue_rt_entity(rt_se);
-+	enqueue_rt_entity(rt_se, head);
- 
- 	if (!task_current(rq, p) && p->rt.nr_cpus_allowed > 1)
- 		enqueue_pushable_task(rq, p);
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -7393,7 +7393,7 @@ static int migration_thread(void *data)
+ /*
+  * Figure out where task on dead CPU should go, use force if necessary.
+  */
+-static void move_task_off_dead_cpu(int dead_cpu, struct task_struct *p)
++void move_task_off_dead_cpu(int dead_cpu, struct task_struct *p)
+ {
+ 	struct rq *rq = cpu_rq(dead_cpu);
+ 	int needs_cpu, uninitialized_var(dest_cpu);
 
 
