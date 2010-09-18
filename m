@@ -1,172 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755224Ab0IRTBm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:01:42 -0400
-Received: from kroah.org ([198.145.64.141]:51105 "EHLO coco.kroah.org"
+	id S1757885Ab0IRTwm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:52:42 -0400
+Received: from kroah.org ([198.145.64.141]:51397 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754274Ab0IRTBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:01:13 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:53 2010
-Message-Id: <20100918185953.501598304@clark.site>
+	id S1754274Ab0IRTBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:01:43 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:57 2010
+Message-Id: <20100918185957.184922275@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:57:32 -0700
+Date: Sat, 18 Sep 2010 11:58:15 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [008/123] PCI: MSI: Restore read_msi_msg_desc(); add get_cached_msi_msg_desc()
+        Gary King <gking@nvidia.com>, Tejun Heo <tj@kernel.org>,
+        Russell King <rmk@arm.linux.org.uk>, Jens Axboe <axboe@kernel.dk>
+Subject: [051/123] bounce: call flush_dcache_page() after bounce_copy_vec()
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=pci-msi-restore-read_msi_msg_desc-add-get_cached_msi_msg_desc.patch
+Content-Disposition: inline; filename=bounce-call-flush_dcache_page-after-bounce_copy_vec.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Gary King <gking@nvidia.com>
 
-commit 30da55242818a8ca08583188ebcbaccd283ad4d9 upstream.
+commit ac8456d6f9a3011c824176bd6084d39e5f70a382 upstream.
 
-commit 2ca1af9aa3285c6a5f103ed31ad09f7399fc65d7 "PCI: MSI: Remove
-unsafe and unnecessary hardware access" changed read_msi_msg_desc() to
-return the last MSI message written instead of reading it from the
-device, since it may be called while the device is in a reduced
-power state.
+I have been seeing problems on Tegra 2 (ARMv7 SMP) systems with HIGHMEM
+enabled on 2.6.35 (plus some patches targetted at 2.6.36 to perform cache
+maintenance lazily), and the root cause appears to be that the mm bouncing
+code is calling flush_dcache_page before it copies the bounce buffer into
+the bio.
 
-However, the pSeries platform code really does need to read messages
-from the device, since they are initially written by firmware.
-Therefore:
-- Restore the previous behaviour of read_msi_msg_desc()
-- Add new functions get_cached_msi_msg{,_desc}() which return the
-  last MSI message written
-- Use the new functions where appropriate
+The bounced page needs to be flushed after data is copied into it, to
+ensure that architecture implementations can synchronize instruction and
+data caches if necessary.
 
-Acked-by: Michael Ellerman <michael@ellerman.id.au>
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Gary King <gking@nvidia.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Russell King <rmk@arm.linux.org.uk>
+Acked-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/ia64/kernel/msi_ia64.c    |    2 -
- arch/ia64/sn/kernel/msi_sn.c   |    2 -
- arch/x86/kernel/apic/io_apic.c |    2 -
- drivers/pci/msi.c              |   47 ++++++++++++++++++++++++++++++++++++-----
- include/linux/msi.h            |    2 +
- 5 files changed, 47 insertions(+), 8 deletions(-)
+ mm/bounce.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/ia64/kernel/msi_ia64.c
-+++ b/arch/ia64/kernel/msi_ia64.c
-@@ -25,7 +25,7 @@ static int ia64_set_msi_irq_affinity(uns
- 	if (irq_prepare_move(irq, cpu))
- 		return -1;
+--- a/mm/bounce.c
++++ b/mm/bounce.c
+@@ -115,8 +115,8 @@ static void copy_to_high_bio_irq(struct
+ 		 */
+ 		vfrom = page_address(fromvec->bv_page) + tovec->bv_offset;
  
--	read_msi_msg(irq, &msg);
-+	get_cached_msi_msg(irq, &msg);
- 
- 	addr = msg.address_lo;
- 	addr &= MSI_ADDR_DEST_ID_MASK;
---- a/arch/ia64/sn/kernel/msi_sn.c
-+++ b/arch/ia64/sn/kernel/msi_sn.c
-@@ -174,7 +174,7 @@ static int sn_set_msi_irq_affinity(unsig
- 	 * Release XIO resources for the old MSI PCI address
- 	 */
- 
--	read_msi_msg(irq, &msg);
-+	get_cached_msi_msg(irq, &msg);
-         sn_pdev = (struct pcidev_info *)sn_irq_info->irq_pciioinfo;
- 	pdev = sn_pdev->pdi_linux_pcidev;
- 	provider = SN_PCIDEV_BUSPROVIDER(pdev);
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3338,7 +3338,7 @@ static int set_msi_irq_affinity(unsigned
- 
- 	cfg = desc->chip_data;
- 
--	read_msi_msg_desc(desc, &msg);
-+	get_cached_msi_msg_desc(desc, &msg);
- 
- 	msg.data &= ~MSI_DATA_VECTOR_MASK;
- 	msg.data |= MSI_DATA_VECTOR(cfg->vector);
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -196,9 +196,46 @@ void read_msi_msg_desc(struct irq_desc *
- {
- 	struct msi_desc *entry = get_irq_desc_msi(desc);
- 
--	/* We do not touch the hardware (which may not even be
--	 * accessible at the moment) but return the last message
--	 * written.  Assert that this is valid, assuming that
-+	BUG_ON(entry->dev->current_state != PCI_D0);
-+
-+	if (entry->msi_attrib.is_msix) {
-+		void __iomem *base = entry->mask_base +
-+			entry->msi_attrib.entry_nr * PCI_MSIX_ENTRY_SIZE;
-+
-+		msg->address_lo = readl(base + PCI_MSIX_ENTRY_LOWER_ADDR);
-+		msg->address_hi = readl(base + PCI_MSIX_ENTRY_UPPER_ADDR);
-+		msg->data = readl(base + PCI_MSIX_ENTRY_DATA);
-+	} else {
-+		struct pci_dev *dev = entry->dev;
-+		int pos = entry->msi_attrib.pos;
-+		u16 data;
-+
-+		pci_read_config_dword(dev, msi_lower_address_reg(pos),
-+					&msg->address_lo);
-+		if (entry->msi_attrib.is_64) {
-+			pci_read_config_dword(dev, msi_upper_address_reg(pos),
-+						&msg->address_hi);
-+			pci_read_config_word(dev, msi_data_reg(pos, 1), &data);
-+		} else {
-+			msg->address_hi = 0;
-+			pci_read_config_word(dev, msi_data_reg(pos, 0), &data);
-+		}
-+		msg->data = data;
-+	}
-+}
-+
-+void read_msi_msg(unsigned int irq, struct msi_msg *msg)
-+{
-+	struct irq_desc *desc = irq_to_desc(irq);
-+
-+	read_msi_msg_desc(desc, msg);
-+}
-+
-+void get_cached_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg)
-+{
-+	struct msi_desc *entry = get_irq_desc_msi(desc);
-+
-+	/* Assert that the cache is valid, assuming that
- 	 * valid messages are not all-zeroes. */
- 	BUG_ON(!(entry->msg.address_hi | entry->msg.address_lo |
- 		 entry->msg.data));
-@@ -206,11 +243,11 @@ void read_msi_msg_desc(struct irq_desc *
- 	*msg = entry->msg;
+-		flush_dcache_page(tovec->bv_page);
+ 		bounce_copy_vec(tovec, vfrom);
++		flush_dcache_page(tovec->bv_page);
+ 	}
  }
  
--void read_msi_msg(unsigned int irq, struct msi_msg *msg)
-+void get_cached_msi_msg(unsigned int irq, struct msi_msg *msg)
- {
- 	struct irq_desc *desc = irq_to_desc(irq);
- 
--	read_msi_msg_desc(desc, msg);
-+	get_cached_msi_msg_desc(desc, msg);
- }
- 
- void write_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg)
---- a/include/linux/msi.h
-+++ b/include/linux/msi.h
-@@ -14,8 +14,10 @@ struct irq_desc;
- extern void mask_msi_irq(unsigned int irq);
- extern void unmask_msi_irq(unsigned int irq);
- extern void read_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg);
-+extern void get_cached_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg);
- extern void write_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg);
- extern void read_msi_msg(unsigned int irq, struct msi_msg *msg);
-+extern void get_cached_msi_msg(unsigned int irq, struct msi_msg *msg);
- extern void write_msi_msg(unsigned int irq, struct msi_msg *msg);
- 
- struct msi_desc {
 
 
