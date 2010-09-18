@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755119Ab0IRHzS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 03:55:18 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:56746 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754444Ab0IRHzR (ORCPT
+	id S1755162Ab0IRIAS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 04:00:18 -0400
+Received: from mailhost-h5-p1.netultra.net ([195.5.209.34]:55203 "EHLO
+	smtp-delay1.nerim.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754611Ab0IRIAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 03:55:17 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: David Miller <davem@davemloft.net>
-Subject: Re: [PATCH 06/12] BKL: Remove BKL from capifs
-Date: Sat, 18 Sep 2010 09:55:09 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-next-20100910+; KDE/4.5.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-References: <1284659185-8942-1-git-send-email-arnd@arndb.de> <1284659185-8942-7-git-send-email-arnd@arndb.de> <20100917.163530.266095048.davem@davemloft.net>
-In-Reply-To: <20100917.163530.266095048.davem@davemloft.net>
+	Sat, 18 Sep 2010 04:00:17 -0400
+X-Greylist: delayed 613 seconds by postgrey-1.27 at vger.kernel.org; Sat, 18 Sep 2010 04:00:17 EDT
+Date: Sat, 18 Sep 2010 09:49:39 +0200
+From: Damien Wyart <damien.wyart@free.fr>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Nix <nix@esperi.org.uk>,
+        Artur Skawina <art.08.09@gmail.com>,
+        John Drescher <drescherjm@gmail.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: [PATCH RFC] x86: hpet: Avoid the readback penalty
+Message-ID: <20100918074939.GA3275@brouette>
+References: <tip-54ff7e595d763d894104d421b103a89f7becf47c@git.kernel.org>
+ <alpine.LFD.2.00.1009151500060.2416@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009180955.10129.arnd@arndb.de>
-X-Provags-ID: V02:K0:ELwtPKYCWcZTOgzlDG6mufKW2AjdVxa7pynKTWr0Mit
- B9pTnBXYVJqNpcuPAeEWOWrk9xkLND9HUENOMymDlEYXHecziF
- XycLeNWJ2fExkgqqddLfBuvOM70IyfMp1DreQi+9GsrXsd5wo7
- DvimtgPpJszjvaj9HxrGQ/2/M4cigysZyVcruZQCb61loeK6mM
- 4kARIg90UckKACrYz2V0Q==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1009151500060.2416@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 18 September 2010 01:35:30 David Miller wrote:
-> 
-> From: Arnd Bergmann <arnd@arndb.de>
-> Date: Thu, 16 Sep 2010 19:46:19 +0200
-> 
-> > The BKL is only used in fill_super, which is  protected by the superblocks
-> > s_umount rw_semaphore. Therefore it is safe to remove the BKL entirely.
-> > 
-> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> > Cc: netdev@vger.kernel.org
-> 
-> I've searched Linus's tree, net-2.6, and net-next-2.6 and I cannot
-> find one reference to lock_kernel() in drivers/isdn/capi/capifs.c
-> in any of them.
-> 
-> What did you write this patch against?
+* Thomas Gleixner <tglx@linutronix.de> [2010-09-15 15:11]:
+> > x86: hpet: Work around hardware stupidity
 
-As I wrote in my [PATCH 0/12], it applies on top of the pushdown
-of the BKL into the get_sb operation, and I intend to submit it
-to Linus with the full series.
+> After my brain recovered from yesterdays exposure with the x86 timer
+> horror, I came up with a different solution for this problem, which
+> avoids the readback of the compare register completely. It works
+> nicely on my affected ATI system, but needs some exposure to the other
+> machines.
 
-I agree that this particular patch is a bit pointless because
-all it does is to undo the change from the pushdown. I guess
-that at the time when the first patch was written, the BKL
-was still present in other parts of capifs.
+Comments for this different solution seemed fine, but it seems only the
+first one was commited into mainline and then stable. Is this intended?
 
-	Arnd
+
+Thanks,
+
+Damien
