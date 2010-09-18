@@ -1,88 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755607Ab0IRKXS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 06:23:18 -0400
-Received: from hera.kernel.org ([140.211.167.34]:42791 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755580Ab0IRKXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 06:23:10 -0400
-Date: Sat, 18 Sep 2010 10:22:50 GMT
-From: tip-bot for Namhyung Kim <namhyung@gmail.com>
-Cc: linux-kernel@vger.kernel.org, dvhltc@us.ibm.com, hpa@zytor.com,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        namhyung@gmail.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, dvhltc@us.ibm.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, namhyung@gmail.com
-In-Reply-To: <1284468228-8723-3-git-send-email-namhyung@gmail.com>
-References: <1284468228-8723-3-git-send-email-namhyung@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/futexes] futex: Add lock context annotations
-Message-ID: <tip-15e408cd6ccc3f4f453d87ccd5bc7a84d59feb96@git.kernel.org>
-Git-Commit-ID: 15e408cd6ccc3f4f453d87ccd5bc7a84d59feb96
-X-Mailer: tip-git-log-daemon
+	id S1755511Ab0IRKwk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 06:52:40 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:56411 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753988Ab0IRKwj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 06:52:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject
+         :content-type:content-transfer-encoding;
+        b=Z6Gb40yxkUHQZxkwuZoJEouL8C2bwj6fNsdQYfXqpk58B9FohqyDUOUYO1GBhlofyi
+         bErfnuQwQmfNjuJjLJ4zTfU32OZzffPL313AuzAoe713rlIdfA2omtovr97rAlWDqCne
+         m6Gh10QMCKsfeOYNUpM53zsbpt+wF7UnNOU2E=
+Message-ID: <4C949A05.5060209@gmail.com>
+Date: Sat, 18 Sep 2010 03:52:53 -0700
+From: Kent Overstreet <kent.overstreet@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9pre) Gecko/20100821 Lanikai/3.1.3pre
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 18 Sep 2010 10:22:51 +0000 (UTC)
+To: linux-kernel@vger.kernel.org
+Subject: Using the page cache while maintaining a reserve? Or do it some other
+ way?
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  15e408cd6ccc3f4f453d87ccd5bc7a84d59feb96
-Gitweb:     http://git.kernel.org/tip/15e408cd6ccc3f4f453d87ccd5bc7a84d59feb96
-Author:     Namhyung Kim <namhyung@gmail.com>
-AuthorDate: Tue, 14 Sep 2010 21:43:48 +0900
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Sat, 18 Sep 2010 12:19:21 +0200
+I've been writing bcache - a patch to use SSDs to cache arbitrary block 
+devices. The biggest thing left before it can be considered production 
+ready (besides lots more testing) is making memory allocation deadlock 
+proof.
 
-futex: Add lock context annotations
+I've been using the page cache for bcache's btree; it might be 50-100 mb 
+of data with a decent sized SSD and I don't want to roll my own cache if 
+I don't have to.
 
-queue_lock/unlock/me() and unqueue_me_pi() grab/release spinlocks
-but are missing proper annotations. Add them.
+The problem is I need to maintain a reserve of enough memory for new 
+btree nodes to split all the way to the root, and bcache's btree nodes 
+are sized to the SSD's erase block. Since most consumer SSDs seem to 
+have 512k erase blocks, that means a couple megabytes of reserve. (Yes, 
+bcache can efficiently use 512k btree nodes, with 16 byte keys - pretty 
+cool, huh? :)
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Darren Hart <dvhltc@us.ibm.com>
-LKML-Reference: <1284468228-8723-3-git-send-email-namhyung@gmail.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/futex.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+Just keeping a couple megabytes of memory around unused is a little 
+silly when the cache could easily be the reserve - except I don't see 
+any way of doing this with the page cache. I imagine it'd probably be 
+possible to rip pages belonging to bcache's mapping out of the page 
+cache, except I don't think I'd be able to pick out the oldest ones that 
+way and besides that it doesn't sound like a very sane thing to do. 
+Guaranteeing the reserve might not be so bad by holding more buckets 
+pinned in memory from within bcache, but probably it'd end up tricky and 
+error prone at best.
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 45e448a..92a31d4 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -1360,6 +1360,7 @@ out:
- 
- /* The key must be already stored in q->key. */
- static inline struct futex_hash_bucket *queue_lock(struct futex_q *q)
-+	__acquires(&hb->lock)
- {
- 	struct futex_hash_bucket *hb;
- 
-@@ -1373,6 +1374,7 @@ static inline struct futex_hash_bucket *queue_lock(struct futex_q *q)
- 
- static inline void
- queue_unlock(struct futex_q *q, struct futex_hash_bucket *hb)
-+	__releases(&hb->lock)
- {
- 	spin_unlock(&hb->lock);
- 	drop_futex_key_refs(&q->key);
-@@ -1391,6 +1393,7 @@ queue_unlock(struct futex_q *q, struct futex_hash_bucket *hb)
-  * an example).
-  */
- static inline void queue_me(struct futex_q *q, struct futex_hash_bucket *hb)
-+	__releases(&hb->lock)
- {
- 	int prio;
- 
-@@ -1471,6 +1474,7 @@ retry:
-  * and dropped here.
-  */
- static void unqueue_me_pi(struct futex_q *q)
-+	__releases(q->lock_ptr)
- {
- 	WARN_ON(plist_node_empty(&q->list));
- 	plist_del(&q->list, &q->list.plist);
+So, I imagine I'm going to need a dedicated cache in order to do this 
+right - if I maintain an lru for the whole btree implementing the 
+reserve is easy, I'd just need to make the pages reclaimable or 
+otherwise respond to memory pressure (which is what I have not figured 
+out how to do). But I can't be the first person to have this problem, so 
+I'm hoping someone will have some suggestions or there'll be an easier 
+solution... (It seems like the kind of thing filesystems might run into...).
+
+I'd also like to get my code reviewed more, but as the patch is almost 
+6k lines now that's inevitably not going to be easy. I don't see any way 
+to usefully split much of it out, to make it easier to digest - if 
+anyone has any suggestions, I'm all ears.
+
+http://bcache.evilpiepirate.org
+git://evilpiepirate.org/~kent/linux-bcache.git
+git://evilpiepirate.org/~kent/bcache-tools.git
