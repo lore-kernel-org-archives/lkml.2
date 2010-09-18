@@ -1,75 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757744Ab0IRTsD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:48:03 -0400
-Received: from xenotime.net ([72.52.115.56]:47096 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757590Ab0IRTry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:47:54 -0400
-Date: Sat, 18 Sep 2010 12:47:50 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: "Joshua Hintze" <joshh@imsar.com>
-Cc: "'Maxim Levitsky'" <maximlevitsky@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-ide@vger.kernel.org>
-Subject: Re: PATA IDE is slower in newer versions of kernel
-Message-Id: <20100918124750.393a64a8.rdunlap@xenotime.net>
-In-Reply-To: <010d01cb5769$cbca3380$635e9a80$@com>
-References: <00d401cb55f7$33a78210$9af68630$@com>
-	<20100917154732.330c4b1b@varda>
-	<010901cb5754$ae6735a0$0b35a0e0$@com>
-	<1284837774.12425.1.camel@localhost.localdomain>
-	<010d01cb5769$cbca3380$635e9a80$@com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757683Ab0IRTqD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:46:03 -0400
+Received: from kroah.org ([198.145.64.141]:51586 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755841Ab0IRTB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:01:58 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:59 2010
+Message-Id: <20100918185959.052029509@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Sat, 18 Sep 2010 11:58:37 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Greg KH <greg@kroah.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>
+Subject: [073/123] sched: Use rcu in sys_sched_getscheduler/sys_sched_getparam()
+References: <20100918185724.290702750@clark.site>
+Content-Disposition: inline; filename=sched-use-rcu-in-sys_sched_getscheduler-sys_sched_getparam.patch
+In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 18 Sep 2010 13:43:40 -0600 Joshua Hintze wrote:
+From: Thomas Gleixner <tglx@linutronix.de>
 
-> Thanks,
-> 
-> I'm not sure what you mean by bisect, other than just the definition of the word. I am breaking this problem down adding printks etc.  I think I'm finally beginng to understand how this works :)
-> 
+commit 5fe85be081edf0ac92d83f9c39e0ab5c1371eb82 upstream
 
-http://www.kernel.org/pub/software/scm/git/docs/git-bisect.html
-http://www.kernel.org/pub/software/scm/git/docs/user-manual.html#using-bisect
+read_lock(&tasklist_lock) does not protect
+sys_sched_getscheduler and sys_sched_getparam() against a
+concurrent update of the policy or scheduler parameters as
+do_sched_setscheduler() does not take the tasklist_lock. The
+accessed integers can be retrieved w/o locking and are snapshots
+anyway.
 
+Using rcu_read_lock() to protect find_task_by_vpid() and prevent
+the task struct from going away is not changing the above
+situation.
 
-> 
-> 
-> -----Original Message-----
-> From: linux-ide-owner@vger.kernel.org [mailto:linux-ide-owner@vger.kernel.org] On Behalf Of Maxim Levitsky
-> Sent: Saturday, September 18, 2010 1:23 PM
-> To: Joshua Hintze
-> Cc: linux-kernel@vger.kernel.org; linux-ide@vger.kernel.org
-> Subject: RE: PATA IDE is slower in newer versions of kernel
-> 
-> On Sat, 2010-09-18 at 11:12 -0600, Joshua Hintze wrote:
-> > Some updated information. I created a screen capture of what I am seeing. First is the logic analyzer when the newer linux kernel is writing slow to the PATA port.
-> > 
-> > http://i56.tinypic.com/oqhrug.png
-> > 
-> > Notice in the above link how there is a lot of activating and then large gaps of no activity. After about 9 mS the STOP line is strobed a few times and then DMARQ finally returns to normal operating. The link below shows the picture of an old 2.6.10 kernel where write speeds are much faster.
-> > 
-> > http://i51.tinypic.com/a9wiur.png
-> > 
-> > In the above image notice how the wait time is considerable less 100's of microseconds before the stop lines get strobed.
-> > 
-> > I'm dedicated to continue working on the problem, I just need to advice from the linux community. I've tried different I/O schedulers such as noop and anticipatory and I'm studying the ide-dma code but still lost to where this is happening.
-> > 
-> > Thanks!
-> > 
-> Maybe you can just bisect this?
-> Just a general advice, I don't know ide subsystem at all.
-> 
-> Best regards,
-> 	Maxim Levitsky
-
-
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+LKML-Reference: <20091209100706.753790977@linutronix.de>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ kernel/sched.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -6505,7 +6505,7 @@ SYSCALL_DEFINE1(sched_getscheduler, pid_
+ 		return -EINVAL;
+ 
+ 	retval = -ESRCH;
+-	read_lock(&tasklist_lock);
++	rcu_read_lock();
+ 	p = find_process_by_pid(pid);
+ 	if (p) {
+ 		retval = security_task_getscheduler(p);
+@@ -6513,7 +6513,7 @@ SYSCALL_DEFINE1(sched_getscheduler, pid_
+ 			retval = p->policy
+ 				| (p->sched_reset_on_fork ? SCHED_RESET_ON_FORK : 0);
+ 	}
+-	read_unlock(&tasklist_lock);
++	rcu_read_unlock();
+ 	return retval;
+ }
+ 
+@@ -6531,7 +6531,7 @@ SYSCALL_DEFINE2(sched_getparam, pid_t, p
+ 	if (!param || pid < 0)
+ 		return -EINVAL;
+ 
+-	read_lock(&tasklist_lock);
++	rcu_read_lock();
+ 	p = find_process_by_pid(pid);
+ 	retval = -ESRCH;
+ 	if (!p)
+@@ -6542,7 +6542,7 @@ SYSCALL_DEFINE2(sched_getparam, pid_t, p
+ 		goto out_unlock;
+ 
+ 	lp.sched_priority = p->rt_priority;
+-	read_unlock(&tasklist_lock);
++	rcu_read_unlock();
+ 
+ 	/*
+ 	 * This one might sleep, we cannot do it with a spinlock held ...
+@@ -6552,7 +6552,7 @@ SYSCALL_DEFINE2(sched_getparam, pid_t, p
+ 	return retval;
+ 
+ out_unlock:
+-	read_unlock(&tasklist_lock);
++	rcu_read_unlock();
+ 	return retval;
+ }
+ 
+
+
