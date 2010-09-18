@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757443Ab0IRTbX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:31:23 -0400
-Received: from kroah.org ([198.145.64.141]:43401 "EHLO coco.kroah.org"
+	id S1757434Ab0IRTbW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:31:22 -0400
+Received: from kroah.org ([198.145.64.141]:43405 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756820Ab0IRTPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:15:14 -0400
+	id S1756730Ab0IRTPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:15:15 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:01 2010
-Message-Id: <20100918191301.701327915@clark.site>
+Message-Id: <20100918191301.787152957@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:12:29 -0700
+Date: Sat, 18 Sep 2010 12:12:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
+        Clemens Ladisch <clemens@ladisch.de>, Daniel Mack <daniel@caiaq.de>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [051/129] ALSA: hda - Add a new hp-laptop model for Conexant 5066, tested on HP G60
+Subject: [052/129] ALSA: usb-audio: fix detection of vendor-specific device protocol settings
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,156 +26,182 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit 048e78a5bc22c27410cb5ca9680c3c7ac400607f upstream.
+commit a2acad8298a42b7be684a32fafaf83332bba9c2b upstream.
 
-This new model adds the following functionality to HP G60:
-- Automute of internal speakers
-- Autoswitch of internal/external mics
-- Remove SPDIF not physically present
+The Audio Class v2 support code in 2.6.35 added checks for the
+bInterfaceProtocol field.  However, there are devices (usually those
+detected by vendor-specific quirks) that do not have one of the
+predefined values in this field, which made the driver reject them.
 
-BugLink: http://launchpad.net/bugs/587388
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+To fix this regression, restore the old behaviour, i.e., assume that
+a device with an unknown bInterfaceProtocol field (other than
+UAC_VERSION_2) has more or less UAC-v1-compatible descriptors.
+
+[compile warning fixes by tiwai]
+
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Cc: Daniel Mack <daniel@caiaq.de>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- Documentation/sound/alsa/HD-Audio-Models.txt |    1 
- sound/pci/hda/patch_conexant.c               |   57 +++++++++++++++++++++++++++
- 2 files changed, 58 insertions(+)
+ sound/usb/card.c     |    9 +++++----
+ sound/usb/clock.c    |    3 +--
+ sound/usb/endpoint.c |   11 ++++++-----
+ sound/usb/format.c   |   14 ++++++++++----
+ sound/usb/mixer.c    |   10 +++++++++-
+ sound/usb/pcm.c      |    3 +--
+ 6 files changed, 32 insertions(+), 18 deletions(-)
 
---- a/Documentation/sound/alsa/HD-Audio-Models.txt
-+++ b/Documentation/sound/alsa/HD-Audio-Models.txt
-@@ -288,6 +288,7 @@ Conexant 5051
- Conexant 5066
- =============
-   laptop	Basic Laptop config (default)
-+  hp-laptop	HP laptops, e g G60
-   dell-laptop	Dell laptops
-   olpc-xo-1_5	OLPC XO 1.5
-   ideapad       Lenovo IdeaPad U150
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -116,6 +116,7 @@ struct conexant_spec {
- 	unsigned int dell_vostro:1;
- 	unsigned int ideapad:1;
- 	unsigned int thinkpad:1;
-+	unsigned int hp_laptop:1;
- 
- 	unsigned int ext_mic_present;
- 	unsigned int recording;
-@@ -2219,6 +2220,18 @@ static void cxt5066_ideapad_automic(stru
+--- a/sound/usb/card.c
++++ b/sound/usb/card.c
+@@ -216,6 +216,11 @@ static int snd_usb_create_streams(struct
  	}
+ 
+ 	switch (protocol) {
++	default:
++		snd_printdd(KERN_WARNING "unknown interface protocol %#02x, assuming v1\n",
++			    protocol);
++		/* fall through */
++
+ 	case UAC_VERSION_1: {
+ 		struct uac_ac_header_descriptor_v1 *h1 = control_header;
+ 
+@@ -253,10 +258,6 @@ static int snd_usb_create_streams(struct
+ 
+ 		break;
+ 	}
+-
+-	default:
+-		snd_printk(KERN_ERR "unknown protocol version 0x%02x\n", protocol);
+-		return -EINVAL;
+ 	}
+ 
+ 	return 0;
+--- a/sound/usb/clock.c
++++ b/sound/usb/clock.c
+@@ -304,12 +304,11 @@ int snd_usb_init_sample_rate(struct snd_
+ 
+ 	switch (altsd->bInterfaceProtocol) {
+ 	case UAC_VERSION_1:
++	default:
+ 		return set_sample_rate_v1(chip, iface, alts, fmt, rate);
+ 
+ 	case UAC_VERSION_2:
+ 		return set_sample_rate_v2(chip, iface, alts, fmt, rate);
+ 	}
+-
+-	return -EINVAL;
  }
  
-+/* toggle input of built-in digital mic and mic jack appropriately */
-+static void cxt5066_hp_laptop_automic(struct hda_codec *codec)
-+{
-+	unsigned int present;
-+
-+	present = snd_hda_jack_detect(codec, 0x1b);
-+	snd_printdd("CXT5066: external microphone present=%d\n", present);
-+	snd_hda_codec_write(codec, 0x17, 0, AC_VERB_SET_CONNECT_SEL,
-+			    present ? 1 : 3);
-+}
-+
-+
- /* toggle input of built-in digital mic and mic jack appropriately
-    order is: external mic -> dock mic -> interal mic */
- static void cxt5066_thinkpad_automic(struct hda_codec *codec)
-@@ -2328,6 +2341,20 @@ static void cxt5066_ideapad_event(struct
- }
+--- a/sound/usb/endpoint.c
++++ b/sound/usb/endpoint.c
+@@ -274,6 +274,12 @@ int snd_usb_parse_audio_endpoints(struct
  
- /* unsolicited event for jack sensing */
-+static void cxt5066_hp_laptop_event(struct hda_codec *codec, unsigned int res)
-+{
-+	snd_printdd("CXT5066_hp_laptop: unsol event %x (%x)\n", res, res >> 26);
-+	switch (res >> 26) {
-+	case CONEXANT_HP_EVENT:
-+		cxt5066_hp_automute(codec);
+ 		/* get audio formats */
+ 		switch (protocol) {
++		default:
++			snd_printdd(KERN_WARNING "%d:%u:%d: unknown interface protocol %#02x, assuming v1\n",
++				    dev->devnum, iface_no, altno, protocol);
++			protocol = UAC_VERSION_1;
++			/* fall through */
++
+ 		case UAC_VERSION_1: {
+ 			struct uac_as_header_descriptor_v1 *as =
+ 				snd_usb_find_csint_desc(alts->extra, alts->extralen, NULL, UAC_AS_GENERAL);
+@@ -335,11 +341,6 @@ int snd_usb_parse_audio_endpoints(struct
+ 				   dev->devnum, iface_no, altno, as->bTerminalLink);
+ 			continue;
+ 		}
+-
+-		default:
+-			snd_printk(KERN_ERR "%d:%u:%d : unknown interface protocol %04x\n",
+-				   dev->devnum, iface_no, altno, protocol);
+-			continue;
+ 		}
+ 
+ 		/* get format type */
+--- a/sound/usb/format.c
++++ b/sound/usb/format.c
+@@ -49,7 +49,8 @@ static u64 parse_audio_format_i_type(str
+ 	u64 pcm_formats;
+ 
+ 	switch (protocol) {
+-	case UAC_VERSION_1: {
++	case UAC_VERSION_1:
++	default: {
+ 		struct uac_format_type_i_discrete_descriptor *fmt = _fmt;
+ 		sample_width = fmt->bBitResolution;
+ 		sample_bytes = fmt->bSubframeSize;
+@@ -64,9 +65,6 @@ static u64 parse_audio_format_i_type(str
+ 		format <<= 1;
+ 		break;
+ 	}
+-
+-	default:
+-		return -EINVAL;
+ 	}
+ 
+ 	pcm_formats = 0;
+@@ -385,6 +383,10 @@ static int parse_audio_format_i(struct s
+ 	 * audio class v2 uses class specific EP0 range requests for that.
+ 	 */
+ 	switch (protocol) {
++	default:
++		snd_printdd(KERN_WARNING "%d:%u:%d : invalid protocol version %d, assuming v1\n",
++			   chip->dev->devnum, fp->iface, fp->altsetting, protocol);
++		/* fall through */
+ 	case UAC_VERSION_1:
+ 		fp->channels = fmt->bNrChannels;
+ 		ret = parse_audio_format_rates_v1(chip, fp, (unsigned char *) fmt, 7);
+@@ -435,6 +437,10 @@ static int parse_audio_format_ii(struct
+ 	fp->channels = 1;
+ 
+ 	switch (protocol) {
++	default:
++		snd_printdd(KERN_WARNING "%d:%u:%d : invalid protocol version %d, assuming v1\n",
++			   chip->dev->devnum, fp->iface, fp->altsetting, protocol);
++		/* fall through */
+ 	case UAC_VERSION_1: {
+ 		struct uac_format_type_ii_discrete_descriptor *fmt = _fmt;
+ 		brate = le16_to_cpu(fmt->wMaxBitRate);
+--- a/sound/usb/mixer.c
++++ b/sound/usb/mixer.c
+@@ -2168,7 +2168,15 @@ int snd_usb_create_mixer(struct snd_usb_
+ 	}
+ 
+ 	host_iface = &usb_ifnum_to_if(chip->dev, ctrlif)->altsetting[0];
+-	mixer->protocol = get_iface_desc(host_iface)->bInterfaceProtocol;
++	switch (get_iface_desc(host_iface)->bInterfaceProtocol) {
++	case UAC_VERSION_1:
++	default:
++		mixer->protocol = UAC_VERSION_1;
 +		break;
-+	case CONEXANT_MIC_EVENT:
-+		cxt5066_hp_laptop_automic(codec);
++	case UAC_VERSION_2:
++		mixer->protocol = UAC_VERSION_2;
 +		break;
 +	}
-+}
-+
-+/* unsolicited event for jack sensing */
- static void cxt5066_thinkpad_event(struct hda_codec *codec, unsigned int res)
- {
- 	snd_printdd("CXT5066_thinkpad: unsol event %x (%x)\n", res, res >> 26);
-@@ -2910,6 +2937,14 @@ static struct hda_verb cxt5066_init_verb
- 	{ } /* end */
- };
  
-+
-+static struct hda_verb cxt5066_init_verbs_hp_laptop[] = {
-+	{0x14, AC_VERB_SET_CONNECT_SEL, 0x0},
-+	{0x19, AC_VERB_SET_UNSOLICITED_ENABLE, AC_USRSP_EN | CONEXANT_HP_EVENT},
-+	{0x1b, AC_VERB_SET_UNSOLICITED_ENABLE, AC_USRSP_EN | CONEXANT_MIC_EVENT},
-+	{ } /* end */
-+};
-+
- /* initialize jack-sensing, too */
- static int cxt5066_init(struct hda_codec *codec)
- {
-@@ -2925,6 +2960,8 @@ static int cxt5066_init(struct hda_codec
- 			cxt5066_ideapad_automic(codec);
- 		else if (spec->thinkpad)
- 			cxt5066_thinkpad_automic(codec);
-+		else if (spec->hp_laptop)
-+			cxt5066_hp_laptop_automic(codec);
+ 	if ((err = snd_usb_mixer_controls(mixer)) < 0 ||
+ 	    (err = snd_usb_mixer_status_create(mixer)) < 0)
+--- a/sound/usb/pcm.c
++++ b/sound/usb/pcm.c
+@@ -173,13 +173,12 @@ int snd_usb_init_pitch(struct snd_usb_au
+ 
+ 	switch (altsd->bInterfaceProtocol) {
+ 	case UAC_VERSION_1:
++	default:
+ 		return init_pitch_v1(chip, iface, alts, fmt);
+ 
+ 	case UAC_VERSION_2:
+ 		return init_pitch_v2(chip, iface, alts, fmt);
  	}
- 	cxt5066_set_mic_boost(codec);
- 	return 0;
-@@ -2952,6 +2989,7 @@ enum {
- 	CXT5066_DELL_VOSTO,	/* Dell Vostro 1015i */
- 	CXT5066_IDEAPAD,	/* Lenovo IdeaPad U150 */
- 	CXT5066_THINKPAD,	/* Lenovo ThinkPad T410s, others? */
-+	CXT5066_HP_LAPTOP,      /* HP Laptop */
- 	CXT5066_MODELS
- };
+-
+-	return -EINVAL;
+ }
  
-@@ -2962,6 +3000,7 @@ static const char *cxt5066_models[CXT506
- 	[CXT5066_DELL_VOSTO]    = "dell-vostro",
- 	[CXT5066_IDEAPAD]	= "ideapad",
- 	[CXT5066_THINKPAD]	= "thinkpad",
-+	[CXT5066_HP_LAPTOP]	= "hp-laptop",
- };
- 
- static struct snd_pci_quirk cxt5066_cfg_tbl[] = {
-@@ -2973,6 +3012,7 @@ static struct snd_pci_quirk cxt5066_cfg_
- 	SND_PCI_QUIRK(0x1028, 0x02d8, "Dell Vostro", CXT5066_DELL_VOSTO),
- 	SND_PCI_QUIRK(0x1028, 0x0402, "Dell Vostro", CXT5066_DELL_VOSTO),
- 	SND_PCI_QUIRK(0x1028, 0x0408, "Dell Inspiron One 19T", CXT5066_IDEAPAD),
-+	SND_PCI_QUIRK(0x103c, 0x360b, "HP G60", CXT5066_HP_LAPTOP),
- 	SND_PCI_QUIRK(0x1179, 0xff50, "Toshiba Satellite P500-PSPGSC-01800T", CXT5066_OLPC_XO_1_5),
- 	SND_PCI_QUIRK(0x1179, 0xffe0, "Toshiba Satellite Pro T130-15F", CXT5066_OLPC_XO_1_5),
- 	SND_PCI_QUIRK(0x17aa, 0x21b2, "Thinkpad X100e", CXT5066_IDEAPAD),
-@@ -3032,6 +3072,23 @@ static int patch_cxt5066(struct hda_code
- 		spec->num_init_verbs++;
- 		spec->dell_automute = 1;
- 		break;
-+	case CXT5066_HP_LAPTOP:
-+		codec->patch_ops.init = cxt5066_init;
-+		codec->patch_ops.unsol_event = cxt5066_hp_laptop_event;
-+		spec->init_verbs[spec->num_init_verbs] =
-+			cxt5066_init_verbs_hp_laptop;
-+		spec->num_init_verbs++;
-+		spec->hp_laptop = 1;
-+		spec->mixers[spec->num_mixers++] = cxt5066_mixer_master;
-+		spec->mixers[spec->num_mixers++] = cxt5066_mixers;
-+		/* no S/PDIF out */
-+		spec->multiout.dig_out_nid = 0;
-+		/* input source automatically selected */
-+		spec->input_mux = NULL;
-+		spec->port_d_mode = 0;
-+		spec->mic_boost = 3; /* default 30dB gain */
-+		break;
-+
- 	case CXT5066_OLPC_XO_1_5:
- 		codec->patch_ops.init = cxt5066_olpc_init;
- 		codec->patch_ops.unsol_event = cxt5066_olpc_unsol_event;
+ /*
 
 
