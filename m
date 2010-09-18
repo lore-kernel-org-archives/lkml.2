@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757441Ab0IRTei (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:34:38 -0400
-Received: from kroah.org ([198.145.64.141]:43345 "EHLO coco.kroah.org"
+	id S1757460Ab0IRTet (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:34:49 -0400
+Received: from kroah.org ([198.145.64.141]:43338 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756742Ab0IRTPF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:15:05 -0400
+	id S1756733Ab0IRTPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:15:04 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:00 2010
-Message-Id: <20100918191300.552233133@clark.site>
+Message-Id: <20100918191300.456963973@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:12:16 -0700
+Date: Sat, 18 Sep 2010 12:12:15 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <error27@gmail.com>
-Subject: [038/129] USB: ehci-ppc-of: problems in unwind
+        Sonic Zhang <sonic.zhang@analog.com>,
+        Mike Frysinger <vapier@gentoo.org>
+Subject: [037/129] serial: bfin_sport_uart: restore transmit frame sync fix
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,53 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <error27@gmail.com>
+From: Sonic Zhang <sonic.zhang@analog.com>
 
-commit 08a3b3b1c2e622e378d9086aee9e2e42ce37591d upstream.
+commit 336746918299f2ca16b31490655b4ff7c8824c87 upstream.
 
-The iounmap(ehci->ohci_hcctrl_reg); should be the first thing we do
-because the ioremap() was the last thing we did.  Also if we hit any of
-the goto statements in the original code then it would have led to a
-NULL dereference of "ehci".  This bug was introduced in: 796bcae7361c
-"USB: powerpc: Workaround for the PPC440EPX USBH_23 errata [take 3]"
+The large cleanup/rewrite of resources in commit ccf68e59e93181df9353c0cc
+accidentally reverted an earlier fix in commit a19e8b205915b2925aca75b.
+So restore it here.
 
-I modified the few lines in front a little so that my code didn't
-obscure the return success code path.
-
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-Reviewed-by: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ehci-ppc-of.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ drivers/serial/bfin_sport_uart.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/ehci-ppc-of.c
-+++ b/drivers/usb/host/ehci-ppc-of.c
-@@ -192,17 +192,19 @@ ehci_hcd_ppc_of_probe(struct of_device *
- 	}
+--- a/drivers/serial/bfin_sport_uart.c
++++ b/drivers/serial/bfin_sport_uart.c
+@@ -121,7 +121,7 @@ static int sport_uart_setup(struct sport
+ 	unsigned int sclk = get_sclk();
  
- 	rv = usb_add_hcd(hcd, irq, 0);
--	if (rv == 0)
--		return 0;
-+	if (rv)
-+		goto err_ehci;
- 
-+	return 0;
-+
-+err_ehci:
-+	if (ehci->has_amcc_usb23)
-+		iounmap(ehci->ohci_hcctrl_reg);
- 	iounmap(hcd->regs);
- err_ioremap:
- 	irq_dispose_mapping(irq);
- err_irq:
- 	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
--
--	if (ehci->has_amcc_usb23)
--		iounmap(ehci->ohci_hcctrl_reg);
- err_rmr:
- 	usb_put_hcd(hcd);
+ 	/* Set TCR1 and TCR2, TFSR is not enabled for uart */
+-	SPORT_PUT_TCR1(up, (ITFS | TLSBIT | ITCLK));
++	SPORT_PUT_TCR1(up, (LATFS | ITFS | TFSR | TLSBIT | ITCLK));
+ 	SPORT_PUT_TCR2(up, size + 1);
+ 	pr_debug("%s TCR1:%x, TCR2:%x\n", __func__, SPORT_GET_TCR1(up), SPORT_GET_TCR2(up));
  
 
 
