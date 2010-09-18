@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757410Ab0IRT1t (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:27:49 -0400
-Received: from kroah.org ([198.145.64.141]:43575 "EHLO coco.kroah.org"
+	id S1756908Ab0IRTPa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:15:30 -0400
+Received: from kroah.org ([198.145.64.141]:43531 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756926Ab0IRTPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:15:33 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:03 2010
-Message-Id: <20100918191303.443273257@clark.site>
+	id S1756708Ab0IRTPZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:15:25 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:02 2010
+Message-Id: <20100918191302.833274002@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:12:49 -0700
+Date: Sat, 18 Sep 2010 12:12:42 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Garzik <jgarzik@redhat.com>
-Subject: [071/129] libata,pata_via: revert ata_wait_idle() removal from ata_sff/via_tf_load()
+        Christoph Hellwig <hch@lst.de>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Jens Axboe <jaxboe@fusionio.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+Subject: [064/129] swap: do not send discards as barriers
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,58 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <teheo@novell.com>
+From: Christoph Hellwig <hch@infradead.org>
 
-commit 40c6023031369ae5573e622ca54fa3ffe89fb865 upstream.
+commit 8f2ae0faa3a119158c4dcfe89926d6fad5f5332c upstream.
 
-Commit 978c0666 (libata: Remove excess delay in the tf_load path)
-removed ata_wait_idle() from ata_sff_tf_load() and via_tf_load().
-This caused obscure detection problems in sata_sil.
+The swap code already uses synchronous discards, no need to add I/O
+barriers.
 
-  https://bugzilla.kernel.org/show_bug.cgi?id=16606
+This fixes the worst of the terrible slowdown in swap allocation for
+hibernation, reported on 2.6.35 by Nigel Cunningham; but does not entirely
+eliminate that regression.
 
-The commit was pure performance optimization.  Revert it for now.
-
-Reported-by: Dieter Plaetinck <dieter@plaetinck.be>
-Reported-by: Jan Beulich <JBeulich@novell.com>
-Bisected-by: gianluca <gianluca@sottospazio.it>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+[tj@kernel.org: superflous newlines removed]
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Tested-by: Nigel Cunningham <nigel@tuxonice.net>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/libata-sff.c |    3 +++
- drivers/ata/pata_via.c   |    2 ++
- 2 files changed, 5 insertions(+)
+ mm/swapfile.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
---- a/drivers/ata/libata-sff.c
-+++ b/drivers/ata/libata-sff.c
-@@ -418,6 +418,7 @@ void ata_sff_tf_load(struct ata_port *ap
- 		if (ioaddr->ctl_addr)
- 			iowrite8(tf->ctl, ioaddr->ctl_addr);
- 		ap->last_ctl = tf->ctl;
-+		ata_wait_idle(ap);
- 	}
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -139,8 +139,7 @@ static int discard_swap(struct swap_info
+ 	nr_blocks = ((sector_t)se->nr_pages - 1) << (PAGE_SHIFT - 9);
+ 	if (nr_blocks) {
+ 		err = blkdev_issue_discard(si->bdev, start_block,
+-				nr_blocks, GFP_KERNEL,
+-				BLKDEV_IFL_WAIT | BLKDEV_IFL_BARRIER);
++				nr_blocks, GFP_KERNEL, BLKDEV_IFL_WAIT);
+ 		if (err)
+ 			return err;
+ 		cond_resched();
+@@ -151,8 +150,7 @@ static int discard_swap(struct swap_info
+ 		nr_blocks = (sector_t)se->nr_pages << (PAGE_SHIFT - 9);
  
- 	if (is_addr && (tf->flags & ATA_TFLAG_LBA48)) {
-@@ -453,6 +454,8 @@ void ata_sff_tf_load(struct ata_port *ap
- 		iowrite8(tf->device, ioaddr->device_addr);
- 		VPRINTK("device 0x%X\n", tf->device);
- 	}
-+
-+	ata_wait_idle(ap);
- }
- EXPORT_SYMBOL_GPL(ata_sff_tf_load);
+ 		err = blkdev_issue_discard(si->bdev, start_block,
+-				nr_blocks, GFP_KERNEL,
+-				BLKDEV_IFL_WAIT | BLKDEV_IFL_BARRIER);
++				nr_blocks, GFP_KERNEL, BLKDEV_IFL_WAIT);
+ 		if (err)
+ 			break;
  
---- a/drivers/ata/pata_via.c
-+++ b/drivers/ata/pata_via.c
-@@ -417,6 +417,8 @@ static void via_tf_load(struct ata_port
- 			tf->lbam,
- 			tf->lbah);
- 	}
-+
-+	ata_wait_idle(ap);
- }
+@@ -191,8 +189,7 @@ static void discard_swap_cluster(struct
+ 			start_block <<= PAGE_SHIFT - 9;
+ 			nr_blocks <<= PAGE_SHIFT - 9;
+ 			if (blkdev_issue_discard(si->bdev, start_block,
+-				    nr_blocks, GFP_NOIO, BLKDEV_IFL_WAIT |
+-							BLKDEV_IFL_BARRIER))
++				    nr_blocks, GFP_NOIO, BLKDEV_IFL_WAIT))
+ 				break;
+ 		}
  
- static int via_port_start(struct ata_port *ap)
 
 
