@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756713Ab0IRThQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:37:16 -0400
-Received: from kroah.org ([198.145.64.141]:43244 "EHLO coco.kroah.org"
+	id S1757480Ab0IRTfJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:35:09 -0400
+Received: from kroah.org ([198.145.64.141]:43333 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756679Ab0IRTOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:14:53 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:12:59 2010
-Message-Id: <20100918191259.057161869@clark.site>
+	id S1756732Ab0IRTPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:15:03 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:00 2010
+Message-Id: <20100918191300.356045910@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:11:59 -0700
+Date: Sat, 18 Sep 2010 12:12:14 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Christoph Hellwig <hch@lst.de>, Alex Elder <aelder@sgi.com>,
-        Chuck Ebbert <cebbert@redhat.com>
-Subject: [021/129] xfs: move aio completion after unwritten extent conversion
+        Sunil Mushran <sunil.mushran@oracle.com>
+Subject: [036/129] ocfs2: Fix incorrect checksum validation error
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,88 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@infradead.org>
+From: Sunil Mushran <sunil.mushran@oracle.com>
 
-commit fb511f2150174b18b28ad54708c1adda0df39b17 upstream.
+commit f5ce5a08a40f2086435858ddc80cb40394b082eb upstream.
 
-If we write into an unwritten extent using AIO we need to complete the AIO
-request after the extent conversion has finished.  Without that a read could
-race to see see the extent still unwritten and return zeros.   For synchronous
-I/O we already take care of that by flushing the xfsconvertd workqueue (which
-might be a bit of overkill).
+For local mounts, ocfs2_read_locked_inode() calls ocfs2_read_blocks_sync() to
+read the inode off the disk. The latter first checks to see if that block is
+cached in the journal, and, if so, returns that block. That is ok.
 
-To do that add iocb and result fields to struct xfs_ioend, so that we can
-call aio_complete from xfs_end_io after the extent conversion has happened.
-Note that we need a new result field as io_error is used for positive errno
-values, while the AIO code can return negative error values and positive
-transfer sizes.
+But ocfs2_read_locked_inode() goes wrong when it tries to validate the checksum
+of such blocks. Blocks that are cached in the journal may not have had their
+checksum computed as yet. We should not validate the checksums of such blocks.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reviewed-by: Dave Chinner <dchinner@redhat.com>
-Signed-off-by: Alex Elder <aelder@sgi.com>
-Cc: Chuck Ebbert <cebbert@redhat.com>
+Fixes ossbz#1282
+http://oss.oracle.com/bugzilla/show_bug.cgi?id=1282
+
+Signed-off-by: Sunil Mushran <sunil.mushran@oracle.com>
+Singed-off-by: Tao Ma <tao.ma@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/xfs/linux-2.6/xfs_aops.c |   19 ++++++++++++++++---
- 1 file changed, 16 insertions(+), 3 deletions(-)
+ fs/ocfs2/inode.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/fs/xfs/linux-2.6/xfs_aops.c
-+++ b/fs/xfs/linux-2.6/xfs_aops.c
-@@ -275,8 +275,11 @@ xfs_end_io(
- 		xfs_finish_ioend(ioend, 0);
- 		/* ensure we don't spin on blocked ioends */
- 		delay(1);
--	} else
-+	} else {
-+		if (ioend->io_iocb)
-+			aio_complete(ioend->io_iocb, ioend->io_result, 0);
- 		xfs_destroy_ioend(ioend);
-+	}
- }
- 
- /*
-@@ -309,6 +312,8 @@ xfs_alloc_ioend(
- 	atomic_inc(&XFS_I(ioend->io_inode)->i_iocount);
- 	ioend->io_offset = 0;
- 	ioend->io_size = 0;
-+	ioend->io_iocb = NULL;
-+	ioend->io_result = 0;
- 
- 	INIT_WORK(&ioend->io_work, xfs_end_io);
- 	return ioend;
-@@ -1604,6 +1609,7 @@ xfs_end_io_direct(
- 	bool		is_async)
- {
- 	xfs_ioend_t	*ioend = iocb->private;
-+	bool		complete_aio = is_async;
- 
- 	/*
- 	 * Non-NULL private data means we need to issue a transaction to
-@@ -1629,7 +1635,14 @@ xfs_end_io_direct(
- 	if (ioend->io_type == IO_READ) {
- 		xfs_finish_ioend(ioend, 0);
- 	} else if (private && size > 0) {
--		xfs_finish_ioend(ioend, is_sync_kiocb(iocb));
-+		if (is_async) {
-+			ioend->io_iocb = iocb;
-+			ioend->io_result = ret;
-+			complete_aio = false;
-+			xfs_finish_ioend(ioend, 0);
-+		} else {
-+			xfs_finish_ioend(ioend, 1);
-+		}
+--- a/fs/ocfs2/inode.c
++++ b/fs/ocfs2/inode.c
+@@ -488,7 +488,11 @@ static int ocfs2_read_locked_inode(struc
+ 						     OCFS2_BH_IGNORE_CACHE);
  	} else {
- 		/*
- 		 * A direct I/O write ioend starts it's life in unwritten
-@@ -1648,7 +1661,7 @@ xfs_end_io_direct(
- 	 */
- 	iocb->private = NULL;
- 
--	if (is_async)
-+	if (complete_aio)
- 		aio_complete(iocb, ret, 0);
- }
- 
+ 		status = ocfs2_read_blocks_sync(osb, args->fi_blkno, 1, &bh);
+-		if (!status)
++		/*
++		 * If buffer is in jbd, then its checksum may not have been
++		 * computed as yet.
++		 */
++		if (!status && !buffer_jbd(bh))
+ 			status = ocfs2_validate_inode_block(osb->sb, bh);
+ 	}
+ 	if (status < 0) {
 
 
