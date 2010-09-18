@@ -1,106 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab0IRSmt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 14:42:49 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43002 "EHLO ogre.sisk.pl"
+	id S1755023Ab0IRSsf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 14:48:35 -0400
+Received: from kroah.org ([198.145.64.141]:38916 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752965Ab0IRSms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 14:42:48 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Nishanth Menon <nm@ti.com>,
-        "linux-pm" <linux-pm@lists.linux-foundation.org>,
-        "linux-omap" <linux-omap@vger.kernel.org>,
-        Paul Walmsley <paul@pwsan.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>
-Subject: Re: [PATCH] opp: introduce library for device-specific OPPs
-Date: Sat, 18 Sep 2010 20:41:41 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-arm" <linux-arm-kernel@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>
-References: <[PATCH 1/4] OMAP: introduce OPP layer for device-specific OPPs> <201009180107.51664.rjw@sisk.pl> <4C93FAD1.80108@ti.com>
-In-Reply-To: <4C93FAD1.80108@ti.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009182041.41675.rjw@sisk.pl>
+	id S1752965Ab0IRSse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 14:48:34 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:46:21 2010
+Message-Id: <20100918184620.980215356@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Sat, 18 Sep 2010 11:44:57 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [01/11] ALSA: seq/oss - Fix double-free at error path of snd_seq_oss_open()
+In-Reply-To: <20100918184651.GA14224@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Trimming the CC list.]
+2.6.27-stable review patch.  If anyone has any objections, please let us know.
 
-On Saturday, September 18, 2010, Nishanth Menon wrote:
-> Rafael J. Wysocki had written, on 09/17/2010 06:07 PM, the following:
-...
-> > 
-> > Apart from this, it might be a good idea to help callers a bit and actually
-> > introduce some sort of locking into the framework.
-> in OMAP implementation we have need to use these apis from irq_locked 
-> contexts as well..  lock implementation will prevent thier necessary 
-> usage.
+------------------
 
-Why so?  You can use spin_lock_irqsave/spin_unclock_irqrestore  to
-avoid that.
+From: Takashi Iwai <tiwai@suse.de>
 
-> instead we have implemented lock mechanisms in higher layers and 
-> ensured that the opp table does not change once created - the rest of 
-> them are query functions - the risk is on opp_enable/disable.
+commit 27f7ad53829f79e799a253285318bff79ece15bd upstream.
 
-OK, but this way you practically make the users of the framework duplicate
-some code for the locking purposes.  This is kind of suboptimal, and error
-prone too.
+The error handling in snd_seq_oss_open() has several bad codes that
+do dereferecing released pointers and double-free of kmalloc'ed data.
+The object dp is release in free_devinfo() that is called via
+private_free callback.  The rest shouldn't touch this object any more.
 
-> >> In terms of the lifetime rules on the nodes in the list:
-> >> The list is expected to be maintained once created, entries are expected 
-> >> to be added optimally and not expected to be destroyed, the choice of 
-> >> list implementation was for reducing the complexity of the code itself 
-> >> and not yet meant as a mechanism to dynamically add and delete nodes on 
-> >> the fly.. Essentially, it was intended for the SOC framework to ensure 
-> >> it plugs in the OPP entries optimally and not create a humongous list of 
-> >> all possible OPPs for all families of the vendor SOCs - even though it 
-> >> is possible to use the OPP layer so - it just wont be smart to do so 
-> >> considering list scan latencies on hot paths such as cpufreq transitions 
-> >> or idle transitions.
-> > 
-> > If the list nodes are not supposed to be added and removed dynamically,
-> > it probably would make sense to create data structures containing
-> > the "available" OPPs only, once they are known, and simply free the object
-> > representing the other ones.
-> I covered the usage in my reply here: 
-> http://marc.info/?l=linux-arm-kernel&m=128476570300466&w=2
-> but to repeat, the list is dynamic during initialization but remains 
-> static after initialization based on SOC framework implementation - this 
-> is best implemented with a list (we had started with an original array 
-> implementation which evolved to the current list implementation 
-> http://marc.info/?l=linux-omap&m=125912217718770&w=2)
+The patch changes delete_port() to call kfree() in any case, and gets
+rid of unnecessary calls of destructors in snd_seq_oss_open().
 
-Well, my point is, since the _final_ set of OPPs doesn't really change, there's
-no need to use a list for storing it in principle.
+Fixes CVE-2010-3080.
 
-Your current algorithm seems to be:
-(1) Create a list of all _possible_ OPPs.
-(2) Mark the ones that can actually be used on the given hardware as
-    "available".
-(3) Whenever we need to find an OPP to use, browse the entire list.
+Reported-and-tested-by: Tavis Ormandy <taviso@cmpxchg8b.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-This isn't optimal, because the OPPs that are not marked as "available" in (2)
-will never be used, although they _will_ be inspected while browsing the list.
-So, I think a better algorithm would be:
-(1) Create a list of all possible OPPs.
-(2) Drop the nonavailable OPPs from the list.
-(3) Whenever we need to find an OPP to use, browse the entire list.
+---
+ sound/core/seq/oss/seq_oss_init.c |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
-But then, it may be better to simply move the list we get in (2) into an
-array, because the browsing is going to require fewer memory accesses in
-that case (also, an array would use less memory than the list).  So, perhaps,
-it's better to change the algorithm even further:
-(1) Create a list of all possible OPPs.
-(2) Drop the nonavailable OPPs from the list.
-(3) Move the list we got in (2) into a sorted array.
-(4) Whenever we need to find an OPP to use, browse the array
-     (perhaps using binary search).
+--- a/sound/core/seq/oss/seq_oss_init.c
++++ b/sound/core/seq/oss/seq_oss_init.c
+@@ -280,13 +280,10 @@ snd_seq_oss_open(struct file *file, int
+ 	return 0;
+ 
+  _error:
+-	snd_seq_oss_writeq_delete(dp->writeq);
+-	snd_seq_oss_readq_delete(dp->readq);
+ 	snd_seq_oss_synth_cleanup(dp);
+ 	snd_seq_oss_midi_cleanup(dp);
+-	delete_port(dp);
+ 	delete_seq_queue(dp->queue);
+-	kfree(dp);
++	delete_port(dp);
+ 
+ 	return rc;
+ }
+@@ -349,8 +346,10 @@ create_port(struct seq_oss_devinfo *dp)
+ static int
+ delete_port(struct seq_oss_devinfo *dp)
+ {
+-	if (dp->port < 0)
++	if (dp->port < 0) {
++		kfree(dp);
+ 		return 0;
++	}
+ 
+ 	debug_printk(("delete_port %i\n", dp->port));
+ 	return snd_seq_event_port_detach(dp->cseq, dp->port);
 
-Thanks,
-Rafael
+
