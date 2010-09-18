@@ -1,69 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755817Ab0IRTBz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:01:55 -0400
-Received: from kroah.org ([198.145.64.141]:51148 "EHLO coco.kroah.org"
+	id S1757689Ab0IRTqY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:46:24 -0400
+Received: from kroah.org ([198.145.64.141]:51576 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754456Ab0IRTBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:01:17 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:54 2010
-Message-Id: <20100918185954.003950482@clark.site>
+	id S1754966Ab0IRTB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:01:57 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:59 2010
+Message-Id: <20100918185958.963057726@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:57:38 -0700
+Date: Sat, 18 Sep 2010 11:58:36 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hank Janssen <hjanssen@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [014/123] staging: hv: Increased storvsc ringbuffer and max_io_requests
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Greg KH <greg@kroah.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Zhang Rui <rui.zhang@intel.com>,
+        pm list <linux-pm@lists.linux-foundation.org>,
+        David Chinner <david@fromorbit.com>, Lachlan McIlroy <lachlan@sgi.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: [072/123] sched: Make wakeup side and atomic variants of completion API irq safe
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=staging-hv-increased-storvsc-ringbuffer-and-max_io_requests.patch
+Content-Disposition: inline; filename=sched-make-wakeup-side-and-atomic-variants-of-completion-api-irq-safe.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hank Janssen <hjanssen@microsoft.com>
+From: Rafael J.Wysocki <rjw@sisk.pl>
 
-commit 15dd1c9f53b31cdc84b8072a88c23fa09527c596 upstream.
+commit 7539a3b3d1f892dd97eaf094134d7de55c13befe upstream
 
-Increased storvsc ringbuffer and max_io_requests. This now more
-closely mimics the numbers on Hyper-V. And will allow more IO requests
-to take place for the SCSI driver.
+Alan Stern noticed that all the wakeup side (and atomic) variants of the
+completion APIs should be irq safe, but the newly introduced
+completion_done() and try_wait_for_completion() aren't. The use of the
+irq unsafe variants in IRQ contexts can cause crashes/hangs.
 
-Max_IO is set to double from what it was before, Hyper-V allows it and
-we have had appliance builder requests to see if it was a problem to
-increase the number.
+Fix the problem by making them use spin_lock_irqsave() and
+spin_lock_irqrestore().
 
-Ringbuffer size for storvsc is now increased because I have seen A few buffer
-problems on extremely busy systems. They were Set pretty low before.
-And since max_io_requests is increased I Really needed to increase the buffer
-as well.
-
-
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reported-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Zhang Rui <rui.zhang@intel.com>
+Cc: pm list <linux-pm@lists.linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: David Chinner <david@fromorbit.com>
+Cc: Lachlan McIlroy <lachlan@sgi.com>
+LKML-Reference: <200912130007.30541.rjw@sisk.pl>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/staging/hv/StorVscApi.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/sched.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/staging/hv/StorVscApi.h
-+++ b/drivers/staging/hv/StorVscApi.h
-@@ -28,10 +28,10 @@
- #include "VmbusApi.h"
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -5947,14 +5947,15 @@ EXPORT_SYMBOL(wait_for_completion_killab
+  */
+ bool try_wait_for_completion(struct completion *x)
+ {
++	unsigned long flags;
+ 	int ret = 1;
  
- /* Defines */
--#define STORVSC_RING_BUFFER_SIZE			(10*PAGE_SIZE)
-+#define STORVSC_RING_BUFFER_SIZE			(20*PAGE_SIZE)
- #define BLKVSC_RING_BUFFER_SIZE				(20*PAGE_SIZE)
+-	spin_lock_irq(&x->wait.lock);
++	spin_lock_irqsave(&x->wait.lock, flags);
+ 	if (!x->done)
+ 		ret = 0;
+ 	else
+ 		x->done--;
+-	spin_unlock_irq(&x->wait.lock);
++	spin_unlock_irqrestore(&x->wait.lock, flags);
+ 	return ret;
+ }
+ EXPORT_SYMBOL(try_wait_for_completion);
+@@ -5969,12 +5970,13 @@ EXPORT_SYMBOL(try_wait_for_completion);
+  */
+ bool completion_done(struct completion *x)
+ {
++	unsigned long flags;
+ 	int ret = 1;
  
--#define STORVSC_MAX_IO_REQUESTS				64
-+#define STORVSC_MAX_IO_REQUESTS				128
- 
- /*
-  * In Hyper-V, each port/path/target maps to 1 scsi host adapter.  In
+-	spin_lock_irq(&x->wait.lock);
++	spin_lock_irqsave(&x->wait.lock, flags);
+ 	if (!x->done)
+ 		ret = 0;
+-	spin_unlock_irq(&x->wait.lock);
++	spin_unlock_irqrestore(&x->wait.lock, flags);
+ 	return ret;
+ }
+ EXPORT_SYMBOL(completion_done);
 
 
