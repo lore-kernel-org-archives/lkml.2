@@ -1,32 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757176Ab0IRTQM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:16:12 -0400
-Received: from kroah.org ([198.145.64.141]:43800 "EHLO coco.kroah.org"
+	id S1756336Ab0IRTVm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:21:42 -0400
+Received: from kroah.org ([198.145.64.141]:43819 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757155Ab0IRTQK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:16:10 -0400
+	id S1757167Ab0IRTQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:16:11 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:06 2010
-Message-Id: <20100918191305.992092794@clark.site>
+Message-Id: <20100918191306.079129171@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:13:19 -0700
+Date: Sat, 18 Sep 2010 12:13:20 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        Arnd Bergmann <arnd@arndb.de>, Fenghua Yu <fenghua.yu@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Helge Deller <deller@gmx.de>, James Bottomley <jejb@parisc-linux.org>,
-        Kyle McMartin <kyle@mcmartin.ca>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, Ralf Baechle <ralf@linux-mips.org>
-Subject: [101/129] compat: Make compat_alloc_user_space() incorporate the access_ok()
+        Roland McGrath <roland@redhat.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [102/129] x86-64, compat: Retruncate rax after ia32 syscall entry tracing
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -36,173 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: H. Peter Anvin <hpa@linux.intel.com>
+From: Roland McGrath <roland@redhat.com>
 
-commit c41d68a513c71e35a14f66d71782d27a79a81ea6 upstream.
+commit eefdca043e8391dcd719711716492063030b55ac upstream.
 
-compat_alloc_user_space() expects the caller to independently call
-access_ok() to verify the returned area.  A missing call could
-introduce problems on some architectures.
+In commit d4d6715, we reopened an old hole for a 64-bit ptracer touching a
+32-bit tracee in system call entry.  A %rax value set via ptrace at the
+entry tracing stop gets used whole as a 32-bit syscall number, while we
+only check the low 32 bits for validity.
 
-This patch incorporates the access_ok() check into
-compat_alloc_user_space() and also adds a sanity check on the length.
-The existing compat_alloc_user_space() implementations are renamed
-arch_compat_alloc_user_space() and are used as part of the
-implementation of the new global function.
-
-This patch assumes NULL will cause __get_user()/__put_user() to either
-fail or access userspace on all architectures.  This should be
-followed by checking the return value of compat_access_user_space()
-for NULL in the callers, at which time the access_ok() in the callers
-can also be removed.
+Fix it by truncating %rax back to 32 bits after syscall_trace_enter,
+in addition to testing the full 64 bits as has already been added.
 
 Reported-by: Ben Hawkes <hawkes@sota.gen.nz>
+Signed-off-by: Roland McGrath <roland@redhat.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
-Acked-by: David S. Miller <davem@davemloft.net>
-Acked-by: Ingo Molnar <mingo@elte.hu>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Acked-by: Tony Luck <tony.luck@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Helge Deller <deller@gmx.de>
-Cc: James Bottomley <jejb@parisc-linux.org>
-Cc: Kyle McMartin <kyle@mcmartin.ca>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/ia64/include/asm/compat.h    |    2 +-
- arch/mips/include/asm/compat.h    |    2 +-
- arch/parisc/include/asm/compat.h  |    2 +-
- arch/powerpc/include/asm/compat.h |    2 +-
- arch/s390/include/asm/compat.h    |    2 +-
- arch/sparc/include/asm/compat.h   |    2 +-
- arch/x86/include/asm/compat.h     |    2 +-
- include/linux/compat.h            |    3 +++
- kernel/compat.c                   |   21 +++++++++++++++++++++
- 9 files changed, 31 insertions(+), 7 deletions(-)
+ arch/x86/ia32/ia32entry.S |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/arch/ia64/include/asm/compat.h
-+++ b/arch/ia64/include/asm/compat.h
-@@ -199,7 +199,7 @@ ptr_to_compat(void __user *uptr)
- }
- 
- static __inline__ void __user *
--compat_alloc_user_space (long len)
-+arch_compat_alloc_user_space (long len)
- {
- 	struct pt_regs *regs = task_pt_regs(current);
- 	return (void __user *) (((regs->r12 & 0xffffffff) & -16) - len);
---- a/arch/mips/include/asm/compat.h
-+++ b/arch/mips/include/asm/compat.h
-@@ -145,7 +145,7 @@ static inline compat_uptr_t ptr_to_compa
- 	return (u32)(unsigned long)uptr;
- }
- 
--static inline void __user *compat_alloc_user_space(long len)
-+static inline void __user *arch_compat_alloc_user_space(long len)
- {
- 	struct pt_regs *regs = (struct pt_regs *)
- 		((unsigned long) current_thread_info() + THREAD_SIZE - 32) - 1;
---- a/arch/parisc/include/asm/compat.h
-+++ b/arch/parisc/include/asm/compat.h
-@@ -147,7 +147,7 @@ static inline compat_uptr_t ptr_to_compa
- 	return (u32)(unsigned long)uptr;
- }
- 
--static __inline__ void __user *compat_alloc_user_space(long len)
-+static __inline__ void __user *arch_compat_alloc_user_space(long len)
- {
- 	struct pt_regs *regs = &current->thread.regs;
- 	return (void __user *)regs->gr[30];
---- a/arch/powerpc/include/asm/compat.h
-+++ b/arch/powerpc/include/asm/compat.h
-@@ -134,7 +134,7 @@ static inline compat_uptr_t ptr_to_compa
- 	return (u32)(unsigned long)uptr;
- }
- 
--static inline void __user *compat_alloc_user_space(long len)
-+static inline void __user *arch_compat_alloc_user_space(long len)
- {
- 	struct pt_regs *regs = current->thread.regs;
- 	unsigned long usp = regs->gpr[1];
---- a/arch/s390/include/asm/compat.h
-+++ b/arch/s390/include/asm/compat.h
-@@ -181,7 +181,7 @@ static inline int is_compat_task(void)
- 
- #endif
- 
--static inline void __user *compat_alloc_user_space(long len)
-+static inline void __user *arch_compat_alloc_user_space(long len)
- {
- 	unsigned long stack;
- 
---- a/arch/sparc/include/asm/compat.h
-+++ b/arch/sparc/include/asm/compat.h
-@@ -167,7 +167,7 @@ static inline compat_uptr_t ptr_to_compa
- 	return (u32)(unsigned long)uptr;
- }
- 
--static inline void __user *compat_alloc_user_space(long len)
-+static inline void __user *arch_compat_alloc_user_space(long len)
- {
- 	struct pt_regs *regs = current_thread_info()->kregs;
- 	unsigned long usp = regs->u_regs[UREG_I6];
---- a/arch/x86/include/asm/compat.h
-+++ b/arch/x86/include/asm/compat.h
-@@ -205,7 +205,7 @@ static inline compat_uptr_t ptr_to_compa
- 	return (u32)(unsigned long)uptr;
- }
- 
--static inline void __user *compat_alloc_user_space(long len)
-+static inline void __user *arch_compat_alloc_user_space(long len)
- {
- 	struct pt_regs *regs = task_pt_regs(current);
- 	return (void __user *)regs->sp - len;
---- a/include/linux/compat.h
-+++ b/include/linux/compat.h
-@@ -360,5 +360,8 @@ extern ssize_t compat_rw_copy_check_uvec
- 		const struct compat_iovec __user *uvector, unsigned long nr_segs,
- 		unsigned long fast_segs, struct iovec *fast_pointer,
- 		struct iovec **ret_pointer);
-+
-+extern void __user *compat_alloc_user_space(unsigned long len);
-+
- #endif /* CONFIG_COMPAT */
- #endif /* _LINUX_COMPAT_H */
---- a/kernel/compat.c
-+++ b/kernel/compat.c
-@@ -1137,3 +1137,24 @@ compat_sys_sysinfo(struct compat_sysinfo
- 
- 	return 0;
- }
-+
-+/*
-+ * Allocate user-space memory for the duration of a single system call,
-+ * in order to marshall parameters inside a compat thunk.
-+ */
-+void __user *compat_alloc_user_space(unsigned long len)
-+{
-+	void __user *ptr;
-+
-+	/* If len would occupy more than half of the entire compat space... */
-+	if (unlikely(len > (((compat_uptr_t)~0) >> 1)))
-+		return NULL;
-+
-+	ptr = arch_compat_alloc_user_space(len);
-+
-+	if (unlikely(!access_ok(VERIFY_WRITE, ptr, len)))
-+		return NULL;
-+
-+	return ptr;
-+}
-+EXPORT_SYMBOL_GPL(compat_alloc_user_space);
+--- a/arch/x86/ia32/ia32entry.S
++++ b/arch/x86/ia32/ia32entry.S
+@@ -50,7 +50,12 @@
+ 	/*
+ 	 * Reload arg registers from stack in case ptrace changed them.
+ 	 * We don't reload %eax because syscall_trace_enter() returned
+-	 * the value it wants us to use in the table lookup.
++	 * the %rax value we should see.  Instead, we just truncate that
++	 * value to 32 bits again as we did on entry from user mode.
++	 * If it's a new value set by user_regset during entry tracing,
++	 * this matches the normal truncation of the user-mode value.
++	 * If it's -1 to make us punt the syscall, then (u32)-1 is still
++	 * an appropriately invalid value.
+ 	 */
+ 	.macro LOAD_ARGS32 offset, _r9=0
+ 	.if \_r9
+@@ -60,6 +65,7 @@
+ 	movl \offset+48(%rsp),%edx
+ 	movl \offset+56(%rsp),%esi
+ 	movl \offset+64(%rsp),%edi
++	movl %eax,%eax			/* zero extension */
+ 	.endm
+ 	
+ 	.macro CFI_STARTPROC32 simple
 
 
