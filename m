@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757460Ab0IRTet (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:34:49 -0400
-Received: from kroah.org ([198.145.64.141]:43338 "EHLO coco.kroah.org"
+	id S1756765Ab0IRTfc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:35:32 -0400
+Received: from kroah.org ([198.145.64.141]:43306 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756733Ab0IRTPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:15:04 -0400
+	id S1755970Ab0IRTPC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:15:02 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:00 2010
-Message-Id: <20100918191300.456963973@clark.site>
+Message-Id: <20100918191300.106219585@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:12:15 -0700
+Date: Sat, 18 Sep 2010 12:12:11 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sonic Zhang <sonic.zhang@analog.com>,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: [037/129] serial: bfin_sport_uart: restore transmit frame sync fix
+        Vivek Natarajan <vnatarajan@atheros.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [033/129] ath9k_htc: Fix disconnect issue in HT40 mode.
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,32 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sonic Zhang <sonic.zhang@analog.com>
+From: Vivek Natarajan <vnatarajan@atheros.com>
 
-commit 336746918299f2ca16b31490655b4ff7c8824c87 upstream.
+commit 71ba186c123630ddab17667ec9ecf7e2ef211295 upstream.
 
-The large cleanup/rewrite of resources in commit ccf68e59e93181df9353c0cc
-accidentally reverted an earlier fix in commit a19e8b205915b2925aca75b.
-So restore it here.
+Some APs advertise that they may be HT40 capable in the capabilites
+but the current operating channel configuration may be only HT20.
+This causes disconnection as ath9k_htc sets WLAN_RC_40_FLAG despite
+the AP operating in HT20 mode.
+Hence set this flag only if the current channel configuration
+is HT40 enabled.
 
-Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+Signed-off-by: Vivek Natarajan <vnatarajan@atheros.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- drivers/serial/bfin_sport_uart.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/serial/bfin_sport_uart.c
-+++ b/drivers/serial/bfin_sport_uart.c
-@@ -121,7 +121,7 @@ static int sport_uart_setup(struct sport
- 	unsigned int sclk = get_sclk();
+---
+ drivers/net/wireless/ath/ath9k/htc_drv_main.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/wireless/ath/ath9k/htc_drv_main.c
++++ b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
+@@ -370,7 +370,8 @@ static int ath9k_htc_init_rate(struct at
+ 		priv->tgt_rate.rates.ht_rates.rs_nrates = j;
  
- 	/* Set TCR1 and TCR2, TFSR is not enabled for uart */
--	SPORT_PUT_TCR1(up, (ITFS | TLSBIT | ITCLK));
-+	SPORT_PUT_TCR1(up, (LATFS | ITFS | TFSR | TLSBIT | ITCLK));
- 	SPORT_PUT_TCR2(up, size + 1);
- 	pr_debug("%s TCR1:%x, TCR2:%x\n", __func__, SPORT_GET_TCR1(up), SPORT_GET_TCR2(up));
- 
+ 		caps = WLAN_RC_HT_FLAG;
+-		if (sta->ht_cap.cap & IEEE80211_HT_CAP_SUP_WIDTH_20_40)
++		if ((sta->ht_cap.cap & IEEE80211_HT_CAP_SUP_WIDTH_20_40) &&
++		    (conf_is_ht40(&priv->hw->conf)))
+ 			caps |= WLAN_RC_40_FLAG;
+ 		if (sta->ht_cap.cap & IEEE80211_HT_CAP_SGI_40)
+ 			caps |= WLAN_RC_SGI_FLAG;
 
 
