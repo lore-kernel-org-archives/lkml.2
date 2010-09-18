@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755346Ab0IRNsX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 09:48:23 -0400
-Received: from palinux.external.hp.com ([192.25.206.14]:54029 "EHLO
-	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754220Ab0IRNsW (ORCPT
+	id S1755324Ab0IROGW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 10:06:22 -0400
+Received: from infernal.debian.net ([87.230.26.131]:47848 "EHLO
+	infernal.debian.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754592Ab0IROGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 09:48:22 -0400
-Date: Sat, 18 Sep 2010 07:48:20 -0600
-From: Matthew Wilcox <matthew@wil.cx>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, Matthew Wilcox <willy@linux.intel.com>,
-        Christoph Hellwig <hch@lst.de>,
-        Trond Myklebust <trond.myklebust@fys.uio.no>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, John Kacur <jkacur@redhat.com>,
-        Sage Weil <sage@newdream.net>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] fs/locks.c: prepare for BKL removal
-Message-ID: <20100918134819.GB25139@parisc-linux.org>
-References: <1284815371-5843-1-git-send-email-arnd@arndb.de>
+	Sat, 18 Sep 2010 10:06:20 -0400
+X-Greylist: delayed 1805 seconds by postgrey-1.27 at vger.kernel.org; Sat, 18 Sep 2010 10:06:20 EDT
+Date: Sat, 18 Sep 2010 15:36:11 +0200
+From: Andreas Bombe <aeb@debian.org>
+To: Alex Riesen <raa.lkml@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
+        linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: OOPS in hiddev_open on connecting "Logitech MX620 Laser
+ Cordless Mouse"
+Message-ID: <20100918133610.GA4554@amos.infernal>
+References: <AANLkTikOowB=8=3cnJ0QgJNfBsVeMUrkNT0E0uH2LDXL@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1284815371-5843-1-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTikOowB=8=3cnJ0QgJNfBsVeMUrkNT0E0uH2LDXL@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 18, 2010 at 03:09:31PM +0200, Arnd Bergmann wrote:
-> This prepares the removal of the big kernel lock from the
-> file locking code. We still use the BKL as long as fs/lockd
-> uses it and ceph might sleep, but we can flip the definition
-> to a private spinlock as soon as that's done.
-> All users outside of fs/lockd get converted to use
-> lock_flocks() instead of lock_kernel() where appropriate.
-> 
-> Based on an earlier patch to use a spinlock from Matthew
-> Wilcox, who has attempted this a few times before. An even
-> earlier attempt to use a semaphore instead of the BKL
-> apparently was made by Andrew Morton about ten years ago,
-> but reverted for performance reasons.
+On Sat, Sep 18, 2010 at 11:30:56AM +0200, Alex Riesen wrote:
+> Happens with Linus' master at 509344b8b4d365b7ff3bce97198d83a57b7c3f31
+> The tree is modified, but I doubt the patches I have can cause this. I attach
+> then anyway. They never caused a conflict, so just the patches (in case of doubt
+> I can push the tree somewhere).
 
-Actually, I attempted the semaphore conversion ten years ago, but Andrew
-Morton reverted it due to the performance regression.  I believe it was
-Apache, when it was using file locks to synchronise between threads.
+I can confirm the same Oops on an unpatched kernel from Linus' git
+(v2.6.36-rc4-134-g03a7ab0). I have a Logitech G500 mouse.
 
-Patch looks good; Acked-by: Matthew Wilcox <willy@linux.intel.com>
+> The oops is reproducable. lsusb hangs (D state) after the oops.
 
--- 
-Matthew Wilcox				Intel Open Source Technology Centre
-"Bill, look, we understand that you're interested in selling us this
-operating system, but compare it to ours.  We can't possibly take such
-a retrograde step."
+However on my machine lsusb doesn't hang.
