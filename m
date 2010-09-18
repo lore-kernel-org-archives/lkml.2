@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207Ab0IRTUb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:20:31 -0400
-Received: from kroah.org ([198.145.64.141]:43864 "EHLO coco.kroah.org"
+	id S1756757Ab0IRTPG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:15:06 -0400
+Received: from kroah.org ([198.145.64.141]:43265 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757203Ab0IRTQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:16:18 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:06 2010
-Message-Id: <20100918191306.575771076@clark.site>
+	id S1756639Ab0IRTO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:14:57 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:12:59 2010
+Message-Id: <20100918191259.574261822@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:13:26 -0700
+Date: Sat, 18 Sep 2010 12:12:05 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Guillem Jover <guillem@hadrons.org>, Riku Voipio <riku.voipio@iki.fi>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [108/129] hwmon: (f75375s) Do not overwrite values read from registers
+        Hank Janssen <hjanssen@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: [027/129] staging: hv: Fixed bounce kmap problem by using correct index
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,42 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guillem Jover <guillem@hadrons.org>
+From: Hank Janssen <hjanssen@microsoft.com>
 
-commit c3b327d60bbba3f5ff8fd87d1efc0e95eb6c121b upstream.
+commit 0c47a70a9a8a6d1ec37a53d2f9cb82f8b8ef8aa2 upstream.
 
-All bits in the values read from registers to be used for the next
-write were getting overwritten, avoid doing so to not mess with the
-current configuration.
+Fixed bounce offset kmap problem by using correct index.
+The symptom of the problem is that in some NAS appliances this problem
+represents Itself by a unresponsive VM under a load with many clients writing
+small files.
 
-Signed-off-by: Guillem Jover <guillem@hadrons.org>
-Cc: Riku Voipio <riku.voipio@iki.fi>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by:Hank Janssen <hjanssen@microsoft.com>
+Signed-off-by:Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hwmon/f75375s.c |    4 ++--
+ drivers/staging/hv/storvsc_drv.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/hwmon/f75375s.c
-+++ b/drivers/hwmon/f75375s.c
-@@ -298,7 +298,7 @@ static int set_pwm_enable_direct(struct
- 		return -EINVAL;
+--- a/drivers/staging/hv/storvsc_drv.c
++++ b/drivers/staging/hv/storvsc_drv.c
+@@ -526,7 +526,7 @@ static unsigned int copy_to_bounce_buffe
  
- 	fanmode = f75375_read8(client, F75375_REG_FAN_TIMER);
--	fanmode = ~(3 << FAN_CTRL_MODE(nr));
-+	fanmode &= ~(3 << FAN_CTRL_MODE(nr));
+ 		/* ASSERT(orig_sgl[i].offset + orig_sgl[i].length <= PAGE_SIZE); */
  
- 	switch (val) {
- 	case 0: /* Full speed */
-@@ -350,7 +350,7 @@ static ssize_t set_pwm_mode(struct devic
+-		if (j == 0)
++		if (bounce_addr == 0)
+ 			bounce_addr = (unsigned long)kmap_atomic(sg_page((&bounce_sgl[j])), KM_IRQ0);
  
- 	mutex_lock(&data->update_lock);
- 	conf = f75375_read8(client, F75375_REG_CONFIG1);
--	conf = ~(1 << FAN_CTRL_LINEAR(nr));
-+	conf &= ~(1 << FAN_CTRL_LINEAR(nr));
+ 		while (srclen) {
+@@ -587,7 +587,7 @@ static unsigned int copy_from_bounce_buf
+ 		destlen = orig_sgl[i].length;
+ 		/* ASSERT(orig_sgl[i].offset + orig_sgl[i].length <= PAGE_SIZE); */
  
- 	if (val == 0)
- 		conf |= (1 << FAN_CTRL_LINEAR(nr)) ;
+-		if (j == 0)
++		if (bounce_addr == 0)
+ 			bounce_addr = (unsigned long)kmap_atomic(sg_page((&bounce_sgl[j])), KM_IRQ0);
+ 
+ 		while (destlen) {
 
 
