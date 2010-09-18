@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab0IRTVT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:21:19 -0400
-Received: from kroah.org ([198.145.64.141]:43840 "EHLO coco.kroah.org"
+	id S1757254Ab0IRTTt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:19:49 -0400
+Received: from kroah.org ([198.145.64.141]:43889 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757184Ab0IRTQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:16:15 -0400
+	id S1757222Ab0IRTQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:16:23 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:06 2010
-Message-Id: <20100918191306.333147527@clark.site>
+Message-Id: <20100918191306.904186657@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:13:23 -0700
+Date: Sat, 18 Sep 2010 12:13:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [105/129] arm: fix really nasty sigreturn bug
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [112/129] SUNRPC: Fix race corrupting rpc upcall
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,95 +25,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 653d48b22166db2d8b1515ebe6f9f0f7c95dfc86 upstream.
+commit 5a67657a2e90c9e4a48518f95d4ba7777aa20fbb upstream.
 
-If a signal hits us outside of a syscall and another gets delivered
-when we are in sigreturn (e.g. because it had been in sa_mask for
-the first one and got sent to us while we'd been in the first handler),
-we have a chance of returning from the second handler to location one
-insn prior to where we ought to return.  If r0 happens to contain -513
-(-ERESTARTNOINTR), sigreturn will get confused into doing restart
-syscall song and dance.
+If rpc_queue_upcall() adds a new upcall to the rpci->pipe list just
+after rpc_pipe_release calls rpc_purge_list(), but before it calls
+gss_pipe_release (as rpci->ops->release_pipe(inode)), then the latter
+will free a message without deleting it from the rpci->pipe list.
 
-Incredible joy to debug, since it manifests as random, infrequent and
-very hard to reproduce double execution of instructions in userland
-code...
+We will be left with a freed object on the rpc->pipe list.  Most
+frequent symptoms are kernel crashes in rpc.gssd system calls on the
+pipe in question.
 
-The fix is simple - mark it "don't bother with restarts" in wrapper,
-i.e. set r8 to 0 in sys_sigreturn and sys_rt_sigreturn wrappers,
-suppressing the syscall restart handling on return from these guys.
-They can't legitimately return a restart-worthy error anyway.
-
-Testcase:
-	#include <unistd.h>
-	#include <signal.h>
-	#include <stdlib.h>
-	#include <sys/time.h>
-	#include <errno.h>
-
-	void f(int n)
-	{
-		__asm__ __volatile__(
-			"ldr r0, [%0]\n"
-			"b 1f\n"
-			"b 2f\n"
-			"1:b .\n"
-			"2:\n" : : "r"(&n));
-	}
-
-	void handler1(int sig) { }
-	void handler2(int sig) { raise(1); }
-	void handler3(int sig) { exit(0); }
-
-	main()
-	{
-		struct sigaction s = {.sa_handler = handler2};
-		struct itimerval t1 = { .it_value = {1} };
-		struct itimerval t2 = { .it_value = {2} };
-
-		signal(1, handler1);
-
-		sigemptyset(&s.sa_mask);
-		sigaddset(&s.sa_mask, 1);
-		sigaction(SIGALRM, &s, NULL);
-
-		signal(SIGVTALRM, handler3);
-
-		setitimer(ITIMER_REAL, &t1, NULL);
-		setitimer(ITIMER_VIRTUAL, &t2, NULL);
-
-		f(-513); /* -ERESTARTNOINTR */
-
-		write(1, "buggered\n", 9);
-		return 1;
-	}
-
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/kernel/entry-common.S |    2 ++
- 1 file changed, 2 insertions(+)
+ net/sunrpc/auth_gss/auth_gss.c |    9 +++++----
+ net/sunrpc/rpc_pipe.c          |    6 +++---
+ 2 files changed, 8 insertions(+), 7 deletions(-)
 
---- a/arch/arm/kernel/entry-common.S
-+++ b/arch/arm/kernel/entry-common.S
-@@ -382,11 +382,13 @@ ENDPROC(sys_clone_wrapper)
+--- a/net/sunrpc/auth_gss/auth_gss.c
++++ b/net/sunrpc/auth_gss/auth_gss.c
+@@ -745,17 +745,18 @@ gss_pipe_release(struct inode *inode)
+ 	struct rpc_inode *rpci = RPC_I(inode);
+ 	struct gss_upcall_msg *gss_msg;
  
- sys_sigreturn_wrapper:
- 		add	r0, sp, #S_OFF
-+		mov	why, #0		@ prevent syscall restart handling
- 		b	sys_sigreturn
- ENDPROC(sys_sigreturn_wrapper)
++restart:
+ 	spin_lock(&inode->i_lock);
+-	while (!list_empty(&rpci->in_downcall)) {
++	list_for_each_entry(gss_msg, &rpci->in_downcall, list) {
  
- sys_rt_sigreturn_wrapper:
- 		add	r0, sp, #S_OFF
-+		mov	why, #0		@ prevent syscall restart handling
- 		b	sys_rt_sigreturn
- ENDPROC(sys_rt_sigreturn_wrapper)
+-		gss_msg = list_entry(rpci->in_downcall.next,
+-				struct gss_upcall_msg, list);
++		if (!list_empty(&gss_msg->msg.list))
++			continue;
+ 		gss_msg->msg.errno = -EPIPE;
+ 		atomic_inc(&gss_msg->count);
+ 		__gss_unhash_msg(gss_msg);
+ 		spin_unlock(&inode->i_lock);
+ 		gss_release_msg(gss_msg);
+-		spin_lock(&inode->i_lock);
++		goto restart;
+ 	}
+ 	spin_unlock(&inode->i_lock);
  
+--- a/net/sunrpc/rpc_pipe.c
++++ b/net/sunrpc/rpc_pipe.c
+@@ -48,7 +48,7 @@ static void rpc_purge_list(struct rpc_in
+ 		return;
+ 	do {
+ 		msg = list_entry(head->next, struct rpc_pipe_msg, list);
+-		list_del(&msg->list);
++		list_del_init(&msg->list);
+ 		msg->errno = err;
+ 		destroy_msg(msg);
+ 	} while (!list_empty(head));
+@@ -208,7 +208,7 @@ rpc_pipe_release(struct inode *inode, st
+ 	if (msg != NULL) {
+ 		spin_lock(&inode->i_lock);
+ 		msg->errno = -EAGAIN;
+-		list_del(&msg->list);
++		list_del_init(&msg->list);
+ 		spin_unlock(&inode->i_lock);
+ 		rpci->ops->destroy_msg(msg);
+ 	}
+@@ -268,7 +268,7 @@ rpc_pipe_read(struct file *filp, char __
+ 	if (res < 0 || msg->len == msg->copied) {
+ 		filp->private_data = NULL;
+ 		spin_lock(&inode->i_lock);
+-		list_del(&msg->list);
++		list_del_init(&msg->list);
+ 		spin_unlock(&inode->i_lock);
+ 		rpci->ops->destroy_msg(msg);
+ 	}
 
 
