@@ -1,101 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757844Ab0IRTuE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:50:04 -0400
-Received: from kroah.org ([198.145.64.141]:51457 "EHLO coco.kroah.org"
+	id S1757824Ab0IRTtR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:49:17 -0400
+Received: from kroah.org ([198.145.64.141]:51489 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755516Ab0IRTBs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:01:48 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:57 2010
-Message-Id: <20100918185957.864681980@clark.site>
+	id S1753281Ab0IRTBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:01:50 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:58 2010
+Message-Id: <20100918185958.114994801@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:58:23 -0700
+Date: Sat, 18 Sep 2010 11:58:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [059/123] wireless extensions: fix kernel heap content leak
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Fenghua Yu <fenghua.yu@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Helge Deller <deller@gmx.de>, James Bottomley <jejb@parisc-linux.org>,
+        Kyle McMartin <kyle@mcmartin.ca>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, Ralf Baechle <ralf@linux-mips.org>
+Subject: [062/123] compat: Make compat_alloc_user_space() incorporate the access_ok()
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=wireless-extensions-fix-kernel-heap-content-leak.patch
+Content-Disposition: inline; filename=compat-make-compat_alloc_user_space-incorporate-the-access_ok.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: H. Peter Anvin <hpa@linux.intel.com>
 
-commit 42da2f948d949efd0111309f5827bf0298bcc9a4 upstream.
+commit c41d68a513c71e35a14f66d71782d27a79a81ea6 upstream.
 
-Wireless extensions have an unfortunate, undocumented
-requirement which requires drivers to always fill
-iwp->length when returning a successful status. When
-a driver doesn't do this, it leads to a kernel heap
-content leak when userspace offers a larger buffer
-than would have been necessary.
+compat_alloc_user_space() expects the caller to independently call
+access_ok() to verify the returned area.  A missing call could
+introduce problems on some architectures.
 
-Arguably, this is a driver bug, as it should, if it
-returns 0, fill iwp->length, even if it separately
-indicated that the buffer contents was not valid.
+This patch incorporates the access_ok() check into
+compat_alloc_user_space() and also adds a sanity check on the length.
+The existing compat_alloc_user_space() implementations are renamed
+arch_compat_alloc_user_space() and are used as part of the
+implementation of the new global function.
 
-However, we can also at least avoid the memory content
-leak if the driver doesn't do this by setting the iwp
-length to max_tokens, which then reflects how big the
-buffer is that the driver may fill, regardless of how
-big the userspace buffer is.
+This patch assumes NULL will cause __get_user()/__put_user() to either
+fail or access userspace on all architectures.  This should be
+followed by checking the return value of compat_access_user_space()
+for NULL in the callers, at which time the access_ok() in the callers
+can also be removed.
 
-To illustrate the point, this patch also fixes a
-corresponding cfg80211 bug (since this requirement
-isn't documented nor was ever pointed out by anyone
-during code review, I don't trust all drivers nor
-all cfg80211 handlers to implement it correctly).
-
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Ben Hawkes <hawkes@sota.gen.nz>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+Acked-by: David S. Miller <davem@davemloft.net>
+Acked-by: Ingo Molnar <mingo@elte.hu>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Tony Luck <tony.luck@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Helge Deller <deller@gmx.de>
+Cc: James Bottomley <jejb@parisc-linux.org>
+Cc: Kyle McMartin <kyle@mcmartin.ca>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/wireless/wext-compat.c |    3 +++
- net/wireless/wext.c        |   16 ++++++++++++++++
- 2 files changed, 19 insertions(+)
+ arch/ia64/include/asm/compat.h    |    2 +-
+ arch/mips/include/asm/compat.h    |    2 +-
+ arch/parisc/include/asm/compat.h  |    2 +-
+ arch/powerpc/include/asm/compat.h |    2 +-
+ arch/s390/include/asm/compat.h    |    2 +-
+ arch/sparc/include/asm/compat.h   |    2 +-
+ arch/x86/include/asm/compat.h     |    2 +-
+ include/linux/compat.h            |    2 ++
+ kernel/compat.c                   |   22 ++++++++++++++++++++++
+ 9 files changed, 31 insertions(+), 7 deletions(-)
 
---- a/net/wireless/wext-compat.c
-+++ b/net/wireless/wext-compat.c
-@@ -1358,6 +1358,9 @@ int cfg80211_wext_giwessid(struct net_de
+--- a/arch/ia64/include/asm/compat.h
++++ b/arch/ia64/include/asm/compat.h
+@@ -198,7 +198,7 @@ ptr_to_compat(void __user *uptr)
+ }
+ 
+ static __inline__ void __user *
+-compat_alloc_user_space (long len)
++arch_compat_alloc_user_space (long len)
  {
- 	struct wireless_dev *wdev = dev->ieee80211_ptr;
+ 	struct pt_regs *regs = task_pt_regs(current);
+ 	return (void __user *) (((regs->r12 & 0xffffffff) & -16) - len);
+--- a/arch/mips/include/asm/compat.h
++++ b/arch/mips/include/asm/compat.h
+@@ -144,7 +144,7 @@ static inline compat_uptr_t ptr_to_compa
+ 	return (u32)(unsigned long)uptr;
+ }
  
-+	data->flags = 0;
-+	data->length = 0;
+-static inline void __user *compat_alloc_user_space(long len)
++static inline void __user *arch_compat_alloc_user_space(long len)
+ {
+ 	struct pt_regs *regs = (struct pt_regs *)
+ 		((unsigned long) current_thread_info() + THREAD_SIZE - 32) - 1;
+--- a/arch/parisc/include/asm/compat.h
++++ b/arch/parisc/include/asm/compat.h
+@@ -146,7 +146,7 @@ static inline compat_uptr_t ptr_to_compa
+ 	return (u32)(unsigned long)uptr;
+ }
+ 
+-static __inline__ void __user *compat_alloc_user_space(long len)
++static __inline__ void __user *arch_compat_alloc_user_space(long len)
+ {
+ 	struct pt_regs *regs = &current->thread.regs;
+ 	return (void __user *)regs->gr[30];
+--- a/arch/powerpc/include/asm/compat.h
++++ b/arch/powerpc/include/asm/compat.h
+@@ -133,7 +133,7 @@ static inline compat_uptr_t ptr_to_compa
+ 	return (u32)(unsigned long)uptr;
+ }
+ 
+-static inline void __user *compat_alloc_user_space(long len)
++static inline void __user *arch_compat_alloc_user_space(long len)
+ {
+ 	struct pt_regs *regs = current->thread.regs;
+ 	unsigned long usp = regs->gpr[1];
+--- a/arch/s390/include/asm/compat.h
++++ b/arch/s390/include/asm/compat.h
+@@ -180,7 +180,7 @@ static inline int is_compat_task(void)
+ 
+ #endif
+ 
+-static inline void __user *compat_alloc_user_space(long len)
++static inline void __user *arch_compat_alloc_user_space(long len)
+ {
+ 	unsigned long stack;
+ 
+--- a/arch/sparc/include/asm/compat.h
++++ b/arch/sparc/include/asm/compat.h
+@@ -166,7 +166,7 @@ static inline compat_uptr_t ptr_to_compa
+ 	return (u32)(unsigned long)uptr;
+ }
+ 
+-static inline void __user *compat_alloc_user_space(long len)
++static inline void __user *arch_compat_alloc_user_space(long len)
+ {
+ 	struct pt_regs *regs = current_thread_info()->kregs;
+ 	unsigned long usp = regs->u_regs[UREG_I6];
+--- a/arch/x86/include/asm/compat.h
++++ b/arch/x86/include/asm/compat.h
+@@ -204,7 +204,7 @@ static inline compat_uptr_t ptr_to_compa
+ 	return (u32)(unsigned long)uptr;
+ }
+ 
+-static inline void __user *compat_alloc_user_space(long len)
++static inline void __user *arch_compat_alloc_user_space(long len)
+ {
+ 	struct pt_regs *regs = task_pt_regs(current);
+ 	return (void __user *)regs->sp - len;
+--- a/include/linux/compat.h
++++ b/include/linux/compat.h
+@@ -309,5 +309,7 @@ asmlinkage long compat_sys_newfstatat(un
+ asmlinkage long compat_sys_openat(unsigned int dfd, const char __user *filename,
+ 				  int flags, int mode);
+ 
++extern void __user *compat_alloc_user_space(unsigned long len);
 +
- 	switch (wdev->iftype) {
- 	case NL80211_IFTYPE_ADHOC:
- 		return cfg80211_ibss_wext_giwessid(dev, info, data, ssid);
---- a/net/wireless/wext.c
-+++ b/net/wireless/wext.c
-@@ -854,6 +854,22 @@ static int ioctl_standard_iw_point(struc
- 		}
- 	}
+ #endif /* CONFIG_COMPAT */
+ #endif /* _LINUX_COMPAT_H */
+--- a/kernel/compat.c
++++ b/kernel/compat.c
+@@ -25,6 +25,7 @@
+ #include <linux/posix-timers.h>
+ #include <linux/times.h>
+ #include <linux/ptrace.h>
++#include <linux/module.h>
  
-+	if (IW_IS_GET(cmd) && !(descr->flags & IW_DESCR_FLAG_NOMAX)) {
-+		/*
-+		 * If this is a GET, but not NOMAX, it means that the extra
-+		 * data is not bounded by userspace, but by max_tokens. Thus
-+		 * set the length to max_tokens. This matches the extra data
-+		 * allocation.
-+		 * The driver should fill it with the number of tokens it
-+		 * provided, and it may check iwp->length rather than having
-+		 * knowledge of max_tokens. If the driver doesn't change the
-+		 * iwp->length, this ioctl just copies back max_token tokens
-+		 * filled with zeroes. Hopefully the driver isn't claiming
-+		 * them to be valid data.
-+		 */
-+		iwp->length = descr->max_tokens;
-+	}
+ #include <asm/uaccess.h>
+ 
+@@ -1136,3 +1137,24 @@ compat_sys_sysinfo(struct compat_sysinfo
+ 
+ 	return 0;
+ }
 +
- 	err = handler(dev, info, (union iwreq_data *) iwp, extra);
- 
- 	iwp->length += essid_compat;
++/*
++ * Allocate user-space memory for the duration of a single system call,
++ * in order to marshall parameters inside a compat thunk.
++ */
++void __user *compat_alloc_user_space(unsigned long len)
++{
++	void __user *ptr;
++
++	/* If len would occupy more than half of the entire compat space... */
++	if (unlikely(len > (((compat_uptr_t)~0) >> 1)))
++		return NULL;
++
++	ptr = arch_compat_alloc_user_space(len);
++
++	if (unlikely(!access_ok(VERIFY_WRITE, ptr, len)))
++		return NULL;
++
++	return ptr;
++}
++EXPORT_SYMBOL_GPL(compat_alloc_user_space);
 
 
