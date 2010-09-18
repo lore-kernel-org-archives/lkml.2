@@ -1,90 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757754Ab0IRTrz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:47:55 -0400
-Received: from kroah.org ([198.145.64.141]:51524 "EHLO coco.kroah.org"
+	id S1755452Ab0IRTBr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:01:47 -0400
+Received: from kroah.org ([198.145.64.141]:51087 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755722Ab0IRTBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:01:53 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:58 2010
-Message-Id: <20100918185958.454635714@clark.site>
+	id S1753847Ab0IRTBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:01:11 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:53 2010
+Message-Id: <20100918185953.235690210@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:58:30 -0700
+Date: Sat, 18 Sep 2010 11:57:29 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Greg KH <greg@kroah.com>, Mike Galbraith <efault@gmx.de>
-Subject: [066/123] sched: Consolidate select_task_rq() callers
+        Mark Lord <mlord@pobox.com>, Jeff Garzik <jgarzik@redhat.com>
+Subject: [005/123] sata_mv: fix broken DSM/TRIM support (v2)
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=sched-consolidate-select_task_rq-callers.patch
+Content-Disposition: inline; filename=sata_mv-fix-broken-dsm-trim-support-v2.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Mark Lord <kernel@teksavvy.com>
 
-commit 970b13bacba14a8cef6f642861947df1d175b0b3 upstream
+commit 44b733809a5aba7f6b15a548d31a56d25bf3851c upstream.
 
-sched: Consolidate select_task_rq() callers
+Fix DSM/TRIM commands in sata_mv (v2).
+These need to be issued using old-school "BM DMA",
+rather than via the EDMA host queue.
 
-Small cleanup.
+Since the chips don't have proper BM DMA status,
+we need to be more careful with setting the ATA_DMA_INTR bit,
+since DSM/TRIM often has a long delay between "DMA complete"
+and "command complete".
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <new-submission>
-[ v2: build fix ]
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Mike Galbraith <efault@gmx.de>
+GEN_I chips don't have BM DMA, so no TRIM for them.
+
+Signed-off-by: Mark Lord <mlord@pobox.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- kernel/sched.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
 
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2333,6 +2333,14 @@ void task_oncpu_function_call(struct tas
- 	preempt_enable();
+---
+ drivers/ata/sata_mv.c |   44 +++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 37 insertions(+), 7 deletions(-)
+
+--- a/drivers/ata/sata_mv.c
++++ b/drivers/ata/sata_mv.c
+@@ -1879,19 +1879,25 @@ static void mv_bmdma_start(struct ata_qu
+  *	LOCKING:
+  *	Inherited from caller.
+  */
+-static void mv_bmdma_stop(struct ata_queued_cmd *qc)
++static void mv_bmdma_stop_ap(struct ata_port *ap)
+ {
+-	struct ata_port *ap = qc->ap;
+ 	void __iomem *port_mmio = mv_ap_base(ap);
+ 	u32 cmd;
+ 
+ 	/* clear start/stop bit */
+ 	cmd = readl(port_mmio + BMDMA_CMD);
+-	cmd &= ~ATA_DMA_START;
+-	writelfl(cmd, port_mmio + BMDMA_CMD);
++	if (cmd & ATA_DMA_START) {
++		cmd &= ~ATA_DMA_START;
++		writelfl(cmd, port_mmio + BMDMA_CMD);
+ 
+-	/* one-PIO-cycle guaranteed wait, per spec, for HDMA1:0 transition */
+-	ata_sff_dma_pause(ap);
++		/* one-PIO-cycle guaranteed wait, per spec, for HDMA1:0 transition */
++		ata_sff_dma_pause(ap);
++	}
++}
++
++static void mv_bmdma_stop(struct ata_queued_cmd *qc)
++{
++	mv_bmdma_stop_ap(qc->ap);
  }
  
-+#ifdef CONFIG_SMP
-+static inline
-+int select_task_rq(struct task_struct *p, int sd_flags, int wake_flags)
-+{
-+	return p->sched_class->select_task_rq(p, sd_flags, wake_flags);
-+}
-+#endif
-+
- /***
-  * try_to_wake_up - wake up a thread
-  * @p: the to-be-woken-up thread
-@@ -2386,7 +2394,7 @@ static int try_to_wake_up(struct task_st
- 	p->state = TASK_WAKING;
- 	task_rq_unlock(rq, &flags);
+ /**
+@@ -1915,8 +1921,21 @@ static u8 mv_bmdma_status(struct ata_por
+ 	reg = readl(port_mmio + BMDMA_STATUS);
+ 	if (reg & ATA_DMA_ACTIVE)
+ 		status = ATA_DMA_ACTIVE;
+-	else
++	else if (reg & ATA_DMA_ERR)
+ 		status = (reg & ATA_DMA_ERR) | ATA_DMA_INTR;
++	else {
++		/*
++		 * Just because DMA_ACTIVE is 0 (DMA completed),
++		 * this does _not_ mean the device is "done".
++		 * So we should not yet be signalling ATA_DMA_INTR
++		 * in some cases.  Eg. DSM/TRIM, and perhaps others.
++		 */
++		mv_bmdma_stop_ap(ap);
++		if (ioread8(ap->ioaddr.altstatus_addr) & ATA_BUSY)
++			status = 0;
++		else
++			status = ATA_DMA_INTR;
++	}
+ 	return status;
+ }
  
--	cpu = p->sched_class->select_task_rq(p, SD_BALANCE_WAKE, wake_flags);
-+	cpu = select_task_rq(p, SD_BALANCE_WAKE, wake_flags);
- 	if (cpu != orig_cpu)
- 		set_task_cpu(p, cpu);
+@@ -1976,6 +1995,9 @@ static void mv_qc_prep(struct ata_queued
  
-@@ -2601,7 +2609,7 @@ void sched_fork(struct task_struct *p, i
- 		p->sched_class = &fair_sched_class;
+ 	switch (tf->protocol) {
+ 	case ATA_PROT_DMA:
++		if (tf->command == ATA_CMD_DSM)
++			return;
++		/* fall-thru */
+ 	case ATA_PROT_NCQ:
+ 		break;	/* continue below */
+ 	case ATA_PROT_PIO:
+@@ -2075,6 +2097,8 @@ static void mv_qc_prep_iie(struct ata_qu
+ 	if ((tf->protocol != ATA_PROT_DMA) &&
+ 	    (tf->protocol != ATA_PROT_NCQ))
+ 		return;
++	if (tf->command == ATA_CMD_DSM)
++		return;  /* use bmdma for this */
  
- #ifdef CONFIG_SMP
--	cpu = p->sched_class->select_task_rq(p, SD_BALANCE_FORK, 0);
-+	cpu = select_task_rq(p, SD_BALANCE_FORK, 0);
- #endif
- 	set_task_cpu(p, cpu);
+ 	/* Fill in Gen IIE command request block */
+ 	if (!(tf->flags & ATA_TFLAG_WRITE))
+@@ -2270,6 +2294,12 @@ static unsigned int mv_qc_issue(struct a
  
-@@ -3170,7 +3178,7 @@ out:
- void sched_exec(void)
- {
- 	int new_cpu, this_cpu = get_cpu();
--	new_cpu = current->sched_class->select_task_rq(current, SD_BALANCE_EXEC, 0);
-+	new_cpu = select_task_rq(current, SD_BALANCE_EXEC, 0);
- 	put_cpu();
- 	if (new_cpu != this_cpu)
- 		sched_migrate_task(current, new_cpu);
+ 	switch (qc->tf.protocol) {
+ 	case ATA_PROT_DMA:
++		if (qc->tf.command == ATA_CMD_DSM) {
++			if (!ap->ops->bmdma_setup)  /* no bmdma on GEN_I */
++				return AC_ERR_OTHER;
++			break;  /* use bmdma for this */
++		}
++		/* fall thru */
+ 	case ATA_PROT_NCQ:
+ 		mv_start_edma(ap, port_mmio, pp, qc->tf.protocol);
+ 		pp->req_idx = (pp->req_idx + 1) & MV_MAX_Q_DEPTH_MASK;
 
 
