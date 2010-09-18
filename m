@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755772Ab0IRStP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 14:49:15 -0400
-Received: from kroah.org ([198.145.64.141]:38983 "EHLO coco.kroah.org"
+	id S1755791Ab0IRStQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 14:49:16 -0400
+Received: from kroah.org ([198.145.64.141]:38920 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755404Ab0IRSsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 14:48:40 -0400
+	id S1753521Ab0IRSse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 14:48:34 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:46:21 2010
-Message-Id: <20100918184621.890709312@clark.site>
+Message-Id: <20100918184621.064344908@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:45:07 -0700
+Date: Sat, 18 Sep 2010 11:44:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Roland McGrath <roland@redhat.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [11/11] x86-64, compat: Retruncate rax after ia32 syscall entry tracing
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [02/11] ath9k_hw: fix parsing of HT40 5 GHz CTLs
 In-Reply-To: <20100918184651.GA14224@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,50 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland McGrath <roland@redhat.com>
+From: Luis R. Rodriguez <lrodriguez@atheros.com>
 
-commit eefdca043e8391dcd719711716492063030b55ac upstream.
+commit 904879748d7439a6dabdc6be9aad983e216b027d upstream.
 
-In commit d4d6715, we reopened an old hole for a 64-bit ptracer touching a
-32-bit tracee in system call entry.  A %rax value set via ptrace at the
-entry tracing stop gets used whole as a 32-bit syscall number, while we
-only check the low 32 bits for validity.
+The 5 GHz CTL indexes were not being read for all hardware
+devices due to the masking out through the CTL_MODE_M mask
+being one bit too short. Without this the calibrated regulatory
+maximum values were not being picked up when devices operate
+on 5 GHz in HT40 mode. The final output power used for Atheros
+devices is the minimum between the calibrated CTL values and
+what CRDA provides.
 
-Fix it by truncating %rax back to 32 bits after syscall_trace_enter,
-in addition to testing the full 64 bits as has already been added.
-
-Reported-by: Ben Hawkes <hawkes@sota.gen.nz>
-Signed-off-by: Roland McGrath <roland@redhat.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/ia32/ia32entry.S |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/net/wireless/ath9k/ath9k.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -50,7 +50,12 @@
- 	/*
- 	 * Reload arg registers from stack in case ptrace changed them.
- 	 * We don't reload %eax because syscall_trace_enter() returned
--	 * the value it wants us to use in the table lookup.
-+	 * the %rax value we should see.  Instead, we just truncate that
-+	 * value to 32 bits again as we did on entry from user mode.
-+	 * If it's a new value set by user_regset during entry tracing,
-+	 * this matches the normal truncation of the user-mode value.
-+	 * If it's -1 to make us punt the syscall, then (u32)-1 is still
-+	 * an appropriately invalid value.
- 	 */
- 	.macro LOAD_ARGS32 offset, _r9=0
- 	.if \_r9
-@@ -60,6 +65,7 @@
- 	movl \offset+48(%rsp),%edx
- 	movl \offset+56(%rsp),%esi
- 	movl \offset+64(%rsp),%edi
-+	movl %eax,%eax			/* zero extension */
- 	.endm
- 	
- 	.macro CFI_STARTPROC32 simple
+--- a/drivers/net/wireless/ath9k/ath9k.h
++++ b/drivers/net/wireless/ath9k/ath9k.h
+@@ -554,7 +554,7 @@ enum ath9k_cipher {
+ 
+ #define SD_NO_CTL               0xE0
+ #define NO_CTL                  0xff
+-#define CTL_MODE_M              7
++#define CTL_MODE_M              0xf
+ #define CTL_11A                 0
+ #define CTL_11B                 1
+ #define CTL_11G                 2
 
 
