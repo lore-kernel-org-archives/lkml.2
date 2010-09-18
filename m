@@ -1,21 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757358Ab0IRTSg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:18:36 -0400
-Received: from kroah.org ([198.145.64.141]:43914 "EHLO coco.kroah.org"
+	id S1757176Ab0IRTQM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:16:12 -0400
+Received: from kroah.org ([198.145.64.141]:43800 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757251Ab0IRTQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:16:27 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:07 2010
-Message-Id: <20100918191307.248377322@clark.site>
+	id S1757155Ab0IRTQK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:16:10 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:06 2010
+Message-Id: <20100918191305.992092794@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:13:34 -0700
+Date: Sat, 18 Sep 2010 12:13:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [116/129] drm/radeon/kms: force legacy pll algo for RV515 LVDS
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Fenghua Yu <fenghua.yu@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Helge Deller <deller@gmx.de>, James Bottomley <jejb@parisc-linux.org>,
+        Kyle McMartin <kyle@mcmartin.ca>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, Ralf Baechle <ralf@linux-mips.org>
+Subject: [101/129] compat: Make compat_alloc_user_space() incorporate the access_ok()
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +36,173 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: H. Peter Anvin <hpa@linux.intel.com>
 
-commit 0d9958b18e10d7426d94cc3dd024920a40db3ee2 upstream.
+commit c41d68a513c71e35a14f66d71782d27a79a81ea6 upstream.
 
-There has been periodic evidence that LVDS, on at least some
-panels, prefers the dividers selected by the legacy pll algo.
-This patch forces the use of the legacy pll algo on RV515
-LVDS panels.  The old behavior (new pll algo) can be selected
-by setting the new_pll module parameter to 1.
+compat_alloc_user_space() expects the caller to independently call
+access_ok() to verify the returned area.  A missing call could
+introduce problems on some architectures.
 
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+This patch incorporates the access_ok() check into
+compat_alloc_user_space() and also adds a sanity check on the length.
+The existing compat_alloc_user_space() implementations are renamed
+arch_compat_alloc_user_space() and are used as part of the
+implementation of the new global function.
+
+This patch assumes NULL will cause __get_user()/__put_user() to either
+fail or access userspace on all architectures.  This should be
+followed by checking the return value of compat_access_user_space()
+for NULL in the callers, at which time the access_ok() in the callers
+can also be removed.
+
+Reported-by: Ben Hawkes <hawkes@sota.gen.nz>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+Acked-by: David S. Miller <davem@davemloft.net>
+Acked-by: Ingo Molnar <mingo@elte.hu>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Tony Luck <tony.luck@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Helge Deller <deller@gmx.de>
+Cc: James Bottomley <jejb@parisc-linux.org>
+Cc: Kyle McMartin <kyle@mcmartin.ca>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/atombios_crtc.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ arch/ia64/include/asm/compat.h    |    2 +-
+ arch/mips/include/asm/compat.h    |    2 +-
+ arch/parisc/include/asm/compat.h  |    2 +-
+ arch/powerpc/include/asm/compat.h |    2 +-
+ arch/s390/include/asm/compat.h    |    2 +-
+ arch/sparc/include/asm/compat.h   |    2 +-
+ arch/x86/include/asm/compat.h     |    2 +-
+ include/linux/compat.h            |    3 +++
+ kernel/compat.c                   |   21 +++++++++++++++++++++
+ 9 files changed, 31 insertions(+), 7 deletions(-)
 
---- a/drivers/gpu/drm/radeon/atombios_crtc.c
-+++ b/drivers/gpu/drm/radeon/atombios_crtc.c
-@@ -527,6 +527,20 @@ static u32 atombios_adjust_pll(struct dr
- 					pll->algo = PLL_ALGO_LEGACY;
- 					pll->flags |= RADEON_PLL_PREFER_CLOSEST_LOWER;
- 				}
-+				/* There is some evidence (often anecdotal) that RV515 LVDS
-+				 * (on some boards at least) prefers the legacy algo.  I'm not
-+				 * sure whether this should handled generically or on a
-+				 * case-by-case quirk basis.  Both algos should work fine in the
-+				 * majority of cases.
-+				 */
-+				if ((radeon_encoder->active_device & (ATOM_DEVICE_LCD_SUPPORT)) &&
-+				    (rdev->family == CHIP_RV515)) {
-+					/* allow the user to overrride just in case */
-+					if (radeon_new_pll == 1)
-+						pll->algo = PLL_ALGO_NEW;
-+					else
-+						pll->algo = PLL_ALGO_LEGACY;
-+				}
- 			} else {
- 				if (encoder->encoder_type != DRM_MODE_ENCODER_DAC)
- 					pll->flags |= RADEON_PLL_NO_ODD_POST_DIV;
+--- a/arch/ia64/include/asm/compat.h
++++ b/arch/ia64/include/asm/compat.h
+@@ -199,7 +199,7 @@ ptr_to_compat(void __user *uptr)
+ }
+ 
+ static __inline__ void __user *
+-compat_alloc_user_space (long len)
++arch_compat_alloc_user_space (long len)
+ {
+ 	struct pt_regs *regs = task_pt_regs(current);
+ 	return (void __user *) (((regs->r12 & 0xffffffff) & -16) - len);
+--- a/arch/mips/include/asm/compat.h
++++ b/arch/mips/include/asm/compat.h
+@@ -145,7 +145,7 @@ static inline compat_uptr_t ptr_to_compa
+ 	return (u32)(unsigned long)uptr;
+ }
+ 
+-static inline void __user *compat_alloc_user_space(long len)
++static inline void __user *arch_compat_alloc_user_space(long len)
+ {
+ 	struct pt_regs *regs = (struct pt_regs *)
+ 		((unsigned long) current_thread_info() + THREAD_SIZE - 32) - 1;
+--- a/arch/parisc/include/asm/compat.h
++++ b/arch/parisc/include/asm/compat.h
+@@ -147,7 +147,7 @@ static inline compat_uptr_t ptr_to_compa
+ 	return (u32)(unsigned long)uptr;
+ }
+ 
+-static __inline__ void __user *compat_alloc_user_space(long len)
++static __inline__ void __user *arch_compat_alloc_user_space(long len)
+ {
+ 	struct pt_regs *regs = &current->thread.regs;
+ 	return (void __user *)regs->gr[30];
+--- a/arch/powerpc/include/asm/compat.h
++++ b/arch/powerpc/include/asm/compat.h
+@@ -134,7 +134,7 @@ static inline compat_uptr_t ptr_to_compa
+ 	return (u32)(unsigned long)uptr;
+ }
+ 
+-static inline void __user *compat_alloc_user_space(long len)
++static inline void __user *arch_compat_alloc_user_space(long len)
+ {
+ 	struct pt_regs *regs = current->thread.regs;
+ 	unsigned long usp = regs->gpr[1];
+--- a/arch/s390/include/asm/compat.h
++++ b/arch/s390/include/asm/compat.h
+@@ -181,7 +181,7 @@ static inline int is_compat_task(void)
+ 
+ #endif
+ 
+-static inline void __user *compat_alloc_user_space(long len)
++static inline void __user *arch_compat_alloc_user_space(long len)
+ {
+ 	unsigned long stack;
+ 
+--- a/arch/sparc/include/asm/compat.h
++++ b/arch/sparc/include/asm/compat.h
+@@ -167,7 +167,7 @@ static inline compat_uptr_t ptr_to_compa
+ 	return (u32)(unsigned long)uptr;
+ }
+ 
+-static inline void __user *compat_alloc_user_space(long len)
++static inline void __user *arch_compat_alloc_user_space(long len)
+ {
+ 	struct pt_regs *regs = current_thread_info()->kregs;
+ 	unsigned long usp = regs->u_regs[UREG_I6];
+--- a/arch/x86/include/asm/compat.h
++++ b/arch/x86/include/asm/compat.h
+@@ -205,7 +205,7 @@ static inline compat_uptr_t ptr_to_compa
+ 	return (u32)(unsigned long)uptr;
+ }
+ 
+-static inline void __user *compat_alloc_user_space(long len)
++static inline void __user *arch_compat_alloc_user_space(long len)
+ {
+ 	struct pt_regs *regs = task_pt_regs(current);
+ 	return (void __user *)regs->sp - len;
+--- a/include/linux/compat.h
++++ b/include/linux/compat.h
+@@ -360,5 +360,8 @@ extern ssize_t compat_rw_copy_check_uvec
+ 		const struct compat_iovec __user *uvector, unsigned long nr_segs,
+ 		unsigned long fast_segs, struct iovec *fast_pointer,
+ 		struct iovec **ret_pointer);
++
++extern void __user *compat_alloc_user_space(unsigned long len);
++
+ #endif /* CONFIG_COMPAT */
+ #endif /* _LINUX_COMPAT_H */
+--- a/kernel/compat.c
++++ b/kernel/compat.c
+@@ -1137,3 +1137,24 @@ compat_sys_sysinfo(struct compat_sysinfo
+ 
+ 	return 0;
+ }
++
++/*
++ * Allocate user-space memory for the duration of a single system call,
++ * in order to marshall parameters inside a compat thunk.
++ */
++void __user *compat_alloc_user_space(unsigned long len)
++{
++	void __user *ptr;
++
++	/* If len would occupy more than half of the entire compat space... */
++	if (unlikely(len > (((compat_uptr_t)~0) >> 1)))
++		return NULL;
++
++	ptr = arch_compat_alloc_user_space(len);
++
++	if (unlikely(!access_ok(VERIFY_WRITE, ptr, len)))
++		return NULL;
++
++	return ptr;
++}
++EXPORT_SYMBOL_GPL(compat_alloc_user_space);
 
 
