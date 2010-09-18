@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757537Ab0IRTjb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:39:31 -0400
-Received: from kroah.org ([198.145.64.141]:43186 "EHLO coco.kroah.org"
+	id S1757453Ab0IRTcu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:32:50 -0400
+Received: from kroah.org ([198.145.64.141]:43377 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756636Ab0IRTOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:14:46 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:12:58 2010
-Message-Id: <20100918191258.211958493@clark.site>
+	id S1756785Ab0IRTPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:15:10 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:01 2010
+Message-Id: <20100918191301.181132573@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:11:49 -0700
+Date: Sat, 18 Sep 2010 12:12:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mark Lord <mlord@pobox.com>, Jeff Garzik <jgarzik@redhat.com>
-Subject: [011/129] sata_mv: fix broken DSM/TRIM support (v2)
+        Dave Ludlow <dave.ludlow@bay.ws>
+Subject: [045/129] usb: serial: mos7840: Add USB IDs to support more B&B USB/RS485 converters.
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,117 +25,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Lord <kernel@teksavvy.com>
+From: Dave Ludlow <dave.ludlow@bay.ws>
 
-commit 44b733809a5aba7f6b15a548d31a56d25bf3851c upstream.
+commit 870408c8291015872a7a0b583673a9e56b3e73f4 upstream.
 
-Fix DSM/TRIM commands in sata_mv (v2).
-These need to be issued using old-school "BM DMA",
-rather than via the EDMA host queue.
+Add the USB IDs needed to support the B&B USOPTL4-4P, USO9ML2-2P, and
+USO9ML2-4P.  This patch expands and corrects a typo in the patch sent
+on 08-31-2010.
 
-Since the chips don't have proper BM DMA status,
-we need to be more careful with setting the ATA_DMA_INTR bit,
-since DSM/TRIM often has a long delay between "DMA complete"
-and "command complete".
-
-GEN_I chips don't have BM DMA, so no TRIM for them.
-
-Signed-off-by: Mark Lord <mlord@pobox.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Dave Ludlow <dave.ludlow@bay.ws>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/sata_mv.c |   44 +++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 37 insertions(+), 7 deletions(-)
+ drivers/usb/serial/mos7840.c |   35 ++++++++++++++++++++++-------------
+ 1 file changed, 22 insertions(+), 13 deletions(-)
 
---- a/drivers/ata/sata_mv.c
-+++ b/drivers/ata/sata_mv.c
-@@ -1898,19 +1898,25 @@ static void mv_bmdma_start(struct ata_qu
-  *	LOCKING:
-  *	Inherited from caller.
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -119,17 +119,20 @@
+  * by making a change here, in moschip_port_id_table, and in
+  * moschip_id_table_combined
   */
--static void mv_bmdma_stop(struct ata_queued_cmd *qc)
-+static void mv_bmdma_stop_ap(struct ata_port *ap)
- {
--	struct ata_port *ap = qc->ap;
- 	void __iomem *port_mmio = mv_ap_base(ap);
- 	u32 cmd;
+-#define USB_VENDOR_ID_BANDB             0x0856
+-#define BANDB_DEVICE_ID_USO9ML2_2	0xAC22
+-#define BANDB_DEVICE_ID_USO9ML2_4	0xAC24
+-#define BANDB_DEVICE_ID_US9ML2_2	0xAC29
+-#define BANDB_DEVICE_ID_US9ML2_4	0xAC30
+-#define BANDB_DEVICE_ID_USPTL4_2	0xAC31
+-#define BANDB_DEVICE_ID_USPTL4_4	0xAC32
+-#define BANDB_DEVICE_ID_USOPTL4_2	0xAC42
+-#define BANDB_DEVICE_ID_USOPTL4_4	0xAC44
+-#define BANDB_DEVICE_ID_USOPTL2_4	0xAC24
+-#define BANDB_DEVICE_ID_USOPTL4_2P      0xBC02
++#define USB_VENDOR_ID_BANDB              0x0856
++#define BANDB_DEVICE_ID_USO9ML2_2        0xAC22
++#define BANDB_DEVICE_ID_USO9ML2_2P       0xBC00
++#define BANDB_DEVICE_ID_USO9ML2_4        0xAC24
++#define BANDB_DEVICE_ID_USO9ML2_4P       0xBC01
++#define BANDB_DEVICE_ID_US9ML2_2         0xAC29
++#define BANDB_DEVICE_ID_US9ML2_4         0xAC30
++#define BANDB_DEVICE_ID_USPTL4_2         0xAC31
++#define BANDB_DEVICE_ID_USPTL4_4         0xAC32
++#define BANDB_DEVICE_ID_USOPTL4_2        0xAC42
++#define BANDB_DEVICE_ID_USOPTL4_2P       0xBC02
++#define BANDB_DEVICE_ID_USOPTL4_4        0xAC44
++#define BANDB_DEVICE_ID_USOPTL4_4P       0xBC03
++#define BANDB_DEVICE_ID_USOPTL2_4        0xAC24
  
- 	/* clear start/stop bit */
- 	cmd = readl(port_mmio + BMDMA_CMD);
--	cmd &= ~ATA_DMA_START;
--	writelfl(cmd, port_mmio + BMDMA_CMD);
-+	if (cmd & ATA_DMA_START) {
-+		cmd &= ~ATA_DMA_START;
-+		writelfl(cmd, port_mmio + BMDMA_CMD);
- 
--	/* one-PIO-cycle guaranteed wait, per spec, for HDMA1:0 transition */
--	ata_sff_dma_pause(ap);
-+		/* one-PIO-cycle guaranteed wait, per spec, for HDMA1:0 transition */
-+		ata_sff_dma_pause(ap);
-+	}
-+}
-+
-+static void mv_bmdma_stop(struct ata_queued_cmd *qc)
-+{
-+	mv_bmdma_stop_ap(qc->ap);
- }
- 
- /**
-@@ -1934,8 +1940,21 @@ static u8 mv_bmdma_status(struct ata_por
- 	reg = readl(port_mmio + BMDMA_STATUS);
- 	if (reg & ATA_DMA_ACTIVE)
- 		status = ATA_DMA_ACTIVE;
--	else
-+	else if (reg & ATA_DMA_ERR)
- 		status = (reg & ATA_DMA_ERR) | ATA_DMA_INTR;
-+	else {
-+		/*
-+		 * Just because DMA_ACTIVE is 0 (DMA completed),
-+		 * this does _not_ mean the device is "done".
-+		 * So we should not yet be signalling ATA_DMA_INTR
-+		 * in some cases.  Eg. DSM/TRIM, and perhaps others.
-+		 */
-+		mv_bmdma_stop_ap(ap);
-+		if (ioread8(ap->ioaddr.altstatus_addr) & ATA_BUSY)
-+			status = 0;
-+		else
-+			status = ATA_DMA_INTR;
-+	}
- 	return status;
- }
- 
-@@ -1995,6 +2014,9 @@ static void mv_qc_prep(struct ata_queued
- 
- 	switch (tf->protocol) {
- 	case ATA_PROT_DMA:
-+		if (tf->command == ATA_CMD_DSM)
-+			return;
-+		/* fall-thru */
- 	case ATA_PROT_NCQ:
- 		break;	/* continue below */
- 	case ATA_PROT_PIO:
-@@ -2094,6 +2116,8 @@ static void mv_qc_prep_iie(struct ata_qu
- 	if ((tf->protocol != ATA_PROT_DMA) &&
- 	    (tf->protocol != ATA_PROT_NCQ))
- 		return;
-+	if (tf->command == ATA_CMD_DSM)
-+		return;  /* use bmdma for this */
- 
- 	/* Fill in Gen IIE command request block */
- 	if (!(tf->flags & ATA_TFLAG_WRITE))
-@@ -2289,6 +2313,12 @@ static unsigned int mv_qc_issue(struct a
- 
- 	switch (qc->tf.protocol) {
- 	case ATA_PROT_DMA:
-+		if (qc->tf.command == ATA_CMD_DSM) {
-+			if (!ap->ops->bmdma_setup)  /* no bmdma on GEN_I */
-+				return AC_ERR_OTHER;
-+			break;  /* use bmdma for this */
-+		}
-+		/* fall thru */
- 	case ATA_PROT_NCQ:
- 		mv_start_edma(ap, port_mmio, pp, qc->tf.protocol);
- 		pp->req_idx = (pp->req_idx + 1) & MV_MAX_Q_DEPTH_MASK;
+ /* This driver also supports
+  * ATEN UC2324 device using Moschip MCS7840
+@@ -185,15 +188,18 @@ static const struct usb_device_id moschi
+ 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7840)},
+ 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7820)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USO9ML2_2)},
++	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USO9ML2_2P)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USO9ML2_4)},
++	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USO9ML2_4P)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_US9ML2_2)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_US9ML2_4)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USPTL4_2)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USPTL4_4)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL4_2)},
++	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL4_2P)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL4_4)},
++	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL4_4P)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL2_4)},
+-	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL2_4P)},
+ 	{USB_DEVICE(USB_VENDOR_ID_ATENINTL, ATENINTL_DEVICE_ID_UC2324)},
+ 	{USB_DEVICE(USB_VENDOR_ID_ATENINTL, ATENINTL_DEVICE_ID_UC2322)},
+ 	{}			/* terminating entry */
+@@ -203,15 +209,18 @@ static const struct usb_device_id moschi
+ 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7840)},
+ 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7820)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USO9ML2_2)},
++	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USO9ML2_2P)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USO9ML2_4)},
++	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USO9ML2_4P)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_US9ML2_2)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_US9ML2_4)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USPTL4_2)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USPTL4_4)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL4_2)},
++	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL4_2P)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL4_4)},
++	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL4_4P)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL2_4)},
+-	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL2_4P)},
+ 	{USB_DEVICE(USB_VENDOR_ID_ATENINTL, ATENINTL_DEVICE_ID_UC2324)},
+ 	{USB_DEVICE(USB_VENDOR_ID_ATENINTL, ATENINTL_DEVICE_ID_UC2322)},
+ 	{}			/* terminating entry */
 
 
