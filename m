@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756819Ab0IRTiR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:38:17 -0400
-Received: from kroah.org ([198.145.64.141]:43224 "EHLO coco.kroah.org"
+	id S1756349Ab0IRTib (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:38:31 -0400
+Received: from kroah.org ([198.145.64.141]:43219 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755982Ab0IRTOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:14:51 -0400
+	id S1755938Ab0IRTOu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:14:50 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:12:58 2010
-Message-Id: <20100918191258.800278893@clark.site>
+Message-Id: <20100918191258.717423689@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:11:56 -0700
+Date: Sat, 18 Sep 2010 12:11:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michael Ellerman <michael@ellerman.id.au>,
         Ben Hutchings <bhutchings@solarflare.com>,
         Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [018/129] PCI: MSI: Restore read_msi_msg_desc(); add get_cached_msi_msg_desc()
+Subject: [017/129] PCI: MSI: Remove unsafe and unnecessary hardware access
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,146 +28,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ben Hutchings <bhutchings@solarflare.com>
 
-commit 30da55242818a8ca08583188ebcbaccd283ad4d9 upstream.
+commit fcd097f31a6ee207cc0c3da9cccd2a86d4334785 upstream.
 
-commit 2ca1af9aa3285c6a5f103ed31ad09f7399fc65d7 "PCI: MSI: Remove
-unsafe and unnecessary hardware access" changed read_msi_msg_desc() to
-return the last MSI message written instead of reading it from the
-device, since it may be called while the device is in a reduced
-power state.
+During suspend on an SMP system, {read,write}_msi_msg_desc() may be
+called to mask and unmask interrupts on a device that is already in a
+reduced power state.  At this point memory-mapped registers including
+MSI-X tables are not accessible, and config space may not be fully
+functional either.
 
-However, the pSeries platform code really does need to read messages
-from the device, since they are initially written by firmware.
-Therefore:
-- Restore the previous behaviour of read_msi_msg_desc()
-- Add new functions get_cached_msi_msg{,_desc}() which return the
-  last MSI message written
-- Use the new functions where appropriate
+While a device is in a reduced power state its interrupts are
+effectively masked and its MSI(-X) state will be restored when it is
+brought back to D0.  Therefore these functions can simply read and
+write msi_desc::msg for devices not in D0.
 
-Acked-by: Michael Ellerman <michael@ellerman.id.au>
+Further, read_msi_msg_desc() should only ever be used to update a
+previously written message, so it can always read msi_desc::msg
+and never needs to touch the hardware.
+
+Tested-by: "Michael Chan" <mchan@broadcom.com>
 Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/ia64/kernel/msi_ia64.c    |    2 -
- arch/ia64/sn/kernel/msi_sn.c   |    2 -
- arch/x86/kernel/apic/io_apic.c |    2 -
- drivers/pci/msi.c              |   47 ++++++++++++++++++++++++++++++++++++-----
- include/linux/msi.h            |    2 +
- 5 files changed, 47 insertions(+), 8 deletions(-)
+ drivers/pci/msi.c |   36 ++++++++++++------------------------
+ 1 file changed, 12 insertions(+), 24 deletions(-)
 
---- a/arch/ia64/kernel/msi_ia64.c
-+++ b/arch/ia64/kernel/msi_ia64.c
-@@ -25,7 +25,7 @@ static int ia64_set_msi_irq_affinity(uns
- 	if (irq_prepare_move(irq, cpu))
- 		return -1;
- 
--	read_msi_msg(irq, &msg);
-+	get_cached_msi_msg(irq, &msg);
- 
- 	addr = msg.address_lo;
- 	addr &= MSI_ADDR_DEST_ID_MASK;
---- a/arch/ia64/sn/kernel/msi_sn.c
-+++ b/arch/ia64/sn/kernel/msi_sn.c
-@@ -175,7 +175,7 @@ static int sn_set_msi_irq_affinity(unsig
- 	 * Release XIO resources for the old MSI PCI address
- 	 */
- 
--	read_msi_msg(irq, &msg);
-+	get_cached_msi_msg(irq, &msg);
-         sn_pdev = (struct pcidev_info *)sn_irq_info->irq_pciioinfo;
- 	pdev = sn_pdev->pdi_linux_pcidev;
- 	provider = SN_PCIDEV_BUSPROVIDER(pdev);
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3399,7 +3399,7 @@ static int set_msi_irq_affinity(unsigned
- 
- 	cfg = desc->chip_data;
- 
--	read_msi_msg_desc(desc, &msg);
-+	get_cached_msi_msg_desc(desc, &msg);
- 
- 	msg.data &= ~MSI_DATA_VECTOR_MASK;
- 	msg.data |= MSI_DATA_VECTOR(cfg->vector);
 --- a/drivers/pci/msi.c
 +++ b/drivers/pci/msi.c
-@@ -197,9 +197,46 @@ void read_msi_msg_desc(struct irq_desc *
+@@ -196,30 +196,15 @@ void unmask_msi_irq(unsigned int irq)
+ void read_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg)
  {
  	struct msi_desc *entry = get_irq_desc_msi(desc);
+-	if (entry->msi_attrib.is_msix) {
+-		void __iomem *base = entry->mask_base +
+-			entry->msi_attrib.entry_nr * PCI_MSIX_ENTRY_SIZE;
  
--	/* We do not touch the hardware (which may not even be
--	 * accessible at the moment) but return the last message
--	 * written.  Assert that this is valid, assuming that
-+	BUG_ON(entry->dev->current_state != PCI_D0);
+-		msg->address_lo = readl(base + PCI_MSIX_ENTRY_LOWER_ADDR);
+-		msg->address_hi = readl(base + PCI_MSIX_ENTRY_UPPER_ADDR);
+-		msg->data = readl(base + PCI_MSIX_ENTRY_DATA);
+-	} else {
+-		struct pci_dev *dev = entry->dev;
+-		int pos = entry->msi_attrib.pos;
+-		u16 data;
+-
+-		pci_read_config_dword(dev, msi_lower_address_reg(pos),
+-					&msg->address_lo);
+-		if (entry->msi_attrib.is_64) {
+-			pci_read_config_dword(dev, msi_upper_address_reg(pos),
+-						&msg->address_hi);
+-			pci_read_config_word(dev, msi_data_reg(pos, 1), &data);
+-		} else {
+-			msg->address_hi = 0;
+-			pci_read_config_word(dev, msi_data_reg(pos, 0), &data);
+-		}
+-		msg->data = data;
+-	}
++	/* We do not touch the hardware (which may not even be
++	 * accessible at the moment) but return the last message
++	 * written.  Assert that this is valid, assuming that
++	 * valid messages are not all-zeroes. */
++	BUG_ON(!(entry->msg.address_hi | entry->msg.address_lo |
++		 entry->msg.data));
 +
-+	if (entry->msi_attrib.is_msix) {
-+		void __iomem *base = entry->mask_base +
-+			entry->msi_attrib.entry_nr * PCI_MSIX_ENTRY_SIZE;
-+
-+		msg->address_lo = readl(base + PCI_MSIX_ENTRY_LOWER_ADDR);
-+		msg->address_hi = readl(base + PCI_MSIX_ENTRY_UPPER_ADDR);
-+		msg->data = readl(base + PCI_MSIX_ENTRY_DATA);
-+	} else {
-+		struct pci_dev *dev = entry->dev;
-+		int pos = entry->msi_attrib.pos;
-+		u16 data;
-+
-+		pci_read_config_dword(dev, msi_lower_address_reg(pos),
-+					&msg->address_lo);
-+		if (entry->msi_attrib.is_64) {
-+			pci_read_config_dword(dev, msi_upper_address_reg(pos),
-+						&msg->address_hi);
-+			pci_read_config_word(dev, msi_data_reg(pos, 1), &data);
-+		} else {
-+			msg->address_hi = 0;
-+			pci_read_config_word(dev, msi_data_reg(pos, 0), &data);
-+		}
-+		msg->data = data;
-+	}
-+}
-+
-+void read_msi_msg(unsigned int irq, struct msi_msg *msg)
-+{
-+	struct irq_desc *desc = irq_to_desc(irq);
-+
-+	read_msi_msg_desc(desc, msg);
-+}
-+
-+void get_cached_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg)
-+{
-+	struct msi_desc *entry = get_irq_desc_msi(desc);
-+
-+	/* Assert that the cache is valid, assuming that
- 	 * valid messages are not all-zeroes. */
- 	BUG_ON(!(entry->msg.address_hi | entry->msg.address_lo |
- 		 entry->msg.data));
-@@ -207,11 +244,11 @@ void read_msi_msg_desc(struct irq_desc *
- 	*msg = entry->msg;
++	*msg = entry->msg;
  }
  
--void read_msi_msg(unsigned int irq, struct msi_msg *msg)
-+void get_cached_msi_msg(unsigned int irq, struct msi_msg *msg)
- {
- 	struct irq_desc *desc = irq_to_desc(irq);
- 
--	read_msi_msg_desc(desc, msg);
-+	get_cached_msi_msg_desc(desc, msg);
- }
- 
+ void read_msi_msg(unsigned int irq, struct msi_msg *msg)
+@@ -232,7 +217,10 @@ void read_msi_msg(unsigned int irq, stru
  void write_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg)
---- a/include/linux/msi.h
-+++ b/include/linux/msi.h
-@@ -14,8 +14,10 @@ struct irq_desc;
- extern void mask_msi_irq(unsigned int irq);
- extern void unmask_msi_irq(unsigned int irq);
- extern void read_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg);
-+extern void get_cached_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg);
- extern void write_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg);
- extern void read_msi_msg(unsigned int irq, struct msi_msg *msg);
-+extern void get_cached_msi_msg(unsigned int irq, struct msi_msg *msg);
- extern void write_msi_msg(unsigned int irq, struct msi_msg *msg);
- 
- struct msi_desc {
+ {
+ 	struct msi_desc *entry = get_irq_desc_msi(desc);
+-	if (entry->msi_attrib.is_msix) {
++
++	if (entry->dev->current_state != PCI_D0) {
++		/* Don't touch the hardware now */
++	} else if (entry->msi_attrib.is_msix) {
+ 		void __iomem *base;
+ 		base = entry->mask_base +
+ 			entry->msi_attrib.entry_nr * PCI_MSIX_ENTRY_SIZE;
 
 
