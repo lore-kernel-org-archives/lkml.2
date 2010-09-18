@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497Ab0IRSsl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 14:48:41 -0400
-Received: from kroah.org ([198.145.64.141]:38935 "EHLO coco.kroah.org"
+	id S1755686Ab0IRStH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 14:49:07 -0400
+Received: from kroah.org ([198.145.64.141]:38944 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752965Ab0IRSsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755224Ab0IRSsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 18 Sep 2010 14:48:36 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:46:21 2010
-Message-Id: <20100918184621.234928485@clark.site>
+Message-Id: <20100918184621.325504180@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:45:00 -0700
+Date: Sat, 18 Sep 2010 11:45:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <error27@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [04/11] irda: off by one
+        Gary King <gking@nvidia.com>, Tejun Heo <tj@kernel.org>,
+        Russell King <rmk@arm.linux.org.uk>, Jens Axboe <axboe@kernel.dk>
+Subject: [05/11] bounce: call flush_dcache_page() after bounce_copy_vec()
 In-Reply-To: <20100918184651.GA14224@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,33 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <error27@gmail.com>
+From: Gary King <gking@nvidia.com>
 
-commit cf9b94f88bdbe8a02015fc30d7c232b2d262d4ad upstream.
+commit ac8456d6f9a3011c824176bd6084d39e5f70a382 upstream.
 
-This is an off by one.  We would go past the end when we NUL terminate
-the "value" string at end of the function.  The "value" buffer is
-allocated in irlan_client_parse_response() or
-irlan_provider_parse_command().
+I have been seeing problems on Tegra 2 (ARMv7 SMP) systems with HIGHMEM
+enabled on 2.6.35 (plus some patches targetted at 2.6.36 to perform cache
+maintenance lazily), and the root cause appears to be that the mm bouncing
+code is calling flush_dcache_page before it copies the bounce buffer into
+the bio.
 
-CC: stable@kernel.org
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The bounced page needs to be flushed after data is copied into it, to
+ensure that architecture implementations can synchronize instruction and
+data caches if necessary.
+
+Signed-off-by: Gary King <gking@nvidia.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Russell King <rmk@arm.linux.org.uk>
+Acked-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/irda/irlan/irlan_common.c |    2 +-
+ mm/bounce.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/irda/irlan/irlan_common.c
-+++ b/net/irda/irlan/irlan_common.c
-@@ -1100,7 +1100,7 @@ int irlan_extract_param(__u8 *buf, char
- 	memcpy(&val_len, buf+n, 2); /* To avoid alignment problems */
- 	le16_to_cpus(&val_len); n+=2;
+--- a/mm/bounce.c
++++ b/mm/bounce.c
+@@ -114,8 +114,8 @@ static void copy_to_high_bio_irq(struct
+ 		 */
+ 		vfrom = page_address(fromvec->bv_page) + tovec->bv_offset;
  
--	if (val_len > 1016) {
-+	if (val_len >= 1016) {
- 		IRDA_DEBUG(2, "%s(), parameter length to long\n", __func__ );
- 		return -RSP_INVALID_COMMAND_FORMAT;
+-		flush_dcache_page(tovec->bv_page);
+ 		bounce_copy_vec(tovec, vfrom);
++		flush_dcache_page(tovec->bv_page);
  	}
+ }
+ 
 
 
