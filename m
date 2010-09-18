@@ -1,107 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757664Ab0IRTo6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:44:58 -0400
-Received: from kroah.org ([198.145.64.141]:51610 "EHLO coco.kroah.org"
+	id S1755692Ab0IRTBw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:01:52 -0400
+Received: from kroah.org ([198.145.64.141]:51144 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754533Ab0IRTCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:02:00 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:59 2010
-Message-Id: <20100918185959.319261336@clark.site>
+	id S1754423Ab0IRTBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:01:17 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:53 2010
+Message-Id: <20100918185953.922961386@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:58:40 -0700
+Date: Sat, 18 Sep 2010 11:57:37 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Greg KH <greg@kroah.com>, Xiaotian Feng <dfeng@redhat.com>,
-        Mike Galbraith <efault@gmx.de>
-Subject: [076/123] sched: Fix set_cpu_active() in cpu_down()
+        Hank Janssen <hjanssen@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: [013/123] staging: hv: Fixed the value of the 64bit-hole inside ring buffer
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=sched-fix-set_cpu_active-in-cpu_down.patch
+Content-Disposition: inline; filename=staging-hv-fixed-the-value-of-the-64bit-hole-inside-ring-buffer.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiaotian Feng <dfeng@redhat.com>
+From: Haiyang Zhang <haiyangz@microsoft.com>
 
-commit 9ee349ad6d326df3633d43f54202427295999c47 upstream
+commit e5fa721d1c2a54261a37eb59686e18dee34b6af6 upstream.
 
-Sachin found cpu hotplug test failures on powerpc, which made
-the kernel hang on his POWER box.
+Fixed the value of the 64bit-hole inside ring buffer, this
+caused a problem on Hyper-V when running checked Windows builds.
 
-The problem is that we fail to re-activate a cpu when a
-hot-unplug fails. Fix this by moving the de-activation into
-_cpu_down after doing the initial checks.
+Checked builds of Windows are used internally and given to external
+system integrators at times. They are builds that for example that all
+elements in a structure follow the definition of that Structure. The bug
+this fixed was for a field that we did not fill in at all (Because we do
+Not use it on the Linux side), and the checked build of windows gives
+errors on it internally to the Windows logs.
 
-Remove the synchronize_sched() calls and rely on those implied
-by rebuilding the sched domains using the new mask.
+This fixes that error.
 
-Reported-by: Sachin Sant <sachinp@in.ibm.com>
-Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
-Tested-by: Sachin Sant <sachinp@in.ibm.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Mike Galbraith <efault@gmx.de>
-LKML-Reference: <20091216170517.500272612@chello.nl>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- kernel/cpu.c |   24 +++---------------------
- 1 file changed, 3 insertions(+), 21 deletions(-)
 
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -209,6 +209,7 @@ static int __ref _cpu_down(unsigned int
- 		return -ENOMEM;
+---
+ drivers/staging/hv/RingBuffer.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/staging/hv/RingBuffer.c
++++ b/drivers/staging/hv/RingBuffer.c
+@@ -192,7 +192,7 @@ Description:
+ static inline u64
+ GetRingBufferIndices(RING_BUFFER_INFO* RingInfo)
+ {
+-	return ((u64)RingInfo->RingBuffer->WriteIndex << 32) || RingInfo->RingBuffer->ReadIndex;
++	return (u64)RingInfo->RingBuffer->WriteIndex << 32;
+ }
  
- 	cpu_hotplug_begin();
-+	set_cpu_active(cpu, false);
- 	err = __raw_notifier_call_chain(&cpu_chain, CPU_DOWN_PREPARE | mod,
- 					hcpu, -1, &nr_calls);
- 	if (err == NOTIFY_BAD) {
-@@ -280,18 +281,6 @@ int __ref cpu_down(unsigned int cpu)
- 		goto out;
- 	}
  
--	set_cpu_active(cpu, false);
--
--	/*
--	 * Make sure the all cpus did the reschedule and are not
--	 * using stale version of the cpu_active_mask.
--	 * This is not strictly necessary becuase stop_machine()
--	 * that we run down the line already provides the required
--	 * synchronization. But it's really a side effect and we do not
--	 * want to depend on the innards of the stop_machine here.
--	 */
--	synchronize_sched();
--
- 	err = _cpu_down(cpu, 0);
- 
- out:
-@@ -382,19 +371,12 @@ int disable_nonboot_cpus(void)
- 		return error;
- 	cpu_maps_update_begin();
- 	first_cpu = cpumask_first(cpu_online_mask);
--	/* We take down all of the non-boot CPUs in one shot to avoid races
-+	/*
-+	 * We take down all of the non-boot CPUs in one shot to avoid races
- 	 * with the userspace trying to use the CPU hotplug at the same time
- 	 */
- 	cpumask_clear(frozen_cpus);
- 
--	for_each_online_cpu(cpu) {
--		if (cpu == first_cpu)
--			continue;
--		set_cpu_active(cpu, false);
--	}
--
--	synchronize_sched();
--
- 	printk("Disabling non-boot CPUs ...\n");
- 	for_each_online_cpu(cpu) {
- 		if (cpu == first_cpu)
 
 
