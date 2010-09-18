@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757839Ab0IRTtw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:49:52 -0400
-Received: from kroah.org ([198.145.64.141]:51463 "EHLO coco.kroah.org"
+	id S1755688Ab0IRTuh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:50:37 -0400
+Received: from kroah.org ([198.145.64.141]:51450 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754165Ab0IRTBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:01:49 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:58 2010
-Message-Id: <20100918185957.944265868@clark.site>
+	id S1753847Ab0IRTBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:01:47 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:57 2010
+Message-Id: <20100918185957.781360208@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:58:24 -0700
+Date: Sat, 18 Sep 2010 11:58:22 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Nico Schottelius <nico-linux-20100709@schottelius.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, Florian Pritz <flo@xssn.at>,
-        Len Brown <lenb@kernel.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [060/123] x86, tsc: Fix a preemption leak in restore_sched_clock_state()
+        "John W. Linville" <linville@tuxdriver.com>,
+        Bob Copeland <me@bobcopeland.com>
+Subject: [058/123] ath5k: check return value of ieee80211_get_tx_rate
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=x86-tsc-fix-a-preemption-leak-in-restore_sched_clock_state.patch
+Content-Disposition: inline; filename=ath5k-check-return-value-of-ieee80211_get_tx_rate.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: John W. Linville <linville@tuxdriver.com>
 
-commit 55496c896b8a695140045099d4e0175cf09d4eae upstream.
+commit d8e1ba76d619dbc0be8fbeee4e6c683b5c812d3a upstream.
 
-Doh, a real life genuine preemption leak..
+This avoids a NULL pointer dereference as reported here:
 
-This caused a suspend failure.
+	https://bugzilla.redhat.com/show_bug.cgi?id=625889
 
-Reported-bisected-and-tested-by-the-invaluable: Jeff Chua <jeff.chua.linux@gmail.com>
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Nico Schottelius <nico-linux-20100709@schottelius.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Florian Pritz <flo@xssn.at>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Len Brown <lenb@kernel.org>
-sleep states
-LKML-Reference: <1284150773.402.122.camel@laptop>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+When the WARN condition is hit in ieee80211_get_tx_rate, it will return
+NULL.  So, we need to check the return value and avoid dereferencing it
+in that case.
+
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Acked-by: Bob Copeland <me@bobcopeland.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/tsc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/ath/ath5k/base.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -655,7 +655,7 @@ void restore_sched_clock_state(void)
+--- a/drivers/net/wireless/ath/ath5k/base.c
++++ b/drivers/net/wireless/ath/ath5k/base.c
+@@ -1288,6 +1288,10 @@ ath5k_txbuf_setup(struct ath5k_softc *sc
+ 			PCI_DMA_TODEVICE);
  
- 	local_irq_save(flags);
+ 	rate = ieee80211_get_tx_rate(sc->hw, info);
++	if (!rate) {
++		ret = -EINVAL;
++		goto err_unmap;
++	}
  
--	get_cpu_var(cyc2ns_offset) = 0;
-+	__get_cpu_var(cyc2ns_offset) = 0;
- 	offset = cyc2ns_suspend - sched_clock();
- 
- 	for_each_possible_cpu(cpu)
+ 	if (info->flags & IEEE80211_TX_CTL_NO_ACK)
+ 		flags |= AR5K_TXDESC_NOACK;
 
 
