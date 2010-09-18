@@ -1,123 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753579Ab0IRSbS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 14:31:18 -0400
-Received: from relay01.mx.bawue.net ([193.7.176.67]:58190 "EHLO
-	relay01.mx.bawue.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752280Ab0IRSbR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 14:31:17 -0400
-From: Nils Radtke <lkml@Think-Future.com>
-To: gregkh@suse.de
-Cc: kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Staging: wlan-ng: p80211netdev.c cleanup
-Date: Sat, 18 Sep 2010 20:30:52 +0200
-Message-Id: <1284834652-26171-1-git-send-email-lkml@Think-Future.com>
-X-Mailer: git-send-email 1.7.1
-X-Bkp: p2mi
+	id S1754932Ab0IRSmt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 14:42:49 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:43002 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752965Ab0IRSms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 14:42:48 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Nishanth Menon <nm@ti.com>,
+        "linux-pm" <linux-pm@lists.linux-foundation.org>,
+        "linux-omap" <linux-omap@vger.kernel.org>,
+        Paul Walmsley <paul@pwsan.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>
+Subject: Re: [PATCH] opp: introduce library for device-specific OPPs
+Date: Sat, 18 Sep 2010 20:41:41 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-arm" <linux-arm-kernel@lists.infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+References: <[PATCH 1/4] OMAP: introduce OPP layer for device-specific OPPs> <201009180107.51664.rjw@sisk.pl> <4C93FAD1.80108@ti.com>
+In-Reply-To: <4C93FAD1.80108@ti.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009182041.41675.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Effected preliminary cleanup lead by the idea of kerneljanitor.org .
-As recommended I'm asking for approval of the location of cleanup
-and the manner it happened to know I'm heading in the right
-direction.
+[Trimming the CC list.]
 
-Compiles. Not tested.
+On Saturday, September 18, 2010, Nishanth Menon wrote:
+> Rafael J. Wysocki had written, on 09/17/2010 06:07 PM, the following:
+...
+> > 
+> > Apart from this, it might be a good idea to help callers a bit and actually
+> > introduce some sort of locking into the framework.
+> in OMAP implementation we have need to use these apis from irq_locked 
+> contexts as well..  lock implementation will prevent thier necessary 
+> usage.
 
-Signed-off-by: Nils Radtke <lkml@Think-Future.com>
----
- drivers/staging/wlan-ng/p80211netdev.c |   50 +++++++++++++++++++-------------
- 1 files changed, 30 insertions(+), 20 deletions(-)
+Why so?  You can use spin_lock_irqsave/spin_unclock_irqrestore  to
+avoid that.
 
-diff --git a/drivers/staging/wlan-ng/p80211netdev.c b/drivers/staging/wlan-ng/p80211netdev.c
-index aa1792c..8104e11 100644
---- a/drivers/staging/wlan-ng/p80211netdev.c
-+++ b/drivers/staging/wlan-ng/p80211netdev.c
-@@ -176,25 +176,30 @@ static struct net_device_stats *p80211knetdev_get_stats(netdevice_t * netdev)
- ----------------------------------------------------------------*/
- static int p80211knetdev_open(netdevice_t *netdev)
- {
--	int result = 0;		/* success */
-+	int ret = 0;
- 	wlandevice_t *wlandev = netdev->ml_priv;
- 
- 	/* Check to make sure the MSD is running */
--	if (wlandev->msdstate != WLAN_MSD_RUNNING)
--		return -ENODEV;
-+	if (wlandev->msdstate != WLAN_MSD_RUNNING) {
-+		ret = -ENODEV;
-+		goto end;
-+	}
- 
- 	/* Tell the MSD to open */
--	if (wlandev->open != NULL) {
--		result = wlandev->open(wlandev);
--		if (result == 0) {
--			netif_start_queue(wlandev->netdev);
--			wlandev->state = WLAN_DEVICE_OPEN;
--		}
--	} else {
--		result = -EAGAIN;
-+	if (wlandev->open == NULL) {
-+		printk(KERN_ERR "Sorry, got wlandev->open == NULL.\n");
-+		ret = -EAGAIN;
-+		goto end;
- 	}
- 
--	return result;
-+	ret = wlandev->open(wlandev);
-+	if (ret) {
-+		netif_start_queue(wlandev->netdev);
-+		wlandev->state = WLAN_DEVICE_OPEN;
-+	}
-+
-+end:
-+	return ret;
- }
- 
- /*----------------------------------------------------------------
-@@ -211,16 +216,23 @@ static int p80211knetdev_open(netdevice_t *netdev)
- ----------------------------------------------------------------*/
- static int p80211knetdev_stop(netdevice_t *netdev)
- {
--	int result = 0;
-+	int ret = -EFAULT;
- 	wlandevice_t *wlandev = netdev->ml_priv;
- 
--	if (wlandev->close != NULL)
--		result = wlandev->close(wlandev);
-+	if (wlandev->close == NULL) {
-+		printk(KERN_ERR "Sorry, got wlandev->close == NULL.\n");
-+		ret = -EFAULT; /* FIXME: nr: correct return code? */
-+		goto end;
-+	}
- 
--	netif_stop_queue(wlandev->netdev);
--	wlandev->state = WLAN_DEVICE_CLOSED;
-+	ret = wlandev->close(wlandev);
-+	if (ret) {
-+		netif_stop_queue(wlandev->netdev);
-+		wlandev->state = WLAN_DEVICE_CLOSED;
-+	}
- 
--	return result;
-+end:
-+	return ret;
- }
- 
- /*----------------------------------------------------------------
-@@ -242,8 +254,6 @@ void p80211netdev_rx(wlandevice_t *wlandev, struct sk_buff *skb)
- 	skb_queue_tail(&wlandev->nsd_rxq, skb);
- 
- 	tasklet_schedule(&wlandev->rx_bh);
--
--	return;
- }
- 
- /*----------------------------------------------------------------
--- 
-1.7.1
+> instead we have implemented lock mechanisms in higher layers and 
+> ensured that the opp table does not change once created - the rest of 
+> them are query functions - the risk is on opp_enable/disable.
 
+OK, but this way you practically make the users of the framework duplicate
+some code for the locking purposes.  This is kind of suboptimal, and error
+prone too.
+
+> >> In terms of the lifetime rules on the nodes in the list:
+> >> The list is expected to be maintained once created, entries are expected 
+> >> to be added optimally and not expected to be destroyed, the choice of 
+> >> list implementation was for reducing the complexity of the code itself 
+> >> and not yet meant as a mechanism to dynamically add and delete nodes on 
+> >> the fly.. Essentially, it was intended for the SOC framework to ensure 
+> >> it plugs in the OPP entries optimally and not create a humongous list of 
+> >> all possible OPPs for all families of the vendor SOCs - even though it 
+> >> is possible to use the OPP layer so - it just wont be smart to do so 
+> >> considering list scan latencies on hot paths such as cpufreq transitions 
+> >> or idle transitions.
+> > 
+> > If the list nodes are not supposed to be added and removed dynamically,
+> > it probably would make sense to create data structures containing
+> > the "available" OPPs only, once they are known, and simply free the object
+> > representing the other ones.
+> I covered the usage in my reply here: 
+> http://marc.info/?l=linux-arm-kernel&m=128476570300466&w=2
+> but to repeat, the list is dynamic during initialization but remains 
+> static after initialization based on SOC framework implementation - this 
+> is best implemented with a list (we had started with an original array 
+> implementation which evolved to the current list implementation 
+> http://marc.info/?l=linux-omap&m=125912217718770&w=2)
+
+Well, my point is, since the _final_ set of OPPs doesn't really change, there's
+no need to use a list for storing it in principle.
+
+Your current algorithm seems to be:
+(1) Create a list of all _possible_ OPPs.
+(2) Mark the ones that can actually be used on the given hardware as
+    "available".
+(3) Whenever we need to find an OPP to use, browse the entire list.
+
+This isn't optimal, because the OPPs that are not marked as "available" in (2)
+will never be used, although they _will_ be inspected while browsing the list.
+So, I think a better algorithm would be:
+(1) Create a list of all possible OPPs.
+(2) Drop the nonavailable OPPs from the list.
+(3) Whenever we need to find an OPP to use, browse the entire list.
+
+But then, it may be better to simply move the list we get in (2) into an
+array, because the browsing is going to require fewer memory accesses in
+that case (also, an array would use less memory than the list).  So, perhaps,
+it's better to change the algorithm even further:
+(1) Create a list of all possible OPPs.
+(2) Drop the nonavailable OPPs from the list.
+(3) Move the list we got in (2) into a sorted array.
+(4) Whenever we need to find an OPP to use, browse the array
+     (perhaps using binary search).
+
+Thanks,
+Rafael
