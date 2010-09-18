@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190Ab0IRTC1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:02:27 -0400
-Received: from kroah.org ([198.145.64.141]:51243 "EHLO coco.kroah.org"
+	id S1756214Ab0IRTCa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:02:30 -0400
+Received: from kroah.org ([198.145.64.141]:51250 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754792Ab0IRTBa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754804Ab0IRTBa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 18 Sep 2010 15:01:30 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:55 2010
-Message-Id: <20100918185955.568489780@clark.site>
+Message-Id: <20100918185955.653148655@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:57:56 -0700
+Date: Sat, 18 Sep 2010 11:57:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Philippe Corbes <philippe.corbes@gmail.com>
-Subject: [032/123] USB: cdc-acm: Add pseudo modem without AT command capabilities
+        Toby Gray <toby.gray@realvnc.com>, Oliver Neukum <oliver@neukum.name>
+Subject: [033/123] USB: cdc-acm: Fixing crash when ACM probing interfaces with no endpoint descriptors.
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=usb-cdc-acm-add-pseudo-modem-without-at-command-capabilities.patch
+Content-Disposition: inline; filename=usb-cdc-acm-fixing-crash-when-acm-probing-interfaces-with-no-endpoint-descriptors.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Philippe Corbes <philippe.corbes@gmail.com>
+From: Toby Gray <toby.gray@realvnc.com>
 
-commit 5b239f0aebd4dd6f85b13decf5e18e86e35d57f0 upstream.
+commit 577045c0a76e34294f902a7d5d60e90b04d094d0 upstream.
 
-cdc-acm.c : Manage pseudo-modem without AT commands capabilities
-  Enable to drive electronic simple gadgets based on microcontrolers.
-  The Interface descriptor is like this:
-    bInterfaceClass         2 Communications
-    bInterfaceSubClass      2 Abstract (modem)
-    bInterfaceProtocol      0 None
+Certain USB devices, such as the Nokia X6 mobile phone, don't expose any
+endpoint descriptors on some of their interfaces. If the ACM driver is forced
+to probe all interfaces on a device the a NULL pointer dereference will occur
+when the ACM driver attempts to use the endpoint of the alternative settings.
+One way to get the ACM driver to probe all the interfaces is by using the
+/sys/bus/usb/drivers/cdc_acm/new_id interface.
 
-Signed-off-by: Philippe Corbes <philippe.corbes@gmail.com>
+This patch checks that the endpoint pointer for the current alternate settings
+is non-NULL before using it.
+
+Signed-off-by: Toby Gray <toby.gray@realvnc.com>
+Cc: Oliver Neukum <oliver@neukum.name>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/class/cdc-acm.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/class/cdc-acm.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 --- a/drivers/usb/class/cdc-acm.c
 +++ b/drivers/usb/class/cdc-acm.c
-@@ -1599,6 +1599,10 @@ static struct usb_device_id acm_ids[] =
+@@ -971,7 +971,8 @@ static int acm_probe(struct usb_interfac
+ 	}
  
- 	/* NOTE: non-Nokia COMM/ACM/0xff is likely MSFT RNDIS... NOT a modem! */
- 
-+	/* control interfaces without any protocol set */
-+	{ USB_INTERFACE_INFO(USB_CLASS_COMM, USB_CDC_SUBCLASS_ACM,
-+		USB_CDC_PROTO_NONE) },
-+
- 	/* control interfaces with various AT-command sets */
- 	{ USB_INTERFACE_INFO(USB_CLASS_COMM, USB_CDC_SUBCLASS_ACM,
- 		USB_CDC_ACM_PROTO_AT_V25TER) },
+ 	if (!buflen) {
+-		if (intf->cur_altsetting->endpoint->extralen &&
++		if (intf->cur_altsetting->endpoint &&
++				intf->cur_altsetting->endpoint->extralen &&
+ 				intf->cur_altsetting->endpoint->extra) {
+ 			dev_dbg(&intf->dev,
+ 				"Seeking extra descriptors on endpoint\n");
 
 
