@@ -1,165 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756091Ab0IRTCT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:02:19 -0400
-Received: from kroah.org ([198.145.64.141]:51219 "EHLO coco.kroah.org"
+	id S1756113Ab0IRTCU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:02:20 -0400
+Received: from kroah.org ([198.145.64.141]:51229 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754742Ab0IRTB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:01:27 -0400
+	id S1754766Ab0IRTB2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:01:28 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:55 2010
-Message-Id: <20100918185955.225571273@clark.site>
+Message-Id: <20100918185955.389552034@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:57:52 -0700
+Date: Sat, 18 Sep 2010 11:57:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Adrian Taylor <aat@realvnc.com>, Oliver Neukum <oliver@neukum.org>
-Subject: [028/123] USB: Exposing second ACM channel as tty for Nokia S60 phones.
+        Przemo Firszt <przemo@firszt.eu>
+Subject: [030/123] USB: Expose vendor-specific ACM channel on Nokia 5230
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=usb-exposing-second-acm-channel-as-tty-for-nokia-s60-phones.patch
+Content-Disposition: inline; filename=usb-expose-vendor-specific-acm-channel-on-nokia-5230.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Taylor <aat@realvnc.com>
+From: Przemo Firszt <przemo@firszt.eu>
 
-commit c1479a92cf0a7792298d364e44a781550621cb58 upstream.
+commit 83a4eae9aeed4a69e89e323a105e653ae06e7c1f upstream.
 
-Nokia S60 phones expose two ACM channels. The first is a modem and is picked
-up by the standard AT-command interface information in the CDC-ACM driver. The
-second is marked as having a vendor-specific protocol. Normally, we don't
-expose those as ttys. (On some other devices, they may be claimed by the
-rndis_host driver and used as a network interface).
+Nokia S60 phones expose two ACM channels. The first is
+a modem, the second is 'vendor-specific' but is treated
+as a serial device at the S60 end, so we want to expose
+it on Linux too.
 
-But on S60 this second ACM channel is the way that third-party S60 application
-developers are expected to communicate over USB. It acts as a serial device
-at the S60 end, and so it should on Linux too.
-
-The list of devices is largely derived from:
-http://wiki.forum.nokia.com/index.php/S60_Platform_and_device_identification_codes
-http://wiki.forum.nokia.com/index.php/Nokia_USB_Product_IDs
-and includes only the S60 3rd Edition+ devices documented there.
-
-There are many devices for which the USB device ID is not documented,
-including:
-    Nokia 6290
-    Nokia E63
-    Nokia 5630 XpressMusic
-    Nokia 5730 XpressMusic
-    Nokia 6710 Navigator
-    Nokia 6720 classic
-    Nokia 6730 Classic
-    Nokia 6760 slide
-    Nokia 6790 slide
-    Nokia 6790 Surge
-    Nokia E52
-    Nokia E55
-    Nokia E71x (AT&T)
-    Nokia E72
-    Nokia E75
-    Nokia E75 US+LTA variant
-    Nokia N79
-    Nokia N86 8MP
-    Nokia 5230 (RM-588)
-    Nokia 5230 (RM-594)
-    Nokia 5530 XpressMusic
-    Nokia 5530 XpressMusic (china)
-    Nokia 5800 XM
-    Nokia N97 (RM-506)
-    Nokia N97 mini
-    Nokia X6
-It would be good to add those subsequently.
-
-Signed-off-by: Adrian Taylor <aat@realvnc.com>
-Acked-by: Oliver Neukum <oliver@neukum.org>
+Signed-off-by: Przemo Firszt <przemo@firszt.eu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/class/cdc-acm.c |   58 +++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 57 insertions(+), 1 deletion(-)
+ drivers/usb/class/cdc-acm.c |    1 +
+ 1 file changed, 1 insertion(+)
 
 --- a/drivers/usb/class/cdc-acm.c
 +++ b/drivers/usb/class/cdc-acm.c
-@@ -1464,6 +1464,12 @@ err_out:
- }
+@@ -1579,6 +1579,7 @@ static struct usb_device_id acm_ids[] =
+ 	{ NOKIA_PCSUITE_ACM_INFO(0x00e9), }, /* Nokia 5320 XpressMusic */
+ 	{ NOKIA_PCSUITE_ACM_INFO(0x0108), }, /* Nokia 5320 XpressMusic 2G */
+ 	{ NOKIA_PCSUITE_ACM_INFO(0x01f5), }, /* Nokia N97, RM-505 */
++	{ NOKIA_PCSUITE_ACM_INFO(0x02e3), }, /* Nokia 5230, RM-588 */
  
- #endif /* CONFIG_PM */
-+
-+#define NOKIA_PCSUITE_ACM_INFO(x) \
-+		USB_DEVICE_AND_INTERFACE_INFO(0x0421, x, \
-+		USB_CLASS_COMM, USB_CDC_SUBCLASS_ACM, \
-+		USB_CDC_ACM_PROTO_VENDOR)
-+
- /*
-  * USB driver structure.
-  */
-@@ -1522,6 +1528,57 @@ static struct usb_device_id acm_ids[] =
- 	.driver_info = NO_UNION_NORMAL, /* reports zero length descriptor */
- 	},
- 
-+	/* Nokia S60 phones expose two ACM channels. The first is
-+	 * a modem and is picked up by the standard AT-command
-+	 * information below. The second is 'vendor-specific' but
-+	 * is treated as a serial device at the S60 end, so we want
-+	 * to expose it on Linux too. */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x042D), }, /* Nokia 3250 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x04D8), }, /* Nokia 5500 Sport */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x04C9), }, /* Nokia E50 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x0419), }, /* Nokia E60 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x044D), }, /* Nokia E61 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x0001), }, /* Nokia E61i */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x0475), }, /* Nokia E62 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x0508), }, /* Nokia E65 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x0418), }, /* Nokia E70 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x0425), }, /* Nokia N71 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x0486), }, /* Nokia N73 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x04DF), }, /* Nokia N75 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x000e), }, /* Nokia N77 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x0445), }, /* Nokia N80 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x042F), }, /* Nokia N91 & N91 8GB */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x048E), }, /* Nokia N92 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x0420), }, /* Nokia N93 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x04E6), }, /* Nokia N93i  */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x04B2), }, /* Nokia 5700 XpressMusic */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x0134), }, /* Nokia 6110 Navigator (China) */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x046E), }, /* Nokia 6110 Navigator */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x002f), }, /* Nokia 6120 classic &  */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x0088), }, /* Nokia 6121 classic */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x00fc), }, /* Nokia 6124 classic */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x0042), }, /* Nokia E51 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x00b0), }, /* Nokia E66 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x00ab), }, /* Nokia E71 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x0481), }, /* Nokia N76 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x0007), }, /* Nokia N81 & N81 8GB */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x0071), }, /* Nokia N82 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x04F0), }, /* Nokia N95 & N95-3 NAM */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x0070), }, /* Nokia N95 8GB  */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x00e9), }, /* Nokia 5320 XpressMusic */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x0099), }, /* Nokia 6210 Navigator, RM-367 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x0128), }, /* Nokia 6210 Navigator, RM-419 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x008f), }, /* Nokia 6220 Classic */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x00a0), }, /* Nokia 6650 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x007b), }, /* Nokia N78 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x0094), }, /* Nokia N85 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x003a), }, /* Nokia N96 & N96-3  */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x00e9), }, /* Nokia 5320 XpressMusic */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x0108), }, /* Nokia 5320 XpressMusic 2G */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x01f5), }, /* Nokia N97, RM-505 */
-+
-+	/* NOTE: non-Nokia COMM/ACM/0xff is likely MSFT RNDIS... NOT a modem! */
-+
- 	/* control interfaces with various AT-command sets */
- 	{ USB_INTERFACE_INFO(USB_CLASS_COMM, USB_CDC_SUBCLASS_ACM,
- 		USB_CDC_ACM_PROTO_AT_V25TER) },
-@@ -1536,7 +1593,6 @@ static struct usb_device_id acm_ids[] =
- 	{ USB_INTERFACE_INFO(USB_CLASS_COMM, USB_CDC_SUBCLASS_ACM,
- 		USB_CDC_ACM_PROTO_AT_CDMA) },
- 
--	/* NOTE:  COMM/ACM/0xff is likely MSFT RNDIS ... NOT a modem!! */
- 	{ }
- };
+ 	/* NOTE: non-Nokia COMM/ACM/0xff is likely MSFT RNDIS... NOT a modem! */
  
 
 
