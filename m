@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710Ab0IRThn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:37:43 -0400
-Received: from kroah.org ([198.145.64.141]:43240 "EHLO coco.kroah.org"
+	id S1756638Ab0IRTkV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:40:21 -0400
+Received: from kroah.org ([198.145.64.141]:43169 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756673Ab0IRTOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:14:53 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:12:59 2010
-Message-Id: <20100918191258.972260079@clark.site>
+	id S1753989Ab0IRTOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:14:44 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:12:58 2010
+Message-Id: <20100918191257.956138243@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:11:58 -0700
+Date: Sat, 18 Sep 2010 12:11:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiaying Zhang <jiayingz@google.com>, "Theodore Tso" <tytso@mit.edu>,
-        Chuck Ebbert <cebbert@redhat.com>
-Subject: [020/129] ext4: move aio completion after unwritten extent conversion
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [008/129] ALSA: HDA: Use model=auto for LG R510
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,99 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiaying Zhang <jiayingz@google.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 5b3ff237bef43b9e7fb7d1eb858e29b73fd664f9 upstream.
+commit 81cd3fca642cecb40a1ccef099799dcb5730734b upstream.
 
-This patch is to be applied upon Christoph's "direct-io: move aio_complete
-into ->end_io" patch. It adds iocb and result fields to struct ext4_io_end_t,
-so that we can call aio_complete from  ext4_end_io_nolock() after the extent
-conversion has finished.
+Two users report model=auto is needed to make the internal mic work properly.
+BugLink: https://bugs.launchpad.net/bugs/495134
 
-I have verified with Christoph's aio-dio test that used to fail after a few
-runs on an original kernel but now succeeds on the patched kernel.
-
-See http://thread.gmane.org/gmane.comp.file-systems.ext4/19659 for details.
-
-Signed-off-by: Jiaying Zhang <jiayingz@google.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Chuck Ebbert <cebbert@redhat.com>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext4/ext4.h  |    4 +++-
- fs/ext4/inode.c |   17 ++++++++++++-----
- 2 files changed, 15 insertions(+), 6 deletions(-)
+ sound/pci/hda/patch_realtek.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -167,13 +167,15 @@ struct mpage_da_data {
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -13305,7 +13305,6 @@ static struct snd_pci_quirk alc268_cfg_t
+ 	SND_PCI_QUIRK(0x14c0, 0x0025, "COMPAL IFL90/JFL-92", ALC268_TOSHIBA),
+ 	SND_PCI_QUIRK(0x152d, 0x0763, "Diverse (CPR2000)", ALC268_ACER),
+ 	SND_PCI_QUIRK(0x152d, 0x0771, "Quanta IL1", ALC267_QUANTA_IL1),
+-	SND_PCI_QUIRK(0x1854, 0x1775, "LG R510", ALC268_DELL),
+ 	{}
  };
- #define	EXT4_IO_UNWRITTEN	0x1
- typedef struct ext4_io_end {
--	struct list_head	list;		/* per-file finished AIO list */
-+	struct list_head	list;		/* per-file finished IO list */
- 	struct inode		*inode;		/* file being written to */
- 	unsigned int		flag;		/* unwritten or not */
- 	struct page		*page;		/* page struct for buffer write */
- 	loff_t			offset;		/* offset in the file */
- 	ssize_t			size;		/* size of the extent */
- 	struct work_struct	work;		/* data work queue */
-+	struct kiocb		*iocb;		/* iocb struct for AIO */
-+	int			result;		/* error value for AIO */
- } ext4_io_end_t;
  
- /*
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -3668,6 +3668,8 @@ static int ext4_end_io_nolock(ext4_io_en
- 		return ret;
- 	}
- 
-+	if (io->iocb)
-+		aio_complete(io->iocb, io->result, 0);
- 	/* clear the DIO AIO unwritten flag */
- 	io->flag = 0;
- 	return ret;
-@@ -3767,6 +3769,8 @@ static ext4_io_end_t *ext4_init_io_end (
- 		io->offset = 0;
- 		io->size = 0;
- 		io->page = NULL;
-+		io->iocb = NULL;
-+		io->result = 0;
- 		INIT_WORK(&io->work, ext4_end_io_work);
- 		INIT_LIST_HEAD(&io->list);
- 	}
-@@ -3796,12 +3800,18 @@ static void ext4_end_io_dio(struct kiocb
- 	if (io_end->flag != EXT4_IO_UNWRITTEN){
- 		ext4_free_io_end(io_end);
- 		iocb->private = NULL;
--		goto out;
-+out:
-+		if (is_async)
-+			aio_complete(iocb, ret, 0);
-+		return;
- 	}
- 
- 	io_end->offset = offset;
- 	io_end->size = size;
--	io_end->flag = EXT4_IO_UNWRITTEN;
-+	if (is_async) {
-+		io_end->iocb = iocb;
-+		io_end->result = ret;
-+	}
- 	wq = EXT4_SB(io_end->inode->i_sb)->dio_unwritten_wq;
- 
- 	/* queue the work to convert unwritten extents to written */
-@@ -3813,9 +3823,6 @@ static void ext4_end_io_dio(struct kiocb
- 	list_add_tail(&io_end->list, &ei->i_completed_io_list);
- 	spin_unlock_irqrestore(&ei->i_completed_io_lock, flags);
- 	iocb->private = NULL;
--out:
--	if (is_async)
--		aio_complete(iocb, ret, 0);
- }
- 
- static void ext4_end_io_buffer_write(struct buffer_head *bh, int uptodate)
 
 
