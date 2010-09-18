@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756973Ab0IRTPk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:15:40 -0400
-Received: from kroah.org ([198.145.64.141]:43578 "EHLO coco.kroah.org"
+	id S1757060Ab0IRTPw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:15:52 -0400
+Received: from kroah.org ([198.145.64.141]:43687 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756936Ab0IRTPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:15:34 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:03 2010
-Message-Id: <20100918191303.533331686@clark.site>
+	id S1757020Ab0IRTPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:15:51 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:04 2010
+Message-Id: <20100918191304.704357969@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:12:50 -0700
+Date: Sat, 18 Sep 2010 12:13:04 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>
-Subject: [072/129] ahci: fix hang on failed softreset
+        Gary King <gking@nvidia.com>, Tejun Heo <tj@kernel.org>,
+        Russell King <rmk@arm.linux.org.uk>, Jens Axboe <axboe@kernel.dk>
+Subject: [086/129] bounce: call flush_dcache_page() after bounce_copy_vec()
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Gary King <gking@nvidia.com>
 
-commit f1f5a807b051eddd3f302e503d39214e5bde0ef2 upstream.
+commit ac8456d6f9a3011c824176bd6084d39e5f70a382 upstream.
 
-ahci_do_softreset() compared the current time and deadline in reverse
-when calculating timeout for SRST issue.  The result is that if
-@deadline is in future, SRST is issued with 0 timeout, which hasn't
-caused any problem because it later waits for DRDY with the correct
-timeout.  If deadline is already exceeded by the time SRST is about to
-be issued, the timeout calculation underflows and if the device
-doesn't respond, timeout doesn't trigger for a _very_ long time.
+I have been seeing problems on Tegra 2 (ARMv7 SMP) systems with HIGHMEM
+enabled on 2.6.35 (plus some patches targetted at 2.6.36 to perform cache
+maintenance lazily), and the root cause appears to be that the mm bouncing
+code is calling flush_dcache_page before it copies the bounce buffer into
+the bio.
 
-Reverse the incorrect comparison order.
+The bounced page needs to be flushed after data is copied into it, to
+ensure that architecture implementations can synchronize instruction and
+data caches if necessary.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Anssi Hannula <anssi.hannula@iki.fi>
-Tested-by: Gwendal Grignou <gwendal@google.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Gary King <gking@nvidia.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Russell King <rmk@arm.linux.org.uk>
+Acked-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/libahci.c |    2 +-
+ mm/bounce.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/ata/libahci.c
-+++ b/drivers/ata/libahci.c
-@@ -1320,7 +1320,7 @@ int ahci_do_softreset(struct ata_link *l
- 	/* issue the first D2H Register FIS */
- 	msecs = 0;
- 	now = jiffies;
--	if (time_after(now, deadline))
-+	if (time_after(deadline, now))
- 		msecs = jiffies_to_msecs(deadline - now);
+--- a/mm/bounce.c
++++ b/mm/bounce.c
+@@ -116,8 +116,8 @@ static void copy_to_high_bio_irq(struct
+ 		 */
+ 		vfrom = page_address(fromvec->bv_page) + tovec->bv_offset;
  
- 	tf.ctl |= ATA_SRST;
+-		flush_dcache_page(tovec->bv_page);
+ 		bounce_copy_vec(tovec, vfrom);
++		flush_dcache_page(tovec->bv_page);
+ 	}
+ }
+ 
 
 
