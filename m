@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754313Ab0IRXpC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 19:45:02 -0400
-Received: from mail.perches.com ([173.55.12.10]:2102 "EHLO mail.perches.com"
+	id S1754229Ab0IRXyD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 19:54:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25947 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752995Ab0IRXpB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 19:45:01 -0400
-Subject: Re: [PATCH 01/25] arch/mips: Use static const char arrays
-From: Joe Perches <joe@perches.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
-In-Reply-To: <20100918225447.GA4739@linux-mips.org>
-References: <cover.1284406638.git.joe@perches.com>
-	 <8fcec0d2a48e806558e6bc39d5aa98518a97f8c7.1284406638.git.joe@perches.com>
-	 <20100918225447.GA4739@linux-mips.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 18 Sep 2010 16:44:59 -0700
-Message-ID: <1284853499.1778.83.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752897Ab0IRXyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 19:54:01 -0400
+Message-ID: <4C95510E.3040608@redhat.com>
+Date: Sat, 18 Sep 2010 13:53:50 -1000
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Jan Kiszka <jan.kiszka@web.de>
+CC: Glauber Costa <glommer@redhat.com>, kvm@vger.kernel.org,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [KVM timekeeping 10/35] Fix deep C-state TSC desynchronization
+References: <1282291669-25709-1-git-send-email-zamsden@redhat.com> <1282291669-25709-11-git-send-email-zamsden@redhat.com> <4C8F3C03.50306@siemens.com> <4C904685.9090402@redhat.com> <4C907F3D.6070709@web.de> <20100915123215.GC3688@mothafucka.localdomain> <4C911002.8060807@web.de> <4C93E734.4040208@redhat.com> <4C93EC2C.1000402@redhat.com>
+In-Reply-To: <4C93EC2C.1000402@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-09-18 at 23:54 +0100, Ralf Baechle wrote:
-> On Mon, Sep 13, 2010 at 12:47:39PM -0700, Joe Perches wrote:
-> > diff --git a/arch/mips/pnx8550/common/reset.c b/arch/mips/pnx8550/common/reset.c
-> > index fadd874..e0ac0b2 100644
-> > --- a/arch/mips/pnx8550/common/reset.c
-> > +++ b/arch/mips/pnx8550/common/reset.c
-> > @@ -27,8 +27,8 @@
-> >  
-> >  void pnx8550_machine_restart(char *command)
-> >  {
-> > -	char head[] = "************* Machine restart *************";
-> > -	char foot[] = "*******************************************";
-> > +	static const char head[] = "************* Machine restart *************";
-> > +	static const char foot[] = "*******************************************";
-> >  
-> >  	printk("\n\n");
-> >  	printk("%s\n", head);
-> NAK.
-> The printks should have been taken out and shot.  And while at it line
-> use the space on the other side of the wall for pnx8550_machine_power_off.
+On 09/17/2010 12:31 PM, Zachary Amsden wrote:
+> On 09/17/2010 12:09 PM, Zachary Amsden wrote:
+>> On 09/15/2010 08:27 AM, Jan Kiszka wrote:
+>>> Am 15.09.2010 14:32, Glauber Costa wrote:
+>>>> On Wed, Sep 15, 2010 at 10:09:33AM +0200, Jan Kiszka wrote:
+>>>>>> In any case, I'll proceed with the forcing of unstable TSC and HPET
+>>>>>> clocksource and see what happens.
+>>>>> I tried that before, but it did not trigger the issue that kvm-clock
+>>>>> guests no longer boot properly. This only happens if the TSC is 
+>>>>> marked
+>>>>> unstable.
+>>>> even artificially marked unstable ?
+>>>>
+>>> Yes. As soon as I hack tsc_unstable to 1, things go wrong. When I hack
+>>> it back to 0, guest that wants kvm-clock boots again and seem to run 
+>>> fine.
+>>>
+>>> This is issue #2, I guess. Issue #2 remains that the TSC is marked
+>>> unstable. I have the feeling that this is bogus, maybe due to lacking
+>>> suspend/resume awareness? The tsc clocksource does
+>>>
+>>>     clocksource_tsc.cycle_last = 0;
+>>>
+>>> on resume...
+>>>
+>>> Jan
+>>>
+>>
+>> I have now reproduced this exactly.  Shouldn't be long before I have 
+>> a solution.
+>
 
-Fix them up as you see fit Ralf.
+Wow, bug was subtle.  Here's what happens:
 
-I don't have the hardware and was simply moving stuff
-that should be const into const ro sections.
+kvmclock enabled
+unstable TSC compensation erases TSC gain; requests kvmclock update
+we get preempted after writing new kvmclock value, so HV is never entered
+unstable TSC compensation erases TSC gain again; requests kvmclock update
+kvmclock overflow compensation underflows because vcpu->last_guest_tsc
+kvmclock advances randomly
+HV entered
+HV exit sets last_guest_tsc, making bug invisible
 
-There are a lot of defects in that file, for instance
-the printks don't use KERN_<level>.
+The solution is to set vcpu->last_guest_tsc always when updating 
+kvmclock.  Note the bug can occur independently of the unstable TSC 
+compensation, which makes it more likely only because it requests more 
+kvmclock updates.  The fundamental issue is the lack of complete state 
+update caused by preemption before HV is entered, but after kvmclock is 
+written.
 
-cheers, Joe
+I have a patch series which fixes this now, but it has some debug gunk 
+in it I need to get rid of.
 
+I'll try to send it in the next few hours, as I'm on vacation (parents 
+visiting) next week.
