@@ -1,41 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab0IROGW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 10:06:22 -0400
-Received: from infernal.debian.net ([87.230.26.131]:47848 "EHLO
-	infernal.debian.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754592Ab0IROGU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 10:06:20 -0400
-X-Greylist: delayed 1805 seconds by postgrey-1.27 at vger.kernel.org; Sat, 18 Sep 2010 10:06:20 EDT
-Date: Sat, 18 Sep 2010 15:36:11 +0200
-From: Andreas Bombe <aeb@debian.org>
-To: Alex Riesen <raa.lkml@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
-        linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: OOPS in hiddev_open on connecting "Logitech MX620 Laser
- Cordless Mouse"
-Message-ID: <20100918133610.GA4554@amos.infernal>
-References: <AANLkTikOowB=8=3cnJ0QgJNfBsVeMUrkNT0E0uH2LDXL@mail.gmail.com>
+	id S1755465Ab0IROWh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 10:22:37 -0400
+Received: from mail001.aei.ca ([206.123.6.130]:48086 "EHLO mail001.aei.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754592Ab0IROWg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 10:22:36 -0400
+From: Ed Tomlinson <edt@aei.ca>
+To: Alexander Stein <alexander.stein@informatik.tu-chemnitz.de>
+Subject: Re: [PATCH] kconfig qconf: port to QT4
+Date: Sat, 18 Sep 2010 10:22:31 -0400
+User-Agent: KMail/1.13.5 (Linux/2.6.35.4-crc+; KDE/4.5.1; x86_64; ; )
+Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        Roman Zippel <zippel@linux-m68k.org>,
+        lkml <linux-kernel@vger.kernel.org>
+References: <201008011032.09611.edt@aei.ca> <1280690915-16380-1-git-send-email-alexander.stein@informatik.tu-chemnitz.de> <201008020801.24130.edt@aei.ca>
+In-Reply-To: <201008020801.24130.edt@aei.ca>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikOowB=8=3cnJ0QgJNfBsVeMUrkNT0E0uH2LDXL@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009181022.31547.edt@aei.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 18, 2010 at 11:30:56AM +0200, Alex Riesen wrote:
-> Happens with Linus' master at 509344b8b4d365b7ff3bce97198d83a57b7c3f31
-> The tree is modified, but I doubt the patches I have can cause this. I attach
-> then anyway. They never caused a conflict, so just the patches (in case of doubt
-> I can push the tree somewhere).
+On Monday 02 August 2010 08:01:23 Ed Tomlinson wrote:
+> Hi,
+> 
+> Works as advertised here.  The merge window for .36 is open.  Would it be possible for this to be included?
 
-I can confirm the same Oops on an unpatched kernel from Linus' git
-(v2.6.36-rc4-134-g03a7ab0). I have a Logitech G500 mouse.
+Looks like this did not make it into .36...  would you have a version that works with .36-rc
 
-> The oops is reproducable. lsusb hangs (D state) after the oops.
-
-However on my machine lsusb doesn't hang.
+TIA
+Ed Tomlinson
