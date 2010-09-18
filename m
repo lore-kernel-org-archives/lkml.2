@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757254Ab0IRTTt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:19:49 -0400
-Received: from kroah.org ([198.145.64.141]:43889 "EHLO coco.kroah.org"
+	id S1757330Ab0IRTR0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:17:26 -0400
+Received: from kroah.org ([198.145.64.141]:43985 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757222Ab0IRTQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:16:23 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:06 2010
-Message-Id: <20100918191306.904186657@clark.site>
+	id S1757123Ab0IRTQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:16:39 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:08 2010
+Message-Id: <20100918191308.164247282@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:13:30 -0700
+Date: Sat, 18 Sep 2010 12:13:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [112/129] SUNRPC: Fix race corrupting rpc upcall
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [127/129] drm/i915: dont enable self-refresh on Ironlake
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,81 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-commit 5a67657a2e90c9e4a48518f95d4ba7777aa20fbb upstream.
+commit dd8849c8f59ec1cee4809a0c5e603e045abe860e upstream.
 
-If rpc_queue_upcall() adds a new upcall to the rpci->pipe list just
-after rpc_pipe_release calls rpc_purge_list(), but before it calls
-gss_pipe_release (as rpci->ops->release_pipe(inode)), then the latter
-will free a message without deleting it from the rpci->pipe list.
+We don't know how to enable it safely, especially as outputs turn on and
+off.  When disabling LP1 we also need to make sure LP2 and 3 are already
+disabled.
 
-We will be left with a freed object on the rpc->pipe list.  Most
-frequent symptoms are kernel crashes in rpc.gssd system calls on the
-pipe in question.
-
-Reported-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=29173
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=29082
+Reported-by: Chris Lord <chris@linux.intel.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Tested-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/sunrpc/auth_gss/auth_gss.c |    9 +++++----
- net/sunrpc/rpc_pipe.c          |    6 +++---
- 2 files changed, 8 insertions(+), 7 deletions(-)
+ drivers/gpu/drm/i915/i915_reg.h      |    8 ++++++++
+ drivers/gpu/drm/i915/intel_display.c |    6 ++++--
+ 2 files changed, 12 insertions(+), 2 deletions(-)
 
---- a/net/sunrpc/auth_gss/auth_gss.c
-+++ b/net/sunrpc/auth_gss/auth_gss.c
-@@ -745,17 +745,18 @@ gss_pipe_release(struct inode *inode)
- 	struct rpc_inode *rpci = RPC_I(inode);
- 	struct gss_upcall_msg *gss_msg;
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -2200,9 +2200,17 @@
+ #define  WM1_LP_SR_EN		(1<<31)
+ #define  WM1_LP_LATENCY_SHIFT	24
+ #define  WM1_LP_LATENCY_MASK	(0x7f<<24)
++#define  WM1_LP_FBC_LP1_MASK	(0xf<<20)
++#define  WM1_LP_FBC_LP1_SHIFT	20
+ #define  WM1_LP_SR_MASK		(0x1ff<<8)
+ #define  WM1_LP_SR_SHIFT	8
+ #define  WM1_LP_CURSOR_MASK	(0x3f)
++#define WM2_LP_ILK		0x4510c
++#define  WM2_LP_EN		(1<<31)
++#define WM3_LP_ILK		0x45110
++#define  WM3_LP_EN		(1<<31)
++#define WM1S_LP_ILK		0x45120
++#define  WM1S_LP_EN		(1<<31)
  
-+restart:
- 	spin_lock(&inode->i_lock);
--	while (!list_empty(&rpci->in_downcall)) {
-+	list_for_each_entry(gss_msg, &rpci->in_downcall, list) {
+ /* Memory latency timer register */
+ #define MLTR_ILK		0x11222
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -3206,8 +3206,7 @@ static void ironlake_update_wm(struct dr
+ 		reg_value = I915_READ(WM1_LP_ILK);
+ 		reg_value &= ~(WM1_LP_LATENCY_MASK | WM1_LP_SR_MASK |
+ 			       WM1_LP_CURSOR_MASK);
+-		reg_value |= WM1_LP_SR_EN |
+-			     (ilk_sr_latency << WM1_LP_LATENCY_SHIFT) |
++		reg_value |= (ilk_sr_latency << WM1_LP_LATENCY_SHIFT) |
+ 			     (sr_wm << WM1_LP_SR_SHIFT) | cursor_wm;
  
--		gss_msg = list_entry(rpci->in_downcall.next,
--				struct gss_upcall_msg, list);
-+		if (!list_empty(&gss_msg->msg.list))
-+			continue;
- 		gss_msg->msg.errno = -EPIPE;
- 		atomic_inc(&gss_msg->count);
- 		__gss_unhash_msg(gss_msg);
- 		spin_unlock(&inode->i_lock);
- 		gss_release_msg(gss_msg);
--		spin_lock(&inode->i_lock);
-+		goto restart;
- 	}
- 	spin_unlock(&inode->i_lock);
- 
---- a/net/sunrpc/rpc_pipe.c
-+++ b/net/sunrpc/rpc_pipe.c
-@@ -48,7 +48,7 @@ static void rpc_purge_list(struct rpc_in
+ 		I915_WRITE(WM1_LP_ILK, reg_value);
+@@ -5425,6 +5424,9 @@ void intel_init_clock_gating(struct drm_
+ 			I915_WRITE(DISP_ARB_CTL,
+ 					(I915_READ(DISP_ARB_CTL) |
+ 						DISP_FBC_WM_DIS));
++		I915_WRITE(WM3_LP_ILK, 0);
++		I915_WRITE(WM2_LP_ILK, 0);
++		I915_WRITE(WM1_LP_ILK, 0);
+ 		}
  		return;
- 	do {
- 		msg = list_entry(head->next, struct rpc_pipe_msg, list);
--		list_del(&msg->list);
-+		list_del_init(&msg->list);
- 		msg->errno = err;
- 		destroy_msg(msg);
- 	} while (!list_empty(head));
-@@ -208,7 +208,7 @@ rpc_pipe_release(struct inode *inode, st
- 	if (msg != NULL) {
- 		spin_lock(&inode->i_lock);
- 		msg->errno = -EAGAIN;
--		list_del(&msg->list);
-+		list_del_init(&msg->list);
- 		spin_unlock(&inode->i_lock);
- 		rpci->ops->destroy_msg(msg);
- 	}
-@@ -268,7 +268,7 @@ rpc_pipe_read(struct file *filp, char __
- 	if (res < 0 || msg->len == msg->copied) {
- 		filp->private_data = NULL;
- 		spin_lock(&inode->i_lock);
--		list_del(&msg->list);
-+		list_del_init(&msg->list);
- 		spin_unlock(&inode->i_lock);
- 		rpci->ops->destroy_msg(msg);
- 	}
+ 	} else if (IS_G4X(dev)) {
 
 
