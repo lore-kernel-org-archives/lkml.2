@@ -1,73 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757815Ab0IRTs5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:48:57 -0400
-Received: from kroah.org ([198.145.64.141]:51499 "EHLO coco.kroah.org"
+	id S1757844Ab0IRTuE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:50:04 -0400
+Received: from kroah.org ([198.145.64.141]:51457 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755631Ab0IRTBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:01:51 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:58 2010
-Message-Id: <20100918185958.199764024@clark.site>
+	id S1755516Ab0IRTBs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:01:48 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:57 2010
+Message-Id: <20100918185957.864681980@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:58:27 -0700
+Date: Sat, 18 Sep 2010 11:58:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Roland McGrath <roland@redhat.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [063/123] x86-64, compat: Retruncate rax after ia32 syscall entry tracing
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [059/123] wireless extensions: fix kernel heap content leak
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=x86-64-compat-retruncate-rax-after-ia32-syscall-entry-tracing.patch
+Content-Disposition: inline; filename=wireless-extensions-fix-kernel-heap-content-leak.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roland McGrath <roland@redhat.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit eefdca043e8391dcd719711716492063030b55ac upstream.
+commit 42da2f948d949efd0111309f5827bf0298bcc9a4 upstream.
 
-In commit d4d6715, we reopened an old hole for a 64-bit ptracer touching a
-32-bit tracee in system call entry.  A %rax value set via ptrace at the
-entry tracing stop gets used whole as a 32-bit syscall number, while we
-only check the low 32 bits for validity.
+Wireless extensions have an unfortunate, undocumented
+requirement which requires drivers to always fill
+iwp->length when returning a successful status. When
+a driver doesn't do this, it leads to a kernel heap
+content leak when userspace offers a larger buffer
+than would have been necessary.
 
-Fix it by truncating %rax back to 32 bits after syscall_trace_enter,
-in addition to testing the full 64 bits as has already been added.
+Arguably, this is a driver bug, as it should, if it
+returns 0, fill iwp->length, even if it separately
+indicated that the buffer contents was not valid.
 
-Reported-by: Ben Hawkes <hawkes@sota.gen.nz>
-Signed-off-by: Roland McGrath <roland@redhat.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+However, we can also at least avoid the memory content
+leak if the driver doesn't do this by setting the iwp
+length to max_tokens, which then reflects how big the
+buffer is that the driver may fill, regardless of how
+big the userspace buffer is.
+
+To illustrate the point, this patch also fixes a
+corresponding cfg80211 bug (since this requirement
+isn't documented nor was ever pointed out by anyone
+during code review, I don't trust all drivers nor
+all cfg80211 handlers to implement it correctly).
+
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/ia32/ia32entry.S |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ net/wireless/wext-compat.c |    3 +++
+ net/wireless/wext.c        |   16 ++++++++++++++++
+ 2 files changed, 19 insertions(+)
 
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -50,7 +50,12 @@
- 	/*
- 	 * Reload arg registers from stack in case ptrace changed them.
- 	 * We don't reload %eax because syscall_trace_enter() returned
--	 * the value it wants us to use in the table lookup.
-+	 * the %rax value we should see.  Instead, we just truncate that
-+	 * value to 32 bits again as we did on entry from user mode.
-+	 * If it's a new value set by user_regset during entry tracing,
-+	 * this matches the normal truncation of the user-mode value.
-+	 * If it's -1 to make us punt the syscall, then (u32)-1 is still
-+	 * an appropriately invalid value.
- 	 */
- 	.macro LOAD_ARGS32 offset, _r9=0
- 	.if \_r9
-@@ -60,6 +65,7 @@
- 	movl \offset+48(%rsp),%edx
- 	movl \offset+56(%rsp),%esi
- 	movl \offset+64(%rsp),%edi
-+	movl %eax,%eax			/* zero extension */
- 	.endm
- 	
- 	.macro CFI_STARTPROC32 simple
+--- a/net/wireless/wext-compat.c
++++ b/net/wireless/wext-compat.c
+@@ -1358,6 +1358,9 @@ int cfg80211_wext_giwessid(struct net_de
+ {
+ 	struct wireless_dev *wdev = dev->ieee80211_ptr;
+ 
++	data->flags = 0;
++	data->length = 0;
++
+ 	switch (wdev->iftype) {
+ 	case NL80211_IFTYPE_ADHOC:
+ 		return cfg80211_ibss_wext_giwessid(dev, info, data, ssid);
+--- a/net/wireless/wext.c
++++ b/net/wireless/wext.c
+@@ -854,6 +854,22 @@ static int ioctl_standard_iw_point(struc
+ 		}
+ 	}
+ 
++	if (IW_IS_GET(cmd) && !(descr->flags & IW_DESCR_FLAG_NOMAX)) {
++		/*
++		 * If this is a GET, but not NOMAX, it means that the extra
++		 * data is not bounded by userspace, but by max_tokens. Thus
++		 * set the length to max_tokens. This matches the extra data
++		 * allocation.
++		 * The driver should fill it with the number of tokens it
++		 * provided, and it may check iwp->length rather than having
++		 * knowledge of max_tokens. If the driver doesn't change the
++		 * iwp->length, this ioctl just copies back max_token tokens
++		 * filled with zeroes. Hopefully the driver isn't claiming
++		 * them to be valid data.
++		 */
++		iwp->length = descr->max_tokens;
++	}
++
+ 	err = handler(dev, info, (union iwreq_data *) iwp, extra);
+ 
+ 	iwp->length += essid_compat;
 
 
