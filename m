@@ -1,49 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754445Ab0IRBmh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 21:42:37 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:34686 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752179Ab0IRBmg (ORCPT
+	id S1754786Ab0IRBrK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 21:47:10 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:48611 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754594Ab0IRBrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 21:42:36 -0400
-X-Sasl-enc: DszX9PLrQsQWmUImrLFvNXLqi4y6BLz1VWqDlRzjU9GV 1284774155
-Date: Fri, 17 Sep 2010 22:42:32 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: New compat_alloc_user_space() GPLness and fglrx
-Message-ID: <20100918014232.GA17699@khazad-dum.debian.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 17 Sep 2010 21:47:08 -0400
+Date: Sat, 18 Sep 2010 10:47:19 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: [GIT PULL] Samsung fixes for 2.6.36-rc5
+To: "'Linus Torvalds'" <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, ben-linux@fluff.org
+Message-id: <006001cb56d3$71a63fc0$54f2bf40$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: ActW022uV2A928YZRlasnzYJT3yy7w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit c41d68a513c71e35a14f66d71782d27a79a81ea6
-compat: Make compat_alloc_user_space() incorporate the access_ok()
+Hi Linus,
 
-promotes compat_alloc_user_space() to EXPORT_SYMBOL_GPL, and moves it from
-asm/compat.h to linux/compat.h.
+Please pull Samsung fixes from:
 
-This breaks AMD/ATI's proprietary fglrx GPU driver, which wants to use
-compat_alloc_user_space(), and expects to find it in asm/compat.h.
+git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
+s5p-fixes-for-linus
 
-Fixing this on the fglrx side is easy enough, one can simply audit the two
-or three call sites in the fglrx glue and make sure they can use
-arch_compat_alloc_user_space() safely.
+These things are for bug fix on 2.6.36-rc5.
+If any problems, please let me know.
 
-But such a fix doesn't look right.  IMHO, either we don't want any non-GPL
-module touching *_compat_alloc_user_space and compat_alloc_user_space, or it
-would be better to let them use compat_alloc_user_space() in the interest of
-overall security...
+Thanks.
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
+
+The following changes since commit 49553c2ef88749dd502687f4eb9c258bb10a4f44:
+
+  Linux 2.6.36-rc4 (2010-09-12 16:07:37 -0700)
+
+are available in the git repository at:
+   git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
+s5p-fixes-for-linus
+
+Darius Augulis (2):
+      ARM: S3C64XX: Fix coding style errors on mach-real6410
+      ARM: S3C64XX: Add IORESOURCE_IRQ_HIGHLEVEL flag to dm9000 on
+mach-real6410
+
+Kukjin Kim (2):
+      ARM: SAMSUNG: Fix on drive strength value
+      ARM: SAMSUNG: Fix on s5p_gpio_[get,set]_drvstr
+
+Kyungmin Park (1):
+      ARM: S5PV210: Reduce the iodesc length of systimer
+
+Marek Szyprowski (2):
+      ARM: S5P: Fix DMA coherent mask for FIMC
+      ARM: S5PV210: Add FIMC clocks
+
+Mark Brown (2):
+      ARM: S3C64XX: Fix dev-spi build
+      ARM: S3C64XX: Prototype SPI devices
+
+MyungJoo Ham (1):
+      ARM: S5PV210: Update I2C-1 Clock Register Property.
+
+Sylwester Nawrocki (1):
+      ARM: S5P: Decrease IO Registers memory region size on FIMC
+
+ arch/arm/mach-s3c64xx/dev-spi.c               |    3 +-
+ arch/arm/mach-s3c64xx/mach-real6410.c         |  104
+++++++++++++------------
+ arch/arm/mach-s5pv210/clock.c                 |   20 +++++-
+ arch/arm/mach-s5pv210/cpu.c                   |    2 +-
+ arch/arm/plat-s5p/dev-fimc0.c                 |    9 ++-
+ arch/arm/plat-s5p/dev-fimc1.c                 |    9 ++-
+ arch/arm/plat-s5p/dev-fimc2.c                 |    9 ++-
+ arch/arm/plat-samsung/gpio-config.c           |    7 +-
+ arch/arm/plat-samsung/include/plat/gpio-cfg.h |   10 +-
+ 9 files changed, 107 insertions(+), 66 deletions(-)
+
