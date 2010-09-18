@@ -1,106 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755319Ab0IRRMm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 13:12:42 -0400
-Received: from mail-da-3.dns-solutions.net ([69.12.112.3]:63528 "HELO
-	mail-da-3.dns-solutions.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754403Ab0IRRMk convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 13:12:40 -0400
-From: "Joshua Hintze" <joshh@imsar.com>
-To: <linux-kernel@vger.kernel.org>, <linux-ide@vger.kernel.org>
-References: <00d401cb55f7$33a78210$9af68630$@com> <20100917154732.330c4b1b@varda>
-In-Reply-To: <20100917154732.330c4b1b@varda>
-Subject: RE: PATA IDE is slower in newer versions of kernel
-Date: Sat, 18 Sep 2010 11:12:31 -0600
-Message-ID: <010901cb5754$ae6735a0$0b35a0e0$@com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: ActWbuWuOyhi0fJbQj6BXHxnjBOMQAA5N4rQ
-Content-Language: en-us
+	id S1754806Ab0IRRY5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 13:24:57 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:46669 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751378Ab0IRRY4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 13:24:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=vlfaZ+LkKl4zxzz6yfJ+eAaOWD4xTCMrlVi4vdwYEgrTC5lnIXJARevLoDPU5NWhIA
+         gmCj12n1w1VOHRJ0bDQFaPu/nOgwM+fkm2yfkx6jA7XaLIje/y1HaX/hytlwg35EVT0G
+         aG2sWPmEsQQV4jux6MqEXtVi67YX9c3CA+ejQ=
+Subject: Re: [PATCH v4] mtd: nand: Expand nand_ecc_layout, deprecate ioctl
+ ECCGETLAYOUT
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Sneha Narnakaje <nsnehaprabha@ti.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Kevin Cernekee <cernekee@gmail.com>
+In-Reply-To: <1283163647.12995.43.camel@brekeke>
+References: <4C5CA4A1.1040000@broadcom.com>
+	 <1282154806-9420-1-git-send-email-norris@broadcom.com>
+	 <4C6DD170.1060807@renesas.com>  <4C6E9C23.6060703@broadcom.com>
+	 <1282646703.24044.162.camel@localhost>  <4C746DE0.7000104@gmail.com>
+	 <1283163647.12995.43.camel@brekeke>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 18 Sep 2010 20:24:50 +0300
+Message-ID: <1284830690.1721.3.camel@brekeke>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some updated information. I created a screen capture of what I am seeing. First is the logic analyzer when the newer linux kernel is writing slow to the PATA port.
-
-http://i56.tinypic.com/oqhrug.png
-
-Notice in the above link how there is a lot of activating and then large gaps of no activity. After about 9 mS the STOP line is strobed a few times and then DMARQ finally returns to normal operating. The link below shows the picture of an old 2.6.10 kernel where write speeds are much faster.
-
-http://i51.tinypic.com/a9wiur.png
-
-In the above image notice how the wait time is considerable less 100's of microseconds before the stop lines get strobed.
-
-I'm dedicated to continue working on the problem, I just need to advice from the linux community. I've tried different I/O schedulers such as noop and anticipatory and I'm studying the ide-dma code but still lost to where this is happening.
-
-Thanks!
-
-
-
------Original Message-----
-From: linux-ide-owner@vger.kernel.org [mailto:linux-ide-owner@vger.kernel.org] On Behalf Of Alejandro Riveira Fernández
-Sent: Friday, September 17, 2010 7:48 AM
-To: Joshua Hintze
-Cc: linux-kernel@vger.kernel.org; linux-ide@vger.kernel.org
-Subject: Re: PATA IDE is slower in newer versions of kernel
-
-El Thu, 16 Sep 2010 17:30:51 -0600
-"Joshua Hintze" <joshh@imsar.com> escribió:
-
- [ Just CC linux-ide ]
-
-> Hello, 
+On Mon, 2010-08-30 at 13:20 +0300, Artem Bityutskiy wrote:
+> On Tue, 2010-08-24 at 18:12 -0700, Brian Norris wrote:
+> > My e-mail address has changed, since I am no longer working at Broadcom.
+> > I will still be able to track messages to my old account if the MTD mailing
+> > list is CC'd.
 > 
-> I've been digging into this for a couple weeks now. I have an embedded board
-> that runs Linux Kernel 2.6.10 that is connected to a SSD over a PATA
-> connection. Data is transferred using UDMA4 speeds and I get a nice
-> sustained write speed of about 20 MBps which is adequate for us. 
+> Oh, does it mean you will stop loving MTD and we won't see steady flow
+> of improvements for you? :-( BTW, I think you have been doing great job
+> - MTD subsystem needs love badly!
 > 
-> I have recently taken the plunge to update to a newer version of the kernel
-> starting at 2.6.32 (also tried 2.6.33) and what I am seeing writes speeds
-> drop to about 18 MBps peak with large jumps going from 8 MBps->16 MBs for
-> sustained throughput.
+> > Note that on the same subject (different thread) David suggested our new
+> > struct be allocated dynamically:
 > 
-> I decided to read up on the ATA specification and I connected a logic
-> analyzer to the PATA bus and here is what is happening...after a large chunk
-> of data is written to the device, instead of the device pausing the transfer
-> by asserting DDMARDY it actual initiates a device data-out termination by
-> pulling DMARQ low.
+> Yes, but I agree with your arguments and also think it is ok to keep it
+> simple for now. So I'm applying this to my l2 tree, and then it is up to
+> dwmw2 to take it or not.
 > 
-> The old kernel 2.6.10 responds to this by strobing the STOP line 8 times
-> within 800uS and the device releases DMARQ shortly afterwards. On the newer
-> kernels the strobing of the STOP line takes near 8mS of time. Since the hard
-> drive only release DMARQ after this 8 pulse strobe I believe this is the
-> cause of the slower write speeds on the newer kernels. This whole process
-> happens thousands of times when writing megs of data. So those extra 7mS
-> begin to add up fast.
+> But I also have some requests about commentaries, so if you can re-send
+> another version of this patch, it would be nice. But I take this one for
+> now, it is good enough.
+>  
+> > +/*
+> > + * Copies (and truncates, if necessary) data from the larger struct,
+> > + * nand_ecclayout, to the smaller, deprecated layout struct,
+> > + * nand_ecclayout_user. This is necessary only to suppport the deprecated
+> > + * API ioctl ECCGETLAYOUT while allowing all new functionality to use
+> > + * nand_ecclayout flexibly (i.e. the struct may change size in new
+> > + * releases without requiring major rewrites).
+> > + */
 > 
-> My problem is I've been digging through the ide.c/ide-dma.c and other code
-> but I'm not exactly sure where the code would jump to upon a device
-> initiated termination on a data-out dma transfer.
+> I think a similar comment should exist in linux/mtd/mtd.h. Indeed, that
+> file is our API with user-space, and our users will probably look at it,
+> and it is nice to document the situation with 'struct
+> nand_ecclayout_user' there.
 > 
-> My guess is ide_dma_intr(...). Is this correct?
+> > +#define MTD_MAX_OOBFREE_ENTRIES_LARGE	32
+> > +#define MTD_MAX_ECCPOS_ENTRIES_LARGE	448
+> > +#define MTD_MAX_ECCPOS_ENTRIES_OLD	64	/* Previous maximum */
+> > +/*
+> > + * Correct ECC layout control structure. This replaces old nand_ecclayout
+> > + * (mtd-abi.h) that is exported via ECCGETLAYOUT ioctl. It should be expandable
+> > + *  in the future simply by the above macros.
+> > + */
 > 
-> Any other areas I could look at?
+> I find this comment confusing. First, "Correct ECC" -> "Internal ECC",
+> because one could think "Correct ECC structure" means something like
+> "structure which describes ECC corrections" or something like that.
 > 
-> Thanks in advance.
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
---
-To unsubscribe from this list: send the line "unsubscribe linux-ide" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Also, I'd avoid mentioning things like "old nand_ecclayout", because
+> with time this will be confusing. Could you please imagine that you are
+> an MTD newbie reading the code in 2012 - you have no idea what was
+> happening in the past in the ancient 2010. 
 
-No virus found in this incoming message.
-Checked by AVG - www.avg.com 
-Version: 9.0.851 / Virus Database: 271.1.1/3132 - Release Date: 09/16/10 12:34:00
+Brian,
+
+would you address the small things I noticed in a follow-up patch?
+-- 
+Best Regards,
+Artem Bityutskiy (Битюцкий Артём)
 
