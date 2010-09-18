@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756214Ab0IRTCa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:02:30 -0400
-Received: from kroah.org ([198.145.64.141]:51250 "EHLO coco.kroah.org"
+	id S1756460Ab0IRTGb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:06:31 -0400
+Received: from kroah.org ([198.145.64.141]:51916 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754804Ab0IRTBa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:01:30 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:55 2010
-Message-Id: <20100918185955.653148655@clark.site>
+	id S1756206Ab0IRTCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:02:30 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:00:03 2010
+Message-Id: <20100918190002.945035516@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:57:57 -0700
+Date: Sat, 18 Sep 2010 11:59:22 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Toby Gray <toby.gray@realvnc.com>, Oliver Neukum <oliver@neukum.name>
-Subject: [033/123] USB: cdc-acm: Fixing crash when ACM probing interfaces with no endpoint descriptors.
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [118/123] NFS: Fix a typo in nfs_sockaddr_match_ipaddr6
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=usb-cdc-acm-fixing-crash-when-acm-probing-interfaces-with-no-endpoint-descriptors.patch
+Content-Disposition: inline; filename=nfs-fix-a-typo-in-nfs_sockaddr_match_ipaddr6.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Toby Gray <toby.gray@realvnc.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 577045c0a76e34294f902a7d5d60e90b04d094d0 upstream.
+commit b20d37ca9561711c6a3c4b859c2855f49565e061 upstream.
 
-Certain USB devices, such as the Nokia X6 mobile phone, don't expose any
-endpoint descriptors on some of their interfaces. If the ACM driver is forced
-to probe all interfaces on a device the a NULL pointer dereference will occur
-when the ACM driver attempts to use the endpoint of the alternative settings.
-One way to get the ACM driver to probe all the interfaces is by using the
-/sys/bus/usb/drivers/cdc_acm/new_id interface.
-
-This patch checks that the endpoint pointer for the current alternate settings
-is non-NULL before using it.
-
-Signed-off-by: Toby Gray <toby.gray@realvnc.com>
-Cc: Oliver Neukum <oliver@neukum.name>
+Reported-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/class/cdc-acm.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/nfs/client.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -971,7 +971,8 @@ static int acm_probe(struct usb_interfac
- 	}
+--- a/fs/nfs/client.c
++++ b/fs/nfs/client.c
+@@ -273,7 +273,7 @@ static int nfs_sockaddr_match_ipaddr6(co
+ 	    sin1->sin6_scope_id != sin2->sin6_scope_id)
+ 		return 0;
  
- 	if (!buflen) {
--		if (intf->cur_altsetting->endpoint->extralen &&
-+		if (intf->cur_altsetting->endpoint &&
-+				intf->cur_altsetting->endpoint->extralen &&
- 				intf->cur_altsetting->endpoint->extra) {
- 			dev_dbg(&intf->dev,
- 				"Seeking extra descriptors on endpoint\n");
+-	return ipv6_addr_equal(&sin1->sin6_addr, &sin1->sin6_addr);
++	return ipv6_addr_equal(&sin1->sin6_addr, &sin2->sin6_addr);
+ }
+ #else	/* !defined(CONFIG_IPV6) && !defined(CONFIG_IPV6_MODULE) */
+ static int nfs_sockaddr_match_ipaddr6(const struct sockaddr *sa1,
 
 
