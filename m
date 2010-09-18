@@ -1,134 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756437Ab0IRTIR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:08:17 -0400
-Received: from kroah.org ([198.145.64.141]:51859 "EHLO coco.kroah.org"
+	id S1756525Ab0IRTIf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:08:35 -0400
+Received: from kroah.org ([198.145.64.141]:51855 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756155Ab0IRTCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:02:25 -0400
+	id S1754759Ab0IRTCY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:02:24 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:00:02 2010
-Message-Id: <20100918190002.336066740@clark.site>
+Message-Id: <20100918190002.247368124@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:59:15 -0700
+Date: Sat, 18 Sep 2010 11:59:14 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Greg KH <greg@kroah.com>, Anton Blanchard <anton@samba.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Tony Luck <tony.luck@intel.com>, Mike Galbraith <efault@gmx.de>
-Subject: [111/123] sched: cpuacct: Use bigger percpu counter batch values for stats counters
+        Greg KH <greg@kroah.com>, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: [110/123] sched: Fix select_idle_sibling() logic in select_task_rq_fair()
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=sched-cpuacct-use-bigger-percpu-counter-batch-values-for-stats-counters.patch
+Content-Disposition: inline; filename=sched-fix-select_idle_sibling-logic-in-select_task_rq_fair.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anton Blanchard <anton@samba.org>
+From: Suresh Siddha <suresh.b.siddha@intel.com>
 
-commit fa535a77bd3fa32b9215ba375d6a202fe73e1dd6 upstream
+commit 99bd5e2f245d8cd17d040c82d40becdb3efd9b69 upstream
 
-When CONFIG_VIRT_CPU_ACCOUNTING and CONFIG_CGROUP_CPUACCT are
-enabled we can call cpuacct_update_stats with values much larger
-than percpu_counter_batch.  This means the call to
-percpu_counter_add will always add to the global count which is
-protected by a spinlock and we end up with a global spinlock in
-the scheduler.
+Issues in the current select_idle_sibling() logic in select_task_rq_fair()
+in the context of a task wake-up:
 
-Based on an idea by KOSAKI Motohiro, this patch scales the batch
-value by cputime_one_jiffy such that we have the same batch
-limit as we would if CONFIG_VIRT_CPU_ACCOUNTING was disabled.
-His patch did this once at boot but that initialisation happened
-too early on PowerPC (before time_init) and it was never updated
-at runtime as a result of a hotplug cpu add/remove.
+a) Once we select the idle sibling, we use that domain (spanning the cpu that
+   the task is currently woken-up and the idle sibling that we found) in our
+   wake_affine() decisions. This domain is completely different from the
+   domain(we are supposed to use) that spans the cpu that the task currently
+   woken-up and the cpu where the task previously ran.
 
-This patch instead scales percpu_counter_batch by
-cputime_one_jiffy at runtime, which keeps the batch correct even
-after cpu hotplug operations.  We cap it at INT_MAX in case of
-overflow.
+b) We do select_idle_sibling() check only for the cpu that the task is
+   currently woken-up on. If select_task_rq_fair() selects the previously run
+   cpu for waking the task, doing a select_idle_sibling() check
+   for that cpu also helps and we don't do this currently.
 
-For architectures that do not support
-CONFIG_VIRT_CPU_ACCOUNTING, cputime_one_jiffy is the constant 1
-and gcc is smart enough to optimise min(s32
-percpu_counter_batch, INT_MAX) to just percpu_counter_batch at
-least on x86 and PowerPC.  So there is no need to add an #ifdef.
+c) In the scenarios where the cpu that the task is woken-up is busy but
+   with its HT siblings are idle, we are selecting the task be woken-up
+   on the idle HT sibling instead of a core that it previously ran
+   and currently completely idle. i.e., we are not taking decisions based on
+   wake_affine() but directly selecting an idle sibling that can cause
+   an imbalance at the SMT/MC level which will be later corrected by the
+   periodic load balancer.
 
-On a 64 thread PowerPC box with CONFIG_VIRT_CPU_ACCOUNTING and
-CONFIG_CGROUP_CPUACCT enabled, a context switch microbenchmark
-is 234x faster and almost matches a CONFIG_CGROUP_CPUACCT
-disabled kernel:
+Fix this by first going through the load imbalance calculations using
+wake_affine() and once we make a decision of woken-up cpu vs previously-ran cpu,
+then choose a possible idle sibling for waking up the task on.
 
- CONFIG_CGROUP_CPUACCT disabled:   16906698 ctx switches/sec
- CONFIG_CGROUP_CPUACCT enabled:       61720 ctx switches/sec
- CONFIG_CGROUP_CPUACCT + patch:	   16663217 ctx switches/sec
-
-Tested with:
-
- wget http://ozlabs.org/~anton/junkcode/context_switch.c
- make context_switch
- for i in `seq 0 63`; do taskset -c $i ./context_switch & done
- vmstat 1
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
-Tested-by: Balbir Singh <balbir@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1270079265.7835.8.camel@sbs-t61.sc.intel.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- kernel/sched.c |   20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+ kernel/sched_fair.c |   82 +++++++++++++++++++++++++---------------------------
+ 1 file changed, 40 insertions(+), 42 deletions(-)
 
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -10934,12 +10934,30 @@ static void cpuacct_charge(struct task_s
- }
- 
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -1386,29 +1386,48 @@ find_idlest_cpu(struct sched_group *grou
  /*
-+ * When CONFIG_VIRT_CPU_ACCOUNTING is enabled one jiffy can be very large
-+ * in cputime_t units. As a result, cpuacct_update_stats calls
-+ * percpu_counter_add with values large enough to always overflow the
-+ * per cpu batch limit causing bad SMP scalability.
-+ *
-+ * To fix this we scale percpu_counter_batch by cputime_one_jiffy so we
-+ * batch the same amount of time with CONFIG_VIRT_CPU_ACCOUNTING disabled
-+ * and enabled. We cap it at INT_MAX which is the largest allowed batch value.
-+ */
-+#ifdef CONFIG_SMP
-+#define CPUACCT_BATCH	\
-+	min_t(long, percpu_counter_batch * cputime_one_jiffy, INT_MAX)
-+#else
-+#define CPUACCT_BATCH	0
-+#endif
-+
-+/*
-  * Charge the system/user time to the task's accounting group.
+  * Try and locate an idle CPU in the sched_domain.
   */
- static void cpuacct_update_stats(struct task_struct *tsk,
- 		enum cpuacct_stat_index idx, cputime_t val)
+-static int
+-select_idle_sibling(struct task_struct *p, struct sched_domain *sd, int target)
++static int select_idle_sibling(struct task_struct *p, int target)
  {
- 	struct cpuacct *ca;
-+	int batch = CPUACCT_BATCH;
+ 	int cpu = smp_processor_id();
+ 	int prev_cpu = task_cpu(p);
++	struct sched_domain *sd;
+ 	int i;
  
- 	if (unlikely(!cpuacct_subsys.active))
- 		return;
-@@ -10948,7 +10966,7 @@ static void cpuacct_update_stats(struct
- 	ca = task_ca(tsk);
+ 	/*
+-	 * If this domain spans both cpu and prev_cpu (see the SD_WAKE_AFFINE
+-	 * test in select_task_rq_fair) and the prev_cpu is idle then that's
+-	 * always a better target than the current cpu.
++	 * If the task is going to be woken-up on this cpu and if it is
++	 * already idle, then it is the right target.
++	 */
++	if (target == cpu && idle_cpu(cpu))
++		return cpu;
++
++	/*
++	 * If the task is going to be woken-up on the cpu where it previously
++	 * ran and if it is currently idle, then it the right target.
+ 	 */
+-	if (target == cpu && !cpu_rq(prev_cpu)->cfs.nr_running)
++	if (target == prev_cpu && idle_cpu(prev_cpu))
+ 		return prev_cpu;
  
- 	do {
--		percpu_counter_add(&ca->cpustat[idx], val);
-+		__percpu_counter_add(&ca->cpustat[idx], val, batch);
- 		ca = ca->parent;
- 	} while (ca);
- 	rcu_read_unlock();
+ 	/*
+-	 * Otherwise, iterate the domain and find an elegible idle cpu.
++	 * Otherwise, iterate the domains and find an elegible idle cpu.
+ 	 */
+-	for_each_cpu_and(i, sched_domain_span(sd), &p->cpus_allowed) {
+-		if (!cpu_rq(i)->cfs.nr_running) {
+-			target = i;
++	for_each_domain(target, sd) {
++		if (!(sd->flags & SD_SHARE_PKG_RESOURCES))
+ 			break;
++
++		for_each_cpu_and(i, sched_domain_span(sd), &p->cpus_allowed) {
++			if (idle_cpu(i)) {
++				target = i;
++				break;
++			}
+ 		}
++
++		/*
++		 * Lets stop looking for an idle sibling when we reached
++		 * the domain that spans the current cpu and prev_cpu.
++		 */
++		if (cpumask_test_cpu(cpu, sched_domain_span(sd)) &&
++		    cpumask_test_cpu(prev_cpu, sched_domain_span(sd)))
++			break;
+ 	}
+ 
+ 	return target;
+@@ -1432,7 +1451,7 @@ select_task_rq_fair(struct rq *rq, struc
+ 	int cpu = smp_processor_id();
+ 	int prev_cpu = task_cpu(p);
+ 	int new_cpu = cpu;
+-	int want_affine = 0, cpu_idle = !current->pid;
++	int want_affine = 0;
+ 	int want_sd = 1;
+ 	int sync = wake_flags & WF_SYNC;
+ 
+@@ -1472,36 +1491,13 @@ select_task_rq_fair(struct rq *rq, struc
+ 		}
+ 
+ 		/*
+-		 * While iterating the domains looking for a spanning
+-		 * WAKE_AFFINE domain, adjust the affine target to any idle cpu
+-		 * in cache sharing domains along the way.
++		 * If both cpu and prev_cpu are part of this domain,
++		 * cpu is a valid SD_WAKE_AFFINE target.
+ 		 */
+-		if (want_affine) {
+-			int target = -1;
+-
+-			/*
+-			 * If both cpu and prev_cpu are part of this domain,
+-			 * cpu is a valid SD_WAKE_AFFINE target.
+-			 */
+-			if (cpumask_test_cpu(prev_cpu, sched_domain_span(tmp)))
+-				target = cpu;
+-
+-			/*
+-			 * If there's an idle sibling in this domain, make that
+-			 * the wake_affine target instead of the current cpu.
+-			 */
+-			if (!cpu_idle && tmp->flags & SD_SHARE_PKG_RESOURCES)
+-				target = select_idle_sibling(p, tmp, target);
+-
+-			if (target >= 0) {
+-				if (tmp->flags & SD_WAKE_AFFINE) {
+-					affine_sd = tmp;
+-					want_affine = 0;
+-					if (target != cpu)
+-						cpu_idle = 1;
+-				}
+-				cpu = target;
+-			}
++		if (want_affine && (tmp->flags & SD_WAKE_AFFINE) &&
++		    cpumask_test_cpu(prev_cpu, sched_domain_span(tmp))) {
++			affine_sd = tmp;
++			want_affine = 0;
+ 		}
+ 
+ 		if (!want_sd && !want_affine)
+@@ -1532,8 +1528,10 @@ select_task_rq_fair(struct rq *rq, struc
+ #endif
+ 
+ 	if (affine_sd) {
+-		if (cpu_idle || cpu == prev_cpu || wake_affine(affine_sd, p, sync))
+-			return cpu;
++		if (cpu == prev_cpu || wake_affine(affine_sd, p, sync))
++			return select_idle_sibling(p, cpu);
++		else
++			return select_idle_sibling(p, prev_cpu);
+ 	}
+ 
+ 	while (sd) {
 
 
