@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757713Ab0IRTqx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:46:53 -0400
-Received: from kroah.org ([198.145.64.141]:51560 "EHLO coco.kroah.org"
+	id S1757720Ab0IRTrG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:47:06 -0400
+Received: from kroah.org ([198.145.64.141]:51552 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755796Ab0IRTB4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:01:56 -0400
+	id S1755812Ab0IRTBz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:01:55 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:58 2010
-Message-Id: <20100918185958.784232693@clark.site>
+Message-Id: <20100918185958.704054867@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:58:34 -0700
+Date: Sat, 18 Sep 2010 11:58:33 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Greg KH <greg@kroah.com>, Mike Galbraith <efault@gmx.de>
-Subject: [070/123] sched: Sanitize fork() handling
+Subject: [069/123] sched: Clean up ttwu() rq locking
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=sched-sanitize-fork-handling.patch
+Content-Disposition: inline; filename=sched-clean-up-ttwu-rq-locking.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,16 +26,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-commit cd29fe6f2637cc2ccbda5ac65f5332d6bf5fa3c6 upstream
+commit ab19cb23313733c55e0517607844b86720b35f5f upstream
 
-Currently we try to do task placement in wake_up_new_task() after we do
-the load-balance pass in sched_fork(). This yields complicated semantics
-in that we have to deal with tasks on different RQs and the
-set_task_cpu() calls in copy_process() and sched_fork()
+Since set_task_clock() doesn't rely on rq->clock anymore we can simplyfy
+the mess in ttwu().
 
-Rename ->task_new() to ->task_fork() and call it from sched_fork()
-before the balancing, this gives the policy a clear point to place the
-task.
+Optimize things a bit by not fiddling with the IRQ state there.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 LKML-Reference: <new-submission>
@@ -43,156 +39,30 @@ Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- include/linux/sched.h |    2 +-
- kernel/sched.c        |   43 ++++++++++++++++++-------------------------
- kernel/sched_fair.c   |   28 +++++++++++++++-------------
- 3 files changed, 34 insertions(+), 39 deletions(-)
+ kernel/sched.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1104,7 +1104,7 @@ struct sched_class {
- 
- 	void (*set_curr_task) (struct rq *rq);
- 	void (*task_tick) (struct rq *rq, struct task_struct *p, int queued);
--	void (*task_new) (struct rq *rq, struct task_struct *p);
-+	void (*task_fork) (struct task_struct *p);
- 
- 	void (*switched_from) (struct rq *this_rq, struct task_struct *task,
- 			       int running);
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -1821,6 +1821,20 @@ static void cfs_rq_set_shares(struct cfs
- static void calc_load_account_active(struct rq *this_rq);
- static void update_sysctl(void);
+@@ -2379,16 +2379,14 @@ static int try_to_wake_up(struct task_st
+ 	if (task_contributes_to_load(p))
+ 		rq->nr_uninterruptible--;
+ 	p->state = TASK_WAKING;
+-	task_rq_unlock(rq, &flags);
++	__task_rq_unlock(rq);
  
-+static inline void __set_task_cpu(struct task_struct *p, unsigned int cpu)
-+{
-+	set_task_rq(p, cpu);
-+#ifdef CONFIG_SMP
-+	/*
-+	 * After ->cpu is set up to a new value, task_rq_lock(p, ...) can be
-+	 * successfuly executed on another CPU. We must ensure that updates of
-+	 * per-task data have been completed by this moment.
-+	 */
-+	smp_wmb();
-+	task_thread_info(p)->cpu = cpu;
-+#endif
-+}
-+
- #include "sched_stats.h"
- #include "sched_idletask.c"
- #include "sched_fair.c"
-@@ -1977,20 +1991,6 @@ inline int task_curr(const struct task_s
- 	return cpu_curr(task_cpu(p)) == p;
- }
+ 	cpu = select_task_rq(p, SD_BALANCE_WAKE, wake_flags);
+ 	if (cpu != orig_cpu)
+ 		set_task_cpu(p, cpu);
  
--static inline void __set_task_cpu(struct task_struct *p, unsigned int cpu)
--{
--	set_task_rq(p, cpu);
--#ifdef CONFIG_SMP
--	/*
--	 * After ->cpu is set up to a new value, task_rq_lock(p, ...) can be
--	 * successfuly executed on another CPU. We must ensure that updates of
--	 * per-task data have been completed by this moment.
--	 */
--	smp_wmb();
--	task_thread_info(p)->cpu = cpu;
--#endif
--}
+-	rq = task_rq_lock(p, &flags);
 -
- static inline void check_class_changed(struct rq *rq, struct task_struct *p,
- 				       const struct sched_class *prev_class,
- 				       int oldprio, int running)
-@@ -2593,6 +2593,9 @@ void sched_fork(struct task_struct *p, i
- 	if (!rt_prio(p->prio))
- 		p->sched_class = &fair_sched_class;
+-	if (rq != orig_rq)
+-		update_rq_clock(rq);
++	rq = __task_rq_lock(p);
++	update_rq_clock(rq);
  
-+	if (p->sched_class->task_fork)
-+		p->sched_class->task_fork(p);
-+
- #ifdef CONFIG_SMP
- 	cpu = select_task_rq(p, SD_BALANCE_FORK, 0);
- #endif
-@@ -2629,17 +2632,7 @@ void wake_up_new_task(struct task_struct
- 	rq = task_rq_lock(p, &flags);
- 	BUG_ON(p->state != TASK_RUNNING);
- 	update_rq_clock(rq);
--
--	if (!p->sched_class->task_new || !current->se.on_rq) {
--		activate_task(rq, p, 0);
--	} else {
--		/*
--		 * Let the scheduling class do new task startup
--		 * management (if any):
--		 */
--		p->sched_class->task_new(rq, p);
--		inc_nr_running(rq);
--	}
-+	activate_task(rq, p, 0);
- 	trace_sched_wakeup_new(rq, p, 1);
- 	check_preempt_curr(rq, p, WF_FORK);
- #ifdef CONFIG_SMP
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -1911,28 +1911,30 @@ static void task_tick_fair(struct rq *rq
- }
- 
- /*
-- * Share the fairness runtime between parent and child, thus the
-- * total amount of pressure for CPU stays equal - new tasks
-- * get a chance to run but frequent forkers are not allowed to
-- * monopolize the CPU. Note: the parent runqueue is locked,
-- * the child is not running yet.
-+ * called on fork with the child task as argument from the parent's context
-+ *  - child not yet on the tasklist
-+ *  - preemption disabled
-  */
--static void task_new_fair(struct rq *rq, struct task_struct *p)
-+static void task_fork_fair(struct task_struct *p)
- {
--	struct cfs_rq *cfs_rq = task_cfs_rq(p);
-+	struct cfs_rq *cfs_rq = task_cfs_rq(current);
- 	struct sched_entity *se = &p->se, *curr = cfs_rq->curr;
- 	int this_cpu = smp_processor_id();
-+	struct rq *rq = this_rq();
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&rq->lock, flags);
- 
--	sched_info_queued(p);
-+	if (unlikely(task_cpu(p) != this_cpu))
-+		__set_task_cpu(p, this_cpu);
- 
- 	update_curr(cfs_rq);
-+
- 	if (curr)
- 		se->vruntime = curr->vruntime;
- 	place_entity(cfs_rq, se, 1);
- 
--	/* 'curr' will be NULL if the child belongs to a different group */
--	if (sysctl_sched_child_runs_first && this_cpu == task_cpu(p) &&
--			curr && entity_before(curr, se)) {
-+	if (sysctl_sched_child_runs_first && curr && entity_before(curr, se)) {
- 		/*
- 		 * Upon rescheduling, sched_class::put_prev_task() will place
- 		 * 'current' within the tree based on its new key value.
-@@ -1941,7 +1943,7 @@ static void task_new_fair(struct rq *rq,
- 		resched_task(rq->curr);
- 	}
- 
--	enqueue_task_fair(rq, p, 0);
-+	spin_unlock_irqrestore(&rq->lock, flags);
- }
- 
- /*
-@@ -2043,7 +2045,7 @@ static const struct sched_class fair_sch
- 
- 	.set_curr_task          = set_curr_task_fair,
- 	.task_tick		= task_tick_fair,
--	.task_new		= task_new_fair,
-+	.task_fork		= task_fork_fair,
- 
- 	.prio_changed		= prio_changed_fair,
- 	.switched_to		= switched_to_fair,
+ 	WARN_ON(p->state != TASK_WAKING);
+ 	cpu = task_cpu(p);
 
 
