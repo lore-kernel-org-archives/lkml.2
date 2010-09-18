@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757430Ab0IRTbF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:31:05 -0400
-Received: from kroah.org ([198.145.64.141]:43410 "EHLO coco.kroah.org"
+	id S1757443Ab0IRTbX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:31:23 -0400
+Received: from kroah.org ([198.145.64.141]:43401 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756826Ab0IRTPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:15:15 -0400
+	id S1756820Ab0IRTPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:15:14 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:01 2010
-Message-Id: <20100918191301.880506109@clark.site>
+Message-Id: <20100918191301.701327915@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:12:31 -0700
+Date: Sat, 18 Sep 2010 12:12:29 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [053/129] ALSA: virtuoso: work around missing reset in the Xonar DS Windows driver
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [051/129] ALSA: hda - Add a new hp-laptop model for Conexant 5066, tested on HP G60
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,101 +26,156 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 4c25b93223340deff73381cc47f9244fb379a74d upstream.
+commit 048e78a5bc22c27410cb5ca9680c3c7ac400607f upstream.
 
-For the WM8776 chip, this driver uses a different sample format and
-more features than the Windows driver.  When rebooting from Linux into
-Windows, the latter driver does not reset the chip but assumes all its
-registers have their default settings, so we get garbled sound or, if
-the output happened to be muted before rebooting, no sound.
+This new model adds the following functionality to HP G60:
+- Automute of internal speakers
+- Autoswitch of internal/external mics
+- Remove SPDIF not physically present
 
-To make that driver happy, hook our driver's cleanup function into the
-shutdown notifier and ensure that the chip gets reset.
-
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Reported-and-tested-by: Nathan Schagen
+BugLink: http://launchpad.net/bugs/587388
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/oxygen/oxygen.h       |    1 +
- sound/pci/oxygen/oxygen_lib.c   |   21 ++++++++++++++++++---
- sound/pci/oxygen/virtuoso.c     |    1 +
- sound/pci/oxygen/xonar_wm87x6.c |    1 +
- 4 files changed, 21 insertions(+), 3 deletions(-)
+ Documentation/sound/alsa/HD-Audio-Models.txt |    1 
+ sound/pci/hda/patch_conexant.c               |   57 +++++++++++++++++++++++++++
+ 2 files changed, 58 insertions(+)
 
---- a/sound/pci/oxygen/oxygen.h
-+++ b/sound/pci/oxygen/oxygen.h
-@@ -155,6 +155,7 @@ void oxygen_pci_remove(struct pci_dev *p
- int oxygen_pci_suspend(struct pci_dev *pci, pm_message_t state);
- int oxygen_pci_resume(struct pci_dev *pci);
- #endif
-+void oxygen_pci_shutdown(struct pci_dev *pci);
+--- a/Documentation/sound/alsa/HD-Audio-Models.txt
++++ b/Documentation/sound/alsa/HD-Audio-Models.txt
+@@ -288,6 +288,7 @@ Conexant 5051
+ Conexant 5066
+ =============
+   laptop	Basic Laptop config (default)
++  hp-laptop	HP laptops, e g G60
+   dell-laptop	Dell laptops
+   olpc-xo-1_5	OLPC XO 1.5
+   ideapad       Lenovo IdeaPad U150
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -116,6 +116,7 @@ struct conexant_spec {
+ 	unsigned int dell_vostro:1;
+ 	unsigned int ideapad:1;
+ 	unsigned int thinkpad:1;
++	unsigned int hp_laptop:1;
  
- /* oxygen_mixer.c */
- 
---- a/sound/pci/oxygen/oxygen_lib.c
-+++ b/sound/pci/oxygen/oxygen_lib.c
-@@ -519,16 +519,21 @@ static void oxygen_init(struct oxygen *c
+ 	unsigned int ext_mic_present;
+ 	unsigned int recording;
+@@ -2219,6 +2220,18 @@ static void cxt5066_ideapad_automic(stru
  	}
  }
  
--static void oxygen_card_free(struct snd_card *card)
-+static void oxygen_shutdown(struct oxygen *chip)
- {
--	struct oxygen *chip = card->private_data;
--
- 	spin_lock_irq(&chip->reg_lock);
- 	chip->interrupt_mask = 0;
- 	chip->pcm_running = 0;
- 	oxygen_write16(chip, OXYGEN_DMA_STATUS, 0);
- 	oxygen_write16(chip, OXYGEN_INTERRUPT_MASK, 0);
- 	spin_unlock_irq(&chip->reg_lock);
++/* toggle input of built-in digital mic and mic jack appropriately */
++static void cxt5066_hp_laptop_automic(struct hda_codec *codec)
++{
++	unsigned int present;
++
++	present = snd_hda_jack_detect(codec, 0x1b);
++	snd_printdd("CXT5066: external microphone present=%d\n", present);
++	snd_hda_codec_write(codec, 0x17, 0, AC_VERB_SET_CONNECT_SEL,
++			    present ? 1 : 3);
 +}
 +
-+static void oxygen_card_free(struct snd_card *card)
-+{
-+	struct oxygen *chip = card->private_data;
 +
-+	oxygen_shutdown(chip);
- 	if (chip->irq >= 0)
- 		free_irq(chip->irq, chip);
- 	flush_scheduled_work();
-@@ -778,3 +783,13 @@ int oxygen_pci_resume(struct pci_dev *pc
+ /* toggle input of built-in digital mic and mic jack appropriately
+    order is: external mic -> dock mic -> interal mic */
+ static void cxt5066_thinkpad_automic(struct hda_codec *codec)
+@@ -2328,6 +2341,20 @@ static void cxt5066_ideapad_event(struct
  }
- EXPORT_SYMBOL(oxygen_pci_resume);
- #endif /* CONFIG_PM */
-+
-+void oxygen_pci_shutdown(struct pci_dev *pci)
+ 
+ /* unsolicited event for jack sensing */
++static void cxt5066_hp_laptop_event(struct hda_codec *codec, unsigned int res)
 +{
-+	struct snd_card *card = pci_get_drvdata(pci);
-+	struct oxygen *chip = card->private_data;
-+
-+	oxygen_shutdown(chip);
-+	chip->model.cleanup(chip);
++	snd_printdd("CXT5066_hp_laptop: unsol event %x (%x)\n", res, res >> 26);
++	switch (res >> 26) {
++	case CONEXANT_HP_EVENT:
++		cxt5066_hp_automute(codec);
++		break;
++	case CONEXANT_MIC_EVENT:
++		cxt5066_hp_laptop_automic(codec);
++		break;
++	}
 +}
-+EXPORT_SYMBOL(oxygen_pci_shutdown);
---- a/sound/pci/oxygen/virtuoso.c
-+++ b/sound/pci/oxygen/virtuoso.c
-@@ -95,6 +95,7 @@ static struct pci_driver xonar_driver =
- 	.suspend = oxygen_pci_suspend,
- 	.resume = oxygen_pci_resume,
- #endif
-+	.shutdown = oxygen_pci_shutdown,
++
++/* unsolicited event for jack sensing */
+ static void cxt5066_thinkpad_event(struct hda_codec *codec, unsigned int res)
+ {
+ 	snd_printdd("CXT5066_thinkpad: unsol event %x (%x)\n", res, res >> 26);
+@@ -2910,6 +2937,14 @@ static struct hda_verb cxt5066_init_verb
+ 	{ } /* end */
  };
  
- static int __init alsa_card_xonar_init(void)
---- a/sound/pci/oxygen/xonar_wm87x6.c
-+++ b/sound/pci/oxygen/xonar_wm87x6.c
-@@ -193,6 +193,7 @@ static void xonar_ds_init(struct oxygen
- static void xonar_ds_cleanup(struct oxygen *chip)
++
++static struct hda_verb cxt5066_init_verbs_hp_laptop[] = {
++	{0x14, AC_VERB_SET_CONNECT_SEL, 0x0},
++	{0x19, AC_VERB_SET_UNSOLICITED_ENABLE, AC_USRSP_EN | CONEXANT_HP_EVENT},
++	{0x1b, AC_VERB_SET_UNSOLICITED_ENABLE, AC_USRSP_EN | CONEXANT_MIC_EVENT},
++	{ } /* end */
++};
++
+ /* initialize jack-sensing, too */
+ static int cxt5066_init(struct hda_codec *codec)
  {
- 	xonar_disable_output(chip);
-+	wm8776_write(chip, WM8776_RESET, 0);
- }
+@@ -2925,6 +2960,8 @@ static int cxt5066_init(struct hda_codec
+ 			cxt5066_ideapad_automic(codec);
+ 		else if (spec->thinkpad)
+ 			cxt5066_thinkpad_automic(codec);
++		else if (spec->hp_laptop)
++			cxt5066_hp_laptop_automic(codec);
+ 	}
+ 	cxt5066_set_mic_boost(codec);
+ 	return 0;
+@@ -2952,6 +2989,7 @@ enum {
+ 	CXT5066_DELL_VOSTO,	/* Dell Vostro 1015i */
+ 	CXT5066_IDEAPAD,	/* Lenovo IdeaPad U150 */
+ 	CXT5066_THINKPAD,	/* Lenovo ThinkPad T410s, others? */
++	CXT5066_HP_LAPTOP,      /* HP Laptop */
+ 	CXT5066_MODELS
+ };
  
- static void xonar_ds_suspend(struct oxygen *chip)
+@@ -2962,6 +3000,7 @@ static const char *cxt5066_models[CXT506
+ 	[CXT5066_DELL_VOSTO]    = "dell-vostro",
+ 	[CXT5066_IDEAPAD]	= "ideapad",
+ 	[CXT5066_THINKPAD]	= "thinkpad",
++	[CXT5066_HP_LAPTOP]	= "hp-laptop",
+ };
+ 
+ static struct snd_pci_quirk cxt5066_cfg_tbl[] = {
+@@ -2973,6 +3012,7 @@ static struct snd_pci_quirk cxt5066_cfg_
+ 	SND_PCI_QUIRK(0x1028, 0x02d8, "Dell Vostro", CXT5066_DELL_VOSTO),
+ 	SND_PCI_QUIRK(0x1028, 0x0402, "Dell Vostro", CXT5066_DELL_VOSTO),
+ 	SND_PCI_QUIRK(0x1028, 0x0408, "Dell Inspiron One 19T", CXT5066_IDEAPAD),
++	SND_PCI_QUIRK(0x103c, 0x360b, "HP G60", CXT5066_HP_LAPTOP),
+ 	SND_PCI_QUIRK(0x1179, 0xff50, "Toshiba Satellite P500-PSPGSC-01800T", CXT5066_OLPC_XO_1_5),
+ 	SND_PCI_QUIRK(0x1179, 0xffe0, "Toshiba Satellite Pro T130-15F", CXT5066_OLPC_XO_1_5),
+ 	SND_PCI_QUIRK(0x17aa, 0x21b2, "Thinkpad X100e", CXT5066_IDEAPAD),
+@@ -3032,6 +3072,23 @@ static int patch_cxt5066(struct hda_code
+ 		spec->num_init_verbs++;
+ 		spec->dell_automute = 1;
+ 		break;
++	case CXT5066_HP_LAPTOP:
++		codec->patch_ops.init = cxt5066_init;
++		codec->patch_ops.unsol_event = cxt5066_hp_laptop_event;
++		spec->init_verbs[spec->num_init_verbs] =
++			cxt5066_init_verbs_hp_laptop;
++		spec->num_init_verbs++;
++		spec->hp_laptop = 1;
++		spec->mixers[spec->num_mixers++] = cxt5066_mixer_master;
++		spec->mixers[spec->num_mixers++] = cxt5066_mixers;
++		/* no S/PDIF out */
++		spec->multiout.dig_out_nid = 0;
++		/* input source automatically selected */
++		spec->input_mux = NULL;
++		spec->port_d_mode = 0;
++		spec->mic_boost = 3; /* default 30dB gain */
++		break;
++
+ 	case CXT5066_OLPC_XO_1_5:
+ 		codec->patch_ops.init = cxt5066_olpc_init;
+ 		codec->patch_ops.unsol_event = cxt5066_olpc_unsol_event;
 
 
