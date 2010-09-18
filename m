@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755023Ab0IRSsf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 14:48:35 -0400
-Received: from kroah.org ([198.145.64.141]:38916 "EHLO coco.kroah.org"
+	id S1755497Ab0IRSsl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 14:48:41 -0400
+Received: from kroah.org ([198.145.64.141]:38935 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752965Ab0IRSse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 14:48:34 -0400
+	id S1752965Ab0IRSsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 14:48:36 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:46:21 2010
-Message-Id: <20100918184620.980215356@clark.site>
+Message-Id: <20100918184621.234928485@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:44:57 -0700
+Date: Sat, 18 Sep 2010 11:45:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [01/11] ALSA: seq/oss - Fix double-free at error path of snd_seq_oss_open()
+        Dan Carpenter <error27@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [04/11] irda: off by one
 In-Reply-To: <20100918184651.GA14224@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,56 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Dan Carpenter <error27@gmail.com>
 
-commit 27f7ad53829f79e799a253285318bff79ece15bd upstream.
+commit cf9b94f88bdbe8a02015fc30d7c232b2d262d4ad upstream.
 
-The error handling in snd_seq_oss_open() has several bad codes that
-do dereferecing released pointers and double-free of kmalloc'ed data.
-The object dp is release in free_devinfo() that is called via
-private_free callback.  The rest shouldn't touch this object any more.
+This is an off by one.  We would go past the end when we NUL terminate
+the "value" string at end of the function.  The "value" buffer is
+allocated in irlan_client_parse_response() or
+irlan_provider_parse_command().
 
-The patch changes delete_port() to call kfree() in any case, and gets
-rid of unnecessary calls of destructors in snd_seq_oss_open().
-
-Fixes CVE-2010-3080.
-
-Reported-and-tested-by: Tavis Ormandy <taviso@cmpxchg8b.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+CC: stable@kernel.org
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 
 ---
- sound/core/seq/oss/seq_oss_init.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ net/irda/irlan/irlan_common.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/core/seq/oss/seq_oss_init.c
-+++ b/sound/core/seq/oss/seq_oss_init.c
-@@ -280,13 +280,10 @@ snd_seq_oss_open(struct file *file, int
- 	return 0;
+--- a/net/irda/irlan/irlan_common.c
++++ b/net/irda/irlan/irlan_common.c
+@@ -1100,7 +1100,7 @@ int irlan_extract_param(__u8 *buf, char
+ 	memcpy(&val_len, buf+n, 2); /* To avoid alignment problems */
+ 	le16_to_cpus(&val_len); n+=2;
  
-  _error:
--	snd_seq_oss_writeq_delete(dp->writeq);
--	snd_seq_oss_readq_delete(dp->readq);
- 	snd_seq_oss_synth_cleanup(dp);
- 	snd_seq_oss_midi_cleanup(dp);
--	delete_port(dp);
- 	delete_seq_queue(dp->queue);
--	kfree(dp);
-+	delete_port(dp);
- 
- 	return rc;
- }
-@@ -349,8 +346,10 @@ create_port(struct seq_oss_devinfo *dp)
- static int
- delete_port(struct seq_oss_devinfo *dp)
- {
--	if (dp->port < 0)
-+	if (dp->port < 0) {
-+		kfree(dp);
- 		return 0;
-+	}
- 
- 	debug_printk(("delete_port %i\n", dp->port));
- 	return snd_seq_event_port_detach(dp->cseq, dp->port);
+-	if (val_len > 1016) {
++	if (val_len >= 1016) {
+ 		IRDA_DEBUG(2, "%s(), parameter length to long\n", __func__ );
+ 		return -RSP_INVALID_COMMAND_FORMAT;
+ 	}
 
 
