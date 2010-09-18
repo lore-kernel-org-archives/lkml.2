@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756633Ab0IRTOq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:14:46 -0400
-Received: from kroah.org ([198.145.64.141]:43153 "EHLO coco.kroah.org"
+	id S1757537Ab0IRTjb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:39:31 -0400
+Received: from kroah.org ([198.145.64.141]:43186 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756605Ab0IRTOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:14:42 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:12:57 2010
-Message-Id: <20100918191257.609019883@clark.site>
+	id S1756636Ab0IRTOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:14:46 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:12:58 2010
+Message-Id: <20100918191258.211958493@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:11:42 -0700
+Date: Sat, 18 Sep 2010 12:11:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [004/129] xen: use percpu interrupts for IPIs and VIRQs
+        Mark Lord <mlord@pobox.com>, Jeff Garzik <jgarzik@redhat.com>
+Subject: [011/129] sata_mv: fix broken DSM/TRIM support (v2)
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,73 +25,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+From: Mark Lord <kernel@teksavvy.com>
 
-commit aaca49642b92c8a57d3ca5029a5a94019c7af69f upstream.
+commit 44b733809a5aba7f6b15a548d31a56d25bf3851c upstream.
 
-IPIs and VIRQs are inherently per-cpu event types, so treat them as such:
- - use a specific percpu irq_chip implementation, and
- - handle them with handle_percpu_irq
+Fix DSM/TRIM commands in sata_mv (v2).
+These need to be issued using old-school "BM DMA",
+rather than via the EDMA host queue.
 
-This makes the path for delivering these interrupts more efficient
-(no masking/unmasking, no locks), and it avoid problems with attempts
-to migrate them.
+Since the chips don't have proper BM DMA status,
+we need to be more careful with setting the ATA_DMA_INTR bit,
+since DSM/TRIM often has a long delay between "DMA complete"
+and "command complete".
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+GEN_I chips don't have BM DMA, so no TRIM for them.
+
+Signed-off-by: Mark Lord <mlord@pobox.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/xen/events.c |   19 +++++++++++++++----
- 1 file changed, 15 insertions(+), 4 deletions(-)
+ drivers/ata/sata_mv.c |   44 +++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 37 insertions(+), 7 deletions(-)
 
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -107,6 +107,7 @@ static inline unsigned long *cpu_evtchn_
- #define VALID_EVTCHN(chn)	((chn) != 0)
- 
- static struct irq_chip xen_dynamic_chip;
-+static struct irq_chip xen_percpu_chip;
- 
- /* Constructor for packed IRQ information. */
- static struct irq_info mk_unbound_info(void)
-@@ -389,8 +390,8 @@ static int bind_ipi_to_irq(unsigned int
- 		if (irq < 0)
- 			goto out;
- 
--		set_irq_chip_and_handler_name(irq, &xen_dynamic_chip,
--					      handle_level_irq, "ipi");
-+		set_irq_chip_and_handler_name(irq, &xen_percpu_chip,
-+					      handle_percpu_irq, "ipi");
- 
- 		bind_ipi.vcpu = cpu;
- 		if (HYPERVISOR_event_channel_op(EVTCHNOP_bind_ipi,
-@@ -430,8 +431,8 @@ static int bind_virq_to_irq(unsigned int
- 
- 		irq = find_unbound_irq();
- 
--		set_irq_chip_and_handler_name(irq, &xen_dynamic_chip,
--					      handle_level_irq, "virq");
-+		set_irq_chip_and_handler_name(irq, &xen_percpu_chip,
-+					      handle_percpu_irq, "virq");
- 
- 		evtchn_to_irq[evtchn] = irq;
- 		irq_info[irq] = mk_virq_info(evtchn, virq);
-@@ -934,6 +935,16 @@ static struct irq_chip xen_dynamic_chip
- 	.retrigger	= retrigger_dynirq,
- };
- 
-+static struct irq_chip en_percpu_chip __read_mostly = {
-+	.name		= "xen-percpu",
-+
-+	.disable	= disable_dynirq,
-+	.mask		= disable_dynirq,
-+	.unmask		= enable_dynirq,
-+
-+	.ack		= ack_dynirq,
-+};
-+
- void __init xen_init_IRQ(void)
+--- a/drivers/ata/sata_mv.c
++++ b/drivers/ata/sata_mv.c
+@@ -1898,19 +1898,25 @@ static void mv_bmdma_start(struct ata_qu
+  *	LOCKING:
+  *	Inherited from caller.
+  */
+-static void mv_bmdma_stop(struct ata_queued_cmd *qc)
++static void mv_bmdma_stop_ap(struct ata_port *ap)
  {
- 	int i;
+-	struct ata_port *ap = qc->ap;
+ 	void __iomem *port_mmio = mv_ap_base(ap);
+ 	u32 cmd;
+ 
+ 	/* clear start/stop bit */
+ 	cmd = readl(port_mmio + BMDMA_CMD);
+-	cmd &= ~ATA_DMA_START;
+-	writelfl(cmd, port_mmio + BMDMA_CMD);
++	if (cmd & ATA_DMA_START) {
++		cmd &= ~ATA_DMA_START;
++		writelfl(cmd, port_mmio + BMDMA_CMD);
+ 
+-	/* one-PIO-cycle guaranteed wait, per spec, for HDMA1:0 transition */
+-	ata_sff_dma_pause(ap);
++		/* one-PIO-cycle guaranteed wait, per spec, for HDMA1:0 transition */
++		ata_sff_dma_pause(ap);
++	}
++}
++
++static void mv_bmdma_stop(struct ata_queued_cmd *qc)
++{
++	mv_bmdma_stop_ap(qc->ap);
+ }
+ 
+ /**
+@@ -1934,8 +1940,21 @@ static u8 mv_bmdma_status(struct ata_por
+ 	reg = readl(port_mmio + BMDMA_STATUS);
+ 	if (reg & ATA_DMA_ACTIVE)
+ 		status = ATA_DMA_ACTIVE;
+-	else
++	else if (reg & ATA_DMA_ERR)
+ 		status = (reg & ATA_DMA_ERR) | ATA_DMA_INTR;
++	else {
++		/*
++		 * Just because DMA_ACTIVE is 0 (DMA completed),
++		 * this does _not_ mean the device is "done".
++		 * So we should not yet be signalling ATA_DMA_INTR
++		 * in some cases.  Eg. DSM/TRIM, and perhaps others.
++		 */
++		mv_bmdma_stop_ap(ap);
++		if (ioread8(ap->ioaddr.altstatus_addr) & ATA_BUSY)
++			status = 0;
++		else
++			status = ATA_DMA_INTR;
++	}
+ 	return status;
+ }
+ 
+@@ -1995,6 +2014,9 @@ static void mv_qc_prep(struct ata_queued
+ 
+ 	switch (tf->protocol) {
+ 	case ATA_PROT_DMA:
++		if (tf->command == ATA_CMD_DSM)
++			return;
++		/* fall-thru */
+ 	case ATA_PROT_NCQ:
+ 		break;	/* continue below */
+ 	case ATA_PROT_PIO:
+@@ -2094,6 +2116,8 @@ static void mv_qc_prep_iie(struct ata_qu
+ 	if ((tf->protocol != ATA_PROT_DMA) &&
+ 	    (tf->protocol != ATA_PROT_NCQ))
+ 		return;
++	if (tf->command == ATA_CMD_DSM)
++		return;  /* use bmdma for this */
+ 
+ 	/* Fill in Gen IIE command request block */
+ 	if (!(tf->flags & ATA_TFLAG_WRITE))
+@@ -2289,6 +2313,12 @@ static unsigned int mv_qc_issue(struct a
+ 
+ 	switch (qc->tf.protocol) {
+ 	case ATA_PROT_DMA:
++		if (qc->tf.command == ATA_CMD_DSM) {
++			if (!ap->ops->bmdma_setup)  /* no bmdma on GEN_I */
++				return AC_ERR_OTHER;
++			break;  /* use bmdma for this */
++		}
++		/* fall thru */
+ 	case ATA_PROT_NCQ:
+ 		mv_start_edma(ap, port_mmio, pp, qc->tf.protocol);
+ 		pp->req_idx = (pp->req_idx + 1) & MV_MAX_Q_DEPTH_MASK;
 
 
