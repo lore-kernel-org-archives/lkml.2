@@ -1,67 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757321Ab0IRTQm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:16:42 -0400
-Received: from kroah.org ([198.145.64.141]:43978 "EHLO coco.kroah.org"
+	id S1756160Ab0IRTNN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:13:13 -0400
+Received: from kroah.org ([198.145.64.141]:51724 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756217Ab0IRTQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:16:37 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:08 2010
-Message-Id: <20100918191308.081927480@clark.site>
+	id S1755984Ab0IRTCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:02:12 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:00:00 2010
+Message-Id: <20100918190000.783766814@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:13:44 -0700
+Date: Sat, 18 Sep 2010 11:58:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [126/129] drm/i915: Prevent double dpms on
-In-Reply-To: <20100918191317.GA11386@kroah.com>
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Greg KH <greg@kroah.com>, Oleg Nesterov <oleg@redhat.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: [093/123] sched: Kill the broken and deadlockable cpuset_lock/cpuset_cpus_allowed_locked code
+References: <20100918185724.290702750@clark.site>
+Content-Disposition: inline; filename=sched-kill-the-broken-and-deadlockable-cpuset_lock-cpuset_cpus_allowed_locked-code.patch
+In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-stable review patch.  If anyone has any objections, please let us know.
+From: Oleg Nesterov <oleg@redhat.com>
 
-------------------
+commit 897f0b3c3ff40b443c84e271bef19bd6ae885195 upstream
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+This patch just states the fact the cpusets/cpuhotplug interaction is
+broken and removes the deadlockable code which only pretends to work.
 
-commit 032d2a0d068b0368296a56469761394ef03207c3 upstream.
+- cpuset_lock() doesn't really work. It is needed for
+  cpuset_cpus_allowed_locked() but we can't take this lock in
+  try_to_wake_up()->select_fallback_rq() path.
 
-Arguably this is a bug in drm-core in that we should not be called twice
-in succession with DPMS_ON, however this is still occuring and we see
-FDI link training failures on the second call leading to the occassional
-blank display. For the time being ignore the repeated call.
+- cpuset_lock() is deadlockable. Suppose that a task T bound to CPU takes
+  callback_mutex. If cpu_down(CPU) happens before T drops callback_mutex
+  stop_machine() preempts T, then migration_call(CPU_DEAD) tries to take
+  cpuset_lock() and hangs forever because CPU is already dead and thus
+  T can't be scheduled.
 
-Original patch by Dave Airlie <airlied@redhat.com>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+- cpuset_cpus_allowed_locked() is deadlockable too. It takes task_lock()
+  which is not irq-safe, but try_to_wake_up() can be called from irq.
+
+Kill them, and change select_fallback_rq() to use cpu_possible_mask, like
+we currently do without CONFIG_CPUSETS.
+
+Also, with or without this patch, with or without CONFIG_CPUSETS, the
+callers of select_fallback_rq() can race with each other or with
+set_cpus_allowed() pathes.
+
+The subsequent patches try to to fix these problems.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <20100315091003.GA9123@redhat.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/gpu/drm/i915/intel_display.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ include/linux/cpuset.h |   13 -------------
+ kernel/cpuset.c        |   27 +--------------------------
+ kernel/sched.c         |   10 +++-------
+ 3 files changed, 4 insertions(+), 46 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -2314,6 +2314,9 @@ static void intel_crtc_dpms(struct drm_c
- 	int pipe = intel_crtc->pipe;
- 	bool enabled;
+--- a/include/linux/cpuset.h
++++ b/include/linux/cpuset.h
+@@ -21,8 +21,6 @@ extern int number_of_cpusets;	/* How man
+ extern int cpuset_init(void);
+ extern void cpuset_init_smp(void);
+ extern void cpuset_cpus_allowed(struct task_struct *p, struct cpumask *mask);
+-extern void cpuset_cpus_allowed_locked(struct task_struct *p,
+-				       struct cpumask *mask);
+ extern nodemask_t cpuset_mems_allowed(struct task_struct *p);
+ #define cpuset_current_mems_allowed (current->mems_allowed)
+ void cpuset_init_current_mems_allowed(void);
+@@ -69,9 +67,6 @@ struct seq_file;
+ extern void cpuset_task_status_allowed(struct seq_file *m,
+ 					struct task_struct *task);
  
-+	if (intel_crtc->dpms_mode == mode)
-+		return;
-+
- 	dev_priv->display.dpms(crtc, mode);
+-extern void cpuset_lock(void);
+-extern void cpuset_unlock(void);
+-
+ extern int cpuset_mem_spread_node(void);
  
- 	intel_crtc->dpms_mode = mode;
-@@ -4915,7 +4918,7 @@ static void intel_crtc_init(struct drm_d
- 	dev_priv->pipe_to_crtc_mapping[intel_crtc->pipe] = &intel_crtc->base;
+ static inline int cpuset_do_page_mem_spread(void)
+@@ -105,11 +100,6 @@ static inline void cpuset_cpus_allowed(s
+ {
+ 	cpumask_copy(mask, cpu_possible_mask);
+ }
+-static inline void cpuset_cpus_allowed_locked(struct task_struct *p,
+-					      struct cpumask *mask)
+-{
+-	cpumask_copy(mask, cpu_possible_mask);
+-}
  
- 	intel_crtc->cursor_addr = 0;
--	intel_crtc->dpms_mode = DRM_MODE_DPMS_OFF;
-+	intel_crtc->dpms_mode = -1;
- 	drm_crtc_helper_add(&intel_crtc->base, &intel_helper_funcs);
+ static inline nodemask_t cpuset_mems_allowed(struct task_struct *p)
+ {
+@@ -157,9 +147,6 @@ static inline void cpuset_task_status_al
+ {
+ }
  
- 	intel_crtc->busy = false;
+-static inline void cpuset_lock(void) {}
+-static inline void cpuset_unlock(void) {}
+-
+ static inline int cpuset_mem_spread_node(void)
+ {
+ 	return 0;
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -2145,19 +2145,10 @@ void __init cpuset_init_smp(void)
+ void cpuset_cpus_allowed(struct task_struct *tsk, struct cpumask *pmask)
+ {
+ 	mutex_lock(&callback_mutex);
+-	cpuset_cpus_allowed_locked(tsk, pmask);
+-	mutex_unlock(&callback_mutex);
+-}
+-
+-/**
+- * cpuset_cpus_allowed_locked - return cpus_allowed mask from a tasks cpuset.
+- * Must be called with callback_mutex held.
+- **/
+-void cpuset_cpus_allowed_locked(struct task_struct *tsk, struct cpumask *pmask)
+-{
+ 	task_lock(tsk);
+ 	guarantee_online_cpus(task_cs(tsk), pmask);
+ 	task_unlock(tsk);
++	mutex_unlock(&callback_mutex);
+ }
+ 
+ void cpuset_init_current_mems_allowed(void)
+@@ -2346,22 +2337,6 @@ int __cpuset_node_allowed_hardwall(int n
+ }
+ 
+ /**
+- * cpuset_lock - lock out any changes to cpuset structures
+- *
+- * The out of memory (oom) code needs to mutex_lock cpusets
+- * from being changed while it scans the tasklist looking for a
+- * task in an overlapping cpuset.  Expose callback_mutex via this
+- * cpuset_lock() routine, so the oom code can lock it, before
+- * locking the task list.  The tasklist_lock is a spinlock, so
+- * must be taken inside callback_mutex.
+- */
+-
+-void cpuset_lock(void)
+-{
+-	mutex_lock(&callback_mutex);
+-}
+-
+-/**
+  * cpuset_unlock - release lock on cpuset changes
+  *
+  * Undo the lock taken in a previous cpuset_lock() call.
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2349,11 +2349,9 @@ static int select_fallback_rq(int cpu, s
+ 		return dest_cpu;
+ 
+ 	/* No more Mr. Nice Guy. */
+-	if (dest_cpu >= nr_cpu_ids) {
+-		rcu_read_lock();
+-		cpuset_cpus_allowed_locked(p, &p->cpus_allowed);
+-		rcu_read_unlock();
+-		dest_cpu = cpumask_any_and(cpu_active_mask, &p->cpus_allowed);
++	if (unlikely(dest_cpu >= nr_cpu_ids)) {
++		cpumask_copy(&p->cpus_allowed, cpu_possible_mask);
++		dest_cpu = cpumask_any(cpu_active_mask);
+ 
+ 		/*
+ 		 * Don't tell them about moving exiting tasks or
+@@ -7833,7 +7831,6 @@ migration_call(struct notifier_block *nf
+ 
+ 	case CPU_DEAD:
+ 	case CPU_DEAD_FROZEN:
+-		cpuset_lock(); /* around calls to cpuset_cpus_allowed_lock() */
+ 		migrate_live_tasks(cpu);
+ 		rq = cpu_rq(cpu);
+ 		/* Idle task back to normal (off runqueue, low prio) */
+@@ -7844,7 +7841,6 @@ migration_call(struct notifier_block *nf
+ 		rq->idle->sched_class = &idle_sched_class;
+ 		migrate_dead_tasks(cpu);
+ 		spin_unlock_irq(&rq->lock);
+-		cpuset_unlock();
+ 		migrate_nr_uninterruptible(rq);
+ 		BUG_ON(rq->nr_running != 0);
+ 		calc_global_load_remove(rq);
 
 
