@@ -1,67 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757599Ab0IRTmT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:42:19 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:39389 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756582Ab0IRTmQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:42:16 -0400
-Date: Sat, 18 Sep 2010 20:42:15 +0100
-To: linux-arch@vger.kernel.org
-Subject: [PATCH 5/5] frv: double syscall restarts, syscall restart in
- sigreturn()
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org
-User-Agent: Heirloom mailx 12.4 7/29/08
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <E1Ox3Id-0006Ri-Bk@ZenIV.linux.org.uk>
-From: Al Viro <viro@ftp.linux.org.uk>
+	id S1756694Ab0IRTmq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:42:46 -0400
+Received: from kroah.org ([198.145.64.141]:51676 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755931Ab0IRTCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:02:07 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:00:00 2010
+Message-Id: <20100918190000.177115998@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Sat, 18 Sep 2010 11:58:50 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Greg KH <greg@kroah.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Mike Galbraith <efault@gmx.de>
+Subject: [086/123] sched: Fix fork vs hotplug vs cpuset namespaces
+References: <20100918185724.290702750@clark.site>
+Content-Disposition: inline; filename=sched-fix-fork-vs-hotplug-vs-cpuset-namespaces.patch
+In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-we need to make sure that only the first do_signal() to be handled
-on the way out syscall will bother with syscall restarts; additionally,
-the check on the "signal has user handler" path had been wrong -
-compare with restart prevention in sigreturn()...
+commit fabf318e5e4bda0aca2b0d617b191884fda62703 upstream
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+There are a number of issues:
+
+1) TASK_WAKING vs cgroup_clone (cpusets)
+
+copy_process():
+
+  sched_fork()
+    child->state = TASK_WAKING; /* waiting for wake_up_new_task() */
+  if (current->nsproxy != p->nsproxy)
+     ns_cgroup_clone()
+       cgroup_clone()
+         mutex_lock(inode->i_mutex)
+         mutex_lock(cgroup_mutex)
+         cgroup_attach_task()
+	   ss->can_attach()
+           ss->attach() [ -> cpuset_attach() ]
+             cpuset_attach_task()
+               set_cpus_allowed_ptr();
+                 while (child->state == TASK_WAKING)
+                   cpu_relax();
+will deadlock the system.
+
+2) cgroup_clone (cpusets) vs copy_process
+
+So even if the above would work we still have:
+
+copy_process():
+
+  if (current->nsproxy != p->nsproxy)
+     ns_cgroup_clone()
+       cgroup_clone()
+         mutex_lock(inode->i_mutex)
+         mutex_lock(cgroup_mutex)
+         cgroup_attach_task()
+	   ss->can_attach()
+           ss->attach() [ -> cpuset_attach() ]
+             cpuset_attach_task()
+               set_cpus_allowed_ptr();
+  ...
+
+  p->cpus_allowed = current->cpus_allowed
+
+over-writing the modified cpus_allowed.
+
+3) fork() vs hotplug
+
+  if we unplug the child's cpu after the sanity check when the child
+  gets attached to the task_list but before wake_up_new_task() shit
+  will meet with fan.
+
+Solve all these issues by moving fork cpu selection into
+wake_up_new_task().
+
+Reported-by: Serge E. Hallyn <serue@us.ibm.com>
+Tested-by: Serge E. Hallyn <serue@us.ibm.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1264106190.4283.1314.camel@laptop>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/frv/kernel/signal.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ kernel/fork.c  |   15 ---------------
+ kernel/sched.c |   39 +++++++++++++++++++++++++++------------
+ 2 files changed, 27 insertions(+), 27 deletions(-)
 
-diff --git a/arch/frv/kernel/signal.c b/arch/frv/kernel/signal.c
-index ad74e2e..c2d331e 100644
---- a/arch/frv/kernel/signal.c
-+++ b/arch/frv/kernel/signal.c
-@@ -446,7 +446,7 @@ static int handle_signal(unsigned long sig, siginfo_t *info,
- 	int ret;
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1233,21 +1233,6 @@ static struct task_struct *copy_process(
+ 	/* Need tasklist lock for parent etc handling! */
+ 	write_lock_irq(&tasklist_lock);
  
- 	/* Are we from a system call? */
--	if (in_syscall(__frame)) {
-+	if (__frame->syscallno != -1) {
- 		/* If so, check system call restarting.. */
- 		switch (__frame->gr8) {
- 		case -ERESTART_RESTARTBLOCK:
-@@ -465,6 +465,7 @@ static int handle_signal(unsigned long sig, siginfo_t *info,
- 			__frame->gr8 = __frame->orig_gr8;
- 			__frame->pc -= 4;
- 		}
-+		__frame->syscallno = -1;
+-	/*
+-	 * The task hasn't been attached yet, so its cpus_allowed mask will
+-	 * not be changed, nor will its assigned CPU.
+-	 *
+-	 * The cpus_allowed mask of the parent may have changed after it was
+-	 * copied first time - so re-copy it here, then check the child's CPU
+-	 * to ensure it is on a valid CPU (and if not, just force it back to
+-	 * parent's CPU). This avoids alot of nasty races.
+-	 */
+-	p->cpus_allowed = current->cpus_allowed;
+-	p->rt.nr_cpus_allowed = current->rt.nr_cpus_allowed;
+-	if (unlikely(!cpu_isset(task_cpu(p), p->cpus_allowed) ||
+-			!cpu_online(task_cpu(p))))
+-		set_task_cpu(p, smp_processor_id());
+-
+ 	/* CLONE_PARENT re-uses the old parent */
+ 	if (clone_flags & (CLONE_PARENT|CLONE_THREAD)) {
+ 		p->real_parent = current->real_parent;
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2351,14 +2351,12 @@ static int select_fallback_rq(int cpu, s
+ }
+ 
+ /*
+- * Called from:
++ * Gets called from 3 sites (exec, fork, wakeup), since it is called without
++ * holding rq->lock we need to ensure ->cpus_allowed is stable, this is done
++ * by:
+  *
+- *  - fork, @p is stable because it isn't on the tasklist yet
+- *
+- *  - exec, @p is unstable, retry loop
+- *
+- *  - wake-up, we serialize ->cpus_allowed against TASK_WAKING so
+- *             we should be good.
++ *  exec:           is unstable, retry loop
++ *  fork & wake-up: serialize ->cpus_allowed against TASK_WAKING
+  */
+ static inline
+ int select_task_rq(struct task_struct *p, int sd_flags, int wake_flags)
+@@ -2652,9 +2650,6 @@ void sched_fork(struct task_struct *p, i
+ 	if (p->sched_class->task_fork)
+ 		p->sched_class->task_fork(p);
+ 
+-#ifdef CONFIG_SMP
+-	cpu = select_task_rq(p, SD_BALANCE_FORK, 0);
+-#endif
+ 	set_task_cpu(p, cpu);
+ 
+ #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
+@@ -2684,6 +2679,21 @@ void wake_up_new_task(struct task_struct
+ {
+ 	unsigned long flags;
+ 	struct rq *rq;
++	int cpu = get_cpu();
++
++#ifdef CONFIG_SMP
++	/*
++	 * Fork balancing, do it here and not earlier because:
++	 *  - cpus_allowed can change in the fork path
++	 *  - any previously selected cpu might disappear through hotplug
++	 *
++	 * We still have TASK_WAKING but PF_STARTING is gone now, meaning
++	 * ->cpus_allowed is stable, we have preemption disabled, meaning
++	 * cpu_online_mask is stable.
++	 */
++	cpu = select_task_rq(p, SD_BALANCE_FORK, 0);
++	set_task_cpu(p, cpu);
++#endif
+ 
+ 	rq = task_rq_lock(p, &flags);
+ 	BUG_ON(p->state != TASK_WAKING);
+@@ -2697,6 +2707,7 @@ void wake_up_new_task(struct task_struct
+ 		p->sched_class->task_woken(rq, p);
+ #endif
+ 	task_rq_unlock(rq, &flags);
++	put_cpu();
+ }
+ 
+ #ifdef CONFIG_PREEMPT_NOTIFIERS
+@@ -7198,14 +7209,18 @@ int set_cpus_allowed_ptr(struct task_str
+ 	 * the ->cpus_allowed mask from under waking tasks, which would be
+ 	 * possible when we change rq->lock in ttwu(), so synchronize against
+ 	 * TASK_WAKING to avoid that.
++	 *
++	 * Make an exception for freshly cloned tasks, since cpuset namespaces
++	 * might move the task about, we have to validate the target in
++	 * wake_up_new_task() anyway since the cpu might have gone away.
+ 	 */
+ again:
+-	while (p->state == TASK_WAKING)
++	while (p->state == TASK_WAKING && !(p->flags & PF_STARTING))
+ 		cpu_relax();
+ 
+ 	rq = task_rq_lock(p, &flags);
+ 
+-	if (p->state == TASK_WAKING) {
++	if (p->state == TASK_WAKING && !(p->flags & PF_STARTING)) {
+ 		task_rq_unlock(rq, &flags);
+ 		goto again;
  	}
- 
- 	/* Set up the stack frame */
-@@ -551,6 +552,7 @@ no_signal:
- 			__frame->pc -= 4;
- 			break;
- 		}
-+		__frame->syscallno = -1;
- 	}
- 
- 	/* if there's no signal to deliver, we just put the saved sigmask
--- 
-1.5.6.5
+
 
