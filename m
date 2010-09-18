@@ -1,97 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989Ab0IRAsq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 20:48:46 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:61337 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753785Ab0IRAsp convert rfc822-to-8bit (ORCPT
+	id S1754129Ab0IRAu7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 20:50:59 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:36742 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753785Ab0IRAu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 20:48:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=c/cB/JZRMuv5+SwO7AP/YXDhaVI3B7Hwidu/KRzT+y6EAd3TQZAvys82gBApazc/pq
-         5lxxtU/bFUunuDdsVuIQ==
-MIME-Version: 1.0
-In-Reply-To: <tip-a68e5c94f7d3dd64fef34dd5d97e365cae4bb42a@git.kernel.org>
-References: <tip-ea53069231f9317062910d6e772cca4ce93de8c8@git.kernel.org>
-	<tip-a68e5c94f7d3dd64fef34dd5d97e365cae4bb42a@git.kernel.org>
-Date: Fri, 17 Sep 2010 17:48:41 -0700
-Message-ID: <AANLkTimCXZWVb7ajANPg15Zuo22nst=d5p-MjXhzu1NX@mail.gmail.com>
-Subject: Re: [tip:x86/idle] x86, hotplug: Move WBINVD back outside the
- play_dead loop
-From: Venkatesh Pallipadi <venki@google.com>
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        asit.k.mallick@intel.com, arjan@linux.kernel.org,
-        a.p.zijlstra@chello.hl, lenb@kernel.org, tglx@linutronix.de,
-        hpa@linux.intel.com, venki@google.com
-Cc: linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Fri, 17 Sep 2010 20:50:58 -0400
+Date: Sat, 18 Sep 2010 02:12:19 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        paulmck@linux.vnet.ibm.com, dhowells@redhat.com,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: memory barrier question
+Message-ID: <20100918021219.1ff6f98f@lxorguk.ukuu.org.uk>
+In-Reply-To: <1284760148.30449.107.camel@pasglop>
+References: <E1OwEjQ-0006wS-MU@pomaz-ex.szeredi.hu>
+	<E1Ovt6F-0005CS-RU@pomaz-ex.szeredi.hu>
+	<3777.1284638136@redhat.com>
+	<6383.1284647456@redhat.com>
+	<20100916150356.GD2462@linux.vnet.ibm.com>
+	<E1OwGz7-0007Cu-CC@pomaz-ex.szeredi.hu>
+	<20100916163708.GG2462@linux.vnet.ibm.com>
+	<E1OwHkg-0007IX-DH@pomaz-ex.szeredi.hu>
+	<1284656978.26423.11.camel@mulgrave.site>
+	<E1OwI5H-0007LR-DC@pomaz-ex.szeredi.hu>
+	<1284760148.30449.107.camel@pasglop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 17, 2010 at 5:13 PM, tip-bot for H. Peter Anvin
-<hpa@linux.intel.com> wrote:
-> Commit-ID:  a68e5c94f7d3dd64fef34dd5d97e365cae4bb42a
-> Gitweb:     http://git.kernel.org/tip/a68e5c94f7d3dd64fef34dd5d97e365cae4bb42a
-> Author:     H. Peter Anvin <hpa@linux.intel.com>
-> AuthorDate: Fri, 17 Sep 2010 17:06:46 -0700
-> Committer:  H. Peter Anvin <hpa@linux.intel.com>
-> CommitDate: Fri, 17 Sep 2010 17:10:23 -0700
->
-> x86, hotplug: Move WBINVD back outside the play_dead loop
->
-> On processors with hyperthreading, when only one thread is offlined
-> the other thread can cause a spurious wakeup on the idled thread.  We
-> do not want to re-WBINVD when that happens.
->
-> Ideally, we should simply skip WBINVD unless we're the last thread on
-> a particular core to shut down, but there might be similar issues
-> elsewhere in the system.
->
-> Thus, revert to previous behavior of only WBINVD outside the loop.
-> Partly as a result, remove the mb()'s around it: they are not
-> necessary since wbinvd() is a serializing instruction, but they were
-> intended to make sure the compiler didn't do any funny loop
-> optimizations.
->
-> Reported-by: Asit Mallick <asit.k.mallick@intel.com>
-> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-> Cc: Arjan van de Ven <arjan@linux.kernel.org>
-> Cc: Len Brown <lenb@kernel.org>
-> Cc: Venkatesh Pallipadi <venki@google.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.hl>
-> LKML-Reference: <tip-ea53069231f9317062910d6e772cca4ce93de8c8@git.kernel.org>
-> ---
->  arch/x86/kernel/smpboot.c |   11 +++++------
->  1 files changed, 5 insertions(+), 6 deletions(-)
->
-> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> index 07bf423..55c80ffb 100644
-> --- a/arch/x86/kernel/smpboot.c
-> +++ b/arch/x86/kernel/smpboot.c
-> @@ -1422,9 +1422,9 @@ static inline void mwait_play_dead(void)
->                        (highest_subcstate - 1);
->        }
->
-> +       wbinvd();
-> +
->        while (1) {
-> -               mb();
-> -               wbinvd();
->                __monitor(&current_thread_info()->flags, 0, 0);
->                mb();
+> >    LOAD inode = next.dentry->inode
+> >    if (inode != NULL)
+> >    	LOAD inode->f_op
+> > 
+> > What is there the compiler can optimize?
+> 
+> Those two loads depend on each other, I don't think any implementation
+> can re-order them. In fact, such data dependency is typically what is
+> used to avoid having barriers in some cases. The second load cannot be
+> issued until the value from the first one is returned.
 
+Actually I've met several compilers which will optimise them but not gcc
+and not in a Linux environment. Some compilers know how to optimise the
+== NULL case for pointer dereferences providing their programming
+environment has a couple of low pages mapped read only and reading 0.
 
-Just one observation. There are some CPUs with errata that need
-clflush before monitor. So, if that CPU wakesup spuriously it may have
-problem reentering idle. Not sure whether that will be a problem as
-that errata also depended on read happening on the flag. May be its
-better to do monitor (0, 0, 0).
-
-Thanks,
-Venki
+Alan
