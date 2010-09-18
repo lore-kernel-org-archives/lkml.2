@@ -1,35 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116Ab0IRUCI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 16:02:08 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:54816 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753633Ab0IRUCF (ORCPT
+	id S1755980Ab0IRUCR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 16:02:17 -0400
+Received: from smtp102.sbc.mail.ac4.yahoo.com ([76.13.13.241]:26959 "HELO
+	smtp102.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754161Ab0IRUCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 16:02:05 -0400
-Date: Sat, 18 Sep 2010 13:00:25 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>,
-        Adrian Hunter <adrian.hunter@nokia.com>, linux-mtd@lists.infradead.org
-Subject: Re: [PATCH] usibfs: fix kconfig dependency warning
-Message-Id: <20100918130025.594ba28f.randy.dunlap@oracle.com>
-In-Reply-To: <20100918125340.7a2cbb8b.randy.dunlap@oracle.com>
-References: <20100918125340.7a2cbb8b.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Sat, 18 Sep 2010 16:02:09 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: qrHJVRMVM1mI5j0t2PH11ahIhUbjAVg4aHZ.JMymNlcfySt
+ cKVXDVFK5.lpo_6awWpyJz4vIU2nKhKRpih8soxnpV12HwKdoI6pm64gzw.h
+ Tyh1b6.LoAiyXwAr1AM1.Lp5.DGA0RuGnh6k_X3F75bYXTtn9bsZWEdmflcX
+ Qug2PJ1Ue8PRTHnOM3t_PDafYMhTZI6ktZqClLbCv4KgPO8VUff9JzIUB0dC
+ stk5yyDUC6p75k6OTxNJRV17qPCpMYnHppgjkc7DlYrnvdp3QprO7gLg-
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [PATCH v2 01/11] scsi: Convert struct
+	Scsi_Host->cmd_serial_number to atomic_t
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Mike Christie <michaelc@cs.wisc.edu>
+Cc: Joe Eykholt <jeykholt@cisco.com>, linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Christoph Hellwig <hch@lst.de>
+In-Reply-To: <4C9427B6.9050404@cs.wisc.edu>
+References: <1284747709-20862-1-git-send-email-nab@linux-iscsi.org>
+	 <4C93BB8E.2080501@cisco.com>  <4C9427B6.9050404@cs.wisc.edu>
+Content-Type: text/plain
+Date: Sat, 18 Sep 2010 12:57:58 -0700
+Message-Id: <1284839878.13344.300.camel@haakon2.linux-iscsi.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 18 Sep 2010 12:53:40 -0700 Randy Dunlap wrote:
+On Fri, 2010-09-17 at 21:45 -0500, Mike Christie wrote:
+> On 09/17/2010 02:03 PM, Joe Eykholt wrote:
+> >
+> > How about instead of adding use_serial_number, let's just have the
+> > drivers that want a serial number call scsi_cmd_get_serial()
+> 
+> I think this sounds better.
+> 
+
+In that case I will go ahead and add explict scsi_cmd_get_serial() calls
+to the LLDs that use struct scsi_cmnd->serial_number in anything beyond
+an obvious and simple informational purpose.
+
+> You could also convert drivers to the host tagging if you needed a 
+> unique id for each command sent to a host.
+
+Hmmm, what does this entail again..?
+
+> 
+> > and stop calling it from scsi_dispatch_cmd()?   AFAICT, it's only
+> > used in debug messages in some drivers.  I didn't find other usages
+> > but didn't do an exhaustive search.
+> 
+> The comments for serial_number say that it is only supposed to be used 
+> for debugging printks and most drivers use it for that.
+
+So I would suppose it would be OK for those drivers to continue to
+printk serial_number to show the internal serial_number allocation is
+now disabled by default.
+
+> However, it looks like mpt and dpt_i2o are using it for error handling
+> and/or lookup type of operations. I think the mpt* uses are not needed
+> in the abort checks.
+> 
+
+In that case, then adding an explict scsi_cmd_get_serial() call in mpt*
+and dpt_i20 ->queuecommand() callers would be a good first step.
+
+> And eata is using it for ordering and tracking or something. It could 
+> probably be converted to the host tagging if or what you suggested if it 
+> needs the uniqueue id.
+
+Adding an explict scsi_cmd_get_serial() for eata for now, and we can
+consider LLD canidates for host tag conversion as a future step.
+
+> 
+> zfcp looks like it copies it. It does not look like the driver needs it.
+> 
+
+Ok, I will look at removing it's usage in zfcp or if necessary add an
+the explict scsi_cmd_get_serial() call.
+
+> scsi_error.c uses it in scsi_try_to_abort_cmd to check if a command has 
+> completed, but I think that can be done by checking if REQ_ATOM_COMPLETE 
+> is set.
+
+Hmmm, good catch here.  Jejb and hch, does this item work for you..?
+
+If so then I will take another peek for any ML uses of a struct
+scsi_cmnd->serial_number that need to be addressed, and include Joe's
+and Mike's recommendations into a v3 series.
+
+Thanks for your comments here Mike!
+
+--nab
 
 
-sorry, subject should be "ubifs".
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
