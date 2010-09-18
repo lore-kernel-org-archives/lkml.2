@@ -1,143 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756585Ab0IRTOA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:14:00 -0400
-Received: from kroah.org ([198.145.64.141]:51696 "EHLO coco.kroah.org"
+	id S1756011Ab0IRTOW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:14:22 -0400
+Received: from kroah.org ([198.145.64.141]:51689 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755947Ab0IRTCJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754603Ab0IRTCJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 18 Sep 2010 15:02:09 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:00:00 2010
-Message-Id: <20100918190000.430345814@clark.site>
+Message-Id: <20100918190000.344890212@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:58:53 -0700
+Date: Sat, 18 Sep 2010 11:58:52 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Greg KH <greg@kroah.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>
-Subject: [089/123] sched: Extend enqueue_task to allow head queueing
+        Mike Galbraith <efault@gmx.de>
+Subject: [088/123] sched: Fix race between ttwu() and task_rq_lock()
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=sched-extend-enqueue_task-to-allow-head-queueing.patch
+Content-Disposition: inline; filename=sched-fix-race-between-ttwu-and-task_rq_lock.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-commit ea87bb7853168434f4a82426dd1ea8421f9e604d upstream
+commit 0970d2992dfd7d5ec2c787417cf464f01eeaf42a upstream
 
-The ability of enqueueing a task to the head of a SCHED_FIFO priority
-list is required to fix some violations of POSIX scheduling policy.
+Thomas found that due to ttwu() changing a task's cpu without holding
+the rq->lock, task_rq_lock() might end up locking the wrong rq.
 
-Extend the related functions with a "head" argument.
+Avoid this by serializing against TASK_WAKING.
 
+Reported-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1266241712.15770.420.camel@laptop>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Tested-by: Carsten Emde <cbe@osadl.org>
-Tested-by: Mathias Weber <mathias.weber.mw1@roche.com>
-LKML-Reference: <20100120171629.734886007@linutronix.de>
 Signed-off-by: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- include/linux/sched.h |    3 ++-
- kernel/sched.c        |   13 +++++++------
- kernel/sched_fair.c   |    3 ++-
- kernel/sched_rt.c     |    3 ++-
- 4 files changed, 13 insertions(+), 9 deletions(-)
+ kernel/sched.c |   71 ++++++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 45 insertions(+), 26 deletions(-)
 
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1071,7 +1071,8 @@ struct sched_domain;
- struct sched_class {
- 	const struct sched_class *next;
- 
--	void (*enqueue_task) (struct rq *rq, struct task_struct *p, int wakeup);
-+	void (*enqueue_task) (struct rq *rq, struct task_struct *p, int wakeup,
-+			      bool head);
- 	void (*dequeue_task) (struct rq *rq, struct task_struct *p, int sleep);
- 	void (*yield_task) (struct rq *rq);
- 
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -1903,13 +1903,14 @@ static void update_avg(u64 *avg, u64 sam
- 	*avg += diff >> 3;
- }
+@@ -942,16 +942,33 @@ static inline void finish_lock_switch(st
+ #endif /* __ARCH_WANT_UNLOCKED_CTXSW */
  
--static void enqueue_task(struct rq *rq, struct task_struct *p, int wakeup)
-+static void
-+enqueue_task(struct rq *rq, struct task_struct *p, int wakeup, bool head)
- {
- 	if (wakeup)
- 		p->se.start_runtime = p->se.sum_exec_runtime;
- 
- 	sched_info_queued(p);
--	p->sched_class->enqueue_task(rq, p, wakeup);
-+	p->sched_class->enqueue_task(rq, p, wakeup, head);
- 	p->se.on_rq = 1;
- }
- 
-@@ -1985,7 +1986,7 @@ static void activate_task(struct rq *rq,
- 	if (task_contributes_to_load(p))
- 		rq->nr_uninterruptible--;
- 
--	enqueue_task(rq, p, wakeup);
-+	enqueue_task(rq, p, wakeup, false);
- 	inc_nr_running(rq);
- }
- 
-@@ -6183,7 +6184,7 @@ void rt_mutex_setprio(struct task_struct
- 	if (running)
- 		p->sched_class->set_curr_task(rq);
- 	if (on_rq) {
--		enqueue_task(rq, p, 0);
-+		enqueue_task(rq, p, 0, false);
- 
- 		check_class_changed(rq, p, prev_class, oldprio, running);
- 	}
-@@ -6227,7 +6228,7 @@ void set_user_nice(struct task_struct *p
- 	delta = p->prio - old_prio;
- 
- 	if (on_rq) {
--		enqueue_task(rq, p, 0);
-+		enqueue_task(rq, p, 0, false);
- 		/*
- 		 * If the task increased its priority or is running and
- 		 * lowered its priority, then reschedule its CPU:
-@@ -10180,7 +10181,7 @@ void sched_move_task(struct task_struct
- 	if (unlikely(running))
- 		tsk->sched_class->set_curr_task(rq);
- 	if (on_rq)
--		enqueue_task(rq, tsk, 0);
-+		enqueue_task(rq, tsk, 0, false);
- 
- 	task_rq_unlock(rq, &flags);
- }
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -1031,7 +1031,8 @@ static inline void hrtick_update(struct
-  * increased. Here we update the fair scheduling stats and
-  * then put the task into the rbtree:
-  */
--static void enqueue_task_fair(struct rq *rq, struct task_struct *p, int wakeup)
-+static void
-+enqueue_task_fair(struct rq *rq, struct task_struct *p, int wakeup, bool head)
- {
- 	struct cfs_rq *cfs_rq;
- 	struct sched_entity *se = &p->se;
---- a/kernel/sched_rt.c
-+++ b/kernel/sched_rt.c
-@@ -878,7 +878,8 @@ static void dequeue_rt_entity(struct sch
  /*
-  * Adding/removing a task to/from a priority array:
++ * Check whether the task is waking, we use this to synchronize against
++ * ttwu() so that task_cpu() reports a stable number.
++ *
++ * We need to make an exception for PF_STARTING tasks because the fork
++ * path might require task_rq_lock() to work, eg. it can call
++ * set_cpus_allowed_ptr() from the cpuset clone_ns code.
++ */
++static inline int task_is_waking(struct task_struct *p)
++{
++	return unlikely((p->state == TASK_WAKING) && !(p->flags & PF_STARTING));
++}
++
++/*
+  * __task_rq_lock - lock the runqueue a given task resides on.
+  * Must be called interrupts disabled.
   */
--static void enqueue_task_rt(struct rq *rq, struct task_struct *p, int wakeup)
-+static void
-+enqueue_task_rt(struct rq *rq, struct task_struct *p, int wakeup, bool head)
+ static inline struct rq *__task_rq_lock(struct task_struct *p)
+ 	__acquires(rq->lock)
  {
- 	struct sched_rt_entity *rt_se = &p->rt;
++	struct rq *rq;
++
+ 	for (;;) {
+-		struct rq *rq = task_rq(p);
++		while (task_is_waking(p))
++			cpu_relax();
++		rq = task_rq(p);
+ 		spin_lock(&rq->lock);
+-		if (likely(rq == task_rq(p)))
++		if (likely(rq == task_rq(p) && !task_is_waking(p)))
+ 			return rq;
+ 		spin_unlock(&rq->lock);
+ 	}
+@@ -968,10 +985,12 @@ static struct rq *task_rq_lock(struct ta
+ 	struct rq *rq;
  
+ 	for (;;) {
++		while (task_is_waking(p))
++			cpu_relax();
+ 		local_irq_save(*flags);
+ 		rq = task_rq(p);
+ 		spin_lock(&rq->lock);
+-		if (likely(rq == task_rq(p)))
++		if (likely(rq == task_rq(p) && !task_is_waking(p)))
+ 			return rq;
+ 		spin_unlock_irqrestore(&rq->lock, *flags);
+ 	}
+@@ -2439,14 +2458,27 @@ static int try_to_wake_up(struct task_st
+ 	__task_rq_unlock(rq);
+ 
+ 	cpu = select_task_rq(p, SD_BALANCE_WAKE, wake_flags);
+-	if (cpu != orig_cpu)
++	if (cpu != orig_cpu) {
++		/*
++		 * Since we migrate the task without holding any rq->lock,
++		 * we need to be careful with task_rq_lock(), since that
++		 * might end up locking an invalid rq.
++		 */
+ 		set_task_cpu(p, cpu);
++	}
+ 
+-	rq = __task_rq_lock(p);
++	rq = cpu_rq(cpu);
++	spin_lock(&rq->lock);
+ 	update_rq_clock(rq);
+ 
++	/*
++	 * We migrated the task without holding either rq->lock, however
++	 * since the task is not on the task list itself, nobody else
++	 * will try and migrate the task, hence the rq should match the
++	 * cpu we just moved it to.
++	 */
++	WARN_ON(task_cpu(p) != cpu);
+ 	WARN_ON(p->state != TASK_WAKING);
+-	cpu = task_cpu(p);
+ 
+ #ifdef CONFIG_SCHEDSTATS
+ 	schedstat_inc(rq, ttwu_count);
+@@ -2695,7 +2727,13 @@ void wake_up_new_task(struct task_struct
+ 	set_task_cpu(p, cpu);
+ #endif
+ 
+-	rq = task_rq_lock(p, &flags);
++	/*
++	 * Since the task is not on the rq and we still have TASK_WAKING set
++	 * nobody else will migrate this task.
++	 */
++	rq = cpu_rq(cpu);
++	spin_lock_irqsave(&rq->lock, flags);
++
+ 	BUG_ON(p->state != TASK_WAKING);
+ 	p->state = TASK_RUNNING;
+ 	update_rq_clock(rq);
+@@ -7204,27 +7242,8 @@ int set_cpus_allowed_ptr(struct task_str
+ 	struct rq *rq;
+ 	int ret = 0;
+ 
+-	/*
+-	 * Since we rely on wake-ups to migrate sleeping tasks, don't change
+-	 * the ->cpus_allowed mask from under waking tasks, which would be
+-	 * possible when we change rq->lock in ttwu(), so synchronize against
+-	 * TASK_WAKING to avoid that.
+-	 *
+-	 * Make an exception for freshly cloned tasks, since cpuset namespaces
+-	 * might move the task about, we have to validate the target in
+-	 * wake_up_new_task() anyway since the cpu might have gone away.
+-	 */
+-again:
+-	while (p->state == TASK_WAKING && !(p->flags & PF_STARTING))
+-		cpu_relax();
+-
+ 	rq = task_rq_lock(p, &flags);
+ 
+-	if (p->state == TASK_WAKING && !(p->flags & PF_STARTING)) {
+-		task_rq_unlock(rq, &flags);
+-		goto again;
+-	}
+-
+ 	if (!cpumask_intersects(new_mask, cpu_active_mask)) {
+ 		ret = -EINVAL;
+ 		goto out;
 
 
