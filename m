@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab0IRR4o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 13:56:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44856 "EHLO mx2.suse.de"
+	id S1753918Ab0IRSJJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 14:09:09 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43896 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751887Ab0IRR4m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 13:56:42 -0400
-Date: Sat, 18 Sep 2010 19:56:40 +0200 (CEST)
+	id S1752001Ab0IRSJH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 14:09:07 -0400
+Date: Sat, 18 Sep 2010 20:09:05 +0200 (CEST)
 From: Jiri Kosina <jkosina@suse.cz>
-To: Alex Riesen <raa.lkml@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-usb@vger.kernel.org,
-        linux-input@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Guillaume Chazarain <guichaz@gmail.com>, Mat <jackdachef@gmail.com>,
-        Andreas Bombe <aeb@debian.org>
+To: Mat <jackdachef@gmail.com>
+Cc: raa.lkml@gmail.com, Linux Kernel <linux-kernel@vger.kernel.org>,
+        guichaz@gmail.com
 Subject: Re: OOPS in hiddev_open on connecting "Logitech MX620 Laser Cordless
  Mouse"
-In-Reply-To: <AANLkTikOowB=8=3cnJ0QgJNfBsVeMUrkNT0E0uH2LDXL@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1009181954010.26813@pobox.suse.cz>
-References: <AANLkTikOowB=8=3cnJ0QgJNfBsVeMUrkNT0E0uH2LDXL@mail.gmail.com>
+In-Reply-To: <AANLkTimpXSrbZ6pAi3OWTmHrUnHPxwAnE1kEvmCj7G+r@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1009182008220.26813@pobox.suse.cz>
+References: <AANLkTimpXSrbZ6pAi3OWTmHrUnHPxwAnE1kEvmCj7G+r@mail.gmail.com>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -26,95 +23,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 18 Sep 2010, Mat wrote:
 
-[ adding Guillame and other reporters to CC ]
-
-On Sat, 18 Sep 2010, Alex Riesen wrote:
-
-> Happens with Linus' master at 509344b8b4d365b7ff3bce97198d83a57b7c3f31
-> The tree is modified, but I doubt the patches I have can cause this. I attach
-> then anyway. They never caused a conflict, so just the patches (in case of doubt
-> I can push the tree somewhere).
+> Hi everybody,
 > 
-> This is a regression from v2.6.35.
-> The machine is 64bit Core2Duo laptop (Dell XPS M1330).
-> The oops happens only with Ubuntu's hald running (9.04, hald 0.5.12).
-> The oops is reproducable. lsusb hangs (D state) after the oops.
-> Full dmesg and other machine data attached.
+> I've been noticing this also since a few days and have the same mouse
+> model. For me it's getting triggered when hald (which seemingly still
+> is needed by KDE4) is started:
 > 
-> [    2.926332] input: Logitech USB Receiver as
-> /devices/pci0000:00/0000:00:1d.0/usb5/5-2/5-2:1.0/input/input15
-> [    2.929221] generic-usb 0003:046D:C521.0001: input,hidraw0: USB HID
-> v1.11 Mouse [Logitech USB Receiver] on usb-0000:00:1d.0-2/input0
-> [    2.962276] input: Logitech USB Receiver as
-> /devices/pci0000:00/0000:00:1d.0/usb5/5-2/5-2:1.1/input/input16
-> [    2.966583] generic-usb 0003:046D:C521.0002: input,hiddev0,hidraw1:
-> USB HID v1.11 Device [Logitech USB Receiver] on
-> usb-0000:00:1d.0-2/input1
-> [    9.965857] udevd (1025): /proc/1025/oom_adj is deprecated, please
-> use /proc/1025/oom_score_adj instead.
-> [    9.969114] udev: starting version 141
-> ...
-> [  192.656508] BUG: unable to handle kernel NULL pointer dereference at (null)
-> [  192.658212] IP: [<ffffffff81331108>] hiddev_open+0xd1/0x19f
-> [  192.660745] PGD 79849067 PUD 79a9d067 PMD 0
-> [  192.661291] Oops: 0000 [#1] SMP
-> [  192.663348] last sysfs file:
-> /sys/devices/virtual/backlight/acpi_video0/max_brightness
-> [  192.663348] CPU 1
-> [  192.663348] Modules linked in: cpufreq_powersave
-> cpufreq_conservative cpufreq_userspace power_meter pci_slot dm_crypt
-> dm_mod sbp2 uvcvideo dell_wmi videodev iwlagn v4l1_compat
-> v4l2_compat_ioctl32 ohci1394 wmi ieee1394
-> [  192.663348]
-> [  192.670199] Pid: 3724, comm: hald-probe-hidd Not tainted
-> 2.6.36-rc4-t+ #81 0N6705/XPS M1330
-> [  192.670199] RIP: 0010:[<ffffffff81331108>]  [<ffffffff81331108>]
-> hiddev_open+0xd1/0x19f
-> [  192.670199] RSP: 0018:ffff88007d9fdc68  EFLAGS: 00010286
-> [  192.670199] RAX: ffff88003ffcc038 RBX: 00000000ffffffed RCX: 0000000000000000
-> [  192.670199] RDX: ffffffff81baa3a0 RSI: ffffffff817b353a RDI: ffff88003ffcc030
-> [  192.670199] RBP: ffff88007d9fdc88 R08: ffff880001d157c8 R09: ffffffff81a6e230
-> [  192.670199] R10: 0000000000000000 R11: 0000000000000000 R12: ffff88003ffc0000
-> [  192.670199] R13: 0000000000000000 R14: ffff88007d9f80c0 R15: ffff88007d9f80c0
-> [  192.670199] FS:  00007f3379d9a700(0000) GS:ffff880001d00000(0000)
+>    50.778558] BUG: unable to handle kernel NULL pointer dereference at (null)
+> [   50.779448] IP: [<ffffffff8159c4b3>] hiddev_open+0xa3/0x1b0
+> [   50.780371] PGD 0
+> [   50.781480] Oops: 0000 [#1] PREEMPT SMP
+> [   50.782671] last sysfs file:
+> /sys/devices/pci0000:00/0000:00:1f.2/host5/target5:0:0/5:0:0:0/block/sdd/size
+> [   50.783649] CPU 7
+> [   50.783659] Modules linked in: fglrx(P) firewire_ohci i2c_i801
+> firewire_core e1000e wmi shpchp tg3 libphy e1000 scsi_wait_scan
+> sl811_hcd ohci_hcd ssb usb_storage ehci_hcd
+> [   50.785661]
+> [   50.786647] Pid: 5576, comm: hald-probe-hidd Tainted: P
+> 2.6.36-rc4_plus_v2+ #2 FMP55/ipower G3710
+> [   50.787712] RIP: 0010:[<ffffffff8159c4b3>]  [<ffffffff8159c4b3>]
+> hiddev_open+0xa3/0x1b0
+> [   50.788784] RSP: 0018:ffff8801bafe9ca8  EFLAGS: 00010296
+> [   50.789889] RAX: 0000000000000000 RBX: ffff8801bb155400 RCX: 0000000000000004
+> [   50.790998] RDX: ffffffff81de4008 RSI: ffffffff81a03638 RDI: ffff8801bb1fc030
+> [   50.792105] RBP: ffff8801bb1f0000 R08: ffffea00060eec88 R09: 0000000000000000
+> [   50.793266] R10: 0000000000000004 R11: 0000000000000000 R12: 0000000000000000
+> [   50.794478] R13: 00000000ffffffed R14: ffffffff818f24e0 R15: ffff8801bfa8abd0
+> [   50.795639] FS:  00007f17699ba700(0000) GS:ffff8800023c0000(0000)
 > knlGS:0000000000000000
-> [  192.670199] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [  192.670199] CR2: 0000000000000000 CR3: 000000007da17000 CR4: 00000000000006e0
-> [  192.670199] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [  192.670199] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [  192.670199] Process hald-probe-hidd (pid: 3724, threadinfo
-> ffff88007d9fc000, task ffff88007db10000)
-> [  192.670199] Stack:
-> [  192.670199]  0000000000000000 0000000000000000 00000000ffffffed
-> ffffffff81652220
-> [  192.670199] <0> ffff88007d9fdcc8 ffffffff812d74b5 ffff88007e2b3090
-> ffff88007f0ec780
-> [  192.670199] <0> 0000000000000000 0000000000000000 ffff88007f0ec780
-> ffff88007e2b3090
-> [  192.670199] Call Trace:
-> [  192.670199]  [<ffffffff812d74b5>] usb_open+0xaf/0x14e
-> [  192.670199]  [<ffffffff810d2214>] chrdev_open+0x169/0x18a
-> [  192.700618]  [<ffffffff810d20ab>] ? chrdev_open+0x0/0x18a
-> [  192.700618]  [<ffffffff810cdbaa>] __dentry_open+0x175/0x298
-> [  192.700618]  [<ffffffff810cdd97>] nameidata_to_filp+0x3e/0x4f
-> [  192.700618]  [<ffffffff810d91d5>] do_last+0x518/0x641
-> [  192.700618]  [<ffffffff810db094>] do_filp_open+0x23d/0x5f7
-> [  192.700618]  [<ffffffff8146c264>] ? do_page_fault+0x379/0x3b8
-> [  192.700618]  [<ffffffff810cd962>] do_sys_open+0x5a/0xf0
-> [  192.700618]  [<ffffffff810cda21>] sys_open+0x1b/0x1d
-> [  192.700618]  [<ffffffff810029eb>] system_call_fastpath+0x16/0x1b
-> [  192.700618] Code: a3 ba 81 48 c7 c6 3a 35 7b 81 bb ed ff ff ff e8
-> 77 42 d2 ff 4d 89 ac 24 18 c0 00 00 4d 89 a6 a0 00 00 00 49 8b 8c 24
-> 18 c0 00 00 <83> 39 00 0f 84 a3 00 00 00 8b 51 04 8d 42 01 85 d2 89 41
-> 04 75
-> [  192.700618] RIP  [<ffffffff81331108>] hiddev_open+0xd1/0x19f
-> [  192.700618]  RSP <ffff88007d9fdc68>
-> [  192.700618] CR2: 0000000000000000
-> [  192.723591] ---[ end trace bd4debade6f95880 ]---
+> [   50.796810] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [   50.798021] CR2: 0000000000000000 CR3: 00000001bc3e5000 CR4: 00000000000006e0
+> [   50.799250] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [   50.800541] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [   50.801786] Process hald-probe-hidd (pid: 5576, threadinfo
+> ffff8801bafe8000, task ffff8801bc3c5dc0)
+> [   50.803057] Stack:
+> [   50.804341]  ffff8801bafe9d24 0000000000000000 ffff8801bb155400
+> ffffffff818e2b00
+> [   50.804378] <0> ffff8801bb0fb850 ffffffff814d9a74 ffff8801bb0fb850
+> ffff8801bb155400
+> [   50.805709] <0> ffff8801bfdd4900 0000000000000000 ffffffff810daf10
+> ffffffff810db035
+> [   50.808363] Call Trace:
+> [   50.809664]  [<ffffffff814d9a74>] ? usb_open+0xf4/0x1d0
+> [   50.811008]  [<ffffffff810daf10>] ? chrdev_open+0x0/0x210
+> [   50.812387]  [<ffffffff810db035>] ? chrdev_open+0x125/0x210
+> [   50.813721]  [<ffffffff810d5730>] ? __dentry_open.clone.16+0x100/0x320
+> [   50.815010]  [<ffffffff810e3ed0>] ? do_last.clone.45+0x3f0/0x690
+> [   50.816367]  [<ffffffff810e4363>] ? do_filp_open+0x1f3/0x5f0
+> [   50.817662]  [<ffffffff816b90a5>] ? unix_getname+0x65/0xe0
+> [   50.818947]  [<ffffffff81742609>] ? _raw_spin_unlock+0x9/0x40
+> [   50.820280]  [<ffffffff810ef5f4>] ? alloc_fd+0xe4/0x140
+> [   50.821639]  [<ffffffff810d6896>] ? do_sys_open+0x66/0x130
+> [   50.822931]  [<ffffffff810026ab>] ? system_call_fastpath+0x16/0x1b
+> [   50.824283] Code: c0 00 00 48 c7 c2 08 40 de 81 48 c7 c6 38 36 a0
+> 81 e8 d2 8a ac ff 4c 89 a5 18 c0 00 00 48 89 ab c0 00 00 00 48 8b 85
+> 18 c0 00 00 <44> 8b 00 45 85 c0 0f 84 e1 00 00 00 8b 50 04 8d 4a 01 85
+> d2 89
+> [   50.827599] RIP  [<ffffffff8159c4b3>] hiddev_open+0xa3/0x1b0
+> [   50.829040]  RSP <ffff8801bafe9ca8>
+> [   50.830557] CR2: 0000000000000000
+> [   50.831998] ---[ end trace e966fc680b209e8f ]---
+> 
+> the first significant related change that catches my eye is:
+> 
+> http://git.eu.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=8fe294caf8c868edd9046251824a0af91991bf43
+> HID: fix hiddev's use of usb_find_interface
+> 
+> Could this be the cause ?
+> 
+> @Alex Riesen:
+> 
+> maybe you could try to revert that commit
+> (http://git.eu.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=patch;h=8fe294caf8c868edd9046251824a0af91991bf43)
+> and see whether that fixes it, I'll do the same in my free time
 
-Does reverting of commit 8fe294caf8c868edd9046251824a0af91991bf43 fix the 
-problem please?
+Yeah, please let me know whether reverting that commit fixes the problem 
+you are seeing. It would mean that intfdata is NULL, which'd be a little 
+bit strange, as it is set in usbhid_probe() already.
 
 Thanks,
 
