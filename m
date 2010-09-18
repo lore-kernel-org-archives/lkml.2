@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757060Ab0IRTPw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:15:52 -0400
-Received: from kroah.org ([198.145.64.141]:43687 "EHLO coco.kroah.org"
+	id S1757192Ab0IRTQP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:16:15 -0400
+Received: from kroah.org ([198.145.64.141]:43823 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757020Ab0IRTPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:15:51 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:04 2010
-Message-Id: <20100918191304.704357969@clark.site>
+	id S1757177Ab0IRTQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:16:12 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:06 2010
+Message-Id: <20100918191306.158360062@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:13:04 -0700
+Date: Sat, 18 Sep 2010 12:13:21 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Gary King <gking@nvidia.com>, Tejun Heo <tj@kernel.org>,
-        Russell King <rmk@arm.linux.org.uk>, Jens Axboe <axboe@kernel.dk>
-Subject: [086/129] bounce: call flush_dcache_page() after bounce_copy_vec()
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [103/129] ALSA: HDA: Enable internal speaker on Dell M101z
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,43 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gary King <gking@nvidia.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit ac8456d6f9a3011c824176bd6084d39e5f70a382 upstream.
+commit 145a902bfeb1f89a41165bd2d1e633ce070bcb73 upstream.
 
-I have been seeing problems on Tegra 2 (ARMv7 SMP) systems with HIGHMEM
-enabled on 2.6.35 (plus some patches targetted at 2.6.36 to perform cache
-maintenance lazily), and the root cause appears to be that the mm bouncing
-code is calling flush_dcache_page before it copies the bounce buffer into
-the bio.
+BugLink: http://launchpad.net/bugs/640254
 
-The bounced page needs to be flushed after data is copied into it, to
-ensure that architecture implementations can synchronize instruction and
-data caches if necessary.
+In some cases a magic processing coefficient is needed to enable
+the internal speaker on Dell M101z. According to Realtek, this
+processing coefficient is only present on ALC269vb.
 
-Signed-off-by: Gary King <gking@nvidia.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Russell King <rmk@arm.linux.org.uk>
-Acked-by: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/bounce.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/mm/bounce.c
-+++ b/mm/bounce.c
-@@ -116,8 +116,8 @@ static void copy_to_high_bio_irq(struct
- 		 */
- 		vfrom = page_address(fromvec->bv_page) + tovec->bv_offset;
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -14230,6 +14230,7 @@ static void alc269_auto_init(struct hda_
  
--		flush_dcache_page(tovec->bv_page);
- 		bounce_copy_vec(tovec, vfrom);
-+		flush_dcache_page(tovec->bv_page);
- 	}
- }
+ enum {
+ 	ALC269_FIXUP_SONY_VAIO,
++	ALC269_FIXUP_DELL_M101Z,
+ };
+ 
+ static const struct hda_verb alc269_sony_vaio_fixup_verbs[] = {
+@@ -14241,11 +14242,20 @@ static const struct alc_fixup alc269_fix
+ 	[ALC269_FIXUP_SONY_VAIO] = {
+ 		.verbs = alc269_sony_vaio_fixup_verbs
+ 	},
++	[ALC269_FIXUP_DELL_M101Z] = {
++		.verbs = (const struct hda_verb[]) {
++			/* Enables internal speaker */
++			{0x20, AC_VERB_SET_COEF_INDEX, 13},
++			{0x20, AC_VERB_SET_PROC_COEF, 0x4040},
++			{}
++		}
++	},
+ };
+ 
+ static struct snd_pci_quirk alc269_fixup_tbl[] = {
+ 	SND_PCI_QUIRK(0x104d, 0x9071, "Sony VAIO", ALC269_FIXUP_SONY_VAIO),
+ 	SND_PCI_QUIRK(0x104d, 0x9077, "Sony VAIO", ALC269_FIXUP_SONY_VAIO),
++	SND_PCI_QUIRK(0x1028, 0x0470, "Dell M101z", ALC269_FIXUP_DELL_M101Z),
+ 	{}
+ };
  
 
 
