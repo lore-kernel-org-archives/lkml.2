@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756177Ab0IRTKy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:10:54 -0400
-Received: from kroah.org ([198.145.64.141]:51789 "EHLO coco.kroah.org"
+	id S1756102Ab0IRTLJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:11:09 -0400
+Received: from kroah.org ([198.145.64.141]:51782 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756079Ab0IRTCS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756073Ab0IRTCS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 18 Sep 2010 15:02:18 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:00:01 2010
-Message-Id: <20100918190001.553535929@clark.site>
+Message-Id: <20100918190001.466812569@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:59:06 -0700
+Date: Sat, 18 Sep 2010 11:59:05 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Greg KH <greg@kroah.com>, Mike Galbraith <efault@gmx.de>
-Subject: [102/123] sched: Fix rq->clock synchronization when migrating tasks
+Subject: [101/123] sched: Fix nr_uninterruptible count
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=sched-fix-rq-clock-synchronization-when-migrating-tasks.patch
+Content-Disposition: inline; filename=sched-fix-nr_uninterruptible-count.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-commit 861d034ee814917a83bd5de4b26e3b8336ddeeb8 upstream
+commit cc87f76a601d2d256118f7bab15e35254356ae21 upstream
 
-sched_fork() -- we do task placement in ->task_fork_fair() ensure we
-  update_rq_clock() so we work with current time. We leave the vruntime
-  in relative state, so the time delay until wake_up_new_task() doesn't
-  matter.
+The cpuload calculation in calc_load_account_active() assumes
+rq->nr_uninterruptible will not change on an offline cpu after
+migrate_nr_uninterruptible(). However the recent migrate on wakeup
+changes broke that and would result in decrementing the offline cpu's
+rq->nr_uninterruptible.
 
-wake_up_new_task() -- Since task_fork_fair() left p->vruntime in
-  relative state we can safely migrate, the activate_task() on the
-  remote rq will call update_rq_clock() and causes the clock to be
-  synced (enough).
+Fix this by accounting the nr_uninterruptible on the waking cpu.
 
-Tested-by: Jack Daniel <wanders.thirst@gmail.com>
-Tested-by: Philby John <pjohn@mvista.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1281002322.1923.1708.camel@laptop>
+LKML-Reference: <new-submission>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- kernel/sched_fair.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/sched.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -1963,6 +1963,8 @@ static void task_fork_fair(struct task_s
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2435,8 +2435,12 @@ static int try_to_wake_up(struct task_st
+ 	 *
+ 	 * First fix up the nr_uninterruptible count:
+ 	 */
+-	if (task_contributes_to_load(p))
+-		rq->nr_uninterruptible--;
++	if (task_contributes_to_load(p)) {
++		if (likely(cpu_online(orig_cpu)))
++			rq->nr_uninterruptible--;
++		else
++			this_rq()->nr_uninterruptible--;
++	}
+ 	p->state = TASK_WAKING;
  
- 	spin_lock_irqsave(&rq->lock, flags);
- 
-+	update_rq_clock(rq);
-+
- 	if (unlikely(task_cpu(p) != this_cpu))
- 		__set_task_cpu(p, this_cpu);
- 
+ 	if (p->sched_class->task_waking)
 
 
