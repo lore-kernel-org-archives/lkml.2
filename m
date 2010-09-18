@@ -1,72 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755632Ab0IRUcj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 16:32:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48011 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753359Ab0IRUci (ORCPT
+	id S1756016Ab0IRUlp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 16:41:45 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:65446 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753440Ab0IRUlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 16:32:38 -0400
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
-        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, stable-review@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-In-Reply-To: <20100918185958.285024381@clark.site>
-References: <20100918185724.290702750@clark.site>
-	 <20100918185958.285024381@clark.site>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-WHtMtuXrqZgG7NtZlRLK"
-Date: Sat, 18 Sep 2010 21:32:28 +0100
-Message-ID: <1284841948.5879.301.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [Stable-review] [064/123] sched: Protect task->cpus_allowed
- access in sched_getaffinity()
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+	Sat, 18 Sep 2010 16:41:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=Eii4CvzCGmVIqQQbSr5yg/PvIrmlVcl45qwcUmrqYHOgh1zSY92iH311PXN2iqcdC6
+         kN8BKjYx5CLDqKZy8xG2AuSwTGrMdBnFC+B8xOAX8YzNudDxfhWAmFiXM6xPcjlAhi1L
+         2ZuHQhrsb+H2D5IfJCNQ5aFvQYJbFRyRGYuEY=
+Date: Sat, 18 Sep 2010 22:41:12 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Nils Radtke <lkml@Think-Future.com>
+Cc: gregkh@suse.de, kernel-janitors@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: wlan-ng: p80211netdev.c cleanup
+Message-ID: <20100918204112.GA6236@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Nils Radtke <lkml@Think-Future.com>, gregkh@suse.de,
+	kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
+	linux-kernel@vger.kernel.org
+References: <1284834652-26171-1-git-send-email-lkml@Think-Future.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284834652-26171-1-git-send-email-lkml@Think-Future.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Sep 18, 2010 at 08:30:52PM +0200, Nils Radtke wrote:
+> diff --git a/drivers/staging/wlan-ng/p80211netdev.c b/drivers/staging/wlan-ng/p80211netdev.c
+> index aa1792c..8104e11 100644
+> --- a/drivers/staging/wlan-ng/p80211netdev.c
+> +++ b/drivers/staging/wlan-ng/p80211netdev.c
+> @@ -176,25 +176,30 @@ static struct net_device_stats *p80211knetdev_get_stats(netdevice_t * netdev)
+>  ----------------------------------------------------------------*/
+>  static int p80211knetdev_open(netdevice_t *netdev)
+>  {
+> -	int result = 0;		/* success */
+> +	int ret = 0;
 
---=-WHtMtuXrqZgG7NtZlRLK
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+If it was new code then I also would have prefered "ret" I suppose, but
+really it's not a good idea to rename things for no reason.
 
-I'm somewhat disturbed by the number of non-trivial scheduler changes
-here.  How well have these been tested as applied to the 2.6.32.y
-branch?
+>  	wlandevice_t *wlandev = netdev->ml_priv;
+>  
+>  	/* Check to make sure the MSD is running */
+> -	if (wlandev->msdstate != WLAN_MSD_RUNNING)
+> -		return -ENODEV;
+> +	if (wlandev->msdstate != WLAN_MSD_RUNNING) {
+> +		ret = -ENODEV;
+> +		goto end;
+> +	}
 
-Ben.
+It's better to just return directly.  This code makes me wonder what
+happens after I goto end, but actually nothing happens.  So it's
+a little annoying.
 
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
+>  
+>  	/* Tell the MSD to open */
+> -	if (wlandev->open != NULL) {
+> -		result = wlandev->open(wlandev);
+> -		if (result == 0) {
+> -			netif_start_queue(wlandev->netdev);
+> -			wlandev->state = WLAN_DEVICE_OPEN;
+> -		}
+> -	} else {
+> -		result = -EAGAIN;
+> +	if (wlandev->open == NULL) {
+> +		printk(KERN_ERR "Sorry, got wlandev->open == NULL.\n");
 
---=-WHtMtuXrqZgG7NtZlRLK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+This printk is not needed.  I haven't looked at this code, but if the
+user can trigger this error message then it can be used to flood
+/var/log/messages and cause a denial of service attack.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+>  
+> -	return result;
+> +	ret = wlandev->open(wlandev);
+> +	if (ret) {
 
-iQIVAwUATJUh1+e/yOyVhhEJAQJqiw/+MIm12LIxLtsDAgm307H7bVvVlU1stMts
-Muq9S1Vh4gQ5ltv8GdaXTH84HP8VRBB6R62jZktRPIZXrAPK3mtePzi6KZajqp/b
-sGuP77I4Vz3f76zSPXa8OL8OesKn7CdHrWIQy5t6NF/eQ7lMEgaaerxUKODmGPmr
-Suh8+tlcP3vBkLBy1WYfiQFcxhOm1/mzy34PEyI3C4Q3x7alJalCJW+BqfeNtpSg
-t/4ILVzFkBO5yN+HhH07LueN53YMuum6YPIKkwAfVu3RO49ZYgXhhQMSEVnqO/NE
-B48hh46NAANLiHV7b+z7x/Oy7z5FYseusRVOZU3Sxi9ZEmnDANBTKFOk2WEAMqoG
-WT89mhWHNDP2vN1cM7X48iSpz9d2Y6BfKGRsawsE+Z7g0Q8kkzRQFTTH5HuAFe63
-Xg+lliZSh4WZA4IPvKUdv8YluKz7jDiu04XR37fn2rRNjE743hste5U6o0c9uC7G
-e7p+OEELQFzM5y/McUWXrZAbrwmYlUnxkQagOLukbyKQrAdAMdgdgQx30GXfYKzG
-tmyHqRaXdNI6B5iUBp6EDGmK73fDM4ZmjIeS6AhouWyJ7Q9yGnhlyhUB/sqx22hP
-HbPx33vm1EMZnHThPEfyujO9mu/b11coH2IGy3SiKTnr3YTIlzKrVWQdk9ka5m0G
-VlzI4nHkjw4=
-=46qA
------END PGP SIGNATURE-----
+This test is reversed (we return zero on success).  It should be:
+	if (ret)
+		return ret;
+And then the other stuff can be pulled in an indent level.
 
---=-WHtMtuXrqZgG7NtZlRLK--
+> +		netif_start_queue(wlandev->netdev);
+> +		wlandev->state = WLAN_DEVICE_OPEN;
+> +	}
+> +
+> +end:
+> +	return ret;
+>  }
+
+The other function had many of the same issues.
+
+The change log for this should have been something like:
+	This is a cleanup of p80211knetdev_open().  I rearranged the
+	to unify all the return paths so there was just one return
+	statement.  I also changed the if statements so I could pull 
+	the code in one indent level and simplify things a bit.  And I
+	added a couple printk() to the let the user know about errors.
+
+(Except that adding printk()s is a functional change so it goes into a
+separate patch instead of hidden inside a "cleanup" patch.  But you get
+the idea).
+
+It's always dangerous writing patches when you can't test them. Most of
+my patches are one liners because and when people ask me to rewrite them
+in a more complicated way I tell them I don't feel comfortable doing
+that because I can't test it.
+
+Really though my advice is to start out by fixing bugs instead of
+focusing on cleanup.  I've fixed many of the interesting buffer
+overflows in main kernel but if you run smatch on staging then there are
+a bunch remaining.  Even reading through the false positives is good
+practise for reading code.
+
+Here's one the wlan-ng driver that you were working on:
+
+drivers/staging/wlan-ng/prism2fw.c +594 mkpdrlist(9)
+	error: buffer overflow 'pda16' 512 <= 512
+drivers/staging/wlan-ng/prism2fw.c +634 mkpdrlist(49)
+	error: buffer overflow 'pda16' 512 <= 512
+
+   592          curroff = 0;
+   593          while (curroff < (HFA384x_PDA_LEN_MAX / 2) &&
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	We check that the array offset is within bounds here
+
+   594                 le16_to_cpu(pda16[curroff + 1]) != HFA384x_PDR_END_OF_PDA) {
+                                         ^^^^^^^^^^^
+	and then we add one here which puts us out of bounds.
+
+   595                  pda->rec[pda->nrec] = (hfa384x_pdrec_t *) &(pda16[curroff]);
+   596  
+
+Fixing overflows is way more interesting than cleanup patches.  So don't
+resend this patch.  The original code works and it's not even that ugly.
+You are a true hacker and have more awesome things to do.  That's my
+advice to newbie hackers.
+
+regards,
+dan carpenter
+
