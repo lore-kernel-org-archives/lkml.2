@@ -1,70 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755782Ab0IRTBy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:01:54 -0400
-Received: from kroah.org ([198.145.64.141]:51162 "EHLO coco.kroah.org"
+	id S1755849Ab0IRTB6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:01:58 -0400
+Received: from kroah.org ([198.145.64.141]:51157 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754492Ab0IRTBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:01:19 -0400
+	id S1754474Ab0IRTBS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:01:18 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:54 2010
-Message-Id: <20100918185954.259380885@clark.site>
+Message-Id: <20100918185954.171935870@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:57:41 -0700
+Date: Sat, 18 Sep 2010 11:57:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [017/123] ath9k_hw: fix parsing of HT40 5 GHz CTLs
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: [016/123] fuse: flush background queue on connection close
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=ath9k_hw-fix-parsing-of-ht40-5-ghz-ctls.patch
+Content-Disposition: inline; filename=fuse-flush-background-queue-on-connection-close.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Luis R. Rodriguez <lrodriguez@atheros.com>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit 904879748d7439a6dabdc6be9aad983e216b027d upstream.
+commit 595afaf9e6ee1b48e13ec4b8bcc8c7dee888161a upstream.
 
-The 5 GHz CTL indexes were not being read for all hardware
-devices due to the masking out through the CTL_MODE_M mask
-being one bit too short. Without this the calibrated regulatory
-maximum values were not being picked up when devices operate
-on 5 GHz in HT40 mode. The final output power used for Atheros
-devices is the minimum between the calibrated CTL values and
-what CRDA provides.
+David Bartly reported that fuse can hang in fuse_get_req_nofail() when
+the connection to the filesystem server is no longer active.
 
-Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+If bg_queue is not empty then flush_bg_queue() called from
+request_end() can put more requests on to the pending queue.  If this
+happens while ending requests on the processing queue then those
+background requests will be queued to the pending list and never
+ended.
+
+Another problem is that fuse_dev_release() didn't wake up processes
+sleeping on blocked_waitq.
+
+Solve this by:
+
+ a) flushing the background queue before calling end_requests() on the
+    pending and processing queues
+
+ b) setting blocked = 0 and waking up processes waiting on
+    blocked_waitq()
+
+Thanks to David for an excellent bug report.
+
+Reported-by: David Bartley <andareed@gmail.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/eeprom.h |    2 +-
- drivers/net/wireless/ath/regd.h         |    1 -
- 2 files changed, 1 insertion(+), 2 deletions(-)
+ fs/fuse/dev.c |   16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/eeprom.h
-+++ b/drivers/net/wireless/ath/ath9k/eeprom.h
-@@ -60,7 +60,7 @@
+--- a/fs/fuse/dev.c
++++ b/fs/fuse/dev.c
+@@ -1158,6 +1158,14 @@ __acquires(&fc->lock)
+ 	}
+ }
  
- #define SD_NO_CTL               0xE0
- #define NO_CTL                  0xff
--#define CTL_MODE_M              7
-+#define CTL_MODE_M              0xf
- #define CTL_11A                 0
- #define CTL_11B                 1
- #define CTL_11G                 2
---- a/drivers/net/wireless/ath/regd.h
-+++ b/drivers/net/wireless/ath/regd.h
-@@ -31,7 +31,6 @@ enum ctl_group {
- #define NO_CTL 0xff
- #define SD_NO_CTL               0xE0
- #define NO_CTL                  0xff
--#define CTL_MODE_M              7
- #define CTL_11A                 0
- #define CTL_11B                 1
- #define CTL_11G                 2
++static void end_queued_requests(struct fuse_conn *fc)
++{
++	fc->max_background = UINT_MAX;
++	flush_bg_queue(fc);
++	end_requests(fc, &fc->pending);
++	end_requests(fc, &fc->processing);
++}
++
+ /*
+  * Abort all requests.
+  *
+@@ -1184,8 +1192,7 @@ void fuse_abort_conn(struct fuse_conn *f
+ 		fc->connected = 0;
+ 		fc->blocked = 0;
+ 		end_io_requests(fc);
+-		end_requests(fc, &fc->pending);
+-		end_requests(fc, &fc->processing);
++		end_queued_requests(fc);
+ 		wake_up_all(&fc->waitq);
+ 		wake_up_all(&fc->blocked_waitq);
+ 		kill_fasync(&fc->fasync, SIGIO, POLL_IN);
+@@ -1200,8 +1207,9 @@ int fuse_dev_release(struct inode *inode
+ 	if (fc) {
+ 		spin_lock(&fc->lock);
+ 		fc->connected = 0;
+-		end_requests(fc, &fc->pending);
+-		end_requests(fc, &fc->processing);
++		fc->blocked = 0;
++		end_queued_requests(fc);
++		wake_up_all(&fc->blocked_waitq);
+ 		spin_unlock(&fc->lock);
+ 		fuse_conn_put(fc);
+ 	}
 
 
