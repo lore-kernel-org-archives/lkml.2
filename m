@@ -1,148 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756563Ab0IRTM3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:12:29 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43221 "EHLO ogre.sisk.pl"
+	id S1756140Ab0IRTMq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:12:46 -0400
+Received: from kroah.org ([198.145.64.141]:51730 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756031Ab0IRTMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:12:24 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Nishanth Menon <nm@ti.com>,
-        "linux-arm" <linux-arm-kernel@lists.infradead.org>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        "linux-pm" <linux-pm@lists.linux-foundation.org>,
-        "linux-omap" <linux-omap@vger.kernel.org>,
-        Paul Walmsley <paul@pwsan.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] opp: introduce library for device-specific OPPs
-Date: Sat, 18 Sep 2010 21:11:25 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: lkml <linux-kernel@vger.kernel.org>
-References: <1284686973-13993-1-git-send-email-nm@ti.com> <201009180045.56122.rjw@sisk.pl> <4C93F794.1030308@ti.com>
-In-Reply-To: <4C93F794.1030308@ti.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009182111.26065.rjw@sisk.pl>
+	id S1756001Ab0IRTCN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:02:13 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:00:00 2010
+Message-Id: <20100918190000.870917770@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Sat, 18 Sep 2010 11:58:58 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Greg KH <greg@kroah.com>, Oleg Nesterov <oleg@redhat.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: [094/123] sched: move_task_off_dead_cpu(): Take rq->lock around select_fallback_rq()
+References: <20100918185724.290702750@clark.site>
+Content-Disposition: inline; filename=sched-move_task_off_dead_cpu-take-rq-lock-around-select_fallback_rq.patch
+In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Trimming the CC list]
+From: Oleg Nesterov <oleg@redhat.com>
 
-On Saturday, September 18, 2010, Nishanth Menon wrote:
-> Rafael J. Wysocki had written, on 09/17/2010 05:45 PM, the following:
-> 
-> Thanks for your review. few views below..
-> 
-> > On Friday, September 17, 2010, Nishanth Menon wrote:
-> >> Nishanth Menon had written, on 09/17/2010 10:05 AM, the following:
-> >>> Linus Walleij had written, on 09/17/2010 08:41 AM, the following:
-> >>>> 2010/9/17 Nishanth Menon <nm@ti.com>:
-> >>>>
-> >>>>> diff --git a/Documentation/power/00-INDEX b/Documentation/power/00-INDEX
-> >>>>> index fb742c2..45e9d4a 100644
-> >>>>> --- a/Documentation/power/00-INDEX
-> >>>>> +++ b/Documentation/power/00-INDEX
-> >>>>> @@ -14,6 +14,8 @@ interface.txt
-> >>>>>        - Power management user interface in /sys/power
-> >>>>>  notifiers.txt
-> >>>>>        - Registering suspend notifiers in device drivers
-> >>>>> +opp.txt
-> >>>>> +       - Operating Performance Point library
-> >>>>>  pci.txt
-> >>>>>        - How the PCI Subsystem Does Power Management
-> >>>> Hm you add the documentation to the index but not the documentation
-> >>>> itself (easy slip) would you mind posting it?
-> >>> ouch.. Sorry.. I realized that I missed adding MAINTAINER entry as 
-> >>> well.. v2 coming up..
-> >>>
-> >> while the review goes on, I will till end of the day before posting a v2 
-> >> will collated comments, here is the opp.txt documentation for the same.. 
-> >> apologies on missing in my v1..
-> > 
-> > OK, I'm not generally familiar with these things, so a couple of questions.
-> > 
-> >> OPP Layer
-> >> ==============
-> >> SOCs have a standard set of tuples consisting of frequency and
-> >> voltage pairs that the device will support per voltage domain. This
-> >> is called Operating Performance Point or OPP. The actual definitions
-> >> of OPP varies over silicon within the same family of devices.
-> >> For a specific domain, you can have a set of {frequency, voltage}
-> >> pairs. As the kernel boots and more information is available, a set
-> >> of these are activated based on the precise nature of device the kernel
-> >> boots up on.
-> > 
-> > Does it mean that the full set of possible OPPs is already known from the
-> > hardware configuration and the ones that are actually useable are found
-> > during boot?
-> 
-> yes. example - https://patchwork.kernel.org/patch/183742/ (based on 
-> original patch posted to l-arm, this will need some tweaks with the 
-> latest evolution, the concepts remain the same).
-> 
-> For example, consider in the patch above where we have a opp definitions 
-> we can choose from omap3430 and 3630,
-> 
-> when using 3630 silicon as a specific, certain boards wish to enable 
-> 1GHz, this allows us to do something as follows:
-> in the generic omap code, we do init of all opps
-> in the board specific file, we enable 1Ghz
-> 
-> The selection of oppset and actual availability is done on the fly.
+commit 1445c08d06c5594895b4fae952ef8a457e89c390 upstream
 
-OK, so why don't you simply drop the OPPs you're not going to use from the
-list in the board-specific file?
+move_task_off_dead_cpu()->select_fallback_rq() reads/updates ->cpus_allowed
+lockless. We can race with set_cpus_allowed() running in parallel.
 
-...
-> >> OPP layer organizes the data internally using device pointers representing
-> >> individual voltage domains.
-> > 
-> > Can you please describe these data structures in a bit more detail?
-> probably a dumb question: Is'nt it enough to give detailed verbose 
-> information in the  struct comment header? why duplicate here as well.. 
-> other than giving an overview?
+Change it to take rq->lock around select_fallback_rq(). Note that it is not
+trivial to move this spin_lock() into select_fallback_rq(), we must recheck
+the task was not migrated after we take the lock and other callers do not
+need this lock.
 
-I meant "explain it to me" rather than "explain it in the doc". :-)  Sorry for
-not being clear enough.
+To avoid the races with other callers of select_fallback_rq() which rely on
+TASK_WAKING, we also check p->state != TASK_WAKING and do nothing otherwise.
+The owner of TASK_WAKING must update ->cpus_allowed and choose the correct
+CPU anyway, and the subsequent __migrate_task() is just meaningless because
+p->se.on_rq must be false.
 
-> >> NOTE:
-> >> a) the OPP layer implementation expects to be used in multiple contexts
-> >> based on SOC implementation and recommends locking schemes appropriate to
-> >> the usage of SOC.
-> >> b) All pointer returns are expected to be handled by standard error checks
-> >> such as IS_ERR() and appropriate actions taken by the caller.
-> > 
-> > I noticed that in a few places it isn't really necessary to return a pointer.
-> > I think you can simply return int in such cases.
-> could you help and point these to me. opp_find_freq_exact, 
-> opp_find_freq_ceil, opp_find_freq_floor are the only ones that return 
-> pointers and they need to return the pointer to the opp they found to 
-> operate on them such as add_freq etc..
+Alternatively, we could change select_task_rq() to take rq->lock right
+after it calls sched_class->select_task_rq(), but this looks a bit ugly.
 
-Hmm, OK.  I must have made a mistake, sorry.
+Also, change it to not assume irqs are disabled and absorb __migrate_task_irq().
 
-...
-> >> Data Structures:
-> >> ---------------
-> >> struct opp * is a handle structure whose internals are known only
-> >> to the OPP layer and is meant to hide the complexity away from users of
-> >> opp layer.
-> >>
-> >> struct opp_def * is the definitions that users can interface with
-> >> opp layer and is meant to define one OPP for a domain device.
-> > 
-> > The data structures require some more description IMHO.  They aren't completely
-> > intuitive.
-> 
-> ok, a repeat question -> why duplicate the information defined in the 
-> structure comment header?
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <20100315091010.GA9131@redhat.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ kernel/sched.c |   30 +++++++++++++++---------------
+ 1 file changed, 15 insertions(+), 15 deletions(-)
 
-Because it doesn't imply the specific implementation, AFAICS.
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -7399,29 +7399,29 @@ static int migration_thread(void *data)
+ }
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
+-
+-static int __migrate_task_irq(struct task_struct *p, int src_cpu, int dest_cpu)
+-{
+-	int ret;
+-
+-	local_irq_disable();
+-	ret = __migrate_task(p, src_cpu, dest_cpu);
+-	local_irq_enable();
+-	return ret;
+-}
+-
+ /*
+  * Figure out where task on dead CPU should go, use force if necessary.
+  */
+ static void move_task_off_dead_cpu(int dead_cpu, struct task_struct *p)
+ {
+-	int dest_cpu;
+-
++	struct rq *rq = cpu_rq(dead_cpu);
++	int needs_cpu, uninitialized_var(dest_cpu);
++	unsigned long flags;
+ again:
+-	dest_cpu = select_fallback_rq(dead_cpu, p);
++	local_irq_save(flags);
++
++	spin_lock(&rq->lock);
++	needs_cpu = (task_cpu(p) == dead_cpu) && (p->state != TASK_WAKING);
++	if (needs_cpu)
++		dest_cpu = select_fallback_rq(dead_cpu, p);
++	spin_unlock(&rq->lock);
+ 
+ 	/* It can have affinity changed while we were choosing. */
+-	if (unlikely(!__migrate_task_irq(p, dead_cpu, dest_cpu)))
++	if (needs_cpu)
++		needs_cpu = !__migrate_task(p, dead_cpu, dest_cpu);
++	local_irq_restore(flags);
++
++	if (unlikely(needs_cpu))
+ 		goto again;
+ }
+ 
 
-Like what the list heads in your structures are used for etc.
 
-Thanks,
-Rafael
