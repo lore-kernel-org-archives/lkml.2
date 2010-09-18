@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054Ab0IRFtn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 01:49:43 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37858 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752353Ab0IRFtm (ORCPT
+	id S1754153Ab0IRGI3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 02:08:29 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52489
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753004Ab0IRGI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 01:49:42 -0400
-Message-ID: <4C9452C6.8010308@ti.com>
-Date: Sat, 18 Sep 2010 00:48:54 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: linux-pm <linux-pm@lists.linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
-        Matthew Garrett <mjg@redhat.com>, Pavel Machek <pavel@ucw.cz>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Lnus Walleij <linus.walleij@stericsson.com>,
-        Phil <ext-phil.2.carmody@nokia.com>,
-        Kevin <khilman@deeprootsystems.com>
-Subject: Re: [PATCH v2] power: introduce library for device-specific OPPs
-References: <1284787459-25643-1-git-send-email-nm@ti.com> <20100918053849.GA19709@suse.de> <4C945139.20602@ti.com>
-In-Reply-To: <4C945139.20602@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Sat, 18 Sep 2010 02:08:28 -0400
+Date: Fri, 17 Sep 2010 23:08:46 -0700 (PDT)
+Message-Id: <20100917.230846.226755853.davem@davemloft.net>
+To: masa-korg@dsn.okisemi.com
+Cc: randy.dunlap@oracle.com, john.linn@xilinx.com, ralf@linux-mips.org,
+        kristoffer@gaisler.com, mbizon@freebox.fr, gregory.v.rose@intel.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, rjw@sisk.pl,
+        okada533@dsn.okisemi.com, shimizu394@dsn.okisemi.com,
+        morinaga526@dsn.okisemi.com, qi.wang@intel.com, yong.y.wang@intel.com,
+        andrew.chih.howe.khor@intel.com, joel.clark@intel.com,
+        margie.foster@intel.com, arjan@linux.intel.com
+Subject: Re: [PATCH v4] Gigabit Ethernet driver of Topcliff PCH
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4C90CBC9.7000203@dsn.okisemi.com>
+References: <4C90CBC9.7000203@dsn.okisemi.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Menon, Nishanth had written, on 09/18/2010 12:42 AM, the following:
-> Greg KH had written, on 09/18/2010 12:38 AM, the following:
->> On Sat, Sep 18, 2010 at 12:24:19AM -0500, Nishanth Menon wrote:
->>> This is hence introduced under lib allowing all architectures to
->>> selectively enable the feature based on their capabilities.
->> <snip>
->>
->>>  Documentation/power/00-INDEX |    2 +
->>>  Documentation/power/opp.txt  |  326 ++++++++++++++++++++++++++
->>>  drivers/base/power/Makefile  |    1 +
->>>  drivers/base/power/opp.c     |  527 ++++++++++++++++++++++++++++++++++++++++++
->>>  include/linux/opp.h          |  126 ++++++++++
->>>  kernel/power/Kconfig         |   14 ++
->>>  6 files changed, 996 insertions(+), 0 deletions(-)
->>>  create mode 100644 Documentation/power/opp.txt
->>>  create mode 100644 drivers/base/power/opp.c
->>>  create mode 100644 include/linux/opp.h
->> That doesn't look like the files are under lib/
->>
->> Did you forget to move them, or do you need to update the changelog
->> message?
-> 
-> Aww... and I thought I fixed them all.. the commit message is wrong.
-> we had an alignment earlier today to move it from lib to 
-> drivers/base/power [1] :(
-> 
-> Thanks for catching it. Will fix it in rev 3 after collating any further 
-> comments as well.
-> 
-> [1] http://marc.info/?l=linux-arm-kernel&m=128476405731191&w=2
-Yikes..sleepy eyes and long threads don't go well together :(
+From: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+Date: Wed, 15 Sep 2010 22:36:09 +0900
 
-[1] http://marc.info/?l=linux-arm-kernel&m=128476651001280&w=2 is the 
-link I had intended
+> +struct pch_gbe_regs_mac_adr {
+> +	u32 high;
+> +	u32 low;
+> +} __attribute__ ((packed));;
+ ...
+> +struct pch_gbe_regs {
+ ...
+> +} __attribute__ ((packed));
+...
+> +struct pch_gbe_rx_desc {
+ ...
+> +} __attribute__ ((packed));;
+ ...
+> +struct pch_gbe_tx_desc {
+ ...
+> +} __attribute__ ((packed));;
 
-apologies on the spam.. :(
--- 
-Regards,
-Nishanth Menon
+The packed attribute should not be necessary for any of these
+datastructures, so unless you can prove they are needed please
+remove the attribute tag.
+
+Besides being unnecessary, it will make cpu access to these
+descriptors extremely slow on risc cpus, as the compiler will
+emit byte-at-a-time accesses for all members of the structure
+larger than one byte.
