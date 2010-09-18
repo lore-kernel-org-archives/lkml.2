@@ -1,174 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756011Ab0IRTOW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:14:22 -0400
-Received: from kroah.org ([198.145.64.141]:51689 "EHLO coco.kroah.org"
+	id S1756580Ab0IRTOh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:14:37 -0400
+Received: from kroah.org ([198.145.64.141]:51683 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754603Ab0IRTCJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:02:09 -0400
+	id S1755309Ab0IRTCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:02:08 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:00:00 2010
-Message-Id: <20100918190000.344890212@clark.site>
+Message-Id: <20100918190000.261754821@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:58:52 -0700
+Date: Sat, 18 Sep 2010 11:58:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Greg KH <greg@kroah.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Mike Galbraith <efault@gmx.de>
-Subject: [088/123] sched: Fix race between ttwu() and task_rq_lock()
+        Greg KH <greg@kroah.com>, Mike Galbraith <efault@gmx.de>
+Subject: [087/123] sched: Fix incorrect sanity check
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=sched-fix-race-between-ttwu-and-task_rq_lock.patch
+Content-Disposition: inline; filename=sched-fix-incorrect-sanity-check.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 0970d2992dfd7d5ec2c787417cf464f01eeaf42a upstream
+commit 11854247e2c851e7ff9ce138e501c6cffc5a4217 upstream
 
-Thomas found that due to ttwu() changing a task's cpu without holding
-the rq->lock, task_rq_lock() might end up locking the wrong rq.
+We moved to migrate on wakeup, which means that sleeping tasks could
+still be present on offline cpus. Amend the check to only test running
+tasks.
 
-Avoid this by serializing against TASK_WAKING.
-
-Reported-by: Thomas Gleixner <tglx@linutronix.de>
+Reported-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1266241712.15770.420.camel@laptop>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- kernel/sched.c |   71 ++++++++++++++++++++++++++++++++++++---------------------
- 1 file changed, 45 insertions(+), 26 deletions(-)
+ kernel/cpu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -942,16 +942,33 @@ static inline void finish_lock_switch(st
- #endif /* __ARCH_WANT_UNLOCKED_CTXSW */
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -151,7 +151,7 @@ static inline void check_for_tasks(int c
  
- /*
-+ * Check whether the task is waking, we use this to synchronize against
-+ * ttwu() so that task_cpu() reports a stable number.
-+ *
-+ * We need to make an exception for PF_STARTING tasks because the fork
-+ * path might require task_rq_lock() to work, eg. it can call
-+ * set_cpus_allowed_ptr() from the cpuset clone_ns code.
-+ */
-+static inline int task_is_waking(struct task_struct *p)
-+{
-+	return unlikely((p->state == TASK_WAKING) && !(p->flags & PF_STARTING));
-+}
-+
-+/*
-  * __task_rq_lock - lock the runqueue a given task resides on.
-  * Must be called interrupts disabled.
-  */
- static inline struct rq *__task_rq_lock(struct task_struct *p)
- 	__acquires(rq->lock)
- {
-+	struct rq *rq;
-+
- 	for (;;) {
--		struct rq *rq = task_rq(p);
-+		while (task_is_waking(p))
-+			cpu_relax();
-+		rq = task_rq(p);
- 		spin_lock(&rq->lock);
--		if (likely(rq == task_rq(p)))
-+		if (likely(rq == task_rq(p) && !task_is_waking(p)))
- 			return rq;
- 		spin_unlock(&rq->lock);
- 	}
-@@ -968,10 +985,12 @@ static struct rq *task_rq_lock(struct ta
- 	struct rq *rq;
- 
- 	for (;;) {
-+		while (task_is_waking(p))
-+			cpu_relax();
- 		local_irq_save(*flags);
- 		rq = task_rq(p);
- 		spin_lock(&rq->lock);
--		if (likely(rq == task_rq(p)))
-+		if (likely(rq == task_rq(p) && !task_is_waking(p)))
- 			return rq;
- 		spin_unlock_irqrestore(&rq->lock, *flags);
- 	}
-@@ -2439,14 +2458,27 @@ static int try_to_wake_up(struct task_st
- 	__task_rq_unlock(rq);
- 
- 	cpu = select_task_rq(p, SD_BALANCE_WAKE, wake_flags);
--	if (cpu != orig_cpu)
-+	if (cpu != orig_cpu) {
-+		/*
-+		 * Since we migrate the task without holding any rq->lock,
-+		 * we need to be careful with task_rq_lock(), since that
-+		 * might end up locking an invalid rq.
-+		 */
- 		set_task_cpu(p, cpu);
-+	}
- 
--	rq = __task_rq_lock(p);
-+	rq = cpu_rq(cpu);
-+	spin_lock(&rq->lock);
- 	update_rq_clock(rq);
- 
-+	/*
-+	 * We migrated the task without holding either rq->lock, however
-+	 * since the task is not on the task list itself, nobody else
-+	 * will try and migrate the task, hence the rq should match the
-+	 * cpu we just moved it to.
-+	 */
-+	WARN_ON(task_cpu(p) != cpu);
- 	WARN_ON(p->state != TASK_WAKING);
--	cpu = task_cpu(p);
- 
- #ifdef CONFIG_SCHEDSTATS
- 	schedstat_inc(rq, ttwu_count);
-@@ -2695,7 +2727,13 @@ void wake_up_new_task(struct task_struct
- 	set_task_cpu(p, cpu);
- #endif
- 
--	rq = task_rq_lock(p, &flags);
-+	/*
-+	 * Since the task is not on the rq and we still have TASK_WAKING set
-+	 * nobody else will migrate this task.
-+	 */
-+	rq = cpu_rq(cpu);
-+	spin_lock_irqsave(&rq->lock, flags);
-+
- 	BUG_ON(p->state != TASK_WAKING);
- 	p->state = TASK_RUNNING;
- 	update_rq_clock(rq);
-@@ -7204,27 +7242,8 @@ int set_cpus_allowed_ptr(struct task_str
- 	struct rq *rq;
- 	int ret = 0;
- 
--	/*
--	 * Since we rely on wake-ups to migrate sleeping tasks, don't change
--	 * the ->cpus_allowed mask from under waking tasks, which would be
--	 * possible when we change rq->lock in ttwu(), so synchronize against
--	 * TASK_WAKING to avoid that.
--	 *
--	 * Make an exception for freshly cloned tasks, since cpuset namespaces
--	 * might move the task about, we have to validate the target in
--	 * wake_up_new_task() anyway since the cpu might have gone away.
--	 */
--again:
--	while (p->state == TASK_WAKING && !(p->flags & PF_STARTING))
--		cpu_relax();
--
- 	rq = task_rq_lock(p, &flags);
- 
--	if (p->state == TASK_WAKING && !(p->flags & PF_STARTING)) {
--		task_rq_unlock(rq, &flags);
--		goto again;
--	}
--
- 	if (!cpumask_intersects(new_mask, cpu_active_mask)) {
- 		ret = -EINVAL;
- 		goto out;
+ 	write_lock_irq(&tasklist_lock);
+ 	for_each_process(p) {
+-		if (task_cpu(p) == cpu &&
++		if (task_cpu(p) == cpu && p->state == TASK_RUNNING &&
+ 		    (!cputime_eq(p->utime, cputime_zero) ||
+ 		     !cputime_eq(p->stime, cputime_zero)))
+ 			printk(KERN_WARNING "Task %s (pid = %d) is on cpu %d\
 
 
