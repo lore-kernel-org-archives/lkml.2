@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757098Ab0IRTP6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:15:58 -0400
-Received: from kroah.org ([198.145.64.141]:43717 "EHLO coco.kroah.org"
+	id S1757232Ab0IRTXg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:23:36 -0400
+Received: from kroah.org ([198.145.64.141]:43727 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757080Ab0IRTP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:15:56 -0400
+	id S1757104Ab0IRTP7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:15:59 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:05 2010
-Message-Id: <20100918191305.060440464@clark.site>
+Message-Id: <20100918191305.232269135@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:13:08 -0700
+Date: Sat, 18 Sep 2010 12:13:10 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dmitry Torokhov <dtor@mail.ru>
-Subject: [090/129] Input: i8042 - fix device removal on unload
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: [092/129] memory hotplug: fix next block calculation in is_removable
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,36 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-commit af045b86662f17bf130239a65995c61a34f00a6b upstream.
+commit 0dcc48c15f63ee86c2fcd33968b08d651f0360a5 upstream.
 
-We need to call platform_device_unregister(i8042_platform_device)
-before calling platform_driver_unregister() because i8042_remove()
-resets i8042_platform_device to NULL. This leaves the platform device
-instance behind and prevents driver reload.
+next_active_pageblock() is for finding next _used_ freeblock.  It skips
+several blocks when it finds there are a chunk of free pages lager than
+pageblock.  But it has 2 bugs.
 
-Fixes https://bugzilla.kernel.org/show_bug.cgi?id=16613
+  1. We have no lock. page_order(page) - pageblock_order can be minus.
+  2. pageblocks_stride += is wrong. it should skip page_order(p) of pages.
 
-Reported-by: Seryodkin Victor <vvscore@gmail.com>
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/input/serio/i8042.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/memory_hotplug.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/input/serio/i8042.c
-+++ b/drivers/input/serio/i8042.c
-@@ -1483,8 +1483,8 @@ static int __init i8042_init(void)
- 
- static void __exit i8042_exit(void)
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -584,19 +584,19 @@ static inline int pageblock_free(struct
+ /* Return the start of the next active pageblock after a given page */
+ static struct page *next_active_pageblock(struct page *page)
  {
--	platform_driver_unregister(&i8042_driver);
- 	platform_device_unregister(i8042_platform_device);
-+	platform_driver_unregister(&i8042_driver);
- 	i8042_platform_exit();
+-	int pageblocks_stride;
+-
+ 	/* Ensure the starting page is pageblock-aligned */
+ 	BUG_ON(page_to_pfn(page) & (pageblock_nr_pages - 1));
  
- 	panic_blink = NULL;
+-	/* Move forward by at least 1 * pageblock_nr_pages */
+-	pageblocks_stride = 1;
+-
+ 	/* If the entire pageblock is free, move to the end of free page */
+-	if (pageblock_free(page))
+-		pageblocks_stride += page_order(page) - pageblock_order;
++	if (pageblock_free(page)) {
++		int order;
++		/* be careful. we don't have locks, page_order can be changed.*/
++		order = page_order(page);
++		if ((order < MAX_ORDER) && (order >= pageblock_order))
++			return page + (1 << order);
++	}
+ 
+-	return page + (pageblocks_stride * pageblock_nr_pages);
++	return page + pageblock_nr_pages;
+ }
+ 
+ /* Checks if this range of memory is likely to be hot-removable. */
 
 
