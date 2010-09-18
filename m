@@ -1,106 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755960Ab0IRUC7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 16:02:59 -0400
-Received: from mail-da-3.dns-solutions.net ([69.12.112.3]:56765 "HELO
-	mail-da-3.dns-solutions.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753633Ab0IRUC6 (ORCPT
+	id S1756102Ab0IRUEB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 16:04:01 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41351 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754161Ab0IRUD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 16:02:58 -0400
-From: "Joshua Hintze" <joshh@imsar.com>
-To: "'Randy Dunlap'" <rdunlap@xenotime.net>
-Cc: "'Maxim Levitsky'" <maximlevitsky@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-ide@vger.kernel.org>
-References: <00d401cb55f7$33a78210$9af68630$@com>	<20100917154732.330c4b1b@varda>	<010901cb5754$ae6735a0$0b35a0e0$@com>	<1284837774.12425.1.camel@localhost.localdomain>	<010d01cb5769$cbca3380$635e9a80$@com> <20100918124750.393a64a8.rdunlap@xenotime.net>
-In-Reply-To: <20100918124750.393a64a8.rdunlap@xenotime.net>
-Subject: RE: PATA IDE is slower in newer versions of kernel
-Date: Sat, 18 Sep 2010 14:02:50 -0600
-Message-ID: <010e01cb576c$7909c900$6b1d5b00$@com>
+	Sat, 18 Sep 2010 16:03:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding
+         :x-antivirus:x-antivirus-status;
+        b=f1kVnHmMLSQQsNkF6RpyGzaZDjou4rndxKVamhFqp87KQCJo8JuwG15puUtTwQAW35
+         ZOLa+6h0YX+2o83yI/IIjJcRj/1FU7xb8BosqEitedEeoK7AapvWnIeWW0dofAzM4Efy
+         cc+DrgWAVbdhb75zqn8jJK3NiwEv3k5XquNRE=
+Message-ID: <4C951B2A.1000706@gmail.com>
+Date: Sat, 18 Sep 2010 13:03:54 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.9) Gecko/20100825 Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+To: dedekind1@gmail.com
+CC: Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Sneha Narnakaje <nsnehaprabha@ti.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Kevin Cernekee <cernekee@gmail.com>
+Subject: Re: [PATCH v4] mtd: nand: Expand nand_ecc_layout, deprecate ioctl
+ ECCGETLAYOUT
+References: <4C5CA4A1.1040000@broadcom.com>	 <1282154806-9420-1-git-send-email-norris@broadcom.com>	 <4C6DD170.1060807@renesas.com>  <4C6E9C23.6060703@broadcom.com>	 <1282646703.24044.162.camel@localhost>  <4C746DE0.7000104@gmail.com>	 <1283163647.12995.43.camel@brekeke> <1284830690.1721.3.camel@brekeke>
+In-Reply-To: <1284830690.1721.3.camel@brekeke>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: ActXamJy0z4norJ7Q62dpuB137KH7gAAg+gw
-Content-Language: en-us
+X-Antivirus: avast! (VPS 100918-1, 09/18/2010), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I got you. 
-
-Thanks.
-
-
------Original Message-----
-From: Randy Dunlap [mailto:rdunlap@xenotime.net] 
-Sent: Saturday, September 18, 2010 1:48 PM
-To: Joshua Hintze
-Cc: 'Maxim Levitsky'; linux-kernel@vger.kernel.org;
-linux-ide@vger.kernel.org
-Subject: Re: PATA IDE is slower in newer versions of kernel
-
-On Sat, 18 Sep 2010 13:43:40 -0600 Joshua Hintze wrote:
-
-> Thanks,
+On 9/18/2010 10:24 AM, Artem Bityutskiy wrote:
+> Brian,
 > 
-> I'm not sure what you mean by bisect, other than just the definition of
-the word. I am breaking this problem down adding printks etc.  I think I'm
-finally beginng to understand how this works :)
-> 
+> would you address the small things I noticed in a follow-up patch?
 
-http://www.kernel.org/pub/software/scm/git/docs/git-bisect.html
-http://www.kernel.org/pub/software/scm/git/docs/user-manual.html#using-bisec
-t
+Artem,
 
+Yes, I will. I'm sorry for the delay; I've been a little busy and
+putting some things off. Would you like a patch for the comments against
+your l2 tree or try and squash it with my previous commit and base it
+off of mtd-2.6 or some other option?
 
-> 
-> 
-> -----Original Message-----
-> From: linux-ide-owner@vger.kernel.org
-[mailto:linux-ide-owner@vger.kernel.org] On Behalf Of Maxim Levitsky
-> Sent: Saturday, September 18, 2010 1:23 PM
-> To: Joshua Hintze
-> Cc: linux-kernel@vger.kernel.org; linux-ide@vger.kernel.org
-> Subject: RE: PATA IDE is slower in newer versions of kernel
-> 
-> On Sat, 2010-09-18 at 11:12 -0600, Joshua Hintze wrote:
-> > Some updated information. I created a screen capture of what I am
-seeing. First is the logic analyzer when the newer linux kernel is writing
-slow to the PATA port.
-> > 
-> > http://i56.tinypic.com/oqhrug.png
-> > 
-> > Notice in the above link how there is a lot of activating and then large
-gaps of no activity. After about 9 mS the STOP line is strobed a few times
-and then DMARQ finally returns to normal operating. The link below shows the
-picture of an old 2.6.10 kernel where write speeds are much faster.
-> > 
-> > http://i51.tinypic.com/a9wiur.png
-> > 
-> > In the above image notice how the wait time is considerable less 100's
-of microseconds before the stop lines get strobed.
-> > 
-> > I'm dedicated to continue working on the problem, I just need to advice
-from the linux community. I've tried different I/O schedulers such as noop
-and anticipatory and I'm studying the ide-dma code but still lost to where
-this is happening.
-> > 
-> > Thanks!
-> > 
-> Maybe you can just bisect this?
-> Just a general advice, I don't know ide subsystem at all.
-> 
-> Best regards,
-> 	Maxim Levitsky
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
-
-No virus found in this incoming message.
-Checked by AVG - www.avg.com 
-Version: 9.0.851 / Virus Database: 271.1.1/3132 - Release Date: 09/18/10
-00:34:00
-
+Brian
