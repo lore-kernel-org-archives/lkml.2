@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755953Ab0IRTCJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:02:09 -0400
-Received: from kroah.org ([198.145.64.141]:51193 "EHLO coco.kroah.org"
+	id S1755980Ab0IRTCL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:02:11 -0400
+Received: from kroah.org ([198.145.64.141]:51081 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754632Ab0IRTBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:01:23 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:54 2010
-Message-Id: <20100918185954.789199885@clark.site>
+	id S1751654Ab0IRTBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:01:10 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:53 2010
+Message-Id: <20100918185953.150912958@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:57:47 -0700
+Date: Sat, 18 Sep 2010 11:57:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Luke Lowrey <luke@chamsys.co.uk>
-Subject: [023/123] USB: ftdi_sio: Added custom PIDs for ChamSys products
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [004/123] ALSA: hda - Rename iMic to Int Mic on Lenovo NB0763
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=usb-ftdi_sio-added-custom-pids-for-chamsys-products.patch
+Content-Disposition: inline; filename=alsa-hda-rename-imic-to-int-mic-on-lenovo-nb0763.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Luke Lowrey <luke@chamsys.co.uk>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 657373883417b2618023fd4135d251ba06a2c30a upstream.
+commit 150b432f448281d5518f5229d240923f9a9c5459 upstream.
 
-Added the 0xDAF8 to 0xDAFF PID range for ChamSys limited USB interface/wing products
+The non-standard name "iMic" makes PulseAudio ignore the microphone.
+BugLink: https://launchpad.net/bugs/605101
 
-Signed-off-by: Luke Lowrey <luke@chamsys.co.uk>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    8 ++++++++
- drivers/usb/serial/ftdi_sio_ids.h |   12 ++++++++++++
- 2 files changed, 20 insertions(+)
+ sound/pci/hda/patch_realtek.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -759,6 +759,14 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, SEGWAY_RMP200_PID) },
- 	{ USB_DEVICE(IONICS_VID, IONICS_PLUGCOMPUTER_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
-+	{ USB_DEVICE(FTDI_VID, FTDI_CHAMSYS_24_MASTER_WING_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_CHAMSYS_PC_WING_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_CHAMSYS_USB_DMX_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_CHAMSYS_MIDI_TIMECODE_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_CHAMSYS_MINI_WING_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_CHAMSYS_MAXI_WING_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_CHAMSYS_MEDIA_WING_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_CHAMSYS_WING_PID) },
- 	{ },					/* Optional parameter entry */
- 	{ }					/* Terminating entry */
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6589,7 +6589,7 @@ static struct hda_input_mux alc883_lenov
+ 	.num_items = 4,
+ 	.items = {
+ 		{ "Mic", 0x0 },
+-		{ "iMic", 0x1 },
++		{ "Int Mic", 0x1 },
+ 		{ "Line", 0x2 },
+ 		{ "CD", 0x4 },
+ 	},
+@@ -8038,8 +8038,8 @@ static struct snd_kcontrol_new alc883_le
+ 	HDA_CODEC_MUTE("CD Playback Switch", 0x0b, 0x04, HDA_INPUT),
+ 	HDA_CODEC_VOLUME("Mic Playback Volume", 0x0b, 0x0, HDA_INPUT),
+ 	HDA_CODEC_MUTE("Mic Playback Switch", 0x0b, 0x0, HDA_INPUT),
+-	HDA_CODEC_VOLUME("iMic Playback Volume", 0x0b, 0x1, HDA_INPUT),
+-	HDA_CODEC_MUTE("iMic Playback Switch", 0x0b, 0x1, HDA_INPUT),
++	HDA_CODEC_VOLUME("Int Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
++	HDA_CODEC_MUTE("Int Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
+ 	{ } /* end */
  };
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -135,6 +135,18 @@
- #define FTDI_NDI_AURORA_SCU_PID		0xDA74	/* NDI Aurora SCU */
  
- /*
-+ * ChamSys Limited (www.chamsys.co.uk) USB wing/interface product IDs
-+ */
-+#define FTDI_CHAMSYS_24_MASTER_WING_PID        0xDAF8
-+#define FTDI_CHAMSYS_PC_WING_PID       0xDAF9
-+#define FTDI_CHAMSYS_USB_DMX_PID       0xDAFA
-+#define FTDI_CHAMSYS_MIDI_TIMECODE_PID 0xDAFB
-+#define FTDI_CHAMSYS_MINI_WING_PID     0xDAFC
-+#define FTDI_CHAMSYS_MAXI_WING_PID     0xDAFD
-+#define FTDI_CHAMSYS_MEDIA_WING_PID    0xDAFE
-+#define FTDI_CHAMSYS_WING_PID  0xDAFF
-+
-+/*
-  * Westrex International devices submitted by Cory Lee
-  */
- #define FTDI_WESTREX_MODEL_777_PID	0xDC00	/* Model 777 */
 
 
