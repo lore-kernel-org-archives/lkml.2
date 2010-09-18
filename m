@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213Ab0IRB1O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 21:27:14 -0400
-Received: from skyboo.net ([82.160.187.4]:54841 "EHLO skyboo.net"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753157Ab0IRB1N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 21:27:13 -0400
-X-Greylist: delayed 2054 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Sep 2010 21:27:13 EDT
-Message-ID: <4C940D5C.4090408@skyboo.net>
-Date: Sat, 18 Sep 2010 02:52:44 +0200
-From: manio <manio@skyboo.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
+	id S1754365Ab0IRBeU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 21:34:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62195 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752179Ab0IRBeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Sep 2010 21:34:18 -0400
+Date: Sat, 18 Sep 2010 03:29:39 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Will Drewry <wad@chromium.org>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Roland McGrath <roland@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        containers@lists.linux-foundation.org, Eugene Teo <eteo@redhat.com>,
+        Tejun Heo <tj@kernel.org>, Serge Hallyn <serue@us.ibm.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 2/2] exec: move core_pattern pipe helper into the
+	crashing namespace
+Message-ID: <20100918012939.GA25046@redhat.com>
+References: <20100917152639.0e88341a@basil.nowhere.org> <1284736618-27153-2-git-send-email-wad@chromium.org>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:470:1f0b:1af:f000::2
-X-SA-Exim-Mail-From: manio@skyboo.net
-Subject: PROBLEM: GPT partition table + RAID: kernel could not load init while
- root filesystem is mounted
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:26:47 +0000)
-X-SA-Exim-Scanned: Yes (on skyboo.net)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284736618-27153-2-git-send-email-wad@chromium.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
-I am trying to migrate from old root filesystem (linux raid1 on disks 
-with msdos partition table) to new (4K sector) disks with GPT partition 
-table (also raid1). I am using raid autodetection (i have superblock 
-v0.90 on all raid devices) and i am passing /dev/mdX as a root device to 
-the kernel. When i am passing root=/dev/md10 (old disks with msdos 
-partition tables) booting process is fine (i am pasting relevant info):
+On 09/17, Will Drewry wrote:
+>
+> Instead, this change implements the more complex option two.  It
+> migrates the ____call_usermodehelper() thread into the same namespaces
+> as the dumping process.  It does not assign a pid in that namespace so
+> the collector will appear to be pid 0.
 
-[    6.695241] raid1: raid set md10 active with 2 out of 2 mirrors
-[    6.695280] md10: detected capacity change from 0 to 6999572480
-[    6.695332] md: ... autorun DONE.
-[    6.695407]  md10: unknown partition table
-[    6.696236] EXT3-fs (md10): error: couldn't mount because of 
-unsupported optional features (240)
-[    6.696508] EXT2-fs (md10): error: couldn't mount because of 
-unsupported optional features (240)
-[    6.743086] EXT4-fs (md10): mounted filesystem with ordered data mode
-[    6.743185] VFS: Mounted root (ext4 filesystem) readonly on device 9:10.
-[    6.743227] Freeing unused kernel memory: 424k freed
-..... now comes INIT - and it boots correctly
+Hmm... You mean, it won't visible in that namespace? Afacis, it should
+have the correct pid in the init ns, no?
 
-BUT (!) the problem is when i am trying to pass root=/dev/md0 (raid1 on 
-new disks with GPT partition tables). Then it seems like kernel cannot 
-run /sbin/init from my ext4 root partition. The root filesystem seems to 
-be mounted OK:
+I am a bit worried task_active_pid_ns() != nsproxy->pid_ns, but perhaps
+this is OK... Say, sys_getpid() returns 0, strange.
 
-md: ... autorun DONE.
-  md0: unknown partition table
-EXT3-fs (md0): error: couldn't mount because of unsupported optional 
-features (240)
-EXT2-fs (md0): error: couldn't mount because of unsupported optional 
-features (240)
-EXT4-fs (md0): mounted filesystem with ordered data mode
-VFS: Mounted root (ext4 filesystem) readonly on device 9:0.
-Freeing unused kernel memory: 424k freed
+> +		/* Run the core_collector in the crashing namespaces */
+> +		if (copy_namespaces_unattached(0, current,
+> +			&pipe_params.nsproxy, &pipe_params.fs)) {
+> +			printk(KERN_WARNING "%s failed to copy namespaces\n",
+> +			       __func__);
+> +			argv_free(helper_argv);
+> +			goto fail_dropcount;
+> +		}
 
-..... now there is some USB init debug info and it stop :(
-/sbin/init is not launched and it seems like the kernel hung :(
-i was waiting several minutes then - and nothing happend.
+This looks overcomplicated to me, or I missed something.
 
-If you would like to see how the boot process look like from the grub to 
-the kernel hung (filmed with my digital camera) then download this:
-http://manio.skyboo.net/kernel-gpt-init-problem.avi
+I do not understand why should we do this beforehand, and why we need
+copy_namespaces_unattached().
 
-please help me - any tips are welcome
+Can't you just pass current to umh_pipe_setup() (or another helper) as
+the argument? Then this helper can copy ->fs and ->nsproxy itself.
 
-best regards,
--- 
-Mariusz Bialonczyk
-jabber/e-mail: manio@skyboo.net
-http://manio.skyboo.net
+In fact, I do not understand why create_new_namespaces() is used. It
+is called with flags == 0 anyway, can't we just do
+
+	ns = coredumping_task->nsproxy;
+	get_nsproxy(ns);	
+	switch_task_namespaces(current, ns);
+
+?
+
+Oleg.
+
