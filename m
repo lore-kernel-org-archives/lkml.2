@@ -1,79 +1,426 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577Ab0IRTxK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:53:10 -0400
-Received: from kroah.org ([198.145.64.141]:51382 "EHLO coco.kroah.org"
+	id S1755576Ab0IRTxb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:53:31 -0400
+Received: from kroah.org ([198.145.64.141]:51371 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754305Ab0IRTBl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755142Ab0IRTBl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 18 Sep 2010 15:01:41 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:57 2010
-Message-Id: <20100918185957.010472560@clark.site>
+Message-Id: <20100918185956.928170346@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:58:13 -0700
+Date: Sat, 18 Sep 2010 11:58:12 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Yusuke Goda <yusuke.goda.sx@renesas.com>,
-        Magnus Damm <damm@opensource.se>, Ian Molton <ian@mnementh.co.uk>,
-        Matt Fleming <matt@console-pimps.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Paul Mundt <lethal@linux-sh.org>,
-        <linux-mmc@vger.kernel.org>
-Subject: [049/123] tmio_mmc: dont clear unhandled pending interrupts
+        Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+Subject: [048/123] gcov: fix null-pointer dereference for certain module types
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=tmio_mmc-don-t-clear-unhandled-pending-interrupts.patch
+Content-Disposition: inline; filename=gcov-fix-null-pointer-dereference-for-certain-module-types.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yusuke Goda <yusuke.goda.sx@renesas.com>
+From: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
 
-commit b78d6c5f51935ba89df8db33a57bacb547aa7325 upstream.
+commit 85a0fdfd0f967507f3903e8419bc7e408f5a59de upstream.
 
-Previously, it was possible for ack_mmc_irqs() to clear pending interrupt
-bits in the CTL_STATUS register, even though the interrupt handler had not
-been called.  This was because of a race that existed when doing a
-read-modify-write sequence on CTL_STATUS.  After the read step in this
-sequence, if an interrupt occurred (causing one of the bits in CTL_STATUS
-to be set) the write step would inadvertently clear it.
+The gcov-kernel infrastructure expects that each object file is loaded
+only once.  This may not be true, e.g.  when loading multiple kernel
+modules which are linked to the same object file.  As a result, loading
+such kernel modules will result in incorrect gcov results while unloading
+will cause a null-pointer dereference.
 
-Observed with the TMIO_STAT_RXRDY bit together with CMD53 on AR6002 and
-BCM4318 SDIO cards in polled mode.
+This patch fixes these problems by changing the gcov-kernel infrastructure
+so that multiple profiling data sets can be associated with one debugfs
+entry.  It applies to 2.6.36-rc1.
 
-This patch eliminates this race by only writing to CTL_STATUS and clearing
-the interrupts that were passed as an argument to ack_mmc_irqs()."
-
-[matt@console-pimps.org: rewrote changelog]
-Signed-off-by: Yusuke Goda <yusuke.goda.sx@renesas.com>
-Acked-by: Magnus Damm <damm@opensource.se>
-Tested-by: Arnd Hannemann <arnd@arndnet.de>
-Acked-by: Ian Molton <ian@mnementh.co.uk>
-Cc: Matt Fleming <matt@console-pimps.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: <linux-mmc@vger.kernel.org>
+Signed-off-by: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+Reported-by: Werner Spies <werner.spies@thalesgroup.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mmc/host/tmio_mmc.h |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ kernel/gcov/fs.c |  244 ++++++++++++++++++++++++++++++++++++++++---------------
+ 1 file changed, 180 insertions(+), 64 deletions(-)
 
---- a/drivers/mmc/host/tmio_mmc.h
-+++ b/drivers/mmc/host/tmio_mmc.h
-@@ -102,10 +102,7 @@
+--- a/kernel/gcov/fs.c
++++ b/kernel/gcov/fs.c
+@@ -33,10 +33,11 @@
+  * @children: child nodes
+  * @all: list head for list of all nodes
+  * @parent: parent node
+- * @info: associated profiling data structure if not a directory
+- * @ghost: when an object file containing profiling data is unloaded we keep a
+- *         copy of the profiling data here to allow collecting coverage data
+- *         for cleanup code. Such a node is called a "ghost".
++ * @loaded_info: array of pointers to profiling data sets for loaded object
++ *   files.
++ * @num_loaded: number of profiling data sets for loaded object files.
++ * @unloaded_info: accumulated copy of profiling data sets for unloaded
++ *   object files. Used only when gcov_persist=1.
+  * @dentry: main debugfs entry, either a directory or data file
+  * @links: associated symbolic links
+  * @name: data file basename
+@@ -51,10 +52,11 @@ struct gcov_node {
+ 	struct list_head children;
+ 	struct list_head all;
+ 	struct gcov_node *parent;
+-	struct gcov_info *info;
+-	struct gcov_info *ghost;
++	struct gcov_info **loaded_info;
++	struct gcov_info *unloaded_info;
+ 	struct dentry *dentry;
+ 	struct dentry **links;
++	int num_loaded;
+ 	char name[0];
+ };
  
- #define ack_mmc_irqs(host, i) \
- 	do { \
--		u32 mask;\
--		mask  = sd_ctrl_read32((host), CTL_STATUS); \
--		mask &= ~((i) & TMIO_MASK_IRQ); \
--		sd_ctrl_write32((host), CTL_STATUS, mask); \
-+		sd_ctrl_write32((host), CTL_STATUS, ~(i)); \
- 	} while (0)
+@@ -136,16 +138,37 @@ static const struct seq_operations gcov_
+ };
  
+ /*
+- * Return the profiling data set for a given node. This can either be the
+- * original profiling data structure or a duplicate (also called "ghost")
+- * in case the associated object file has been unloaded.
++ * Return a profiling data set associated with the given node. This is
++ * either a data set for a loaded object file or a data set copy in case
++ * all associated object files have been unloaded.
+  */
+ static struct gcov_info *get_node_info(struct gcov_node *node)
+ {
+-	if (node->info)
+-		return node->info;
++	if (node->num_loaded > 0)
++		return node->loaded_info[0];
  
+-	return node->ghost;
++	return node->unloaded_info;
++}
++
++/*
++ * Return a newly allocated profiling data set which contains the sum of
++ * all profiling data associated with the given node.
++ */
++static struct gcov_info *get_accumulated_info(struct gcov_node *node)
++{
++	struct gcov_info *info;
++	int i = 0;
++
++	if (node->unloaded_info)
++		info = gcov_info_dup(node->unloaded_info);
++	else
++		info = gcov_info_dup(node->loaded_info[i++]);
++	if (!info)
++		return NULL;
++	for (; i < node->num_loaded; i++)
++		gcov_info_add(info, node->loaded_info[i]);
++
++	return info;
+ }
+ 
+ /*
+@@ -163,9 +186,10 @@ static int gcov_seq_open(struct inode *i
+ 	mutex_lock(&node_lock);
+ 	/*
+ 	 * Read from a profiling data copy to minimize reference tracking
+-	 * complexity and concurrent access.
++	 * complexity and concurrent access and to keep accumulating multiple
++	 * profiling data sets associated with one node simple.
+ 	 */
+-	info = gcov_info_dup(get_node_info(node));
++	info = get_accumulated_info(node);
+ 	if (!info)
+ 		goto out_unlock;
+ 	iter = gcov_iter_new(info);
+@@ -225,12 +249,25 @@ static struct gcov_node *get_node_by_nam
+ 	return NULL;
+ }
+ 
++/*
++ * Reset all profiling data associated with the specified node.
++ */
++static void reset_node(struct gcov_node *node)
++{
++	int i;
++
++	if (node->unloaded_info)
++		gcov_info_reset(node->unloaded_info);
++	for (i = 0; i < node->num_loaded; i++)
++		gcov_info_reset(node->loaded_info[i]);
++}
++
+ static void remove_node(struct gcov_node *node);
+ 
+ /*
+  * write() implementation for gcov data files. Reset profiling data for the
+- * associated file. If the object file has been unloaded (i.e. this is
+- * a "ghost" node), remove the debug fs node as well.
++ * corresponding file. If all associated object files have been unloaded,
++ * remove the debug fs node as well.
+  */
+ static ssize_t gcov_seq_write(struct file *file, const char __user *addr,
+ 			      size_t len, loff_t *pos)
+@@ -245,10 +282,10 @@ static ssize_t gcov_seq_write(struct fil
+ 	node = get_node_by_name(info->filename);
+ 	if (node) {
+ 		/* Reset counts or remove node for unloaded modules. */
+-		if (node->ghost)
++		if (node->num_loaded == 0)
+ 			remove_node(node);
+ 		else
+-			gcov_info_reset(node->info);
++			reset_node(node);
+ 	}
+ 	/* Reset counts for open file. */
+ 	gcov_info_reset(info);
+@@ -378,7 +415,10 @@ static void init_node(struct gcov_node *
+ 	INIT_LIST_HEAD(&node->list);
+ 	INIT_LIST_HEAD(&node->children);
+ 	INIT_LIST_HEAD(&node->all);
+-	node->info = info;
++	if (node->loaded_info) {
++		node->loaded_info[0] = info;
++		node->num_loaded = 1;
++	}
+ 	node->parent = parent;
+ 	if (name)
+ 		strcpy(node->name, name);
+@@ -394,9 +434,13 @@ static struct gcov_node *new_node(struct
+ 	struct gcov_node *node;
+ 
+ 	node = kzalloc(sizeof(struct gcov_node) + strlen(name) + 1, GFP_KERNEL);
+-	if (!node) {
+-		pr_warning("out of memory\n");
+-		return NULL;
++	if (!node)
++		goto err_nomem;
++	if (info) {
++		node->loaded_info = kcalloc(1, sizeof(struct gcov_info *),
++					   GFP_KERNEL);
++		if (!node->loaded_info)
++			goto err_nomem;
+ 	}
+ 	init_node(node, info, name, parent);
+ 	/* Differentiate between gcov data file nodes and directory nodes. */
+@@ -416,6 +460,11 @@ static struct gcov_node *new_node(struct
+ 	list_add(&node->all, &all_head);
+ 
+ 	return node;
++
++err_nomem:
++	kfree(node);
++	pr_warning("out of memory\n");
++	return NULL;
+ }
+ 
+ /* Remove symbolic links associated with node. */
+@@ -441,8 +490,9 @@ static void release_node(struct gcov_nod
+ 	list_del(&node->all);
+ 	debugfs_remove(node->dentry);
+ 	remove_links(node);
+-	if (node->ghost)
+-		gcov_info_free(node->ghost);
++	kfree(node->loaded_info);
++	if (node->unloaded_info)
++		gcov_info_free(node->unloaded_info);
+ 	kfree(node);
+ }
+ 
+@@ -477,7 +527,7 @@ static struct gcov_node *get_child_by_na
+ 
+ /*
+  * write() implementation for reset file. Reset all profiling data to zero
+- * and remove ghost nodes.
++ * and remove nodes for which all associated object files are unloaded.
+  */
+ static ssize_t reset_write(struct file *file, const char __user *addr,
+ 			   size_t len, loff_t *pos)
+@@ -487,8 +537,8 @@ static ssize_t reset_write(struct file *
+ 	mutex_lock(&node_lock);
+ restart:
+ 	list_for_each_entry(node, &all_head, all) {
+-		if (node->info)
+-			gcov_info_reset(node->info);
++		if (node->num_loaded > 0)
++			reset_node(node);
+ 		else if (list_empty(&node->children)) {
+ 			remove_node(node);
+ 			/* Several nodes may have gone - restart loop. */
+@@ -564,37 +614,115 @@ err_remove:
+ }
+ 
+ /*
+- * The profiling data set associated with this node is being unloaded. Store a
+- * copy of the profiling data and turn this node into a "ghost".
++ * Associate a profiling data set with an existing node. Needs to be called
++ * with node_lock held.
+  */
+-static int ghost_node(struct gcov_node *node)
++static void add_info(struct gcov_node *node, struct gcov_info *info)
+ {
+-	node->ghost = gcov_info_dup(node->info);
+-	if (!node->ghost) {
+-		pr_warning("could not save data for '%s' (out of memory)\n",
+-			   node->info->filename);
+-		return -ENOMEM;
++	struct gcov_info **loaded_info;
++	int num = node->num_loaded;
++
++	/*
++	 * Prepare new array. This is done first to simplify cleanup in
++	 * case the new data set is incompatible, the node only contains
++	 * unloaded data sets and there's not enough memory for the array.
++	 */
++	loaded_info = kcalloc(num + 1, sizeof(struct gcov_info *), GFP_KERNEL);
++	if (!loaded_info) {
++		pr_warning("could not add '%s' (out of memory)\n",
++			   info->filename);
++		return;
++	}
++	memcpy(loaded_info, node->loaded_info,
++	       num * sizeof(struct gcov_info *));
++	loaded_info[num] = info;
++	/* Check if the new data set is compatible. */
++	if (num == 0) {
++		/*
++		 * A module was unloaded, modified and reloaded. The new
++		 * data set replaces the copy of the last one.
++		 */
++		if (!gcov_info_is_compatible(node->unloaded_info, info)) {
++			pr_warning("discarding saved data for %s "
++				   "(incompatible version)\n", info->filename);
++			gcov_info_free(node->unloaded_info);
++			node->unloaded_info = NULL;
++		}
++	} else {
++		/*
++		 * Two different versions of the same object file are loaded.
++		 * The initial one takes precedence.
++		 */
++		if (!gcov_info_is_compatible(node->loaded_info[0], info)) {
++			pr_warning("could not add '%s' (incompatible "
++				   "version)\n", info->filename);
++			kfree(loaded_info);
++			return;
++		}
+ 	}
+-	node->info = NULL;
++	/* Overwrite previous array. */
++	kfree(node->loaded_info);
++	node->loaded_info = loaded_info;
++	node->num_loaded = num + 1;
++}
+ 
+-	return 0;
++/*
++ * Return the index of a profiling data set associated with a node.
++ */
++static int get_info_index(struct gcov_node *node, struct gcov_info *info)
++{
++	int i;
++
++	for (i = 0; i < node->num_loaded; i++) {
++		if (node->loaded_info[i] == info)
++			return i;
++	}
++	return -ENOENT;
+ }
+ 
+ /*
+- * Profiling data for this node has been loaded again. Add profiling data
+- * from previous instantiation and turn this node into a regular node.
++ * Save the data of a profiling data set which is being unloaded.
+  */
+-static void revive_node(struct gcov_node *node, struct gcov_info *info)
++static void save_info(struct gcov_node *node, struct gcov_info *info)
+ {
+-	if (gcov_info_is_compatible(node->ghost, info))
+-		gcov_info_add(info, node->ghost);
++	if (node->unloaded_info)
++		gcov_info_add(node->unloaded_info, info);
+ 	else {
+-		pr_warning("discarding saved data for '%s' (version changed)\n",
++		node->unloaded_info = gcov_info_dup(info);
++		if (!node->unloaded_info) {
++			pr_warning("could not save data for '%s' "
++				   "(out of memory)\n", info->filename);
++		}
++	}
++}
++
++/*
++ * Disassociate a profiling data set from a node. Needs to be called with
++ * node_lock held.
++ */
++static void remove_info(struct gcov_node *node, struct gcov_info *info)
++{
++	int i;
++
++	i = get_info_index(node, info);
++	if (i < 0) {
++		pr_warning("could not remove '%s' (not found)\n",
+ 			   info->filename);
++		return;
+ 	}
+-	gcov_info_free(node->ghost);
+-	node->ghost = NULL;
+-	node->info = info;
++	if (gcov_persist)
++		save_info(node, info);
++	/* Shrink array. */
++	node->loaded_info[i] = node->loaded_info[node->num_loaded - 1];
++	node->num_loaded--;
++	if (node->num_loaded > 0)
++		return;
++	/* Last loaded data set was removed. */
++	kfree(node->loaded_info);
++	node->loaded_info = NULL;
++	node->num_loaded = 0;
++	if (!node->unloaded_info)
++		remove_node(node);
+ }
+ 
+ /*
+@@ -609,30 +737,18 @@ void gcov_event(enum gcov_action action,
+ 	node = get_node_by_name(info->filename);
+ 	switch (action) {
+ 	case GCOV_ADD:
+-		/* Add new node or revive ghost. */
+-		if (!node) {
++		if (node)
++			add_info(node, info);
++		else
+ 			add_node(info);
+-			break;
+-		}
+-		if (gcov_persist)
+-			revive_node(node, info);
+-		else {
+-			pr_warning("could not add '%s' (already exists)\n",
+-				   info->filename);
+-		}
+ 		break;
+ 	case GCOV_REMOVE:
+-		/* Remove node or turn into ghost. */
+-		if (!node) {
++		if (node)
++			remove_info(node, info);
++		else {
+ 			pr_warning("could not remove '%s' (not found)\n",
+ 				   info->filename);
+-			break;
+ 		}
+-		if (gcov_persist) {
+-			if (!ghost_node(node))
+-				break;
+-		}
+-		remove_node(node);
+ 		break;
+ 	}
+ 	mutex_unlock(&node_lock);
 
 
