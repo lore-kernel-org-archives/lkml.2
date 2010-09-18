@@ -1,103 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754905Ab0IRDO0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Sep 2010 23:14:26 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:61998 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754111Ab0IRDOZ convert rfc822-to-8bit (ORCPT
+	id S1755012Ab0IRDPY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Sep 2010 23:15:24 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:37285 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753008Ab0IRDPX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Sep 2010 23:14:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimsNtoT2GGCv1Zk2cGCsZ17zsOqV1DiF7D5tV=L@mail.gmail.com>
-References: <20100917152639.0e88341a@basil.nowhere.org>
-	<1284736618-27153-2-git-send-email-wad@chromium.org>
-	<20100918012939.GA25046@redhat.com>
-	<AANLkTimsNtoT2GGCv1Zk2cGCsZ17zsOqV1DiF7D5tV=L@mail.gmail.com>
-Date: Fri, 17 Sep 2010 22:14:23 -0500
-Message-ID: <AANLkTikjN7Xj5BXLbGEPN2+V9kT1h_z2oifoa-Aw4mK6@mail.gmail.com>
-Subject: Re: [PATCH 2/2] exec: move core_pattern pipe helper into the crashing namespace
+	Fri, 17 Sep 2010 23:15:23 -0400
 From: Will Drewry <wad@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
+To: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Roland McGrath <roland@redhat.com>,
         Neil Horman <nhorman@tuxdriver.com>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
         containers@lists.linux-foundation.org, Eugene Teo <eteo@redhat.com>,
         Tejun Heo <tj@kernel.org>, Serge Hallyn <serue@us.ibm.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Alexey Dobriyan <adobriyan@gmail.com>, linux-fsdevel@vger.kernel.org,
+        Will Drewry <wad@chromium.org>
+Subject: [PATCH][RFC] v2 exec: move core_pattern pipe helper into the crashing namespace
+Date: Fri, 17 Sep 2010 22:13:49 -0500
+Message-Id: <1284779629-15273-1-git-send-email-wad@chromium.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <20100918012939.GA25046@redhat.com>
+References: <20100918012939.GA25046@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 17, 2010 at 9:34 PM, Will Drewry <wad@chromium.org> wrote:
-> On Fri, Sep 17, 2010 at 8:29 PM, Oleg Nesterov <oleg@redhat.com> wrote:
->> On 09/17, Will Drewry wrote:
->>>
->>> Instead, this change implements the more complex option two.  It
->>> migrates the ____call_usermodehelper() thread into the same namespaces
->>> as the dumping process.  It does not assign a pid in that namespace so
->>> the collector will appear to be pid 0.
->>
->> Hmm... You mean, it won't visible in that namespace? Afacis, it should
->> have the correct pid in the init ns, no?
->
-> Exactly - it will be unmapped in its new pid namespace, returning 0
-> only in that case, as you point out below!
->
->>
->> I am a bit worried task_active_pid_ns() != nsproxy->pid_ns, but perhaps
->> this is OK... Say, sys_getpid() returns 0, strange.
->>
->>> +             /* Run the core_collector in the crashing namespaces */
->>> +             if (copy_namespaces_unattached(0, current,
->>> +                     &pipe_params.nsproxy, &pipe_params.fs)) {
->>> +                     printk(KERN_WARNING "%s failed to copy namespaces\n",
->>> +                            __func__);
->>> +                     argv_free(helper_argv);
->>> +                     goto fail_dropcount;
->>> +             }
->>
->> This looks overcomplicated to me, or I missed something.
->>
->> I do not understand why should we do this beforehand, and why we need
->> copy_namespaces_unattached().
->>
->> Can't you just pass current to umh_pipe_setup() (or another helper) as
->> the argument? Then this helper can copy ->fs and ->nsproxy itself.
->
-> I wasn't sure if it was reasonable to pass the current task_struct
-> over, but I certainly can.
->
->> In fact, I do not understand why create_new_namespaces() is used. It
->> is called with flags == 0 anyway, can't we just do
->>
->>        ns = coredumping_task->nsproxy;
->>        get_nsproxy(ns);
->>        switch_task_namespaces(current, ns);
->>
->> ?
->
-> So that was my first thought (which I tried).  I did exactly what you
-> suggested to the khelper thread, and the lack of the fs struct bit me.
->  Since the older patch from Eric Biederman (setns()) had taken the
-> route of deflecting the work through create_new_namespaces(), I did
-> too.  I figured it would ensure that any namespacing behavior that
-> needed to be done would be done.
->
-> In practice, this seems to amount to just adding a refcount to all the
-> namespaces and creating a new nsproxy which isn't really needed.  Most
-> likely, doing what you've suggested above plus the copy_fs_struct and
-> the swap out will do the trick.  I'll try it out and see.  That's make
-> it much clearer I think.
+Presently, a core_pattern pipe endpoint will be run in the init
+namespace.  It will receive the virtual pid (task_tgid_vnr->%p) of the
+core dumping process but will have no access to that processes /proc
+without walking the init namespace /proc looking through all the global
+pids until it finds the one it thinks matches.
 
-That seems to work -- I'll post an update shortly with your comments
-and Neil's integrated - hopefully accurately.  Any other thoughts on
-style/cleanup/etc will certainly be appreciated.
+One option for fixing this is to change the reported pid:
+  https://patchwork.kernel.org/patch/185912/
+However, it's unclear if it is desirable for the core_pattern to run
+outside the namespace.  In particular, it can easily access the mounts
+via /proc/[pid_nr]/root, but if there is a net namespace, it will not
+have access.  (Originally introduced in 2007 in commit
+b488893a390edfe027bae7a46e9af8083e740668 )
 
-cheers!
-will
+Instead, this change implements the more complex option two.  It
+migrates the ____call_usermodehelper() thread into the same namespaces
+as the dumping process.  It does not assign a pid in that namespace so
+the collector will appear to be pid 0 in the namespace.
+
+Signed-off-by: Will Drewry <wad@chromium.org>
+
+---
+v2: dropped patch 1/2
+    removed use of new copy_namespaces_unattached (oleg@redhat.com)
+    moved pipe_params into coredump_params (nhorman@tuxdriver.com)
+
+ fs/exec.c               |   46 +++++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/binfmts.h |    9 +++++++++
+ 2 files changed, 54 insertions(+), 1 deletions(-)
+
+diff --git a/fs/exec.c b/fs/exec.c
+index 828dd24..4cbb735 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -51,6 +51,7 @@
+ #include <linux/audit.h>
+ #include <linux/tracehook.h>
+ #include <linux/kmod.h>
++#include <linux/nsproxy.h>
+ #include <linux/fsnotify.h>
+ #include <linux/fs_struct.h>
+ #include <linux/pipe_fs_i.h>
+@@ -1820,7 +1821,32 @@ static int umh_pipe_setup(struct subprocess_info *info)
+ 	struct file *rp, *wp;
+ 	struct fdtable *fdt;
+ 	struct coredump_params *cp = (struct coredump_params *)info->data;
+-	struct files_struct *cf = current->files;
++	struct coredump_pipe_params *pipe_params = &cp->pipe_params;
++	struct task_struct *tsk = current;
++	struct files_struct *cf = tsk->files;
++	struct fs_struct *cfs = tsk->fs;
++
++	/* Migrate this thread into the crashing namespaces, but
++	 * don't change its pid struct to avoid breaking any other
++	 * dependencies.  This will mean the process is pid=0 if it
++	 * was migrated into a pid namespace.
++	 */
++	if (pipe_params->nsproxy && pipe_params->fs) {
++		int kill;
++		switch_task_namespaces(tsk, pipe_params->nsproxy);
++		pipe_params->nsproxy = NULL;
++
++		task_lock(tsk);
++		tsk->fs = pipe_params->fs;
++		task_unlock(tsk);
++		pipe_params->fs = NULL;
++		/* Clean up the previous fs struct */
++		write_lock(&cfs->lock);
++		kill = !--cfs->users;
++		write_unlock(&cfs->lock);
++		if (kill)
++			free_fs_struct(cfs);
++	}
+ 
+ 	wp = create_write_pipe(0);
+ 	if (IS_ERR(wp))
+@@ -1950,10 +1976,28 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
+ 			goto fail_dropcount;
+ 		}
+ 
++		/* Run the core_collector in the crashing namespaces */
++		cprm.pipe_params.fs = copy_fs_struct(current->fs);
++		if (!cprm.pipe_params.fs) {
++			printk(KERN_WARNING "%s failed to copy fs\n",
++				__func__);
++			argv_free(helper_argv);
++			goto fail_dropcount;
++		}
++		get_nsproxy(current->nsproxy);
++		cprm.pipe_params.nsproxy = current->nsproxy;
++
+ 		retval = call_usermodehelper_fns(helper_argv[0], helper_argv,
+ 					NULL, UMH_WAIT_EXEC, umh_pipe_setup,
+ 					NULL, &cprm);
+ 		argv_free(helper_argv);
++		/* nsproxy and fs will survive if call_usermodehelper_fns hits
++		 * ENOMEM prior to creating a new thread.
++		 */
++		if (cprm.pipe_params.nsproxy)
++			put_nsproxy(cprm.pipe_params.nsproxy);
++		if (cprm.pipe_params.fs)  /* not in use by anything else */
++			free_fs_struct(cprm.pipe_params.fs);
+ 		if (retval) {
+  			printk(KERN_INFO "Core dump to %s pipe failed\n",
+ 			       corename);
+diff --git a/include/linux/binfmts.h b/include/linux/binfmts.h
+index a065612..2629603 100644
+--- a/include/linux/binfmts.h
++++ b/include/linux/binfmts.h
+@@ -68,6 +68,12 @@ struct linux_binprm{
+ 
+ #define BINPRM_MAX_RECURSION 4
+ 
++/* Parameters to be passed to a pipe target during coredump */
++struct coredump_pipe_params {
++	struct nsproxy *nsproxy;
++	struct fs_struct *fs;
++};
++
+ /* Function parameter for binfmt->coredump */
+ struct coredump_params {
+ 	long signr;
+@@ -75,6 +81,9 @@ struct coredump_params {
+ 	struct file *file;
+ 	unsigned long limit;
+ 	unsigned long mm_flags;
++	union {
++		struct coredump_pipe_params pipe_params;
++	};
+ };
+ 
+ /*
+-- 
+1.7.0.4
+
