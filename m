@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756765Ab0IRTfc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:35:32 -0400
-Received: from kroah.org ([198.145.64.141]:43306 "EHLO coco.kroah.org"
+	id S1756781Ab0IRTgB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:36:01 -0400
+Received: from kroah.org ([198.145.64.141]:43289 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755970Ab0IRTPC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:15:02 -0400
+	id S1756714Ab0IRTPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:15:00 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:00 2010
-Message-Id: <20100918191300.106219585@clark.site>
+Message-Id: <20100918191259.929904981@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:12:11 -0700
+Date: Sat, 18 Sep 2010 12:12:09 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vivek Natarajan <vnatarajan@atheros.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [033/129] ath9k_htc: Fix disconnect issue in HT40 mode.
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: [031/129] fuse: flush background queue on connection close
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,37 +25,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vivek Natarajan <vnatarajan@atheros.com>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit 71ba186c123630ddab17667ec9ecf7e2ef211295 upstream.
+commit 595afaf9e6ee1b48e13ec4b8bcc8c7dee888161a upstream.
 
-Some APs advertise that they may be HT40 capable in the capabilites
-but the current operating channel configuration may be only HT20.
-This causes disconnection as ath9k_htc sets WLAN_RC_40_FLAG despite
-the AP operating in HT20 mode.
-Hence set this flag only if the current channel configuration
-is HT40 enabled.
+David Bartly reported that fuse can hang in fuse_get_req_nofail() when
+the connection to the filesystem server is no longer active.
 
-Signed-off-by: Vivek Natarajan <vnatarajan@atheros.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+If bg_queue is not empty then flush_bg_queue() called from
+request_end() can put more requests on to the pending queue.  If this
+happens while ending requests on the processing queue then those
+background requests will be queued to the pending list and never
+ended.
+
+Another problem is that fuse_dev_release() didn't wake up processes
+sleeping on blocked_waitq.
+
+Solve this by:
+
+ a) flushing the background queue before calling end_requests() on the
+    pending and processing queues
+
+ b) setting blocked = 0 and waking up processes waiting on
+    blocked_waitq()
+
+Thanks to David for an excellent bug report.
+
+Reported-by: David Bartley <andareed@gmail.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
 ---
- drivers/net/wireless/ath/ath9k/htc_drv_main.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/fuse/dev.c |   16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-@@ -370,7 +370,8 @@ static int ath9k_htc_init_rate(struct at
- 		priv->tgt_rate.rates.ht_rates.rs_nrates = j;
+--- a/fs/fuse/dev.c
++++ b/fs/fuse/dev.c
+@@ -1552,6 +1552,14 @@ __acquires(&fc->lock)
+ 	}
+ }
  
- 		caps = WLAN_RC_HT_FLAG;
--		if (sta->ht_cap.cap & IEEE80211_HT_CAP_SUP_WIDTH_20_40)
-+		if ((sta->ht_cap.cap & IEEE80211_HT_CAP_SUP_WIDTH_20_40) &&
-+		    (conf_is_ht40(&priv->hw->conf)))
- 			caps |= WLAN_RC_40_FLAG;
- 		if (sta->ht_cap.cap & IEEE80211_HT_CAP_SGI_40)
- 			caps |= WLAN_RC_SGI_FLAG;
++static void end_queued_requests(struct fuse_conn *fc)
++{
++	fc->max_background = UINT_MAX;
++	flush_bg_queue(fc);
++	end_requests(fc, &fc->pending);
++	end_requests(fc, &fc->processing);
++}
++
+ /*
+  * Abort all requests.
+  *
+@@ -1578,8 +1586,7 @@ void fuse_abort_conn(struct fuse_conn *f
+ 		fc->connected = 0;
+ 		fc->blocked = 0;
+ 		end_io_requests(fc);
+-		end_requests(fc, &fc->pending);
+-		end_requests(fc, &fc->processing);
++		end_queued_requests(fc);
+ 		wake_up_all(&fc->waitq);
+ 		wake_up_all(&fc->blocked_waitq);
+ 		kill_fasync(&fc->fasync, SIGIO, POLL_IN);
+@@ -1594,8 +1601,9 @@ int fuse_dev_release(struct inode *inode
+ 	if (fc) {
+ 		spin_lock(&fc->lock);
+ 		fc->connected = 0;
+-		end_requests(fc, &fc->pending);
+-		end_requests(fc, &fc->processing);
++		fc->blocked = 0;
++		end_queued_requests(fc);
++		wake_up_all(&fc->blocked_waitq);
+ 		spin_unlock(&fc->lock);
+ 		fuse_conn_put(fc);
+ 	}
 
 
