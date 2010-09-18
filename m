@@ -1,99 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598Ab0IRPJq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 11:09:46 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:57299 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751014Ab0IRPJp (ORCPT
+	id S1755577Ab0IRPTJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 11:19:09 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:46060 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758Ab0IRPTI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 11:09:45 -0400
-Date: Sat, 18 Sep 2010 11:09:43 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Matthias Dahl <ml_kernel@mortal-soul.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] sched: Improve latencies under load by decreasing
-	minimum
-Message-ID: <20100918150943.GA2562@Krystal>
-References: <201009162048.50941.ml_kernel@mortal-soul.de> <20100918145301.GA19879@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100918145301.GA19879@Krystal>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 11:09:18 up 238 days, 17:46,  4 users,  load average: 0.01, 0.03,
-	0.04
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sat, 18 Sep 2010 11:19:08 -0400
+Subject: Re: [PATCH] generic-ipi: fix deadlock in __smp_call_function_single
+From: Peter Zijlstra <peterz@infradead.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+In-Reply-To: <1284761553.2676.21.camel@sbsiddha-MOBL3.sc.intel.com>
+References: <20100909135050.GB2228@osiris.boeblingen.de.ibm.com>
+	 <1284116817.402.33.camel@laptop>
+	 <20100910172805.a4fe5c7f.akpm@linux-foundation.org>
+	 <1284196838.2251.12.camel@laptop>
+	 <AANLkTi=Vrd0g-64oRYLo6fTj1SYYa++VG57vGn608tkA@mail.gmail.com>
+	 <1284400941.2684.19.camel@sbsiddha-MOBL3.sc.intel.com>
+	 <1284451427.2275.462.camel@laptop>
+	 <20100914111954.GB2201@osiris.boeblingen.de.ibm.com>
+	 <1284761553.2676.21.camel@sbsiddha-MOBL3.sc.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Sat, 18 Sep 2010 17:18:47 +0200
+Message-ID: <1284823127.2275.604.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
-> * Matthias Dahl (ml_kernel@mortal-soul.de) wrote:
-> > Hi.
-> > 
-> > I don't know if this is relevant but I just tried this ontop 2.6.35.4 while
-> > investigating a different problem and it was quite easy to produce audio
-> > buffer underruns while doing some compile job in the background.
-> > 
-> > To be exact: I had vlc (1.1 git) play back several flac files and was compiling
-> > qt 4.7 in the background as a test w/ -j5 on an i7 860 . The result was that w/
-> > the decreased granularity it caused noticeable audio buffer underruns while it
-> > worked just fine w/ the default granularity (nothing else touched).
-> > 
-> > Just wanted to report this early on and hope it helps.
+On Fri, 2010-09-17 at 15:12 -0700, Suresh Siddha wrote:
+> On Tue, 2010-09-14 at 04:19 -0700, Heiko Carstens wrote:
+> > > 
+> > > So what patches are we going to merge?
+> > > 
+> > > I share Heiko's opinion on that its somewhat surprising to have
+> > > __smp_call_function_single() differ in this detail from
+> > > smp_call_function_single() and think that merging his patch would be
+> > > good in that respect. But Andrew seemed to have reservations.
+> > > 
+> > > We can also merge either my or Suresh's patch (which I think makes
+> > > sense, but is kinda subtle) to avoid the needless self kick.
 > 
-> Hi Matthias,
-> 
-> Thanks for reporting this. I have a few more questions:
-> 
-> Can you provide:
-> 
-> you full kernel .config
-> 
-> The config values of your sound card:
-> 
-> cat /proc/asound/card0/pcm0p/sub0/hw_params
-> cat /proc/asound/card0/pcm0c/sub0/hw_params
-> 
-> while you play your audio. (could be other than pcm0p, try to get one which is
-> not "Closed" while you play) Also providing the dmesg output showing which sound
-> card driver you are using might help.
-> 
-> Also the output of:
-> cat /proc/cpuinfo
-> 
-> Also, can you try reproducing the problem with different players ? With
-> non-git-bleeding-edge vlc versions too ? Can you reproduce this problem while
-> using "aplay" (a much simpler player) to play wav files ? (I've got an
-> instrumented version hooked on my tracer that traces underruns in here).
+> Peter, Can you please merge my patch instead of yours, as mine is more
+> appropriate here. And also I would like Heiko's patch also to be merged
+> as that brings smp_call_function_single() and
+> __smp_call_function_single() to similar behavior.
 
-Also, do you use pulseaudio, alsa directly, or go through OSS ?
-
-Mathieu
-
-> 
-> Thanks !
-> 
-> Mathieu
-> 
-> > 
-> > So long,
-> > matthias.
-> > 
-> > PS. Please cc' as I am not subscribed. Thanks a lot.
-> 
-> -- 
-> Mathieu Desnoyers
-> Operating System Efficiency R&D Consultant
-> EfficiOS Inc.
-> http://www.efficios.com
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Sure can do. Thanks!
