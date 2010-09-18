@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757192Ab0IRTQP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:16:15 -0400
-Received: from kroah.org ([198.145.64.141]:43823 "EHLO coco.kroah.org"
+	id S1757218Ab0IRTQV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:16:21 -0400
+Received: from kroah.org ([198.145.64.141]:43870 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757177Ab0IRTQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:16:12 -0400
+	id S1756217Ab0IRTQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:16:20 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:06 2010
-Message-Id: <20100918191306.158360062@clark.site>
+Message-Id: <20100918191306.659286659@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:13:21 -0700
+Date: Sat, 18 Sep 2010 12:13:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [103/129] ALSA: HDA: Enable internal speaker on Dell M101z
+        Anton Vorontsov <cbouatmailru@gmail.com>
+Subject: [109/129] apm_power: Add missing break statement
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,54 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Anton Vorontsov <cbouatmailru@gmail.com>
 
-commit 145a902bfeb1f89a41165bd2d1e633ce070bcb73 upstream.
+commit 1d220334d6a8a711149234dc5f98d34ae02226b8 upstream.
 
-BugLink: http://launchpad.net/bugs/640254
+The missing break statement causes wrong capacity calculation for
+batteries that report energy.
 
-In some cases a magic processing coefficient is needed to enable
-the internal speaker on Dell M101z. According to Realtek, this
-processing coefficient is only present on ALC269vb.
-
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: d binderman <dcb314@hotmail.com>
+Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_realtek.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/power/apm_power.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -14230,6 +14230,7 @@ static void alc269_auto_init(struct hda_
- 
- enum {
- 	ALC269_FIXUP_SONY_VAIO,
-+	ALC269_FIXUP_DELL_M101Z,
- };
- 
- static const struct hda_verb alc269_sony_vaio_fixup_verbs[] = {
-@@ -14241,11 +14242,20 @@ static const struct alc_fixup alc269_fix
- 	[ALC269_FIXUP_SONY_VAIO] = {
- 		.verbs = alc269_sony_vaio_fixup_verbs
- 	},
-+	[ALC269_FIXUP_DELL_M101Z] = {
-+		.verbs = (const struct hda_verb[]) {
-+			/* Enables internal speaker */
-+			{0x20, AC_VERB_SET_COEF_INDEX, 13},
-+			{0x20, AC_VERB_SET_PROC_COEF, 0x4040},
-+			{}
-+		}
-+	},
- };
- 
- static struct snd_pci_quirk alc269_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x104d, 0x9071, "Sony VAIO", ALC269_FIXUP_SONY_VAIO),
- 	SND_PCI_QUIRK(0x104d, 0x9077, "Sony VAIO", ALC269_FIXUP_SONY_VAIO),
-+	SND_PCI_QUIRK(0x1028, 0x0470, "Dell M101z", ALC269_FIXUP_DELL_M101Z),
- 	{}
- };
- 
+--- a/drivers/power/apm_power.c
++++ b/drivers/power/apm_power.c
+@@ -233,6 +233,7 @@ static int calculate_capacity(enum apm_s
+ 		empty_design_prop = POWER_SUPPLY_PROP_ENERGY_EMPTY_DESIGN;
+ 		now_prop = POWER_SUPPLY_PROP_ENERGY_NOW;
+ 		avg_prop = POWER_SUPPLY_PROP_ENERGY_AVG;
++		break;
+ 	case SOURCE_VOLTAGE:
+ 		full_prop = POWER_SUPPLY_PROP_VOLTAGE_MAX;
+ 		empty_prop = POWER_SUPPLY_PROP_VOLTAGE_MIN;
 
 
