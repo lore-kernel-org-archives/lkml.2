@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755244Ab0IRI1K (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 04:27:10 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:56850 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754877Ab0IRI1I (ORCPT
+	id S1755277Ab0IRIiw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 04:38:52 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:33931 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755158Ab0IRIiu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 04:27:08 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Subject: Re: New compat_alloc_user_space() GPLness and fglrx
-Date: Sat, 18 Sep 2010 10:26:57 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-next-20100910+; KDE/4.5.1; x86_64; ; )
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Greg Kroah-Hartman" <gregkh@suse.de>
-References: <20100918014232.GA17699@khazad-dum.debian.net>
-In-Reply-To: <20100918014232.GA17699@khazad-dum.debian.net>
+	Sat, 18 Sep 2010 04:38:50 -0400
+Date: Sat, 18 Sep 2010 09:38:47 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: linux-kernel@vger.kernel.org
+Cc: Richard Henderson <rth@twiddle.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-arch@vger.kernel.org
+Subject: [PATCH 1/4] alpha: belated ERESTART_RESTARTBLOCK race fix
+Message-ID: <20100918083846.GA31363@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009181026.58002.arnd@arndb.de>
-X-Provags-ID: V02:K0:kd9XduqW/YCctutNr7n/CwBsk6dl09ddP3kbHhPzbtA
- cucAQPa/lNJr9JCq5BzTuUG+z02NBbnwDjHPCY2vYYgF0Mpr6B
- DWYfcoAjYXfVCaN8oumWqf4QQZhOLo7cBlqQFYVPhQBUWxcy66
- sRRuSWi74/Wi0VR2W7b020YMiAOorpoax7By23NdvlCSyYttQ0
- k6Skr2z7Lo9GuCh39GW0Q==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 18 September 2010 03:42:32 Henrique de Moraes Holschuh wrote:
-> promotes compat_alloc_user_space() to EXPORT_SYMBOL_GPL, and moves it from
-> asm/compat.h to linux/compat.h.
-> 
-> This breaks AMD/ATI's proprietary fglrx GPU driver, which wants to use
-> compat_alloc_user_space(), and expects to find it in asm/compat.h.
-> 
-> Fixing this on the fglrx side is easy enough, one can simply audit the two
-> or three call sites in the fglrx glue and make sure they can use
-> arch_compat_alloc_user_space() safely.
-> 
-> But such a fix doesn't look right.  IMHO, either we don't want any non-GPL
-> module touching *_compat_alloc_user_space and compat_alloc_user_space, or it
-> would be better to let them use compat_alloc_user_space() in the interest of
-> overall security...
+same thing as had been done on other targets back in 2003 -
+move setting ->restart_block.fn into {rt_,}sigreturn().
 
-Right, don't use arch_compat_alloc_user_space(), that would be worse.
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+ arch/alpha/kernel/signal.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-compat_alloc_user_space is still a horrible hack and shouldn't be used
-at all if possible. Just fix the code to either not require compat
-ioctl handling or split out the common code from the native ioctl
-function and pass it a kernel data structure, which you copy from user
-space in different ways depending on where you come from.
-
-	Arnd
+diff --git a/arch/alpha/kernel/signal.c b/arch/alpha/kernel/signal.c
+index 0932dbb..e5b1b3c 100644
+--- a/arch/alpha/kernel/signal.c
++++ b/arch/alpha/kernel/signal.c
+@@ -239,6 +239,8 @@ restore_sigcontext(struct sigcontext __user *sc, struct pt_regs *regs,
+ 	unsigned long usp;
+ 	long i, err = __get_user(regs->pc, &sc->sc_pc);
+ 
++	current_thread_info()->restart_block.fn = do_no_restart_syscall;
++
+ 	sw->r26 = (unsigned long) ret_from_sys_call;
+ 
+ 	err |= __get_user(regs->r0, sc->sc_regs+0);
+@@ -591,7 +593,6 @@ syscall_restart(unsigned long r0, unsigned long r19,
+ 		regs->pc -= 4;
+ 		break;
+ 	case ERESTART_RESTARTBLOCK:
+-		current_thread_info()->restart_block.fn = do_no_restart_syscall;
+ 		regs->r0 = EINTR;
+ 		break;
+ 	}
+-- 
+1.5.6.5
