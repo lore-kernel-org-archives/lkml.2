@@ -1,38 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754416Ab0IRP6X (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 11:58:23 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:48391 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758Ab0IRP6V (ORCPT
+	id S1755297Ab0IRQBF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 12:01:05 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41896 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753092Ab0IRQBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 11:58:21 -0400
-Date: Sat, 18 Sep 2010 11:58:20 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Alan Cox <alan@linux.intel.com>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org, greg@kroah.com,
-        drosenberg@vsecurity.com
-Subject: Re: [PATCH 0/3] Fix the TIOCGICOUNT problem for good
-Message-ID: <20100918155820.GA3942@infradead.org>
-References: <20100916171747.25987.33573.stgit@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100916171747.25987.33573.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sat, 18 Sep 2010 12:01:03 -0400
+Message-Id: <20100918155326.478277313@chello.nl>
+User-Agent: quilt/0.47-1
+Date: Sat, 18 Sep 2010 17:53:26 +0200
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Russell King <rmk@arm.linux.org.uk>,
+        David Howells <dhowells@redhat.com>,
+        Ralf Baechle <ralf@linux-mips.org>, David Miller <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>, Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 0/5] mm, highmem: kmap_atomic rework -v3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 06:21:06PM +0100, Alan Cox wrote:
-> Remembering to clear fields is something driver authors are simply never
-> going to remember to get right every new driver. Instead take the problem
-> away from them and give them a simple interface to do the job.
+Next version of the kmap_atomic rework using Andrew's fancy CPP trickery to
+avoid having to convert the whole tree at once.
 
-Btw, I wonder if all the standard tty ioctls should get similar
-treatment.  That way we have a nice enough skeleton of what needs to be
-implemented in every tty driver instead of passing down the raw ioctl
-method.
+This is compile tested for i386-allmodconfig, frv, mips-sb1250-swarm,
+powerpc-ppc6xx_defconfig, sparc32_defconfig, arm-omap3 (all with
+HIGHEM=y).
+
+Tested on Tile by Chris Metcalf.
+
+Boot-tested with: i386-defconfig.
+
+Not tested with:
+ - nm10300, the arch doesn't build with highmem to begin with
+
 
