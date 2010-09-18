@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab0IRUEB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 16:04:01 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:41351 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754161Ab0IRUD7 (ORCPT
+	id S1756233Ab0IRUE0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 16:04:26 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:54813 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756141Ab0IRUEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 16:03:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding
-         :x-antivirus:x-antivirus-status;
-        b=f1kVnHmMLSQQsNkF6RpyGzaZDjou4rndxKVamhFqp87KQCJo8JuwG15puUtTwQAW35
-         ZOLa+6h0YX+2o83yI/IIjJcRj/1FU7xb8BosqEitedEeoK7AapvWnIeWW0dofAzM4Efy
-         cc+DrgWAVbdhb75zqn8jJK3NiwEv3k5XquNRE=
-Message-ID: <4C951B2A.1000706@gmail.com>
-Date: Sat, 18 Sep 2010 13:03:54 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.9) Gecko/20100825 Thunderbird/3.1.3
+	Sat, 18 Sep 2010 16:04:23 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Subject: Re: PATA IDE is slower in newer versions of kernel
+Date: Sat, 18 Sep 2010 22:04:16 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4+; KDE/4.5.1; x86_64; ; )
+Cc: Joshua Hintze <joshh@imsar.com>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org
+References: <00d401cb55f7$33a78210$9af68630$@com> <010901cb5754$ae6735a0$0b35a0e0$@com> <1284837774.12425.1.camel@localhost.localdomain>
+In-Reply-To: <1284837774.12425.1.camel@localhost.localdomain>
 MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        Sneha Narnakaje <nsnehaprabha@ti.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Kevin Cernekee <cernekee@gmail.com>
-Subject: Re: [PATCH v4] mtd: nand: Expand nand_ecc_layout, deprecate ioctl
- ECCGETLAYOUT
-References: <4C5CA4A1.1040000@broadcom.com>	 <1282154806-9420-1-git-send-email-norris@broadcom.com>	 <4C6DD170.1060807@renesas.com>  <4C6E9C23.6060703@broadcom.com>	 <1282646703.24044.162.camel@localhost>  <4C746DE0.7000104@gmail.com>	 <1283163647.12995.43.camel@brekeke> <1284830690.1721.3.camel@brekeke>
-In-Reply-To: <1284830690.1721.3.camel@brekeke>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Antivirus: avast! (VPS 100918-1, 09/18/2010), Outbound message
-X-Antivirus-Status: Clean
+Message-Id: <201009182204.17255.arnd@arndb.de>
+X-Provags-ID: V02:K0:Gc/AvaiU9qr+5x0jpyDzLt3kG49RmriRN6/XWb3+gQo
+ K6DWPMIav6mX53XvzLEBUyrDQHIam0HJxxfTaqvR88opNRWyFt
+ wwdJTMHdEGDwqHmnE5L4kNP/g0UkF7zYFv3ZimymYq9uEPXSQH
+ AYZw36yvYpzZYGaYUWOY9Vx5hkJ/xoZ6tSyeQriMJn2L1jWbD0
+ EQzal1+WQCLMrI0W9xSZw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/18/2010 10:24 AM, Artem Bityutskiy wrote:
-> Brian,
-> 
-> would you address the small things I noticed in a follow-up patch?
+On Saturday 18 September 2010 21:22:54 Maxim Levitsky wrote:
+> On Sat, 2010-09-18 at 11:12 -0600, Joshua Hintze wrote:
+> > I'm dedicated to continue working on the problem, I just need to advice from 
+> > the linux community. I've tried different I/O schedulers such as noop and
+> > anticipatory and I'm studying the ide-dma code but still lost to where this
+> > is happening.
+> > 
+> > Thanks!
+> > 
+> Maybe you can just bisect this?
 
-Artem,
+That would probably help to pinpoint the problem. A regression somewhere
+between 2.6.10 and 2.6.32 is not that interesting when people are working
+on stabilizing 2.6.36 and adding features to 2.6.37.
 
-Yes, I will. I'm sorry for the delay; I've been a little busy and
-putting some things off. Would you like a patch for the comments against
-your l2 tree or try and squash it with my previous commit and base it
-off of mtd-2.6 or some other option?
+One important question would be if this happens with the libata drivers
+in 2.6.36-rc4 or linux-next as well. Note that the IDE subsystem has been
+replaced with libata a few years ago, and that is what all development
+happens on. If libata is good enough, there is probably no point in
+chasing down ide bugs.
 
-Brian
+	Arnd
