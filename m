@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756757Ab0IRTPG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:15:06 -0400
-Received: from kroah.org ([198.145.64.141]:43265 "EHLO coco.kroah.org"
+	id S1757358Ab0IRTSg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:18:36 -0400
+Received: from kroah.org ([198.145.64.141]:43914 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756639Ab0IRTO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:14:57 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:12:59 2010
-Message-Id: <20100918191259.574261822@clark.site>
+	id S1757251Ab0IRTQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:16:27 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:07 2010
+Message-Id: <20100918191307.248377322@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:12:05 -0700
+Date: Sat, 18 Sep 2010 12:13:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hank Janssen <hjanssen@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [027/129] staging: hv: Fixed bounce kmap problem by using correct index
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [116/129] drm/radeon/kms: force legacy pll algo for RV515 LVDS
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,42 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hank Janssen <hjanssen@microsoft.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 0c47a70a9a8a6d1ec37a53d2f9cb82f8b8ef8aa2 upstream.
+commit 0d9958b18e10d7426d94cc3dd024920a40db3ee2 upstream.
 
-Fixed bounce offset kmap problem by using correct index.
-The symptom of the problem is that in some NAS appliances this problem
-represents Itself by a unresponsive VM under a load with many clients writing
-small files.
+There has been periodic evidence that LVDS, on at least some
+panels, prefers the dividers selected by the legacy pll algo.
+This patch forces the use of the legacy pll algo on RV515
+LVDS panels.  The old behavior (new pll algo) can be selected
+by setting the new_pll module parameter to 1.
 
-Signed-off-by:Hank Janssen <hjanssen@microsoft.com>
-Signed-off-by:Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/hv/storvsc_drv.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/atombios_crtc.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -526,7 +526,7 @@ static unsigned int copy_to_bounce_buffe
- 
- 		/* ASSERT(orig_sgl[i].offset + orig_sgl[i].length <= PAGE_SIZE); */
- 
--		if (j == 0)
-+		if (bounce_addr == 0)
- 			bounce_addr = (unsigned long)kmap_atomic(sg_page((&bounce_sgl[j])), KM_IRQ0);
- 
- 		while (srclen) {
-@@ -587,7 +587,7 @@ static unsigned int copy_from_bounce_buf
- 		destlen = orig_sgl[i].length;
- 		/* ASSERT(orig_sgl[i].offset + orig_sgl[i].length <= PAGE_SIZE); */
- 
--		if (j == 0)
-+		if (bounce_addr == 0)
- 			bounce_addr = (unsigned long)kmap_atomic(sg_page((&bounce_sgl[j])), KM_IRQ0);
- 
- 		while (destlen) {
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -527,6 +527,20 @@ static u32 atombios_adjust_pll(struct dr
+ 					pll->algo = PLL_ALGO_LEGACY;
+ 					pll->flags |= RADEON_PLL_PREFER_CLOSEST_LOWER;
+ 				}
++				/* There is some evidence (often anecdotal) that RV515 LVDS
++				 * (on some boards at least) prefers the legacy algo.  I'm not
++				 * sure whether this should handled generically or on a
++				 * case-by-case quirk basis.  Both algos should work fine in the
++				 * majority of cases.
++				 */
++				if ((radeon_encoder->active_device & (ATOM_DEVICE_LCD_SUPPORT)) &&
++				    (rdev->family == CHIP_RV515)) {
++					/* allow the user to overrride just in case */
++					if (radeon_new_pll == 1)
++						pll->algo = PLL_ALGO_NEW;
++					else
++						pll->algo = PLL_ALGO_LEGACY;
++				}
+ 			} else {
+ 				if (encoder->encoder_type != DRM_MODE_ENCODER_DAC)
+ 					pll->flags |= RADEON_PLL_NO_ODD_POST_DIV;
 
 
