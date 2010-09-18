@@ -1,205 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756694Ab0IRTmq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:42:46 -0400
-Received: from kroah.org ([198.145.64.141]:51676 "EHLO coco.kroah.org"
+	id S1755920Ab0IRTCG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:02:06 -0400
+Received: from kroah.org ([198.145.64.141]:51181 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755931Ab0IRTCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:02:07 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:00:00 2010
-Message-Id: <20100918190000.177115998@clark.site>
+	id S1754594Ab0IRTBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:01:22 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:54 2010
+Message-Id: <20100918185954.624670901@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:58:50 -0700
+Date: Sat, 18 Sep 2010 11:57:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Greg KH <greg@kroah.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Mike Galbraith <efault@gmx.de>
-Subject: [086/123] sched: Fix fork vs hotplug vs cpuset namespaces
+        Craig Shelley <craig@microtron.org.uk>
+Subject: [021/123] USB: CP210x Add new device ID
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=sched-fix-fork-vs-hotplug-vs-cpuset-namespaces.patch
+Content-Disposition: inline; filename=usb-cp210x-add-new-device-id.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Craig Shelley <craig@microtron.org.uk>
 
-commit fabf318e5e4bda0aca2b0d617b191884fda62703 upstream
+commit 541e05ec3add5ab5bcf238d60161b53480280b20 upstream.
 
-There are a number of issues:
+New device ID added for Balluff RFID reader.
 
-1) TASK_WAKING vs cgroup_clone (cpusets)
-
-copy_process():
-
-  sched_fork()
-    child->state = TASK_WAKING; /* waiting for wake_up_new_task() */
-  if (current->nsproxy != p->nsproxy)
-     ns_cgroup_clone()
-       cgroup_clone()
-         mutex_lock(inode->i_mutex)
-         mutex_lock(cgroup_mutex)
-         cgroup_attach_task()
-	   ss->can_attach()
-           ss->attach() [ -> cpuset_attach() ]
-             cpuset_attach_task()
-               set_cpus_allowed_ptr();
-                 while (child->state == TASK_WAKING)
-                   cpu_relax();
-will deadlock the system.
-
-2) cgroup_clone (cpusets) vs copy_process
-
-So even if the above would work we still have:
-
-copy_process():
-
-  if (current->nsproxy != p->nsproxy)
-     ns_cgroup_clone()
-       cgroup_clone()
-         mutex_lock(inode->i_mutex)
-         mutex_lock(cgroup_mutex)
-         cgroup_attach_task()
-	   ss->can_attach()
-           ss->attach() [ -> cpuset_attach() ]
-             cpuset_attach_task()
-               set_cpus_allowed_ptr();
-  ...
-
-  p->cpus_allowed = current->cpus_allowed
-
-over-writing the modified cpus_allowed.
-
-3) fork() vs hotplug
-
-  if we unplug the child's cpu after the sanity check when the child
-  gets attached to the task_list but before wake_up_new_task() shit
-  will meet with fan.
-
-Solve all these issues by moving fork cpu selection into
-wake_up_new_task().
-
-Reported-by: Serge E. Hallyn <serue@us.ibm.com>
-Tested-by: Serge E. Hallyn <serue@us.ibm.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1264106190.4283.1314.camel@laptop>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Craig Shelley <craig@microtron.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- kernel/fork.c  |   15 ---------------
- kernel/sched.c |   39 +++++++++++++++++++++++++++------------
- 2 files changed, 27 insertions(+), 27 deletions(-)
 
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1233,21 +1233,6 @@ static struct task_struct *copy_process(
- 	/* Need tasklist lock for parent etc handling! */
- 	write_lock_irq(&tasklist_lock);
+---
+ drivers/usb/serial/cp210x.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -111,6 +111,7 @@ static struct usb_device_id id_table []
+ 	{ USB_DEVICE(0x10C4, 0x83A8) }, /* Amber Wireless AMB2560 */
+ 	{ USB_DEVICE(0x10C4, 0x8411) }, /* Kyocera GPS Module */
+ 	{ USB_DEVICE(0x10C4, 0x846E) }, /* BEI USB Sensor Interface (VCP) */
++	{ USB_DEVICE(0x10C4, 0x8477) }, /* Balluff RFID */
+ 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
+ 	{ USB_DEVICE(0x10C4, 0xEA61) }, /* Silicon Labs factory default */
+ 	{ USB_DEVICE(0x10C4, 0xEA71) }, /* Infinity GPS-MIC-1 Radio Monophone */
+@@ -124,14 +125,14 @@ static struct usb_device_id id_table []
+ 	{ USB_DEVICE(0x1555, 0x0004) }, /* Owen AC4 USB-RS485 Converter */
+ 	{ USB_DEVICE(0x166A, 0x0303) }, /* Clipsal 5500PCU C-Bus USB interface */
+ 	{ USB_DEVICE(0x16D6, 0x0001) }, /* Jablotron serial interface */
+-	{ USB_DEVICE(0x17F4, 0xAAAA) }, /* Wavesense Jazz blood glucose meter */
+-	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
+-	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
+-	{ USB_DEVICE(0x413C, 0x9500) }, /* DW700 GPS USB interface */
+ 	{ USB_DEVICE(0x16DC, 0x0010) }, /* W-IE-NE-R Plein & Baus GmbH PL512 Power Supply */
+ 	{ USB_DEVICE(0x16DC, 0x0011) }, /* W-IE-NE-R Plein & Baus GmbH RCM Remote Control for MARATON Power Supply */
+ 	{ USB_DEVICE(0x16DC, 0x0012) }, /* W-IE-NE-R Plein & Baus GmbH MPOD Multi Channel Power Supply */
+ 	{ USB_DEVICE(0x16DC, 0x0015) }, /* W-IE-NE-R Plein & Baus GmbH CML Control, Monitoring and Data Logger */
++	{ USB_DEVICE(0x17F4, 0xAAAA) }, /* Wavesense Jazz blood glucose meter */
++	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
++	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
++	{ USB_DEVICE(0x413C, 0x9500) }, /* DW700 GPS USB interface */
+ 	{ } /* Terminating Entry */
+ };
  
--	/*
--	 * The task hasn't been attached yet, so its cpus_allowed mask will
--	 * not be changed, nor will its assigned CPU.
--	 *
--	 * The cpus_allowed mask of the parent may have changed after it was
--	 * copied first time - so re-copy it here, then check the child's CPU
--	 * to ensure it is on a valid CPU (and if not, just force it back to
--	 * parent's CPU). This avoids alot of nasty races.
--	 */
--	p->cpus_allowed = current->cpus_allowed;
--	p->rt.nr_cpus_allowed = current->rt.nr_cpus_allowed;
--	if (unlikely(!cpu_isset(task_cpu(p), p->cpus_allowed) ||
--			!cpu_online(task_cpu(p))))
--		set_task_cpu(p, smp_processor_id());
--
- 	/* CLONE_PARENT re-uses the old parent */
- 	if (clone_flags & (CLONE_PARENT|CLONE_THREAD)) {
- 		p->real_parent = current->real_parent;
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2351,14 +2351,12 @@ static int select_fallback_rq(int cpu, s
- }
- 
- /*
-- * Called from:
-+ * Gets called from 3 sites (exec, fork, wakeup), since it is called without
-+ * holding rq->lock we need to ensure ->cpus_allowed is stable, this is done
-+ * by:
-  *
-- *  - fork, @p is stable because it isn't on the tasklist yet
-- *
-- *  - exec, @p is unstable, retry loop
-- *
-- *  - wake-up, we serialize ->cpus_allowed against TASK_WAKING so
-- *             we should be good.
-+ *  exec:           is unstable, retry loop
-+ *  fork & wake-up: serialize ->cpus_allowed against TASK_WAKING
-  */
- static inline
- int select_task_rq(struct task_struct *p, int sd_flags, int wake_flags)
-@@ -2652,9 +2650,6 @@ void sched_fork(struct task_struct *p, i
- 	if (p->sched_class->task_fork)
- 		p->sched_class->task_fork(p);
- 
--#ifdef CONFIG_SMP
--	cpu = select_task_rq(p, SD_BALANCE_FORK, 0);
--#endif
- 	set_task_cpu(p, cpu);
- 
- #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
-@@ -2684,6 +2679,21 @@ void wake_up_new_task(struct task_struct
- {
- 	unsigned long flags;
- 	struct rq *rq;
-+	int cpu = get_cpu();
-+
-+#ifdef CONFIG_SMP
-+	/*
-+	 * Fork balancing, do it here and not earlier because:
-+	 *  - cpus_allowed can change in the fork path
-+	 *  - any previously selected cpu might disappear through hotplug
-+	 *
-+	 * We still have TASK_WAKING but PF_STARTING is gone now, meaning
-+	 * ->cpus_allowed is stable, we have preemption disabled, meaning
-+	 * cpu_online_mask is stable.
-+	 */
-+	cpu = select_task_rq(p, SD_BALANCE_FORK, 0);
-+	set_task_cpu(p, cpu);
-+#endif
- 
- 	rq = task_rq_lock(p, &flags);
- 	BUG_ON(p->state != TASK_WAKING);
-@@ -2697,6 +2707,7 @@ void wake_up_new_task(struct task_struct
- 		p->sched_class->task_woken(rq, p);
- #endif
- 	task_rq_unlock(rq, &flags);
-+	put_cpu();
- }
- 
- #ifdef CONFIG_PREEMPT_NOTIFIERS
-@@ -7198,14 +7209,18 @@ int set_cpus_allowed_ptr(struct task_str
- 	 * the ->cpus_allowed mask from under waking tasks, which would be
- 	 * possible when we change rq->lock in ttwu(), so synchronize against
- 	 * TASK_WAKING to avoid that.
-+	 *
-+	 * Make an exception for freshly cloned tasks, since cpuset namespaces
-+	 * might move the task about, we have to validate the target in
-+	 * wake_up_new_task() anyway since the cpu might have gone away.
- 	 */
- again:
--	while (p->state == TASK_WAKING)
-+	while (p->state == TASK_WAKING && !(p->flags & PF_STARTING))
- 		cpu_relax();
- 
- 	rq = task_rq_lock(p, &flags);
- 
--	if (p->state == TASK_WAKING) {
-+	if (p->state == TASK_WAKING && !(p->flags & PF_STARTING)) {
- 		task_rq_unlock(rq, &flags);
- 		goto again;
- 	}
 
 
