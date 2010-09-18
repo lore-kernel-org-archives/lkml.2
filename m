@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757160Ab0IRTQJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:16:09 -0400
-Received: from kroah.org ([198.145.64.141]:43772 "EHLO coco.kroah.org"
+	id S1756207Ab0IRTUb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:20:31 -0400
+Received: from kroah.org ([198.145.64.141]:43864 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757095Ab0IRTQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:16:06 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:05 2010
-Message-Id: <20100918191305.735125567@clark.site>
+	id S1757203Ab0IRTQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:16:18 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:06 2010
+Message-Id: <20100918191306.575771076@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:13:16 -0700
+Date: Sat, 18 Sep 2010 12:13:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Steve Wise <swise@opengridcomputing.com>,
-        Roland Dreier <rolandd@cisco.com>
-Subject: [098/129] RDMA/cxgb3: Dont exceed the max HW CQ depth
+        Guillem Jover <guillem@hadrons.org>, Riku Voipio <riku.voipio@iki.fi>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [108/129] hwmon: (f75375s) Do not overwrite values read from registers
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,32 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve Wise <swise@opengridcomputing.com>
+From: Guillem Jover <guillem@hadrons.org>
 
-commit dc4e96ce2dceb649224ee84f83592aac8c54c9b7 upstream.
+commit c3b327d60bbba3f5ff8fd87d1efc0e95eb6c121b upstream.
 
-The max depth supported by T3 is 64K entries.  This fixes a bug
-introduced in commit 9918b28d ("RDMA/cxgb3: Increase the max CQ
-depth") that causes stalls and possibly crashes in large MPI clusters.
+All bits in the values read from registers to be used for the next
+write were getting overwritten, avoid doing so to not mess with the
+current configuration.
 
-Signed-off-by: Steve Wise <swise@opengridcomputing.com>
-Signed-off-by: Roland Dreier <rolandd@cisco.com>
+Signed-off-by: Guillem Jover <guillem@hadrons.org>
+Cc: Riku Voipio <riku.voipio@iki.fi>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/infiniband/hw/cxgb3/cxio_hal.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hwmon/f75375s.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/infiniband/hw/cxgb3/cxio_hal.h
-+++ b/drivers/infiniband/hw/cxgb3/cxio_hal.h
-@@ -53,7 +53,7 @@
- #define T3_MAX_PBL_SIZE 256
- #define T3_MAX_RQ_SIZE 1024
- #define T3_MAX_QP_DEPTH (T3_MAX_RQ_SIZE-1)
--#define T3_MAX_CQ_DEPTH 262144
-+#define T3_MAX_CQ_DEPTH 65536
- #define T3_MAX_NUM_STAG (1<<15)
- #define T3_MAX_MR_SIZE 0x100000000ULL
- #define T3_PAGESIZE_MASK 0xffff000  /* 4KB-128MB */
+--- a/drivers/hwmon/f75375s.c
++++ b/drivers/hwmon/f75375s.c
+@@ -298,7 +298,7 @@ static int set_pwm_enable_direct(struct
+ 		return -EINVAL;
+ 
+ 	fanmode = f75375_read8(client, F75375_REG_FAN_TIMER);
+-	fanmode = ~(3 << FAN_CTRL_MODE(nr));
++	fanmode &= ~(3 << FAN_CTRL_MODE(nr));
+ 
+ 	switch (val) {
+ 	case 0: /* Full speed */
+@@ -350,7 +350,7 @@ static ssize_t set_pwm_mode(struct devic
+ 
+ 	mutex_lock(&data->update_lock);
+ 	conf = f75375_read8(client, F75375_REG_CONFIG1);
+-	conf = ~(1 << FAN_CTRL_LINEAR(nr));
++	conf &= ~(1 << FAN_CTRL_LINEAR(nr));
+ 
+ 	if (val == 0)
+ 		conf |= (1 << FAN_CTRL_LINEAR(nr)) ;
 
 
