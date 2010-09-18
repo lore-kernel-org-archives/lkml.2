@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756873Ab0IRTak (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:30:40 -0400
-Received: from kroah.org ([198.145.64.141]:43441 "EHLO coco.kroah.org"
+	id S1756824Ab0IRTPO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:15:14 -0400
+Received: from kroah.org ([198.145.64.141]:43326 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756841Ab0IRTPT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:15:19 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:02 2010
-Message-Id: <20100918191302.341371386@clark.site>
+	id S1756730Ab0IRTPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:15:03 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:00 2010
+Message-Id: <20100918191300.274285973@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:12:36 -0700
+Date: Sat, 18 Sep 2010 12:12:13 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Brian Austin <brian.austin@cirrus.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [058/129] ALSA: hda - Add errata initverb sequence for CS42xx codecs
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [035/129] ath9k_hw: fix parsing of HT40 5 GHz CTLs
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,86 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Austin <brian.austin@cirrus.com>
+From: Luis R. Rodriguez <lrodriguez@atheros.com>
 
-commit a769cbcf60cee51f4431c0938acd39e7e5b76b8d upstream.
+commit 904879748d7439a6dabdc6be9aad983e216b027d upstream.
 
-Add init verb sequence for errata ER880C3
-http://www.cirrus.com/en/pubs/errata/ER880C3.pdf
+The 5 GHz CTL indexes were not being read for all hardware
+devices due to the masking out through the CTL_MODE_M mask
+being one bit too short. Without this the calibrated regulatory
+maximum values were not being picked up when devices operate
+on 5 GHz in HT40 mode. The final output power used for Atheros
+devices is the minimum between the calibrated CTL values and
+what CRDA provides.
 
-Signed-off-by: Brian Austin <brian.austin@cirrus.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_cirrus.c |   50 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 50 insertions(+)
+ drivers/net/wireless/ath/ath9k/eeprom.h |    2 +-
+ drivers/net/wireless/ath/regd.h         |    1 -
+ 2 files changed, 1 insertion(+), 2 deletions(-)
 
---- a/sound/pci/hda/patch_cirrus.c
-+++ b/sound/pci/hda/patch_cirrus.c
-@@ -972,6 +972,53 @@ static struct hda_verb cs_coef_init_verb
- 	{} /* terminator */
- };
+--- a/drivers/net/wireless/ath/ath9k/eeprom.h
++++ b/drivers/net/wireless/ath/ath9k/eeprom.h
+@@ -62,7 +62,7 @@
  
-+/* Errata: CS4207 rev C0/C1/C2 Silicon
-+ *
-+ * http://www.cirrus.com/en/pubs/errata/ER880C3.pdf
-+ *
-+ * 6. At high temperature (TA > +85°C), the digital supply current (IVD)
-+ * may be excessive (up to an additional 200 μA), which is most easily
-+ * observed while the part is being held in reset (RESET# active low).
-+ *
-+ * Root Cause: At initial powerup of the device, the logic that drives
-+ * the clock and write enable to the S/PDIF SRC RAMs is not properly
-+ * initialized.
-+ * Certain random patterns will cause a steady leakage current in those
-+ * RAM cells. The issue will resolve once the SRCs are used (turned on).
-+ *
-+ * Workaround: The following verb sequence briefly turns on the S/PDIF SRC
-+ * blocks, which will alleviate the issue.
-+ */
-+
-+static struct hda_verb cs_errata_init_verbs[] = {
-+	{0x01, AC_VERB_SET_POWER_STATE, 0x00}, /* AFG: D0 */
-+	{0x11, AC_VERB_SET_PROC_STATE, 0x01},  /* VPW: processing on */
-+
-+	{0x11, AC_VERB_SET_COEF_INDEX, 0x0008},
-+	{0x11, AC_VERB_SET_PROC_COEF, 0x9999},
-+	{0x11, AC_VERB_SET_COEF_INDEX, 0x0017},
-+	{0x11, AC_VERB_SET_PROC_COEF, 0xa412},
-+	{0x11, AC_VERB_SET_COEF_INDEX, 0x0001},
-+	{0x11, AC_VERB_SET_PROC_COEF, 0x0009},
-+
-+	{0x07, AC_VERB_SET_POWER_STATE, 0x00}, /* S/PDIF Rx: D0 */
-+	{0x08, AC_VERB_SET_POWER_STATE, 0x00}, /* S/PDIF Tx: D0 */
-+
-+	{0x11, AC_VERB_SET_COEF_INDEX, 0x0017},
-+	{0x11, AC_VERB_SET_PROC_COEF, 0x2412},
-+	{0x11, AC_VERB_SET_COEF_INDEX, 0x0008},
-+	{0x11, AC_VERB_SET_PROC_COEF, 0x0000},
-+	{0x11, AC_VERB_SET_COEF_INDEX, 0x0001},
-+	{0x11, AC_VERB_SET_PROC_COEF, 0x0008},
-+	{0x11, AC_VERB_SET_PROC_STATE, 0x00},
-+
-+	{0x07, AC_VERB_SET_POWER_STATE, 0x03}, /* S/PDIF Rx: D3 */
-+	{0x08, AC_VERB_SET_POWER_STATE, 0x03}, /* S/PDIF Tx: D3 */
-+	/*{0x01, AC_VERB_SET_POWER_STATE, 0x03},*/ /* AFG: D3 This is already handled */
-+
-+	{} /* terminator */
-+};
-+
- /* SPDIF setup */
- static void init_digital(struct hda_codec *codec)
- {
-@@ -991,6 +1038,9 @@ static int cs_init(struct hda_codec *cod
- {
- 	struct cs_spec *spec = codec->spec;
- 
-+	/* init_verb sequence for C0/C1/C2 errata*/
-+	snd_hda_sequence_write(codec, cs_errata_init_verbs);
-+
- 	snd_hda_sequence_write(codec, cs_coef_init_verbs);
- 
- 	if (spec->gpio_mask) {
+ #define SD_NO_CTL               0xE0
+ #define NO_CTL                  0xff
+-#define CTL_MODE_M              7
++#define CTL_MODE_M              0xf
+ #define CTL_11A                 0
+ #define CTL_11B                 1
+ #define CTL_11G                 2
+--- a/drivers/net/wireless/ath/regd.h
++++ b/drivers/net/wireless/ath/regd.h
+@@ -31,7 +31,6 @@ enum ctl_group {
+ #define NO_CTL 0xff
+ #define SD_NO_CTL               0xE0
+ #define NO_CTL                  0xff
+-#define CTL_MODE_M              7
+ #define CTL_11A                 0
+ #define CTL_11B                 1
+ #define CTL_11G                 2
 
 
