@@ -1,120 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756273Ab0IRTMN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:12:13 -0400
-Received: from kroah.org ([198.145.64.141]:51743 "EHLO coco.kroah.org"
+	id S1756563Ab0IRTM3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:12:29 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:43221 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756015Ab0IRTCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:02:14 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:00:01 2010
-Message-Id: <20100918190001.054442254@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:59:00 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>
-Subject: [096/123] sched: sched_exec(): Remove the select_fallback_rq() logic
-References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=sched-sched_exec-remove-the-select_fallback_rq-logic.patch
-In-Reply-To: <20100918190024.GA14388@kroah.com>
+	id S1756031Ab0IRTMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:12:24 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Nishanth Menon <nm@ti.com>,
+        "linux-arm" <linux-arm-kernel@lists.infradead.org>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        "linux-pm" <linux-pm@lists.linux-foundation.org>,
+        "linux-omap" <linux-omap@vger.kernel.org>,
+        Paul Walmsley <paul@pwsan.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] opp: introduce library for device-specific OPPs
+Date: Sat, 18 Sep 2010 21:11:25 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: lkml <linux-kernel@vger.kernel.org>
+References: <1284686973-13993-1-git-send-email-nm@ti.com> <201009180045.56122.rjw@sisk.pl> <4C93F794.1030308@ti.com>
+In-Reply-To: <4C93F794.1030308@ti.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009182111.26065.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Nesterov <oleg@redhat.com>
+[Trimming the CC list]
 
-commit 30da688ef6b76e01969b00608202fff1eed2accc upstream.
+On Saturday, September 18, 2010, Nishanth Menon wrote:
+> Rafael J. Wysocki had written, on 09/17/2010 05:45 PM, the following:
+> 
+> Thanks for your review. few views below..
+> 
+> > On Friday, September 17, 2010, Nishanth Menon wrote:
+> >> Nishanth Menon had written, on 09/17/2010 10:05 AM, the following:
+> >>> Linus Walleij had written, on 09/17/2010 08:41 AM, the following:
+> >>>> 2010/9/17 Nishanth Menon <nm@ti.com>:
+> >>>>
+> >>>>> diff --git a/Documentation/power/00-INDEX b/Documentation/power/00-INDEX
+> >>>>> index fb742c2..45e9d4a 100644
+> >>>>> --- a/Documentation/power/00-INDEX
+> >>>>> +++ b/Documentation/power/00-INDEX
+> >>>>> @@ -14,6 +14,8 @@ interface.txt
+> >>>>>        - Power management user interface in /sys/power
+> >>>>>  notifiers.txt
+> >>>>>        - Registering suspend notifiers in device drivers
+> >>>>> +opp.txt
+> >>>>> +       - Operating Performance Point library
+> >>>>>  pci.txt
+> >>>>>        - How the PCI Subsystem Does Power Management
+> >>>> Hm you add the documentation to the index but not the documentation
+> >>>> itself (easy slip) would you mind posting it?
+> >>> ouch.. Sorry.. I realized that I missed adding MAINTAINER entry as 
+> >>> well.. v2 coming up..
+> >>>
+> >> while the review goes on, I will till end of the day before posting a v2 
+> >> will collated comments, here is the opp.txt documentation for the same.. 
+> >> apologies on missing in my v1..
+> > 
+> > OK, I'm not generally familiar with these things, so a couple of questions.
+> > 
+> >> OPP Layer
+> >> ==============
+> >> SOCs have a standard set of tuples consisting of frequency and
+> >> voltage pairs that the device will support per voltage domain. This
+> >> is called Operating Performance Point or OPP. The actual definitions
+> >> of OPP varies over silicon within the same family of devices.
+> >> For a specific domain, you can have a set of {frequency, voltage}
+> >> pairs. As the kernel boots and more information is available, a set
+> >> of these are activated based on the precise nature of device the kernel
+> >> boots up on.
+> > 
+> > Does it mean that the full set of possible OPPs is already known from the
+> > hardware configuration and the ones that are actually useable are found
+> > during boot?
+> 
+> yes. example - https://patchwork.kernel.org/patch/183742/ (based on 
+> original patch posted to l-arm, this will need some tweaks with the 
+> latest evolution, the concepts remain the same).
+> 
+> For example, consider in the patch above where we have a opp definitions 
+> we can choose from omap3430 and 3630,
+> 
+> when using 3630 silicon as a specific, certain boards wish to enable 
+> 1GHz, this allows us to do something as follows:
+> in the generic omap code, we do init of all opps
+> in the board specific file, we enable 1Ghz
+> 
+> The selection of oppset and actual availability is done on the fly.
 
-sched_exec()->select_task_rq() reads/updates ->cpus_allowed lockless.
-This can race with other CPUs updating our ->cpus_allowed, and this
-looks meaningless to me.
+OK, so why don't you simply drop the OPPs you're not going to use from the
+list in the board-specific file?
 
-The task is current and running, it must have online cpus in ->cpus_allowed,
-the fallback mode is bogus. And, if ->sched_class returns the "wrong" cpu,
-this likely means we raced with set_cpus_allowed() which was called
-for reason, why should sched_exec() retry and call ->select_task_rq()
-again?
+...
+> >> OPP layer organizes the data internally using device pointers representing
+> >> individual voltage domains.
+> > 
+> > Can you please describe these data structures in a bit more detail?
+> probably a dumb question: Is'nt it enough to give detailed verbose 
+> information in the  struct comment header? why duplicate here as well.. 
+> other than giving an overview?
 
-Change the code to call sched_class->select_task_rq() directly and do
-nothing if the returned cpu is wrong after re-checking under rq->lock.
+I meant "explain it to me" rather than "explain it in the doc". :-)  Sorry for
+not being clear enough.
 
->From now task_struct->cpus_allowed is always stable under TASK_WAKING,
-select_fallback_rq() is always called under rq-lock or the caller or
-the caller owns TASK_WAKING (select_task_rq).
+> >> NOTE:
+> >> a) the OPP layer implementation expects to be used in multiple contexts
+> >> based on SOC implementation and recommends locking schemes appropriate to
+> >> the usage of SOC.
+> >> b) All pointer returns are expected to be handled by standard error checks
+> >> such as IS_ERR() and appropriate actions taken by the caller.
+> > 
+> > I noticed that in a few places it isn't really necessary to return a pointer.
+> > I think you can simply return int in such cases.
+> could you help and point these to me. opp_find_freq_exact, 
+> opp_find_freq_ceil, opp_find_freq_floor are the only ones that return 
+> pointers and they need to return the pointer to the opp they found to 
+> operate on them such as add_freq etc..
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <20100315091019.GA9141@redhat.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Hmm, OK.  I must have made a mistake, sorry.
 
----
- kernel/sched.c |   25 ++++++++-----------------
- 1 file changed, 8 insertions(+), 17 deletions(-)
+...
+> >> Data Structures:
+> >> ---------------
+> >> struct opp * is a handle structure whose internals are known only
+> >> to the OPP layer and is meant to hide the complexity away from users of
+> >> opp layer.
+> >>
+> >> struct opp_def * is the definitions that users can interface with
+> >> opp layer and is meant to define one OPP for a domain device.
+> > 
+> > The data structures require some more description IMHO.  They aren't completely
+> > intuitive.
+> 
+> ok, a repeat question -> why duplicate the information defined in the 
+> structure comment header?
 
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2333,6 +2333,9 @@ void task_oncpu_function_call(struct tas
- }
- 
- #ifdef CONFIG_SMP
-+/*
-+ * ->cpus_allowed is protected by either TASK_WAKING or rq->lock held.
-+ */
- static int select_fallback_rq(int cpu, struct task_struct *p)
- {
- 	int dest_cpu;
-@@ -2369,12 +2372,7 @@ static int select_fallback_rq(int cpu, s
- }
- 
- /*
-- * Gets called from 3 sites (exec, fork, wakeup), since it is called without
-- * holding rq->lock we need to ensure ->cpus_allowed is stable, this is done
-- * by:
-- *
-- *  exec:           is unstable, retry loop
-- *  fork & wake-up: serialize ->cpus_allowed against TASK_WAKING
-+ * The caller (fork, wakeup) owns TASK_WAKING, ->cpus_allowed is stable.
-  */
- static inline
- int select_task_rq(struct task_struct *p, int sd_flags, int wake_flags)
-@@ -3223,9 +3221,8 @@ void sched_exec(void)
- 	unsigned long flags;
- 	struct rq *rq;
- 
--again:
- 	this_cpu = get_cpu();
--	dest_cpu = select_task_rq(p, SD_BALANCE_EXEC, 0);
-+	dest_cpu = p->sched_class->select_task_rq(p, SD_BALANCE_EXEC, 0);
- 	if (dest_cpu == this_cpu) {
- 		put_cpu();
- 		return;
-@@ -3233,18 +3230,12 @@ again:
- 
- 	rq = task_rq_lock(p, &flags);
- 	put_cpu();
--
- 	/*
- 	 * select_task_rq() can race against ->cpus_allowed
- 	 */
--	if (!cpumask_test_cpu(dest_cpu, &p->cpus_allowed)
--	    || unlikely(!cpu_active(dest_cpu))) {
--		task_rq_unlock(rq, &flags);
--		goto again;
--	}
--
--	/* force the process onto the specified CPU */
--	if (migrate_task(p, dest_cpu, &req)) {
-+	if (cpumask_test_cpu(dest_cpu, &p->cpus_allowed) &&
-+	    likely(cpu_active(dest_cpu)) &&
-+	    migrate_task(p, dest_cpu, &req)) {
- 		/* Need to wait for migration thread (might exit: take ref). */
- 		struct task_struct *mt = rq->migration_thread;
- 
+Because it doesn't imply the specific implementation, AFAICS.
 
+Like what the list heads in your structures are used for etc.
 
+Thanks,
+Rafael
