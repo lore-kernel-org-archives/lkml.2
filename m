@@ -1,61 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757872Ab0IRTw2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:52:28 -0400
-Received: from kroah.org ([198.145.64.141]:51406 "EHLO coco.kroah.org"
+	id S1755224Ab0IRTBm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:01:42 -0400
+Received: from kroah.org ([198.145.64.141]:51105 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755290Ab0IRTBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:01:43 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:57 2010
-Message-Id: <20100918185957.271072789@clark.site>
+	id S1754274Ab0IRTBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:01:13 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:53 2010
+Message-Id: <20100918185953.501598304@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:58:16 -0700
+Date: Sat, 18 Sep 2010 11:57:32 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jerome Marchand <jmarchan@redhat.com>
-Subject: [052/123] kernel/groups.c: fix integer overflow in groups_search
+        Michael Ellerman <michael@ellerman.id.au>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [008/123] PCI: MSI: Restore read_msi_msg_desc(); add get_cached_msi_msg_desc()
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=kernel-groups.c-fix-integer-overflow-in-groups_search.patch
+Content-Disposition: inline; filename=pci-msi-restore-read_msi_msg_desc-add-get_cached_msi_msg_desc.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jerome Marchand <jmarchan@redhat.com>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-commit 1c24de60e50fb19b94d94225458da17c720f0729 upstream.
+commit 30da55242818a8ca08583188ebcbaccd283ad4d9 upstream.
 
-gid_t is a unsigned int.  If group_info contains a gid greater than
-MAX_INT, groups_search() function may look on the wrong side of the search
-tree.
+commit 2ca1af9aa3285c6a5f103ed31ad09f7399fc65d7 "PCI: MSI: Remove
+unsafe and unnecessary hardware access" changed read_msi_msg_desc() to
+return the last MSI message written instead of reading it from the
+device, since it may be called while the device is in a reduced
+power state.
 
-This solves some unfair "permission denied" problems.
+However, the pSeries platform code really does need to read messages
+from the device, since they are initially written by firmware.
+Therefore:
+- Restore the previous behaviour of read_msi_msg_desc()
+- Add new functions get_cached_msi_msg{,_desc}() which return the
+  last MSI message written
+- Use the new functions where appropriate
 
-Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Michael Ellerman <michael@ellerman.id.au>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/groups.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ arch/ia64/kernel/msi_ia64.c    |    2 -
+ arch/ia64/sn/kernel/msi_sn.c   |    2 -
+ arch/x86/kernel/apic/io_apic.c |    2 -
+ drivers/pci/msi.c              |   47 ++++++++++++++++++++++++++++++++++++-----
+ include/linux/msi.h            |    2 +
+ 5 files changed, 47 insertions(+), 8 deletions(-)
 
---- a/kernel/groups.c
-+++ b/kernel/groups.c
-@@ -143,10 +143,9 @@ int groups_search(const struct group_inf
- 	right = group_info->ngroups;
- 	while (left < right) {
- 		unsigned int mid = (left+right)/2;
--		int cmp = grp - GROUP_AT(group_info, mid);
--		if (cmp > 0)
-+		if (grp > GROUP_AT(group_info, mid))
- 			left = mid + 1;
--		else if (cmp < 0)
-+		else if (grp < GROUP_AT(group_info, mid))
- 			right = mid;
- 		else
- 			return 1;
+--- a/arch/ia64/kernel/msi_ia64.c
++++ b/arch/ia64/kernel/msi_ia64.c
+@@ -25,7 +25,7 @@ static int ia64_set_msi_irq_affinity(uns
+ 	if (irq_prepare_move(irq, cpu))
+ 		return -1;
+ 
+-	read_msi_msg(irq, &msg);
++	get_cached_msi_msg(irq, &msg);
+ 
+ 	addr = msg.address_lo;
+ 	addr &= MSI_ADDR_DEST_ID_MASK;
+--- a/arch/ia64/sn/kernel/msi_sn.c
++++ b/arch/ia64/sn/kernel/msi_sn.c
+@@ -174,7 +174,7 @@ static int sn_set_msi_irq_affinity(unsig
+ 	 * Release XIO resources for the old MSI PCI address
+ 	 */
+ 
+-	read_msi_msg(irq, &msg);
++	get_cached_msi_msg(irq, &msg);
+         sn_pdev = (struct pcidev_info *)sn_irq_info->irq_pciioinfo;
+ 	pdev = sn_pdev->pdi_linux_pcidev;
+ 	provider = SN_PCIDEV_BUSPROVIDER(pdev);
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -3338,7 +3338,7 @@ static int set_msi_irq_affinity(unsigned
+ 
+ 	cfg = desc->chip_data;
+ 
+-	read_msi_msg_desc(desc, &msg);
++	get_cached_msi_msg_desc(desc, &msg);
+ 
+ 	msg.data &= ~MSI_DATA_VECTOR_MASK;
+ 	msg.data |= MSI_DATA_VECTOR(cfg->vector);
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -196,9 +196,46 @@ void read_msi_msg_desc(struct irq_desc *
+ {
+ 	struct msi_desc *entry = get_irq_desc_msi(desc);
+ 
+-	/* We do not touch the hardware (which may not even be
+-	 * accessible at the moment) but return the last message
+-	 * written.  Assert that this is valid, assuming that
++	BUG_ON(entry->dev->current_state != PCI_D0);
++
++	if (entry->msi_attrib.is_msix) {
++		void __iomem *base = entry->mask_base +
++			entry->msi_attrib.entry_nr * PCI_MSIX_ENTRY_SIZE;
++
++		msg->address_lo = readl(base + PCI_MSIX_ENTRY_LOWER_ADDR);
++		msg->address_hi = readl(base + PCI_MSIX_ENTRY_UPPER_ADDR);
++		msg->data = readl(base + PCI_MSIX_ENTRY_DATA);
++	} else {
++		struct pci_dev *dev = entry->dev;
++		int pos = entry->msi_attrib.pos;
++		u16 data;
++
++		pci_read_config_dword(dev, msi_lower_address_reg(pos),
++					&msg->address_lo);
++		if (entry->msi_attrib.is_64) {
++			pci_read_config_dword(dev, msi_upper_address_reg(pos),
++						&msg->address_hi);
++			pci_read_config_word(dev, msi_data_reg(pos, 1), &data);
++		} else {
++			msg->address_hi = 0;
++			pci_read_config_word(dev, msi_data_reg(pos, 0), &data);
++		}
++		msg->data = data;
++	}
++}
++
++void read_msi_msg(unsigned int irq, struct msi_msg *msg)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++
++	read_msi_msg_desc(desc, msg);
++}
++
++void get_cached_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg)
++{
++	struct msi_desc *entry = get_irq_desc_msi(desc);
++
++	/* Assert that the cache is valid, assuming that
+ 	 * valid messages are not all-zeroes. */
+ 	BUG_ON(!(entry->msg.address_hi | entry->msg.address_lo |
+ 		 entry->msg.data));
+@@ -206,11 +243,11 @@ void read_msi_msg_desc(struct irq_desc *
+ 	*msg = entry->msg;
+ }
+ 
+-void read_msi_msg(unsigned int irq, struct msi_msg *msg)
++void get_cached_msi_msg(unsigned int irq, struct msi_msg *msg)
+ {
+ 	struct irq_desc *desc = irq_to_desc(irq);
+ 
+-	read_msi_msg_desc(desc, msg);
++	get_cached_msi_msg_desc(desc, msg);
+ }
+ 
+ void write_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg)
+--- a/include/linux/msi.h
++++ b/include/linux/msi.h
+@@ -14,8 +14,10 @@ struct irq_desc;
+ extern void mask_msi_irq(unsigned int irq);
+ extern void unmask_msi_irq(unsigned int irq);
+ extern void read_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg);
++extern void get_cached_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg);
+ extern void write_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg);
+ extern void read_msi_msg(unsigned int irq, struct msi_msg *msg);
++extern void get_cached_msi_msg(unsigned int irq, struct msi_msg *msg);
+ extern void write_msi_msg(unsigned int irq, struct msi_msg *msg);
+ 
+ struct msi_desc {
 
 
