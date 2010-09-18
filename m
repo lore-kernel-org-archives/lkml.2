@@ -1,109 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755130Ab0IRTBk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:01:40 -0400
-Received: from kroah.org ([198.145.64.141]:51099 "EHLO coco.kroah.org"
+	id S1754625Ab0IRTB5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:01:57 -0400
+Received: from kroah.org ([198.145.64.141]:51154 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754259Ab0IRTBM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:01:12 -0400
-X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:53 2010
-Message-Id: <20100918185953.411104806@clark.site>
+	id S1754462Ab0IRTBS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:01:18 -0400
+X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:54 2010
+Message-Id: <20100918185954.091349478@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:57:31 -0700
+Date: Sat, 18 Sep 2010 11:57:39 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [007/123] PCI: MSI: Remove unsafe and unnecessary hardware access
+        Hank Janssen <hjanssen@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: [015/123] staging: hv: Fixed lockup problem with bounce_buffer scatter list
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=pci-msi-remove-unsafe-and-unnecessary-hardware-access.patch
+Content-Disposition: inline; filename=staging-hv-fixed-lockup-problem-with-bounce_buffer-scatter-list.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Hank Janssen <hjanssen@microsoft.com>
 
-commit fcd097f31a6ee207cc0c3da9cccd2a86d4334785 upstream.
+commit 77c5ceaff31645ea049c6706b99e699eae81fb88 upstream.
 
-During suspend on an SMP system, {read,write}_msi_msg_desc() may be
-called to mask and unmask interrupts on a device that is already in a
-reduced power state.  At this point memory-mapped registers including
-MSI-X tables are not accessible, and config space may not be fully
-functional either.
+Fixed lockup problem with bounce_buffer scatter list which caused
+crashes in heavy loads. And minor code indentation cleanup in effected
+area.
 
-While a device is in a reduced power state its interrupts are
-effectively masked and its MSI(-X) state will be restored when it is
-brought back to D0.  Therefore these functions can simply read and
-write msi_desc::msg for devices not in D0.
+Removed whitespace and noted minor indentation changes in description as
+pointed out by Joe Perches. (Thanks for reviewing Joe)
 
-Further, read_msi_msg_desc() should only ever be used to update a
-previously written message, so it can always read msi_desc::msg
-and never needs to touch the hardware.
-
-Tested-by: "Michael Chan" <mchan@broadcom.com>
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/msi.c |   36 ++++++++++++------------------------
- 1 file changed, 12 insertions(+), 24 deletions(-)
+ drivers/staging/hv/storvsc_drv.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -195,30 +195,15 @@ void unmask_msi_irq(unsigned int irq)
- void read_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg)
- {
- 	struct msi_desc *entry = get_irq_desc_msi(desc);
--	if (entry->msi_attrib.is_msix) {
--		void __iomem *base = entry->mask_base +
--			entry->msi_attrib.entry_nr * PCI_MSIX_ENTRY_SIZE;
+--- a/drivers/staging/hv/storvsc_drv.c
++++ b/drivers/staging/hv/storvsc_drv.c
+@@ -652,6 +652,7 @@ static int storvsc_queuecommand(struct s
+ 	unsigned int request_size = 0;
+ 	int i;
+ 	struct scatterlist *sgl;
++	unsigned int sg_count = 0;
  
--		msg->address_lo = readl(base + PCI_MSIX_ENTRY_LOWER_ADDR);
--		msg->address_hi = readl(base + PCI_MSIX_ENTRY_UPPER_ADDR);
--		msg->data = readl(base + PCI_MSIX_ENTRY_DATA);
--	} else {
--		struct pci_dev *dev = entry->dev;
--		int pos = entry->msi_attrib.pos;
--		u16 data;
--
--		pci_read_config_dword(dev, msi_lower_address_reg(pos),
--					&msg->address_lo);
--		if (entry->msi_attrib.is_64) {
--			pci_read_config_dword(dev, msi_upper_address_reg(pos),
--						&msg->address_hi);
--			pci_read_config_word(dev, msi_data_reg(pos, 1), &data);
--		} else {
--			msg->address_hi = 0;
--			pci_read_config_word(dev, msi_data_reg(pos, 0), &data);
--		}
--		msg->data = data;
--	}
-+	/* We do not touch the hardware (which may not even be
-+	 * accessible at the moment) but return the last message
-+	 * written.  Assert that this is valid, assuming that
-+	 * valid messages are not all-zeroes. */
-+	BUG_ON(!(entry->msg.address_hi | entry->msg.address_lo |
-+		 entry->msg.data));
-+
-+	*msg = entry->msg;
- }
+ 	DPRINT_ENTER(STORVSC_DRV);
  
- void read_msi_msg(unsigned int irq, struct msi_msg *msg)
-@@ -231,7 +216,10 @@ void read_msi_msg(unsigned int irq, stru
- void write_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg)
- {
- 	struct msi_desc *entry = get_irq_desc_msi(desc);
--	if (entry->msi_attrib.is_msix) {
-+
-+	if (entry->dev->current_state != PCI_D0) {
-+		/* Don't touch the hardware now */
-+	} else if (entry->msi_attrib.is_msix) {
- 		void __iomem *base;
- 		base = entry->mask_base +
- 			entry->msi_attrib.entry_nr * PCI_MSIX_ENTRY_SIZE;
+@@ -736,6 +737,7 @@ static int storvsc_queuecommand(struct s
+ 	request->DataBuffer.Length = scsi_bufflen(scmnd);
+ 	if (scsi_sg_count(scmnd)) {
+ 		sgl = (struct scatterlist *)scsi_sglist(scmnd);
++		sg_count = scsi_sg_count(scmnd);
+ 
+ 		/* check if we need to bounce the sgl */
+ 		if (do_bounce_buffer(sgl, scsi_sg_count(scmnd)) != -1) {
+@@ -770,11 +772,12 @@ static int storvsc_queuecommand(struct s
+ 					      scsi_sg_count(scmnd));
+ 
+ 			sgl = cmd_request->bounce_sgl;
++			sg_count = cmd_request->bounce_sgl_count;
+ 		}
+ 
+ 		request->DataBuffer.Offset = sgl[0].offset;
+ 
+-		for (i = 0; i < scsi_sg_count(scmnd); i++) {
++		for (i = 0; i < sg_count; i++) {
+ 			DPRINT_DBG(STORVSC_DRV, "sgl[%d] len %d offset %d \n",
+ 				   i, sgl[i].length, sgl[i].offset);
+ 			request->DataBuffer.PfnArray[i] =
 
 
