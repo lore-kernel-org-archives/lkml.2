@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426Ab0IRTam (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:30:42 -0400
-Received: from kroah.org ([198.145.64.141]:43416 "EHLO coco.kroah.org"
+	id S1756873Ab0IRTak (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:30:40 -0400
+Received: from kroah.org ([198.145.64.141]:43441 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756833Ab0IRTPQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:15:16 -0400
+	id S1756841Ab0IRTPT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:15:19 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 12:13:02 2010
-Message-Id: <20100918191301.992963769@clark.site>
+Message-Id: <20100918191302.341371386@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 12:12:32 -0700
+Date: Sat, 18 Sep 2010 12:12:36 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [054/129] ALSA: virtuoso: fix setting of Xonar DS line-in/mic-in controls
+        Brian Austin <brian.austin@cirrus.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [058/129] ALSA: hda - Add errata initverb sequence for CS42xx codecs
 In-Reply-To: <20100918191317.GA11386@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,77 +25,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Brian Austin <brian.austin@cirrus.com>
 
-commit fe6ce80ae25953d95ebaf9bce27b585218cda25c upstream.
+commit a769cbcf60cee51f4431c0938acd39e7e5b76b8d upstream.
 
-The Line and Mic inputs cannot be used at the same time, so the driver
-has to automatically disable one of them if both are set.  However, it
-forgot to notify userspace about this change, so the mixer state would
-be inconsistent.  To fix this, check if the other control gets muted,
-and send a notification event in this case.
+Add init verb sequence for errata ER880C3
+http://www.cirrus.com/en/pubs/errata/ER880C3.pdf
 
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Reported-and-tested-by: Nathan Schagen
+Signed-off-by: Brian Austin <brian.austin@cirrus.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/oxygen/xonar_wm87x6.c |   21 ++++++++++++++++++++-
- 1 file changed, 20 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_cirrus.c |   50 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 50 insertions(+)
 
---- a/sound/pci/oxygen/xonar_wm87x6.c
-+++ b/sound/pci/oxygen/xonar_wm87x6.c
-@@ -53,6 +53,8 @@ struct xonar_wm87x6 {
- 	struct xonar_generic generic;
- 	u16 wm8776_regs[0x17];
- 	u16 wm8766_regs[0x10];
-+	struct snd_kcontrol *line_adcmux_control;
-+	struct snd_kcontrol *mic_adcmux_control;
- 	struct snd_kcontrol *lc_controls[13];
+--- a/sound/pci/hda/patch_cirrus.c
++++ b/sound/pci/hda/patch_cirrus.c
+@@ -972,6 +972,53 @@ static struct hda_verb cs_coef_init_verb
+ 	{} /* terminator */
  };
  
-@@ -604,6 +606,7 @@ static int wm8776_input_mux_put(struct s
++/* Errata: CS4207 rev C0/C1/C2 Silicon
++ *
++ * http://www.cirrus.com/en/pubs/errata/ER880C3.pdf
++ *
++ * 6. At high temperature (TA > +85°C), the digital supply current (IVD)
++ * may be excessive (up to an additional 200 μA), which is most easily
++ * observed while the part is being held in reset (RESET# active low).
++ *
++ * Root Cause: At initial powerup of the device, the logic that drives
++ * the clock and write enable to the S/PDIF SRC RAMs is not properly
++ * initialized.
++ * Certain random patterns will cause a steady leakage current in those
++ * RAM cells. The issue will resolve once the SRCs are used (turned on).
++ *
++ * Workaround: The following verb sequence briefly turns on the S/PDIF SRC
++ * blocks, which will alleviate the issue.
++ */
++
++static struct hda_verb cs_errata_init_verbs[] = {
++	{0x01, AC_VERB_SET_POWER_STATE, 0x00}, /* AFG: D0 */
++	{0x11, AC_VERB_SET_PROC_STATE, 0x01},  /* VPW: processing on */
++
++	{0x11, AC_VERB_SET_COEF_INDEX, 0x0008},
++	{0x11, AC_VERB_SET_PROC_COEF, 0x9999},
++	{0x11, AC_VERB_SET_COEF_INDEX, 0x0017},
++	{0x11, AC_VERB_SET_PROC_COEF, 0xa412},
++	{0x11, AC_VERB_SET_COEF_INDEX, 0x0001},
++	{0x11, AC_VERB_SET_PROC_COEF, 0x0009},
++
++	{0x07, AC_VERB_SET_POWER_STATE, 0x00}, /* S/PDIF Rx: D0 */
++	{0x08, AC_VERB_SET_POWER_STATE, 0x00}, /* S/PDIF Tx: D0 */
++
++	{0x11, AC_VERB_SET_COEF_INDEX, 0x0017},
++	{0x11, AC_VERB_SET_PROC_COEF, 0x2412},
++	{0x11, AC_VERB_SET_COEF_INDEX, 0x0008},
++	{0x11, AC_VERB_SET_PROC_COEF, 0x0000},
++	{0x11, AC_VERB_SET_COEF_INDEX, 0x0001},
++	{0x11, AC_VERB_SET_PROC_COEF, 0x0008},
++	{0x11, AC_VERB_SET_PROC_STATE, 0x00},
++
++	{0x07, AC_VERB_SET_POWER_STATE, 0x03}, /* S/PDIF Rx: D3 */
++	{0x08, AC_VERB_SET_POWER_STATE, 0x03}, /* S/PDIF Tx: D3 */
++	/*{0x01, AC_VERB_SET_POWER_STATE, 0x03},*/ /* AFG: D3 This is already handled */
++
++	{} /* terminator */
++};
++
+ /* SPDIF setup */
+ static void init_digital(struct hda_codec *codec)
  {
- 	struct oxygen *chip = ctl->private_data;
- 	struct xonar_wm87x6 *data = chip->model_data;
-+	struct snd_kcontrol *other_ctl;
- 	unsigned int mux_bit = ctl->private_value;
- 	u16 reg;
- 	int changed;
-@@ -611,8 +614,18 @@ static int wm8776_input_mux_put(struct s
- 	mutex_lock(&chip->mutex);
- 	reg = data->wm8776_regs[WM8776_ADCMUX];
- 	if (value->value.integer.value[0]) {
--		reg &= ~0x003;
- 		reg |= mux_bit;
-+		/* line-in and mic-in are exclusive */
-+		mux_bit ^= 3;
-+		if (reg & mux_bit) {
-+			reg &= ~mux_bit;
-+			if (mux_bit == 1)
-+				other_ctl = data->line_adcmux_control;
-+			else
-+				other_ctl = data->mic_adcmux_control;
-+			snd_ctl_notify(chip->card, SNDRV_CTL_EVENT_MASK_VALUE,
-+				       &other_ctl->id);
-+		}
- 	} else
- 		reg &= ~mux_bit;
- 	changed = reg != data->wm8776_regs[WM8776_ADCMUX];
-@@ -964,7 +977,13 @@ static int xonar_ds_mixer_init(struct ox
- 		err = snd_ctl_add(chip->card, ctl);
- 		if (err < 0)
- 			return err;
-+		if (!strcmp(ctl->id.name, "Line Capture Switch"))
-+			data->line_adcmux_control = ctl;
-+		else if (!strcmp(ctl->id.name, "Mic Capture Switch"))
-+			data->mic_adcmux_control = ctl;
- 	}
-+	if (!data->line_adcmux_control || !data->mic_adcmux_control)
-+		return -ENXIO;
- 	BUILD_BUG_ON(ARRAY_SIZE(lc_controls) != ARRAY_SIZE(data->lc_controls));
- 	for (i = 0; i < ARRAY_SIZE(lc_controls); ++i) {
- 		ctl = snd_ctl_new1(&lc_controls[i], chip);
+@@ -991,6 +1038,9 @@ static int cs_init(struct hda_codec *cod
+ {
+ 	struct cs_spec *spec = codec->spec;
+ 
++	/* init_verb sequence for C0/C1/C2 errata*/
++	snd_hda_sequence_write(codec, cs_errata_init_verbs);
++
+ 	snd_hda_sequence_write(codec, cs_coef_init_verbs);
+ 
+ 	if (spec->gpio_mask) {
 
 
