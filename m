@@ -1,100 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849Ab0IRTB6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 15:01:58 -0400
-Received: from kroah.org ([198.145.64.141]:51157 "EHLO coco.kroah.org"
+	id S1755869Ab0IRTB7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 15:01:59 -0400
+Received: from kroah.org ([198.145.64.141]:51175 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754474Ab0IRTBS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 15:01:18 -0400
+	id S1754533Ab0IRTBV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 15:01:21 -0400
 X-Mailbox-Line: From gregkh@clark.site Sat Sep 18 11:59:54 2010
-Message-Id: <20100918185954.171935870@clark.site>
+Message-Id: <20100918185954.541067959@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Sat, 18 Sep 2010 11:57:40 -0700
+Date: Sat, 18 Sep 2010 11:57:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Miklos Szeredi <mszeredi@suse.cz>
-Subject: [016/123] fuse: flush background queue on connection close
+        Maxim Osipov <maxim.osipov@gmail.com>
+Subject: [020/123] USB: Fix kernel oops with g_ether and Windows
 References: <20100918185724.290702750@clark.site>
-Content-Disposition: inline; filename=fuse-flush-background-queue-on-connection-close.patch
+Content-Disposition: inline; filename=usb-fix-kernel-oops-with-g_ether-and-windows.patch
 In-Reply-To: <20100918190024.GA14388@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Maxim Osipov <maxim.osipov@gmail.com>
 
-commit 595afaf9e6ee1b48e13ec4b8bcc8c7dee888161a upstream.
+commit 037d3656adbd7e8cb848f01cf5dec423ed76bbe7 upstream.
 
-David Bartly reported that fuse can hang in fuse_get_req_nofail() when
-the connection to the filesystem server is no longer active.
+Please find attached patch for
+https://bugzilla.kernel.org/show_bug.cgi?id=16023 problem.
 
-If bg_queue is not empty then flush_bg_queue() called from
-request_end() can put more requests on to the pending queue.  If this
-happens while ending requests on the processing queue then those
-background requests will be queued to the pending list and never
-ended.
 
-Another problem is that fuse_dev_release() didn't wake up processes
-sleeping on blocked_waitq.
-
-Solve this by:
-
- a) flushing the background queue before calling end_requests() on the
-    pending and processing queues
-
- b) setting blocked = 0 and waking up processes waiting on
-    blocked_waitq()
-
-Thanks to David for an excellent bug report.
-
-Reported-by: David Bartley <andareed@gmail.com>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Maxim Osipov <maxim.osipov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/fuse/dev.c |   16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ drivers/usb/gadget/rndis.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
---- a/fs/fuse/dev.c
-+++ b/fs/fuse/dev.c
-@@ -1158,6 +1158,14 @@ __acquires(&fc->lock)
- 	}
- }
+--- a/drivers/usb/gadget/rndis.c
++++ b/drivers/usb/gadget/rndis.c
+@@ -291,9 +291,13 @@ gen_ndis_query_resp (int configNr, u32 O
+ 	/* mandatory */
+ 	case OID_GEN_VENDOR_DESCRIPTION:
+ 		pr_debug("%s: OID_GEN_VENDOR_DESCRIPTION\n", __func__);
+-		length = strlen (rndis_per_dev_params [configNr].vendorDescr);
+-		memcpy (outbuf,
+-			rndis_per_dev_params [configNr].vendorDescr, length);
++		if ( rndis_per_dev_params [configNr].vendorDescr ) {
++			length = strlen (rndis_per_dev_params [configNr].vendorDescr);
++			memcpy (outbuf,
++				rndis_per_dev_params [configNr].vendorDescr, length);
++		} else {
++			outbuf[0] = 0;
++		}
+ 		retval = 0;
+ 		break;
  
-+static void end_queued_requests(struct fuse_conn *fc)
-+{
-+	fc->max_background = UINT_MAX;
-+	flush_bg_queue(fc);
-+	end_requests(fc, &fc->pending);
-+	end_requests(fc, &fc->processing);
-+}
-+
- /*
-  * Abort all requests.
-  *
-@@ -1184,8 +1192,7 @@ void fuse_abort_conn(struct fuse_conn *f
- 		fc->connected = 0;
- 		fc->blocked = 0;
- 		end_io_requests(fc);
--		end_requests(fc, &fc->pending);
--		end_requests(fc, &fc->processing);
-+		end_queued_requests(fc);
- 		wake_up_all(&fc->waitq);
- 		wake_up_all(&fc->blocked_waitq);
- 		kill_fasync(&fc->fasync, SIGIO, POLL_IN);
-@@ -1200,8 +1207,9 @@ int fuse_dev_release(struct inode *inode
- 	if (fc) {
- 		spin_lock(&fc->lock);
- 		fc->connected = 0;
--		end_requests(fc, &fc->pending);
--		end_requests(fc, &fc->processing);
-+		fc->blocked = 0;
-+		end_queued_requests(fc);
-+		wake_up_all(&fc->blocked_waitq);
- 		spin_unlock(&fc->lock);
- 		fuse_conn_put(fc);
- 	}
 
 
