@@ -1,86 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742Ab0ISPcI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 11:32:08 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:36050 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754329Ab0ISPcH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 11:32:07 -0400
-Message-ID: <4C962CF3.9000601@panasas.com>
-Date: Sun, 19 Sep 2010 17:32:03 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Vasiliy Kulikov <segooon@gmail.com>
-CC: kernel-janitors@vger.kernel.org, Benny Halevy <bhalevy@panasas.com>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Tejun Heo <tj@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        osd-dev@open-osd.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/14] scsi: osd: fix device_register() error handling
-References: <1284900907-24621-1-git-send-email-segooon@gmail.com>
-In-Reply-To: <1284900907-24621-1-git-send-email-segooon@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 19 Sep 2010 15:32:06.0369 (UTC) FILETIME=[D0F56D10:01CB580F]
+	id S1754830Ab0ISQ2Y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 12:28:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6354 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754518Ab0ISQ2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Sep 2010 12:28:22 -0400
+From: Avi Kivity <avi@redhat.com>
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: [PATCH] x86, nmi: workaround sti; hlt race vs nmi; intr
+Date: Sun, 19 Sep 2010 18:28:19 +0200
+Message-Id: <1284913699-14986-1-git-send-email-avi@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/19/2010 02:55 PM, Vasiliy Kulikov wrote:
-> If device_register() fails then call put_device().
-> See comment to device_register.
-> 
-> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-> ---
->  compile tested.
-> 
->  drivers/scsi/osd/osd_uld.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/scsi/osd/osd_uld.c b/drivers/scsi/osd/osd_uld.c
-> index cefb2c0..3e0edc2 100644
-> --- a/drivers/scsi/osd/osd_uld.c
-> +++ b/drivers/scsi/osd/osd_uld.c
-> @@ -474,7 +474,7 @@ static int osd_probe(struct device *dev)
->  	error = device_register(&oud->class_dev);
->  	if (error) {
->  		OSD_ERR("device_register failed => %d\n", error);
-> -		goto err_put_cdev;
-> +		goto err_put_device;
->  	}
->  
->  	get_device(&oud->class_dev);
-> @@ -482,6 +482,8 @@ static int osd_probe(struct device *dev)
->  	OSD_INFO("osd_probe %s\n", disk->disk_name);
->  	return 0;
->  
-> +err_put_device:
-> +	put_device(&oud->class_dev);
+On machines without monitor/mwait we use an sti; hlt sequence to atomically
+enable interrupts and put the cpu to sleep.  The sequence uses the "interrupt
+shadow" property of the sti instruction: interrupts are enabled only after
+the instruction following sti has been executed.  This means an interrupt
+cannot happen in the middle of the sequence, which would leave us with
+the interrupt processed but the cpu halted.
 
-I'm not sure we can do this here. We might need to disregard the
-comment at device_register. Because this put_ will try to call the
-registered __release which will try to free the oud structure which
-has the ->class_dev embedded, and now we have a double free.
+The interrupt shadow, however, can be broken by an nmi; the following
+sequence
 
-But I will add a fat comment if all agree.
+   sti
+     nmi ... iret
+     # interrupt shadow disabled
+     intr ... iret
+   hlt
 
-I'm assuming that if the device_register has failed then we are not
-yet on any exposed system lists. (proof of we don't need to call
-device_unregister). Since we don't yet let anyone see this device
-we can go head and free it regardless of it's initialized ref-count
-== 1. The motivation here is to tear down the device without any
-possible users. Is that guaranteed? From my code audit it is.
+puts the cpu to sleep, even though the interrupt may need additional processing
+after the hlt (like scheduling a task).
 
->  err_put_cdev:
->  	cdev_del(&oud->cdev);
->  err_put_disk:
+sti is explicitly documented not to force an interrupt shadow; though many
+processors do inhibit nmi immediately after sti.
 
-And I think device_register has a very bad API side effect with this put.
-If you are going to monitor all places that do not call put_device. Why
-not go to all places that do, and remove them and fix device_register.
-Do a majority vote. What is done more? put_device called or not called.
+Avoid the race by checking, during an nmi, if we hit the safe halt sequence.
+If we did, increment the instruction pointer past the hlt instruction; this
+allows an immediately following interrupt to return to a safe place.
 
-Thanks
-Boaz
+Signed-off-by: Avi Kivity <avi@redhat.com>
+---
+ arch/x86/include/asm/irqflags.h |   18 +++++++++++++++++-
+ arch/x86/kernel/traps.c         |   14 ++++++++++++++
+ 2 files changed, 31 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/include/asm/irqflags.h b/arch/x86/include/asm/irqflags.h
+index 9e2b952..f412167 100644
+--- a/arch/x86/include/asm/irqflags.h
++++ b/arch/x86/include/asm/irqflags.h
+@@ -44,9 +44,25 @@ static inline void native_irq_enable(void)
+ 	asm volatile("sti": : :"memory");
+ }
+ 
++extern void safe_halt_addr(void);
++
+ static inline void native_safe_halt(void)
+ {
+-	asm volatile("sti; hlt": : :"memory");
++	asm volatile("sti \n\t"
++		     /*
++		      * If NMI hits us here, it negates the interrupt shadow
++		      * induced by STI.  So the NMI handler checks for
++		      * safe_halt_addr and skips the hlt if it loses the
++		      * interrupt shadow.
++		      *
++		      * If native_safe_halt() is ever instantiated more
++		      * than once, this will fail to build, and we'll need
++		      * a list of addresses in a special section.
++		      */
++		     ".globl safe_halt_addr \n\t"
++		     "safe_halt_addr: \n\t"
++		     "hlt"
++		     : : :"memory");
+ }
+ 
+ static inline void native_halt(void)
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 60788de..f67da48 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -438,6 +438,20 @@ do_nmi(struct pt_regs *regs, long error_code)
+ 
+ 	inc_irq_stat(__nmi_count);
+ 
++	/*
++	 * We hit in the middle of an sti; hlt instruction.  When we return,
++	 * the interrupt shadow cast by sti will no longer be in effect; then,
++	 * if an interrupt causes a wakeup, we won't notice it since the hlt
++	 * will take effect and block the cpu.
++	 *
++	 * If we detect this situation, fix it by advancing the instruction
++	 * pointer past the hlt instruction; if the interrupt doesn't happen,
++	 * we'll spend a few cycles falling asleep again, but that's better
++	 * than a missed wakeup.
++	 */
++	if (regs->cs == __KERNEL_CS && regs->ip == (ulong)safe_halt_addr)
++		++regs->ip;
++
+ 	if (!ignore_nmis)
+ 		default_do_nmi(regs);
+ 
+-- 
+1.7.2.3
+
