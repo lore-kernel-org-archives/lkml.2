@@ -1,94 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056Ab0ISQr1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 12:47:27 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:39116 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1754925Ab0ISQr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 12:47:26 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX19kdUc7K/xktXV+Lqg6lYfAsFEAi13xwg3w+WAiv2
-	UHLnCXkpsqfL8R
-Message-ID: <4C963E99.9080207@gmx.de>
-Date: Sun, 19 Sep 2010 18:47:21 +0200
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
+	id S1755103Ab0ISQxy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 12:53:54 -0400
+Received: from mx01.sz.bfs.de ([194.94.69.103]:60477 "EHLO mx01.sz.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755020Ab0ISQxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Sep 2010 12:53:53 -0400
+Message-ID: <4C96401C.1000707@bfs.de>
+Date: Sun, 19 Sep 2010 18:53:48 +0200
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-CC: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bernie Thompson <bernie@plugable.com>
-Subject: Re: [Patch, RFC] Make struct fb_info ref-counted with kref
-References: <20100919172833.14bf291e@neptune.home>
-In-Reply-To: <20100919172833.14bf291e@neptune.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+To: Vasiliy Kulikov <segooon@gmail.com>
+CC: kernel-janitors@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/14] mca: fix device_register() error handling
+References: <1284900887-24327-1-git-send-email-segooon@gmail.com>
+In-Reply-To: <1284900887-24327-1-git-send-email-segooon@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-Bruno Prémont schrieb:
-> For USB-attached (or other hot-(un)pluggable) framebuffers the current
-> fbdev infrastructure is not very helpful. Each such driver currently
-> needs to perform the ref-counting on its own in .fbops.fb_open and
-> .fbops.fb_release callbacks.
 
-I agree. This is a great idea even for non-hot-(un)pluggable framebuffers.
-
-> This patch moves the ref-counting in fbdev infrastructure.
-> (drivers have not been adjusted, all those releasing fb_info in
->  .fbops.fb_destroy will not work -- patch for those will follow
->  later on, all the others will continue to work fine)
+Vasiliy Kulikov schrieb:
+> If device_register() fails then call put_device().
+> See comment to device_register.
 > 
-> API-wise the following changes are done:
-> - num_registered_fb and registered_fb variables are no more exported.
->   New functions fb_get_registered() and fb_is_registered() replace
->   them.
->   The only know user of those was fbcon, thus the large diff on fbcon.c
+> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+> ---
+>  I cannot compile this driver, so it is not tested at all.
 > 
->   Note: the accesses to registered_fb and num_registered_fb look racy
->   as there was not protection at all around them, potentially letting
->   register_framebuffer() register two framebuffers on the same minor
->   concurrently, fbcon access should have been safe by combination of
->   its use of console_semaphore and reaction to events.
->   In this patch I combined most of fbcon's accesses to registered_fb
->   and num_registered_fb into fb_is_registered(), though I'm not sure
->   if the num-check optimization is worth to keep or its check should
->   be put into a separate function.
+>  drivers/mca/mca-bus.c |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
 > 
-> - framebuffer_release() is mapped to fb_put() but will go away
->   when converting drivers
-> 
-> Reference count for fb_info can be increased with fb_get(fb_info) and
-> later released with fb_put(fb_info).
-> 
-> 
-> If you have concerns regarding the API changes, please let me know.
-
-Uhm, I'm not really happy with what we count. With the old method you mentioned 
-we ref-counted framebuffer users, after your patch it's more counting users + 
-uses. This might be okay as we usually are interested whether the ref_count is 0 
-or not but it doesn't look right if we modify the refcount during nearly every 
-framebuffer operation. Wouldn't it be sufficient to do the refcounting in 
-fb_open & fb_release operation + in fbcon where open&release are done?
-
-> diff --git a/drivers/video/fbsysfs.c b/drivers/video/fbsysfs.c
-> index 0a08f13..be5f342 100644
-> --- a/drivers/video/fbsysfs.c
-> +++ b/drivers/video/fbsysfs.c
-> @@ -58,6 +58,7 @@ struct fb_info *framebuffer_alloc(size_t size, struct device *dev)
->  		info->par = p + fb_info_size;
+> diff --git a/drivers/mca/mca-bus.c b/drivers/mca/mca-bus.c
+> index ada5ebb..7162f08 100644
+> --- a/drivers/mca/mca-bus.c
+> +++ b/drivers/mca/mca-bus.c
+> @@ -116,8 +116,10 @@ int __init mca_register_device(int bus, struct mca_device *mca_dev)
+>  	mca_dev->dev.coherent_dma_mask = mca_dev->dma_mask;
 >  
->  	info->device = dev;
-> +	kref_init(&info->refcount);
+>  	rc = device_register(&mca_dev->dev);
+> -	if (rc)
+> +	if (rc) {
+> +		put_device(&mca_dev->dev);
+>  		goto err_out;
+> +	}
+>  
+>  	rc = device_create_file(&mca_dev->dev, &dev_attr_id);
+>  	if (rc) goto err_out_devreg;
+> @@ -154,6 +156,7 @@ struct mca_bus * __devinit mca_attach_bus(int bus)
+>  	dev_set_name(&mca_bus->dev, "mca%d", bus);
+>  	sprintf(mca_bus->name,"Host %s MCA Bridge", bus ? "Secondary" : "Primary");
+>  	if (device_register(&mca_bus->dev)) {
+> +		put_device(&mca_bus->dev);
+>  		kfree(mca_bus);
+>  		return NULL;
+>  	}
 
-As far as I know there exist framebuffer drivers which do not call 
-framebuffer_alloc but contain their own fb_info. I guess these would be broken 
-as well.
+just a minor: dev_set_name() is not check here. (But is in other places).
+
+re,
+ wh
 
 
-Thanks,
-
-Florian Tobias Schandinat
