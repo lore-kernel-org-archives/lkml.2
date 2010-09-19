@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115Ab0ISEo0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 00:44:26 -0400
-Received: from snt0-omc3-s25.snt0.hotmail.com ([65.55.90.164]:35596 "EHLO
-	snt0-omc3-s25.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751260Ab0ISEoZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 00:44:25 -0400
-Message-ID: <SNT125-W404716E1C7DD1F32AA10AFC37D0@phx.gbl>
-X-Originating-IP: [96.253.143.208]
-From: Yuhong Bao <yuhongbao_386@hotmail.com>
-To: <torvalds@linux-foundation.org>, <peterz@infradead.org>
-CC: <cyeoh@au1.ibm.com>, <linux-kernel@vger.kernel.org>
-Subject: RE: [RFC][PATCH] Cross Memory Attach
-Date: Sat, 18 Sep 2010 21:44:25 -0700
-Importance: Normal
-In-Reply-To: <AANLkTikjV1Qos4R-84Msqdqiv408mknEWc2PAHtf8fRY@mail.gmail.com>
-References: <20100915104855.41de3ebf@lilo>
- <AANLkTimNsDxeyZL4GVaH4L7YGO-EoRyCMHDtMPWU37hN@mail.gmail.com>
- <1284654451.2275.579.camel@laptop>
- <AANLkTinihPeUueKhEqUuraW2hcf3FFHjm26RieKQZi0d@mail.gmail.com>
- <1284657194.2275.585.camel@laptop>
- <AANLkTikquj_2DE4UhTFAoDxL+,<AANLkTikjV1Qos4R-84Msqdqiv408mknEWc2PAHtf8fRY@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1752357Ab0ISEvI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 00:51:08 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58063 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644Ab0ISEu4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Sep 2010 00:50:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=DmQ5Dmb2EtlO8d9Cl7zfsLp6mb+Z4QIcskmxn2MJjnVr+kBH+a52f9VwaW7k0/67UB
+         nbpiaSRjrY7QdFZO1RKDhgzzHwkYCJYy4A2JgJU/+e4QPYB6fpx1eyEoG+BJaAHnbCiH
+         EOmYPOzroZnlHeY/mkcG8KkSTVPMXn2b5WqlA=
 MIME-Version: 1.0
-X-OriginalArrivalTime: 19 Sep 2010 04:44:25.0236 (UTC) FILETIME=[55EB1D40:01CB57B5]
+In-Reply-To: <4C9579A1.5030009@orcon.net.nz>
+References: <20100918083846.GA31363@ZenIV.linux.org.uk> <4C9579A1.5030009@orcon.net.nz>
+From: Matt Turner <mattst88@gmail.com>
+Date: Sun, 19 Sep 2010 00:50:34 -0400
+Message-ID: <AANLkTimPZ5=FBdffeeDVB0_=no-rQcdEOdZ0OqLXkpss@mail.gmail.com>
+Subject: Re: [PATCH 1/4] alpha: belated ERESTART_RESTARTBLOCK race fix
+To: Michael Cree <mcree@orcon.net.nz>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Richard Henderson <rth@twiddle.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-arch@vger.kernel.org, linux-alpha@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> On Thu, Sep 16, 2010 at 10:54 AM, Linus Torvalds
->  wrote:
-> > But there is no way I'm
-> > going to say "oh, HIGHMEM still makes sense in 2010 because the ARM
-> > guys are now making all the same mistakes Intel did in 1992".
+On Sat, Sep 18, 2010 at 10:46 PM, Michael Cree <mcree@orcon.net.nz> wrote:
+> On 18/09/10 20:38, Al Viro wrote:
+>>
+>> same thing as had been done on other targets back in 2003 -
+>> move setting ->restart_block.fn into {rt_,}sigreturn().
+>>
+>> Signed-off-by: Al Viro<viro@zeniv.linux.org.uk>
 >
-> Off by a couple of years. Intel did it wit the PPro, in 1995,
-> actually. But it's still going to be 16 years later by the time ARM
-> LPAE actually ships, I guess.
+> For the patch series:
+>
+> Tested-by: Michael Cree <mcree@orcon.net.nz>
+>
+> Cheers
+> Michael.
+>
 
-Yep, back when the 386 was designed, having 4GB for both physical and virtual address space
-(which was what caused HIGHMEM to be needed at all with more than 1GB in the first place)
-was not a mistake.
- 		 	   		  
+Thanks for the test.
+
+Al, I've vacuumed your patches and sent them with others in a pull
+request to Linus.
+
+Thanks a ton. Anyone who finds and fixes a 14 year-old bug, well, I
+owe you a beer.
+
+Thanks!
+Matt
