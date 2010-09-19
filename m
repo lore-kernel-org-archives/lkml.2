@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220Ab0ISJyW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 05:54:22 -0400
-Received: from pfepa.post.tele.dk ([195.41.46.235]:57300 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752738Ab0ISJyV (ORCPT
+	id S1753528Ab0ISJym (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 05:54:42 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:42200 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753388Ab0ISJyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 05:54:21 -0400
-Date: Sun, 19 Sep 2010 11:54:19 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Junio C Hamano <gitster@pobox.com>
-Cc: Roman Zippel <zippel@linux-m68k.org>, Michal Marek <mmarek@suse.cz>,
-        Li Zefan <lizf@cn.fujitsu.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]
-Message-ID: <20100919095419.GC25704@merkur.ravnborg.org>
-References: <7vhbhmxyeb.fsf@alter.siamese.dyndns.org>
+	Sun, 19 Sep 2010 05:54:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=v7x22HLEEwfUUIHge8XZZN9h83wVzO3MzoRPhwmj2ZcceRIFznU+c/kOaudyez2DJc
+         sjr1zeRpQWB7SPLID0n2UyzV7TMW1XT1DSuytl+jPw7uRf5RJTuCbmd64xrQCydtopVy
+         YH8izb2r86eK4I/ENMCHkojIp3O+ZjbZMhXyM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7vhbhmxyeb.fsf@alter.siamese.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100915055649.GB22219@core.coreip.homeip.net>
+References: <4C8F886E.2080407@vlnb.net>
+	<20100915055649.GB22219@core.coreip.homeip.net>
+Date: Sun, 19 Sep 2010 11:54:37 +0200
+X-Google-Sender-Auth: _SImbbA5DvJzUyF4o15jFuQE4mk
+Message-ID: <AANLkTi=d1ZYrOxP3iMt4+qE628FhzassD9=8Q1V+unNE@mail.gmail.com>
+Subject: Re: [PATCH 0/17]: New SCSI target framework (SCST) with dev handlers
+ and 2 target drivers
+From: Bart Van Assche <bvanassche@acm.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Vladislav Bolkhovitin <vst@vlnb.net>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Jeff Garzik <jeff@garzik.org>,
+        Vu Pham <vuhuong@mellanox.com>, James Smart <James.Smart@emulex.com>,
+        Joe Eykholt <jeykholt@cisco.com>, Andy Yan <ayan@marvell.com>,
+        Chetan Loke <generationgnu@yahoo.com>, Hannes Reinecke <hare@suse.de>,
+        Richard Sharpe <realrichardsharpe@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 18, 2010 at 07:25:32PM -0700, Junio C Hamano wrote:
-> In 60f33b8 (kconfig: get rid of stray a.o, support ncursesw, 2006-01-15),
-> support to link menuconfig with ncursesw library was added.  To compute
-> the linker command option -l, we check "libncursesw.{so,a,dylib}" to allow
-> ncursesw to be used as a replacement ncurses.  However, when checking what
-> header file to include, we do not check /usr/include/ncursesw directory.
-> 
-> Add /usr/include/ncursesw to the list of directories that are checked.
-> With this patch, on my Debian Lenny box with libncursesw5-dev package but
-> not libncurses5-dev package, I can say "make menuconfig".
-> 
-> Signed-off-by: Junio C Hamano <gitster@pobox.com>
+On Wed, Sep 15, 2010 at 7:56 AM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+>
+> Hi Vladislav,
+>
+> On Tue, Sep 14, 2010 at 06:36:30PM +0400, Vladislav Bolkhovitin wrote:
+> > Hi All,
+> >
+> > Please review this second iteration of the patch set of the new
+> > (although, perhaps, the oldest) SCSI target framework for Linux SCST
+> > with a set of dev handlers and 2 target drivers: for local access
+> > (scst_local) and for Infiniband SRP (srpt).
+> >
+>
+> [ ... ]
+>
+> And too many "naked returns", I believe common style is to only have
+> return for non-void functions.
 
-Except for the missing patch subject then it looks OK.
+Hello Dmitry,
 
-Suggested subject:
-kconfig: fix menuconfig on debian lenny
+If there is agreement among kernel maintainers that return statements
+at the end of functions that do not return a value should be avoided,
+it might be a good idea to let checkpatch complain about such return
+statements. Currently checkpatch doesn't complain about such return
+statements.
 
-Add as this is a fix we should Cc: <stable@kerne.org>?
-
-Acked-by: Sam Ravnborg <sam@ravnborg.org>
-
-	Sam
+Bart.
