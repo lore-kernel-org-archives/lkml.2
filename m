@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753730Ab0ISTVB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 15:21:01 -0400
-Received: from snt0-omc3-s3.snt0.hotmail.com ([65.55.90.142]:8858 "EHLO
-	snt0-omc3-s3.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753023Ab0ISTVA convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 15:21:00 -0400
-Message-ID: <SNT125-W305F365835060339BD4008C37D0@phx.gbl>
-X-Originating-IP: [96.253.143.208]
-From: Yuhong Bao <yuhongbao_386@hotmail.com>
-To: <torvalds@linux-foundation.org>, <peterz@infradead.org>
-CC: <cyeoh@au1.ibm.com>, <linux-kernel@vger.kernel.org>,
-        <linux@arm.linux.org.uk>
-Subject: RE: [RFC][PATCH] Cross Memory Attach
-Date: Sun, 19 Sep 2010 12:20:59 -0700
-Importance: Normal
-In-Reply-To: <AANLkTi=hFydeqk_ENGmqEqwqduSeN2gpjMr+VpcN38Xx@mail.gmail.com>
-References: <20100915104855.41de3ebf@lilo>
- <AANLkTimNsDxeyZL4GVaH4L7YGO-EoRyCMHDtMPWU37hN@mail.gmail.com>
- <1284654451.2275.579.camel@laptop>
- <AANLkTinihPeUueKhEqUuraW2hcf3FFHjm26RieKQZi0d@mail.gmail.com>
- <1284657194.2275.585.camel@laptop>
- <AANLkTikquj_2DE4UhTFAoDxL+,<AANLkTi=hFydeqk_ENGmqEqwqduSeN2gpjMr+VpcN38Xx@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1753699Ab0ISTbV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 15:31:21 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:36695 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751946Ab0ISTbU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Sep 2010 15:31:20 -0400
+Date: Sun, 19 Sep 2010 21:31:18 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Junio C Hamano <junio@pobox.com>
+Cc: Roman Zippel <zippel@linux-m68k.org>, Michal Marek <mmarek@suse.cz>,
+        Li Zefan <lizf@cn.fujitsu.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]
+Message-ID: <20100919193118.GA26308@merkur.ravnborg.org>
+References: <7vhbhmxyeb.fsf@alter.siamese.dyndns.org> <20100919095419.GC25704@merkur.ravnborg.org> <7v8w2xy4pq.fsf@alter.siamese.dyndns.org>
 MIME-Version: 1.0
-X-OriginalArrivalTime: 19 Sep 2010 19:20:59.0901 (UTC) FILETIME=[CAC81AD0:01CB582F]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7v8w2xy4pq.fsf@alter.siamese.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-(Adding Russell King of ARM Linux to CC list)
-
-----------------------------------------
-> From: torvalds@linux-foundation.org
-> Date: Thu, 16 Sep 2010 10:54:29 -0700
-> Subject: Re: [RFC][PATCH] Cross Memory Attach
-> To: peterz@infradead.org
-> CC: cyeoh@au1.ibm.com; linux-kernel@vger.kernel.org
->
-> On Thu, Sep 16, 2010 at 10:47 AM, Peter Zijlstra  wrote:
-> > On Thu, 2010-09-16 at 10:34 -0700, Linus Torvalds wrote:
-> >>
-> >> Of course, these days I would seriously suggest against trying to
-> >> optimize the kmap() case. It only matters on crap hardware these days.
-> >> Anybody running HIGHMEM in 2010 and thinks that it makes sense
-> >> deserves the pain the get. We should not complicate the kernel further
-> >> for it, and sane architectures will have a no-op kmap().
+On Sun, Sep 19, 2010 at 11:21:21AM -0700, Junio C Hamano wrote:
+> Sam Ravnborg <sam@ravnborg.org> writes:
+> 
+> > On Sat, Sep 18, 2010 at 07:25:32PM -0700, Junio C Hamano wrote:
+> >> In 60f33b8 (kconfig: get rid of stray a.o, support ncursesw, 2006-01-15),
+> >> support to link menuconfig with ncursesw library was added.  To compute
+> >> the linker command option -l, we check "libncursesw.{so,a,dylib}" to allow
+> >> ncursesw to be used as a replacement ncurses.  However, when checking what
+> >> header file to include, we do not check /usr/include/ncursesw directory.
+> >> 
+> >> Add /usr/include/ncursesw to the list of directories that are checked.
+> >> With this patch, on my Debian Lenny box with libncursesw5-dev package but
+> >> not libncurses5-dev package, I can say "make menuconfig".
+> >> 
+> >> Signed-off-by: Junio C Hamano <gitster@pobox.com>
 > >
-> > OK, fully agreed. Someone ought to tell ARM though :-)
->
-> You know what? I don't care. If the fact that ARM is messing up means
-> that they will never be able to do well in the micro-server space,
-> that's _their_ problem.
->
-> I fought HIGHMEM tooth and nail when it appeared originally. I lost,
-> because we really didn't have any choice. But there is no way I'm
-> going to say "oh, HIGHMEM still makes sense in 2010 because the ARM
-> guys are now making all the same mistakes Intel did in 1992". Because
-> these days we _do_ have a choice.
->
-> And all the rumors are that there will be a 64-bit ARM too. So their
-> PAE mess will be out before, but nobody sane should really consider it
-> a primary issue. It will work, but it will work suboptimally. That's
-> what you get when you have bad hardware design.
->
-> Linus
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at http://www.tux.org/lkml/
->
->
- 		 	   		  
+> > Except for the missing patch subject then it looks OK.
+> > Suggested subject:
+> > kconfig: fix menuconfig on debian lenny
+> 
+> Sorry, the missing subject really was sloppy of me, and thanks.
+> 
+> > Add as this is a fix we should Cc: <stable@kerne.org>?
+> 
+> I don't think the fix deserves to be in stable.  It does not look like
+> 60f33b8 made it possible to use ncursesw on a box like mine so the patch
+> is not evan an regression-fix.
+OK
+> 
+> > Acked-by: Sam Ravnborg <sam@ravnborg.org>
+> 
+> Thanks; is it my responsibility to follow-up the thread with identical
+> patch with updated Subject and with your Ack, hoping somebody in kbuild
+> team would pick it up?
+
+I assume Michal will pick it up anyway - but if you do it would make
+it simpler for him to do so.
+So no need..
+
+	Sam
