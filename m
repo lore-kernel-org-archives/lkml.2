@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755007Ab0ISMza (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 08:55:30 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:44711 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754896Ab0ISMz0 (ORCPT
+	id S1754703Ab0ISMzN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 08:55:13 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:58608 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754619Ab0ISMzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 08:55:26 -0400
+	Sun, 19 Sep 2010 08:55:09 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=qCSCWQBaQeh8DLzPZ3hv3S0XJKGNY0aW3t9D/3DUSmdPoKhiosUCCJDOtEd88AcmZt
-         31sAml8Q/4qg6CjGJBw3EFyhy7yhGSX/3tos+xeKJne+8GsI/Tr7DCGhKw9BtO+cD0ah
-         fDjv417DwUxApIymbkR8GfphgeCiLRB2emCRY=
+        b=pnrCY4JDnsdxiMkL+XY9vuS9wUAABegUhonD/taNaGA9hSmYkTSEitL1S9QmuGwWWF
+         AQrMfAjaeqPgqHzrQoYLeqdc8Z75SlbZXXdxwuP1Uen7GBXubo5xnZ2EAc6+93kC/qp9
+         i64WCmRt0a03Z+9d+Gg87wqFtY9UMGQt02CSU=
 From: Vasiliy Kulikov <segooon@gmail.com>
 To: kernel-janitors@vger.kernel.org
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Roman Zippel <zippel@linux-m68k.org>, linux-m68k@vger.kernel.org,
+Cc: Alessandro Zummo <a.zummo@towertech.it>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Aaro Koskinen <aaro.koskinen@nokia.com>, rtc-linux@googlegroups.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 14/14] zorro: fix device_register() error handling
-Date: Sun, 19 Sep 2010 16:55:21 +0400
-Message-Id: <1284900921-24814-1-git-send-email-segooon@gmail.com>
+Subject: [PATCH 09/14] rtc: fix device_register() error handling
+Date: Sun, 19 Sep 2010 16:55:04 +0400
+Message-Id: <1284900904-24579-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,31 +32,27 @@ See comment to device_register.
 
 Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
 ---
- I cannot compile this driver, so it is not tested at all.
+ compile tested.
 
- drivers/zorro/zorro.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ drivers/rtc/class.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/zorro/zorro.c b/drivers/zorro/zorro.c
-index 6455f3a..e0c2807 100644
---- a/drivers/zorro/zorro.c
-+++ b/drivers/zorro/zorro.c
-@@ -142,6 +142,7 @@ static int __init amiga_zorro_probe(struct platform_device *pdev)
- 	error = device_register(&bus->dev);
- 	if (error) {
- 		pr_err("Zorro: Error registering zorro_bus\n");
-+		put_device(&bus->dev);
- 		kfree(bus);
- 		return error;
- 	}
-@@ -175,6 +176,7 @@ static int __init amiga_zorro_probe(struct platform_device *pdev)
- 		if (error) {
- 			dev_err(&bus->dev, "Error registering device %s\n",
- 				z->name);
-+			put_device(&z->dev);
- 			continue;
- 		}
- 		error = zorro_create_sysfs_dev_files(z);
+diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
+index 565562b..e6539cb 100644
+--- a/drivers/rtc/class.c
++++ b/drivers/rtc/class.c
+@@ -158,8 +158,10 @@ struct rtc_device *rtc_device_register(const char *name, struct device *dev,
+ 	rtc_dev_prepare(rtc);
+ 
+ 	err = device_register(&rtc->dev);
+-	if (err)
++	if (err) {
++		put_device(&rtc->dev);
+ 		goto exit_kfree;
++	}
+ 
+ 	rtc_dev_add_device(rtc);
+ 	rtc_sysfs_add_device(rtc);
 -- 
 1.7.0.4
 
