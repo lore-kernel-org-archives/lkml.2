@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262Ab0ISHXH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 03:23:07 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:44675 "HELO mail.gmx.net"
+	id S1752195Ab0ISH2h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 03:28:37 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:48790 "HELO mail.gmx.net"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752187Ab0ISHWh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 03:22:37 -0400
+	id S1751103Ab0ISH2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Sep 2010 03:28:35 -0400
 X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX19ziApylidzMLLa7zDfjtebWDSDpfTVKQmQqXydVx
-	eNh6if4DZw8AWO
+X-Provags-ID: V01U2FsdGVkX19JGCgntAxJ4Jcr2gSr/3r7ZyG1arkWOPnh5XkrVp
+	Y8IVNLyIazANyX
 From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 To: linux-fbdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
         Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Joseph Chan <JosephChan@via.com.tw>
-Subject: [PATCH 08/12] viafb: add function to change sync polarity per device
-Date: Sun, 19 Sep 2010 07:33:49 +0000
-Message-Id: <00ad35ddf5af3070a8c4cd031bc93d560259ee00.1284879532.git.FlorianSchandinat@gmx.de>
+        Joseph Chan <JosephChan@via.com.tw>, Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 10/12] viafb: add a mapping of supported output devices
+Date: Sun, 19 Sep 2010 07:39:55 +0000
+Message-Id: <a20caff43626418b91187e476905ebc7cd974701.1284879533.git.FlorianSchandinat@gmx.de>
 X-Mailer: git-send-email 1.6.3.2
-In-Reply-To: <171e0fb74a34b069c0c12aa90c56d5e5da5489c6.1284879532.git.FlorianSchandinat@gmx.de>
-References: <171e0fb74a34b069c0c12aa90c56d5e5da5489c6.1284879532.git.FlorianSchandinat@gmx.de>
 In-Reply-To: <cover.1284879532.git.FlorianSchandinat@gmx.de>
 References: <cover.1284879532.git.FlorianSchandinat@gmx.de>
 X-Y-GMX-Trusted: 0
@@ -27,87 +26,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-viafb: add function to change sync polarity per device
+viafb: add a mapping of supported output devices
 
-At the moment only the sync polarity for CRT is handled but there are
-also bits for controlling the sync polarity for other output devices.
-Add a function to change those similar to the other output device
-functions.
-There is no runtime change yet as the code still handles only CRT.
+This patch maps supported output devices to IGP versions. This list may
+contain errors as most of it is derived of the driver source but it should
+be correct enough to provide a good help. The devices are exported via a
+proc entry in the same format as those showing the output devices per IGA.
 
 Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 Cc: Joseph Chan <JosephChan@via.com.tw>
+Cc: Jonathan Corbet <corbet@lwn.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- drivers/video/via/hw.c |   24 +++++++++++++++++++++---
- drivers/video/via/hw.h |    5 +++++
- 2 files changed, 26 insertions(+), 3 deletions(-)
+ drivers/video/via/viafbdev.c |   48 ++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 48 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/video/via/hw.c b/drivers/video/via/hw.c
-index 132d811..d6bbb0a 100644
---- a/drivers/video/via/hw.c
-+++ b/drivers/video/via/hw.c
-@@ -1151,6 +1151,24 @@ void via_set_state(u32 devices, u8 state)
- 		set_lvds2_state(state);
- }
+diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
+index ce6f13a..17f228a 100644
+--- a/drivers/video/via/viafbdev.c
++++ b/drivers/video/via/viafbdev.c
+@@ -56,6 +56,31 @@ static int viafb_pan_display(struct fb_var_screeninfo *var,
  
-+void via_set_sync_polarity(u32 devices, u8 polarity)
+ static struct fb_ops viafb_ops;
+ 
++/* supported output devices on each IGP
++ * only CX700, VX800, VX855 were documented
++ * VIA_CRT should be everywhere
++ * VIA_6C can be onle pre-CX700 (probably only on CLE266) as 6C is used for PLL
++ * source selection on CX700 and later
++ * K400 seems to support VIA_96, VIA_DVP1, VIA_LVDS{1,2} as in viamode.c
++ */
++static const u32 supported_odev_map[] = {
++	[UNICHROME_CLE266]	= VIA_CRT | VIA_6C | VIA_93,
++	[UNICHROME_K400]	= VIA_CRT | VIA_96 | VIA_DVP1 | VIA_LVDS1
++				| VIA_LVDS2,
++	[UNICHROME_K800]	= VIA_CRT | VIA_96 | VIA_DVP1 | VIA_LVDS1
++				| VIA_LVDS2,
++	[UNICHROME_PM800]	= VIA_CRT | VIA_96 | VIA_DVP1 | VIA_LVDS1
++				| VIA_LVDS2,
++	[UNICHROME_CN700]	= VIA_CRT | VIA_96 | VIA_DVP1 | VIA_LVDS1
++				| VIA_LVDS2,
++	[UNICHROME_CX700]	= VIA_CRT | VIA_DVP1 | VIA_LVDS1 | VIA_LVDS2,
++	[UNICHROME_CN750]	= VIA_CRT | VIA_DVP1 | VIA_LVDS1 | VIA_LVDS2,
++	[UNICHROME_K8M890]	= VIA_CRT | VIA_DVP1 | VIA_LVDS1 | VIA_LVDS2,
++	[UNICHROME_P4M890]	= VIA_CRT | VIA_DVP1 | VIA_LVDS1 | VIA_LVDS2,
++	[UNICHROME_P4M900]	= VIA_CRT | VIA_DVP1 | VIA_LVDS1 | VIA_LVDS2,
++	[UNICHROME_VX800]	= VIA_CRT | VIA_DVP1 | VIA_LVDS1 | VIA_LVDS2,
++	[UNICHROME_VX855]	= VIA_CRT | VIA_DVP1 | VIA_LVDS1 | VIA_LVDS2,
++};
+ 
+ static void viafb_fill_var_color_info(struct fb_var_screeninfo *var, u8 depth)
+ {
+@@ -1433,6 +1458,26 @@ static const struct file_operations viafb_vt1636_proc_fops = {
+ 
+ #endif /* CONFIG_FB_VIA_DIRECT_PROCFS */
+ 
++static int viafb_sup_odev_proc_show(struct seq_file *m, void *v)
 +{
-+	if (polarity & ~(VIA_HSYNC_NEGATIVE | VIA_VSYNC_NEGATIVE)) {
-+		printk(KERN_WARNING "viafb: Unsupported polarity: %d\n",
-+			polarity);
-+		return;
-+	}
-+
-+	if (devices & VIA_CRT)
-+		via_write_misc_reg_mask(polarity << 6, 0xC0);
-+	if (devices & VIA_DVP1)
-+		via_write_reg_mask(VIACR, 0x9B, polarity << 5, 0x60);
-+	if (devices & VIA_LVDS1)
-+		via_write_reg_mask(VIACR, 0x99, polarity << 5, 0x60);
-+	if (devices & VIA_LVDS2)
-+		via_write_reg_mask(VIACR, 0x97, polarity << 5, 0x60);
++	via_odev_to_seq(m, supported_odev_map[
++		viaparinfo->shared->chip_info.gfx_chip_name]);
++	return 0;
 +}
 +
- u32 via_parse_odev(char *input, char **end)
- {
- 	char *ptr = input;
-@@ -2026,10 +2044,10 @@ void viafb_fill_crtc_timing(struct crt_mode_table *crt_table,
- 
- 	/* update polarity for CRT timing */
- 	if (crt_table[index].h_sync_polarity == NEGATIVE)
--		polarity |= BIT6;
-+		polarity |= VIA_HSYNC_NEGATIVE;
- 	if (crt_table[index].v_sync_polarity == NEGATIVE)
--		polarity |= BIT7;
--	via_write_misc_reg_mask(polarity, BIT6 | BIT7);
-+		polarity |= VIA_VSYNC_NEGATIVE;
-+	via_set_sync_polarity(VIA_CRT, polarity);
- 
- 	if (set_iga == IGA1) {
- 		viafb_unlock_crt();
-diff --git a/drivers/video/via/hw.h b/drivers/video/via/hw.h
-index b067cbb..ad6f9b1 100644
---- a/drivers/video/via/hw.h
-+++ b/drivers/video/via/hw.h
-@@ -47,6 +47,10 @@
- #define VIA_STATE_SUSPEND	2
- #define VIA_STATE_OFF		3
- 
-+/* VIA output device sync polarity */
-+#define VIA_HSYNC_NEGATIVE	0x01
-+#define VIA_VSYNC_NEGATIVE	0x02
++static int viafb_sup_odev_proc_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, viafb_sup_odev_proc_show, NULL);
++}
 +
- /***************************************************
- * Definition IGA1 Design Method of CRTC Registers *
- ****************************************************/
-@@ -912,6 +916,7 @@ void viafb_load_reg(int timing_value, int viafb_load_reg_num,
- 	      int io_type);
- void via_set_source(u32 devices, u8 iga);
- void via_set_state(u32 devices, u8 state);
-+void via_set_sync_polarity(u32 devices, u8 polarity);
- u32 via_parse_odev(char *input, char **end);
- void via_odev_to_seq(struct seq_file *m, u32 odev);
- void init_ad9389(void);
++static const struct file_operations viafb_sup_odev_proc_fops = {
++	.owner		= THIS_MODULE,
++	.open		= viafb_sup_odev_proc_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= single_release,
++};
++
+ static ssize_t odev_update(const char __user *buffer, size_t count, u32 *odev)
+ {
+ 	char buf[64], *ptr = buf;
+@@ -1561,6 +1606,8 @@ static void viafb_init_proc(struct viafb_shared *shared)
+ 		}
+ #endif /* CONFIG_FB_VIA_DIRECT_PROCFS */
+ 
++		proc_create("supported_output_devices", 0, viafb_entry,
++			&viafb_sup_odev_proc_fops);
+ 		iga1_entry = proc_mkdir("iga1", viafb_entry);
+ 		shared->iga1_proc_entry = iga1_entry;
+ 		proc_create("output_devices", 0, iga1_entry,
+@@ -1585,6 +1632,7 @@ static void viafb_remove_proc(struct viafb_shared *shared)
+ 	remove_proc_entry("iga2", viafb_entry);
+ 	remove_proc_entry("output_devices", iga1_entry);
+ 	remove_proc_entry("iga1", viafb_entry);
++	remove_proc_entry("supported_output_devices", viafb_entry);
+ 
+ #ifdef CONFIG_FB_VIA_DIRECT_PROCFS
+ 	remove_proc_entry("dvp0", viafb_entry);/* parent dir */
 -- 
 1.6.3.2
 
