@@ -1,170 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830Ab0ISQfg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 12:35:36 -0400
-Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:9379 "EHLO
-	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751934Ab0ISQfe (ORCPT
-	<rfc822;groupwise-jlee@novell.com:5:2>);
-	Sun, 19 Sep 2010 12:35:34 -0400
-Message-Id: <4C96C86E020000230002090E@novprvlin0050.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.2 
-Date: Sun, 19 Sep 2010 10:35:26 -0600
-From: "Joey Lee" <jlee@novell.com>
-To: <mjg59@srcf.ucam.org>
-Cc: <randy.dunlap@oracle.com>, <mjg@redhat.com>, <gregkh@suse.de>,
-        <trenn@suse.de>, <linux-acpi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <Valdis.Kletnieks@vt.edu>,
-        <Dennis.Jansen@web.de>
-Subject: Re: [PATCH] Add Intel Poulsbo Stub Driver
+	id S1754862Ab0ISQi0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 12:38:26 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:38750 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751934Ab0ISQiZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Sep 2010 12:38:25 -0400
+X-Authority-Analysis: v=1.1 cv=QPMnOuvfoRK4nyqTv0NRvva4Xk0fUUuJArrqv1I9dZo= c=1 sm=0 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=JbmLpqPY44Zk42c_IaYA:9 a=4RQkHHPpQfmaEGvsMLrA2JvZ034A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: raw_spinlock_t rules
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <4C960B78.4010804@redhat.com>
+References: <4C960B78.4010804@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Sun, 19 Sep 2010 12:38:22 -0400
+Message-ID: <1284914302.23787.2749.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Content-Disposition: inline
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matthew, 
-
-I modified the help description to add GMA500.
-Could you please give my any suggestion for this stub driver? Does it
-good enough to put into kernel ?
-
-
-Thank's a lot!
-Joey Lee
-
-於 三，2010-09-15 於 22:24 +0800，Lee, Chun-Yi 提到：
-> Currently, there have no GMA500(Poulsbo) native video driver to support
-> intel opregion. So, use this stub driver to enable the acpi backlight
-> control sysfs entry files by requrest acpi_video_register.
+On Sun, 2010-09-19 at 15:09 +0200, Avi Kivity wrote:
+> Some time ago, the i8259 emulation code in kvm was changed to use 
+> raw_spinlock_t, as it was called in a preempt_disable() and 
+> local_irq_disable() context, which doesn't work with preemptible 
+> spinlocks used with CONFIG_PREEMPT_RT.
 > 
-> Signed-off-by: Lee, Chun-Yi <jlee@novell.com>
-> ---
->  drivers/gpu/Makefile       |    2 +-
->  drivers/gpu/stub/Kconfig   |   13 +++++++++
->  drivers/gpu/stub/Makefile  |    1 +
->  drivers/gpu/stub/poulsbo.c |   63 ++++++++++++++++++++++++++++++++++++++++++++
->  drivers/video/Kconfig      |    2 +
->  5 files changed, 80 insertions(+), 1 deletions(-)
->  create mode 100644 drivers/gpu/stub/Kconfig
->  create mode 100644 drivers/gpu/stub/Makefile
->  create mode 100644 drivers/gpu/stub/poulsbo.c
+> In Linux 2.6.37, the spinlock will no longer be taken in these contexts, 
+> so I'd like to change it to a normal spinlock_t.  However, it is still 
+> taken in a spin_lock_irq() context.
 > 
-> diff --git a/drivers/gpu/Makefile b/drivers/gpu/Makefile
-> index 30879df..cc92778 100644
-> --- a/drivers/gpu/Makefile
-> +++ b/drivers/gpu/Makefile
-> @@ -1 +1 @@
-> -obj-y			+= drm/ vga/
-> +obj-y			+= drm/ vga/ stub/
-> diff --git a/drivers/gpu/stub/Kconfig b/drivers/gpu/stub/Kconfig
-> new file mode 100644
-> index 0000000..8f5a540
-> --- /dev/null
-> +++ b/drivers/gpu/stub/Kconfig
-> @@ -0,0 +1,13 @@
-> +config STUB_POULSBO
-> +	tristate "Intel GMA500 Stub Driver"
-> +	depends on PCI
-> +        # Poulsbo stub depends on ACPI_VIDEO when ACPI is enabled
-> +        # but for select to work, need to select ACPI_VIDEO's dependencies, ick
-> +        select ACPI_VIDEO if ACPI
-> +	help
-> +	  Choose this option if you have a system that has Intel GMA500
-> +	  (Poulsbo) integrated graphics. If M is selected, the module will
-> +	  be called Poulsbo. This driver is a stub driver for Poulsbo that
-> +	  will call poulsbo.ko to enable the acpi backlight control sysfs
-> +	  entry file because there have no poulsbo native driver can support
-> +	  intel opregion.
-> diff --git a/drivers/gpu/stub/Makefile b/drivers/gpu/stub/Makefile
-> new file mode 100644
-> index 0000000..cd940cc
-> --- /dev/null
-> +++ b/drivers/gpu/stub/Makefile
-> @@ -0,0 +1 @@
-> +obj-$(CONFIG_STUB_POULSBO) += poulsbo.o
-> diff --git a/drivers/gpu/stub/poulsbo.c b/drivers/gpu/stub/poulsbo.c
-> new file mode 100644
-> index 0000000..d8aa636
-> --- /dev/null
-> +++ b/drivers/gpu/stub/poulsbo.c
-> @@ -0,0 +1,63 @@
-> +/*
-> + * Intel Poulsbo Stub driver
-> + *
-> + * Copyright (C) 2010 Novell <jlee@novell.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2 as published by
-> + * the Free Software Foundation.
-> + *
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/pci.h>
-> +#include <acpi/video.h>
-> +
-> +#define DRIVER_NAME "poulsbo"
-> +
-> +enum {
-> +	CHIP_PSB_8108 = 0,
-> +	CHIP_PSB_8109 = 1,
-> +};
-> +
-> +static struct pci_device_id pciidlist[] = {
-> +	{0x8086, 0x8108, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_8108}, \
-> +	{0x8086, 0x8109, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_8109}, \
-> +	{0, 0, 0}
-> +};
-> +
-> +static int poulsbo_probe(struct pci_dev *pdev, const struct pci_device_id *id)
-> +{
-> +	return acpi_video_register();
-> +}
-> +
-> +static void poulsbo_remove(struct pci_dev *pdev)
-> +{
-> +	acpi_video_unregister();
-> +}
-> +
-> +static struct pci_driver poulsbo_driver = {
-> +	.name = DRIVER_NAME,
-> +	.id_table = pciidlist,
-> +	.probe = poulsbo_probe,
-> +	.remove = poulsbo_remove,
-> +};
-> +
-> +static int __init poulsbo_init(void)
-> +{
-> +	return pci_register_driver(&poulsbo_driver);
-> +}
-> +
-> +static void __exit poulsbo_exit(void)
-> +{
-> +	pci_unregister_driver(&poulsbo_driver);
-> +}
-> +
-> +module_init(poulsbo_init);
-> +module_exit(poulsbo_exit);
-> +
-> +MODULE_AUTHOR("Lee, Chun-Yi <jlee@novell.com>");
-> +MODULE_DESCRIPTION("Poulsbo Stub Driver");
-> +MODULE_LICENSE("GPL");
-> +
-> +MODULE_DEVICE_TABLE(pci, pciidlist);
-> diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-> index 8b31fdf..8807ae5 100644
-> --- a/drivers/video/Kconfig
-> +++ b/drivers/video/Kconfig
-> @@ -17,6 +17,8 @@ source "drivers/gpu/vga/Kconfig"
->  
->  source "drivers/gpu/drm/Kconfig"
->  
-> +source "drivers/gpu/stub/Kconfig"
-> +
->  config VGASTATE
->         tristate
->         default n
+> Is it okay to do this change?  I figured since spin_lock_irq() is part 
+> of the spinlock infrastructure it might to the right thing.
+> 
+
+In PREEMPT_RT all interrupts (besides the timer) is converted to a
+thread. The spin_lock_irq() will not disable interrupts in PREEMPT_RT,
+because it is not needed (irqs are threaded and wont cause a deadlock if
+they share the same spin_locks).
+
+Note, spin_locks used by the timer will must be raw_spin_lock(), and
+threaded context must disable interrupts for real before using it.
+
+-- Steve
+
 
