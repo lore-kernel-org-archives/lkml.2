@@ -1,71 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755103Ab0ISQxy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 12:53:54 -0400
-Received: from mx01.sz.bfs.de ([194.94.69.103]:60477 "EHLO mx01.sz.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755020Ab0ISQxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 12:53:53 -0400
-Message-ID: <4C96401C.1000707@bfs.de>
-Date: Sun, 19 Sep 2010 18:53:48 +0200
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
+	id S1755103Ab0ISRCR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 13:02:17 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42990 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753358Ab0ISRCO convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Sep 2010 13:02:14 -0400
 MIME-Version: 1.0
-To: Vasiliy Kulikov <segooon@gmail.com>
-CC: kernel-janitors@vger.kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/14] mca: fix device_register() error handling
-References: <1284900887-24327-1-git-send-email-segooon@gmail.com>
-In-Reply-To: <1284900887-24327-1-git-send-email-segooon@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100918155652.684071800@chello.nl>
+References: <20100918155326.478277313@chello.nl> <20100918155652.684071800@chello.nl>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 19 Sep 2010 10:01:12 -0700
+Message-ID: <AANLkTikkVZEGS=1_qbwPoG47twdbzrgWa85NEVD3TxMK@mail.gmail.com>
+Subject: Re: [PATCH 2/5] mm: stack based kmap_atomic
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Russell King <rmk@arm.linux.org.uk>,
+        David Howells <dhowells@redhat.com>,
+        Ralf Baechle <ralf@linux-mips.org>, David Miller <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>, Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Sep 18, 2010 at 8:53 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>
+>  usr/src/linux-2.6/drivers/gpu/drm/nouveau/nouveau_bios.c | 6832 ---------------
+>  29 files changed, 361 insertions(+), 7195 deletions(-)
 
+What's that odd 'usr/src/linux-2.6' file that you have and removed?
 
-Vasiliy Kulikov schrieb:
-> If device_register() fails then call put_device().
-> See comment to device_register.
-> 
-> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-> ---
->  I cannot compile this driver, so it is not tested at all.
-> 
->  drivers/mca/mca-bus.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/mca/mca-bus.c b/drivers/mca/mca-bus.c
-> index ada5ebb..7162f08 100644
-> --- a/drivers/mca/mca-bus.c
-> +++ b/drivers/mca/mca-bus.c
-> @@ -116,8 +116,10 @@ int __init mca_register_device(int bus, struct mca_device *mca_dev)
->  	mca_dev->dev.coherent_dma_mask = mca_dev->dma_mask;
->  
->  	rc = device_register(&mca_dev->dev);
-> -	if (rc)
-> +	if (rc) {
-> +		put_device(&mca_dev->dev);
->  		goto err_out;
-> +	}
->  
->  	rc = device_create_file(&mca_dev->dev, &dev_attr_id);
->  	if (rc) goto err_out_devreg;
-> @@ -154,6 +156,7 @@ struct mca_bus * __devinit mca_attach_bus(int bus)
->  	dev_set_name(&mca_bus->dev, "mca%d", bus);
->  	sprintf(mca_bus->name,"Host %s MCA Bridge", bus ? "Secondary" : "Primary");
->  	if (device_register(&mca_bus->dev)) {
-> +		put_device(&mca_bus->dev);
->  		kfree(mca_bus);
->  		return NULL;
->  	}
+You're using some seriously broken SCM there.
 
-just a minor: dev_set_name() is not check here. (But is in other places).
-
-re,
- wh
-
-
+                  Linus
