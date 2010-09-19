@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686Ab0ISTgM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 15:36:12 -0400
-Received: from mailhub.stratus.com ([134.111.1.18]:50678 "EHLO
-	mailhub5.stratus.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754325Ab0ISTgK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 15:36:10 -0400
-Date: Sun, 19 Sep 2010 15:36:01 -0400
-From: Bandan Das <bandan.das@stratus.com>
-To: David Miller <davem@davemloft.net>
-Cc: herbert@gondor.hengli.com.au, bandan.das@stratus.com, bunk@kernel.org,
-        eric.dumazet@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kaber@trash.net
-Subject: Re: [PATCH net-next-2.6] net/ipv4: push IP options to CB in
- ip_fragment
-Message-ID: <20100919193601.GG31036@stratus.com>
-References: <20100903044941.GA28300@gondor.apana.org.au>
- <20100915173209.GB9086@stratus.com>
- <20100917065117.GA9577@gondor.apana.org.au>
- <20100917.164356.22528384.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754325Ab0ISUCx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 16:02:53 -0400
+Received: from soto.provo.novell.com ([137.65.250.214]:33432 "EHLO
+	soto.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752357Ab0ISUCw convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-ghaskins@novell.com:3:2>);
+	Sun, 19 Sep 2010 16:02:52 -0400
+Message-Id: <4C9634230200005A00072005@soto.provo.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.2 
+Date: Sun, 19 Sep 2010 14:02:43 -0600
+From: "Gregory Haskins" <ghaskins@novell.com>
+To: "Tejun Heo" <tj@kernel.org>, "Avi Kivity" <avi@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        "Marcelo Tosatti" <mtosatti@redhat.com>, <kvm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kvm: fix irqfd assign/deassign race
+References: <20100919170231.GA12620@redhat.com>
+In-Reply-To: <20100919170231.GA12620@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20100917.164356.22528384.davem@davemloft.net>
-Company: Stratus Technologies
-X-Disclaimer: This email will auto delete in 5 days, nah.. I am kidding!
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-OriginalArrivalTime: 19 Sep 2010 19:36:02.0114 (UTC) FILETIME=[E48AE220:01CB5831]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On  0, David Miller <davem@davemloft.net> wrote:
-> From: Herbert Xu <herbert@gondor.apana.org.au>
-> Date: Fri, 17 Sep 2010 14:51:17 +0800
+>>> On 9/19/2010 at 01:02 PM, in message <20100919170231.GA12620@redhat.com>,
+"Michael S. Tsirkin" <mst@redhat.com> wrote: 
+> I think I see the following (theoretical) race:
 > 
-> > On Wed, Sep 15, 2010 at 01:32:09PM -0400, Bandan Das wrote:
-> >>
-> >> Sorry for the late response. Here's a patch that I put up based on Herbert's
-> >> suggestions. I ofcourse don't see the problem anymore after 
-> >> commit 87f94b4e91dc042620c527f3c30c37e5127ef757 but a generic helper such as this 
-> >> can be used anytime the bridge code is sending a packet over to the IP layer. 
-> >> Compile tested only but based on responses, will test it before submitting a 
-> >> final change. Also added it at two places where I know we do send a packet over to
-> >> the IP layer. I will add it at other places later as I come across them.
-> > 
-> > Looks fine to me.
+> During irqfd assign, we drop irqfds lock before we
+> schedule inject work. Therefore, deassign running
+> on another CPU could cause shutdown and flush to run
+> before inject, causing user after free in inject.
 > 
-> Bandan, please submit this formally with proper commit message,
-> signoff, also the new function you added needs a minor coding
-> style fix, there needs to be a space after "if" and the openning
-> left parenthesis.
-> 
-> Thanks.
+> A simple fix it to schedule inject under the lock.
 
-Submitted. And also incorporated the coding style fixes you mentioned.
+I swear there was some reason why the schedule_work() was done outside of the lock, but I can't for the life of me remember why anymore (it obviously was a failing on my part to _comment_ why if there was such a reason).  So, short of recalling what that reason was, and the fact that Michael's theory seems rational and legit... 
 
-Thanks
-Bandan
+Acked-by: Gregory Haskins <ghaskins@novell.com>
+
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+> 
+> If the issue is real, this might be a 2.6.36 and -stable
+> candidate. Comments?
+> 
+>  virt/kvm/eventfd.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+> index 66cf65b..c1f1e3c 100644
+> --- a/virt/kvm/eventfd.c
+> +++ b/virt/kvm/eventfd.c
+> @@ -218,7 +218,6 @@ kvm_irqfd_assign(struct kvm *kvm, int fd, int gsi)
+>  	events = file->f_op->poll(file, &irqfd->pt);
+>  
+>  	list_add_tail(&irqfd->list, &kvm->irqfds.items);
+> -	spin_unlock_irq(&kvm->irqfds.lock);
+>  
+>  	/*
+>  	 * Check if there was an event already pending on the eventfd
+> @@ -227,6 +226,8 @@ kvm_irqfd_assign(struct kvm *kvm, int fd, int gsi)
+>  	if (events & POLLIN)
+>  		schedule_work(&irqfd->inject);
+>  
+> +	spin_unlock_irq(&kvm->irqfds.lock);
+> +
+>  	/*
+>  	 * do not drop the file until the irqfd is fully initialized, otherwise
+>  	 * we might race against the POLLHUP
+
+
+
+
