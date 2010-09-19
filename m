@@ -1,50 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752374Ab0ISI6O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 04:58:14 -0400
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:48204 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751790Ab0ISI6M (ORCPT
+	id S1753044Ab0ISJ2t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 05:28:49 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:55877 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752187Ab0ISJ2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 04:58:12 -0400
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH] hid: 3m: Output proper orientation range
-Date: Sun, 19 Sep 2010 10:56:23 +0200
-Message-Id: <1284886583-30965-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.7.1
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1OxFhG-0005UI-Cl.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1OxFhG-0005UI-Cl 814422b156fd69fd5e3caeeeef3403fa
+	Sun, 19 Sep 2010 05:28:46 -0400
+From: Pekka Enberg <penberg@kernel.org>
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Lars Lindley <lindley@coyote.org>, Pavel Machek <pavel@ucw.cz>,
+        Ruslan Pisarev <ruslan@rpisarev.org.ua>
+Subject: [PATCH 3/7] w35und: Kill unused scan_s.h header
+Date: Sun, 19 Sep 2010 12:28:39 +0300
+Message-Id: <1284888523-9625-3-git-send-email-penberg@kernel.org>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1284888523-9625-2-git-send-email-penberg@kernel.org>
+References: <1284888523-9625-1-git-send-email-penberg@kernel.org>
+ <1284888523-9625-2-git-send-email-penberg@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The range of orientation values for height/width devices should
-be [0, 1], but is currently set to [1, 1]. Having min == max also
-breaks uinput device setup. Fixed with this patch.
+The scan_s.h header is not actually used for anything so just kill it off.
 
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Cc: Lars Lindley <lindley@coyote.org>
+Cc: Pavel Machek <pavel@ucw.cz>
+Cc: Ruslan Pisarev <ruslan@rpisarev.org.ua>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
 ---
- drivers/hid/hid-3m-pct.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/staging/winbond/mds_s.h  |    1 -
+ drivers/staging/winbond/scan_s.h |   57 --------------------------------------
+ 2 files changed, 0 insertions(+), 58 deletions(-)
+ delete mode 100644 drivers/staging/winbond/scan_s.h
 
-diff --git a/drivers/hid/hid-3m-pct.c b/drivers/hid/hid-3m-pct.c
-index cd4b125..860d47c 100644
---- a/drivers/hid/hid-3m-pct.c
-+++ b/drivers/hid/hid-3m-pct.c
-@@ -110,7 +110,7 @@ static int mmm_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 			input_set_abs_params(hi->input, ABS_MT_TOUCH_MINOR,
- 					     f1, f2, df / SN_WIDTH, 0);
- 			input_set_abs_params(hi->input, ABS_MT_ORIENTATION,
--					1, 1, 0, 0);
-+					0, 1, 0, 0);
- 			return 1;
- 		case HID_DG_CONTACTID:
- 			field->logical_maximum = MAX_TRKID;
+diff --git a/drivers/staging/winbond/mds_s.h b/drivers/staging/winbond/mds_s.h
+index 89328c5..e2de4bd 100644
+--- a/drivers/staging/winbond/mds_s.h
++++ b/drivers/staging/winbond/mds_s.h
+@@ -7,7 +7,6 @@
+ 
+ #include "localpara.h"
+ #include "mac_structures.h"
+-#include "scan_s.h"
+ 
+ /* Preamble_Type, see <SFS-802.11G-MIB-203> */
+ enum {
+diff --git a/drivers/staging/winbond/scan_s.h b/drivers/staging/winbond/scan_s.h
+deleted file mode 100644
+index 85cdf3b..0000000
+--- a/drivers/staging/winbond/scan_s.h
++++ /dev/null
+@@ -1,57 +0,0 @@
+-#ifndef __WINBOND_SCAN_S_H
+-#define __WINBOND_SCAN_S_H
+-
+-#include <linux/types.h>
+-#include "localpara.h"
+-
+-/*
+- * SCAN task global CONSTANTS, STRUCTURES, variables
+- */
+-
+-/* define the msg type of SCAN module */
+-#define SCANMSG_SCAN_REQ		0x01
+-#define SCANMSG_BEACON			0x02
+-#define SCANMSG_PROBE_RESPONSE		0x03
+-#define SCANMSG_TIMEOUT			0x04
+-#define SCANMSG_TXPROBE_FAIL		0x05
+-#define SCANMSG_ENABLE_BGSCAN		0x06
+-#define SCANMSG_STOP_SCAN		0x07
+-
+-/*
+- * BSS Type =>conform to
+- * IBSS             : ToDS/FromDS = 00
+- * Infrastructure   : ToDS/FromDS = 01
+- */
+-#define IBSS_NET			0
+-#define ESS_NET				1
+-#define ANYBSS_NET			2
+-
+-/* Scan Type */
+-#define ACTIVE_SCAN			0
+-#define PASSIVE_SCAN			1
+-
+-/*
+- * ===========================================================
+- *	scan.h
+- *		Define the related definitions of scan module
+- *
+- * ===========================================================
+- */
+-
+-/* Define the state of scan module */
+-#define SCAN_INACTIVE			0
+-#define WAIT_PROBE_DELAY		1
+-#define WAIT_RESPONSE_MIN		2
+-#define WAIT_RESPONSE_MAX_ACTIVE	3
+-#define WAIT_BEACON_MAX_PASSIVE		4
+-#define SCAN_COMPLETE			5
+-#define BG_SCAN				6
+-#define BG_SCANNING			7
+-
+-
+-/*
+- * The value will load from EEPROM
+- * If 0xff is set in EEPOM, the driver will use SCAN_MAX_CHNL_TIME instead.
+- * The definition is in WbHal.h
+- */
+-#endif
 -- 
-1.7.1
+1.6.3.3
 
