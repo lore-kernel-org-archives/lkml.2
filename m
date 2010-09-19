@@ -1,30 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754477Ab0IRX7X (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 19:59:23 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:57987 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753804Ab0IRX7W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 19:59:22 -0400
-Date: Sun, 19 Sep 2010 00:59:20 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Joe Perches <joe@perches.com>, g@linux-mips.org
-Cc: Jiri Kosina <trivial@kernel.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/11] arch/mips: Remove pr_<level> uses of KERN_<level>
-Message-ID: <20100918235920.GA31231@linux-mips.org>
-References: <cover.1284267142.git.joe@perches.com>
- <c3b4d799ec7338f31638d90bef10d3d89208ae89.1284267142.git.joe@perches.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <c3b4d799ec7338f31638d90bef10d3d89208ae89.1284267142.git.joe@perches.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1754394Ab0ISAOJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 20:14:09 -0400
+Received: from mga01.intel.com ([192.55.52.88]:13094 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753440Ab0ISAOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 20:14:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,387,1280732400"; 
+   d="scan'208";a="838901631"
+Subject: Re: 7ad6e9435596f692ff65f399da12816c94960185 breaks AMD f10h.
+From: Huang Ying <ying.huang@intel.com>
+To: Conny Seidel <conny.seidel@amd.com>, "Brown, Len" <len.brown@intel.com>
+Cc: Andi Kleen <ak@linux.intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        "borislav.petkov@" <amd.com.borislav.petkov@amd.com>,
+        Jin Dongming <jin.dongming@np.css.fujitsu.com>
+In-Reply-To: <20100917145625.75d2a412@marah.osrc.amd.com>
+References: <20100917145625.75d2a412@marah.osrc.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 19 Sep 2010 08:14:06 +0800
+Message-ID: <1284855246.32373.291.camel@yhuang-dev>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, applied.
+Hi, Conny,
 
-  Ralf
+On Fri, 2010-09-17 at 20:56 +0800, Conny Seidel wrote:
+> Hi,
+> 
+> Kernel v2.6.36-rc4-134-g03a7ab0 breaks with the OOPS below.
+> 
+> Reverting the commitid in the subject fixes the issue.
+> This is because APEI is selected by default on X86 (X86 && ACPI),
+> maybe a vendor check in the hest_init() might make sense.
+
+It seems that Dongming has reported and fixed this BUG. Please try this
+fixes:
+
+http://lkml.org/lkml/2010/9/2/52
+
+Hi, Len,
+
+Can you apply the BUG FIX?
+
+Best Regards,
+Huang Ying
+
+
