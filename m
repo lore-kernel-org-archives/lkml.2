@@ -1,37 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753649Ab0ISULR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 16:11:17 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57845 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752021Ab0ISULQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 16:11:16 -0400
+	id S1753132Ab0ISUPl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 16:15:41 -0400
+Received: from mx.ij.cx ([212.13.201.15]:62403 "EHLO wes.ijneb.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751015Ab0ISUPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Sep 2010 16:15:40 -0400
+Date: Sun, 19 Sep 2010 21:15:37 +0100 (BST)
+From: Mark Hills <mark@pogo.org.uk>
+To: David Woodhouse <dwmw2@infradead.org>
+cc: linux-kernel@vger.kernel.org
+Subject: make headers_install
+Message-ID: <alpine.LNX.2.01.1009192055520.28631@fgnk.ybpnyqbznva>
 MIME-Version: 1.0
-In-Reply-To: <20100918010300.0194C403E8@magilla.sf.frob.com>
-References: <20100918010300.0194C403E8@magilla.sf.frob.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 19 Sep 2010 13:10:55 -0700
-Message-ID: <AANLkTi=5XK69B1hJt7H0Tpa=QE8CQ340voG8oCTWvgkX@mail.gmail.com>
-Subject: Re: [PATCH] default CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
-To: Roland McGrath <roland@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SA-Exim-Connect-IP: 82.28.218.61
+X-SA-Exim-Mail-From: mark@pogo.org.uk
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 17, 2010 at 6:02 PM, Roland McGrath <roland@redhat.com> wrote:
-> The userland ELF tools have been coping with partial-segments core
-> files for a few years now.  Multiple distro builds are now setting
-> this option.  It behooves everyone who ever deals with core files to
-> have more info dumped in there, especially as more and more people's
-> compilers are producing build IDs.  Make it the default.
+Hi David, I tried to update my kernel headers using the instructions in 
+Documentation/make/headers_install.txt. I followed the example:
 
-Ok, I can do this next merge window, but it's not appropriate for my tree now.
+  make headers_install INSTALL_HDR_PATH=/usr/include
 
-So either Andrew tracks this, or you'll need to re-send it when we're
-not in the -rc phase.
+but it installed them in /usr/include/include. So I modified the path:
 
-                   Linus
+  make headers_install INSTALL_HDR_PATH=/usr
+
+The command installed the headers, but then automatically deleted 
+/usr/include/*.h (nasty!). This is with kernel 2.6.35.4.
+
+Do the docs need an update (and I should always be installing to a staging 
+area?) Or is this a bug in the process -- where is should be removing 
+unknown files in /usr/include/linux or similar?
+
+I seem to remember that I used to be able to install headers direct to the 
+system, is this still the case?
+
+Thanks
+
+-- 
+Mark
