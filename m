@@ -1,144 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508Ab0ISJ3E (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 05:29:04 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:55893 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752858Ab0ISJ2s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752744Ab0ISJ2s (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 19 Sep 2010 05:28:48 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:41408 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751790Ab0ISJ2q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Sep 2010 05:28:46 -0400
 From: Pekka Enberg <penberg@kernel.org>
 To: gregkh@suse.de
 Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
         Lars Lindley <lindley@coyote.org>, Pavel Machek <pavel@ucw.cz>,
         Ruslan Pisarev <ruslan@rpisarev.org.ua>
-Subject: [PATCH 5/7] w35und: Inline mlme_s.h to core.h
-Date: Sun, 19 Sep 2010 12:28:41 +0300
-Message-Id: <1284888523-9625-5-git-send-email-penberg@kernel.org>
+Subject: [PATCH 1/7] w35und: Kill dead HAL macros in wbhal_f.h
+Date: Sun, 19 Sep 2010 12:28:37 +0300
+Message-Id: <1284888523-9625-1-git-send-email-penberg@kernel.org>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1284888523-9625-4-git-send-email-penberg@kernel.org>
-References: <1284888523-9625-1-git-send-email-penberg@kernel.org>
- <1284888523-9625-2-git-send-email-penberg@kernel.org>
- <1284888523-9625-3-git-send-email-penberg@kernel.org>
- <1284888523-9625-4-git-send-email-penberg@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mlme_s.h header is included in one place. As the header is very small, just
-inline it to core.h.
+Fixes an uninitialized variable access in _rx_iq_calibration_loop_winbond():
+
+    CC [M]  drivers/staging/winbond/phy_calibration.o
+  drivers/staging/winbond/phy_calibration.c: In function ‘_rx_iq_calibration_loop_winbond’:
+  drivers/staging/winbond/phy_calibration.c:1138: warning: ‘val’ is used uninitialized in this function
 
 Cc: Lars Lindley <lindley@coyote.org>
 Cc: Pavel Machek <pavel@ucw.cz>
 Cc: Ruslan Pisarev <ruslan@rpisarev.org.ua>
 Signed-off-by: Pekka Enberg <penberg@kernel.org>
 ---
- drivers/staging/winbond/core.h   |   35 +++++++++++++++++++++++++++++-
- drivers/staging/winbond/mlme_s.h |   44 --------------------------------------
- 2 files changed, 34 insertions(+), 45 deletions(-)
- delete mode 100644 drivers/staging/winbond/mlme_s.h
+ drivers/staging/winbond/phy_calibration.c |   20 --------------------
+ drivers/staging/winbond/wbhal_f.h         |   10 ----------
+ 2 files changed, 0 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/staging/winbond/core.h b/drivers/staging/winbond/core.h
-index 2e9f02a..294d371 100644
---- a/drivers/staging/winbond/core.h
-+++ b/drivers/staging/winbond/core.h
-@@ -1,12 +1,45 @@
- #ifndef __WINBOND_CORE_H
- #define __WINBOND_CORE_H
+diff --git a/drivers/staging/winbond/phy_calibration.c b/drivers/staging/winbond/phy_calibration.c
+index 5c1f053..2b375ba 100644
+--- a/drivers/staging/winbond/phy_calibration.c
++++ b/drivers/staging/winbond/phy_calibration.c
+@@ -1132,18 +1132,6 @@ u8 _rx_iq_calibration_loop_winbond(struct hw_data *phw_data, u16 factor, u32 fre
+ 	PHY_DEBUG(("[CAL] -> [5]_rx_iq_calibration_loop()\n"));
+ 	PHY_DEBUG(("[CAL] ** factor = %d\n", factor));
  
-+#include <linux/spinlock.h>
- #include <linux/wireless.h>
-+#include <linux/types.h>
+-
+-/* RF Control Override */
+-	hw_get_cxx_reg(phw_data, 0x80, &val);
+-	val |= BIT(19);
+-	hw_set_cxx_reg(phw_data, 0x80, val);
+-
+-/* RF_Ctrl */
+-	hw_get_cxx_reg(phw_data, 0xE4, &val);
+-	val |= BIT(0);
+-	hw_set_cxx_reg(phw_data, 0xE4, val);
+-	PHY_DEBUG(("[CAL] ** RF_CTRL(0xE4) = 0x%08X", val));
+-
+ 	hw_set_dxx_reg(phw_data, 0x58, 0x44444444); /* IQ_Alpha */
  
--#include "mlme_s.h"
- #include "wbhal_s.h"
- #include "mto.h"
+ 	/* b. */
+@@ -1461,13 +1449,8 @@ void phy_calibration_winbond(struct hw_data *phw_data, u32 frequency)
  
-+#include "mac_structures.h"
-+#include "mds_s.h"
-+
-+#define MAX_NUM_TX_MMPDU		2
-+#define MAX_MMPDU_SIZE			1512
-+#define MAX_NUM_RX_MMPDU		6
-+
-+struct mlme_frame {
-+	s8		*pMMPDU;
-+	u16		len;
-+	u8		DataType;
-+	u8		IsInUsed;
-+
-+	spinlock_t	MLMESpinLock;
-+
-+	u8		TxMMPDU[MAX_NUM_TX_MMPDU][MAX_MMPDU_SIZE];
-+	u8		TxMMPDUInUse[(MAX_NUM_TX_MMPDU + 3) & ~0x03];
-+
-+	u16		wNumTxMMPDU;
-+	u16		wNumTxMMPDUDiscarded;
-+
-+	u8		RxMMPDU[MAX_NUM_RX_MMPDU][MAX_MMPDU_SIZE];
-+	u8		SaveRxBufSlotInUse[(MAX_NUM_RX_MMPDU + 3) & ~0x03];
-+
-+	u16		wNumRxMMPDU;
-+	u16		wNumRxMMPDUDiscarded;
-+
-+	u16		wNumRxMMPDUInMLME;	/* Number of the Rx MMPDU */
-+	u16		reserved_1;		/*  in MLME. */
-+						/*  excluding the discarded */
-+};
-+
- #define WBLINUX_PACKET_ARRAY_SIZE (ETHERNET_TX_DESCRIPTORS*4)
+ 	PHY_DEBUG(("[CAL] -> phy_calibration_winbond()\n"));
  
- #define WB_MAX_LINK_NAME_LEN 40
-diff --git a/drivers/staging/winbond/mlme_s.h b/drivers/staging/winbond/mlme_s.h
-deleted file mode 100644
-index 0e7d2f6..0000000
---- a/drivers/staging/winbond/mlme_s.h
-+++ /dev/null
-@@ -1,44 +0,0 @@
--#ifndef __WINBOND_MLME_H
--#define __WINBOND_MLME_H
+-	/* 20040701 1.1.25.1000 kevin */
+-	hw_get_cxx_reg(phw_data, 0x80, &mac_ctrl);
+-	hw_get_cxx_reg(phw_data, 0xE4, &rf_ctrl);
+ 	hw_get_dxx_reg(phw_data, 0x58, &iq_alpha);
+ 
 -
--#include <linux/types.h>
--#include <linux/spinlock.h>
 -
--#include "mac_structures.h"
--#include "mds_s.h"
+ 	_rxadc_dc_offset_cancellation_winbond(phw_data, frequency);
+ 	/* _txidac_dc_offset_cancellation_winbond(phw_data); */
+ 	/* _txqdac_dc_offset_cacellation_winbond(phw_data); */
+@@ -1482,11 +1465,8 @@ void phy_calibration_winbond(struct hw_data *phw_data, u32 frequency)
+ 	PHY_DEBUG(("[CAL]    MODE_CTRL (write) = 0x%08X\n", reg_mode_ctrl));
+ 
+ 	/* i. Set RFIC to "Normal mode" */
+-	hw_set_cxx_reg(phw_data, 0x80, mac_ctrl);
+-	hw_set_cxx_reg(phw_data, 0xE4, rf_ctrl);
+ 	hw_set_dxx_reg(phw_data, 0x58, iq_alpha);
+ 
 -
--/*
-- * ==============================================
-- * Global data structures
-- * ==============================================
-- */
--#define MAX_NUM_TX_MMPDU		2
--#define MAX_MMPDU_SIZE			1512
--#define MAX_NUM_RX_MMPDU		6
+ 	/*********************************************************************/
+ 	phy_init_rf(phw_data);
+ 
+diff --git a/drivers/staging/winbond/wbhal_f.h b/drivers/staging/winbond/wbhal_f.h
+index 401c024..fc78c14 100644
+--- a/drivers/staging/winbond/wbhal_f.h
++++ b/drivers/staging/winbond/wbhal_f.h
+@@ -78,14 +78,4 @@ u32 hal_get_bss_pk_cnt(struct hw_data *hw_data);
+ #define hal_get_time_count(_P)		(_P->time_count / 10)
+ #define hal_detect_error(_P)		(_P->WbUsb.DetectCount)
+ 
+-/* The follow function is unused for IS89C35 */
+-#define hal_disable_interrupt(_A)
+-#define hal_enable_interrupt(_A)
+-#define hal_get_interrupt_type(_A)
+-#define hal_get_clear_interrupt(_A)
+ #define hal_ibss_disconnect(_A)		(hal_stop_sync_bss(_A))
+-#define hal_join_request_stop(_A)
+-#define hw_get_cxx_reg(_A, _B, _C)
+-#define hw_set_cxx_reg(_A, _B, _C)
 -
--struct mlme_frame {
--	s8		*pMMPDU;
--	u16		len;
--	u8		DataType;
--	u8		IsInUsed;
 -
--	spinlock_t	MLMESpinLock;
--
--	u8		TxMMPDU[MAX_NUM_TX_MMPDU][MAX_MMPDU_SIZE];
--	u8		TxMMPDUInUse[(MAX_NUM_TX_MMPDU + 3) & ~0x03];
--
--	u16		wNumTxMMPDU;
--	u16		wNumTxMMPDUDiscarded;
--
--	u8		RxMMPDU[MAX_NUM_RX_MMPDU][MAX_MMPDU_SIZE];
--	u8		SaveRxBufSlotInUse[(MAX_NUM_RX_MMPDU + 3) & ~0x03];
--
--	u16		wNumRxMMPDU;
--	u16		wNumRxMMPDUDiscarded;
--
--	u16		wNumRxMMPDUInMLME;	/* Number of the Rx MMPDU */
--	u16		reserved_1;		/*  in MLME. */
--						/*  excluding the discarded */
--};
--
--#endif
 -- 
 1.6.3.3
 
