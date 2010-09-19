@@ -1,44 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755321Ab0ISCrJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 22:47:09 -0400
-Received: from mx1.orcon.net.nz ([219.88.242.51]:56043 "EHLO mx1.orcon.net.nz"
+	id S1755828Ab0ISCro (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 22:47:44 -0400
+Received: from gate.crashing.org ([63.228.1.57]:59006 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753321Ab0ISCrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 22:47:07 -0400
-Message-ID: <4C9579A1.5030009@orcon.net.nz>
-Date: Sun, 19 Sep 2010 14:46:57 +1200
-From: Michael Cree <mcree@orcon.net.nz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100913 Icedove/3.0.7
-MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: linux-kernel@vger.kernel.org, Richard Henderson <rth@twiddle.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arch@vger.kernel.org, linux-alpha@vger.kernel.org,
-        mattst88@gmail.com
-Subject: Re: [PATCH 1/4] alpha: belated ERESTART_RESTARTBLOCK race fix
-References: <20100918083846.GA31363@ZenIV.linux.org.uk>
-In-Reply-To: <20100918083846.GA31363@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755231Ab0ISCrm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 22:47:42 -0400
+Subject: Re: memory barrier question
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        dhowells@redhat.com, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+In-Reply-To: <20100917231222.GA3060@linux.vnet.ibm.com>
+References: <E1Ovt6F-0005CS-RU@pomaz-ex.szeredi.hu>
+	 <3777.1284638136@redhat.com> <6383.1284647456@redhat.com>
+	 <20100916150356.GD2462@linux.vnet.ibm.com>
+	 <E1OwGz7-0007Cu-CC@pomaz-ex.szeredi.hu>
+	 <20100916163708.GG2462@linux.vnet.ibm.com>
+	 <E1OwHkg-0007IX-DH@pomaz-ex.szeredi.hu>
+	 <1284656978.26423.11.camel@mulgrave.site>
+	 <E1OwI5H-0007LR-DC@pomaz-ex.szeredi.hu>
+	 <1284760148.30449.107.camel@pasglop>
+	 <20100917231222.GA3060@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 19 Sep 2010 12:47:01 +1000
+Message-ID: <1284864421.30449.113.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-DSPAM-Check: by mx1.orcon.net.nz on Sun, 19 Sep 2010 14:47:07 +1200
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Sun Sep 19 14:47:07 2010
-X-DSPAM-Confidence: 0.6091
-X-DSPAM-Probability: 0.0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/09/10 20:38, Al Viro wrote:
-> same thing as had been done on other targets back in 2003 -
-> move setting ->restart_block.fn into {rt_,}sigreturn().
->
-> Signed-off-by: Al Viro<viro@zeniv.linux.org.uk>
+On Fri, 2010-09-17 at 16:12 -0700, Paul E. McKenney wrote:
+> On Sat, Sep 18, 2010 at 07:49:08AM +1000, Benjamin Herrenschmidt wrote:
+> > 
+> > > Right but in the concrete namei example I can't see how a compiler
+> > > optimization can make a difference.  The order of the loads is quite
+> > > clear:
+> > > 
+> > >    LOAD inode = next.dentry->inode
+> > >    if (inode != NULL)
+> > >    	LOAD inode->f_op
+> > > 
+> > > What is there the compiler can optimize?
+> > 
+> > Those two loads depend on each other, I don't think any implementation
+> > can re-order them. In fact, such data dependency is typically what is
+> > used to avoid having barriers in some cases. The second load cannot be
+> > issued until the value from the first one is returned.
+> 
+> Sufficiently sadistic compiler and CPU implementations could do value
+> speculation, for example, driven by profile-feedback optimization.
+> Then the guess might initially incorrect, but then a store by some other
+> CPU could make the subsequent test decide (wrongly) that the guess had
+> in fact been correct.
+> 
+> Needless to say, I am not a fan of value speculation.  But other people
+> do like it a lot.
 
-For the patch series:
+Well, this verges on insanity... we get to a point where nobody's going
+to get any code right :-)
 
-Tested-by: Michael Cree <mcree@orcon.net.nz>
+I don't think the powerpc arch allows that, that leaves us with the
+compiler, but so far I don't think gcc is -that- crazy. Those constructs
+are common enough...
 
-Cheers
-Michael.
+Cheers,
+Ben.
+
+
