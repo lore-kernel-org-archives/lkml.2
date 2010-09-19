@@ -1,68 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623Ab0ISAUi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 20:20:38 -0400
-Received: from mga01.intel.com ([192.55.52.88]:19181 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753440Ab0ISAUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 20:20:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,387,1280732400"; 
-   d="scan'208";a="608206604"
-Subject: Re: [RFC 3/6] x86, NMI, Rename memory parity error to PCI SERR
- error
-From: Huang Ying <ying.huang@intel.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-In-Reply-To: <20100917091454.GL13563@erda.amd.com>
-References: <1284087065-32722-1-git-send-email-ying.huang@intel.com>
-	 <1284087065-32722-3-git-send-email-ying.huang@intel.com>
-	 <20100913010248.GH21909@erda.amd.com>
-	 <1284343326.3269.70.camel@yhuang-dev.sh.intel.com>
-	 <20100916081806.GV13563@erda.amd.com>
-	 <1284682105.32373.11.camel@yhuang-dev>
-	 <20100917091454.GL13563@erda.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 19 Sep 2010 08:20:35 +0800
-Message-ID: <1284855635.32373.298.camel@yhuang-dev>
+	id S1754727Ab0ISAg7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 20:36:59 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:40792 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753661Ab0ISAg6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 20:36:58 -0400
+Date: Sun, 19 Sep 2010 01:59:03 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "Joshua Hintze" <joshh@imsar.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-ide@vger.kernel.org>
+Subject: Re: PATA IDE is slower in newer versions of kernel
+Message-ID: <20100919015903.49606426@lxorguk.ukuu.org.uk>
+In-Reply-To: <010901cb5754$ae6735a0$0b35a0e0$@com>
+References: <00d401cb55f7$33a78210$9af68630$@com>
+	<20100917154732.330c4b1b@varda>
+	<010901cb5754$ae6735a0$0b35a0e0$@com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-09-17 at 17:14 +0800, Robert Richter wrote:
-> On 16.09.10 20:08:25, Huang Ying wrote:
-> > On Thu, 2010-09-16 at 16:18 +0800, Robert Richter wrote:
-> > > On 12.09.10 22:02:06, Huang Ying wrote:
-> > > > > Haven't you introduced *_MEMPAR with patch 1/6?
-> > > > 
-> > > > Yes. And I suggest to rename it to *_SERR in this patch to reflect the
-> > > > contemporary hardware better. I think they are two steps: naming the
-> > > > magic number and changing the name of constant and function.
-> > > 
-> > > Hmm, I would rather avoid introducing a name and then immediatly
-> > > renaming it again.
-> > 
-> > I split them into two patches because there is function named as
-> > mem_parity_error already. The 1/6 names constants as *_MEMPAR to make it
-> > consistent with mem_parity_error(). 3/6 rename both the constants,
-> > function name and some string/comments to serr. Do you think this is
-> > more clean?
-> 
-> If I am not wrong the only real functional change is to rip out the
-> edac handler. So, just introduce the final names with your renaming in
-> patch #1 (and maybe make a comment in the commit message or change
-> patch order).
+> I'm dedicated to continue working on the problem, I just need to advice from the linux community. I've tried different I/O schedulers such as noop and anticipatory and I'm studying the ide-dma code but still lost to where this is happening.
 
-If I merge the 1/6 and 3/6, can you suggest a patch subject, "Add symbol
-definition for NMI magic constants and rename memory parity to PCI
-SERR"?
+drivers/ide is pretty much obsolete - so what you are seeing is doubly
+odd. Most stuff now is using the newer drivers/ata code which can support
+SATA, NCQ etc unlike the old codebase.
 
-Best Regards,
-Huang Ying
+One thing to check would be whether using the drivers/ata code shows the
+same problem.
 
-
+Alan
