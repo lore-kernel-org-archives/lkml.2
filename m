@@ -1,86 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601Ab0ISJ3k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 05:29:40 -0400
-Received: from filtteri2.pp.htv.fi ([213.243.153.185]:58098 "EHLO
-	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752343Ab0ISJ2q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 05:28:46 -0400
+	id S1753583Ab0ISJa3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 05:30:29 -0400
+Received: from freeflow.nu ([178.79.134.28]:50800 "EHLO freeflow.nu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752568Ab0ISJa1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Sep 2010 05:30:27 -0400
+Message-ID: <4C95D82F.2080001@kernel.org>
+Date: Sun, 19 Sep 2010 12:30:23 +0300
 From: Pekka Enberg <penberg@kernel.org>
-To: gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        Lars Lindley <lindley@coyote.org>, Pavel Machek <pavel@ucw.cz>,
-        Ruslan Pisarev <ruslan@rpisarev.org.ua>
-Subject: [PATCH 6/7] w35und: Remove unused spinlocks
-Date: Sun, 19 Sep 2010 12:28:42 +0300
-Message-Id: <1284888523-9625-6-git-send-email-penberg@kernel.org>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1284888523-9625-5-git-send-email-penberg@kernel.org>
-References: <1284888523-9625-1-git-send-email-penberg@kernel.org>
- <1284888523-9625-2-git-send-email-penberg@kernel.org>
- <1284888523-9625-3-git-send-email-penberg@kernel.org>
- <1284888523-9625-4-git-send-email-penberg@kernel.org>
- <1284888523-9625-5-git-send-email-penberg@kernel.org>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: "Luis R. Rodriguez" <lrodriguez@atheros.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        mcgrof@gmail.com, Julia Lawall <julia@diku.dk>,
+        Nicolas Palix <npalix@diku.dk>,
+        Yoann Padioleau <yoann.padioleau@gmail.com>
+Subject: Re: [PATCH v2] scripts: add typdef removal tool
+References: <1250228384-19823-1-git-send-email-lrodriguez@atheros.com>	 <AANLkTi==_Tvt6hosvfKDdd9uivsa5SVPiqSHNg5Ob3-v@mail.gmail.com> <1284886192.1778.94.camel@Joe-Laptop>
+In-Reply-To: <1284886192.1778.94.camel@Joe-Laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes unused spinlocks from "struct mlme_frame" and "struct
-wbsoft_priv".
+  On 19.9.2010 11.49, Joe Perches wrote:
+> On Sun, 2010-09-19 at 11:19 +0300, Pekka Enberg wrote:
+>> On Fri, Aug 14, 2009 at 8:39 AM, Luis R. Rodriguez
+>> <lrodriguez@atheros.com>  wrote:
+>>> If you are porting drivers and need to remove tydpefs you can use
+>>> this to help you port the driver faster. Until we don't have a fully
+>>> correct and complete way to do this through Coccinelle spatch we
+>>> might as well help developers porting drivers with something. spatch
+>>> also has a learning curve, people working on staging may not end
+>>> up using it for a while.
+>> How come this script never made it to the kernel tree?
+> General lack of interest?
+>
+> Probably the same reason that similar patches didn't.
+> https://patchwork.kernel.org/patch/88026/
+Scripts like these are sure handy when dealing with the crap in staging 
+tree. Maybe we can convince Greg to take them in.
 
-Cc: Lars Lindley <lindley@coyote.org>
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: Ruslan Pisarev <ruslan@rpisarev.org.ua>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
----
- drivers/staging/winbond/core.h  |    5 -----
- drivers/staging/winbond/wbusb.c |    2 --
- 2 files changed, 0 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/staging/winbond/core.h b/drivers/staging/winbond/core.h
-index 294d371..333b197 100644
---- a/drivers/staging/winbond/core.h
-+++ b/drivers/staging/winbond/core.h
-@@ -1,7 +1,6 @@
- #ifndef __WINBOND_CORE_H
- #define __WINBOND_CORE_H
- 
--#include <linux/spinlock.h>
- #include <linux/wireless.h>
- #include <linux/types.h>
- 
-@@ -21,8 +20,6 @@ struct mlme_frame {
- 	u8		DataType;
- 	u8		IsInUsed;
- 
--	spinlock_t	MLMESpinLock;
--
- 	u8		TxMMPDU[MAX_NUM_TX_MMPDU][MAX_MMPDU_SIZE];
- 	u8		TxMMPDUInUse[(MAX_NUM_TX_MMPDU + 3) & ~0x03];
- 
-@@ -57,8 +54,6 @@ struct wbsoft_priv {
- 	struct hw_data sHwData;	/*For HAL */
- 	struct wb35_mds Mds;
- 
--	spinlock_t SpinLock;
--
- 	atomic_t ThreadCount;
- 
- 	u32 RxByteCount;
-diff --git a/drivers/staging/winbond/wbusb.c b/drivers/staging/winbond/wbusb.c
-index abaa05a..5419f4f 100644
---- a/drivers/staging/winbond/wbusb.c
-+++ b/drivers/staging/winbond/wbusb.c
-@@ -783,8 +783,6 @@ static int wb35_probe(struct usb_interface *intf,
- 
- 	priv = dev->priv;
- 
--	spin_lock_init(&priv->SpinLock);
--
- 	pWbUsb = &priv->sHwData.WbUsb;
- 	pWbUsb->udev = udev;
- 
--- 
-1.6.3.3
-
+             Pekka
