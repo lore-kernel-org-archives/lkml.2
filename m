@@ -1,56 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754998Ab0ISQno (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 12:43:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58783 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754814Ab0ISQnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 12:43:43 -0400
-Message-ID: <4C963DAC.4040604@redhat.com>
-Date: Sun, 19 Sep 2010 18:43:24 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.3
+	id S1755056Ab0ISQr1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 12:47:27 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:39116 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1754925Ab0ISQr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Sep 2010 12:47:26 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX19kdUc7K/xktXV+Lqg6lYfAsFEAi13xwg3w+WAiv2
+	UHLnCXkpsqfL8R
+Message-ID: <4C963E99.9080207@gmx.de>
+Date: Sun, 19 Sep 2010 18:47:21 +0200
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: raw_spinlock_t rules
-References: <4C960B78.4010804@redhat.com> <1284914302.23787.2749.camel@gandalf.stny.rr.com>
-In-Reply-To: <1284914302.23787.2749.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+To: =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+CC: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bernie Thompson <bernie@plugable.com>
+Subject: Re: [Patch, RFC] Make struct fb_info ref-counted with kref
+References: <20100919172833.14bf291e@neptune.home>
+In-Reply-To: <20100919172833.14bf291e@neptune.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 09/19/2010 06:38 PM, Steven Rostedt wrote:
-> On Sun, 2010-09-19 at 15:09 +0200, Avi Kivity wrote:
-> >  Some time ago, the i8259 emulation code in kvm was changed to use
-> >  raw_spinlock_t, as it was called in a preempt_disable() and
-> >  local_irq_disable() context, which doesn't work with preemptible
-> >  spinlocks used with CONFIG_PREEMPT_RT.
-> >
-> >  In Linux 2.6.37, the spinlock will no longer be taken in these contexts,
-> >  so I'd like to change it to a normal spinlock_t.  However, it is still
-> >  taken in a spin_lock_irq() context.
-> >
-> >  Is it okay to do this change?  I figured since spin_lock_irq() is part
-> >  of the spinlock infrastructure it might to the right thing.
-> >
->
-> In PREEMPT_RT all interrupts (besides the timer) is converted to a
-> thread. The spin_lock_irq() will not disable interrupts in PREEMPT_RT,
-> because it is not needed (irqs are threaded and wont cause a deadlock if
-> they share the same spin_locks).
->
-> Note, spin_locks used by the timer will must be raw_spin_lock(), and
-> threaded context must disable interrupts for real before using it.
->
+Hi,
 
-Thanks.  So it looks like we can convert that spinlock.
+Bruno Prémont schrieb:
+> For USB-attached (or other hot-(un)pluggable) framebuffers the current
+> fbdev infrastructure is not very helpful. Each such driver currently
+> needs to perform the ref-counting on its own in .fbops.fb_open and
+> .fbops.fb_release callbacks.
 
--- 
-error compiling committee.c: too many arguments to function
+I agree. This is a great idea even for non-hot-(un)pluggable framebuffers.
 
+> This patch moves the ref-counting in fbdev infrastructure.
+> (drivers have not been adjusted, all those releasing fb_info in
+>  .fbops.fb_destroy will not work -- patch for those will follow
+>  later on, all the others will continue to work fine)
+> 
+> API-wise the following changes are done:
+> - num_registered_fb and registered_fb variables are no more exported.
+>   New functions fb_get_registered() and fb_is_registered() replace
+>   them.
+>   The only know user of those was fbcon, thus the large diff on fbcon.c
+> 
+>   Note: the accesses to registered_fb and num_registered_fb look racy
+>   as there was not protection at all around them, potentially letting
+>   register_framebuffer() register two framebuffers on the same minor
+>   concurrently, fbcon access should have been safe by combination of
+>   its use of console_semaphore and reaction to events.
+>   In this patch I combined most of fbcon's accesses to registered_fb
+>   and num_registered_fb into fb_is_registered(), though I'm not sure
+>   if the num-check optimization is worth to keep or its check should
+>   be put into a separate function.
+> 
+> - framebuffer_release() is mapped to fb_put() but will go away
+>   when converting drivers
+> 
+> Reference count for fb_info can be increased with fb_get(fb_info) and
+> later released with fb_put(fb_info).
+> 
+> 
+> If you have concerns regarding the API changes, please let me know.
+
+Uhm, I'm not really happy with what we count. With the old method you mentioned 
+we ref-counted framebuffer users, after your patch it's more counting users + 
+uses. This might be okay as we usually are interested whether the ref_count is 0 
+or not but it doesn't look right if we modify the refcount during nearly every 
+framebuffer operation. Wouldn't it be sufficient to do the refcounting in 
+fb_open & fb_release operation + in fbcon where open&release are done?
+
+> diff --git a/drivers/video/fbsysfs.c b/drivers/video/fbsysfs.c
+> index 0a08f13..be5f342 100644
+> --- a/drivers/video/fbsysfs.c
+> +++ b/drivers/video/fbsysfs.c
+> @@ -58,6 +58,7 @@ struct fb_info *framebuffer_alloc(size_t size, struct device *dev)
+>  		info->par = p + fb_info_size;
+>  
+>  	info->device = dev;
+> +	kref_init(&info->refcount);
+
+As far as I know there exist framebuffer drivers which do not call 
+framebuffer_alloc but contain their own fb_info. I guess these would be broken 
+as well.
+
+
+Thanks,
+
+Florian Tobias Schandinat
