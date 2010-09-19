@@ -1,17 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab0ITAF5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 20:05:57 -0400
-Received: from rere.qmqm.pl ([89.167.52.164]:60112 "EHLO rere.qmqm.pl"
+	id S1755396Ab0ITAF4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 20:05:56 -0400
+Received: from rere.qmqm.pl ([89.167.52.164]:60113 "EHLO rere.qmqm.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755368Ab0ITAFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755363Ab0ITAFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 19 Sep 2010 20:05:55 -0400
-Date: Mon, 20 Sep 2010 01:58:08 +0200
+X-Greylist: delayed 628 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 Sep 2010 20:05:55 EDT
+Date: Mon, 20 Sep 2010 01:55:26 +0200
 From: =?iso-8859-2?Q?Micha=B3_Miros=B3aw?= <mirq-linux@rere.qmqm.pl>
-To: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] (trivial) Fix compiler warning in kernel/modules.c
-Message-ID: <20100919235808.GB31892@rere.qmqm.pl>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Andreas Fenkart <andreas.fenkart@streamunlimited.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] ARM: (trivial) fix format warning in arch/arm/mm/init.c
+Message-ID: <20100919235526.GA31892@rere.qmqm.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
@@ -21,33 +26,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building with CONFIG_KALLSYMS=n gives following warning:
+/mnt/src/linux-git/arch/arm/mm/init.c: In function ‘mem_init’:
+/mnt/src/linux-git/arch/arm/mm/init.c:548:4: warning: format ‘%4d’ expects type ‘int’, but argument 22 has type ‘long int’
+/mnt/src/linux-git/arch/arm/mm/init.c:548:4: warning: format ‘%4d’ expects type ‘int’, but argument 25 has type ‘long int’
+/mnt/src/linux-git/arch/arm/mm/init.c:548:4: warning: format ‘%4d’ expects type ‘int’, but argument 28 has type ‘long int’
 
-/mnt/src/linux-git/kernel/module.c: In function ‘post_relocation’:
-/mnt/src/linux-git/kernel/module.c:2534:2: warning: passing argument 2 of ‘add_kallsyms’ discards qualifiers from pointer target type
-/mnt/src/linux-git/kernel/module.c:2038:13: note: expected ‘struct load_info *’ but argument is of type ‘const struct load_info *’
+(with gcc-4.5.1)
 
 Signed-off-by: Michał Mirosław <mirq-linux@rere.qmqm.pl>
 ---
- kernel/module.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/arm/mm/init.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-For current git (2.6.36-rc4).
+Patch against current linux.git (after 2.6.36-rc4).
 
 
-diff --git a/kernel/module.c b/kernel/module.c
-index d0b5f8d..452052c 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2035,7 +2035,7 @@ static inline void layout_symtab(struct module *mod, struct load_info *info)
- {
- }
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index 7185b00..009797d 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -521,9 +521,9 @@ void __init mem_init(void)
+ 			"    pkmap   : 0x%08lx - 0x%08lx   (%4ld MB)\n"
+ #endif
+ 			"    modules : 0x%08lx - 0x%08lx   (%4ld MB)\n"
+-			"      .init : 0x%p" " - 0x%p" "   (%4d kB)\n"
+-			"      .text : 0x%p" " - 0x%p" "   (%4d kB)\n"
+-			"      .data : 0x%p" " - 0x%p" "   (%4d kB)\n",
++			"      .init : 0x%p" " - 0x%p" "   (%4ld kB)\n"
++			"      .text : 0x%p" " - 0x%p" "   (%4ld kB)\n"
++			"      .data : 0x%p" " - 0x%p" "   (%4ld kB)\n",
  
--static void add_kallsyms(struct module *mod, struct load_info *info)
-+static void add_kallsyms(struct module *mod, const struct load_info *info)
- {
- }
- #endif /* CONFIG_KALLSYMS */
+ 			MLK(UL(CONFIG_VECTORS_BASE), UL(CONFIG_VECTORS_BASE) +
+ 				(PAGE_SIZE)),
 -- 
 1.7.1
 
