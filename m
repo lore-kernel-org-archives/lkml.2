@@ -1,98 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564Ab0ISTSb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 15:18:31 -0400
-Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:36564 "EHLO
-	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752966Ab0ISTSa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 15:18:30 -0400
-Subject: Re: [PATCH] drm/edid: Don't repeatedly log hex dumps of bad EDIDs
- by default
-From: Andy Walls <awalls@md.metrocast.net>
-To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
-Cc: Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Dave Airlie <airlied@redhat.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-In-Reply-To: <AANLkTimVNDwD61TgRDCnL--gu6QV7VVQsK8UqchryUdk@mail.gmail.com>
-References: <1284764006.13604.21.camel@morgan.silverblock.net>
-	 <20100918115043.GB2953@joi.lan>
-	 <AANLkTimVNDwD61TgRDCnL--gu6QV7VVQsK8UqchryUdk@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 19 Sep 2010 15:18:19 -0400
-Message-ID: <1284923899.2079.95.camel@morgan.silverblock.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 8bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.0.10011,1.0.148,0.0.0000
- definitions=2010-09-19_05:2010-09-18,2010-09-19,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 phishscore=0
- bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- engine=5.0.0-1005130000 definitions=main-1009190111
+	id S1753730Ab0ISTVB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 15:21:01 -0400
+Received: from snt0-omc3-s3.snt0.hotmail.com ([65.55.90.142]:8858 "EHLO
+	snt0-omc3-s3.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753023Ab0ISTVA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Sep 2010 15:21:00 -0400
+Message-ID: <SNT125-W305F365835060339BD4008C37D0@phx.gbl>
+X-Originating-IP: [96.253.143.208]
+From: Yuhong Bao <yuhongbao_386@hotmail.com>
+To: <torvalds@linux-foundation.org>, <peterz@infradead.org>
+CC: <cyeoh@au1.ibm.com>, <linux-kernel@vger.kernel.org>,
+        <linux@arm.linux.org.uk>
+Subject: RE: [RFC][PATCH] Cross Memory Attach
+Date: Sun, 19 Sep 2010 12:20:59 -0700
+Importance: Normal
+In-Reply-To: <AANLkTi=hFydeqk_ENGmqEqwqduSeN2gpjMr+VpcN38Xx@mail.gmail.com>
+References: <20100915104855.41de3ebf@lilo>
+ <AANLkTimNsDxeyZL4GVaH4L7YGO-EoRyCMHDtMPWU37hN@mail.gmail.com>
+ <1284654451.2275.579.camel@laptop>
+ <AANLkTinihPeUueKhEqUuraW2hcf3FFHjm26RieKQZi0d@mail.gmail.com>
+ <1284657194.2275.585.camel@laptop>
+ <AANLkTikquj_2DE4UhTFAoDxL+,<AANLkTi=hFydeqk_ENGmqEqwqduSeN2gpjMr+VpcN38Xx@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
+X-OriginalArrivalTime: 19 Sep 2010 19:20:59.0901 (UTC) FILETIME=[CAC81AD0:01CB582F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-09-19 at 20:39 +0200, Rafał Miłecki wrote:
-> 2010/9/18 Marcin Slusarz <marcin.slusarz@gmail.com>:
-> > On Fri, Sep 17, 2010 at 06:53:26PM -0400, Andy Walls wrote:
-> >> On my system, every 10 seconds drm_edid_block_valid() gets called 4
-> >> times by radeon_dvi_detect().  This results in 4 instances of a
-> >> multi-line hex dump of the same EDID (non-)data being logged every 10
-> >> seconds.
+
+(Adding Russell King of ARM Linux to CC list)
+
+----------------------------------------
+> From: torvalds@linux-foundation.org
+> Date: Thu, 16 Sep 2010 10:54:29 -0700
+> Subject: Re: [RFC][PATCH] Cross Memory Attach
+> To: peterz@infradead.org
+> CC: cyeoh@au1.ibm.com; linux-kernel@vger.kernel.org
+>
+> On Thu, Sep 16, 2010 at 10:47 AM, Peter Zijlstra  wrote:
+> > On Thu, 2010-09-16 at 10:34 -0700, Linus Torvalds wrote:
 > >>
-> >> Silence the hex dump from drm_edid_block_valid() unless a drm_debug
-> >> module parameter flag is set.
-> >>
-> >> Signed-of-by: Andy Walls <awalls@md.metrocast.net>
-> >>
-> >> diff --git a/drivers/gpu/drm/drm_edid.c b/drivers/gpu/drm/drm_edid.c
-> >> index dce5c4a..33a748c 100644
-> >> --- a/drivers/gpu/drm/drm_edid.c
-> >> +++ b/drivers/gpu/drm/drm_edid.c
-> >> @@ -173,9 +173,12 @@ drm_edid_block_valid(u8 *raw_edid)
-> >>
-> >>  bad:
-> >>         if (raw_edid) {
-> >> -               DRM_ERROR("Raw EDID:\n");
-> >> -               print_hex_dump_bytes(KERN_ERR, DUMP_PREFIX_NONE, raw_edid, EDID_LENGTH);
-> >> -               printk("\n");
-> >> +               DRM_DEBUG("Raw EDID:\n");
-> >> +               if (drm_debug & DRM_UT_CORE) {
-> >> +                       print_hex_dump_bytes(KERN_ERR, DUMP_PREFIX_NONE,
-> >> +                                            raw_edid, EDID_LENGTH);
-> >> +                       printk("\n");
-> >> +               }
-> >>         }
-> >>         return 0;
-> >>  }
-> >>
+> >> Of course, these days I would seriously suggest against trying to
+> >> optimize the kmap() case. It only matters on crap hardware these days.
+> >> Anybody running HIGHMEM in 2010 and thinks that it makes sense
+> >> deserves the pain the get. We should not complicate the kernel further
+> >> for it, and sane architectures will have a no-op kmap().
 > >
-> > Why not print it only once on original error level?
-> > Something like:
-> > static bool printed = false;
-> > if (!printed) {
-> >        ...
-> >        printed = true;
-> > }
-> >
-> > It has the same effect for you (no spamming by default) and it's still provide some information.
-> 
-> Should be per-monitor or per-output I think.
-
-Yes, something like that.  I thought about that after my reply.
-
-My perpetual log spam is related to my DVI-D-1 "connector" for my radeon
-graphics chip.  So per connector, per graphics chip.
-
-With the patch as provided, the hex dump messages can be turned on and
-off using something like:
-
-	echo 1 > /sys/module/drm/parameters/debug
-	echo 0 > /sys/module/drm/parameters/debug
-
-once the user has a shell prompt.
-
-Regards,
-Andy
-
+> > OK, fully agreed. Someone ought to tell ARM though :-)
+>
+> You know what? I don't care. If the fact that ARM is messing up means
+> that they will never be able to do well in the micro-server space,
+> that's _their_ problem.
+>
+> I fought HIGHMEM tooth and nail when it appeared originally. I lost,
+> because we really didn't have any choice. But there is no way I'm
+> going to say "oh, HIGHMEM still makes sense in 2010 because the ARM
+> guys are now making all the same mistakes Intel did in 1992". Because
+> these days we _do_ have a choice.
+>
+> And all the rumors are that there will be a 64-bit ARM too. So their
+> PAE mess will be out before, but nobody sane should really consider it
+> a primary issue. It will work, but it will work suboptimally. That's
+> what you get when you have bad hardware design.
+>
+> Linus
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at http://www.tux.org/lkml/
+>
+>
+ 		 	   		  
