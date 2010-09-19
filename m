@@ -1,67 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699Ab0ISTbV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 15:31:21 -0400
-Received: from pfepb.post.tele.dk ([195.41.46.236]:36695 "EHLO
-	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751946Ab0ISTbU (ORCPT
+	id S1754000Ab0ISTet (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 15:34:49 -0400
+Received: from mailhub.stratus.com ([134.111.1.18]:50670 "EHLO
+	mailhub5.stratus.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753023Ab0ISTes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 15:31:20 -0400
-Date: Sun, 19 Sep 2010 21:31:18 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Junio C Hamano <junio@pobox.com>
-Cc: Roman Zippel <zippel@linux-m68k.org>, Michal Marek <mmarek@suse.cz>,
-        Li Zefan <lizf@cn.fujitsu.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]
-Message-ID: <20100919193118.GA26308@merkur.ravnborg.org>
-References: <7vhbhmxyeb.fsf@alter.siamese.dyndns.org> <20100919095419.GC25704@merkur.ravnborg.org> <7v8w2xy4pq.fsf@alter.siamese.dyndns.org>
+	Sun, 19 Sep 2010 15:34:48 -0400
+Date: Sun, 19 Sep 2010 15:34:33 -0400
+From: Bandan Das <bandan.das@stratus.com>
+To: David Miller <davem@davemloft.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, NetDev <netdev@vger.kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Patrick McHardy <kaber@trash.net>
+Subject: [PATCH net-next-2.6] bridge : Sanitize skb before it enters the IP
+ stack
+Message-ID: <20100919193433.GF31036@stratus.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <7v8w2xy4pq.fsf@alter.siamese.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Company: Stratus Technologies
+X-Disclaimer: This email will auto delete in 5 days, nah.. I am kidding!
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-OriginalArrivalTime: 19 Sep 2010 19:34:34.0017 (UTC) FILETIME=[B0085910:01CB5831]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 19, 2010 at 11:21:21AM -0700, Junio C Hamano wrote:
-> Sam Ravnborg <sam@ravnborg.org> writes:
-> 
-> > On Sat, Sep 18, 2010 at 07:25:32PM -0700, Junio C Hamano wrote:
-> >> In 60f33b8 (kconfig: get rid of stray a.o, support ncursesw, 2006-01-15),
-> >> support to link menuconfig with ncursesw library was added.  To compute
-> >> the linker command option -l, we check "libncursesw.{so,a,dylib}" to allow
-> >> ncursesw to be used as a replacement ncurses.  However, when checking what
-> >> header file to include, we do not check /usr/include/ncursesw directory.
-> >> 
-> >> Add /usr/include/ncursesw to the list of directories that are checked.
-> >> With this patch, on my Debian Lenny box with libncursesw5-dev package but
-> >> not libncurses5-dev package, I can say "make menuconfig".
-> >> 
-> >> Signed-off-by: Junio C Hamano <gitster@pobox.com>
-> >
-> > Except for the missing patch subject then it looks OK.
-> > Suggested subject:
-> > kconfig: fix menuconfig on debian lenny
-> 
-> Sorry, the missing subject really was sloppy of me, and thanks.
-> 
-> > Add as this is a fix we should Cc: <stable@kerne.org>?
-> 
-> I don't think the fix deserves to be in stable.  It does not look like
-> 60f33b8 made it possible to use ncursesw on a box like mine so the patch
-> is not evan an regression-fix.
-OK
-> 
-> > Acked-by: Sam Ravnborg <sam@ravnborg.org>
-> 
-> Thanks; is it my responsibility to follow-up the thread with identical
-> patch with updated Subject and with your Ack, hoping somebody in kbuild
-> team would pick it up?
+Related dicussion here : http://lkml.org/lkml/2010/9/3/16
 
-I assume Michal will pick it up anyway - but if you do it would make
-it simpler for him to do so.
-So no need..
+Introduce a function br_parse_ip_options that will audit the 
+skb and possibly refill IP options before a packet enters the
+IP stack. If no options are present, the function will zero out
+the skb cb area so that it is not misinterpreted as options by some
+unsuspecting IP layer routine. If packet consistency fails, drop it.
 
-	Sam
+Signed-off-by: Bandan Das <bandan.das@stratus.com>
+---
+ net/bridge/br_netfilter.c |  107 ++++++++++++++++++++++++++++++++------------
+ net/ipv4/ip_options.c     |    3 +-
+ 2 files changed, 80 insertions(+), 30 deletions(-)
+
+diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
+index 137f232..77f7b5f 100644
+--- a/net/bridge/br_netfilter.c
++++ b/net/bridge/br_netfilter.c
+@@ -209,6 +209,72 @@ static inline void nf_bridge_update_protocol(struct sk_buff *skb)
+ 		skb->protocol = htons(ETH_P_PPP_SES);
+ }
+ 
++/* When handing a packet over to the IP layer
++ * check whether we have a skb that is in the
++ * expected format
++ */
++
++int br_parse_ip_options(struct sk_buff *skb)
++{
++	struct ip_options *opt;
++	struct iphdr *iph;
++	struct net_device *dev = skb->dev;
++	u32 len;
++
++	iph = ip_hdr(skb);
++	opt = &(IPCB(skb)->opt);
++
++	/* Basic sanity checks */
++	if (iph->ihl < 5 || iph->version != 4)
++		goto inhdr_error;
++
++	if (!pskb_may_pull(skb, iph->ihl*4))
++		goto inhdr_error;
++
++	iph = ip_hdr(skb);
++	if (unlikely(ip_fast_csum((u8 *)iph, iph->ihl)))
++		goto inhdr_error;
++
++	len = ntohs(iph->tot_len);
++	if (skb->len < len) {
++		IP_INC_STATS_BH(dev_net(dev), IPSTATS_MIB_INTRUNCATEDPKTS);
++		goto drop;
++	} else if (len < (iph->ihl*4))
++		goto inhdr_error;
++
++	if (pskb_trim_rcsum(skb, len)) {
++		IP_INC_STATS_BH(dev_net(dev), IPSTATS_MIB_INDISCARDS);
++		goto drop;
++	}
++
++	/* Zero out the CB buffer if no options present */
++	if (iph->ihl == 5) {
++		memset(IPCB(skb), 0, sizeof(struct inet_skb_parm));
++		return 0;
++	}
++
++	opt->optlen = iph->ihl*4 - sizeof(struct iphdr);
++	if (ip_options_compile(dev_net(dev), opt, skb))
++		goto inhdr_error;
++
++	/* Check correct handling of SRR option */
++	if (unlikely(opt->srr)) {
++		struct in_device *in_dev = __in_dev_get_rcu(dev);
++		if (in_dev && !IN_DEV_SOURCE_ROUTE(in_dev))
++			goto drop;
++
++		if (ip_options_rcv_srr(skb))
++			goto drop;
++	}
++
++	return 0;
++
++inhdr_error:
++	IP_INC_STATS_BH(dev_net(dev), IPSTATS_MIB_INHDRERRORS);
++drop:
++	return -1;
++}
++
+ /* Fill in the header for fragmented IP packets handled by
+  * the IPv4 connection tracking code.
+  */
+@@ -549,7 +615,6 @@ static unsigned int br_nf_pre_routing(unsigned int hook, struct sk_buff *skb,
+ {
+ 	struct net_bridge_port *p;
+ 	struct net_bridge *br;
+-	struct iphdr *iph;
+ 	__u32 len = nf_bridge_encap_header_len(skb);
+ 
+ 	if (unlikely(!pskb_may_pull(skb, len)))
+@@ -578,28 +643,9 @@ static unsigned int br_nf_pre_routing(unsigned int hook, struct sk_buff *skb,
+ 
+ 	nf_bridge_pull_encap_header_rcsum(skb);
+ 
+-	if (!pskb_may_pull(skb, sizeof(struct iphdr)))
+-		goto inhdr_error;
+-
+-	iph = ip_hdr(skb);
+-	if (iph->ihl < 5 || iph->version != 4)
+-		goto inhdr_error;
+-
+-	if (!pskb_may_pull(skb, 4 * iph->ihl))
+-		goto inhdr_error;
+-
+-	iph = ip_hdr(skb);
+-	if (ip_fast_csum((__u8 *) iph, iph->ihl) != 0)
+-		goto inhdr_error;
+-
+-	len = ntohs(iph->tot_len);
+-	if (skb->len < len || len < 4 * iph->ihl)
+-		goto inhdr_error;
+-
+-	pskb_trim_rcsum(skb, len);
+-
+-	/* BUG: Should really parse the IP options here. */
+-	memset(IPCB(skb), 0, sizeof(struct inet_skb_parm));
++	if (br_parse_ip_options(skb))
++		/* Drop invalid packet */
++		goto out;
+ 
+ 	nf_bridge_put(skb->nf_bridge);
+ 	if (!nf_bridge_alloc(skb))
+@@ -614,8 +660,6 @@ static unsigned int br_nf_pre_routing(unsigned int hook, struct sk_buff *skb,
+ 
+ 	return NF_STOLEN;
+ 
+-inhdr_error:
+-//      IP_INC_STATS_BH(IpInHdrErrors);
+ out:
+ 	return NF_DROP;
+ }
+@@ -759,14 +803,19 @@ static unsigned int br_nf_forward_arp(unsigned int hook, struct sk_buff *skb,
+ #if defined(CONFIG_NF_CONNTRACK_IPV4) || defined(CONFIG_NF_CONNTRACK_IPV4_MODULE)
+ static int br_nf_dev_queue_xmit(struct sk_buff *skb)
+ {
++	int ret;
++
+ 	if (skb->nfct != NULL && skb->protocol == htons(ETH_P_IP) &&
+ 	    skb->len + nf_bridge_mtu_reduction(skb) > skb->dev->mtu &&
+ 	    !skb_is_gso(skb)) {
+-		/* BUG: Should really parse the IP options here. */
+-		memset(IPCB(skb), 0, sizeof(struct inet_skb_parm));
+-		return ip_fragment(skb, br_dev_queue_push_xmit);
++		if (br_parse_ip_options(skb))
++			/* Drop invalid packet */
++			return NF_DROP;
++		ret = ip_fragment(skb, br_dev_queue_push_xmit);
+ 	} else
+-		return br_dev_queue_push_xmit(skb);
++		ret = br_dev_queue_push_xmit(skb);
++
++	return ret;
+ }
+ #else
+ static int br_nf_dev_queue_xmit(struct sk_buff *skb)
+diff --git a/net/ipv4/ip_options.c b/net/ipv4/ip_options.c
+index ba9836c..1906fa3 100644
+--- a/net/ipv4/ip_options.c
++++ b/net/ipv4/ip_options.c
+@@ -466,7 +466,7 @@ error:
+ 	}
+ 	return -EINVAL;
+ }
+-
++EXPORT_SYMBOL(ip_options_compile);
+ 
+ /*
+  *	Undo all the changes done by ip_options_compile().
+@@ -646,3 +646,4 @@ int ip_options_rcv_srr(struct sk_buff *skb)
+ 	}
+ 	return 0;
+ }
++EXPORT_SYMBOL(ip_options_rcv_srr);
+-- 
+1.6.6.1
