@@ -1,101 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754518Ab0ISO1U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 10:27:20 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:47268 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753427Ab0ISO1S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 10:27:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=KAGO7P8gfIAmk/TsXk3rSn61UksPhoBNEsB8M+kp7yrM4ALBaTojthVMHZh7GGwswB
-         9C1rt+iK+6ugiG5gSGNB6EiwPxwq+VYhLYx3r/b5fZ6aFfhmQj2juW4w4NiYDmShDeTB
-         xGH5YGrqIPPnqUVnpjqOG+QUuE4FIDLEjDfYk=
-Date: Sun, 19 Sep 2010 16:26:53 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Vasiliy Kulikov <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Boaz Harrosh <bharrosh@panasas.com>,
-        Benny Halevy <bhalevy@panasas.com>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Tejun Heo <tj@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        osd-dev@open-osd.org, linux-scsi@vger.kernel.org,
-        cornelia.huck@de.ibm.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/14] scsi: osd: fix device_register() error handling
-Message-ID: <20100919142653.GF6236@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Vasiliy Kulikov <segooon@gmail.com>,
-	kernel-janitors@vger.kernel.org,
-	Boaz Harrosh <bharrosh@panasas.com>,
-	Benny Halevy <bhalevy@panasas.com>,
-	"James E.J. Bottomley" <James.Bottomley@suse.de>,
-	Tejun Heo <tj@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-	osd-dev@open-osd.org, linux-scsi@vger.kernel.org,
-	cornelia.huck@de.ibm.com, linux-kernel@vger.kernel.org
-References: <1284900907-24621-1-git-send-email-segooon@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284900907-24621-1-git-send-email-segooon@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754572Ab0ISOeE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 10:34:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60490 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751645Ab0ISOeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Sep 2010 10:34:02 -0400
+From: Avi Kivity <avi@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-trace-users@vger.kernel.org
+Subject: [PATCH trace-cmd] plugin_kvm: disassemble instructions for kvm_emulate_insn
+Date: Sun, 19 Sep 2010 16:33:57 +0200
+Message-Id: <1284906837-2431-1-git-send-email-avi@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 19, 2010 at 04:55:07PM +0400, Vasiliy Kulikov wrote:
-> If device_register() fails then call put_device().
-> See comment to device_register.
-> 
-> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-> ---
->  compile tested.
-> 
->  drivers/scsi/osd/osd_uld.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/scsi/osd/osd_uld.c b/drivers/scsi/osd/osd_uld.c
-> index cefb2c0..3e0edc2 100644
-> --- a/drivers/scsi/osd/osd_uld.c
-> +++ b/drivers/scsi/osd/osd_uld.c
-> @@ -474,7 +474,7 @@ static int osd_probe(struct device *dev)
->  	error = device_register(&oud->class_dev);
->  	if (error) {
->  		OSD_ERR("device_register failed => %d\n", error);
-> -		goto err_put_cdev;
-> +		goto err_put_device;
->  	}
->  
->  	get_device(&oud->class_dev);
-> @@ -482,6 +482,8 @@ static int osd_probe(struct device *dev)
->  	OSD_INFO("osd_probe %s\n", disk->disk_name);
->  	return 0;
->  
+Override kvm_emulate_insn formatting to use a disassembler to format
+the emulated instruction.  If a disassembler (udis86) is not available,
+fall back to showing the instruction bytes in hex.
 
-Hm...  So if device_register() fails then we should always call
-device_put()?  It seems like a lot of existing code does that but I
-hadn't realized until now that that is how it works.
+Signed-off-by: Avi Kivity <avi@redhat.com>
+---
 
-Why can't the device_put() just be added inside the device_register() so
-the unwinding works automatically?
+Note 1: on top of 'master' with 'trace-cmd-kvm' cherry-picked on top.
 
-Also if someone add some more stuff to the end of this function, will
-the device_unregister() followed by a device_put() cause problems if we
-unwind like this?
+Note 2: I get output of the form
 
-+err_free_something:
-+	kfree(foo);
-+	device_unregister(&oud->class_dev);
-> +err_put_device:
-> +	put_device(&oud->class_dev);
->  err_put_cdev:
->  	cdev_del(&oud->cdev);
->  err_put_disk:
+... kvm_emulate_insn:     0:fffff800010527b5: mov $0x0, 0xfffe00b0CAN'T FIND FIELD "guest_rip"
 
-If that's the case then the put_device() should be called infront of the
-goto.
+which leads me to believe there is a bug in trace_seq_printf when the input
+to %s is "".
 
-regards,
-dan carpenter
+ Makefile     |   11 +++++-
+ plugin_kvm.c |  111 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 121 insertions(+), 1 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 5282f94..fe34d1c 100644
+--- a/Makefile
++++ b/Makefile
+@@ -74,6 +74,14 @@ ifeq ($(shell sh -c "python-config --includes > /dev/null 2>&1 && echo y"), y)
+ 	PYTHON_PY_INSTALL := event-viewer.install tracecmd.install tracecmdgui.install
+ endif
+ 
++# $(call test-build, snippet, ret) -> ret if snippet compiles
++#                                  -> empty otherwise
++test-build = $(if $(shell $(CC) -o /dev/null -c -x c - > /dev/null 2>&1 \
++	                  <<<'$1' && echo y), $2)
++
++# have udis86 disassembler library?
++udis86-flags := $(call test-build,\#include <udis86.h>,-DHAVE_UDIS86 -ludis86)
++
+ ifeq ("$(origin O)", "command line")
+   BUILD_OUTPUT := $(O)
+ endif
+@@ -188,6 +196,7 @@ CFLAGS ?= -g -Wall
+ 
+ # Append required CFLAGS
+ override CFLAGS += $(CONFIG_FLAGS) $(INCLUDES) $(PLUGIN_DIR_SQ)
++override CFLAGS += $(udis86-flags)
+ 
+ ifeq ($(VERBOSE),1)
+   Q =
+@@ -228,7 +237,7 @@ do_compile_plugin_obj =				\
+ 
+ do_plugin_build =				\
+ 	($(print_plugin_build)			\
+-	$(CC) -shared -nostartfiles -o $@ $<)
++	$(CC) $(CFLAGS) -shared -nostartfiles -o $@ $<)
+ 
+ do_build_static_lib =				\
+ 	($(print_static_lib_build)		\
+diff --git a/plugin_kvm.c b/plugin_kvm.c
+index 7217e85..00cac5a 100644
+--- a/plugin_kvm.c
++++ b/plugin_kvm.c
+@@ -21,9 +21,68 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <stdint.h>
+ 
+ #include "parse-events.h"
+ 
++#ifdef HAVE_UDIS86
++
++#include <udis86.h>
++
++static ud_t ud;
++
++static void init_disassembler(void)
++{
++	ud_init(&ud);
++	ud_set_syntax(&ud, UD_SYN_ATT);
++}
++
++static const char *disassemble(unsigned char *insn, int len, uint64_t rip,
++			       int cr0_pe, int eflags_vm,
++			       int cs_d, int cs_l)
++{
++	int mode;
++
++	if (!cr0_pe)
++		mode = 16;
++	else if (eflags_vm)
++		mode = 16;
++	else if (cs_l)
++		mode = 64;
++	else if (cs_d)
++		mode = 32;
++	else
++		mode = 16;
++
++	ud_set_pc(&ud, rip);
++	ud_set_mode(&ud, mode);
++	ud_set_input_buffer(&ud, insn, len);
++	ud_disassemble(&ud);
++	return ud_insn_asm(&ud);
++}
++
++#else
++
++static void init_disassembler(void)
++{
++}
++
++static const char *disassemble(unsigned char *insn, int len, uint64_t rip,
++			       int cr0_pe, int eflags_vm,
++			       int cs_d, int cs_l)
++{
++	static char out[15*3+1];
++	int i;
++
++	for (i = 0; i < len; ++i)
++		sprintf(out + i * 3, "%02x ", insn[i]);
++	out[len*3-1] = '\0';
++	return out;
++}
++
++#endif
++
++
+ #define VMX_EXIT_REASONS			\
+ 	_ER(EXCEPTION_NMI,	0)		\
+ 	_ER(EXTERNAL_INTERRUPT,	1)		\
+@@ -99,6 +158,53 @@ static int kvm_exit_handler(struct trace_seq *s, struct record *record,
+ 	return 0;
+ }
+ 
++#define KVM_EMUL_INSN_F_CR0_PE (1 << 0)
++#define KVM_EMUL_INSN_F_EFL_VM (1 << 1)
++#define KVM_EMUL_INSN_F_CS_D   (1 << 2)
++#define KVM_EMUL_INSN_F_CS_L   (1 << 3)
++
++static int kvm_emulate_insn_handler(struct trace_seq *s, struct record *record,
++				    struct event_format *event, void *context)
++{
++	unsigned long long rip, csbase, len, flags, failed;
++	int llen;
++	uint8_t *insn;
++	const char *disasm;
++
++	if (pevent_get_field_val(s, event, "rip", record, &rip, 1) < 0)
++		return -1;
++
++	if (pevent_get_field_val(s, event, "csbase", record, &csbase, 1) < 0)
++		return -1;
++
++	if (pevent_get_field_val(s, event, "len", record, &len, 1) < 0)
++		return -1;
++
++	if (pevent_get_field_val(s, event, "flags", record, &flags, 1) < 0)
++		return -1;
++
++	if (pevent_get_field_val(s, event, "failed", record, &failed, 1) < 0)
++		return -1;
++
++	insn = pevent_get_field_raw(s, event, "insn", record, &llen, 1);
++	if (!insn)
++		return -1;
++
++	disasm = disassemble(insn, len, rip,
++			     flags & KVM_EMUL_INSN_F_CR0_PE,
++			     flags & KVM_EMUL_INSN_F_EFL_VM,
++			     flags & KVM_EMUL_INSN_F_CS_D,
++			     flags & KVM_EMUL_INSN_F_CS_L);
++
++	trace_seq_printf(s, "%llx:%llx: %s%s", csbase, rip, disasm,
++			 failed ? " FAIL" : "");
++
++	pevent_print_num_field(s, " rip %0xlx", event, "guest_rip", record, 1);
++
++	return 0;
++}
++
++
+ static int kvm_nested_vmexit_inject_handler(struct trace_seq *s, struct record *record,
+ 					    struct event_format *event, void *context)
+ {
+@@ -199,9 +305,14 @@ static int kvm_mmu_get_page_handler(struct trace_seq *s, struct record *record,
+ 
+ int PEVENT_PLUGIN_LOADER(struct pevent *pevent)
+ {
++	init_disassembler();
++
+ 	pevent_register_event_handler(pevent, -1, "kvm", "kvm_exit",
+ 				      kvm_exit_handler, NULL);
+ 
++	pevent_register_event_handler(pevent, -1, "kvm", "kvm_emulate_insn",
++				      kvm_emulate_insn_handler, NULL);
++
+ 	pevent_register_event_handler(pevent, -1, "kvm", "kvm_nested_vmexit",
+ 				      kvm_nested_vmexit_handler, NULL);
+ 
+-- 
+1.7.2.3
+
