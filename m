@@ -1,39 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754259Ab0ISUXV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 16:23:21 -0400
-Received: from smtp-out.rrz.uni-koeln.de ([134.95.19.53]:41651 "EHLO
-	smtp-out.rrz.uni-koeln.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752178Ab0ISUXT (ORCPT
+	id S1754944Ab0ISUXz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 16:23:55 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:57716
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752338Ab0ISUXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 16:23:19 -0400
-Message-ID: <4C967131.8030802@uni-koeln.de>
-Date: Sun, 19 Sep 2010 22:23:13 +0200
-From: Berthold Cogel <cogel@uni-koeln.de>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; de; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Software error at bugzilla.kernel.org
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+	Sun, 19 Sep 2010 16:23:53 -0400
+Date: Sun, 19 Sep 2010 13:24:12 -0700 (PDT)
+Message-Id: <20100919.132412.102552920.davem@davemloft.net>
+To: bandan.das@stratus.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        eric.dumazet@gmail.com, herbert@gondor.hengli.com.au, kaber@trash.net
+Subject: Re: [PATCH net-next-2.6] bridge : Sanitize skb before it enters
+ the IP stack
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100919193433.GF31036@stratus.com>
+References: <20100919193433.GF31036@stratus.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To whom it may concern:
+From: Bandan Das <bandan.das@stratus.com>
+Date: Sun, 19 Sep 2010 15:34:33 -0400
 
-I'm getting an error at https://bugzilla.kernel.org.
+> Related dicussion here : http://lkml.org/lkml/2010/9/3/16
+> 
+> Introduce a function br_parse_ip_options that will audit the 
+> skb and possibly refill IP options before a packet enters the
+> IP stack. If no options are present, the function will zero out
+> the skb cb area so that it is not misinterpreted as options by some
+> unsuspecting IP layer routine. If packet consistency fails, drop it.
+> 
+> Signed-off-by: Bandan Das <bandan.das@stratus.com>
 
-Software error:
-
-The ./data/params file does not exist. You probably need to run 
-checksetup.pl. at Bugzilla/Config.pm line 333.
-Compilation failed in require at /var/www/bugzilla/show_bug.cgi line 27.
-BEGIN failed--compilation aborted at /var/www/bugzilla/show_bug.cgi line 27.
-
-For help, please send mail to the webmaster (root@localhost), giving 
-this error message and the time and date of the error.
-
-
-Regards,
-Berthold Cogel
+Applied, thanks a lot!
