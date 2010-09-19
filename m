@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852Ab0ISMzW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 08:55:22 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:58608 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754812Ab0ISMzU (ORCPT
+	id S1755020Ab0ISM4U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 08:56:20 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:44711 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754456Ab0ISMzN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 08:55:20 -0400
+	Sun, 19 Sep 2010 08:55:13 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=JbxMoW5w1H5XaRU/PUu8FrkUtYuTYJfse0ccQjEpPQS6BTTfmKvaWoEdW1hY9eHOuo
-         ZXJy52PhuX1T+iudayRZi8p7ucrxqlIN989fT28zzdK/sScPD8PRgLlbzaQWnzdPONcl
-         m3DMVTrdIIRX7VMLYCPIRr/ZHNcD4O+wXagCM=
+        b=MfVSqOElqCi/WH6bAj26UsfpQVm16RTZwJqxKwT7ZHjaaatef/7hfj8X5DYtlb1uaA
+         D0L7+AFNE907CBOfgZLU0GA6ex1MuyPxNyMsXzGq9/ENHZwGKhKk/+dp8vvq7Bii7r9j
+         4rx1svsFYWv0PmrJ3tD+fQqiRWzjoySIyYl9I=
 From: Vasiliy Kulikov <segooon@gmail.com>
 To: kernel-janitors@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Martyn Welch <martyn.welch@ge.com>,
-        Bill Pemberton <wfp5p@virginia.edu>, Tejun Heo <tj@kernel.org>,
-        Huang Weiyi <weiyi.huang@gmail.com>, devel@driverdev.osuosl.org,
+Cc: Boaz Harrosh <bharrosh@panasas.com>, Benny Halevy <bhalevy@panasas.com>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Tejun Heo <tj@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        osd-dev@open-osd.org, linux-scsi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 12/14] staging: vme: fix device_register() error handling
-Date: Sun, 19 Sep 2010 16:55:14 +0400
-Message-Id: <1284900914-24728-1-git-send-email-segooon@gmail.com>
+Subject: [PATCH 10/14] scsi: osd: fix device_register() error handling
+Date: Sun, 19 Sep 2010 16:55:07 +0400
+Message-Id: <1284900907-24621-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,25 +35,31 @@ Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
 ---
  compile tested.
 
- drivers/staging/vme/vme.c |    4 +++-
+ drivers/scsi/osd/osd_uld.c |    4 +++-
  1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/vme/vme.c b/drivers/staging/vme/vme.c
-index 093fbff..c08668d 100644
---- a/drivers/staging/vme/vme.c
-+++ b/drivers/staging/vme/vme.c
-@@ -1357,8 +1357,10 @@ int vme_register_bridge(struct vme_bridge *bridge)
- 		dev_set_name(dev, "vme-%x.%x", bridge->num, i + 1);
- 
- 		retval = device_register(dev);
--		if (retval)
-+		if (retval) {
-+			put_device(dev);
- 			goto err_reg;
-+		}
+diff --git a/drivers/scsi/osd/osd_uld.c b/drivers/scsi/osd/osd_uld.c
+index cefb2c0..3e0edc2 100644
+--- a/drivers/scsi/osd/osd_uld.c
++++ b/drivers/scsi/osd/osd_uld.c
+@@ -474,7 +474,7 @@ static int osd_probe(struct device *dev)
+ 	error = device_register(&oud->class_dev);
+ 	if (error) {
+ 		OSD_ERR("device_register failed => %d\n", error);
+-		goto err_put_cdev;
++		goto err_put_device;
  	}
  
- 	return retval;
+ 	get_device(&oud->class_dev);
+@@ -482,6 +482,8 @@ static int osd_probe(struct device *dev)
+ 	OSD_INFO("osd_probe %s\n", disk->disk_name);
+ 	return 0;
+ 
++err_put_device:
++	put_device(&oud->class_dev);
+ err_put_cdev:
+ 	cdev_del(&oud->cdev);
+ err_put_disk:
 -- 
 1.7.0.4
 
