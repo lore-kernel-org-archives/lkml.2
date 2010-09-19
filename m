@@ -1,71 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528Ab0ISJym (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 05:54:42 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:42200 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753388Ab0ISJyi (ORCPT
+	id S1753461Ab0ISKBK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 06:01:10 -0400
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:34690 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752519Ab0ISKBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 05:54:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=v7x22HLEEwfUUIHge8XZZN9h83wVzO3MzoRPhwmj2ZcceRIFznU+c/kOaudyez2DJc
-         sjr1zeRpQWB7SPLID0n2UyzV7TMW1XT1DSuytl+jPw7uRf5RJTuCbmd64xrQCydtopVy
-         YH8izb2r86eK4I/ENMCHkojIp3O+ZjbZMhXyM=
-MIME-Version: 1.0
-In-Reply-To: <20100915055649.GB22219@core.coreip.homeip.net>
-References: <4C8F886E.2080407@vlnb.net>
-	<20100915055649.GB22219@core.coreip.homeip.net>
-Date: Sun, 19 Sep 2010 11:54:37 +0200
-X-Google-Sender-Auth: _SImbbA5DvJzUyF4o15jFuQE4mk
-Message-ID: <AANLkTi=d1ZYrOxP3iMt4+qE628FhzassD9=8Q1V+unNE@mail.gmail.com>
-Subject: Re: [PATCH 0/17]: New SCSI target framework (SCST) with dev handlers
- and 2 target drivers
-From: Bart Van Assche <bvanassche@acm.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Vladislav Bolkhovitin <vst@vlnb.net>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Jeff Garzik <jeff@garzik.org>,
-        Vu Pham <vuhuong@mellanox.com>, James Smart <James.Smart@emulex.com>,
-        Joe Eykholt <jeykholt@cisco.com>, Andy Yan <ayan@marvell.com>,
-        Chetan Loke <generationgnu@yahoo.com>, Hannes Reinecke <hare@suse.de>,
-        Richard Sharpe <realrichardsharpe@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 19 Sep 2010 06:01:08 -0400
+From: Pekka Enberg <penberg@kernel.org>
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Lars Lindley <lindley@coyote.org>, Pavel Machek <pavel@ucw.cz>,
+        Ruslan Pisarev <ruslan@rpisarev.org.ua>
+Subject: [PATCH 2/2] w35und: Inline MLMESendFrame() to wbsoft_tx()
+Date: Sun, 19 Sep 2010 13:01:03 +0300
+Message-Id: <1284890463-14048-2-git-send-email-penberg@kernel.org>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1284890463-14048-1-git-send-email-penberg@kernel.org>
+References: <1284890463-14048-1-git-send-email-penberg@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 15, 2010 at 7:56 AM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
->
-> Hi Vladislav,
->
-> On Tue, Sep 14, 2010 at 06:36:30PM +0400, Vladislav Bolkhovitin wrote:
-> > Hi All,
-> >
-> > Please review this second iteration of the patch set of the new
-> > (although, perhaps, the oldest) SCSI target framework for Linux SCST
-> > with a set of dev handlers and 2 target drivers: for local access
-> > (scst_local) and for Infiniband SRP (srpt).
-> >
->
-> [ ... ]
->
-> And too many "naked returns", I believe common style is to only have
-> return for non-void functions.
+The wbsoft_tx() function is a simple wrapper on top of MLMESendFrame() so
+inline the latter to the former.
 
-Hello Dmitry,
+Cc: Lars Lindley <lindley@coyote.org>
+Cc: Pavel Machek <pavel@ucw.cz>
+Cc: Ruslan Pisarev <ruslan@rpisarev.org.ua>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+---
+ drivers/staging/winbond/mlmetxrx.c   |   25 -------------------------
+ drivers/staging/winbond/mlmetxrx_f.h |    1 -
+ drivers/staging/winbond/wbusb.c      |   21 ++++++++++++++++++++-
+ 3 files changed, 20 insertions(+), 27 deletions(-)
 
-If there is agreement among kernel maintainers that return statements
-at the end of functions that do not return a value should be avoided,
-it might be a good idea to let checkpatch complain about such return
-statements. Currently checkpatch doesn't complain about such return
-statements.
+diff --git a/drivers/staging/winbond/mlmetxrx.c b/drivers/staging/winbond/mlmetxrx.c
+index 6b28898..7425a23 100644
+--- a/drivers/staging/winbond/mlmetxrx.c
++++ b/drivers/staging/winbond/mlmetxrx.c
+@@ -19,31 +19,6 @@
+ 
+ #include "mds_f.h"
+ 
+-#include <linux/netdevice.h>
+-
+-int MLMESendFrame(struct wbsoft_priv *adapter, u8 *pMMPDU, u16 len, u8 DataType)
+-{
+-	if (adapter->sMlmeFrame.IsInUsed != PACKET_FREE_TO_USE) {
+-		adapter->sMlmeFrame.wNumTxMMPDUDiscarded++;
+-		return NETDEV_TX_BUSY;
+-	}
+-	adapter->sMlmeFrame.IsInUsed = PACKET_COME_FROM_MLME;
+-
+-	/* Keep information for sending */
+-	adapter->sMlmeFrame.pMMPDU = pMMPDU;
+-	adapter->sMlmeFrame.DataType = DataType;
+-	/* len must be the last setting due to QUERY_SIZE_SECOND of Mds */
+-	adapter->sMlmeFrame.len = len;
+-	adapter->sMlmeFrame.wNumTxMMPDU++;
+-
+-	/* H/W will enter power save by set the register. S/W don't send null frame
+-	with PWRMgt bit enbled to enter power save now. */
+-
+-	Mds_Tx(adapter);
+-
+-	return NETDEV_TX_OK;
+-}
+-
+ void MLME_GetNextPacket(struct wbsoft_priv *adapter, struct wb35_descriptor *desc)
+ {
+ 	desc->InternalUsed = desc->buffer_start_index + desc->buffer_number;
+diff --git a/drivers/staging/winbond/mlmetxrx_f.h b/drivers/staging/winbond/mlmetxrx_f.h
+index ddccbc2..012507f 100644
+--- a/drivers/staging/winbond/mlmetxrx_f.h
++++ b/drivers/staging/winbond/mlmetxrx_f.h
+@@ -11,7 +11,6 @@
+ #include "core.h"
+ 
+ void MLME_GetNextPacket(struct wbsoft_priv *adapter, struct wb35_descriptor *pDes);
+-int MLMESendFrame(struct wbsoft_priv *adapter, u8 *pMMPDU, u16 len, u8 DataType);
+ 
+ void
+ MLME_SendComplete(struct wbsoft_priv *adapter, u8 PacketID,
+diff --git a/drivers/staging/winbond/wbusb.c b/drivers/staging/winbond/wbusb.c
+index 157c05b..3f60cf7 100644
+--- a/drivers/staging/winbond/wbusb.c
++++ b/drivers/staging/winbond/wbusb.c
+@@ -121,7 +121,26 @@ static int wbsoft_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
+ {
+ 	struct wbsoft_priv *priv = dev->priv;
+ 
+-	return MLMESendFrame(priv, skb->data, skb->len, FRAME_TYPE_802_11_MANAGEMENT);
++	if (priv->sMlmeFrame.IsInUsed != PACKET_FREE_TO_USE) {
++		priv->sMlmeFrame.wNumTxMMPDUDiscarded++;
++		return NETDEV_TX_BUSY;
++	}
++
++	priv->sMlmeFrame.IsInUsed = PACKET_COME_FROM_MLME;
++
++	priv->sMlmeFrame.pMMPDU		= skb->data;
++	priv->sMlmeFrame.DataType	= FRAME_TYPE_802_11_MANAGEMENT;
++	priv->sMlmeFrame.len		= skb->len;
++	priv->sMlmeFrame.wNumTxMMPDU++;
++
++	/*
++	 * H/W will enter power save by set the register. S/W don't send null
++	 * frame with PWRMgt bit enbled to enter power save now.
++	 */
++
++	Mds_Tx(priv);
++
++	return NETDEV_TX_OK;
+ }
+ 
+ static int wbsoft_start(struct ieee80211_hw *dev)
+-- 
+1.6.3.3
 
-Bart.
