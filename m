@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601Ab0ISL3X (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 07:29:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52182 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752548Ab0ISL3W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 07:29:22 -0400
-Date: Sun, 19 Sep 2010 13:23:23 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] kvm: enable irq injection from interrupt context
-Message-ID: <20100919112323.GE7350@redhat.com>
-References: <20100916142335.GC24850@redhat.com>
- <20100916145117.GK3008@redhat.com>
- <20100916152411.GE24850@redhat.com>
- <20100916154326.GL3008@redhat.com>
- <20100916220715.GA30531@redhat.com>
- <20100917075929.GA11518@redhat.com>
- <20100919104550.GA7350@redhat.com>
- <4C95EC4C.4060904@redhat.com>
- <20100919105512.GB7350@redhat.com>
- <4C95EE65.3090209@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C95EE65.3090209@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1753475Ab0ISLbm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 07:31:42 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46343 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752374Ab0ISLbl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Sep 2010 07:31:41 -0400
+Subject: Re: [PATCH 5/6] sched: Remove irq time from available CPU power
+From: Peter Zijlstra <peterz@infradead.org>
+To: Venkatesh Pallipadi <venki@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>
+In-Reply-To: <1284688596-6731-6-git-send-email-venki@google.com>
+References: <1284688596-6731-1-git-send-email-venki@google.com>
+	 <1284688596-6731-6-git-send-email-venki@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Sun, 19 Sep 2010 13:31:33 +0200
+Message-ID: <1284895893.2275.627.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 19, 2010 at 01:05:09PM +0200, Avi Kivity wrote:
->  On 09/19/2010 12:55 PM, Michael S. Tsirkin wrote:
-> >On Sun, Sep 19, 2010 at 12:56:12PM +0200, Avi Kivity wrote:
-> >>   On 09/19/2010 12:45 PM, Michael S. Tsirkin wrote:
-> >>  >On Fri, Sep 17, 2010 at 09:59:29AM +0200, Gleb Natapov wrote:
-> >>  >>   >   writing 0 to eventfd does nothing. The way to deassert irq
-> >>  >>   That is implementation detail of current irqfd. It was designed for MSI
-> >>  >>   not level triggered interrupts.
-> >>  >
-> >>  >Maybe we should add a check that gsi is mapped to MSI (or unmapped) then?
-> >>  >Level which switches to 1 and back to 0 immediately will be racy anyway
-> >>  >...
-> >>  >
-> >>
-> >>  Add a check where?
-> >
-> >I would make sure that if you bind irqfd to a non-MSI GSI,
-> >signalling it has no effect.
-> >
-> 
-> Certainly.  We should also update the documentation, when we have
-> irqfd documentation.
+On Thu, 2010-09-16 at 18:56 -0700, Venkatesh Pallipadi wrote:
+> +++ b/kernel/sched.c
+> @@ -2025,6 +2025,18 @@ static u64 unaccount_irq_delta(u64 delta, int cpu, u64 *saved_irq_time)
+>  #define unaccount_irq_delta_rt(delta, cpu, class_rq)            \
+>                 unaccount_irq_delta(delta, cpu, &(class_rq)->saved_irq_time)
+>  
+> +static void sched_irq_power_update_fair(int cpu, struct cfs_rq *cfs_rq,
+> +                       struct rq* rq)
+> +{
+> +       if (!sched_clock_irqtime)
+> +               return;
+> +
+> +       if (likely(rq->total_irq_time > cfs_rq->saved_irq_time)) {
+> +               sched_rt_avg_update(rq,
+> +                               rq->total_irq_time - cfs_rq->saved_irq_time);
+> +       }
+> +}
+> +
+>  #else
+>  
+>  #define update_irq_time(cpu, crq)              do { } while (0)
+> @@ -2042,6 +2054,8 @@ static u64 unaccount_irq_delta_rt(u64 delta_exec, int cpu, struct rt_rq *rt_rq)
+>         return delta_exec;
+>  }
+>  
+> +#define sched_irq_power_update_fair(cpu, crq, rq)      do { } while (0)
+> +
+>  #endif
+>  
+>  #include "sched_idletask.c"
+> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> index a64fdaf..937fded 100644
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -526,6 +526,9 @@ static void update_curr(struct cfs_rq *cfs_rq)
+>         if (unlikely(!curr))
+>                 return;
+>  
+> +       if (sched_feat(NONIRQ_POWER) && entity_is_task(curr))
+> +               sched_irq_power_update_fair(cpu, cfs_rq, rq_of(cfs_rq));
+> +
+>         /*
+>          * Get the amount of time the current task was running
+>          * since the last time we changed load (this cannot 
 
-When and if we start supporing level, we'll have to add a capability flag.
-By way of documentation, reserve a bit value in header right now?
-
-> -- 
-> error compiling committee.c: too many arguments to function
+This all looks very confusing to me,.. How about we simply fold the
+delta between rq->clock and rq->clock_task into sched_rt_avg_update()
+and be done with it?
