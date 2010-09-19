@@ -1,146 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754012Ab0ISMkg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 08:40:36 -0400
-Received: from mx01.sz.bfs.de ([194.94.69.103]:61299 "EHLO mx01.sz.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752738Ab0ISMkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 08:40:35 -0400
-Message-ID: <4C9604BF.1090809@bfs.de>
-Date: Sun, 19 Sep 2010 14:40:31 +0200
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
-MIME-Version: 1.0
-To: Nils Radtke <lkml@Think-Future.com>
-CC: gregkh@suse.de, kernel-janitors@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: wlan-ng: p80211netdev.c cleanup
-References: <1284834652-26171-1-git-send-email-lkml@Think-Future.com>
-In-Reply-To: <1284834652-26171-1-git-send-email-lkml@Think-Future.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1754021Ab0ISMyp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 08:54:45 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:44711 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753726Ab0ISMyn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Sep 2010 08:54:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=kAbV2TUdEmmAQpF7nD78SYzPF2+6GUHcfAnrFOitYtm8F7E1ROlpqtNPIwhIfMU/4q
+         +vKiPFhG5lMXrzw8Eun6KdOvVkjMtdUQUfiqT//siY2ddagkCoDF6OTxGD3Zlc01+9T1
+         vk+j/Yufz0SZFpqFp1i0bcSqXyNAcuqf9p7H8=
+From: Vasiliy Kulikov <segooon@gmail.com>
+To: kernel-janitors@vger.kernel.org
+Cc: Christof Schmitt <christof.schmitt@de.ibm.com>,
+        Swen Schillig <swen@vnet.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        James Bottomley <James.Bottomley@suse.de>, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 01/14] s390: scsi: fix error path
+Date: Sun, 19 Sep 2010 16:54:36 +0400
+Message-Id: <1284900877-24201-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+zfcp_unit_add() doesn't free all allocated resources in error case.
 
+Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+---
+ I cannot compile this driver, so it is not tested at all.
 
-Nils Radtke schrieb:
-> Effected preliminary cleanup lead by the idea of kerneljanitor.org .
-> As recommended I'm asking for approval of the location of cleanup
-> and the manner it happened to know I'm heading in the right
-> direction.
-> 
-> Compiles. Not tested.
-> 
-> Signed-off-by: Nils Radtke <lkml@Think-Future.com>
-> ---
->  drivers/staging/wlan-ng/p80211netdev.c |   50 +++++++++++++++++++-------------
->  1 files changed, 30 insertions(+), 20 deletions(-)
-> 
-> diff --git a/drivers/staging/wlan-ng/p80211netdev.c b/drivers/staging/wlan-ng/p80211netdev.c
-> index aa1792c..8104e11 100644
-> --- a/drivers/staging/wlan-ng/p80211netdev.c
-> +++ b/drivers/staging/wlan-ng/p80211netdev.c
-> @@ -176,25 +176,30 @@ static struct net_device_stats *p80211knetdev_get_stats(netdevice_t * netdev)
->  ----------------------------------------------------------------*/
->  static int p80211knetdev_open(netdevice_t *netdev)
->  {
-> -	int result = 0;		/* success */
-> +	int ret = 0;
->  	wlandevice_t *wlandev = netdev->ml_priv;
->  
->  	/* Check to make sure the MSD is running */
-> -	if (wlandev->msdstate != WLAN_MSD_RUNNING)
-> -		return -ENODEV;
-> +	if (wlandev->msdstate != WLAN_MSD_RUNNING) {
-> +		ret = -ENODEV;
-> +		goto end;
-> +	}
->  
->  	/* Tell the MSD to open */
-> -	if (wlandev->open != NULL) {
-> -		result = wlandev->open(wlandev);
-> -		if (result == 0) {
-> -			netif_start_queue(wlandev->netdev);
-> -			wlandev->state = WLAN_DEVICE_OPEN;
-> -		}
-> -	} else {
-> -		result = -EAGAIN;
-> +	if (wlandev->open == NULL) {
-> +		printk(KERN_ERR "Sorry, got wlandev->open == NULL.\n");
-> +		ret = -EAGAIN;
-> +		goto end;
->  	}
->  
-> -	return result;
-> +	ret = wlandev->open(wlandev);
-> +	if (ret) {
-> +		netif_start_queue(wlandev->netdev);
-> +		wlandev->state = WLAN_DEVICE_OPEN;
-> +	}
-> +
-> +end:
-> +	return ret;
->  }
->  
+ drivers/s390/scsi/zfcp_unit.c |   28 +++++++++++++++++-----------
+ 1 files changed, 17 insertions(+), 11 deletions(-)
 
-unwinding is always good :)
+diff --git a/drivers/s390/scsi/zfcp_unit.c b/drivers/s390/scsi/zfcp_unit.c
+index 1119c53..8eb4046 100644
+--- a/drivers/s390/scsi/zfcp_unit.c
++++ b/drivers/s390/scsi/zfcp_unit.c
+@@ -119,6 +119,7 @@ static void zfcp_unit_release(struct device *dev)
+ int zfcp_unit_add(struct zfcp_port *port, u64 fcp_lun)
+ {
+ 	struct zfcp_unit *unit;
++	int err;
+ 
+ 	unit = zfcp_unit_find(port, fcp_lun);
+ 	if (unit) {
+@@ -136,21 +137,20 @@ int zfcp_unit_add(struct zfcp_port *port, u64 fcp_lun)
+ 	unit->dev.release = zfcp_unit_release;
+ 	INIT_WORK(&unit->scsi_work, zfcp_unit_scsi_scan_work);
+ 
+-	if (dev_set_name(&unit->dev, "0x%016llx",
+-			 (unsigned long long) fcp_lun)) {
+-		kfree(unit);
+-		return -ENOMEM;
+-	}
++	err = dev_set_name(&unit->dev, "0x%016llx",
++			 (unsigned long long) fcp_lun);
++	if (err)
++		goto err_free;
+ 
+-	if (device_register(&unit->dev)) {
++	err = device_register(&unit->dev);
++	if (err) {
+ 		put_device(&unit->dev);
+-		return -ENOMEM;
++		goto err_free;
+ 	}
+ 
+-	if (sysfs_create_group(&unit->dev.kobj, &zfcp_sysfs_unit_attrs)) {
+-		device_unregister(&unit->dev);
+-		return -EINVAL;
+-	}
++	err = sysfs_create_group(&unit->dev.kobj, &zfcp_sysfs_unit_attrs);
++	if (err)
++		goto err_unreg;
+ 
+ 	get_device(&port->dev);
+ 
+@@ -161,6 +161,12 @@ int zfcp_unit_add(struct zfcp_port *port, u64 fcp_lun)
+ 	zfcp_unit_scsi_scan(unit);
+ 
+ 	return 0;
++
++err_unreg:
++	device_unregister(&unit->dev);
++err_free:
++	kfree(unit);
++	return err;
+ }
+ 
+ /**
+-- 
+1.7.0.4
 
-
-
-
-
->  /*----------------------------------------------------------------
-> @@ -211,16 +216,23 @@ static int p80211knetdev_open(netdevice_t *netdev)
->  ----------------------------------------------------------------*/
->  static int p80211knetdev_stop(netdevice_t *netdev)
->  {
-> -	int result = 0;
-> +	int ret = -EFAULT;
->  	wlandevice_t *wlandev = netdev->ml_priv;
->  
-> -	if (wlandev->close != NULL)
-> -		result = wlandev->close(wlandev);
-> +	if (wlandev->close == NULL) {
-> +		printk(KERN_ERR "Sorry, got wlandev->close == NULL.\n");
-> +		ret = -EFAULT; /* FIXME: nr: correct return code? */
-> +		goto end;
-> +	}
->  
-> -	netif_stop_queue(wlandev->netdev);
-> -	wlandev->state = WLAN_DEVICE_CLOSED;
-> +	ret = wlandev->close(wlandev);
-> +	if (ret) {
-> +		netif_stop_queue(wlandev->netdev);
-> +		wlandev->state = WLAN_DEVICE_CLOSED;
-> +	}
->  
-> -	return result;
-> +end:
-> +	return ret;
->  }
->  
-
-but i wonder if the the test for wlandev->open in X_close() is needed
-can wlandev->close vanish between open() and stop() ?
-
-I am wondering who to use the error message "Sorry, got wlandev->open == NULL"
-is true but what help ? Give the reader a change and add __func__ to figure out
-what hit him.
-
-re,
- wh
-
-
->  /*----------------------------------------------------------------
-> @@ -242,8 +254,6 @@ void p80211netdev_rx(wlandevice_t *wlandev, struct sk_buff *skb)
->  	skb_queue_tail(&wlandev->nsd_rxq, skb);
->  
->  	tasklet_schedule(&wlandev->rx_bh);
-> -
-> -	return;
->  }
->  
->  /*----------------------------------------------------------------
