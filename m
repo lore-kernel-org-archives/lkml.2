@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753860Ab0ISW1k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 18:27:40 -0400
-Received: from mga02.intel.com ([134.134.136.20]:20002 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753429Ab0ISW1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 18:27:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,390,1280732400"; 
-   d="scan'208";a="658921480"
-Date: Mon, 20 Sep 2010 00:27:48 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gary King <gking@nvidia.com>
-Subject: Re: linux-next: build failure after merge of the mfd tree
-Message-ID: <20100919222747.GA4235@sortiz-mobl>
-References: <20100916125447.08698025.sfr@canb.auug.org.au>
+	id S1754259Ab0ISWrP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 18:47:15 -0400
+Received: from snt0-omc2-s12.snt0.hotmail.com ([65.55.90.87]:24345 "EHLO
+	snt0-omc2-s12.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753374Ab0ISWrO convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Sep 2010 18:47:14 -0400
+Message-ID: <SNT125-W52BDEC78C3DED007751655C37D0@phx.gbl>
+X-Originating-IP: [96.253.143.208]
+From: Yuhong Bao <yuhongbao_386@hotmail.com>
+To: <linux@arm.linux.org.uk>
+CC: <torvalds@linux-foundation.org>, <peterz@infradead.org>,
+        <cyeoh@au1.ibm.com>, <linux-kernel@vger.kernel.org>
+Subject: RE: [RFC][PATCH] Cross Memory Attach
+Date: Sun, 19 Sep 2010 15:47:14 -0700
+Importance: Normal
+In-Reply-To: <20100919214802.GA22579@n2100.arm.linux.org.uk>
+References: <20100915104855.41de3ebf@lilo>
+ <AANLkTimNsDxeyZL4GVaH4L7YGO-EoRyCMHDtMPWU37hN@mail.gmail.com>
+ <1284654451.2275.579.camel@laptop>
+ <AANLkTinihPeUueKhEqUuraW2hcf3FFHjm26RieKQZi0d@mail.gmail.com>
+ <1284657194.2275.585.camel@laptop>
+ <AANLkTi=hFydeqk_ENGmqEqwqduSeN2gpjMr+VpcN38Xx@mail.gmail.com>
+ <SNT125-W305F365835060339BD4008C37D0@phx.gbl>,<20100919214802.GA22579@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100916125447.08698025.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 19 Sep 2010 22:47:14.0920 (UTC) FILETIME=[9ADE2680:01CB584C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
 
-On Thu, Sep 16, 2010 at 12:54:47PM +1000, Stephen Rothwell wrote:
-> Hi Samuel,
-> 
-> After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
-> 
-> drivers/built-in.o: In function `__tps6586x_read':
-> tps6586x.c:(.text+0xe4151): undefined reference to `i2c_smbus_read_byte_data'
-> drivers/built-in.o: In function `__tps6586x_write':
-> tps6586x.c:(.text+0xe4345): undefined reference to `i2c_smbus_write_byte_data'
-> drivers/built-in.o: In function `tps6586x_reads':
-> (.text+0xe4762): undefined reference to `i2c_smbus_read_i2c_block_data'
-> drivers/built-in.o: In function `tps6586x_writes':
-> (.text+0xe4894): undefined reference to `i2c_smbus_write_i2c_block_data'
-> drivers/built-in.o: In function `tps6586x_init':
-> tps6586x.c:(.init.text+0xc511): undefined reference to `i2c_register_driver'
-> drivers/built-in.o: In function `tps6586x_i2c_probe':
-> tps6586x.c:(.devinit.text+0x4ae6): undefined reference to `i2c_smbus_read_byte_data'
-> drivers/built-in.o: In function `tps6586x_exit':
-> tps6586x.c:(.exit.text+0x574): undefined reference to `i2c_del_driver'
-> 
-> Caused by commit 2d0a9a6d922712267ef62a5e8b38ed2b37cf45cc ("mfd: Add
-> basic tps6586x interrupt support").  Presumably a missing dependency.
-> 
-> I have used the mfd tree from next-20100915 for today.
-Sorry about that, this is fixed now.
+> > (Adding Russell King of ARM Linux to CC list)
+>
+> I'm not sure why you're repeatedly sending me this email (this is the
+> second in less than 24 hours.)
+Sorry, the first one was sent with multipart/alternate with both HTML
+and plain text, leading it to be rejected by LKML.
 
-Cheers,
-Samuel.
+> In any case, it's not like I can influence the direction ARM Ltd take
+> their architecture - I only hear about stuff after the decisions have
+> been taken and the direction set. (Sometimes I hear about stuff just
+> before the public announcement.)
+>
+> So, if you think I can do anything to stop the move towards LPAS
+> (large physical address space) and tell ARM to go to 64-bit directly,
+> you're sadly mistaken.
+If I know of email address of any ARM engineers, I'd add them to CC list too.
 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> http://www.canb.auug.org.au/~sfr/
-
-
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Yuhong Bao
+ 		 	   		  
