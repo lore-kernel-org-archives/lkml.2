@@ -1,43 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007Ab0ISFJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 01:09:56 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:36857 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751125Ab0ISFJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 01:09:55 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/UsdVXNBLU6bf8l59l/4lnPjNJAYCQmkHrMNtf5M
-	rYE7yDdBtvR63K
-Subject: Re: [Stable-review] [064/123] sched: Protect task->cpus_allowed
- access in sched_getaffinity()
-From: Mike Galbraith <efault@gmx.de>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        stable-review@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-In-Reply-To: <1284841948.5879.301.camel@localhost>
-References: <20100918185724.290702750@clark.site>
-	 <20100918185958.285024381@clark.site> <1284841948.5879.301.camel@localhost>
-Content-Type: text/plain
-Date: Sun, 19 Sep 2010 07:10:06 +0200
-Message-Id: <1284873006.7467.1.camel@marge.simson.net>
+	id S1752539Ab0ISFqN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 01:46:13 -0400
+Received: from 1wt.eu ([62.212.114.60]:45099 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751929Ab0ISFqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Sep 2010 01:46:12 -0400
+Date: Sun, 19 Sep 2010 07:45:20 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, stable-review@kernel.org,
+        alan@lxorguk.ukuu.org.uk, David Miller <davem@davemloft.net>
+Subject: Re: [Stable-review] [000/123] 2.6.32.22-stable review
+Message-ID: <20100919054520.GB15598@1wt.eu>
+References: <20100918190024.GA14388@kroah.com> <20100918213930.GD11678@1wt.eu> <20100919040008.GA30907@suse.de>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100919040008.GA30907@suse.de>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-09-18 at 21:32 +0100, Ben Hutchings wrote:
-> I'm somewhat disturbed by the number of non-trivial scheduler changes
-> here.  How well have these been tested as applied to the 2.6.32.y
-> branch?
+On Sat, Sep 18, 2010 at 09:00:08PM -0700, Greg KH wrote:
+> On Sat, Sep 18, 2010 at 11:39:30PM +0200, Willy Tarreau wrote:
+> > Hi Greg,
+> > 
+> > On Sat, Sep 18, 2010 at 12:00:24PM -0700, Greg KH wrote:
+> > > [Note, I do still have patches that people have sent me for inclusion in
+> > > the .32-stable tree in my queue, but I figured this series was already
+> > > big enough that it should go out now.  If you notice, I _did_ apply all
+> > > patches that went through Linus's tree with a stable@kernel.org marking
+> > > on it, so people might consider using that method instead...]
+> > 
+> > I'll give this a try, however I really miss the tcp_collapse() fix
+> > (baff42ab1494528907bf4d5870359e31711746ae) without which 2.6.32.21 panics
+> > several times a day when using splice().
+> > 
+> > I don't know if Davem had time to forward it to you though.
+> 
+> He has not done so yet.  I think this is a big enough series for now
+> this releaase :)
 
-All of them of course.
+Yes, I certainly share your concerns with the size of the release. I
+just wanted to ensure we don't delay that fix too much because it's
+always very embarrassing to have a userland triggerable panic. I've
+seen David's mail so I assume we'll have that in .23 which is fine.
 
-	-Mike
+Thanks,
+Willy
 
