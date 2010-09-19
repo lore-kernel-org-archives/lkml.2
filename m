@@ -1,39 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754012Ab0ISNJg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 09:09:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5185 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753533Ab0ISNJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 09:09:34 -0400
-Message-ID: <4C960B78.4010804@redhat.com>
-Date: Sun, 19 Sep 2010 15:09:12 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.3
+	id S1754021Ab0ISNV7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 09:21:59 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:64279 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753712Ab0ISNV6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Sep 2010 09:21:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=Sn/OFvrESire6FIVhJTT4oFfQZtCSFgb1KjGFS7uRpgJHu2tTZV5Oid48C81M1U3J5
+         FfwpV6x72gvn9ADzwCUtAqK1e8ZETYzfKMKneEC45Q96ytnzDNeAzOX8easPMSTuaGQt
+         qYWzRXdKDYgPmkK/A/aEeeOOxSvUGhcN1dD/A=
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: raw_spinlock_t rules
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Sun, 19 Sep 2010 21:21:56 +0800
+Message-ID: <AANLkTi=Fi0i4fjWWaiZ_7E7FSOHqKKCfm9cxD3gLDLZe@mail.gmail.com>
+Subject: [PATCH] Documemtation: fix email-clients for gmail
+From: Hillf Danton <dhillf@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Some time ago, the i8259 emulation code in kvm was changed to use 
-raw_spinlock_t, as it was called in a preempt_disable() and 
-local_irq_disable() context, which doesn't work with preemptible 
-spinlocks used with CONFIG_PREEMPT_RT.
+If this patch is not unapplyable, then gmail seems not bad for
+delivering patch to vger.kernel.org.
 
-In Linux 2.6.37, the spinlock will no longer be taken in these contexts, 
-so I'd like to change it to a normal spinlock_t.  However, it is still 
-taken in a spin_lock_irq() context.
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
 
-Is it okay to do this change?  I figured since spin_lock_irq() is part 
-of the spinlock infrastructure it might to the right thing.
+--- o/linux-2.6.36-rc4/Documentation/email-clients.txt	2010-09-13
+07:07:38.000000000 +0800
++++ m/linux-2.6.36-rc4/Documentation/email-clients.txt	2010-09-19
+21:14:16.000000000 +0800
+@@ -216,14 +216,6 @@ Works.  Use "Insert file..." or external
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ Gmail (Web GUI)
 
--- 
-error compiling committee.c: too many arguments to function
+-Does not work for sending patches.
+-
+-Gmail web client converts tabs to spaces automatically.
+-
+-At the same time it wraps lines every 78 chars with CRLF style line breaks
+-although tab2space problem can be solved with external editor.
+-
+-Another problem is that Gmail will base64-encode any message that has a
+-non-ASCII character. That includes things like European names.
++Works.  Instead of Rich formatting, select Plain Text when preparing patch.
 
+                                 ###
