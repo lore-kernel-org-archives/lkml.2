@@ -1,214 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000Ab0ISTet (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 15:34:49 -0400
-Received: from mailhub.stratus.com ([134.111.1.18]:50670 "EHLO
-	mailhub5.stratus.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753023Ab0ISTes (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 15:34:48 -0400
-Date: Sun, 19 Sep 2010 15:34:33 -0400
-From: Bandan Das <bandan.das@stratus.com>
-To: David Miller <davem@davemloft.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, NetDev <netdev@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Patrick McHardy <kaber@trash.net>
-Subject: [PATCH net-next-2.6] bridge : Sanitize skb before it enters the IP
- stack
-Message-ID: <20100919193433.GF31036@stratus.com>
+	id S1754133Ab0ISTfy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 15:35:54 -0400
+Received: from fieldses.org ([174.143.236.118]:44973 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753023Ab0ISTfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Sep 2010 15:35:53 -0400
+Date: Sun, 19 Sep 2010 15:34:18 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, Matthew Wilcox <willy@linux.intel.com>,
+        Christoph Hellwig <hch@lst.de>,
+        Trond Myklebust <trond.myklebust@fys.uio.no>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, John Kacur <jkacur@redhat.com>,
+        Sage Weil <sage@newdream.net>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] fs/locks.c: prepare for BKL removal
+Message-ID: <20100919193418.GF32071@fieldses.org>
+References: <1284815371-5843-1-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Company: Stratus Technologies
-X-Disclaimer: This email will auto delete in 5 days, nah.. I am kidding!
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-OriginalArrivalTime: 19 Sep 2010 19:34:34.0017 (UTC) FILETIME=[B0085910:01CB5831]
+In-Reply-To: <1284815371-5843-1-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Related dicussion here : http://lkml.org/lkml/2010/9/3/16
+On Sat, Sep 18, 2010 at 03:09:31PM +0200, Arnd Bergmann wrote:
+> This prepares the removal of the big kernel lock from the
+> file locking code. We still use the BKL as long as fs/lockd
+> uses it and ceph might sleep, but we can flip the definition
+> to a private spinlock as soon as that's done.
+> All users outside of fs/lockd get converted to use
+> lock_flocks() instead of lock_kernel() where appropriate.
+> 
+> Based on an earlier patch to use a spinlock from Matthew
+> Wilcox, who has attempted this a few times before. An even
+> earlier attempt to use a semaphore instead of the BKL
+> apparently was made by Andrew Morton about ten years ago,
+> but reverted for performance reasons.
+> 
+> Someone should do some serious performance testing when
+> this becomes a spinlock, since this has caused problems
+> before. Using a spinlock should be at least as good
+> as the BKL in theory, but who knows...
+> 
+> If nobody has any objections to this preparation patch,
+> I'd like to add it to my bkl/vfs tree and into -next.
 
-Introduce a function br_parse_ip_options that will audit the 
-skb and possibly refill IP options before a packet enters the
-IP stack. If no options are present, the function will zero out
-the skb cb area so that it is not misinterpreted as options by some
-unsuspecting IP layer routine. If packet consistency fails, drop it.
+Looks good to me.
 
-Signed-off-by: Bandan Das <bandan.das@stratus.com>
----
- net/bridge/br_netfilter.c |  107 ++++++++++++++++++++++++++++++++------------
- net/ipv4/ip_options.c     |    3 +-
- 2 files changed, 80 insertions(+), 30 deletions(-)
+>  EXPORT_SYMBOL(posix_test_lock);
+> @@ -730,18 +746,16 @@ static int flock_lock_file(struct file *filp, struct file_lock *request)
+>  	int error = 0;
+>  	int found = 0;
+>  
+> -	lock_kernel();
+> -	if (request->fl_flags & FL_ACCESS)
+> -		goto find_conflict;
+> -
+> -	if (request->fl_type != F_UNLCK) {
+> -		error = -ENOMEM;
+> +	if (!(request->fl_flags & FL_ACCESS) && (request->fl_type != F_UNLCK)) {
+>  		new_fl = locks_alloc_lock();
+> -		if (new_fl == NULL)
+> -			goto out;
+> -		error = 0;
+> +		if (!new_fl)
+> +			return -ENOMEM;
+>  	}
+>  
+> +	lock_flocks();
+> +	if (request->fl_flags & FL_ACCESS)
+> +		goto find_conflict;
+> +
 
-diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
-index 137f232..77f7b5f 100644
---- a/net/bridge/br_netfilter.c
-+++ b/net/bridge/br_netfilter.c
-@@ -209,6 +209,72 @@ static inline void nf_bridge_update_protocol(struct sk_buff *skb)
- 		skb->protocol = htons(ETH_P_PPP_SES);
- }
- 
-+/* When handing a packet over to the IP layer
-+ * check whether we have a skb that is in the
-+ * expected format
-+ */
-+
-+int br_parse_ip_options(struct sk_buff *skb)
-+{
-+	struct ip_options *opt;
-+	struct iphdr *iph;
-+	struct net_device *dev = skb->dev;
-+	u32 len;
-+
-+	iph = ip_hdr(skb);
-+	opt = &(IPCB(skb)->opt);
-+
-+	/* Basic sanity checks */
-+	if (iph->ihl < 5 || iph->version != 4)
-+		goto inhdr_error;
-+
-+	if (!pskb_may_pull(skb, iph->ihl*4))
-+		goto inhdr_error;
-+
-+	iph = ip_hdr(skb);
-+	if (unlikely(ip_fast_csum((u8 *)iph, iph->ihl)))
-+		goto inhdr_error;
-+
-+	len = ntohs(iph->tot_len);
-+	if (skb->len < len) {
-+		IP_INC_STATS_BH(dev_net(dev), IPSTATS_MIB_INTRUNCATEDPKTS);
-+		goto drop;
-+	} else if (len < (iph->ihl*4))
-+		goto inhdr_error;
-+
-+	if (pskb_trim_rcsum(skb, len)) {
-+		IP_INC_STATS_BH(dev_net(dev), IPSTATS_MIB_INDISCARDS);
-+		goto drop;
-+	}
-+
-+	/* Zero out the CB buffer if no options present */
-+	if (iph->ihl == 5) {
-+		memset(IPCB(skb), 0, sizeof(struct inet_skb_parm));
-+		return 0;
-+	}
-+
-+	opt->optlen = iph->ihl*4 - sizeof(struct iphdr);
-+	if (ip_options_compile(dev_net(dev), opt, skb))
-+		goto inhdr_error;
-+
-+	/* Check correct handling of SRR option */
-+	if (unlikely(opt->srr)) {
-+		struct in_device *in_dev = __in_dev_get_rcu(dev);
-+		if (in_dev && !IN_DEV_SOURCE_ROUTE(in_dev))
-+			goto drop;
-+
-+		if (ip_options_rcv_srr(skb))
-+			goto drop;
-+	}
-+
-+	return 0;
-+
-+inhdr_error:
-+	IP_INC_STATS_BH(dev_net(dev), IPSTATS_MIB_INHDRERRORS);
-+drop:
-+	return -1;
-+}
-+
- /* Fill in the header for fragmented IP packets handled by
-  * the IPv4 connection tracking code.
-  */
-@@ -549,7 +615,6 @@ static unsigned int br_nf_pre_routing(unsigned int hook, struct sk_buff *skb,
- {
- 	struct net_bridge_port *p;
- 	struct net_bridge *br;
--	struct iphdr *iph;
- 	__u32 len = nf_bridge_encap_header_len(skb);
- 
- 	if (unlikely(!pskb_may_pull(skb, len)))
-@@ -578,28 +643,9 @@ static unsigned int br_nf_pre_routing(unsigned int hook, struct sk_buff *skb,
- 
- 	nf_bridge_pull_encap_header_rcsum(skb);
- 
--	if (!pskb_may_pull(skb, sizeof(struct iphdr)))
--		goto inhdr_error;
--
--	iph = ip_hdr(skb);
--	if (iph->ihl < 5 || iph->version != 4)
--		goto inhdr_error;
--
--	if (!pskb_may_pull(skb, 4 * iph->ihl))
--		goto inhdr_error;
--
--	iph = ip_hdr(skb);
--	if (ip_fast_csum((__u8 *) iph, iph->ihl) != 0)
--		goto inhdr_error;
--
--	len = ntohs(iph->tot_len);
--	if (skb->len < len || len < 4 * iph->ihl)
--		goto inhdr_error;
--
--	pskb_trim_rcsum(skb, len);
--
--	/* BUG: Should really parse the IP options here. */
--	memset(IPCB(skb), 0, sizeof(struct inet_skb_parm));
-+	if (br_parse_ip_options(skb))
-+		/* Drop invalid packet */
-+		goto out;
- 
- 	nf_bridge_put(skb->nf_bridge);
- 	if (!nf_bridge_alloc(skb))
-@@ -614,8 +660,6 @@ static unsigned int br_nf_pre_routing(unsigned int hook, struct sk_buff *skb,
- 
- 	return NF_STOLEN;
- 
--inhdr_error:
--//      IP_INC_STATS_BH(IpInHdrErrors);
- out:
- 	return NF_DROP;
- }
-@@ -759,14 +803,19 @@ static unsigned int br_nf_forward_arp(unsigned int hook, struct sk_buff *skb,
- #if defined(CONFIG_NF_CONNTRACK_IPV4) || defined(CONFIG_NF_CONNTRACK_IPV4_MODULE)
- static int br_nf_dev_queue_xmit(struct sk_buff *skb)
- {
-+	int ret;
-+
- 	if (skb->nfct != NULL && skb->protocol == htons(ETH_P_IP) &&
- 	    skb->len + nf_bridge_mtu_reduction(skb) > skb->dev->mtu &&
- 	    !skb_is_gso(skb)) {
--		/* BUG: Should really parse the IP options here. */
--		memset(IPCB(skb), 0, sizeof(struct inet_skb_parm));
--		return ip_fragment(skb, br_dev_queue_push_xmit);
-+		if (br_parse_ip_options(skb))
-+			/* Drop invalid packet */
-+			return NF_DROP;
-+		ret = ip_fragment(skb, br_dev_queue_push_xmit);
- 	} else
--		return br_dev_queue_push_xmit(skb);
-+		ret = br_dev_queue_push_xmit(skb);
-+
-+	return ret;
- }
- #else
- static int br_nf_dev_queue_xmit(struct sk_buff *skb)
-diff --git a/net/ipv4/ip_options.c b/net/ipv4/ip_options.c
-index ba9836c..1906fa3 100644
---- a/net/ipv4/ip_options.c
-+++ b/net/ipv4/ip_options.c
-@@ -466,7 +466,7 @@ error:
- 	}
- 	return -EINVAL;
- }
--
-+EXPORT_SYMBOL(ip_options_compile);
- 
- /*
-  *	Undo all the changes done by ip_options_compile().
-@@ -646,3 +646,4 @@ int ip_options_rcv_srr(struct sk_buff *skb)
- 	}
- 	return 0;
- }
-+EXPORT_SYMBOL(ip_options_rcv_srr);
--- 
-1.6.6.1
+I might have left this to a separate patch, but OK.
+
+--b.
+
+>  	for_each_lock(inode, before) {
+>  		struct file_lock *fl = *before;
+>  		if (IS_POSIX(fl))
+> @@ -767,8 +781,11 @@ static int flock_lock_file(struct file *filp, struct file_lock *request)
+>  	 * If a higher-priority process was blocked on the old file lock,
+>  	 * give it the opportunity to lock the file.
+>  	 */
+> -	if (found)
+> +	if (found) {
+> +		unlock_flocks();
+>  		cond_resched();
+> +		lock_flocks();
+> +	}
+>  
+>  find_conflict:
+>  	for_each_lock(inode, before) {
