@@ -1,63 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973Ab0ISHRz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 03:17:55 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46361 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103Ab0ISHRy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 03:17:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=VrEsbBYN/6sG3aqWdgMALCnef3RjGlT8v+bgzbpmgtdr+4mg0koFj52Ix6LhsTe1fa
-         9twbN6PBZpzbbRz0LJmSz/N5KyW6KVZRgzRBcVAJLwOJC5C6W8tuT+3F+e800kI4NVkf
-         dgtDV5F7ZGucG6GAYxIyJbDJp6ydDtE289NQc=
-Subject: Re: [PATCH v4] mtd: nand: Expand nand_ecc_layout, deprecate ioctl
- ECCGETLAYOUT
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        Sneha Narnakaje <nsnehaprabha@ti.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Kevin Cernekee <cernekee@gmail.com>
-In-Reply-To: <4C951B2A.1000706@gmail.com>
-References: <4C5CA4A1.1040000@broadcom.com>
-	 <1282154806-9420-1-git-send-email-norris@broadcom.com>
-	 <4C6DD170.1060807@renesas.com>  <4C6E9C23.6060703@broadcom.com>
-	 <1282646703.24044.162.camel@localhost>  <4C746DE0.7000104@gmail.com>
-	 <1283163647.12995.43.camel@brekeke> <1284830690.1721.3.camel@brekeke>
-	 <4C951B2A.1000706@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 19 Sep 2010 10:17:50 +0300
-Message-ID: <1284880670.1721.111.camel@brekeke>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-Content-Transfer-Encoding: 8bit
+	id S1751969Ab0ISHWd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 03:22:33 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:44483 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751103Ab0ISHWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Sep 2010 03:22:32 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1/+1QVkDXj+renvL5BJVoe/mbJFZRIPl2KAqnvzDX
+	OQO3RIr0g6goNc
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+To: linux-fbdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Joseph Chan <JosephChan@via.com.tw>, Jonathan Corbet <corbet@lwn.net>
+Subject: [PATCH 05/12] viafb: fix i2c_transfer error handling
+Date: Sun, 19 Sep 2010 07:33:46 +0000
+Message-Id: <171e0fb74a34b069c0c12aa90c56d5e5da5489c6.1284879532.git.FlorianSchandinat@gmx.de>
+X-Mailer: git-send-email 1.6.3.2
+In-Reply-To: <cover.1284879532.git.FlorianSchandinat@gmx.de>
+References: <cover.1284879532.git.FlorianSchandinat@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-09-18 at 13:03 -0700, Brian Norris wrote:
-> On 9/18/2010 10:24 AM, Artem Bityutskiy wrote:
-> > Brian,
-> > 
-> > would you address the small things I noticed in a follow-up patch?
-> 
-> Artem,
-> 
-> Yes, I will. I'm sorry for the delay; I've been a little busy and
-> putting some things off. Would you like a patch for the comments against
-> your l2 tree or try and squash it with my previous commit and base it
-> off of mtd-2.6 or some other option?
+viafb: fix i2c_transfer error handling
 
-No, against l2 tree is ok, I'll put it on top, thanks!
+i2c_transfer returns negative errno on error and number of messages
+processed on success. Just returning this value would give a poor
+interface as it is not obvious that you must compare with 2 after reading
+1 or n bytes and with 1 after writing 1 byte to determine if it was
+successful. To avoid this error prone interface convert the error code
+of a successful read/write to zero and all other non-negative values to
+an negative error code.
+This fixes a regression introduced by
+	via: Rationalize vt1636 detection
+which resulted in no longer detecting a VT1636 chip and therefore has
+broken the output in configurations wich contain this chip.
 
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Joseph Chan <JosephChan@via.com.tw>
+Cc: Jonathan Corbet <corbet@lwn.net>
+---
+ drivers/video/via/via_i2c.c |   27 ++++++++++++++++++++++++---
+ 1 files changed, 24 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/video/via/via_i2c.c b/drivers/video/via/via_i2c.c
+index da9e4ca..021112e 100644
+--- a/drivers/video/via/via_i2c.c
++++ b/drivers/video/via/via_i2c.c
+@@ -114,6 +114,7 @@ static void via_i2c_setsda(void *data, int state)
+ 
+ int viafb_i2c_readbyte(u8 adap, u8 slave_addr, u8 index, u8 *pdata)
+ {
++	int ret;
+ 	u8 mm1[] = {0x00};
+ 	struct i2c_msg msgs[2];
+ 
+@@ -126,11 +127,18 @@ int viafb_i2c_readbyte(u8 adap, u8 slave_addr, u8 index, u8 *pdata)
+ 	mm1[0] = index;
+ 	msgs[0].len = 1; msgs[1].len = 1;
+ 	msgs[0].buf = mm1; msgs[1].buf = pdata;
+-	return i2c_transfer(&via_i2c_par[adap].adapter, msgs, 2);
++	ret = i2c_transfer(&via_i2c_par[adap].adapter, msgs, 2);
++	if (ret == 2)
++		ret = 0;
++	else if (ret >= 0)
++		ret = -EIO;
++
++	return ret;
+ }
+ 
+ int viafb_i2c_writebyte(u8 adap, u8 slave_addr, u8 index, u8 data)
+ {
++	int ret;
+ 	u8 msg[2] = { index, data };
+ 	struct i2c_msg msgs;
+ 
+@@ -140,11 +148,18 @@ int viafb_i2c_writebyte(u8 adap, u8 slave_addr, u8 index, u8 data)
+ 	msgs.addr = slave_addr / 2;
+ 	msgs.len = 2;
+ 	msgs.buf = msg;
+-	return i2c_transfer(&via_i2c_par[adap].adapter, &msgs, 1);
++	ret = i2c_transfer(&via_i2c_par[adap].adapter, &msgs, 1);
++	if (ret == 1)
++		ret = 0;
++	else if (ret >= 0)
++		ret = -EIO;
++
++	return ret;
+ }
+ 
+ int viafb_i2c_readbytes(u8 adap, u8 slave_addr, u8 index, u8 *buff, int buff_len)
+ {
++	int ret;
+ 	u8 mm1[] = {0x00};
+ 	struct i2c_msg msgs[2];
+ 
+@@ -156,7 +171,13 @@ int viafb_i2c_readbytes(u8 adap, u8 slave_addr, u8 index, u8 *buff, int buff_len
+ 	mm1[0] = index;
+ 	msgs[0].len = 1; msgs[1].len = buff_len;
+ 	msgs[0].buf = mm1; msgs[1].buf = buff;
+-	return i2c_transfer(&via_i2c_par[adap].adapter, msgs, 2);
++	ret = i2c_transfer(&via_i2c_par[adap].adapter, msgs, 2);
++	if (ret == 2)
++		ret = 0;
++	else if (ret >= 0)
++		ret = -EIO;
++
++	return ret;
+ }
+ 
+ /*
 -- 
-Best Regards,
-Artem Bityutskiy (Битюцкий Артём)
+1.6.3.2
 
