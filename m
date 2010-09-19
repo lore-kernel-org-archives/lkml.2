@@ -1,100 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755691Ab0ISAiq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Sep 2010 20:38:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51721 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754862Ab0ISAiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Sep 2010 20:38:24 -0400
-From: Zachary Amsden <zamsden@redhat.com>
-To: kvm@vger.kernel.org
-Cc: Zachary Amsden <zamsden@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Glauber Costa <glommer@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [KVM timekeeping fixes 3/4] Rename timer function
-Date: Sat, 18 Sep 2010 14:38:14 -1000
-Message-Id: <1284856695-19438-3-git-send-email-zamsden@redhat.com>
-In-Reply-To: <1284856695-19438-2-git-send-email-zamsden@redhat.com>
-References: <1284856695-19438-1-git-send-email-zamsden@redhat.com>
- <1284856695-19438-2-git-send-email-zamsden@redhat.com>
-Organization: Frobozz Magic Timekeeping Company
+	id S1755606Ab0ISB1g (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Sep 2010 21:27:36 -0400
+Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:38408 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755068Ab0ISB1f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Sep 2010 21:27:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=to:subject:from
+	:date:message-id:mime-version:content-type; q=dns; s=sasl; b=DPn
+	Qih/7QlVdvglpIMDLvcseB7QLvNJd4asE4DAXRmhwcG2JXn6zRRzC/jlXSuj5uzi
+	mbfktnHDsul03K1MMs7uwxftCczoe5APso/hBAj7OYlNTdQznQBy2wEe+4BjfGfU
+	zlOQuWjIkPHE8w2lrfExh+nBWqzGJd2/Ct5U3sMA=
+To: git@vger.kernel.org
+Subject: [ANNOUNCE] Git 1.7.3
+From: Junio C Hamano <gitster@pobox.com>
+Date: Sat, 18 Sep 2010 18:27:24 -0700
+Message-ID: <7vpqway137.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: 121DF4F4-C38D-11DF-8D65-030CEE7EF46B-77302942!a-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This just changes some names to better reflect the usage they
-will be given.  Separated out to keep confusion to a minimum.
+The latest feature release Git 1.7.3 is available at the usual
+places:
 
-Signed-off-by: Zachary Amsden <zamsden@redhat.com>
----
- arch/x86/kvm/x86.c       |   12 ++++++------
- include/linux/kvm_host.h |    2 +-
- 2 files changed, 7 insertions(+), 7 deletions(-)
+  http://www.kernel.org/pub/software/scm/git/
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index f92401f..09f468a 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -892,7 +892,7 @@ static void kvm_write_wall_clock(struct kvm *kvm, gpa_t wall_clock)
- 
- 	/*
- 	 * The guest calculates current wall clock time by adding
--	 * system time (updated by kvm_write_guest_time below) to the
-+	 * system time (updated by kvm_guest_time_update below) to the
- 	 * wall clock specified here.  guest system time equals host
- 	 * system time for us, thus we must fill in host boot time here.
- 	 */
-@@ -1032,7 +1032,7 @@ void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
- }
- EXPORT_SYMBOL_GPL(kvm_write_tsc);
- 
--static int kvm_write_guest_time(struct kvm_vcpu *v)
-+static int kvm_guest_time_update(struct kvm_vcpu *v)
- {
- 	unsigned long flags;
- 	struct kvm_vcpu_arch *vcpu = &v->arch;
-@@ -1052,7 +1052,7 @@ static int kvm_write_guest_time(struct kvm_vcpu *v)
- 	local_irq_restore(flags);
- 
- 	if (unlikely(this_tsc_khz == 0)) {
--		kvm_make_request(KVM_REQ_KVMCLOCK_UPDATE, v);
-+		kvm_make_request(KVM_REQ_CLOCK_UPDATE, v);
- 		return 1;
- 	}
- 
-@@ -1128,7 +1128,7 @@ static int kvm_request_guest_time_update(struct kvm_vcpu *v)
- 
- 	if (!vcpu->time_page)
- 		return 0;
--	kvm_make_request(KVM_REQ_KVMCLOCK_UPDATE, v);
-+	kvm_make_request(KVM_REQ_CLOCK_UPDATE, v);
- 	return 1;
- }
- 
-@@ -5012,8 +5012,8 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
- 			kvm_mmu_unload(vcpu);
- 		if (kvm_check_request(KVM_REQ_MIGRATE_TIMER, vcpu))
- 			__kvm_migrate_timers(vcpu);
--		if (kvm_check_request(KVM_REQ_KVMCLOCK_UPDATE, vcpu)) {
--			r = kvm_write_guest_time(vcpu);
-+		if (kvm_check_request(KVM_REQ_CLOCK_UPDATE, vcpu)) {
-+			r = kvm_guest_time_update(vcpu);
- 			if (unlikely(r))
- 				goto out;
- 		}
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 6022da1..0b89d00 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -36,7 +36,7 @@
- #define KVM_REQ_PENDING_TIMER      5
- #define KVM_REQ_UNHALT             6
- #define KVM_REQ_MMU_SYNC           7
--#define KVM_REQ_KVMCLOCK_UPDATE    8
-+#define KVM_REQ_CLOCK_UPDATE       8
- #define KVM_REQ_KICK               9
- #define KVM_REQ_DEACTIVATE_FPU    10
- #define KVM_REQ_EVENT             11
--- 
-1.6.6.1
+  git-1.7.3.tar.{gz,bz2}			(source tarball)
+  git-htmldocs-1.7.3.tar.{gz,bz2}		(preformatted docs)
+  git-manpages-1.7.3.tar.{gz,bz2}		(preformatted docs)
+
+The RPM binary packages for a few architectures are found in:
+
+  RPMS/$arch/git-*-1.7.3-1.fc11.$arch.rpm	(RPM)
+
+Git v1.7.3 Release Notes
+========================
+
+Updates since v1.7.2
+--------------------
+
+ * git-gui, now at version 0.13.0, got various updates and a new
+   maintainer, Pat Thoyts.
+
+ * Gitweb allows its configuration to change per each request; it used to
+   read the configuration once upon startup.
+
+ * When git finds a corrupt object, it now reports the file that contains
+   it.
+
+ * "git checkout -B <it>" is a shorter way to say "git branch -f <it>"
+   followed by "git checkout <it>".
+
+ * When "git checkout" or "git merge" refuse to proceed in order to
+   protect local modification to your working tree, they used to stop
+   after showing just one path that might be lost.  They now show all,
+   in a format that is easier to read.
+
+ * "git clean" learned "-e" ("--exclude") option.
+
+ * Hunk headers produced for C# files by "git diff" and friends show more
+   relevant context than before.
+
+ * diff.ignoresubmodules configuration variable can be used to squelch the
+   differences in submodules reported when running commands (e.g. "diff",
+   "status", etc.) at the superproject level.
+
+ * http.useragent configuration can be used to lie who you are to your
+   restrictive firewall.
+
+ * "git rebase --strategy <s>" learned "-X" option to pass extra options
+   that are understood by the chosen merge strategy.
+
+ * "git rebase -i" learned "exec" that you can insert into the insn sheet
+   to run a command between its steps.
+
+ * "git rebase" between branches that have many binary changes that do
+   not conflict should be faster.
+
+ * "git rebase -i" peeks into rebase.autosquash configuration and acts as
+   if you gave --autosquash from the command line.
+
+
+Also contains various documentation updates.
+
+
+Fixes since v1.7.2
+------------------
+
+All of the fixes in v1.7.2.X maintenance series are included in this
+release, unless otherwise noted.
+
+ * "git merge -s recursive" (which is the default) did not handle cases
+   where a directory becomes a file (or vice versa) very well.
+
+ * "git fetch" and friends were accidentally broken for url with "+" in
+   its path, e.g. "git://git.gnome.org/gtk+".
+
+ * "git fetch $url" (i.e. without refspecs) was broken for quite some
+   time, if the current branch happen to be tracking some remote.
+
+ * "git ls-tree dir dirgarbage", when "dir" was a directory,
+   incorrectly recursed into "dir".
+
+ * "git note remove" created unnecessary extra commit when named object
+   did not have any note to begin with.
+
+ * "git rebase" did not work well if you had diff.noprefix configured.
+
+ * "git -c foo=bar subcmd" did not work well for subcmd that is not
+   implemented as a built-in command.
 
