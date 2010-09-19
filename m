@@ -1,59 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726Ab0ISMbL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 08:31:11 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:34009 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752573Ab0ISMbJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 08:31:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=NI5o+7GKykYBkPvGC8oVgR3+RPCR7H4taqDwkw7idcKjzHLp6Ru7i4BWcPZ5gdCdC2
-         o1y/fcS4Nlqp2CqSLR1ZHL2mqfnMRkw1ZOgR/eK3tPYIE9y6D45pIdAI9WP3L99ZR5V+
-         4B9I2r6H+dCpICNBd/YKtm9MqI+Wawz9Qf8Zw=
-Message-ID: <4C9602E4.4090007@gmail.com>
-Date: Sun, 19 Sep 2010 14:32:36 +0200
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	id S1754012Ab0ISMkg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 08:40:36 -0400
+Received: from mx01.sz.bfs.de ([194.94.69.103]:61299 "EHLO mx01.sz.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752738Ab0ISMkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Sep 2010 08:40:35 -0400
+Message-ID: <4C9604BF.1090809@bfs.de>
+Date: Sun, 19 Sep 2010 14:40:31 +0200
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
 MIME-Version: 1.0
-To: Pedro Francisco <pedrogfrancisco@gmail.com>
-CC: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org
-Subject: Re: ahci rmmodable and shouldn't
-References: <201009162256.04765.pedrogfrancisco@gmail.com> <47010.148.87.67.141.1284674336.squirrel@www.xenotime.net> <4C933A8F.2080305@gmail.com> <1284892106.2650.4.camel@sundae-v2>
-In-Reply-To: <1284892106.2650.4.camel@sundae-v2>
-X-Enigmail-Version: 1.1.1
+To: Nils Radtke <lkml@Think-Future.com>
+CC: gregkh@suse.de, kernel-janitors@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: wlan-ng: p80211netdev.c cleanup
+References: <1284834652-26171-1-git-send-email-lkml@Think-Future.com>
+In-Reply-To: <1284834652-26171-1-git-send-email-lkml@Think-Future.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On 09/19/2010 12:28 PM, Pedro Francisco wrote:
-> On Sex, 2010-09-17 at 11:53 +0200, Tejun Heo wrote:
->> Just don't rmmod a module which is serving a live filesystem.  Why
->> does it even matter?
+
+Nils Radtke schrieb:
+> Effected preliminary cleanup lead by the idea of kerneljanitor.org .
+> As recommended I'm asking for approval of the location of cleanup
+> and the manner it happened to know I'm heading in the right
+> direction.
 > 
-> ... Ok, let me argue another way. What if my mail was called: «lsmod
-> shows false values ("Used by: 0") for module 'ahci'», would you agree it
-> was an error and should therefore be fixed?
+> Compiles. Not tested.
+> 
+> Signed-off-by: Nils Radtke <lkml@Think-Future.com>
+> ---
+>  drivers/staging/wlan-ng/p80211netdev.c |   50 +++++++++++++++++++-------------
+>  1 files changed, 30 insertions(+), 20 deletions(-)
+> 
+> diff --git a/drivers/staging/wlan-ng/p80211netdev.c b/drivers/staging/wlan-ng/p80211netdev.c
+> index aa1792c..8104e11 100644
+> --- a/drivers/staging/wlan-ng/p80211netdev.c
+> +++ b/drivers/staging/wlan-ng/p80211netdev.c
+> @@ -176,25 +176,30 @@ static struct net_device_stats *p80211knetdev_get_stats(netdevice_t * netdev)
+>  ----------------------------------------------------------------*/
+>  static int p80211knetdev_open(netdevice_t *netdev)
+>  {
+> -	int result = 0;		/* success */
+> +	int ret = 0;
+>  	wlandevice_t *wlandev = netdev->ml_priv;
+>  
+>  	/* Check to make sure the MSD is running */
+> -	if (wlandev->msdstate != WLAN_MSD_RUNNING)
+> -		return -ENODEV;
+> +	if (wlandev->msdstate != WLAN_MSD_RUNNING) {
+> +		ret = -ENODEV;
+> +		goto end;
+> +	}
+>  
+>  	/* Tell the MSD to open */
+> -	if (wlandev->open != NULL) {
+> -		result = wlandev->open(wlandev);
+> -		if (result == 0) {
+> -			netif_start_queue(wlandev->netdev);
+> -			wlandev->state = WLAN_DEVICE_OPEN;
+> -		}
+> -	} else {
+> -		result = -EAGAIN;
+> +	if (wlandev->open == NULL) {
+> +		printk(KERN_ERR "Sorry, got wlandev->open == NULL.\n");
+> +		ret = -EAGAIN;
+> +		goto end;
+>  	}
+>  
+> -	return result;
+> +	ret = wlandev->open(wlandev);
+> +	if (ret) {
+> +		netif_start_queue(wlandev->netdev);
+> +		wlandev->state = WLAN_DEVICE_OPEN;
+> +	}
+> +
+> +end:
+> +	return ret;
+>  }
+>  
 
-I think it works the same way for any other SCSI driver and it's
-pretty convenient during development.  You can unload any network
-driver module while the network is still up too.  Module reference
-count doesn't have any specific meaning of 'use' preassigned other
-than it's there to prevent unloading module while the code and data
-are being actively used by the processor.  It's unfortunate that the
-way module reference count is used for libata is causing discomfort to
-you but I need much better reason to change it.
+unwinding is always good :)
 
-Thanks.
 
--- 
-tejun
+
+
+
+>  /*----------------------------------------------------------------
+> @@ -211,16 +216,23 @@ static int p80211knetdev_open(netdevice_t *netdev)
+>  ----------------------------------------------------------------*/
+>  static int p80211knetdev_stop(netdevice_t *netdev)
+>  {
+> -	int result = 0;
+> +	int ret = -EFAULT;
+>  	wlandevice_t *wlandev = netdev->ml_priv;
+>  
+> -	if (wlandev->close != NULL)
+> -		result = wlandev->close(wlandev);
+> +	if (wlandev->close == NULL) {
+> +		printk(KERN_ERR "Sorry, got wlandev->close == NULL.\n");
+> +		ret = -EFAULT; /* FIXME: nr: correct return code? */
+> +		goto end;
+> +	}
+>  
+> -	netif_stop_queue(wlandev->netdev);
+> -	wlandev->state = WLAN_DEVICE_CLOSED;
+> +	ret = wlandev->close(wlandev);
+> +	if (ret) {
+> +		netif_stop_queue(wlandev->netdev);
+> +		wlandev->state = WLAN_DEVICE_CLOSED;
+> +	}
+>  
+> -	return result;
+> +end:
+> +	return ret;
+>  }
+>  
+
+but i wonder if the the test for wlandev->open in X_close() is needed
+can wlandev->close vanish between open() and stop() ?
+
+I am wondering who to use the error message "Sorry, got wlandev->open == NULL"
+is true but what help ? Give the reader a change and add __func__ to figure out
+what hit him.
+
+re,
+ wh
+
+
+>  /*----------------------------------------------------------------
+> @@ -242,8 +254,6 @@ void p80211netdev_rx(wlandevice_t *wlandev, struct sk_buff *skb)
+>  	skb_queue_tail(&wlandev->nsd_rxq, skb);
+>  
+>  	tasklet_schedule(&wlandev->rx_bh);
+> -
+> -	return;
+>  }
+>  
+>  /*----------------------------------------------------------------
