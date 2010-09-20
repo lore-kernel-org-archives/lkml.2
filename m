@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756011Ab0ITIqb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 04:46:31 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:41541 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755761Ab0ITIqb (ORCPT
+	id S1756016Ab0ITIrW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 04:47:22 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41119 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755632Ab0ITIrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 04:46:31 -0400
-Subject: Re: [PATCH] Regulator: lp3972 cleanup
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100917122844.GD4322@rakim.wolfsonmicro.main>
-References: <1284702257.9481.3.camel@mola>
-	 <20100917122844.GD4322@rakim.wolfsonmicro.main>
+	Mon, 20 Sep 2010 04:47:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Hrwqqu+SE0aB/YkwMB/tS08r5PiyDYCmLcSdN3mAeqApHULJmv4eBl1VINvh+sq6dZ
+         D0e8sC5T7n29UDEzNU7xcvCAgi2HBIRW59LK5CIkyuZ24wXgylJYl1CU4NA4y/H6I62V
+         E6qBDPR5h2K9EY4mSCTDCfTmcvnw3lLE5QJaE=
+Subject: Re: [PATCH] usibfs: fix kconfig dependency warning
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Adrian Hunter <adrian.hunter@nokia.com>, linux-mtd@lists.infradead.org
+In-Reply-To: <20100918125340.7a2cbb8b.randy.dunlap@oracle.com>
+References: <20100918125340.7a2cbb8b.randy.dunlap@oracle.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 20 Sep 2010 09:46:26 +0100
-Message-ID: <1284972386.3403.20.camel@odin>
+Date: Mon, 20 Sep 2010 11:45:28 +0300
+Message-ID: <1284972328.2286.49.camel@localhost>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-09-17 at 13:28 +0100, Mark Brown wrote:
-> On Fri, Sep 17, 2010 at 01:44:17PM +0800, Axel Lin wrote:
+On Sat, 2010-09-18 at 12:53 -0700, Randy Dunlap wrote:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
 > 
-> >  - Logging the value for diagnostics if failed to detect device
+> Fix another kconfig dependency warning, this time in ubifs.
 > 
-> >  	if (ret == 0 && (val & SYS_CONTROL1_INIT_MASK) != SYS_CONTROL1_INIT_VAL)
-> >  		ret = -ENODEV;
-> >  	if (ret < 0) {
-> > -		dev_err(&i2c->dev, "failed to detect device\n");
-> > +		dev_err(&i2c->dev, "failed to detect device: %d\n", ret);
-> 
-> This misses part of the point of my suggestion - if you don't match the
-> ID register then you'll log -ENODEV rather than the device ID that you
-> read back which would presumably be more useful for someone trying to
-> work out why the check triggered.
-> 
-> Lots of other good stuff in there, though:
-> 
-> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> warning: (MTD_UBI_DEBUG && MTD && SYSFS && MTD_UBI && KALLSYMS && DEBUG_KERNEL || UBIFS_FS_DEBUG && MISC_FILESYSTEMS && UBIFS_FS || LOCKDEP && DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT && STACKTRACE_SUPPORT && LOCKDEP_SUPPORT || LATENCYTOP && HAVE_LATENCYTOP_SUPPORT && DEBUG_KERNEL && STACKTRACE_SUPPORT && PROC_FS) selects KALLSYMS_ALL which has unmet direct dependencies (DEBUG_KERNEL && KALLSYMS)
 
-Applied.
+Pushed to the ubifs-2.6.git tree. This won't go to 2.6.36, though, I
+think - not too important. But I have anything really important, I'll
+merge this one as well, although for now I do not have such plans.
 
-Thanks
+Thanks!
 
-Liam
 -- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
