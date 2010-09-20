@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126Ab0ITJZf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 05:25:35 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:34435 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753480Ab0ITJZd (ORCPT
+	id S1756131Ab0ITJ1k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 05:27:40 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:53840 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756096Ab0ITJ1j convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 05:25:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=m4pFSPFvW2Q34oEj/Yh5AvODYTuup3U95sieDGWRrHJlR9eL7Xw3zbE78Sf/dikjlJ
-         UG1jANfPMagCtV5CzzLRWU23IWEejCpjN++D5UOEkN8Gfu/KFZW7HuWJtEpDWUAAAX0n
-         Mu33abTTptWRoCFdb1vxfQHW5QQZ7wKDTRdtk=
-Subject: Re: ahci rmmodable and shouldn't
-From: Pedro Francisco <pedrogfrancisco@gmail.com>
-To: Tejun Heo <htejun@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-In-Reply-To: <4C9602E4.4090007@gmail.com>
-References: <201009162256.04765.pedrogfrancisco@gmail.com>
-	 <47010.148.87.67.141.1284674336.squirrel@www.xenotime.net>
-	 <4C933A8F.2080305@gmail.com> <1284892106.2650.4.camel@sundae-v2>
-	 <4C9602E4.4090007@gmail.com>
+	Mon, 20 Sep 2010 05:27:39 -0400
+Subject: Re: [PATCH 2/6] Add IRQ_TIME_ACCOUNTING, finer accounting of CPU
+ irq time
+From: Peter Zijlstra <peterz@infradead.org>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Venkatesh Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Paul Turner <pjt@google.com>
+In-Reply-To: <20100920092734.3f46af9f@mschwide.boeblingen.de.ibm.com>
+References: <1284688596-6731-1-git-send-email-venki@google.com>
+	 <1284688596-6731-3-git-send-email-venki@google.com>
+	 <1284895291.2275.617.camel@laptop> <1284897666.2275.638.camel@laptop>
+	 <20100920092734.3f46af9f@mschwide.boeblingen.de.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 20 Sep 2010 10:25:26 +0100
-Message-ID: <1284974726.11757.9.camel@sundae-v2>
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 20 Sep 2010 11:27:30 +0200
+Message-ID: <1284974850.2275.682.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Dom, 2010-09-19 at 14:32 +0200, Tejun Heo wrote: 
-> I think it works the same way for any other SCSI driver and it's
-> pretty convenient during development.  You can unload any network
-> driver module while the network is still up too.  Module reference
-> count doesn't have any specific meaning of 'use' preassigned other
-> than it's there to prevent unloading module while the code and data
-> are being actively used by the processor.  It's unfortunate that the
-> way module reference count is used for libata is causing discomfort to
-> you but I need much better reason to change it.
+On Mon, 2010-09-20 at 09:27 +0200, Martin Schwidefsky wrote:
 
-Discomfort? Not really, sorry if my stubbornness felt like it. No, I'm
-fine with it.
+> > OK, so by virtue of calling the same function on _enter and _exit its
+> > not incomplete, just weird.
+> 
+> That is the same with CONFIG_VIRT_CPU_ACCOUNTING=y. irq_enter/irq_exit
+> call account_system_vtime, the function then uses the preempt/softirq/
+> hardirq counter to find out which context is currently active.
 
-I just thought it was weird the change of behaviour from 2.6.32, plus
-felt that the "Used by" field by lsmod was incorrectly set at 0 since
-the module is, in fact, being used (e)
+Yeah, I realized that eventually, I've so far been able to mostly ignore
+all that VIRT_CPU_ACCOUNTING muck.
 
-If you say both behaviours are expected and preferred, besides being
-consistent with other modules (something I didn't know), I really can't
-argue any more.
+> > And it won't account time double, since it uses irq_start_time to
+> > compute deltas between invocations and will attribute that delta to only
+> > one state.
+> 
+> irq_start_time is a bit misleading, it is a time stamp of the last update.
+> The confusing part (which deserves a comment) is the fact that the delta
+> is not added to anything if hardirq_count and softirq_count are zero.
 
-Thanks for the explanation and sorry for the noise :)
+Yeah, the name didn't help either, but I really expected to see two
+hooks: start/exit, I did eventually figure it all out, but its a bit
+daft.
 
--- 
-Pedro
+If you would have had 4 hooks, the below problem would have been fixable
+within the implementation.
 
+> > You still do have the problem with local_bh_disable() though, since you
+> > cannot distinguish between having bh disabled and processing softirq.
+> > 
+> > So a hardirq that hits while you have bh disabled will inflate your
+> > softirq time.
+> > 
+> > A possible solution is to have local_bh_{disable,enable} {add,sub}
+> > 2*SOFTIRQ_OFFSET and have the processing use SOFTIRQ_OFFSET, will need a
+> > bit of a code shuffle though.
+> 
+> Hmm, that bug is valid for CONFIG_VIRT_CPU_ACCOUNTING=y as well.
+
+And nobody ever noticed?
