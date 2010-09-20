@@ -1,43 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756345Ab0ITL6u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 07:58:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61644 "EHLO mx1.redhat.com"
+	id S1756298Ab0ITMD5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 08:03:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42656 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755210Ab0ITL6t convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 07:58:49 -0400
-From: Andreas Schwab <schwab@redhat.com>
-To: Andy Clark <andy.apcs@googlemail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [x86] x86 targets without CMOS still build rtc.c despite CONFIG_RTC unset
-References: <AANLkTimigBxKWaJ6LNxu6a0uXo8+LOfzcoE8bVsXZ1bW@mail.gmail.com>
-X-Yow: This PORCUPINE knows his ZIPCODE..  And he has ``VISA''!!
-Date: Mon, 20 Sep 2010 13:58:45 +0200
-In-Reply-To: <AANLkTimigBxKWaJ6LNxu6a0uXo8+LOfzcoE8bVsXZ1bW@mail.gmail.com>
-	(Andy Clark's message of "Mon, 20 Sep 2010 12:49:38 +0100")
-Message-ID: <m3fwx48w3u.fsf@hase.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1755130Ab0ITMDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 08:03:55 -0400
+Message-ID: <4C974DA8.5020207@suse.cz>
+Date: Mon, 20 Sep 2010 14:03:52 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100714 SUSE/3.1.1 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Ed Tomlinson <edt@aei.ca>
+Cc: Alexander Stein <alexander.stein@informatik.tu-chemnitz.de>,
+        linux-kbuild@vger.kernel.org, Roman Zippel <zippel@linux-m68k.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kconfig qconf: port to QT4
+References: <201008011032.09611.edt@aei.ca> <1280690915-16380-1-git-send-email-alexander.stein@informatik.tu-chemnitz.de> <201008020801.24130.edt@aei.ca> <201009181022.31547.edt@aei.ca>
+In-Reply-To: <201009181022.31547.edt@aei.ca>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Clark <andy.apcs@googlemail.com> writes:
+On 18.9.2010 16:22, Ed Tomlinson wrote:
+> On Monday 02 August 2010 08:01:23 Ed Tomlinson wrote:
+>> Hi,
+>>
+>> Works as advertised here.  The merge window for .36 is open.  Would it be possible for this to be included?
+> 
+> Looks like this did not make it into .36...  would you have a version that works with .36-rc
 
-> I haven't taken the time to fully understand the build mechanism, but
-> comparing the x86 with other targets, the x86 target doesn't appear to
-> support CONFIG_RTC.  Leaving this unset doesn't prevent
-> arch/x86/kernel/rtc.c being built into the kernel.
+It is in the kconfig branch of
+git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git and
+will end up in 2.6.37-rc1.
 
-CONFIG_RTC is unrelated to arch/x86/kernel/rtc.c.  It controls
-drivers/char/rtc.c.
-
-Andreas.
-
--- 
-Andreas Schwab, schwab@redhat.com
-GPG Key fingerprint = D4E8 DBE3 3813 BB5D FA84  5EC7 45C6 250E 6F00 984E
-"And now for something completely different."
+Michal
