@@ -1,291 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104Ab0ITK7E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 06:59:04 -0400
-Received: from cantor.suse.de ([195.135.220.2]:38584 "EHLO mx1.suse.de"
+	id S1756185Ab0ITK7b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 06:59:31 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:42994 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755570Ab0ITK7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 06:59:03 -0400
-Date: Mon, 20 Sep 2010 12:58:11 +0200
-From: Jan Kara <jack@suse.cz>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] BKL: Remove BKL from isofs
-Message-ID: <20100920105811.GC3390@quack.suse.cz>
-References: <201009161632.59210.arnd@arndb.de>
- <20100917140219.GA9454@infradead.org>
- <201009171656.56615.arnd@arndb.de>
- <201009172100.06598.arnd@arndb.de>
+	id S1756117Ab0ITK73 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 06:59:29 -0400
+Date: Mon, 20 Sep 2010 11:59:16 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/10] hugetlb: add allocate function for hugepage
+	migration
+Message-ID: <20100920105916.GH1998@csn.ul.ie>
+References: <1283908781-13810-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1283908781-13810-3-git-send-email-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <201009172100.06598.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1283908781-13810-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 17-09-10 21:00:06, Arnd Bergmann wrote:
-> As in other file systems, we can replace the big kernel lock
-> with a private mutex in isofs. This means we can now access
-> multiple file systems concurrently, but it also means that
-> we serialize readdir and lookup across sleeping operations
-> which previously released the big kernel lock. This should
-> not matter though, as these operations are in practice
-> serialized through the hardware access.
+On Wed, Sep 08, 2010 at 10:19:33AM +0900, Naoya Horiguchi wrote:
+> We can't use existing hugepage allocation functions to allocate hugepage
+> for page migration, because page migration can happen asynchronously with
+> the running processes and page migration users should call the allocation
+> function with physical addresses (not virtual addresses) as arguments.
 > 
-> The isofs_get_blocks functions now does not take any lock
-> any more, it used to recursively get the BKL. After looking
-> at the code for hours, I convinced myself that it was never
-> needed here anyway, because it only reads constant fields
-> of the inode and writes to a buffer head array that is
-> at this time only visible to the caller.
+> ChangeLog since v3:
+> - unify alloc_buddy_huge_page() and alloc_buddy_huge_page_node()
 > 
-> The get_sb and fill_super operations do not need the locking
-> at all because they operate on a file system that is either
-> about to be created or to be destroyed but in either case
-> is not visible to other threads.
-  Hmm, looking through the code, I actually don't see a reason
-why we should need any per-sb lock at all. The filesystem is always
-read-only and we don't seem to have any global data structures that
-change. But that needs some testing I guess - I'll try to do that.
-
-								Honza
+> ChangeLog since v2:
+> - remove unnecessary get/put_mems_allowed() (thanks to David Rientjes)
 > 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> ChangeLog since v1:
+> - add comment on top of alloc_huge_page_no_vma()
+> 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
 > ---
+>  include/linux/hugetlb.h |    3 ++
+>  mm/hugetlb.c            |   79 ++++++++++++++++++++++++++++++++---------------
+>  2 files changed, 57 insertions(+), 25 deletions(-)
 > 
->  fs/isofs/dir.c   |    6 +++---
->  fs/isofs/inode.c |   17 ++---------------
->  fs/isofs/isofs.h |    1 +
->  fs/isofs/namei.c |    8 ++++----
->  fs/isofs/rock.c  |   10 +++++-----
->  5 files changed, 15 insertions(+), 27 deletions(-)
-> 
-> diff --git a/fs/isofs/dir.c b/fs/isofs/dir.c
-> index e0aca9a..0542b6e 100644
-> --- a/fs/isofs/dir.c
-> +++ b/fs/isofs/dir.c
-> @@ -10,7 +10,6 @@
->   *
->   *  isofs directory handling functions
->   */
-> -#include <linux/smp_lock.h>
->  #include <linux/gfp.h>
->  #include "isofs.h"
->  
-> @@ -255,18 +254,19 @@ static int isofs_readdir(struct file *filp,
->  	char *tmpname;
->  	struct iso_directory_record *tmpde;
->  	struct inode *inode = filp->f_path.dentry->d_inode;
-> +	struct isofs_sb_info *sbi = ISOFS_SB(inode->i_sb);
->  
->  	tmpname = (char *)__get_free_page(GFP_KERNEL);
->  	if (tmpname == NULL)
->  		return -ENOMEM;
->  
-> -	lock_kernel();
-> +	mutex_lock(&sbi->s_mutex);
->  	tmpde = (struct iso_directory_record *) (tmpname+1024);
->  
->  	result = do_isofs_readdir(inode, filp, dirent, filldir, tmpname, tmpde);
->  
->  	free_page((unsigned long) tmpname);
-> -	unlock_kernel();
-> +	mutex_unlock(&sbi->s_mutex);
->  	return result;
->  }
->  
-> diff --git a/fs/isofs/inode.c b/fs/isofs/inode.c
-> index 05baf77..09ff41a 100644
-> --- a/fs/isofs/inode.c
-> +++ b/fs/isofs/inode.c
-> @@ -17,7 +17,6 @@
->  #include <linux/slab.h>
->  #include <linux/nls.h>
->  #include <linux/ctype.h>
-> -#include <linux/smp_lock.h>
->  #include <linux/statfs.h>
->  #include <linux/cdrom.h>
->  #include <linux/parser.h>
-> @@ -44,11 +43,7 @@ static void isofs_put_super(struct super_block *sb)
->  	struct isofs_sb_info *sbi = ISOFS_SB(sb);
->  
->  #ifdef CONFIG_JOLIET
-> -	lock_kernel();
-> -
->  	unload_nls(sbi->s_nls_iocharset);
-> -
-> -	unlock_kernel();
->  #endif
->  
->  	kfree(sbi);
-> @@ -571,15 +566,11 @@ static int isofs_fill_super(struct super_block *s, void *data, int silent)
->  	int table, error = -EINVAL;
->  	unsigned int vol_desc_start;
->  
-> -	lock_kernel();
-> -
->  	save_mount_options(s, data);
->  
->  	sbi = kzalloc(sizeof(*sbi), GFP_KERNEL);
-> -	if (!sbi) {
-> -		unlock_kernel();
-> +	if (!sbi)
->  		return -ENOMEM;
-> -	}
->  	s->s_fs_info = sbi;
->  
->  	if (!parse_options((char *)data, &opt))
-> @@ -827,6 +818,7 @@ root_found:
->  	sbi->s_utf8 = opt.utf8;
->  	sbi->s_nocompress = opt.nocompress;
->  	sbi->s_overriderockperm = opt.overriderockperm;
-> +	mutex_init(&sbi->s_mutex);
->  	/*
->  	 * It would be incredibly stupid to allow people to mark every file
->  	 * on the disk as suid, so we merely allow them to set the default
-> @@ -904,7 +896,6 @@ root_found:
->  
->  	kfree(opt.iocharset);
->  
-> -	unlock_kernel();
->  	return 0;
->  
->  	/*
-> @@ -944,7 +935,6 @@ out_freesbi:
->  	kfree(opt.iocharset);
->  	kfree(sbi);
->  	s->s_fs_info = NULL;
-> -	unlock_kernel();
->  	return error;
->  }
->  
-> @@ -983,8 +973,6 @@ int isofs_get_blocks(struct inode *inode, sector_t iblock_s,
->  	int section, rv, error;
->  	struct iso_inode_info *ei = ISOFS_I(inode);
->  
-> -	lock_kernel();
-> -
->  	error = -EIO;
->  	rv = 0;
->  	if (iblock < 0 || iblock != iblock_s) {
-> @@ -1060,7 +1048,6 @@ int isofs_get_blocks(struct inode *inode, sector_t iblock_s,
->  
->  	error = 0;
->  abort:
-> -	unlock_kernel();
->  	return rv != 0 ? rv : error;
->  }
->  
-> diff --git a/fs/isofs/isofs.h b/fs/isofs/isofs.h
-> index 7d33de8..2882dc0 100644
-> --- a/fs/isofs/isofs.h
-> +++ b/fs/isofs/isofs.h
-> @@ -55,6 +55,7 @@ struct isofs_sb_info {
->  	gid_t s_gid;
->  	uid_t s_uid;
->  	struct nls_table *s_nls_iocharset; /* Native language support table */
-> +	struct mutex s_mutex; /* replaces BKL, please remove if possible */
+> diff --git v2.6.36-rc2/include/linux/hugetlb.h v2.6.36-rc2/include/linux/hugetlb.h
+> index f479700..0b73c53 100644
+> --- v2.6.36-rc2/include/linux/hugetlb.h
+> +++ v2.6.36-rc2/include/linux/hugetlb.h
+> @@ -228,6 +228,8 @@ struct huge_bootmem_page {
+>  	struct hstate *hstate;
 >  };
 >  
->  #define ISOFS_INVALID_MODE ((mode_t) -1)
-> diff --git a/fs/isofs/namei.c b/fs/isofs/namei.c
-> index ab438be..0d23abf 100644
-> --- a/fs/isofs/namei.c
-> +++ b/fs/isofs/namei.c
-> @@ -6,7 +6,6 @@
->   *  (C) 1991  Linus Torvalds - minix filesystem
->   */
+> +struct page *alloc_huge_page_node(struct hstate *h, int nid);
+> +
+>  /* arch callback */
+>  int __init alloc_bootmem_huge_page(struct hstate *h);
 >  
-> -#include <linux/smp_lock.h>
->  #include <linux/gfp.h>
->  #include "isofs.h"
+> @@ -303,6 +305,7 @@ static inline struct hstate *page_hstate(struct page *page)
 >  
-> @@ -168,6 +167,7 @@ struct dentry *isofs_lookup(struct inode *dir, struct dentry *dentry, struct nam
->  	int found;
->  	unsigned long uninitialized_var(block);
->  	unsigned long uninitialized_var(offset);
-> +	struct isofs_sb_info *sbi = ISOFS_SB(dir->i_sb);
->  	struct inode *inode;
->  	struct page *page;
+>  #else
+>  struct hstate {};
+> +#define alloc_huge_page_node(h, nid) NULL
+>  #define alloc_bootmem_huge_page(h) NULL
+>  #define hstate_file(f) NULL
+>  #define hstate_vma(v) NULL
+> diff --git v2.6.36-rc2/mm/hugetlb.c v2.6.36-rc2/mm/hugetlb.c
+> index 6871b41..f526228 100644
+> --- v2.6.36-rc2/mm/hugetlb.c
+> +++ v2.6.36-rc2/mm/hugetlb.c
+> @@ -466,11 +466,23 @@ static void enqueue_huge_page(struct hstate *h, struct page *page)
+>  	h->free_huge_pages_node[nid]++;
+>  }
 >  
-> @@ -177,7 +177,7 @@ struct dentry *isofs_lookup(struct inode *dir, struct dentry *dentry, struct nam
->  	if (!page)
->  		return ERR_PTR(-ENOMEM);
+> +static struct page *dequeue_huge_page_node(struct hstate *h, int nid)
+> +{
+> +	struct page *page;
+> +
+> +	if (list_empty(&h->hugepage_freelists[nid]))
+> +		return NULL;
+> +	page = list_entry(h->hugepage_freelists[nid].next, struct page, lru);
+> +	list_del(&page->lru);
+> +	h->free_huge_pages--;
+> +	h->free_huge_pages_node[nid]--;
+> +	return page;
+> +}
+> +
+
+Ok, this is fine because all you are doing is splitting
+dequeue_huge_page_vma()
+
+>  static struct page *dequeue_huge_page_vma(struct hstate *h,
+>  				struct vm_area_struct *vma,
+>  				unsigned long address, int avoid_reserve)
+>  {
+> -	int nid;
+>  	struct page *page = NULL;
+>  	struct mempolicy *mpol;
+>  	nodemask_t *nodemask;
+> @@ -496,19 +508,13 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
 >  
-> -	lock_kernel();
-> +	mutex_lock(&sbi->s_mutex);
->  	found = isofs_find_entry(dir, dentry,
->  				&block, &offset,
->  				page_address(page),
-> @@ -188,10 +188,10 @@ struct dentry *isofs_lookup(struct inode *dir, struct dentry *dentry, struct nam
->  	if (found) {
->  		inode = isofs_iget(dir->i_sb, block, offset);
->  		if (IS_ERR(inode)) {
-> -			unlock_kernel();
-> +			mutex_unlock(&sbi->s_mutex);
->  			return ERR_CAST(inode);
+>  	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+>  						MAX_NR_ZONES - 1, nodemask) {
+> -		nid = zone_to_nid(zone);
+> -		if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask) &&
+> -		    !list_empty(&h->hugepage_freelists[nid])) {
+> -			page = list_entry(h->hugepage_freelists[nid].next,
+> -					  struct page, lru);
+> -			list_del(&page->lru);
+> -			h->free_huge_pages--;
+> -			h->free_huge_pages_node[nid]--;
+> -
+> -			if (!avoid_reserve)
+> -				decrement_hugepage_resv_vma(h, vma);
+> -
+> -			break;
+> +		if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask)) {
+> +			page = dequeue_huge_page_node(h, zone_to_nid(zone));
+> +			if (page) {
+> +				if (!avoid_reserve)
+> +					decrement_hugepage_resv_vma(h, vma);
+> +				break;
+> +			}
 >  		}
 >  	}
-> -	unlock_kernel();
-> +	mutex_unlock(&sbi->s_mutex);
->  	return d_splice_alias(inode, dentry);
+
+This looks functionally equivalent so no problems there.
+
+>  err:
+> @@ -770,11 +776,10 @@ static int free_pool_huge_page(struct hstate *h, nodemask_t *nodes_allowed,
+>  	return ret;
 >  }
-> diff --git a/fs/isofs/rock.c b/fs/isofs/rock.c
-> index 96a685c..f9cd04d 100644
-> --- a/fs/isofs/rock.c
-> +++ b/fs/isofs/rock.c
-> @@ -8,7 +8,6 @@
 >  
->  #include <linux/slab.h>
->  #include <linux/pagemap.h>
-> -#include <linux/smp_lock.h>
->  
->  #include "isofs.h"
->  #include "rock.h"
-> @@ -661,6 +660,7 @@ static int rock_ridge_symlink_readpage(struct file *file, struct page *page)
+> -static struct page *alloc_buddy_huge_page(struct hstate *h,
+> -			struct vm_area_struct *vma, unsigned long address)
+> +static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
 >  {
->  	struct inode *inode = page->mapping->host;
->  	struct iso_inode_info *ei = ISOFS_I(inode);
-> +	struct isofs_sb_info *sbi = ISOFS_SB(inode->i_sb);
->  	char *link = kmap(page);
->  	unsigned long bufsize = ISOFS_BUFFER_SIZE(inode);
->  	struct buffer_head *bh;
-> @@ -673,12 +673,12 @@ static int rock_ridge_symlink_readpage(struct file *file, struct page *page)
->  	struct rock_state rs;
->  	int ret;
+>  	struct page *page;
+> -	unsigned int nid;
+> +	unsigned int r_nid;
 >  
-> -	if (!ISOFS_SB(inode->i_sb)->s_rock)
-> +	if (!sbi->s_rock)
->  		goto error;
+
+Why the rename, just to avoid changing the value of a function parameter?
+
+>  	if (h->order >= MAX_ORDER)
+>  		return NULL;
+> @@ -812,9 +817,14 @@ static struct page *alloc_buddy_huge_page(struct hstate *h,
+>  	}
+>  	spin_unlock(&hugetlb_lock);
 >  
->  	init_rock_state(&rs, inode);
->  	block = ei->i_iget5_block;
-> -	lock_kernel();
-> +	mutex_lock(&sbi->s_mutex);
->  	bh = sb_bread(inode->i_sb, block);
->  	if (!bh)
->  		goto out_noread;
-> @@ -748,7 +748,7 @@ repeat:
->  		goto fail;
->  	brelse(bh);
->  	*rpnt = '\0';
-> -	unlock_kernel();
-> +	mutex_unlock(&sbi->s_mutex);
->  	SetPageUptodate(page);
->  	kunmap(page);
->  	unlock_page(page);
-> @@ -765,7 +765,7 @@ out_bad_span:
->  	printk("symlink spans iso9660 blocks\n");
->  fail:
->  	brelse(bh);
-> -	unlock_kernel();
-> +	mutex_unlock(&sbi->s_mutex);
->  error:
->  	SetPageError(page);
->  	kunmap(page);
+> -	page = alloc_pages(htlb_alloc_mask|__GFP_COMP|
+> -					__GFP_REPEAT|__GFP_NOWARN,
+> -					huge_page_order(h));
+> +	if (nid == NUMA_NO_NODE)
+> +		page = alloc_pages(htlb_alloc_mask|__GFP_COMP|
+> +				   __GFP_REPEAT|__GFP_NOWARN,
+> +				   huge_page_order(h));
+> +	else
+> +		page = alloc_pages_exact_node(nid,
+> +			htlb_alloc_mask|__GFP_COMP|__GFP_THISNODE|
+> +			__GFP_REPEAT|__GFP_NOWARN, huge_page_order(h));
+>  
+
+Why not just call alloc_pages_node()?
+
+>  	if (page && arch_prepare_hugepage(page)) {
+>  		__free_pages(page, huge_page_order(h));
+> @@ -829,13 +839,13 @@ static struct page *alloc_buddy_huge_page(struct hstate *h,
+>  		 */
+>  		put_page_testzero(page);
+>  		VM_BUG_ON(page_count(page));
+> -		nid = page_to_nid(page);
+> +		r_nid = page_to_nid(page);
+>  		set_compound_page_dtor(page, free_huge_page);
+>  		/*
+>  		 * We incremented the global counters already
+>  		 */
+> -		h->nr_huge_pages_node[nid]++;
+> -		h->surplus_huge_pages_node[nid]++;
+> +		h->nr_huge_pages_node[r_nid]++;
+> +		h->surplus_huge_pages_node[r_nid]++;
+>  		__count_vm_event(HTLB_BUDDY_PGALLOC);
+>  	} else {
+>  		h->nr_huge_pages--;
+> @@ -848,6 +858,25 @@ static struct page *alloc_buddy_huge_page(struct hstate *h,
+>  }
+>  
+>  /*
+> + * This allocation function is useful in the context where vma is irrelevant.
+> + * E.g. soft-offlining uses this function because it only cares physical
+> + * address of error page.
+> + */
+> +struct page *alloc_huge_page_node(struct hstate *h, int nid)
+> +{
+> +	struct page *page;
+> +
+> +	spin_lock(&hugetlb_lock);
+> +	page = dequeue_huge_page_node(h, nid);
+> +	spin_unlock(&hugetlb_lock);
+> +
+> +	if (!page)
+> +		page = alloc_buddy_huge_page(h, nid);
+> +
+> +	return page;
+> +}
+> +
+> +/*
+>   * Increase the hugetlb pool such that it can accomodate a reservation
+>   * of size 'delta'.
+>   */
+> @@ -871,7 +900,7 @@ static int gather_surplus_pages(struct hstate *h, int delta)
+>  retry:
+>  	spin_unlock(&hugetlb_lock);
+>  	for (i = 0; i < needed; i++) {
+> -		page = alloc_buddy_huge_page(h, NULL, 0);
+> +		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
+>  		if (!page) {
+>  			/*
+>  			 * We were not able to allocate enough pages to
+> @@ -1052,7 +1081,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+>  	spin_unlock(&hugetlb_lock);
+>  
+>  	if (!page) {
+> -		page = alloc_buddy_huge_page(h, vma, addr);
+> +		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
+>  		if (!page) {
+>  			hugetlb_put_quota(inode->i_mapping, chg);
+>  			return ERR_PTR(-VM_FAULT_SIGBUS);
+
+Mostly it looks ok, the only snag I see is the why you didn't use
+alloc_pages_node().
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
