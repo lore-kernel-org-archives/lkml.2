@@ -1,67 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756219Ab0ITJvq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 05:51:46 -0400
-Received: from ppsw-31.csi.cam.ac.uk ([131.111.8.131]:45455 "EHLO
-	ppsw-31.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754462Ab0ITJvn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 05:51:43 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4C972FE5.2070103@cam.ac.uk>
-Date: Mon, 20 Sep 2010 10:56:53 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100909 Lightning/1.0b3pre Thunderbird/3.1.3
+	id S1756227Ab0ITJwx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 05:52:53 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:37734 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754462Ab0ITJww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 05:52:52 -0400
+Date: Mon, 20 Sep 2010 10:52:39 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH 8/8] writeback: Do not sleep on the congestion queue if
+	there are no congested BDIs or if significant congestion is not
+	being encountered in the current zone
+Message-ID: <20100920095239.GE1998@csn.ul.ie>
+References: <1284553671-31574-1-git-send-email-mel@csn.ul.ie> <1284553671-31574-9-git-send-email-mel@csn.ul.ie> <20100916152810.cb074e9f.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Eric Miao <eric.y.miao@gmail.com>
-Subject: Re: [PATCH 2/6] MAINTAINERS: Merge imote2 and stargate
-References: <cover.1284937055.git.joe@perches.com> <33b49e667f4b875a383dd5ba1db168b6ce8225ec.1284937055.git.joe@perches.com>
-In-Reply-To: <33b49e667f4b875a383dd5ba1db168b6ce8225ec.1284937055.git.joe@perches.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100916152810.cb074e9f.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/10 00:10, Joe Perches wrote:
-> Removed by commit dcd925f95194da42e42cea7e5f901f9746cf441c
+On Thu, Sep 16, 2010 at 03:28:10PM -0700, Andrew Morton wrote:
+> On Wed, 15 Sep 2010 13:27:51 +0100
+> Mel Gorman <mel@csn.ul.ie> wrote:
 > 
-> CC: Jonathan Cameron <jic23@cam.ac.uk>
-> CC: Eric Miao <eric.y.miao@gmail.com>
-Doh!  Good point, I forgot about the MAINTAINERS file when I did that
-merge. Thanks Joe,
-
+> > If wait_iff_congested() is called with no BDI congested, the function simply
+> > calls cond_resched(). In the event there is significant writeback happening
+> > in the zone that is being reclaimed, this can be a poor decision as reclaim
+> > would succeed once writeback was completed. Without any backoff logic,
+> > younger clean pages can be reclaimed resulting in more reclaim overall and
+> > poor performance.
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
-Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
-> ---
->  MAINTAINERS |    8 +-------
->  1 files changed, 1 insertions(+), 7 deletions(-)
+> This is because cond_resched() is a no-op,
+
+Can be a no-op surely. There is an expectation that it will sometimes schedule.
+
+> and we skip around the
+> under-writeback pages and go off and look further along the LRU for
+> younger clean pages, yes?
 > 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index a9f0567..03929b5 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -755,13 +755,7 @@ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
->  S:	Maintained
->  F:	arch/arm/mach-ixp4xx/
->  
-> -ARM/INTEL RESEARCH IMOTE 2 MACHINE SUPPORT
-> -M:	Jonathan Cameron <jic23@cam.ac.uk>
-> -L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-> -S:	Maintained
-> -F:	arch/arm/mach-pxa/imote2.c
-> -
-> -ARM/INTEL RESEARCH STARGATE 2 MACHINE SUPPORT
-> +ARM/INTEL RESEARCH IMOTE/STARGATE 2 MACHINE SUPPORT
->  M:	Jonathan Cameron <jic23@cam.ac.uk>
->  L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
->  S:	Maintained
 
+Yes.
 
+> > This patch tracks how many pages backed by a congested BDI were found during
+> > scanning. If all the dirty pages encountered on a list isolated from the
+> > LRU belong to a congested BDI, the zone is marked congested until the zone
+> > reaches the high watermark.
+> 
+> High watermark, or low watermark?
+> 
 
+High watermark. The check is made by kswapd.
+
+> The terms are rather ambiguous so let's avoid them.  Maybe "full"
+> watermark and "empty"?
+> 
+
+Unfortunately they are ambiguous to me. I know what the high watermark
+is but not what the full or empty watermarks are.
+
+> >
+> > ...
+> >
+> > @@ -706,6 +726,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+> >  			goto keep;
+> >  
+> >  		VM_BUG_ON(PageActive(page));
+> > +		VM_BUG_ON(page_zone(page) != zone);
+> 
+> ?
+> 
+
+It should not be the case that pages from multiple zones exist on the list
+passed to shrink_page_list(). Lets say someone broke that assumption in the
+future, which one should be marked congested? No way to know, so lets catch
+the bug if the assumptions is ever broken.
+
+> >  		sc->nr_scanned++;
+> >  
+> >
+> > ...
+> >
+> > @@ -903,6 +928,15 @@ keep_lumpy:
+> >  		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
+> >  	}
+> >  
+> > +	/*
+> > +	 * Tag a zone as congested if all the dirty pages encountered were
+> > +	 * backed by a congested BDI. In this case, reclaimers should just
+> > +	 * back off and wait for congestion to clear because further reclaim
+> > +	 * will encounter the same problem
+> > +	 */
+> > +	if (nr_dirty == nr_congested)
+> > +		zone_set_flag(zone, ZONE_CONGESTED);
+> 
+> The implicit "100%" there is a magic number.  hrm.
+> 
+
+It is but any other value for that number would be very specific to a
+workload or a machine. A sysctl would have to be maintained and I
+couldn't convince myself that anyone could do something sensible with
+the value.
+
+Rather than introducing a new tunable for this, I was toying with the idea over
+the weekend on tracking the scanned/reclaimed ratio within the scan control -
+possibly on a per-zone basis but more likely globally. When this ratio drops
+below a given threshold, start increasing the time it backs off for up to a
+maximum of HZ/10. There are a lot of details to iron out but it's possibly a
+better long-term direction than adding a tunable for this implicit magic number
+because it would be adaptive to what is happening for the current workload.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
