@@ -1,145 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756177Ab0ITJmA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 05:42:00 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:65038 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754485Ab0ITJl6 (ORCPT
+	id S1756187Ab0ITJnm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 05:43:42 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:35760 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754485Ab0ITJnk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 05:41:58 -0400
+	Mon, 20 Sep 2010 05:43:40 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=b1Rc6eS9ef/jAR5Bd0tybZNJkfCvbTIqv6OMJWH/MsCyUaFzxpDEnKHPw/RSwZU0Hv
-         ycIsNeEfDfRT2kGr7DcPEVg7YScdjwuyuzh863E3texwuzzfJUlm+kJnJkHM3i5SexDV
-         OSFnA3M3id9BuEuGAFkboOtNb4yOzb0aF3iyc=
-Message-ID: <4C972C60.8010506@gmail.com>
-Date: Mon, 20 Sep 2010 11:41:52 +0200
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=g6OfNe1NXL393wXR/EwyhPlObJ+5OyXEhq24/9JBvyF1lMuZdAx9pwx3fwKXdPXs6T
+         zmyGOqCTFKhbao1nZ6JKVMcVXONavpJPbwLYPvfb4AJAtMiwHSgSY2jb19rT0hfKysm8
+         QO2u2DIdPDfOf/wW0pQB2fKr1Lt9uwAIClKLI=
 MIME-Version: 1.0
-To: Pedro Francisco <pedrogfrancisco@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: ahci rmmodable and shouldn't
-References: <201009162256.04765.pedrogfrancisco@gmail.com> <47010.148.87.67.141.1284674336.squirrel@www.xenotime.net> <4C933A8F.2080305@gmail.com> <1284892106.2650.4.camel@sundae-v2> <4C9602E4.4090007@gmail.com> <1284974726.11757.9.camel@sundae-v2> <4C9729D7.70500@gmail.com>
-In-Reply-To: <4C9729D7.70500@gmail.com>
-X-Enigmail-Version: 1.1.1
+In-Reply-To: <4C96B9DB.8030403@turmel.org>
+References: <4C96B9DB.8030403@turmel.org>
+Date: Mon, 20 Sep 2010 11:43:38 +0200
+Message-ID: <AANLkTi=1zh4hD-1uzpgjAsnKZBE=qi_ZAX-ug=2XMkW0@mail.gmail.com>
+Subject: Re: [BUG, Regression, bisected] USB mouse causes bug on 1st insert,
+ ignored on 2nd insert, lsusb stuck at usbdev_open
+From: Guillaume Chazarain <guichaz@gmail.com>
+To: Phil Turmel <philip@turmel.org>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oliver@neukum.org>, Alan Ott <alan@signal11.us>,
+        linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
+        Mat <jackdachef@gmail.com>, Andreas Bombe <aeb@debian.org>,
+        Alex Riesen <raa.lkml@gmail.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, again.
+[ + Mat <jackdachef@gmail.com>, Andreas Bombe <aeb@debian.org>, Alex
+Riesen <raa.lkml@gmail.com> ]
 
-Yeah, now I'm fairly sure I was spewing out complete bullshit.  Sorry
-about that.  Gees, why does spewing out bullshit always feel so right?
-Please feel free to call me an idiot.  Can you please try the
-following patch and see whether it changes the module counting
-behavior?
+On Mon, Sep 20, 2010 at 3:33 AM, Phil Turmel <philip@turmel.org> wrote:
+> A new regression was introduced between -rc3 and -rc4:
+>
+> The USB mouse I use with my laptop is causing a BUG when inserted.  It works at that
+> point, but if removed and re-inserted, it is ignored.  Also, after the 2nd insert,
+> other USB devices (like my thumb drive) are also ignored.
+>
+> [   37.450777] BUG: unable to handle kernel NULL pointer dereference at (null)
+> [   37.451148] IP: [<ffffffff817d0991>] hiddev_open+0xc1/0x220
+> [   37.452036] PGD 1131a0067 PUD 113036067 PMD 0
+> [   37.452924] Oops: 0000 [#1] PREEMPT SMP
+> [   37.453336] last sysfs file: /sys/devices/platform/toshiba_acpi/backlight/toshiba/max_brightness
+> [   37.453336] CPU 1
+> [   37.453336] Modules linked in: tpm_infineon iwlagn iwlcore tifm_7xx1 tpm_tis toshiba_bluetooth toshiba_acpi tifm_core pcmcia sdhci_pci yenta_socket sdhci [last unloaded: scsi_wait_scan]
+> [   37.453336]
+> [   37.453336] Pid: 3117, comm: hald-probe-hidd Not tainted 2.6.36-rc4-00166-g151b6a5 #28 Portable PC/TECRA A9
+> [   37.453336] RIP: 0010:[<ffffffff817d0991>]  [<ffffffff817d0991>] hiddev_open+0xc1/0x220
+> [   37.453336] RSP: 0018:ffff8801130e7c28  EFLAGS: 00010286
+> [   37.453336] RAX: 00000000ffffffed RBX: ffff8801121a0000 RCX: 0000000000000000
+> [   37.453336] RDX: 0000000000000000 RSI: ffffffff81cfbfaa RDI: ffff8801121ac030
+> [   37.453336] RBP: ffff8801130e7c58 R08: 0000000000000010 R09: 0000000000000000
+> [   37.453336] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8801131c10c0
+> [   37.453336] R13: 0000000000000000 R14: 00000000ffffffed R15: ffff88013820ac68
+> [   37.453336] FS:  00007f3987315700(0000) GS:ffff880002500000(0000) knlGS:0000000000000000
+> [   37.453336] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [   37.453336] CR2: 0000000000000000 CR3: 0000000112188000 CR4: 00000000000006e0
+> [   37.453336] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [   37.453336] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [   37.453336] Process hald-probe-hidd (pid: 3117, threadinfo ffff8801130e6000, task ffff8801399186b0)
+> [   37.453336] Stack:
+> [   37.453336]  ffff8801130e6000 00000000000000b4 ffff8801131c10c0 ffffffff81b57c20
+> [   37.453336] <0> ffffffff81b66420 00000000ffffffed ffff8801130e7c98 ffffffff8171794b
+> [   37.453336] <0> 000000000029d5f6 ffff88013b345d00 ffff88013820ac68 ffff8801131c10c0
+> [   37.453336] Call Trace:
+> [   37.453336]  [<ffffffff8171794b>] usb_open+0x10b/0x2b0
+> [   37.453336]  [<ffffffff81156ae0>] ? chrdev_open+0x0/0x280
+> [   37.453336]  [<ffffffff81156c07>] chrdev_open+0x127/0x280
+> [   37.453336]  [<ffffffff81156ae0>] ? chrdev_open+0x0/0x280
+> [   37.453336]  [<ffffffff81151508>] __dentry_open+0x108/0x3a0
+> [   37.453336]  [<ffffffff811518b4>] nameidata_to_filp+0x54/0x70
+> [   37.453336]  [<ffffffff8115f668>] do_last+0x3b8/0x6c0
+> [   37.453336]  [<ffffffff811618a8>] do_filp_open+0x228/0x670
+> [   37.453336]  [<ffffffff81919ac5>] ? T.827+0x135/0x230
+> [   37.453336]  [<ffffffff8116c4aa>] ? alloc_fd+0xfa/0x140
+> [   37.453336]  [<ffffffff811512c5>] do_sys_open+0x65/0x130
+> [   37.453336]  [<ffffffff811513d0>] sys_open+0x20/0x30
+> [   37.453336]  [<ffffffff81037c1b>] system_call_fastpath+0x16/0x1b
+> [   37.453336] Code: 30 c0 00 00 48 c7 c6 aa bf cf 81 e8 9a 7d 8d ff 4c 89 ab 18 c0 00 00 b8 ed ff ff ff 49 89 9c 24 98 00 00 00 48 8b 93 18 c0 00 00 <44> 8b 02 45 85 c0 0f 84 a8 00 00 00 8b 42 04 8d 48 01 85 c0 89
+> [   37.453336] RIP  [<ffffffff817d0991>] hiddev_open+0xc1/0x220
+> [   37.453336]  RSP <ffff8801130e7c28>
+> [   37.453336] CR2: 0000000000000000
+> [   37.495310] ---[ end trace a76b3a74914412d8 ]---
+>
+> I bisected this phenomenon to:
+>
+> 8fe294caf8c868edd9046251824a0af91991bf43 is the first bad commit
+> commit 8fe294caf8c868edd9046251824a0af91991bf43
+> Author: Guillaume Chazarain <guichaz@gmail.com>
+> Date:   Sun Sep 12 21:32:35 2010 +0200
+>
+>    HID: fix hiddev's use of usb_find_interface
+>
+>    My macbook infrared remote control was broken by commit
+>    bd25f4dd6972755579d0ea50d1a5ace2e9b00d1a ("HID: hiddev: use
+>    usb_find_interface, get rid of BKL").
+>
+>    This device appears in dmesg as:
+>    apple 0003:05AC:8242.0001: hiddev0,hidraw0: USB HID v1.11 Device
+>    [Apple Computer, Inc. IR Receiver] on usb-0000:00:1d.2-1/input0
+>
+>    It stopped working as lircd was getting ENODEV when opening /dev/usb/hiddev0.
+>
+>    AFAICS hiddev_driver is a dummy driver so usb_find_interface(&hiddev_driver)
+>    does not find anything.
+>
+>    The device is associated with the usbhid driver, so let's do
+>    usb_find_interface(&hid_driver) instead.
+>
+>    $ ls -l /sys/devices/pci0000:00/0000:00:1d.2/usb7/7-1/7-1:1.0/usb/hiddev0/device/driver
+>    lrwxrwxrwx 1 root root 0 2010-09-12 16:28 /sys/devices/pci0000:00/0000:00:1d.2/usb7/7-1/7-1:1.0/usb/hiddev0/device/driver -> ../../../../../../bus/usb/drivers/usbhid
+>
+>    Signed-off-by: Guillaume Chazarain <guichaz@gmail.com>
+>    Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+>
+> :040000 040000 a7db28b9b84792aa51a1027daebb627150892837 84209dde8d0d2ef3c1d58a20586060947890fc80 M      drivers
+>
+> lsusb also gets stuck like so:
+>
+> # cat /proc/4306/stack
+> [<ffffffff81719e3c>] usbdev_open+0x11c/0x2e0
+> [<ffffffff81156c07>] chrdev_open+0x127/0x280
+> [<ffffffff81151508>] __dentry_open+0x108/0x3a0
+> [<ffffffff811518b4>] nameidata_to_filp+0x54/0x70
+> [<ffffffff8115f668>] do_last+0x3b8/0x6c0
+> [<ffffffff811618a8>] do_filp_open+0x228/0x670
+> [<ffffffff811512c5>] do_sys_open+0x65/0x130
+> [<ffffffff811513d0>] sys_open+0x20/0x30
+> [<ffffffff81037c1b>] system_call_fastpath+0x16/0x1b
+> [<ffffffffffffffff>] 0xffffffffffffffff
+>
+> The commit 8fe294c reverts cleanly from 2.6.36-rc4-00166-g151b6a5, and solves this
+> problem.
+>
+> Config, dmesg, and lsusb (after revert) are attached.
+>
+> The system is Gentoo unstable 64bit, w/ hal-0.5.14-r2 and udev-161.
+>
+> I'm happy to test patches in lieu of a revert, since it was a fix to a
+> different regression.
+
+One difference between the regression I originally reported and the
+current one is that I was using the "apple" hid_driver while all the
+regressions caused by my patch use the "generic" hid_driver.
+Can you send the output of 'sudo ls -lR /sys | bzip2'?
 
 Thanks.
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index ff1c945..99d0e5a 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -90,6 +90,10 @@ static int ahci_pci_device_suspend(struct pci_dev *pdev, pm_message_t mesg);
- static int ahci_pci_device_resume(struct pci_dev *pdev);
- #endif
-
-+static struct scsi_host_template ahci_sht = {
-+	AHCI_SHT("ahci"),
-+};
-+
- static struct ata_port_operations ahci_vt8251_ops = {
- 	.inherits		= &ahci_ops,
- 	.hardreset		= ahci_vt8251_hardreset,
-diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
-index 474427b..e5fdeeb 100644
---- a/drivers/ata/ahci.h
-+++ b/drivers/ata/ahci.h
-@@ -298,7 +298,17 @@ struct ahci_host_priv {
-
- extern int ahci_ignore_sss;
-
--extern struct scsi_host_template ahci_sht;
-+extern struct device_attribute *ahci_shost_attrs[];
-+extern struct device_attribute *ahci_sdev_attrs[];
-+
-+#define AHCI_SHT(drv_name)						\
-+	ATA_NCQ_SHT(drv_name),						\
-+	.can_queue		= AHCI_MAX_CMDS - 1,			\
-+	.sg_tablesize		= AHCI_MAX_SG,				\
-+	.dma_boundary		= AHCI_DMA_BOUNDARY,			\
-+	.shost_attrs		= ahci_shost_attrs,			\
-+	.sdev_attrs		= ahci_sdev_attrs
-+
- extern struct ata_port_operations ahci_ops;
-
- void ahci_save_initial_config(struct device *dev,
-diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
-index 4e97f33..84b6432 100644
---- a/drivers/ata/ahci_platform.c
-+++ b/drivers/ata/ahci_platform.c
-@@ -23,6 +23,10 @@
- #include <linux/ahci_platform.h>
- #include "ahci.h"
-
-+static struct scsi_host_template ahci_platform_sht = {
-+	AHCI_SHT("ahci_platform"),
-+};
-+
- static int __init ahci_probe(struct platform_device *pdev)
- {
- 	struct device *dev = &pdev->dev;
-@@ -145,7 +149,7 @@ static int __init ahci_probe(struct platform_device *pdev)
- 	ahci_print_info(host, "platform");
-
- 	rc = ata_host_activate(host, irq, ahci_interrupt, IRQF_SHARED,
--			       &ahci_sht);
-+			       &ahci_platform_sht);
- 	if (rc)
- 		goto err0;
-
-diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
-index 68dc678..8eea309 100644
---- a/drivers/ata/libahci.c
-+++ b/drivers/ata/libahci.c
-@@ -121,7 +121,7 @@ static DEVICE_ATTR(ahci_port_cmd, S_IRUGO, ahci_show_port_cmd, NULL);
- static DEVICE_ATTR(em_buffer, S_IWUSR | S_IRUGO,
- 		   ahci_read_em_buffer, ahci_store_em_buffer);
-
--static struct device_attribute *ahci_shost_attrs[] = {
-+struct device_attribute *ahci_shost_attrs[] = {
- 	&dev_attr_link_power_management_policy,
- 	&dev_attr_em_message_type,
- 	&dev_attr_em_message,
-@@ -132,22 +132,14 @@ static struct device_attribute *ahci_shost_attrs[] = {
- 	&dev_attr_em_buffer,
- 	NULL
- };
-+EXPORT_SYMBOL_GPL(ahci_shost_attrs);
-
--static struct device_attribute *ahci_sdev_attrs[] = {
-+struct device_attribute *ahci_sdev_attrs[] = {
- 	&dev_attr_sw_activity,
- 	&dev_attr_unload_heads,
- 	NULL
- };
--
--struct scsi_host_template ahci_sht = {
--	ATA_NCQ_SHT("ahci"),
--	.can_queue		= AHCI_MAX_CMDS - 1,
--	.sg_tablesize		= AHCI_MAX_SG,
--	.dma_boundary		= AHCI_DMA_BOUNDARY,
--	.shost_attrs		= ahci_shost_attrs,
--	.sdev_attrs		= ahci_sdev_attrs,
--};
--EXPORT_SYMBOL_GPL(ahci_sht);
-+EXPORT_SYMBOL_GPL(ahci_sdev_attrs);
-
- struct ata_port_operations ahci_ops = {
- 	.inherits		= &sata_pmp_port_ops,
+-- 
+Guillaume
