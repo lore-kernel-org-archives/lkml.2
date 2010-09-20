@@ -1,55 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755467Ab0ITRm7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 13:42:59 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:53131 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755133Ab0ITRm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 13:42:57 -0400
-Date: Mon, 20 Sep 2010 19:42:55 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, scsi <linux-scsi@vger.kernel.org>,
-        linux-pcmcia@lists.infradead.org, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        YOKOTA Hiroshi <yokota@netlab.is.tsukuba.ac.jp>
-Subject: Re: linux-next: Tree for September 20 (scsi/pcmcia/nsp_cs.c)
-Message-ID: <20100920174255.GA16938@isilmar-3.linta.de>
-Mail-Followup-To: Randy Dunlap <randy.dunlap@oracle.com>,
-	Stephen Rothwell <sfr@canb.auug.org.au>,
-	scsi <linux-scsi@vger.kernel.org>, linux-pcmcia@lists.infradead.org,
-	linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-	YOKOTA Hiroshi <yokota@netlab.is.tsukuba.ac.jp>
-References: <20100920161239.f204a507.sfr@canb.auug.org.au> <20100920091811.551ee35a.randy.dunlap@oracle.com>
+	id S1756202Ab0ITRrK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 13:47:10 -0400
+Received: from cantor.suse.de ([195.135.220.2]:52268 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756117Ab0ITRrJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 13:47:09 -0400
+Date: Mon, 20 Sep 2010 10:45:06 -0700
+From: Greg KH <gregkh@suse.de>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Roland McGrath <roland@redhat.com>, Ben Hawkes <hawkes@sota.gen.nz>
+Subject: Re: planned 2.6.35.x -stable release for critical x86-64
+ vulnerabilities ?
+Message-ID: <20100920174506.GB27303@suse.de>
+References: <20100920165320.GA28380@Krystal>
+ <20100920172319.GA8526@suse.de>
+ <20100920173840.GA30241@Krystal>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100920091811.551ee35a.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100920173840.GA30241@Krystal>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for testing, should be fixed for tomorrow.
-
-On Mon, Sep 20, 2010 at 09:18:11AM -0700, Randy Dunlap wrote:
-> On Mon, 20 Sep 2010 16:12:39 +1000 Stephen Rothwell wrote:
-> 
-> > Hi all,
+On Mon, Sep 20, 2010 at 01:38:41PM -0400, Mathieu Desnoyers wrote:
+> * Greg KH (gregkh@suse.de) wrote:
+> > On Mon, Sep 20, 2010 at 12:53:20PM -0400, Mathieu Desnoyers wrote:
+> > > Hi Greg,
+> > > 
+> > > Sorry to have to ask this, but I was wondering about the ETA for the next round
+> > > of -stable releases including fixes for the following bugs that seems to be
+> > > actively exploited in the wild
+> > > (http://blog.iweb.com/en/2010/09/64bits-linux-important-security-vulnerability-identified/5437.html
+> > > http://isc.sans.edu/diary.html?storyid=9574):
+> > > 
+> > > CVE-2010-3081 (fixed by upstream
+> > > commit c41d68a513c71e35a14f66d71782d27a79a81ea6)
+> > > "compat: Make compat_alloc_user_space() incorporate the access_ok()"
+> > > 
+> > > and
+> > > CVE-2010-3301 (fixed by upstream
+> > > commit 36d001c70d8a0144ac1d038f6876c484849a74de
+> > > "x86-64, compat: Test %rax for the syscall number, not %eax"
+> > > and
+> > > commit
+> > > commit eefdca043e8391dcd719711716492063030b55ac
+> > > "x86-64, compat: Retruncate rax after ia32 syscall entry tracing")
+> > > 
+> > > I'd like to rebase the LTTng tree on top of -stable as soon as it incorporates
+> > > these fixes. I could just pull the fixes in my own tree, but this would be
+> > > duplicated effort.
+> > > 
+> > > Again, sorry for the hassle, but I feel these bugs require immediate attention.
 > > 
-> > Changes since 20100917:
+> > Does NOBODY frickin read my -rc stable announcements?  This is only the
+> > 8th email today that I've gotten about this issue.
+> > 
+> > {sigh}
+> > 
+> > I don't know why I even bother at times...
+> > 
+> > Sorry, I don't mean to take it out on you, but please people, at least
+> > do some basic searching.  Like look at the -stable queue git tree which
+> > shows that a -rc has been released and is under review, or look at the
+> > lkml traffic, or, subscribe to the stable-review mailing list or look at
+> > its archives.
 > 
-> 
-> drivers/scsi/pcmcia/nsp_cs.c:1573: error: 'cfg' undeclared (first use in this function)
-> drivers/scsi/pcmcia/nsp_cs.c:1592: error: dereferencing pointer to incomplete type
-> drivers/scsi/pcmcia/nsp_cs.c:1595: error: dereferencing pointer to incomplete type
-> drivers/scsi/pcmcia/nsp_cs.c:1697: error: 'struct pcmcia_device' has no member named 'win'
-> 
-> 
-> (rand)config is attached.
-> 
-> ---
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> I did look at the stable-queue.git tree, and did not find anything about 2.6.35.
+> The tree only specify "start .27/.32 review cycle". Nothing about .35. This is
+> why I thought it was appropriate to email you about 2.6.35.x.
 
+Ah, sorry, I forgot to move the .35 tree in the queue quilt series, my
+mistake.  It's now done and pushed out.
 
+thanks,
+
+greg k-h
