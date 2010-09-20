@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756799Ab0ITUA3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 16:00:29 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:55737
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756509Ab0ITUA2 (ORCPT
+	id S1757251Ab0ITUCG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 16:02:06 -0400
+Received: from 89-230.252-81.static-ip.oleane.fr ([81.252.230.89]:41287 "EHLO
+	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751844Ab0ITUCF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 16:00:28 -0400
-Date: Mon, 20 Sep 2010 13:00:47 -0700 (PDT)
-Message-Id: <20100920.130047.124017922.davem@davemloft.net>
-To: nbowler@elliptictech.com
-Cc: eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: Regression, bisected: reference leak with IPSec since ~2.6.31
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100920195256.GA14330@elliptictech.com>
-References: <20100920174443.GA5515@elliptictech.com>
-	<1285006844.2323.17.camel@edumazet-laptop>
-	<20100920195256.GA14330@elliptictech.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 20 Sep 2010 16:02:05 -0400
+In-Reply-To: <4C97BB33.5020806@euromail.se>
+References: <1283005748-3293-1-git-send-email-rydberg@euromail.se>  <1283005748-3293-2-git-send-email-rydberg@euromail.se>  <CE1C24FC-7C9A-4940-8141-391A368C59E5@enac.fr> <4C97BB33.5020806@euromail.se>
+Mime-Version: 1.0 (Apple Message framework v752.3)
+Content-Type: text/plain; charset=ISO-8859-1; delsp=yes; format=flowed
+Message-Id: <6A8BB954-78BB-4507-86F3-19DA5174FA5E@enac.fr>
+Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+From: =?ISO-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
+Subject: Re: [PATCH 2/3] hid: 3m: Convert to MT slots
+Date: Mon, 20 Sep 2010 22:01:57 +0200
+To: Henrik Rydberg <rydberg@euromail.se>
+X-Mailer: Apple Mail (2.752.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nick Bowler <nbowler@elliptictech.com>
-Date: Mon, 20 Sep 2010 15:52:56 -0400
 
-> On 2010-09-20 20:20 +0200, Eric Dumazet wrote:
->> If you change your program to send small frames (so they are not
->> fragmented), is the problem still present ?
-> 
-> I changed MAX_DGRAM_SIZE in the test program to 1000 (mtu on the
-> interface is 1500).  The short answer is that the references are
-> not leaked, and things seem to get cleaned up.  So the rest of this
-> mail probably describes a separate issue.
-> 
-> The long answer, however, is interesting: With latest Linus' git, the
-> references are cleaned up much later than I would expect.  After running
-> the test program and flushing the SAD/SPD, the reference count is still
-> 1.  If I repeat the test immediately, the reference count will increase
-> further.  I can easily raise the reference count to, say, 100.  Now, if
-> I wait a while (10 minutes or so), the reference count will still be
-> 100.  However, when I run the setkey script after this delay, the
-> reference count drops immediately to 1.  If I then flush the SAD/SPD, it
-> drops to 0.
+Le 20 sept. 10 à 21:51, Henrik Rydberg a écrit :
 
-This is because we actually cache IPSEC routes correctly, previously
-we'd create a new routing cache entry every time a lookup happened.
+> On 09/20/2010 09:46 PM, Stéphane Chatty wrote:
+>
+>>
+>> Le 28 août 10 à 16:29, Henrik Rydberg a écrit :
+>>
+>>>  #define MAX_SLOTS        60
+>>> -#define MAX_TRKID        59
+>>> +#define MAX_TRKID        USHRT_MAX
+>>>
+>>
+>> Oops, I forgot this one: in the rest of the code, it seems to me  
+>> that you use
+>> your knowledge that TRACKINGID cannot be more than 59 (you use it  
+>> to map the
+>> tracking ID onto the slot ID). Therefore, why change TRKID to a  
+>> larger value?
+>
+>
+> There are only 60 slots available, but an infinite number of  
+> tracking ids.
+> Nowhere is the tracking id assumed to be bounded by anything but  
+> MAX_TRKID.
+>
+
+What about this:
++			value = clamp_val(value, 0, MAX_SLOTS - 1);
+  			if (md->valid) {
+  				md->curid = value;
+  				md->f[value].touch = md->touch;
+
+If you had tracking IDs 59, 60 and 61 in the same frame, this would  
+not work properly would it?
+
+St.
 
