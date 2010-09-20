@@ -1,66 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757251Ab0ITT2U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 15:28:20 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:51566 "EHLO ogre.sisk.pl"
+	id S1757291Ab0ITTaO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 15:30:14 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51586 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754921Ab0ITT2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 15:28:19 -0400
+	id S1757137Ab0ITTaM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 15:30:12 -0400
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>, "CAI Qian" <caiqian@redhat.com>,
+        "Tejun Heo" <tj@kernel.org>
+References: <1fwtoy8sG5H.A.veG.9D7lMB@chimera>
+In-Reply-To: <1fwtoy8sG5H.A.veG.9D7lMB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kevin Cernekee <cernekee@gmail.com>
-Subject: Re: [PATCH] PM: Fix signed/unsigned warning
-Date: Mon, 20 Sep 2010 21:27:24 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Pavel Machek <pavel@ucw.cz>, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-References: <8136c24e8aaf577b86dfdfc40b0d01e6@localhost>
-In-Reply-To: <8136c24e8aaf577b86dfdfc40b0d01e6@localhost>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009202127.24691.rjw@sisk.pl>
+Content-Disposition: inline
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <Wn2eLj_6KZG.A.UcH.xE7lMB@chimera>
+Subject: [Bug #17341] kdump regression compared to v2.6.35
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Mon, 20 Sep 2010 21:08:04 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, September 20, 2010, Kevin Cernekee wrote:
-> Seen on MIPS32, gcc 4.4.3, 2.6.36-rc4:
-> 
-> drivers/base/power/main.c: In function 'dpm_show_time':
-> drivers/base/power/main.c:415: warning: comparison of distinct pointer types lacks a cast
-> 
-> do_div() takes unsigned parameters:
-> 
-> uint32_t do_div(uint64_t *n, uint32_t base);
-> 
-> Using an unsigned variable for usecs64 should not cause any problems,
-> because calltime >= starttime .
-> 
-> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+This message has been generated automatically as a part of a summary report
+of recent regressions.
 
-OK, I'm going to apply it.
-
-Thanks,
-Rafael
+The following bug entry is on the current list of known regressions
+from 2.6.35.  Please verify if it still should be listed and let the tracking team
+know (either way).
 
 
-> ---
->  drivers/base/power/main.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-> index 276d5a7..db67719 100644
-> --- a/drivers/base/power/main.c
-> +++ b/drivers/base/power/main.c
-> @@ -407,7 +407,7 @@ static void pm_dev_err(struct device *dev, pm_message_t state, char *info,
->  static void dpm_show_time(ktime_t starttime, pm_message_t state, char *info)
->  {
->  	ktime_t calltime;
-> -	s64 usecs64;
-> +	u64 usecs64;
->  	int usecs;
->  
->  	calltime = ktime_get();
-> 
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=17341
+Subject		: kdump regression compared to v2.6.35
+Submitter	: CAI Qian <caiqian@redhat.com>
+Date		: 2010-08-27 12:35 (25 days old)
+Message-ID	: <2136707099.1405541282912500148.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+References	: http://marc.info/?l=linux-kernel&m=128291252612135&w=2
+Handled-By	: Tejun Heo <tj@kernel.org>
+
 
