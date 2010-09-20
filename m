@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757340Ab0ITTjz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 15:39:55 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:17811 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757160Ab0ITTjx (ORCPT
+	id S1757300Ab0ITTmr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 15:42:47 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56909 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755090Ab0ITTmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 15:39:53 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: linux-kernel@vger.kernel.org, kernel-testers@vger.kernel.org
-Subject: Re: Testing request: Gigabyte GA-MA69VM-S2 690V regression
-Date: Mon, 20 Sep 2010 13:39:04 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
-Cc: kas@fi.muni.cz, marwooj@wp.pl, "Simon Arlott" <simon@fire.lp0.eu>,
-        yahoocomar-noreply@yahoo.com.ar, jima@beer.tclug.org,
-        vincent20165@yahoo.com, Marvin <marvin24@gmx.de>,
-        andreas.in.hk@googlemail.com
-References: <201009171653.53848.bjorn.helgaas@hp.com>
-In-Reply-To: <201009171653.53848.bjorn.helgaas@hp.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Mon, 20 Sep 2010 15:42:46 -0400
+Date: Mon, 20 Sep 2010 12:41:43 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>, Avi Kivity <avi@redhat.com>
+Subject: Re: [RFC][PATCH 2/2] kernel: extract thread types from
+ task_struct::flags
+Message-Id: <20100920124143.a28b4c91.akpm@linux-foundation.org>
+In-Reply-To: <1285010716.2275.797.camel@laptop>
+References: <20100920151334.569154707@chello.nl>
+	<20100920151839.414197086@chello.nl>
+	<20100920121446.18fb3a65.akpm@linux-foundation.org>
+	<1285010716.2275.797.camel@laptop>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009201339.05199.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Added kernel-testers and others who have reported problems with this board]
+On Mon, 20 Sep 2010 21:25:16 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-On Friday, September 17, 2010 04:53:52 pm Bjorn Helgaas wrote:
-> Simon Arlott reported that 2.6.35.4 hangs on his GA-MA69VM-S2 690V:
-> 
->    http://lkml.org/lkml/2010/9/9/92
-> 
-> This is a regression, and I'd like to fix it as soon as possible.
-> 
-> I have a patch to fix this, but haven't been able to find someone
-> who can reproduce the failure and test the patch.
-> 
-> If you have this motherboard, please consider testing a current
-> upstream kernel on it.  If it fails, please try the test patch from
-> 
->     https://bugzilla.kernel.org/show_bug.cgi?id=18482
-> 
-> and report your BIOS version and your results.  If it fails even
-> with the test patch, please boot with "pci=nocrs" and attach the
-> dmesg log to the bugzilla.
-> 
-> Thanks,
->   Bjorn
+> So can you agree with Linus' proposal of simply moving all type like
+> bits over to a new word, or would you rather see the linear type field
+> with an extra helper; possibly part of the existing ->flags field?
+
+No strong feelings either way, really.
+
+One thing we should keep an eye out for is the size/speed of code at
+the client callsites.  Plucking a field of bits out of the flags word
+and then treating that as a scalar would generate quite a bit of code,
+I expect.  Let's not do that.
