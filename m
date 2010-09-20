@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023Ab0ITIxd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 04:53:33 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29438 "EHLO mga02.intel.com"
+	id S1756048Ab0ITIxk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 04:53:40 -0400
+Received: from mga14.intel.com ([143.182.124.37]:39426 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755632Ab0ITIxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 04:53:32 -0400
+	id S1756031Ab0ITIxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 04:53:38 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.56,391,1280732400"; 
-   d="scan'208";a="659043545"
-Subject: [patch]cfq-iosched: do cleanup
+   d="scan'208";a="326462994"
+Subject: [patch]cfq-iosched: don't idle if a deep seek queue is slow
 From: Shaohua Li <shaohua.li@intel.com>
 To: lkml <linux-kernel@vger.kernel.org>
-Cc: jaxboe@fusionio.com
+Cc: jaxboe@fusionio.com, vgoyal@redhat.com, czoccolo@gmail.com
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 20 Sep 2010 16:53:30 +0800
-Message-ID: <1284972810.6598.17.camel@sli10-conroe.sh.intel.com>
+Date: Mon, 20 Sep 2010 16:53:34 +0800
+Message-ID: <1284972814.6598.18.camel@sli10-conroe.sh.intel.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -23,29 +23,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-return bool for cfq_should_idle
+If a deep seek queue slowly deliver requests but disk is much faster, idle
+for the queue just wastes disk throughput. If the queue delevers all requests
+before half its slice is used, the patch disable idle for it.
+In my test, application delivers 32 requests one time, the disk can accept
+128 requests at maxium and disk is fast. without the patch, the throughput
+is just around 30m/s, while with it, the speed is about 80m/s. The disk is
+a SSD, but is detected as a rotational disk. I can configure it as SSD, but
+I thought the deep seek queue logic should be fixed too, for example,
+considering a fast raid.
 
 Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+
 ---
- block/cfq-iosched.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ block/cfq-iosched.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
 Index: linux-2.6/block/cfq-iosched.c
 ===================================================================
---- linux-2.6.orig/block/cfq-iosched.c	2010-09-21 00:27:23.000000000 +0800
-+++ linux-2.6/block/cfq-iosched.c	2010-09-21 00:27:59.000000000 +0800
-@@ -1882,10 +1882,10 @@
- 	 * in their service tree.
- 	 */
- 	if (service_tree->count == 1 && cfq_cfqq_sync(cfqq))
--		return 1;
-+		return true;
- 	cfq_log_cfqq(cfqd, cfqq, "Not idling. st->count:%d",
- 			service_tree->count);
--	return 0;
-+	return false;
- }
+--- linux-2.6.orig/block/cfq-iosched.c	2010-09-19 21:25:11.000000000 +0800
++++ linux-2.6/block/cfq-iosched.c	2010-09-21 00:20:46.000000000 +0800
+@@ -2275,6 +2275,17 @@
+ 		goto keep_queue;
+ 	}
  
- static void cfq_arm_slice_timer(struct cfq_data *cfqd)
++	/*
++	 * This is a deep seek queue, but the device is much faster than
++	 * the queue can deliver, don't idle
++	 **/
++	if (CFQQ_SEEKY(cfqq) && cfq_cfqq_idle_window(cfqq) &&
++	    (cfq_cfqq_slice_new(cfqq) ||
++	    (cfqq->slice_end - jiffies > jiffies - cfqq->slice_start))) {
++		cfq_clear_cfqq_deep(cfqq);
++		cfq_clear_cfqq_idle_window(cfqq);
++	}
++
+ 	if (cfqq->dispatched && cfq_should_idle(cfqd, cfqq)) {
+ 		cfqq = NULL;
+ 		goto keep_queue;
 
 
