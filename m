@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757251Ab0ITTQG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 15:16:06 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:62333 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757195Ab0ITTQD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757227Ab0ITTQD (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 20 Sep 2010 15:16:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=TCKEDGWdems0iFWWGhCaGVWHrjxU63DC445V7JWlZsEQTLDjt/39UpRu04CZcQlZsd
-         olfYuleGlhYDQCeciCMgAT+oYN3Egd62Zp7tMw/PaCLJxIs3av+0dWYX2k1DtN+Wm0K/
-         kSZ0xS1loz98XLyuUNL+5S7Eyn4btOhLecPAo=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: vaibhav agarwal <vaibhav_agrwal@yahoo.co.in>
-Subject: Re: Kernel panic in 2.6.36-rc4 after suspend/resume
-Date: Mon, 20 Sep 2010 21:15:56 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4; KDE/4.4.5; i686; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <809346.96921.qm@web137402.mail.in.yahoo.com>
-In-Reply-To: <809346.96921.qm@web137402.mail.in.yahoo.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201009202115.56325.maciej.rutecki@gmail.com>
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59398 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755028Ab0ITTQB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 15:16:01 -0400
+Date: Mon, 20 Sep 2010 12:14:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>, Avi Kivity <avi@redhat.com>
+Subject: Re: [RFC][PATCH 2/2] kernel: extract thread types from
+ task_struct::flags
+Message-Id: <20100920121446.18fb3a65.akpm@linux-foundation.org>
+In-Reply-To: <20100920151839.414197086@chello.nl>
+References: <20100920151334.569154707@chello.nl>
+	<20100920151839.414197086@chello.nl>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On sobota, 18 września 2010 o 11:25:50 vaibhav agarwal wrote:
-> Hi,
-> 
-> I am using kernel 2.6.34-rc4 directly taken from kernel.org. After suspend
-> to ram if I leave it for few hours and resume then kernel panic happens
-> (screen of death). If I suspend and resume immediately then it works fine.
-> 
-> I have hand copied the message and attached in this mail. Let me know what
-> other
-> 
-> information is needed from my side.
-> I can file bug in kernel bugzilla if needed. As per kernel oops docs, I am
-> sending a mail here.
-> 
-> (Its a intel Dual Core machine)
-> 
-> -vaibhav
+On Mon, 20 Sep 2010 17:13:36 +0200
+Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=18882
-for your bug report, please add your address to the CC list in there, thanks!
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+> Free up a few more PF_flags by moving thread types out to their own variable.
+> 
+> Initially I compressed the types into less bits inside task_struct::flags, but
+> Thomas suggested I move them to their own field.
+> 
+
+There doesn't seem to be a huge point to all this, but I guess there's
+some sense in separating "what type of thread this is" from "attributes
+of this thread".  Maybe.  At the expense of a larger task_struct.
+
+> +/*
+> + * Types >= tt_kernel imply the old PF_KTHREAD
+> + */
+
+Perhaps that should be encapsulated into another helper function
+
+> --- linux-2.6.orig/kernel/fork.c
+> +++ linux-2.6/kernel/fork.c
+> @@ -570,7 +570,7 @@ struct mm_struct *get_task_mm(struct tas
+>  	task_lock(task);
+>  	mm = task->mm;
+>  	if (mm) {
+> -		if (task->flags & PF_KTHREAD)
+> +		if (task_type(task) >= tt_kernel)
+
+rather than open-coded everywhere.
+
+
