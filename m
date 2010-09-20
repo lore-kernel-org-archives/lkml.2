@@ -1,81 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757064Ab0ITWbg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 18:31:36 -0400
-Received: from mga09.intel.com ([134.134.136.24]:43625 "EHLO mga09.intel.com"
+	id S1757351Ab0ITWgG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 18:36:06 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:56062 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753184Ab0ITWbf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 18:31:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,395,1280732400"; 
-   d="scan'208";a="556420443"
-From: "Allan, Bruce W" <bruce.w.allan@intel.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: Tony Jones <tonyj@suse.de>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bphilips@suse.de" <bphilips@suse.de>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Date: Mon, 20 Sep 2010 15:31:32 -0700
-Subject: RE: high latency on 82573L
-Thread-Topic: high latency on 82573L
-Thread-Index: ActPgqJ4XtwxqV1BRF60dmQQSSK7TgJkEurQ
-Message-ID: <8DD2590731AB5D4C9DBF71A877482A9001691E8C45@orsmsx509.amr.corp.intel.com>
-References: <20100902033900.GA5283@suse.de>
-	<8DD2590731AB5D4C9DBF71A877482A900168E59EFA@orsmsx509.amr.corp.intel.com>
-	<20100903175102.GA7767@suse.de>
-	<8DD2590731AB5D4C9DBF71A877482A900168EDB454@orsmsx509.amr.corp.intel.com>
- <20100908112104.33219331@jbarnes-desktop>
-In-Reply-To: <20100908112104.33219331@jbarnes-desktop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1754295Ab0ITWgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 18:36:04 -0400
+From: florian@mickler.org
+To: linux-kernel@vger.kernel.org
+Cc: ebiederm@xmission.com, greg@kroah.com, stefanr@s5r6.in-berlin.de,
+        broonie@opensource.wolfsonmicro.com,
+        "florian@mickler.org" <florian@mickler.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>,
+        Stephen Hemminger <shemminger@vyatta.com>
+Subject: [PATCH] scripts/get_maintainer.pl: fix .mailmap handling
+Date: Tue, 21 Sep 2010 00:35:56 +0200
+Message-Id: <1285022156-14501-1-git-send-email-florian@mickler.org>
+X-Mailer: git-send-email 1.7.3
+In-Reply-To: <1285021645-14311-1-git-send-email-florian@mickler.org>
+References: <1285021645-14311-1-git-send-email-florian@mickler.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 08, 2010 11:21 AM, Jesse Barnes wrote:
-> On Fri, 3 Sep 2010 11:59:30 -0700
-> "Allan, Bruce W" <bruce.w.allan@intel.com> wrote:
-> 
->> ASPM L1 must be disabled on this device otherwise the latency
->> described above will happen.  And even though there are log messages
->> indicating ASPM L1 is disabled, it really isn't according to the
->> verbose lspci output and PCI config space for the 2:0.0 device (see
->> LnkCtl above). Since CONFIG_PCIEASPM is enabled in your kernel
->> config, the driver is calling the kernel function
->> pci_disable_link_state() to disable ASPM L1 which it fails to do
->> because the variable aspm_disabled=1 (as indicated by the "ACPI FADT
->> declares the system doesn't support PCIe ASPM, so disable it"
->> message).  
->> 
->> I'm unclear on whether the aspm_disabled variable is meant to
->> indicate ASPM L0s or both ASPM L0s _and_ L1 are disabled (added PCI
->> maintainer and linux-pci mail-list).  To resolve this issue, we need
->> to either a) change e1000e to directly write the PCI config space to
->> disable ASPM L1 as was done before 6f461f6c7c, or b) fix
->> pci_disable_link_state() et. al. to allow for ASPM L1 to be disabled
->> properly.  I would prefer the latter option so that other drivers do
->> not have to use the same kludge to write to the PCI config space. 
->> Any input from the PCI guys? 
-> 
-> Yeah, I'd prefer this code to be in the core.  Are there any patches
-> available yet?
+From: florian@mickler.org <florian@mickler.org>
 
-Nothing from me at this point (been on vacation).  I might be able to
-look into this further but not for another week or so (need to catch
-up on the backlog that piled up while away).
+The .mailmap handling was broken.
 
-Bruce.
+Implement it like the git-shortlog man page  explains it.
+
+Signed-off-by: Florian Mickler <florian@mickler.org>
+---
+changes: added sign off
+
+    scripts/get_maintainer.pl |  148 +++++++++++++++++++++++++++++++++------------
+ 1 files changed, 110 insertions(+), 38 deletions(-)
+
+diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
+index a91ae63..d6fdd1a 100755
+--- a/scripts/get_maintainer.pl
++++ b/scripts/get_maintainer.pl
+@@ -255,31 +255,77 @@ while (<$maint>) {
+ }
+ close($maint);
+ 
+-my %mailmap;
+ 
+-if ($email_remove_duplicates) {
+-    open(my $mailmap, '<', "${lk_path}.mailmap")
++#
++# Read mail address map
++#
++
++my $mailmap = read_mailmap();
++
++sub read_mailmap {
++    my $mailmap = {
++	names => {},
++	addresses => {}
++   };
++
++    if (!$email_remove_duplicates) {
++	return $mailmap;
++    }
++
++    open(my $mailmap_file, '<', "${lk_path}.mailmap")
+ 	or warn "$P: Can't open .mailmap: $!\n";
+-    while (<$mailmap>) {
+-	my $line = $_;
+ 
+-	next if ($line =~ m/^\s*#/);
+-	next if ($line =~ m/^\s*$/);
++    while (<$mailmap_file>) {
++	s/#.*$//; #strip comments
++	s/^\s+|\s+$//g; #trim
+ 
+-	my ($name, $address) = parse_email($line);
+-	$line = format_email($name, $address, $email_usename);
++	next if (/^\s*$/); #skip empty lines
++	#print "entry: \"$_\"\n";
++	#entries have one of the following formats:
++	# name1 <mail1>
++	# <mail1> <mail2>
++	# name1 <mail1> <mail2>
++	# name1 <mail1> name2 <mail2>
++	# (see man git-shortlog)
++	if (/^(.+)<(.+)>$/) {
++		my $real_name = $1;
++		my $address = $2;
+ 
+-	next if ($line =~ m/^\s*$/);
++		$real_name =~ s/\s+$//;
++		$mailmap->{names}->{$address} = $real_name;
+ 
+-	if (exists($mailmap{$name})) {
+-	    my $obj = $mailmap{$name};
+-	    push(@$obj, $address);
+-	} else {
+-	    my @arr = ($address);
+-	    $mailmap{$name} = \@arr;
++	} elsif (/^<([^\s]+)>\s*<([^\s]+)>$/) {
++		my $real_address = $1;
++		my $wrong_address = $2;
++
++		$mailmap->{addresses}->{$wrong_address} = $real_address;
++
++	} elsif (/^(.+)<([^\s]+)>\s*<([^\s]+)>$/) {
++		my $real_name= $1;
++		my $real_address = $2;
++		my $wrong_address = $3;
++
++		$real_name =~ s/\s+$//;
++
++		$mailmap->{names}->{$wrong_address} = $real_name;
++		$mailmap->{addresses}->{$wrong_address} = $real_address;
++
++	} elsif (/^(.+)<([^\s]+)>\s*([^\s].*)<([^\s]+)>$/) {
++		my $real_name = $1;
++		my $real_address = $2;
++		my $wrong_name = $3;
++		my $wrong_address = $4;
++
++		$real_name =~ s/\s+$//;
++		$wrong_name =~ s/\s+$//;
++
++		$mailmap->{names}->{format_email($wrong_name,$wrong_address,1)} = $real_name;
++		$mailmap->{addresses}->{format_email($wrong_name,$wrong_address,1)} = $real_address;
+ 	}
+     }
+-    close($mailmap);
++    close($mailmap_file);
++
++    return $mailmap;
+ }
+ 
+ ## use the filenames on the command line or find the filenames in the patchfiles
+@@ -954,30 +1000,58 @@ sub which {
+     return "";
+ }
+ 
+-sub mailmap {
+-    my (@lines) = @_;
+-    my %hash;
++sub mailmap_email {
++	my $line = shift;
+ 
+-    foreach my $line (@lines) {
+ 	my ($name, $address) = parse_email($line);
+-	if (!exists($hash{$name})) {
+-	    $hash{$name} = $address;
+-	} elsif ($address ne $hash{$name}) {
+-	    $address = $hash{$name};
+-	    $line = format_email($name, $address, $email_usename);
+-	}
+-	if (exists($mailmap{$name})) {
+-	    my $obj = $mailmap{$name};
+-	    foreach my $map_address (@$obj) {
+-		if (($map_address eq $address) &&
+-		    ($map_address ne $hash{$name})) {
+-		    $line = format_email($name, $hash{$name}, $email_usename);
++	my $email = format_email($name, $address, 1);
++	my $real_name = $name;
++	my $real_address = $address;
++
++	if (exists $mailmap->{names}->{$email} || exists $mailmap->{addresses}->{$email}) {
++		if (exists $mailmap->{names}->{$email}) {
++			$real_name = $mailmap->{names}->{$email};
++		}
++		if (exists $mailmap->{addresses}->{$email}) {
++			$real_address = $mailmap->{addresses}->{$email};
++		}
++	} else {
++		if (exists $mailmap->{names}->{$address}) {
++			$real_name = $mailmap->{names}->{$address};
++		}
++		if (exists $mailmap->{addresses}->{$address}) {
++			$real_address = $mailmap->{addresses}->{$address};
+ 		}
+-	    }
+ 	}
++	return format_email($real_name, $real_address, 1);
++}
++
++sub mailmap {
++    my (@addresses) = @_;
++
++    my @ret = ();
++    foreach my $line (@addresses) {
++	push(@ret, mailmap_email($line), 1);
+     }
+ 
+-    return @lines;
++    merge_by_realname(@ret) if $email_remove_duplicates;
++
++    return @ret;
++}
++
++sub merge_by_realname {
++	my %address_map;
++	my (@emails) = @_;
++	foreach my $email (@emails) {
++		my ($name, $address) = parse_email($email);
++		if (!exists $address_map{$name}) {
++			$address_map{$name} = $address;
++		} else {
++			$address = $address_map{$name};
++			$email = format_email($name,$address,1);
++		}
++	}
++
+ }
+ 
+ sub git_execute_cmd {
+@@ -1148,9 +1222,7 @@ sub vcs_assign {
+ 	$divisor = 1;
+     }
+ 
+-    if ($email_remove_duplicates) {
+-	@lines = mailmap(@lines);
+-    }
++    @lines = mailmap(@lines);
+ 
+     return if (@lines <= 0);
+ 
+-- 
+1.7.3
+
