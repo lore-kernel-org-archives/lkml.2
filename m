@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756235Ab0ITXlb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 19:41:31 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:60150 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752404Ab0ITXla (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 19:41:30 -0400
-X-Sasl-enc: 5y/cuu5nDjSZs+RDSgY0rC9Yjorqn/yUcBerJ7ptZmeR 1285026089
-Message-ID: <52C8765522A740A4A5C027E8FDFFDFE3@jem>
-From: "Rob Mueller" <robm@fastmail.fm>
-To: "Mel Gorman" <mel@csn.ul.ie>,
-        "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>
-Cc: <linux-kernel@vger.kernel.org>, "Bron Gondwana" <brong@fastmail.fm>,
-        "linux-mm" <linux-mm@kvack.org>,
-        "Christoph Lameter" <cl@linux-foundation.org>
-References: <1284349152.15254.1394658481@webmail.messagingengine.com> <20100916184240.3BC9.A69D9226@jp.fujitsu.com> <20100920093440.GD1998@csn.ul.ie>
-Subject: Re: Default zone_reclaim_mode = 1 on NUMA kernel is bad forfile/email/web servers
-Date: Tue, 21 Sep 2010 09:41:21 +1000
+	id S1756658Ab0ITXmu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 19:42:50 -0400
+Received: from kroah.org ([198.145.64.141]:42676 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752957Ab0ITXmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 19:42:49 -0400
+Date: Mon, 20 Sep 2010 16:42:04 -0700
+From: Greg KH <gregkh@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PATCH] USB fixes for .36-rc6
+Message-ID: <20100920234204.GA7672@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-15";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5931
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I don't think we will ever get the default value for this tunable right.
-> I would also worry that avoiding the reclaim_mode for file-backed
-> cache will hurt HPC applications that are dumping their data to disk
-> and depending on the existing default for zone_reclaim_mode to not
-> pollute other nodes.
->
-> The ideal would be if distribution packages for mail, web servers
-> and others that are heavily IO orientated would prompt for a change
-> to the default value of zone_reclaim_mode in sysctl.
+Here are some usb driver fixes for .36-rc6.
 
-I would argue that there's a lot more mail/web/file servers out there than 
-HPC machines. And HPC machines tend to have a team of people to 
-monitor/tweak them. I think it would be much more sane to default this to 0 
-which works best for most people, and get the HPC people to change it.
+A MAINTAINERS file update, and some other bugfixes that people have made
+for problems reported.
 
-However there's still another question, why is this problem happening at all 
-for us? I know almost nothing about NUMA, but from other posts, it sounds 
-like the problem is the memory allocations are all happening on one node? 
-But I don't understand why that would be happening. The machine runs the 
-cyrus IMAP server, which is a classic unix forking server with 1000's of 
-processes. Each process will mmap lots of different files to access them. 
-Why would that all be happening on one node, not spread around?
+Please pull from:
+	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/usb-2.6.git/
 
-One thing is that the machine is vastly more IO loaded than CPU loaded, in 
-fact it uses very little CPU at all (a few % usually). Does the kernel 
-prefer to run processes on one particular node if it's available? So if a 
-machine has very little CPU load, every process will generally end up 
-running on the same node?
+All of these patches have been in the linux-next and mm trees.
 
-Rob
+The full patches will be sent to the linux-usb mailing list, if anyone
+wants to see them.
+
+thanks,
+
+greg k-h
+
+------------
+
+ MAINTAINERS                     |    4 +-
+ drivers/usb/host/ehci-pci.c     |    5 ++
+ drivers/usb/musb/musb_debugfs.c |    5 +-
+ drivers/usb/otg/twl4030-usb.c   |   78 +++++++++++++++++++++++++-------------
+ drivers/usb/serial/mos7720.c    |    3 +
+ drivers/usb/serial/mos7840.c    |    3 +
+ 6 files changed, 66 insertions(+), 32 deletions(-)
+
+---------------
+
+Alek Du (1):
+      USB: EHCI: Disable langwell/penwell LPM capability
+
+Dan Rosenberg (1):
+      USB: serial/mos*: prevent reading uninitialized stack memory
+
+Felipe Balbi (1):
+      USB: musb: MAINTAINERS: Fix my mail address
+
+Mathias Nyman (1):
+      usb: musb_debugfs: don't use the struct file private_data field with seq_files
+
+Ming Lei (1):
+      USB: otg: twl4030: fix phy initialization(v1)
 
