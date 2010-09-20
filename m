@@ -1,140 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756745Ab0ITPmW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 11:42:22 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:19740 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756812Ab0ITPmU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 11:42:20 -0400
-Message-ID: <4C9780D5.8000804@panasas.com>
-Date: Mon, 20 Sep 2010 17:42:13 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: Greg KH <gregkh@suse.de>, Dan Carpenter <error27@gmail.com>,
-        Vasiliy Kulikov <segooon@gmail.com>, kernel-janitors@vger.kernel.org,
-        Benny Halevy <bhalevy@panasas.com>, Tejun Heo <tj@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, osd-dev@open-osd.org,
-        linux-scsi@vger.kernel.org, cornelia.huck@de.ibm.com,
-        linux-kernel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH 10/14] scsi: osd: fix device_register() error handling
-References: <1284900907-24621-1-git-send-email-segooon@gmail.com>	 <20100919142653.GF6236@bicker> <1284983897.2973.11.camel@mulgrave.site>	 <20100920151029.GA25386@suse.de>  <20100920151317.GA25506@suse.de> <1284996062.2973.85.camel@mulgrave.site>
-In-Reply-To: <1284996062.2973.85.camel@mulgrave.site>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 Sep 2010 15:42:18.0359 (UTC) FILETIME=[68257070:01CB58DA]
+	id S1756835Ab0ITPpj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 11:45:39 -0400
+Received: from cantor.suse.de ([195.135.220.2]:48849 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752947Ab0ITPpf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 11:45:35 -0400
+From: Jan Kara <jack@suse.cz>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>
+Subject: [PATCH 3/3] bdi: Fix warnings in __mark_inode_dirty for /dev/zero and friends
+Date: Mon, 20 Sep 2010 17:44:31 +0200
+Message-Id: <1284997471-9850-4-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1284997471-9850-1-git-send-email-jack@suse.cz>
+References: <1284997471-9850-1-git-send-email-jack@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2010 05:21 PM, James Bottomley wrote:
-> On Mon, 2010-09-20 at 08:13 -0700, Greg KH wrote:
->> On Mon, Sep 20, 2010 at 08:10:29AM -0700, Greg KH wrote:
->>> On Mon, Sep 20, 2010 at 06:58:17AM -0500, James Bottomley wrote:
->>>> On Sun, 2010-09-19 at 16:26 +0200, Dan Carpenter wrote:
->>>>> On Sun, Sep 19, 2010 at 04:55:07PM +0400, Vasiliy Kulikov wrote:
->>>>>> If device_register() fails then call put_device().
->>>>>> See comment to device_register.
->>>>>>
->>>>>> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
->>>>>> ---
->>>>>>  compile tested.
->>>>>>
->>>>>>  drivers/scsi/osd/osd_uld.c |    4 +++-
->>>>>>  1 files changed, 3 insertions(+), 1 deletions(-)
->>>>>>
->>>>>> diff --git a/drivers/scsi/osd/osd_uld.c b/drivers/scsi/osd/osd_uld.c
->>>>>> index cefb2c0..3e0edc2 100644
->>>>>> --- a/drivers/scsi/osd/osd_uld.c
->>>>>> +++ b/drivers/scsi/osd/osd_uld.c
->>>>>> @@ -474,7 +474,7 @@ static int osd_probe(struct device *dev)
->>>>>>  	error = device_register(&oud->class_dev);
->>>>>>  	if (error) {
->>>>>>  		OSD_ERR("device_register failed => %d\n", error);
->>>>>> -		goto err_put_cdev;
->>>>>> +		goto err_put_device;
->>>>>>  	}
->>>>>>  
->>>>>>  	get_device(&oud->class_dev);
->>>>>> @@ -482,6 +482,8 @@ static int osd_probe(struct device *dev)
->>>>>>  	OSD_INFO("osd_probe %s\n", disk->disk_name);
->>>>>>  	return 0;
->>>>>>  
->>>>>
->>>>> Hm...  So if device_register() fails then we should always call
->>>>> device_put()?  It seems like a lot of existing code does that but I
->>>>> hadn't realized until now that that is how it works.
->>>>
->>>> Heh, it wasn't a bug when most of the code was written.  It became a bug
->>>> when dev_set_name() was added because now the storage allocated for the
->>>> name has to be freed with a put.  Previous to this, the advice was just
->>>> to free the device if device_register() failed.
->>
->> That was a long time ago.  When the driver core changed, all callers
->> were audited from what I recall.
->>
->>>>> Why can't the device_put() just be added inside the device_register() so
->>>>> the unwinding works automatically?
->>>>
->>>> Since Greg and Kay didn't actually alter any of the device_register()
->>>> failure paths, this does sound to be the better course of action ... of
->>>> course, every device_register() introduced after the dev_set_name()
->>>> change may call put_device() on the cleanup path ... someone needs to
->>>> check.
->>>
->>> Yes, this patch series should not be needed at all.  If there's a
->>> problem with the driver core here, it should be fixed, not forcing the
->>> issue to all of the individual callers.
->>
->> Nope, I'm wrong, sorry, this is correct.  We can't just free the device
->> ourselves in the driver core because other parts that the device might
->> be embedded in need to be cleaned up before it can go away.
-> 
-> We're not asking you to free it; that would be wrong.  We're discussing
-> doing a put on add fail.  This will free the name allocation and would
-> call the release method if one exists, but most of these devices that
-> use device_register() seem not to have one (being embedded).  The
-> ultimate free would be done either directly in the error path or
-> indirectly via release.
-> 
-> This would make the bug you and Kay introduced with the dev_set_name()
-> patch series go away silently.  As I said ... this change would require
-> verification since device_register() calls introduced after that patch
-> series may do the put.
-> 
-> The question is really which is more effort.  Every device_register() up
-> until the beginning of 2009 has been made buggy by the dev_set_name()
-> patch set.  The chances are at least a few uses added after would be
-> rendered wrong (although most look to use copy and paste from existing
-> uses).
-> 
-> James
-> 
+Inodes of devices such as /dev/zero can get dirty for example via utime(2)
+syscall or due to atime update. Backing device of such inodes (zero_bdi, etc.)
+is however unable to handle dirty inodes and thus __mark_inode_dirty complains.
+In fact, inode should be rather dirtied against backing device of the
+filesystem holding it. This is generally a good rule except for filesystems
+such as 'bdev' or 'mtd_inodefs'. Inodes in these pseudofilesystems are
+referenced from ordinary filesystem inodes and carry mapping with real data of
+the device. Thus for these inodes we have to use
+inode->i_mapping->backing_dev_info as we did so far. We distinguish these
+filesystems by checking whether sb->s_bdi points to a non-trivial backing
+device or not.
 
-I think I have a compromise. If it is indeed the dev_set_name() leak
-then we can just deallocate the name on the error return path. Therefore
-any drivers that have the device embedded and rely on it been freed without
-calling _put will be fine as before. And these calling _put will be fine
-as well.
+Example: Assume we have an ext3 filesystem on /dev/sda1 mounted on /. There's a
+device inode A described by a path "/dev/sdb" on this filesystem. This inode
+will be dirtied against backing device "8:0" after this patch. bdev filesystem
+contains block device inode B coupled with our inode A. When someone modifies a
+page of /dev/sdb, it's B that gets dirtied and the dirtying happens against the
+backing device "8:16". Thus both inodes get filed to a correct bdi list.
 
-See below
-Boaz
+Signed-off-by: Jan Kara <jack@suse.cz>
 ---
-git diff --stat -p -M drivers/base/core.c
- drivers/base/core.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ fs/fs-writeback.c |   23 +++++++++++++++++++++--
+ 1 files changed, 21 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index d1b2c9a..054fac2 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1068,6 +1068,7 @@ done:
- 	if (parent)
- 		put_device(parent);
- name_error:
-+	kfree(dev->kobj.name);
- 	kfree(dev->p);
- 	dev->p = NULL;
- 	goto done;
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 49fd41a..7dad208 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -52,8 +52,6 @@ struct wb_writeback_work {
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/writeback.h>
+ 
+-#define inode_to_bdi(inode)	((inode)->i_mapping->backing_dev_info)
+-
+ /*
+  * We don't actually have pdflush, but this one is exported though /proc...
+  */
+@@ -71,6 +69,27 @@ int writeback_in_progress(struct backing_dev_info *bdi)
+ 	return test_bit(BDI_writeback_running, &bdi->state);
+ }
+ 
++static inline struct backing_dev_info *inode_to_bdi(struct inode *inode)
++{
++	struct super_block *sb = inode->i_sb;
++	struct backing_dev_info *bdi = inode->i_mapping->backing_dev_info;
++
++	/*
++	 * For inodes on standard filesystems, we use superblock's bdi. For
++	 * inodes on virtual filesystems, we want to use inode mapping's bdi
++	 * because they can possibly point to something useful (think about
++	 * block_dev filesystem).
++	 */
++	if (sb->s_bdi && sb->s_bdi != &noop_backing_dev_info) {
++		/* Some device inodes could play dirty tricks. Catch them... */
++		WARN(bdi != sb->s_bdi && bdi_cap_writeback_dirty(bdi),
++			"Dirtiable inode bdi %s != sb bdi %s\n",
++			bdi->name, sb->s_bdi->name);
++		return sb->s_bdi;
++	}
++	return bdi;
++}
++
+ /* Wakeup flusher thread or forker thread to fork it. Requires bdi->wb_lock. */
+ static void _bdi_wakeup_flusher(struct backing_dev_info *bdi)
+ {
+-- 
+1.6.4.2
+
