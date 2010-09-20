@@ -1,55 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756785Ab0ITPvH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 11:51:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50699 "EHLO mx2.suse.de"
+	id S1756731Ab0ITPzO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 11:55:14 -0400
+Received: from cantor.suse.de ([195.135.220.2]:49124 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756363Ab0ITPvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 11:51:05 -0400
-Date: Mon, 20 Sep 2010 17:50:15 +0200
-From: Jan Kara <jack@suse.cz>
-To: "Alexander E. Patrakov" <patrakov@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] BKL: Remove BKL from isofs
-Message-ID: <20100920155014.GH3390@quack.suse.cz>
-References: <201009161632.59210.arnd@arndb.de>
- <201009172100.06598.arnd@arndb.de>
- <20100920105811.GC3390@quack.suse.cz>
- <201009201313.11526.arnd@arndb.de>
- <20100920151834.GF3390@quack.suse.cz>
- <4C978087.7060802@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C978087.7060802@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751844Ab0ITPzM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 11:55:12 -0400
+Subject: Re: [PATCH 10/14] scsi: osd: fix device_register() error handling
+From: James Bottomley <James.Bottomley@suse.de>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Greg KH <gregkh@suse.de>, Dan Carpenter <error27@gmail.com>,
+        Vasiliy Kulikov <segooon@gmail.com>, kernel-janitors@vger.kernel.org,
+        Benny Halevy <bhalevy@panasas.com>, Tejun Heo <tj@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, osd-dev@open-osd.org,
+        linux-scsi@vger.kernel.org, cornelia.huck@de.ibm.com,
+        linux-kernel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>
+In-Reply-To: <4C9780D5.8000804@panasas.com>
+References: <1284900907-24621-1-git-send-email-segooon@gmail.com>
+	 <20100919142653.GF6236@bicker> <1284983897.2973.11.camel@mulgrave.site>
+	 <20100920151029.GA25386@suse.de>  <20100920151317.GA25506@suse.de>
+	 <1284996062.2973.85.camel@mulgrave.site>  <4C9780D5.8000804@panasas.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 20 Sep 2010 10:55:06 -0500
+Message-ID: <1284998106.2973.125.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 20-09-10 21:40:55, Alexander E. Patrakov wrote:
-> [I know nothing about linux filesystem code, please disregard this
-> mail if it is stupid]
+On Mon, 2010-09-20 at 17:42 +0200, Boaz Harrosh wrote:
+> I think I have a compromise. If it is indeed the dev_set_name() leak
+> then we can just deallocate the name on the error return path. Therefore
+> any drivers that have the device embedded and rely on it been freed without
+> calling _put will be fine as before. And these calling _put will be fine
+> as well.
 > 
-> 20.09.2010 21:18, Jan Kara wrote:
+> See below
+> Boaz
+> ---
+> git diff --stat -p -M drivers/base/core.c
+>  drivers/base/core.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
 > 
-> >BKL isn't needed for isofs at all so we can just remove it. Generally, since
-> >isofs is always mounted read-only, filesystem structure cannot change under us.
-> 
-> Does your statement also cover the case of read errors on scratched
-> CD-ROMs (i.e., the driver has successfully read a sector with a
-> directory once after a lot of strugging, and failed the next time),
-> or ejects of mounted media?
-  Well, BKL definitely won't help in protecting races triggered by such
-problems. Also if we fail to read some data, we just bail out with
-error so data appearing later do not bother us. Similarly once we get hold
-of some buffer with data, it cannot disappear under us while we hold a
-reference to it so again we are safe... I don't think these case pose any
-problem.
+> diff --git a/drivers/base/core.c b/drivers/base/core.c
+> index d1b2c9a..054fac2 100644
+> --- a/drivers/base/core.c
+> +++ b/drivers/base/core.c
+> @@ -1068,6 +1068,7 @@ done:
+>  	if (parent)
+>  		put_device(parent);
+>  name_error:
+> +	kfree(dev->kobj.name);
+>  	kfree(dev->p);
+>  	dev->p = NULL;
+>  	goto done;
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+That's not really good enough ... it will result in a double free
+because the final put (if there is one) will free the name again.
+
+This would work, but it feels a bit wrong to be poking at the kobject
+from within the driver core ... perhaps a kobject_free_name() call might
+be better?
+
+James
+
+---
+
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index d1b2c9a..88ffaca 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -1067,6 +1067,8 @@ done:
+ 	cleanup_device_parent(dev);
+ 	if (parent)
+ 		put_device(parent);
++	kfree(dev->kobj.name);
++	dev->kobj.name = NULL;
+ name_error:
+ 	kfree(dev->p);
+ 	dev->p = NULL;
+
+
