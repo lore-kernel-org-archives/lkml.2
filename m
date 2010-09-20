@@ -1,113 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476Ab0ITHLh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 03:11:37 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:15916 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781Ab0ITHLf (ORCPT
+	id S1753001Ab0ITHUK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 03:20:10 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:51104 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752317Ab0ITHUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 03:11:35 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=RGGQ4AW8FUIx4NW/XqxG0JnMgRJDJtqAtKYe6RZX8FgvUx1XkApNkehwmdKksGwtR
-	McTJWcWx75RXK5nU3nHOw==
-Date: Mon, 20 Sep 2010 00:11:18 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Nikanth Karthikesan <knikanth@suse.de>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Matt Mackall <mpm@selenic.com>, Richard Guenther <rguenther@suse.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Matz <matz@novell.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Document the new Anonymous field in smaps.
-In-Reply-To: <201009171134.02771.knikanth@suse.de>
-Message-ID: <alpine.LSU.2.00.1009200003150.4348@sister.anvils>
-References: <AANLkTini3k1hK-9RM6io0mOf4VoDzGpbUEpiv=WHfhEW@mail.gmail.com> <201009161135.00129.knikanth@suse.de> <alpine.DEB.2.00.1009160940330.24798@tigran.mtv.corp.google.com> <201009171134.02771.knikanth@suse.de>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Mon, 20 Sep 2010 03:20:09 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Hans J. Koch" <hjk@linutronix.de>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+References: <m1y6b48973.fsf@fess.ebiederm.org> <20100917205946.GF2522@local>
+Date: Mon, 20 Sep 2010 00:19:59 -0700
+In-Reply-To: <20100917205946.GF2522@local> (Hans J. Koch's message of "Fri, 17
+	Sep 2010 22:59:46 +0200")
+Message-ID: <m139t451b4.fsf_-_@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-1106520754-1284966689=:4348"
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 98.207.157.188
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"Hans J. Koch" <hjk@linutronix.de>
+X-Spam-Relay-Country: 
+Subject: [PATCH 0/5] uio hotplug support
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
 
---8323584-1106520754-1284966689=:4348
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Implement the ability to hotunplug a uio device while file handles
+are still open without crashing.
 
-On Fri, 17 Sep 2010, Nikanth Karthikesan wrote:
-> Document the new Anonymous field in smaps.
+I have written the code very carefully, and this survives my
+basic testing.  So at the very least this is better than
+what is present in uio today.
 
-Thanks for doing that, good effort, but your shifts between singular
-and plural rather jarred on my ear, so I've rewritten it a little below.
-Also added a sentence on "Swap"; but gave up when it came to KernelPageSize
-and MMUPageSize, let someone else clarify those later.
+I have implemented the ``locking'' for hotunplug support in
+a generic library, that should be reusable to make this
+kind of support easier to add in other pieces of the kernel.
 
+Eric W. Biederman (5):
+      uio: Simplify the lifetime logic of struct uio_device.
+      uio: Kill unused vma_count.
+      uio: Remove unused uio_info mmap method.
+      libunload: A library to help remove open files
+      uio: Implement hotunplug support, using libunload
 
-[PATCH v3] Document the new Anonymous field in smaps.
-
-From: Nikanth Karthikesan <knikanth@suse.de>
-
-Document the new Anonymous field in smaps, and also the Swap field.
-Explain what smaps means by shared and private, which differs from
-MAP_SHARED and MAP_PRIVATE.
-
-Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
-Signed-off-by: Hugh Dickins <hughd@google.com>
 ---
-
- Documentation/filesystems/proc.txt |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
-
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -370,17 +370,24 @@ Shared_Dirty:          0 kB
- Private_Clean:         0 kB
- Private_Dirty:         0 kB
- Referenced:          892 kB
-+Anonymous:             0 kB
- Swap:                  0 kB
- KernelPageSize:        4 kB
- MMUPageSize:           4 kB
-=20
--The first  of these lines shows  the same information  as is displayed for=
- the
--mapping in /proc/PID/maps.  The remaining lines show  the size of the mapp=
-ing,
-+The first of these lines shows the same information as is displayed for th=
-e
-+mapping in /proc/PID/maps. The remaining lines show the size of the mappin=
-g,
- the amount of the mapping that is currently resident in RAM, the "proporti=
-onal
- set size=E2=80=9D (divide each shared page by the number of processes shar=
-ing it), the
- number of clean and dirty shared pages in the mapping, and the number of c=
-lean
--and dirty private pages in the mapping.  The "Referenced" indicates the am=
-ount
--of memory currently marked as referenced or accessed.
-+and dirty private pages in the mapping. Note that even a page which is par=
-t of
-+a MAP_SHARED mapping, but has only a single pte mapped, i.e. is currently =
-used
-+by only one process, is accounted as private and not as shared. "Reference=
-d"
-+indicates the amount of memory currently marked as referenced or accessed.
-+"Anonymous" shows the amount of memory that does not belong to any file. E=
-ven
-+a mapping associated with a file may contain anonymous pages: when MAP_PRI=
-VATE
-+and a page is modified, the file page is replaced by a private anonymous c=
-opy.
-+"Swap" shows how much would-be-anonymous memory is also used, but out on s=
-wap.
-=20
- This file is only present if the CONFIG_MMU kernel configuration option is
- enabled.
---8323584-1106520754-1284966689=:4348--
+ drivers/uio/uio.c          |  326 ++++++++++++++++++++++++++++++--------------
+ fs/Makefile                |    2 +-
+ fs/libunload.c             |  166 ++++++++++++++++++++++
+ include/linux/uio_driver.h |   11 +--
+ include/linux/unload.h     |   33 +++++
+ 5 files changed, 426 insertions(+), 112 deletions(-)
