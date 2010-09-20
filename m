@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757370Ab0ITTte (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 15:49:34 -0400
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:58805 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753802Ab0ITTtd (ORCPT
+	id S1757379Ab0ITTud (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 15:50:33 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:37573 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753802Ab0ITTuc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 15:49:33 -0400
-Message-ID: <4C97BAA2.6000309@euromail.se>
-Date: Mon, 20 Sep 2010 21:48:50 +0200
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100916 Thunderbird/3.1.4
+	Mon, 20 Sep 2010 15:50:32 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
-CC: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] hid: 3m: Convert to MT slots
-References: <1283005748-3293-1-git-send-email-rydberg@euromail.se> <1283005748-3293-2-git-send-email-rydberg@euromail.se> <FF722ED6-6568-47D0-82D1-99B9E9D5AEAF@enac.fr>
-In-Reply-To: <FF722ED6-6568-47D0-82D1-99B9E9D5AEAF@enac.fr>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1OxmML-0001nS-7b.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1OxmML-0001nS-7b 8d8ed4f4fead8c5c815a77f6e2aa61f3
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH v2 03/10] RapidIO: Use stored ingress port number instead of register read
+Date: Mon, 20 Sep 2010 12:49:30 -0700
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E55201303EA2@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <20100920121725.66bb96d0.akpm@linux-foundation.org>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+thread-topic: [PATCH v2 03/10] RapidIO: Use stored ingress port number instead of register read
+thread-index: ActY+BqgXPuA+vgNSM+Z4ybgW+VXOAAAh1nw
+References: <1284476363-1677-1-git-send-email-alexandre.bounine@idt.com><1284476363-1677-4-git-send-email-alexandre.bounine@idt.com><20100914151219.5d92c6f9.akpm@linux-foundation.org><0CE8B6BE3C4AD74AB97D9D29BD24E55201303D0E@CORPEXCH1.na.ads.idt.com> <20100920121725.66bb96d0.akpm@linux-foundation.org>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: "Andrew Morton" <akpm@linux-foundation.org>
+Cc: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        "Thomas Moll" <thomas.moll@sysgo.com>,
+        "Matt Porter" <mporter@kernel.crashing.org>,
+        "Li Yang" <leoli@freescale.com>,
+        "Kumar Gala" <galak@kernel.crashing.org>,
+        "Micha Nelissen" <micha@neli.hopto.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2010 09:43 PM, Stéphane Chatty wrote:
+Andrew Morton <akpm@linux-foundation.org> wrote:
+> 
+> The "variable length array at the end of the struct" thing is pretty
+> commonly used and works well.  As long as we never want to change the
+> number of switches on the fly (hotplug?).
 
-> 
-> Le 28 août 10 à 16:29, Henrik Rydberg a écrit :
-> 
->> The Microtouch controller is capable of doing finger tracking on
->> up to 60 fingers. To reduce bandwidth and cpu usage, convert the
->> driver to use the MT slots protocol.
-> 
-> As I understand it, this patch actually has three roles:
->  1. improving the evdev parameters of the device
->  2. cleaning the protocol to get rid of useless MISC/SCANCODE messages
->  3. convert the protocol to MT slots
-> 
-> 
->> +#define SN_MOVE            2048
->> +#define SN_WIDTH        128
->>
-> 
-> In the long run, it might be useful to comment these signal/noise constants
-> 
-> 
-> 
->>              hid_map_usage(hi, usage, bit, max, EV_KEY, BTN_TOUCH);
->> +            input_set_capability(hi->input, EV_KEY, BTN_TOUCH);
-> 
->>  {
->> +    /* tell hid-input to skip setup of these event types */
->>      if (usage->type == EV_KEY || usage->type == EV_ABS)
->> -        clear_bit(usage->code, *bit);
->> -
->> -    return 0;
->> +        set_bit(usage->type, hi->input->evbit);
->> +    return -1;
->>  }
->>
-> 
-> I understand this as a trick to get rid of MISC/SCANCODEs that are added for
-> every EV_KEY message, consequence of a rule in hid-input.c. Wouldn't it be
-> simpler to improve the rule than to work around it?
+This is expected to be a "strange" array - its size can be 0 or 1 only.
+No number of switches in that array should be changed on the fly.
+In the hotplug situation entire rio_dev structure should be added (or
+removed).
+RIO device can be endpoint or switch. If a RIO device is a switch - the
+rio_switch
+structure will be added at the end.
 
-
-The main reason is to be able to set the fuzz parameters, which are otherwise
-overwritten by hid-input setup.
-
-Henrik
