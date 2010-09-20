@@ -1,18 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757626Ab0ITUVM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 16:21:12 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:52096 "EHLO ogre.sisk.pl"
+	id S932163Ab0ITUUq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 16:20:46 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:52056 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754594Ab0ITUVJ convert rfc822-to-8bit (ORCPT
+	id S1757398Ab0ITUUn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 16:21:09 -0400
+	Mon, 20 Sep 2010 16:20:43 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Jens Axboe" <jens.axboe@oracle.com>,
-        "Maxim Levitsky" <maximlevitsky@gmail.com>,
-        "Tejun Heo" <tj@kernel.org>
+        "Can Celasun" <dcelasun@gmail.com>
 References: <r2gGqgg1zFC.A.LrE.w97lMB@chimera>
 In-Reply-To: <r2gGqgg1zFC.A.LrE.w97lMB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -20,10 +18,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <aRnAGz9xZ8K.A.V1E.697lMB@chimera>
-Subject: [Bug #18522] [REGRESSION] cdrom drive doesn't detect removal
+Message-ID: <aRnAGz9xZ8K.A.ZSF.c-7lMB@chimera>
+Subject: [Bug #16691] IPW5100: iwlagn broken with 2.6.34.x to 2.6.35.2 update
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 20 Sep 2010 21:57:22 +0200 (CEST)
+Date: Mon, 20 Sep 2010 21:57:20 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -36,12 +34,9 @@ introduced between 2.6.34 and 2.6.35.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=18522
-Subject		: [REGRESSION] cdrom drive doesn't detect removal
-Submitter	: Maxim Levitsky <maximlevitsky@gmail.com>
-Date		: 2010-09-12 9:49 (9 days old)
-First-Bad-Commit: http://git.kernel.org/linus/6b4517a7913a09d3259bb1d21c9cb300f12294bd
-Message-ID	: <1284284969.2928.18.camel@maxim-laptop>
-References	: http://marc.info/?l=linux-kernel&m=128428499013930&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16691
+Subject		: IPW5100: iwlagn broken with 2.6.34.x to 2.6.35.2 update
+Submitter	: Can Celasun <dcelasun@gmail.com>
+Date		: 2010-08-21 08:28 (31 days old)
 
 
