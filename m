@@ -1,96 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756701Ab0ITPNc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 11:13:32 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47873 "EHLO mx1.suse.de"
+	id S1756716Ab0ITPNp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 11:13:45 -0400
+Received: from mga11.intel.com ([192.55.52.93]:42111 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752427Ab0ITPNa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 11:13:30 -0400
-Date: Mon, 20 Sep 2010 08:13:17 -0700
-From: Greg KH <gregkh@suse.de>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Dan Carpenter <error27@gmail.com>, Vasiliy Kulikov <segooon@gmail.com>,
-        kernel-janitors@vger.kernel.org, Boaz Harrosh <bharrosh@panasas.com>,
-        Benny Halevy <bhalevy@panasas.com>, Tejun Heo <tj@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, osd-dev@open-osd.org,
-        linux-scsi@vger.kernel.org, cornelia.huck@de.ibm.com,
-        linux-kernel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH 10/14] scsi: osd: fix device_register() error handling
-Message-ID: <20100920151317.GA25506@suse.de>
-References: <1284900907-24621-1-git-send-email-segooon@gmail.com>
- <20100919142653.GF6236@bicker>
- <1284983897.2973.11.camel@mulgrave.site>
- <20100920151029.GA25386@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100920151029.GA25386@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756707Ab0ITPNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 11:13:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,394,1280732400"; 
+   d="scan'208";a="839242648"
+Date: Mon, 20 Sep 2010 15:27:26 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH] x86/mrst: add SFI platform device parsing code
+Message-ID: <20100920152726.68ac2d84@linux.intel.com>
+In-Reply-To: <20100920150431.GD31167@sirena.org.uk>
+References: <20100920140049.31408.67527.stgit@localhost.localdomain>
+	<20100920150431.GD31167@sirena.org.uk>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 20, 2010 at 08:10:29AM -0700, Greg KH wrote:
-> On Mon, Sep 20, 2010 at 06:58:17AM -0500, James Bottomley wrote:
-> > On Sun, 2010-09-19 at 16:26 +0200, Dan Carpenter wrote:
-> > > On Sun, Sep 19, 2010 at 04:55:07PM +0400, Vasiliy Kulikov wrote:
-> > > > If device_register() fails then call put_device().
-> > > > See comment to device_register.
-> > > > 
-> > > > Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-> > > > ---
-> > > >  compile tested.
-> > > > 
-> > > >  drivers/scsi/osd/osd_uld.c |    4 +++-
-> > > >  1 files changed, 3 insertions(+), 1 deletions(-)
-> > > > 
-> > > > diff --git a/drivers/scsi/osd/osd_uld.c b/drivers/scsi/osd/osd_uld.c
-> > > > index cefb2c0..3e0edc2 100644
-> > > > --- a/drivers/scsi/osd/osd_uld.c
-> > > > +++ b/drivers/scsi/osd/osd_uld.c
-> > > > @@ -474,7 +474,7 @@ static int osd_probe(struct device *dev)
-> > > >  	error = device_register(&oud->class_dev);
-> > > >  	if (error) {
-> > > >  		OSD_ERR("device_register failed => %d\n", error);
-> > > > -		goto err_put_cdev;
-> > > > +		goto err_put_device;
-> > > >  	}
-> > > >  
-> > > >  	get_device(&oud->class_dev);
-> > > > @@ -482,6 +482,8 @@ static int osd_probe(struct device *dev)
-> > > >  	OSD_INFO("osd_probe %s\n", disk->disk_name);
-> > > >  	return 0;
-> > > >  
-> > > 
-> > > Hm...  So if device_register() fails then we should always call
-> > > device_put()?  It seems like a lot of existing code does that but I
-> > > hadn't realized until now that that is how it works.
-> > 
-> > Heh, it wasn't a bug when most of the code was written.  It became a bug
-> > when dev_set_name() was added because now the storage allocated for the
-> > name has to be freed with a put.  Previous to this, the advice was just
-> > to free the device if device_register() failed.
-
-That was a long time ago.  When the driver core changed, all callers
-were audited from what I recall.
-
-> > > Why can't the device_put() just be added inside the device_register() so
-> > > the unwinding works automatically?
-> > 
-> > Since Greg and Kay didn't actually alter any of the device_register()
-> > failure paths, this does sound to be the better course of action ... of
-> > course, every device_register() introduced after the dev_set_name()
-> > change may call put_device() on the cleanup path ... someone needs to
-> > check.
+> > +static void *lis331dl_platform_data(void *info)
+> > +{
+> > +	static short intr2nd_pdata;
+> > +	struct i2c_board_info *i2c_info = (struct i2c_board_info
+> > *)info;
 > 
-> Yes, this patch series should not be needed at all.  If there's a
-> problem with the driver core here, it should be fixed, not forcing the
-> issue to all of the individual callers.
+> It's rather concerning that the parser here needs to have all this
+> knowledge about the specific chips that will be on the boards.  Is
+> there a plan for how this will be managed once system integrators
+> begin putting other chips onto Moorestown boards?
 
-Nope, I'm wrong, sorry, this is correct.  We can't just free the device
-ourselves in the driver core because other parts that the device might
-be embedded in need to be cleaned up before it can go away.
+It depends on the device. The information for the platform device has
+to come from somewhere and the kernel has no formal standard structure
+for private data passed from platform devices - so in a lot of cases
+its really just the needed glue so the platform device code in
+drivers/i2c etc stays independent.
 
-So this patch series is correct, thanks.
+For a device that doesn't need any private structure passing it's just
+a case of knowing the Linux name that matches the firmware description.
+For a chip that already has a Linux driver that expects private data
+(or a new driver that needs to) the info has to come from somewhere and
+Linux packages it in per device fashion.
 
-greg k-h
+The parser has the knowledge precisely because we don't want to put the
+knowledge in the driver.
+
+Alan
+
