@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757571Ab0ITWiO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 18:38:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:47979 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754301Ab0ITWiN (ORCPT
+	id S1757765Ab0ITWjY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 18:39:24 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:6170 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754334Ab0ITWjW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 18:38:13 -0400
-X-Authority-Analysis: v=1.1 cv=Ba7GFA6IM/Rlu/bGJ5lftWmk/oljGo5ZwASPcBcXAAo= c=1 sm=0 a=efo-eZkTzUcA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=P5wrnlEIAAAA:8 a=nTzIIlD1-3tuQacf-JEA:9 a=oE4bRwlgjrWX6MUKV4UGmPvmrGIA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=nXjPMxIiGpsA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 09/10] jump label 11: add sparc64 support
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Miller <davem@davemloft.net>
-Cc: jbaron@redhat.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        mathieu.desnoyers@polymtl.ca, hpa@zytor.com, tglx@linutronix.de,
-        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-        mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
-        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com
-In-Reply-To: <20100920.153023.226756815.davem@davemloft.net>
-References: <cover.1284733808.git.jbaron@redhat.com>
-	 <3b5b071fcdb2afb7f67cacecfa78b14c740278a7.1284733808.git.jbaron@redhat.com>
-	 <1285021546.23122.698.camel@gandalf.stny.rr.com>
-	 <20100920.153023.226756815.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 20 Sep 2010 18:38:11 -0400
-Message-ID: <1285022291.23122.728.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	Mon, 20 Sep 2010 18:39:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=EO8jkd6aTFfEtE+87+ADccKaZuD8hhfa+OQCjtmZ6tYEv7MtwSkNFMMsLqP3UiyPZA
+         ISQI5dmmyf4PxvTnx4mQ==
+MIME-Version: 1.0
+In-Reply-To: <4C97BFE7.6050202@zytor.com>
+References: <tip-ea53069231f9317062910d6e772cca4ce93de8c8@git.kernel.org>
+	<tip-a68e5c94f7d3dd64fef34dd5d97e365cae4bb42a@git.kernel.org>
+	<AANLkTimCXZWVb7ajANPg15Zuo22nst=d5p-MjXhzu1NX@mail.gmail.com>
+	<4C97A5EF.4070100@zytor.com>
+	<4C97BFE7.6050202@zytor.com>
+Date: Mon, 20 Sep 2010 15:34:02 -0700
+Message-ID: <AANLkTikJGJ_84fbtVTqGv-zsJUKUQBQO2ZG6tKQnzFCf@mail.gmail.com>
+Subject: Re: [tip:x86/idle] x86, hotplug: Move WBINVD back outside the
+ play_dead loop
+From: Venkatesh Pallipadi <venki@google.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, asit.k.mallick@intel.com,
+        arjan@linux.kernel.org, a.p.zijlstra@chello.hl, lenb@kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com,
+        linux-tip-commits@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-20 at 15:30 -0700, David Miller wrote:
-> From: Steven Rostedt <rostedt@goodmis.org>
-> Date: Mon, 20 Sep 2010 18:25:46 -0400
-> 
-> > 
-> > Jason, did you author this patch or did David?
-> 
-> I did.
-> 
-> Jason when you post patches other people have authored, you should
-> add a:
-> 
-> From: Mr. Author <email_of_author@foo.com>
-> 
-> to the top of your commit message.
-> 
-> This allows automated tools that pull patches into GIT to set
-> the author correctly when it is not you.
-> 
-> Thanks.
+On Mon, Sep 20, 2010 at 1:11 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 09/20/2010 11:20 AM, H. Peter Anvin wrote:
+>> On 09/17/2010 05:48 PM, Venkatesh Pallipadi wrote:
+>>>>
+>>>> +       wbinvd();
+>>>> +
+>>>>        while (1) {
+>>>> -               mb();
+>>>> -               wbinvd();
+>>>>                __monitor(&current_thread_info()->flags, 0, 0);
+>>>>                mb();
+>>>
+>>>
+>>> Just one observation. There are some CPUs with errata that need
+>>> clflush before monitor. So, if that CPU wakesup spuriously it may have
+>>> problem reentering idle. Not sure whether that will be a problem as
+>>> that errata also depended on read happening on the flag. May be its
+>>> better to do monitor (0, 0, 0).
+>>>
+>>
+>> It seems the easy way to deal with that would be to just add clflush
+>> before monitor... it is *probably* redundant, but it should be safe to
+>> do. It means depending on X86_FEATURE_CLFLUSH as well as
+>> X86_FEATURE_MWAIT, but I don't think there is any x86 processor which
+>> has MWAIT and not CLFLUSH, and I highly doubt there ever will be.
+>>
+>> Does anyone see any downside?
+>>
+>
+> Patch for review... anyone see any problem with it?
+>
 
-Thanks, I figured you did when I saw your SoB. I'll add your From line
-manually, when I pull it.
+Looks good.
 
--- Steve
+We can also close one of the longest standing bugs in
+bugzilla.kernel.org  now :-)
+https://bugzilla.kernel.org/show_bug.cgi?id=5471
 
-
+Acked-by: Venkatesh Pallipadi <venki@google.com>
