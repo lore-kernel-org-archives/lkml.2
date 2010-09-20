@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756785Ab0ITP7l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 11:59:41 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:53434 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753060Ab0ITP7k convert rfc822-to-8bit (ORCPT
+	id S1756811Ab0ITQCO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 12:02:14 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:52652 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752275Ab0ITQCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 11:59:40 -0400
-Subject: Re: [RFC][PATCH 0/2] PF_flags cleaups
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
-        Avi Kivity <avi@redhat.com>
-In-Reply-To: <AANLkTinjVNddRYDUBnVZ67QDEPGrpj4dmW5BMwq2+ozP@mail.gmail.com>
-References: <20100920151334.569154707@chello.nl>
-	 <AANLkTinjVNddRYDUBnVZ67QDEPGrpj4dmW5BMwq2+ozP@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 20 Sep 2010 17:58:59 +0200
-Message-ID: <1284998339.2275.738.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 20 Sep 2010 12:02:13 -0400
+To: paulmck@linux.vnet.ibm.com
+CC: James.Bottomley@HansenPartnership.com, miklos@szeredi.hu,
+        benh@kernel.crashing.org, dhowells@redhat.com,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+In-reply-to: <20100920012915.GI3060@linux.vnet.ibm.com>
+	(paulmck@linux.vnet.ibm.com)
+Subject: Re: memory barrier question
+References: <E1OwHkg-0007IX-DH@pomaz-ex.szeredi.hu>
+ <1284656978.26423.11.camel@mulgrave.site>
+ <E1OwI5H-0007LR-DC@pomaz-ex.szeredi.hu>
+ <1284760148.30449.107.camel@pasglop>
+ <20100917231222.GA3060@linux.vnet.ibm.com>
+ <1284864421.30449.113.camel@pasglop>
+ <20100919152638.GF3060@linux.vnet.ibm.com>
+ <E1OxQIg-0005Nw-WE@pomaz-ex.szeredi.hu>
+ <20100919215909.GG3060@linux.vnet.ibm.com>
+ <1284944316.2957.795.camel@mulgrave.site> <20100920012915.GI3060@linux.vnet.ibm.com>
+Message-Id: <E1OxioY-0006nd-M9@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Mon, 20 Sep 2010 18:01:58 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-20 at 08:40 -0700, Linus Torvalds wrote:
-> On Mon, Sep 20, 2010 at 8:13 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > Because we recently ran out of PF_flags, try and clean up.
-> >
-> > Patches are on top of -tip, which already includes the PF_ALIGNWARN
-> > removal.
+On Sun, 19 Sep 2010, Paul E. McKenney wrote:
+> > > Again, please put at least an ACCESS_ONCE() in.  Trivial to do now,
+> > > possibly saving much pain and headache later on.
+> > 
+> > OK, lost you here.  ACCESS_ONCE() is only needed in certain situations
+> > (like list traversal) because some compilers can reload cached values
+> > across an explicit barrier (which isn't here).
 > 
-> Looks ok by me conceptually, but I _really_ hate the naming of that
-> second patch and the pointless churn.
-> 
+> ACCESS_ONCE() also tells the compiler not to try to guess.
 
-> and look how much straightforward it would have been had you just kept
-> the same simple semantics with just a new field:
-> 
-> -       new_flags &= ~(PF_SUPERPRIV | PF_WQ_WORKER);
-> +       new_type &= ~(TT_SUPERPRIV | TT_WQ_WORKER);
-> 
-> and nobody could possibly have any objections to a straightforward
-> "move the task type flags into a separate field" patch.
+If the code is written like this:
 
-Sure, can do. Like said, my initial approach was to compress these type
-bits into fewer bits by converting all these individual bits (PF_KSWAPD,
-PF_WQ_WORKER, etc) into a linear range which spans less bits.
+	if (ACCESS_ONCE(dentry->d_inode)) {
+		blah = dentry->d_inode->i_some_field
+		...
+	}
 
-But indeed, if we're OK with adding a new field (which is I think the
-biggest question, and your reply seems imply you don't mind at all),
-then keeping the old structure and moving them over to a new field will
-generate a much saner patch.
+does the compiler guarantee anything or does it need a full compiler
+barrier to prevent reordering?
 
-(I only left the helper functions in in case people would object to
-adding another field and we'd need to really compress bits again).
+Because that pattern is, again, pretty much all over the place.  Yeah
+it can be rewritten but that's not always feasable since it's
+difficult to audit, would possibly need extra function arguments,
+etc...
 
-One point though, I noticed we actually expose p->flags to userspace,
-which basically makes PF_flags an ABI, do we care?
+Thanks,
+Miklos
