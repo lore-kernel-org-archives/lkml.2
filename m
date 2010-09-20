@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755982Ab0ITIpA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 04:45:00 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:43942 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755758Ab0ITIo7 (ORCPT
+	id S1756011Ab0ITIqb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 04:46:31 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41541 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755761Ab0ITIqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 04:44:59 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275dhz32i2a8h62h)
-X-Spam-TCS-SCL: 1:0
-X-WSS-ID: 0L91ETG-01-6C7-02
-X-M-MSG: 
-Date: Mon, 20 Sep 2010 10:41:39 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Stephane Eranian <eranian@google.com>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Don Zickus <dzickus@redhat.com>,
-        "gorcunov@gmail.com" <gorcunov@gmail.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>
-Subject: Re: [PATCH] perf, x86: catch spurious interrupts after disabling
- counters
-Message-ID: <20100920084139.GN13563@erda.amd.com>
-References: <20100910144634.GA1060@elte.hu>
- <20100910155659.GD13563@erda.amd.com>
- <20100911094157.GA11521@elte.hu>
- <20100911114404.GE13563@erda.amd.com>
- <20100911124537.GA22850@elte.hu>
- <20100912095202.GF13563@erda.amd.com>
- <20100913143713.GK13563@erda.amd.com>
- <20100914174132.GN13563@erda.amd.com>
- <20100915162034.GO13563@erda.amd.com>
- <AANLkTikdRh48rf19d3vsd8pEJO0Tvqbnw9_Yd7FaQ3yB@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <AANLkTikdRh48rf19d3vsd8pEJO0Tvqbnw9_Yd7FaQ3yB@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	Mon, 20 Sep 2010 04:46:31 -0400
+Subject: Re: [PATCH] Regulator: lp3972 cleanup
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100917122844.GD4322@rakim.wolfsonmicro.main>
+References: <1284702257.9481.3.camel@mola>
+	 <20100917122844.GD4322@rakim.wolfsonmicro.main>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 20 Sep 2010 09:46:26 +0100
+Message-ID: <1284972386.3403.20.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17.09.10 09:06:09, Stephane Eranian wrote:
-> Robert.
+On Fri, 2010-09-17 at 13:28 +0100, Mark Brown wrote:
+> On Fri, Sep 17, 2010 at 01:44:17PM +0800, Axel Lin wrote:
 > 
-> Does it mean that with this patch, we don't need Don's back-to-back NMI patch
-> anymore?
+> >  - Logging the value for diagnostics if failed to detect device
+> 
+> >  	if (ret == 0 && (val & SYS_CONTROL1_INIT_MASK) != SYS_CONTROL1_INIT_VAL)
+> >  		ret = -ENODEV;
+> >  	if (ret < 0) {
+> > -		dev_err(&i2c->dev, "failed to detect device\n");
+> > +		dev_err(&i2c->dev, "failed to detect device: %d\n", ret);
+> 
+> This misses part of the point of my suggestion - if you don't match the
+> ID register then you'll log -ENODEV rather than the device ID that you
+> read back which would presumably be more useful for someone trying to
+> work out why the check triggered.
+> 
+> Lots of other good stuff in there, though:
+> 
+> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-No, both fix separate things.
+Applied.
 
-Don's patch is about this problem on Intel systems, where ack'ing the
-status late may cause empty nmis:
+Thanks
 
- http://lkml.org/lkml/2010/8/25/124
-
-My patch fixes a problem that after disabling a counter, it could
-still cause a late NMI. It was observed on AMD systems, but may also
-be valid for Intel systems.
-
--Robert
-
+Liam
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
 
