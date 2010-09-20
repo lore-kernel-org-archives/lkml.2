@@ -1,40 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755482Ab0ITCv0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 22:51:26 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:52117 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754403Ab0ITCvZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 22:51:25 -0400
-Date: Sun, 19 Sep 2010 19:53:08 -0700 (PDT)
-From: Sage Weil <sage@newdream.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Farnum <gregf@hq.newdream.net>
-Subject: Re: linux-next: build failure after merge of the ceph tree
-In-Reply-To: <20100920114136.33d75323.sfr@canb.auug.org.au>
-Message-ID: <Pine.LNX.4.64.1009191952540.7498@cobra.newdream.net>
-References: <20100920114136.33d75323.sfr@canb.auug.org.au>
+	id S1755490Ab0ITDJx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 23:09:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29713 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754403Ab0ITDJw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Sep 2010 23:09:52 -0400
+Message-ID: <4C96D072.5080305@redhat.com>
+Date: Sun, 19 Sep 2010 23:09:38 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Hugh Dickins <hughd@google.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Greg KH <greg@kroah.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: further fix swapin race condition
+References: <20100903153958.GC16761@random.random> <alpine.LSU.2.00.1009051926330.12092@sister.anvils> <alpine.LSU.2.00.1009151534060.5630@tigran.mtv.corp.google.com> <20100915234237.GR5981@random.random> <alpine.DEB.2.00.1009151703060.7332@tigran.mtv.corp.google.com> <20100916210349.GU5981@random.random> <alpine.LSU.2.00.1009161905190.2517@tigran.mtv.corp.google.com> <20100918131907.GI18596@random.random> <alpine.LSU.2.00.1009191924110.2779@sister.anvils> <alpine.LSU.2.00.1009191938110.3025@sister.anvils>
+In-Reply-To: <alpine.LSU.2.00.1009191938110.3025@sister.anvils>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Sep 2010, Stephen Rothwell wrote:
-> Hi Sage,
-> 
-> After merging the vfs tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
-> 
-> net/ceph/pagelist.c: In function 'ceph_pagelist_truncate':
-> net/ceph/pagelist.c:136: error: implicit declaration of function 'pagelist_unmap_tail'
-> 
-> Caused by commit d73f8eefea20406cba00b80a65747844df120559 ("ceph: add pagelist_reserve, pagelist_truncate, pagelist_set_cursor").
-> 
-> I have used the version of the ceph tree from next-20100917 for today.
+On 09/19/2010 10:40 PM, Hugh Dickins wrote:
+> Commit 4969c1192d15afa3389e7ae3302096ff684ba655 "mm: fix swapin race condition"
+> is now agreed to be incomplete.  There's a race, not very much less likely
+> than the original race envisaged, in which it is further necessary to check
+> that the swapcache page's swap has not changed.
 
-Fixed.  Thanks!
+> B ought to have checked that page1's swap was still swap1.
+>
+> Signed-off-by: Hugh Dickins<hughd@google.com>
+> Cc: stable@kernel.org
 
-sage
+Reviewed-by: Rik van Riel <riel@redhat.com>
+
+-- 
+All rights reversed
