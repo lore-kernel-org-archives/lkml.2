@@ -1,136 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751370Ab0ITF0E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 01:26:04 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:39380 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750835Ab0ITF0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 01:26:01 -0400
-Date: Sun, 19 Sep 2010 22:25:53 -0700
-From: Ram Pai <linuxram@us.ibm.com>
-To: Valerie Aurora <vaurora@redhat.com>
-Cc: Ram Pai <ram.n.pai@gmail.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andreas Gruenbacher <agruen@suse.de>, Nick Piggin <npiggin@kernel.dk>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 03/34] VFS: Add CL_NO_SLAVE flag to
- clone_mnt()/copy_tree()
-Message-ID: <20100920052553.GM8926@ram-laptop>
-Reply-To: Ram Pai <linuxram@us.ibm.com>
-References: <1284675145-4391-1-git-send-email-vaurora@redhat.com>
- <1284675145-4391-4-git-send-email-vaurora@redhat.com>
- <AANLkTim1bbGrrPcFHThx3XOm8GmudQFSmFUs3NAXT5yC@mail.gmail.com>
- <20100917043401.GD8926@ram-laptop>
- <20100917171514.GA32258@shell>
+	id S1751596Ab0ITFa2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 01:30:28 -0400
+Received: from smtp101.rog.mail.re2.yahoo.com ([206.190.36.79]:34131 "HELO
+	smtp101.rog.mail.re2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750934Ab0ITFa0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 01:30:26 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Sep 2010 01:30:26 EDT
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=rogers.com;
+  h=DKIM-Signature:Message-ID:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:From:To:Subject:Date:User-Agent:MIME-Version:Content-Transfer-Encoding:Content-Type;
+  b=j8iy+vKYV1J4A6ByQEMt+u1SkssDs1ZdUiBctn1E4fL2/X5vqAxyFniEAWL2UhibY4U3TNAZWPJQe13umN93bnFQ+HQPs1pPquxEnrENA/82pHf1a0H9I4LoOHFSmPaNZD2FtkpaiBiNywoQ3Scx8npVBWZILPaouvGr39bg594=  ;
+Message-ID: <650240.84760.qm@smtp101.rog.mail.re2.yahoo.com>
+X-Yahoo-SMTP: rZzhDImswBA_40COIyZI42.8nAz5YXic.zo1v550XQVtX7k-
+X-YMail-OSG: 9rDUxoQVM1nB_K8.7z70jNPCbuqyDqE6WxNRexKqO.kH9LH
+ AYS6rv6L6
+X-Yahoo-Newman-Property: ymail-3
+From: Shawn Starr <shawn.starr@rogers.com>
+To: linux-kernel@vger.kernel.org
+Subject: [i915] 2.6.36-rc4-git2 (Fedora snapshot) - kernel BUG at drivers/gpu/drm/i915/i915_gem.c:1444!
+Date: Mon, 20 Sep 2010 01:23:41 -0400
+User-Agent: KMail/4.5 beta1 (Linux/2.6.36-0.22.rc4.git2.fc15.x86_64; KDE/4.5.1; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100917171514.GA32258@shell>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="ISO-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 17, 2010 at 01:15:14PM -0400, Valerie Aurora wrote:
-> On Thu, Sep 16, 2010 at 09:34:01PM -0700, Ram Pai wrote:
-> > On Thu, Sep 16, 2010 at 05:09:58PM -0700, Ram Pai wrote:
-> > > On Thu, Sep 16, 2010 at 3:11 PM, Valerie Aurora <vaurora@redhat.com> wrote:
-> > > 
-> > > > Passing the CL_NO_SLAVE flag to clone_mnt() causes the clone
-> > > > to fail if the source mnt is a slave.
-> > > >
-> > > > Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-> > > > ---
-> > > >  fs/namespace.c |    3 +++
-> > > >  fs/pnode.h     |    1 +
-> > > >  2 files changed, 4 insertions(+), 0 deletions(-)
-> > > >
-> > > > diff --git a/fs/namespace.c b/fs/namespace.c
-> > > > index eeb4c22..6956062 100644
-> > > > --- a/fs/namespace.c
-> > > > +++ b/fs/namespace.c
-> > > > @@ -565,6 +565,9 @@ static struct vfsmount *clone_mnt(struct vfsmount *old,
-> > > > struct dentry *root,
-> > > >        if ((flag & CL_NO_SHARED) && (IS_MNT_SHARED(old)))
-> > > >                return ERR_PTR(-EINVAL);
-> > > >
-> > > > +       if ((flag & CL_NO_SLAVE) && (IS_MNT_SLAVE(old)))
-> > > > +               return ERR_PTR(-EINVAL);
-> > > > +
-> > > >
-> > > 
-> > > 
-> > > its been a while and my memory may have corroded.  But I dont think this
-> > > check is needed. Because cloning a 'slave mount' makes the mount a 'private
-> > > mount' and not a 'slave mount'.
-> >
-> > There is one case where a 'slave mount' when cloned can generate a 'slave mount', and
-> > that is when the 'slave mount' is also a 'shared mount'. So the above check has to
-> > be
-> > 
-> >        if ((flag & CL_NO_SLAVE) && (IS_MNT_SLAVE(old) && IS_MNT_SHARED(old)))
-> >                return ERR_PTR(-EINVAL);
-> 
-> Hey Ram,
-> 
-> I added this flag for union mounts. Union mounts can't deal with
-> namespace changes in the read-only layers, so we don't allow union of
-> read-only mounts that are the target of propagation events (shared or
-> slave).
-> 
-> We could automatically convert all slave or shared mounts into private
-> mounts when we clone the mounts, but that would surprise an
-> administrator who carefully set up their shared or slave read-only
-> mounts before unioning them.  So instead of silently converting slave
-> or shared to private, we error out.  Does that make sense?
+Hello,
 
-I understand your intentions, but I think you are making a wrong assumption.
-You seem to be thinking that if a slave-mount is cloned, the new cloned
-mount will also be a slave-mount and will hence receive propagations. As
-per shared subtree semantics, a slave-mount when cloned will create a private
-mount. Since your intention is to avoid generating any new mounts that 
-recieve propagations, you should be checking for shared-mounts and 
-slave-shared-mounts because these are the two kind of mounts that when
-cloned create new mounts that receive propagation.
+I've been hitting this repeatedly in using this kernel this is a recent issue. Also, www.kerneloops.org seems broken, someone might want to fix this? We can disregard virtualbox drivers causing this especially given the 
+traceback.
 
-btw: slave-shared-mount is a mount that is shared and is also a slave of
-a shared mount.
+trace below:
 
-> 
-> All that being said, I debated how to do this cleanly and I'm still
-> not satisfied.  My goal is to both check and clone the proposed
-> read-only layers in one pass.  Without these flags, I had to do four
-> passes:
-> 
-> 1. Find the "lowest" read-only mount at this mountpoint.
-> 2. Check each mount for read-only, not shared, not slave.
-> 3. Clone the subtree starting at the "lowest" mount.
-> 4. Recheck the cloned tree for rules in #2.
-> 
-> One of the reasons I had to do it this way is that you can't hold
-> vfsmount_lock while calling copy_tree(), so the mount flags can change
-> between the first check in #2 and the copy_tree() in #3.  Also
-> sb->s_flag can change.  
+------------[ cut here ]------------
+kernel BUG at drivers/gpu/drm/i915/i915_gem.c:1444!
+invalid opcode: 0000 [#1] SMP
+last sysfs file: /sys/devices/system/cpu/cpu1/cache/index2/shared_cpu_map
+CPU 0
+Modules linked in: tcp_lp cryptd aes_x86_64 aes_generic vboxnetadp vboxnetflt vboxdrv sco bnep l2cap bluetooth sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf uinput snd_hda_codec_conexant snd_hda_intel snd_hda_codec arc4 
+ecb snd_usb_audio uvcvideo iwlagn snd_hwdep snd_usbmidi_lib snd_seq videodev v4l1_compat iwlcore mac80211 snd_pcm snd_rawmidi v4l2_compat_ioctl32 r852 sm_common nand nand_ids nand_ecc mtd thinkpad_acpi snd_timer snd_seq_device 
+i2c_i801 iTCO_wdt e1000e snd snd_page_alloc cfg80211 soundcore rfkill iTCO_vendor_support joydev microcode wmi firewire_ohci sdhci_pci sdhci firewire_core mmc_core crc_itu_t yenta_socket i915 drm_kms_helper drm usb_storage 
+i2c_algo_bit i2c_core video output [last unloaded: scsi_wait_scan]
 
-Isn't this whole operation done under the protection of namespace_sem? 
-I know that shared/slave flags can't change if the namespace_sem is held. 
-The same may also be true for sb->s_flag. 
+Pid: 1507, comm: X Not tainted 2.6.36-0.22.rc4.git2.fc15.x86_64 #1 4058CTO/4058CTO
+RIP: 0010:[<ffffffffa0093026>]  [<ffffffffa0093026>] i915_gem_object_put_pages+0x25/0xf5 [i915]
+RSP: 0018:ffff880138671ad8  EFLAGS: 00010246
+RAX: 0000000000000002 RBX: ffff880019504e00 RCX: ffff88002cc6fd40
+RDX: 0000000000000001 RSI: 0000000000000001 RDI: ffff880019504e00
+RBP: ffff880138671af8 R08: ffffffff82892420 R09: ffff880138671888
+R10: ffffffff82892438 R11: ffff8800325f3a50 R12: 0000000000000000
+R13: ffff880135f55000 R14: 0000000000000001 R15: ffff880136be54e0
+FS:  00007f3621a878a0(0000) GS:ffff880002c00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00007fa44c7c4ffc CR3: 00000001378a7000 CR4: 00000000000426f0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process X (pid: 1507, threadinfo ffff880138670000, task ffff880137d8c800)
+Stack:
+ ffff880019504e00 0000000000000000 ffff880135f55000 ffff880136be4000
+<0> ffff880138671b28 ffffffffa009481d ffff88005a9d4600 ffff880138671b78
+<0> 0000000003000000 0000000000001000 ffff880138671bb8 ffffffffa0098ab2
+Call Trace:
+ [<ffffffffa009481d>] i915_gem_object_unbind+0xc5/0x1a7 [i915]
+ [<ffffffffa0098ab2>] i915_gem_evict_something+0x3bd/0x409 [i915]
+ [<ffffffffa0027923>] ? drm_gem_object_lookup+0x27/0x57 [drm]
+ [<ffffffffa0093bc3>] i915_gem_object_bind_to_gtt+0x1d3/0x279 [i915]
+ [<ffffffffa0095b30>] i915_gem_object_pin+0xa3/0x146 [i915]
+ [<ffffffffa0027948>] ? drm_gem_object_lookup+0x4c/0x57 [drm]
+ [<ffffffffa00961bc>] i915_gem_do_execbuffer+0x50d/0xe32 [i915]
+ [<ffffffff8107fdd3>] ? lock_acquire+0xee/0xfd
+ [<ffffffff810fad05>] ? might_fault+0xa5/0xac
+ [<ffffffff810facbc>] ? might_fault+0x5c/0xac
+ [<ffffffffa0092c97>] ? drm_malloc_ab+0x3b/0x53 [i915]
+ [<ffffffffa0096baf>] i915_gem_execbuffer2+0xce/0x12d [i915]
+ [<ffffffff810fad05>] ? might_fault+0xa5/0xac
+ [<ffffffffa0026256>] drm_ioctl+0x2ae/0x390 [drm]
+ [<ffffffffa0096ae1>] ? i915_gem_execbuffer2+0x0/0x12d [i915]
+ [<ffffffff81138de1>] do_vfs_ioctl+0x4c4/0x505
+ [<ffffffff8112b74f>] ? fcheck_files+0x7b/0xe0
+ [<ffffffff81138e78>] sys_ioctl+0x56/0x7a
+ [<ffffffff81009cb2>] system_call_fastpath+0x16/0x1b
+Code: 44 9b 06 e1 c9 c3 55 48 89 e5 41 56 41 55 41 54 53 0f 1f 44 00 00 4c 8b 77 60 8a 87 c1 00 00 00 48 89 fb 49 c1 ee 0c a8 0c 75 02 <0f> 0b 88 c2 83 e2 03 80 fa 02 75 02 0f 0b 88 c2 83 e0 f3 c0 ea
+RIP  [<ffffffffa0093026>] i915_gem_object_put_pages+0x25/0xf5 [i915]
+ RSP <ffff880138671ad8>
 
-
-> One of the problems with the current code is
-> that it can't deal with cloning existing union mounts, which we need
-> if we are to make bind mounts work (see do_loopback()).
-
-if I understand your union mount semantics correctly, you dont' allow the
-same filesystem to be union mounted rw in two different locations. correct?
-If yes, then bind mount of a union-mount has to be disallowed.
-
-RP
-
-> 
-> Anyway, if you have any ideas, I'm all ears.
-> 
-> Thanks for reviewing,
-> 
-> -VAL
