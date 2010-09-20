@@ -1,393 +1,376 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757817Ab0ITVpc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 17:45:32 -0400
-Received: from kroah.org ([198.145.64.141]:45335 "EHLO coco.kroah.org"
+	id S1757856Ab0ITVpl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 17:45:41 -0400
+Received: from kroah.org ([198.145.64.141]:45341 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757779Ab0ITVpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 17:45:30 -0400
-Date: Mon, 20 Sep 2010 14:40:39 -0700
+	id S1757805Ab0ITVpb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 17:45:31 -0400
+Date: Mon, 20 Sep 2010 14:41:33 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
-Subject: Re: Linux 2.6.27.53
-Message-ID: <20100920214039.GB26264@kroah.com>
-References: <20100920214027.GA26264@kroah.com>
+        torvalds@linux-foundation.org, stable@kernel.org
+Cc: lwn@lwn.net
+Subject: Linux 2.6.32.22
+Message-ID: <20100920214133.GC26264@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100920214027.GA26264@kroah.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/Makefile b/Makefile
-index 9447d9d..1f60819 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,7 +1,7 @@
- VERSION = 2
- PATCHLEVEL = 6
- SUBLEVEL = 27
--EXTRAVERSION = .53
-+EXTRAVERSION = .54
- NAME = Trembling Tortoise
- 
- # *DOCUMENTATION*
-diff --git a/arch/ia64/include/asm/compat.h b/arch/ia64/include/asm/compat.h
-index dfcf75b..c8662cd 100644
---- a/arch/ia64/include/asm/compat.h
-+++ b/arch/ia64/include/asm/compat.h
-@@ -198,7 +198,7 @@ ptr_to_compat(void __user *uptr)
- }
- 
- static __inline__ void __user *
--compat_alloc_user_space (long len)
-+arch_compat_alloc_user_space (long len)
- {
- 	struct pt_regs *regs = task_pt_regs(current);
- 	return (void __user *) (((regs->r12 & 0xffffffff) & -16) - len);
-diff --git a/arch/powerpc/include/asm/compat.h b/arch/powerpc/include/asm/compat.h
-index 4774c2f..8d0fff3 100644
---- a/arch/powerpc/include/asm/compat.h
-+++ b/arch/powerpc/include/asm/compat.h
-@@ -133,7 +133,7 @@ static inline compat_uptr_t ptr_to_compat(void __user *uptr)
- 	return (u32)(unsigned long)uptr;
- }
- 
--static inline void __user *compat_alloc_user_space(long len)
-+static inline void __user *arch_compat_alloc_user_space(long len)
- {
- 	struct pt_regs *regs = current->thread.regs;
- 	unsigned long usp = regs->gpr[1];
-diff --git a/arch/s390/include/asm/compat.h b/arch/s390/include/asm/compat.h
-index de065b3..307cac1 100644
---- a/arch/s390/include/asm/compat.h
-+++ b/arch/s390/include/asm/compat.h
-@@ -163,7 +163,7 @@ static inline compat_uptr_t ptr_to_compat(void __user *uptr)
- 	return (u32)(unsigned long)uptr;
- }
- 
--static inline void __user *compat_alloc_user_space(long len)
-+static inline void __user *arch_compat_alloc_user_space(long len)
- {
- 	unsigned long stack;
- 
-diff --git a/arch/sparc/include/asm/compat.h b/arch/sparc/include/asm/compat.h
-index 0e70625..612bb38 100644
---- a/arch/sparc/include/asm/compat.h
-+++ b/arch/sparc/include/asm/compat.h
-@@ -166,7 +166,7 @@ static inline compat_uptr_t ptr_to_compat(void __user *uptr)
- 	return (u32)(unsigned long)uptr;
- }
- 
--static inline void __user *compat_alloc_user_space(long len)
-+static inline void __user *arch_compat_alloc_user_space(long len)
- {
- 	struct pt_regs *regs = current_thread_info()->kregs;
- 	unsigned long usp = regs->u_regs[UREG_I6];
-diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index 5d7f4af..745bab2 100644
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -50,7 +50,12 @@
- 	/*
- 	 * Reload arg registers from stack in case ptrace changed them.
- 	 * We don't reload %eax because syscall_trace_enter() returned
--	 * the value it wants us to use in the table lookup.
-+	 * the %rax value we should see.  Instead, we just truncate that
-+	 * value to 32 bits again as we did on entry from user mode.
-+	 * If it's a new value set by user_regset during entry tracing,
-+	 * this matches the normal truncation of the user-mode value.
-+	 * If it's -1 to make us punt the syscall, then (u32)-1 is still
-+	 * an appropriately invalid value.
- 	 */
- 	.macro LOAD_ARGS32 offset, _r9=0
- 	.if \_r9
-@@ -60,6 +65,7 @@
- 	movl \offset+48(%rsp),%edx
- 	movl \offset+56(%rsp),%esi
- 	movl \offset+64(%rsp),%edi
-+	movl %eax,%eax			/* zero extension */
- 	.endm
- 	
- 	.macro CFI_STARTPROC32 simple
-@@ -153,7 +159,7 @@ ENTRY(ia32_sysenter_target)
- 	testl  $_TIF_WORK_SYSCALL_ENTRY,TI_flags(%r10)
- 	CFI_REMEMBER_STATE
- 	jnz  sysenter_tracesys
--	cmpl	$(IA32_NR_syscalls-1),%eax
-+	cmpq	$(IA32_NR_syscalls-1),%rax
- 	ja	ia32_badsys
- sysenter_do_call:
- 	IA32_ARG_FIXUP
-@@ -195,7 +201,7 @@ sysexit_from_sys_call:
- 	movl $AUDIT_ARCH_I386,%edi	/* 1st arg: audit arch */
- 	call audit_syscall_entry
- 	movl RAX-ARGOFFSET(%rsp),%eax	/* reload syscall number */
--	cmpl $(IA32_NR_syscalls-1),%eax
-+	cmpq $(IA32_NR_syscalls-1),%rax
- 	ja ia32_badsys
- 	movl %ebx,%edi			/* reload 1st syscall arg */
- 	movl RCX-ARGOFFSET(%rsp),%esi	/* reload 2nd syscall arg */
-@@ -248,7 +254,7 @@ sysenter_tracesys:
- 	call	syscall_trace_enter
- 	LOAD_ARGS32 ARGOFFSET  /* reload args from stack in case ptrace changed it */
- 	RESTORE_REST
--	cmpl	$(IA32_NR_syscalls-1),%eax
-+	cmpq	$(IA32_NR_syscalls-1),%rax
- 	ja	int_ret_from_sys_call /* sysenter_tracesys has set RAX(%rsp) */
- 	jmp	sysenter_do_call
- 	CFI_ENDPROC
-@@ -314,7 +320,7 @@ ENTRY(ia32_cstar_target)
- 	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags(%r10)
- 	CFI_REMEMBER_STATE
- 	jnz   cstar_tracesys
--	cmpl $IA32_NR_syscalls-1,%eax
-+	cmpq $IA32_NR_syscalls-1,%rax
- 	ja  ia32_badsys
- cstar_do_call:
- 	IA32_ARG_FIXUP 1
-@@ -367,7 +373,7 @@ cstar_tracesys:
- 	LOAD_ARGS32 ARGOFFSET, 1  /* reload args from stack in case ptrace changed it */
- 	RESTORE_REST
- 	xchgl %ebp,%r9d
--	cmpl $(IA32_NR_syscalls-1),%eax
-+	cmpq $(IA32_NR_syscalls-1),%rax
- 	ja int_ret_from_sys_call /* cstar_tracesys has set RAX(%rsp) */
- 	jmp cstar_do_call
- END(ia32_cstar_target)
-@@ -425,7 +431,7 @@ ENTRY(ia32_syscall)
- 	orl   $TS_COMPAT,TI_status(%r10)
- 	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags(%r10)
- 	jnz ia32_tracesys
--	cmpl $(IA32_NR_syscalls-1),%eax
-+	cmpq $(IA32_NR_syscalls-1),%rax
- 	ja ia32_badsys
- ia32_do_call:
- 	IA32_ARG_FIXUP
-@@ -444,7 +450,7 @@ ia32_tracesys:
- 	call syscall_trace_enter
- 	LOAD_ARGS32 ARGOFFSET  /* reload args from stack in case ptrace changed it */
- 	RESTORE_REST
--	cmpl $(IA32_NR_syscalls-1),%eax
-+	cmpq $(IA32_NR_syscalls-1),%rax
- 	ja  int_ret_from_sys_call	/* ia32_tracesys has set RAX(%rsp) */
- 	jmp ia32_do_call
- END(ia32_syscall)
-diff --git a/drivers/hwmon/f75375s.c b/drivers/hwmon/f75375s.c
-index 1692de3..195aea4 100644
---- a/drivers/hwmon/f75375s.c
-+++ b/drivers/hwmon/f75375s.c
-@@ -79,7 +79,7 @@ I2C_CLIENT_INSMOD_2(f75373, f75375);
- #define F75375_REG_PWM2_DROP_DUTY	0x6C
- 
- #define FAN_CTRL_LINEAR(nr)		(4 + nr)
--#define FAN_CTRL_MODE(nr)		(5 + ((nr) * 2))
-+#define FAN_CTRL_MODE(nr)		(4 + ((nr) * 2))
- 
- /*
-  * Data structures and manipulation thereof
-@@ -298,7 +298,7 @@ static int set_pwm_enable_direct(struct i2c_client *client, int nr, int val)
- 		return -EINVAL;
- 
- 	fanmode = f75375_read8(client, F75375_REG_FAN_TIMER);
--	fanmode = ~(3 << FAN_CTRL_MODE(nr));
-+	fanmode &= ~(3 << FAN_CTRL_MODE(nr));
- 
- 	switch (val) {
- 	case 0: /* Full speed */
-@@ -350,7 +350,7 @@ static ssize_t set_pwm_mode(struct device *dev, struct device_attribute *attr,
- 
- 	mutex_lock(&data->update_lock);
- 	conf = f75375_read8(client, F75375_REG_CONFIG1);
--	conf = ~(1 << FAN_CTRL_LINEAR(nr));
-+	conf &= ~(1 << FAN_CTRL_LINEAR(nr));
- 
- 	if (val == 0)
- 		conf |= (1 << FAN_CTRL_LINEAR(nr)) ;
-diff --git a/drivers/net/wireless/ath9k/ath9k.h b/drivers/net/wireless/ath9k/ath9k.h
-index 8ccf374..e4babfb 100644
---- a/drivers/net/wireless/ath9k/ath9k.h
-+++ b/drivers/net/wireless/ath9k/ath9k.h
-@@ -554,7 +554,7 @@ enum ath9k_cipher {
- 
- #define SD_NO_CTL               0xE0
- #define NO_CTL                  0xff
--#define CTL_MODE_M              7
-+#define CTL_MODE_M              0xf
- #define CTL_11A                 0
- #define CTL_11B                 1
- #define CTL_11G                 2
-diff --git a/drivers/power/apm_power.c b/drivers/power/apm_power.c
-index 936bae5..dc628cb 100644
---- a/drivers/power/apm_power.c
-+++ b/drivers/power/apm_power.c
-@@ -233,6 +233,7 @@ static int calculate_capacity(enum apm_source source)
- 		empty_design_prop = POWER_SUPPLY_PROP_ENERGY_EMPTY_DESIGN;
- 		now_prop = POWER_SUPPLY_PROP_ENERGY_NOW;
- 		avg_prop = POWER_SUPPLY_PROP_ENERGY_AVG;
-+		break;
- 	case SOURCE_VOLTAGE:
- 		full_prop = POWER_SUPPLY_PROP_VOLTAGE_MAX;
- 		empty_prop = POWER_SUPPLY_PROP_VOLTAGE_MIN;
-diff --git a/include/asm-mips/compat.h b/include/asm-mips/compat.h
-index 6c5b409..8df5cee 100644
---- a/include/asm-mips/compat.h
-+++ b/include/asm-mips/compat.h
-@@ -145,7 +145,7 @@ static inline compat_uptr_t ptr_to_compat(void __user *uptr)
- 	return (u32)(unsigned long)uptr;
- }
- 
--static inline void __user *compat_alloc_user_space(long len)
-+static inline void __user *arch_compat_alloc_user_space(long len)
- {
- 	struct pt_regs *regs = (struct pt_regs *)
- 		((unsigned long) current_thread_info() + THREAD_SIZE - 32) - 1;
-diff --git a/include/asm-parisc/compat.h b/include/asm-parisc/compat.h
-index 7f32611..7c77fa9 100644
---- a/include/asm-parisc/compat.h
-+++ b/include/asm-parisc/compat.h
-@@ -146,7 +146,7 @@ static inline compat_uptr_t ptr_to_compat(void __user *uptr)
- 	return (u32)(unsigned long)uptr;
- }
- 
--static __inline__ void __user *compat_alloc_user_space(long len)
-+static __inline__ void __user *arch_compat_alloc_user_space(long len)
- {
- 	struct pt_regs *regs = &current->thread.regs;
- 	return (void __user *)regs->gr[30];
-diff --git a/include/asm-x86/compat.h b/include/asm-x86/compat.h
-index 1793ac3..8b1b00e 100644
---- a/include/asm-x86/compat.h
-+++ b/include/asm-x86/compat.h
-@@ -204,7 +204,7 @@ static inline compat_uptr_t ptr_to_compat(void __user *uptr)
- 	return (u32)(unsigned long)uptr;
- }
- 
--static inline void __user *compat_alloc_user_space(long len)
-+static inline void __user *arch_compat_alloc_user_space(long len)
- {
- 	struct pt_regs *regs = task_pt_regs(current);
- 	return (void __user *)regs->sp - len;
-diff --git a/include/linux/compat.h b/include/linux/compat.h
-index 275b9bd..8cb2fcf 100644
---- a/include/linux/compat.h
-+++ b/include/linux/compat.h
-@@ -291,5 +291,7 @@ asmlinkage long compat_sys_newfstatat(unsigned int dfd, char __user * filename,
- asmlinkage long compat_sys_openat(unsigned int dfd, const char __user *filename,
- 				  int flags, int mode);
- 
-+extern void __user *compat_alloc_user_space(unsigned long len);
-+
- #endif /* CONFIG_COMPAT */
- #endif /* _LINUX_COMPAT_H */
-diff --git a/kernel/compat.c b/kernel/compat.c
-index 32c254a..e0cdde9 100644
---- a/kernel/compat.c
-+++ b/kernel/compat.c
-@@ -23,6 +23,7 @@
- #include <linux/timex.h>
- #include <linux/migrate.h>
- #include <linux/posix-timers.h>
-+#include <linux/module.h>
- 
- #include <asm/uaccess.h>
- 
-@@ -1081,3 +1082,24 @@ compat_sys_sysinfo(struct compat_sysinfo __user *info)
- 
- 	return 0;
- }
-+
-+/*
-+ * Allocate user-space memory for the duration of a single system call,
-+ * in order to marshall parameters inside a compat thunk.
-+ */
-+void __user *compat_alloc_user_space(unsigned long len)
-+{
-+	void __user *ptr;
-+
-+	/* If len would occupy more than half of the entire compat space... */
-+	if (unlikely(len > (((compat_uptr_t)~0) >> 1)))
-+		return NULL;
-+
-+	ptr = arch_compat_alloc_user_space(len);
-+
-+	if (unlikely(!access_ok(VERIFY_WRITE, ptr, len)))
-+		return NULL;
-+
-+	return ptr;
-+}
-+EXPORT_SYMBOL_GPL(compat_alloc_user_space);
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index f6e3af3..c8b8105 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -1456,7 +1456,7 @@ static struct file_operations ftrace_filter_fops = {
- 	.open = ftrace_filter_open,
- 	.read = ftrace_regex_read,
- 	.write = ftrace_filter_write,
--	.llseek = ftrace_regex_lseek,
-+	.llseek = no_llseek,
- 	.release = ftrace_filter_release,
- };
- 
-diff --git a/mm/bounce.c b/mm/bounce.c
-index b6d2d0f..e83e280 100644
---- a/mm/bounce.c
-+++ b/mm/bounce.c
-@@ -114,8 +114,8 @@ static void copy_to_high_bio_irq(struct bio *to, struct bio *from)
- 		 */
- 		vfrom = page_address(fromvec->bv_page) + tovec->bv_offset;
- 
--		flush_dcache_page(tovec->bv_page);
- 		bounce_copy_vec(tovec, vfrom);
-+		flush_dcache_page(tovec->bv_page);
- 	}
- }
- 
-diff --git a/net/irda/irlan/irlan_common.c b/net/irda/irlan/irlan_common.c
-index 9a1cd87..b00f5d1 100644
---- a/net/irda/irlan/irlan_common.c
-+++ b/net/irda/irlan/irlan_common.c
-@@ -1100,7 +1100,7 @@ int irlan_extract_param(__u8 *buf, char *name, char *value, __u16 *len)
- 	memcpy(&val_len, buf+n, 2); /* To avoid alignment problems */
- 	le16_to_cpus(&val_len); n+=2;
- 
--	if (val_len > 1016) {
-+	if (val_len >= 1016) {
- 		IRDA_DEBUG(2, "%s(), parameter length to long\n", __func__ );
- 		return -RSP_INVALID_COMMAND_FORMAT;
- 	}
-diff --git a/sound/core/seq/oss/seq_oss_init.c b/sound/core/seq/oss/seq_oss_init.c
-index d0d721c..1f133fe 100644
---- a/sound/core/seq/oss/seq_oss_init.c
-+++ b/sound/core/seq/oss/seq_oss_init.c
-@@ -280,13 +280,10 @@ snd_seq_oss_open(struct file *file, int level)
- 	return 0;
- 
-  _error:
--	snd_seq_oss_writeq_delete(dp->writeq);
--	snd_seq_oss_readq_delete(dp->readq);
- 	snd_seq_oss_synth_cleanup(dp);
- 	snd_seq_oss_midi_cleanup(dp);
--	delete_port(dp);
- 	delete_seq_queue(dp->queue);
--	kfree(dp);
-+	delete_port(dp);
- 
- 	return rc;
- }
-@@ -349,8 +346,10 @@ create_port(struct seq_oss_devinfo *dp)
- static int
- delete_port(struct seq_oss_devinfo *dp)
- {
--	if (dp->port < 0)
-+	if (dp->port < 0) {
-+		kfree(dp);
- 		return 0;
-+	}
- 
- 	debug_printk(("delete_port %i\n", dp->port));
- 	return snd_seq_event_port_detach(dp->cseq, dp->port);
+I'm announcing the release of the 2.6.32.22 kernel.
+
+All users of the 2.6.32 kernel series must upgrade.
+
+The updated 2.6.32.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6.32.y.git
+and can be browsed at the normal kernel.org git web browser:
+        http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.32.y.git;a=summary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                                |    2 
+ arch/arm/kernel/entry-common.S          |    2 
+ arch/ia64/include/asm/compat.h          |    2 
+ arch/ia64/kernel/msi_ia64.c             |    2 
+ arch/ia64/sn/kernel/msi_sn.c            |    2 
+ arch/mips/include/asm/compat.h          |    2 
+ arch/parisc/include/asm/compat.h        |    2 
+ arch/powerpc/include/asm/compat.h       |    2 
+ arch/s390/include/asm/compat.h          |    2 
+ arch/sparc/include/asm/compat.h         |    2 
+ arch/x86/ia32/ia32entry.S               |   22 -
+ arch/x86/include/asm/compat.h           |    2 
+ arch/x86/include/asm/tsc.h              |    2 
+ arch/x86/kernel/apic/io_apic.c          |    2 
+ arch/x86/kernel/tsc.c                   |   38 ++
+ arch/x86/oprofile/nmi_int.c             |   22 +
+ arch/x86/power/cpu.c                    |    2 
+ drivers/ata/libata-core.c               |   14 
+ drivers/ata/libata-eh.c                 |    4 
+ drivers/ata/sata_mv.c                   |   44 ++
+ drivers/gpu/drm/drm_crtc_helper.c       |    4 
+ drivers/gpu/drm/i915/i915_dma.c         |   12 
+ drivers/gpu/drm/i915/i915_gem.c         |    1 
+ drivers/gpu/drm/i915/intel_display.c    |    5 
+ drivers/hid/usbhid/hid-core.c           |   18 -
+ drivers/hwmon/f75375s.c                 |    6 
+ drivers/hwmon/k8temp.c                  |   35 ++
+ drivers/input/serio/i8042.c             |    2 
+ drivers/mmc/host/tmio_mmc.c             |    7 
+ drivers/mmc/host/tmio_mmc.h             |   13 
+ drivers/net/tun.c                       |    3 
+ drivers/net/wireless/ath/ath5k/base.c   |    4 
+ drivers/net/wireless/ath/ath9k/eeprom.h |    2 
+ drivers/net/wireless/ath/regd.h         |    1 
+ drivers/net/wireless/p54/txrx.c         |    2 
+ drivers/oprofile/buffer_sync.c          |   27 -
+ drivers/oprofile/cpu_buffer.c           |    2 
+ drivers/pci/msi.c                       |   27 +
+ drivers/power/apm_power.c               |    1 
+ drivers/staging/hv/RingBuffer.c         |    2 
+ drivers/staging/hv/StorVscApi.h         |    4 
+ drivers/staging/hv/netvsc_drv.c         |    3 
+ drivers/staging/hv/storvsc_drv.c        |    9 
+ drivers/usb/class/cdc-acm.c             |   85 +++++
+ drivers/usb/gadget/rndis.c              |   10 
+ drivers/usb/host/ehci-ppc-of.c          |   12 
+ drivers/usb/serial/cp210x.c             |   10 
+ drivers/usb/serial/ftdi_sio.c           |    8 
+ drivers/usb/serial/ftdi_sio_ids.h       |   12 
+ drivers/usb/serial/mos7840.c            |   55 ++-
+ drivers/xen/events.c                    |   21 +
+ fs/binfmt_misc.c                        |    2 
+ fs/fuse/dev.c                           |   16 -
+ fs/nfs/client.c                         |    2 
+ fs/ocfs2/inode.c                        |    6 
+ fs/sysfs/file.c                         |    2 
+ include/linux/compat.h                  |    2 
+ include/linux/cpuset.h                  |   16 -
+ include/linux/libata.h                  |    1 
+ include/linux/msi.h                     |    2 
+ include/linux/sched.h                   |   20 -
+ include/linux/topology.h                |    2 
+ kernel/compat.c                         |   22 +
+ kernel/cpu.c                            |   44 --
+ kernel/cpuset.c                         |   67 ++--
+ kernel/fork.c                           |   15 
+ kernel/gcov/fs.c                        |  244 +++++++++++-----
+ kernel/groups.c                         |    5 
+ kernel/sched.c                          |  485 ++++++++++++++++++--------------
+ kernel/sched_debug.c                    |    2 
+ kernel/sched_fair.c                     |  210 +++++++++----
+ kernel/sched_idletask.c                 |    5 
+ kernel/sched_rt.c                       |   33 +-
+ kernel/trace/ftrace.c                   |   19 -
+ mm/bounce.c                             |    2 
+ mm/memory_hotplug.c                     |   16 -
+ net/irda/irlan/irlan_common.c           |    2 
+ net/sunrpc/auth_gss/auth_gss.c          |    9 
+ net/sunrpc/rpc_pipe.c                   |    6 
+ net/wireless/wext-compat.c              |    3 
+ net/wireless/wext.c                     |   16 +
+ sound/core/seq/oss/seq_oss_init.c       |    9 
+ sound/pci/hda/patch_realtek.c           |    9 
+ tools/perf/util/callchain.h             |    1 
+ 84 files changed, 1252 insertions(+), 618 deletions(-)
+
+Adrian Taylor (1):
+      USB: Exposing second ACM channel as tty for Nokia S60 phones.
+
+Al Viro (1):
+      arm: fix really nasty sigreturn bug
+
+Alan Stern (1):
+      HID: fix suspend crash by moving initializations earlier
+
+Amit Arora (1):
+      sched: kill migration thread in CPU_POST_DEAD instead of CPU_DEAD
+
+Andreas Herrmann (1):
+      hwmon: (k8temp) Differentiate between AM2 and ASB1
+
+Anton Blanchard (1):
+      sched: cpuacct: Use bigger percpu counter batch values for stats counters
+
+Anton Vorontsov (1):
+      apm_power: Add missing break statement
+
+Ben Hutchings (3):
+      PCI: MSI: Remove unsafe and unnecessary hardware access
+      PCI: MSI: Restore read_msi_msg_desc(); add get_cached_msi_msg_desc()
+      tun: Don't add sysfs attributes to devices without sysfs directories
+
+Blaise Gassend (1):
+      USB: serial: Extra device/vendor ID for mos7840 driver
+
+Chris Wilson (2):
+      drm/i915: Prevent double dpms on
+      drm: Only decouple the old_fb from the crtc is we call mode_set*
+
+Chris Wright (1):
+      tracing: t_start: reset FTRACE_ITER_HASH in case of seek/pread
+
+Christian Lamparter (1):
+      p54: fix tx feedback status flag check
+
+Craig Shelley (1):
+      USB: CP210x Add new device ID
+
+Dan Carpenter (5):
+      USB: ehci-ppc-of: problems in unwind
+      sysfs: checking for NULL instead of ERR_PTR
+      irda: off by one
+      i915: return -EFAULT if copy_to_user fails
+      i915_gem: return -EFAULT if copy_to_user fails
+
+Daniel J Blueman (1):
+      sched: apply RCU protection to wake_affine()
+
+Dave Ludlow (2):
+      usb: serial: mos7840: Add USB ID to support the B&B Electronics USOPTL4-2P.
+      usb: serial: mos7840: Add USB IDs to support more B&B USB/RS485 converters.
+
+David Henningsson (1):
+      ALSA: hda - Rename iMic to Int Mic on Lenovo NB0763
+
+Dmitry Torokhov (1):
+      Input: i8042 - fix device removal on unload
+
+Frederic Weisbecker (1):
+      perf: Initialize callchains roots's childen hits
+
+Gary King (1):
+      bounce: call flush_dcache_page() after bounce_copy_vec()
+
+Greg Kroah-Hartman (1):
+      Linux 2.6.32.22
+
+Guennadi Liakhovetski (1):
+      mmc: fix the use of kunmap_atomic() in tmio_mmc.h
+
+Guillem Jover (2):
+      hwmon: (f75375s) Shift control mode to the correct bit position
+      hwmon: (f75375s) Do not overwrite values read from registers
+
+H. Peter Anvin (2):
+      x86-64, compat: Test %rax for the syscall number, not %eax
+      compat: Make compat_alloc_user_space() incorporate the access_ok()
+
+Haiyang Zhang (2):
+      staging: hv: Fix missing functions for net_device_ops
+      staging: hv: Fixed the value of the 64bit-hole inside ring buffer
+
+Hank Janssen (3):
+      staging: hv: Fixed bounce kmap problem by using correct index
+      staging: hv: Increased storvsc ringbuffer and max_io_requests
+      staging: hv: Fixed lockup problem with bounce_buffer scatter list
+
+Hiroshi Shimamoto (1):
+      sched: Remove unused cpu_nr_migrations()
+
+Ingo Molnar (2):
+      sched: Remove forced2_migrations stats
+      sched: Make warning less noisy
+
+Jan Sembera (1):
+      binfmt_misc: fix binfmt_misc priority
+
+Jason Detring (1):
+      USB: cp210x: Add B&G H3000 link cable ID
+
+Jeremy Fitzhardinge (2):
+      xen: handle events as edge-triggered
+      xen: use percpu interrupts for IPIs and VIRQs
+
+Jerome Marchand (1):
+      kernel/groups.c: fix integer overflow in groups_search
+
+Jiri Kosina (1):
+      HID: usbhid: initialize interface pointers early enough
+
+Johan Hovold (1):
+      USB: mos7840: fix DMA buffers on stack and endianess bugs
+
+Johannes Berg (1):
+      wireless extensions: fix kernel heap content leak
+
+John W. Linville (1):
+      ath5k: check return value of ieee80211_get_tx_rate
+
+KAMEZAWA Hiroyuki (1):
+      memory hotplug: fix next block calculation in is_removable
+
+Kailang Yang (1):
+      ALSA: hda - Fix auto-parser of ALC269vb for HP pin NID 0x21
+
+Li Zefan (1):
+      tracing: Fix a race in function profile
+
+Luis R. Rodriguez (1):
+      ath9k_hw: fix parsing of HT40 5 GHz CTLs
+
+Luke Lowrey (1):
+      USB: ftdi_sio: Added custom PIDs for ChamSys products
+
+Mark Lord (1):
+      sata_mv: fix broken DSM/TRIM support (v2)
+
+Maxim Osipov (1):
+      USB: Fix kernel oops with g_ether and Windows
+
+Mike Galbraith (3):
+      sched: revert stable c6fc81a sched: Fix a race between ttwu() and migrate_task()
+      sched: Fix vmark regression on big machines
+      sched: Fix select_idle_sibling()
+
+Miklos Szeredi (1):
+      fuse: flush background queue on connection close
+
+Oleg Nesterov (7):
+      sched: set_cpus_allowed_ptr(): Don't use rq->migration_thread after unlock
+      sched: Kill the broken and deadlockable cpuset_lock/cpuset_cpus_allowed_locked code
+      sched: move_task_off_dead_cpu(): Take rq->lock around select_fallback_rq()
+      sched: move_task_off_dead_cpu(): Remove retry logic
+      sched: sched_exec(): Remove the select_fallback_rq() logic
+      sched: _cpu_down(): Don't play with current->cpus_allowed
+      sched: Make select_fallback_rq() cpuset friendly
+
+Peter Oberparleiter (1):
+      gcov: fix null-pointer dereference for certain module types
+
+Peter Zijlstra (24):
+      x86, tsc: Fix a preemption leak in restore_sched_clock_state()
+      sched: Consolidate select_task_rq() callers
+      sched: Remove rq->clock coupling from set_task_cpu()
+      sched: Clean up ttwu() rq locking
+      sched: Sanitize fork() handling
+      sched: Use TASK_WAKING for fork wakups
+      sched: Ensure set_task_cpu() is never called on blocked tasks
+      sched: Fix broken assertion
+      sched: Fix sched_exec() balancing
+      sched: Fix select_task_rq() vs hotplug issues
+      sched: Add pre and post wakeup hooks
+      sched: Remove the cfs_rq dependency from set_task_cpu()
+      sched: Fix hotplug hang
+      sched: Fix fork vs hotplug vs cpuset namespaces
+      sched: Fix incorrect sanity check
+      sched: Fix race between ttwu() and task_rq_lock()
+      sched: Fix TASK_WAKING vs fork deadlock
+      sched: Optimize task_rq_lock()
+      sched: Fix nr_uninterruptible count
+      sched: Fix rq->clock synchronization when migrating tasks
+      sched: Remove unnecessary RCU exclusion
+      sched: Cleanup select_task_rq_fair()
+      sched: More generic WAKE_AFFINE vs select_idle_sibling()
+      sched: Pre-compute cpumask_weight(sched_domain_span(sd))
+
+Philippe Corbes (1):
+      USB: cdc-acm: Add pseudo modem without AT command capabilities
+
+Przemo Firszt (1):
+      USB: Expose vendor-specific ACM channel on Nokia 5230
+
+Rafael J.Wysocki (1):
+      sched: Make wakeup side and atomic variants of completion API irq safe
+
+Robert Richter (3):
+      oprofile: fix crash when accessing freed task structs
+      oprofile, x86: fix init_sysfs error handling
+      oprofile, x86: fix init_sysfs() function stub
+
+Roland McGrath (1):
+      x86-64, compat: Retruncate rax after ia32 syscall entry tracing
+
+Russ Nelson (1):
+      USB: cdc-acm: add another device quirk
+
+Steven Rostedt (1):
+      tracing: Do not allow llseek to set_ftrace_filter
+
+Sunil Mushran (1):
+      ocfs2: Fix incorrect checksum validation error
+
+Suresh Siddha (2):
+      x86, tsc, sched: Recompute cyc2ns_offset's during resume from sleep states
+      sched: Fix select_idle_sibling() logic in select_task_rq_fair()
+
+Takashi Iwai (3):
+      ALSA: seq/oss - Fix double-free at error path of snd_seq_oss_open()
+      ALSA: hda - Handle missing NID 0x1b on ALC259 codec
+      ALSA: hda - Handle pin NID 0x1a on ALC259/269
+
+Tejun Heo (1):
+      libata: skip EH autopsy and recovery during suspend
+
+Thomas Gleixner (8):
+      sched: Protect task->cpus_allowed access in sched_getaffinity()
+      sched: Protect sched_rr_get_param() access to task->sched_class
+      sched: Use rcu in sys_sched_getscheduler/sys_sched_getparam()
+      sched: Use rcu in sched_get/set_affinity()
+      sched: Use rcu in sched_get_rr_param()
+      sched: Extend enqueue_task to allow head queueing
+      sched: Implement head queueing for sched_rt
+      sched: Queue a deboosted task to the head of the RT prio queue
+
+Toby Gray (2):
+      USB: cdc-acm: Adding second ACM channel support for various Nokia and one Samsung phones
+      USB: cdc-acm: Fixing crash when ACM probing interfaces with no endpoint descriptors.
+
+Trond Myklebust (2):
+      NFS: Fix a typo in nfs_sockaddr_match_ipaddr6
+      SUNRPC: Fix race corrupting rpc upcall
+
+Xiaotian Feng (1):
+      sched: Fix set_cpu_active() in cpu_down()
+
+Yusuke Goda (1):
+      tmio_mmc: don't clear unhandled pending interrupts
+
