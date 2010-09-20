@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757444Ab0ITUTG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 16:19:06 -0400
-Received: from web113411.mail.gq1.yahoo.com ([98.136.167.31]:41328 "HELO
-	web113411.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757192Ab0ITUTF (ORCPT
+	id S1757477Ab0ITUT2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 16:19:28 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51969 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757385Ab0ITUT0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 16:19:05 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Sep 2010 16:19:04 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=ymail.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type;
-  b=Lquj3GYhGgCFLEjs1xFto0foIQss7WFP3Z3vNNyB6Fp6KuFCpa1+2mcEnQ+xdnGSBUyK+6i9SOGqJW8o2t4NnIYYoaSsLXaoOl2uX2Z8B9Myicf6dVE6UBWP4zcY6frmmadz4NIV2cvToo/sJPqKikVX4Kx+WNhKQgagUDGZHfQ=;
-Message-ID: <633175.66987.qm@web113411.mail.gq1.yahoo.com>
-X-YMail-OSG: FM_Nu2kVM1n9Ic9NqPgGu9.eXRNQwTq7Uhgsv2LAjGtrQJc
- YyGvJungZknJIxEx2NAnqbtYJXKw3YLcJ1UpNtmaS3ZqqMithu7YTHFJ7ztv
- 6M.xzw4odDKfJjBmd7OCn0uA0j8drWv.KFS5CZTReJZDJ5WisVAyOrn_WThn
- 7QFZSAY2QKGXLaq4uv_1tZPCNJ6AveM53Ed2WkePGYaBt_RbAWhtpLnrBGtD
- XyjRYc032.6zfF9RWzRtwkSaLmeA4F4MN
-X-Mailer: YahooMailRC/497 YahooMailWebService/0.8.105.279950
-Date: Mon, 20 Sep 2010 13:12:22 -0700 (PDT)
-From: Neeraj Kumar <neeraj.kumar01@ymail.com>
-Subject: Doing a zero-copy move of data from a kernel buffer to hard disk
-To: linux-kernel@vger.kernel.org
+	Mon, 20 Sep 2010 16:19:26 -0400
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        "Bjorn Helgaas" <bjorn.helgaas@hp.com>,
+        "Brian Bloniarz" <brian.bloniarz@gmail.com>,
+        "Yinghai Lu" <yinghai@kernel.org>
+References: <r2gGqgg1zFC.A.LrE.w97lMB@chimera>
+In-Reply-To: <r2gGqgg1zFC.A.LrE.w97lMB@chimera>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <aRnAGz9xZ8K.A.B1G.qB8lMB@chimera>
+Subject: [Bug #16228] BUG/boot failure on Dell Precision T3500 (pci/ahci_stop_engine)
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Mon, 20 Sep 2010 21:57:17 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am trying to move data from a buffer in kernel space into the hard
-disk without having to incur any additional copies from kernel buffer to
-user buffers or any other kernel buffers. Any ideas/suggestions would be
-most helpful.
+This message has been generated automatically as a part of a report
+of regressions introduced between 2.6.34 and 2.6.35.
 
-The use case is basically a demux driver which collects data into a
-demux buffer in kernel space and this buffer has to be emptied
-periodically by copying the contents into a FUSE-based partition on the
-disk. As the buffer gets full, a user process is signalled which then
-determines the sector numbers on the disk the contents need to be copied
-to.
-
-I was hoping to mmap the above demux kernel buffer into user address
-space and issue a write system call to the raw partition device. But
-from what I can see, the this data is being cached by the kernel on its
-way to the Hard Disk driver. And so I am assuming that involves
-additional copies by the linux kernel.
-
-At this point I am wondering if there is any other mechansim to do this
-without involving additional copies by the kernel. I realize this is an
-unsual usage scenario for non-embedded environments, but I would
-appreciate any feedback on possible options.
-
-BTW - I have tried using O_DIRECT when opening the raw partition, but
-the subsequent write call fails if the buffer being passed is the
-mmapped buffer.
+The following bug entry is on the current list of known regressions
+introduced between 2.6.34 and 2.6.35.  Please verify if it still should
+be listed and let the tracking team know (either way).
 
 
-Thanx!
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16228
+Subject		: BUG/boot failure on Dell Precision T3500 (pci/ahci_stop_engine)
+Submitter	: Brian Bloniarz <brian.bloniarz@gmail.com>
+Date		: 2010-06-16 17:57 (97 days old)
+Handled-By	: Bjorn Helgaas <bjorn.helgaas@hp.com>
 
 
-
-      
