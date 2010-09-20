@@ -1,101 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756011Ab0ITKrl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 06:47:41 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:51729 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755734Ab0ITKrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 06:47:40 -0400
-Date: Mon, 20 Sep 2010 11:47:23 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/10] hugetlb: fix metadata corruption in
-	hugetlb_fault()
-Message-ID: <20100920104723.GG1998@csn.ul.ie>
-References: <1283908781-13810-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1283908781-13810-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1756120Ab0ITKsA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 06:48:00 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:17873 "EHLO
+	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755800Ab0ITKro (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 06:47:44 -0400
+X-SpamScore: -18
+X-BigFish: VPS-18(zzbb2cK1432N98dN4015Lzz1202hzz8275bhz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L91KHQ-01-DFF-02
+X-M-MSG: 
+Date: Mon, 20 Sep 2010 12:44:15 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Jiri Olsa <jolsa@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "oprofile-list@lists.sourceforge.net" 
+	<oprofile-list@lists.sourceforge.net>,
+        "tdm.rhbz@gmail.com" <tdm.rhbz@gmail.com>
+Subject: Re: [PATCH] oprofile, x86: allow backtrace for 32bit apps under
+ 64bit kernel
+Message-ID: <20100920104415.GO13563@erda.amd.com>
+References: <1284380117-6857-1-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1283908781-13810-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <1284380117-6857-1-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 08, 2010 at 10:19:32AM +0900, Naoya Horiguchi wrote:
-> Since the PageHWPoison() check is for avoiding hwpoisoned page remained
-> in pagecache mapping to the process, it should be done in "found in pagecache"
-> branch, not in the common path.
-> Otherwise, metadata corruption occurs if memory failure happens between
-> alloc_huge_page() and lock_page() because page fault fails with metadata
-> changes remained (such as refcount, mapcount, etc.)
+On 13.09.10 08:15:17, Jiri Olsa wrote:
+> hi,
 > 
-> This patch moves the check to "found in pagecache" branch and fix the problem.
+> adding support for backtrace of ia32 applications under 64bit kernels.
 > 
-> ChangeLog since v2:
-> - remove retry check in "new allocation" path.
-> - make description more detailed
-> - change patch name from "HWPOISON, hugetlb: move PG_HWPoison bit check"
+> wbr,
+> jirka
 > 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
-> Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
-
-Seems reasonable.
-
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-
+> 
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> Signed-off-by: Tom Marshall <tdm.rhbz@gmail.com>
 > ---
->  mm/hugetlb.c |   21 +++++++++------------
->  1 files changed, 9 insertions(+), 12 deletions(-)
+>  arch/x86/oprofile/backtrace.c |   42 +++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 42 insertions(+), 0 deletions(-)
+
+Jirka,
+
+see my comments below.
+
+Please, provide a more meaningful commit message.
+
 > 
-> diff --git v2.6.36-rc2/mm/hugetlb.c v2.6.36-rc2/mm/hugetlb.c
-> index cc5be78..6871b41 100644
-> --- v2.6.36-rc2/mm/hugetlb.c
-> +++ v2.6.36-rc2/mm/hugetlb.c
-> @@ -2518,22 +2518,19 @@ retry:
->  			hugepage_add_new_anon_rmap(page, vma, address);
->  		}
->  	} else {
-> +		/*
-> +		 * If memory error occurs between mmap() and fault, some process
-> +		 * don't have hwpoisoned swap entry for errored virtual address.
-> +		 * So we need to block hugepage fault by PG_hwpoison bit check.
-> +		 */
-> +		if (unlikely(PageHWPoison(page))) {
-> +			ret = VM_FAULT_HWPOISON;
-> +			goto backout_unlocked;
-> +		}
->  		page_dup_rmap(page);
+> diff --git a/arch/x86/oprofile/backtrace.c b/arch/x86/oprofile/backtrace.c
+> index 3855096..3e443ad 100644
+> --- a/arch/x86/oprofile/backtrace.c
+> +++ b/arch/x86/oprofile/backtrace.c
+> @@ -73,6 +73,38 @@ static struct frame_head *dump_user_backtrace(struct frame_head *head)
+>  	return bufhead[0].bp;
+>  }
+>  
+> +#ifdef CONFIG_X86_64
+> +struct frame_head_32 {
+> +	__u32 ebp;
+> +	__u32 ret;
+> +} __attribute__((packed));
+
+There exists already struct stack_frame_ia32.
+
+Please, also change the code to reuse struct stack_frame for 64 bit
+processes.
+
+> +
+> +static struct frame_head *
+> +dump_user_backtrace_32(struct frame_head *head)
+> +{
+> +	struct frame_head_32 bufhead_32[2];
+> +	unsigned long bp, ret;
+> +
+> +	/* Also check accessibility of one struct frame_head beyond */
+> +	if (!access_ok(VERIFY_READ, head, sizeof(bufhead_32)))
+> +		return NULL;
+> +	if (__copy_from_user_inatomic(bufhead_32, head, sizeof(bufhead_32)))
+> +		return NULL;
+> +
+> +	bp  = bufhead_32[0].ebp;
+> +	ret = bufhead_32[0].ret;
+> +
+> +	oprofile_add_trace(ret);
+> +
+> +	/* frame pointers should strictly progress back up the stack
+> +	* (towards higher addresses) */
+> +	if (head >= (struct frame_head *) bp)
+
+You are mixing up struct frame_head and struct frame_head_32 here.
+
+> +		return NULL;
+> +
+> +	return (struct frame_head *) bp;
+> +}
+> +#endif
+> +
+>  void
+>  x86_backtrace(struct pt_regs * const regs, unsigned int depth)
+>  {
+> @@ -86,6 +118,16 @@ x86_backtrace(struct pt_regs * const regs, unsigned int depth)
+>  		return;
 >  	}
 >  
->  	/*
-> -	 * Since memory error handler replaces pte into hwpoison swap entry
-> -	 * at the time of error handling, a process which reserved but not have
-> -	 * the mapping to the error hugepage does not have hwpoison swap entry.
-> -	 * So we need to block accesses from such a process by checking
-> -	 * PG_hwpoison bit here.
-> -	 */
-> -	if (unlikely(PageHWPoison(page))) {
-> -		ret = VM_FAULT_HWPOISON;
-> -		goto backout_unlocked;
-> -	}
-> -
-> -	/*
->  	 * If we are going to COW a private mapping later, we examine the
->  	 * pending reservations for this page now. This will ensure that
->  	 * any allocations necessary to record that reservation occur outside
+> +#ifdef CONFIG_X86_64
+
+Rather use CONFIG_COMPAT here.
+
+> +	if (current && test_thread_flag(TIF_IA32)) {
+> +		/* User process is 32-bit */
+> +		head = (struct frame_head *)(regs->bp & 0xffffffff);
+
+Same is provided with compat_ptr().
+
+> +		while (depth-- && head)
+> +			head = dump_user_backtrace_32(head);
+> +		return;
+> +	}
+> +#endif
+
+Please avoid inline macros and make this an inline function (maybe
+x86_backtrace_32) with a function stub for the !CONFIG_COMPAT case.
+
+If possible, try to avoid duplicate code for 32 and 64 bit backtraces.
+
+Thanks,
+
+-Robert
+
+> +
+>  	while (depth-- && head)
+>  		head = dump_user_backtrace(head);
+>  }
 > -- 
-> 1.7.2.2
+> 1.7.1
+> 
 > 
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
