@@ -1,99 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756760Ab0ITW2g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 18:28:36 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:36343 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1753830Ab0ITW2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 18:28:34 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX19DuplYepZDPmnD1fpxif1mQ99L8obOWMdH5+N8WI
-	kIrO2pxkP6aVQs
-Message-ID: <4C97E00B.6090103@gmx.de>
-Date: Tue, 21 Sep 2010 00:28:27 +0200
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
+	id S1756202Ab0ITWaF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 18:30:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22385 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752338Ab0ITWaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 18:30:03 -0400
+Date: Mon, 20 Sep 2010 18:30:01 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Christoph Hellwig <hch@lst.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] floppy: switch to one queue per drive instead of sharing a
+ queue (Was: Re: cgq vs bdi names, was "cfq-iosched: fix a kernel OOPs when
+ usb key  is inserted")
+Message-ID: <20100920223001.GJ6138@redhat.com>
+References: <20100920130318.GA29565@lst.de>
+ <4C975DCC.9050902@fusionio.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?QnJ1bm8gUHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-CC: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bernie Thompson <bernie@plugable.com>
-Subject: Re: [Patch, RFC] Make struct fb_info ref-counted with kref
-References: <20100919172833.14bf291e@neptune.home>	<4C963E99.9080207@gmx.de>	<20100919190240.65762511@neptune.home>	<4C97B079.8050707@gmx.de>	<20100920213258.1218b284@neptune.home>	<4C97BF40.6030708@gmx.de> <20100920223608.19b4d177@neptune.home>
-In-Reply-To: <20100920223608.19b4d177@neptune.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C975DCC.9050902@fusionio.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bruno Prémont schrieb:
-> On Mon, 20 September 2010 Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
->> Bruno Prémont schrieb:
->>> On Mon, 20 September 2010 Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
->>>> Bruno Prémont schrieb:
->>>>> On Sun, 19 September 2010 Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
->>>>>> Bruno Prémont schrieb:
->>>>>>> If you have concerns regarding the API changes, please let me know.
->>>>>> Uhm, I'm not really happy with what we count. With the old method you mentioned 
->>>>>> we ref-counted framebuffer users, after your patch it's more counting users + 
->>>>>> uses. This might be okay as we usually are interested whether the ref_count is 0 
->>>>>> or not but it doesn't look right if we modify the refcount during nearly every 
->>>>>> framebuffer operation. Wouldn't it be sufficient to do the refcounting in 
->>>>>> fb_open & fb_release operation + in fbcon where open&release are done?
->>>>> Well I'm more for counting the uses, (especially as the aim is to not
->>>>> force the driver to look exactly when it can free the fb_info struct).
->>>>> If the driver needs to know about active users (e.g. for handling memory
->>>>> reorganization on mode change or the like) that would remain driver's job.
->>>> I don't see how your counting would influence the time fb_info is freed. It is 
->>>> freed when the last reference is gone but the last remaining reference is always 
->>>>   a user reference either from the framebuffer itself or from any user. But all 
->>>> users have to keep the framebuffer open to do anything with it therfore the last 
->>>> thing they do is releasing the framebuffer. So I do not really understand your 
->>>> reasoning, for me counting the users + uses is more error prone than just the 
->>>> users. But that's not important for me as I'm only interested in whether the 
->>>> count is 0, 1 or more (want to turn off the screen if there are no active [=1] 
->>>> users) which is the same regardless on what you count. So if you really want to 
->>>> stick to your way of counting, that's no problem for me.
->>> In case of picoLCD driver (which uses a shadow framebuffer in system RAM) the
->>> last user can be a (userspace) process as on unplug driver unregisters that
->>> framebuffer and hands back it's own reference, the fb_destroy callback being
->>> in charge of freeing the shadow framebuffer when fb_info is being freed.
->> True. I think I understand the problem you want to solve.
->> My question is:
->> Do you keep a reference for each successful open operation until a release is done?
->> If I read your patch correctly, the answer is yes.
+On Mon, Sep 20, 2010 at 03:12:44PM +0200, Jens Axboe wrote:
+> On 2010-09-20 15:03, Christoph Hellwig wrote:
+> > Hi Vivek, hi Jens,
+> > 
+> > where was http://git.kernel.dk/?p=linux-2.6-block.git;a=commitdiff_plain;h=44c74d6292e97f8bd9adfa6b0df3cb4f3c42a6dc posted  on the mailinglist?
+> > 
+> > I can't find it in my lkml or fsdevel inboxes.  Either way I don't think
+> > just papering over the underlying issue like this is a good idea.  
+> > 
+> > The big issue is that cfq tries to scanf the textual representation of
+> > the dev_t from the request_queue by abusing the bdi.  But the reason why
+> > we don't have a dev_t in the request_queue is that it's still not
+> > unique.  If it was we could easily add a dev_t into the request_queue
+> > and be done with it.
+> > 
+> > So the fix is either to get rid of the last remaining users of shared
+> > request_queues (IIRC the various floppy drivers) and just add a dev_t
+> > in the request_queue for the bdi, tracing and cfq, or add a dev_t into
+> > the request_queue and add a flag for shared request queues that the
+> > floppy driver and whoever needs it set and let the bdi sysfs code, cfq
+> > and blocktrace ignore theis request_queue.  This will also allow to
+> > get rid of the crap about ignoring failures due to already register
+> > or prematurely unregistered bdis and actually add real error handling
+> > to that code.
 > 
-> The reference already exists now (fb_info being assigned to file->private_data),
-> but is not being accounted.
+> I did this one 15 months ago (according to git), but I never got it
+> tested:
 > 
->> Than the operations/counting you do between such operations should be irrelevant 
->> to when the free is performed or?
->> So the free is done either when the framebuffer releases its handle or (in your 
->> case) when the process closes the file and therefore calls fb_release. Or do you 
->> have any way to perform framebuffer operations without an open framebuffer?
+> http://git.kernel.dk/?p=linux-2.6-block.git;a=commitdiff;h=7a0ebc7ea1db42a71841df6a15be9fd420fae980
 > 
-> Yes, the idea is to free fb_info when the last reference to it is being dropped
-> not matter who does it (device file closed or driver cleaning up or whoever else).
-> And do this without great complexity for the driver (fb_release callback not
-> allowing driver to free fb_info inside of callback).
+> IIRC, the mtd stuff also uses a shared queue. But I think that is it.
+> Would indeed be VERY nice to finally get rid of that crap, it has
+> technically been outlawed since 2.5.1.
 
-I totally agree.
+Hi Jens,
 
-> Tracking if/how often framebuffer is opened as such is a separate thing (though
-> all users that have the framebuffer opened hold a reference to fb_info).
+I have refreshed your patch to apply on latest tree. I did testing with
+one floppy controller and it was hanging because we were taking
+floppy_lock both inside and outside of function set_next_request(). I got
+rid of that and now atleast with one flopply controller this patch is
+working fine.
 
-That's what I said. So as long as refcount <= 1 it does not matter whether you 
-just count on open/release or additionally on every framebuffer operation, just 
-that the later produces more noise.
-So I still don't see any advantage in counting users + uses.
-Please note that I do not object the idea of the patch itself, it's only that I 
-have a different preference on what to count. I only want to express that your 
-way is more complicated than what I would recommend.
-But if you want to go on I do not object. As long as the end result works that's 
-okay with me.
-
+I tried connecting another floppy controller to see if I see two request
+queues being registered, but somehow my BIOS does not recognize two 
+floppy controllers and only makes one of these operational.
 
 Thanks
+Vivek
 
-Florian Tobias Schandinat
+
+Pretty straight forward conversion. Note that we do round-robin
+between the drives that have available requests, before we simply
+used the drive that the IO scheduler told us to. Since the IO
+scheduler doesn't care about multiple devices per queue, the resulting
+sort would not have made sense.
+
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ drivers/block/floppy.c |   66 +++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 45 insertions(+), 21 deletions(-)
+
+Index: linux-2.6/drivers/block/floppy.c
+===================================================================
+--- linux-2.6.orig/drivers/block/floppy.c	2010-09-20 13:20:18.000000000 -0400
++++ linux-2.6/drivers/block/floppy.c	2010-09-20 15:39:46.406861152 -0400
+@@ -258,8 +258,8 @@ static int irqdma_allocated;
+ #include <linux/completion.h>
+ 
+ static struct request *current_req;
+-static struct request_queue *floppy_queue;
+ static void do_fd_request(struct request_queue *q);
++static int set_next_request(void);
+ 
+ #ifndef fd_get_dma_residue
+ #define fd_get_dma_residue() get_dma_residue(FLOPPY_DMA)
+@@ -413,6 +413,7 @@ static struct gendisk *disks[N_DRIVE];
+ static struct block_device *opened_bdev[N_DRIVE];
+ static DEFINE_MUTEX(open_lock);
+ static struct floppy_raw_cmd *raw_cmd, default_raw_cmd;
++static int fdc_queue;
+ 
+ /*
+  * This struct defines the different floppy types.
+@@ -890,8 +891,8 @@ static void unlock_fdc(void)
+ 	del_timer(&fd_timeout);
+ 	cont = NULL;
+ 	clear_bit(0, &fdc_busy);
+-	if (current_req || blk_peek_request(floppy_queue))
+-		do_fd_request(floppy_queue);
++	if (current_req || set_next_request())
++		do_fd_request(current_req->q);
+ 	spin_unlock_irqrestore(&floppy_lock, flags);
+ 	wake_up(&fdc_wait);
+ }
+@@ -2243,8 +2244,8 @@ static void floppy_end_request(struct re
+  * logical buffer */
+ static void request_done(int uptodate)
+ {
+-	struct request_queue *q = floppy_queue;
+ 	struct request *req = current_req;
++	struct request_queue *q;
+ 	unsigned long flags;
+ 	int block;
+ 	char msg[sizeof("request done ") + sizeof(int) * 3];
+@@ -2258,6 +2259,8 @@ static void request_done(int uptodate)
+ 		return;
+ 	}
+ 
++	q = req->q;
++
+ 	if (uptodate) {
+ 		/* maintain values for invalidation on geometry
+ 		 * change */
+@@ -2811,6 +2814,28 @@ static int make_raw_rw_request(void)
+ 	return 2;
+ }
+ 
++/*
++ * Round-robin between our available drives, doing one request from each
++ */
++static int set_next_request(void)
++{
++	struct request_queue *q;
++	int old_pos = fdc_queue;
++
++	do {
++		q = disks[fdc_queue]->queue;
++		if (++fdc_queue == N_DRIVE)
++			fdc_queue = 0;
++		if (q) {
++			current_req = blk_fetch_request(q);
++			if (current_req)
++				break;
++		}
++	} while (fdc_queue != old_pos);
++
++	return current_req != NULL;
++}
++
+ static void redo_fd_request(void)
+ {
+ 	int drive;
+@@ -2822,17 +2847,17 @@ static void redo_fd_request(void)
+ 
+ do_request:
+ 	if (!current_req) {
+-		struct request *req;
++		int pending;
++
++		spin_lock_irq(&floppy_lock);
++		pending = set_next_request();
++		spin_unlock_irq(&floppy_lock);
+ 
+-		spin_lock_irq(floppy_queue->queue_lock);
+-		req = blk_fetch_request(floppy_queue);
+-		spin_unlock_irq(floppy_queue->queue_lock);
+-		if (!req) {
++		if (!pending) {
+ 			do_floppy = NULL;
+ 			unlock_fdc();
+ 			return;
+ 		}
+-		current_req = req;
+ 	}
+ 	drive = (long)current_req->rq_disk->private_data;
+ 	set_fdc(drive);
+@@ -4165,6 +4190,13 @@ static int __init floppy_init(void)
+ 			goto out_put_disk;
+ 		}
+ 
++		disks[dr]->queue = blk_init_queue(do_fd_request, &floppy_lock);
++		if (!disks[dr]->queue) {
++			err = -ENOMEM;
++			goto out_put_disk;
++		}
++
++		blk_queue_max_hw_sectors(disks[dr]->queue, 64);
+ 		disks[dr]->major = FLOPPY_MAJOR;
+ 		disks[dr]->first_minor = TOMINOR(dr);
+ 		disks[dr]->fops = &floppy_fops;
+@@ -4183,13 +4215,6 @@ static int __init floppy_init(void)
+ 	if (err)
+ 		goto out_unreg_blkdev;
+ 
+-	floppy_queue = blk_init_queue(do_fd_request, &floppy_lock);
+-	if (!floppy_queue) {
+-		err = -ENOMEM;
+-		goto out_unreg_driver;
+-	}
+-	blk_queue_max_hw_sectors(floppy_queue, 64);
+-
+ 	blk_register_region(MKDEV(FLOPPY_MAJOR, 0), 256, THIS_MODULE,
+ 			    floppy_find, NULL, NULL);
+ 
+@@ -4317,7 +4342,6 @@ static int __init floppy_init(void)
+ 
+ 		/* to be cleaned up... */
+ 		disks[drive]->private_data = (void *)(long)drive;
+-		disks[drive]->queue = floppy_queue;
+ 		disks[drive]->flags |= GENHD_FL_REMOVABLE;
+ 		disks[drive]->driverfs_dev = &floppy_device[drive].dev;
+ 		add_disk(disks[drive]);
+@@ -4333,8 +4357,6 @@ out_flush_work:
+ 		floppy_release_irq_and_dma();
+ out_unreg_region:
+ 	blk_unregister_region(MKDEV(FLOPPY_MAJOR, 0), 256);
+-	blk_cleanup_queue(floppy_queue);
+-out_unreg_driver:
+ 	platform_driver_unregister(&floppy_driver);
+ out_unreg_blkdev:
+ 	unregister_blkdev(FLOPPY_MAJOR, "fd");
+@@ -4342,6 +4364,8 @@ out_put_disk:
+ 	while (dr--) {
+ 		del_timer(&motor_off_timer[dr]);
+ 		put_disk(disks[dr]);
++		if (disks[dr]->queue)
++			blk_cleanup_queue(disks[dr]->queue);
+ 	}
+ 	return err;
+ }
+@@ -4550,11 +4574,11 @@ static void __exit floppy_module_exit(vo
+ 			platform_device_unregister(&floppy_device[drive]);
+ 		}
+ 		put_disk(disks[drive]);
++		blk_cleanup_queue(disks[drive]->queue);
+ 	}
+ 
+ 	del_timer_sync(&fd_timeout);
+ 	del_timer_sync(&fd_timer);
+-	blk_cleanup_queue(floppy_queue);
+ 
+ 	if (atomic_read(&usage_count))
+ 		floppy_release_irq_and_dma();
