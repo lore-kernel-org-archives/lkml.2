@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756857Ab0ITUeT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 16:34:19 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:35629 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752077Ab0ITUeS (ORCPT
+	id S1757505Ab0ITUfx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 16:35:53 -0400
+Received: from sj-iport-6.cisco.com ([171.71.176.117]:48529 "EHLO
+	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753042Ab0ITUfv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 16:34:18 -0400
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Venkatesh Pallipadi" <venki@google.com>
-Subject: Re: [Bug #18272] 2.6.35.*: horrible (exponential? >linear) slowdown to unusability (ACPI idle?)
-References: <r2gGqgg1zFC.A.LrE.w97lMB@chimera>
-	<aRnAGz9xZ8K.A.lAF.897lMB@chimera>
-From: Nix <nix@esperi.org.uk>
-Emacs: is that a Lisp interpreter in your editor, or are you just happy to see me?
-Date: Mon, 20 Sep 2010 21:33:18 +0100
-In-Reply-To: <aRnAGz9xZ8K.A.lAF.897lMB@chimera> (Rafael J. Wysocki's message of "Mon, 20 Sep 2010 21:57:22 +0200 (CEST)")
-Message-ID: <87pqw8f94h.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) XEmacs/21.5-b29 (linux)
+	Mon, 20 Sep 2010 16:35:51 -0400
+Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-AV: E=Sophos;i="4.56,395,1280707200"; 
+   d="scan'208";a="592247779"
+From: Roland Dreier <rdreier@cisco.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: linux-kernel@vger.kernel.org,
+        "Jean Delvare \(PC drivers\, core\)" <khali@linux-fr.org>,
+        "Ben Dooks \(embedded platforms\)" <ben-linux@fluff.org>,
+        Roland Dreier <rolandd@cisco.com>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Steve Wise <swise@chelsio.com>, Neil Brown <neilb@suse.de>,
+        Paul Mackerras <paulus@samba.org>, linux-i2c@vger.kernel.org,
+        linux-rdma@vger.kernel.org, dm-devel@redhat.com,
+        linux-raid@vger.kernel.org, linux-ppp@vger.kernel.org,
+        netdev@vger.kernel.org, akpm@linux-foundation.org
+Subject: Re: idr_get_new_exact ?
+References: <AANLkTi=ZLupVyFR0e2v-TLpeNWdw1bVMZUAhgyxLJ7OV@mail.gmail.com>
+X-Message-Flag: Warning: May contain useful information
+Date: Mon, 20 Sep 2010 13:35:42 -0700
+In-Reply-To: <AANLkTi=ZLupVyFR0e2v-TLpeNWdw1bVMZUAhgyxLJ7OV@mail.gmail.com>
+	(Ohad Ben-Cohen's message of "Mon, 20 Sep 2010 16:11:31 +0200")
+Message-ID: <adaiq20f90h.fsf@cisco.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-DCC-URT-Metrics: spindle 1060; Body=8 Fuz1=8 Fuz2=8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 Sep 2010, Rafael J. Wysocki said:
+ > Occasionally, drivers care about the value that idr associates with
+ > their pointers.
+ > 
+ > Today we have idr_get_new_above() which allocates a new idr entry
+ > above or equal to a given starting id, but sometimes drivers need to
+ > force an exact value.
+ > 
+ > To overcome this small API gap, drivers are wrapping idr_get_new_above
+ > and then either BUG_ON() or just call idr_remove() and returns -EBUSY
+ > when idr allocates them an id which is different than their requested
+ > value.
 
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.34 and 2.6.35.
->
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.34 and 2.6.35.  Please verify if it still should
-> be listed and let the tracking team know (either way).
+Looks fine to me as an improvement over the status quo, but I wonder how
+many of these places could use the radix_tree stuff instead?  If you're
+not using the ability of the idr code to assign an id for you, then it
+seems the radix_tree API is a better fit.
 
-Resolved by 54ff7e595d763d894104d421b103a89f7becf47c in master,
-which is landing in 2.6.35.5 imminently.
+ - R.
