@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756332Ab0ITMLk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 08:11:40 -0400
-Received: from cantor.suse.de ([195.135.220.2]:41510 "EHLO mx1.suse.de"
+	id S1755938Ab0ITMma (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 08:42:30 -0400
+Received: from cantor.suse.de ([195.135.220.2]:42242 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755965Ab0ITMLj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 08:11:39 -0400
-Message-ID: <4C974F78.4020202@suse.cz>
-Date: Mon, 20 Sep 2010 14:11:36 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100714 SUSE/3.1.1 Thunderbird/3.1.1
+	id S1755785Ab0ITMm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 08:42:28 -0400
+Date: Mon, 20 Sep 2010 14:42:25 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Guillaume Chazarain <guichaz@gmail.com>
+Cc: Phil Turmel <philip@turmel.org>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oliver@neukum.org>, Alan Ott <alan@signal11.us>,
+        linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
+        Mat <jackdachef@gmail.com>, Andreas Bombe <aeb@debian.org>,
+        Alex Riesen <raa.lkml@gmail.com>, Phil Turmel <philip@turmel.org>
+Subject: Re: [BUG, Regression, bisected] USB mouse causes bug on 1st insert,
+ ignored on 2nd insert, lsusb stuck at usbdev_open
+In-Reply-To: <AANLkTi=1zh4hD-1uzpgjAsnKZBE=qi_ZAX-ug=2XMkW0@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1009201440140.26813@pobox.suse.cz>
+References: <4C96B9DB.8030403@turmel.org> <AANLkTi=1zh4hD-1uzpgjAsnKZBE=qi_ZAX-ug=2XMkW0@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Junio C Hamano <junio@pobox.com>
-Cc: Sam Ravnborg <sam@ravnborg.org>, Roman Zippel <zippel@linux-m68k.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]
-References: <7vhbhmxyeb.fsf@alter.siamese.dyndns.org> <20100919095419.GC25704@merkur.ravnborg.org> <7v8w2xy4pq.fsf@alter.siamese.dyndns.org>
-In-Reply-To: <7v8w2xy4pq.fsf@alter.siamese.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19.9.2010 20:21, Junio C Hamano wrote:
-> Sam Ravnborg <sam@ravnborg.org> writes:
->> On Sat, Sep 18, 2010 at 07:25:32PM -0700, Junio C Hamano wrote:
->>> In 60f33b8 (kconfig: get rid of stray a.o, support ncursesw, 2006-01-15),
->>> support to link menuconfig with ncursesw library was added.  To compute
->>> the linker command option -l, we check "libncursesw.{so,a,dylib}" to allow
->>> ncursesw to be used as a replacement ncurses.  However, when checking what
->>> header file to include, we do not check /usr/include/ncursesw directory.
->>>
->>> Add /usr/include/ncursesw to the list of directories that are checked.
->>> With this patch, on my Debian Lenny box with libncursesw5-dev package but
->>> not libncurses5-dev package, I can say "make menuconfig".
->>>
->>> Signed-off-by: Junio C Hamano <gitster@pobox.com>
->>
-[...]
-> 
->> Acked-by: Sam Ravnborg <sam@ravnborg.org>
-> 
-> Thanks; is it my responsibility to follow-up the thread with identical
-> patch with updated Subject and with your Ack, hoping somebody in kbuild
-> team would pick it up?
+On Mon, 20 Sep 2010, Guillaume Chazarain wrote:
 
-I fixed the subject line myself and applied it to kbuild-2.6.git#kconfig.
+> > The USB mouse I use with my laptop is causing a BUG when inserted.  It works at that
+> > point, but if removed and re-inserted, it is ignored.  Also, after the 2nd insert,
+> > other USB devices (like my thumb drive) are also ignored.
+> >
+> > [   37.450777] BUG: unable to handle kernel NULL pointer dereference at (null)
+> > [   37.451148] IP: [<ffffffff817d0991>] hiddev_open+0xc1/0x220
+> > [   37.452036] PGD 1131a0067 PUD 113036067 PMD 0
+> > [   37.452924] Oops: 0000 [#1] PREEMPT SMP
+> > [   37.453336] last sysfs file: /sys/devices/platform/toshiba_acpi/backlight/toshiba/max_brightness
+> > [   37.453336] CPU 1
+> > [   37.453336] Modules linked in: tpm_infineon iwlagn iwlcore tifm_7xx1 tpm_tis toshiba_bluetooth toshiba_acpi tifm_core pcmcia sdhci_pci yenta_socket sdhci [last unloaded: scsi_wait_scan]
+> > [   37.453336]
+> > [   37.453336] Pid: 3117, comm: hald-probe-hidd Not tainted 2.6.36-rc4-00166-g151b6a5 #28 Portable PC/TECRA A9
+> > [   37.453336] RIP: 0010:[<ffffffff817d0991>]  [<ffffffff817d0991>] hiddev_open+0xc1/0x220
+
+Could please those of you who are able to reproduce the problem (from a 
+quick test seems that I am not) use 'addr2line' utility to convert the RIP 
+value (ffffffff817d0991 in this case) to the line number inside of 
+hiddev_open(), so that we can see whether it's something behind 
+usbhid_find_interface() causing NULL pointer dereference, or whether it is 
+intfdata being NULL and thus going to hid->hiddev faults?
+
+(sticking two printk()s in there should do the same as well).
 
 Thanks,
-Michal
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
