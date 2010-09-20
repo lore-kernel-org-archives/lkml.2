@@ -1,166 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756866Ab0ITSU4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 14:20:56 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:36760 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756714Ab0ITSUy (ORCPT
+	id S1757029Ab0ITSVX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 14:21:23 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:15380 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753720Ab0ITSVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 14:20:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=hMRwc2s0s5pTILCIrBCM1jj9e9aVjuG3KMbufDQl0pM0KtQsoaqhk5Kk8vsJyG2SS/
-         85EknwMbi98P2haNd56jB8KlJ96uiNsFPNvGPT83ikdwHZ5xvZJIYGHXgOe2bIkMvsWv
-         mUXr0MVGFR5WSOrS9tRPk+FeiF8+Qxq2ZROkA=
-Subject: Re: Regression, bisected: reference leak with IPSec since ~2.6.31
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-In-Reply-To: <20100920174443.GA5515@elliptictech.com>
-References: <20100920174443.GA5515@elliptictech.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 20 Sep 2010 20:20:44 +0200
-Message-ID: <1285006844.2323.17.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Mon, 20 Sep 2010 14:21:21 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Mon, 20 Sep 2010 20:23:04 +0200
+From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [PATCH] usb: gadget: rndis: don't use dev_get_stats()
+To: David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Message-id: <bdd595ff5a45c008254da0a0c4322b6e7b699cf2.1285006511.git.m.nazarewicz@samsung.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 20 septembre 2010 à 13:44 -0400, Nick Bowler a écrit :
-> Since 2.6.31, one of our UDP test programs has resulted in an SA leak: after
-> running the test and flushing the SAD/SPD, the esp module is left with a
-> non-zero reference count.  This reference is never released: closer
-> inspection reveals that esp_destroy is never called on the SA.
-> 
-> I've attached a simplified version of the test program which reproduces the
-> issue.  To reproduce:
-> 
->   (1) Create a Tx SA -- I used the following setkey script for my tests:
-> 
->        add 192.168.42.2 192.168.42.1 esp 0x327B23C6  -f seq-pad
->         -E rijndael-cbc 0x3D1B58BA507ED7AB2EB141F241B71EFB
->         -A null;
->        
->        spdadd 192.168.42.2 192.168.42.1 any -P out ipsec
->         esp/transport//require;
-> 
->   (2) lsmod | grep esp4
->       (note that the reference count is 1)
-> 
->   (3) run the test program, e.g. udp_burst 192.168.42.1 for the above SA.
-> 
->   (4) setkey -F; setkey -P -F
-> 
->   (5) wait as long as you want.
-> 
->   (6) lsmod | grep esp4
->       (note that the reference count is still 1, not 0 as it should be)
-> 
-> You can repeat the test until the zombie SAs consume all available
-> memory.  Cursory tests show similar problems with AH, IPv6 and Rx SAs,
-> but I only really tested ESP Tx.
-> 
-> Bisection implicates the following:
-> 
->   2b85a34e911bf483c27cfdd124aeb1605145dc80 is the first bad commit
->   commit 2b85a34e911bf483c27cfdd124aeb1605145dc80
->   Author: Eric Dumazet <eric.dumazet@gmail.com>
->   Date:   Thu Jun 11 02:55:43 2009 -0700
->   
->       net: No more expensive sock_hold()/sock_put() on each tx
->       
->       One of the problem with sock memory accounting is it uses
->       a pair of sock_hold()/sock_put() for each transmitted packet.
->       
->       This slows down bidirectional flows because the receive path
->       also needs to take a refcount on socket and might use a different
->       cpu than transmit path or transmit completion path. So these
->       two atomic operations also trigger cache line bounces.
->       
->       We can see this in tx or tx/rx workloads (media gateways for example),
->       where sock_wfree() can be in top five functions in profiles.
->       
->       We use this sock_hold()/sock_put() so that sock freeing
->       is delayed until all tx packets are completed.
->       
->       As we also update sk_wmem_alloc, we could offset sk_wmem_alloc
->       by one unit at init time, until sk_free() is called.
->       Once sk_free() is called, we atomic_dec_and_test(sk_wmem_alloc)
->       to decrement initial offset and atomicaly check if any packets
->       are in flight.
->       
->       skb_set_owner_w() doesnt call sock_hold() anymore
->       
->       sock_wfree() doesnt call sock_put() anymore, but check if sk_wmem_alloc
->       reached 0 to perform the final freeing.
->       
->       Drawback is that a skb->truesize error could lead to unfreeable sockets, or
->       even worse, prematurely calling __sk_free() on a live socket.
->       
->       Nice speedups on SMP. tbench for example, going from 2691 MB/s to 2711 MB/s
->       on my 8 cpu dev machine, even if tbench was not really hitting sk_refcnt
->       contention point. 5 % speedup on a UDP transmit workload (depends
->       on number of flows), lowering TX completion cpu usage.
->       
->       Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
->       Signed-off-by: David S. Miller <davem@davemloft.net>
->   
->   :040000 040000 13fc48f3903764863486c4e557a50281e8d790e6 4801aa898e906ad61729a84e33f1afb114abdf47 M	include
->   :040000 040000 042d86ad3f4d34cb96f137acb356c8251c2f8efc bd0698ec5bf8507c8ed1c5cf1e7791b4a5ed5596 M	net
-> 
->   git bisect start
->   # good: [4a6908a3a050aacc9c3a2f36b276b46c0629ad91] Linux 2.6.28
->   git bisect good 4a6908a3a050aacc9c3a2f36b276b46c0629ad91
->   # bad: [22763c5cf3690a681551162c15d34d935308c8d7] Linux 2.6.32
->   git bisect bad 22763c5cf3690a681551162c15d34d935308c8d7
->   # good: [37ecfd807b82bf547429fe1376e1fe7000ba7cff] Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/drzeus/mmc
->   git bisect good 37ecfd807b82bf547429fe1376e1fe7000ba7cff
->   # bad: [2187550525d7bcb8c87689e4eca41b1955bf9ac3] xfs: rationalize xfs_inobt_lookup*
->   git bisect bad 2187550525d7bcb8c87689e4eca41b1955bf9ac3
->   # bad: [9cbc1cb8cd46ce1f7645b9de249b2ce8460129bb] Merge branch 'master' of master.kernel.org:/pub/scm/linux/kernel/git/torvalds/linux-2.6
->   git bisect bad 9cbc1cb8cd46ce1f7645b9de249b2ce8460129bb
->   # good: [8a1ca8cedd108c8e76a6ab34079d0bbb4f244799] Merge branch 'perfcounters-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip
->   git bisect good 8a1ca8cedd108c8e76a6ab34079d0bbb4f244799
->   # good: [2cf4d4514d5b43c1f3b64bd0ec8b9853bde8f1dc] Merge branch 'for-linus' of master.kernel.org:/home/rmk/linux-2.6-arm
->   git bisect good 2cf4d4514d5b43c1f3b64bd0ec8b9853bde8f1dc
->   # good: [267a90127472be70b02ab13cbd355b5013e2aa51] ath9k: Optimize TBTT/DTIM calculation for timers
->   git bisect good 267a90127472be70b02ab13cbd355b5013e2aa51
->   # good: [5b1a002ade68173f21b2126a778278df72202ba6] datagram: Use frag list abstraction interfaces.
->   git bisect good 5b1a002ade68173f21b2126a778278df72202ba6
->   # bad: [5b2c4b972c0226406361f83b747eb5cdab51e68e] net: fix network drivers ndo_start_xmit() return values (part 8)
->   git bisect bad 5b2c4b972c0226406361f83b747eb5cdab51e68e
->   # bad: [2b85a34e911bf483c27cfdd124aeb1605145dc80] net: No more expensive sock_hold()/sock_put() on each tx
->   git bisect bad 2b85a34e911bf483c27cfdd124aeb1605145dc80
->   # good: [558f6d3229ddb9f11ca4ffee0439046c283882ff] cfg80211: fix for duplicate response for driver reg request
->   git bisect good 558f6d3229ddb9f11ca4ffee0439046c283882ff
->   # good: [84503ddd65e804ccdeedee3f307b40d80ff793e6] Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-next-2.6
->   git bisect good 84503ddd65e804ccdeedee3f307b40d80ff793e6
->   # good: [87433bfc75f34599c38137e172b6bf8fd41971ba] r8169: use dev_kfree_skb() instead of dev_kfree_skb_irq()
->   git bisect good 87433bfc75f34599c38137e172b6bf8fd41971ba
->   # good: [6811086899f2740c08d0ade26f8b9d705708e0cc] be2net: fix netdev stats rx_errors and rx_dropped
->   git bisect good 6811086899f2740c08d0ade26f8b9d705708e0cc
->   # good: [a7a0ef31def6b6badd94fc96c8f17c2e18d91513] be2net: Fix early reset of rx-completion
->   git bisect good a7a0ef31def6b6badd94fc96c8f17c2e18d91513
->   # good: [f2333a014c1e13ac8e1b73a6fd77731c524eff78] netxen: No need to check vfree() pointer.
->   git bisect good f2333a014c1e13ac8e1b73a6fd77731c524eff78
-> 
+This commit removes the call to dev_get_stats() from the
+gen_ndis_query_resp() function.  Since spin_lock_bh() was
+added to dev_txq_stats_fold() the call started causing
+warnings.  This is because gen_ndis_query_resp() can be
+(indirectly) called from rndis_command_complete() which is
+called with interrupts disabled.
+
+While at it, this commit also changes the
+gen_ndis_query_resp() function so that "net" local variable is
+used instead of "rndis_per_dev_params[configNr].dev" in all
+places this is referenced.
+
+Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+---
+ drivers/usb/gadget/rndis.c |   50 +++++++++++++++++++------------------------
+ 1 files changed, 22 insertions(+), 28 deletions(-)
 
 
-Hi Nick
+Without this patch, I got the following warning when RNDIS
+configuration is chosen:
 
-If you change your program to send small frames (so they are not
-fragmented), is the problem still present ?
+> WARNING: at kernel/softirq.c:143 local_bh_enable_ip+0x44/0xc0()
+[...]
+> [<c0049024>] (local_bh_enable_ip+0x44/0xc0) from [<c025ef18>] (dev_txq_stats_fold+0xac/0x108)
+> [<c025ef18>] (dev_txq_stats_fold+0xac/0x108) from [<c025f018>] (dev_get_stats+0xa4/0xac)
+> [<c025f018>] (dev_get_stats+0xa4/0xac) from [<c01f72bc>] (gen_ndis_query_resp+0x4c/0x43c)
+> [<c01f72bc>] (gen_ndis_query_resp+0x4c/0x43c) from [<c01f784c>] (rndis_msg_parser+0x1a0/0x32c)
+> [<c01f784c>] (rndis_msg_parser+0x1a0/0x32c) from [<c01f79f8>] (rndis_command_complete+0x20/0x4c)
+> [<c01f79f8>] (rndis_command_complete+0x20/0x4c) from [<c01f3278>] (done+0x5c/0x70)
+> [<c01f3278>] (done+0x5c/0x70) from [<c01f3c60>] (complete_tx+0xf0/0x1a8)
+> [<c01f3c60>] (complete_tx+0xf0/0x1a8) from [<c01f3d8c>] (process_ep_in_intr+0x74/0x14c)
+> [<c01f3d8c>] (process_ep_in_intr+0x74/0x14c) from [<c01f470c>] (s3c_udc_irq+0x2c8/0x3f4)
+> [<c01f470c>] (s3c_udc_irq+0x2c8/0x3f4) from [<c006dfd0>] (handle_IRQ_event+0x24/0xe4)
+> [<c006dfd0>] (handle_IRQ_event+0x24/0xe4) from [<c006fe40>] (handle_level_irq+0xb0/0x12c)
+> [<c006fe40>] (handle_level_irq+0xb0/0x12c) from [<c0027074>] (asm_do_IRQ+0x74/0x98)
+> [<c0027074>] (asm_do_IRQ+0x74/0x98) from [<c0027ca4>] (__irq_usr+0x44/0xc0)
 
-The commit you mention was buggy and a fix was added later in
-sock_wfree()
+After some investigation I found out that recently introduced commit
+bd27290a593f80cb99e95287cb29c72c0d57608b causes this.
 
-(commit d99927f4d93f36553699573b279e0ff98ad7dea6
-net: Fix sock_wfree() race)
+> diff --git a/net/core/dev.c b/net/core/dev.c
+> index 1c002c7..9de75cd 100644
+> --- a/net/core/dev.c
+> +++ b/net/core/dev.c
+> @@ -5282,15 +5282,17 @@ void netdev_run_todo(void)
+>  void dev_txq_stats_fold(const struct net_device *dev,
+>  			struct rtnl_link_stats64 *stats)
+>  {
+> -	unsigned long tx_bytes = 0, tx_packets = 0, tx_dropped = 0;
+> +	u64 tx_bytes = 0, tx_packets = 0, tx_dropped = 0;
+>  	unsigned int i;
+>  	struct netdev_queue *txq;
+>  
+>  	for (i = 0; i < dev->num_tx_queues; i++) {
+>  		txq = netdev_get_tx_queue(dev, i);
+> +		spin_lock_bh(&txq->_xmit_lock);
+>  		tx_bytes   += txq->tx_bytes;
+>  		tx_packets += txq->tx_packets;
+>  		tx_dropped += txq->tx_dropped;
+> +		spin_unlock_bh(&txq->_xmit_lock);
+>  	}
+>  	if (tx_bytes || tx_packets || tx_dropped) {
+>  		stats->tx_bytes   = tx_bytes;
+
+David Miller didn't agree to change spin_lock_bh() to
+spin_lock_irqsave() so I'm trying to fix the issue by changing
+rndis.c.
 
 
+At this point, I'm not entirely sure whether replacing dev_get_stats()
+with simple access to net->stats doesn't break something and I'm not
+really sure how to test that either (g_ether works when connected to
+Windows host).
+
+
+The other solution would be to change rndis_command_complete() so that
+a tasklet is used.
+
+
+If everyone is happy with this change, I think it's good idea
+to get it pulled before 2.6.36.
+
+
+Also, David (Brownel), can rndis_per_dev_params[configNr].dev
+be ever NULL?  The line dev_get_stats() assumed it's never
+NULL but some other parts of the code checked the value.
+I left the checking just to be safe but maybe it can be
+dropped?
+
+
+diff --git a/drivers/usb/gadget/rndis.c b/drivers/usb/gadget/rndis.c
+index 972d5dd..ea597cc 100644
+--- a/drivers/usb/gadget/rndis.c
++++ b/drivers/usb/gadget/rndis.c
+@@ -171,8 +171,6 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	int			i, count;
+ 	rndis_query_cmplt_type	*resp;
+ 	struct net_device	*net;
+-	struct rtnl_link_stats64 temp;
+-	const struct rtnl_link_stats64 *stats;
+ 
+ 	if (!r) return -ENOMEM;
+ 	resp = (rndis_query_cmplt_type *) r->buf;
+@@ -195,7 +193,6 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	resp->InformationBufferOffset = cpu_to_le32 (16);
+ 
+ 	net = rndis_per_dev_params[configNr].dev;
+-	stats = dev_get_stats(net, &temp);
+ 
+ 	switch (OID) {
+ 
+@@ -242,9 +239,8 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	/* mandatory */
+ 	case OID_GEN_MAXIMUM_FRAME_SIZE:
+ 		pr_debug("%s: OID_GEN_MAXIMUM_FRAME_SIZE\n", __func__);
+-		if (rndis_per_dev_params [configNr].dev) {
+-			*outbuf = cpu_to_le32 (
+-				rndis_per_dev_params [configNr].dev->mtu);
++		if (net) {
++			*outbuf = cpu_to_le32(net->mtu);
+ 			retval = 0;
+ 		}
+ 		break;
+@@ -265,9 +261,8 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	/* mandatory */
+ 	case OID_GEN_TRANSMIT_BLOCK_SIZE:
+ 		pr_debug("%s: OID_GEN_TRANSMIT_BLOCK_SIZE\n", __func__);
+-		if (rndis_per_dev_params [configNr].dev) {
+-			*outbuf = cpu_to_le32 (
+-				rndis_per_dev_params [configNr].dev->mtu);
++		if (net) {
++			*outbuf = cpu_to_le32(net->mtu);
+ 			retval = 0;
+ 		}
+ 		break;
+@@ -275,9 +270,8 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	/* mandatory */
+ 	case OID_GEN_RECEIVE_BLOCK_SIZE:
+ 		pr_debug("%s: OID_GEN_RECEIVE_BLOCK_SIZE\n", __func__);
+-		if (rndis_per_dev_params [configNr].dev) {
+-			*outbuf = cpu_to_le32 (
+-				rndis_per_dev_params [configNr].dev->mtu);
++		if (net) {
++			*outbuf = cpu_to_le32(net->mtu);
+ 			retval = 0;
+ 		}
+ 		break;
+@@ -357,9 +351,9 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	case OID_GEN_XMIT_OK:
+ 		if (rndis_debug > 1)
+ 			pr_debug("%s: OID_GEN_XMIT_OK\n", __func__);
+-		if (stats) {
+-			*outbuf = cpu_to_le32(stats->tx_packets
+-				- stats->tx_errors - stats->tx_dropped);
++		if (net) {
++			*outbuf = cpu_to_le32(net->stats.tx_packets
++				- net->stats.tx_errors - net->stats.tx_dropped);
+ 			retval = 0;
+ 		}
+ 		break;
+@@ -368,9 +362,9 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	case OID_GEN_RCV_OK:
+ 		if (rndis_debug > 1)
+ 			pr_debug("%s: OID_GEN_RCV_OK\n", __func__);
+-		if (stats) {
+-			*outbuf = cpu_to_le32(stats->rx_packets
+-				- stats->rx_errors - stats->rx_dropped);
++		if (net) {
++			*outbuf = cpu_to_le32(net->stats.rx_packets
++				- net->stats.rx_errors - net->stats.rx_dropped);
+ 			retval = 0;
+ 		}
+ 		break;
+@@ -379,8 +373,8 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	case OID_GEN_XMIT_ERROR:
+ 		if (rndis_debug > 1)
+ 			pr_debug("%s: OID_GEN_XMIT_ERROR\n", __func__);
+-		if (stats) {
+-			*outbuf = cpu_to_le32(stats->tx_errors);
++		if (net) {
++			*outbuf = cpu_to_le32(net->stats.tx_errors);
+ 			retval = 0;
+ 		}
+ 		break;
+@@ -389,8 +383,8 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	case OID_GEN_RCV_ERROR:
+ 		if (rndis_debug > 1)
+ 			pr_debug("%s: OID_GEN_RCV_ERROR\n", __func__);
+-		if (stats) {
+-			*outbuf = cpu_to_le32(stats->rx_errors);
++		if (net) {
++			*outbuf = cpu_to_le32(net->stats.rx_errors);
+ 			retval = 0;
+ 		}
+ 		break;
+@@ -398,8 +392,8 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	/* mandatory */
+ 	case OID_GEN_RCV_NO_BUFFER:
+ 		pr_debug("%s: OID_GEN_RCV_NO_BUFFER\n", __func__);
+-		if (stats) {
+-			*outbuf = cpu_to_le32(stats->rx_dropped);
++		if (net) {
++			*outbuf = cpu_to_le32(net->stats.rx_dropped);
+ 			retval = 0;
+ 		}
+ 		break;
+@@ -409,7 +403,7 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	/* mandatory */
+ 	case OID_802_3_PERMANENT_ADDRESS:
+ 		pr_debug("%s: OID_802_3_PERMANENT_ADDRESS\n", __func__);
+-		if (rndis_per_dev_params [configNr].dev) {
++		if (net) {
+ 			length = ETH_ALEN;
+ 			memcpy (outbuf,
+ 				rndis_per_dev_params [configNr].host_mac,
+@@ -421,7 +415,7 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	/* mandatory */
+ 	case OID_802_3_CURRENT_ADDRESS:
+ 		pr_debug("%s: OID_802_3_CURRENT_ADDRESS\n", __func__);
+-		if (rndis_per_dev_params [configNr].dev) {
++		if (net) {
+ 			length = ETH_ALEN;
+ 			memcpy (outbuf,
+ 				rndis_per_dev_params [configNr].host_mac,
+@@ -457,8 +451,8 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	/* mandatory */
+ 	case OID_802_3_RCV_ERROR_ALIGNMENT:
+ 		pr_debug("%s: OID_802_3_RCV_ERROR_ALIGNMENT\n", __func__);
+-		if (stats) {
+-			*outbuf = cpu_to_le32(stats->rx_frame_errors);
++		if (net) {
++			*outbuf = cpu_to_le32(net->stats.rx_frame_errors);
+ 			retval = 0;
+ 		}
+ 		break;
+-- 
+1.7.1
 
