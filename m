@@ -1,43 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756295Ab0ITLtk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 07:49:40 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:44155 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756117Ab0ITLtj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 07:49:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type
-         :content-transfer-encoding;
-        b=QC7mtn+zVXNIEyRMKbfipHSTBMc4dW1MQZ0BKJ/zojnMYc9jFY+T5iE9ZKEa/Kd8qE
-         kLPLI8VdPT+w3DI07K57NrpNYGBt/g+oJJ2Fi6OZA17aPO0HrvbOICXO17FXEU5rRPK+
-         c2YP06ct9i1W+wuf3/g4590b9M8MHWKUfkCdY=
-MIME-Version: 1.0
-Date: Mon, 20 Sep 2010 12:49:38 +0100
-Message-ID: <AANLkTimigBxKWaJ6LNxu6a0uXo8+LOfzcoE8bVsXZ1bW@mail.gmail.com>
-Subject: [x86] x86 targets without CMOS still build rtc.c despite CONFIG_RTC unset
-From: Andy Clark <andy.apcs@googlemail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756312Ab0ITL61 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 07:58:27 -0400
+Received: from cantor.suse.de ([195.135.220.2]:40901 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754213Ab0ITL6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 07:58:25 -0400
+Subject: Re: [PATCH 10/14] scsi: osd: fix device_register() error handling
+From: James Bottomley <James.Bottomley@suse.de>
+To: Dan Carpenter <error27@gmail.com>
+Cc: Vasiliy Kulikov <segooon@gmail.com>, kernel-janitors@vger.kernel.org,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Benny Halevy <bhalevy@panasas.com>, Tejun Heo <tj@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, osd-dev@open-osd.org,
+        linux-scsi@vger.kernel.org, cornelia.huck@de.ibm.com,
+        linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>
+In-Reply-To: <20100919142653.GF6236@bicker>
+References: <1284900907-24621-1-git-send-email-segooon@gmail.com>
+	 <20100919142653.GF6236@bicker>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 20 Sep 2010 06:58:17 -0500
+Message-ID: <1284983897.2973.11.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Sun, 2010-09-19 at 16:26 +0200, Dan Carpenter wrote:
+> On Sun, Sep 19, 2010 at 04:55:07PM +0400, Vasiliy Kulikov wrote:
+> > If device_register() fails then call put_device().
+> > See comment to device_register.
+> > 
+> > Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+> > ---
+> >  compile tested.
+> > 
+> >  drivers/scsi/osd/osd_uld.c |    4 +++-
+> >  1 files changed, 3 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/scsi/osd/osd_uld.c b/drivers/scsi/osd/osd_uld.c
+> > index cefb2c0..3e0edc2 100644
+> > --- a/drivers/scsi/osd/osd_uld.c
+> > +++ b/drivers/scsi/osd/osd_uld.c
+> > @@ -474,7 +474,7 @@ static int osd_probe(struct device *dev)
+> >  	error = device_register(&oud->class_dev);
+> >  	if (error) {
+> >  		OSD_ERR("device_register failed => %d\n", error);
+> > -		goto err_put_cdev;
+> > +		goto err_put_device;
+> >  	}
+> >  
+> >  	get_device(&oud->class_dev);
+> > @@ -482,6 +482,8 @@ static int osd_probe(struct device *dev)
+> >  	OSD_INFO("osd_probe %s\n", disk->disk_name);
+> >  	return 0;
+> >  
+> 
+> Hm...  So if device_register() fails then we should always call
+> device_put()?  It seems like a lot of existing code does that but I
+> hadn't realized until now that that is how it works.
 
-I haven't taken the time to fully understand the build mechanism, but
-comparing the x86 with other targets, the x86 target doesn't appear to
-support CONFIG_RTC.  Leaving this unset doesn't prevent
-arch/x86/kernel/rtc.c being built into the kernel.
+Heh, it wasn't a bug when most of the code was written.  It became a bug
+when dev_set_name() was added because now the storage allocated for the
+name has to be freed with a put.  Previous to this, the advice was just
+to free the device if device_register() failed.
 
-I'm building a linux-2.6.32.16 kernel using OpenWRT trunk for
-Bifferboard, an rdc target.  The Bifferboard SOC does not have an RTC.
+> Why can't the device_put() just be added inside the device_register() so
+> the unwinding works automatically?
 
-Is this as-designed (i.e. do "all" rdc targets have RTC) or a work-in-progress?
+Since Greg and Kay didn't actually alter any of the device_register()
+failure paths, this does sound to be the better course of action ... of
+course, every device_register() introduced after the dev_set_name()
+change may call put_device() on the cleanup path ... someone needs to
+check.
 
-Thanks,
+James
 
-Andy.
+
