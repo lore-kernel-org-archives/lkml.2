@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757774Ab0ITUYS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 16:24:18 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:52035 "EHLO ogre.sisk.pl"
+	id S1757749Ab0ITUYB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 16:24:01 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:52034 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757531Ab0ITUUW convert rfc822-to-8bit (ORCPT
+	id S1757534Ab0ITUUW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 20 Sep 2010 16:20:22 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Milan Bouchet-Valat" <nalimilan@club.fr>
+        "MadLoisae@gmx.net" <MadLoisae@gmx.net>
 References: <r2gGqgg1zFC.A.LrE.w97lMB@chimera>
 In-Reply-To: <r2gGqgg1zFC.A.LrE.w97lMB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -19,10 +18,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <aRnAGz9xZ8K.A.d-F.V_7lMB@chimera>
-Subject: [Bug #16488] [i915] Framebuffer ID error after suspend/hibernate leading to X crash
+Message-ID: <aRnAGz9xZ8K.A.FxF.9-7lMB@chimera>
+Subject: [Bug #16525] unexpected high load since 2.6.35
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 20 Sep 2010 21:57:18 +0200 (CEST)
+Date: Mon, 20 Sep 2010 21:57:19 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -35,9 +34,12 @@ introduced between 2.6.34 and 2.6.35.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16488
-Subject		: [i915] Framebuffer ID error after suspend/hibernate leading to X crash
-Submitter	: Milan Bouchet-Valat <nalimilan@club.fr>
-Date		: 2010-08-01 08:55 (51 days old)
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16525
+Subject		: unexpected high load since 2.6.35
+Submitter	: MadLoisae@gmx.net <MadLoisae@gmx.net>
+Date		: 2010-08-02 20:53 (50 days old)
+Message-ID	: <4C573041.1070103@gmx.net>
+References	: http://marc.info/?l=linux-kernel&m=128078243726655&w=2
+		  http://lkml.org/lkml/2010/9/14/105
 
 
