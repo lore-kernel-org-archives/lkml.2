@@ -1,100 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757225Ab0ITTY0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 15:24:26 -0400
-Received: from waste.org ([173.11.57.241]:39363 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754510Ab0ITTYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 15:24:25 -0400
-Subject: Re: [PATCH v2] Document the new Anonymous field in smaps.
-From: Matt Mackall <mpm@selenic.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Nikanth Karthikesan <knikanth@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Richard Guenther <rguenther@suse.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Matz <matz@novell.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <alpine.LSU.2.00.1009200003150.4348@sister.anvils>
-References: <AANLkTini3k1hK-9RM6io0mOf4VoDzGpbUEpiv=WHfhEW@mail.gmail.com>
-	 <201009161135.00129.knikanth@suse.de>
-	 <alpine.DEB.2.00.1009160940330.24798@tigran.mtv.corp.google.com>
-	 <201009171134.02771.knikanth@suse.de>
-	 <alpine.LSU.2.00.1009200003150.4348@sister.anvils>
+	id S1757258Ab0ITTZa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 15:25:30 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:36855 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757160Ab0ITTZ3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 15:25:29 -0400
+Subject: Re: [RFC][PATCH 2/2] kernel: extract thread types from
+ task_struct::flags
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>, Avi Kivity <avi@redhat.com>
+In-Reply-To: <20100920121446.18fb3a65.akpm@linux-foundation.org>
+References: <20100920151334.569154707@chello.nl>
+	 <20100920151839.414197086@chello.nl>
+	 <20100920121446.18fb3a65.akpm@linux-foundation.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 20 Sep 2010 14:24:20 -0500
-Message-ID: <1285010660.21906.905.camel@calx>
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 20 Sep 2010 21:25:16 +0200
+Message-ID: <1285010716.2275.797.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-20 at 00:11 -0700, Hugh Dickins wrote:
-> On Fri, 17 Sep 2010, Nikanth Karthikesan wrote:
-> > Document the new Anonymous field in smaps.
+On Mon, 2010-09-20 at 12:14 -0700, Andrew Morton wrote:
+> On Mon, 20 Sep 2010 17:13:36 +0200
+> Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 > 
-> Thanks for doing that, good effort, but your shifts between singular
-> and plural rather jarred on my ear, so I've rewritten it a little below.
-> Also added a sentence on "Swap"; but gave up when it came to KernelPageSize
-> and MMUPageSize, let someone else clarify those later.
+> > Free up a few more PF_flags by moving thread types out to their own variable.
+> > 
+> > Initially I compressed the types into less bits inside task_struct::flags, but
+> > Thomas suggested I move them to their own field.
+> > 
 > 
-> 
-> [PATCH v3] Document the new Anonymous field in smaps.
-> 
-> From: Nikanth Karthikesan <knikanth@suse.de>
-> 
-> Document the new Anonymous field in smaps, and also the Swap field.
-> Explain what smaps means by shared and private, which differs from
-> MAP_SHARED and MAP_PRIVATE.
-> 
-> Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
-> Signed-off-by: Hugh Dickins <hughd@google.com>
+> There doesn't seem to be a huge point to all this, but I guess there's
+> some sense in separating "what type of thread this is" from "attributes
+> of this thread".  Maybe.  At the expense of a larger task_struct. 
 
-Looks good, 
+Yeah, with the PF_FLUSHER and PF_ALIGNWARN things removed we again have
+2 bits free in flags.
 
-Acked-by: Matt Mackall <mpm@selenic.com>
+And that's the amount -rt consumes (it adds 2 more: I'm a $FOO thread,
+flags).
 
-> ---
-> 
->  Documentation/filesystems/proc.txt |   15 +++++++++++----
->  1 file changed, 11 insertions(+), 4 deletions(-)
-> 
-> --- a/Documentation/filesystems/proc.txt
-> +++ b/Documentation/filesystems/proc.txt
-> @@ -370,17 +370,24 @@ Shared_Dirty:          0 kB
->  Private_Clean:         0 kB
->  Private_Dirty:         0 kB
->  Referenced:          892 kB
-> +Anonymous:             0 kB
->  Swap:                  0 kB
->  KernelPageSize:        4 kB
->  MMUPageSize:           4 kB
->  
-> -The first  of these lines shows  the same information  as is displayed for the
-> -mapping in /proc/PID/maps.  The remaining lines show  the size of the mapping,
-> +The first of these lines shows the same information as is displayed for the
-> +mapping in /proc/PID/maps. The remaining lines show the size of the mapping,
->  the amount of the mapping that is currently resident in RAM, the "proportional
->  set size” (divide each shared page by the number of processes sharing it), the
->  number of clean and dirty shared pages in the mapping, and the number of clean
-> -and dirty private pages in the mapping.  The "Referenced" indicates the amount
-> -of memory currently marked as referenced or accessed.
-> +and dirty private pages in the mapping. Note that even a page which is part of
-> +a MAP_SHARED mapping, but has only a single pte mapped, i.e. is currently used
-> +by only one process, is accounted as private and not as shared. "Referenced"
-> +indicates the amount of memory currently marked as referenced or accessed.
-> +"Anonymous" shows the amount of memory that does not belong to any file. Even
-> +a mapping associated with a file may contain anonymous pages: when MAP_PRIVATE
-> +and a page is modified, the file page is replaced by a private anonymous copy.
-> +"Swap" shows how much would-be-anonymous memory is also used, but out on swap.
->  
->  This file is only present if the CONFIG_MMU kernel configuration option is
->  enabled.
+But having looked at it, I came up with the compress I'm a $FOO thread,
+idea. Which would free up a few more bits for future use.
 
+At that time Thomas suggested I move it into a separate field, and then
+Linus said, don't compact the types, simply transfer the bits we have.
 
--- 
-Mathematics is the supreme nostalgia of our time.
+Anyway, it was all very much RFC.. and comments I got :-)
+
+So can you agree with Linus' proposal of simply moving all type like
+bits over to a new word, or would you rather see the linear type field
+with an extra helper; possibly part of the existing ->flags field?
 
 
