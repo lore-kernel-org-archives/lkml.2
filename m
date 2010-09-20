@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757057Ab0ITSzV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 14:55:21 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:43055 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756744Ab0ITSzS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756843Ab0ITSzS (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 20 Sep 2010 14:55:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=j21O4NZLkI59+ignWuJvVL09omug3TyEMw2KtIOSipswGuXRIt+F4bdbt/+WfoErpT
-         Szx8C22Wz3cYib9pdo33Ptx7S8XwEqRM0h40IkeUmSCSU8RT+It4S+NZU09WxTwKXLoo
-         /ufytR5EJHBter3isLMUffNEx/Vu8BEI/pUmI=
-Subject: Re: [PATCH] usb: gadget: rndis: don't use dev_get_stats()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: m.nazarewicz@samsung.com, dbrownell@users.sourceforge.net, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-In-Reply-To: <20100920.112727.214208208.davem@davemloft.net>
-References: <bdd595ff5a45c008254da0a0c4322b6e7b699cf2.1285006511.git.m.nazarewicz@samsung.com>
-	 <20100920.112727.214208208.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 20 Sep 2010 20:48:47 +0200
-Message-ID: <1285008527.2323.52.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+Received: from mx1.redhat.com ([209.132.183.28]:25574 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756627Ab0ITSzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 14:55:16 -0400
+Date: Mon, 20 Sep 2010 20:50:01 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Will Drewry <wad@chromium.org>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Roland McGrath <roland@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        containers@lists.linux-foundation.org, Eugene Teo <eteo@redhat.com>,
+        Tejun Heo <tj@kernel.org>, Serge Hallyn <serue@us.ibm.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 2/2] exec: move core_pattern pipe helper into the
+	crashing namespace
+Message-ID: <20100920185001.GA955@redhat.com>
+References: <20100917152639.0e88341a@basil.nowhere.org> <1284736618-27153-2-git-send-email-wad@chromium.org> <20100918012939.GA25046@redhat.com> <AANLkTimsNtoT2GGCv1Zk2cGCsZ17zsOqV1DiF7D5tV=L@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimsNtoT2GGCv1Zk2cGCsZ17zsOqV1DiF7D5tV=L@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 20 septembre 2010 à 11:27 -0700, David Miller a écrit :
-> From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-> Date: Mon, 20 Sep 2010 20:23:04 +0200
-> 
-> > This commit removes the call to dev_get_stats() from the
-> > gen_ndis_query_resp() function.  Since spin_lock_bh() was
-> > added to dev_txq_stats_fold() the call started causing
-> > warnings.  This is because gen_ndis_query_resp() can be
-> > (indirectly) called from rndis_command_complete() which is
-> > called with interrupts disabled.
-> > 
-> > While at it, this commit also changes the
-> > gen_ndis_query_resp() function so that "net" local variable is
-> > used instead of "rndis_per_dev_params[configNr].dev" in all
-> > places this is referenced.
-> > 
-> > Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-> 
-> The way this works is dev_get_stats() takes that "temp" object the
-> caller provides, it writes the correct statistics into it (with any
-> necessary translations), and then passes back a pointer to it.
-> 
-> See net/core/dev.c:dev_get_stats()
-> 
-> You must use dev_get_stats() or else the statistics won't be properly
-> converted.
-> 
-> Like I originally suggested, you need to rearrange the code in this
-> driver such that the gen_ndis_query_resp() work happens in a tasklet,
-> workqueue, or some other non-hardware-irq context.
+On 09/17, Will Drewry wrote:
+>
+> On Fri, Sep 17, 2010 at 8:29 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > This looks overcomplicated to me, or I missed something.
+> >
+> > I do not understand why should we do this beforehand, and why we need
+> > copy_namespaces_unattached().
+> >
+> > Can't you just pass current to umh_pipe_setup() (or another helper) as
+> > the argument? Then this helper can copy ->fs and ->nsproxy itself.
+>
+> I wasn't sure if it was reasonable to pass the current task_struct
+> over, but I certainly can.
 
-Hmm, maybe its a bit difficult to fix this problem for stable kernel.
+Why not? current calls call_usermodehelper_exec(), it can't go away
+until subprocess_info->init() returns, it sleeps on wait_for_completion().
 
-What we could do is assume rndis wont use a device driver that actually
-needs txq tx stats folding, and just use following interim patch ?
+> In practice, this seems to amount to just adding a refcount to all the
+> namespaces and creating a new nsproxy which isn't really needed.  Most
+> likely, doing what you've suggested above plus the copy_fs_struct and
+> the swap out will do the trick.  I'll try it out and see.  That's make
+> it much clearer I think.
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index b9b22a3..31d5424 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -5288,6 +5288,14 @@ void dev_txq_stats_fold(const struct net_device *dev,
- 	unsigned int i;
- 	struct netdev_queue *txq;
- 
-+	/* temporary hack : rndis calls us under hard irq */
-+	if (WARN_ON_ONCE(in_irq())) {
-+		stats->tx_bytes   = dev->stats.tx_bytes;
-+		stats->tx_packets = dev->stats.tx_packets;
-+		stats->tx_dropped = dev->stats.tx_dropped;
-+		return;
-+	}
-+
- 	for (i = 0; i < dev->num_tx_queues; i++) {
- 		txq = netdev_get_tx_queue(dev, i);
- 		spin_lock_bh(&txq->_xmit_lock);
+Yes, just get_nsproxy() (like fork() does) should be fine in this case.
 
+As for copying ->fs, I am not sure actually. core_pattern is global,
+say it is "|/coredumper". If you change ->root, then exec can fail
+because that binary is not visible to the coredumping process?
+
+Probably we should move core_pattern into ->pid_ns, I dunno.
+
+Oleg.
 
