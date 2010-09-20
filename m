@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755584Ab0ITHyd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 03:54:33 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45129 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752887Ab0ITHyc (ORCPT
+	id S1755617Ab0ITHym (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 03:54:42 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:51790 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755601Ab0ITHyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 03:54:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Dqow5i6nLEcebMWtx8PQe4qDr1jaeMfP5bFFk3zi5hjYVFA3WyzFRQJzlCHcwuqMeI
-         57oEsSQzG7zKGgziyPk9gE/XL1e/lvxEAHDLDwwEIW+hxAkopY1PdwN9lH9bBndnhdto
-         BxW6x/4CZWGKIMk9G7xKMQPQVKaIc0O0Nntog=
-Subject: Re: [PATCH v4] mtd: nand: Expand nand_ecc_layout, deprecate ioctl
- ECCGETLAYOUT
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        Sneha Narnakaje <nsnehaprabha@ti.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Kevin Cernekee <cernekee@gmail.com>
-In-Reply-To: <4C96FF10.2010805@gmail.com>
-References: <4C5CA4A1.1040000@broadcom.com>
-	 <1282154806-9420-1-git-send-email-norris@broadcom.com>
-	 <4C6DD170.1060807@renesas.com>  <4C6E9C23.6060703@broadcom.com>
-	 <1282646703.24044.162.camel@localhost>  <4C746DE0.7000104@gmail.com>
-	 <1283163647.12995.43.camel@brekeke> <1284830690.1721.3.camel@brekeke>
-	 <4C96FF10.2010805@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 20 Sep 2010 10:52:40 +0300
-Message-ID: <1284969160.2286.17.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+	Mon, 20 Sep 2010 03:54:39 -0400
+Date: Mon, 20 Sep 2010 13:24:33 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [PATCH][-mm] memcg : memory cgroup cpu hotplug support update.
+Message-ID: <20100920075433.GB6676@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20100916144618.852b7e9a.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100916062159.GF22371@balbir.in.ibm.com>
+ <20100916152204.6c457936.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100916161727.04a1f905.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100917063537.GA4534@balbir.in.ibm.com>
+ <AANLkTikWqPf_SfYn7fzL7ROGqCY=ZZR5mUzr7sah+TOd@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikWqPf_SfYn7fzL7ROGqCY=ZZR5mUzr7sah+TOd@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-09-19 at 23:28 -0700, Brian Norris wrote:
-> >> Oh, does it mean you will stop loving MTD and we won't see steady flow
-> >> of improvements for you? :-( BTW, I think you have been doing great job
-> >> - MTD subsystem needs love badly!
+* Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com> [2010-09-17 20:49:09]:
+
+> 2010/9/17 Balbir Singh <balbir@linux.vnet.ibm.com>:
+> > * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-09-16 16:17:27]:
+> >
+> >> On Thu, 16 Sep 2010 15:22:04 +0900
+> >> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> >>
+> >> > This naming is from mem_cgroup_walk_tree(). Now we have
+> >> >
+> >> > † mem_cgroup_walk_tree();
+> >> > † mem_cgroup_walk_all();
+> >> >
+> >> > Rename both ? But it should be in separated patch.
+> >> >
+> >>
+> >> Considering a bit ...but..
+> >>
+> >> #define for_each_mem_cgroup(mem) \
+> >> † † † for (mem = mem_cgroup_get_first(); \
+> >> † † † † † †mem; \
+> >> † † † † † †mem = mem_cgroup_get_next(mem);) \
+> >>
+> >> seems to need some helper functions. I'll consider about this clean up
+> >> but it requires some amount of patch because css_get()/css_put()/rcu...etc..
+> >> are problematic.
+> >>
+> >
+> > Why does this need to be a macro (I know we use this for lists and
+> > other places), assuming for now we don't use the iterator pattern, we
+> > can rename mem_cgroup_walk_all() to for_each_mem_cgroup().
+> >
 > 
-> No, this doesn't mean I will stop loving MTD, although as may be readily
-> apparent by my delay, I may work a bit slower :) In fact, I will
-> probably be picking up some more work shortly.
+> When I see for_each in the kernel source, I expect iterator and macro.
+> When I see "walk" in the kernel source, I expect callback and visit function.
+>
 
-Nice :-)
-
-> From the context, I assume you meant include/mtd/mtd-abi.h, not
-> linux/mtd/mtd.h; am I correct?
-
-Probably yes :-)
+I understand that is the convention we used thus far. When I see
+for_each for walk, I presume iterators, doesn't matter if we have a
+call back or not. I'll leave the decision to you. 
 
 -- 
-Best Regards,
-Artem Bityutskiy (–ê—Ä—Ç—ë–º –ë–∏—Ç—é—Ü–∫–∏–π)
-
+	Three Cheers,
+	Balbir
