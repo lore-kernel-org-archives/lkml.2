@@ -1,101 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757125Ab0ITTFi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 15:05:38 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:44625 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1754861Ab0ITTFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 15:05:36 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1/oYK0gQLzo4CZ5qxnwU1yNjPpV0oc4FqI9SOeryG
-	/l/KUAaK9XOpr7
-Message-ID: <4C97B079.8050707@gmx.de>
-Date: Mon, 20 Sep 2010 21:05:29 +0200
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
-MIME-Version: 1.0
-To: =?UTF-8?B?QnJ1bm8gUHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-CC: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bernie Thompson <bernie@plugable.com>
-Subject: Re: [Patch, RFC] Make struct fb_info ref-counted with kref
-References: <20100919172833.14bf291e@neptune.home>	<4C963E99.9080207@gmx.de> <20100919190240.65762511@neptune.home>
-In-Reply-To: <20100919190240.65762511@neptune.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+	id S1757148Ab0ITTIK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 15:08:10 -0400
+Received: from exchange.solarflare.com ([216.237.3.220]:9446 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756688Ab0ITTII (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 15:08:08 -0400
+Subject: [RFC][PATCH 1/4] IRQ: IRQ groups for multiqueue devices
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Tom Herbert <therbert@google.com>
+Cc: netdev@vger.kernel.org, linux-net-drivers@solarflare.com,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1285009290.2282.121.camel@achroite.uk.solarflarecom.com>
+References: <1285009290.2282.121.camel@achroite.uk.solarflarecom.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Mon, 20 Sep 2010 20:08:05 +0100
+Message-ID: <1285009685.2282.127.camel@achroite.uk.solarflarecom.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 20 Sep 2010 19:08:08.0274 (UTC) FILETIME=[2944EB20:01CB58F7]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17654.005
+X-TM-AS-Result: No--22.236100-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bruno,
+When initiating I/O on multiqueue devices, we usually want to select a
+queue for which the response will be handled on the same or a nearby
+CPU.  IRQ groups hold a mapping of CPU to IRQ which will be updated
+based on the inverse of IRQ CPU-affinities plus CPU topology
+information.
+---
+ include/linux/irq.h |   52 ++++++++++++++++++
+ kernel/irq/manage.c |  149 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 201 insertions(+), 0 deletions(-)
 
-Bruno Prémont schrieb:
-> Hi Florian,
-> 
-> On Sun, 19 September 2010 Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
->> Hi,
->>
->> Bruno Prémont schrieb:
->>> For USB-attached (or other hot-(un)pluggable) framebuffers the current
->>> fbdev infrastructure is not very helpful. Each such driver currently
->>> needs to perform the ref-counting on its own in .fbops.fb_open and
->>> .fbops.fb_release callbacks.
->> I agree. This is a great idea even for non-hot-(un)pluggable framebuffers.
-> 
-> Yes, things like drmfb and drivers of multi-head capable framebuffer
-> drivers would certainly appreciate as well, but they will probably also
-> want to care about users (of fb_info.screen_base).
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index c03243a..bbddd5f 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -196,6 +196,8 @@ struct irq_desc {
+ #ifdef CONFIG_SMP
+ 	cpumask_var_t		affinity;
+ 	const struct cpumask	*affinity_hint;
++	struct irq_group	*group;
++	u16			group_index;
+ 	unsigned int		node;
+ #ifdef CONFIG_GENERIC_PENDING_IRQ
+ 	cpumask_var_t		pending_mask;
+@@ -498,6 +500,33 @@ static inline void free_desc_masks(struct irq_desc *old_desc,
+ #endif
+ }
+ 
++/**
++ * struct irq_group - IRQ group for multiqueue devices
++ * @closest: For each CPU, the index and distance to the closest IRQ,
++ *	based on affinity masks
++ * @size: Size of the group
++ * @used: Number of IRQs currently included in the group
++ * @irq: Descriptors for IRQs in the group
++ */
++struct irq_group {
++	struct {
++		u16	index;
++		u16	dist;
++	} closest[NR_CPUS];
++	unsigned int	size, used;
++	struct irq_desc *irq[0];
++};
++#define IRQ_CPU_DIST_INF 0xffff
++
++extern struct irq_group *alloc_irq_group(unsigned int size, gfp_t flags);
++extern void free_irq_group(struct irq_group *group);
++extern void irq_group_add(struct irq_group *group, unsigned int irq);
++
++static inline u16 irq_group_get_index(struct irq_group *group, int cpu)
++{
++	return group->closest[cpu].index;
++}
++
+ #else /* !CONFIG_SMP */
+ 
+ static inline bool alloc_desc_masks(struct irq_desc *desc, int node,
+@@ -519,6 +548,29 @@ static inline void free_desc_masks(struct irq_desc *old_desc,
+ 				   struct irq_desc *new_desc)
+ {
+ }
++
++struct irq_group {
++};
++
++static inline struct irq_group *alloc_irq_group(unsigned int size, gfp_t flags)
++{
++	static struct irq_group dummy;
++	return &dummy;
++}
++
++static inline void free_irq_group(struct irq_group *group)
++{
++}
++
++static inline void irq_group_add(struct irq_group *group, unsigned int irq)
++{
++}
++
++static inline u16 irq_group_get_index(struct irq_group *group, int cpu)
++{
++	return 0;
++}
++
+ #endif	/* CONFIG_SMP */
+ 
+ #endif /* _LINUX_IRQ_H */
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index c3003e9..3f2b1a9 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -100,6 +100,154 @@ void irq_set_thread_affinity(struct irq_desc *desc)
+ 	}
+ }
+ 
++static void irq_group_update_neigh(struct irq_group *group,
++				   const struct cpumask *mask,
++				   u16 index, u16 dist)
++{
++	int cpu;
++
++	for_each_cpu(cpu, mask) {
++		if (dist < group->closest[cpu].dist) {
++			group->closest[cpu].index = index;
++			group->closest[cpu].dist = dist;
++		}
++	}
++}
++
++static bool irq_group_copy_neigh(struct irq_group *group, int cpu,
++				 const struct cpumask *mask, u16 dist)
++{
++	int neigh;
++
++	for_each_cpu(neigh, mask) {
++		if (group->closest[neigh].dist <= dist) {
++			group->closest[cpu].index = group->closest[neigh].index;
++			group->closest[cpu].dist = dist;
++			return true;
++		}
++	}
++	return false;
++}
++
++/* Update the per-CPU closest IRQs following a change of affinity */
++static void
++irq_update_group(struct irq_desc *desc, const struct cpumask *affinity)
++{
++	struct irq_group *group = desc->group;
++	unsigned index = desc->group_index;
++	int cpu;
++
++	if (!group)
++		return;
++
++	/* Invalidate old distances to this IRQ */
++	for_each_online_cpu(cpu)
++		if (group->closest[cpu].index == index)
++			group->closest[cpu].dist = IRQ_CPU_DIST_INF;
++
++	/*
++	 * Set this as the closest IRQ for all CPUs in the affinity mask,
++	 * plus the following CPUs if they don't have a closer IRQ:
++	 * - all other threads in the same core (distance 1);
++	 * - all other cores in the same package (distance 2);
++	 * - all other packages in the same NUMA node (distance 3).
++	 */
++	for_each_cpu(cpu, affinity) {
++		group->closest[cpu].index = index;
++		group->closest[cpu].dist = 0;
++		irq_group_update_neigh(group, topology_thread_cpumask(cpu),
++				       index, 1);
++		irq_group_update_neigh(group, topology_core_cpumask(cpu),
++				       index, 2);
++		irq_group_update_neigh(group, cpumask_of_node(cpu_to_node(cpu)),
++				       index, 3);
++	}
++
++	/* Find new closest IRQ for any CPUs left with invalid distances */
++	for_each_online_cpu(cpu) {
++		if (!(group->closest[cpu].index == index &&
++		      group->closest[cpu].dist == IRQ_CPU_DIST_INF))
++			continue;
++		if (irq_group_copy_neigh(group, cpu,
++					 topology_thread_cpumask(cpu), 1))
++			continue;
++		if (irq_group_copy_neigh(group, cpu,
++					 topology_core_cpumask(cpu), 2))
++			continue;
++		if (irq_group_copy_neigh(group, cpu,
++					 cpumask_of_node(cpu_to_node(cpu)), 3))
++			continue;
++		/* We could continue into NUMA node distances, but for now
++		 * we give up. */
++	}
++}
++
++/**
++ *	alloc_irq_group - allocate IRQ group
++ *	@size:		Size of the group
++ *	@flags:		Allocation flags e.g. %GFP_KERNEL
++ */
++struct irq_group *alloc_irq_group(unsigned int size, gfp_t flags)
++{
++	struct irq_group *group =
++		kzalloc(sizeof(*group) + size * sizeof(group->irq[0]), flags);
++	int cpu;
++
++	if (!group)
++		return NULL;
++
++	/* Initially assign CPUs to IRQs on a rota */
++	for (cpu = 0; cpu < NR_CPUS; cpu++) {
++		group->closest[cpu].index = cpu % size;
++		group->closest[cpu].dist = IRQ_CPU_DIST_INF;
++	}
++
++	group->size = size;
++	return group;
++}
++EXPORT_SYMBOL(alloc_irq_group);
++
++/**
++ *	free_irq_group - free IRQ group
++ *	@group:		IRQ group allocated with alloc_irq_group(), or %NULL
++ */
++void free_irq_group(struct irq_group *group)
++{
++	struct irq_desc *desc;
++	unsigned int i;
++
++	if (!group)
++		return;
++
++	/* Remove all descriptors from the group */
++	for (i = 0; i < group->used; i++) {
++		desc = group->irq[i];
++		BUG_ON(desc->group != group || desc->group_index != i);
++		desc->group = NULL;
++	}
++
++	kfree(group);
++}
++EXPORT_SYMBOL(free_irq_group);
++
++/**
++ *	irq_group_add - add IRQ to a group
++ *	@group:		IRQ group allocated with alloc_irq_group()
++ *	@irq:		Interrupt to add to group
++ */
++void irq_group_add(struct irq_group *group, unsigned int irq)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++
++	BUG_ON(desc->group);
++	BUG_ON(group->used >= group->size);
++
++	desc->group = group;
++	desc->group_index = group->used;
++	group->irq[group->used++] = desc;
++}
++EXPORT_SYMBOL(irq_group_add);
++
+ /**
+  *	irq_set_affinity - Set the irq affinity of a given irq
+  *	@irq:		Interrupt to set affinity
+@@ -134,6 +282,7 @@ int irq_set_affinity(unsigned int irq, const struct cpumask *cpumask)
+ 	}
+ #endif
+ 	desc->status |= IRQ_AFFINITY_SET;
++	irq_update_group(desc, cpumask);
+ 	raw_spin_unlock_irqrestore(&desc->lock, flags);
+ 	return 0;
+ }
+-- 
+1.7.2.1
 
-I don't see any special users of fb_info.screen_base. It's only used for 
-software fallbacks of acceleration functions and fb_read/fb_write (which I'd 
-consider rare to fb_mmap). The bad thing of screen_base is that it can make 
-viafb try to map up to 512MB on 32 bit systems...
-Much more painful IMHO are the mmaped areas in userspace which essentially 
-prevent moving around of the screen framebuffer inside the video ram.
-
->>> If you have concerns regarding the API changes, please let me know.
->> Uhm, I'm not really happy with what we count. With the old method you mentioned 
->> we ref-counted framebuffer users, after your patch it's more counting users + 
->> uses. This might be okay as we usually are interested whether the ref_count is 0 
->> or not but it doesn't look right if we modify the refcount during nearly every 
->> framebuffer operation. Wouldn't it be sufficient to do the refcounting in 
->> fb_open & fb_release operation + in fbcon where open&release are done?
-> 
-> Well I'm more for counting the uses, (especially as the aim is to not
-> force the driver to look exactly when it can free the fb_info struct).
-> If the driver needs to know about active users (e.g. for handling memory
-> reorganization on mode change or the like) that would remain driver's job.
-
-I don't see how your counting would influence the time fb_info is freed. It is 
-freed when the last reference is gone but the last remaining reference is always 
-  a user reference either from the framebuffer itself or from any user. But all 
-users have to keep the framebuffer open to do anything with it therfore the last 
-thing they do is releasing the framebuffer. So I do not really understand your 
-reasoning, for me counting the users + uses is more error prone than just the 
-users. But that's not important for me as I'm only interested in whether the 
-count is 0, 1 or more (want to turn off the screen if there are no active [=1] 
-users) which is the same regardless on what you count. So if you really want to 
-stick to your way of counting, that's no problem for me.
-
->>> diff --git a/drivers/video/fbsysfs.c b/drivers/video/fbsysfs.c
->>> index 0a08f13..be5f342 100644
->>> --- a/drivers/video/fbsysfs.c
->>> +++ b/drivers/video/fbsysfs.c
->>> @@ -58,6 +58,7 @@ struct fb_info *framebuffer_alloc(size_t size, struct device *dev)
->>>  		info->par = p + fb_info_size;
->>>  
->>>  	info->device = dev;
->>> +	kref_init(&info->refcount);
->> As far as I know there exist framebuffer drivers which do not call 
->> framebuffer_alloc but contain their own fb_info. I guess these would be broken 
->> as well.
-> 
-> For those it would be better to switch them to be using framebuffer_alloc.
-
-I don't see any argument against this.
 
 
-Thanks,
-
-Florian Tobias Schandinat
+-- 
+Ben Hutchings, Senior Software Engineer, Solarflare Communications
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
