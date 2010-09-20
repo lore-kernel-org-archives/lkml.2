@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756550Ab0ITONR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 10:13:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65100 "EHLO mx1.redhat.com"
+	id S1756585Ab0ITON0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 10:13:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59398 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756425Ab0ITONQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 10:13:16 -0400
+	id S1756435Ab0ITONY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 10:13:24 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
 	Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 1/5] frv: restart_block.fn needs to be reset on sigreturn
+Subject: [PATCH 3/5] frv: avoid infinite loop of SIGSEGV delivery
 To: torvalds@osdl.org, akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
         David Howells <dhowells@redhat.com>
-Date: Mon, 20 Sep 2010 15:13:04 +0100
-Message-ID: <20100920141304.11066.51314.stgit@warthog.procyon.org.uk>
+Date: Mon, 20 Sep 2010 15:13:14 +0100
+Message-ID: <20100920141314.11066.19947.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20100920141304.11066.51314.stgit@warthog.procyon.org.uk>
+References: <20100920141304.11066.51314.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -27,29 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Al Viro <viro@ftp.linux.org.uk>
 
-Reset restart_block.fn on executing a sigreturn such that any currently pending
-system call restarts will be forced to return -EINTR.
+Use force_sigsegv() rather than force_sig(SIGSEGV, ...) as the former resets
+the SEGV handler pointer which will kill the process, rather than leaving it
+open to an infinite loop if the SEGV handler itself caused a SEGV signal.
 
 Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- arch/frv/kernel/signal.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ arch/frv/kernel/signal.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
 
 diff --git a/arch/frv/kernel/signal.c b/arch/frv/kernel/signal.c
-index 0974c0e..7fc2961 100644
+index 5fb2d06..48203c6 100644
 --- a/arch/frv/kernel/signal.c
 +++ b/arch/frv/kernel/signal.c
-@@ -121,6 +121,9 @@ static int restore_sigcontext(struct sigcontext __user *sc, int *_gr8)
- 	struct user_context *user = current->thread.user;
- 	unsigned long tbr, psr;
+@@ -329,7 +329,7 @@ static int setup_frame(int sig, struct k_sigaction *ka, sigset_t *set)
+ 	return 0;
  
-+	/* Always make any pending restarted system calls return -EINTR */
-+	current_thread_info()->restart_block.fn = do_no_restart_syscall;
-+
- 	tbr = user->i.tbr;
- 	psr = user->i.psr;
- 	if (copy_from_user(user, &sc->sc_context, sizeof(sc->sc_context)))
+ give_sigsegv:
+-	force_sig(SIGSEGV, current);
++	force_sigsegv(sig, current);
+ 	return -EFAULT;
+ 
+ } /* end setup_frame() */
+@@ -431,7 +431,7 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	return 0;
+ 
+ give_sigsegv:
+-	force_sig(SIGSEGV, current);
++	force_sigsegv(sig, current);
+ 	return -EFAULT;
+ 
+ } /* end setup_rt_frame() */
 
