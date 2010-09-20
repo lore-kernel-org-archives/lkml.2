@@ -1,134 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756985Ab0ITRNe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 13:13:34 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:4234 "EHLO
+	id S1756972Ab0ITRQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 13:16:57 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:36874 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753704Ab0ITRNd convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753567Ab0ITRQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 13:13:33 -0400
+	Mon, 20 Sep 2010 13:16:55 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=cFZo/X/xYF1Qf/tvfObS2G4SlgVMrXRAq8Dlo5qYa0WP4C6Jf23Okbt6EE9uo6oVQ6
-         zNdvduqZCL/qizdqjQkA==
+         :cc:content-type;
+        b=FopiLZQGF3IYGRurwjBDHovi81FQ/uxJT6BqS6KY7LqKfVpvh4cZAYX3RA+9bc1H9u
+         cKts3YX7RSUtOejERGGQ==
 MIME-Version: 1.0
-In-Reply-To: <1284894708.2275.607.camel@laptop>
+In-Reply-To: <1284974850.2275.682.camel@laptop>
 References: <1284688596-6731-1-git-send-email-venki@google.com>
 	<1284688596-6731-3-git-send-email-venki@google.com>
-	<1284894708.2275.607.camel@laptop>
-Date: Mon, 20 Sep 2010 10:13:23 -0700
-Message-ID: <AANLkTinu+2N7xnkuzMvhL+3V=vbRMDNT6ep-OHPrbT4y@mail.gmail.com>
+	<1284895291.2275.617.camel@laptop>
+	<1284897666.2275.638.camel@laptop>
+	<20100920092734.3f46af9f@mschwide.boeblingen.de.ibm.com>
+	<1284974850.2275.682.camel@laptop>
+Date: Mon, 20 Sep 2010 10:16:50 -0700
+Message-ID: <AANLkTi=RvqLTG84sziDTHWn6p93rKB12ePsYW6TfMdSz@mail.gmail.com>
 Subject: Re: [PATCH 2/6] Add IRQ_TIME_ACCOUNTING, finer accounting of CPU irq time
 From: Venkatesh Pallipadi <venki@google.com>
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Paul Turner <pjt@google.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 19, 2010 at 4:11 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, 2010-09-16 at 18:56 -0700, Venkatesh Pallipadi wrote:
->>
->> Signed-off-by: Venkatesh Pallipadi <venki@google.com>
->> ---
->>  include/linux/hardirq.h |    2 +-
->>  include/linux/sched.h   |   11 +++++++++++
->>  kernel/sched.c          |   38 ++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 50 insertions(+), 1 deletions(-)
->>
->> diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
->> index ce22d09..bfafd29 100644
->> --- a/include/linux/hardirq.h
->> +++ b/include/linux/hardirq.h
->> @@ -132,7 +132,7 @@ extern void synchronize_irq(unsigned int irq);
->>
->>  struct task_struct;
->>
->> -#ifndef CONFIG_VIRT_CPU_ACCOUNTING
->> +#if !defined(CONFIG_VIRT_CPU_ACCOUNTING) && !defined(CONFIG_IRQ_TIME_ACCOUNTING)
->>  static inline void account_system_vtime(struct task_struct *tsk)
->>  {
->>  }
->> diff --git a/include/linux/sched.h b/include/linux/sched.h
->> index 1e2a6db..dbb6808 100644
->> --- a/include/linux/sched.h
->> +++ b/include/linux/sched.h
->> @@ -1826,6 +1826,17 @@ extern void sched_clock_idle_sleep_event(void);
->>  extern void sched_clock_idle_wakeup_event(u64 delta_ns);
->>  #endif
->>
->> +#ifdef CONFIG_IRQ_TIME_ACCOUNTING
->> +/*
->> + * An i/f to runtime opt-in for irq time accounting based off of sched_clock.
->> + * The reason for this explicit opt-in is not to have perf penalty with
->> + * slow sched_clocks.
->> + */
->> +extern void enable_sched_clock_irqtime(void);
->> +#else
->> +static inline void enable_sched_clock_irqtime(void) {}
->> +#endif
->> +
->>  extern unsigned long long
->>  task_sched_runtime(struct task_struct *task);
->>  extern unsigned long long thread_group_sched_runtime(struct task_struct *task);
->> diff --git a/kernel/sched.c b/kernel/sched.c
->> index ed09d4f..912d2de 100644
->> --- a/kernel/sched.c
->> +++ b/kernel/sched.c
->> @@ -1917,6 +1917,44 @@ static void deactivate_task(struct rq *rq, struct task_struct *p, int flags)
->>         dec_nr_running(rq);
->>  }
->>
->> +#ifdef CONFIG_IRQ_TIME_ACCOUNTING
->> +
->> +static DEFINE_PER_CPU(u64, cpu_hardirq_time);
->> +static DEFINE_PER_CPU(u64, cpu_softirq_time);
->> +
->> +static DEFINE_PER_CPU(u64, irq_start_time);
->> +static int sched_clock_irqtime;
->> +
->> +void enable_sched_clock_irqtime(void)
->> +{
->> +       sched_clock_irqtime = 1;
->> +}
->> +
->> +void account_system_vtime(struct task_struct *tsk)
->> +{
->> +       unsigned long flags;
->> +       int cpu;
->> +       u64 now, delta;
->> +
->> +       if (!sched_clock_irqtime)
->> +               return;
->> +
->> +       local_irq_save(flags);
->> +
->> +       cpu = task_cpu(tsk);
+On Mon, Sep 20, 2010 at 2:27 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, 2010-09-20 at 09:27 +0200, Martin Schwidefsky wrote:
 >
-> Can this ever be anything other can smp_processor_id() and current?
+>> > OK, so by virtue of calling the same function on _enter and _exit its
+>> > not incomplete, just weird.
+>>
+>> That is the same with CONFIG_VIRT_CPU_ACCOUNTING=y. irq_enter/irq_exit
+>> call account_system_vtime, the function then uses the preempt/softirq/
+>> hardirq counter to find out which context is currently active.
 >
->> +       now = sched_clock();
+> Yeah, I realized that eventually, I've so far been able to mostly ignore
+> all that VIRT_CPU_ACCOUNTING muck.
 >
-> this should be using one of the kernel/sched_clock.c thingies, probably
-> local_clock(), or sched_clock_cpu(cpu).
+>> > And it won't account time double, since it uses irq_start_time to
+>> > compute deltas between invocations and will attribute that delta to only
+>> > one state.
+>>
+>> irq_start_time is a bit misleading, it is a time stamp of the last update.
+>> The confusing part (which deserves a comment) is the fact that the delta
+>> is not added to anything if hardirq_count and softirq_count are zero.
+>
+> Yeah, the name didn't help either, but I really expected to see two
+> hooks: start/exit, I did eventually figure it all out, but its a bit
+> daft.
+>
+> If you would have had 4 hooks, the below problem would have been fixable
+> within the implementation.
+>
+>> > You still do have the problem with local_bh_disable() though, since you
+>> > cannot distinguish between having bh disabled and processing softirq.
+>> >
+>> > So a hardirq that hits while you have bh disabled will inflate your
+>> > softirq time.
+>> >
+>> > A possible solution is to have local_bh_{disable,enable} {add,sub}
+>> > 2*SOFTIRQ_OFFSET and have the processing use SOFTIRQ_OFFSET, will need a
+>> > bit of a code shuffle though.
+>>
+>> Hmm, that bug is valid for CONFIG_VIRT_CPU_ACCOUNTING=y as well.
+>
+> And nobody ever noticed?
+>
 
-I don't really need task there. I can use smp_processor_id() or
-task_cpu(tsk) and I think latter one would be cheaper.
-
-You mean sched_clock() is not the right interface to use here.
-sched_clock_cpu() uses either sched_clock or remote_cpu stuff which I
-don't really need here and local_clock() also has irq
-disable/smp_processor_id() and calls sched_clock_cpu in turn.
-sched_clock() seemed to be more appropriate.
+Yes. I inherited the API from VIRT_CPU_ACCOUNTING along with this
+local_bh_disable bug. Agree that we need one extra bit to handle this
+case. I will take a stab at fixing this along with refresh of this
+patchset if no one else has beaten me to it until then.
 
 Thanks,
 Venki
