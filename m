@@ -1,93 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932097Ab0ITTUE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 15:20:04 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:42130 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932075Ab0ITTT7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 15:19:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=pDnY1/Yytt5hLmEZ6aa2jBXabNEW6ss1oEL/fDNnUXLjL64iHL5IAuv/x2pClfDvv4
-         vqypJ4svv+esJWbw6j+y+FRYnUrpW9Ue73lmLU5pgELkkvHNZjJ0uUeh2JkMlJim7gML
-         uCljAxHKSOgkGSc5WjFCHLICnR2/UGYoe1+eA=
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <1fwtoy8sG5H.A.veG.9D7lMB@chimera>
-References: <1fwtoy8sG5H.A.veG.9D7lMB@chimera>
-Date: Mon, 20 Sep 2010 21:19:58 +0200
-Message-ID: <AANLkTinLR0Js0ueVOGEkbs27d4FEH14c=1wuhUqPsiHx@mail.gmail.com>
-Subject: Re: 2.6.36-rc4-git5: Reported regressions from 2.6.35
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
+	id S1757225Ab0ITTY0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 15:24:26 -0400
+Received: from waste.org ([173.11.57.241]:39363 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754510Ab0ITTYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 15:24:25 -0400
+Subject: Re: [PATCH v2] Document the new Anonymous field in smaps.
+From: Matt Mackall <mpm@selenic.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Nikanth Karthikesan <knikanth@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Richard Guenther <rguenther@suse.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-mm@kvack.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>, harn-solo@gmx.de
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        Michael Matz <matz@novell.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.LSU.2.00.1009200003150.4348@sister.anvils>
+References: <AANLkTini3k1hK-9RM6io0mOf4VoDzGpbUEpiv=WHfhEW@mail.gmail.com>
+	 <201009161135.00129.knikanth@suse.de>
+	 <alpine.DEB.2.00.1009160940330.24798@tigran.mtv.corp.google.com>
+	 <201009171134.02771.knikanth@suse.de>
+	 <alpine.LSU.2.00.1009200003150.4348@sister.anvils>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 20 Sep 2010 14:24:20 -0500
+Message-ID: <1285010660.21906.905.camel@calx>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+On Mon, 2010-09-20 at 00:11 -0700, Hugh Dickins wrote:
+> On Fri, 17 Sep 2010, Nikanth Karthikesan wrote:
+> > Document the new Anonymous field in smaps.
+> 
+> Thanks for doing that, good effort, but your shifts between singular
+> and plural rather jarred on my ear, so I've rewritten it a little below.
+> Also added a sentence on "Swap"; but gave up when it came to KernelPageSize
+> and MMUPageSize, let someone else clarify those later.
+> 
+> 
+> [PATCH v3] Document the new Anonymous field in smaps.
+> 
+> From: Nikanth Karthikesan <knikanth@suse.de>
+> 
+> Document the new Anonymous field in smaps, and also the Swap field.
+> Explain what smaps means by shared and private, which differs from
+> MAP_SHARED and MAP_PRIVATE.
+> 
+> Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
+> Signed-off-by: Hugh Dickins <hughd@google.com>
 
-can you please add the following, Thanks in advance.
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=18872
-> Subject         : Radeon KMS r100 and STR problems
-> Submitter       : Richard Mittendorfer <delist@gmx.net>
-> Date            : 2010-09-17 18:26 (4 days old)
-> Message-ID      : <20100917202647.aa4b6300.delist@gmx.net>
-> References      : http://marc.info/?l=linux-kernel&m=128474802809779&w=2
+Looks good, 
 
-On Mon, Sep 20, 2010 at 8:47 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> This message contains a list of some regressions from 2.6.35,
-> for which there are no fixes in the mainline known to the tracking team.
-> If any of them have been fixed already, please let us know.
->
-> If you know of any other unresolved regressions from 2.6.35, please let us
-> know either and we'll add them to the list.  Also, please let us know
-> if any of the entries below are invalid.
->
-> Each entry from the list will be sent additionally in an automatic reply
-> to this message with CCs to the people involved in reporting and handling
-> the issue.
->
->
-> Listed regressions statistics:
->
->  Date          Total  Pending  Unresolved
->  ----------------------------------------
->  2010-09-20       38       15          15
->  2010-09-12       28       14          13
->  2010-08-30       21       16          15
->
->
-> Unresolved regressions
+Acked-by: Matt Mackall <mpm@selenic.com>
 
-Hi Rafael,
+> ---
+> 
+>  Documentation/filesystems/proc.txt |   15 +++++++++++----
+>  1 file changed, 11 insertions(+), 4 deletions(-)
+> 
+> --- a/Documentation/filesystems/proc.txt
+> +++ b/Documentation/filesystems/proc.txt
+> @@ -370,17 +370,24 @@ Shared_Dirty:          0 kB
+>  Private_Clean:         0 kB
+>  Private_Dirty:         0 kB
+>  Referenced:          892 kB
+> +Anonymous:             0 kB
+>  Swap:                  0 kB
+>  KernelPageSize:        4 kB
+>  MMUPageSize:           4 kB
+>  
+> -The first  of these lines shows  the same information  as is displayed for the
+> -mapping in /proc/PID/maps.  The remaining lines show  the size of the mapping,
+> +The first of these lines shows the same information as is displayed for the
+> +mapping in /proc/PID/maps. The remaining lines show the size of the mapping,
+>  the amount of the mapping that is currently resident in RAM, the "proportional
+>  set size” (divide each shared page by the number of processes sharing it), the
+>  number of clean and dirty shared pages in the mapping, and the number of clean
+> -and dirty private pages in the mapping.  The "Referenced" indicates the amount
+> -of memory currently marked as referenced or accessed.
+> +and dirty private pages in the mapping. Note that even a page which is part of
+> +a MAP_SHARED mapping, but has only a single pte mapped, i.e. is currently used
+> +by only one process, is accounted as private and not as shared. "Referenced"
+> +indicates the amount of memory currently marked as referenced or accessed.
+> +"Anonymous" shows the amount of memory that does not belong to any file. Even
+> +a mapping associated with a file may contain anonymous pages: when MAP_PRIVATE
+> +and a page is modified, the file page is replaced by a private anonymous copy.
+> +"Swap" shows how much would-be-anonymous memory is also used, but out on swap.
+>  
+>  This file is only present if the CONFIG_MMU kernel configuration option is
+>  enabled.
 
-can you please add the following Bug, Thanks in advance.
 
-Bug-Entry       : https://bugzilla.kernel.org/show_bug.cgi?id=16140
-Subject         : Suspend To RAM/ Resume broken - Radeon KMS on RV250
-Submitter       : Michael Long <harn-solo@gmx.de>
-Date            : 2010-06-06 09:52
-Message-ID      : ???
-References      : ???
+-- 
+Mathematics is the supreme nostalgia of our time.
 
-What is with "Regression:	No" in the BR? Change?
 
-Regards,
-- Sedat -
