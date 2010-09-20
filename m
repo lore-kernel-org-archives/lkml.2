@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756506Ab0ITOtc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 10:49:32 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:54286 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119Ab0ITOtb convert rfc822-to-8bit (ORCPT
+	id S1756315Ab0ITPEe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 11:04:34 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:44709 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751844Ab0ITPEd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 10:49:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=inrlE9wI3QMjEE+vCl+5Qfb/myKCRTOrs1/qweQUiicTi5r7AYTuQyAgeJFLy/XwHy
-         JHH9/gWEnVAcrg/CUYVPNj5uwS27EVHZEJED6gPaBFV1wt2p3ldMEOZUvHEJRoaON/tC
-         Jdjop/5OQrlMJGcLgICPuLLLLY6FVQZYblIo8=
+	Mon, 20 Sep 2010 11:04:33 -0400
+Date: Mon, 20 Sep 2010 16:04:32 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Alan Cox <alan@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH] x86/mrst: add SFI platform device parsing code
+Message-ID: <20100920150431.GD31167@sirena.org.uk>
+References: <20100920140049.31408.67527.stgit@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <4C972FE5.2070103@cam.ac.uk>
-References: <cover.1284937055.git.joe@perches.com> <33b49e667f4b875a383dd5ba1db168b6ce8225ec.1284937055.git.joe@perches.com>
- <4C972FE5.2070103@cam.ac.uk>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Mon, 20 Sep 2010 22:49:10 +0800
-Message-ID: <AANLkTi=MUyeb4rSz6X8PrWM7uEgCu6m1i3JzuuU=B7pW@mail.gmail.com>
-Subject: Re: [PATCH 2/6] MAINTAINERS: Merge imote2 and stargate
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Jonathan Cameron <jic23@cam.ac.uk>
-Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100920140049.31408.67527.stgit@localhost.localdomain>
+X-Cookie: Stay the curse.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 20, 2010 at 5:56 PM, Jonathan Cameron <jic23@cam.ac.uk> wrote:
-> On 09/20/10 00:10, Joe Perches wrote:
->> Removed by commit dcd925f95194da42e42cea7e5f901f9746cf441c
->>
->> CC: Jonathan Cameron <jic23@cam.ac.uk>
->> CC: Eric Miao <eric.y.miao@gmail.com>
-> Doh!  Good point, I forgot about the MAINTAINERS file when I did that
-> merge. Thanks Joe,
->
->>
->> Signed-off-by: Joe Perches <joe@perches.com>
-> Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+On Mon, Sep 20, 2010 at 03:01:06PM +0100, Alan Cox wrote:
 
-Andrew,
+> +static void *max3111_platform_data(void *info)
+> +{
+> +	static int dummy;
+> +	struct spi_board_info *spi_info = (struct spi_board_info *)info;
+> +	int intr = get_gpio_by_name("max3111_int");
 
-Would be appreciated if you could help merge this. Thanks.
+> +/* we have multiple max7315 on the board ... */
+> +#define MAX7315_NUM 2
+> +static void *max7315_platform_data(void *info)
 
->> ---
->>  MAINTAINERS |    8 +-------
->>  1 files changed, 1 insertions(+), 7 deletions(-)
->>
->> diff --git a/MAINTAINERS b/MAINTAINERS
->> index a9f0567..03929b5 100644
->> --- a/MAINTAINERS
->> +++ b/MAINTAINERS
->> @@ -755,13 +755,7 @@ L:       linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
->>  S:   Maintained
->>  F:   arch/arm/mach-ixp4xx/
->>
->> -ARM/INTEL RESEARCH IMOTE 2 MACHINE SUPPORT
->> -M:   Jonathan Cameron <jic23@cam.ac.uk>
->> -L:   linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
->> -S:   Maintained
->> -F:   arch/arm/mach-pxa/imote2.c
->> -
->> -ARM/INTEL RESEARCH STARGATE 2 MACHINE SUPPORT
->> +ARM/INTEL RESEARCH IMOTE/STARGATE 2 MACHINE SUPPORT
->>  M:   Jonathan Cameron <jic23@cam.ac.uk>
->>  L:   linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
->>  S:   Maintained
->
->
->
->
+> +static void *emc1403_platform_data(void *info)
+> +{
+
+> +static void *lis331dl_platform_data(void *info)
+> +{
+> +	static short intr2nd_pdata;
+> +	struct i2c_board_info *i2c_info = (struct i2c_board_info *)info;
+
+It's rather concerning that the parser here needs to have all this
+knowledge about the specific chips that will be on the boards.  Is there
+a plan for how this will be managed once system integrators begin
+putting other chips onto Moorestown boards?
