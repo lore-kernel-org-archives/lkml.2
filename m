@@ -1,230 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756923Ab0ITQvH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 12:51:07 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:50804 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753317Ab0ITQvE convert rfc822-to-8bit (ORCPT
+	id S1756937Ab0ITQxX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 12:53:23 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:56635 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753587Ab0ITQxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 12:51:04 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Chen Gong <gong.chen@linux.intel.com>
-Subject: [PATCH] PCI / PCIe / AER: Disable native AER service if BIOS has precedence (v2) (was: Re: [PATCH]  PCI / PCIe / AER ...)
-Date: Mon, 20 Sep 2010 18:50:00 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
-        Huang Ying <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-References: <201009200002.15609.rjw@sisk.pl> <4C96FCA3.2060704@linux.intel.com>
-In-Reply-To: <4C96FCA3.2060704@linux.intel.com>
+	Mon, 20 Sep 2010 12:53:22 -0400
+Date: Mon, 20 Sep 2010 12:53:20 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Roland McGrath <roland@redhat.com>, Ben Hawkes <hawkes@sota.gen.nz>
+Subject: planned 2.6.35.x -stable release for critical x86-64
+	vulnerabilities ?
+Message-ID: <20100920165320.GA28380@Krystal>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201009201850.00626.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 12:39:30 up 240 days, 19:16,  6 users,  load average: 0.00, 0.03,
+	0.02
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, September 20, 2010, Chen Gong wrote:
-> 于 9/20/2010 6:02 AM, Rafael J. Wysocki 写道:
-> > From: Rafael J. Wysocki<rjw@sisk.pl>
-> >
-> > There is a design issue related to PCIe AER and _OSC that the BIOS
-> > may be asked to grant control of the AER service even if some
-> > Hardware Error Source Table (HEST) entries contain information
-> > meaning that the BIOS really should control it.  Namely,
-> > pcie_port_acpi_setup() calls pcie_aer_get_firmware_first() that
-> > determines whether or not the AER service should be controlled by
-> > the BIOS on the basis of the HEST information for the given PCIe
-> > port.  The BIOS is asked to grant control of the AER service for
-> > a PCIe Root Complex if pcie_aer_get_firmware_first() returns 'false'
-> > for at least one root port in that complex, even if all of the other
-> > root ports' HEST entries have the FIRMWARE_FIRST flag set (and none
-> > of them has the GLOBAL flag set).  However, if the AER service is
-> > controlled by the kernel, that may interfere with the BIOS' handling
-> > of the error sources having the FIRMWARE_FIRST flag.  Moreover,
-> > there may be PCIe endpoints that have the FIRMWARE_FIRST flag set in
-> > HEST and are attached to the root ports in question, in which case it
-> > also may be unsafe to ask the BIOS for control of the AER service.
-> >
-> > For this reason, introduce a function checking if there's at least
-> > one PCIe-related HEST entry with the FIRMWARE_FIRST flag set and
-> > disable the native AER service altogether if this function returns
-> > 'true'.
-> >
-> > Signed-off-by: Rafael J. Wysocki<rjw@sisk.pl>
-> > ---
-> >   drivers/pci/pcie/aer/aerdrv.c      |    2 +-
-> >   drivers/pci/pcie/aer/aerdrv.h      |    3 +++
-> >   drivers/pci/pcie/aer/aerdrv_acpi.c |   31 +++++++++++++++++++++++++++++++
-> >   drivers/pci/pcie/portdrv_acpi.c    |    2 +-
-> >   4 files changed, 36 insertions(+), 2 deletions(-)
-> >
-> > Index: linux-2.6/drivers/pci/pcie/aer/aerdrv_acpi.c
-> > ===================================================================
-> > --- linux-2.6.orig/drivers/pci/pcie/aer/aerdrv_acpi.c
-> > +++ linux-2.6/drivers/pci/pcie/aer/aerdrv_acpi.c
-> > @@ -93,4 +93,35 @@ int pcie_aer_get_firmware_first(struct p
-> >   		aer_set_firmware_first(dev);
-> >   	return dev->__aer_firmware_first;
-> >   }
-> > +
-> > +static bool aer_firmware_first;
-> > +
-> > +static int aer_hest_parse_aff(struct acpi_hest_header *hest_hdr, void *data)
-> > +{
-> > +	if (aer_firmware_first)
-> > +		return 0;
-> > +
-> > +	switch (hest_hdr->type) {
-> > +	case ACPI_HEST_TYPE_AER_ROOT_PORT:
-> > +	case ACPI_HEST_TYPE_AER_ENDPOINT:
-> > +	case ACPI_HEST_TYPE_AER_BRIDGE:
-> > +		aer_firmware_first = !!(p->flags&  ACPI_HEST_FIRMWARE_FIRST);
-> 
-> Where "p" comes from ? Maybe it points to "struct acpi_hest_aer_common *p;"
+Hi Greg,
 
-My bad, terribly sorry.
+Sorry to have to ask this, but I was wondering about the ETA for the next round
+of -stable releases including fixes for the following bugs that seems to be
+actively exploited in the wild
+(http://blog.iweb.com/en/2010/09/64bits-linux-important-security-vulnerability-identified/5437.html
+http://isc.sans.edu/diary.html?storyid=9574):
 
-I must have posted a wrong version of the patch. :-(
-Fixed patch is appended.
+CVE-2010-3081 (fixed by upstream
+commit c41d68a513c71e35a14f66d71782d27a79a81ea6)
+"compat: Make compat_alloc_user_space() incorporate the access_ok()"
+
+and
+CVE-2010-3301 (fixed by upstream
+commit 36d001c70d8a0144ac1d038f6876c484849a74de
+"x86-64, compat: Test %rax for the syscall number, not %eax"
+and
+commit
+commit eefdca043e8391dcd719711716492063030b55ac
+"x86-64, compat: Retruncate rax after ia32 syscall entry tracing")
+
+I'd like to rebase the LTTng tree on top of -stable as soon as it incorporates
+these fixes. I could just pull the fixes in my own tree, but this would be
+duplicated effort.
+
+Again, sorry for the hassle, but I feel these bugs require immediate attention.
 
 Thanks,
-Rafael
 
----
-From: Rafael J. Wysocki <rjw@sisk.pl>
-Subject: PCI / PCIe / AER: Disable native AER service if BIOS has precedence (v2)
+Mathieu
 
-There is a design issue related to PCIe AER and _OSC that the BIOS
-may be asked to grant control of the AER service even if some
-Hardware Error Source Table (HEST) entries contain information
-meaning that the BIOS really should control it.  Namely,
-pcie_port_acpi_setup() calls pcie_aer_get_firmware_first() that
-determines whether or not the AER service should be controlled by
-the BIOS on the basis of the HEST information for the given PCIe
-port.  The BIOS is asked to grant control of the AER service for
-a PCIe Root Complex if pcie_aer_get_firmware_first() returns 'false'
-for at least one root port in that complex, even if all of the other
-root ports' HEST entries have the FIRMWARE_FIRST flag set (and none
-of them has the GLOBAL flag set).  However, if the AER service is
-controlled by the kernel, that may interfere with the BIOS' handling
-of the error sources having the FIRMWARE_FIRST flag.  Moreover,
-there may be PCIe endpoints that have the FIRMWARE_FIRST flag set in
-HEST and are attached to the root ports in question, in which case it
-also may be unsafe to ask the BIOS for control of the AER service.
-
-For this reason, introduce a function checking if there's at least
-one PCIe-related HEST entry with the FIRMWARE_FIRST flag set and
-disable the native AER service altogether if this function returns
-'true'.
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
-
-Changes since v1:
-
- * Fix compilation problem with undefined p in aer_hest_parse_aff().
-
----
- drivers/pci/pcie/aer/aerdrv.c      |    2 +-
- drivers/pci/pcie/aer/aerdrv.h      |    3 +++
- drivers/pci/pcie/aer/aerdrv_acpi.c |   34 ++++++++++++++++++++++++++++++++++
- drivers/pci/pcie/portdrv_acpi.c    |    2 +-
- 4 files changed, 39 insertions(+), 2 deletions(-)
-
-Index: linux-2.6/drivers/pci/pcie/aer/aerdrv_acpi.c
-===================================================================
---- linux-2.6.orig/drivers/pci/pcie/aer/aerdrv_acpi.c
-+++ linux-2.6/drivers/pci/pcie/aer/aerdrv_acpi.c
-@@ -93,4 +93,38 @@ int pcie_aer_get_firmware_first(struct p
- 		aer_set_firmware_first(dev);
- 	return dev->__aer_firmware_first;
- }
-+
-+static bool aer_firmware_first;
-+
-+static int aer_hest_parse_aff(struct acpi_hest_header *hest_hdr, void *data)
-+{
-+	struct acpi_hest_aer_common *p;
-+
-+	if (aer_firmware_first)
-+		return 0;
-+
-+	switch (hest_hdr->type) {
-+	case ACPI_HEST_TYPE_AER_ROOT_PORT:
-+	case ACPI_HEST_TYPE_AER_ENDPOINT:
-+	case ACPI_HEST_TYPE_AER_BRIDGE:
-+		p = (struct acpi_hest_aer_common *)(hest_hdr + 1);
-+		aer_firmware_first = !!(p->flags & ACPI_HEST_FIRMWARE_FIRST);
-+	default:
-+		return 0;
-+	}
-+}
-+
-+/**
-+ * aer_acpi_firmware_first - Check if APEI should control AER.
-+ */
-+bool aer_acpi_firmware_first(void)
-+{
-+	static bool parsed = false;
-+
-+	if (!parsed) {
-+		apei_hest_parse(aer_hest_parse_aff, NULL);
-+		parsed = true;
-+	}
-+	return aer_firmware_first;
-+}
- #endif
-Index: linux-2.6/drivers/pci/pcie/aer/aerdrv.h
-===================================================================
---- linux-2.6.orig/drivers/pci/pcie/aer/aerdrv.h
-+++ linux-2.6/drivers/pci/pcie/aer/aerdrv.h
-@@ -132,6 +132,7 @@ static inline int aer_osc_setup(struct p
- 
- #ifdef CONFIG_ACPI_APEI
- extern int pcie_aer_get_firmware_first(struct pci_dev *pci_dev);
-+extern bool aer_acpi_firmware_first(void);
- #else
- static inline int pcie_aer_get_firmware_first(struct pci_dev *pci_dev)
- {
-@@ -139,6 +140,8 @@ static inline int pcie_aer_get_firmware_
- 		return pci_dev->__aer_firmware_first;
- 	return 0;
- }
-+
-+static inline bool aer_acpi_firmware_first(void) { return false; }
- #endif
- 
- static inline void pcie_aer_force_firmware_first(struct pci_dev *pci_dev,
-Index: linux-2.6/drivers/pci/pcie/aer/aerdrv.c
-===================================================================
---- linux-2.6.orig/drivers/pci/pcie/aer/aerdrv.c
-+++ linux-2.6/drivers/pci/pcie/aer/aerdrv.c
-@@ -416,7 +416,7 @@ static void aer_error_resume(struct pci_
-  */
- static int __init aer_service_init(void)
- {
--	if (!pci_aer_available())
-+	if (!pci_aer_available() || aer_acpi_firmware_first())
- 		return -ENXIO;
- 	return pcie_port_service_register(&aerdriver);
- }
-Index: linux-2.6/drivers/pci/pcie/portdrv_acpi.c
-===================================================================
---- linux-2.6.orig/drivers/pci/pcie/portdrv_acpi.c
-+++ linux-2.6/drivers/pci/pcie/portdrv_acpi.c
-@@ -49,7 +49,7 @@ int pcie_port_acpi_setup(struct pci_dev 
- 		| OSC_PCI_EXPRESS_PME_CONTROL;
- 
- 	if (pci_aer_available()) {
--		if (pcie_aer_get_firmware_first(port))
-+		if (aer_acpi_firmware_first())
- 			dev_dbg(&port->dev, "PCIe errors handled by BIOS.\n");
- 		else
- 			flags |= OSC_PCI_EXPRESS_AER_CONTROL;
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
