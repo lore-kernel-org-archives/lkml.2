@@ -1,165 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757892Ab0ITWJN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 18:09:13 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46875 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753588Ab0ITWJL (ORCPT
+	id S1757900Ab0ITWJy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 18:09:54 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:53502 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751972Ab0ITWJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 18:09:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type;
-        b=jnEJjQqFILKIl8IhxtzDHPmzfCH2cxCz8vqYSPUtRvRfxHXVcHRexrVQojvwtEaJoH
-         PqVvAW4t+oXkbnVcydIZorUmBXggTTq86pEVNjLvWBjmHOcXiph/c1gvuGM9fNLO5VLB
-         dfLEQtQW2TPEd5vchVd/H8P1Zu2qtBw482Vd0=
-Message-ID: <4C97DBE2.8070707@gmail.com>
-Date: Tue, 21 Sep 2010 00:10:42 +0200
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	Mon, 20 Sep 2010 18:09:52 -0400
+Date: Mon, 20 Sep 2010 15:06:33 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
+        Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
+        Linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [RFC 02/22] configfs: Add struct
+ configfs_item_operations->check_link() in configfs_unlink()
+Message-ID: <20100920220633.GC8405@mail.oracle.com>
+Mail-Followup-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+	Konrad Rzeszutek Wilk <konrad@darnok.org>,
+	linux-scsi <linux-scsi@vger.kernel.org>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+	Mike Christie <michaelc@cs.wisc.edu>,
+	Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+	James Bottomley <James.Bottomley@suse.de>,
+	Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
+	Linux-fsdevel <linux-fsdevel@vger.kernel.org>
+References: <1283456440.5598.108.camel@haakon2.linux-iscsi.org>
+ <201009071701.02847.konrad@darnok.org>
+ <20100907224413.GC21935@mail.oracle.com>
+ <1283911739.556.420.camel@haakon2.linux-iscsi.org>
+ <20100908192639.GD29545@mail.oracle.com>
+ <1283979207.556.510.camel@haakon2.linux-iscsi.org>
+ <20100910152802.GG885@mail.oracle.com>
+ <1284145606.19890.68.camel@haakon2.linux-iscsi.org>
+ <20100910194404.GJ885@mail.oracle.com>
+ <1284148323.19890.94.camel@haakon2.linux-iscsi.org>
 MIME-Version: 1.0
-To: Pedro Francisco <pedrogfrancisco@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: ahci rmmodable and shouldn't
-References: <201009162256.04765.pedrogfrancisco@gmail.com> <47010.148.87.67.141.1284674336.squirrel@www.xenotime.net> <4C933A8F.2080305@gmail.com> <1284892106.2650.4.camel@sundae-v2> <4C9602E4.4090007@gmail.com> <1284974726.11757.9.camel@sundae-v2> <4C9729D7.70500@gmail.com>  <4C972C60.8010506@gmail.com> <1285015465.26023.10.camel@sundae-v2> <4C97DB80.4060403@gmail.com>
-In-Reply-To: <4C97DB80.4060403@gmail.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: multipart/mixed;
- boundary="------------050803040006000708000108"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284148323.19890.94.camel@haakon2.linux-iscsi.org>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------050803040006000708000108
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+[Sorry on the delay, I was out of town]
 
-On 09/21/2010 12:09 AM, Tejun Heo wrote:
-> Hello,
+On Fri, Sep 10, 2010 at 12:52:03PM -0700, Nicholas A. Bellinger wrote:
+> On Fri, 2010-09-10 at 12:44 -0700, Joel Becker wrote:
+> > 	You can refcount without check_link().
 > 
-> On 09/20/2010 10:44 PM, Pedro Francisco wrote:
->> To which tree shall I apply it? It currently fails both on Linus'
->> linux-2.6 and
->> git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata-dev.git .
-> 
-> Hmm... weird.  It's against Linus' tree.  Checking, yeap, it applies
-> cleanly to 2.6.36-rc4, commit 2422084a (Merge branch 'for-linus' of
-> git://git.kernel.org/pub/scm/linux/kernel/git/mattst88/alpha-2.6).
+> So what do you recommend here..?
 
-Attaching the patch just in case.
+	That your ACL object, or whatever it is that considers itself to
+be refcounted by the number of links, keep track of that and only free
+itself when all are gone rather than freeing itself when the first goes
+away.
+
+> The problem is that the 'unlink sub_child/group1/src_0/src_link' can't
+> signal to the other struct config_group to also call an internal 'unlink
+> sub_child/group2/dst_0/dst_link' to drop the child link outside of it's
+> struct config_group.
+
+	Nor should it.  I'm asking what is so wrong about a world where
+sub_child/group1/src_0/src_link is gone but
+sub_child/group2/dst_0/dst_link remains?  Maybe that target object can't
+work anymore, but the user broke it by breaking the link.
+
+> > 	You're still fighting allowing the links to go away.  You
+> > haven't explained why that is necessary.  You had a problem with a crash
+> > because you expected one reference to your ACLs and actually have two,
+> > but you can fix that without modifying configfs.
+> 
+> If this is the case then I must be mis-understanding what you mean by
+> configfs consumer refcounting from allow_link() and drop_link().  Can
+> you give me a bit more detail where I should be looking..?
+
+	Here's how I sort of understood things.  First, you create the
+src_link pointing to $object.  This somehow allocates some sort of ACL
+structure hanging off of $object.  Then you create dst_link pointing to
+src_link, which really ends up pointing to the $object.  So now you have
+src_link and dst_link pointing to $object.
+	Finally, someone unlinks src_link.  This triggers $object to
+free the ACL structure.  When the caller later removes dst_link, it
+crashes because it was expecting ACL to still be there.  Do I have it
+right?
+	I'm saying that $object should count how many people are
+pointing to it, so that when you remove src_link, ACL is *not* freed.
+It will only be freed when both src_link and dst_link are removed.  This
+way you do not crash.  Perhaps I'm not understanding the ACL object.
+Perhaps I'm missing the mechanism entirely.  But I don't see why the ACL
+object must necessarily be freed when one symlink is removed but not the
+other.
+
+Joel
 
 -- 
-tejun
 
---------------050803040006000708000108
-Content-Type: text/x-patch;
- name="ahci-sht-fix.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="ahci-sht-fix.patch"
+"And yet I fight,
+ And yet I fight this battle all alone.
+ No one to cry to;
+ No place to call home."
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index ff1c945..99d0e5a 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -90,6 +90,10 @@ static int ahci_pci_device_suspend(struct pci_dev *pdev, pm_message_t mesg);
- static int ahci_pci_device_resume(struct pci_dev *pdev);
- #endif
- 
-+static struct scsi_host_template ahci_sht = {
-+	AHCI_SHT("ahci"),
-+};
-+
- static struct ata_port_operations ahci_vt8251_ops = {
- 	.inherits		= &ahci_ops,
- 	.hardreset		= ahci_vt8251_hardreset,
-diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
-index 474427b..e5fdeeb 100644
---- a/drivers/ata/ahci.h
-+++ b/drivers/ata/ahci.h
-@@ -298,7 +298,17 @@ struct ahci_host_priv {
- 
- extern int ahci_ignore_sss;
- 
--extern struct scsi_host_template ahci_sht;
-+extern struct device_attribute *ahci_shost_attrs[];
-+extern struct device_attribute *ahci_sdev_attrs[];
-+
-+#define AHCI_SHT(drv_name)						\
-+	ATA_NCQ_SHT(drv_name),						\
-+	.can_queue		= AHCI_MAX_CMDS - 1,			\
-+	.sg_tablesize		= AHCI_MAX_SG,				\
-+	.dma_boundary		= AHCI_DMA_BOUNDARY,			\
-+	.shost_attrs		= ahci_shost_attrs,			\
-+	.sdev_attrs		= ahci_sdev_attrs
-+
- extern struct ata_port_operations ahci_ops;
- 
- void ahci_save_initial_config(struct device *dev,
-diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
-index 4e97f33..84b6432 100644
---- a/drivers/ata/ahci_platform.c
-+++ b/drivers/ata/ahci_platform.c
-@@ -23,6 +23,10 @@
- #include <linux/ahci_platform.h>
- #include "ahci.h"
- 
-+static struct scsi_host_template ahci_platform_sht = {
-+	AHCI_SHT("ahci_platform"),
-+};
-+
- static int __init ahci_probe(struct platform_device *pdev)
- {
- 	struct device *dev = &pdev->dev;
-@@ -145,7 +149,7 @@ static int __init ahci_probe(struct platform_device *pdev)
- 	ahci_print_info(host, "platform");
- 
- 	rc = ata_host_activate(host, irq, ahci_interrupt, IRQF_SHARED,
--			       &ahci_sht);
-+			       &ahci_platform_sht);
- 	if (rc)
- 		goto err0;
- 
-diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
-index 68dc678..8eea309 100644
---- a/drivers/ata/libahci.c
-+++ b/drivers/ata/libahci.c
-@@ -121,7 +121,7 @@ static DEVICE_ATTR(ahci_port_cmd, S_IRUGO, ahci_show_port_cmd, NULL);
- static DEVICE_ATTR(em_buffer, S_IWUSR | S_IRUGO,
- 		   ahci_read_em_buffer, ahci_store_em_buffer);
- 
--static struct device_attribute *ahci_shost_attrs[] = {
-+struct device_attribute *ahci_shost_attrs[] = {
- 	&dev_attr_link_power_management_policy,
- 	&dev_attr_em_message_type,
- 	&dev_attr_em_message,
-@@ -132,22 +132,14 @@ static struct device_attribute *ahci_shost_attrs[] = {
- 	&dev_attr_em_buffer,
- 	NULL
- };
-+EXPORT_SYMBOL_GPL(ahci_shost_attrs);
- 
--static struct device_attribute *ahci_sdev_attrs[] = {
-+struct device_attribute *ahci_sdev_attrs[] = {
- 	&dev_attr_sw_activity,
- 	&dev_attr_unload_heads,
- 	NULL
- };
--
--struct scsi_host_template ahci_sht = {
--	ATA_NCQ_SHT("ahci"),
--	.can_queue		= AHCI_MAX_CMDS - 1,
--	.sg_tablesize		= AHCI_MAX_SG,
--	.dma_boundary		= AHCI_DMA_BOUNDARY,
--	.shost_attrs		= ahci_shost_attrs,
--	.sdev_attrs		= ahci_sdev_attrs,
--};
--EXPORT_SYMBOL_GPL(ahci_sht);
-+EXPORT_SYMBOL_GPL(ahci_sdev_attrs);
- 
- struct ata_port_operations ahci_ops = {
- 	.inherits		= &sata_pmp_port_ops,
-
---------------050803040006000708000108--
+Joel Becker
+Consulting Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
