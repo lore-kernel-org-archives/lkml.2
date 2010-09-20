@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756585Ab0ITON0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 10:13:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59398 "EHLO mx1.redhat.com"
+	id S1756649Ab0ITONi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 10:13:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64255 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756435Ab0ITONY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 10:13:24 -0400
+	id S1756592Ab0ITONf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 10:13:35 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
 	Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 3/5] frv: avoid infinite loop of SIGSEGV delivery
+Subject: [PATCH 5/5] frv: double syscall restarts,
+	syscall restart in sigreturn()
 To: torvalds@osdl.org, akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
         David Howells <dhowells@redhat.com>
-Date: Mon, 20 Sep 2010 15:13:14 +0100
-Message-ID: <20100920141314.11066.19947.stgit@warthog.procyon.org.uk>
+Date: Mon, 20 Sep 2010 15:13:25 +0100
+Message-ID: <20100920141324.11066.43742.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20100920141304.11066.51314.stgit@warthog.procyon.org.uk>
 References: <20100920141304.11066.51314.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -29,38 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Al Viro <viro@ftp.linux.org.uk>
 
-Use force_sigsegv() rather than force_sig(SIGSEGV, ...) as the former resets
-the SEGV handler pointer which will kill the process, rather than leaving it
-open to an infinite loop if the SEGV handler itself caused a SEGV signal.
+We need to make sure that only the first do_signal() to be handled
+on the way out syscall will bother with syscall restarts; additionally,
+the check on the "signal has user handler" path had been wrong -
+compare with restart prevention in sigreturn()...
 
 Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- arch/frv/kernel/signal.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ arch/frv/kernel/signal.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
 
 diff --git a/arch/frv/kernel/signal.c b/arch/frv/kernel/signal.c
-index 5fb2d06..48203c6 100644
+index bd13b57..bab0129 100644
 --- a/arch/frv/kernel/signal.c
 +++ b/arch/frv/kernel/signal.c
-@@ -329,7 +329,7 @@ static int setup_frame(int sig, struct k_sigaction *ka, sigset_t *set)
- 	return 0;
+@@ -446,7 +446,7 @@ static int handle_signal(unsigned long sig, siginfo_t *info,
+ 	int ret;
  
- give_sigsegv:
--	force_sig(SIGSEGV, current);
-+	force_sigsegv(sig, current);
- 	return -EFAULT;
+ 	/* Are we from a system call? */
+-	if (in_syscall(__frame)) {
++	if (__frame->syscallno != -1) {
+ 		/* If so, check system call restarting.. */
+ 		switch (__frame->gr8) {
+ 		case -ERESTART_RESTARTBLOCK:
+@@ -465,6 +465,7 @@ static int handle_signal(unsigned long sig, siginfo_t *info,
+ 			__frame->gr8 = __frame->orig_gr8;
+ 			__frame->pc -= 4;
+ 		}
++		__frame->syscallno = -1;
+ 	}
  
- } /* end setup_frame() */
-@@ -431,7 +431,7 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 	return 0;
+ 	/* Set up the stack frame */
+@@ -551,6 +552,7 @@ no_signal:
+ 			__frame->pc -= 4;
+ 			break;
+ 		}
++		__frame->syscallno = -1;
+ 	}
  
- give_sigsegv:
--	force_sig(SIGSEGV, current);
-+	force_sigsegv(sig, current);
- 	return -EFAULT;
- 
- } /* end setup_rt_frame() */
+ 	/* if there's no signal to deliver, we just put the saved sigmask
 
