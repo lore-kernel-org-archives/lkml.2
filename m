@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756962Ab0ITS6m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 14:58:42 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:65237 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753262Ab0ITS6l convert rfc822-to-8bit (ORCPT
+	id S1757119Ab0ITS6w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 14:58:52 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:36723 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756819Ab0ITS6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 14:58:41 -0400
-Date: Mon, 20 Sep 2010 21:00:35 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCH] usb: gadget: rndis: don't use dev_get_stats()
-In-reply-to: <1285008527.2323.52.camel@edumazet-laptop>
-To: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>
-Cc: dbrownell@users.sourceforge.net, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Message-id: <op.vjchq9lx7p4s8u@pikus>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.62 (Linux)
-References: <bdd595ff5a45c008254da0a0c4322b6e7b699cf2.1285006511.git.m.nazarewicz@samsung.com>
- <20100920.112727.214208208.davem@davemloft.net>
- <1285008527.2323.52.camel@edumazet-laptop>
+	Mon, 20 Sep 2010 14:58:50 -0400
+Date: Mon, 20 Sep 2010 14:58:49 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Heinz Diehl <htd@fancy-poultry.org>
+cc: Alan Ott <alan@signal11.us>, Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Jiri Kosina <jkosina@suse.cz>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-input@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [BUG] object: is not initialized, yet kobject_put() is being
+ called
+In-Reply-To: <20100920181100.GA12295@fancy-poultry.org>
+Message-ID: <Pine.LNX.4.44L0.1009201456260.2010-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> From: Michal Nazarewicz <m.nazarewicz@samsung.com>
->>> This commit removes the call to dev_get_stats() from the
->>> gen_ndis_query_resp() function.  Since spin_lock_bh() was
->>> added to dev_txq_stats_fold() the call started causing
->>> warnings.  This is because gen_ndis_query_resp() can be
->>> (indirectly) called from rndis_command_complete() which is
->>> called with interrupts disabled.
+On Mon, 20 Sep 2010, Heinz Diehl wrote:
 
-> Le lundi 20 septembre 2010 à 11:27 -0700, David Miller a écrit :
->> The way this works is dev_get_stats() takes that "temp" object the
->> caller provides, it writes the correct statistics into it (with any
->> necessary translations), and then passes back a pointer to it.
-[...]
->> Like I originally suggested, you need to rearrange the code in this
->> driver such that the gen_ndis_query_resp() work happens in a tasklet,
->> workqueue, or some other non-hardware-irq context.
+> On 12.08.2010, Heinz Diehl wrote: 
+> 
+> > > >>Could please those of you, who are able to reproduce the problem, verify
+> > > >>whether the patch below (completely untested) makes everything behave
+> > > >>again? Thanks.
+>  
+> > > >Yes, everything behaves again. Thanks Jiri.
+>   
+> > > Seconded. Works good. Thanks for your support Jiri.
+>  
+> > Thirded! This fixes the warning here.
+> 
+> Unfortunately, I have to take up this problem a second time. 
+> I considered the issue fixed, and in fact it was using Jiris patch.
+> 
+> However, the same problem came back while testing 2.6.36-rc4 and the
+> following -git's. /var/log/warn shows the same warning as mentioned in
+> the first mail in this thread:
+> 
+>  Sep 20 08:18:42 liesel apcupsd[5436]: apcupsd FATAL ERROR in linux-usb.c at line 609 
+>  Cannot find UPS device -- For a link to detailed USB trouble
+>  shooting information, please see <http://www.apcupsd.com/support.html>.
+>  Sep 20 08:18:42 liesel apcupsd[5436]: apcupsd error shutdown completed
+> 
+> No additional oops this time, only the warning, and my UPS is no longer
+> working.
+> 
+> Jiris patch obviously didn't made it into 2.6.36-rc4, and it doesn't
+> apply nay longer either.
 
-On Mon, 20 Sep 2010 20:48:47 +0200, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Hmm, maybe its a bit difficult to fix this problem for stable kernel.
->
-> What we could do is assume rndis wont use a device driver that actually
-> needs txq tx stats folding, and just use following interim patch ?
->
-> diff --git a/net/core/dev.c b/net/core/dev.c
-> index b9b22a3..31d5424 100644
-> --- a/net/core/dev.c
-> +++ b/net/core/dev.c
-> @@ -5288,6 +5288,14 @@ void dev_txq_stats_fold(const struct net_device *dev,
->  	unsigned int i;
->  	struct netdev_queue *txq;
->+	/* temporary hack : rndis calls us under hard irq */
-> +	if (WARN_ON_ONCE(in_irq())) {
-> +		stats->tx_bytes   = dev->stats.tx_bytes;
-> +		stats->tx_packets = dev->stats.tx_packets;
-> +		stats->tx_dropped = dev->stats.tx_dropped;
-> +		return;
-> +	}
-> +
->  	for (i = 0; i < dev->num_tx_queues; i++) {
->  		txq = netdev_get_tx_queue(dev, i);
->  		spin_lock_bh(&txq->_xmit_lock);
+No, you're wrong.  The patch _is_ in 2.6.36-rc4, and that's the reason 
+why it doesn't apply any longer.
 
-I think it's better to put such temporary fix inside RNDIS code.  It
-seems there is no need to clutter the whole subsystem with temporary
-fix.
+The error you see must have a different cause.  Have you read this 
+thread?
 
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+	http://marc.info/?t=128494644600005&r=1&w=2
+
+Alan Stern
+
