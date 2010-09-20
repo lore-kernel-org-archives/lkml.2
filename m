@@ -1,93 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755192Ab0ITA6l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Sep 2010 20:58:41 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:34629 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754727Ab0ITA6k (ORCPT
+	id S1755363Ab0ITBZR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Sep 2010 21:25:17 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:59931 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754792Ab0ITBZO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Sep 2010 20:58:40 -0400
-Subject: Re: memory barrier question
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Miklos Szeredi <miklos@szeredi.hu>, benh@kernel.crashing.org,
-        dhowells@redhat.com, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-In-Reply-To: <20100919215909.GG3060@linux.vnet.ibm.com>
-References: <E1OwGz7-0007Cu-CC@pomaz-ex.szeredi.hu>
-	 <20100916163708.GG2462@linux.vnet.ibm.com>
-	 <E1OwHkg-0007IX-DH@pomaz-ex.szeredi.hu>
-	 <1284656978.26423.11.camel@mulgrave.site>
-	 <E1OwI5H-0007LR-DC@pomaz-ex.szeredi.hu>
-	 <1284760148.30449.107.camel@pasglop>
-	 <20100917231222.GA3060@linux.vnet.ibm.com>
-	 <1284864421.30449.113.camel@pasglop>
-	 <20100919152638.GF3060@linux.vnet.ibm.com>
-	 <E1OxQIg-0005Nw-WE@pomaz-ex.szeredi.hu>
-	 <20100919215909.GG3060@linux.vnet.ibm.com>
+	Sun, 19 Sep 2010 21:25:14 -0400
+X-Sasl-enc: CHAO+2HuBdcDWCjJEqtSsIxD3u/1xkhRzxF/Izviiw7G 1284945912
+Subject: Re: [autofs] Remaining BKL users, what to do
+From: Ian Kent <raven@themaw.net>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: codalist@TELEMANN.coda.cs.cmu.edu, autofs@linux.kernel.org,
+        Samuel Ortiz <samuel@sortiz.org>, Jan Kara <jack@suse.cz>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        netdev@vger.kernel.org, Anders Larsen <al@alarsen.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Christoph Hellwig <hch@infradead.org>,
+        Petr Vandrovec <vandrove@vc.cvut.cz>,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        linux-fsdevel@vger.kernel.org, Evgeniy Dushistov <dushistov@mail.ru>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Hendry <andrew.hendry@gmail.com>,
+        linux-media@vger.kernel.org
+In-Reply-To: <201009161632.59210.arnd@arndb.de>
+References: <201009161632.59210.arnd@arndb.de>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 19 Sep 2010 19:58:36 -0500
-Message-ID: <1284944316.2957.795.camel@mulgrave.site>
+Date: Mon, 20 Sep 2010 09:25:02 +0800
+Message-ID: <1284945902.3095.4.camel@localhost>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-09-19 at 14:59 -0700, Paul E. McKenney wrote:
-> On Sun, Sep 19, 2010 at 10:15:51PM +0200, Miklos Szeredi wrote:
-> > On Sun, 19 Sep 2010, Paul E. McKenney wrote:
-> > > Give it a few years.  There are reportedly already other compilers that do
-> > > this, which is not too surprising given that the perception of insanity
-> > > is limited to lockless parallel code.  If you have single-threaded code,
-> > > such as code and data under a lock (where the data is never accessed
-> > > without holding that lock), then this sort of optimization is pretty safe.
-> > > I still don't like it, but the compiler guys would argue that this is
-> > > because I am one of those insane parallel-programming guys.
-> > > 
-> > > Furthermore, there are other ways to get into trouble.  If the code
-> > > continued as follows:
-> > > 
-> > >    LOAD inode = next.dentry->inode
-> > >    if (inode != NULL)
-> > >    	LOAD inode->f_op
-> > > 	do_something_using_lots_of_registers();
-> > > 	LOAD inode->some_other_field
-> > > 
-> > > and if the code expected ->f_op and ->some_other_field to be from the
-> > > same inode structure, severe disappointment could ensue.  This is because
-> > > the compiler is within its rights to reload from next.dentry->inode,
-> > > especially given register pressure.  In fact, the compiler would be within
-> > > its rights to reload from next.dentry->inode in the "LOAD inode->f_op"
-> > > statement.  And it might well get NULL from such a reload.
-> > 
-> > Except the VFS doesn't allow that.  dentry->inode can go from NULL to
-> > non-NULL anytime but will only go from non-NULL to NULL when there are
-> > no possible external references to the dentry.
-> > 
-> > The compiler and the CPU cannot move the "LOAD inode->some_field"
-> > before the "LOAD dentry->inode", because of the conditional, right?
+On Thu, 2010-09-16 at 16:32 +0200, Arnd Bergmann wrote:
+> The big kernel lock is gone from almost all code in linux-next, this is
+> the status of what I think will happen to the remaining users:
 > 
-> Other than Alpha, the CPU cannot.  The standard -does- permit the
-> compiler to guess the value of the pointer, thus effectively moving the
-> load prior to the conditional.  At present, as far as I know, gcc does
-> not actually do this.
 
-I believe the standard only allows this if the compiler can *prove* (not
-guess) the result of the if test.  Even on Parisc where this can be
-expressed as a nullified instruction pair, the architectural rules
-forbid speculation of the latter before the former (the only time they
-can be executed out of order is when the CPU can prove the values
-internally, i.e. they're both cached)
+...
 
-> Again, please put at least an ACCESS_ONCE() in.  Trivial to do now,
-> possibly saving much pain and headache later on.
+> fs/autofs:
+> 	Pretty much dead, replaced by autofs4. I'd suggest moving this
+> 	to drivers/staging in 2.6.37 and letting it die there.
 
-OK, lost you here.  ACCESS_ONCE() is only needed in certain situations
-(like list traversal) because some compilers can reload cached values
-across an explicit barrier (which isn't here).
+Not sure that's what we need.
+What actually needs to happen is that autofs4 needs to be renamed to
+autofs.
 
-James
+Ian
+
 
 
