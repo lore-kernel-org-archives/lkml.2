@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757316Ab0ITUFq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 16:05:46 -0400
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:37485 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756705Ab0ITUFp (ORCPT
+	id S1757360Ab0ITUID (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 16:08:03 -0400
+Received: from smtp.opengridcomputing.com ([209.198.142.2]:50038 "EHLO
+	smtp.opengridcomputing.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754531Ab0ITUH6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 16:05:45 -0400
-Message-ID: <4C97BE69.2030100@euromail.se>
-Date: Mon, 20 Sep 2010 22:04:57 +0200
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100916 Thunderbird/3.1.4
+	Mon, 20 Sep 2010 16:07:58 -0400
+Message-ID: <4C97BF0C.6070809@opengridcomputing.com>
+Date: Mon, 20 Sep 2010 15:07:40 -0500
+From: Steve Wise <swise@opengridcomputing.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100826 Lightning/1.0b1 Thunderbird/3.0.7
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
-CC: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] hid: 3m: Convert to MT slots
-References: <1283005748-3293-1-git-send-email-rydberg@euromail.se>  <1283005748-3293-2-git-send-email-rydberg@euromail.se>  <CE1C24FC-7C9A-4940-8141-391A368C59E5@enac.fr> <4C97BB33.5020806@euromail.se> <6A8BB954-78BB-4507-86F3-19DA5174FA5E@enac.fr>
-In-Reply-To: <6A8BB954-78BB-4507-86F3-19DA5174FA5E@enac.fr>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1Oxmbi-0004Qf-BA.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1Oxmbi-0004Qf-BA 5b8a3f01ea4eed26ee1294a6e163b37c
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: linux-kernel@vger.kernel.org,
+        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Roland Dreier <rolandd@cisco.com>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Steve Wise <swise@chelsio.com>, Neil Brown <neilb@suse.de>,
+        Paul Mackerras <paulus@samba.org>, linux-i2c@vger.kernel.org,
+        linux-rdma@vger.kernel.org, dm-devel@redhat.com,
+        linux-raid@vger.kernel.org, linux-ppp@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: idr_get_new_exact ?
+References: <AANLkTi=ZLupVyFR0e2v-TLpeNWdw1bVMZUAhgyxLJ7OV@mail.gmail.com> <20100920123140.f524de79.akpm@linux-foundation.org>
+In-Reply-To: <20100920123140.f524de79.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2010 10:01 PM, Stéphane Chatty wrote:
-
-> 
-> Le 20 sept. 10 à 21:51, Henrik Rydberg a écrit :
-> 
->> On 09/20/2010 09:46 PM, Stéphane Chatty wrote:
+On 09/20/2010 02:31 PM, Andrew Morton wrote:
+> On Mon, 20 Sep 2010 16:11:31 +0200
+> Ohad Ben-Cohen<ohad@wizery.com>  wrote:
+>
+>    
+>> Occasionally, drivers care about the value that idr associates with
+>> their pointers.
 >>
->>>
->>> Le 28 août 10 à 16:29, Henrik Rydberg a écrit :
->>>
->>>>  #define MAX_SLOTS        60
->>>> -#define MAX_TRKID        59
->>>> +#define MAX_TRKID        USHRT_MAX
->>>>
->>>
->>> Oops, I forgot this one: in the rest of the code, it seems to me that you use
->>> your knowledge that TRACKINGID cannot be more than 59 (you use it to map the
->>> tracking ID onto the slot ID). Therefore, why change TRKID to a larger value?
+>> Today we have idr_get_new_above() which allocates a new idr entry
+>> above or equal to a given starting id, but sometimes drivers need to
+>> force an exact value.
 >>
+>> To overcome this small API gap, drivers are wrapping idr_get_new_above
+>> and then either BUG_ON() or just call idr_remove() and returns -EBUSY
+>> when idr allocates them an id which is different than their requested
+>> value.
 >>
->> There are only 60 slots available, but an infinite number of tracking ids.
->> Nowhere is the tracking id assumed to be bounded by anything but MAX_TRKID.
+>> There are only a handful of users who need this (see below. especially
+>> note the i2c comment :), but it might be nice to have such an API (a
+>> bit less of code, and a bit less error prone).
 >>
-> 
-> What about this:
-> +            value = clamp_val(value, 0, MAX_SLOTS - 1);
->              if (md->valid) {
->                  md->curid = value;
->                  md->f[value].touch = md->touch;
-> 
-> If you had tracking IDs 59, 60 and 61 in the same frame, this would not work
-> properly would it?
+>> Would something like the below be desirable/acceptable ?
+>>      
+> It seems OK to me - it's an improvement over what we have now.
+>
+>    
 
+Looks ok to me also.  This is exactly what cxgb* needs.  IE the driver 
+manages the ID space and never expects an idr insertion to fail because 
+its already inserted.  That constitutes a driver bug (which is why the 
+BUG_ON() is there :)).
 
-That is the slot id being set. The microtouch controller is also using slots
-internally.
-
-Henrik
+Steve.
 
