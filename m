@@ -1,797 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750835Ab0ITE3M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 00:29:12 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:43384 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750739Ab0ITE3L (ORCPT
+	id S1750934Ab0ITEfV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 00:35:21 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:45427 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750771Ab0ITEfT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 00:29:11 -0400
-Date: Mon, 20 Sep 2010 00:29:07 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: ltt-dev@lists.casi.polymtl.ca, linux-kernel@vger.kernel.org
-Cc: Tasneem Brutch - SISA <t.brutch@sisa.samsung.com>, k.stewart@freescale.com,
-        tibbitts@us.ibm.com, cristiano.l.pereira@intel.com,
-        janghaeng.lee@lge.com, jay.sim@lge.com, cheoljoo.lee@lge.com,
-        RVGG20@freescale.com, John.Bromhead@lsi.com, kbarde@huawei.com,
-        Felix.Burton@windriver.com, sumit@quicinc.com,
-        "Spear, Aaron" <aaron_spear@mentor.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [RFC] Portable bitfield library for trace format (v2)
-Message-ID: <20100920042907.GB26060@Krystal>
+	Mon, 20 Sep 2010 00:35:19 -0400
+From: "Ghorai, Sukumar" <s-ghorai@ti.com>
+To: Chris Ball <cjb@laptop.org>, Adrian Hunter <adrian.hunter@nokia.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Matt Fleming <matt@console-pimps.org>,
+        Linus Walleij <linus.ml.walleij@gmail.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "STEricsson_nomadik_linux@list.st.com" 
+	<STEricsson_nomadik_linux@list.st.com>,
+        Hanumath Prasad <hanumath.prasad@stericsson.com>,
+        Kyungmin Park <kmpark@infradead.org>
+Date: Mon, 20 Sep 2010 10:04:39 +0530
+Subject: RE: [PATCH] mmc: MMC 4.4 DDR support
+Thread-Topic: [PATCH] mmc: MMC 4.4 DDR support
+Thread-Index: ActUAZFODssEdaEqRv+Cdh0xy1RV+gAtQrbgAPEGt4A=
+Message-ID: <2A3DCF3DA181AD40BDE86A3150B27B6B031606223F@dbde02.ent.ti.com>
+References: <1278658780-26397-1-git-send-email-hanumath.prasad@stericsson.com>
+ <AANLkTikBdBhJeQ-t2+0echJfAxz529QZEYPJtyHUsROd@mail.gmail.com>
+ <m3pqxbsibq.fsf@pullcord.laptop.org>
+ <20100823204829.GB6510@console-pimps.org>
+ <20100823142816.59b12253.akpm@linux-foundation.org>
+ <4C739F55.8030301@nokia.com> <20100914112143.GA16039@void.printf.net> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 00:22:26 up 240 days,  6:59,  5 users,  load average: 0.12, 0.05,
-	0.01
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm keeping the same introduction as (v1), but I'm appending v2 of my portable
-bitfield library below. Comments are welcome,
 
-Changelog since v1:
-* Add missing brackets around "ptr" in the macros.
-* Add more tests, including tests using randomly generated input values.
+> -----Original Message-----
+> From: Ghorai, Sukumar
+> Sent: Wednesday, September 15, 2010 3:02 PM
+> To: 'Chris Ball'; Adrian Hunter
+> Cc: Andrew Morton; Matt Fleming; Linus Walleij; linux-mmc@vger.kernel.org;
+> linux-kernel@vger.kernel.org; STEricsson_nomadik_linux@list.st.com;
+> Hanumath Prasad; Kyungmin Park
+> Subject: RE: [PATCH] mmc: MMC 4.4 DDR support
+> 
+> 
+> > -----Original Message-----
+> > From: linux-mmc-owner@vger.kernel.org [mailto:linux-mmc-
+> > owner@vger.kernel.org] On Behalf Of Chris Ball
+> > Sent: Tuesday, September 14, 2010 4:52 PM
+> > To: Adrian Hunter
+> > Cc: Andrew Morton; Matt Fleming; Linus Walleij; linux-
+> mmc@vger.kernel.org;
+> > linux-kernel@vger.kernel.org; STEricsson_nomadik_linux@list.st.com;
+> > Hanumath Prasad; Kyungmin Park
+> > Subject: Re: [PATCH] mmc: MMC 4.4 DDR support
+> >
+> > Hi Hanumath, Linus,
+> >
+> > On Tue, Aug 24, 2010 at 01:30:45PM +0300, Adrian Hunter wrote:
+> > > I am not able to test DDR mode but it look to me that the patch
+> > > should be changed.  Here is a fix:
+> > >
+> > > From: Adrian Hunter <adrian.hunter@nokia.com>
+> > > Date: Tue, 24 Aug 2010 13:20:26 +0300
+> > > Subject: [PATCH] mmc: Fix Dual Data Rate (DDR) support
+> >
+> > Could someone please test Adrian's patch and report back?  I'd like
+> > to merge this, but not without testing.
+> >
+> > https://patchwork.kernel.org/patch/177332/
+> 
+> [Ghorai] I was testing this patch (Adrian's) and top of patch[1] from
+> Hanumath; Looks working fine as functionality. Checking throughput in my
+> omap platform.
+> [1] http://lkml.org/lkml/2010/7/9/35
+> But there are few comments on this patch from others, I think. And is not
+> applying cleanly in latest codebase. Also following #define is conflicting
+> with Hanumath's patch.
+> File: include/linux/mmc/host.h
+> #define MMC_CAP_ERASE           (1 << 10)
+
+[Ghorai] 
+Chris and all,
+Can we plan these patches for 2.6.37 release? 
+Also let me know if I can do anything!
 
 Thanks,
-
-Mathieu
-
-* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
-> Hi,
+Ghorai
 > 
-> After looking at gcc bitfields, I found out that they were really non-portable.
-> One particularity of these bitfields is that the fields are put from high to low
-> bits on big endian, and from low to high bits on little endian. So it is not
-> enough to do the byte swap between architectures, one must also take care to
-> reorder the fields.
-> 
-> Also, the fact that gcc requires bitfields to fit in the current unit adds much
-> padding that is unwanted in a trace e.g.
-> 
-> struct {
->         int a:3;
->         int b:31;
->         int c:3;
-> };
-> 
-> will be 12 bytes in size because "b" does not fit in the first "int" unit.
-> 
-> So I created a bitfield library with write and read primitives that can be made
-> compatible with gcc bitfields by specifying the bit padding manually. The
-> write-side writes bitfields in the native endianness, either with 1, 2, 4 or 8
-> bytes memory writes. The read side is architecture-agnostic, so it can read
-> bitfields generated by either little or big endian architectures.
-> 
-> The userspace code is below. It includes a rather useful test-suite. The code
-> generated is quite compact when the parameters are fixed.  A x86-32 disassembly
-> of fct() below which contains the macro instance:
-> 
-> unsigned int glob[1];
-> 
-> void fct(void)
-> {
->    bitfield_write(glob, 0x12345678, 12, 15);
-> }
-> 
-> Compared to this, we have the generated assembly from gcc 4.3.4 for:
-> 
-> struct d3 {
->         unsigned int a:12;
->         unsigned int b:15;
-> };
-> 
-> struct d3 glob;
-> 
-> void fct(void)
-> {
->         glob.b = 0x12345678;
-> }
-> 
-> glob.b = 0x12345678;
-> 
-> On x86-32, the bitfield library looks like:
-> 
-> 08048470 <fct>:
->  8048470:       a1 70 ba 04 08          mov    0x804ba70,%eax
->  8048475:       55                      push   %ebp
->  8048476:       89 e5                   mov    %esp,%ebp
->  8048478:       5d                      pop    %ebp
->  8048479:       25 ff 0f 00 f8          and    $0xf8000fff,%eax
->  804847e:       0d 00 80 67 05          or     $0x5678000,%eax
->  8048483:       a3 70 ba 04 08          mov    %eax,0x804ba70
->  8048488:       c3                      ret    
->  8048489:       8d b4 26 00 00 00 00    lea    0x0(%esi,%eiz,1),%esi
-> 
-> The gcc bitfields generate:
-> 
-> 080483d0 <fct>:
->  80483d0:       a1 64 96 04 08          mov    0x8049664,%eax
->  80483d5:       55                      push   %ebp
->  80483d6:       89 e5                   mov    %esp,%ebp
->  80483d8:       5d                      pop    %ebp
->  80483d9:       25 ff 0f 00 f8          and    $0xf8000fff,%eax
->  80483de:       0d 00 80 67 05          or     $0x5678000,%eax
->  80483e3:       a3 64 96 04 08          mov    %eax,0x8049664
->  80483e8:       c3                      ret    
->  80483e9:       8d b4 26 00 00 00 00    lea    0x0(%esi,%eiz,1),%esi
-> 
-> 
-> and on powerpc 32, the bitfield library:
-> 
-> 10000520 <fct>:
-> 10000520:       3d 20 10 01     lis     r9,4097
-> 10000524:       80 09 33 80     lwz     r0,13184(r9)
-> 10000528:       54 00 06 d6     rlwinm  r0,r0,0,27,11
-> 1000052c:       64 00 00 0a     oris    r0,r0,10
-> 10000530:       60 00 cf 00     ori     r0,r0,52992
-> 10000534:       90 09 33 80     stw     r0,13184(r9)
-> 10000538:       4e 80 00 20     blr
-> 1000053c:       60 00 00 00     nop
-> 
-> And gcc bitfields:
-> 
-> 10000490 <fct>:
-> 10000490:       3d 20 10 01     lis     r9,4097
-> 10000494:       39 60 56 78     li      r11,22136
-> 10000498:       80 09 0a a4     lwz     r0,2724(r9)
-> 1000049c:       51 60 2b 34     rlwimi  r0,r11,5,12,26
-> 100004a0:       90 09 0a a4     stw     r0,2724(r9)
-> 100004a4:       4e 80 00 20     blr
-> 100004a8:       60 00 00 00     nop
-> 100004ac:       60 00 00 00     nop
-> 
-> 
-> Comments are welcome (code below).
-> 
-> Thanks,
-> 
-> Mathieu
-> 
-
-/*
- * Common Trace Format
- *
- * Bitfields implementation
- *
- * Copyright 2010 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
- *
- * Dual LGPL v2.1/GPL v2 license.
- */
-
-#include <endian.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <assert.h>
-#include <time.h>
-#include <strings.h>
-
-/* We can't shift a int from 32 bit, >> 32 on int is a no-op on x86 */
-#define piecewise_rshift(v, shift) \
-do { \
-	int sb = (shift) / (sizeof(v) * 8 - 1); \
-	int final = (shift) % (sizeof(v) * 8 - 1); \
- \
-	for (; sb; sb--) \
-		(v) >>= sizeof(v) * 8 - 1; \
-	(v) >>= final; \
-} while (0)
-
-
-/*
- * Save integer to the bitfield, which starts at the "start" bit, has "len"
- * bits.
- * The inside of a bitfield is from high bits to low bits.
- * Uses native endianness.
- * For unsigned "v", pad MSB with 0 if bitfield is larger than v.
- * For signed "v", sign-extend v if bitfield is larger than v.
- *
- * On little endian, bytes are placed from the less significant to the most
- * significant. Also, consecutive bitfields are placed from lower bits to higher
- * bits.
- *
- * On big endian, bytes are places from most significant to less significant.
- * Also, consecutive bitfields are placed from higher to lower bits.
- */
-
-#if (BYTE_ORDER == LITTLE_ENDIAN)
-
-#define bitfield_write(ptr, _v, _start, _length) \
-do { \
-	typeof(*(ptr)) mask, cmask; \
-	unsigned int start = (_start), length = (_length); \
-	typeof(_v) v = (_v); \
-	int start_unit, end_unit, this_unit; \
-	unsigned int end, cshift; /* cshift is "complement shift" */ \
-	unsigned int ts = sizeof(__typeof__(*(ptr))) * 8; /* type size */ \
- \
-	if (!length) \
-		break; \
- \
-	end = start + length; \
-	start_unit = start / ts; \
-	end_unit = (end + (ts - 1)) / ts; \
- \
-	/* Trim v high bits */ \
-	if (length < sizeof(v) * 8) \
-		v &= ~(~0ULL << length); \
- \
-	/* We can now append v with a simple "or", shift it piece-wise */ \
-	this_unit = start_unit; \
-	if (start_unit == end_unit - 1) { \
-		mask = ~((typeof(*(ptr))) ~0ULL << (start % ts)); \
-		mask |= (typeof(*(ptr))) ~0ULL << (end % ts ? : ts); \
-		cmask = (typeof(*(ptr))) v << (start % ts); \
-		(ptr)[this_unit] &= mask; \
-		(ptr)[this_unit] |= cmask; \
-		break; \
-	} \
-	if (start % ts) { \
-		cshift = start % ts; \
-		mask = ~((typeof(*(ptr))) ~0ULL << cshift); \
-		cmask = (typeof(*(ptr))) v << cshift; \
-		(ptr)[this_unit] &= mask; \
-		(ptr)[this_unit] |= cmask; \
-		if (ts - cshift >= sizeof(v) * 8) \
-			piecewise_rshift(v, ts - cshift); \
-		else \
-			v >>= ts - cshift; \
-		start += ts - cshift; \
-		this_unit++; \
-	} \
-	for (; this_unit < end_unit - 1; this_unit++) { \
-		(ptr)[this_unit] = (typeof(*(ptr))) v; \
-		if (ts >= sizeof(v) * 8) \
-			piecewise_rshift(v, ts); \
-		else \
-			v >>= ts; \
-		start += ts; \
-	} \
-	if (end % ts) { \
-		mask = (typeof(*(ptr))) ~0ULL << (end % ts); \
-		cmask = (typeof(*(ptr))) v; \
-		(ptr)[this_unit] &= mask; \
-		(ptr)[this_unit] |= cmask; \
-	} else \
-		(ptr)[this_unit] = (typeof(*(ptr))) v; \
-} while (0)
-
-#else /* (BYTE_ORDER != LITTLE_ENDIAN) */
-
-#define bitfield_write(ptr, _v, _start, _length) \
-do { \
-	typeof(_v) v = (_v); \
-	unsigned int start = _start, length = _length; \
-	int start_unit, end_unit, this_unit; \
-	unsigned int end, cshift; /* cshift is "complement shift" */ \
-	typeof(*(ptr)) mask, cmask; \
-	unsigned int ts = sizeof(__typeof__(*(ptr))) * 8; /* type size */ \
- \
-	if (!length) \
-		break; \
- \
-	end = start + length; \
-	start_unit = start / ts; \
-	end_unit = (end + (ts - 1)) / ts; \
- \
-	/* Trim v high bits */ \
-	if (length < sizeof(v) * 8) \
-		v &= ~(~0ULL << length); \
-  \
-	/* We can now append v with a simple "or", shift it piece-wise */ \
-	this_unit = end_unit - 1; \
-	if (start_unit == end_unit - 1) { \
-		mask = ~((typeof(*(ptr))) ~0ULL << ((ts - (end % ts)) % ts)); \
-		mask |= (typeof(*(ptr))) ~0ULL << (ts - (start % ts)); \
-		cmask = (typeof(*(ptr))) v << ((ts - (end % ts)) % ts); \
-		(ptr)[this_unit] &= mask; \
-		(ptr)[this_unit] |= cmask; \
-		break; \
-	} \
-	if (end % ts) { \
-		cshift = end % ts; \
-		mask = ~((typeof(*(ptr))) ~0ULL << (ts - cshift)); \
-		cmask = (typeof(*(ptr))) v << (ts - cshift); \
-		(ptr)[this_unit] &= mask; \
-		(ptr)[this_unit] |= cmask; \
-		if (cshift >= sizeof(v) * 8) \
-			piecewise_rshift(v, cshift); \
-		else \
-			v >>= cshift; \
-		end -= cshift; \
-		this_unit--; \
-	} \
-	for (; this_unit >= start_unit + 1; this_unit--) { \
-		(ptr)[this_unit] = (typeof(*(ptr))) v; \
-		if (ts >= sizeof(v) * 8) \
-			piecewise_rshift(v, ts); \
-		else \
-			v >>= ts; \
-		end -= ts; \
-	} \
-	if (start % ts) { \
-		mask = (typeof(*(ptr))) ~0ULL << (ts - (start % ts)); \
-		cmask = (typeof(*(ptr))) v; \
-		(ptr)[this_unit] &= mask; \
-		(ptr)[this_unit] |= cmask; \
-	} else \
-		(ptr)[this_unit] = (typeof(*(ptr))) v; \
-} while (0)
-
-#endif
-
-/*
- * Read a bitfield byte-wise. This function is arch-agnostic.
- */
-
-uint64_t bitfield_read_64(unsigned char *ptr,
-			  unsigned int start, unsigned int len,
-			  int byte_order, int signedness)
-{
-	int start_unit, end_unit, this_unit;
-	unsigned int end, cshift; /* cshift is "complement shift" */
-	unsigned int ts = sizeof(unsigned char) * 8;
-	unsigned char mask, cmask;
-	uint64_t v = 0;
-
-	if (!len)
-		return 0;
-	end = start + len;
-	start_unit = start / ts;
-	end_unit = (end + (ts - 1)) / ts;
-
-	/*
-	 * We can now fill v piece-wise, from lower bits to upper bits.
-	 * We read the bitfield in the opposite direction it was written.
-	 */
-	switch (byte_order) {
-	case LITTLE_ENDIAN:
-		this_unit = end_unit - 1;
-		if (signedness) {
-			if (ptr[this_unit] & (1U << ((end % ts ? : ts) - 1)))
-				v = ~0ULL;
-		}
-		if (start_unit == end_unit - 1) {
-			mask = (unsigned char) ~0ULL << (end % ts ? : ts);
-			mask |= ~((unsigned char) ~0ULL << (start % ts));
-			cmask = ptr[this_unit];
-			cmask &= ~mask;
-			cmask >>= (start % ts);
-			v <<= end - start;
-			v |= cmask;
-			break;
-		}
-		if (end % ts) {
-			cshift = (end % ts ? : ts);
-			mask = (unsigned char) ~0ULL << cshift;
-			cmask = ptr[this_unit];
-			cmask &= ~mask;
-			v <<= cshift;
-			v |= (uint64_t) cmask;
-			end -= cshift;
-			this_unit--;
-		}
-		for (; this_unit >= start_unit + 1; this_unit--) {
-			v <<= ts;
-			v |= (uint64_t) ptr[this_unit];
-			end -= ts;
-		}
-		if (start % ts) {
-			cmask = ptr[this_unit] >> (start % ts);
-			v <<= ts - (start % ts);
-			v |= (uint64_t) cmask;
-		} else {
-			v <<= ts;
-			v |= (uint64_t) ptr[this_unit];
-		}
-		break;
-	case BIG_ENDIAN:
-		this_unit = start_unit;
-		if (signedness) {
-			if (ptr[this_unit] & (1U << (ts - (start % ts) - 1)))
-				v = ~0ULL;
-		}
-		if (start_unit == end_unit - 1) {
-			mask = (unsigned char) ~0ULL << (ts - (start % ts));
-			mask |= ~((unsigned char) ~0ULL << ((ts - (end % ts)) % ts));
-			cmask = ptr[this_unit];
-			cmask &= ~mask;
-			cmask >>= (ts - (end % ts)) % ts;
-			v <<= end - start;
-			v |= (uint64_t) cmask;
-			break;
-		}
-		if (start % ts) {
-			mask = (unsigned char) ~0ULL << (ts - (start % ts));
-			cmask = ptr[this_unit];
-			cmask &= ~mask;
-			v <<= ts - (start % ts);
-			v |= (uint64_t) cmask;
-			start += ts - (start % ts);
-			this_unit++;
-		}
-		for (; this_unit < end_unit - 1; this_unit++) {
-			v <<= ts;
-			v |= (uint64_t) ptr[this_unit];
-			start += ts;
-		}
-		if (end % ts) {
-			cmask = ptr[this_unit];
-			cmask >>= (ts - (end % ts)) % ts;
-			v <<= (end % ts);
-			v |= (uint64_t) cmask;
-		} else {
-			v <<= ts;
-			v |= (uint64_t) ptr[this_unit];
-		}
-		break;
-	default:
-		assert(0);
-	}
-	return v;
-}
-
-/*
- * The code below is for testing the bitfield write/read functions.
- */
-
-unsigned int glob;
-
-/*
- * This function is only declared to show the size of a bitfield write in
- * objdump.
- */
-void fct(void)
-{
-	bitfield_write(&glob, 0x12345678, 12, 15);
-}
-
-/* Test array size, in bytes */
-#define TEST_LEN 128
-#define NR_TESTS 10
-
-unsigned int srcrand;
-
-#if defined(__i386) || defined(__x86_64)
-
-static inline int fls(int x)
-{
-	int r;
-	asm("bsrl %1,%0\n\t"
-	    "cmovzl %2,%0"
-	    : "=&r" (r) : "rm" (x), "rm" (-1));
-	return r + 1;
-}
-
-#elif defined(__PPC__)
-
-static __inline__ int fls(unsigned int x)
-{
-	int lz;
-
-	asm ("cntlzw %0,%1" : "=r" (lz) : "r" (x));
-	return 32 - lz;
-}
-
-#else
-
-static int fls(unsigned int x)
-{
-	int r = 32;
-
-	if (!x)
-		return 0;
-	if (!(x & 0xFFFF0000U)) {
-		x <<= 16;
-		r -= 16;
-	}
-	if (!(x & 0xFF000000U)) {
-		x <<= 8;
-		r -= 8;
-	}
-	if (!(x & 0xF0000000U)) {
-		x <<= 4;
-		r -= 4;
-	}
-	if (!(x & 0xC0000000U)) {
-		x <<= 2;
-		r -= 2;
-	}
-	if (!(x & 0x80000000U)) {
-		x <<= 1;
-		r -= 1;
-	}
-	return r;
-}
-
-#endif
-
-static void print_byte_array(const unsigned char *c, unsigned long len)
-{
-	unsigned long i;
-
-	for (i = 0; i < len; i++) {
-		printf("0x%X", c[i]);
-		if (i != len - 1)
-			printf(" ");
-	}
-	printf("\n");
-}
-
-static void init_byte_array(unsigned char *c,
-			    unsigned long len,
-			    unsigned char val)
-{
-	unsigned long i;
-
-	for (i = 0; i < len; i++)
-		c[i] = val;
-}
-
-int run_test_unsigned(void)
-{
-	unsigned int src, nrbits;
-	union {
-		unsigned char c[TEST_LEN];
-		unsigned short s[TEST_LEN/2];
-		unsigned int i[TEST_LEN/4];
-		unsigned long l[TEST_LEN/4];
-		unsigned long long ll[TEST_LEN/2];
-	} target;
-	uint64_t readval;
-	unsigned int s, l;
-	int err = 0;
-
-	printf("Running unsigned test with 0x%X\n", srcrand);
-
-	src = srcrand;
-	nrbits = fls(src);
-
-	for (s = 0; s < 8 * TEST_LEN; s++) {
-		for (l = nrbits; l < (8 * TEST_LEN) - s; l++) {
-			init_byte_array(target.c, TEST_LEN, 0xFF);
-			bitfield_write(target.c, src, s, l);
-			readval = bitfield_read_64(target.c, s, l, BYTE_ORDER, 0);
-			if (readval != src) {
-				printf("Error (bytewise) src %lX read %llX shift %d len %d\n",
-				       src, readval, s, l);
-				print_byte_array(target.c, TEST_LEN);
-				err = 1;
-			}
-
-			init_byte_array(target.c, TEST_LEN, 0xFF);
-			bitfield_write(target.s, src, s, l);
-			readval = bitfield_read_64(target.c, s, l, BYTE_ORDER, 0);
-			if (readval != src) {
-				printf("Error (shortwise) src %lX read %llX shift %d len %d\n",
-				       src, readval, s, l);
-				print_byte_array(target.c, TEST_LEN);
-				err = 1;
-			}
-
-			init_byte_array(target.c, TEST_LEN, 0xFF);
-			bitfield_write(target.i, src, s, l);
-			readval = bitfield_read_64(target.c, s, l, BYTE_ORDER, 0);
-			if (readval != src) {
-				printf("Error (intwise) src %lX read %llX shift %d len %d\n",
-				       src, readval, s, l);
-				print_byte_array(target.c, TEST_LEN);
-				err = 1;
-			}
-
-			init_byte_array(target.c, TEST_LEN, 0xFF);
-			bitfield_write(target.l, src, s, l);
-			readval = bitfield_read_64(target.c, s, l, BYTE_ORDER, 0);
-			if (readval != src) {
-				printf("Error (longwise) src %lX read %llX shift %d len %d\n",
-				       src, readval, s, l);
-				print_byte_array(target.c, TEST_LEN);
-				err = 1;
-			}
-
-			init_byte_array(target.c, TEST_LEN, 0xFF);
-			bitfield_write(target.ll, src, s, l);
-			readval = bitfield_read_64(target.c, s, l, BYTE_ORDER, 0);
-			if (readval != src) {
-				printf("Error (longlongwise) src %lX read %llX shift %d len %d\n",
-				       src, readval, s, l);
-				print_byte_array(target.c, TEST_LEN);
-				err = 1;
-			}
-		}
-	}
-	if (!err)
-		printf("Success!\n");
-	else
-		printf("Failed!\n");
-	return err;
-}
-
-int run_test_signed(void)
-{
-	int src, nrbits;
-	union {
-		char c[TEST_LEN];
-		short s[TEST_LEN/2];
-		int i[TEST_LEN/4];
-		long l[TEST_LEN/4];
-		long long ll[TEST_LEN/8];
-	} target;
-	int64_t readval;
-	unsigned int s, l;
-	int err = 0;
-
-	printf("Running signed test with 0x%X\n", srcrand);
-
-	src = srcrand;
-	if (src & 0x80000000U)
-		nrbits = fls(~src) + 1;	/* Find least significant bit conveying sign */
-	else
-		nrbits = fls(src) + 1;	/* Keep sign at 0 */
-
-	for (s = 0; s < 8 * TEST_LEN; s++) {
-		for (l = nrbits; l < (8 * TEST_LEN) - s; l++) {
-			init_byte_array(target.c, TEST_LEN, 0x0);
-			bitfield_write(target.c, src, s, l);
-			readval = bitfield_read_64(target.c, s, l, BYTE_ORDER, 1);
-			if (readval != src) {
-				printf("Error (bytewise) src %lX read %llX shift %d len %d\n",
-				       src, readval, s, l);
-				print_byte_array(target.c, TEST_LEN);
-				err = 1;
-			}
-
-			init_byte_array(target.c, TEST_LEN, 0x0);
-			bitfield_write(target.s, src, s, l);
-			readval = bitfield_read_64(target.c, s, l, BYTE_ORDER, 1);
-			if (readval != src) {
-				printf("Error (shortwise) src %lX read %llX shift %d len %d\n",
-				       src, readval, s, l);
-				print_byte_array(target.c, TEST_LEN);
-				err = 1;
-			}
-
-			init_byte_array(target.c, TEST_LEN, 0x0);
-			bitfield_write(target.i, src, s, l);
-			readval = bitfield_read_64(target.c, s, l, BYTE_ORDER, 1);
-			if (readval != src) {
-				printf("Error (intwise) src %lX read %llX shift %d len %d\n",
-				       src, readval, s, l);
-				print_byte_array(target.c, TEST_LEN);
-				err = 1;
-			}
-
-			init_byte_array(target.c, TEST_LEN, 0x0);
-			bitfield_write(target.l, src, s, l);
-			readval = bitfield_read_64(target.c, s, l, BYTE_ORDER, 1);
-			if (readval != src) {
-				printf("Error (longwise) src %lX read %llX shift %d len %d\n",
-				       src, readval, s, l);
-				print_byte_array(target.c, TEST_LEN);
-				err = 1;
-			}
-
-			init_byte_array(target.c, TEST_LEN, 0x0);
-			bitfield_write(target.ll, src, s, l);
-			readval = bitfield_read_64(target.c, s, l, BYTE_ORDER, 1);
-			if (readval != src) {
-				printf("Error (longlongwise) src %lX read %llX shift %d len %d\n",
-				       src, readval, s, l);
-				print_byte_array(target.c, TEST_LEN);
-				err = 1;
-			}
-		}
-	}
-	if (!err)
-		printf("Success!\n");
-	else
-		printf("Failed!\n");
-	return err;
-}
-
-int run_test(void)
-{
-	int err = 0;
-	int i;
-
-	srand(time(NULL));
-
-	srcrand = 0;
-	err |= run_test_unsigned();
-	srcrand = 0;
-	err |= run_test_signed();
-	srcrand = 1;
-	err |= run_test_unsigned();
-	srcrand = ~0U;
-	err |= run_test_unsigned();
-	srcrand = -1;
-	err |= run_test_signed();
-	srcrand = (int)0x80000000U;
-	err |= run_test_signed();
-
-	for (i = 0; i < NR_TESTS; i++) {
-		srcrand = rand();
-		err |= run_test_unsigned();
-		err |= run_test_signed();
-	}
-	return err;
-}
-
-int main(int argc, char **argv)
-{
-	unsigned long src;
-	unsigned int shift, len;
-	int ret;
-	union {
-		unsigned char c[8];
-		unsigned short s[4];
-		unsigned int i[2];
-		unsigned long l[2];
-		unsigned long long ll[1];
-	} target;
-	uint64_t readval;
-
-	if (argc > 1)
-		src = atoi(argv[1]);
-	else
-		src = 0x12345678;
-	if (argc > 2)
-		shift = atoi(argv[2]);
-	else
-		shift = 12;
-	if (argc > 3)
-		len = atoi(argv[3]);
-	else
-		len = 40;
-
-	target.i[0] = 0xFFFFFFFF;
-	target.i[1] = 0xFFFFFFFF;
-	bitfield_write(target.c, src, shift, len);
-	printf("bytewise\n");
-	print_byte_array(target.c, 8);
-
-	target.i[0] = 0xFFFFFFFF;
-	target.i[1] = 0xFFFFFFFF;
-	bitfield_write(target.s, src, shift, len);
-	printf("shortwise\n");
-	print_byte_array(target.c, 8);
-
-	target.i[0] = 0xFFFFFFFF;
-	target.i[1] = 0xFFFFFFFF;
-	bitfield_write(target.i, src, shift, len);
-	printf("intwise\n");
-	print_byte_array(target.c, 8);
-
-	target.i[0] = 0xFFFFFFFF;
-	target.i[1] = 0xFFFFFFFF;
-	bitfield_write(target.l, src, shift, len);
-	printf("longwise\n");
-	print_byte_array(target.c, 8);
-
-	target.i[0] = 0xFFFFFFFF;
-	target.i[1] = 0xFFFFFFFF;
-	bitfield_write(target.ll, src, shift, len);
-	printf("lluwise\n");
-	print_byte_array(target.c, 8);
-
-	readval = bitfield_read_64(target.c, shift, len, BYTE_ORDER, 0);
-	printf("read: %llX\n", readval);
-
-	ret = run_test();
-
-	return ret;
-}
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+> >
+> > Thanks,
+> >
+> > --
+> > Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+> > One Laptop Per Child
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
