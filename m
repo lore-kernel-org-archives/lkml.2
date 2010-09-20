@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757092Ab0ITSVt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 14:21:49 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:49929 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757051Ab0ITSVs (ORCPT
+	id S1757125Ab0ITSWA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 14:22:00 -0400
+Received: from 89-230.252-81.static-ip.oleane.fr ([81.252.230.89]:52993 "EHLO
+	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757110Ab0ITSV6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 14:21:48 -0400
-X-Authority-Analysis: v=1.1 cv=Ba7GFA6IM/Rlu/bGJ5lftWmk/oljGo5ZwASPcBcXAAo= c=1 sm=0 a=QOP7y4XR2NEA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=-T2CzcbACM4l99N0KBEA:9 a=vVinNvPp3DdiRk1gs58A:7 a=lCFTJuztA5FgWasqyXINElwRDG8A:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH trace-cmd] plugin_kvm: disassemble instructions for
- kvm_emulate_insn
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-trace-users@vger.kernel.org
-In-Reply-To: <4C972EA6.2070704@redhat.com>
-References: <1284906837-2431-1-git-send-email-avi@redhat.com>
-	 <4C972EA6.2070704@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 20 Sep 2010 14:21:45 -0400
-Message-ID: <1285006905.23122.364.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	Mon, 20 Sep 2010 14:21:58 -0400
+In-Reply-To: <1283005748-3293-1-git-send-email-rydberg@euromail.se>
+References: <1283005748-3293-1-git-send-email-rydberg@euromail.se>
+Mime-Version: 1.0 (Apple Message framework v752.3)
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Message-Id: <1213242F-BA51-4D3C-93F9-5CF29DEC513B@enac.fr>
+Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+From: =?ISO-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
+Subject: Re: [PATCH 1/3] hid: 3m: Adjust to sequential MT HID protocol
+Date: Mon, 20 Sep 2010 20:21:51 +0200
+To: Henrik Rydberg <rydberg@euromail.se>
+X-Mailer: Apple Mail (2.752.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-20 at 11:51 +0200, Avi Kivity wrote:
-> On 09/19/2010 04:33 PM, Avi Kivity wrote:
-> > Override kvm_emulate_insn formatting to use a disassembler to format
-> > the emulated instruction.  If a disassembler (udis86) is not available,
-> > fall back to showing the instruction bytes in hex.
-> >
-> > Signed-off-by: Avi Kivity<avi@redhat.com>
-> > ---
-> >
-> > Note 1: on top of 'master' with 'trace-cmd-kvm' cherry-picked on top.
-> >
-> > Note 2: I get output of the form
-> >
-> > ... kvm_emulate_insn:     0:fffff800010527b5: mov $0x0, 0xfffe00b0CAN'T FIND FIELD "guest_rip"
-> >
-> > which leads me to believe there is a bug in trace_seq_printf when the input
-> > to %s is "".
-> >
-> >
-> 
-> Note 3: this is not thread safe.  If trace-cmd wants to be (or is) 
-> multithreaded, we need some kind of plugin context that is passed to all 
-> plugin methods, which is initialized separately for each thread.
-> 
-> Or we can be lazy and use thread local storage.
-> 
 
-No need, I purposely, made trace-cmd non-threaded. Too much hassles ;-)
+Le 28 août 10 à 16:29, Henrik Rydberg a écrit :
 
--- Steve
+> The multitouch extensions to the HID protocol allows for contact
+> data to be sent over several reports, which is also the case for
+> the 3M M2256PW touchscreen. This patch modifies the logic to only
+> synchronize the input layer when all contacts have been received.
+> Consequentially, the full 60-finger capacity of the device is enabled.
+>
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> ---
+>  drivers/hid/hid-3m-pct.c |   22 ++++++++++++++++++----
+>  1 files changed, 18 insertions(+), 4 deletions(-)
 
+You can add
+
+Acked-by: Stephane Chatty <chatty@enac.fr>
+
+St.
 
