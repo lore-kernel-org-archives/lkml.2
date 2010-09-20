@@ -1,41 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757469Ab0ITU0T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 16:26:19 -0400
-Received: from mx3.orcon.net.nz ([219.88.242.53]:43458 "EHLO mx3.orcon.net.nz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756731Ab0ITU0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 16:26:17 -0400
-Message-ID: <4C97C366.80206@orcon.net.nz>
-Date: Tue, 21 Sep 2010 08:26:14 +1200
-From: Michael Cree <mcree@orcon.net.nz>
-User-Agent: Mozilla/5.0 (X11; U; Linux alpha; en-US; rv:1.9.1.12) Gecko/20100913 Icedove/3.0.7
+	id S1757519Ab0ITU0W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 16:26:22 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:47729 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757451Ab0ITU0U convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 16:26:20 -0400
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Miklos Szeredi <miklos@szeredi.hu>, James.Bottomley@HansenPartnership.com,
-        benh@kernel.crashing.org, dhowells@redhat.com,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: memory barrier question
-References: <E1OwI5H-0007LR-DC@pomaz-ex.szeredi.hu> <1284760148.30449.107.camel@pasglop> <20100917231222.GA3060@linux.vnet.ibm.com> <1284864421.30449.113.camel@pasglop> <20100919152638.GF3060@linux.vnet.ibm.com> <E1OxQIg-0005Nw-WE@pomaz-ex.szeredi.hu> <20100919215909.GG3060@linux.vnet.ibm.com> <1284944316.2957.795.camel@mulgrave.site> <20100920012915.GI3060@linux.vnet.ibm.com> <E1OxioY-0006nd-M9@pomaz-ex.szeredi.hu> <20100920182504.GD2408@linux.vnet.ibm.com>
-In-Reply-To: <20100920182504.GD2408@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-DSPAM-Check: by mx3.orcon.net.nz on Tue, 21 Sep 2010 08:26:14 +1200
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Tue Sep 21 08:26:15 2010
-X-DSPAM-Confidence: 0.7794
-X-DSPAM-Probability: 0.0000
+In-Reply-To: <20100920191214.GB7496@one.firstfloor.org>
+References: <20100918012939.GA25046@redhat.com>
+	<1284779629-15273-1-git-send-email-wad@chromium.org>
+	<m1eico1cyv.fsf@fess.ebiederm.org>
+	<20100920191214.GB7496@one.firstfloor.org>
+Date: Mon, 20 Sep 2010 15:26:18 -0500
+Message-ID: <AANLkTi=bKdcHdNSy8dQQeHZd0uxeRekSvf9Ronu5KFV_@mail.gmail.com>
+Subject: Re: [PATCH][RFC] v2 exec: move core_pattern pipe helper into the
+ crashing namespace
+From: Will Drewry <wad@chromium.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Roland McGrath <roland@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        containers@lists.linux-foundation.org, Eugene Teo <eteo@redhat.com>,
+        Tejun Heo <tj@kernel.org>, Serge Hallyn <serue@us.ibm.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/09/10 06:25, Paul E. McKenney wrote:
-> But do we really care about Alpha anymore?  (I can see it now... The
-> Alpha portion of the kernel tree moves to staging...)
+On Mon, Sep 20, 2010 at 2:12 PM, Andi Kleen <andi@firstfloor.org> wrote:
+>> The pipe process needs to run in the namespaces of the process who set
+>> the core pattern, not in the namespaces of the dumping process.
+>> Otherwise it is possible to trigger a privileged process to run in a
+>> context where it's reality that it expected, causing it to misuse
+>> it's privileges.  Even if we don't have a privilege problem I think
+>> we will have a case of mismatched functionality where the core pattern
+>> will not work as expected.
+>
+> For me it seems rather the other way around: running the helper in some
+> highly priviledged namespace is more dangerous. If it runs in the
+> same context as the crasher it can do the least amount of damage
+> relative to the crash process.
+>
+> And as Will pointed out it's the only sane way to deal with net namespaces.
 
-I do.
 
-Sent from my Compaq Alpha XP1000 :-)
+I think you're both right.  How it is implemented right now is an
+escape from the linux container. If you allow the root user in a
+container to mount proc and update core_pattern, they can escape.
+(core_pattern = |/well/known/binary_or_scripting_lang)  I'm sure there
+are other escapes too (and any umh call is likely an escape like this
+one -- e.g., modprobe_path).  That said, using my patch above might
+let you traverse a path otherwise blocked by an LSM enforcement (E.g.,
+root user runs a process which sets up a vfs namespace with an
+encrypted mount and the lsm blocks access to the /proc/[pid]/root -
+but core_pattern still runs and with access).
 
-Cheers
-Michael.
+That said, using the setters namespace makes sense to me as a consumer
+of core_pattern too. You can set the core_pattern outside of a
+chroot/container and collect core dumps there _or_ you can let a
+"root" user in a container have their own core collector without
+providing a simple escape.  Making format_corename use the correct pid
+namespace for translation would make these cases even more seamless.
+
+Unfortunately, I haven't yet looked at doing it that way yet.  The
+namespace-transition patch posted is what occurred to me initially.
+Perhaps it won't be so hard.  I'll take a look at what it'd take to do
+move core_pattern since it'd resolve both the escape/lsm-bypass
+scenarios and the mismatch between the arbitrary namespace and the
+core_pattern values.
+
+Thanks!
+will
