@@ -1,66 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932076Ab0ITUp4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 16:45:56 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:53465 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756835Ab0ITUpx (ORCPT
+	id S1757527Ab0ITUtB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 16:49:01 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36092 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757388Ab0ITUtA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 16:45:53 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4C97C7EC.5070907@s5r6.in-berlin.de>
-Date: Mon, 20 Sep 2010 22:45:32 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
+	Mon, 20 Sep 2010 16:49:00 -0400
+Date: Mon, 20 Sep 2010 21:48:57 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: linus-arch@ZenIV.linux.org.uk
+Cc: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: powerpc: fix double syscall restarts
+Message-ID: <20100920204856.GF31363@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-Subject: Re: [Bug #17752] 2.6.36-rc3: inconsistent lock state (iprune_sem,
- shrink_icache_memory)
-References: <1fwtoy8sG5H.A.veG.9D7lMB@chimera> <Wn2eLj_6KZG.A._MH.jE7lMB@chimera>
-In-Reply-To: <Wn2eLj_6KZG.A._MH.jE7lMB@chimera>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a summary report
-> of recent regressions.
-> 
-> The following bug entry is on the current list of known regressions
-> from 2.6.35.  Please verify if it still should be listed and let the tracking team
-> know (either way).
-> 
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=17752
-> Subject		: 2.6.36-rc3: inconsistent lock state (iprune_sem, shrink_icache_memory)
-> Submitter	: Stefan Richter <stefanr@s5r6.in-berlin.de>
-> Date		: 2010-09-01 6:37 (20 days old)
-> Message-ID	: <tkrat.ed8eda6bc8ffe64e@s5r6.in-berlin.de>
-> References	: http://marc.info/?l=linux-kernel&m=128332308528119&w=2
+Make sigreturn zero regs->trap, make do_signal() do the same on all
+paths.  As it is, signal interrupting e.g. read() from fd 512 (==
+ERESTARTSYS) with another signal getting unblocked when the first
+handler finishes will lead to restart one insn earlier than it ought
+to.  Same for multiple signals with in-kernel handlers interrupting
+that sucker at the same time.  Same for multiple signals of any kind
+interrupting that sucker on 64bit...
 
-I think this should not be marked as a regression.  See the older reports of
-very similar issues (in my LKML mail from September 3, logged in bugzilla in
-comment #1)
-	http://lkml.org/lkml/2010/1/15/76	(2.6.33-rc, xfs involved)
-	http://lkml.org/lkml/2010/1/18/108	(2.6.32.y, ntfs involved)
-and hch's analysis in the first of these two threads
-	http://lkml.org/lkml/2010/1/19/267	(several filesystems and
-						 other code paths)
-So, unless my trace was a code path that only newly acquired that oldproblem
-of other code paths, this is an older issue.  Alas this is not obvious to me
-at least from the log that I got.
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+ arch/powerpc/kernel/signal.c    |    2 ++
+ arch/powerpc/kernel/signal_32.c |    3 +--
+ arch/powerpc/kernel/signal_64.c |    2 +-
+ 3 files changed, 4 insertions(+), 3 deletions(-)
 
-I did not have lockdep enabled on the machine which delivered the log during
-the last few months or so; I just remembered to re-enable it at the occasion
-of switching to 2.6.36-rc.
+diff --git a/arch/powerpc/kernel/signal.c b/arch/powerpc/kernel/signal.c
+index 7109f5b..2300426 100644
+--- a/arch/powerpc/kernel/signal.c
++++ b/arch/powerpc/kernel/signal.c
+@@ -138,6 +138,7 @@ static int do_signal_pending(sigset_t *oldset, struct pt_regs *regs)
+ 			ti->local_flags &= ~_TLF_RESTORE_SIGMASK;
+ 			sigprocmask(SIG_SETMASK, &current->saved_sigmask, NULL);
+ 		}
++		regs->trap = 0;
+ 		return 0;               /* no signals delivered */
+ 	}
+ 
+@@ -164,6 +165,7 @@ static int do_signal_pending(sigset_t *oldset, struct pt_regs *regs)
+ 		ret = handle_rt_signal64(signr, &ka, &info, oldset, regs);
+ 	}
+ 
++	regs->trap = 0;
+ 	if (ret) {
+ 		spin_lock_irq(&current->sighand->siglock);
+ 		sigorsets(&current->blocked, &current->blocked,
+diff --git a/arch/powerpc/kernel/signal_32.c b/arch/powerpc/kernel/signal_32.c
+index 2666101..b96a3a0 100644
+--- a/arch/powerpc/kernel/signal_32.c
++++ b/arch/powerpc/kernel/signal_32.c
+@@ -511,6 +511,7 @@ static long restore_user_regs(struct pt_regs *regs,
+ 	if (!sig)
+ 		save_r2 = (unsigned int)regs->gpr[2];
+ 	err = restore_general_regs(regs, sr);
++	regs->trap = 0;
+ 	err |= __get_user(msr, &sr->mc_gregs[PT_MSR]);
+ 	if (!sig)
+ 		regs->gpr[2] = (unsigned long) save_r2;
+@@ -884,7 +885,6 @@ int handle_rt_signal32(unsigned long sig, struct k_sigaction *ka,
+ 	regs->nip = (unsigned long) ka->sa.sa_handler;
+ 	/* enter the signal handler in big-endian mode */
+ 	regs->msr &= ~MSR_LE;
+-	regs->trap = 0;
+ 	return 1;
+ 
+ badframe:
+@@ -1228,7 +1228,6 @@ int handle_signal32(unsigned long sig, struct k_sigaction *ka,
+ 	regs->nip = (unsigned long) ka->sa.sa_handler;
+ 	/* enter the signal handler in big-endian mode */
+ 	regs->msr &= ~MSR_LE;
+-	regs->trap = 0;
+ 
+ 	return 1;
+ 
+diff --git a/arch/powerpc/kernel/signal_64.c b/arch/powerpc/kernel/signal_64.c
+index 2fe6fc6..27c4a45 100644
+--- a/arch/powerpc/kernel/signal_64.c
++++ b/arch/powerpc/kernel/signal_64.c
+@@ -178,7 +178,7 @@ static long restore_sigcontext(struct pt_regs *regs, sigset_t *set, int sig,
+ 	err |= __get_user(regs->xer, &sc->gp_regs[PT_XER]);
+ 	err |= __get_user(regs->ccr, &sc->gp_regs[PT_CCR]);
+ 	/* skip SOFTE */
+-	err |= __get_user(regs->trap, &sc->gp_regs[PT_TRAP]);
++	regs->trap = 0;
+ 	err |= __get_user(regs->dar, &sc->gp_regs[PT_DAR]);
+ 	err |= __get_user(regs->dsisr, &sc->gp_regs[PT_DSISR]);
+ 	err |= __get_user(regs->result, &sc->gp_regs[PT_RESULT]);
 -- 
-Stefan Richter
--=====-==-=- =--= =-=--
-http://arcgraph.de/sr/
+1.5.6.5
+
