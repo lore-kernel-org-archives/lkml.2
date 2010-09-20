@@ -1,179 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757359Ab0ITXC5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 19:02:57 -0400
-Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:55506 "EHLO
-	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753512Ab0ITXC4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 19:02:56 -0400
-Subject: Re: [PATCH] drm/sysfs: Provide per connector control of DRM KMS
- polling
-From: Andy Walls <awalls@md.metrocast.net>
-To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>,
-        Jon Smirl <jonsmirl@gmail.com>, dri-devel@lists.freedesktop.org,
-        Greg Kroah-Hartman <greg@kroah.com>
-In-Reply-To: <AANLkTikj4biBS7wQsRM6o3kEmyaPNMaSUBEktMmmOy89@mail.gmail.com>
-References: <1284987540.2242.29.camel@morgan.silverblock.net>
-	 <AANLkTikj4biBS7wQsRM6o3kEmyaPNMaSUBEktMmmOy89@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 20 Sep 2010 19:02:30 -0400
-Message-ID: <1285023750.30856.99.camel@morgan.silverblock.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 8bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.0.10011,1.0.148,0.0.0000
- definitions=2010-09-20_14:2010-09-20,2010-09-20,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 phishscore=0
- bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- engine=5.0.0-1005130000 definitions=main-1009200138
+	id S1757480Ab0ITXEB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 19:04:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23826 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753512Ab0ITXD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 19:03:59 -0400
+Date: Mon, 20 Sep 2010 17:17:21 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 1/2] KVM: fix the description of kvm-amd.nested in
+ documentation
+Message-ID: <20100920201720.GA6684@amt.cnet>
+References: <4C976CCD.4030406@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C976CCD.4030406@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-20 at 20:29 +0200, Rafał Miłecki wrote:
-> 2010/9/20 Andy Walls <awalls@md.metrocast.net>:
-> > DRM KMS polling of connections providing errant EDID responses, or
-> > polling of "connectors" that have chips responding on DDC I2C bus
-> > address 0xA0/0xA1 with no actual physical connector nor EDID EEPROM,
-> > will create perpetual noise in dmesg and the system log every 10
-> > seconds.  Currently the user has apparently little recourse to silence
-> > these messages aside from replacing the offending cable, monitor, or
-> > graphics adapter.  That recourse is impossible for an unused DVI-D
-> > "connector" of an internal graphics processor on a motherboard that
-> > provides no physical DVI-D connector.
-> >
-> > This change allows the root user to disable (and re-enable) DRM KMS
-> > connector polling on a per connector basis via sysfs, like so:
+On Mon, Sep 20, 2010 at 10:16:45PM +0800, Xiao Guangrong wrote:
+> The default state of 'kvm-amd.nested' is enabled now, so fix the documentation
 > 
-> Huh, I didn't imagine solution of this issue that way.
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+> ---
+>  Documentation/kernel-parameters.txt |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 
-The problems with my initial patch, and related approaches, were:
-
-1. They didn't get rid of all the spam in the logs, just the most
-verbose portion of it.
-
-2. They didn't deal with the root cause of the log spam and all the
-related, but unneeded, I/O and processing that was still occurring.
-
-
-
->  AFAIR previous
-> thread, something else was suggested, it was about storing the fact
-> that user already received warning/info about error.
-
-Yes, that was the discussion.
-
-I went with this patch because:
-
-1. It deals with the root cause: unneeded DRM KMS connector polling
-
-2. It eliminates all my DRM KMS connector polling related log spam, not
-just the hex dump.
-
-3. The existing sysfs structure was already exposing 'struct
-drm_connector' members to user-space at per connector granularity
-
-
-The real root cause of the polling spew is that the radeon module, based
-on the best information it has (BIOS connector tables, I2C bus probes,
-etc.), makes a decision on if a connector should be polled and how it
-should be polled.
-
-Given incorrect BIOS tables, and strange I2C setups, the radeon module
-is bound to make the wrong decision about polling in some cases.  This
-change is a way for the human to step in a correct things, when the
-radeon driver gets it wrong.
-
-In my case, along with the log spam, there are also a lot of unneeded
-I2C transactions going on.
-
-
-BTW, I found that Chris Wilson recently committed a change to inhibit
-all drm connector polling globally for a different reason:
-
-http://git.kernel.org/?p=linux/kernel/git/airlied/drm-2.6.git;a=commit;h=e58f637bb96d5a0ae0919b9998b891d1ba7e47c9
-
-That commit message shows a case where the driver decides polling needs
-to happen, but the human knows differently and manual control over
-connector polling mitigates the problem.
-
-
-
-
-
-> Why I don't really like proposed solution?
-> 1) You need to be root
-
-Yes, for both sysfs and module parameters.
-
-I view video hardware configuration (montiors, cables, graphics cards)
-and control of what gets logged into files as system administrative
-issues.  I'd assume that needing root privileges to turn on and off
-device auto detection would be the norm.  I imagined that root would set
-up any DRM KMS connector polling fixes once in an init script and be
-done with it.  Is there any other use-case you had in mind?
-
-If there's some set-uid or group privilege method or utilities that's in
-common use (xrandr?) for manual control of drm/kms parameters, that you
-think would be better, just point me in that direction and I'll try to
-work something out.
-
-However, trying to code automatic control of when to disable DRM KMS
-connector polling, by some heuristic or algorithm in radeon or drm, is
-likely doomed to failure for corner cases or for someone's policy
-preferences.  I'd rather not attempt that.
-
-
-> 2) Need to know and play with some "magic" sysfs file.
-
-I strongly dislike ever using sysfs myself.  However, I'll spare us all
-my rantings^Wreasons. ;)
-
-My problem with KMS was with the documentation I could find.  The
-"userland interfaces" section in Documentation/Docbook/drm.tmpl is
-essentially empty.  DRM design documents at freedesktop.org (which
-actually look closer to requirements documents) are the most detailed
-documents I could find, but they don't really cover KMS.  Maybe I'm just
-looking in the wrong places.
-
-Is there a KMS or DRM_MODESET API document?  Maybe I could propose a new
-ioctl(), if there isn't already one that will be usable for controlling
-DRM KMS polling.
-
-
-
-> I thing it would be much better and user-friendly to display such an
-> error just once per display. How this could be implemented?
-> 
-> 1) Add field like "warned" to connector struct, default to 0
-> 2) if (warning_to_be_printed && !connector->warned) { printk();
-> connector->warned = 1
-> 3) if (connector_disconnected) { connector->warned = 0; }
-> 
-> This was you will get just one warning per connected display. Of
-> course after disconnecting it we have to clear "warned", as user may
-> connect another "broken" display, then we should print warning again.
-> 
-> What do think about this solution?
-
-I followed most of the function calls back and looked at he return
-values and error messages that can get emitted under various
-circumstances.  The amount of effort and complexity for trying to
-supress all the error messages due to the 10 second poll just wasn't
-worth it, when supressing the polling was so much easier.  For
-supressing error messages, I decided there was too much state to track
-and that any policy I hard-coded would be wrong for someone.
-
->From inside the code, it is difficult to decide what message about
-errors induced from the external environment are important to the user
-and what aren't.  It's too dependent on the external context and what
-action the user would like to take under various conditions.
-
-
-Thanks for your comments.  Sorry for the long reply.
-
-Regards,
-Andy
+Applied both, thanks.
 
