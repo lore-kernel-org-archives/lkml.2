@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757432Ab0ITUSV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 16:18:21 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:52495 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756778Ab0ITUST (ORCPT
+	id S1757444Ab0ITUTG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 16:19:06 -0400
+Received: from web113411.mail.gq1.yahoo.com ([98.136.167.31]:41328 "HELO
+	web113411.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757192Ab0ITUTF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 16:18:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=vSW2SrDrh2quJZuog8fh0+ZApfofsIgPyFrs/UOsyhdW+P0xWn/qAJ+GQ23bVEd5Gk
-         p9Zqdc27/43E8SHQYrpZBUVjDsEB2C90S3/APTDLdVUXG05XpxvN35T50Sa52GpPuFg3
-         tVVwgOfdE6GLPt+z1KcsCkSdscunIuhybCIgg=
-Subject: Re: Regression, bisected: reference leak with IPSec since ~2.6.31
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-In-Reply-To: <20100920195256.GA14330@elliptictech.com>
-References: <20100920174443.GA5515@elliptictech.com>
-	 <1285006844.2323.17.camel@edumazet-laptop>
-	 <20100920195256.GA14330@elliptictech.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 20 Sep 2010 22:17:33 +0200
-Message-ID: <1285013853.2323.148.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Mon, 20 Sep 2010 16:19:05 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Sep 2010 16:19:04 EDT
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=ymail.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type;
+  b=Lquj3GYhGgCFLEjs1xFto0foIQss7WFP3Z3vNNyB6Fp6KuFCpa1+2mcEnQ+xdnGSBUyK+6i9SOGqJW8o2t4NnIYYoaSsLXaoOl2uX2Z8B9Myicf6dVE6UBWP4zcY6frmmadz4NIV2cvToo/sJPqKikVX4Kx+WNhKQgagUDGZHfQ=;
+Message-ID: <633175.66987.qm@web113411.mail.gq1.yahoo.com>
+X-YMail-OSG: FM_Nu2kVM1n9Ic9NqPgGu9.eXRNQwTq7Uhgsv2LAjGtrQJc
+ YyGvJungZknJIxEx2NAnqbtYJXKw3YLcJ1UpNtmaS3ZqqMithu7YTHFJ7ztv
+ 6M.xzw4odDKfJjBmd7OCn0uA0j8drWv.KFS5CZTReJZDJ5WisVAyOrn_WThn
+ 7QFZSAY2QKGXLaq4uv_1tZPCNJ6AveM53Ed2WkePGYaBt_RbAWhtpLnrBGtD
+ XyjRYc032.6zfF9RWzRtwkSaLmeA4F4MN
+X-Mailer: YahooMailRC/497 YahooMailWebService/0.8.105.279950
+Date: Mon, 20 Sep 2010 13:12:22 -0700 (PDT)
+From: Neeraj Kumar <neeraj.kumar01@ymail.com>
+Subject: Doing a zero-copy move of data from a kernel buffer to hard disk
+To: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 20 septembre 2010 à 15:52 -0400, Nick Bowler a écrit :
-> On 2010-09-20 20:20 +0200, Eric Dumazet wrote:
-> > If you change your program to send small frames (so they are not
-> > fragmented), is the problem still present ?
-> 
-> I changed MAX_DGRAM_SIZE in the test program to 1000 (mtu on the
-> interface is 1500).  The short answer is that the references are
-> not leaked, and things seem to get cleaned up.  So the rest of this
-> mail probably describes a separate issue.
-> 
-> The long answer, however, is interesting: With latest Linus' git, the
-> references are cleaned up much later than I would expect.  After running
-> the test program and flushing the SAD/SPD, the reference count is still
-> 1.  If I repeat the test immediately, the reference count will increase
-> further.  I can easily raise the reference count to, say, 100.  Now, if
-> I wait a while (10 minutes or so), the reference count will still be
-> 100.  However, when I run the setkey script after this delay, the
-> reference count drops immediately to 1.  If I then flush the SAD/SPD, it
-> drops to 0.
-> 
-> This behaviour is new: newer than the reported leak.  For example, with
-> 2.6.34, everything works perfectly with MAX_DGRAM_SIZE set to 1000 (the
-> SAs are destroyed immediately when the SAD/SPD are flushed), but the
-> leak occurs with MAX_DGRAM_SIZE set to 10000.
-> 
+I am trying to move data from a buffer in kernel space into the hard
+disk without having to incur any additional copies from kernel buffer to
+user buffers or any other kernel buffers. Any ideas/suggestions would be
+most helpful.
 
-Thanks Nick
+The use case is basically a demux driver which collects data into a
+demux buffer in kernel space and this buffer has to be emptied
+periodically by copying the contents into a FUSE-based partition on the
+disk. As the buffer gets full, a user process is signalled which then
+determines the sector numbers on the disk the contents need to be copied
+to.
 
-I suspect a skb->truesize bug somewhere.
+I was hoping to mmap the above demux kernel buffer into user address
+space and issue a write system call to the raw partition device. But
+from what I can see, the this data is being cached by the kernel on its
+way to the Hard Disk driver. And so I am assuming that involves
+additional copies by the linux kernel.
 
-I can see atomic_read(&sk->sk_wmem_alloc) becoming negative after a
-while...
+At this point I am wondering if there is any other mechansim to do this
+without involving additional copies by the kernel. I realize this is an
+unsual usage scenario for non-embedded environments, but I would
+appreciate any feedback on possible options.
 
-I am investigating and let you know.
-
-Thanks
+BTW - I have tried using O_DIRECT when opening the raw partition, but
+the subsequent write call fails if the buffer being passed is the
+mmapped buffer.
 
 
+Thanx!
+
+
+
+      
