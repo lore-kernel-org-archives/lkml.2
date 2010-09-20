@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757564Ab0ITXIJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 19:08:09 -0400
-Received: from hera.kernel.org ([140.211.167.34]:49244 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754073Ab0ITXII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 19:08:08 -0400
-Message-ID: <4C97E9A6.6030909@kernel.org>
-Date: Tue, 21 Sep 2010 01:09:26 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	id S1757526Ab0ITXRj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 19:17:39 -0400
+Received: from dion.org.ua ([193.104.35.153]:45229 "EHLO dion.org.ua"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754271Ab0ITXRj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 19:17:39 -0400
+X-Greylist: delayed 2424 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Sep 2010 19:17:38 EDT
+Date: Tue, 21 Sep 2010 01:37:00 +0300
+From: Dmitry Nezhevenko <dion@inhex.net>
+To: linux-kernel@vger.kernel.org
+Subject: dm-crypt and huge performance penalty
+Message-ID: <20100920223700.GA20507@laptop.local>
 MIME-Version: 1.0
-To: caiqian@redhat.com
-CC: graff yang <graff.yang@gmail.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kexec <kexec@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, dhowells@redhat.com,
-        sonic adi <sonic.adi@gmail.com>,
-        Chris Lalancette <clalance@redhat.com>, Avi Kivity <avi@redhat.com>
-Subject: Re: kvm kdump regression
-References: <1841599922.1349991284977843873.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <1841599922.1349991284977843873.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 20 Sep 2010 23:07:50 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi,
 
-Thanks a lot for testing.  Can you please verify whether the following
-patch fixes the problem?
+I've just purchased three HDD drives and tried to setup mdadm RAID5 +
+dm-crypt.
 
-diff --git a/mm/percpu.c b/mm/percpu.c
-index 58c572b..c76ef38 100644
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -1401,9 +1401,9 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+What I've found is that dm-crypt reduces storage I/O performance very much
+while CPU is not bottleneck.
 
- 			if (pcpu_first_unit_cpu == NR_CPUS)
- 				pcpu_first_unit_cpu = cpu;
-+			pcpu_last_unit_cpu = cpu;
- 		}
- 	}
--	pcpu_last_unit_cpu = cpu;
- 	pcpu_nr_units = unit;
+Firstly I've tried to setup raid5 and then dm-crypt on top of it. After
+discovering issue I've tried just raid5 and confirmed that mdadm itself
+works as expected. 
 
- 	for_each_possible_cpu(cpu)
+And the last idea is to setup three dm-crypt partitions and then raid5 on
+top of independently encrypted drives.
+
+So here are my results:
+
+           |  mdadm   | mdadm+dm-crypt | 3 x dm-crypt + mdadm |
+Seq. read  | 168 Mb/s | 57 Mb/s        | 119 Mb/s             |
+Seq. write | 80 Mb/s  | 36 Mb/s        | 64.4 Mb/s            |
+
+
+Also here are some results using both dd and bonnie as benchmark:
+http://pastebin.com/hwwkRRTd
+
+I'm using 3 x WD1002FAEX-00Z3A0 HDD. SATA controller is just embedded to
+m/b:
+
+00:1f.2 IDE interface: Intel Corporation 5 Series/3400 Series Chipset 4
+port SATA IDE Controller (rev 06)
+00:1f.5 IDE interface: Intel Corporation 5 Series/3400 Series Chipset 2
+port SATA IDE Controller (rev 06)
+ 
+dd tests were done using simple dd:
+if=/dev/resulting-device of=/dev/zero bs=1m count=512
+
+For Bonnie I've used 50GB reiserfs3 partition on top of resulting device.
+
+Are these numbers expected? They looks really strange for me.
+
+-- 
+WBR, Dmitry
