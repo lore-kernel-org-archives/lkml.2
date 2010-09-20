@@ -1,229 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757351Ab0ITWgG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 18:36:06 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:56062 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754295Ab0ITWgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 18:36:04 -0400
-From: florian@mickler.org
-To: linux-kernel@vger.kernel.org
-Cc: ebiederm@xmission.com, greg@kroah.com, stefanr@s5r6.in-berlin.de,
-        broonie@opensource.wolfsonmicro.com,
-        "florian@mickler.org" <florian@mickler.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>,
-        Stephen Hemminger <shemminger@vyatta.com>
-Subject: [PATCH] scripts/get_maintainer.pl: fix .mailmap handling
-Date: Tue, 21 Sep 2010 00:35:56 +0200
-Message-Id: <1285022156-14501-1-git-send-email-florian@mickler.org>
-X-Mailer: git-send-email 1.7.3
-In-Reply-To: <1285021645-14311-1-git-send-email-florian@mickler.org>
-References: <1285021645-14311-1-git-send-email-florian@mickler.org>
+	id S1757571Ab0ITWiO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 18:38:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:47979 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754301Ab0ITWiN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 18:38:13 -0400
+X-Authority-Analysis: v=1.1 cv=Ba7GFA6IM/Rlu/bGJ5lftWmk/oljGo5ZwASPcBcXAAo= c=1 sm=0 a=efo-eZkTzUcA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=P5wrnlEIAAAA:8 a=nTzIIlD1-3tuQacf-JEA:9 a=oE4bRwlgjrWX6MUKV4UGmPvmrGIA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=nXjPMxIiGpsA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 09/10] jump label 11: add sparc64 support
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Miller <davem@davemloft.net>
+Cc: jbaron@redhat.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        mathieu.desnoyers@polymtl.ca, hpa@zytor.com, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+        mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
+        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com
+In-Reply-To: <20100920.153023.226756815.davem@davemloft.net>
+References: <cover.1284733808.git.jbaron@redhat.com>
+	 <3b5b071fcdb2afb7f67cacecfa78b14c740278a7.1284733808.git.jbaron@redhat.com>
+	 <1285021546.23122.698.camel@gandalf.stny.rr.com>
+	 <20100920.153023.226756815.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 20 Sep 2010 18:38:11 -0400
+Message-ID: <1285022291.23122.728.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: florian@mickler.org <florian@mickler.org>
+On Mon, 2010-09-20 at 15:30 -0700, David Miller wrote:
+> From: Steven Rostedt <rostedt@goodmis.org>
+> Date: Mon, 20 Sep 2010 18:25:46 -0400
+> 
+> > 
+> > Jason, did you author this patch or did David?
+> 
+> I did.
+> 
+> Jason when you post patches other people have authored, you should
+> add a:
+> 
+> From: Mr. Author <email_of_author@foo.com>
+> 
+> to the top of your commit message.
+> 
+> This allows automated tools that pull patches into GIT to set
+> the author correctly when it is not you.
+> 
+> Thanks.
 
-The .mailmap handling was broken.
+Thanks, I figured you did when I saw your SoB. I'll add your From line
+manually, when I pull it.
 
-Implement it like the git-shortlog man page  explains it.
+-- Steve
 
-Signed-off-by: Florian Mickler <florian@mickler.org>
----
-changes: added sign off
-
-    scripts/get_maintainer.pl |  148 +++++++++++++++++++++++++++++++++------------
- 1 files changed, 110 insertions(+), 38 deletions(-)
-
-diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
-index a91ae63..d6fdd1a 100755
---- a/scripts/get_maintainer.pl
-+++ b/scripts/get_maintainer.pl
-@@ -255,31 +255,77 @@ while (<$maint>) {
- }
- close($maint);
- 
--my %mailmap;
- 
--if ($email_remove_duplicates) {
--    open(my $mailmap, '<', "${lk_path}.mailmap")
-+#
-+# Read mail address map
-+#
-+
-+my $mailmap = read_mailmap();
-+
-+sub read_mailmap {
-+    my $mailmap = {
-+	names => {},
-+	addresses => {}
-+   };
-+
-+    if (!$email_remove_duplicates) {
-+	return $mailmap;
-+    }
-+
-+    open(my $mailmap_file, '<', "${lk_path}.mailmap")
- 	or warn "$P: Can't open .mailmap: $!\n";
--    while (<$mailmap>) {
--	my $line = $_;
- 
--	next if ($line =~ m/^\s*#/);
--	next if ($line =~ m/^\s*$/);
-+    while (<$mailmap_file>) {
-+	s/#.*$//; #strip comments
-+	s/^\s+|\s+$//g; #trim
- 
--	my ($name, $address) = parse_email($line);
--	$line = format_email($name, $address, $email_usename);
-+	next if (/^\s*$/); #skip empty lines
-+	#print "entry: \"$_\"\n";
-+	#entries have one of the following formats:
-+	# name1 <mail1>
-+	# <mail1> <mail2>
-+	# name1 <mail1> <mail2>
-+	# name1 <mail1> name2 <mail2>
-+	# (see man git-shortlog)
-+	if (/^(.+)<(.+)>$/) {
-+		my $real_name = $1;
-+		my $address = $2;
- 
--	next if ($line =~ m/^\s*$/);
-+		$real_name =~ s/\s+$//;
-+		$mailmap->{names}->{$address} = $real_name;
- 
--	if (exists($mailmap{$name})) {
--	    my $obj = $mailmap{$name};
--	    push(@$obj, $address);
--	} else {
--	    my @arr = ($address);
--	    $mailmap{$name} = \@arr;
-+	} elsif (/^<([^\s]+)>\s*<([^\s]+)>$/) {
-+		my $real_address = $1;
-+		my $wrong_address = $2;
-+
-+		$mailmap->{addresses}->{$wrong_address} = $real_address;
-+
-+	} elsif (/^(.+)<([^\s]+)>\s*<([^\s]+)>$/) {
-+		my $real_name= $1;
-+		my $real_address = $2;
-+		my $wrong_address = $3;
-+
-+		$real_name =~ s/\s+$//;
-+
-+		$mailmap->{names}->{$wrong_address} = $real_name;
-+		$mailmap->{addresses}->{$wrong_address} = $real_address;
-+
-+	} elsif (/^(.+)<([^\s]+)>\s*([^\s].*)<([^\s]+)>$/) {
-+		my $real_name = $1;
-+		my $real_address = $2;
-+		my $wrong_name = $3;
-+		my $wrong_address = $4;
-+
-+		$real_name =~ s/\s+$//;
-+		$wrong_name =~ s/\s+$//;
-+
-+		$mailmap->{names}->{format_email($wrong_name,$wrong_address,1)} = $real_name;
-+		$mailmap->{addresses}->{format_email($wrong_name,$wrong_address,1)} = $real_address;
- 	}
-     }
--    close($mailmap);
-+    close($mailmap_file);
-+
-+    return $mailmap;
- }
- 
- ## use the filenames on the command line or find the filenames in the patchfiles
-@@ -954,30 +1000,58 @@ sub which {
-     return "";
- }
- 
--sub mailmap {
--    my (@lines) = @_;
--    my %hash;
-+sub mailmap_email {
-+	my $line = shift;
- 
--    foreach my $line (@lines) {
- 	my ($name, $address) = parse_email($line);
--	if (!exists($hash{$name})) {
--	    $hash{$name} = $address;
--	} elsif ($address ne $hash{$name}) {
--	    $address = $hash{$name};
--	    $line = format_email($name, $address, $email_usename);
--	}
--	if (exists($mailmap{$name})) {
--	    my $obj = $mailmap{$name};
--	    foreach my $map_address (@$obj) {
--		if (($map_address eq $address) &&
--		    ($map_address ne $hash{$name})) {
--		    $line = format_email($name, $hash{$name}, $email_usename);
-+	my $email = format_email($name, $address, 1);
-+	my $real_name = $name;
-+	my $real_address = $address;
-+
-+	if (exists $mailmap->{names}->{$email} || exists $mailmap->{addresses}->{$email}) {
-+		if (exists $mailmap->{names}->{$email}) {
-+			$real_name = $mailmap->{names}->{$email};
-+		}
-+		if (exists $mailmap->{addresses}->{$email}) {
-+			$real_address = $mailmap->{addresses}->{$email};
-+		}
-+	} else {
-+		if (exists $mailmap->{names}->{$address}) {
-+			$real_name = $mailmap->{names}->{$address};
-+		}
-+		if (exists $mailmap->{addresses}->{$address}) {
-+			$real_address = $mailmap->{addresses}->{$address};
- 		}
--	    }
- 	}
-+	return format_email($real_name, $real_address, 1);
-+}
-+
-+sub mailmap {
-+    my (@addresses) = @_;
-+
-+    my @ret = ();
-+    foreach my $line (@addresses) {
-+	push(@ret, mailmap_email($line), 1);
-     }
- 
--    return @lines;
-+    merge_by_realname(@ret) if $email_remove_duplicates;
-+
-+    return @ret;
-+}
-+
-+sub merge_by_realname {
-+	my %address_map;
-+	my (@emails) = @_;
-+	foreach my $email (@emails) {
-+		my ($name, $address) = parse_email($email);
-+		if (!exists $address_map{$name}) {
-+			$address_map{$name} = $address;
-+		} else {
-+			$address = $address_map{$name};
-+			$email = format_email($name,$address,1);
-+		}
-+	}
-+
- }
- 
- sub git_execute_cmd {
-@@ -1148,9 +1222,7 @@ sub vcs_assign {
- 	$divisor = 1;
-     }
- 
--    if ($email_remove_duplicates) {
--	@lines = mailmap(@lines);
--    }
-+    @lines = mailmap(@lines);
- 
-     return if (@lines <= 0);
- 
--- 
-1.7.3
 
