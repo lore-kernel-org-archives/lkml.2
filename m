@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757356Ab0ITTsg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 15:48:36 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:51804 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753802Ab0ITTsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 15:48:35 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: sedat.dilek@gmail.com
-Subject: Re: 2.6.36-rc4-git5: Reported regressions from 2.6.35
-Date: Mon, 20 Sep 2010 21:47:39 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>, harn-solo@gmx.de
-References: <1fwtoy8sG5H.A.veG.9D7lMB@chimera> <AANLkTinLR0Js0ueVOGEkbs27d4FEH14c=1wuhUqPsiHx@mail.gmail.com>
-In-Reply-To: <AANLkTinLR0Js0ueVOGEkbs27d4FEH14c=1wuhUqPsiHx@mail.gmail.com>
+	id S1757370Ab0ITTte (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 15:49:34 -0400
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:58805 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753802Ab0ITTtd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 15:49:33 -0400
+Message-ID: <4C97BAA2.6000309@euromail.se>
+Date: Mon, 20 Sep 2010 21:48:50 +0200
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100916 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009202147.39971.rjw@sisk.pl>
+To: =?ISO-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
+CC: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] hid: 3m: Convert to MT slots
+References: <1283005748-3293-1-git-send-email-rydberg@euromail.se> <1283005748-3293-2-git-send-email-rydberg@euromail.se> <FF722ED6-6568-47D0-82D1-99B9E9D5AEAF@enac.fr>
+In-Reply-To: <FF722ED6-6568-47D0-82D1-99B9E9D5AEAF@enac.fr>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1OxmML-0001nS-7b.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1OxmML-0001nS-7b 8d8ed4f4fead8c5c815a77f6e2aa61f3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Trimming the CC list.]
+On 09/20/2010 09:43 PM, Stéphane Chatty wrote:
 
-On Monday, September 20, 2010, Sedat Dilek wrote:
-> Hi Rafael,
 > 
-> can you please add the following, Thanks in advance.
-> > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=18872
-> > Subject         : Radeon KMS r100 and STR problems
-> > Submitter       : Richard Mittendorfer <delist@gmx.net>
-> > Date            : 2010-09-17 18:26 (4 days old)
-> > Message-ID      : <20100917202647.aa4b6300.delist@gmx.net>
-> > References      : http://marc.info/?l=linux-kernel&m=128474802809779&w=2
+> Le 28 août 10 à 16:29, Henrik Rydberg a écrit :
 > 
-> On Mon, Sep 20, 2010 at 8:47 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > This message contains a list of some regressions from 2.6.35,
-> > for which there are no fixes in the mainline known to the tracking team.
-> > If any of them have been fixed already, please let us know.
-> >
-> > If you know of any other unresolved regressions from 2.6.35, please let us
-> > know either and we'll add them to the list.  Also, please let us know
-> > if any of the entries below are invalid.
-> >
-> > Each entry from the list will be sent additionally in an automatic reply
-> > to this message with CCs to the people involved in reporting and handling
-> > the issue.
-> >
-> >
-> > Listed regressions statistics:
-> >
-> >  Date          Total  Pending  Unresolved
-> >  ----------------------------------------
-> >  2010-09-20       38       15          15
-> >  2010-09-12       28       14          13
-> >  2010-08-30       21       16          15
-> >
-> >
-> > Unresolved regressions
+>> The Microtouch controller is capable of doing finger tracking on
+>> up to 60 fingers. To reduce bandwidth and cpu usage, convert the
+>> driver to use the MT slots protocol.
 > 
-> Hi Rafael,
+> As I understand it, this patch actually has three roles:
+>  1. improving the evdev parameters of the device
+>  2. cleaning the protocol to get rid of useless MISC/SCANCODE messages
+>  3. convert the protocol to MT slots
 > 
-> can you please add the following Bug, Thanks in advance.
 > 
-> Bug-Entry       : https://bugzilla.kernel.org/show_bug.cgi?id=16140
-> Subject         : Suspend To RAM/ Resume broken - Radeon KMS on RV250
-> Submitter       : Michael Long <harn-solo@gmx.de>
-> Date            : 2010-06-06 09:52
-> Message-ID      : ???
-> References      : ???
+>> +#define SN_MOVE            2048
+>> +#define SN_WIDTH        128
+>>
 > 
-> What is with "Regression:	No" in the BR? Change?
+> In the long run, it might be useful to comment these signal/noise constants
+> 
+> 
+> 
+>>              hid_map_usage(hi, usage, bit, max, EV_KEY, BTN_TOUCH);
+>> +            input_set_capability(hi->input, EV_KEY, BTN_TOUCH);
+> 
+>>  {
+>> +    /* tell hid-input to skip setup of these event types */
+>>      if (usage->type == EV_KEY || usage->type == EV_ABS)
+>> -        clear_bit(usage->code, *bit);
+>> -
+>> -    return 0;
+>> +        set_bit(usage->type, hi->input->evbit);
+>> +    return -1;
+>>  }
+>>
+> 
+> I understand this as a trick to get rid of MISC/SCANCODEs that are added for
+> every EV_KEY message, consequence of a rule in hid-input.c. Wouldn't it be
+> simpler to improve the rule than to work around it?
 
-Yes, but according to the comments in there, it is a regression from 2.6.33.
-I marked is as such and linked it to the appropriate meta-bug entry, but we're
-not going to list it, because we only list post-2.6.34 (and post-2.6.35)
-regressions in the current cycle.
 
-Thanks,
-Rafael
+The main reason is to be able to set the fuzz parameters, which are otherwise
+overwritten by hid-input setup.
+
+Henrik
