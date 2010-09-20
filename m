@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757765Ab0ITWjY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 18:39:24 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:6170 "EHLO
+	id S1756248Ab0ITWpu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 18:45:50 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:13406 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754334Ab0ITWjW convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753529Ab0ITWpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 18:39:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=EO8jkd6aTFfEtE+87+ADccKaZuD8hhfa+OQCjtmZ6tYEv7MtwSkNFMMsLqP3UiyPZA
-         ISQI5dmmyf4PxvTnx4mQ==
-MIME-Version: 1.0
-In-Reply-To: <4C97BFE7.6050202@zytor.com>
-References: <tip-ea53069231f9317062910d6e772cca4ce93de8c8@git.kernel.org>
-	<tip-a68e5c94f7d3dd64fef34dd5d97e365cae4bb42a@git.kernel.org>
-	<AANLkTimCXZWVb7ajANPg15Zuo22nst=d5p-MjXhzu1NX@mail.gmail.com>
-	<4C97A5EF.4070100@zytor.com>
-	<4C97BFE7.6050202@zytor.com>
-Date: Mon, 20 Sep 2010 15:34:02 -0700
-Message-ID: <AANLkTikJGJ_84fbtVTqGv-zsJUKUQBQO2ZG6tKQnzFCf@mail.gmail.com>
-Subject: Re: [tip:x86/idle] x86, hotplug: Move WBINVD back outside the
- play_dead loop
-From: Venkatesh Pallipadi <venki@google.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, asit.k.mallick@intel.com,
-        arjan@linux.kernel.org, a.p.zijlstra@chello.hl, lenb@kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com,
-        linux-tip-commits@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 20 Sep 2010 18:45:49 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=message-id:from:date:to:reply-to:cc:subject:x-system-of-record;
+	b=QfqWtCwyU8m13Nwarx7/JoHhYbLIYGja31B56iVkm0shy1fFUHALmtLeHB64uD3K6
+	Stg1KDJWROhfi+Uxc2jlA==
+Message-ID: <4c97e41a.078fd80a.7a8b.3cc9@mx.google.com>
+From: Stephane Eranian <eranian@google.com>
+Date: Tue, 21 Sep 2010 00:45:01 +0200
+To: linux-kernel@vger.kernel.org
+Reply-to: eranian@google.com
+Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
+        eranian@google.com, robert.richter@amd.com, acme@redhat.com
+Subject: [PATCH] perf: fix extern struct definitions
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 20, 2010 at 1:11 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 09/20/2010 11:20 AM, H. Peter Anvin wrote:
->> On 09/17/2010 05:48 PM, Venkatesh Pallipadi wrote:
->>>>
->>>> +       wbinvd();
->>>> +
->>>>        while (1) {
->>>> -               mb();
->>>> -               wbinvd();
->>>>                __monitor(&current_thread_info()->flags, 0, 0);
->>>>                mb();
->>>
->>>
->>> Just one observation. There are some CPUs with errata that need
->>> clflush before monitor. So, if that CPU wakesup spuriously it may have
->>> problem reentering idle. Not sure whether that will be a problem as
->>> that errata also depended on read happening on the flag. May be its
->>> better to do monitor (0, 0, 0).
->>>
->>
->> It seems the easy way to deal with that would be to just add clflush
->> before monitor... it is *probably* redundant, but it should be safe to
->> do. It means depending on X86_FEATURE_CLFLUSH as well as
->> X86_FEATURE_MWAIT, but I don't think there is any x86 processor which
->> has MWAIT and not CLFLUSH, and I highly doubt there ever will be.
->>
->> Does anyone see any downside?
->>
->
-> Patch for review... anyone see any problem with it?
->
+Both python_scripting_ops and perl_scripting_ops have two global definitions.
+One in trace-event-scripting.c and one in their respective scripting-engine
+modules.
 
-Looks good.
+The issue is that depending on the linker order one definition or the other
+is chosen. One is uninitialized (bss), while the other is initialized. If
+the uninitialized version is chosen, then perf does not function properly.
 
-We can also close one of the longest standing bugs in
-bugzilla.kernel.org  now :-)
-https://bugzilla.kernel.org/show_bug.cgi?id=5471
+This patch fixes this by adding the extern prefix to the definitions in
+trace-event-scripting.c. 
 
-Acked-by: Venkatesh Pallipadi <venki@google.com>
+Signed-off-by: Stephane Eranian <eranian@google.com>
+
+diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
+index 7ea983a..f7af2fc 100644
+--- a/tools/perf/util/trace-event-scripting.c
++++ b/tools/perf/util/trace-event-scripting.c
+@@ -97,7 +97,7 @@ void setup_python_scripting(void)
+ 	register_python_scripting(&python_scripting_unsupported_ops);
+ }
+ #else
+-struct scripting_ops python_scripting_ops;
++extern struct scripting_ops python_scripting_ops;
+ 
+ void setup_python_scripting(void)
+ {
+@@ -158,7 +158,7 @@ void setup_perl_scripting(void)
+ 	register_perl_scripting(&perl_scripting_unsupported_ops);
+ }
+ #else
+-struct scripting_ops perl_scripting_ops;
++extern struct scripting_ops perl_scripting_ops;
+ 
+ void setup_perl_scripting(void)
+ {
