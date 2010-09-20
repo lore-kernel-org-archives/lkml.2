@@ -1,34 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757856Ab0ITVpl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 17:45:41 -0400
-Received: from kroah.org ([198.145.64.141]:45341 "EHLO coco.kroah.org"
+	id S1757865Ab0ITVpn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 17:45:43 -0400
+Received: from kroah.org ([198.145.64.141]:45351 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757805Ab0ITVpb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 17:45:31 -0400
-Date: Mon, 20 Sep 2010 14:41:33 -0700
+	id S1757824Ab0ITVpe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 17:45:34 -0400
+Date: Mon, 20 Sep 2010 14:45:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@kernel.org
 Cc: lwn@lwn.net
-Subject: Linux 2.6.32.22
-Message-ID: <20100920214133.GC26264@kroah.com>
+Subject: Linux 2.6.35.5
+Message-ID: <20100920214501.GB26382@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm announcing the release of the 2.6.32.22 kernel.
+I'm announcing the release of the 2.6.35.5 kernel.
 
-All users of the 2.6.32 kernel series must upgrade.
+All users of the 2.6.35 kernel series must upgrade.
 
-The updated 2.6.32.y git tree can be found at:
-        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6.32.y.git
+The updated 2.6.35.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6.35.y.git
 and can be browsed at the normal kernel.org git web browser:
-        http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.32.y.git;a=summary
+        http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.35.y.git;a=summary
 
 thanks,
 
@@ -36,123 +37,192 @@ greg k-h
 
 ------------
 
- Makefile                                |    2 
- arch/arm/kernel/entry-common.S          |    2 
- arch/ia64/include/asm/compat.h          |    2 
- arch/ia64/kernel/msi_ia64.c             |    2 
- arch/ia64/sn/kernel/msi_sn.c            |    2 
- arch/mips/include/asm/compat.h          |    2 
- arch/parisc/include/asm/compat.h        |    2 
- arch/powerpc/include/asm/compat.h       |    2 
- arch/s390/include/asm/compat.h          |    2 
- arch/sparc/include/asm/compat.h         |    2 
- arch/x86/ia32/ia32entry.S               |   22 -
- arch/x86/include/asm/compat.h           |    2 
- arch/x86/include/asm/tsc.h              |    2 
- arch/x86/kernel/apic/io_apic.c          |    2 
- arch/x86/kernel/tsc.c                   |   38 ++
- arch/x86/oprofile/nmi_int.c             |   22 +
- arch/x86/power/cpu.c                    |    2 
- drivers/ata/libata-core.c               |   14 
- drivers/ata/libata-eh.c                 |    4 
- drivers/ata/sata_mv.c                   |   44 ++
- drivers/gpu/drm/drm_crtc_helper.c       |    4 
- drivers/gpu/drm/i915/i915_dma.c         |   12 
- drivers/gpu/drm/i915/i915_gem.c         |    1 
- drivers/gpu/drm/i915/intel_display.c    |    5 
- drivers/hid/usbhid/hid-core.c           |   18 -
- drivers/hwmon/f75375s.c                 |    6 
- drivers/hwmon/k8temp.c                  |   35 ++
- drivers/input/serio/i8042.c             |    2 
- drivers/mmc/host/tmio_mmc.c             |    7 
- drivers/mmc/host/tmio_mmc.h             |   13 
- drivers/net/tun.c                       |    3 
- drivers/net/wireless/ath/ath5k/base.c   |    4 
- drivers/net/wireless/ath/ath9k/eeprom.h |    2 
- drivers/net/wireless/ath/regd.h         |    1 
- drivers/net/wireless/p54/txrx.c         |    2 
- drivers/oprofile/buffer_sync.c          |   27 -
- drivers/oprofile/cpu_buffer.c           |    2 
- drivers/pci/msi.c                       |   27 +
- drivers/power/apm_power.c               |    1 
- drivers/staging/hv/RingBuffer.c         |    2 
- drivers/staging/hv/StorVscApi.h         |    4 
- drivers/staging/hv/netvsc_drv.c         |    3 
- drivers/staging/hv/storvsc_drv.c        |    9 
- drivers/usb/class/cdc-acm.c             |   85 +++++
- drivers/usb/gadget/rndis.c              |   10 
- drivers/usb/host/ehci-ppc-of.c          |   12 
- drivers/usb/serial/cp210x.c             |   10 
- drivers/usb/serial/ftdi_sio.c           |    8 
- drivers/usb/serial/ftdi_sio_ids.h       |   12 
- drivers/usb/serial/mos7840.c            |   55 ++-
- drivers/xen/events.c                    |   21 +
- fs/binfmt_misc.c                        |    2 
- fs/fuse/dev.c                           |   16 -
- fs/nfs/client.c                         |    2 
- fs/ocfs2/inode.c                        |    6 
- fs/sysfs/file.c                         |    2 
- include/linux/compat.h                  |    2 
- include/linux/cpuset.h                  |   16 -
- include/linux/libata.h                  |    1 
- include/linux/msi.h                     |    2 
- include/linux/sched.h                   |   20 -
- include/linux/topology.h                |    2 
- kernel/compat.c                         |   22 +
- kernel/cpu.c                            |   44 --
- kernel/cpuset.c                         |   67 ++--
- kernel/fork.c                           |   15 
- kernel/gcov/fs.c                        |  244 +++++++++++-----
- kernel/groups.c                         |    5 
- kernel/sched.c                          |  485 ++++++++++++++++++--------------
- kernel/sched_debug.c                    |    2 
- kernel/sched_fair.c                     |  210 +++++++++----
- kernel/sched_idletask.c                 |    5 
- kernel/sched_rt.c                       |   33 +-
- kernel/trace/ftrace.c                   |   19 -
- mm/bounce.c                             |    2 
- mm/memory_hotplug.c                     |   16 -
- net/irda/irlan/irlan_common.c           |    2 
- net/sunrpc/auth_gss/auth_gss.c          |    9 
- net/sunrpc/rpc_pipe.c                   |    6 
- net/wireless/wext-compat.c              |    3 
- net/wireless/wext.c                     |   16 +
- sound/core/seq/oss/seq_oss_init.c       |    9 
- sound/pci/hda/patch_realtek.c           |    9 
- tools/perf/util/callchain.h             |    1 
- 84 files changed, 1252 insertions(+), 618 deletions(-)
 
-Adrian Taylor (1):
-      USB: Exposing second ACM channel as tty for Nokia S60 phones.
+ Documentation/sound/alsa/HD-Audio-Models.txt   |    1 
+ Makefile                                       |    2 
+ arch/arm/kernel/entry-common.S                 |    2 
+ arch/ia64/include/asm/compat.h                 |    2 
+ arch/ia64/kernel/msi_ia64.c                    |    2 
+ arch/ia64/sn/kernel/msi_sn.c                   |    2 
+ arch/mips/include/asm/compat.h                 |    2 
+ arch/parisc/include/asm/compat.h               |    2 
+ arch/powerpc/include/asm/compat.h              |    2 
+ arch/powerpc/kernel/time.c                     |   23 +-
+ arch/s390/include/asm/compat.h                 |    2 
+ arch/sparc/include/asm/compat.h                |    2 
+ arch/x86/ia32/ia32entry.S                      |   22 +-
+ arch/x86/include/asm/compat.h                  |    2 
+ arch/x86/include/asm/hpet.h                    |    1 
+ arch/x86/include/asm/tsc.h                     |    2 
+ arch/x86/kernel/apic/io_apic.c                 |    2 
+ arch/x86/kernel/cpu/perf_event_p4.c            |    2 
+ arch/x86/kernel/early-quirks.c                 |   18 -
+ arch/x86/kernel/hpet.c                         |   31 +--
+ arch/x86/kernel/tsc.c                          |   38 +++
+ arch/x86/oprofile/nmi_int.c                    |   22 +-
+ arch/x86/power/cpu.c                           |    2 
+ drivers/ata/libahci.c                          |    2 
+ drivers/ata/libata-core.c                      |   14 +
+ drivers/ata/libata-eh.c                        |    4 
+ drivers/ata/libata-sff.c                       |    7 
+ drivers/ata/pata_cmd64x.c                      |    6 
+ drivers/ata/pata_via.c                         |    2 
+ drivers/ata/sata_mv.c                          |   44 +++-
+ drivers/char/agp/intel-gtt.c                   |    8 
+ drivers/gpu/drm/drm_crtc_helper.c              |    4 
+ drivers/gpu/drm/i915/i915_dma.c                |   36 ++-
+ drivers/gpu/drm/i915/i915_gem.c                |    1 
+ drivers/gpu/drm/i915/i915_reg.h                |    9 
+ drivers/gpu/drm/i915/intel_display.c           |   11 -
+ drivers/gpu/drm/i915/intel_dp.c                |   58 ++---
+ drivers/gpu/drm/i915/intel_lvds.c              |    2 
+ drivers/gpu/drm/i915/intel_ringbuffer.c        |    8 
+ drivers/gpu/drm/radeon/atombios_crtc.c         |   23 +-
+ drivers/gpu/drm/radeon/evergreen.c             |   66 +++++-
+ drivers/gpu/drm/radeon/r600.c                  |    7 
+ drivers/gpu/drm/radeon/radeon.h                |    6 
+ drivers/gpu/drm/radeon/rv770.c                 |   52 +++++
+ drivers/hid/usbhid/hid-core.c                  |    3 
+ drivers/hwmon/ads7871.c                        |   38 +--
+ drivers/hwmon/emc1403.c                        |    1 
+ drivers/hwmon/f75375s.c                        |    6 
+ drivers/hwmon/hp_accel.c                       |    2 
+ drivers/hwmon/k8temp.c                         |   35 +++
+ drivers/infiniband/hw/cxgb3/cxio_hal.h         |    2 
+ drivers/input/mouse/appletouch.c               |    6 
+ drivers/input/serio/i8042.c                    |   67 ++++--
+ drivers/mmc/core/core.c                        |   83 +++++---
+ drivers/mmc/core/host.c                        |    6 
+ drivers/mmc/host/tmio_mmc.c                    |    7 
+ drivers/mmc/host/tmio_mmc.h                    |   13 -
+ drivers/net/wireless/ath/ath5k/base.c          |    4 
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |    2 
+ drivers/net/wireless/ath/ath9k/eeprom.h        |    2 
+ drivers/net/wireless/ath/ath9k/htc_drv_main.c  |    3 
+ drivers/net/wireless/ath/regd.h                |    1 
+ drivers/net/wireless/p54/txrx.c                |    2 
+ drivers/oprofile/buffer_sync.c                 |   27 +-
+ drivers/oprofile/cpu_buffer.c                  |    2 
+ drivers/pci/msi.c                              |   27 ++
+ drivers/power/apm_power.c                      |    1 
+ drivers/serial/bfin_sport_uart.c               |    2 
+ drivers/staging/hv/netvsc_drv.c                |    3 
+ drivers/staging/hv/ring_buffer.c               |    3 
+ drivers/staging/hv/storvsc_api.h               |    4 
+ drivers/staging/hv/storvsc_drv.c               |   11 -
+ drivers/staging/rt2860/usb_main_dev.c          |   41 +++-
+ drivers/usb/atm/cxacru.c                       |   24 ++
+ drivers/usb/class/cdc-acm.c                    |   23 ++
+ drivers/usb/core/message.c                     |   22 +-
+ drivers/usb/gadget/rndis.c                     |   10 -
+ drivers/usb/host/ehci-ppc-of.c                 |   12 -
+ drivers/usb/serial/cp210x.c                    |   10 -
+ drivers/usb/serial/ftdi_sio.c                  |    8 
+ drivers/usb/serial/ftdi_sio_ids.h              |   12 +
+ drivers/usb/serial/mos7840.c                   |   32 ++-
+ drivers/xen/events.c                           |   21 +-
+ fs/binfmt_misc.c                               |    2 
+ fs/cifs/connect.c                              |    6 
+ fs/direct-io.c                                 |   30 +--
+ fs/ext4/ext4.h                                 |    4 
+ fs/ext4/inode.c                                |   17 +
+ fs/fuse/dev.c                                  |   16 +
+ fs/minix/namei.c                               |    2 
+ fs/nfs/client.c                                |    2 
+ fs/nfs/super.c                                 |    8 
+ fs/ocfs2/aops.c                                |    7 
+ fs/ocfs2/inode.c                               |    6 
+ fs/sysfs/file.c                                |    2 
+ fs/xfs/linux-2.6/xfs_aops.c                    |   24 ++
+ fs/xfs/linux-2.6/xfs_aops.h                    |    2 
+ fs/xfs/xfs_ialloc.c                            |   16 +
+ fs/xfs/xfs_inode.c                             |   49 ++---
+ include/linux/compat.h                         |    3 
+ include/linux/fs.h                             |    3 
+ include/linux/libata.h                         |    1 
+ include/linux/mmc/host.h                       |    3 
+ include/linux/msi.h                            |    2 
+ include/linux/swap.h                           |    3 
+ kernel/compat.c                                |   21 ++
+ kernel/gcov/fs.c                               |  244 ++++++++++++++++++-------
+ kernel/groups.c                                |    5 
+ kernel/trace/ftrace.c                          |   19 +
+ mm/bounce.c                                    |    2 
+ mm/compaction.c                                |    7 
+ mm/memory_hotplug.c                            |   16 -
+ mm/page-writeback.c                            |   26 +-
+ mm/swapfile.c                                  |   35 ++-
+ net/ipv4/netfilter/arp_tables.c                |    3 
+ net/ipv4/netfilter/ip_tables.c                 |    3 
+ net/ipv6/netfilter/ip6_tables.c                |    3 
+ net/irda/irlan/irlan_common.c                  |    2 
+ net/mac80211/main.c                            |    6 
+ net/sunrpc/auth_gss/auth_gss.c                 |    9 
+ net/sunrpc/rpc_pipe.c                          |    6 
+ net/wireless/wext-compat.c                     |    3 
+ net/wireless/wext-core.c                       |   16 +
+ security/integrity/ima/ima.h                   |    1 
+ security/integrity/ima/ima_iint.c              |    4 
+ security/integrity/ima/ima_main.c              |    8 
+ sound/core/seq/oss/seq_oss_init.c              |    9 
+ sound/pci/hda/hda_codec.c                      |    2 
+ sound/pci/hda/patch_cirrus.c                   |   50 +++++
+ sound/pci/hda/patch_conexant.c                 |   58 +++++
+ sound/pci/hda/patch_nvhdmi.c                   |   61 ++++--
+ sound/pci/hda/patch_realtek.c                  |   20 +-
+ sound/pci/oxygen/oxygen.h                      |    1 
+ sound/pci/oxygen/oxygen_lib.c                  |   21 +-
+ sound/pci/oxygen/virtuoso.c                    |    1 
+ sound/pci/oxygen/xonar_wm87x6.c                |   22 ++
+ sound/usb/card.c                               |   19 +
+ sound/usb/clock.c                              |    3 
+ sound/usb/endpoint.c                           |   11 -
+ sound/usb/format.c                             |   14 +
+ sound/usb/mixer.c                              |   10 -
+ sound/usb/pcm.c                                |    3 
+ tools/perf/util/callchain.h                    |    1 
+ 143 files changed, 1516 insertions(+), 571 deletions(-)
 
 Al Viro (1):
       arm: fix really nasty sigreturn bug
 
-Alan Stern (1):
-      HID: fix suspend crash by moving initializations earlier
+Alan Ott (1):
+      HID: Set Report ID properly for Output reports on the Control endpoint.
 
-Amit Arora (1):
-      sched: kill migration thread in CPU_POST_DEAD instead of CPU_DEAD
+Alex Deucher (6):
+      drm/radeon/kms: fix a regression on r7xx AGP due to the HDP flush fix
+      drm/radeon/kms: force legacy pll algo for RV515 LVDS
+      drm/radeon/kms: force legacy pll algo for RV620 LVDS
+      drm/radeon/kms: properly set crtc high base on r7xx
+      drm/radeon/kms/evergreen: fix gpu hangs in userspace accel code
+      drm/radeon/kms/evergreen: fix backend setup
 
 Andreas Herrmann (1):
       hwmon: (k8temp) Differentiate between AM2 and ASB1
 
-Anton Blanchard (1):
-      sched: cpuacct: Use bigger percpu counter batch values for stats counters
-
 Anton Vorontsov (1):
       apm_power: Add missing break statement
+
+Axel Lin (1):
+      hwmon: (ads7871) Fix ads7871_probe error paths
 
 Ben Hutchings (3):
       PCI: MSI: Remove unsafe and unnecessary hardware access
       PCI: MSI: Restore read_msi_msg_desc(); add get_cached_msi_msg_desc()
-      tun: Don't add sysfs attributes to devices without sysfs directories
+      Staging: rt2870sta: Add more device IDs from vendor drivers
 
-Blaise Gassend (1):
-      USB: serial: Extra device/vendor ID for mos7840 driver
+Benjamin Herrenschmidt (1):
+      Revert "Input: appletouch - fix integer overflow issue"
 
-Chris Wilson (2):
+Brian Austin (1):
+      ALSA: hda - Add errata initverb sequence for CS42xx codecs
+
+Chris Wilson (6):
+      agp/intel: Promote warning about failure to setup flush to error.
+      drm/i915/dp: Really try 5 times before giving up.
+      drm/i915: Allocate the PCI resource for the MCHBAR
       drm/i915: Prevent double dpms on
+      Revert "drm/i915: Allow LVDS on pipe A on gen4+"
       drm: Only decouple the old_fb from the crtc is we call mode_set*
 
 Chris Wright (1):
@@ -160,6 +230,16 @@ Chris Wright (1):
 
 Christian Lamparter (1):
       p54: fix tx feedback status flag check
+
+Christoph Hellwig (3):
+      direct-io: move aio_complete into ->end_io
+      xfs: move aio completion after unwritten extent conversion
+      swap: do not send discards as barriers
+
+Clemens Ladisch (3):
+      ALSA: usb-audio: fix detection of vendor-specific device protocol settings
+      ALSA: virtuoso: work around missing reset in the Xonar DS Windows driver
+      ALSA: virtuoso: fix setting of Xonar DS line-in/mic-in controls
 
 Craig Shelley (1):
       USB: CP210x Add new device ID
@@ -171,18 +251,34 @@ Dan Carpenter (5):
       i915: return -EFAULT if copy_to_user fails
       i915_gem: return -EFAULT if copy_to_user fails
 
-Daniel J Blueman (1):
-      sched: apply RCU protection to wake_affine()
+Daniel Mack (1):
+      ALSA: usb-audio: Assume first control interface is for audio
+
+Daniel Vetter (1):
+      drm/i915: overlay on gen2 can't address above 1G
+
+Dave Chinner (3):
+      xfs: fix untrusted inode number lookup
+      xfs: ensure we mark all inodes in a freed cluster XFS_ISTALE
+      writeback: write_cache_pages doesn't terminate at nr_to_write <= 0
 
 Dave Ludlow (2):
       usb: serial: mos7840: Add USB ID to support the B&B Electronics USOPTL4-2P.
       usb: serial: mos7840: Add USB IDs to support more B&B USB/RS485 converters.
 
-David Henningsson (1):
+David Henningsson (5):
+      ALSA: hda - Add Sony VAIO quirk for ALC269
+      ALSA: HDA: Use model=auto for LG R510
       ALSA: hda - Rename iMic to Int Mic on Lenovo NB0763
+      ALSA: hda - Add a new hp-laptop model for Conexant 5066, tested on HP G60
+      ALSA: HDA: Enable internal speaker on Dell M101z
 
-Dmitry Torokhov (1):
+Dmitry Torokhov (2):
       Input: i8042 - fix device removal on unload
+      Input: i8042 - reset keyboard controller wehen resuming from S2R
+
+Florian Westphal (1):
+      netfilter: fix CONFIG_COMPAT support
 
 Frederic Weisbecker (1):
       perf: Initialize callchains roots's childen hits
@@ -191,7 +287,7 @@ Gary King (1):
       bounce: call flush_dcache_page() after bounce_copy_vec()
 
 Greg Kroah-Hartman (1):
-      Linux 2.6.32.22
+      Linux 2.6.35.5
 
 Guennadi Liakhovetski (1):
       mmc: fix the use of kunmap_atomic() in tmio_mmc.h
@@ -213,18 +309,21 @@ Hank Janssen (3):
       staging: hv: Increased storvsc ringbuffer and max_io_requests
       staging: hv: Fixed lockup problem with bounce_buffer scatter list
 
-Hiroshi Shimamoto (1):
-      sched: Remove unused cpu_nr_migrations()
-
-Ingo Molnar (2):
-      sched: Remove forced2_migrations stats
-      sched: Make warning less noisy
+Hugh Dickins (2):
+      swap: prevent reuse during hibernation
+      swap: discard while swapping only if SWAP_FLAG_DISCARD
 
 Jan Sembera (1):
       binfmt_misc: fix binfmt_misc priority
 
 Jason Detring (1):
       USB: cp210x: Add B&G H3000 link cable ID
+
+Jeff Layton (1):
+      cifs: fix potential double put of TCP session reference
+
+Jeff Moyer (1):
+      O_DIRECT: fix the splitting up of contiguous I/O
 
 Jeremy Fitzhardinge (2):
       xen: handle events as edge-triggered
@@ -233,93 +332,71 @@ Jeremy Fitzhardinge (2):
 Jerome Marchand (1):
       kernel/groups.c: fix integer overflow in groups_search
 
-Jiri Kosina (1):
-      HID: usbhid: initialize interface pointers early enough
+Jesse Barnes (1):
+      drm/i915: don't enable self-refresh on Ironlake
 
-Johan Hovold (1):
-      USB: mos7840: fix DMA buffers on stack and endianess bugs
+Jiaying Zhang (1):
+      ext4: move aio completion after unwritten extent conversion
 
-Johannes Berg (1):
+Johannes Berg (2):
+      mac80211: delete work timer
       wireless extensions: fix kernel heap content leak
 
 John W. Linville (1):
       ath5k: check return value of ieee80211_get_tx_rate
 
+Jorge Boncompte [DTI2] (1):
+      minix: fix regression in minix_mkdir()
+
 KAMEZAWA Hiroyuki (1):
       memory hotplug: fix next block calculation in is_removable
-
-Kailang Yang (1):
-      ALSA: hda - Fix auto-parser of ALC269vb for HP pin NID 0x21
 
 Li Zefan (1):
       tracing: Fix a race in function profile
 
-Luis R. Rodriguez (1):
+Lin Ming (1):
+      perf, x86, Pentium4: Clear the P4_CCCR_FORCE_OVF flag
+
+Luis R. Rodriguez (2):
+      ath9k_hw: Fix EEPROM uncompress block reading on AR9003
       ath9k_hw: fix parsing of HT40 5 GHz CTLs
 
 Luke Lowrey (1):
       USB: ftdi_sio: Added custom PIDs for ChamSys products
 
-Mark Lord (1):
+Mark Lord (2):
+      libata-sff: remove harmful BUG_ON from ata_bmdma_qc_issue
       sata_mv: fix broken DSM/TRIM support (v2)
+
+Maxim Levitsky (1):
+      mmc: fix all hangs related to mmc/sd card insert/removal during suspend/resume
 
 Maxim Osipov (1):
       USB: Fix kernel oops with g_ether and Windows
 
-Mike Galbraith (3):
-      sched: revert stable c6fc81a sched: Fix a race between ttwu() and migrate_task()
-      sched: Fix vmark regression on big machines
-      sched: Fix select_idle_sibling()
+Menyhart Zoltan (1):
+      statfs() gives ESTALE error
 
 Miklos Szeredi (1):
       fuse: flush background queue on connection close
 
-Oleg Nesterov (7):
-      sched: set_cpus_allowed_ptr(): Don't use rq->migration_thread after unlock
-      sched: Kill the broken and deadlockable cpuset_lock/cpuset_cpus_allowed_locked code
-      sched: move_task_off_dead_cpu(): Take rq->lock around select_fallback_rq()
-      sched: move_task_off_dead_cpu(): Remove retry logic
-      sched: sched_exec(): Remove the select_fallback_rq() logic
-      sched: _cpu_down(): Don't play with current->cpus_allowed
-      sched: Make select_fallback_rq() cpuset friendly
+Mimi Zohar (1):
+      ima: always maintain counters
+
+Minchan Kim (1):
+      mm: compaction: handle active and inactive fairly in too_many_isolated
+
+Paul Mackerras (1):
+      powerpc/perf_event: Reduce latency of calling perf_event_do_pending
 
 Peter Oberparleiter (1):
       gcov: fix null-pointer dereference for certain module types
 
-Peter Zijlstra (24):
+Peter Zijlstra (1):
       x86, tsc: Fix a preemption leak in restore_sched_clock_state()
-      sched: Consolidate select_task_rq() callers
-      sched: Remove rq->clock coupling from set_task_cpu()
-      sched: Clean up ttwu() rq locking
-      sched: Sanitize fork() handling
-      sched: Use TASK_WAKING for fork wakups
-      sched: Ensure set_task_cpu() is never called on blocked tasks
-      sched: Fix broken assertion
-      sched: Fix sched_exec() balancing
-      sched: Fix select_task_rq() vs hotplug issues
-      sched: Add pre and post wakeup hooks
-      sched: Remove the cfs_rq dependency from set_task_cpu()
-      sched: Fix hotplug hang
-      sched: Fix fork vs hotplug vs cpuset namespaces
-      sched: Fix incorrect sanity check
-      sched: Fix race between ttwu() and task_rq_lock()
-      sched: Fix TASK_WAKING vs fork deadlock
-      sched: Optimize task_rq_lock()
-      sched: Fix nr_uninterruptible count
-      sched: Fix rq->clock synchronization when migrating tasks
-      sched: Remove unnecessary RCU exclusion
-      sched: Cleanup select_task_rq_fair()
-      sched: More generic WAKE_AFFINE vs select_idle_sibling()
-      sched: Pre-compute cpumask_weight(sched_domain_span(sd))
 
 Philippe Corbes (1):
       USB: cdc-acm: Add pseudo modem without AT command capabilities
-
-Przemo Firszt (1):
-      USB: Expose vendor-specific ACM channel on Nokia 5230
-
-Rafael J.Wysocki (1):
-      sched: Make wakeup side and atomic variants of completion API irq safe
 
 Robert Richter (3):
       oprofile: fix crash when accessing freed task structs
@@ -329,8 +406,17 @@ Robert Richter (3):
 Roland McGrath (1):
       x86-64, compat: Retruncate rax after ia32 syscall entry tracing
 
-Russ Nelson (1):
-      USB: cdc-acm: add another device quirk
+Simon Arlott (1):
+      USB: cxacru: Use a bulk/int URB to access the command endpoint
+
+Sonic Zhang (1):
+      serial: bfin_sport_uart: restore transmit frame sync fix
+
+Stephen Warren (1):
+      ALSA: hda - patch_nvhdmi.c: Add missing codec IDs, unify names
+
+Steve Wise (1):
+      RDMA/cxgb3: Don't exceed the max HW CQ depth
 
 Steven Rostedt (1):
       tracing: Do not allow llseek to set_ftrace_filter
@@ -338,27 +424,29 @@ Steven Rostedt (1):
 Sunil Mushran (1):
       ocfs2: Fix incorrect checksum validation error
 
-Suresh Siddha (2):
+Suresh Siddha (1):
       x86, tsc, sched: Recompute cyc2ns_offset's during resume from sleep states
-      sched: Fix select_idle_sibling() logic in select_task_rq_fair()
 
-Takashi Iwai (3):
-      ALSA: seq/oss - Fix double-free at error path of snd_seq_oss_open()
+Takashi Iwai (7):
       ALSA: hda - Handle missing NID 0x1b on ALC259 codec
       ALSA: hda - Handle pin NID 0x1a on ALC259/269
+      ALSA: seq/oss - Fix double-free at error path of snd_seq_oss_open()
+      ALSA: usb - Release capture substream URBs properly
+      ALSA: hda - Add quirk for Lenovo T400s
+      ALSA: hda - Fix wrong HP pin detection in snd_hda_parse_pin_def_config()
+      hp_accel: add quirks for HP ProBook 532x and HP Mini 5102
 
-Tejun Heo (1):
+Tejun Heo (4):
+      pata_cmd64x: revert commit d62f5576
       libata: skip EH autopsy and recovery during suspend
+      libata,pata_via: revert ata_wait_idle() removal from ata_sff/via_tf_load()
+      ahci: fix hang on failed softreset
 
-Thomas Gleixner (8):
-      sched: Protect task->cpus_allowed access in sched_getaffinity()
-      sched: Protect sched_rr_get_param() access to task->sched_class
-      sched: Use rcu in sys_sched_getscheduler/sys_sched_getparam()
-      sched: Use rcu in sched_get/set_affinity()
-      sched: Use rcu in sched_get_rr_param()
-      sched: Extend enqueue_task to allow head queueing
-      sched: Implement head queueing for sched_rt
-      sched: Queue a deboosted task to the head of the RT prio queue
+Thadeu Lima de Souza Cascardo (1):
+      usb: allow drivers to use allocated bandwidth until unbound
+
+Thomas Gleixner (1):
+      x86: hpet: Work around hardware stupidity
 
 Toby Gray (2):
       USB: cdc-acm: Adding second ACM channel support for various Nokia and one Samsung phones
@@ -368,9 +456,18 @@ Trond Myklebust (2):
       NFS: Fix a typo in nfs_sockaddr_match_ipaddr6
       SUNRPC: Fix race corrupting rpc upcall
 
-Xiaotian Feng (1):
-      sched: Fix set_cpu_active() in cpu_down()
+Uwe Kleine-König (1):
+      mmc: build fix: mmc_pm_notify is only available with CONFIG_PM=y
+
+Vivek Natarajan (1):
+      ath9k_htc: Fix disconnect issue in HT40 mode.
+
+Yong Wang (1):
+      hwmon: (emc1403) Remove unnecessary hwmon_device_unregister
 
 Yusuke Goda (1):
       tmio_mmc: don't clear unhandled pending interrupts
+
+Zhenyu Wang (1):
+      drm/i915: Enable MI_FLUSH on Sandybridge
 
