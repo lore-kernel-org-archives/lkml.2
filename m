@@ -1,44 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756065Ab0ITRqy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 13:46:54 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:62895 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753711Ab0ITRqw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 13:46:52 -0400
-Date: Mon, 20 Sep 2010 19:48:47 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCH] net: core: dev.c: use spin_lock_irqsave() rather than
-In-reply-to: <1284998621.3420.539.camel@edumazet-laptop>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, netdev@vger.kernel.org
-Message-id: <op.vjceflc37p4s8u@pikus>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.62 (Linux)
-References: <ee14e5e38e7a5df520d902ef8a236bbe9ed206fa.1284991149.git.m.nazarewicz@samsung.com>
- <1284998621.3420.539.camel@edumazet-laptop>
+	id S1756133Ab0ITRs3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 13:48:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22701 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751205Ab0ITRs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 13:48:28 -0400
+Date: Mon, 20 Sep 2010 19:42:22 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL net-2.6] vhost-net: fix range checking
+Message-ID: <20100920174222.GA30510@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Sep 2010 18:03:41 +0200, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> dev_get_stats(dev, &temp) is called from drivers/usb/gadget/rndis.c,
-> while I suspect underlying stats are already provided in dev->stats
+David,
+The following tree includes a bugfix for vhost-net.
+It is on top of net-2.6.  Please merge it for 2.6.36.
+Thanks!
 
-So, you are saying that it is likely that if I change rndis.c and replace
-"dev_get_stats(net, &temp)" with plain "&net->stats" things should work
-correctly (rndis.c does not use the "temp" so it's not a problem)?
+The following changes since commit 053d8f6622701f849fda2ca2c9ae596c13599ba9:
 
-I actually did that and nothing seems to crash but dunno if it didn't
-make g_ether report some not fully up-to-date values or something.
+  Merge branch 'vhost-net' of git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost (2010-09-09 21:59:51 -0700)
 
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-net
+
+Michael S. Tsirkin (1):
+      vhost-net: fix range checking in mrg bufs case
+
+ drivers/vhost/net.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
