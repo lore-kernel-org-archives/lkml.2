@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114Ab0ITJW0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 05:22:26 -0400
-Received: from smtp125.sbc.mail.sp1.yahoo.com ([69.147.65.184]:40762 "HELO
-	smtp125.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755812Ab0ITJWY (ORCPT
+	id S1756126Ab0ITJZf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 05:25:35 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:34435 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753480Ab0ITJZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 05:22:24 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: kUTXXFcVM1nYsRnSvNklI6HtQrHPx_8gj_YF_pLG6t8NCvy
- _O3F_WHOkPQKHToRqjyaf20hQ73Edu_z2u7FagOSTudPyYnRuL8k5.Z0694I
- wYiixKCcxOOQapHsR6c4KX0G.KtN09pY3vupTvTfpBJaHm.gmI5OCg2TpUo8
- wfrmJkurJKEq2Bc6bNCGhU5vai7YL3b5C8Q7qlMydKn9jdVvWCYzAwvrZF.q
- 6WvDhmwSdkyNksGe5EzB4agpwDs91MeiHopeDVypmUK1KSzRhRCKiHXMf3JE
- 2KvTjuKjwpdCdj1bf1Mf7pyeSmS_zAZJt4ONc6VHgEcM08AU3iwDZQwAc
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [ANNOUNCE] TCM/LIO v4.0.0-rc4 for 2.6.36-rc4
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        James.Bottomley@suse.de, michaelc@cs.wisc.edu, konrad@darnok.org,
-        jeykholt@cisco.com, hare@suse.de, hch@lst.de, James.Smart@Emulex.Com,
-        andrew.vasquez@qlogic.com, philipp.reisner@linbit.com,
-        martin.petersen@oracle.com, vasu.dev@linux.intel.com,
-        Joel Becker <joel.becker@oracle.com>,
-        Linux-fsdevel <linux-fsdevel@vger.kernel.org>
-In-Reply-To: <4C961644.70209@panasas.com>
-References: <1284754930.13344.216.camel@haakon2.linux-iscsi.org>
-	 <20100918125729D.fujita.tomonori@lab.ntt.co.jp>
-	 <1284841932.13344.339.camel@haakon2.linux-iscsi.org>
-	 <4C961644.70209@panasas.com>
-Content-Type: text/plain
-Date: Mon, 20 Sep 2010 02:18:10 -0700
-Message-Id: <1284974290.13344.466.camel@haakon2.linux-iscsi.org>
+	Mon, 20 Sep 2010 05:25:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=m4pFSPFvW2Q34oEj/Yh5AvODYTuup3U95sieDGWRrHJlR9eL7Xw3zbE78Sf/dikjlJ
+         UG1jANfPMagCtV5CzzLRWU23IWEejCpjN++D5UOEkN8Gfu/KFZW7HuWJtEpDWUAAAX0n
+         Mu33abTTptWRoCFdb1vxfQHW5QQZ7wKDTRdtk=
+Subject: Re: ahci rmmodable and shouldn't
+From: Pedro Francisco <pedrogfrancisco@gmail.com>
+To: Tejun Heo <htejun@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+In-Reply-To: <4C9602E4.4090007@gmail.com>
+References: <201009162256.04765.pedrogfrancisco@gmail.com>
+	 <47010.148.87.67.141.1284674336.squirrel@www.xenotime.net>
+	 <4C933A8F.2080305@gmail.com> <1284892106.2650.4.camel@sundae-v2>
+	 <4C9602E4.4090007@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 20 Sep 2010 10:25:26 +0100
+Message-ID: <1284974726.11757.9.camel@sundae-v2>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-09-19 at 15:55 +0200, Boaz Harrosh wrote:
-> On 09/18/2010 10:32 PM, Nicholas A. Bellinger wrote:
-> > On Sat, 2010-09-18 at 13:00 +0900, FUJITA Tomonori wrote:
-> > So the RFC cuts have been going into a seperate tree here:
-> > 
-> > http://git.kernel.org/?p=linux/kernel/git/nab/lio-4.0.git;a=summary
-> > 
-> 
-> This is the two weeks ago stuff, right. Where is the lio-core-2.6.git/ ?
-> 
-> > Mike has requested an RFC v2 for him to review TCM Core and TCM_Loop
-> > v4.0.0-rc4 changes.  So I will be respinning this tree with the latest
-> > changes from lio-core-2.6.git/lio-4.0 and re-posting in the next days.
-> > 
-> 
-> Me to. And a git tree and a git web, as well. I'll postpone any review
-> to that time.
+On Dom, 2010-09-19 at 14:32 +0200, Tejun Heo wrote: 
+> I think it works the same way for any other SCSI driver and it's
+> pretty convenient during development.  You can unload any network
+> driver module while the network is still up too.  Module reference
+> count doesn't have any specific meaning of 'use' preassigned other
+> than it's there to prevent unloading module while the code and data
+> are being actively used by the processor.  It's unfortunate that the
+> way module reference count is used for libata is causing discomfort to
+> you but I need much better reason to change it.
 
-Hi Boaz,
+Discomfort? Not really, sorry if my stubbornness felt like it. No, I'm
+fine with it.
 
-So as mentioned earlier, the main upstream branch where all of the
-review changes have been moving through is located at
-lio-core-2.6.git/lio-4.0:
+I just thought it was weird the change of behaviour from 2.6.32, plus
+felt that the "Used by" field by lsmod was incorrectly set at 0 since
+the module is, in fact, being used (e)
 
-http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=shortlog;h=refs/heads/lio-4.0
+If you say both behaviours are expected and preferred, besides being
+consistent with other modules (something I didn't know), I really can't
+argue any more.
 
-I will be doing a RFCv2 posting for TCM Core and TCM_Loop v4.0.0-rc4
-with the very latest changes this week for Mike, Tomo-san and yourself
-to further review.  This series will be in the usual one-file-per-commit
-format and will be pushed these into a rfcv2-for-37 branch against
-v2.6.36-rc4 in the seperate pristine lio-4.0.git tree mentioned above.
+Thanks for the explanation and sorry for the noise :)
 
-Also just FYI, the workflow I plan to use post-merge for TCM is to
-continue to merge all changes in via the lio-core-2.6.git tree, and send
-out pull requests for patches destined to mainline via a seperate
-pristine tree + branches.
-
-Best,
-
---nab
-
+-- 
+Pedro
 
