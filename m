@@ -1,126 +1,376 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756227Ab0ITJwx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 05:52:53 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:37734 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754462Ab0ITJww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 05:52:52 -0400
-Date: Mon, 20 Sep 2010 10:52:39 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 8/8] writeback: Do not sleep on the congestion queue if
-	there are no congested BDIs or if significant congestion is not
-	being encountered in the current zone
-Message-ID: <20100920095239.GE1998@csn.ul.ie>
-References: <1284553671-31574-1-git-send-email-mel@csn.ul.ie> <1284553671-31574-9-git-send-email-mel@csn.ul.ie> <20100916152810.cb074e9f.akpm@linux-foundation.org>
+	id S1755830Ab0ITJzo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 05:55:44 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:60187 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754424Ab0ITJzn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 05:55:43 -0400
+Message-ID: <4C972F98.4050709@panasas.com>
+Date: Mon, 20 Sep 2010 11:55:36 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100916152810.cb074e9f.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        Joe Eykholt <jeykholt@cisco.com>
+Subject: Re: [PATCH 1/3] tcm: Add native 32-byte CDB support
+References: <1284701685-18344-1-git-send-email-nab@linux-iscsi.org>	 <4C95FA26.6040803@panasas.com> <1284972877.13344.439.camel@haakon2.linux-iscsi.org>
+In-Reply-To: <1284972877.13344.439.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 20 Sep 2010 09:55:41.0242 (UTC) FILETIME=[FC1939A0:01CB58A9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 16, 2010 at 03:28:10PM -0700, Andrew Morton wrote:
-> On Wed, 15 Sep 2010 13:27:51 +0100
-> Mel Gorman <mel@csn.ul.ie> wrote:
+On 09/20/2010 10:54 AM, Nicholas A. Bellinger wrote:
+> On Sun, 2010-09-19 at 13:55 +0200, Boaz Harrosh wrote:
+>> On 09/17/2010 07:34 AM, Nicholas A. Bellinger wrote:
+>>> From: Nicholas Bellinger <nab@linux-iscsi.org>
+>>>
+>>> This patch adds a '#define TCM_MAX_COMMAND_SIZE 32' and converts all
+>>> inline TCM core and subsystem CDB size defines to use TCM_MAX_COMMAND_SIZE
+>>> instead of the 16-byte MAX_COMMAND_SIZE.  This includes the conversion of
+>>> MAX_COMMAND_SIZE in certain places to use include/scsi/scsi.h:scsi_command_size()
+>>> to properly extract the size of a received CDB based on opcode.
+>>>
+>>> This patch also includes the conversion of the FILEIO, IBLOCK, PSCSI, RAMDISK
+>>> and STGT subsystem modules to use TCM_MAX_COMMAND_SIZE for their default
+>>> internal inline CDB size.
+>>>
+>>> It also adds transport_lba_64_ext() and transport_get_sectors_32() callers
+>>> into target_core_transport.c to be used for extracting a 64-bit logical
+>>> block address and 32-bit transfer length (in block) from 32-byte CDBs.
+>>> Finally this patch adds split_cdb_XX_32() and split_cdb_XX_32() for handling
+>>> the generation of 32-byte CDBs for individual struct se_task.
+>>>
+>>> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+>>> ---
+>>>  drivers/target/target_core_file.h      |    2 +-
+>>>  drivers/target/target_core_iblock.h    |    2 +-
+>>>  drivers/target/target_core_pscsi.c     |    2 +-
+>>>  drivers/target/target_core_pscsi.h     |    2 +-
+>>>  drivers/target/target_core_rd.h        |    2 +-
+>>>  drivers/target/target_core_scdb.c      |   38 +++++++++++++++++++++++++++
+>>>  drivers/target/target_core_scdb.h      |    2 +
+>>>  drivers/target/target_core_stgt.h      |    2 +-
+>>>  drivers/target/target_core_transport.c |   44 ++++++++++++++++++++++++++++---
+>>>  include/target/target_core_base.h      |   13 +++++++++
+>>>  10 files changed, 98 insertions(+), 11 deletions(-)
+>>>
 > 
-> > If wait_iff_congested() is called with no BDI congested, the function simply
-> > calls cond_resched(). In the event there is significant writeback happening
-> > in the zone that is being reclaimed, this can be a poor decision as reclaim
-> > would succeed once writeback was completed. Without any backoff logic,
-> > younger clean pages can be reclaimed resulting in more reclaim overall and
-> > poor performance.
+> <SNIP>
 > 
-> This is because cond_resched() is a no-op,
+>>> diff --git a/drivers/target/target_core_pscsi.c b/drivers/target/target_core_pscsi.c
+>>> index 803853d..beca807 100644
+>>> --- a/drivers/target/target_core_pscsi.c
+>>> +++ b/drivers/target/target_core_pscsi.c
+>>> @@ -743,7 +743,7 @@ static inline void pscsi_blk_init_request(
+>>>  	 * Load the referenced struct se_task's SCSI CDB into
+>>>  	 * include/linux/blkdev.h:struct request->cmd
+>>>  	 */
+>>> -	pt->pscsi_req->cmd_len = COMMAND_SIZE(pt->pscsi_cdb[0]);
+>>> +	pt->pscsi_req->cmd_len = scsi_command_size(pt->pscsi_cdb);
+>>>  	memcpy(pt->pscsi_req->cmd, pt->pscsi_cdb, pt->pscsi_req->cmd_len);
+>>
+>> Boom, only 16 bytes at req->cmd.
+>>
+>> For larger than 16 bytes commands at the block/scsi-ml level you need to:
+>>
+>> 	request->cmd = my_buffer_valid_until_complete;
+>> 	request->cmd_len = scsi_command_size()
+>>
+>> if above "my_buffer_valid_until_complet" is always available you can just
+>> do this regardless. If you need to dynamically allocate it (and deallocate)
+>> then you should do an if > MAX_COMMAND_SIZE
+>>
+> 
+> Hi Boaz,
+> 
+> I was pretty there was going to be some more work required on the
+> TCM/PSCSI case for proper > 16 byte support, thanks for spotting this
+> one.
+> 
+> So what I am thinking is that we can get rid of this memcpy() all
+> together and just always use the per struct se_task allocated struct
+> pscsi_plugin_task *pt->pscsi_cdb[] up to the new TCM_MAX_COMMAND_SIZE
+> (32 bytes) for the request->cmd pointer.
+> 
+> Is there anything special that needs to be done in order to singal that
+> struct request->cmd will be using *tp->pscsi_cdb[], and not struct
+> request->__cmd[BLK_MAX_CMD]..?
 
-Can be a no-op surely. There is an expectation that it will sometimes schedule.
+No that's perfect.
+The tricky part in other places is to keep it allocated through the life
+cycle of the request. (And overriding the completion for de-allocation).
+But here we have no problems, the governing pscsi_plugin_task is available
+until after the request is complete, right?
 
-> and we skip around the
-> under-writeback pages and go off and look further along the LRU for
-> younger clean pages, yes?
+> 
+>>>  	/*
+>>>  	 * Setup pointer for outgoing sense data.
+>>> diff --git a/drivers/target/target_core_pscsi.h b/drivers/target/target_core_pscsi.h
+>>> index db09d6a..086e6f1 100644
+>>> --- a/drivers/target/target_core_pscsi.h
+>>> +++ b/drivers/target/target_core_pscsi.h
+>>> @@ -28,7 +28,7 @@ extern int linux_blockdevice_check(int, int);
+>>>  #include <linux/kobject.h>
+>>>  
+>>>  struct pscsi_plugin_task {
+>>> -	unsigned char pscsi_cdb[MAX_COMMAND_SIZE];
+>>> +	unsigned char pscsi_cdb[TCM_MAX_COMMAND_SIZE];
+>>>  	unsigned char pscsi_sense[SCSI_SENSE_BUFFERSIZE];
+>>>  	int	pscsi_direction;
+>>>  	int	pscsi_result;
+>>
+>> pscsi is when you directly Q to a scsi LLD via midlayer right? Note that most
+>> scsi LLDs don't support > 16 or 12 bytes. The regular scsi despatch will check
+>> this for you and return an error. How are these dispatched? blk_execute_rq* ?
+>>
+> 
+> Correct on both points.  So all control path CDBs with PSCSI are treated
+> as a passthrough.  The one special thing about pSCSI and struct request
+> passthrough is wrt SCF_SCSI_DATA_SG_IO_CDB I/Os is that TCM Core will
+> still handle the 1 -> N mapping of TCM struct se_task->task_sg[] across
+> a single struct se_cmd->t_mem_list for received CDB sectors > underying
+> HW max_sectors limitiations reported by pscsi_get_max_sectors().
+> 
+>>> diff --git a/drivers/target/target_core_rd.h b/drivers/target/target_core_rd.h
+>>> index 8170b41..2008807 100644
+>>> --- a/drivers/target/target_core_rd.h
+>>> +++ b/drivers/target/target_core_rd.h
+>>> @@ -31,7 +31,7 @@ void rd_module_exit(void);
+>>>  
+>>>  struct rd_request {
+>>>  	/* SCSI CDB from iSCSI Command PDU */
+>>> -	unsigned char	rd_scsi_cdb[MAX_COMMAND_SIZE];
+>>> +	unsigned char	rd_scsi_cdb[TCM_MAX_COMMAND_SIZE];
+>>>  	/* Data Direction */
+>>>  	u8		rd_data_direction;
+>>>  	/* Total length of request */
+>>> diff --git a/drivers/target/target_core_scdb.c b/drivers/target/target_core_scdb.c
+>>> index 8bcfeaf..76a7de0 100644
+>>> --- a/drivers/target/target_core_scdb.c
+>>> +++ b/drivers/target/target_core_scdb.c
+>>> @@ -28,6 +28,7 @@
+>>>  
+>>>  #include <linux/net.h>
+>>>  #include <linux/string.h>
+>>> +#include <scsi/scsi.h>
+>>>  
+>>>  #include <target/target_core_base.h>
+>>>  #include <target/target_core_transport.h>
+>>> @@ -147,3 +148,40 @@ void split_cdb_RW_16(
+>>>  	cdb[0] = (rw) ? 0x8a : 0x88;
+>>>  	split_cdb_XX_16(lba, sectors, &cdb[0]);
+>>>  }
+>>> +
+>>> +/*
+>>> + *	split_cdb_XX_32():
+>>> + *	
+>>> + * 	64-bit LBA w/ 32-bit SECTORS such as READ_32, WRITE_32 and XDWRITEREAD_32
+>>> + */
+>>> +void split_cdb_XX_32(
+>>> +	unsigned long long lba,
+>>> +	u32 *sectors,
+>>> +	unsigned char *cdb)
+>>> +{
+>>> +	cdb[12] = (lba >> 56) & 0xff;
+>>> +	cdb[13] = (lba >> 48) & 0xff;
+>>> +	cdb[14] = (lba >> 40) & 0xff;
+>>> +	cdb[15] = (lba >> 32) & 0xff;
+>>> +	cdb[16] = (lba >> 24) & 0xff;
+>>> +	cdb[17] = (lba >> 16) & 0xff;
+>>> +	cdb[18] = (lba >> 8) & 0xff;
+>>> +	cdb[19] = lba & 0xff;
+>>
+>> put_unaligned_be64
+> 
+> Ok, converting all functions these in target_core_scdb.c to use
+> put_unaligned_be*().
+> 
+>>
+>>> +	cdb[28] = (*sectors >> 24) & 0xff;
+>>> +	cdb[29] = (*sectors >> 16) & 0xff;
+>>> +	cdb[30] = (*sectors >> 8) & 0xff;
+>>> +	cdb[31] = *sectors & 0xff;
+>>
+>> put_unaligned_be32
+> 
+> <nod>
+> 
+>>> diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+>>> index 49d5946..a3016f7 100644
+>>> --- a/drivers/target/target_core_transport.c
+>>> +++ b/drivers/target/target_core_transport.c
+>>> @@ -2636,7 +2636,8 @@ static int transport_process_control_sg_transform(
+>>>  
+>>>  	cdb = TRANSPORT(dev)->get_cdb(task);
+>>>  	if (cdb)
+>>> -		memcpy(cdb, T_TASK(cmd)->t_task_cdb, MAX_COMMAND_SIZE);
+>>> +		memcpy(cdb, T_TASK(cmd)->t_task_cdb,
+>>> +			scsi_command_size(T_TASK(cmd)->t_task_cdb));
+>>>  
+>>>  	task->task_size = cmd->data_length;
+>>>  	task->task_sg_num = 1;
+>>> @@ -2677,7 +2678,8 @@ static int transport_process_control_nonsg_transform(
+>>>  
+>>>  	cdb = TRANSPORT(dev)->get_cdb(task);
+>>>  	if (cdb)
+>>> -		memcpy(cdb, T_TASK(cmd)->t_task_cdb, MAX_COMMAND_SIZE);
+>>> +		memcpy(cdb, T_TASK(cmd)->t_task_cdb,
+>>> +			scsi_command_size(T_TASK(cmd)->t_task_cdb));
+>>>  
+>>>  	task->task_size = cmd->data_length;
+>>>  	task->task_sg_num = 0;
+>>> @@ -2711,7 +2713,8 @@ static int transport_process_non_data_transform(
+>>>  
+>>>  	cdb = TRANSPORT(dev)->get_cdb(task);
+>>>  	if (cdb)
+>>> -		memcpy(cdb, T_TASK(cmd)->t_task_cdb, MAX_COMMAND_SIZE);
+>>> +		memcpy(cdb, T_TASK(cmd)->t_task_cdb,
+>>> +			scsi_command_size(T_TASK(cmd)->t_task_cdb));
+>>>  
+>>>  	task->task_size = cmd->data_length;
+>>>  	task->task_sg_num = 0;
+>>> @@ -2902,7 +2905,7 @@ int transport_generic_allocate_tasks(
+>>>  	/*
+>>>  	 * Copy the original CDB into T_TASK(cmd).
+>>>  	 */
+>>> -	memcpy(T_TASK(cmd)->t_task_cdb, cdb, MAX_COMMAND_SIZE);
+>>> +	memcpy(T_TASK(cmd)->t_task_cdb, cdb, scsi_command_size(cdb));
+>>
+>> scsi_command_size can return up to 260 dependent on command. So you'll
+>> need a min() to make sure. I'd do a tsk_cdb_cpy() wrapper that does
+>> the proper min() for everyone. Later that wrapper can be made smarter
+>> for large commands up to 260.
+> 
+> Hmmm actually, I am wondering if we need a method for the individual
+> backstore to report the maximum supported CDB size on a TCM subsystem
+> plugin basis, say via a caller include/target/target_core_transport.h:
+> struct se_subsystem_api, and fail the extended CDB at TCM level for the
+> pSCSI cases where struct scsi_host->max_cmd_len < scsi_command_size().
+> 
+> Also wrt to 260 byte CDBs for TCM/pSCSI and really everything received
+> greater than the new default 32 for TCM_MAX_COMMAND_SIZE, this will
+> require the extra allocation by TCM Core at both the
+> T_TASK(cmd)->t_task_cdb[] as well as allowing pSCSI to handle this case.
 > 
 
-Yes.
+For me, (I'm not sure how hard it is. I still did not look, you know ;-))
+I'd drop the allocation all together and just use a pointer and a size.
+So for instance pSCSI can just pass along it's pointer and size, all the
+way to the end and back. In something like iscsi the fixed 16 bytes can
+just point to the received header, and with an extended cdb spill over
+a buffer should be allocated, then de-allocated once command-response is
+sent.
+So basically allocated once in transport, passed around as pointer.
+(BTW Same for sense buffer)
 
-> > This patch tracks how many pages backed by a congested BDI were found during
-> > scanning. If all the dirty pages encountered on a list isolated from the
-> > LRU belong to a congested BDI, the zone is marked congested until the zone
-> > reaches the high watermark.
-> 
-> High watermark, or low watermark?
-> 
+And by the way, I'd let the target reject un-known commands. It's a big
+boy and it's easiest to add new code. No other places to change. (And
+some fun things can be done, like target filtering). Passing the "size"
+test says nothing, the actual command needs implementing. Just make sure
+Error handling is solid. (The target already as a default: return error
+case)
 
-High watermark. The check is made by kswapd.
-
-> The terms are rather ambiguous so let's avoid them.  Maybe "full"
-> watermark and "empty"?
-> 
-
-Unfortunately they are ambiguous to me. I know what the high watermark
-is but not what the full or empty watermarks are.
-
-> >
-> > ...
-> >
-> > @@ -706,6 +726,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
-> >  			goto keep;
-> >  
-> >  		VM_BUG_ON(PageActive(page));
-> > +		VM_BUG_ON(page_zone(page) != zone);
-> 
-> ?
+> I will look at implementing this soon, but I still need a way to test
+> this code with TCM/PSCSI and scsi_debug..  Any ideas on where to look
+> for doing this with > 32 byte CDBs..?
 > 
 
-It should not be the case that pages from multiple zones exist on the list
-passed to shrink_page_list(). Lets say someone broke that assumption in the
-future, which one should be marked congested? No way to know, so lets catch
-the bug if the assumptions is ever broken.
+That's easy. You have decided that TCM_MAX_COMMAND_SIZE == 32 and anything
+bigger needs allocation. So for the duration of the test set
+TCM_MAX_COMMAND_SIZE == 16 and see how these 32s get allocated.
 
-> >  		sc->nr_scanned++;
-> >  
-> >
-> > ...
-> >
-> > @@ -903,6 +928,15 @@ keep_lumpy:
-> >  		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
-> >  	}
-> >  
-> > +	/*
-> > +	 * Tag a zone as congested if all the dirty pages encountered were
-> > +	 * backed by a congested BDI. In this case, reclaimers should just
-> > +	 * back off and wait for congestion to clear because further reclaim
-> > +	 * will encounter the same problem
-> > +	 */
-> > +	if (nr_dirty == nr_congested)
-> > +		zone_set_flag(zone, ZONE_CONGESTED);
+or
+
+How ready is target_core_stgt.h can you pass commands to user-space and
+back. We can send OSD commands.
+
+or
+
+What if we use pscsi_plugin_task to send commands to an iscsi-initiator
+device that's an OSD. A bit stupid as an admin point of view, but a grate
+pass through exercise.
+
+[osd-initiator] --net--> [(iscsi_tcm) - (pscsi_plugin_task) - (iscsi-initiator)] \
+  --net--> [osd-target]
+
+The [osd-initiator] and [osd-target] parts are easy.
+
+Boaz
+
+>>
+>>>  	/*
+>>>  	 * Check for SAM Task Attribute Emulation
+>>>  	 */
+>>> @@ -3829,6 +3832,19 @@ static inline unsigned long long transport_lba_64(unsigned char *cdb)
+>>>  	return ((unsigned long long)__v2) | (unsigned long long)__v1 << 32;
+>>>  }
+>>>  
+>>> +/*
+>>> + * For VARIABLE_LENGTH_CDB w/ 32 byte extended CDBs
+>>> + */
+>>> +static inline unsigned long long transport_lba_64_ext(unsigned char *cdb)
+>>> +{
+>>> +	unsigned int __v1, __v2;
+>>> +
+>>> +	__v1 = (cdb[12] << 24) | (cdb[13] << 16) | (cdb[14] << 8) | cdb[15];
+>>> +	__v2 = (cdb[16] << 24) | (cdb[17] << 16) | (cdb[18] << 8) | cdb[19];
+>>> +
+>>> +	return ((unsigned long long)__v2) | (unsigned long long)__v1 << 32;
+>>
+>> get_unaligned_be64(&cdb[12]);
+>>
+>> I'd just drop this wrapper
 > 
-> The implicit "100%" there is a magic number.  hrm.
+> Good point, I believe this is only used in a single location.
+> transport_generic_allocate_tasks().
+> 
+>>
+>>> +}
+>>> +
+>>>  /*	transport_set_supported_SAM_opcode():
+>>>   *
+>>>   *
+>>> @@ -4370,6 +4386,23 @@ type_disk:
+>>>  		    (cdb[12] << 8) + cdb[13];
+>>>  }
+>>>  
+>>> +/*
+>>> + * Used for VARIABLE_LENGTH_CDB WRITE_32 and READ_32 variants
+>>> + */
+>>> +static inline u32 transport_get_sectors_32(
+>>> +	unsigned char *cdb,
+>>> +	struct se_cmd *cmd,
+>>> +	int *ret)
+>>> +{
+>>> +	/*
+>>> +	 * Assume TYPE_DISK for non struct se_device objects.
+>>> +	 * Use 32-bit sector value.
+>>> +	 */
+>>> +	return (u32)(cdb[28] << 24) + (cdb[29] << 16) +
+>>> +		    (cdb[30] << 8) + cdb[31];
+>>> +
+>>
+>> get_unaligned_be32
+> 
+> Ok, there are a few more of these that can be converted to
+> get_unaligned_be*() and friends.
+> 
+> Thanks for your comments Boaz!
+> 
+> --nab
 > 
 
-It is but any other value for that number would be very specific to a
-workload or a machine. A sysctl would have to be maintained and I
-couldn't convince myself that anyone could do something sensible with
-the value.
-
-Rather than introducing a new tunable for this, I was toying with the idea over
-the weekend on tracking the scanned/reclaimed ratio within the scan control -
-possibly on a per-zone basis but more likely globally. When this ratio drops
-below a given threshold, start increasing the time it backs off for up to a
-maximum of HZ/10. There are a lot of details to iron out but it's possibly a
-better long-term direction than adding a tunable for this implicit magic number
-because it would be adaptive to what is happening for the current workload.
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
