@@ -1,36 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550Ab0ITGak (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 02:30:40 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60102 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab0ITGaj convert rfc822-to-8bit (ORCPT
+	id S1752848Ab0ITGe1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 02:34:27 -0400
+Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:43069 "EHLO
+	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751968Ab0ITGeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 02:30:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:x-duff:content-type:content-transfer-encoding:subject:date
-         :message-id:to:mime-version:x-mailer;
-        b=xHnDX2NHuEDttnojgGkqISIromX69ATlEB98XwfpLQtmUQaKIhBLAtwZm/EIwejDLs
-         GdXq8VyYjeMwe+sKOuCjn67zYuW2oPEcJDwn+C53tc7DYuvbNjcE3J5tP+vz8cQKpar+
-         k2M0lvTSdGQu1prcIrx/NXh+R5Feg+BpjLJr4=
-From: Mathias Krause <minipli@googlemail.com>
-X-Duff: Duff Lite, Duff Dry, Duff Dark, Lady Duff, Raspberry Duff, Duff Zero
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Subject: linux-2.6-stable.git abandoned?
-Date: Mon, 20 Sep 2010 08:30:30 +0200
-Message-Id: <158DE6B2-4FA4-4213-A63F-76BC94D539D9@googlemail.com>
-To: Chris Wright <chrisw@sous-sol.org>, linux-kernel@vger.kernel.org
-Mime-Version: 1.0 (Apple Message framework v1081)
-X-Mailer: Apple Mail (2.1081)
+	Mon, 20 Sep 2010 02:34:25 -0400
+From: matt mooney <mfm@muteddisk.com>
+To: Michal Marek <mmarek@suse.cz>, Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH] Documentation/kbuild: correct variable definitions in makefiles.txt
+Date: Sun, 19 Sep 2010 23:33:32 -0700
+Message-Id: <1284964412-32211-1-git-send-email-mfm@muteddisk.com>
+X-Mailer: git-send-email 1.6.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Change $(src) and $(obj) definitions to state the path as absolute and
+not relative.
 
-the repository at git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6-stable.git was last updated 3 weeks ago and because of this it's missing v2.6.34.7. Not to mention master is behind, too. Just wanted to ask what the status of this repository is?
+Signed-off-by: matt mooney <mfm@muteddisk.com>
+---
 
-Regards,
-Mathias
+Hmm, this file is also _full_ of bad grammar and might be out of date FAIK.
+If you would like it updated/corrected, please let me know. I don't mind doing
+this, but only if it is beneficial and wanted.
+
+ Documentation/kbuild/makefiles.txt |   11 +++++------
+ 1 files changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
+index c787ae5..fe162f5 100644
+--- a/Documentation/kbuild/makefiles.txt
++++ b/Documentation/kbuild/makefiles.txt
+@@ -376,14 +376,13 @@ more details, with real examples.
+ 	Two variables are used when defining special rules:
+ 
+     $(src)
+-	$(src) is a relative path which points to the directory
+-	where the Makefile is located. Always use $(src) when
+-	referring to files located in the src tree.
++	The absolute path to the directory where the makefile is
++	located. Always use $(src) when referring to files located
++	in the src directory.
+ 
+     $(obj)
+-	$(obj) is a relative path which points to the directory
+-	where the target is saved. Always use $(obj) when
+-	referring to generated files.
++	The absolute path to the directory where the target is saved.
++	Always use $(obj) when referring to generated files.
+ 
+ 	Example:
+ 		#drivers/scsi/Makefile
+-- 
+1.7.2.1
+
