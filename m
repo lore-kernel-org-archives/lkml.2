@@ -1,246 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756409Ab0ITW2G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 18:28:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:40924 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754015Ab0ITW2E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 18:28:04 -0400
-X-Authority-Analysis: v=1.1 cv=Ba7GFA6IM/Rlu/bGJ5lftWmk/oljGo5ZwASPcBcXAAo= c=1 sm=0 a=AQvWsPa8YAIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=mDV3o1hIAAAA:8 a=MLU_O91U2IiFqpbfOa8A:9 a=aShDrDowLo9Hy0FqZqIA:7 a=XqIJsglAZS7dPqnyu8oBc0STGdEA:4 a=PUjeQqilurYA:10 a=GBvSOdkZNRUA:10 a=jEp0ucaQiEUA:10 a=MA374Aut6f5-fwla:21 a=QXKCJxW9esnFGWHu:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 10/10] jump label v11: add docs
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: Jason Baron <jbaron@redhat.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, hpa@zytor.com, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com
-In-Reply-To: <20100917160520.GA23262@Krystal>
-References: <cover.1284733808.git.jbaron@redhat.com>
-	 <f75207ca500d2be85ec049624bc70b01c0183db2.1284733808.git.jbaron@redhat.com>
-	 <20100917160520.GA23262@Krystal>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 20 Sep 2010 18:28:00 -0400
-Message-ID: <1285021680.23122.706.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1756760Ab0ITW2g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 18:28:36 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:36343 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1753830Ab0ITW2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 18:28:34 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX19DuplYepZDPmnD1fpxif1mQ99L8obOWMdH5+N8WI
+	kIrO2pxkP6aVQs
+Message-ID: <4C97E00B.6090103@gmx.de>
+Date: Tue, 21 Sep 2010 00:28:27 +0200
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
+MIME-Version: 1.0
+To: =?UTF-8?B?QnJ1bm8gUHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+CC: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bernie Thompson <bernie@plugable.com>
+Subject: Re: [Patch, RFC] Make struct fb_info ref-counted with kref
+References: <20100919172833.14bf291e@neptune.home>	<4C963E99.9080207@gmx.de>	<20100919190240.65762511@neptune.home>	<4C97B079.8050707@gmx.de>	<20100920213258.1218b284@neptune.home>	<4C97BF40.6030708@gmx.de> <20100920223608.19b4d177@neptune.home>
+In-Reply-To: <20100920223608.19b4d177@neptune.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-09-17 at 12:05 -0400, Mathieu Desnoyers wrote:
-> * Jason Baron (jbaron@redhat.com) wrote:
-> > Add jump label docs as: Documentation/jump-label.txt
-> > 
-> > Signed-off-by: Jason Baron <jbaron@redhat.com>
+Bruno Prémont schrieb:
+> On Mon, 20 September 2010 Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
+>> Bruno Prémont schrieb:
+>>> On Mon, 20 September 2010 Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
+>>>> Bruno Prémont schrieb:
+>>>>> On Sun, 19 September 2010 Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
+>>>>>> Bruno Prémont schrieb:
+>>>>>>> If you have concerns regarding the API changes, please let me know.
+>>>>>> Uhm, I'm not really happy with what we count. With the old method you mentioned 
+>>>>>> we ref-counted framebuffer users, after your patch it's more counting users + 
+>>>>>> uses. This might be okay as we usually are interested whether the ref_count is 0 
+>>>>>> or not but it doesn't look right if we modify the refcount during nearly every 
+>>>>>> framebuffer operation. Wouldn't it be sufficient to do the refcounting in 
+>>>>>> fb_open & fb_release operation + in fbcon where open&release are done?
+>>>>> Well I'm more for counting the uses, (especially as the aim is to not
+>>>>> force the driver to look exactly when it can free the fb_info struct).
+>>>>> If the driver needs to know about active users (e.g. for handling memory
+>>>>> reorganization on mode change or the like) that would remain driver's job.
+>>>> I don't see how your counting would influence the time fb_info is freed. It is 
+>>>> freed when the last reference is gone but the last remaining reference is always 
+>>>>   a user reference either from the framebuffer itself or from any user. But all 
+>>>> users have to keep the framebuffer open to do anything with it therfore the last 
+>>>> thing they do is releasing the framebuffer. So I do not really understand your 
+>>>> reasoning, for me counting the users + uses is more error prone than just the 
+>>>> users. But that's not important for me as I'm only interested in whether the 
+>>>> count is 0, 1 or more (want to turn off the screen if there are no active [=1] 
+>>>> users) which is the same regardless on what you count. So if you really want to 
+>>>> stick to your way of counting, that's no problem for me.
+>>> In case of picoLCD driver (which uses a shadow framebuffer in system RAM) the
+>>> last user can be a (userspace) process as on unplug driver unregisters that
+>>> framebuffer and hands back it's own reference, the fb_destroy callback being
+>>> in charge of freeing the shadow framebuffer when fb_info is being freed.
+>> True. I think I understand the problem you want to solve.
+>> My question is:
+>> Do you keep a reference for each successful open operation until a release is done?
+>> If I read your patch correctly, the answer is yes.
+> 
+> The reference already exists now (fb_info being assigned to file->private_data),
+> but is not being accounted.
+> 
+>> Than the operations/counting you do between such operations should be irrelevant 
+>> to when the free is performed or?
+>> So the free is done either when the framebuffer releases its handle or (in your 
+>> case) when the process closes the file and therefore calls fb_release. Or do you 
+>> have any way to perform framebuffer operations without an open framebuffer?
+> 
+> Yes, the idea is to free fb_info when the last reference to it is being dropped
+> not matter who does it (device file closed or driver cleaning up or whoever else).
+> And do this without great complexity for the driver (fb_release callback not
+> allowing driver to free fb_info inside of callback).
 
-Jason,
+I totally agree.
 
-Could you post this patch again with any updates you want to take from
-Mathieu. No need to post the entire series, I'm pulling in the rest.
-Just this patch.
+> Tracking if/how often framebuffer is opened as such is a separate thing (though
+> all users that have the framebuffer opened hold a reference to fb_info).
 
-Thanks,
-
--- Steve
-
-> > ---
-> >  Documentation/jump-label.txt |  148 ++++++++++++++++++++++++++++++++++++++++++
-> >  1 files changed, 148 insertions(+), 0 deletions(-)
-> >  create mode 100644 Documentation/jump-label.txt
-> > 
-> > diff --git a/Documentation/jump-label.txt b/Documentation/jump-label.txt
-> > new file mode 100644
-> > index 0000000..2e5cff6
-> > --- /dev/null
-> > +++ b/Documentation/jump-label.txt
-> > @@ -0,0 +1,148 @@
-> > +			Jump Label
-> > +			----------
-> > +
-> > +By: Jason Baron <jbaron@redhat.com>
-> > +
-> > +
-> > +1) motivation
-> 
-> You might want to start your titles with capital letters (small nit).
-> 
-> > +
-> > +
-> > +Currently, tracepoints are implemented using a conditional. The conditional
-> > +check requires checking a global variable for each tracepoint. Although,
-> > +the overhead of this check is small, it increases under memory pressure. As we
-> 
-> I wonder if it would be worthwhile to spell out the difference between
-> "memory pressure" in terms of memory bandwidth (which is what we care
-> about here) and in terms of "memory space available". I just don't want
-> people to get mixed up between the two when they read this text. What we
-> care a lot about here is just memory bandwidth, which is impacted by
-> cache pressure.
-> 
-> > +increase the number of tracepoints in the kernel this may become more of an
-> > +issue. In addition, tracepoints are often dormant (disabled), and provide no
-> > +direct kernel functionality. Thus, it is highly desirable to reduce their
-> > +impact as much as possible. Although tracepoints are the original motivation
-> > +for this work, other kernel code paths should be able to make use of the jump
-> > +label optimization.
-> > +
-> > +
-> > +2) jump label description/usage
-> 
-> Start with capital letter here too.
-> 
-> > +
-> > +
-> > +gcc (v4.5) adds a new 'asm goto' statement that allows branching to a label.
-> > +http://gcc.gnu.org/ml/gcc-patches/2009-07/msg01556.html
-> > +
-> > +Thus, this patch set introduces an architecture specific 'JUMP_LABEL()' macro as
-> > +follows (x86):
-> > +
-> > +# define JUMP_LABEL_INITIAL_NOP ".byte 0xe9 \n\t .long 0\n\t"
-> > +
-> > +# define JUMP_LABEL(key, label)					\
-> > +	do {                                                    \
-> > +		asm goto("1:"                                   \
-> > +			JUMP_LABEL_INITIAL_NOP			\
-> > +                        ".pushsection __jump_table,  \"a\" \n\t"\
-> > +                        _ASM_PTR "1b, %l[" #label "], %c0 \n\t" \
-> > +                        ".popsection \n\t"                      \
-> > +                        : :  "i" (key) :  : label);		\
-> > +        } while (0)
-> > +
-> > +
-> > +For architectures that have not yet introduced jump label support its simply:
-> > +
-> > +#define JUMP_LABEL(key, label)			\
-> > +	if (unlikely(*key))			\
-> > +		goto label;
-> > +
-> > +which then can be used as:
-> > +
-> > +	....
-> > +        JUMP_LABEL(trace_name, trace_label, jump_enabled);
-> > +        printk("not doing tracing\n");
-> > +	return;
-> > +trace_label:
-> > +        printk("doing tracing: %d\n", file);
-> > +	....
-> > +
-> > +The 'key' argument is thus a pointer to a conditional argument that can be used
-> > +if the optimization is not enabled. Otherwise, this address serves as a unique
-> > +key to identify the particular instance of the jump label.
-> > +
-> > +Thus, when tracing is disabled, we simply have a no-op followed by a jump around
-> > +the dormant (disabled) tracing code. The 'JUMP_LABEL()' macro, produces a
-> > +'jump_table' which has the following format:
-> > +
-> > +[instruction address] [jump target] [tracepoint key]
-> > +
-> > +Thus, to enable a tracepoint, we simply patch the 'instruction address' with
-> > +a jump to the 'jump target'.
-> > +
-> > +The call to enable a jump label is: enable_jump_label(key); to disable:
-> > +disable_jump_label(key);
-> > +
-> > +
-> > +3) architecture interface
-> 
-> cap.
-> 
-> > +
-> > +
-> > +There are a few functions and macros which arches must implement in order to
-> 
-> arches -> architectures
-> 
-> > +take advantage of this optimization. As previously mentioned, if there is no
-> > +architecture support we simply fall back to a traditional, load, test, and
-> > +jump sequence.
-> > +
-> > +* add "HAVE_ARCH_JUMP_LABEL" to arch/<arch>/Kconfig to indicate support
-> > +
-> > +* #define JUMP_LABEL_NOP_SIZE, arch/x86/include/asm/jump_label.h
-> > +
-> > +* #define "JUMP_LABEL(key, label)", arch/x86/include/asm/jump_label.h
-> > +
-> > +* void arch_jump_label_transform(struct jump_entry *entry, enum jump_label_type type)
-> > +	see: arch/x86/kernel/jump_label.c
-> > +
-> > +* void arch_jump_label_text_poke_early(jump_label_t addr)
-> > +	see: arch/x86/kernel/jump_label.c
-> > +
-> > +* finally add a definition for "struct jump_entry".
-> > +	see: arch/x86/include/asm/jump_label.h
-> > +
-> > +
-> > +4) Jump label analysis (x86)
-> > +
-> > +
-> > +I've tested the performance of using 'get_cycles()' calls around the
-> > +tracepoint call sites. For an Intel Core 2 Quad cpu (in cycles, averages):
-> > +
-> > +		idle		after tbench run
-> > +		----		----------------
-> > +old code	 32		  88
-> > +new code	  2		   4
-> > +
-> > +
-> > +The performance improvement can be reproduced reliably on both Intel and AMD
-> > +hardware.
-> > +
-> > +In terms of code analysis the current code for the disabled case is a 'cmpl'
-> > +followed by a 'je' around the tracepoint code. so:
-> > +
-> > +cmpl - 83 3d 0e 77 87 00 00 - 7 bytes
-> > +je   - 74 3e                - 2 bytes
-> > +
-> > +total of 9 instruction bytes.
-> > +
-> > +The new code is a 'nopl' followed by a 'jmp'. Thus:
-> > +
-> > +nopl - 0f 1f 44 00 00 - 5 bytes
-> > +jmp  - eb 3e          - 2 bytes
-> > +
-> > +total of 7 instruction bytes.
-> > +
-> > +So, the new code also accounts for 2 less bytes in the instruction cache per tracepoint.
-> > +
-> > +The optimization depends on !CC_OPTIMIZE_FOR_SIZE. When CC_OPTIMIZE_FOR_SIZE is
-> > +set, gcc does not always out of line the not taken label path in the same way
-> > +that the "if unlikely()" paths are made out of line. Thus, with
-> > +CC_OPTIMIZE_FOR_SIZE set, this optimization is not always optimal. This may be
-> > +solved in subsequent gcc versions, that allow us to move labels out of line,
-> > +while still optimizing for size.
-> > +
-> > +
-> > +5) Acknowledgments
-> 
-> Acknowledgements (seems to be the usual way to spell it in
-> Documentation/).
-> 
-> > +
-> > +
-> > +Thanks to Roland McGrath and Richard Henderson for helping come up with the
-> > +initial 'asm goto' and jump label design.
-> > +
-> > +Thanks to Mathieu Desnoyers and H. Peter Anvin for calling attention to this
-> > +issue, and outlining the requirements of a solution. Mathieu also implemened a
-> 
-> implemened -> implemented
-> 
-> Thanks!
-> 
-> Mathieu
-> 
-> > +solution in the form of the "Immediate Values" work.
-> > -- 
-> > 1.7.1
-> > 
-> 
+That's what I said. So as long as refcount <= 1 it does not matter whether you 
+just count on open/release or additionally on every framebuffer operation, just 
+that the later produces more noise.
+So I still don't see any advantage in counting users + uses.
+Please note that I do not object the idea of the patch itself, it's only that I 
+have a different preference on what to count. I only want to express that your 
+way is more complicated than what I would recommend.
+But if you want to go on I do not object. As long as the end result works that's 
+okay with me.
 
 
+Thanks
+
+Florian Tobias Schandinat
