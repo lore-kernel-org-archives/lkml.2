@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757286Ab0ITT5S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 15:57:18 -0400
-Received: from www17.your-server.de ([213.133.104.17]:60725 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972Ab0ITT5R convert rfc822-to-8bit (ORCPT
+	id S1756799Ab0ITUA3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 16:00:29 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:55737
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756509Ab0ITUA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 15:57:17 -0400
-References: <1fwtoy8sG5H.A.veG.9D7lMB@chimera> <Wn2eLj_6KZG.A.JTH.nE7lMB@chimera>
-In-Reply-To: <Wn2eLj_6KZG.A.JTH.nE7lMB@chimera>
-Mime-Version: 1.0 (iPod Mail 8B117)
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <5F27624E-7090-490A-92CF-F3C5036C3583@m3y3r.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-X-Mailer: iPod Mail (8B117)
-From: Thomas Meyer <thomas@m3y3r.de>
-Subject: Re: [Bug #17722] 2.6.36-rc3: WARNING: at net/mac80211/scan.c:269 ieee80211_scan_completed
-Date: Mon, 20 Sep 2010 21:58:00 +0200
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-X-Authenticated-Sender: thomas@m3y3r.de
+	Mon, 20 Sep 2010 16:00:28 -0400
+Date: Mon, 20 Sep 2010 13:00:47 -0700 (PDT)
+Message-Id: <20100920.130047.124017922.davem@davemloft.net>
+To: nbowler@elliptictech.com
+Cc: eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: Regression, bisected: reference leak with IPSec since ~2.6.31
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100920195256.GA14330@elliptictech.com>
+References: <20100920174443.GA5515@elliptictech.com>
+	<1285006844.2323.17.camel@edumazet-laptop>
+	<20100920195256.GA14330@elliptictech.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 20.09.2010 um 21:08 schrieb "Rafael J. Wysocki" <rjw@sisk.pl>:
+From: Nick Bowler <nbowler@elliptictech.com>
+Date: Mon, 20 Sep 2010 15:52:56 -0400
 
-> This message has been generated automatically as a part of a summary report
-> of recent regressions.
+> On 2010-09-20 20:20 +0200, Eric Dumazet wrote:
+>> If you change your program to send small frames (so they are not
+>> fragmented), is the problem still present ?
 > 
-> The following bug entry is on the current list of known regressions
-> from 2.6.35.  Please verify if it still should be listed and let the tracking team
-> know (either way).
+> I changed MAX_DGRAM_SIZE in the test program to 1000 (mtu on the
+> interface is 1500).  The short answer is that the references are
+> not leaked, and things seem to get cleaned up.  So the rest of this
+> mail probably describes a separate issue.
 > 
-> 
-> 
+> The long answer, however, is interesting: With latest Linus' git, the
+> references are cleaned up much later than I would expect.  After running
+> the test program and flushing the SAD/SPD, the reference count is still
+> 1.  If I repeat the test immediately, the reference count will increase
+> further.  I can easily raise the reference count to, say, 100.  Now, if
+> I wait a while (10 minutes or so), the reference count will still be
+> 100.  However, when I run the setkey script after this delay, the
+> reference count drops immediately to 1.  If I then flush the SAD/SPD, it
+> drops to 0.
 
-See also: 
+This is because we actually cache IPSEC routes correctly, previously
+we'd create a new routing cache entry every time a lookup happened.
 
-http://www.spinics.net/lists/netdev/msg140769.html
-> 
-> 
