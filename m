@@ -1,113 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932067Ab0ITS5g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 14:57:36 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:51950 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753262Ab0ITS5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 14:57:35 -0400
-Date: Mon, 20 Sep 2010 11:57:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: James.Bottomley@HansenPartnership.com, benh@kernel.crashing.org,
-        dhowells@redhat.com, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: Re: memory barrier question
-Message-ID: <20100920185732.GA12336@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1284760148.30449.107.camel@pasglop>
- <20100917231222.GA3060@linux.vnet.ibm.com>
- <1284864421.30449.113.camel@pasglop>
- <20100919152638.GF3060@linux.vnet.ibm.com>
- <E1OxQIg-0005Nw-WE@pomaz-ex.szeredi.hu>
- <20100919215909.GG3060@linux.vnet.ibm.com>
- <1284944316.2957.795.camel@mulgrave.site>
- <20100920012915.GI3060@linux.vnet.ibm.com>
- <E1OxioY-0006nd-M9@pomaz-ex.szeredi.hu>
- <20100920182504.GD2408@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100920182504.GD2408@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756962Ab0ITS6m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 14:58:42 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:65237 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753262Ab0ITS6l convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 14:58:41 -0400
+Date: Mon, 20 Sep 2010 21:00:35 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCH] usb: gadget: rndis: don't use dev_get_stats()
+In-reply-to: <1285008527.2323.52.camel@edumazet-laptop>
+To: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>
+Cc: dbrownell@users.sourceforge.net, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Message-id: <op.vjchq9lx7p4s8u@pikus>
+Organization: Samsung Electronics
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.62 (Linux)
+References: <bdd595ff5a45c008254da0a0c4322b6e7b699cf2.1285006511.git.m.nazarewicz@samsung.com>
+ <20100920.112727.214208208.davem@davemloft.net>
+ <1285008527.2323.52.camel@edumazet-laptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 20, 2010 at 11:25:04AM -0700, Paul E. McKenney wrote:
-> On Mon, Sep 20, 2010 at 06:01:58PM +0200, Miklos Szeredi wrote:
-> > On Sun, 19 Sep 2010, Paul E. McKenney wrote:
-> > > > > Again, please put at least an ACCESS_ONCE() in.  Trivial to do now,
-> > > > > possibly saving much pain and headache later on.
-> > > > 
-> > > > OK, lost you here.  ACCESS_ONCE() is only needed in certain situations
-> > > > (like list traversal) because some compilers can reload cached values
-> > > > across an explicit barrier (which isn't here).
-> > > 
-> > > ACCESS_ONCE() also tells the compiler not to try to guess.
-> > 
-> > If the code is written like this:
-> > 
-> > 	if (ACCESS_ONCE(dentry->d_inode)) {
-> > 		blah = dentry->d_inode->i_some_field
-> > 		...
-> > 	}
-> > 
-> > does the compiler guarantee anything or does it need a full compiler
-> > barrier to prevent reordering?
-> 
-> From what I understand, this could do strange things.  The compiler
-> is forced to access dentry->d_inode for the "if" check, but would be
-> free to use some previously fetched value for the assignment to "blah".
-> Unless of course this code was under a lock that prevented any
-> change to dentry->d_inode.
-> 
-> If the code is to execute in a lockless manner, I would instead suggest
-> something like the following:
-> 
-> 	p = ACCESS_ONCE(dentry->d_inode);
-> 	if (p) {
-> 		blah = p->i_some_field
-> 		...
-> 	}
-> 
-> This would force the compiler to actually fetch dentry->d_inode
-> and only then dereference it.
+>> From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+>>> This commit removes the call to dev_get_stats() from the
+>>> gen_ndis_query_resp() function.  Since spin_lock_bh() was
+>>> added to dev_txq_stats_fold() the call started causing
+>>> warnings.  This is because gen_ndis_query_resp() can be
+>>> (indirectly) called from rndis_command_complete() which is
+>>> called with interrupts disabled.
 
-Are the initial check and the assignment to "blah" in different
-functions or something?  If so, the following might be easier to
-deal with:
+> Le lundi 20 septembre 2010 à 11:27 -0700, David Miller a écrit :
+>> The way this works is dev_get_stats() takes that "temp" object the
+>> caller provides, it writes the correct statistics into it (with any
+>> necessary translations), and then passes back a pointer to it.
+[...]
+>> Like I originally suggested, you need to rearrange the code in this
+>> driver such that the gen_ndis_query_resp() work happens in a tasklet,
+>> workqueue, or some other non-hardware-irq context.
 
-	if (ACCESS_ONCE(dentry->d_inode)) {
-		blah = ACCESS_ONCE(dentry->d_inode)->i_some_field
-		...
-	}
+On Mon, 20 Sep 2010 20:48:47 +0200, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Hmm, maybe its a bit difficult to fix this problem for stable kernel.
+>
+> What we could do is assume rndis wont use a device driver that actually
+> needs txq tx stats folding, and just use following interim patch ?
+>
+> diff --git a/net/core/dev.c b/net/core/dev.c
+> index b9b22a3..31d5424 100644
+> --- a/net/core/dev.c
+> +++ b/net/core/dev.c
+> @@ -5288,6 +5288,14 @@ void dev_txq_stats_fold(const struct net_device *dev,
+>  	unsigned int i;
+>  	struct netdev_queue *txq;
+>+	/* temporary hack : rndis calls us under hard irq */
+> +	if (WARN_ON_ONCE(in_irq())) {
+> +		stats->tx_bytes   = dev->stats.tx_bytes;
+> +		stats->tx_packets = dev->stats.tx_packets;
+> +		stats->tx_dropped = dev->stats.tx_dropped;
+> +		return;
+> +	}
+> +
+>  	for (i = 0; i < dev->num_tx_queues; i++) {
+>  		txq = netdev_get_tx_queue(dev, i);
+>  		spin_lock_bh(&txq->_xmit_lock);
 
-The compiler is forbidden to reorder volatile accesses (at least assuming
-that they have a well-defined order, which they do in this case).  The
-CPU is required to make successive accesses to the same memory location
-be in order.
+I think it's better to put such temporary fix inside RNDIS code.  It
+seems there is no need to clutter the whole subsystem with temporary
+fix.
 
-So as long as the only change to dentry->d_inode is a NULL-to-non-NULL
-transition, the above should work, other than on DEC Alpha.
-
-						Thanx, Paul
-
-> This would -not- constrain the CPU in any way, but the only CPU that
-> I know of that misbehaves in this case is DEC Alpha.
-> 
-> So my version of the above code would do what you expect on most CPUs,
-> but really could fail on DEC Alpha.  If you don't believe me, please feel
-> free to take a look at http://www.openvms.compaq.com/wizard/wiz_2637.html.
-> 
-> But do we really care about Alpha anymore?  (I can see it now... The
-> Alpha portion of the kernel tree moves to staging...)
-> 
-> > Because that pattern is, again, pretty much all over the place.  Yeah
-> > it can be rewritten but that's not always feasable since it's
-> > difficult to audit, would possibly need extra function arguments,
-> > etc...
-> 
-> Again, the pattern is OK if you are preventing the pointer from changing.
-> 
-> 							Thanx, Paul
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
