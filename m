@@ -1,175 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756822Ab0ITQCx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 12:02:53 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:55006 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752275Ab0ITQCw (ORCPT
+	id S1756848Ab0ITQDt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 12:03:49 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33450 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752275Ab0ITQDr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 12:02:52 -0400
-Date: Mon, 20 Sep 2010 12:02:49 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>
-Subject: Re: [RFC PATCH] sched: START_NICE feature (temporarily niced
-	forks) (v3)
-Message-ID: <20100920160249.GB12624@Krystal>
-References: <20100914202503.GA1496@Krystal> <1284983026.2275.695.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284983026.2275.695.camel@laptop>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 11:26:30 up 240 days, 18:03,  5 users,  load average: 0.02, 0.04,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 20 Sep 2010 12:03:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=NZmugSx5O0XSox8PHONvs/85hhmTd5SuQhj8v/SYnK5i/Gacaj5G1dWNhDQKtPm8Ty
+         rpcNq736X6DeSObnGR2KicEexnTHINqJHNcvzWyzhjWW9OXwWZD7bV9Q3RWKN+NySWhO
+         YnyyKA0Fpjx2PINFIWskjn7vOlOakIHlOOQVQ=
+Subject: Re: [PATCH] net: core: dev.c: use spin_lock_irqsave() rather than
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, netdev@vger.kernel.org
+In-Reply-To: <ee14e5e38e7a5df520d902ef8a236bbe9ed206fa.1284991149.git.m.nazarewicz@samsung.com>
+References: <ee14e5e38e7a5df520d902ef8a236bbe9ed206fa.1284991149.git.m.nazarewicz@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 20 Sep 2010 18:03:41 +0200
+Message-ID: <1284998621.3420.539.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra (peterz@infradead.org) wrote:
-> On Tue, 2010-09-14 at 16:25 -0400, Mathieu Desnoyers wrote:
+Le lundi 20 septembre 2010 à 17:08 +0200, Michal Nazarewicz a écrit :
+> This commit fixes a warning that was issued when g_ether gadget
+> was connected to Windows host.  In g_ether, the dev_txq_stats_fold()
+> can be called from context other then soft-irq so _bh version of
+> spin_lock is not adequate.
+> 
+> Changing from spin_lock_bh() to spin_lock_irqsave() is always safe (as
+> irqsave is superset of all other spin lock operations) is always safe
+> so this commit should not break anything.
+> 
+> As Eric Dumazet said, dev_txq_stats_fold() is a slow patch so there
+> is no need to optimise that much.
+> 
+> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+> Cc: Eric Dumazet <eric.dumazet@gmail.com>
+> ---
+>  net/core/dev.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> Hello David,
+> 
+> could you pull this patch.  I think it's best to get it in 2.6.36.
 > 
 > 
-> > Index: linux-2.6-lttng.git/include/linux/sched.h
-> > ===================================================================
-> > --- linux-2.6-lttng.git.orig/include/linux/sched.h
-> > +++ linux-2.6-lttng.git/include/linux/sched.h
-> > @@ -1132,6 +1132,8 @@ struct sched_entity {
-> >  	u64			prev_sum_exec_runtime;
-> >  
-> >  	u64			nr_migrations;
-> > +	u64			fork_nice_timeout;
-> > +	unsigned int		fork_nice_penality;
-> >  
-> >  #ifdef CONFIG_SCHEDSTATS
-> >  	struct sched_statistics statistics;
-> > Index: linux-2.6-lttng.git/kernel/sched.c
-> > ===================================================================
-> > --- linux-2.6-lttng.git.orig/kernel/sched.c
-> > +++ linux-2.6-lttng.git/kernel/sched.c
-> > @@ -2421,6 +2421,8 @@ static void __sched_fork(struct task_str
-> >  	p->se.sum_exec_runtime		= 0;
-> >  	p->se.prev_sum_exec_runtime	= 0;
-> >  	p->se.nr_migrations		= 0;
-> > +	p->se.fork_nice_timeout		= 0;
-> > +	p->se.fork_nice_penality	= 0;
-> >  
-> >  #ifdef CONFIG_SCHEDSTATS
-> >  	memset(&p->se.statistics, 0, sizeof(p->se.statistics));
-> > Index: linux-2.6-lttng.git/kernel/sched_fair.c
-> > ===================================================================
-> > --- linux-2.6-lttng.git.orig/kernel/sched_fair.c
-> > +++ linux-2.6-lttng.git/kernel/sched_fair.c
-> > @@ -433,6 +433,14 @@ calc_delta_fair(unsigned long delta, str
-> >  	if (unlikely(se->load.weight != NICE_0_LOAD))
-> >  		delta = calc_delta_mine(delta, NICE_0_LOAD, &se->load);
-> >  
-> > +	if (se->fork_nice_penality) {
-> > +		delta <<= se->fork_nice_penality;
-> > +		if ((s64)(se->sum_exec_runtime - se->fork_nice_timeout) > 0) {
-> > +			se->fork_nice_penality = 0;
-> > +			se->fork_nice_timeout = 0;
-> > +		}
-> > +	}
-> > +
-> >  	return delta;
-> >  }
+> Without this patch, I got the following warning when RNDIS
+> configuration is chosen:
 > 
-> Something like this ought to live at every place where you use se->load,
-> including sched_slice(), possibly wakeup_gran(), although that's more
-> heuristic, so you could possibly leave it out there.
-
-Agreed for wakeup_gran(). I'll just remove the duplicate "if
-(unlikely(se->load.weight != NICE_0_LOAD))" check.
-
-For sched_slice(), I don't know. sched_vslice() is used to take nice level into
-account when placing new tasks. sched_slice() takes only the weight into
-account, not the nice level. So given that I want to mimic the nice level
-impact, I'm not sure we have to take this into account at the sched_slice level.
-
-Also, I wonder if leaving it out of account_entity_enqueue/dequeue() calls to
-add_cfs_task_weight() and inc/dec_cpu_load is OK ? Because it can be a pain to
-reequilibrate the cpu and task weights when the timeout occurs.  The temporary
-effect of this nice-on-fork is to make the tasks a little lighter, so the weight
-is not accurate. But I wonder if we really care that much about it.
-
+> > ------------[ cut here ]------------
+> > WARNING: at kernel/softirq.c:143 local_bh_enable_ip+0x44/0xc0()
+> > Modules linked in:
+> > [<c002d73c>] (unwind_backtrace+0x0/0xf0) from [<c0043b60>] (warn_slowpath_common+0x4c/0x64)
+> > [<c0043b60>] (warn_slowpath_common+0x4c/0x64) from [<c0043b90>] (warn_slowpath_null+0x18/0x1c)
+> > [<c0043b90>] (warn_slowpath_null+0x18/0x1c) from [<c0049024>] (local_bh_enable_ip+0x44/0xc0)
+> > [<c0049024>] (local_bh_enable_ip+0x44/0xc0) from [<c025ef18>] (dev_txq_stats_fold+0xac/0x108)
+> > [<c025ef18>] (dev_txq_stats_fold+0xac/0x108) from [<c025f018>] (dev_get_stats+0xa4/0xac)
+> > [<c025f018>] (dev_get_stats+0xa4/0xac) from [<c01f72bc>] (gen_ndis_query_resp+0x4c/0x43c)
+> > [<c01f72bc>] (gen_ndis_query_resp+0x4c/0x43c) from [<c01f784c>] (rndis_msg_parser+0x1a0/0x32c)
+> > [<c01f784c>] (rndis_msg_parser+0x1a0/0x32c) from [<c01f79f8>] (rndis_command_complete+0x20/0x4c)
+> > [<c01f79f8>] (rndis_command_complete+0x20/0x4c) from [<c01f3278>] (done+0x5c/0x70)
+> > [<c01f3278>] (done+0x5c/0x70) from [<c01f3c60>] (complete_tx+0xf0/0x1a8)
+> > [<c01f3c60>] (complete_tx+0xf0/0x1a8) from [<c01f3d8c>] (process_ep_in_intr+0x74/0x14c)
+> > [<c01f3d8c>] (process_ep_in_intr+0x74/0x14c) from [<c01f470c>] (s3c_udc_irq+0x2c8/0x3f4)
+> > [<c01f470c>] (s3c_udc_irq+0x2c8/0x3f4) from [<c006dfd0>] (handle_IRQ_event+0x24/0xe4)
+> > [<c006dfd0>] (handle_IRQ_event+0x24/0xe4) from [<c006fe40>] (handle_level_irq+0xb0/0x12c)
+> > [<c006fe40>] (handle_level_irq+0xb0/0x12c) from [<c0027074>] (asm_do_IRQ+0x74/0x98)
+> > [<c0027074>] (asm_do_IRQ+0x74/0x98) from [<c0027ca4>] (__irq_usr+0x44/0xc0)
+> > Exception stack(0xe735ffb0 to 0xe735fff8)
+> > ffa0:                                     000cc328 00000000 00000000 bec76520
+> > ffc0: 000ee008 000bd210 00000000 00000000 000ee068 000ee008 bec76524 bec76520
+> > ffe0: 000ec108 bec76508 000471f4 000458e8 80000010 ffffffff
+> > ---[ end trace 92e33c96fb76fb3d ]---
 > 
-> > @@ -832,6 +840,11 @@ dequeue_entity(struct cfs_rq *cfs_rq, st
+> After some investigation I found out that commit
+> bd27290a593f80cb99e95287cb29c72c0d57608b is the culprit:
+> 
+> > diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+> > index fdc3f29..b626289 100644
+> > --- a/include/linux/netdevice.h
+> > +++ b/include/linux/netdevice.h
+> > @@ -501,9 +501,9 @@ struct netdev_queue {
+> >  	 * please use this field instead of dev->trans_start
 > >  	 */
-> >  	if (!(flags & DEQUEUE_SLEEP))
-> >  		se->vruntime -= cfs_rq->min_vruntime;
-> > +
-> > +	if (se->fork_nice_penality) {
-> > +		se->fork_nice_penality = 0;
-> > +		se->fork_nice_timeout = 0;
-> > +	}
-> >  }
+> >  	unsigned long		trans_start;
+> > -	unsigned long		tx_bytes;
+> > -	unsigned long		tx_packets;
+> > -	unsigned long		tx_dropped;
+> > +	u64			tx_bytes;
+> > +	u64			tx_packets;
+> > +	u64			tx_dropped;
+> >  } ____cacheline_aligned_in_smp;
 > >  
-> >  /*
+> >  #ifdef CONFIG_RPS
+> > diff --git a/net/core/dev.c b/net/core/dev.c
+> > index 1c002c7..9de75cd 100644
+> > --- a/net/core/dev.c
+> > +++ b/net/core/dev.c
+> > @@ -5282,15 +5282,17 @@ void netdev_run_todo(void)
+> >  void dev_txq_stats_fold(const struct net_device *dev,
+> >  			struct rtnl_link_stats64 *stats)
+> >  {
+> > -	unsigned long tx_bytes = 0, tx_packets = 0, tx_dropped = 0;
+> > +	u64 tx_bytes = 0, tx_packets = 0, tx_dropped = 0;
+> >  	unsigned int i;
+> >  	struct netdev_queue *txq;
+> >  
+> >  	for (i = 0; i < dev->num_tx_queues; i++) {
+> >  		txq = netdev_get_tx_queue(dev, i);
+> > +		spin_lock_bh(&txq->_xmit_lock);
+> >  		tx_bytes   += txq->tx_bytes;
+> >  		tx_packets += txq->tx_packets;
+> >  		tx_dropped += txq->tx_dropped;
+> > +		spin_unlock_bh(&txq->_xmit_lock);
+> >  	}
+> >  	if (tx_bytes || tx_packets || tx_dropped) {
+> >  		stats->tx_bytes   = tx_bytes;
 > 
-> So you want to reset this penalty on each de-schedule, not only sleep
-> (but also preemptions)?
-
-only sleeps. So I should put this within a 
-
-if (flags & DEQUEUE_SLEEP) {
-  ...
-}
-
-I suppose ?
-
+> Changing spin_lock_bh() to spin_lock_irqsave().
 > 
-> > @@ -3544,8 +3557,27 @@ static void task_fork_fair(struct task_s
-> >  
-> >  	update_curr(cfs_rq);
-> >  
-> > -	if (curr)
-> > +	if (curr) {
-> >  		se->vruntime = curr->vruntime;
-> > +		if (sched_feat(START_NICE)) {
-> > +			if (curr->fork_nice_penality &&
-> > +			    (s64)(curr->sum_exec_runtime
-> > +				  - curr->fork_nice_timeout) > 0) {
-> > +				curr->fork_nice_penality = 0;
-> > +				curr->fork_nice_timeout = 0;
-> > +			}
-> > +
-> > +			if (!curr->fork_nice_timeout)
-> > +				curr->fork_nice_timeout =
-> > +					curr->sum_exec_runtime;
-> > +			curr->fork_nice_timeout += sched_slice(cfs_rq, curr);
-> > +			curr->fork_nice_penality = min_t(unsigned int,
-> > +							 curr->fork_nice_penality + 1, 8);
-> > +			se->fork_nice_timeout = curr->fork_nice_timeout
-> > +						- curr->sum_exec_runtime;
-> > +			se->fork_nice_penality = curr->fork_nice_penality;
-> > +		}
-> > +	}
-> >  	place_entity(cfs_rq, se, 1);
-> >  
-> >  	if (sysctl_sched_child_runs_first && curr && entity_before(curr, se)) {
-> 
-> If you stick than in a separate function you can loose 2 indent levels,
-> which would help with readability.
+> diff --git a/net/core/dev.c b/net/core/dev.c
+> index 1ae6543..278bd08 100644
+> --- a/net/core/dev.c
+> +++ b/net/core/dev.c
+> @@ -5289,12 +5289,13 @@ void dev_txq_stats_fold(const struct net_device *dev,
+>  	struct netdev_queue *txq;
+>  
+>  	for (i = 0; i < dev->num_tx_queues; i++) {
+> +		unsigned long flags;
+>  		txq = netdev_get_tx_queue(dev, i);
+> -		spin_lock_bh(&txq->_xmit_lock);
+> +		spin_lock_irqsave(&txq->_xmit_lock, flags);
+>  		tx_bytes   += txq->tx_bytes;
+>  		tx_packets += txq->tx_packets;
+>  		tx_dropped += txq->tx_dropped;
+> -		spin_unlock_bh(&txq->_xmit_lock);
+> +		spin_unlock_irqrestore(&txq->_xmit_lock, flags);
+>  	}
+>  	if (tx_bytes || tx_packets || tx_dropped) {
+>  		stats->tx_bytes   = tx_bytes;
 
-Excellent point, will do! That will let me add more comments into the function
-too.
+Hmm, while your patch is technically correct, it seems strange all this
+stuff runs in hard irq context.
 
-Thanks a lot!
+If we accept dev_get_stats() being called from hard irq context, we must
+audit all ndo_get_stats() & ndo_get_stats64() to make sure they use
+spin_lock_irqsave() variants. I am pretty sure we have a lot of work...
 
-Mathieu
+For example:
+ drivers/net/macvlan.c uses a _bh() variant
+ drivers/net/cxgb4vf/cxgb4vf_main.c uses a spin_lock()
+ drivers/net/bonding/bond_main.c uses a read_lock_bh()
+ drivers/net/sunhme.c uses a spin_lock_irq()/spin_unlock_irq()
+ drivers/net/ehea/ehea_main.c uses a get_zeroed_page(GFP_KERNEL);
+ drivers/net/sfc/efx.c uses a spin_lock_bh()
+
+...
+
+dev_get_stats(dev, &temp) is called from drivers/usb/gadget/rndis.c,
+while I suspect underlying stats are already provided in dev->stats
 
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+
