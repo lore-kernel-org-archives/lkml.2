@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751053Ab0ITE6W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 00:58:22 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:43124 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750776Ab0ITE6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 00:58:20 -0400
-Date: Mon, 20 Sep 2010 14:58:17 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, Chris Ball <cjb@laptop.org>
-Subject: linux-next: manual merge of the bkl-trivial tree with the mmc tree
-Message-Id: <20100920145817.71fa0c35.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751200Ab0ITFVh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 01:21:37 -0400
+Received: from victor.provo.novell.com ([137.65.250.26]:43776 "EHLO
+	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810Ab0ITFVg (ORCPT
+	<rfc822;groupwise-KNikanth@novell.com:0:0>);
+	Mon, 20 Sep 2010 01:21:36 -0400
+From: Nikanth Karthikesan <knikanth@suse.de>
+Organization: suse.de
+To: Richard Guenther <rguenther@suse.de>
+Subject: Re: [PATCH v2] After swapout/swapin private dirty mappings are reported clean in smaps
+Date: Mon, 20 Sep 2010 10:54:01 +0530
+User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-default; KDE/4.3.5; x86_64; ; )
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michael Matz <matz@novell.com>, Matt Mackall <mpm@selenic.com>,
+        linux-kernel@vger.kernel.org
+References: <20100915134724.C9EE.A69D9226@jp.fujitsu.com> <alpine.LNX.2.00.1009151612450.28912@zhemvz.fhfr.qr> <201009192307.09309.knikanth@suse.de>
+In-Reply-To: <201009192307.09309.knikanth@suse.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201009201054.02143.knikanth@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Sunday 19 September 2010 23:07:09 Nikanth Karthikesan wrote:
+> On Wednesday 15 September 2010 19:44:17 Richard Guenther wrote:
+> > On Wed, 15 Sep 2010, Balbir Singh wrote:
+> > > * Nikanth Karthikesan <knikanth@suse.de> [2010-09-15 12:01:11]:
+> > > > How? Current smaps information without this patch provides incorrect
+> > > > information. Just because a private dirty page became part of swap
+> > > > cache, it shown as clean and backed by a file. If it is shown as
+> > > > clean and backed by swap then it is fine.
+> > >
+> > > How is GDB using this information?
+> >
+> > GDB counts the number of dirty and swapped pages in a private mapping and
+> > based on that decides whether it needs to dump it to a core file or not.
+> > If there are no dirty or swapped pages gdb assumes it can reconstruct
+> > the mapping from the original backing file.  This way for example
+> > shared libraries do not end up in the core file.
+> 
+> Well, may be /proc/pid/pagemap + /proc/kpageflags is enough for this! One
+>  can get the pageflags using these interfaces. See
+>  Documentation/vm/pagemap.txt for the explanation on how to do it. There is
+>  also a sample program that prints page flags using this interface in
+>  Documentation/vm/page-types.c.
+> 
+> It is bad that /proc/pid/pagemap is never mentioned in
+> Documentation/filesystems/proc.txt. I will send a patch to rectify this.
 
-Today's linux-next merge of the bkl-trivial tree got a conflict in
-drivers/mmc/card/block.c between commit
-28280d210bacf6788a5e4b12c5a9430bd50860b4 ("mmc: make number of mmcblk
-minors configurable") from the mmc tree and commit
-5778067afcfd8b718ffc3744c25fdd194fc886a1 ("block: autoconvert trivial BKL
-users to private mutex") from the bkl-trivial tree.
+Or even simpler, /proc/pid/numa_maps already exports the number of anonymous 
+pages in a mapping, if you have CONFIG_NUMA=y! Again not documented in 
+Documentation/filesystems/proc.txt
 
-I fixed it up (see below) and can carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/mmc/card/block.c
-index 5568044,00073b7..0000000
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@@ -44,26 -43,15 +43,27 @@@
-  #include "queue.h"
-  
-  MODULE_ALIAS("mmc:block");
- +#ifdef MODULE_PARAM_PREFIX
- +#undef MODULE_PARAM_PREFIX
- +#endif
- +#define MODULE_PARAM_PREFIX "mmcblk."
- +
- +
- +/*
- + * The defaults come from config options but can be overriden by module
- + * or bootarg options.
- + */
- +static int perdev_minors = CONFIG_MMC_BLOCK_MINORS;
-  
-  /*
- - * max 8 partitions per card
- + * We've only got one major, so number of mmcblk devices is
- + * limited to 256 / number of minors per device.
-   */
- -#define MMC_SHIFT	3
- -#define MMC_NUM_MINORS	(256 >> MMC_SHIFT)
- +static int max_devices;
-  
-+ static DEFINE_MUTEX(block_mutex);
- -static DECLARE_BITMAP(dev_use, MMC_NUM_MINORS);
- +/* 256 minors, so at most 256 separate devices */
- +static DECLARE_BITMAP(dev_use, 256);
-  
-  /*
-   * There is one mmc_blk_data per slot.
+Thanks
+Nikanth
