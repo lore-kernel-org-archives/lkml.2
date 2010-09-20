@@ -1,92 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755205Ab0ITRip (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 13:38:45 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:58078 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754922Ab0ITRin (ORCPT
+	id S1755404Ab0ITRj1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 13:39:27 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:20482 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754842Ab0ITRjZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 13:38:43 -0400
-Date: Mon, 20 Sep 2010 13:38:41 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Roland McGrath <roland@redhat.com>, Ben Hawkes <hawkes@sota.gen.nz>
-Subject: Re: planned 2.6.35.x -stable release for critical x86-64
-	vulnerabilities ?
-Message-ID: <20100920173840.GA30241@Krystal>
-References: <20100920165320.GA28380@Krystal> <20100920172319.GA8526@suse.de>
+	Mon, 20 Sep 2010 13:39:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=QZxabm2phZnzD4j+aw7/4hiaTs/dM1Mja+qYsG4Q8oHrUyBb+Crr3wR03XwAt6ShWD
+         zVBz7s8dIQdBDOrk9WZg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100920172319.GA8526@suse.de>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 13:35:37 up 240 days, 20:12,  5 users,  load average: 0.00, 0.01,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1284895893.2275.627.camel@laptop>
+References: <1284688596-6731-1-git-send-email-venki@google.com>
+	<1284688596-6731-6-git-send-email-venki@google.com>
+	<1284895893.2275.627.camel@laptop>
+Date: Mon, 20 Sep 2010 10:38:59 -0700
+Message-ID: <AANLkTi=Hxaz9+x-Fw7p2=4G+zw52chPuUgkaTcCqhQDy@mail.gmail.com>
+Subject: Re: [PATCH 5/6] sched: Remove irq time from available CPU power
+From: Venkatesh Pallipadi <venki@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Greg KH (gregkh@suse.de) wrote:
-> On Mon, Sep 20, 2010 at 12:53:20PM -0400, Mathieu Desnoyers wrote:
-> > Hi Greg,
-> > 
-> > Sorry to have to ask this, but I was wondering about the ETA for the next round
-> > of -stable releases including fixes for the following bugs that seems to be
-> > actively exploited in the wild
-> > (http://blog.iweb.com/en/2010/09/64bits-linux-important-security-vulnerability-identified/5437.html
-> > http://isc.sans.edu/diary.html?storyid=9574):
-> > 
-> > CVE-2010-3081 (fixed by upstream
-> > commit c41d68a513c71e35a14f66d71782d27a79a81ea6)
-> > "compat: Make compat_alloc_user_space() incorporate the access_ok()"
-> > 
-> > and
-> > CVE-2010-3301 (fixed by upstream
-> > commit 36d001c70d8a0144ac1d038f6876c484849a74de
-> > "x86-64, compat: Test %rax for the syscall number, not %eax"
-> > and
-> > commit
-> > commit eefdca043e8391dcd719711716492063030b55ac
-> > "x86-64, compat: Retruncate rax after ia32 syscall entry tracing")
-> > 
-> > I'd like to rebase the LTTng tree on top of -stable as soon as it incorporates
-> > these fixes. I could just pull the fixes in my own tree, but this would be
-> > duplicated effort.
-> > 
-> > Again, sorry for the hassle, but I feel these bugs require immediate attention.
-> 
-> Does NOBODY frickin read my -rc stable announcements?  This is only the
-> 8th email today that I've gotten about this issue.
-> 
-> {sigh}
-> 
-> I don't know why I even bother at times...
-> 
-> Sorry, I don't mean to take it out on you, but please people, at least
-> do some basic searching.  Like look at the -stable queue git tree which
-> shows that a -rc has been released and is under review, or look at the
-> lkml traffic, or, subscribe to the stable-review mailing list or look at
-> its archives.
+On Sun, Sep 19, 2010 at 4:31 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, 2010-09-16 at 18:56 -0700, Venkatesh Pallipadi wrote:
+>> +++ b/kernel/sched.c
+>> @@ -2025,6 +2025,18 @@ static u64 unaccount_irq_delta(u64 delta, int cpu, u64 *saved_irq_time)
+>>  #define unaccount_irq_delta_rt(delta, cpu, class_rq)            \
+>>                 unaccount_irq_delta(delta, cpu, &(class_rq)->saved_irq_time)
+>>
+>> +static void sched_irq_power_update_fair(int cpu, struct cfs_rq *cfs_rq,
+>> +                       struct rq* rq)
+>> +{
+>> +       if (!sched_clock_irqtime)
+>> +               return;
+>> +
+>> +       if (likely(rq->total_irq_time > cfs_rq->saved_irq_time)) {
+>> +               sched_rt_avg_update(rq,
+>> +                               rq->total_irq_time - cfs_rq->saved_irq_time);
+>> +       }
+>> +}
+>> +
+>>  #else
+>>
+>>  #define update_irq_time(cpu, crq)              do { } while (0)
+>> @@ -2042,6 +2054,8 @@ static u64 unaccount_irq_delta_rt(u64 delta_exec, int cpu, struct rt_rq *rt_rq)
+>>         return delta_exec;
+>>  }
+>>
+>> +#define sched_irq_power_update_fair(cpu, crq, rq)      do { } while (0)
+>> +
+>>  #endif
+>>
+>>  #include "sched_idletask.c"
+>> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+>> index a64fdaf..937fded 100644
+>> --- a/kernel/sched_fair.c
+>> +++ b/kernel/sched_fair.c
+>> @@ -526,6 +526,9 @@ static void update_curr(struct cfs_rq *cfs_rq)
+>>         if (unlikely(!curr))
+>>                 return;
+>>
+>> +       if (sched_feat(NONIRQ_POWER) && entity_is_task(curr))
+>> +               sched_irq_power_update_fair(cpu, cfs_rq, rq_of(cfs_rq));
+>> +
+>>         /*
+>>          * Get the amount of time the current task was running
+>>          * since the last time we changed load (this cannot
+>
+> This all looks very confusing to me,.. How about we simply fold the
+> delta between rq->clock and rq->clock_task into sched_rt_avg_update()
+> and be done with it?
+>
 
-I did look at the stable-queue.git tree, and did not find anything about 2.6.35.
-The tree only specify "start .27/.32 review cycle". Nothing about .35. This is
-why I thought it was appropriate to email you about 2.6.35.x.
+rq->clock and rq->clock_task: As I understood, you mean having both
+being continuous counters since boot. So, we will still need some
+"rt_avg_accounted irq_time" that will be updated when
+sched_rt_avg_update() is done. Or am I missing something?
 
-I'll also read the -rc stable announcements next time, point taken.
-
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Thanks.
+Venki
