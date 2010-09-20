@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756199Ab0ITJuF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 05:50:05 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:41660 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755851Ab0ITJuE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 05:50:04 -0400
-Date: Mon, 20 Sep 2010 10:50:01 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, lrg@slimlogic.co.uk,
-        "'Changhwan Youn'" <chaos.youn@samsung.com>,
-        "'Jeongbae Seo'" <jeongbae.seo@samsung.com>
-Subject: Re: [PATCH] regulator: Add support samsung power domain
-Message-ID: <20100920095001.GB31167@sirena.org.uk>
-References: <1284717532-9992-1-git-send-email-kgene.kim@samsung.com> <20100917113050.GA4322@rakim.wolfsonmicro.main> <009d01cb588a$d45ce520$7d16af60$%kim@samsung.com>
+	id S1756197Ab0ITJvm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 05:51:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13845 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754462Ab0ITJvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 05:51:40 -0400
+Message-ID: <4C972EA6.2070704@redhat.com>
+Date: Mon, 20 Sep 2010 11:51:34 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <009d01cb588a$d45ce520$7d16af60$%kim@samsung.com>
-X-Cookie: Stay the curse.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-trace-users@vger.kernel.org
+Subject: Re: [PATCH trace-cmd] plugin_kvm: disassemble instructions for kvm_emulate_insn
+References: <1284906837-2431-1-git-send-email-avi@redhat.com>
+In-Reply-To: <1284906837-2431-1-git-send-email-avi@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 20, 2010 at 03:12:34PM +0900, Kukjin Kim wrote:
+  On 09/19/2010 04:33 PM, Avi Kivity wrote:
+> Override kvm_emulate_insn formatting to use a disassembler to format
+> the emulated instruction.  If a disassembler (udis86) is not available,
+> fall back to showing the instruction bytes in hex.
+>
+> Signed-off-by: Avi Kivity<avi@redhat.com>
+> ---
+>
+> Note 1: on top of 'master' with 'trace-cmd-kvm' cherry-picked on top.
+>
+> Note 2: I get output of the form
+>
+> ... kvm_emulate_insn:     0:fffff800010527b5: mov $0x0, 0xfffe00b0CAN'T FIND FIELD "guest_rip"
+>
+> which leads me to believe there is a bug in trace_seq_printf when the input
+> to %s is "".
+>
+>
 
-> The reason the implementation is located in machine-specific code is that
-> the way to handle power domain in S5PV210 and S5PV310 is different but we
-> can handle this using platform_device_id.
+Note 3: this is not thread safe.  If trace-cmd wants to be (or is) 
+multithreaded, we need some kind of plugin context that is passed to all 
+plugin methods, which is initialized separately for each thread.
 
-Yes, I think it's reasonable to implement stuff under arch/arm - my only
-issue with what you'd done was that I didn't feel the glue layer was
-adding anything.
+Or we can be lazy and use thread local storage.
 
-> > Another option to consider here is using runtime PM - other platforms
-> > seem to be going down that route, and are using it to also factor clock
-> > management for the IP blocks out (so that the block's clocks get enabled
-> > and disabled automatically when the block is active without needing any
-> > code in the driver).
+-- 
+error compiling committee.c: too many arguments to function
 
-> To use runtime PM cannot be a substitute for using regulator API.
-> It's related to when to control the power domain whether using regulator API
-> is to how to control the power domain.
-
-The runtime PM API will give you very similar reference counting to the
-regulator API, for all you're using the regulator API for here there's
-not a massive difference.  If you started using voltage scaling then
-there'd be more win.
-
-> We have a plan to support runtime PM using regulator API.
-> Am I on the right track ?
-
-That's doable.
