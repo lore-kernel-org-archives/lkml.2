@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755766Ab0ITI1l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 04:27:41 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:56351 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755603Ab0ITI1i convert rfc822-to-8bit (ORCPT
+	id S1755948Ab0ITI2k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 04:28:40 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:35407 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755919Ab0ITI2h convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 04:27:38 -0400
+	Mon, 20 Sep 2010 04:28:37 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=C/3uk75xcE5fuBtwEm32OROuRy2QXaPcwbuh9i1Po0kBdsjhvDxpItHqVkdFSyQYSo
-         IXcf3OO5860syBTF7kEWVzk3FmNSRVdgc2uZ5ZQ5b40VF+6PoI9xl0CWj6kjW9UxEe2+
-         0GQh7ZVmm8yRg1XRktd/XiDULS3BJuxCtqCHE=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=HLz0B7ND6LslnER0a38EjUTVZOYEnYiqsdx1poRP5SRUnDzWxrf0jDCKNgagvk8xD9
+         V6/ajtmkWGiNRc/EBTd+uKMqL2jl3YvAy0/p+I7OZqIjVw1r4v7GomGBfi+agYvmff5l
+         uoTpn6/yGQW9Z4M3ivwUXc6hA31cpbhkGSpQs=
 MIME-Version: 1.0
-In-Reply-To: <4C963E99.9080207@gmx.de>
-References: <20100919172833.14bf291e@neptune.home>
-	<4C963E99.9080207@gmx.de>
-Date: Mon, 20 Sep 2010 10:27:37 +0200
-X-Google-Sender-Auth: C5OkeTUv7_unKPBcGUwN4t9wADY
-Message-ID: <AANLkTimH4HmxH=gcX7-=t64pHttQjrhm9XkxnnpQYR1S@mail.gmail.com>
-Subject: Re: [Patch, RFC] Make struct fb_info ref-counted with kref
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: =?UTF-8?Q?Bruno_Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bernie Thompson <bernie@plugable.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20100920074838.GB5503@cr0.nay.redhat.com>
+References: <AANLkTintKaxaAKarDPFgpDLQMVomhThYtZecp5R5Mi62@mail.gmail.com>
+	<20100920074838.GB5503@cr0.nay.redhat.com>
+Date: Mon, 20 Sep 2010 16:28:36 +0800
+Message-ID: <AANLkTim2NWLE4vhPL-P8JLS3bu9f=V8GqwF0xhE7S87m@mail.gmail.com>
+Subject: Re: A simple question of sys_
+From: Rofail Qu <rofail@gmail.com>
+To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 19, 2010 at 18:47, Florian Tobias Schandinat
-<FlorianSchandinat@gmx.de> wrote:
-> Bruno Prémont schrieb:
->> diff --git a/drivers/video/fbsysfs.c b/drivers/video/fbsysfs.c
->> index 0a08f13..be5f342 100644
->> --- a/drivers/video/fbsysfs.c
->> +++ b/drivers/video/fbsysfs.c
->> @@ -58,6 +58,7 @@ struct fb_info *framebuffer_alloc(size_t size, struct
->> device *dev)
->>                info->par = p + fb_info_size;
->>        info->device = dev;
->> +       kref_init(&info->refcount);
+2010/9/20 Am�rico Wang <xiyou.wangcong@gmail.com>:
+> On Fri, Sep 17, 2010 at 02:58:30PM +0800, Rofail Qu wrote:
+>>How to use macro IS_ERR() ?
+>>
+>>It defines as,
+>>...
+>>#define IS_ERR_VALUE(x) unlikely((x) >= (unsigned long)-MAX_ERRNO)
+>>static inline long __must_check IS_ERR(const void *ptr)
+>>{
+>> � � � return IS_ERR_VALUE((unsigned long)ptr);
+>>}
+>>...
+>>so when pass x as a pointer and x>=-MAX_ERRNO (including NULL or any
+>>valid address),
+>>IS_ERR() will return true!
 >
-> As far as I know there exist framebuffer drivers which do not call
-> framebuffer_alloc but contain their own fb_info. I guess these would be
-> broken as well.
-
-Those should be converted to framebuffer_alloc() anyway. Janitors?
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> NULL is not an error pointer, you missed the cast to unsigned long.
+Ahh, yeah. A stupid mistake i have.
+Thanks.
+>
+>
+>>IS_ERR(x) seems to use on judge if "x" is a valid error number, right?
+>>
+>
+> Strictly speaking, it checks if 'x' is an error pointer.
+Then what is the range of a valid pointer?
+At least less than (unsigned long)-MAX_ERRNO from this case.
+>
+>
