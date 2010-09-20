@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932076Ab0ITVKb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 17:10:31 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:52366 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754983Ab0ITVK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 17:10:29 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Daniel J Blueman <daniel.blueman@gmail.com>
-Subject: Re: [Bug #16462] unable to connect to AP on legal channel 13
-Date: Mon, 20 Sep 2010 23:09:49 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-References: <r2gGqgg1zFC.A.LrE.w97lMB@chimera> <aRnAGz9xZ8K.A.SAG.e_7lMB@chimera> <AANLkTik5gibBKuayOvCsp0ZGxQWC0saGGbGgnQ=HOCSx@mail.gmail.com>
-In-Reply-To: <AANLkTik5gibBKuayOvCsp0ZGxQWC0saGGbGgnQ=HOCSx@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1757021Ab0ITVMG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 17:12:06 -0400
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:51015 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754983Ab0ITVME (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 17:12:04 -0400
+Subject: Re: [PATCH] drm/sysfs: Provide per connector control of DRM KMS
+ polling
+From: Andy Walls <awalls@md.metrocast.net>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Dave Airlie <airlied@redhat.com>, Jon Smirl <jonsmirl@gmail.com>
+In-Reply-To: <20100920185232.GA29263@kroah.com>
+References: <1284987540.2242.29.camel@morgan.silverblock.net>
+	 <20100920185232.GA29263@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 20 Sep 2010 17:11:48 -0400
+Message-ID: <1285017108.30856.7.camel@morgan.silverblock.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009202309.49723.rjw@sisk.pl>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.0.10011,1.0.148,0.0.0000
+ definitions=2010-09-20_11:2010-09-20,2010-09-20,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 phishscore=0
+ bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ engine=5.0.0-1005130000 definitions=main-1009200123
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, September 20, 2010, Daniel J Blueman wrote:
-> Hi Rafael,
-> 
-> On 20 September 2010 20:57, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > This message has been generated automatically as a part of a report
-> > of regressions introduced between 2.6.34 and 2.6.35.
-> >
-> > The following bug entry is on the current list of known regressions
-> > introduced between 2.6.34 and 2.6.35.  Please verify if it still should
-> > be listed and let the tracking team know (either way).
-> >
-> > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16462
-> > Subject         : unable to connect to AP on legal channel 13
-> > Submitter       : Daniel J Blueman <daniel.blueman@gmail.com>
-> > Date            : 2010-07-25 17:06 (58 days old)
-> 
-> I have verified this issue still exists in 2.6.36-rc4, alas.
+On Mon, 2010-09-20 at 11:52 -0700, Greg KH wrote:
+> On Mon, Sep 20, 2010 at 08:59:00AM -0400, Andy Walls wrote:
+ 
+> > This change allows the root user to disable (and re-enable) DRM KMS
+> > connector polling on a per connector basis via sysfs, like so:
+> > 
+> >         # cat /sys/class/drm/card0/card0-DVI-D-1/polled
+> >         [hotplug_detectable] connect disconnect
 
-Thanks for the update.
+> You are adding a sysfs file, yet you forgot to add a file in
+> Documentation/ABI.  Please fix that and resend the patch.
 
-Rafael
+Oops, process failure, sorry.
+Will do.
+
+Regards,
+Andy
+
