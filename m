@@ -1,213 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756999Ab0IUP1l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 11:27:41 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:62894 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754855Ab0IUP1j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 11:27:39 -0400
-Date: Tue, 21 Sep 2010 17:27:28 +0200
-From: Heinz Diehl <htd@fritha.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Heinz Diehl <htd@fancy-poultry.org>, Alan Ott <alan@signal11.us>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-input@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [BUG] object: is not initialized, yet kobject_put() is being
- called
-Message-ID: <20100921152728.GA13464@fritha.org>
-References: <20100812115657.GA1611@arch.tripp.de>
- <alpine.LNX.2.00.1008121401580.2702@pobox.suse.cz>
- <alpine.LNX.2.00.1008121457060.2702@pobox.suse.cz>
- <20100812130411.GA1626@arch.tripp.de>
- <4C63F285.8070801@signal11.us>
- <20100812164035.GB6761@fritha.org>
- <20100920181100.GA12295@fancy-poultry.org>
- <alpine.LNX.2.00.1009211653510.26813@pobox.suse.cz>
- <20100921150900.GA6801@fritha.org>
- <alpine.LNX.2.00.1009211714400.26813@pobox.suse.cz>
+	id S1756791Ab0IUPaY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 11:30:24 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:57837 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753360Ab0IUPaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 11:30:23 -0400
+Date: Tue, 21 Sep 2010 17:29:57 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Jason Baron <jbaron@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        mathieu.desnoyers@polymtl.ca, tglx@linutronix.de, rostedt@goodmis.org,
+        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+        mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org,
+        tony@bakeyournoodle.com
+Subject: Re: [PATCH 08/10] jump label v11: x86 support
+Message-ID: <20100921152957.GA23380@elte.hu>
+References: <cover.1284733808.git.jbaron@redhat.com>
+ <f838f49f40fbea0254036194be66dc48b598dcea.1284733808.git.jbaron@redhat.com>
+ <4C981BC4.90405@zytor.com>
+ <20100921152525.GC2873@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="ZGiS0Q5IWpPtfppv"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1009211714400.26813@pobox.suse.cz>
-X-Accept-Language: no,dk,se,en,de
-Organization: private site
-X-OpenPGP-KeyID: 0xA9353F12
-X-OpenPGP-Fingerprint: C67E 9A93 1033 DF8A 9321  9F90 DC39 B8C3 A935 3F12
-X-OpenPGP-URL: http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.20+20100810 (GNU/Linux)
-X-Provags-ID: V02:K0:nTAniRkT1cqLHc/6qy0X3gh/GvdRT2ns9R9IqEbuIMy
- 6XF8EPpSox6DCaDuGZtrAsKCPe188U+1upy9vtncgq8DqyMbIa
- cY0eIvY8pAMOwpqaqV+gmyfDLUr68B+NS9URFCts1Jn4U5bX+r
- 3/bXYVVTwNAZBtXRQunqXddMakQnvOhyjRp7XrWV2hZoWF+7Pt
- 6DAr0jo1rmasXeBm5F9VA==
+In-Reply-To: <20100921152525.GC2873@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---ZGiS0Q5IWpPtfppv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+* Jason Baron <jbaron@redhat.com> wrote:
 
-On 21.09.2010, Jiri Kosina wrote: 
+> On Mon, Sep 20, 2010 at 07:43:16PM -0700, H. Peter Anvin wrote:
+> > On 09/17/2010 08:09 AM, Jason Baron wrote:
+> > > add x86 support for jump label. I'm keeping this patch separate so its clear to
+> > > arch maintainers what was required for x86 support this new feature. hopefully,
+> > > it wouldn't be too painful for other arches.
+> > 
+> > > +	select HAVE_ARCH_JUMP_LABEL if !CC_OPTIMIZE_FOR_SIZE
+> > 
+> > Why?
+> > 
+> > 	-hpa
+> > 
+> 
+> Hi,
+> 
+> >From the documentation patch:
+> 
+> " The optimization depends on !CC_OPTIMIZE_FOR_SIZE. When 
+> CC_OPTIMIZE_FOR_SIZE is set, gcc does not always out of line the not 
+> taken label path in the same way that the "if unlikely()" paths are 
+> made out of line. Thus, with CC_OPTIMIZE_FOR_SIZE set, this 
+> optimization is not always optimal. This may be solved in subsequent 
+> gcc versions, that allow us to move labels out of line, while still 
+> optimizing for size. "
 
-> strace -f would likely be more helpful.
+OTOH making a difficult optimization (HAVE_ARCH_JUMP_LABEL) dependent on 
+compiler flags is really asking for trouble.
 
-Oops, yes, of course. Output is attached.
+So how about enabling it unconditionally, and just chalk up the cost 
+under CC_OPTIMIZE_FOR_SIZE as one of the costs it already has? This also 
+has the advantage that future compilers can improve things without 
+having to wait for yet another kernel patch that re-enables 
+HAVE_ARCH_JUMP_LABEL.
 
+Thanks,
 
---ZGiS0Q5IWpPtfppv
-Content-Type: application/octet-stream
-Content-Disposition: attachment; filename="output.txt.bz2"
-Content-Transfer-Encoding: base64
-
-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
-66mbupMCTAkwJMCTAkwJM85nvvvv4989+7bQAAABYlcY4xVSSYxUkmT6M6zPjOu++0mBJgSY
-EmBJgTFSSYxW85zve9tgAAAAXbWOpmdCTAkwJMD5zqT11O++0mBJgSYEmBJnrd3168+vXq22
-2220AAC7u7zjFSSYxUkmMVJJVV1WdTd1JgZjOpOhJgZE6mdCTAU2rtMBN4kEgkEgmxdKzz3b
-sd27dppppoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AA1rWta1rXnHevpqABye3t7PPePXXXMgA6O14V29vb29999tgAAAAWJ8uM67Yqu3faTAkwJM
-CTPu5u7smBmOpOhjFSSViu1cTtJjHvFVieee3Pny8+fIAAtttttttvq2gAAAGBJJUkl8Zzd3
-d2AAAABdtfY3d0AAAAA9bu+vXr162AAAABYkkkkkkkgAc3d0A3d3nOc5y222222222222223
-m589ZlrQAAAO8znOZJJJLznN3q7sAAAALeW0AAAAABzd3nOXdgAAAAWJJJJJJIFzd3QAA6z4
-+efHx38858+eW222222222222228ZbdAAABJJJJJJLznN3ersAAAAW3nnu+LvN3dAAAAYA3c
-5u/F3YAAAAFiSSSQAAAAH2c+z7nn5+cmZmZmZmdYxXyrFcViuKrFcVinPbLz58+bAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA1rWta1rQAAAAAAAAAAAAA1rWta1rXn
-Vd8Yu5d83d2AAAABYnyqs5zmSSSSSSSSSTipO0kkkk3nOd73vewAAFttttt5bQAAAAASdrz2
-zd3d2AAAABbFEAAAAANzd3ebu85znOWgAAABYkkkkkkkkkkkkkkkkkkl5zm7u7sAAAW2223l
-tAAAAAAXnObu7uwAAAALlVzxQ7AAAObu6wAG7u8+eeecoAAAALvF3eZJJJJJJC7u6AAHe7vP
-jnOcttttttttttttttt5bQAH1bu6AfG7ukkkm85zve9tgAAAAWAAAAAAHN3ec5znLaAAAALE
-kkkkkkkkkAAA63rr4651nrxnz1kkyZmTMz737GSY5rnjPLXnz535AAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA1rWta1rQAAAAAAAAAAAAA1rWta1rXnjFK4744qqrtf
-F3fe7sAAAABcGeft1znjntzJJJJJJ885zmSSSSSSSTjrOZ111vroAAAFttt5bW+Ot1oAAAAC
-XnObu7uwAAAALEkkAA67znfe9gABu7vOc5eW2gAAAFiSSSSSSSSSSSSfRnOcySTEk84x1zzz
-111110AABbbbbbb6+M+4k5znbAAB6ybu6Ekkkm85znnOc+O+972AAAALby2gAAAAAObu85d3
-YAAAAFiSSSSSQAAABzd3nOc5y222222222222223ltAAAAASSSe988873ve9gAAAAb3ec5oA
-AB9O7uh7zd3Q3d33799ddAAAAAWJJJJJJIABubu6AeMz7Wfq9evj39P2snMkzM5mc96+isYx
-x4l859+/fuwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa1rWta1oAAAA
-AAAAAAAAAa1rWta1r33q7u83d3YAABbbbbby2uveddZ1u+NAA+N3dASSSVJN5zne97bAAAAA
-5bQAABuZu7oAHN3ecu7sAAAAC+2BmSSSSAOsPAADrDw5u7znOXlttttAAAFiec5zmSSSSSRn
-OcySSSSSSSbznO++972AAAAW28toAAADd3d3N3dDm5zd3d2AAAABYkkkkAAcybu6AB777779
-evXr16tttoAAANiaznOZJJJJJJJJJJJJJJJLznN97u7AAAAW23ltAAAAAAJF9u2bu7uwAAAA
-LEmJIAAwAABzd3nOc5y222gAAAsSVJJJJJJJJJIAAGYz4k+xnX1yTMz7PPjM+19xkk+lfX0/
-Trfv2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADWta1rWtAAAAAAAAAA
-AAADWta1rWte3msYqteL8cVxx2nO+M7zvvvWwAAFttttt9LnXOXfHPj6vpdd9uwAA+jdzmSS
-SSSTWc515878+QAAAC23ltAAAAAAfX7zPffv3666666AAAAA6EkkkAAAAA5u7znOc5bbbbaA
-AAWJJJvGM5znOMZznMkkkkkkkkxJJJN5zne973sAAALbbbeefOXx4AAAAdHgCSd7555u78XY
-AAAAFiQAAAAfO7uhzd3nPnnOW2gAAAFiSSSSXWc5zJJJJJJJJJJJJnOc3d3dgAAC22228trv
-d3QvnO+++wAACSS85z3vxawAAAALuru9AAAAD3u7od7u+vXr169WgAAABYkkkkkkkkkkkkkk
-kkkkk91jGN9ued73vewAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAANa1rWta3318b7Xm7u72AAAABuDPz+XPPPMkkkkkkkkkkkkkkkn3VfL1379/Xr
-1169AABbbbbbbb7toAAAABJJLznN3d3YAAAAFqwoAAAAADm7vOc5zloAAAAWJeM5zmSSSSSA
-DrMPAA3d3nOc5y222222222222223ltAABubu6AJJJJdZzm7u7sAAA1rWta1rVlAHWHgAAAB
-9E9ZO++/Xre97AAANa1rWta1u8VzxjHHFVV3fPxu7vrN3dAAAAD4z7rJMzOu+eeur666AAAN
-a1rWta1sSSS6rO7oB1DwAADd3ec5znLbbaAA1rWta1rViSSSSSSSSSSSSSSSSSSXnObu7uwA
-ACta1rWvPnnnz5AAB4x0B73d0A2ZwzDMOo3en1+v10hIJIJIJIJIJIJImybJznE2TZNk2TZN
-k2TZNk5zibJsmybJsmybJsmyc5xNk2TZNk2TZNk2TZOc4mybJsmybJsmybJsnOcTZNk2TZNk
-2TZNk2TnOJsmybJsmybJsmybJznE2TZNk2TZNk2TZNk5zibJsmybJsmybJsmyc5xNk2TZNk2
-TZNk2TZOc4mybJsmybJsmybJsnOcTZNk2TZNk2TZNk2TnOJsmybJsmybJsmybJznE2TZNk2T
-ZNk2TZNk5zibJsmybJsmybJsmyc5xNk2TZNk2TZNk2TZOc4mybJsmybJsmybJsnOcTZNk2TZ
-Nk2TZNk2TnOJsmybJsmybJsmybJznE2TZNk2TZNk2TZNk5zibJsmybJsmybJsmyc5xNk2TZN
-k2TZNk2TZOc4mybJsmybJsmybJsnOcTZNk2TZNk2TZNk2TnOJsmybJsmybJsmybJznE2TZNk
-2TZNk2TZNk5zibJsmybJsmybJsmyc5xNk2TZNk2TZNk2TZOc4mybJsmybJsmybJsnOcTZNk2
-TZNk2TZNk2TrrrpNk2TZNk2TZNk2TZc4mybJsmybJsmybJ1zibJsmybJsmybJsmyc5xNk2TZ
-Nk2TZNk2TZOc4mybJsmybJsmybJsnOcTZNk2TZNk2TZNk2TnOJsmybJsmybJsmybJ4EVdb+b
-Vc02Vs1fy8vw0AD/p4c1tielCXglQXDLCH2HrwBahIYwziGcE9cM4v2Ho+Ly9ixAAAD3UAAA
-LNp9HnvSnOd5dR6j4f4/vE9gqqq/atlH4Lf6wP5mQv9FAPduGcoTI+5FuV50bCqqrkJnmKqq
-spdpc9qnyCfX6FPb9JbHj/lYoAFZhqJJJJJI65kpcXAVoVVVbC1mrTaCrhf1eReFLnlXh8iN
-/LoAGSISG4VVVfauiwHJePBS/UuWeagK7UQF5fSLsLmg+oimsHAVvvXHTaemqXiqqqu1efk4
-9sADv59F4q4+KlY7V18eCKZkU3qblTm5rcRrUyAXP8DqIAffXuoAPveXtdt7fe9fsQ+XmgA5
-K8i91fZ8acTXw3rx76rPFXE/S9afZk0gB5byr2UAH6onVeVfjp4veHj+tUfUr6p7M7oAP6Je
-Dx6vo9Hl8q91Z2MH1BV4UKsIA+Us5IV4bd35A1Txl4K6oVfY86fP4kKo76un0q9/Us+K4+q0
-qB0I8igK7gBVk49+M3cOnFeTiRdK6KYn/X2dqDv83XXlJB9Hzp2XVPvoe+V70AH5fq8Pk7VD
-p7J8fV69fPnmgCuI8SO7gmAwm4HLkOITCXJvIL6BtTleiefteOp606fqfSQr7nzOc82m51kU
-eTl5LqOXDYJYzHbqvzgAriACuv+B283xry7QAOFNidnsdvGJ35+N7MkefUK6kWdpcwOr3BbI
-lIArswXEHwRbfmDeKyCALBOJRlnnPlIoP/MxPmWKHz9nzUslQk/R479XzmABisFCRCSMW8yl
-RA7qxAxWYXAsOKy8vD/3Sts5zxDOOO7w/h9Plx9/wAOkE6u54uq5w7glHwYo97wiaHj07dld
-leNffX0eBdfr09PMFXQgAyOzXkC4ACrgiHfUxE2dlF8MNnjW4J4fm/P+pAB/H+q4gA1P39C8
-NvufyXXGp93x/QfUdeFQ8GOr2AHyCqqr9/yq/p9K6Ht0rye+JzKtvC+InFZIepJMFTep7LCA
-AAcggCbeh5tqVAqT8V5y+DfpAqccxgWsZw2vNaTPLakO3COzx5ay8AzFcddJ5VAV5dmX+jnd
-1uVQBpN7G96qqq9n3Q8Q8+SFfYr7kAHPG7Kqqr3tzrOulddTn3OeAJ8P0zbevrm2hjZqdjDE
-vcTyyTmMmJIEgrZiwiYgArId+z1p8VVVV9xFXkCrirQddkQF4e50a8aMDUvQcSgCoHa1advg
-gojmoUNMiSu/qq7t6no7V/VSynSrmAZ2RAXrq2O0TorqQFW5tPhDBPy/Z6Kqqr4d/4u76z0/
-OgA6+PmQp7kFd+tucmzr6jzCgYr16Cd3ILLbDBARYfkeQcQAaTyff50KvTXqAmc+Hqr6qvtd
-frAnbAq3/11I6fCgqH0/H3IAPLIAPg/Ly6D7lVVV81Cvy++u3mgA/I8V7qfdxxvx8k+R/T5v
-T0+PzfWQqHmn4ule1QAvT5Pr8nw7+U+FUAeP18PtxAB9heywd3lJ7EAHbyyADzFpTLOlD8sD
-2hsQFXAArUXMRNMTHPosZ5hvrITI3GJ/BQFeHKZoTm5IFWRORSj8Xz7h1y9VKV4+dBUPBUAe
-qKEMtob+JWQAsJNdGlC70BV7phzW61Og8lfP+P1VVVXp6exQrrKqqr5PSb17oAPpvr2+31V+
-P2KFden0VVVXkvhf8EAHmgA9EAHz84TmgBynDdkiHaOREBduerkNLbOAgCZ6yqqq9FexUAet
-fb7l3+AXwqeKV0IYa3UaW2KXU06lLKArxq75sQkNNBADwLnrI5TmLT2fXsveHh4eXx9Hx9sP
-xPCqqquSFbyQAfcz8/uoVftP7Oz1erfhfF6PQIB9f62oJ9/4dGs3gAga4CCOKWzrsgrqXXqx
-G/OeMCn1QAbq+MhX03k+2nmH7KYqAfuU/eX8FWrF9v6P4sCrnhS4uc9yfmjt/igAcfPwVf/x
-dyRThQkNv9nv4A==
-
---ZGiS0Q5IWpPtfppv--
+	Ingo
