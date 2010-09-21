@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752811Ab0IUXOG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 19:14:06 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:18942 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484Ab0IUXOF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 19:14:05 -0400
-Message-ID: <4C993BE1.1020506@kernel.org>
-Date: Tue, 21 Sep 2010 16:12:33 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	id S1754017Ab0IUXxM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 19:53:12 -0400
+Received: from borg.medozas.de ([188.40.89.202]:53710 "EHLO borg.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751413Ab0IUXxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 19:53:11 -0400
+Date: Wed, 22 Sep 2010 01:53:09 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: hpa@linux.intel.com
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: "Glove box" BIOS patch causes boot flicker
+Message-ID: <alpine.LNX.2.01.1009220135380.25692@obet.zrqbmnf.qr>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Jack Steiner <steiner@sgi.com>, mingo@elte.hu,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86 - irq vector assignment
-References: <20100921200502.GA26587@sgi.com> <AANLkTinkiZC6bvRJ10EsG-CZSjdJtqW4N7pfq7vnvz3i@mail.gmail.com> <alpine.LFD.2.00.1009212310410.2416@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1009212310410.2416@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/21/2010 02:34 PM, Thomas Gleixner wrote:
-> On Tue, 21 Sep 2010, Yinghai Lu wrote:
->>>  arch/x86/kernel/apic/io_apic.c |    5 +++++
->>>  1 file changed, 5 insertions(+)
->>>
->>> Index: linux/arch/x86/kernel/apic/io_apic.c
->>> ===================================================================
->>> --- linux.orig/arch/x86/kernel/apic/io_apic.c   2010-09-17 13:00:19.164638447 -0500
->>> +++ linux/arch/x86/kernel/apic/io_apic.c        2010-09-17 13:00:23.448595373 -0500
->>> @@ -3253,6 +3253,11 @@ unsigned int create_irq_nr(unsigned int
->>>                desc_new = move_irq_desc(desc_new, node);
->>>                cfg_new = desc_new->chip_data;
->>>
->>> +#ifdef CONFIG_NUMA
->>> +               if (node >= 0 && __assign_irq_vector(new, cfg_new, node_to_cpumask_map[node]) == 0)
->>> +                       irq = new;
->>> +               else
->>> +#endif
->>>                if (__assign_irq_vector(new, cfg_new, apic->target_cpus()) == 0)
->>>                        irq = new;
->>>                break;
->>
->> target_cpus() for uv_x and x2apic phys mode all have cpu_online_mask()
->>
->> so we should get the vector for other cpus. aka __assign_irq_vector()
->> should not fail. unless you have so many irq > nr_irqs.
-> 
-> Did you even read the changelog ? It's not about "should".
-> 
-> All CPU0 vectors are assigned already just because the current code
-> takes the first cpu in the target_cpus mask regardless of the node on
-> which the irq_desc is allocated. That's crap. Why do we allocate
-> irq_desc on node and leave the vector assigned to node(cpu0) ?
+Hi,
 
- ok, i got it. vectors from cpus on node0 are used by devices from others nodes.
-later devices from node0 can not get vector from node0.
 
-Yinghai
+some (long) time ago, I noticed a change whereby at the start of Linux 
+(before any log messages are output) the monitor would do one reset on 
+x86/VGA (the classic modes à la 80x25 - no fbdev stuff). It is only now 
+that I found enough joy to revisit this.
+
+Between 2.6.30 and 2.6.31, commit cf06de7b9cdd was introduced by you, 
+which I have bisected the problem down to.
+
+commit cf06de7b9cdd3efee7a59dced1977b3c21d43732
+Author: H. Peter Anvin <hpa@linux.intel.com>
+Date:   Wed Apr 1 18:20:11 2009 -0700
+
+    x86, setup: "glove box" BIOS interrupts in the video code
+    
+    Impact: BIOS proofing
+    
+    "Glove box" off BIOS interrupts in the video code.
+
+The exact artifacts caused by it are:
+
+- a mode set from 80x25 to 80x25...
+- cursor position is reset to the top-left corner, overwriting any 
+logs from previous code such as BIOSes or bootloaders. Previously, the 
+linux kernel log nicely followed these, now it is intersecting.
+
+("glove box off" is a ventured description to me. Even the German 
+translation gave no hint; an image search was required. Suggesting "seal 
+off".)
+
+Anyhow, the commit description lacks a bit of information to coders 
+whose area of expertise is outside hardware (net/ is what I do), and why 
+this commit is needed, given all I seemingly got from it was a 
+degradation of my VGA console experience.
+
+Could you elaborate on it, and/or what could be done to address the two 
+issues?
+
+thanks,
+Jan
