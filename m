@@ -1,59 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757153Ab0IUK1m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 06:27:42 -0400
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:37646
-	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752967Ab0IUK1l (ORCPT
+	id S1756902Ab0IUKei (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 06:34:38 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:4451 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752471Ab0IUKeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 06:27:41 -0400
-X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Sep 2010 06:27:41 EDT
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h61h)
+	Tue, 21 Sep 2010 06:34:37 -0400
+X-SpamScore: -21
+X-BigFish: VPS-21(zzbb2cK936eK1432N98dN4015Lzz1202hzz8275bh8275dhz32i2a8h43h61h)
 X-Spam-TCS-SCL: 0:0
-From: Li Yang <leoli@freescale.com>
-To: dan.j.williams@intel.com
-CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Li Yang <leoli@freescale.com>
-Subject: [PATCH] fsldma: add support to 36-bit physical address
-Date: Tue, 21 Sep 2010 18:57:18 +0800
-Message-ID: <1285066638-7473-1-git-send-email-leoli@freescale.com>
-X-Mailer: git-send-email 1.6.6-rc1.GIT
-X-OriginalArrivalTime: 21 Sep 2010 10:12:33.0578 (UTC) FILETIME=[81E930A0:01CB5975]
+X-FB-SS: 0,
+X-WSS-ID: 0L93EO8-02-5DM-02
+X-M-MSG: 
+Date: Tue, 21 Sep 2010 12:33:45 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@elte.hu>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "oprofile-list@lists.sourceforge.net" 
+	<oprofile-list@lists.sourceforge.net>,
+        "tdm.rhbz@gmail.com" <tdm.rhbz@gmail.com>
+Subject: Re: [PATCH] oprofile: Add Support for Intel CPU Family 6 / Model 29
+Message-ID: <20100921103345.GT13563@erda.amd.com>
+References: <1285053995-3811-1-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Reverse-DNS: de01egw01.freescale.net
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1285053995-3811-1-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Li Yang <leoli@freescale.com>
----
- drivers/dma/fsldma.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+On 21.09.10 03:26:35, Jiri Olsa wrote:
+> This patch adds CPU type detection for dunnington processor (Family 6 / Model 29)
+> to be identified as core 2 family cpu type (wikipedia source).
+> 
+> I tested oprofile on Intel(R) Xeon(R) CPU E7440 reporting itself as model 29,
+> and it runs without an issue.
+> 
+> wbr,
+> jirka
+> 
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 
-diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-index cea08be..9163552 100644
---- a/drivers/dma/fsldma.c
-+++ b/drivers/dma/fsldma.c
-@@ -1,7 +1,7 @@
- /*
-  * Freescale MPC85xx, MPC83xx DMA Engine support
-  *
-- * Copyright (C) 2007 Freescale Semiconductor, Inc. All rights reserved.
-+ * Copyright (C) 2007-2009 Freescale Semiconductor, Inc. All rights reserved.
-  *
-  * Author:
-  *   Zhang Wei <wei.zhang@freescale.com>, Jul 2007
-@@ -1338,6 +1338,7 @@ static int __devinit fsldma_of_probe(struct platform_device *op,
- 	fdev->common.device_control = fsl_dma_device_control;
- 	fdev->common.dev = &op->dev;
- 
-+	dma_set_mask(&op->dev, DMA_BIT_MASK(36));
- 	dev_set_drvdata(&op->dev, fdev);
- 
- 	/*
+Applied to oprofile/urgent. Thanks Jiri.
+
+Ingo,
+
+please pull for tip/perf/urgent:
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
+
+This should be ff-only, pull request see below.
+
+Thanks,
+
+-Robert
+
+> ---
+>  arch/x86/oprofile/nmi_int.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
+> index 009b819..f1575c9 100644
+> --- a/arch/x86/oprofile/nmi_int.c
+> +++ b/arch/x86/oprofile/nmi_int.c
+> @@ -674,6 +674,7 @@ static int __init ppro_init(char **cpu_type)
+>  	case 0x0f:
+>  	case 0x16:
+>  	case 0x17:
+> +	case 0x1d:
+>  		*cpu_type = "i386/core_2";
+>  		break;
+>  	case 0x1a:
+> -- 
+> 1.7.1
+> 
+> 
+
+The following changes since commit 068e35eee9ef98eb4cab55181977e24995d273be:
+
+  hw breakpoints: Fix pid namespace bug (2010-09-17 04:42:59 +0200)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
+
+Jiri Olsa (1):
+      oprofile: Add Support for Intel CPU Family 6 / Model 29
+
+ arch/x86/oprofile/nmi_int.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
 -- 
-1.6.6-rc1.GIT
-
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
