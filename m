@@ -1,84 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756997Ab0IUJa7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 05:30:59 -0400
-Received: from lucidpixels.com ([75.144.35.66]:48510 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756816Ab0IUJa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 05:30:58 -0400
-Date: Tue, 21 Sep 2010 05:30:56 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-cc: adam radford <aradford@gmail.com>
-Subject: 2.6.35.x: acpi+no_hz+turboboost causing 3ware I/O controller
- resets
-Message-ID: <alpine.DEB.2.00.1009210515210.14504@p34.internal.lan>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+	id S1757146Ab0IUJg6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 05:36:58 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48196 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756659Ab0IUJg5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 05:36:57 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 21 Sep 2010 18:31:27 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+Cc: "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 0/3][-mm] memcg: memory cgroup cput hotplug support
+ update
+Message-Id: <20100921183127.1c4c2bc1.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-There has been discussion going on here:
-http://forums.storagereview.com/index.php/topic/28920-3ware-9650se-controller-resets-under-load-on-linux/page__st__30__gopid__264286&#entry264286
+I rewrote memcg-memory-cgroup-cpu-hotplug-support-update.patch completely.
+And the patch is divided into 3 part.
 
-Member JGC posted:
-======================================================================
-I've been stuggling with these reset problems for a year now. Problems started to appear when we upgraded our servers running Debian Etch to Debian Lenny. When we did this upgrade, we changed our kernel from a custom compiled 2.6.24 kernel to 2.6.27. When 2.6.32 was declared as long time supported stable kernel, we switched to this kernel, but problems still appeared.
-Recently I reconfigured the kernel (2.6.32.21) a bit:
-- disable NOHZ
-- disable speedstepping
-- apply two patches from 2.6.35:
-http://git.kernel.or...405aa31bcbb7091
-http://git.kernel.or...e2d9fcf50aa04be
-======================================================================
-After those changes, I haven't seen reset problems anymore. We've seen this bug on several servers and contacted LSI and our vendor about this problem. The vendor doesn't know about the problems, and LSI blames the mainboard of some servers, while they blame the disks for other servers (yes, we have some servers with desktop drives).
+1/3 clean up ... delete mem_cgroup_walk_tree and add for_each_mem_cgroup_tree()
+2/3 usual counters.... handles usual percpu statistics.
+3/3 on_move ... handles special counters works as a kind of lock.
 
-I've been stresstesting this kernel with the "stress" utility on a 9690SA and 9650SE-based machine, both work fine with the modified kernel and haven't shown any resets ever since. I could even enable NCQ again without hanging up the servers completely.
-======================================================================
+The direction is not different from previous one but implementation is re-designed.
+I think all review comments are reflected...any comments are welcome.
 
-I always have had NO_HZ enabled along with CPU Frequency Scaling so I could
-utilize turbo boost.  However, with 2.6.35, as soon as there was any I/O on
-the system, the system would "freeze," - it would respond to ping, but all
-SSH windows would "lockup" until the controller resets (like below):
-
-[  593.967176] 3w-9xxx: scsi0: WARNING: (0x06:0x0037): Character ioctl (0x108)
-timed out, resetting card.
-[  730.483812] 3w-9xxx: scsi0: WARNING: (0x06:0x0037): Character ioctl (0x108)
-timed out, resetting card.
-
-However, after disabling:
-
-[*] Tickless System (Dynamic Ticks)
-<*> Processor or CPU Frequency Scaling
-[*] CPU Frequency scaling
-
-Re-compiling, booting into 2.6.35.4 again (have not changed the kernel
-version).
-
-I have been running heavy I/O processes that can cause the problem pretty much
-immediately when those CPU options are enabled-- and the problem appears to
-be resolved, there have been no freezing events yet.
-
-I'll let it run for a while longer but from what I can tell disabling
-turboboost options (tickless/scaling) seems to solve the problem!
-
-The next questions are:
-
-1. what changed with CPU/frequency scaling from 2.6.34 -> 2.6.35?
-2. when disabling the options above, it seems to stop the reset issue, why?
-
-I've had a case (a couple cases open with 3ware/LSI) and they have my
-configuration/etc and have not been able to re-produce the problem; however,
-unless they have a CPU that is turbo-boost capable/matching the hardware,
-I am not sure they will be able to reproduce the problem.
-
-I'll keep running tests to see if I can re-produce the problem when CPU 
-frequency scaling is turned off, but so far, the problem has not recurred.
-
-Justin.
-
+Thanks,
+-Kame
 
