@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758138Ab0IUSVT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 14:21:19 -0400
-Received: from casper.infradead.org ([85.118.1.10]:32855 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754470Ab0IUSVR convert rfc822-to-8bit (ORCPT
+	id S1758106Ab0IUSXx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 14:23:53 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:62026 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752923Ab0IUSXw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 14:21:17 -0400
-Subject: Re: [PATCH -tip -v5] irq_work: generic hard-irq context callbacks
-From: Peter Zijlstra <peterz@infradead.org>
-To: Paul Mackerras <paulus@samba.org>
-Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+	Tue, 21 Sep 2010 14:23:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=hkdsnF7rhCImJB3sAJ1glCxN/7AtRrG1xk9tShk7cJAWTqzUNbRK2LdkYiINZn4fq5
+         6UsItEs1CHM21UePOki/i3qblT86yO9EkVCW6zyXVvEM8GMGmjB4jduumgwM9pQPlf5P
+         juikIWcoeKfvg0zKt0zZ7uyvXNF+ZK3jpXgJY=
+MIME-Version: 1.0
+In-Reply-To: <20100921181250.GA11157@suse.de>
+References: <19F8576C6E063C45BE387C64729E7394046836CE5C@dbde02.ent.ti.com>
+	<20100831224238.GA13253@suse.de>
+	<19F8576C6E063C45BE387C64729E739404687B2835@dbde02.ent.ti.com>
+	<AANLkTimCkTFfe157dHK=caAdAeX_4m1A_p6ZRxp=2RWt@mail.gmail.com>
+	<19F8576C6E063C45BE387C64729E739404687B2B27@dbde02.ent.ti.com>
+	<AANLkTimZ2Pe5T2=ZUZnd_3-RQi8Qs4FrykkJy6Zvx89M@mail.gmail.com>
+	<19F8576C6E063C45BE387C64729E739404687B2B81@dbde02.ent.ti.com>
+	<AANLkTim0Z7AWeqCM4d26Z1UP1VsEaSBgqDCAUr1vqgMj@mail.gmail.com>
+	<20100921173719.GA11404@suse.de>
+	<AANLkTim1cjcXf+eB7O9cTfEu1s=+-eL3uZ=UcXvb8H4M@mail.gmail.com>
+	<20100921181250.GA11157@suse.de>
+Date: Tue, 21 Sep 2010 21:23:43 +0300
+Message-ID: <AANLkTin=GRFiJbX2t5gRVkhitsKNAaFmtEvqmmG51fB7@mail.gmail.com>
+Subject: Re: [PATCH] drivers:staging:ti-st: remove st_get_plat_device
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: "Savoy, Pavan" <pavan_savoy@ti.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, dhowells <dhowells@redhat.com>,
-        Russell King <rmk@arm.linux.org.uk>, Kyle McMartin <kyle@mcmartin.ca>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        davem <davem@davemloft.net>, Linux-Arch <linux-arch@vger.kernel.org>
-In-Reply-To: <20100921030523.GB14668@drongo>
-References: <1284689131.32373.63.camel@yhuang-dev>
-	 <1284728802.28028.470.camel@twins> <20100920042011.GA13542@drongo>
-	 <1284973981.2275.642.camel@laptop>  <20100921030523.GB14668@drongo>
-Content-Type: text/plain; charset="UTF-8"
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Date: Tue, 21 Sep 2010 20:20:51 +0200
-Message-ID: <1285093251.2275.888.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-09-21 at 13:05 +1000, Paul Mackerras wrote:
-> On Mon, Sep 20, 2010 at 11:13:01AM +0200, Peter Zijlstra wrote:
-> > On Mon, 2010-09-20 at 14:20 +1000, Paul Mackerras wrote:
-> > > Actually these days we do it by setting the decrementer (the built-in
-> > > timer facility) to generate an interrupt immediately (well, within one
-> > > timebase tick, i.e. a small number of nanoseconds).
-> > 
-> > Then that is something that wants curing I guess.. 
-> 
-> Curing?  Why?  How?
+> Is there a specific patch that fixes this issue that is not around?  Or
+> is it already in my staging-next tree and you feel it should be added to
+> the final .36 release?
+>
+> If so, which one is it?
+>
+> thanks,
+>
+> greg k-h
+>
 
-Sorry, I got my head in a twist, its fine.
+for the build problem, include it in 2.6.36
+no need for more delay.
