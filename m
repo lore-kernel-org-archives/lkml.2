@@ -1,52 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757007Ab0IUPOj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 11:14:39 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:36251 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754163Ab0IUPOi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 11:14:38 -0400
-Date: Tue, 21 Sep 2010 11:08:21 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Grazvydas Ignotas <notasas@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, Ohad Ben-Cohen <ohad@wizery.com>
-Subject: Re: linux-next: manual merge of the wireless tree with Linus' tree
-Message-ID: <20100921150820.GA2448@tuxdriver.com>
-References: <20100921120919.a38723d3.sfr@canb.auug.org.au>
+	id S1757241Ab0IUPOz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 11:14:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60871 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755868Ab0IUPOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 11:14:53 -0400
+Date: Tue, 21 Sep 2010 17:14:52 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Heinz Diehl <htd@fritha.org>
+Cc: Heinz Diehl <htd@fancy-poultry.org>, Alan Ott <alan@signal11.us>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-input@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [BUG] object: is not initialized, yet kobject_put() is being
+ called
+In-Reply-To: <20100921150900.GA6801@fritha.org>
+Message-ID: <alpine.LNX.2.00.1009211714400.26813@pobox.suse.cz>
+References: <20100812113624.GB1591@arch.tripp.de> <20100812114513.GA1584@arch.tripp.de> <20100812115657.GA1611@arch.tripp.de> <alpine.LNX.2.00.1008121401580.2702@pobox.suse.cz> <alpine.LNX.2.00.1008121457060.2702@pobox.suse.cz> <20100812130411.GA1626@arch.tripp.de>
+ <4C63F285.8070801@signal11.us> <20100812164035.GB6761@fritha.org> <20100920181100.GA12295@fancy-poultry.org> <alpine.LNX.2.00.1009211653510.26813@pobox.suse.cz> <20100921150900.GA6801@fritha.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100921120919.a38723d3.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 21, 2010 at 12:09:19PM +1000, Stephen Rothwell wrote:
-> Hi John,
+On Tue, 21 Sep 2010, Heinz Diehl wrote:
+
+> > Could you perhaps strace apcupsd to see what it is doing before it fails?
 > 
-> Today's linux-next merge of the wireless tree got a conflict in
-> arch/arm/mach-omap2/board-omap3pandora.c between commit
-> 79ccf549b33c613b57eebcb03f8b24644c545a88 ("omap3: pandora: add NAND and
-> wifi support") from Linus' tree and commit
-> 664279b5121b480f31ffecf202cd2d1591ff356e ("wl12xx: make wl12xx.h common
-> to both spi and sdio") from the wireless tree.
-> 
-> The wireless tree commit copied the include/linux/spi/wl12xx.h to
-> include/linux but did not remove the spi/ one.  Later patches modified
-> only the new one ... I fixed the above conflict (see below) on the
-> assumption that the spi/ version of the header file should have been
-> removed.
+> Yes, of course. The output is attached this mail.
 
-Hmmmm...not sure how the delete part of the move got lost...  I'll fix
-it up.
+strace -f would likely be more helpful.
 
-Thanks for letting me know!
-
-John
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Jiri Kosina
+SUSE Labs, Novell Inc.
