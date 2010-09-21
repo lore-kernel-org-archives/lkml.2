@@ -1,96 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756544Ab0IUJVI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 05:21:08 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:40673 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752171Ab0IUJVG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 05:21:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=iTTEMBEruvcaYAb4ykBn6YxYJzs5rrEWxrHCbtQEPMKXOQ4/gyWAoDpKJKBuNG1VHD
-         24TCPGkEsy49ZUG4fR8RRSq/UNUYDzct7tAkLMiTX24CJRYT0N8aZVvQNR42EzHXvqil
-         nTHEu8GXxtDfnnQt1S5ss2ISwYOo+2VB7Dros=
-Subject: Re: Regression, bisected: reference leak with IPSec since ~2.6.31
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jarek Poplawski <jarkao2@gmail.com>
-Cc: Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-In-Reply-To: <20100921091248.GA8424@ff.dom.local>
-References: <20100921091248.GA8424@ff.dom.local>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 21 Sep 2010 11:21:00 +0200
-Message-ID: <1285060860.2617.158.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1756997Ab0IUJa7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 05:30:59 -0400
+Received: from lucidpixels.com ([75.144.35.66]:48510 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756816Ab0IUJa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 05:30:58 -0400
+Date: Tue, 21 Sep 2010 05:30:56 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+cc: adam radford <aradford@gmail.com>
+Subject: 2.6.35.x: acpi+no_hz+turboboost causing 3ware I/O controller
+ resets
+Message-ID: <alpine.DEB.2.00.1009210515210.14504@p34.internal.lan>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 21 septembre 2010 à 09:12 +0000, Jarek Poplawski a écrit :
-> On 2010-09-20 23:31, Eric Dumazet wrote:
-> ...
-> > [PATCH] ip : fix truesize mismatch in ip fragmentation
-> > 
-> > We should not set frag->destructor to sock_wkfree() until we are sure we
-> > dont hit slow path in ip_fragment(). Or we risk uncharging
-> > frag->truesize twice, and in the end, having negative socket
-> > sk_wmem_alloc counter, or even freeing socket sooner than expected.
-> > 
-> > Many thanks to Nick Bowler, who provided a very clean bug report and
-> > test programs.
-> > 
-> > While Nick bisection pointed to commit 2b85a34e911bf483 (net: No more
-> > expensive sock_hold()/sock_put() on each tx), underlying bug is older.
-> > 
-> > Reported-and-bisected-by: Nick Bowler <nbowler@elliptictech.com>
-> > Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> > ---
-> >  net/ipv4/ip_output.c  |    8 ++++----
-> >  net/ipv6/ip6_output.c |   10 +++++-----
-> >  2 files changed, 9 insertions(+), 9 deletions(-)
-> > 
-> > diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
-> > index 04b6989..126d9b3 100644
-> > --- a/net/ipv4/ip_output.c
-> > +++ b/net/ipv4/ip_output.c
-> > @@ -490,7 +490,6 @@ int ip_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
-> >  	if (skb_has_frags(skb)) {
-> >  		struct sk_buff *frag;
-> >  		int first_len = skb_pagelen(skb);
-> > -		int truesizes = 0;
-> >  
-> >  		if (first_len - hlen > mtu ||
-> >  		    ((first_len - hlen) & 7) ||
-> > @@ -510,11 +509,13 @@ int ip_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
-> >  				goto slow_path;
-> >  
-> >  			BUG_ON(frag->sk);
-> > -			if (skb->sk) {
-> > +		}
-> > +		if (skb->sk) {
-> > +			skb_walk_frags(skb, frag) {
-> >  				frag->sk = skb->sk;
-> >  				frag->destructor = sock_wfree;
-> 
-> Nice catch, but it seems doing it in the first loop as now, and
-> reverting changes before goto slow_path might be more optimal here.
-> 
+Hello,
 
-I thought of this, but found this function already very complex.
+There has been discussion going on here:
+http://forums.storagereview.com/index.php/topic/28920-3ware-9650se-controller-resets-under-load-on-linux/page__st__30__gopid__264286&#entry264286
 
-Once everything is in cpu caches, the added loop is very cheap.
+Member JGC posted:
+======================================================================
+I've been stuggling with these reset problems for a year now. Problems started to appear when we upgraded our servers running Debian Etch to Debian Lenny. When we did this upgrade, we changed our kernel from a custom compiled 2.6.24 kernel to 2.6.27. When 2.6.32 was declared as long time supported stable kernel, we switched to this kernel, but problems still appeared.
+Recently I reconfigured the kernel (2.6.32.21) a bit:
+- disable NOHZ
+- disable speedstepping
+- apply two patches from 2.6.35:
+http://git.kernel.or...405aa31bcbb7091
+http://git.kernel.or...e2d9fcf50aa04be
+======================================================================
+After those changes, I haven't seen reset problems anymore. We've seen this bug on several servers and contacted LSI and our vendor about this problem. The vendor doesn't know about the problems, and LSI blames the mainboard of some servers, while they blame the disks for other servers (yes, we have some servers with desktop drives).
 
-I liked the :
+I've been stresstesting this kernel with the "stress" utility on a 9690SA and 9650SE-based machine, both work fine with the modified kernel and haven't shown any resets ever since. I could even enable NCQ again without hanging up the servers completely.
+======================================================================
 
-<check everything without changing state>
-if something wrong
-	goto slow_path
-else
-	<OK, lets do destructive things>
+I always have had NO_HZ enabled along with CPU Frequency Scaling so I could
+utilize turbo boost.  However, with 2.6.35, as soon as there was any I/O on
+the system, the system would "freeze," - it would respond to ping, but all
+SSH windows would "lockup" until the controller resets (like below):
+
+[  593.967176] 3w-9xxx: scsi0: WARNING: (0x06:0x0037): Character ioctl (0x108)
+timed out, resetting card.
+[  730.483812] 3w-9xxx: scsi0: WARNING: (0x06:0x0037): Character ioctl (0x108)
+timed out, resetting card.
+
+However, after disabling:
+
+[*] Tickless System (Dynamic Ticks)
+<*> Processor or CPU Frequency Scaling
+[*] CPU Frequency scaling
+
+Re-compiling, booting into 2.6.35.4 again (have not changed the kernel
+version).
+
+I have been running heavy I/O processes that can cause the problem pretty much
+immediately when those CPU options are enabled-- and the problem appears to
+be resolved, there have been no freezing events yet.
+
+I'll let it run for a while longer but from what I can tell disabling
+turboboost options (tickless/scaling) seems to solve the problem!
+
+The next questions are:
+
+1. what changed with CPU/frequency scaling from 2.6.34 -> 2.6.35?
+2. when disabling the options above, it seems to stop the reset issue, why?
+
+I've had a case (a couple cases open with 3ware/LSI) and they have my
+configuration/etc and have not been able to re-produce the problem; however,
+unless they have a CPU that is turbo-boost capable/matching the hardware,
+I am not sure they will be able to reproduce the problem.
+
+I'll keep running tests to see if I can re-produce the problem when CPU 
+frequency scaling is turned off, but so far, the problem has not recurred.
+
+Justin.
 
 
