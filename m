@@ -1,57 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758106Ab0IUSXx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 14:23:53 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:62026 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752923Ab0IUSXw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 14:23:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=hkdsnF7rhCImJB3sAJ1glCxN/7AtRrG1xk9tShk7cJAWTqzUNbRK2LdkYiINZn4fq5
-         6UsItEs1CHM21UePOki/i3qblT86yO9EkVCW6zyXVvEM8GMGmjB4jduumgwM9pQPlf5P
-         juikIWcoeKfvg0zKt0zZ7uyvXNF+ZK3jpXgJY=
+	id S1758127Ab0IUSZh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 14:25:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41019 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754470Ab0IUSZg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 14:25:36 -0400
+Date: Tue, 21 Sep 2010 14:25:29 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Christoph Hellwig <hch@lst.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] floppy: switch to one queue per drive instead of sharing
+ a queue (Was: Re: cgq vs bdi names, was "cfq-iosched: fix a kernel OOPs when
+ usb key  is inserted")
+Message-ID: <20100921182529.GA31132@redhat.com>
+References: <20100920130318.GA29565@lst.de>
+ <4C975DCC.9050902@fusionio.com>
+ <20100920223001.GJ6138@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20100921181250.GA11157@suse.de>
-References: <19F8576C6E063C45BE387C64729E7394046836CE5C@dbde02.ent.ti.com>
-	<20100831224238.GA13253@suse.de>
-	<19F8576C6E063C45BE387C64729E739404687B2835@dbde02.ent.ti.com>
-	<AANLkTimCkTFfe157dHK=caAdAeX_4m1A_p6ZRxp=2RWt@mail.gmail.com>
-	<19F8576C6E063C45BE387C64729E739404687B2B27@dbde02.ent.ti.com>
-	<AANLkTimZ2Pe5T2=ZUZnd_3-RQi8Qs4FrykkJy6Zvx89M@mail.gmail.com>
-	<19F8576C6E063C45BE387C64729E739404687B2B81@dbde02.ent.ti.com>
-	<AANLkTim0Z7AWeqCM4d26Z1UP1VsEaSBgqDCAUr1vqgMj@mail.gmail.com>
-	<20100921173719.GA11404@suse.de>
-	<AANLkTim1cjcXf+eB7O9cTfEu1s=+-eL3uZ=UcXvb8H4M@mail.gmail.com>
-	<20100921181250.GA11157@suse.de>
-Date: Tue, 21 Sep 2010 21:23:43 +0300
-Message-ID: <AANLkTin=GRFiJbX2t5gRVkhitsKNAaFmtEvqmmG51fB7@mail.gmail.com>
-Subject: Re: [PATCH] drivers:staging:ti-st: remove st_get_plat_device
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: "Savoy, Pavan" <pavan_savoy@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100920223001.GJ6138@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Is there a specific patch that fixes this issue that is not around?  Or
-> is it already in my staging-next tree and you feel it should be added to
-> the final .36 release?
->
-> If so, which one is it?
->
-> thanks,
->
-> greg k-h
->
+On Mon, Sep 20, 2010 at 06:30:01PM -0400, Vivek Goyal wrote:
+> On Mon, Sep 20, 2010 at 03:12:44PM +0200, Jens Axboe wrote:
+> > On 2010-09-20 15:03, Christoph Hellwig wrote:
+> > > Hi Vivek, hi Jens,
+> > > 
+> > > where was http://git.kernel.dk/?p=linux-2.6-block.git;a=commitdiff_plain;h=44c74d6292e97f8bd9adfa6b0df3cb4f3c42a6dc posted  on the mailinglist?
+> > > 
+> > > I can't find it in my lkml or fsdevel inboxes.  Either way I don't think
+> > > just papering over the underlying issue like this is a good idea.  
+> > > 
+> > > The big issue is that cfq tries to scanf the textual representation of
+> > > the dev_t from the request_queue by abusing the bdi.  But the reason why
+> > > we don't have a dev_t in the request_queue is that it's still not
+> > > unique.  If it was we could easily add a dev_t into the request_queue
+> > > and be done with it.
+> > > 
+> > > So the fix is either to get rid of the last remaining users of shared
+> > > request_queues (IIRC the various floppy drivers) and just add a dev_t
+> > > in the request_queue for the bdi, tracing and cfq, or add a dev_t into
+> > > the request_queue and add a flag for shared request queues that the
+> > > floppy driver and whoever needs it set and let the bdi sysfs code, cfq
+> > > and blocktrace ignore theis request_queue.  This will also allow to
+> > > get rid of the crap about ignoring failures due to already register
+> > > or prematurely unregistered bdis and actually add real error handling
+> > > to that code.
+> > 
+> > I did this one 15 months ago (according to git), but I never got it
+> > tested:
+> > 
+> > http://git.kernel.dk/?p=linux-2.6-block.git;a=commitdiff;h=7a0ebc7ea1db42a71841df6a15be9fd420fae980
+> > 
+> > IIRC, the mtd stuff also uses a shared queue. But I think that is it.
+> > Would indeed be VERY nice to finally get rid of that crap, it has
+> > technically been outlawed since 2.5.1.
+> 
+> Hi Jens,
+> 
+> I have refreshed your patch to apply on latest tree. I did testing with
+> one floppy controller and it was hanging because we were taking
+> floppy_lock both inside and outside of function set_next_request(). I got
+> rid of that and now atleast with one flopply controller this patch is
+> working fine.
+> 
+> I tried connecting another floppy controller to see if I see two request
+> queues being registered, but somehow my BIOS does not recognize two 
+> floppy controllers and only makes one of these operational.
+> 
 
-for the build problem, include it in 2.6.36
-no need for more delay.
+Christoph suggested to use qemu and test with multiple flopply disk
+controller and it worked. Thanks Christoph.
+
+I exported two floppy disks and they show up as /dev/fd0 and /dev/fd1 in
+the guest.
+
+With the patch I also verified that changing IO scheduler on fd0 does
+not change it automatically for fd1. That means they both are using 
+separate requests queues after the patch. Without the patch changing
+IO scheduler on one changed it automatically for the other controller
+meaning they were sharing same request queue.
+
+I did basic testing of being able to mount the floppy disks and being
+able to read/write simple text files.
+
+Jens, do let me know if you are curious to know about test results in
+some other configuration.
+
+Thanks
+Vivek
