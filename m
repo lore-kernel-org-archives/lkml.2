@@ -1,97 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758127Ab0IUSZh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 14:25:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41019 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754470Ab0IUSZg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 14:25:36 -0400
-Date: Tue, 21 Sep 2010 14:25:29 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Christoph Hellwig <hch@lst.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] floppy: switch to one queue per drive instead of sharing
- a queue (Was: Re: cgq vs bdi names, was "cfq-iosched: fix a kernel OOPs when
- usb key  is inserted")
-Message-ID: <20100921182529.GA31132@redhat.com>
-References: <20100920130318.GA29565@lst.de>
- <4C975DCC.9050902@fusionio.com>
- <20100920223001.GJ6138@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100920223001.GJ6138@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1758152Ab0IUS0P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 14:26:15 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:40463 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756837Ab0IUS0N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 14:26:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
+         :mime-version:content-type:content-transfer-encoding;
+        b=m/GvPOp4rRHQLNwCE1Ys/HCZLGYrpZbBhrmStJOAPB/N501nCrLHAtRUzyPp5wKSEE
+         QPaUKoGMPn69/rZQNqHd+XnZAJ8Z57SYDt0D5Jo5DYP/PrBQ9FP18sKYYFKB5Xv7W+dh
+         1nNBBwxo/c3idBZC/4eCBtyypzXKXG28ZKNso=
+Date: Tue, 21 Sep 2010 20:26:07 +0200
+From: Paolo Ornati <ornati@gmail.com>
+To: Vasily Khoruzhick <anarsoul@gmail.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Simon Farnsworth <simon.farnsworth@onelan.co.uk>,
+        intel-gfx@lists.freedesktop.org, Sitsofe Wheeler <sitsofe@yahoo.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [Intel-gfx] Interrupt latency on some 945GM platforms
+Message-ID: <20100921202607.2b46ffca@gmail.com>
+In-Reply-To: <201009171550.48480.anarsoul@gmail.com>
+References: <201009132336.17310.anarsoul@gmail.com>
+	<201009171002.09187.simon.farnsworth@onelan.co.uk>
+	<4b4d1e0a-b1ad-40f1-a829-6d4726d2b2d3@email.android.com>
+	<201009171550.48480.anarsoul@gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 20, 2010 at 06:30:01PM -0400, Vivek Goyal wrote:
-> On Mon, Sep 20, 2010 at 03:12:44PM +0200, Jens Axboe wrote:
-> > On 2010-09-20 15:03, Christoph Hellwig wrote:
-> > > Hi Vivek, hi Jens,
-> > > 
-> > > where was http://git.kernel.dk/?p=linux-2.6-block.git;a=commitdiff_plain;h=44c74d6292e97f8bd9adfa6b0df3cb4f3c42a6dc posted  on the mailinglist?
-> > > 
-> > > I can't find it in my lkml or fsdevel inboxes.  Either way I don't think
-> > > just papering over the underlying issue like this is a good idea.  
-> > > 
-> > > The big issue is that cfq tries to scanf the textual representation of
-> > > the dev_t from the request_queue by abusing the bdi.  But the reason why
-> > > we don't have a dev_t in the request_queue is that it's still not
-> > > unique.  If it was we could easily add a dev_t into the request_queue
-> > > and be done with it.
-> > > 
-> > > So the fix is either to get rid of the last remaining users of shared
-> > > request_queues (IIRC the various floppy drivers) and just add a dev_t
-> > > in the request_queue for the bdi, tracing and cfq, or add a dev_t into
-> > > the request_queue and add a flag for shared request queues that the
-> > > floppy driver and whoever needs it set and let the bdi sysfs code, cfq
-> > > and blocktrace ignore theis request_queue.  This will also allow to
-> > > get rid of the crap about ignoring failures due to already register
-> > > or prematurely unregistered bdis and actually add real error handling
-> > > to that code.
+On Fri, 17 Sep 2010 15:50:43 +0300
+Vasily Khoruzhick <anarsoul@gmail.com> wrote:
+
+> > Vasily, can you try the qos workaround on your machine and see if it works
+> > too?
 > > 
-> > I did this one 15 months ago (according to git), but I never got it
-> > tested:
-> > 
-> > http://git.kernel.dk/?p=linux-2.6-block.git;a=commitdiff;h=7a0ebc7ea1db42a71841df6a15be9fd420fae980
-> > 
-> > IIRC, the mtd stuff also uses a shared queue. But I think that is it.
-> > Would indeed be VERY nice to finally get rid of that crap, it has
-> > technically been outlawed since 2.5.1.
+> > Thanks,  
 > 
-> Hi Jens,
-> 
-> I have refreshed your patch to apply on latest tree. I did testing with
-> one floppy controller and it was hanging because we were taking
-> floppy_lock both inside and outside of function set_next_request(). I got
-> rid of that and now atleast with one flopply controller this patch is
-> working fine.
-> 
-> I tried connecting another floppy controller to see if I see two request
-> queues being registered, but somehow my BIOS does not recognize two 
-> floppy controllers and only makes one of these operational.
-> 
+> Just give me a patch :)
 
-Christoph suggested to use qemu and test with multiple flopply disk
-controller and it worked. Thanks Christoph.
+Me too...
 
-I exported two floppy disks and they show up as /dev/fd0 and /dev/fd1 in
-the guest.
+I've a laptop with 945GM (Asus x5dij) and with 2.6.32+ kernels I'm
+having random, but not frequent, screen flickering problems (for some
+reasons 2.6.31 works fine).
 
-With the patch I also verified that changing IO scheduler on fd0 does
-not change it automatically for fd1. That means they both are using 
-separate requests queues after the patch. Without the patch changing
-IO scheduler on one changed it automatically for the other controller
-meaning they were sharing same request queue.
+Problem goes away with "nohz=off".
 
-I did basic testing of being able to mount the floppy disks and being
-able to read/write simple text files.
+I'll try with "processor.max_cstate=?" and see if that works too.
 
-Jens, do let me know if you are curious to know about test results in
-some other configuration.
+Bye,
 
-Thanks
-Vivek
+-- 
+	Paolo Ornati
+	Linux 2.6.35.4 on x86_64
