@@ -1,64 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758152Ab0IUS0P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 14:26:15 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:40463 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756837Ab0IUS0N (ORCPT
+	id S1758159Ab0IUS3k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 14:29:40 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:57811 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758011Ab0IUS3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 14:26:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
-         :mime-version:content-type:content-transfer-encoding;
-        b=m/GvPOp4rRHQLNwCE1Ys/HCZLGYrpZbBhrmStJOAPB/N501nCrLHAtRUzyPp5wKSEE
-         QPaUKoGMPn69/rZQNqHd+XnZAJ8Z57SYDt0D5Jo5DYP/PrBQ9FP18sKYYFKB5Xv7W+dh
-         1nNBBwxo/c3idBZC/4eCBtyypzXKXG28ZKNso=
-Date: Tue, 21 Sep 2010 20:26:07 +0200
-From: Paolo Ornati <ornati@gmail.com>
-To: Vasily Khoruzhick <anarsoul@gmail.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Simon Farnsworth <simon.farnsworth@onelan.co.uk>,
-        intel-gfx@lists.freedesktop.org, Sitsofe Wheeler <sitsofe@yahoo.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [Intel-gfx] Interrupt latency on some 945GM platforms
-Message-ID: <20100921202607.2b46ffca@gmail.com>
-In-Reply-To: <201009171550.48480.anarsoul@gmail.com>
-References: <201009132336.17310.anarsoul@gmail.com>
-	<201009171002.09187.simon.farnsworth@onelan.co.uk>
-	<4b4d1e0a-b1ad-40f1-a829-6d4726d2b2d3@email.android.com>
-	<201009171550.48480.anarsoul@gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Sep 2010 14:29:38 -0400
+Date: Tue, 21 Sep 2010 14:26:20 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: wireless-2.6 2010-09-21
+Message-ID: <20100921182620.GB2448@tuxdriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Sep 2010 15:50:43 +0300
-Vasily Khoruzhick <anarsoul@gmail.com> wrote:
+Dave,
 
-> > Vasily, can you try the qos workaround on your machine and see if it works
-> > too?
-> > 
-> > Thanks,  
-> 
-> Just give me a patch :)
+Here are two more small fixes intended for 2.6.36.  One is a one-liner
+(kmalloc->kzalloc) that prevents a potential information leak.
+The other is a small fix that skips firmware reloads (a workaround
+for firmware problems) while a scan is in progress in order to avoid
+the stack trace cited in the commit log.
 
-Me too...
+Please let me know if there are problems!
 
-I've a laptop with 945GM (Asus x5dij) and with 2.6.32+ kernels I'm
-having random, but not frequent, screen flickering problems (for some
-reasons 2.6.31 works fine).
+Thanks,
 
-Problem goes away with "nohz=off".
+John
 
-I'll try with "processor.max_cstate=?" and see if that works too.
+---
 
-Bye,
+The following changes since commit 3779298b81cd9a2531cec93e3beefc1acdb01382:
 
+  Merge branch 'vhost-net' of git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost (2010-09-20 11:13:34 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git master
+
+Johannes Berg (1):
+      wext: fix potential private ioctl memory content leak
+
+Wey-Yi Guy (1):
+      iwlwifi: do not perferm force reset while doing scan
+
+ drivers/net/wireless/iwlwifi/iwl-core.c |    5 +++++
+ net/wireless/wext-priv.c                |    2 +-
+ 2 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/wireless/iwlwifi/iwl-core.c b/drivers/net/wireless/iwlwifi/iwl-core.c
+index 07dbc27..e23c406 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-core.c
++++ b/drivers/net/wireless/iwlwifi/iwl-core.c
+@@ -2613,6 +2613,11 @@ int iwl_force_reset(struct iwl_priv *priv, int mode, bool external)
+ 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
+ 		return -EINVAL;
+ 
++	if (test_bit(STATUS_SCANNING, &priv->status)) {
++		IWL_DEBUG_INFO(priv, "scan in progress.\n");
++		return -EINVAL;
++	}
++
+ 	if (mode >= IWL_MAX_FORCE_RESET) {
+ 		IWL_DEBUG_INFO(priv, "invalid reset request.\n");
+ 		return -EINVAL;
+diff --git a/net/wireless/wext-priv.c b/net/wireless/wext-priv.c
+index 3feb28e..674d426 100644
+--- a/net/wireless/wext-priv.c
++++ b/net/wireless/wext-priv.c
+@@ -152,7 +152,7 @@ static int ioctl_private_iw_point(struct iw_point *iwp, unsigned int cmd,
+ 	} else if (!iwp->pointer)
+ 		return -EFAULT;
+ 
+-	extra = kmalloc(extra_size, GFP_KERNEL);
++	extra = kzalloc(extra_size, GFP_KERNEL);
+ 	if (!extra)
+ 		return -ENOMEM;
+ 
 -- 
-	Paolo Ornati
-	Linux 2.6.35.4 on x86_64
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
