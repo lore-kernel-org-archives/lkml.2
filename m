@@ -1,67 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab0IUI5v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 04:57:51 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:62524 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755989Ab0IUI5t convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 04:57:49 -0400
+	id S1756370Ab0IUJEW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 05:04:22 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:59792 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755924Ab0IUJEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 05:04:21 -0400
+Date: Tue, 21 Sep 2010 10:04:07 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Rob Mueller <robm@fastmail.fm>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Bron Gondwana <brong@fastmail.fm>,
+        linux-mm <linux-mm@kvack.org>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: Default zone_reclaim_mode = 1 on NUMA kernel is bad
+	forfile/email/web servers
+Message-ID: <20100921090407.GA11439@csn.ul.ie>
+References: <1284349152.15254.1394658481@webmail.messagingengine.com> <20100916184240.3BC9.A69D9226@jp.fujitsu.com> <20100920093440.GD1998@csn.ul.ie> <52C8765522A740A4A5C027E8FDFFDFE3@jem>
 MIME-Version: 1.0
-X-Originating-IP: [46.116.86.31]
-In-Reply-To: <AANLkTinxssqohSCfod8Q1emhJ6AB4Hkxo7EmkTtTxuf=@mail.gmail.com>
-References: <20100921120919.a38723d3.sfr@canb.auug.org.au> <AANLkTinxssqohSCfod8Q1emhJ6AB4Hkxo7EmkTtTxuf=@mail.gmail.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 21 Sep 2010 10:57:29 +0200
-Message-ID: <AANLkTimNX=uYZLTfcxqXQVZCpJDCpdYKRubyy=8afdAS@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the wireless tree with Linus' tree
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "John W. Linville" <linville@tuxdriver.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Grazvydas Ignotas <notasas@gmail.com>,
-        Tony Lindgren <tony@atomide.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <52C8765522A740A4A5C027E8FDFFDFE3@jem>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 21, 2010 at 8:53 AM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> On Tue, Sep 21, 2010 at 4:09 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> The wireless tree commit copied the include/linux/spi/wl12xx.h to
->> include/linux but did not remove the spi/ one.
->
-> We had that one fixed in
-> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg34910.html
-> but it seems an older patch accidentally got in.
-
-Ok, figured this out - the correct patch _was_ taken, but commit
-79ccf549b33c613b57eebcb03f8b24644c545a88 ("omap3: pandora: add NAND
-and
-wifi support") only came later, so the "#include <linux/spi/wl12xx.h>"
-was only removed in the merge (so it was dropped from the original
-patch).
-
-Anyway your fix is good Stephen, Thank you.
-
-
->> --
->> Cheers,
->> Stephen Rothwell                    sfr@canb.auug.org.au
+On Tue, Sep 21, 2010 at 09:41:21AM +1000, Rob Mueller wrote:
+>> I don't think we will ever get the default value for this tunable right.
+>> I would also worry that avoiding the reclaim_mode for file-backed
+>> cache will hurt HPC applications that are dumping their data to disk
+>> and depending on the existing default for zone_reclaim_mode to not
+>> pollute other nodes.
 >>
->> diff --cc arch/arm/mach-omap2/board-omap3pandora.c
->> index dd3af2b,9b62b62..0000000
->> --- a/arch/arm/mach-omap2/board-omap3pandora.c
->> +++ b/arch/arm/mach-omap2/board-omap3pandora.c
->> @@@ -25,9 -25,7 +25,9 @@@
->>  #include <linux/spi/ads7846.h>
->>  #include <linux/regulator/machine.h>
->>  #include <linux/i2c/twl.h>
->> - #include <linux/spi/wl12xx.h>
->> + #include <linux/wl12xx.h>
->>  +#include <linux/mtd/partitions.h>
->>  +#include <linux/mtd/nand.h>
->>  #include <linux/leds.h>
->>  #include <linux/input.h>
->>  #include <linux/input/matrix_keypad.h>
->>
+>> The ideal would be if distribution packages for mail, web servers
+>> and others that are heavily IO orientated would prompt for a change
+>> to the default value of zone_reclaim_mode in sysctl.
 >
+> I would argue that there's a lot more mail/web/file servers out there 
+> than HPC machines. And HPC machines tend to have a team of people to  
+> monitor/tweak them. I think it would be much more sane to default this to 
+> 0 which works best for most people, and get the HPC people to change it.
+>
+
+No doubt this is true. The only real difference is that there are more NUMA
+machines running mail/web/file servers now than there might have been in the
+past. The default made sense once upon a time. Personally I wouldn't mind
+the default changing but my preference would be that distribution packages
+installing on NUMA machines would prompt if the default should be changed if it
+is likely to be of benefit for that package (e.g. the mail, file and web ones).
+
+> However there's still another question, why is this problem happening at 
+> all for us? I know almost nothing about NUMA, but from other posts, it 
+> sounds like the problem is the memory allocations are all happening on 
+> one node?
+
+Yes.
+
+> But I don't understand why that would be happening.
+
+Because in a situation where you have many NUMA-aware applications
+running bound to CPUs, it performs better if they always allocate from
+local nodes instead of accessing remote nodes. It's great for one type
+of workload but not so much for mail/web/file.
+
+> The machine 
+> runs the cyrus IMAP server, which is a classic unix forking server with 
+> 1000's of processes. Each process will mmap lots of different files to 
+> access them. Why would that all be happening on one node, not spread 
+> around?
+>
+
+Honestly, I don't know and I don't have such a machine to investigate
+with. My guess is that there are a number of files that are hot and
+accessed by multiple processes on different nodes and they are evicting
+each other but it's only a guess.
+
+> One thing is that the machine is vastly more IO loaded than CPU loaded, 
+> in fact it uses very little CPU at all (a few % usually). Does the kernel 
+> prefer to run processes on one particular node if it's available?
+
+It prefers to run on the same node it ran previously. If they all
+happened to start up on a small subset of nodes, they could be
+continually getting running there.
+
+> So if a 
+> machine has very little CPU load, every process will generally end up  
+> running on the same node?
+>
+
+It's possible they are running on a small subset. mpstat should be able
+to give a basic idea of what the spread across CPUs is.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
