@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860Ab0IUODp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 10:03:45 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:41120 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751456Ab0IUODo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 10:03:44 -0400
-Subject: Re: [RFC PATCH 0/2] perf_events: add support for per-cpu
- per-cgroup monitoring (v3)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
-        eranian@gmail.com, robert.richter@amd.com, acme@redhat.com,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-In-Reply-To: <AANLkTinmHGtLFRa4O5DNRGgoRtM4cy65JgCw=sYxEjNF@mail.gmail.com>
-References: <4c88dc9c.991ce30a.3d91.3e0e@mx.google.com>
-	 <1285061899.2275.824.camel@laptop> <1285062228.2275.826.camel@laptop>
-	 <AANLkTik-oMNJdakwsH=22LzgYvgd35aom+Zu2WkchUte@mail.gmail.com>
-	 <1285072975.2275.872.camel@laptop>
-	 <AANLkTinmHGtLFRa4O5DNRGgoRtM4cy65JgCw=sYxEjNF@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 21 Sep 2010 16:03:21 +0200
-Message-ID: <1285077801.2275.881.camel@laptop>
+	id S1755630Ab0IUODt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 10:03:49 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:36181 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1754951Ab0IUODq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 10:03:46 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/DllYZH4zDZvdFadjb87s3p7uXSTkFsN8BwUInlh
+	PAvZTdIdZ799Zo
+Subject: Re: [RFC PATCH] sched: START_NICE feature (temporarily niced
+ forks) (v4)
+From: Mike Galbraith <efault@gmx.de>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>
+In-Reply-To: <1285070478.24680.76.camel@marge.simson.net>
+References: <20100920191929.GA29026@Krystal>
+	 <1285070478.24680.76.camel@marge.simson.net>
+Content-Type: text/plain
+Date: Tue, 21 Sep 2010 16:04:04 +0200
+Message-Id: <1285077844.24680.176.camel@marge.simson.net>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-09-21 at 15:38 +0200, Stephane Eranian wrote:
-> > Hmm, indeed. One thing we can do about that is move perf into the
-> > cgroup, create the counter (disabled) using self to identify the cgroup,
-> > move perf back to where it came from, and enable the counter.
-> >
-> Yes, that's another possibility. I wonder if there are any non-obvious
-> difficulties with this approach.
+On Tue, 2010-09-21 at 14:01 +0200, Mike Galbraith wrote:
 
-Yes, there is, but I think we can fix it. The problem with moving perf
-itself around is that perf is not a fully dormant process and can thus
-interact with the cgroup state.
+> Since this is mostly about reducing latencies for the non-fork
+> competition, maybe a kinder gentler START_DEBIT would work.  Let the
+> child inherit parent's vruntime, charge a fraction of the vruntime
+> equalizer bill _after_ it execs, until the bill has been paid, or
+> whatnot.
 
-If we were to fork a child that's simply sitting idle in waitpid() (or
-any other blocking syscall) we can move that around cgroup without
-affecting the cgroup itself.
+One thing that comes to mind is that a lot of this problem is generated,
+or rather exacerbated by, sleeper fairness.  For example, take vfork:
+parent goes to sleep after passing the baton to the child.  When the
+child exits, the parent wakes, gets credit for sleeping while it was
+really running in drag, may preempt as a result, and is free to repeat
+the procedure, gaining an edge.  START_DEBIT prevents that.
 
->  Is it as simple as:
->    FILE *fp;
->    fp = fopen("/dev/cgroup/test/tasks", "w");
->    fprintf(fp, "%d", gettid());
->    close(fp): 
+In the naked vfork/exec case, the parent _should_ resume at the relative
+vruntime of the child, without further sleeper vruntime adjustment, but
+that wouldn't help fix plain fork/clone which can do the same, nor would
+it help kbuild's vfork->exec->clone[s]->parallel_stuff->exit unless you
+add a lot of complexity... 
 
-Except I've never in my life mounted a cgroup filesystem in /dev/ :-)
+(...heh, to end up with something remarkably similar to cgroup container
+per process.  Nope, don't want to re-invent the process scheduler to fix
+a task scheduler corner case.  That's the core though, same old divide
+and conquer problem we've always had.  We have a process scheduler
+available these days though.  Back to our task scheduler problem...)
+
+Perhaps take that vslice penalty, apply it to parent and child, and if
+present, deduct sleep time from their debt, and only credit sleep time
+if there's anything left over?  In any case, seems to me that sleep time
+has to be included in the equation while the penalty is in effect.
+
+Guess I'll try that, see what happens.
+
+(but that will likely negate much of the benefit for your testcase,
+where parent and child sleep)
+
+	-Mike
+
