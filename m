@@ -1,63 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758075Ab0IUQzm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 12:55:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36916 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755873Ab0IUQzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 12:55:40 -0400
-Date: Tue, 21 Sep 2010 18:55:36 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Greg KH <gregkh@suse.de>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Phil Turmel <philip@turmel.org>,
-        Mat <jackdachef@gmail.com>, Guillaume Chazarain <guichaz@gmail.com>,
-        linux-kernel@vger.kernel.org, Oliver Neukum <oliver@neukum.org>,
-        Alan Ott <alan@signal11.us>, linux-usb@vger.kernel.org,
-        linux-input@vger.kernel.org, Andreas Bombe <aeb@debian.org>,
-        Alex Riesen <raa.lkml@gmail.com>,
-        Gabriel C <nix.or.die@googlemail.com>
-Subject: Re: [BUG, Regression, bisected] USB mouse causes bug on 1st insert,
- ignored on 2nd insert, lsusb stuck at usbdev_open
-In-Reply-To: <20100921165048.GB8756@suse.de>
-Message-ID: <alpine.LNX.2.00.1009211852010.26813@pobox.suse.cz>
-References: <alpine.LNX.2.00.1009211156520.26813@pobox.suse.cz> <Pine.LNX.4.44L0.1009211013460.1644-100000@iolanthe.rowland.org> <20100921165048.GB8756@suse.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1757975Ab0IUQ75 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 12:59:57 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:57794 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757895Ab0IUQ74 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 12:59:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=MitsYv+fZDQMZMKULgHXoSVCOx62CaRGzNgzkqQMe63RN12XRWvX31YHIH1AdZhwwY
+         nksA3k2KBqjosd2eSSyHE02VvS12LCUIcw7V9LcJ6p9LRq3mo9CEQQ/ApdqGbO98npSc
+         Iweq9VMhreuLl0tsqSS7hX2DHCNnTSDflhwsY=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Tue, 21 Sep 2010 17:59:52 +0100
+Message-ID: <AANLkTimc3oFBG8YiouuCiJ10hz-V8d-vThmMi56RpV9H@mail.gmail.com>
+Subject: [2.6.36-rc5] minor DRM fixes...
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Sep 2010, Greg KH wrote:
+Hi Alex; please review and let me know if you prefer this broken out
+further, and thanks.
 
-> > > I have just found out that it's actually CONFIG_USB_DYNAMIC_MINORS which 
-> > > makes the difference. When unset, the problem doesn't trigger, and 
-> > > usb_find_interface() always returns the proper interface. When 
-> > > CONFIG_USB_DYNAMIC_MINORS is being used, the oops happen.
-> > > 
-> > > I'll look into that.
-> > 
-> > Apparently the problem is that intf->minors doesn't get initialized 
-> > properly.  This patch should fix it.  Everybody, please try it out.
-> 
-> Wow, what happened to suddenly cause this?  Nothing has changed here in
-> a long time.
-> 
-> wierd.
+---
 
-It doesn't hit you if you are calling usb_register_dev() for all the 
-instances you have, as the first device will have minor '0', the second 
-one '1', etc.
+Fix a number of small compilation issues with DRM.
 
-But if you are calling usb_find_interface() for devices that have never 
-been registered through usb_register_dev(), then you have a problem, as 
-usb_find_interface() will match those unregistered devices (as minor == 0 
-in such cases).
+Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
 
-This is probably quite rare scenario, and hiddev (which might be the only 
-in-kernel driver doing this?) has moved to usb_find_interface() only 
-recently.
+diff --git a/drivers/gpu/drm/drm_buffer.c b/drivers/gpu/drm/drm_buffer.c
+index 55d03ed..687de5f 100644
+--- a/drivers/gpu/drm/drm_buffer.c
++++ b/drivers/gpu/drm/drm_buffer.c
+@@ -98,7 +98,7 @@ EXPORT_SYMBOL(drm_buffer_alloc);
+  *   user_data: A pointer the data that is copied to the buffer.
+  *   size: The Number of bytes to copy.
+  */
+-extern int drm_buffer_copy_from_user(struct drm_buffer *buf,
++int drm_buffer_copy_from_user(struct drm_buffer *buf,
+ 		void __user *user_data, int size)
+ {
+ 	int nr_pages = size / PAGE_SIZE + 1;
+@@ -163,7 +163,7 @@ void *drm_buffer_read_object(struct drm_buffer *buf,
+ {
+ 	int idx = drm_buffer_index(buf);
+ 	int page = drm_buffer_page(buf);
+-	void *obj = 0;
++	void *obj = NULL;
 
+ 	if (idx + objsize <= PAGE_SIZE) {
+ 		obj = &buf->data[page][idx];
+diff --git a/drivers/gpu/drm/radeon/atombios.h
+b/drivers/gpu/drm/radeon/atombios.h
+index 1bc72c3..fe359a2 100644
+--- a/drivers/gpu/drm/radeon/atombios.h
++++ b/drivers/gpu/drm/radeon/atombios.h
+@@ -4999,7 +4999,7 @@ typedef struct _SW_I2C_IO_DATA_PARAMETERS
+ #define SW_I2C_CNTL_WRITE1BIT 6
+
+ //==============================VESA definition
+Portion===============================
+-#define VESA_OEM_PRODUCT_REV			            '01.00'
++#define VESA_OEM_PRODUCT_REV			            "01.00"
+ #define VESA_MODE_ATTRIBUTE_MODE_SUPPORT	     0xBB	//refer to VBE
+spec p.32, no TTY support
+ #define VESA_MODE_WIN_ATTRIBUTE						     7
+ #define VESA_WIN_SIZE											     64
+diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
+index bfdfa3e..e3b47a5 100644
+--- a/drivers/gpu/drm/radeon/r600.c
++++ b/drivers/gpu/drm/radeon/r600.c
+@@ -2727,7 +2727,7 @@ int r600_ib_test(struct radeon_device *rdev)
+ 	if (i < rdev->usec_timeout) {
+ 		DRM_INFO("ib test succeeded in %u usecs\n", i);
+ 	} else {
+-		DRM_ERROR("radeon: ib test failed (sracth(0x%04X)=0x%08X)\n",
++		DRM_ERROR("radeon: ib test failed (scratch(0x%04X)=0x%08X)\n",
+ 			  scratch, tmp);
+ 		r = -EINVAL;
+ 	}
+diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c
+b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+index ca90479..b1e02ff 100644
+--- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
++++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+@@ -69,7 +69,7 @@ struct ttm_page_pool {
+ 	spinlock_t		lock;
+ 	bool			fill_lock;
+ 	struct list_head	list;
+-	int			gfp_flags;
++	gfp_t			gfp_flags;
+ 	unsigned		npages;
+ 	char			*name;
+ 	unsigned long		nfrees;
+@@ -475,7 +475,7 @@ static void
+ttm_handle_caching_state_failure(struct list_head *pages,
+  * This function is reentrant if caller updates count depending on number of
+  * pages returned in pages array.
+  */
+-static int ttm_alloc_new_pages(struct list_head *pages, int gfp_flags,
++static int ttm_alloc_new_pages(struct list_head *pages, gfp_t gfp_flags,
+ 		int ttm_flags, enum ttm_caching_state cstate, unsigned count)
+ {
+ 	struct page **caching_array;
+@@ -666,7 +666,7 @@ int ttm_get_pages(struct list_head *pages, int flags,
+ {
+ 	struct ttm_page_pool *pool = ttm_get_pool(flags, cstate);
+ 	struct page *p = NULL;
+-	int gfp_flags = GFP_USER;
++	gfp_t gfp_flags = GFP_USER;
+ 	int r;
+
+ 	/* set zero flag for page allocation if required */
+@@ -818,7 +818,7 @@ int ttm_page_alloc_init(struct ttm_mem_global
+*glob, unsigned max_pages)
+ 	return 0;
+ }
+
+-void ttm_page_alloc_fini()
++void ttm_page_alloc_fini(void)
+ {
+ 	int i;
+
+diff --git a/drivers/gpu/vga/vgaarb.c b/drivers/gpu/vga/vgaarb.c
+index b87569e..f366f96 100644
+--- a/drivers/gpu/vga/vgaarb.c
++++ b/drivers/gpu/vga/vgaarb.c
+@@ -598,7 +598,7 @@ static inline void
+vga_update_device_decodes(struct vga_device *vgadev,
+ 	pr_debug("vgaarb: decoding count now is: %d\n", vga_decode_count);
+ }
+
+-void __vga_set_legacy_decoding(struct pci_dev *pdev, unsigned int
+decodes, bool userspace)
++static void __vga_set_legacy_decoding(struct pci_dev *pdev, unsigned
+int decodes, bool userspace)
+ {
+ 	struct vga_device *vgadev;
+ 	unsigned long flags;
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Daniel J Blueman
