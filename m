@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758021Ab0IUQrM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 12:47:12 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35212 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753736Ab0IUQrK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 12:47:10 -0400
-Date: Tue, 21 Sep 2010 09:46:38 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] mm: do not print backtraces on GFP_ATOMIC failures
-Message-Id: <20100921094638.9910add0.akpm@linux-foundation.org>
-In-Reply-To: <20100921121818.4745f038@annuminas.surriel.com>
-References: <20100921121818.4745f038@annuminas.surriel.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757981Ab0IUQvJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 12:51:09 -0400
+Received: from cantor.suse.de ([195.135.220.2]:35876 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753736Ab0IUQvG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 12:51:06 -0400
+Date: Tue, 21 Sep 2010 09:44:14 -0700
+From: Greg KH <gregkh@suse.de>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Alan Cox <alan@linux.intel.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        lud <linux-usb@vger.kernel.org>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Alek Du <alek.du@intel.com>
+Subject: Re: linux-next: Tree for September 9 (usb/otg/langwell)
+Message-ID: <20100921164414.GA8756@suse.de>
+References: <20100909211249.2c70ac41.sfr@canb.auug.org.au>
+ <20100909092645.11fc3bf0.randy.dunlap@oracle.com>
+ <20100909203046.7e3d7819@linux.intel.com>
+ <20100921093742.2bec5c15.randy.dunlap@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100921093742.2bec5c15.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Sep 2010 12:18:18 -0400 Rik van Riel <riel@redhat.com> wrote:
+On Tue, Sep 21, 2010 at 09:37:42AM -0700, Randy Dunlap wrote:
+> On Thu, 9 Sep 2010 20:30:46 +0100 Alan Cox wrote:
+> 
+> > On Thu, 9 Sep 2010 09:26:45 -0700
+> > Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> > 
+> > > On Thu, 9 Sep 2010 21:12:49 +1000 Stephen Rothwell wrote:
+> > > 
+> > > > Hi all,
+> > > > 
+> > > > Changes since 20100908:
+> > > 
+> > > on i386 (X86_32), drivers/usb/otg/langwell_otg.c has 429 errors and 2
+> > > warnings.
+> > > 
+> > 
+> > Just sorting this now.
+> 
+> 
+> Still seeing lots of langwell_otg errors in linux-next 20100921.
+> Have any patches been merged?
 
-> Atomic allocations cannot fall back to the page eviction code
-> and are expected to fail.  In fact, in some network intensive
-> workloads, it is common to experience hundreds of GFP_ATOMIC
-> allocation failures.
-> 
-> Printing out a backtrace for every one of those expected
-> allocation failures accomplishes nothing good. At multi-gigabit
-> network speeds with jumbo frames, a burst of allocation failure
-> backtraces could even slow down the system.
-> 
-> We're better off not printing out backtraces on GFP_ATOMIC
-> allocation failures.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> 
-> diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-> index 975609c..5a0bddb 100644
-> --- a/include/linux/gfp.h
-> +++ b/include/linux/gfp.h
-> @@ -72,7 +72,7 @@ struct vm_area_struct;
->  /* This equals 0, but use constants in case they ever change */
->  #define GFP_NOWAIT	(GFP_ATOMIC & ~__GFP_HIGH)
->  /* GFP_ATOMIC means both !wait (__GFP_WAIT not set) and use emergency pool */
-> -#define GFP_ATOMIC	(__GFP_HIGH)
-> +#define GFP_ATOMIC	(__GFP_HIGH | __GFP_NOWARN)
->  #define GFP_NOIO	(__GFP_WAIT)
->  #define GFP_NOFS	(__GFP_WAIT | __GFP_IO)
->  #define GFP_KERNEL	(__GFP_WAIT | __GFP_IO | __GFP_FS)
+Sorry, I'm a bit behind, should catch up today barring anything
+unexpected happening...
 
-A much finer-tuned implementation would be to add __GFP_NOWARN just to
-the networking call sites.  I asked about this in June and it got
-nixed:
+thanks,
 
-http://www.spinics.net/lists/netdev/msg131965.html
+greg k-h
