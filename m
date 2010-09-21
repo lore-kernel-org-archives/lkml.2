@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758Ab0IUBTQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 21:19:16 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:38695 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753897Ab0IUBTP (ORCPT
+	id S1757427Ab0IUBTx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 21:19:53 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:42259 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960Ab0IUBTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 21:19:15 -0400
+	Mon, 20 Sep 2010 21:19:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=w6YvOMaYc28F4rwjQc0/QA/9al1VmCIToZ3Nn+F5R+K8TweK4rBFez0ncasyb3LYMi
-         qi0H5RmwMyOdb+FFAsMPq4Tp2k5hfjSdDNTfyGjS8/PwniUku1WgenajnvUpS4m9wIs4
-         fYe5R4hera4pd1cFjgvVeW2PFgkaC42qsBA5o=
-MIME-Version: 1.0
-In-Reply-To: <4C97F451.5090907@hitachi.com>
-References: <AANLkTinJBUxr-GtxxMFsnn_tb-0FS9b1KOe06YiBr5En@mail.gmail.com>
-	<4C97F451.5090907@hitachi.com>
-Date: Tue, 21 Sep 2010 09:19:13 +0800
-Message-ID: <AANLkTinuDWweEt80Kchwzx3B5yeVA5SaFHxJyv9d9pao@mail.gmail.com>
-Subject: Re: Is it supported to perf probe data?
-From: Luming Yu <luming.yu@gmail.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, 2nddept-manager@sdl.hitachi.co.jp
-Content-Type: text/plain; charset=UTF-8
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=HaoY4Qf8vNlsSuu1S8n3TxR54MJh4vS4zJjugowG6TPBcgkYCbSyYPBKR1JZIdcUyF
+         nNbRv6lh0T6WIjMCCiosbphvWipHVcyRc12oyBNUJByRSpXZiDPJ5vLKfAI8dpaeWl0T
+         XPs5rtXx5z56vEdkS4cOQl9BtUc+bWisGWpxY=
+From: Tracey Dent <tdent48227@gmail.com>
+To: greg@kroah.com, linux-kernel@vger.kernel.org
+Cc: Tracey Dent <tdent48227@gmail.com>
+Subject: [PATCH 1/5] Staging: rtl8187se: r8180.h: fixed alot of checkpatch.pl issues
+Date: Mon, 20 Sep 2010 21:19:38 -0400
+Message-Id: <1285031982-3870-1-git-send-email-tdent48227@gmail.com>
+X-Mailer: git-send-email 1.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 21, 2010 at 7:54 AM, Masami Hiramatsu
-<masami.hiramatsu.pt@hitachi.com> wrote:
-> Hi Luming,
->
-> (2010/09/20 17:03), Luming Yu wrote:
->> Hi there,
->>
->> I need to analyze accessing pattern to a data in kernel. Wanna to
->> check with you if perf probe can help to get that trace.
->
-> Yes, perf probe can add new trace events which can be used
-> from perf record/report/trace or ftrace as same as other pre-defined
-> trace events. Those new events can record variables as arguments too.
-> So you can define new events with accessed data, record it by perf record,
-> and see it by perf trace.
+Fixed numerous coding style issues
 
-e.g. I need to trace accessing to thread_info.flags of a specific task,
-would you please show me an example how to do it.
+Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+---
+ drivers/staging/rtl8187se/r8180_dm.h |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-Thanks,
-Luming
+diff --git a/drivers/staging/rtl8187se/r8180_dm.h b/drivers/staging/rtl8187se/r8180_dm.h
+index 84f4672..b775825 100644
+--- a/drivers/staging/rtl8187se/r8180_dm.h
++++ b/drivers/staging/rtl8187se/r8180_dm.h
+@@ -2,17 +2,17 @@
+ #define R8180_DM_H
+ 
+ #include "r8180.h"
+-//#include "r8180_hw.h"
+-//#include "r8180_93cx6.h"
++/* #include "r8180_hw.h"	*/
++/* #include "r8180_93cx6.h"	*/
+ void SwAntennaDiversityRxOk8185(struct net_device *dev, u8 SignalStrength);
+ bool SetAntenna8185(struct net_device *dev,	u8 u1bAntennaIndex);
+-bool SwitchAntenna(	struct net_device *dev);
+-void SwAntennaDiversity(struct net_device *dev	);
++bool SwitchAntenna(struct net_device *dev);
++void SwAntennaDiversity(struct net_device *dev);
+ void SwAntennaDiversityTimerCallback(struct net_device *dev);
+ bool CheckDig(struct net_device *dev);
+ bool CheckHighPower(struct net_device *dev);
+-void rtl8180_hw_dig_wq (struct work_struct *work);
+-void rtl8180_tx_pw_wq (struct work_struct *work);
++void rtl8180_hw_dig_wq(struct work_struct *work);
++void rtl8180_tx_pw_wq(struct work_struct *work);
+ void rtl8180_rate_adapter(struct work_struct * work);
+ void TxPwrTracking87SE(struct net_device *dev);
+ bool CheckTxPwrTracking(struct net_device *dev);
+-- 
+1.7.3
+
