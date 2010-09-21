@@ -1,146 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756828Ab0IUORC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 10:17:02 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:46346 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756772Ab0IUOQ7 (ORCPT
+	id S1755873Ab0IUOUa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 10:20:30 -0400
+Received: from mtagate6.uk.ibm.com ([194.196.100.166]:44290 "EHLO
+	mtagate6.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753775Ab0IUOU3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 10:16:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Eg0VsdwPVhLc/8O+sCtH/SUEFxswkDKttW2J1DWjw2esbx67TvZeJ82609EgLYMrFJ
-         JjvQxt74En62d6d3XM/qhpPHW+exYG4iuOC+V+DuGkwBIun/OFO50MTOcD9ySrO15Ez6
-         VW5BiFaXlv18TeAwOGwAPJP7rTHPNSd1iJavo=
-Subject: [PATCH] ip : fix truesize mismatch in ip fragmentation
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-In-Reply-To: <20100921140501.GA21572@elliptictech.com>
-References: <20100920174443.GA5515@elliptictech.com>
-	 <1285006844.2323.17.camel@edumazet-laptop>
-	 <20100920195256.GA14330@elliptictech.com>
-	 <1285013853.2323.148.camel@edumazet-laptop>
-	 <1285018272.2323.243.camel@edumazet-laptop>
-	 <20100921140501.GA21572@elliptictech.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 21 Sep 2010 16:16:53 +0200
-Message-ID: <1285078613.2617.503.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Tue, 21 Sep 2010 10:20:29 -0400
+Date: Tue, 21 Sep 2010 16:20:17 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH/RFC] timer: fix deadlock on cpu hotplug
+Message-ID: <20100921142017.GA2291@osiris.boeblingen.de.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 21 septembre 2010 à 10:05 -0400, Nick Bowler a écrit :
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-> This hunk introduces some whitespace damage.
-> 
-> Anyway, I tried this with ESP on both IPv4 and IPv6 and it appears to
-> correct the issue.  Thanks!
-> 
+I've seen the following deadlock on cpu hotplug stress test:
 
-Indeed good catch.
+On cpu down the process that triggered offlining of a cpu waits for
+stop_machine() to finish:
 
-Here is an updated patch, I added your Tested-by
+PID: 56033  TASK: e001540           CPU: 2   COMMAND: "cpu_all_off"
+ #0 [37aa7990] schedule at 559194
+ #1 [37aa7a40] schedule_timeout at 559de0
+ #2 [37aa7b18] wait_for_common at 558bfa
+ #3 [37aa7b90] __stop_cpus at 1a876e
+ #4 [37aa7c68] stop_cpus at 1a8a3a
+ #5 [37aa7c98] __stop_machine at 1a8adc
+ #6 [37aa7cf8] _cpu_down at 55007a
+ #7 [37aa7d78] cpu_down at 550280
+ #8 [37aa7d98] store_online at 551d48
+ #9 [37aa7dc0] sysfs_write_file at 2a3fa2
+ #10 [37aa7e18] vfs_write at 229b3c
+ #11 [37aa7e78] sys_write at 229d38
+ #12 [37aa7eb8] sysc_noemu at 1146de
 
-Thanks for testing !
+All cpus actually have been synchronized and cpu 0 got offlined. However,
+the migration thread on cpu 5 got preempted just between preempt_enable()
+and cpu_stop_signal_done() within cpu_stopper_thread():
 
-[PATCH] ip : fix truesize mismatch in ip fragmentation
+PID: 55622  TASK: 31a00a40          CPU: 5   COMMAND: "migration/5"
+ #0 [30f8bc80] schedule at 559194
+ #1 [30f8bd30] preempt_schedule at 559b54
+ #2 [30f8bd50] cpu_stopper_thread at 1a81dc
+ #3 [30f8be28] kthread at 163224
+ #4 [30f8beb8] kernel_thread_starter at 106c1a
 
-We should not set frag->destructor to sock_wkfree() until we are sure we
-dont hit slow path in ip_fragment(). Or we risk uncharging
-frag->truesize twice, and in the end, having negative socket
-sk_wmem_alloc counter, or even freeing socket sooner than expected.
+For some reason the scheduler decided to throttle RT tasks on the runqueue
+of cpu 5 (rt_throttled = 1). So as long as rt_throttled == 1 we won't see the
+migration thread coming back to execution.
+The only thing that would unthrottle the runqueue would be the rt_period_timer.
+The timer is indeed scheduled, however in the dump I have it has been expired
+for more than four hours.
+The reason is simply that the timer is pending on the offlined cpu 0 and
+therefore would never fire before it gets migrated to an online cpu. Before
+the cpu hotplug mechanisms (cpu hotplug notifier with state CPU_DEAD) would
+migrate the timer to an online cpu stop_machine() must complete ---> deadlock.
 
-Many thanks to Nick Bowler, who provided a very clean bug report and
-test program.
+The fix _seems_ to be simple: just migrate timers after __cpu_disable() has
+been called and use the CPU_DYING state. The subtle difference is of course
+that the migration code now gets executed on the cpu that actually just is
+going to disable itself instead of an arbitrary cpu that stays online.
 
-While Nick bisection pointed to commit 2b85a34e911bf483 (net: No more
-expensive sock_hold()/sock_put() on each tx), underlying bug is older.
+This patch moves the migration of pending timers to an earlier time
+(CPU_DYING), so that the deadlock described cannot happen anymore.
 
-Reported-and-bisected-by: Nick Bowler <nbowler@elliptictech.com>
-Tested-by: Nick Bowler <nbowler@elliptictech.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Up to now the hrtimer migration code called __hrtimer_peek_ahead_timers()
+after migrating timers to the _current_ cpu. Now pending timers are moved
+to a remote cpu and calling that function isn't possible anymore.
+To solve that I introduced the function raise_remote_softirq() which gets
+used to raise the HRTIMER_SOFTIRQ on the cpu where the timers have been
+migrated to. Which will lead to execution of hrtimer_peek_ahead_timers()
+as soon as softirq are executed on the remote cpu.
+
+The proper place for such a generic function should be softirq.c, but this
+is just an RFC and I would like to check if people are ok with the general
+approach.
+Or maybe it's possible to fix this in a better way?
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 ---
- net/ipv4/ip_output.c  |    8 ++++----
- net/ipv6/ip6_output.c |    8 ++++----
- 2 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
-index 04b6989..126d9b3 100644
---- a/net/ipv4/ip_output.c
-+++ b/net/ipv4/ip_output.c
-@@ -490,7 +490,6 @@ int ip_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
- 	if (skb_has_frags(skb)) {
- 		struct sk_buff *frag;
- 		int first_len = skb_pagelen(skb);
--		int truesizes = 0;
- 
- 		if (first_len - hlen > mtu ||
- 		    ((first_len - hlen) & 7) ||
-@@ -510,11 +509,13 @@ int ip_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
- 				goto slow_path;
- 
- 			BUG_ON(frag->sk);
--			if (skb->sk) {
-+		}
-+		if (skb->sk) {
-+			skb_walk_frags(skb, frag) {
- 				frag->sk = skb->sk;
- 				frag->destructor = sock_wfree;
-+				skb->truesize -= frag->truesize;
- 			}
--			truesizes += frag->truesize;
- 		}
- 
- 		/* Everything is OK. Generate! */
-@@ -524,7 +525,6 @@ int ip_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
- 		frag = skb_shinfo(skb)->frag_list;
- 		skb_frag_list_init(skb);
- 		skb->data_len = first_len - skb_headlen(skb);
--		skb->truesize -= truesizes;
- 		skb->len = first_len;
- 		iph->tot_len = htons(first_len);
- 		iph->frag_off = htons(IP_MF);
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index d40b330..633217d 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -639,7 +639,6 @@ static int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
- 
- 	if (skb_has_frags(skb)) {
- 		int first_len = skb_pagelen(skb);
--		int truesizes = 0;
- 
- 		if (first_len - hlen > mtu ||
- 		    ((first_len - hlen) & 7) ||
-@@ -658,10 +657,12 @@ static int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
- 				goto slow_path;
- 
- 			BUG_ON(frag->sk);
--			if (skb->sk) {
-+		}
-+		if (skb->sk) {
-+			skb_walk_frags(skb, frag) {
- 				frag->sk = skb->sk;
- 				frag->destructor = sock_wfree;
--				truesizes += frag->truesize;
-+				skb->truesize -= frag->truesize;
- 			}
- 		}
- 
-@@ -693,7 +694,6 @@ static int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
- 
- 		first_len = skb_pagelen(skb);
- 		skb->data_len = first_len - skb_headlen(skb);
--		skb->truesize -= truesizes;
- 		skb->len = first_len;
- 		ipv6_hdr(skb)->payload_len = htons(first_len -
- 						   sizeof(struct ipv6hdr));
+ kernel/hrtimer.c |   30 +++++++++++++++++++++---------
+ kernel/timer.c   |   14 ++++++++------
+ 2 files changed, 29 insertions(+), 15 deletions(-)
 
-
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 1decafb..a912585 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1662,17 +1662,32 @@ static void migrate_hrtimer_list(struct hrtimer_clock_base *old_base,
+ 	}
+ }
+ 
++#ifdef CONFIG_HIGH_RES_TIMERS
++static void raise_remote_softirq_handler(void *nr)
++{
++	raise_softirq_irqoff((unsigned int)(long)nr);
++}
++
++static void raise_remote_softirq(int cpu, unsigned int nr)
++{
++	smp_call_function_single(cpu, raise_remote_softirq_handler,
++				 (void *)(long) nr, 0);
++}
++#endif
++
+ static void migrate_hrtimers(int scpu)
+ {
+ 	struct hrtimer_cpu_base *old_base, *new_base;
++	int dcpu;
+ 	int i;
+ 
+ 	BUG_ON(cpu_online(scpu));
++	BUG_ON(!irqs_disabled());
+ 	tick_cancel_sched_timer(scpu);
+ 
+-	local_irq_disable();
++	dcpu = any_online_cpu(cpu_online_map);
+ 	old_base = &per_cpu(hrtimer_bases, scpu);
+-	new_base = &__get_cpu_var(hrtimer_bases);
++	new_base = &per_cpu(hrtimer_bases, dcpu);
+ 	/*
+ 	 * The caller is globally serialized and nobody else
+ 	 * takes two locks at once, deadlock is not possible.
+@@ -1687,10 +1702,9 @@ static void migrate_hrtimers(int scpu)
+ 
+ 	raw_spin_unlock(&old_base->lock);
+ 	raw_spin_unlock(&new_base->lock);
+-
+-	/* Check, if we got expired work to do */
+-	__hrtimer_peek_ahead_timers();
+-	local_irq_enable();
++#ifdef CONFIG_HIGH_RES_TIMERS
++	raise_remote_softirq(dcpu, HRTIMER_SOFTIRQ);
++#endif
+ }
+ 
+ #endif /* CONFIG_HOTPLUG_CPU */
+@@ -1711,14 +1725,12 @@ static int __cpuinit hrtimer_cpu_notify(struct notifier_block *self,
+ 	case CPU_DYING:
+ 	case CPU_DYING_FROZEN:
+ 		clockevents_notify(CLOCK_EVT_NOTIFY_CPU_DYING, &scpu);
++		migrate_hrtimers(scpu);
+ 		break;
+ 	case CPU_DEAD:
+ 	case CPU_DEAD_FROZEN:
+-	{
+ 		clockevents_notify(CLOCK_EVT_NOTIFY_CPU_DEAD, &scpu);
+-		migrate_hrtimers(scpu);
+ 		break;
+-	}
+ #endif
+ 
+ 	default:
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 97bf05b..c9e8679 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1665,16 +1665,19 @@ static void __cpuinit migrate_timers(int cpu)
+ {
+ 	struct tvec_base *old_base;
+ 	struct tvec_base *new_base;
++	int dcpu;
+ 	int i;
+ 
+ 	BUG_ON(cpu_online(cpu));
++	BUG_ON(!irqs_disabled());
++	dcpu = any_online_cpu(cpu_online_map);
+ 	old_base = per_cpu(tvec_bases, cpu);
+-	new_base = get_cpu_var(tvec_bases);
++	new_base = per_cpu(tvec_bases, dcpu);
+ 	/*
+ 	 * The caller is globally serialized and nobody else
+ 	 * takes two locks at once, deadlock is not possible.
+ 	 */
+-	spin_lock_irq(&new_base->lock);
++	spin_lock(&new_base->lock);
+ 	spin_lock_nested(&old_base->lock, SINGLE_DEPTH_NESTING);
+ 
+ 	BUG_ON(old_base->running_timer);
+@@ -1689,8 +1692,7 @@ static void __cpuinit migrate_timers(int cpu)
+ 	}
+ 
+ 	spin_unlock(&old_base->lock);
+-	spin_unlock_irq(&new_base->lock);
+-	put_cpu_var(tvec_bases);
++	spin_unlock(&new_base->lock);
+ }
+ #endif /* CONFIG_HOTPLUG_CPU */
+ 
+@@ -1708,8 +1710,8 @@ static int __cpuinit timer_cpu_notify(struct notifier_block *self,
+ 			return notifier_from_errno(err);
+ 		break;
+ #ifdef CONFIG_HOTPLUG_CPU
+-	case CPU_DEAD:
+-	case CPU_DEAD_FROZEN:
++	case CPU_DYING:
++	case CPU_DYING_FROZEN:
+ 		migrate_timers(cpu);
+ 		break;
+ #endif
