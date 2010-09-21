@@ -1,97 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab0IUXJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 19:09:57 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33284 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484Ab0IUXJ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 19:09:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=pQ6bXFtACGtKfQJ+S8B1iJd666ul98pY+1aUsr/yh8/p6ND0vjWOzkfKg5InkCzJCP
-         xbpoVF898TBWMZT6Jjml3LzBnDGFE7ZbgjrG5jO8haHPxMzo1+4kUlyPdwBLEcwSOr6C
-         NUMMnExeBYd6vJ/Cl4i4AOTwLzuaixAHDbmmI=
-Subject: Re: [REGRESSION] cdrom drive doesn't detect removal
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>, Tejun Heo <tj@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-In-Reply-To: <1285069338.3124.4.camel@maxim-laptop>
-References: <1284284969.2928.18.camel@maxim-laptop>
-	 <1284427621.4127.7.camel@maxim-laptop> <4C8F2699.3020509@kernel.org>
-	 <AANLkTinGHB9fbLw1Cm5wvPLGy8QEuoBBmFiqpnvXiZ8R@mail.gmail.com>
-	 <1284507516.4963.2.camel@maxim-laptop>
-	 <AANLkTimFpyYab69=XQVZc+P50v6_uVr6UbA246Fnm3-u@mail.gmail.com>
-	 <1284511071.3551.1.camel@maxim-laptop>
-	 <AANLkTikF37hN7dFqPbCp-gcim7SarveaTrjXipnGpJM7@mail.gmail.com>
-	 <20100915132731.GA20558@khazad-dum.debian.net>
-	 <AANLkTinGDUxsgaGey7EnYOu3kKP-YRE00gL33hiKvAWj@mail.gmail.com>
-	 <1284589207.4672.3.camel@maxim-laptop>
-	 <AANLkTin37rbEbcGDejhcsnxZNYhhUWGy+x=v4Y=s0_Qx@mail.gmail.com>
-	 <1285069338.3124.4.camel@maxim-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 22 Sep 2010 01:09:50 +0200
-Message-ID: <1285110590.2822.9.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1755279Ab0IUXIt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 19:08:49 -0400
+Received: from kroah.org ([198.145.64.141]:35006 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751484Ab0IUXIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 19:08:38 -0400
+Date: Tue, 21 Sep 2010 16:08:30 -0700
+From: Greg KH <greg@kroah.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg KH <gregkh@suse.de>, Jiri Slaby <jslaby@suse.cz>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        Rogier Wolff <R.E.Wolff@bitwizard.nl>,
+        "Michael H. Warfield" <mhw@wittsend.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 2/2] TTY: create tty/vt and move the vt code there
+Message-ID: <20100921230830.GC32346@kroah.com>
+References: <1283115995-4734-1-git-send-email-arnd@arndb.de>
+ <20100830184737.GA21339@suse.de>
+ <201008302333.22447.arnd@arndb.de>
+ <201009031729.58102.arnd@arndb.de>
+ <20100921230733.GA32346@kroah.com>
+ <20100921230804.GB32346@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100921230804.GB32346@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-09-21 at 13:42 +0200, Maxim Levitsky wrote: 
-> On Thu, 2010-09-16 at 08:51 +0200, Kay Sievers wrote: 
-> > On Thu, Sep 16, 2010 at 00:20, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-> > > So it makes the sense.
-> > > It turns out that hal is still running on ubuntu systems, and yes, it
-> > > still polls the drives, and yes I disabled that feature....
-> > > So restoring that polling feature indeed fixes that problem for now.
-> > > Yet, why without that commit detection did work?
-> > 
-> > Really, I have no idea how this can happen. You could only find out
-> > with blocktrace, if something else is trying to open the device. The
-> > state change in the drive should not be able to get known to the host
-> > unless something is causing i/o with open().
-> > 
-> > Kay
-> 
-> Due to some unexplained laziness, I didn't put a printk to cdrom_open to
-> figure out if drive is polled or not without hal.
-> Today I finally found why kgdb didn't work (it was conflict with nmi
-> watchdog), and just for fun I have put a breakpoint to cdrom_open.
-> Well udisks *does* poll the drive, every few seconds, and therefore this
-> is a regression.
-> I will soon look at udisk source to see how it polls the drive.
-> (Maybe it uses exclusive open and hal doesn't or something like that.)
+The vt and other related code is moved into the tty/vt directory.
 
-I just did a strace on udisks, and it is pretty much self explanatory.
-(While CD is mounted).
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/char/Makefile                              |   18 +----------------
+ tty/Makefile                                       |    2 +
+ tty/vt/Makefile                                    |   21 ++++++++++++++++++++
+ .../char/defkeymap.c_shipped => tty/vt/defkeymap.c |    0
+ {drivers/char => tty/vt}/defkeymap.c_shipped       |    0
+ {drivers/char => tty/vt}/defkeymap.map             |    0
+ {drivers/char => tty/vt}/keyboard.c                |    0
+ {drivers/char => tty/vt}/selection.c               |    0
+ {drivers/char => tty/vt}/vc_screen.c               |    0
+ {drivers/char => tty/vt}/vt.c                      |    0
+ {drivers/char => tty/vt}/vt_ioctl.c                |    0
+ 11 files changed, 24 insertions(+), 17 deletions(-)
+ create mode 100644 tty/vt/Makefile
+ copy drivers/char/defkeymap.c_shipped => tty/vt/defkeymap.c (100%)
+ rename {drivers/char => tty/vt}/defkeymap.c_shipped (100%)
+ rename {drivers/char => tty/vt}/defkeymap.map (100%)
+ rename {drivers/char => tty/vt}/keyboard.c (100%)
+ rename {drivers/char => tty/vt}/selection.c (100%)
+ rename {drivers/char => tty/vt}/vc_screen.c (100%)
+ rename {drivers/char => tty/vt}/vt.c (100%)
+ rename {drivers/char => tty/vt}/vt_ioctl.c (100%)
 
-
-open("/dev/sr0", O_RDONLY|O_EXCL|O_NONBLOCK) = -1 EBUSY (Device or resource busy)
-poll([{fd=5, events=POLLIN}, {fd=3, events=POLLIN}], 2, 1997) = 0 (Timeout)
-open("/dev/sr0", O_RDONLY|O_EXCL|O_NONBLOCK) = -1 EBUSY (Device or resource busy)
-poll([{fd=5, events=POLLIN}, {fd=3, events=POLLIN}], 2, 1997) = 0 (Timeout)
-open("/dev/sr0", O_RDONLY|O_EXCL|O_NONBLOCK) = -1 EBUSY (Device or resource busy)
-poll([{fd=5, events=POLLIN}, {fd=3, events=POLLIN}], 2, 1997) = 0 (Timeout)
-open("/dev/sr0", O_RDONLY|O_EXCL|O_NONBLOCK) = -1 EBUSY (Device or resource busy)
-
-Sure, a filesystem is mounted, so exclusive access fails...
-
-So, we end up with impossible to solve problem.
-We want on one hand to guard the burner against polling programs that disturb it, but one the other hand
-we must do polling to check CD status.
-
-Unless the kernel does the polling, but then we also must stop it when burning is done.
-I think that we need new ioctl in the CD driver that would give absolute access to the burning application, and lock it fully.
-
-What to do?
-
-Best regards,
-	Maxim Levitsky
-
+diff --git a/drivers/char/Makefile b/drivers/char/Makefile
+index c999eac..acd1710 100644
+--- a/drivers/char/Makefile
++++ b/drivers/char/Makefile
+@@ -12,10 +12,8 @@ obj-y	 += mem.o random.o
+ obj-$(CONFIG_LEGACY_PTYS)	+= pty.o
+ obj-$(CONFIG_UNIX98_PTYS)	+= pty.o
+ obj-y				+= misc.o
+-obj-$(CONFIG_VT)		+= vt_ioctl.o vc_screen.o selection.o keyboard.o
+ obj-$(CONFIG_BFIN_JTAG_COMM)	+= bfin_jtag_comm.o
+ obj-$(CONFIG_CONSOLE_TRANSLATIONS) += consolemap.o consolemap_deftbl.o
+-obj-$(CONFIG_HW_CONSOLE)	+= vt.o defkeymap.o
+ obj-$(CONFIG_MAGIC_SYSRQ)	+= sysrq.o
+ obj-$(CONFIG_MVME147_SCC)	+= generic_serial.o vme_scc.o
+ obj-$(CONFIG_MVME162_SCC)	+= generic_serial.o vme_scc.o
+@@ -114,7 +112,7 @@ obj-$(CONFIG_JS_RTC)		+= js-rtc.o
+ js-rtc-y = rtc.o
+ 
+ # Files generated that shall be removed upon make clean
+-clean-files := consolemap_deftbl.c defkeymap.c
++clean-files := consolemap_deftbl.c
+ 
+ quiet_cmd_conmk = CONMK   $@
+       cmd_conmk = scripts/conmakehash $< > $@
+@@ -122,18 +120,4 @@ quiet_cmd_conmk = CONMK   $@
+ $(obj)/consolemap_deftbl.c: $(src)/$(FONTMAPFILE)
+ 	$(call cmd,conmk)
+ 
+-$(obj)/defkeymap.o:  $(obj)/defkeymap.c
+ 
+-# Uncomment if you're changing the keymap and have an appropriate
+-# loadkeys version for the map. By default, we'll use the shipped
+-# versions.
+-# GENERATE_KEYMAP := 1
+-
+-ifdef GENERATE_KEYMAP
+-
+-$(obj)/defkeymap.c: $(obj)/%.c: $(src)/%.map
+-	loadkeys --mktable $< > $@.tmp
+-	sed -e 's/^static *//' $@.tmp > $@
+-	rm $@.tmp
+-
+-endif
+diff --git a/tty/Makefile b/tty/Makefile
+index 3862838..91129af 100644
+--- a/tty/Makefile
++++ b/tty/Makefile
+@@ -6,3 +6,5 @@ obj-y				+= tty_buffer.o
+ obj-y				+= tty_port.o
+ obj-y				+= tty_mutex.o
+ obj-$(CONFIG_AUDIT)		+= tty_audit.o
++obj-$(CONFIG_VT)		+= vt/
++obj-$(CONFIG_HW_CONSOLE)	+= vt/
+diff --git a/tty/vt/Makefile b/tty/vt/Makefile
+new file mode 100644
+index 0000000..5cc32dc
+--- /dev/null
++++ b/tty/vt/Makefile
+@@ -0,0 +1,21 @@
++obj-$(CONFIG_VT)		+= vt_ioctl.o vc_screen.o selection.o keyboard.o
++obj-$(CONFIG_HW_CONSOLE)	+= vt.o defkeymap.o
++
++# Files generated that shall be removed upon make clean
++clean-files := defkeymap.c
++
++$(obj)/defkeymap.o:  $(obj)/defkeymap.c
++
++# Uncomment if you're changing the keymap and have an appropriate
++# loadkeys version for the map. By default, we'll use the shipped
++# versions.
++# GENERATE_KEYMAP := 1
++
++ifdef GENERATE_KEYMAP
++
++$(obj)/defkeymap.c: $(obj)/%.c: $(src)/%.map
++	loadkeys --mktable $< > $@.tmp
++	sed -e 's/^static *//' $@.tmp > $@
++	rm $@.tmp
++
++endif
+diff --git a/drivers/char/defkeymap.c_shipped b/tty/vt/defkeymap.c
+similarity index 100%
+copy from drivers/char/defkeymap.c_shipped
+copy to tty/vt/defkeymap.c
+diff --git a/drivers/char/defkeymap.c_shipped b/tty/vt/defkeymap.c_shipped
+similarity index 100%
+rename from drivers/char/defkeymap.c_shipped
+rename to tty/vt/defkeymap.c_shipped
+diff --git a/drivers/char/defkeymap.map b/tty/vt/defkeymap.map
+similarity index 100%
+rename from drivers/char/defkeymap.map
+rename to tty/vt/defkeymap.map
+diff --git a/drivers/char/keyboard.c b/tty/vt/keyboard.c
+similarity index 100%
+rename from drivers/char/keyboard.c
+rename to tty/vt/keyboard.c
+diff --git a/drivers/char/selection.c b/tty/vt/selection.c
+similarity index 100%
+rename from drivers/char/selection.c
+rename to tty/vt/selection.c
+diff --git a/drivers/char/vc_screen.c b/tty/vt/vc_screen.c
+similarity index 100%
+rename from drivers/char/vc_screen.c
+rename to tty/vt/vc_screen.c
+diff --git a/drivers/char/vt.c b/tty/vt/vt.c
+similarity index 100%
+rename from drivers/char/vt.c
+rename to tty/vt/vt.c
+diff --git a/drivers/char/vt_ioctl.c b/tty/vt/vt_ioctl.c
+similarity index 100%
+rename from drivers/char/vt_ioctl.c
+rename to tty/vt/vt_ioctl.c
+-- 
+1.7.1
 
