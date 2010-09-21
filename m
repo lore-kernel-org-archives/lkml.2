@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715Ab0IUGMQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 02:12:16 -0400
-Received: from mail.perches.com ([173.55.12.10]:2189 "EHLO mail.perches.com"
+	id S1755400Ab0IUGNL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 02:13:11 -0400
+Received: from hera.kernel.org ([140.211.167.34]:34796 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753169Ab0IUGMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 02:12:15 -0400
-Subject: Re: [RFC PATCH] scripts/get_maintainer.pl: add interactive mode
-From: Joe Perches <joe@perches.com>
-To: Florian Mickler <florian@mickler.org>
-Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>, Greg KH <greg@kroah.com>
-In-Reply-To: <20100921073140.32060603@schatten.dmk.lab>
-References: <1284558207-10223-1-git-send-email-florian@mickler.org>
-	 <1284563819-11363-1-git-send-email-florian@mickler.org>
-	 <1285011788.25988.48.camel@Joe-Laptop>
-	 <20100920235337.6e0ac989@schatten.dmk.lab>
-	 <1285029532.25988.82.camel@Joe-Laptop>
-	 <20100921073140.32060603@schatten.dmk.lab>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 20 Sep 2010 23:12:13 -0700
-Message-ID: <1285049533.25988.173.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752502Ab0IUGNK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 02:13:10 -0400
+Message-ID: <4C984D27.3050102@kernel.org>
+Date: Tue, 21 Sep 2010 08:13:59 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: CAI Qian <caiqian@redhat.com>, lkml <linux-kernel@vger.kernel.org>
+CC: graff yang <graff.yang@gmail.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kexec <kexec@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, dhowells@redhat.com,
+        sonic adi <sonic.adi@gmail.com>,
+        Chris Lalancette <clalance@redhat.com>, Avi Kivity <avi@redhat.com>
+Subject: [PATCH] percpu: fix pcpu_last_unit_cpu
+References: <1848241872.1438141285029613564.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <1848241872.1438141285029613564.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 21 Sep 2010 06:12:23 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-09-21 at 07:31 +0200, Florian Mickler wrote:
-> On Mon, 20 Sep 2010 17:38:52 -0700
-> Joe Perches <joe@perches.com> wrote:
-> > > > Because git history is now not searched by default
-> > > > when there is a named maintainer, there are no
-> > > > commit signers.
-> > > Don't know if this is intuitive. If there is the possibility to have
-> > > them shown but not selected, that would be ideal as it relieves the
-> > > user from pressing extra keys while still having a sane behaviour.
-> > Use a command line option: --git.
-> > All command line options apply to create the initial list of
-> > displayed names.
-> > Or add code to set
-> > 	$git-fallback = 1 if $interactive;
-> Are you opposed to that second solution?
+pcpu_first/last_unit_cpu are used to track which cpu has the first and
+last units assigned.  This in turn is used to determine the span of a
+chunk for man/unmap cache flushes and whether an address belongs to
+the first chunk or not in per_cpu_ptr_to_phys().
 
-Not at all.
+When the number of possible CPUs isn't power of two, a chunk may
+contain unassigned units towards the end of a chunk.  The logic to
+determine pcpu_last_unit_cpu was incorrect when there was an unused
+unit at the end of a chunk.  It failed to ignore the unused unit and
+assigned the unused marker NR_CPUS to pcpu_last_unit_cpu.
 
-I'd prefer to default select all returned entries though.
-Maybe add some key to deselect the non-maintainer
-git added entries.
+This was discovered through kdump failure which was caused by
+malfunctioning per_cpu_ptr_to_phys() on a kvm setup with 50 possible
+CPUs by CAI Qian.
 
-> > $ git log --since=1-year-ago | grep -i "by:.*@" | \
-> >   cut -f1 -d":" | sort -i | uniq -ci | sort -rn | head -10
-> >   83413     Signed-off-by
-> >    6544     Acked-by
-> >    2022     Reviewed-by
-> >    1691     Reported-by
-> >    1065     Tested-by
-> >     111     Reported-and-tested-by
-> >      83     Suggested-by
-> >      31     Requested-by
-> >      28         Signed-off-by
-> >      26     Fixed-by
-> That's just sad. At least there are more Reviewed-By then Reported-By. 
-> I don't think this actually represents reality of the
-> development process. 
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: CAI Qian <caiqian@redhat.com>
+Cc: stable@kernel.org
+---
+This is pretty subtle and has the potential to cause mysterious
+problems on vcache architectuers.  Thanks a lot for discovering it and
+your patience.  I'll put it out in linux-next for a couple of days and
+push it to Linus and stable.
 
-I think most all reviewers don't add reviewed-by acks
-and most submitters don't collect them.
+Thanks.
 
-> > > That should just be $$bool_ref = !$$bool_ref (and probably not a
-> > > function)
-> > I think it needs to be a function.
-> > I want a 0 or 1, not "" or 1.
-> Sorry, I didn't look at the use of that. What about  
-> $bool = (1 - !!$bool) 
-> then? (if $bool is always 1 or 0, you can drop the double negation in
-> front of it)
+ mm/percpu.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-<shrug> Sure.  I don't care which is used.
+diff --git a/mm/percpu.c b/mm/percpu.c
+index 58c572b..c76ef38 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -1401,9 +1401,9 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
 
+ 			if (pcpu_first_unit_cpu == NR_CPUS)
+ 				pcpu_first_unit_cpu = cpu;
++			pcpu_last_unit_cpu = cpu;
+ 		}
+ 	}
+-	pcpu_last_unit_cpu = cpu;
+ 	pcpu_nr_units = unit;
+
+ 	for_each_possible_cpu(cpu)
+-- 
+1.7.1
 
