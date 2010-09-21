@@ -1,95 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414Ab0IUKHq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 06:07:46 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:39358 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752598Ab0IUKHo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 06:07:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=skUm2fy57qDqfM8S3ag/NspMivthGDTsX+wBnJGIaHrMg95lxGn1GPw23VXIvnBnPR
-         f8iPyKLRMKj4MsROC4AUT+WFH00nl1jKfDb7kAXJJIn8Qv7G6/YgbUu6f/UkrpX0YnHD
-         nT18rgLHNLtuXegel9KgsT9moNTNlcfU1YJao=
-Subject: Re: Regression, bisected: reference leak with IPSec since ~2.6.31
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jarek Poplawski <jarkao2@gmail.com>
-Cc: Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-In-Reply-To: <1285062948.2617.204.camel@edumazet-laptop>
-References: <20100921091248.GA8424@ff.dom.local>
-	 <1285060860.2617.158.camel@edumazet-laptop>
-	 <20100921093853.GA8664@ff.dom.local>
-	 <1285062948.2617.204.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 21 Sep 2010 12:07:37 +0200
-Message-ID: <1285063657.2617.226.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1757381Ab0IUKIJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 06:08:09 -0400
+Received: from mga03.intel.com ([143.182.124.21]:63912 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756582Ab0IUKII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 06:08:08 -0400
+Message-Id: <89k83a$9np2i3@azsmga001.ch.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,398,1280732400"; 
+   d="scan'208";a="326928963"
+Date: Tue, 21 Sep 2010 11:08:03 +0100
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] i915 regression fixes
+Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
+From: Chris Wilson <chris@chris-wilson.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 21 septembre 2010 à 11:55 +0200, Eric Dumazet a écrit :
-> Le mardi 21 septembre 2010 à 09:38 +0000, Jarek Poplawski a écrit :
-> > On Tue, Sep 21, 2010 at 11:21:00AM +0200, Eric Dumazet wrote:
-> 
-> > I hope you're right with this.
-> > 
-> > > 
-> > > I liked the :
-> > > 
-> > > <check everything without changing state>
-> > > if something wrong
-> > > 	goto slow_path
-> > > else
-> > > 	<OK, lets do destructive things>
-> > > 
-> > 
-> > But it's an optimization of the "unlikely" case btw. ;-)
-> > 
-> 
-> This is a bug fix, in a complex function.
-> 
-> in -next branch, we can try to be smart, adding more code in slow_path
-> to revert what was done in the hope fast path would be taken.
-> And pray we dont add another bug :)
-> 
+Hi Linus, a bit later than intended due to travel, but here a few more
+fixes for the recently reported regressions.
 
-My initial patch was somehing like :
+The following changes since commit b30a3f6257ed2105259b404d419b4964e363928c:
 
-<loop to check everything is ok>
-  compute truesizes = sum (frag->truesize)
-  not modifying frag->sk/frag->destructor
+  Linux 2.6.36-rc5 (2010-09-20 16:56:53 -0700)
 
-if problem -> goto slow_path
-else {
-	skb->truesize -= truesizes;
-       send(skb)
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/ickle/drm-intel.git drm-intel-fixes
 
-	for each frag
-		set frag->sk = original_sk
-                set frag->destructor = sock_wfree
-		send(frag)
+Chris Wilson (7):
+      drm/i915: Ensure that the crtcinfo is populated during mode_fixup()
+      Merge remote branch 'linus' into drm-intel-fixes
+      drm/i915/crt: Downgrade warnings for hotplug failures
+      drm/i915: Fix Sandybridge fence registers
+      drm/i915,agp/intel: Add second set of PCI-IDs for B43
+      drm/i915: Hold a reference to the object whilst unbinding the eviction list
+      Merge remote branch 'linus' into drm-intel-fixes
 
-Problem was if we got an error while sending skb or one frag :
-It was leaking some truesize accounting.
-(an extra loop was needed to set frag->sk/frag->destructor for remaining
-frags before freeing them)
+ drivers/char/agp/intel-agp.c          |    2 +
+ drivers/char/agp/intel-agp.h          |    2 +
+ drivers/gpu/drm/i915/i915_drv.c       |    1 +
+ drivers/gpu/drm/i915/i915_gem.c       |   37 +++++++++++++++++++++-----------
+ drivers/gpu/drm/i915/i915_gem_evict.c |    9 ++++++-
+ drivers/gpu/drm/i915/i915_suspend.c   |   36 ++++++++++++++++++++++++--------
+ drivers/gpu/drm/i915/intel_crt.c      |    4 +-
+ drivers/gpu/drm/i915/intel_display.c  |    8 +++++++
+ 8 files changed, 73 insertions(+), 26 deletions(-)
 
-So I added the extra loop to :
-
-for each frag {
-	set frag->sk = skb->sk
-	set frag->destructor = sock_wfree
-	skb->truesize -= frag->truesize
-}
-
-It removed the need to compute sum(frag->truesize) in a temp variable
-(truesizes)
-
-
+-- 
+Chris Wilson, Intel Open Source Technology Centre
