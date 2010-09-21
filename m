@@ -1,70 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752343Ab0IUSyT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 14:54:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64083 "EHLO mx1.redhat.com"
+	id S1753001Ab0IUS4v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 14:56:51 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:55751 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751450Ab0IUSyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 14:54:18 -0400
-Date: Tue, 21 Sep 2010 14:53:47 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Andreas Gruenbacher <agruen@suse.de>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Christoph Hellwig <hch@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 01/34] VFS: Make clone_mnt() and copy_tree() return error codes
-Message-ID: <20100921185347.GA13785@shell>
-References: <1284675145-4391-1-git-send-email-vaurora@redhat.com> <1284675145-4391-2-git-send-email-vaurora@redhat.com> <201009202326.43538.agruen@suse.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201009202326.43538.agruen@suse.de>
-User-Agent: Mutt/1.4.2.2i
+	id S1751828Ab0IUS4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 14:56:49 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Andi Kleen" <andi@firstfloor.org>,
+        "Chris Wilson" <chris@chris-wilson.co.uk>
+Subject: Re: [Bug #18332] [regression] *ERROR* timed out waiting for FORCE_DETECT in 36rc3 on i915
+Date: Tue, 21 Sep 2010 20:55:54 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        "Kernel Testers List" <kernel-testers@vger.kernel.org>,
+        "Maciej Rutecki" <maciej.rutecki@gmail.com>,
+        "Florian Mickler" <florian@mickler.org>
+References: <1fwtoy8sG5H.A.veG.9D7lMB@chimera> <Wn2eLj_6KZG.A.sGH.ZE7lMB@chimera> <f0da51fd10b5b6b99ca1b3cdaf924a11.squirrel@www.firstfloor.org>
+In-Reply-To: <f0da51fd10b5b6b99ca1b3cdaf924a11.squirrel@www.firstfloor.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009212055.55038.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 20, 2010 at 11:26:42PM +0200, Andreas Gruenbacher wrote:
-> collect_mounts() now also returns error pointers instead of NULL upon
-> failure:
+On Tuesday, September 21, 2010, Andi Kleen wrote:
 > 
-> diff --git a/kernel/audit_tree.c b/kernel/audit_tree.c
-> index 46a57b5..898da28 100644
-> --- a/kernel/audit_tree.c
-> +++ b/kernel/audit_tree.c
-> @@ -579,7 +579,7 @@ void audit_trim_trees(void)
->  
->  		root_mnt = collect_mounts(&path);
->  		path_put(&path);
-> -		if (!root_mnt)
-> +		if (IS_ERR(root_mnt))
->  			goto skip_it;
->  
->  		spin_lock(&hash_lock);
-> @@ -651,8 +651,8 @@ int audit_add_tree_rule(struct audit_krule *rule)
->  		goto Err;
->  	mnt = collect_mounts(&path);
->  	path_put(&path);
-> -	if (!mnt) {
-> -		err = -ENOMEM;
-> +	if (IS_ERR(mnt)) {
-> +		err = PTR_ERR(mnt);
->  		goto Err;
->  	}
->  
-> @@ -701,8 +701,8 @@ int audit_tag_tree(char *old, char *new)
->  		return err;
->  	tagged = collect_mounts(&path2);
->  	path_put(&path2);
-> -	if (!tagged)
-> -		return -ENOMEM;
-> +	if (IS_ERR(tagged))
-> +		return PTR_ERR(tagged);
->  
->  	err = kern_path(old, 0, &path1);
->  	if (err) {
+> > The following bug entry is on the current list of known regressions
+> > from 2.6.35.  Please verify if it still should be listed and let the
+> > tracking team3
+> > know (either way).
+> 
+> I believe Chris Wilson already fixed it by downgrading the message,
+> but I don't know if the fix is 2.6.35 track.
 
-Thanks for the fix, folded in.
-
--VAL
+Chris?
