@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756902Ab0IUKV5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 06:21:57 -0400
-Received: from ppsw-31.csi.cam.ac.uk ([131.111.8.131]:46183 "EHLO
-	ppsw-31.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752152Ab0IUKVz (ORCPT
+	id S1757153Ab0IUK1m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 06:27:42 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:37646
+	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752967Ab0IUK1l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 06:21:55 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4C988880.4060609@jic23.retrosnub.co.uk>
-Date: Tue, 21 Sep 2010 11:27:12 +0100
-From: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100909 Lightning/1.0b3pre Thunderbird/3.1.3
+	Tue, 21 Sep 2010 06:27:41 -0400
+X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Sep 2010 06:27:41 EDT
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h61h)
+X-Spam-TCS-SCL: 0:0
+From: Li Yang <leoli@freescale.com>
+To: dan.j.williams@intel.com
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Li Yang <leoli@freescale.com>
+Subject: [PATCH] fsldma: add support to 36-bit physical address
+Date: Tue, 21 Sep 2010 18:57:18 +0800
+Message-ID: <1285066638-7473-1-git-send-email-leoli@freescale.com>
+X-Mailer: git-send-email 1.6.6-rc1.GIT
+X-OriginalArrivalTime: 21 Sep 2010 10:12:33.0578 (UTC) FILETIME=[81E930A0:01CB5975]
 MIME-Version: 1.0
-To: Hemanth V <hemanthv@ti.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH V3 1/2] input: CMA3000 Accelerometer driver
-References: <61033.10.24.255.18.1283926671.squirrel@dbdmail.itg.ti.com> <4C877584.7000902@jic23.retrosnub.co.uk> <20100914080003.GD15167@core.coreip.homeip.net> <4C8F7429.1080105@jic23.retrosnub.co.uk> <007601cb5950$55d52980$LocalHost@wipblrx0099946>
-In-Reply-To: <007601cb5950$55d52980$LocalHost@wipblrx0099946>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Reverse-DNS: de01egw01.freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/21/10 06:46, Hemanth V wrote:
-> ----- Original Message ----- From: "Jonathan Cameron" <kernel@jic23.retrosnub.co.uk>
-> To: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>
-> Cc: "Hemanth V" <hemanthv@ti.com>; <linux-input@vger.kernel.org>; <linux-kernel@vger.kernel.org>; <linux-omap@vger.kernel.org>
-> Sent: Tuesday, September 14, 2010 6:40 PM
-> Subject: Re: [PATCH V3 1/2] input: CMA3000 Accelerometer driver
-> 
-> 
->> On 09/14/10 09:00, Dmitry Torokhov wrote:
->>> On Wed, Sep 08, 2010 at 12:37:40PM +0100, Jonathan Cameron wrote:
->>>>
->>>> I'm happy to see your driver go in as it is currently, what bothers me is that we will end
->>>> up with incompatible interfaces for all the accelerometers Dmitry takes!
->>>>
->>>
->>> This is a valid concern. How about I chicken out and will not merge any
->>> new sysfs knobs until you guys decide on reasonable interface? Most set
->>> up is done by board code anyways, sysfs is more of nice-to-have?
->> Hemanth, would removing the sysfs hooks from this driver be ok with you?
->> I'd personally have favoured a merge, add new interfaces when agreed and
->> deprecate old ones approach, but it is Dmitry's call.  Perhaps it is better
->> to get the majority of the device functionality in place now and add
->> the bells and whistles later.
->>
->> For input device things are probably mostly fixed for a particular board
->> design.  There are definitely interesting things one can do if the knobs
->> are available but they (I think) mostly fall outside of using the device
->> for input!
->>
-> 
-> Dmitry, Jonathan
-> 
-> I am ok to remove the sysfs entries for now, but would cause some limitations
-> like not being able to change sampling frequency / disabling interrupts runtime.
-> 
-> Wanted to clarify if the intention is to come up with a standard sysfs interface
-> for all accelerometer drivers under input/misc including adxl34x.
-The intent is to come up with an interface covering a much wider range of devices
-if at all possible. I've proposed options for conventional threshold and rate of
-change interrupts on IIO (you were cc'd IIRC). I'll propose those on to lkml shortly
-and suggest that others suggest the interfaces they would like to see added (or
-object to the syntax for the ones I've covered!)
+Signed-off-by: Li Yang <leoli@freescale.com>
+---
+ drivers/dma/fsldma.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-To be honest, sampling frequency is much more general and I would imagine applies to
-lots of input drivers.  Do you already have a standard for this Dmitry?
+diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+index cea08be..9163552 100644
+--- a/drivers/dma/fsldma.c
++++ b/drivers/dma/fsldma.c
+@@ -1,7 +1,7 @@
+ /*
+  * Freescale MPC85xx, MPC83xx DMA Engine support
+  *
+- * Copyright (C) 2007 Freescale Semiconductor, Inc. All rights reserved.
++ * Copyright (C) 2007-2009 Freescale Semiconductor, Inc. All rights reserved.
+  *
+  * Author:
+  *   Zhang Wei <wei.zhang@freescale.com>, Jul 2007
+@@ -1338,6 +1338,7 @@ static int __devinit fsldma_of_probe(struct platform_device *op,
+ 	fdev->common.device_control = fsl_dma_device_control;
+ 	fdev->common.dev = &op->dev;
+ 
++	dma_set_mask(&op->dev, DMA_BIT_MASK(36));
+ 	dev_set_drvdata(&op->dev, fdev);
+ 
+ 	/*
+-- 
+1.6.6-rc1.GIT
 
-Jonathan
+
