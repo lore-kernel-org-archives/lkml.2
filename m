@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753697Ab0IUGAP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 02:00:15 -0400
-Received: from outmail149120.authsmtp.net ([62.13.149.120]:56496 "EHLO
-	outmail149120.authsmtp.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750739Ab0IUGAN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 02:00:13 -0400
-X-Greylist: delayed 1981 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Sep 2010 02:00:13 EDT
-From: Ben Pfaff <blp@cs.stanford.edu>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
-        "Maciej W. Rozycki" <macro@linux-mips.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Finn Thain <fthain@telegraphics.com.au>,
-        Randy Dunlap <rdunlap@xenotime.net>, Matt Turner <mattst88@gmail.com>,
-        Dimitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mike Frysinger <vapier.adi@gmail.com>
-Subject: Re: [PATCH]Update-broken-web-addresses-in-the-kernel
-References: <1285042724-19135-1-git-send-email-justinmattock@gmail.com>
-Reply-To: Ben Pfaff <blp@cs.stanford.edu>
-Date: Mon, 20 Sep 2010 22:25:22 -0700
-In-Reply-To: <1285042724-19135-1-git-send-email-justinmattock@gmail.com>
-	(Justin P. Mattock's message of "Mon, 20 Sep 2010 21:18:44 -0700")
-Message-ID: <87aanbpt19.fsf@benpfaff.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Server-Quench: a3e4e868-c540-11df-80b9-0022640b883e
-X-AuthReport-Spam: If SPAM / abuse - report it at: http://www.authsmtp.com/abuse
-X-AuthRoute: OCdwYQ8QAVZfSBwy AC4CFCFJRwtjIQdD FxoeKRdbOF4EFV0J c1AAdx1oPUVbHwkA A3YLXV5WVVdzXy1y bRRQaRtZalRMXwd1 Uk1LR01TWlpgfRlh eUZbUhx6cQNONn90 ZUBrECFYCUAvfUB1 Xx1REW0bZGY0Pn0X UBJRagNUcgFMeh8X Ylh8AT1vNG8XDRoR IyQTCg0pMTxDJWFf WAYOIFRXXksBWzcw SwoPBi4iBggEQWAv LxFjKVMGGksVWgAA 
-X-Authentic-SMTP: 61633331373532.1015:706
-X-AuthFastPath: 0 (Was 255)
-X-AuthVirus-Status: No virus detected - but ensure you scan with your own anti-virus system.
+	id S1754379Ab0IUGGs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 02:06:48 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:56755 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751008Ab0IUGGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 02:06:46 -0400
+Date: Tue, 21 Sep 2010 16:06:37 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sven Eckelmann <sven.eckelmann@gmx.de>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>
+Subject: linux-next: manual merge of the bkl-llseek tree with the
+ staging-next tree
+Message-Id: <20100921160637.c61d4322.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__21_Sep_2010_16_06_37_+1000_fFeYMTsBe1orEyoK"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Justin P. Mattock" <justinmattock@gmail.com> writes:
+--Signature=_Tue__21_Sep_2010_16_06_37_+1000_fFeYMTsBe1orEyoK
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Signed-off-by: Ben Pfaff <blp@cs.stanford.edu>
+Hi Arnd,
 
-Please change this to an Acked-by.
+Today's linux-next merge of the bkl-llseek tree got conflicts in
+drivers/staging/batman-adv/icmp_socket.c and
+drivers/staging/batman-adv/bat_debugfs.c between commit
+2d77bb592f6cabc5ee5322c03ee92b9f96c45f60 ("Staging: batman-adv: Mark
+debugfs files as nonseekable") from the staging-next tree and commit
+5295184fb318693b4ef2cd8056bf1a7cb43586d7 ("llseek: automatically
+add .llseek fop") from the bkl-llseek tree.
 
-Thanks,
+I used the versions from the staging-next tree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Ben.
--- 
-Ben Pfaff 
-http://benpfaff.org
+--Signature=_Tue__21_Sep_2010_16_06_37_+1000_fFeYMTsBe1orEyoK
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMmEttAAoJEDMEi1NhKgbsBOwH/1lLy+1s0jA3nnmqfnOK+Ai3
+FBSENcDK9/LF1fIybI015VOIw2MiY/CXbc6SCISOOrpCLuICohpd7EACb8bWJ1Bp
+0L58m4skRxL5g9ge1bFZhSIB/jY1rPhAqdjDrfnXuoRVVWnw4+ZuS0wma/0OIrri
+CYOPQVVSPLKoMGhnvXjZ7gEGeP3+jgvSjiJOjflrE5gkD22mh8fgrR/KLpiXaZL2
+g7DhOGHs/CjTrNvOHA9TqiLgRBFIR47spbO15BPOP9jrcP/6w5rzoGQIpxyXlleW
+tiEEQ1ma3VOkaSJKM+2JH96vIBtYpDjUVy6peqAnOStx0xhiuD9vJzY2pWRezrs=
+=Ragl
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__21_Sep_2010_16_06_37_+1000_fFeYMTsBe1orEyoK--
