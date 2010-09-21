@@ -1,54 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561Ab0IUNUX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 09:20:23 -0400
-Received: from mail-out123.unilogicnetworks.net ([62.133.206.123]:57869 "EHLO
-	mail.unilogicnetworks.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752811Ab0IUNUV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 09:20:21 -0400
-X-Greylist: delayed 1887 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Sep 2010 09:20:21 EDT
-Subject: [PATCH] Don't show error if Acer WMI is not found
-From: "Pascal de Bruijn | Unilogic Networks B.V." 
-	<pascal@unilogicnetworks.net>
-To: platform-driver-x86@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, trivial@kernel.org,
-        akpm@linux-foundation.org
-Content-Type: text/plain; charset="UTF-8"
-Organization: Unilogic Networks B.V.
-Date: Tue, 21 Sep 2010 14:48:52 +0200
-Message-ID: <1285073332.9470.5.camel@carnifex>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1755513Ab0IUNUp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 09:20:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24440 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754751Ab0IUNUn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 09:20:43 -0400
+Date: Tue, 21 Sep 2010 15:14:22 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "herbert@gondor.hengli.com.au" <herbert@gondor.hengli.com.au>,
+        "jdike@linux.intel.com" <jdike@linux.intel.com>
+Subject: Re: [RFC PATCH v9 12/16] Add mp(mediate passthru) device.
+Message-ID: <20100921131421.GA10439@redhat.com>
+References: <20100915112811.GB29267@redhat.com>
+ <1284970128-7343-1-git-send-email-xiaohui.xin@intel.com>
+ <20100920113643.GB23898@redhat.com>
+ <F2E9EB7348B8264F86B6AB8151CE2D792B8CAA0F6A@shsmsx502.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <F2E9EB7348B8264F86B6AB8151CE2D792B8CAA0F6A@shsmsx502.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 6e5643d6b1c1e5250d29b8d6d82dae3ec6404055 Mon Sep 17 00:00:00 2001
-From: Pascal de Bruijn <pascal@unilogicnetworks.net>
-Date: Mon, 30 Aug 2010 09:09:53 +0200
-Subject: [PATCH] Don't show error if Acer WMI is not found
+On Tue, Sep 21, 2010 at 09:39:31AM +0800, Xin, Xiaohui wrote:
+> >From: Michael S. Tsirkin [mailto:mst@redhat.com]
+> >Sent: Monday, September 20, 2010 7:37 PM
+> >To: Xin, Xiaohui
+> >Cc: netdev@vger.kernel.org; kvm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> >mingo@elte.hu; davem@davemloft.net; herbert@gondor.hengli.com.au;
+> >jdike@linux.intel.com
+> >Subject: Re: [RFC PATCH v9 12/16] Add mp(mediate passthru) device.
+> >
+> >On Mon, Sep 20, 2010 at 04:08:48PM +0800, xiaohui.xin@intel.com wrote:
+> >> From: Xin Xiaohui <xiaohui.xin@intel.com>
+> >>
+> >> ---
+> >> Michael,
+> >> I have move the ioctl to configure the locked memory to vhost
+> >
+> >It's ok to move this to vhost but vhost does not
+> >know how much memory is needed by the backend.
+> 
+> I think the backend here you mean is mp device.
+> Actually, the memory needed is related to vq->num to run zero-copy
+> smoothly.
+> That means mp device did not know it but vhost did.
 
----
- drivers/platform/x86/acer-wmi.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Well, this might be so if you insist on locking
+all posted buffers immediately. However, let's assume I have a
+very large ring and prepost a ton of RX buffers:
+there's no need to lock all of them directly:
 
-diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
-index 2badee2..c8c6537 100644
---- a/drivers/platform/x86/acer-wmi.c
-+++ b/drivers/platform/x86/acer-wmi.c
-@@ -1314,7 +1314,7 @@ static int __init acer_wmi_init(void)
- 		AMW0_find_mailled();
- 
- 	if (!interface) {
--		printk(ACER_ERR "No or unsupported WMI interface, unable to "
-+		printk(ACER_INFO "No or unsupported WMI interface, unable to "
- 				"load\n");
- 		return -ENODEV;
- 	}
+if we have buffers A and B, we can lock A, pass it
+to hardware, and when A is consumed unlock A, lock B
+and pass it to hardware.
+
+
+It's not really critical. But note we can always have userspace
+tell MP device all it wants to know, after all.
+
+> And the rlimt stuff is per process, we use current pointer to set
+> and check the rlimit, the operations should be in the same process.
+
+Well no, the ring is handled from the kernel thread: we switch the mm to
+point to the owner task so copy from/to user and friends work, but you
+can't access the rlimit etc.
+
+> Now the check operations are in vhost process, as mp_recvmsg() or
+> mp_sendmsg() are called by vhost.
+
+Hmm, what do you mean by the check operations?
+send/recv are data path operations, they shouldn't
+do any checks, should they?
+
+> So set operations should be in
+> vhost process too, it's natural.
+> 
+> >So I think we'll need another ioctl in the backend
+> >to tell userspace how much memory is needed?
+> >
+> Except vhost tells it to mp device, mp did not know
+> how much memory is needed to run zero-copy smoothly.
+> Is userspace interested about the memory mp is needed?
+
+Couldn't parse this last question.
+I think userspace generally does want control over
+how much memory we'll lock. We should not just lock
+as much as we can.
+
 -- 
-1.7.0.4
-
-
-
+MST
