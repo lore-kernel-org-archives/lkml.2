@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755998Ab0IUTsY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 15:48:24 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:54030 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754419Ab0IUTsX (ORCPT
+	id S1757659Ab0IUTtF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 15:49:05 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:36457 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753444Ab0IUTtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 15:48:23 -0400
-Subject: Re: [RFC] led-class: always implement blinking
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Richard Purdie <rpurdie@rpsys.net>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100921124419.6b88f7f6.akpm@linux-foundation.org>
-References: <1282296102.3785.28.camel@jlt3.sipsolutions.net>
-	 <20100921124419.6b88f7f6.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 21 Sep 2010 21:48:17 +0200
-Message-ID: <1285098497.12764.18.camel@jlt3.sipsolutions.net>
+	Tue, 21 Sep 2010 15:49:04 -0400
+Date: Tue, 21 Sep 2010 21:48:58 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        Jason Baron <jbaron@redhat.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, hpa@zytor.com, tglx@linutronix.de, roland@redhat.com,
+        rth@redhat.com, mhiramat@redhat.com, fweisbec@gmail.com,
+        avi@redhat.com, davem@davemloft.net, vgoyal@redhat.com,
+        sam@ravnborg.org, tony@bakeyournoodle.com
+Subject: Re: [PATCH 03/10] jump label v11: base patch
+Message-ID: <20100921194858.GB3024@one.firstfloor.org>
+References: <cover.1284733808.git.jbaron@redhat.com> <ee8b3595967989fdaf84e698dc7447d315ce972a.1284733808.git.jbaron@redhat.com> <20100921131232.GA3024@one.firstfloor.org> <20100921143555.GA2873@redhat.com> <0e1f6b339e72a449fed0df7b801da607.squirrel@www.firstfloor.org> <1285082049.23122.1930.camel@gandalf.stny.rr.com> <140ee1c060f22286fe2f4d81170f76be.squirrel@www.firstfloor.org> <1285092337.26872.12.camel@gandalf.stny.rr.com> <20100921182431.GA30075@Krystal>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100921182431.GA30075@Krystal>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-09-21 at 12:44 -0700, Andrew Morton wrote:
-> On Fri, 20 Aug 2010 11:21:42 +0200
-> Johannes Berg <johannes@sipsolutions.net> wrote:
-> 
-> > +static int led_blink_set(struct led_classdev *led_cdev,
-> > +			 unsigned long *delay_on, unsigned long *delay_off)
+> I agree with Steven, Peter and Jason: due to the large amount of
+> tracepoints we can end up patching, we should keep the hash tables. This
 
-> > +	if (*delay_on == led_cdev->blink_delay_on &&
-> > +	    *delay_off == led_cdev->blink_delay_off)
-> > +		return 0;
-> > +
-> > +	/* deactivate previous settings */
-> > +	del_timer_sync(&led_cdev->blink_timer);
-> > +
-> > +	led_cdev->blink_delay_on = *delay_on;
-> > +	led_cdev->blink_delay_off = *delay_off;
+I suspect when it's cache cold the hash tables will be actually slower.
+As a general rule memory bloat = slow.
 
-> delay_on and delay_off could have been pass-by-value rather than
-> pass-by-reference?  That would clean up some gunk in callers, too.
-> 
-> If there was some reason for doing it with pass-by-reference then that
-> reason should have been documented!
+> code is very similar to what I have in the tracepoints already and in
+> the immediate values. So this code is solid and has been tested over a
+> large user base for quite some time already.
 
-Well, this function gets assigned to led_cdev->blink_set(), which is a
-function pointer that takes pass-by-reference arguments. The comment
-there says:
+FWIW "We always did it this way" is not a good argument 
+in engineering discussions.
 
-        /* Activate hardware accelerated blink, delays are in
-         * miliseconds and if none is provided then a sensible default
-         * should be chosen. The call can adjust the timings if it can't
-         * match the values specified exactly. */
-        int             (*blink_set)(struct led_classdev *led_cdev,
-                                     unsigned long *delay_on,
-                                     unsigned long *delay_off);
+> One change I would recommend is to use a separate memory pool to
+> allocate the struct jump_label_entry, to favor better locality. I did
+> not do it in tracepoints and markers because each entry have a variable
+> length, but given that struct jump_label_entry seems to be fixed-size,
+> then we should definitely go for a kmem_cache_alloc().
 
-but the software implementation doesn't adjust the timings, of course. I
-suppose the "adjust the timings" was also meant to update the values.
+Yes even more complexity, great idea.
 
-johannes
-
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
