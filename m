@@ -1,91 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757068Ab0IUWKX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 18:10:23 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:59228 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752522Ab0IUWKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 18:10:22 -0400
-Date: Tue, 21 Sep 2010 23:10:08 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 8/8] writeback: Do not sleep on the congestion queue if
-	there are no congested BDIs or if significant congestion is not
-	being encountered in the current zone
-Message-ID: <20100921221008.GA16323@csn.ul.ie>
-References: <1284553671-31574-1-git-send-email-mel@csn.ul.ie> <1284553671-31574-9-git-send-email-mel@csn.ul.ie> <20100916152810.cb074e9f.akpm@linux-foundation.org> <20100920095239.GE1998@csn.ul.ie> <20100921144413.abc45d2f.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100921144413.abc45d2f.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1757461Ab0IUWK7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 18:10:59 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:49030 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756351Ab0IUWK6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 18:10:58 -0400
+Date: Tue, 21 Sep 2010 15:10:33 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Any SYSRQ key to force mode switch to console mode when using
+ KMS?
+Message-Id: <20100921151033.80e61747.randy.dunlap@oracle.com>
+In-Reply-To: <19601.1301.803816.92851@elektron.ikp.physik.tu-darmstadt.de>
+References: <19601.1301.803816.92851@elektron.ikp.physik.tu-darmstadt.de>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 21, 2010 at 02:44:13PM -0700, Andrew Morton wrote:
-> On Mon, 20 Sep 2010 10:52:39 +0100
-> Mel Gorman <mel@csn.ul.ie> wrote:
+On Wed, 15 Sep 2010 19:40:37 +0200 Uwe Bonnes wrote:
+
+> Hello,
 > 
-> > > > This patch tracks how many pages backed by a congested BDI were found during
-> > > > scanning. If all the dirty pages encountered on a list isolated from the
-> > > > LRU belong to a congested BDI, the zone is marked congested until the zone
-> > > > reaches the high watermark.
-> > > 
-> > > High watermark, or low watermark?
-> > > 
-> > 
-> > High watermark. The check is made by kswapd.
-> > 
-> > > The terms are rather ambiguous so let's avoid them.  Maybe "full"
-> > > watermark and "empty"?
-> > > 
-> > 
-> > Unfortunately they are ambiguous to me. I know what the high watermark
-> > is but not what the full or empty watermarks are.
+> is there any SYSRQ key that forces the video system to console mode,
+> especially when using KMS and allows to work on. 
+
+sysrq-v help message says:
+
+force-fb(V) = "Restore framebuffer console"
+
+> Since going to KMS on a Thinkpad R50 with ATI Radeon RV250 via going from
+> Opensuse-11.2 to Opensuse-11.3 I experience frequent situations where I am
+> left with a black screen, with only ALT-SYSREQ-C switching the screen back
+> on and hard reboot as only chance to escape that situation.
 > 
-> Really.  So what's the "high" watermark? 
-
-The high watermark is the point where kswapd goes back to sleep because
-enough pages have been reclaimed. It's a proxy measure for memory pressure.
-
-> From the above text I'm
-> thinking that you mean the high watermark is when the queue has a small
-> number of requests and the low watermark is when the queue has a large
-> number of requests.
+> Situations that result in a black screen are:
 > 
-
-I was expecting "zone reaches the high watermark" was the clue that I was
-talking about zone watermarks and not an IO queue but it could be better.
-
-
-> I'd have thought that this is backwards: the "high" watermark is when
-> the queue has a large (ie: high) number of requests.
+> * Going with the mouse over the NOSCRIPT buttom in firefox. Load goes up and
+> screen goes black after some seconds. xorg.log ends with "Backtrace", but no
+> backtrace output...
 > 
-> A problem.  How do we fix it?
+> * Calling pm-hibernate on a system that has hibernated before. First
+>   pm-hibernate/wake-up-per power buttom sequence is successfull.
 > 
+> Disabling KMS results in very slow "kaffeine" full screen output...
+> 
+> pm-hibernate and firefox/noscript worked pre-KMS on opensuse-11.2.
+> 
+> Some traces of other people hitting the NOSCRIPT xorg crash and others
+> hitting the black unresponsive screen with KMS on RV250 are
+> found on the net, but I didn't find a conclusive resolution.
+> 
+> Opensuse default kernel and the recent Opensuse 2.6.36-rc3 kernel-of-the day
+> were tested with no difference
+> 
+> Thanks
+> 
+> PS: I only follow linux-kernel via gmane.org, so if you need fast feedback,
+> please CC me. 
 
-I will try and clarify. How about this as a replacement paragraph?
-
-==== CUT HERE ====
-This patch tracks how many pages backed by a congested BDI were found
-during scanning. If all the dirty pages isolated from the LRU are
-backed by a congested BDI, the zone is marked congested. A zone is marked
-uncongested with enough pages have been freed for the zone's high watermark
-to be reached indicating that the zone is no longer under any memory
-pressure. wait_iff_congested() checks if there are any congested BDIs and if
-so if the current zone is marked congested. If both conditions are met, the
-caller sleeps on the congestion queue. Otherwise it will call cond_reched()
-to yield the processor if necessary.
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
