@@ -1,70 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754334Ab0IUF0c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 01:26:32 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:40386 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753560Ab0IUF0b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 01:26:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=TIfp0lKokZJIs8QuGZ3g4G5EjKIUJ3YPic+QwvFiwQQh9zqXrjxdXVbQph71e5KwMe
-         wu0yyyc5dsMt3CQpPkg5QPIOY6G+7NZ8iUJTBJtIWZqs+TTUqL2w2ARfohnnmWLb8U2U
-         d0ughRoFDDT289wSe9b/lan3AQQeX2QleX9l8=
-Message-ID: <4C98420B.8030207@gmail.com>
-Date: Mon, 20 Sep 2010 22:26:35 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
-MIME-Version: 1.0
-To: Finn Thain <fthain@telegraphics.com.au>
-CC: Matt Turner <mattst88@gmail.com>, trivial@kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Maciej W. Rozycki" <macro@linux-mips.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Dimitry Torokhov <dmitry.torokhov@gmail.com>,
-        Ben Pfaff <blp@cs.stanford.edu>, Mike Frysinger <vapier.adi@gmail.com>
-Subject: Re: [PATCH]Update-broken-web-addresses-in-the-kernel
-References: <1285042724-19135-1-git-send-email-justinmattock@gmail.com> <AANLkTinE73z9QV0zriVE3bRtzMifWSGvG36hfvnA9biD@mail.gmail.com> <4C983C7D.1050000@gmail.com> <AANLkTimYp6ua743x9ze4fcU09ZZ=oZZd_iKCmU0WQ2h7@mail.gmail.com> <alpine.LNX.2.00.1009211516180.9370@nippy.intranet>
-In-Reply-To: <alpine.LNX.2.00.1009211516180.9370@nippy.intranet>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1754683Ab0IUFbo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 01:31:44 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:37625 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753554Ab0IUFbm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 01:31:42 -0400
+Date: Tue, 21 Sep 2010 07:31:40 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>, Greg KH <greg@kroah.com>
+Subject: Re: [RFC PATCH] scripts/get_maintainer.pl: add interactive mode
+Message-ID: <20100921073140.32060603@schatten.dmk.lab>
+In-Reply-To: <1285029532.25988.82.camel@Joe-Laptop>
+References: <1284558207-10223-1-git-send-email-florian@mickler.org>
+	<1284563819-11363-1-git-send-email-florian@mickler.org>
+	<1285011788.25988.48.camel@Joe-Laptop>
+	<20100920235337.6e0ac989@schatten.dmk.lab>
+	<1285029532.25988.82.camel@Joe-Laptop>
+X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2010 10:17 PM, Finn Thain wrote:
->
-> I would say that if a URL is in the web archive, then no patch is needed.
->
-> Finn
->
+On Mon, 20 Sep 2010 17:38:52 -0700
+Joe Perches <joe@perches.com> wrote:
 
-true especially if it's really ancient, but with a series I sent out a 
-few weeks ago archive.org was introduced due to people still looking at 
-the old documentation. Up to you guys if you want to remove archive.org 
-from this..
+> On Mon, 2010-09-20 at 23:53 +0200, Florian Mickler wrote:
+> > On Mon, 20 Sep 2010 12:43:08 -0700
+> > Joe Perches <joe@perches.com> wrote:
+> > > #(toggle), A#(author), S#(signed) *(all), ^(none), O(options), Y(approve): 
+> > I don't think the descriptions on the bottom are that descriptive. Nor
+> > can they be. There should probably be just a quick primer like:
+> > "([N]+:select) ([N]-:deselect) ([N]?:toggle infos) (Y:approve) (h:help)"
+> > and on "h" a long description gets displayed.
+> 
+> We disagree.  There could be a useful "H" help option.
 
-> On Tue, 21 Sep 2010, Matt Turner wrote:
+Oh, we don't disagree that much then. After all, the help option is the
+meat of the comment above. Bringing up the alternative syntax for the
+prompt was just a suggestion.
+
+
+> > > Because git history is now not searched by default
+> > > when there is a named maintainer, there are no
+> > > commit signers.
+> > 
+> > Don't know if this is intuitive. If there is the possibility to have
+> > them shown but not selected, that would be ideal as it relieves the
+> > user from pressing extra keys while still having a sane behaviour.
+> 
+> Use a command line option: --git.
+> 
+> All command line options apply to create the initial list of
+> displayed names.
 >
->> On Tue, Sep 21, 2010 at 1:02 AM, Justin P. Mattock
->> <justinmattock@gmail.com>  wrote:
->>> didnt even think about that.. I really appreciate you pointing this out..
->>>   I'll go through the whole thing and see if I can figure a good fix for the
->>> archive.org stuff
->>
->> Just checked, and you can modify the links like so:
->>
->> - http://web.archive.org/web/*/http://ftp.digital.com/pub/DEC/axppci/ref_interrupts.txt
->> + http://web.archive.org/web/%2A/http://ftp.digital.com/pub/DEC/axppci/ref_interrupts.txt
->>
->> So, change * to %2A (it's ASCII code in hex).
->>
->> I guess that's the least clunky fix.
->>
->> Matt
+> Or add code to set
+> 
+> 	$git-fallback = 1 if $interactive;
 
-Justin P. Mattock
+Are you opposed to that second solution?
+
+
+
+> 
+> > > 
+> > > If the "G" option is entered, you get:
+> > > 
+> > > #(toggle), A#(author), S#(signed) *(all), ^(none), O(options), Y(approve): g
+> > > --------------------------------------------------------------------------------
+> > > *  # email/list and role:stats                                        auth sign
+> > > *  1 Stephen Hemminger <shemminger@linux-foundation.org>                 1    0
+> > >      maintainer:SKGE, SKY2 10/100...,commit_signer:38/69=55%
+> > >    2 "David S. Miller" <davem@davemloft.net>                             7   57
+> > >      commit_signer:57/69=83%
+> > >    3 Mike McCormack <mikem@ring3k.org>                                  16   16
+> > >      commit_signer:16/69=23%
+> > >    4 Joe Perches <joe@perches.com>                                       4    4
+> > >      commit_signer:4/69=6%
+> > > *  5 netdev@vger.kernel.org                                           
+> > >      open list:SKGE, SKY2 10/100...
+> > > *  6 linux-kernel@vger.kernel.org                                     
+> > >      open list
+> > 
+> > I would try to fit reviewed-by in the statistics on the right, because
+> > that actually says a bit about the ability and willingness to review
+> > code... 
+> 
+> I think it's not worth it.
+> 
+> Only about 2% of signatures in git history are reviewed-by:
+> 
+> Using S shows the signature type.
+
+Yes, that is nice. Did I say, I like the UI over all?
+
+I think showing reviewed-by seperately is good nonetheless, as it might
+give an increased awareness to the existence of that line.
+
+In the xserver, no patch is comitted, that doesn't has an explicit
+reviewed-by line. That is actually a good thing in my opinion.
+
+> 
+> Over the last year:
+> $ git log --since=1-year-ago | grep -i "by:.*@" | \
+>   cut -f1 -d":" | sort -i | uniq -ci | sort -rn | head -10
+>   83413     Signed-off-by
+>    6544     Acked-by
+>    2022     Reviewed-by
+>    1691     Reported-by
+>    1065     Tested-by
+>     111     Reported-and-tested-by
+>      83     Suggested-by
+>      31     Requested-by
+>      28         Signed-off-by
+>      26     Fixed-by
+
+
+That's just sad. At least there are more Reviewed-By then Reported-By. 
+I don't think this actually represents reality of the
+development process. 
+
+
+> > [snip menu parsing code]
+> > 
+> > That should probably go in an extra function and be slimmed down, like
+> > I did in a later version I sent you.
+> 
+> Maybe.  I think it doesn't matter much though.
+> Menu handling code tends to get long.
+
+> > > +sub bool_invert {
+> > > +    my ($bool_ref) = @_;
+> > > +
+> > > +    if ($$bool_ref) {
+> > > +	$$bool_ref = 0;
+> > > +    } else {
+> > > +	$$bool_ref = 1;
+> > > +    }
+> >  +}
+> > 
+> > That should just be $$bool_ref = !$$bool_ref (and probably not a
+> > function)
+> 
+> I think it needs to be a function.
+> I want a 0 or 1, not "" or 1.
+
+Sorry, I didn't look at the use of that. What about  
+
+$bool = (1 - !!$bool) 
+
+then? (if $bool is always 1 or 0, you can drop the double negation in
+front of it)
+
+Cheers,
+Flo
