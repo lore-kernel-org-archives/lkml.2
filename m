@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757187Ab0IUJip (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 05:38:45 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:51555 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751768Ab0IUJio convert rfc822-to-8bit (ORCPT
+	id S1757301Ab0IUJjC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 05:39:02 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48973 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757266Ab0IUJjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 05:38:44 -0400
-Subject: Re: [RFC PATCH 0/2] perf_events: add support for per-cpu
- per-cgroup monitoring (v3)
-From: Peter Zijlstra <peterz@infradead.org>
-To: eranian@google.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
-        eranian@gmail.com, robert.richter@amd.com, acme@redhat.com,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-In-Reply-To: <4c88dc9c.991ce30a.3d91.3e0e@mx.google.com>
-References: <4c88dc9c.991ce30a.3d91.3e0e@mx.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 21 Sep 2010 11:38:19 +0200
-Message-ID: <1285061899.2275.824.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Tue, 21 Sep 2010 05:39:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=dIzeziVmETQmRnixYtCf4NFGe+3euv0Tq4LIQSJ5SJLUg5A2U7TDgFwXvw4nQLGRxA
+         j61oIMx4VHOpXCfbr8vqerw5XaiNgM5oQgD3Xcj4coxQd7HRlLsdzsCgL6rjwmmirWG2
+         O5f81+CZhktYJBD3VaLI1i0N7/BCWrevcde+o=
+Date: Tue, 21 Sep 2010 09:38:53 +0000
+From: Jarek Poplawski <jarkao2@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: Regression, bisected: reference leak with IPSec since ~2.6.31
+Message-ID: <20100921093853.GA8664@ff.dom.local>
+References: <20100921091248.GA8424@ff.dom.local> <1285060860.2617.158.camel@edumazet-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1285060860.2617.158.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-09 at 15:05 +0200, Stephane Eranian wrote:
-> The cgroup to monitor is designated by passing a file descriptor opened
-> on a new per-cgroup file in the cgroup filesystem (perf_event.perf). The
-> option must be activated by setting perf_event_attr.cgroup=1 and passing
-> a valid file descriptor in perf_event_attr.cgroup_fd. Those are the only
-> two ABI extensions. 
+On Tue, Sep 21, 2010 at 11:21:00AM +0200, Eric Dumazet wrote:
+> Le mardi 21 septembre 2010 ?? 09:12 +0000, Jarek Poplawski a écrit :
+> > On 2010-09-20 23:31, Eric Dumazet wrote:
+> > ...
+> > > @@ -510,11 +509,13 @@ int ip_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
+> > >  				goto slow_path;
+> > >  
+> > >  			BUG_ON(frag->sk);
+> > > -			if (skb->sk) {
+> > > +		}
+> > > +		if (skb->sk) {
+> > > +			skb_walk_frags(skb, frag) {
+> > >  				frag->sk = skb->sk;
+> > >  				frag->destructor = sock_wfree;
+> > 
+> > Nice catch, but it seems doing it in the first loop as now, and
+> > reverting changes before goto slow_path might be more optimal here.
+> > 
+> 
+> I thought of this, but found this function already very complex.
+> 
+> Once everything is in cpu caches, the added loop is very cheap.
 
-> +++ b/include/linux/perf_event.h
-> @@ -215,8 +215,9 @@ struct perf_event_attr {
->                                  */
->                                 precise_ip     :  2, /* skid constraint       */
->                                 mmap_data      :  1, /* non-exec mmap data    */
-> +                               cgroup         :  1, /* cgroup aggregation    */
->  
-> -                               __reserved_1   : 46;
-> +                               __reserved_1   : 45;
->  
->         union {
->                 __u32           wakeup_events;    /* wakeup every n events */
-> @@ -226,6 +227,8 @@ struct perf_event_attr {
->         __u32                   bp_type;
->         __u64                   bp_addr;
->         __u64                   bp_len;
-> +
-> +       int                     cgroup_fd;
->  };
->  
->  /*
+I hope you're right with this.
 
-I'm not sure I like this much.. so we attach to {pid,cpu}, for nodes we
-can use cpu_to_node(cpu), which would suggest to use
-cgroup_of_task(pid), except that a task can be part of multiple cgroups,
-so its not unique.
+> 
+> I liked the :
+> 
+> <check everything without changing state>
+> if something wrong
+> 	goto slow_path
+> else
+> 	<OK, lets do destructive things>
+> 
 
-One thing we could do is pass this cgroup identifier in the pid field
-and use PERF_FLAG_CGROUP or something. Currently the syscall signature
-uses pid_t, but I think we can safely change that to int.
+But it's an optimization of the "unlikely" case btw. ;-)
 
-You create a special new file in the cgroup stuff, I'm not sure about
-that either, but its not something I feel too strongly about, why
-wouldn't a fd of any file or even directory of that cgroup work? Do the
-cgroup people have an opinion?
+Jarek P.
