@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757600Ab0IUAEI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 20:04:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49099 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754183Ab0IUAEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 20:04:05 -0400
-Date: Mon, 20 Sep 2010 20:03:44 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Ram Pai <linuxram@us.ibm.com>
-Cc: Ram Pai <ram.n.pai@gmail.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andreas Gruenbacher <agruen@suse.de>, Nick Piggin <npiggin@kernel.dk>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 03/34] VFS: Add CL_NO_SLAVE flag to clone_mnt()/copy_tree()
-Message-ID: <20100921000344.GB9032@shell>
-References: <1284675145-4391-1-git-send-email-vaurora@redhat.com> <1284675145-4391-4-git-send-email-vaurora@redhat.com> <AANLkTim1bbGrrPcFHThx3XOm8GmudQFSmFUs3NAXT5yC@mail.gmail.com> <20100917043401.GD8926@ram-laptop> <20100917171514.GA32258@shell> <20100920052553.GM8926@ram-laptop>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100920052553.GM8926@ram-laptop>
-User-Agent: Mutt/1.4.2.2i
+	id S1757840Ab0IUAEf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 20:04:35 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:41904 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757697Ab0IUAEd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 20:04:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=AklcahnQ/+VjOsJ17aL788jkzjsgtFTY4rVRwmWa2LI16DJOAdOs3joUmzO4LG49dV
+         0hXMsKeEaP772aAhhAqXlSBS63r66P7Fin5ow+RInfrLhawLLye1ld9bC5fFwjzbboKq
+         7BDSa/9/2cSDHft8omFmOZEUkeQ5wDf6+a31A=
+MIME-Version: 1.0
+In-Reply-To: <4C979515.4060908@trash.net>
+References: <1282344540-5306-1-git-send-email-xiaosuo@gmail.com>
+ <4C91B6BE.8020300@trash.net> <AANLkTikZeFrS9pj6jxmOxqY6dsaAf1U+FAXe5jNwQ-nV@mail.gmail.com>
+ <4C979515.4060908@trash.net>
+From: Changli Gao <xiaosuo@gmail.com>
+Date: Tue, 21 Sep 2010 08:02:43 +0800
+Message-ID: <AANLkTi=NXj9PjYA06+UFYms8q5K3Z4DsPMcpVHpj7Gmq@mail.gmail.com>
+Subject: Re: [PATCH v5 2/2] netfilter: save the hash of the tuple in the
+ original direction for latter use
+To: Patrick McHardy <kaber@trash.net>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        akpm@linux-foundation.org, netfilter-devel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 19, 2010 at 10:25:53PM -0700, Ram Pai wrote:
-> 
-> I understand your intentions, but I think you are making a wrong assumption.
-> You seem to be thinking that if a slave-mount is cloned, the new cloned
-> mount will also be a slave-mount and will hence receive propagations. As
-> per shared subtree semantics, a slave-mount when cloned will create a private
-> mount. Since your intention is to avoid generating any new mounts that 
-> recieve propagations, you should be checking for shared-mounts and 
-> slave-shared-mounts because these are the two kind of mounts that when
-> cloned create new mounts that receive propagation.
+On Tue, Sep 21, 2010 at 1:08 AM, Patrick McHardy <kaber@trash.net> wrote:
+>
+> Sure we can, dropping unconfirmed conntracks is a rare exception,
+> not a common case. Even under DoS we usually drop *unassured*
+> conntracks, which have already enterered the hash. If we're unable
+> to do that, we won't even allocate a new conntrack.
+>
 
-No.  This isn't about the semantics of the clone mount operation.  It
-is about the administrator creating a slave mount, unioning it, and
-then being surprised when the unioned file system does not receive
-mount propagation events.
+Even so, saving the hash of the reply tuple isn't a good idea.
 
-Think of the source vfsmount tree as a set of command line arguments
-for the union mount.
+If NAT is turned on, the current code is:
 
-> > One of the reasons I had to do it this way is that you can't hold
-> > vfsmount_lock while calling copy_tree(), so the mount flags can change
-> > between the first check in #2 and the copy_tree() in #3.  Also
-> > sb->s_flag can change.  
-> 
-> Isn't this whole operation done under the protection of namespace_sem? 
-> I know that shared/slave flags can't change if the namespace_sem is held. 
-> The same may also be true for sb->s_flag. 
+mangle the reply tuple -> compute the hash of the reply tuple ->
+insert into the conntrack hash table.
 
-namespace_sem only covers the shared/slave mount flags.  We also care
-about MNT_READONLY, which is protected by vfsmount_lock.  sb->s_flags
-is protected by sb->s_umount and not namespace_sem.
+the new code is
 
-We could do the shared/slave check outside of clone_mnt(), but it
-would require two passes over the source vfsmount tree.
+compute the hash of the reply tuple -> mangle the reply tuple ->
+recompute the hash of the reply tuple -> insert into the conntrack
+hash table.
 
-> > One of the problems with the current code is
-> > that it can't deal with cloning existing union mounts, which we need
-> > if we are to make bind mounts work (see do_loopback()).
-> 
-> if I understand your union mount semantics correctly, you dont' allow the
-> same filesystem to be union mounted rw in two different locations. correct?
-> If yes, then bind mount of a union-mount has to be disallowed.
+As you see, the hash computing is done twice, and we use more CPU
+cycles than before.
 
-A bind mount of part of a union file system (which is itself unioned
-and includes the lower layers) doesn't have the same problems as an
-independent mount of the rw layer.  Mainly, the union stack will be
-the same for both.  I'm not sure it will work but it won't fail for
-the same reasons as a separate mount of the rw layer alone.
-
--VAL
+-- 
+Regards,
+Changli Gao(xiaosuo@gmail.com)
