@@ -1,207 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758068Ab0IUSk7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 14:40:59 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:27176 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753737Ab0IUSk6 (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 21 Sep 2010 14:40:58 -0400
-Date: Tue, 21 Sep 2010 14:39:43 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jason Baron <jbaron@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
-        hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
-        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-        mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
-        davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org,
-        tony@bakeyournoodle.com
-Subject: Re: [PATCH 10/10] jump label v11: add docs
-Message-ID: <20100921183943.GC22088@dumpdata.com>
-References: <cover.1284733808.git.jbaron@redhat.com>
- <f75207ca500d2be85ec049624bc70b01c0183db2.1284733808.git.jbaron@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <f75207ca500d2be85ec049624bc70b01c0183db2.1284733808.git.jbaron@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751981Ab0IUSrx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 14:47:53 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:58524 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015Ab0IUSrv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 14:47:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=NtWhYxkyvkWP01G5wLzXaftXA/W71oEYnDPqbHbauKDfW2uC1zfE76XbwPg7lu44Gn
+         I6BZiybudkS9fVQ4lvg+lKr20BfF+lbjFycMrC7R4ccEX+AGnOJv3dIQ9TaiB+IZDyEN
+         yPuz+Zo3zlcT5dxUm6T0ePBAlyurx+PtU1zvM=
+Subject: Re: [PATCH v3] ip: fix truesize mismatch in ip fragmentation
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jarek Poplawski <jarkao2@gmail.com>
+Cc: Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Patrick McHardy <kaber@trash.net>
+In-Reply-To: <20100921175014.GA2066@del.dom.local>
+References: <20100920174443.GA5515@elliptictech.com>
+	 <1285006844.2323.17.camel@edumazet-laptop>
+	 <20100920195256.GA14330@elliptictech.com>
+	 <1285013853.2323.148.camel@edumazet-laptop>
+	 <1285018272.2323.243.camel@edumazet-laptop>
+	 <20100921140501.GA21572@elliptictech.com>
+	 <1285078613.2617.503.camel@edumazet-laptop>
+	 <1285084705.2617.636.camel@edumazet-laptop>
+	 <20100921175014.GA2066@del.dom.local>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 21 Sep 2010 20:47:45 +0200
+Message-ID: <1285094865.2452.2.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 17, 2010 at 11:09:29AM -0400, Jason Baron wrote:
-> Add jump label docs as: Documentation/jump-label.txt
-> 
-> Signed-off-by: Jason Baron <jbaron@redhat.com>
-> ---
->  Documentation/jump-label.txt |  148 ++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 148 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/jump-label.txt
-> 
-> diff --git a/Documentation/jump-label.txt b/Documentation/jump-label.txt
-> new file mode 100644
-> index 0000000..2e5cff6
-> --- /dev/null
-> +++ b/Documentation/jump-label.txt
-> @@ -0,0 +1,148 @@
-> +			Jump Label
-> +			----------
-> +
-> +By: Jason Baron <jbaron@redhat.com>
-> +
-> +
-> +1) motivation
-> +
-> +
-> +Currently, tracepoints are implemented using a conditional. The conditional
-> +check requires checking a global variable for each tracepoint. Although,
-> +the overhead of this check is small, it increases under memory pressure. As we
-> +increase the number of tracepoints in the kernel this may become more of an
-> +issue. In addition, tracepoints are often dormant (disabled), and provide no
-> +direct kernel functionality. Thus, it is highly desirable to reduce their
-> +impact as much as possible. Although tracepoints are the original motivation
-> +for this work, other kernel code paths should be able to make use of the jump
-> +label optimization.
-> +
-> +
-> +2) jump label description/usage
-> +
-> +
-> +gcc (v4.5) adds a new 'asm goto' statement that allows branching to a label.
-> +http://gcc.gnu.org/ml/gcc-patches/2009-07/msg01556.html
-> +
-> +Thus, this patch set introduces an architecture specific 'JUMP_LABEL()' macro as
-> +follows (x86):
-> +
-> +# define JUMP_LABEL_INITIAL_NOP ".byte 0xe9 \n\t .long 0\n\t"
-> +
-> +# define JUMP_LABEL(key, label)					\
-> +	do {                                                    \
-> +		asm goto("1:"                                   \
-> +			JUMP_LABEL_INITIAL_NOP			\
-> +                        ".pushsection __jump_table,  \"a\" \n\t"\
-> +                        _ASM_PTR "1b, %l[" #label "], %c0 \n\t" \
-> +                        ".popsection \n\t"                      \
-> +                        : :  "i" (key) :  : label);		\
-> +        } while (0)
-> +
-> +
-> +For architectures that have not yet introduced jump label support its simply:
-> +
-> +#define JUMP_LABEL(key, label)			\
-> +	if (unlikely(*key))			\
-> +		goto label;
-> +
-> +which then can be used as:
-> +
-> +	....
-> +        JUMP_LABEL(trace_name, trace_label, jump_enabled);
 
-No. That is three arguments. The macro only has two.
-
-> +        printk("not doing tracing\n");
-> +	return;
-> +trace_label:
-> +        printk("doing tracing: %d\n", file);
-> +	....
-> +
-> +The 'key' argument is thus a pointer to a conditional argument that can be used
-> +if the optimization is not enabled. Otherwise, this address serves as a unique
-> +key to identify the particular instance of the jump label.
-> +
-> +Thus, when tracing is disabled, we simply have a no-op followed by a jump around
-> +the dormant (disabled) tracing code. The 'JUMP_LABEL()' macro, produces a
-> +'jump_table' which has the following format:
-> +
-> +[instruction address] [jump target] [tracepoint key]
-> +
-> +Thus, to enable a tracepoint, we simply patch the 'instruction address' with
-> +a jump to the 'jump target'.
-> +
-> +The call to enable a jump label is: enable_jump_label(key); to disable:
-> +disable_jump_label(key);
-> +
-> +
-> +3) architecture interface
-> +
-> +
-> +There are a few functions and macros which arches must implement in order to
-> +take advantage of this optimization. As previously mentioned, if there is no
-> +architecture support we simply fall back to a traditional, load, test, and
-> +jump sequence.
-> +
-> +* add "HAVE_ARCH_JUMP_LABEL" to arch/<arch>/Kconfig to indicate support
-> +
-> +* #define JUMP_LABEL_NOP_SIZE, arch/x86/include/asm/jump_label.h
-> +
-> +* #define "JUMP_LABEL(key, label)", arch/x86/include/asm/jump_label.h
-> +
-> +* void arch_jump_label_transform(struct jump_entry *entry, enum jump_label_type type)
-> +	see: arch/x86/kernel/jump_label.c
-> +
-> +* void arch_jump_label_text_poke_early(jump_label_t addr)
-> +	see: arch/x86/kernel/jump_label.c
-> +
-> +* finally add a definition for "struct jump_entry".
-> +	see: arch/x86/include/asm/jump_label.h
-> +
-> +
-> +4) Jump label analysis (x86)
-> +
-> +
-> +I've tested the performance of using 'get_cycles()' calls around the
-> +tracepoint call sites. For an Intel Core 2 Quad cpu (in cycles, averages):
-> +
-> +		idle		after tbench run
-> +		----		----------------
-> +old code	 32		  88
-> +new code	  2		   4
-> +
-> +
-> +The performance improvement can be reproduced reliably on both Intel and AMD
-> +hardware.
-> +
-> +In terms of code analysis the current code for the disabled case is a 'cmpl'
-> +followed by a 'je' around the tracepoint code. so:
-> +
-> +cmpl - 83 3d 0e 77 87 00 00 - 7 bytes
-> +je   - 74 3e                - 2 bytes
-> +
-> +total of 9 instruction bytes.
-> +
-> +The new code is a 'nopl' followed by a 'jmp'. Thus:
-> +
-> +nopl - 0f 1f 44 00 00 - 5 bytes
-> +jmp  - eb 3e          - 2 bytes
-
-Uh, not e9?
-> +
-> +total of 7 instruction bytes.
-> +
-> +So, the new code also accounts for 2 less bytes in the instruction cache per tracepoint.
-> +
-> +The optimization depends on !CC_OPTIMIZE_FOR_SIZE. When CC_OPTIMIZE_FOR_SIZE is
-> +set, gcc does not always out of line the not taken label path in the same way
-> +that the "if unlikely()" paths are made out of line. Thus, with
-> +CC_OPTIMIZE_FOR_SIZE set, this optimization is not always optimal. This may be
-> +solved in subsequent gcc versions, that allow us to move labels out of line,
-> +while still optimizing for size.
-> +
-> +
-> +5) Acknowledgments
-> +
-> +
-> +Thanks to Roland McGrath and Richard Henderson for helping come up with the
-> +initial 'asm goto' and jump label design.
-> +
-> +Thanks to Mathieu Desnoyers and H. Peter Anvin for calling attention to this
-> +issue, and outlining the requirements of a solution. Mathieu also implemened a
-> +solution in the form of the "Immediate Values" work.
-> -- 
-> 1.7.1
+> Looks better and better to me, except, checkpatch complains about the
+> (existing) indentation fault here (and later), but I guess you've seen
+> that?
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
+Indeed, there is checkpatch somewhere ;)
+
+Thanks !
+
+[PATCH v4] ip: fix truesize mismatch in ip fragmentation
+
+Special care should be taken when slow path is hit in ip_fragment() :
+
+When walking through frags, we transfert truesize ownership from skb to
+frags. Then if we hit a slow_path condition, we must undo this or risk
+uncharging frags->truesize twice, and in the end, having negative socket
+sk_wmem_alloc counter, or even freeing socket sooner than expected.
+
+Many thanks to Nick Bowler, who provided a very clean bug report and
+test program.
+
+Thanks to Jarek for reviewing my first patch and providing a V2
+
+While Nick bisection pointed to commit 2b85a34e911 (net: No more
+expensive sock_hold()/sock_put() on each tx), underlying bug is older
+(2.6.12-rc5)
+
+A side effect is to extend work done in commit b2722b1c3a893e
+(ip_fragment: also adjust skb->truesize for packets not owned by a
+socket) to ipv6 as well.
+
+Reported-and-bisected-by: Nick Bowler <nbowler@elliptictech.com>
+Tested-by: Nick Bowler <nbowler@elliptictech.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Jarek Poplawski <jarkao2@gmail.com>
+CC: Patrick McHardy <kaber@trash.net>
+---
+ net/ipv4/ip_output.c  |   19 +++++++++++++------
+ net/ipv6/ip6_output.c |   18 +++++++++++++-----
+ 2 files changed, 26 insertions(+), 11 deletions(-)
+
+diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
+index 04b6989..7649d77 100644
+--- a/net/ipv4/ip_output.c
++++ b/net/ipv4/ip_output.c
+@@ -488,9 +488,8 @@ int ip_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
+ 	 * we can switch to copy when see the first bad fragment.
+ 	 */
+ 	if (skb_has_frags(skb)) {
+-		struct sk_buff *frag;
++		struct sk_buff *frag, *frag2;
+ 		int first_len = skb_pagelen(skb);
+-		int truesizes = 0;
+ 
+ 		if (first_len - hlen > mtu ||
+ 		    ((first_len - hlen) & 7) ||
+@@ -503,18 +502,18 @@ int ip_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
+ 			if (frag->len > mtu ||
+ 			    ((frag->len & 7) && frag->next) ||
+ 			    skb_headroom(frag) < hlen)
+-			    goto slow_path;
++				goto slow_path_clean;
+ 
+ 			/* Partially cloned skb? */
+ 			if (skb_shared(frag))
+-				goto slow_path;
++				goto slow_path_clean;
+ 
+ 			BUG_ON(frag->sk);
+ 			if (skb->sk) {
+ 				frag->sk = skb->sk;
+ 				frag->destructor = sock_wfree;
+ 			}
+-			truesizes += frag->truesize;
++			skb->truesize -= frag->truesize;
+ 		}
+ 
+ 		/* Everything is OK. Generate! */
+@@ -524,7 +523,6 @@ int ip_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
+ 		frag = skb_shinfo(skb)->frag_list;
+ 		skb_frag_list_init(skb);
+ 		skb->data_len = first_len - skb_headlen(skb);
+-		skb->truesize -= truesizes;
+ 		skb->len = first_len;
+ 		iph->tot_len = htons(first_len);
+ 		iph->frag_off = htons(IP_MF);
+@@ -576,6 +574,15 @@ int ip_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
+ 		}
+ 		IP_INC_STATS(dev_net(dev), IPSTATS_MIB_FRAGFAILS);
+ 		return err;
++
++slow_path_clean:
++		skb_walk_frags(skb, frag2) {
++			if (frag2 == frag)
++				break;
++			frag2->sk = NULL;
++			frag2->destructor = NULL;
++			skb->truesize += frag2->truesize;
++		}
+ 	}
+ 
+ slow_path:
+diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
+index d40b330..980912e 100644
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -639,7 +639,7 @@ static int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
+ 
+ 	if (skb_has_frags(skb)) {
+ 		int first_len = skb_pagelen(skb);
+-		int truesizes = 0;
++		struct sk_buff *frag2;
+ 
+ 		if (first_len - hlen > mtu ||
+ 		    ((first_len - hlen) & 7) ||
+@@ -651,18 +651,18 @@ static int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
+ 			if (frag->len > mtu ||
+ 			    ((frag->len & 7) && frag->next) ||
+ 			    skb_headroom(frag) < hlen)
+-			    goto slow_path;
++				goto slow_path_clean;
+ 
+ 			/* Partially cloned skb? */
+ 			if (skb_shared(frag))
+-				goto slow_path;
++				goto slow_path_clean;
+ 
+ 			BUG_ON(frag->sk);
+ 			if (skb->sk) {
+ 				frag->sk = skb->sk;
+ 				frag->destructor = sock_wfree;
+-				truesizes += frag->truesize;
+ 			}
++			skb->truesize -= frag->truesize;
+ 		}
+ 
+ 		err = 0;
+@@ -693,7 +693,6 @@ static int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
+ 
+ 		first_len = skb_pagelen(skb);
+ 		skb->data_len = first_len - skb_headlen(skb);
+-		skb->truesize -= truesizes;
+ 		skb->len = first_len;
+ 		ipv6_hdr(skb)->payload_len = htons(first_len -
+ 						   sizeof(struct ipv6hdr));
+@@ -756,6 +755,15 @@ static int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
+ 			      IPSTATS_MIB_FRAGFAILS);
+ 		dst_release(&rt->dst);
+ 		return err;
++
++slow_path_clean:
++		skb_walk_frags(skb, frag2) {
++			if (frag2 == frag)
++				break;
++			frag2->sk = NULL;
++			frag2->destructor = NULL;
++			skb->truesize += frag2->truesize;
++		}
+ 	}
+ 
+ slow_path:
+
+
