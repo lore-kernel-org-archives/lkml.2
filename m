@@ -1,50 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104Ab0IUTV1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 15:21:27 -0400
-Received: from 89-230.252-81.static-ip.oleane.fr ([81.252.230.89]:54721 "EHLO
-	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755312Ab0IUTVZ convert rfc822-to-8bit (ORCPT
+	id S1756328Ab0IUTWD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 15:22:03 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33719 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755333Ab0IUTWB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 15:21:25 -0400
-In-Reply-To: <4C98ED5B.7020408@euromail.se>
-References: <1283005748-3293-1-git-send-email-rydberg@euromail.se>    <1283005748-3293-2-git-send-email-rydberg@euromail.se>    <CE1C24FC-7C9A-4940-8141-391A368C59E5@enac.fr>   <4C97BB33.5020806@euromail.se>   <6A8BB954-78BB-4507-86F3-19DA5174FA5E@enac.fr>  <4C97BE69.2030100@euromail.se>  <EBFF8B5B-5361-45B3-88B8-8254E3953578@enac.fr> <4C98ED5B.7020408@euromail.se>
-Mime-Version: 1.0 (Apple Message framework v752.3)
-Content-Type: text/plain; charset=ISO-8859-1; delsp=yes; format=flowed
-Message-Id: <83EE14B9-C3BB-43DA-AF0B-962EA40C0DB5@enac.fr>
-Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-From: =?ISO-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
-Subject: Re: [PATCH 2/3] hid: 3m: Convert to MT slots
-Date: Tue, 21 Sep 2010 21:21:19 +0200
-To: Henrik Rydberg <rydberg@euromail.se>
-X-Mailer: Apple Mail (2.752.3)
+	Tue, 21 Sep 2010 15:22:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=v+XVE13NHeh5tPIzpYOaZmmhZY+LVB7cBdqMdh7/y1/dF0tzEoqC8x2GYnPBifCvlg
+         yvGkxIDtX0daqrhAS1xZOPKFQhO7o4y3xZoh/wb+g9k42Im0vtbOwcBWkQDbXkprb2T9
+         NeUmhNh7yBkFYTzww4GLeProMDlSFt1ieSaJQ=
+Date: Tue, 21 Sep 2010 21:21:54 +0200
+From: Jarek Poplawski <jarkao2@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Patrick McHardy <kaber@trash.net>
+Subject: Re: [PATCH v3] ip: fix truesize mismatch in ip fragmentation
+Message-ID: <20100921192154.GA2115@del.dom.local>
+References: <20100920174443.GA5515@elliptictech.com>
+ <1285006844.2323.17.camel@edumazet-laptop>
+ <20100920195256.GA14330@elliptictech.com>
+ <1285013853.2323.148.camel@edumazet-laptop>
+ <1285018272.2323.243.camel@edumazet-laptop>
+ <20100921140501.GA21572@elliptictech.com>
+ <1285078613.2617.503.camel@edumazet-laptop>
+ <1285084705.2617.636.camel@edumazet-laptop>
+ <20100921175014.GA2066@del.dom.local>
+ <1285094865.2452.2.camel@edumazet-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285094865.2452.2.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Sep 21, 2010 at 08:47:45PM +0200, Eric Dumazet wrote:
+> 
+> > Looks better and better to me, except, checkpatch complains about the
+> > (existing) indentation fault here (and later), but I guess you've seen
+> > that?
+> > 
+> 
+> Indeed, there is checkpatch somewhere ;)
+> 
+> Thanks !
+> 
+> [PATCH v4] ip: fix truesize mismatch in ip fragmentation
+> 
+> Special care should be taken when slow path is hit in ip_fragment() :
+> 
+> When walking through frags, we transfert truesize ownership from skb to
+> frags. Then if we hit a slow_path condition, we must undo this or risk
+> uncharging frags->truesize twice, and in the end, having negative socket
+> sk_wmem_alloc counter, or even freeing socket sooner than expected.
+> 
+> Many thanks to Nick Bowler, who provided a very clean bug report and
+> test program.
+> 
+> Thanks to Jarek for reviewing my first patch and providing a V2
+> 
+> While Nick bisection pointed to commit 2b85a34e911 (net: No more
+> expensive sock_hold()/sock_put() on each tx), underlying bug is older
+> (2.6.12-rc5)
+> 
+> A side effect is to extend work done in commit b2722b1c3a893e
+> (ip_fragment: also adjust skb->truesize for packets not owned by a
+> socket) to ipv6 as well.
+> 
+> Reported-and-bisected-by: Nick Bowler <nbowler@elliptictech.com>
+> Tested-by: Nick Bowler <nbowler@elliptictech.com>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> CC: Jarek Poplawski <jarkao2@gmail.com>
+> CC: Patrick McHardy <kaber@trash.net>
 
-Le 21 sept. 10 à 19:37, Henrik Rydberg a écrit :
+Looks perfect to me.
 
-> On 09/20/2010 10:23 PM, Stéphane Chatty wrote:
->
->>
->> Le 20 sept. 10 à 22:04, Henrik Rydberg a écrit :
->>>>
->> Anyway, I have no more problem with this constant. Just with the  
->> vocabulary :-)
->
->
-> In the HID protocol, it is called ContactID... So, Stéphane, are we  
-> close to
-> acking this patch now? :-)
-
-Oh yes of course, I was not clear enough in the above message. To  
-make things more formal:
-
-Acked-by: Stéphane Chatty <chaty@enac.fr>
-
-
-St.
-
+Jarek P.
