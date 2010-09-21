@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757461Ab0IUWK7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 18:10:59 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:49030 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756351Ab0IUWK6 (ORCPT
+	id S1756652Ab0IUWPQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 18:15:16 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40159
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752531Ab0IUWPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 18:10:58 -0400
-Date: Tue, 21 Sep 2010 15:10:33 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Any SYSRQ key to force mode switch to console mode when using
- KMS?
-Message-Id: <20100921151033.80e61747.randy.dunlap@oracle.com>
-In-Reply-To: <19601.1301.803816.92851@elektron.ikp.physik.tu-darmstadt.de>
-References: <19601.1301.803816.92851@elektron.ikp.physik.tu-darmstadt.de>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Tue, 21 Sep 2010 18:15:14 -0400
+Date: Tue, 21 Sep 2010 15:15:34 -0700 (PDT)
+Message-Id: <20100921.151534.183050170.davem@davemloft.net>
+To: jarkao2@gmail.com
+Cc: eric.dumazet@gmail.com, nbowler@elliptictech.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org, kaber@trash.net
+Subject: Re: [PATCH v3] ip: fix truesize mismatch in ip fragmentation
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100921192154.GA2115@del.dom.local>
+References: <20100921175014.GA2066@del.dom.local>
+	<1285094865.2452.2.camel@edumazet-laptop>
+	<20100921192154.GA2115@del.dom.local>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Sep 2010 19:40:37 +0200 Uwe Bonnes wrote:
+From: Jarek Poplawski <jarkao2@gmail.com>
+Date: Tue, 21 Sep 2010 21:21:54 +0200
 
-> Hello,
+> On Tue, Sep 21, 2010 at 08:47:45PM +0200, Eric Dumazet wrote:
+>> [PATCH v4] ip: fix truesize mismatch in ip fragmentation
+>> 
+>> Special care should be taken when slow path is hit in ip_fragment() :
+>> 
+>> When walking through frags, we transfert truesize ownership from skb to
+>> frags. Then if we hit a slow_path condition, we must undo this or risk
+>> uncharging frags->truesize twice, and in the end, having negative socket
+>> sk_wmem_alloc counter, or even freeing socket sooner than expected.
+>> 
+>> Many thanks to Nick Bowler, who provided a very clean bug report and
+>> test program.
+>> 
+>> Thanks to Jarek for reviewing my first patch and providing a V2
+>> 
+>> While Nick bisection pointed to commit 2b85a34e911 (net: No more
+>> expensive sock_hold()/sock_put() on each tx), underlying bug is older
+>> (2.6.12-rc5)
+>> 
+>> A side effect is to extend work done in commit b2722b1c3a893e
+>> (ip_fragment: also adjust skb->truesize for packets not owned by a
+>> socket) to ipv6 as well.
+>> 
+>> Reported-and-bisected-by: Nick Bowler <nbowler@elliptictech.com>
+>> Tested-by: Nick Bowler <nbowler@elliptictech.com>
+>> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+>> CC: Jarek Poplawski <jarkao2@gmail.com>
+>> CC: Patrick McHardy <kaber@trash.net>
 > 
-> is there any SYSRQ key that forces the video system to console mode,
-> especially when using KMS and allows to work on. 
+> Looks perfect to me.
 
-sysrq-v help message says:
+Great work everyone!
 
-force-fb(V) = "Restore framebuffer console"
-
-> Since going to KMS on a Thinkpad R50 with ATI Radeon RV250 via going from
-> Opensuse-11.2 to Opensuse-11.3 I experience frequent situations where I am
-> left with a black screen, with only ALT-SYSREQ-C switching the screen back
-> on and hard reboot as only chance to escape that situation.
-> 
-> Situations that result in a black screen are:
-> 
-> * Going with the mouse over the NOSCRIPT buttom in firefox. Load goes up and
-> screen goes black after some seconds. xorg.log ends with "Backtrace", but no
-> backtrace output...
-> 
-> * Calling pm-hibernate on a system that has hibernated before. First
->   pm-hibernate/wake-up-per power buttom sequence is successfull.
-> 
-> Disabling KMS results in very slow "kaffeine" full screen output...
-> 
-> pm-hibernate and firefox/noscript worked pre-KMS on opensuse-11.2.
-> 
-> Some traces of other people hitting the NOSCRIPT xorg crash and others
-> hitting the black unresponsive screen with KMS on RV250 are
-> found on the net, but I didn't find a conclusive resolution.
-> 
-> Opensuse default kernel and the recent Opensuse 2.6.36-rc3 kernel-of-the day
-> were tested with no difference
-> 
-> Thanks
-> 
-> PS: I only follow linux-kernel via gmane.org, so if you need fast feedback,
-> please CC me. 
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Applied, thanks.
