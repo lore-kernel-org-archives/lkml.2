@@ -1,39 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882Ab0IUOMh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 10:12:37 -0400
-Received: from cantor.suse.de ([195.135.220.2]:57406 "EHLO mx1.suse.de"
+	id S1755995Ab0IUOMv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 10:12:51 -0400
+Received: from cantor.suse.de ([195.135.220.2]:57431 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753462Ab0IUOMg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 10:12:36 -0400
-Date: Tue, 21 Sep 2010 16:12:34 +0200 (CEST)
+	id S1755808Ab0IUOMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 10:12:50 -0400
+Date: Tue, 21 Sep 2010 16:12:48 +0200 (CEST)
 From: Jiri Kosina <jkosina@suse.cz>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stephane Chatty <chatty@enac.fr>
-Subject: Re: [PATCH] hid: Add a hid quirk for input sync override
-In-Reply-To: <1282640084-19217-1-git-send-email-rydberg@euromail.se>
-Message-ID: <alpine.LNX.2.00.1009211612100.26813@pobox.suse.cz>
-References: <1282640084-19217-1-git-send-email-rydberg@euromail.se>
+To: =?ISO-8859-15?Q?St=E9phane_Chatty?= <chatty@enac.fr>
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] hid: 3m: Adjust to sequential MT HID protocol
+In-Reply-To: <1213242F-BA51-4D3C-93F9-5CF29DEC513B@enac.fr>
+Message-ID: <alpine.LNX.2.00.1009211612400.26813@pobox.suse.cz>
+References: <1283005748-3293-1-git-send-email-rydberg@euromail.se> <1213242F-BA51-4D3C-93F9-5CF29DEC513B@enac.fr>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Aug 2010, Henrik Rydberg wrote:
+On Mon, 20 Sep 2010, Stéphane Chatty wrote:
 
-> From: Henrik Rydberg <rydberg@thabit.(none)>
+> > The multitouch extensions to the HID protocol allows for contact
+> > data to be sent over several reports, which is also the case for
+> > the 3M M2256PW touchscreen. This patch modifies the logic to only
+> > synchronize the input layer when all contacts have been received.
+> > Consequentially, the full 60-finger capacity of the device is enabled.
+> > 
+> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> > ---
+> >  drivers/hid/hid-3m-pct.c |   22 ++++++++++++++++++----
+> >  1 files changed, 18 insertions(+), 4 deletions(-)
 > 
-> As of lately, HID devices which send per-frame data split over several
-> HID reports have started to emerge. This patch adds a quirk which
-> allows the HID driver to take over the input layer synchronization,
-> and hence the control of the frame boundary.
+> You can add
 > 
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> Acked-by: Stephane Chatty <chatty@enac.fr>
 
-Applied, thanks (into 3m branch, as 3m patches depend on this).
+Applied, thanks guys.
 
 -- 
 Jiri Kosina
