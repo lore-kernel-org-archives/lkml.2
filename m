@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756652Ab0IUWPQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 18:15:16 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40159
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752531Ab0IUWPO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 18:15:14 -0400
-Date: Tue, 21 Sep 2010 15:15:34 -0700 (PDT)
-Message-Id: <20100921.151534.183050170.davem@davemloft.net>
-To: jarkao2@gmail.com
-Cc: eric.dumazet@gmail.com, nbowler@elliptictech.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org, kaber@trash.net
-Subject: Re: [PATCH v3] ip: fix truesize mismatch in ip fragmentation
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100921192154.GA2115@del.dom.local>
-References: <20100921175014.GA2066@del.dom.local>
-	<1285094865.2452.2.camel@edumazet-laptop>
-	<20100921192154.GA2115@del.dom.local>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1756351Ab0IUWQG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 18:16:06 -0400
+Received: from digitaldans.com ([69.36.177.99]:54839 "EHLO digitaldans.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754098Ab0IUWQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 18:16:04 -0400
+X-Greylist: delayed 738 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Sep 2010 18:16:04 EDT
+In-Reply-To: <20100921164944.164ed0af@udp111988uds.am.freescale.net>
+References: <1285066638-7473-1-git-send-email-leoli@freescale.com> <877FD0B5-19A7-4A16-831E-369B80B104EA@kernel.crashing.org> <AANLkTimiwtoa6i10OTcgFnvbvcO9N4KWHyt4Poj-yj=T@mail.gmail.com> <20100921163456.7e2c9b32@udp111988uds.am.freescale.net> <AANLkTine--kry0c0n87WOqYyi3AQOb2KnmNRs-MeXcQt@mail.gmail.com> <20100921164944.164ed0af@udp111988uds.am.freescale.net>
+Mime-Version: 1.0 (Apple Message framework v753.1)
+Content-Type: text/plain; charset=US-ASCII; format=flowed
+Message-Id: <2C3F2C02-35B6-46AF-82DA-44ACCBFB8362@digitaldans.com>
+Cc: Timur Tabi <timur.tabi@gmail.com>, dan.j.williams@intel.com,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 7bit
+From: Dan Malek <ppc6dev@digitaldans.com>
+Subject: Re: [PATCH] fsldma: add support to 36-bit physical address
+Date: Tue, 21 Sep 2010 15:05:05 -0700
+To: Scott Wood <scottwood@freescale.com>
+X-Mailer: Apple Mail (2.753.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jarek Poplawski <jarkao2@gmail.com>
-Date: Tue, 21 Sep 2010 21:21:54 +0200
 
-> On Tue, Sep 21, 2010 at 08:47:45PM +0200, Eric Dumazet wrote:
->> [PATCH v4] ip: fix truesize mismatch in ip fragmentation
->> 
->> Special care should be taken when slow path is hit in ip_fragment() :
->> 
->> When walking through frags, we transfert truesize ownership from skb to
->> frags. Then if we hit a slow_path condition, we must undo this or risk
->> uncharging frags->truesize twice, and in the end, having negative socket
->> sk_wmem_alloc counter, or even freeing socket sooner than expected.
->> 
->> Many thanks to Nick Bowler, who provided a very clean bug report and
->> test program.
->> 
->> Thanks to Jarek for reviewing my first patch and providing a V2
->> 
->> While Nick bisection pointed to commit 2b85a34e911 (net: No more
->> expensive sock_hold()/sock_put() on each tx), underlying bug is older
->> (2.6.12-rc5)
->> 
->> A side effect is to extend work done in commit b2722b1c3a893e
->> (ip_fragment: also adjust skb->truesize for packets not owned by a
->> socket) to ipv6 as well.
->> 
->> Reported-and-bisected-by: Nick Bowler <nbowler@elliptictech.com>
->> Tested-by: Nick Bowler <nbowler@elliptictech.com>
->> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
->> CC: Jarek Poplawski <jarkao2@gmail.com>
->> CC: Patrick McHardy <kaber@trash.net>
-> 
-> Looks perfect to me.
+On Sep 21, 2010, at 2:49 PM, Scott Wood wrote:
 
-Great work everyone!
+>
+> On Tue, 21 Sep 2010 16:43:12 -0500
+> Timur Tabi <timur.tabi@gmail.com> wrote:
+>
+>> Since we don't DMA the descriptors themselves, I just don't see how
+>> this patch does anything.
+>
+> Look in dmaengine.c, there are calls to dma_map_single() and
+> dma_map_page(), using what I assume is that same device pointer --
+> unless there's confusion between the channel and the controller.
 
-Applied, thanks.
+The DMA descriptors are accessed using DMA by the
+controller itself.  The APIs need to ensure proper coherency
+between the CPU and the DMA controller for the
+descriptor access.  The underlying implementation of the
+API will depend upon the hardware capabilities that
+ensure this coherency.
+
+	-- Dan
+
