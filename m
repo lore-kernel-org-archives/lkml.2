@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756801Ab0IUVUj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 17:20:39 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:47074 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756328Ab0IUVUg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 17:20:36 -0400
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: netdev@vger.kernel.org
-Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        padovan@profusion.mobi, marcel@holtmann.org, davem@davemloft.net,
-        mathewm@codeaurora.org
-Subject: [PATCH] Bluetooth: Fix deadlock in the ERTM logic
-Date: Tue, 21 Sep 2010 18:20:13 -0300
-Message-Id: <1285104013-9946-2-git-send-email-padovan@profusion.mobi>
-X-Mailer: git-send-email 1.7.3
-In-Reply-To: <1285104013-9946-1-git-send-email-padovan@profusion.mobi>
-References: <1285104013-9946-1-git-send-email-padovan@profusion.mobi>
+	id S1756881Ab0IUVWr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 17:22:47 -0400
+Received: from kroah.org ([198.145.64.141]:42741 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755312Ab0IUVWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 17:22:47 -0400
+Date: Tue, 21 Sep 2010 14:08:09 -0700
+From: Greg KH <greg@kroah.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "Hans J. Koch" <hjk@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] uio: Support 2^MINOR_BITS minors
+Message-ID: <20100921210809.GA28026@kroah.com>
+References: <m1y6b48973.fsf@fess.ebiederm.org>
+ <m1eicw892p.fsf@fess.ebiederm.org>
+ <alpine.LFD.2.00.1009172235490.2416@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1009172235490.2416@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Enhanced Retransmission Mode(ERTM) is a realiable mode of operation
-of the Bluetooth L2CAP layer. Think on it like a simplified version of
-TCP.
-The problem we were facing here was a deadlock. ERTM uses a backlog
-queue to queue incomimg packets while the user is helding the lock. The
-problem is that at some moment the user doesn't have memory anymore to
-do alloc new skbs and sleep with the lock to wait for memory, that
-stalls the ERTM connection once we can't read the acknowledgements
-packets in the backlog queue to free memory and make the allocation of
-outcoming skb successful.
+On Fri, Sep 17, 2010 at 10:36:50PM +0200, Thomas Gleixner wrote:
+> On Tue, 14 Sep 2010, Eric W. Biederman wrote:
+> 
+> > 
+> > register_chrdev limits uio devices to 256 minor numbers which causes
+> > problems on one system I have with 384+ uio devices.  So instead set
+> > UIO_MAX_DEVICES to the maximum number of minors and use
+> > alloc_chrdev_region to reserve the uio minors.
+> > 
+> > The final result is that the code works the same but the uio driver now
+> > supports any minor the idr allocator comes up with.
+> > 
+> > Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
+> 
+> One minor nit:
+> 
+> > +	result = alloc_chrdev_region(&uio_dev, 0, UIO_MAX_DEVICES, name);
+> > +	if (result)
+> > +		goto out;
+> 
+>   		return result;
 
-I'm thinking on this patch more like a proof of concept than a real fix
-to the deadlock in ERTM.
+Wait, why?  It's the exact came code, as out does:
 
-Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
----
- net/bluetooth/l2cap.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+out:
+	return result;
 
-diff --git a/net/bluetooth/l2cap.c b/net/bluetooth/l2cap.c
-index 44a8fb0..dd406b5 100644
---- a/net/bluetooth/l2cap.c
-+++ b/net/bluetooth/l2cap.c
-@@ -1633,7 +1633,9 @@ static inline int l2cap_skbuff_fromiovec(struct sock *sk, struct msghdr *msg, in
- 	while (len) {
- 		count = min_t(unsigned int, conn->mtu, len);
- 
-+		release_sock(sk);
- 		*frag = bt_skb_send_alloc(sk, count, msg->msg_flags & MSG_DONTWAIT, &err);
-+		lock_sock(sk);
- 		if (!*frag)
- 			return -EFAULT;
- 		if (memcpy_fromiovec(skb_put(*frag, count), msg->msg_iov, count))
-@@ -1724,8 +1726,10 @@ static struct sk_buff *l2cap_create_iframe_pdu(struct sock *sk, struct msghdr *m
- 		hlen += 2;
- 
- 	count = min_t(unsigned int, (conn->mtu - hlen), len);
-+	release_sock(sk);
- 	skb = bt_skb_send_alloc(sk, count + hlen,
- 			msg->msg_flags & MSG_DONTWAIT, &err);
-+	lock_sock(sk);
- 	if (!skb)
- 		return ERR_PTR(-ENOMEM);
- 
--- 
-1.7.3
+and you need that line due to the code above it.  So I say leave it.
 
+thanks,
+
+greg k-h
