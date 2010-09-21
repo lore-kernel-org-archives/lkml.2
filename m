@@ -1,68 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab0IUOiK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 10:38:10 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:60699 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753740Ab0IUOiI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 10:38:08 -0400
-Message-ID: <38667ac18ee6604649af9396cf156182.squirrel@www.firstfloor.org>
-In-Reply-To: <20100921141329.GU13563@erda.amd.com>
-References: <1285053995-3811-1-git-send-email-jolsa@redhat.com>
-    <201009211321.06172.arnd@arndb.de>
-    <20100921141329.GU13563@erda.amd.com>
-Date: Tue, 21 Sep 2010 16:38:04 +0200
-Subject: Re: [PATCH] oprofile: Add Support for Intel CPU Family 6 / Model 29
-From: "Andi Kleen" <andi@firstfloor.org>
-To: "Robert Richter" <robert.richter@amd.com>
-Cc: "Arnd Bergmann" <arnd@arndb.de>, "Jiri Olsa" <jolsa@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "oprofile-list@lists.sourceforge.net" 
-	<oprofile-list@lists.sourceforge.net>,
-        "tdm.rhbz@gmail.com" <tdm.rhbz@gmail.com>,
-        "Andi Kleen" <andi@firstfloor.org>
-User-Agent: SquirrelMail/1.4.21
+	id S1755056Ab0IUOkQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 10:40:16 -0400
+Received: from cantor.suse.de ([195.135.220.2]:58595 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751131Ab0IUOkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 10:40:14 -0400
+Date: Tue, 21 Sep 2010 16:40:12 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Phil Turmel <philip@turmel.org>, Mat <jackdachef@gmail.com>,
+        Guillaume Chazarain <guichaz@gmail.com>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>, Oliver Neukum <oliver@neukum.org>,
+        Alan Ott <alan@signal11.us>, linux-usb@vger.kernel.org,
+        linux-input@vger.kernel.org, Andreas Bombe <aeb@debian.org>,
+        Alex Riesen <raa.lkml@gmail.com>,
+        Gabriel C <nix.or.die@googlemail.com>, Heinz Diehl <htd@fritha.org>
+Subject: Re: [BUG, Regression, bisected] USB mouse causes bug on 1st insert,
+ ignored on 2nd insert, lsusb stuck at usbdev_open
+In-Reply-To: <Pine.LNX.4.44L0.1009211013460.1644-100000@iolanthe.rowland.org>
+Message-ID: <alpine.LNX.2.00.1009211638450.26813@pobox.suse.cz>
+References: <Pine.LNX.4.44L0.1009211013460.1644-100000@iolanthe.rowland.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 21.09.10 07:21:05, Arnd Bergmann wrote:
->> Just curious about the other missing IDs: this now supports all Core
->> microarchitecture CPUs, but only some Nehalem/Westmere ones.
->>
->> There is support for 0x1a (Bloomfield/Gainestown) and 0x2e (Beckton),
->> but
->> not for the much more common 0x1e (Lynnfield/Clarksfield/Jasper Forest),
->> 0x25 (Clarkdale/Arrandale) and 0x26 (Gulftown/Westmere-EP).
->>
->> Shouldn't those be added as well?
+On Tue, 21 Sep 2010, Alan Stern wrote:
 
-Westmere I still hold off because the oprofile user land
-doesn't have the correct event list yet.
+> On Tue, 21 Sep 2010, Jiri Kosina wrote:
+> 
+> > I have just found out that it's actually CONFIG_USB_DYNAMIC_MINORS which 
+> > makes the difference. When unset, the problem doesn't trigger, and 
+> > usb_find_interface() always returns the proper interface. When 
+> > CONFIG_USB_DYNAMIC_MINORS is being used, the oops happen.
+> > 
+> > I'll look into that.
+> 
+> Apparently the problem is that intf->minors doesn't get initialized 
+> properly.  This patch should fix it.  Everybody, please try it out.
+> 
+> Alan Stern
+> 
+> 
+> Index: usb-2.6/drivers/usb/core/file.c
+> ===================================================================
+> --- usb-2.6.orig/drivers/usb/core/file.c
+> +++ usb-2.6/drivers/usb/core/file.c
+> @@ -159,9 +159,9 @@ void usb_major_cleanup(void)
+>  int usb_register_dev(struct usb_interface *intf,
+>  		     struct usb_class_driver *class_driver)
+>  {
+> -	int retval = -EINVAL;
+> +	int retval;
+>  	int minor_base = class_driver->minor_base;
+> -	int minor = 0;
+> +	int minor;
+>  	char name[20];
+>  	char *temp;
+>  
+> @@ -173,12 +173,17 @@ int usb_register_dev(struct usb_interfac
+>  	 */
+>  	minor_base = 0;
+>  #endif
+> -	intf->minor = -1;
+> -
+> -	dbg ("looking for a minor, starting at %d", minor_base);
+>  
+>  	if (class_driver->fops == NULL)
+> -		goto exit;
+> +		return -EINVAL;
+> +	if (intf->minor >= 0)
+> +		return -EADDRINUSE;
+> +
+> +	retval = init_usb_class();
+> +	if (retval)
+> +		return retval;
+> +
+> +	dev_dbg(&intf->dev, "looking for a minor, starting at %d", minor_base);
+>  
+>  	down_write(&minor_rwsem);
+>  	for (minor = minor_base; minor < MAX_USB_MINORS; ++minor) {
+> @@ -186,20 +191,12 @@ int usb_register_dev(struct usb_interfac
+>  			continue;
+>  
+>  		usb_minors[minor] = class_driver->fops;
+> -
+> -		retval = 0;
+> +		intf->minor = minor;
+>  		break;
+>  	}
+>  	up_write(&minor_rwsem);
+> -
+> -	if (retval)
+> -		goto exit;
+> -
+> -	retval = init_usb_class();
+> -	if (retval)
+> -		goto exit;
+> -
+> -	intf->minor = minor;
+> +	if (intf->minor < 0)
+> +		return -EXFULL;
+>  
+>  	/* create a usb class device for this usb interface */
+>  	snprintf(name, sizeof(name), class_driver->name, minor - minor_base);
+> @@ -212,12 +209,12 @@ int usb_register_dev(struct usb_interfac
+>  				      MKDEV(USB_MAJOR, minor), class_driver,
+>  				      "%s", temp);
+>  	if (IS_ERR(intf->usb_dev)) {
+> +		retval = PTR_ERR(intf->usb_dev);
+>  		down_write(&minor_rwsem);
+> -		usb_minors[intf->minor] = NULL;
+> +		usb_minors[minor] = NULL;
+> +		intf->minor = -1;
+>  		up_write(&minor_rwsem);
+> -		retval = PTR_ERR(intf->usb_dev);
+>  	}
+> -exit:
+>  	return retval;
+>  }
+>  EXPORT_SYMBOL_GPL(usb_register_dev);
+> Index: usb-2.6/drivers/usb/core/message.c
+> ===================================================================
+> --- usb-2.6.orig/drivers/usb/core/message.c
+> +++ usb-2.6/drivers/usb/core/message.c
+> @@ -1803,6 +1803,7 @@ free_interfaces:
+>  		intf->dev.groups = usb_interface_groups;
+>  		intf->dev.dma_mask = dev->dev.dma_mask;
+>  		INIT_WORK(&intf->reset_ws, __usb_queue_reset_device);
+> +		intf->minor = -1;
+>  		device_initialize(&intf->dev);
+>  		dev_set_name(&intf->dev, "%d-%s:%d.%d",
+>  			dev->bus->busnum, dev->devpath,
 
-BTW I was thinking in this case to only add the model
-numbers to the user code and just let it handle arch_perfmon
-from the kernel.
+[ adding Heinz to CC ]
 
-This should work currently fine and avoid the problem
-that you need to update user land and kernel in parallel
-for a new cpu type.
+If USB core would guarantee the initialization of intf->minor to -1, that 
+would be of course nicer than having to do it myself in the driver (which 
+is exactly what my previous patch has been doing).
 
->>
->> When you're there, it probably also wouldn't hurt to fill in the blanks
->> of some of the older CPUs like Tolopai (0x15) and newer Atoms (0x1c).
->
-> Yes, would be nice to have also an update for the remaining
-> unsupported models. Andi?
+So everyone please test Alan's patch rather than mine, as it is more 
+general.
 
-Yes would make sense. I'll ask around if there is a consolidated
-list somewhere that could be used as a base.
-
--Andi
-
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
