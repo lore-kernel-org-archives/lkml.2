@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755589Ab0IUGjM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 02:39:12 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:56489 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751205Ab0IUGjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 02:39:10 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1+PjBdXW6+POM6XNDjegMojsoaDOsTxNORrj4qlBq
-	zaskb038szlBig
-Message-ID: <4C985309.5020205@gmx.de>
-Date: Tue, 21 Sep 2010 08:39:05 +0200
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
-MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-CC: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bernie Thompson <bernie@plugable.com>
-Subject: Re: [Patch, RFC] Make struct fb_info ref-counted with kref
-References: <20100919172833.14bf291e@neptune.home>	<4C963E99.9080207@gmx.de>	<20100919190240.65762511@neptune.home>	<4C97B079.8050707@gmx.de>	<20100920213258.1218b284@neptune.home>	<4C97BF40.6030708@gmx.de>	<20100920223608.19b4d177@neptune.home>	<4C97E00B.6090103@gmx.de> <20100921075610.1c016c12@pluto.restena.lu>
-In-Reply-To: <20100921075610.1c016c12@pluto.restena.lu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+	id S1756017Ab0IUGke (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 02:40:34 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:47914 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753274Ab0IUGkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 02:40:32 -0400
+Date: Tue, 21 Sep 2010 16:40:25 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the final tree (sound tree
+ related)
+Message-Id: <20100921164025.62ace513.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__21_Sep_2010_16_40_25_+1000_KABOLVhxguv_Szl="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bruno Prémont schrieb:
-> On Tue, 21 Sep 2010 00:28:27 Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
->>> Tracking if/how often framebuffer is opened as such is a separate thing (though
->>> all users that have the framebuffer opened hold a reference to fb_info).
->> That's what I said. So as long as refcount <= 1 it does not matter whether you 
->> just count on open/release or additionally on every framebuffer operation, just 
->> that the later produces more noise.
-> 
-> Hm, I don't count on every framebuffer operation... in most cases
-> fb_info is provided as function argument, in which case no further
-> counting is needed as the caller has a valid reference.
-> 
-> With my patch applied refcount for registered but unsed framebuffer was
-> 2 (once for the driver, once for registered_fb entry) and went up to 3
-> when userspace opened framebuffer. fbcon's usage only incremented
-> refcount for very short timeframes when effectively using fb_info.
-> 
-> When starting with the FB minor I have to take a new reference.
-> (though I maybe should check if file's private data is set and use
-> that reference instead of looking up fb_info by minor as is currently
-> done)
-> 
-> For fbcon all the references are taken by FB minor (I wondered why
-> fbcon only remembers index into registered_fb aka minor instead of
-> fb_info itself)
+--Signature=_Tue__21_Sep_2010_16_40_25_+1000_KABOLVhxguv_Szl=
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-True, I guess fb infrastructure and fbcon both could use a lot of work. At the 
-moment I am more at fixing my driver but once that's done to an acceptable level 
-I think I'll give it a try, too.
+Hi ,
 
->> So I still don't see any advantage in counting users + uses.
->> Please note that I do not object the idea of the patch itself, it's only that I 
->> have a different preference on what to count. I only want to express that your 
->> way is more complicated than what I would recommend.
-> 
-> I don't think I see how you would do the refcounting... would you just
-> drop the changes in fb_open() and fb_release()?
-> Could you describe your approach (with pseudo-code) or the differences
-> to mine?
+After merging the final tree, today's linux-next build (i386 defconfig)
+failed like this:
 
-No, quite the opposite.
-I would increase the refcount in fb_open in fbmem.c and in fbcon.c where 
-fbops->fb_open is called; decrease the refcount on fb_release in fbmem.c and in 
-fbcon.c where fbops->fb_release is called. This would be only 6 places in total 
-which need to be changed and would be the same as what you said is currently used.
-As we agree (I hope) that for framebuffer operations an already open framebuffer 
-is required this would not change when the framebuffer will be freed (compared 
-to your counting) so the part changing how a framebuffer is shut down can be 
-changed just as you proposed. The advantage is that it does not require changes 
-to framebuffer ioctls/read/write/mmap and probably also much less changes in 
-fbcon. And if this is also what drivers want and there is no conflict with what 
-you want, I don't see any reason to not provide this service but force them to 
-do this kind of refcounting on their own.
+sound/pci/hda/patch_realtek.c: In function 'alc_resume':
+sound/pci/hda/patch_realtek.c:4131: error: 'struct hda_codec_ops' has no me=
+mber named 'check_power_status'
+sound/pci/hda/patch_realtek.c:4132: error: 'struct hda_codec_ops' has no me=
+mber named 'check_power_status'
+sound/pci/hda/patch_realtek.c: In function 'alc269_resume':
+sound/pci/hda/patch_realtek.c:14706: error: 'struct hda_codec_ops' has no m=
+ember named 'check_power_status'
+sound/pci/hda/patch_realtek.c:14707: error: 'struct hda_codec_ops' has no m=
+ember named 'check_power_status'
 
+Caused by commit 0ec33d1f952934ea3251cefc6d108b47818eedd0 ("ALSA: hda -
+Refactor ALC269 power-ups/downs in PM callbacks").  I have reverted that
+commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Thanks,
+--Signature=_Tue__21_Sep_2010_16_40_25_+1000_KABOLVhxguv_Szl=
+Content-Type: application/pgp-signature
 
-Florian Tobias Schandinat
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iQEcBAEBAgAGBQJMmFNZAAoJEDMEi1NhKgbsjHYH/007ol4rpcNV7OrtQJB0Du5z
+Hb205tNcPDngF2k+ELcnKg7Pug3nPfrF4WBwGohbduBSRLL2sAuNwNq2RXYS1dbb
+AhVG3GgZdkYchtEuni7YLr0sble6wZFDNJHVJC5DQ2uKCVdNrm60JYsZu9O4TWxt
+vaYOZL4qmY4cLUIqrvrKj9jsJl80lj6UAnIPl/W4dKEoBwIPGAz9X1jRrXLzcaSY
+kMv3pfYzsZgc1ty7wTooy7W75irX7byQI6ZtRZ7WLOGKMIgZeE/XrG3aBl1nwndi
+MmvX6KFFiBYWWLqs0oB/bf7zH877lTJpjspLQriIv0P7YcbC+XG6EFPL4QkpX4I=
+=ZZ2/
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__21_Sep_2010_16_40_25_+1000_KABOLVhxguv_Szl=--
