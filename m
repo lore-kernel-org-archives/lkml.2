@@ -1,214 +1,383 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755873Ab0IUOUa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 10:20:30 -0400
-Received: from mtagate6.uk.ibm.com ([194.196.100.166]:44290 "EHLO
-	mtagate6.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753775Ab0IUOU3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 10:20:29 -0400
-Date: Tue, 21 Sep 2010 16:20:17 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH/RFC] timer: fix deadlock on cpu hotplug
-Message-ID: <20100921142017.GA2291@osiris.boeblingen.de.ibm.com>
+	id S1755291Ab0IUOXZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 10:23:25 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:46078 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753775Ab0IUOXY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 10:23:24 -0400
+Date: Tue, 21 Sep 2010 15:23:09 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Greg KH <greg@kroah.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, stable@kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [stable] [PATCH 0/3] Reduce watermark-related problems with
+	the per-cpu allocator V4
+Message-ID: <20100921142309.GA31813@csn.ul.ie>
+References: <1283504926-2120-1-git-send-email-mel@csn.ul.ie> <20100903160551.05db4a92.akpm@linux-foundation.org> <20100921111741.GB11439@csn.ul.ie> <20100921125814.GF1205@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100921125814.GF1205@kroah.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+On Tue, Sep 21, 2010 at 05:58:14AM -0700, Greg KH wrote:
+> On Tue, Sep 21, 2010 at 12:17:41PM +0100, Mel Gorman wrote:
+> > On Fri, Sep 03, 2010 at 04:05:51PM -0700, Andrew Morton wrote:
+> > > On Fri,  3 Sep 2010 10:08:43 +0100
+> > > Mel Gorman <mel@csn.ul.ie> wrote:
+> > > 
+> > > > The noteworthy change is to patch 2 which now uses the generic
+> > > > zone_page_state_snapshot() in zone_nr_free_pages(). Similar logic still
+> > > > applies for *when* zone_page_state_snapshot() to avoid ovedhead.
+> > > > 
+> > > > Changelog since V3
+> > > >   o Use generic helper for NR_FREE_PAGES estimate when necessary
+> > > > 
+> > > > Changelog since V2
+> > > >   o Minor clarifications
+> > > >   o Rebase to 2.6.36-rc3
+> > > > 
+> > > > Changelog since V1
+> > > >   o Fix for !CONFIG_SMP
+> > > >   o Correct spelling mistakes
+> > > >   o Clarify a ChangeLog
+> > > >   o Only check for counter drift on machines large enough for the counter
+> > > >     drift to breach the min watermark when NR_FREE_PAGES report the low
+> > > >     watermark is fine
+> > > > 
+> > > > Internal IBM test teams beta testing distribution kernels have reported
+> > > > problems on machines with a large number of CPUs whereby page allocator
+> > > > failure messages show huge differences between the nr_free_pages vmstat
+> > > > counter and what is available on the buddy lists. In an extreme example,
+> > > > nr_free_pages was above the min watermark but zero pages were on the buddy
+> > > > lists allowing the system to potentially livelock unable to make forward
+> > > > progress unless an allocation succeeds. There is no reason why the problems
+> > > > would not affect mainline so the following series mitigates the problems
+> > > > in the page allocator related to to per-cpu counter drift and lists.
+> > > > 
+> > > > The first patch ensures that counters are updated after pages are added to
+> > > > free lists.
+> > > > 
+> > > > The second patch notes that the counter drift between nr_free_pages and what
+> > > > is on the per-cpu lists can be very high. When memory is low and kswapd
+> > > > is awake, the per-cpu counters are checked as well as reading the value
+> > > > of NR_FREE_PAGES. This will slow the page allocator when memory is low and
+> > > > kswapd is awake but it will be much harder to breach the min watermark and
+> > > > potentially livelock the system.
+> > > > 
+> > > > The third patch notes that after direct-reclaim an allocation can
+> > > > fail because the necessary pages are on the per-cpu lists. After a
+> > > > direct-reclaim-and-allocation-failure, the per-cpu lists are drained and
+> > > > a second attempt is made.
+> > > > 
+> > > > Performance tests against 2.6.36-rc3 did not show up anything interesting. A
+> > > > version of this series that continually called vmstat_update() when
+> > > > memory was low was tested internally and found to help the counter drift
+> > > > problem. I described this during LSF/MM Summit and the potential for IPI
+> > > > storms was frowned upon. An alternative fix is in patch two which uses
+> > > > for_each_online_cpu() to read the vmstat deltas while memory is low and
+> > > > kswapd is awake. This should be functionally similar.
+> > > > 
+> > > > This patch should be merged after the patch "vmstat : update
+> > > > zone stat threshold at onlining a cpu" which is in mmotm as
+> > > > vmstat-update-zone-stat-threshold-when-onlining-a-cpu.patch .
+> > > > 
+> > > > If we can agree on it, this series is a stable candidate.
+> > > 
+> > > (cc stable@kernel.org)
+> > > 
+> > > >  include/linux/mmzone.h |   13 +++++++++++++
+> > > >  include/linux/vmstat.h |   22 ++++++++++++++++++++++
+> > > >  mm/mmzone.c            |   21 +++++++++++++++++++++
+> > > >  mm/page_alloc.c        |   29 +++++++++++++++++++++--------
+> > > >  mm/vmstat.c            |   15 ++++++++++++++-
+> > > >  5 files changed, 91 insertions(+), 9 deletions(-)
+> > > 
+> > > For the entire patch series I get
+> > > 
+> > >  include/linux/mmzone.h |   13 +++++++++++++
+> > >  include/linux/vmstat.h |   22 ++++++++++++++++++++++
+> > >  mm/mmzone.c            |   21 +++++++++++++++++++++
+> > >  mm/page_alloc.c        |   33 +++++++++++++++++++++++----------
+> > >  mm/vmstat.c            |   16 +++++++++++++++-
+> > >  5 files changed, 94 insertions(+), 11 deletions(-)
+> > > 
+> > > The patches do apply OK to 2.6.35.
+> > > 
+> > > Give the extent and the coreness of it all, it's a bit more than I'd
+> > > usually push at the -stable guys.  But I guess that if the patches fix
+> > > all the issues you've noted, as well as David's "minute-long livelocks
+> > > in memory reclaim" then yup, it's worth backporting it all.
+> > > 
+> > 
+> > These patches have made it to mainline as the following commits.
+> > 
+> > 9ee493c mm: page allocator: drain per-cpu lists after direct reclaim allocation fails
+> > aa45484 mm: page allocator: calculate a better estimate of NR_FREE_PAGES when memory is low and kswapd is awake
+> > 72853e2 mm: page allocator: update free page counters after pages are placed on the free list
+> > 
+> > I have not heard from the -stable guys, is there a reasonable
+> > expectation that they'll be picked up?
+> 
+> If you ask me, then I'll know to give a response :)
+> 
 
-I've seen the following deadlock on cpu hotplug stress test:
+Hi Greg,
 
-On cpu down the process that triggered offlining of a cpu waits for
-stop_machine() to finish:
+I would ask you directly but I didn't want anyone else on stable@ to
+feel left out :)
 
-PID: 56033  TASK: e001540           CPU: 2   COMMAND: "cpu_all_off"
- #0 [37aa7990] schedule at 559194
- #1 [37aa7a40] schedule_timeout at 559de0
- #2 [37aa7b18] wait_for_common at 558bfa
- #3 [37aa7b90] __stop_cpus at 1a876e
- #4 [37aa7c68] stop_cpus at 1a8a3a
- #5 [37aa7c98] __stop_machine at 1a8adc
- #6 [37aa7cf8] _cpu_down at 55007a
- #7 [37aa7d78] cpu_down at 550280
- #8 [37aa7d98] store_online at 551d48
- #9 [37aa7dc0] sysfs_write_file at 2a3fa2
- #10 [37aa7e18] vfs_write at 229b3c
- #11 [37aa7e78] sys_write at 229d38
- #12 [37aa7eb8] sysc_noemu at 1146de
+> None of these were tagged as going to the stable tree, should I include
+> them? 
 
-All cpus actually have been synchronized and cpu 0 got offlined. However,
-the migration thread on cpu 5 got preempted just between preempt_enable()
-and cpu_stop_signal_done() within cpu_stopper_thread():
+Yes please unless there is a late objection. The patches were first developed
+as a result of a distro bug whose kernel was based on 2.6.32.  There was
+every indication this affected mainline as well. The details of the testing
+are above.
 
-PID: 55622  TASK: 31a00a40          CPU: 5   COMMAND: "migration/5"
- #0 [30f8bc80] schedule at 559194
- #1 [30f8bd30] preempt_schedule at 559b54
- #2 [30f8bd50] cpu_stopper_thread at 1a81dc
- #3 [30f8be28] kthread at 163224
- #4 [30f8beb8] kernel_thread_starter at 106c1a
+Dave Chinner had also reported problems with livelocks in reclaim that
+looked like IPI storms. There were two major factors at play and these
+patches addressed one of them. It works out as both a bug and a
+performance fix.
 
-For some reason the scheduler decided to throttle RT tasks on the runqueue
-of cpu 5 (rt_throttled = 1). So as long as rt_throttled == 1 we won't see the
-migration thread coming back to execution.
-The only thing that would unthrottle the runqueue would be the rt_period_timer.
-The timer is indeed scheduled, however in the dump I have it has been expired
-for more than four hours.
-The reason is simply that the timer is pending on the offlined cpu 0 and
-therefore would never fire before it gets migrated to an online cpu. Before
-the cpu hotplug mechanisms (cpu hotplug notifier with state CPU_DEAD) would
-migrate the timer to an online cpu stop_machine() must complete ---> deadlock.
+> If so, for which -stable tree?  .27, .32, and .35 are all
+> currently active.
+> 
 
-The fix _seems_ to be simple: just migrate timers after __cpu_disable() has
-been called and use the CPU_DYING state. The subtle difference is of course
-that the migration code now gets executed on the cpu that actually just is
-going to disable itself instead of an arbitrary cpu that stays online.
+2.6.35 for certain.
 
-This patch moves the migration of pending timers to an earlier time
-(CPU_DYING), so that the deadlock described cannot happen anymore.
+I would have a strong preference for 2.6.32 as well as it's a baseline for
+a number of distros. The second commit will conflict with per-cpu changes
+but the resolution is straight-forward.
 
-Up to now the hrtimer migration code called __hrtimer_peek_ahead_timers()
-after migrating timers to the _current_ cpu. Now pending timers are moved
-to a remote cpu and calling that function isn't possible anymore.
-To solve that I introduced the function raise_remote_softirq() which gets
-used to raise the HRTIMER_SOFTIRQ on the cpu where the timers have been
-migrated to. Which will lead to execution of hrtimer_peek_ahead_timers()
-as soon as softirq are executed on the remote cpu.
+In mm/vmstat.c, the correct per-cpu related line that conflicts should
+look like
 
-The proper place for such a generic function should be softirq.c, but this
-is just an RFC and I would like to check if people are ok with the general
-approach.
-Or maybe it's possible to fix this in a better way?
+	zone_pcp(zone, cpu)->stat_threshold = threshold;
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+vmstat.h will fail to build again due to per-cpu changes. A rebased
+version looks like
+
+static inline unsigned long zone_page_state_snapshot(struct zone *zone,
+                                        enum zone_stat_item item)
+{
+        long x = atomic_long_read(&zone->vm_stat[item]);
+
+#ifdef CONFIG_SMP
+        int cpu;
+        for_each_online_cpu(cpu)
+                x += zone_pcp(zone, cpu)->vm_stat_diff[item];
+
+        if (x < 0)
+                x = 0;
+#endif
+        return x;
+}
+
+A rebased version of patch 2 against 2.6.32.21 is below.
+
+I do not know who the users of 2.6.27.x are so I have no strong opinions
+on whether they need these patches or not.
+
+Thanks Greg.
+
+==== CUT HERE ====
+mm: page allocator: calculate a better estimate of NR_FREE_PAGES when memory is low and kswapd is awake
+
+Ordinarily watermark checks are based on the vmstat NR_FREE_PAGES as it is
+cheaper than scanning a number of lists.  To avoid synchronization
+overhead, counter deltas are maintained on a per-cpu basis and drained
+both periodically and when the delta is above a threshold.  On large CPU
+systems, the difference between the estimated and real value of
+NR_FREE_PAGES can be very high.  If NR_FREE_PAGES is much higher than
+number of real free page in buddy, the VM can allocate pages below min
+watermark, at worst reducing the real number of pages to zero.  Even if
+the OOM killer kills some victim for freeing memory, it may not free
+memory if the exit path requires a new page resulting in livelock.
+
+This patch introduces a zone_page_state_snapshot() function (courtesy of
+Christoph) that takes a slightly more accurate view of an arbitrary vmstat
+counter.  It is used to read NR_FREE_PAGES while kswapd is awake to avoid
+the watermark being accidentally broken.  The estimate is not perfect and
+may result in cache line bounces but is expected to be lighter than the
+IPI calls necessary to continually drain the per-cpu counters while kswapd
+is awake.
+
+Signed-off-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+
+Conflicts:
+
+	mm/vmstat.c
 ---
+ include/linux/mmzone.h |   13 +++++++++++++
+ include/linux/vmstat.h |   22 ++++++++++++++++++++++
+ mm/mmzone.c            |   21 +++++++++++++++++++++
+ mm/page_alloc.c        |    4 ++--
+ mm/vmstat.c            |   15 ++++++++++++++-
+ 5 files changed, 72 insertions(+), 3 deletions(-)
 
- kernel/hrtimer.c |   30 +++++++++++++++++++++---------
- kernel/timer.c   |   14 ++++++++------
- 2 files changed, 29 insertions(+), 15 deletions(-)
-
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 1decafb..a912585 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1662,17 +1662,32 @@ static void migrate_hrtimer_list(struct hrtimer_clock_base *old_base,
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 6f75617..6c31a2a 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -290,6 +290,13 @@ struct zone {
+ 	unsigned long watermark[NR_WMARK];
+ 
+ 	/*
++	 * When free pages are below this point, additional steps are taken
++	 * when reading the number of free pages to avoid per-cpu counter
++	 * drift allowing watermarks to be breached
++	 */
++	unsigned long percpu_drift_mark;
++
++	/*
+ 	 * We don't know if the memory that we're going to allocate will be freeable
+ 	 * or/and it will be released eventually, so to avoid totally wasting several
+ 	 * GB of ram we must reserve some of the lower zone memory (otherwise we risk
+@@ -460,6 +467,12 @@ static inline int zone_is_oom_locked(const struct zone *zone)
+ 	return test_bit(ZONE_OOM_LOCKED, &zone->flags);
+ }
+ 
++#ifdef CONFIG_SMP
++unsigned long zone_nr_free_pages(struct zone *zone);
++#else
++#define zone_nr_free_pages(zone) zone_page_state(zone, NR_FREE_PAGES)
++#endif /* CONFIG_SMP */
++
+ /*
+  * The "priority" of VM scanning is how much of the queues we will scan in one
+  * go. A value of 12 for DEF_PRIORITY implies that we will scan 1/4096th of the
+diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
+index 2d0f222..13070d6 100644
+--- a/include/linux/vmstat.h
++++ b/include/linux/vmstat.h
+@@ -166,6 +166,28 @@ static inline unsigned long zone_page_state(struct zone *zone,
+ 	return x;
+ }
+ 
++/*
++ * More accurate version that also considers the currently pending
++ * deltas. For that we need to loop over all cpus to find the current
++ * deltas. There is no synchronization so the result cannot be
++ * exactly accurate either.
++ */
++static inline unsigned long zone_page_state_snapshot(struct zone *zone,
++					enum zone_stat_item item)
++{
++	long x = atomic_long_read(&zone->vm_stat[item]);
++
++#ifdef CONFIG_SMP
++	int cpu;
++	for_each_online_cpu(cpu)
++		x += zone_pcp(zone, cpu)->vm_stat_diff[item];
++
++	if (x < 0)
++		x = 0;
++#endif
++	return x;
++}
++
+ extern unsigned long global_reclaimable_pages(void);
+ extern unsigned long zone_reclaimable_pages(struct zone *zone);
+ 
+diff --git a/mm/mmzone.c b/mm/mmzone.c
+index f5b7d17..e35bfb8 100644
+--- a/mm/mmzone.c
++++ b/mm/mmzone.c
+@@ -87,3 +87,24 @@ int memmap_valid_within(unsigned long pfn,
+ 	return 1;
+ }
+ #endif /* CONFIG_ARCH_HAS_HOLES_MEMORYMODEL */
++
++#ifdef CONFIG_SMP
++/* Called when a more accurate view of NR_FREE_PAGES is needed */
++unsigned long zone_nr_free_pages(struct zone *zone)
++{
++	unsigned long nr_free_pages = zone_page_state(zone, NR_FREE_PAGES);
++
++	/*
++	 * While kswapd is awake, it is considered the zone is under some
++	 * memory pressure. Under pressure, there is a risk that
++	 * per-cpu-counter-drift will allow the min watermark to be breached
++	 * potentially causing a live-lock. While kswapd is awake and
++	 * free pages are low, get a better estimate for free pages
++	 */
++	if (nr_free_pages < zone->percpu_drift_mark &&
++			!waitqueue_active(&zone->zone_pgdat->kswapd_wait))
++		return zone_page_state_snapshot(zone, NR_FREE_PAGES);
++
++	return nr_free_pages;
++}
++#endif /* CONFIG_SMP */
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 542fc4d..ed53cfd 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1366,7 +1366,7 @@ int zone_watermark_ok(struct zone *z, int order, unsigned long mark,
+ {
+ 	/* free_pages my go negative - that's OK */
+ 	long min = mark;
+-	long free_pages = zone_page_state(z, NR_FREE_PAGES) - (1 << order) + 1;
++	long free_pages = zone_nr_free_pages(z) - (1 << order) + 1;
+ 	int o;
+ 
+ 	if (alloc_flags & ALLOC_HIGH)
+@@ -2239,7 +2239,7 @@ void show_free_areas(void)
+ 			" all_unreclaimable? %s"
+ 			"\n",
+ 			zone->name,
+-			K(zone_page_state(zone, NR_FREE_PAGES)),
++			K(zone_nr_free_pages(zone)),
+ 			K(min_wmark_pages(zone)),
+ 			K(low_wmark_pages(zone)),
+ 			K(high_wmark_pages(zone)),
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index c81321f..42d76c6 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -136,10 +136,23 @@ static void refresh_zone_stat_thresholds(void)
+ 	int threshold;
+ 
+ 	for_each_populated_zone(zone) {
++		unsigned long max_drift, tolerate_drift;
++
+ 		threshold = calculate_threshold(zone);
+ 
+ 		for_each_online_cpu(cpu)
+ 			zone_pcp(zone, cpu)->stat_threshold = threshold;
++
++		/*
++		 * Only set percpu_drift_mark if there is a danger that
++		 * NR_FREE_PAGES reports the low watermark is ok when in fact
++		 * the min watermark could be breached by an allocation
++		 */
++		tolerate_drift = low_wmark_pages(zone) - min_wmark_pages(zone);
++		max_drift = num_online_cpus() * threshold;
++		if (max_drift > tolerate_drift)
++			zone->percpu_drift_mark = high_wmark_pages(zone) +
++					max_drift;
  	}
  }
  
-+#ifdef CONFIG_HIGH_RES_TIMERS
-+static void raise_remote_softirq_handler(void *nr)
-+{
-+	raise_softirq_irqoff((unsigned int)(long)nr);
-+}
-+
-+static void raise_remote_softirq(int cpu, unsigned int nr)
-+{
-+	smp_call_function_single(cpu, raise_remote_softirq_handler,
-+				 (void *)(long) nr, 0);
-+}
-+#endif
-+
- static void migrate_hrtimers(int scpu)
- {
- 	struct hrtimer_cpu_base *old_base, *new_base;
-+	int dcpu;
- 	int i;
- 
- 	BUG_ON(cpu_online(scpu));
-+	BUG_ON(!irqs_disabled());
- 	tick_cancel_sched_timer(scpu);
- 
--	local_irq_disable();
-+	dcpu = any_online_cpu(cpu_online_map);
- 	old_base = &per_cpu(hrtimer_bases, scpu);
--	new_base = &__get_cpu_var(hrtimer_bases);
-+	new_base = &per_cpu(hrtimer_bases, dcpu);
- 	/*
- 	 * The caller is globally serialized and nobody else
- 	 * takes two locks at once, deadlock is not possible.
-@@ -1687,10 +1702,9 @@ static void migrate_hrtimers(int scpu)
- 
- 	raw_spin_unlock(&old_base->lock);
- 	raw_spin_unlock(&new_base->lock);
--
--	/* Check, if we got expired work to do */
--	__hrtimer_peek_ahead_timers();
--	local_irq_enable();
-+#ifdef CONFIG_HIGH_RES_TIMERS
-+	raise_remote_softirq(dcpu, HRTIMER_SOFTIRQ);
-+#endif
- }
- 
- #endif /* CONFIG_HOTPLUG_CPU */
-@@ -1711,14 +1725,12 @@ static int __cpuinit hrtimer_cpu_notify(struct notifier_block *self,
- 	case CPU_DYING:
- 	case CPU_DYING_FROZEN:
- 		clockevents_notify(CLOCK_EVT_NOTIFY_CPU_DYING, &scpu);
-+		migrate_hrtimers(scpu);
- 		break;
- 	case CPU_DEAD:
- 	case CPU_DEAD_FROZEN:
--	{
- 		clockevents_notify(CLOCK_EVT_NOTIFY_CPU_DEAD, &scpu);
--		migrate_hrtimers(scpu);
- 		break;
--	}
- #endif
- 
- 	default:
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 97bf05b..c9e8679 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1665,16 +1665,19 @@ static void __cpuinit migrate_timers(int cpu)
- {
- 	struct tvec_base *old_base;
- 	struct tvec_base *new_base;
-+	int dcpu;
- 	int i;
- 
- 	BUG_ON(cpu_online(cpu));
-+	BUG_ON(!irqs_disabled());
-+	dcpu = any_online_cpu(cpu_online_map);
- 	old_base = per_cpu(tvec_bases, cpu);
--	new_base = get_cpu_var(tvec_bases);
-+	new_base = per_cpu(tvec_bases, dcpu);
- 	/*
- 	 * The caller is globally serialized and nobody else
- 	 * takes two locks at once, deadlock is not possible.
- 	 */
--	spin_lock_irq(&new_base->lock);
-+	spin_lock(&new_base->lock);
- 	spin_lock_nested(&old_base->lock, SINGLE_DEPTH_NESTING);
- 
- 	BUG_ON(old_base->running_timer);
-@@ -1689,8 +1692,7 @@ static void __cpuinit migrate_timers(int cpu)
- 	}
- 
- 	spin_unlock(&old_base->lock);
--	spin_unlock_irq(&new_base->lock);
--	put_cpu_var(tvec_bases);
-+	spin_unlock(&new_base->lock);
- }
- #endif /* CONFIG_HOTPLUG_CPU */
- 
-@@ -1708,8 +1710,8 @@ static int __cpuinit timer_cpu_notify(struct notifier_block *self,
- 			return notifier_from_errno(err);
- 		break;
- #ifdef CONFIG_HOTPLUG_CPU
--	case CPU_DEAD:
--	case CPU_DEAD_FROZEN:
-+	case CPU_DYING:
-+	case CPU_DYING_FROZEN:
- 		migrate_timers(cpu);
- 		break;
- #endif
+@@ -715,7 +728,7 @@ static void zoneinfo_show_print(struct seq_file *m, pg_data_t *pgdat,
+ 		   "\n        scanned  %lu"
+ 		   "\n        spanned  %lu"
+ 		   "\n        present  %lu",
+-		   zone_page_state(zone, NR_FREE_PAGES),
++		   zone_nr_free_pages(zone),
+ 		   min_wmark_pages(zone),
+ 		   low_wmark_pages(zone),
+ 		   high_wmark_pages(zone),
