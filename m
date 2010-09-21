@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758095Ab0IUT1F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 15:27:05 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:8643 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757200Ab0IUT1D (ORCPT
+	id S1758138Ab0IUT12 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 15:27:28 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:63220 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757200Ab0IUT11 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 15:27:03 -0400
-X-SpamScore: -25
-X-BigFish: VPS-25(zzbb2dK936eK146fK1432N98dN4015Lzz1202hzzz2fh2a8h)
-Message-ID: <4C9906EE.3030506@am.sony.com>
-Date: Tue, 21 Sep 2010 12:26:38 -0700
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: frank.rowand@am.sony.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.1) Gecko/20090814 Fedora/3.0-2.6.b3.fc11 Thunderbird/3.0b3
+	Tue, 21 Sep 2010 15:27:27 -0400
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Gregory Haskins <ghaskins@novell.com>
-Subject: Re: [PATCH 3/4] tracing/sched: Add sched_rt_push and sched_rt_pull
- tracepoints
-References: <20100921024002.672817629@goodmis.org>	 <20100921024139.095017089@goodmis.org>  <1285058793.2275.799.camel@laptop>	 <1285072416.23122.1723.camel@gandalf.stny.rr.com> <1285076187.23122.1809.camel@gandalf.stny.rr.com>
-In-Reply-To: <1285076187.23122.1809.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
-X-Reverse-DNS: mail7.fw-bc.sony.com
+In-Reply-To: <alpine.LFD.2.00.1009211826240.2416@localhost6.localdomain6>
+References: <20100910060151.6613e9c3@debxo> <20100910172538.GC11284@angua.secretlab.ca>
+ <20100910181458.GA7243@elte.hu> <20100910182135.GG11284@angua.secretlab.ca>
+ <20100920190604.5a2118da@debxo> <alpine.LFD.2.00.1009211144070.2416@localhost6.localdomain6>
+ <20100921091136.45f5f7fa@debxo> <alpine.LFD.2.00.1009211826240.2416@localhost6.localdomain6>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 21 Sep 2010 16:27:07 -0300
+X-Google-Sender-Auth: _-Xw29ra99wr6HrzDqUDAhDU7fI
+Message-ID: <AANLkTikmnzi_3EihiOMJS+tvHFTnb0uu=L-ZmUPZnFDB@mail.gmail.com>
+Subject: Re: [PATCH 2/2] x86: of: define irq functions to allow drivers/of/*
+ to build on x86
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andres Salomon <dilinger@queued.net>, Ingo Molnar <mingo@elte.hu>,
+        devicetree-discuss@lists.ozlabs.org, x86@kernel.org, mingo@redhat.com,
+        hpa@zytor.com, Mitch Bradley <wmb@laptop.org>,
+        linux-kernel@vger.kernel.org,
+        Stephen Neuendorffer <stephen.neuendorffer@xilinx.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/21/10 06:36, Steven Rostedt wrote:
-> On Tue, 2010-09-21 at 08:33 -0400, Steven Rostedt wrote:
-> 
->>> Why doesn't the migration tracepoint cover this? It shows you the task,
->>> the prio, the old and new cpu. If the migration is logged from the old
->>> cpu, its a push, if its logged from the new its a pull, no?
-
-Slight nuance...
-
-If the migration is logged from a cpu other than the new cpu, it is a push.
-
-
+On Tue, Sep 21, 2010 at 1:27 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Tue, 21 Sep 2010, Andres Salomon wrote:
+>> On Tue, 21 Sep 2010 11:45:37 +0200 (CEST)
+>> Thomas Gleixner <tglx@linutronix.de> wrote:
 >>
->> For some reason it did not help me enough in my analysis. I'll go back
->> and see why.
+>> > > Any additional comments (ACKs, NACKs, etc) on the patches?  If I
+>> > > need to rework it (or them), I can certainly make the patch
+>> > > description longer.
+>> >
+>> > Fine with me, but you could make the "mapping" function an inline as
+>> > well. While at it, some sensible changelog would be helpful :)
+>> >
+>> > Thanks,
+>> >
+>> >     tglx
 >>
->> I originally had these tracepoints at the front of the series, and
->> realized they may be a little controversial, thus I moved them to the
->> end.
-> 
-> OK, I went back and looked, and I think you are right. I can determine
-> this from the migration tracepoint. I think I was just being lazy and
-> wanted to have the direction obvious to me :-)  I can easily do that by
-> adding a plugin.
-> 
-> Anyway, I'll remove this patch and rename the sched_rt_setprio
-> tracepoint to sched_pi_setprio. Would that be OK with you?
-> 
-> Thanks,
-> 
-> -- Steve
+>> Hm, inlining it would require some additional x86 #ifdefs in
+>> include/linux/of_irq.h (where the mapping function is declared).  You'd
+>> prefer that?
+>
+> Urgh, no.
 
-Regards,
+In OF code, I *have* been moving to the following pattern when the OF
+code has a sane default:
 
-Frank
+#ifndef <symbol>
+static inline <symbol>(...)
+{
+        <default implementation>
+}
+#define <symbol> <symbol>
+#endif
 
+I'd normally be totally okay with this in of_irq.h, except for the
+fact that this implementation is a temporary solution.  Once I've got
+the irq remapping code generalized for all architecture then the map
+function could become a static inline in this form.
 
+Fortunately, this code should never be on a hot path.
+
+g.
