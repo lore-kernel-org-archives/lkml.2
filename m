@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757381Ab0IUKIJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 06:08:09 -0400
-Received: from mga03.intel.com ([143.182.124.21]:63912 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756582Ab0IUKII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 06:08:08 -0400
-Message-Id: <89k83a$9np2i3@azsmga001.ch.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,398,1280732400"; 
-   d="scan'208";a="326928963"
-Date: Tue, 21 Sep 2010 11:08:03 +0100
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] i915 regression fixes
-Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
-From: Chris Wilson <chris@chris-wilson.co.uk>
+	id S1756594Ab0IUKJV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 06:09:21 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:58848 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752506Ab0IUKJU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 06:09:20 -0400
+Message-ID: <274e128f862a7ed5f6ba0a137133569d.squirrel@www.firstfloor.org>
+In-Reply-To: <20100921082044.GS13563@erda.amd.com>
+References: <1285053995-3811-1-git-send-email-jolsa@redhat.com>
+    <20100921082044.GS13563@erda.amd.com>
+Date: Tue, 21 Sep 2010 12:09:15 +0200
+Subject: Re: [PATCH] oprofile: Add Support for Intel CPU Family 6 / Model 29
+From: "Andi Kleen" <andi@firstfloor.org>
+To: "Robert Richter" <robert.richter@amd.com>
+Cc: "Jiri Olsa" <jolsa@redhat.com>, "Andi Kleen" <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "oprofile-list@lists.sourceforge.net" 
+	<oprofile-list@lists.sourceforge.net>,
+        "tdm.rhbz@gmail.com" <tdm.rhbz@gmail.com>
+User-Agent: SquirrelMail/1.4.21
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus, a bit later than intended due to travel, but here a few more
-fixes for the recently reported regressions.
+> On 21.09.10 03:26:35, Jiri Olsa wrote:
+>> This patch adds CPU type detection for dunnington processor (Family 6 /
+>> Model 29)
+>> to be identified as core 2 family cpu type (wikipedia source).
+>>
+>> I tested oprofile on Intel(R) Xeon(R) CPU E7440 reporting itself as
+>> model 29,
+>> and it runs without an issue.
+>>
+>> wbr,
+>> jirka
+>>
+>>
+>> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+>
+> Andi,
+>
+> found this spec:
+>
+>  http://www.intel.com/Assets/en_US/PDF/specupdate/320336.pdf
+>
+> Please ack.
 
-The following changes since commit b30a3f6257ed2105259b404d419b4964e363928c:
+Acked-by: Andi Kleen <ak@linux.intel.com>
 
-  Linux 2.6.36-rc5 (2010-09-20 16:56:53 -0700)
+Thanks,
+-Andi
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/ickle/drm-intel.git drm-intel-fixes
-
-Chris Wilson (7):
-      drm/i915: Ensure that the crtcinfo is populated during mode_fixup()
-      Merge remote branch 'linus' into drm-intel-fixes
-      drm/i915/crt: Downgrade warnings for hotplug failures
-      drm/i915: Fix Sandybridge fence registers
-      drm/i915,agp/intel: Add second set of PCI-IDs for B43
-      drm/i915: Hold a reference to the object whilst unbinding the eviction list
-      Merge remote branch 'linus' into drm-intel-fixes
-
- drivers/char/agp/intel-agp.c          |    2 +
- drivers/char/agp/intel-agp.h          |    2 +
- drivers/gpu/drm/i915/i915_drv.c       |    1 +
- drivers/gpu/drm/i915/i915_gem.c       |   37 +++++++++++++++++++++-----------
- drivers/gpu/drm/i915/i915_gem_evict.c |    9 ++++++-
- drivers/gpu/drm/i915/i915_suspend.c   |   36 ++++++++++++++++++++++++--------
- drivers/gpu/drm/i915/intel_crt.c      |    4 +-
- drivers/gpu/drm/i915/intel_display.c  |    8 +++++++
- 8 files changed, 73 insertions(+), 26 deletions(-)
-
--- 
-Chris Wilson, Intel Open Source Technology Centre
