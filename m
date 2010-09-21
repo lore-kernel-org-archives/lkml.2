@@ -1,70 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302Ab0IUE7Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 00:59:24 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:58692 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751347Ab0IUE7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 00:59:23 -0400
-Date: Tue, 21 Sep 2010 06:59:21 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, ebiederm@xmission.com, greg@kroah.com,
-        stefanr@s5r6.in-berlin.de, broonie@opensource.wolfsonmicro.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Hemminger <shemminger@vyatta.com>
-Subject: Re: [PATCH] scripts/get_maintainer.pl: fix .mailmap handling
-Message-ID: <20100921065921.03f06293@schatten.dmk.lab>
-In-Reply-To: <1285028085.25988.60.camel@Joe-Laptop>
-References: <1285021645-14311-1-git-send-email-florian@mickler.org>
-	<1285022156-14501-1-git-send-email-florian@mickler.org>
-	<1285028085.25988.60.camel@Joe-Laptop>
-X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753211Ab0IUFCx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 01:02:53 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:39969 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750739Ab0IUFCv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 01:02:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=r328COalWptUIIceBYASmgQ3cUVdP5WjBfbHMSm1pjB+GfSq3jWkH9UdqWeEb8UU5E
+         cS5Tzk6q47jVJL4yqp+fk7Wtt4qPKr/XTuoyZvOPyqh0sTyOdEmivqf5/ZQ52e/lVml+
+         PHqPZmkBLtLooLYD+oWZcDvnLb5mc4fcgr6AE=
+Message-ID: <4C983C7D.1050000@gmail.com>
+Date: Mon, 20 Sep 2010 22:02:53 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
+MIME-Version: 1.0
+To: Matt Turner <mattst88@gmail.com>
+CC: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        "Maciej W. Rozycki" <macro@linux-mips.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Finn Thain <fthain@telegraphics.com.au>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Dimitry Torokhov <dmitry.torokhov@gmail.com>,
+        Ben Pfaff <blp@cs.stanford.edu>, Mike Frysinger <vapier.adi@gmail.com>
+Subject: Re: [PATCH]Update-broken-web-addresses-in-the-kernel
+References: <1285042724-19135-1-git-send-email-justinmattock@gmail.com> <AANLkTinE73z9QV0zriVE3bRtzMifWSGvG36hfvnA9biD@mail.gmail.com>
+In-Reply-To: <AANLkTinE73z9QV0zriVE3bRtzMifWSGvG36hfvnA9biD@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Sep 2010 17:14:45 -0700
-Joe Perches <joe@perches.com> wrote:
+On 09/20/2010 09:52 PM, Matt Turner wrote:
+> On Tue, Sep 21, 2010 at 12:18 AM, Justin P. Mattock
+> <justinmattock@gmail.com>  wrote:
+>> Signed-off-by: Matt Turner<mattst88@gmail.com>
+>
+> Yeah... I didn't give my sign off.
+>
+> [snip]
 
-> On Tue, 2010-09-21 at 00:35 +0200, florian@mickler.org wrote:
-> > From: florian@mickler.org <florian@mickler.org>
-> > diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
-> 
-> []
-> 
-> > -	my ($name, $address) = parse_email($line);
-> > -	$line = format_email($name, $address, $email_usename);
-> > +	next if (/^\s*$/); #skip empty lines
-> > +	#print "entry: \"$_\"\n";
-> 
-> Please do not add commented out debugging code.
-> Add and use use some centralized debug(foo) call.
+alright... My mistake,amongst putting this together I got a little 
+cluttered..
 
-Hm. Yes that might be better in the long run. 
+>
+>> diff --git a/arch/alpha/Kconfig b/arch/alpha/Kconfig
+>> index b9647bb..8da39ce 100644
+>> --- a/arch/alpha/Kconfig
+>> +++ b/arch/alpha/Kconfig
+>> @@ -219,7 +219,7 @@ config ALPHA_LX164
+>>         bool "LX164"
+>>         help
+>>           A technical overview of this board is available at
+>> -<http://www.unix-ag.org/Linux-Alpha/Architectures/LX164.html>.
+>> +<http://www.alphalinux.org/>.
+>>
+>>   config ALPHA_LYNX
+>>         bool "Lynx"
+>> @@ -483,7 +483,7 @@ config ALPHA_AVANTI
+>>         help
+>>           Avanti AS 200, AS 205, AS 250, AS 255, AS 300, and AS 400-based
+>>           Alphas. Info at
+>> -<http://www.unix-ag.org/Linux-Alpha/Architectures/Avanti.html>.
+>> +<http://www.alphalinux.org/>.
+>>
+>>   config ALPHA_BROKEN_IRQ_MASK
+>>         bool
+>> diff --git a/arch/alpha/kernel/sys_sio.c b/arch/alpha/kernel/sys_sio.c
+>> index 85b4aea..c5051aa 100644
+>> --- a/arch/alpha/kernel/sys_sio.c
+>> +++ b/arch/alpha/kernel/sys_sio.c
+>> @@ -154,7 +154,7 @@ noname_map_irq(struct pci_dev *dev, u8 slot, u8 pin)
+>>          * bridge (PIRQ0-PIRQ3).  The table below is based on
+>>          * information available at:
+>>          *
+>> -        *   http://ftp.digital.com/pub/DEC/axppci/ref_interrupts.txt
+>> +        *  http://web.archive.org/web/*/http://ftp.digital.com/pub/DEC/axppci/ref_interrupts.txt
+>>          *
+>>          * I have no information on the Avanti interrupt routing, but
+>>          * the routing seems to be identical to the Noname except
+>
+> This change looks harmless. After all, it's changing a comment. But wait.
+>
+> You're adding a */ into a block comment, thereby prematurely closing
+> the comment and breaking compilation.
 
-> 
-> []
-> 
-> > +sub mailmap {
-> > +    my (@addresses) = @_;
-> > +
-> > +    my @ret = ();
-> 
-> Suboptimal naming.  I try to use descriptive names.
-> 
-> cheers, Joe
-> 
+didnt even think about that.. I really appreciate you pointing this 
+out..  I'll go through the whole thing and see if I can figure a good 
+fix for the archive.org stuff
 
-:-) 
+>
+> I imagine that any other places you've changed the link to archive.org
+> has the same problem.
+>
+> I appreciate the work, but please drop arch/alpha from your patch.
+> I'll go through and fix those links at the same time as I update a lot
+> of other Kconfig information.
+>
+> Matt
+>
 
-Come on, Joe! It was "sub mailmap" before. @addresses was @list before
-and @ret is the list that get's returned by the function. 
+alright.. cool..
 
-If you think a patch is ok, you actually may say so. 
-
-Regards,
-Flo
+Justin P. Mattock
