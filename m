@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757895Ab0IUQ1A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 12:27:00 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45184
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756369Ab0IUQ07 (ORCPT
+	id S1757949Ab0IUQ1I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 12:27:08 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:58068 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757920Ab0IUQ1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 12:26:59 -0400
-Date: Tue, 21 Sep 2010 09:27:18 -0700 (PDT)
-Message-Id: <20100921.092718.246552385.davem@davemloft.net>
-To: rostedt@goodmis.org
-Cc: jbaron@redhat.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        mathieu.desnoyers@polymtl.ca, hpa@zytor.com, tglx@linutronix.de,
-        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-        mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
-        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com
-Subject: Re: [PATCH 09/10] jump label 11: add sparc64 support
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1285083453.23122.1959.camel@gandalf.stny.rr.com>
-References: <cover.1284733808.git.jbaron@redhat.com>
-	<3b5b071fcdb2afb7f67cacecfa78b14c740278a7.1284733808.git.jbaron@redhat.com>
-	<1285083453.23122.1959.camel@gandalf.stny.rr.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Sep 2010 12:27:03 -0400
+X-Sasl-enc: n8EPaRwtucAh/dfZMf9L8bTFaZ4yXOl20Y5JB2ps9YAI 1285086421
+Date: Tue, 21 Sep 2010 13:26:57 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Jarek Poplawski <jarkao2@gmail.com>, Patrick McHardy <kaber@trash.net>
+Subject: Re: [PATCH v3] ip: fix truesize mismatch in ip fragmentation
+Message-ID: <20100921162657.GA22183@khazad-dum.debian.net>
+References: <20100920174443.GA5515@elliptictech.com>
+ <1285006844.2323.17.camel@edumazet-laptop>
+ <20100920195256.GA14330@elliptictech.com>
+ <1285013853.2323.148.camel@edumazet-laptop>
+ <1285018272.2323.243.camel@edumazet-laptop>
+ <20100921140501.GA21572@elliptictech.com>
+ <1285078613.2617.503.camel@edumazet-laptop>
+ <1285084705.2617.636.camel@edumazet-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285084705.2617.636.camel@edumazet-laptop>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
-Date: Tue, 21 Sep 2010 11:37:33 -0400
+Should this be a candidate for -stable?
 
-> On Fri, 2010-09-17 at 11:09 -0400, Jason Baron wrote:
-> 
->> diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
->> index 491e9d6..a81b04e 100644
->> --- a/arch/sparc/Kconfig
->> +++ b/arch/sparc/Kconfig
->> @@ -30,6 +30,7 @@ config SPARC
->>  	select PERF_USE_VMALLOC
->>  	select HAVE_DMA_ATTRS
->>  	select HAVE_DMA_API_DEBUG
->> +	select HAVE_ARCH_JUMP_LABEL if !CC_OPTIMIZE_FOR_SIZE
->>  
-> 
-> David,
-> 
-> If you look at the thread for patch #8, do you still want that
->  " if !CC_OPTIMIZE_FOR_SIZE"?
-
-No :-)
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
