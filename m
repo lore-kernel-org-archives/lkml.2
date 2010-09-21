@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756101Ab0IUGvu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 02:51:50 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:56050 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755497Ab0IUGvs (ORCPT
+	id S1756131Ab0IUGyG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 02:54:06 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:60701 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753560Ab0IUGyD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 02:51:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=MXs3NLsEnWRt21dqEXKGW+5vUQXYWX7NSyMX5t8yvQnkpDtWJImt0ooOaNnokPTeep
-         fTPVaxMROT+FxXCpvuk9+QBRA3lJg+CDWWxdal5DjxIPvhWDxXtq5vRR7Jt/gvZEns3f
-         CLqNcePMAVNKKo1Kpz4/VEG0up0c6I+D62Uyw=
-From: Kenneth Waters <kwwaters@gmail.com>
-To: dmitry.torokhov@gmail.com
-Cc: steve@sk2.org, linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kenneth Waters <kwwaters@gmail.com>
-Subject: [PATCH] input: joydev: Fix JSIOCSAXMAP ioctl.
-Date: Mon, 20 Sep 2010 23:51:25 -0700
-Message-Id: <1285051885-20417-1-git-send-email-kwwaters@gmail.com>
-X-Mailer: git-send-email 1.7.2.2
+	Tue, 21 Sep 2010 02:54:03 -0400
+MIME-Version: 1.0
+X-Originating-IP: [46.116.86.31]
+In-Reply-To: <20100921120919.a38723d3.sfr@canb.auug.org.au>
+References: <20100921120919.a38723d3.sfr@canb.auug.org.au>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Tue, 21 Sep 2010 08:53:43 +0200
+Message-ID: <AANLkTinxssqohSCfod8Q1emhJ6AB4Hkxo7EmkTtTxuf=@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the wireless tree with Linus' tree
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "John W. Linville" <linville@tuxdriver.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Grazvydas Ignotas <notasas@gmail.com>,
+        Tony Lindgren <tony@atomide.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed JSIOCSAXMAP ioctl to update absmap, the map from hardware axis to
-event axis in addition to abspam.  This fixes a regression introduced
-by 999b874f.
+Hi Stephen,
 
-Signed-off-by: Kenneth Waters <kwwaters@gmail.com>
----
- drivers/input/joydev.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+On Tue, Sep 21, 2010 at 4:09 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> The wireless tree commit copied the include/linux/spi/wl12xx.h to
+> include/linux but did not remove the spi/ one.
 
-diff --git a/drivers/input/joydev.c b/drivers/input/joydev.c
-index d85bd8a..22239e9 100644
---- a/drivers/input/joydev.c
-+++ b/drivers/input/joydev.c
-@@ -483,6 +483,9 @@ static int joydev_handle_JSIOCSAXMAP(struct joydev *joydev,
- 
- 	memcpy(joydev->abspam, abspam, len);
- 
-+	for (i = 0; i < joydev->nabs; i++)
-+		joydev->absmap[joydev->abspam[i]] = i;
-+
-  out:
- 	kfree(abspam);
- 	return retval;
--- 
-1.7.2.2
+We had that one fixed in
+http://www.mail-archive.com/linux-omap@vger.kernel.org/msg34910.html
+but it seems an older patch accidentally got in.
 
+> only the new one ... I fixed the above conflict (see below) on the
+> assumption that the spi/ version of the header file should have been
+> removed.
+
+Yes, thank you. I'll send a patch to fix that in the wireless tree too.
+
+Thanks,
+Ohad.
+
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>
+> diff --cc arch/arm/mach-omap2/board-omap3pandora.c
+> index dd3af2b,9b62b62..0000000
+> --- a/arch/arm/mach-omap2/board-omap3pandora.c
+> +++ b/arch/arm/mach-omap2/board-omap3pandora.c
+> @@@ -25,9 -25,7 +25,9 @@@
+>  #include <linux/spi/ads7846.h>
+>  #include <linux/regulator/machine.h>
+>  #include <linux/i2c/twl.h>
+> - #include <linux/spi/wl12xx.h>
+> + #include <linux/wl12xx.h>
+>  +#include <linux/mtd/partitions.h>
+>  +#include <linux/mtd/nand.h>
+>  #include <linux/leds.h>
+>  #include <linux/input.h>
+>  #include <linux/input/matrix_keypad.h>
+>
