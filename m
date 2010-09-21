@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757379Ab0IUVYV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 17:24:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46909 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757322Ab0IUVYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 17:24:20 -0400
-Date: Tue, 21 Sep 2010 23:24:19 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?St=E9phane_Chatty?= <chatty@enac.fr>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] hid: 3m: Convert to MT slots
-In-Reply-To: <83EE14B9-C3BB-43DA-AF0B-962EA40C0DB5@enac.fr>
-Message-ID: <alpine.LNX.2.00.1009212324100.26813@pobox.suse.cz>
-References: <1283005748-3293-1-git-send-email-rydberg@euromail.se>    <1283005748-3293-2-git-send-email-rydberg@euromail.se>    <CE1C24FC-7C9A-4940-8141-391A368C59E5@enac.fr>   <4C97BB33.5020806@euromail.se>   <6A8BB954-78BB-4507-86F3-19DA5174FA5E@enac.fr>
-  <4C97BE69.2030100@euromail.se>  <EBFF8B5B-5361-45B3-88B8-8254E3953578@enac.fr> <4C98ED5B.7020408@euromail.se> <83EE14B9-C3BB-43DA-AF0B-962EA40C0DB5@enac.fr>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1757415Ab0IUVYm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 17:24:42 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:41409 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757175Ab0IUVYl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 17:24:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=Re3DDsyXj/Ed9w0HWBsK/X00CugbgjSZRuZSwXgmm6LUWkXJwELtSHMuE6NzX98HrM
+         Eu/gdzeCtDY+vG3l58CyDzIM/a9Vfj8vvtpYfB0vbBZl8n8ilgacaht9i8vfrZom/EBU
+         3Jfn9PipkrmXAm5epUUAkHayAE2R22KiANL1E=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <877FD0B5-19A7-4A16-831E-369B80B104EA@kernel.crashing.org>
+References: <1285066638-7473-1-git-send-email-leoli@freescale.com> <877FD0B5-19A7-4A16-831E-369B80B104EA@kernel.crashing.org>
+From: Timur Tabi <timur.tabi@gmail.com>
+Date: Tue, 21 Sep 2010 16:24:10 -0500
+Message-ID: <AANLkTimiwtoa6i10OTcgFnvbvcO9N4KWHyt4Poj-yj=T@mail.gmail.com>
+Subject: Re: [PATCH] fsldma: add support to 36-bit physical address
+To: Kumar Gala <galak@kernel.crashing.org>
+Cc: Li Yang <leoli@freescale.com>, dan.j.williams@intel.com,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Sep 2010, Stéphane Chatty wrote:
+On Tue, Sep 21, 2010 at 7:55 AM, Kumar Gala <galak@kernel.crashing.org> wrote:
+>
+> On Sep 21, 2010, at 5:57 AM, Li Yang wrote:
+>
+>> Signed-off-by: Li Yang <leoli@freescale.com>
+>> ---
+>
+> We really should have a sentence about how or why this works to address 36-bit addressing.
 
-> > > Anyway, I have no more problem with this constant. Just with the 
-> > > vocabulary :-)
-> > 
-> > In the HID protocol, it is called ContactID... So, Stéphane, are we 
-> > close to acking this patch now? :-)
-> 
-> Oh yes of course, I was not clear enough in the above message. To make things
-> more formal:
-> 
-> Acked-by: Stéphane Chatty <chaty@enac.fr>
-
-Applied, thanks!
+For example, I would like to know which memory is going to be
+allocated above 4GB.  I don't know much about the kernel's async
+library, but my understanding is that fsldma does not allocate any of
+the memory buffers that it copies data to/from.  The only memory that
+fsldma allocates is for the DMA descriptors, which are very small and
+probably don't take up more than a couple pages.
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Timur Tabi
+Linux kernel developer at Freescale
