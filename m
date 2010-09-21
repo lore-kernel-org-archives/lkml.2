@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754364Ab0IUOhG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 10:37:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23611 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753462Ab0IUOhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 10:37:05 -0400
-Date: Tue, 21 Sep 2010 10:35:55 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
-        hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
-        roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com
-Subject: Re: [PATCH 03/10] jump label v11: base patch
-Message-ID: <20100921143555.GA2873@redhat.com>
-References: <cover.1284733808.git.jbaron@redhat.com> <ee8b3595967989fdaf84e698dc7447d315ce972a.1284733808.git.jbaron@redhat.com> <20100921131232.GA3024@one.firstfloor.org>
+	id S1755330Ab0IUOiK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 10:38:10 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:60699 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753740Ab0IUOiI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 10:38:08 -0400
+Message-ID: <38667ac18ee6604649af9396cf156182.squirrel@www.firstfloor.org>
+In-Reply-To: <20100921141329.GU13563@erda.amd.com>
+References: <1285053995-3811-1-git-send-email-jolsa@redhat.com>
+    <201009211321.06172.arnd@arndb.de>
+    <20100921141329.GU13563@erda.amd.com>
+Date: Tue, 21 Sep 2010 16:38:04 +0200
+Subject: Re: [PATCH] oprofile: Add Support for Intel CPU Family 6 / Model 29
+From: "Andi Kleen" <andi@firstfloor.org>
+To: "Robert Richter" <robert.richter@amd.com>
+Cc: "Arnd Bergmann" <arnd@arndb.de>, "Jiri Olsa" <jolsa@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "oprofile-list@lists.sourceforge.net" 
+	<oprofile-list@lists.sourceforge.net>,
+        "tdm.rhbz@gmail.com" <tdm.rhbz@gmail.com>,
+        "Andi Kleen" <andi@firstfloor.org>
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100921131232.GA3024@one.firstfloor.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 21, 2010 at 03:12:32PM +0200, Andi Kleen wrote:
-> On Fri, Sep 17, 2010 at 11:09:00AM -0400, Jason Baron wrote:
-> > +extern void arch_jump_label_transform(struct jump_entry *entry,
-> > +				 enum jump_label_type type);
-> > +extern void jump_label_update(unsigned long key, enum jump_label_type type);
-> > +extern void jump_label_apply_nops(struct module *mod);
-> > +extern void arch_jump_label_text_poke_early(jump_label_t addr);
-> 
-> These function names are too long.
-> 
-> Also it would be better if the types for the pointers are kept
-> instead of casting to unsigned long. All the variables
-> are ints right?
-> 
+> On 21.09.10 07:21:05, Arnd Bergmann wrote:
+>> Just curious about the other missing IDs: this now supports all Core
+>> microarchitecture CPUs, but only some Nehalem/Westmere ones.
+>>
+>> There is support for 0x1a (Bloomfield/Gainestown) and 0x2e (Beckton),
+>> but
+>> not for the much more common 0x1e (Lynnfield/Clarksfield/Jasper Forest),
+>> 0x25 (Clarkdale/Arrandale) and 0x26 (Gulftown/Westmere-EP).
+>>
+>> Shouldn't those be added as well?
 
-So far, yes. But I didn't want to force this, in case the users of the
-API wanted to use other types. But I'm ok with 'int *' here.
+Westmere I still hold off because the oprofile user land
+doesn't have the correct event list yet.
 
-> > +#define JUMP_LABEL_HASH_BITS 6
-> > +#define JUMP_LABEL_TABLE_SIZE (1 << JUMP_LABEL_HASH_BITS)
-> > +static struct hlist_head jump_label_table[JUMP_LABEL_TABLE_SIZE];
-> 
-> It's not clear to me why this hash table is needed. There should
-> not be that many trace points, is it that big a problem to simply
-> walk all the sections when something is changed?
-> 
-> Or maybe the sections could be just sorted and a binary search used
-> like with exception tables.
-> 
-> I suspect that would simplify a lot of code.
-> 
-> Overall I like the idea, but the current code is too complicated
-> for the benefit I think.
-> 
-> Can it be put on a diet?
-> 
-> -Andi
+BTW I was thinking in this case to only add the model
+numbers to the user code and just let it handle arch_perfmon
+from the kernel.
 
-So there are ~150 tracepoints, but this code is also being proposed for
-use with 'dynamic debug' of which there are > 1000, and I'm hoping for
-more users moving forward.
+This should work currently fine and avoid the problem
+that you need to update user land and kernel in parallel
+for a new cpu type.
 
-Also, I think the hash table deals nicely with modules. I create a
-linked list of only those module sections that are relevant to each hash
-bucket. If you search through all the section on each enable/disable,
-its going to be proportional to the number of modules as well.
+>>
+>> When you're there, it probably also wouldn't hurt to fill in the blanks
+>> of some of the older CPUs like Tolopai (0x15) and newer Atoms (0x1c).
+>
+> Yes, would be nice to have also an update for the remaining
+> unsupported models. Andi?
 
-thanks,
+Yes would make sense. I'll ask around if there is a consolidated
+list somewhere that could be used as a base.
 
--Jason
+-Andi
+
