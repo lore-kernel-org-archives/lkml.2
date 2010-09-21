@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756961Ab0IUIVJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 04:21:09 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:3433 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756902Ab0IUIVG (ORCPT
+	id S1756923Ab0IUIaR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 04:30:17 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:53895 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756436Ab0IUIaP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 04:21:06 -0400
-X-SpamScore: -26
-X-BigFish: VPS-26(zzbb2cK1432N98dN4015Lzz1202hzz8275bh5eeePz32i2a8h43h)
-X-WSS-ID: 0L938IK-01-JBO-02
-X-M-MSG: 
-Date: Tue, 21 Sep 2010 10:20:44 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Jiri Olsa <jolsa@redhat.com>, Andi Kleen <andi@firstfloor.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "oprofile-list@lists.sourceforge.net" 
-	<oprofile-list@lists.sourceforge.net>,
-        "tdm.rhbz@gmail.com" <tdm.rhbz@gmail.com>
-Subject: Re: [PATCH] oprofile: Add Support for Intel CPU Family 6 / Model 29
-Message-ID: <20100921082044.GS13563@erda.amd.com>
-References: <1285053995-3811-1-git-send-email-jolsa@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1285053995-3811-1-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+	Tue, 21 Sep 2010 04:30:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=fW6V0t5/6Tu3xLyd0JmZCbKHOcUpvH6tbkfh9GGbku1aktE0oxx0j3SMPOX8r9sJEP
+         tQDmLfeRl7JLWqDlzx0AdQOiH6uBHRubKjOC88SZc+U4hfB3R4YFu+5lU8tGXRNCps+K
+         WcW521vzDZ3bT/IU4/3znbdJmCCTLHdPsc0Fc=
+Subject: [PATCH] drivers/power: add missing sysfs_remove_group() in
+	pcf50633_mbc_remove()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Balaji Rao <balajirrao@openmoko.org>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Paul Fertser <fercerpav@gmail.com>
+Content-Type: text/plain
+Date: Tue, 21 Sep 2010 16:35:57 +0800
+Message-Id: <1285058157.26315.1.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.09.10 03:26:35, Jiri Olsa wrote:
-> This patch adds CPU type detection for dunnington processor (Family 6 / Model 29)
-> to be identified as core 2 family cpu type (wikipedia source).
-> 
-> I tested oprofile on Intel(R) Xeon(R) CPU E7440 reporting itself as model 29,
-> and it runs without an issue.
-> 
-> wbr,
-> jirka
-> 
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+sysfs entries should be removed when unload the module.
 
-Andi,
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/power/pcf50633-charger.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-found this spec:
-
- http://www.intel.com/Assets/en_US/PDF/specupdate/320336.pdf
-
-Please ack.
-
-Thanks,
-
--Robert
-
-> ---
->  arch/x86/oprofile/nmi_int.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
-> index 009b819..f1575c9 100644
-> --- a/arch/x86/oprofile/nmi_int.c
-> +++ b/arch/x86/oprofile/nmi_int.c
-> @@ -674,6 +674,7 @@ static int __init ppro_init(char **cpu_type)
->  	case 0x0f:
->  	case 0x16:
->  	case 0x17:
-> +	case 0x1d:
->  		*cpu_type = "i386/core_2";
->  		break;
->  	case 0x1a:
-> -- 
-> 1.7.1
-> 
-> 
-
+diff --git a/drivers/power/pcf50633-charger.c b/drivers/power/pcf50633-charger.c
+index 066f994..4fa52e1 100644
+--- a/drivers/power/pcf50633-charger.c
++++ b/drivers/power/pcf50633-charger.c
+@@ -456,6 +456,7 @@ static int __devexit pcf50633_mbc_remove(struct platform_device *pdev)
+ 	for (i = 0; i < ARRAY_SIZE(mbc_irq_handlers); i++)
+ 		pcf50633_free_irq(mbc->pcf, mbc_irq_handlers[i]);
+ 
++	sysfs_remove_group(&pdev->dev.kobj, &mbc_attr_group);
+ 	power_supply_unregister(&mbc->usb);
+ 	power_supply_unregister(&mbc->adapter);
+ 	power_supply_unregister(&mbc->ac);
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+1.7.2
+
+
 
