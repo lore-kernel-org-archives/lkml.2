@@ -1,58 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755008Ab0IUBK3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 21:10:29 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52662 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739Ab0IUBK2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 21:10:28 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 21 Sep 2010 10:05:22 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: robm@fastmail.fm, linux-kernel@vger.kernel.org,
-        "Bron Gondwana" <brong@fastmail.fm>, linux-mm <linux-mm@kvack.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: Default zone_reclaim_mode = 1 on NUMA kernel is bad for
- file/email/web servers
-Message-Id: <20100921100522.be252b3d.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100916184240.3BC9.A69D9226@jp.fujitsu.com>
-References: <1284349152.15254.1394658481@webmail.messagingengine.com>
-	<20100916184240.3BC9.A69D9226@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755501Ab0IUBLf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 21:11:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43021 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753521Ab0IUBLe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 21:11:34 -0400
+Message-ID: <4C980642.5000901@redhat.com>
+Date: Mon, 20 Sep 2010 15:11:30 -1000
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Glauber Costa <glommer@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [KVM timekeeping fixes 4/4] TSC catchup mode
+References: <1284856695-19438-1-git-send-email-zamsden@redhat.com> <1284856695-19438-2-git-send-email-zamsden@redhat.com> <1284856695-19438-3-git-send-email-zamsden@redhat.com> <1284856695-19438-4-git-send-email-zamsden@redhat.com> <20100920153820.GA3088@amt.cnet>
+In-Reply-To: <20100920153820.GA3088@amt.cnet>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Sep 2010 19:01:32 +0900 (JST)
-KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+On 09/20/2010 05:38 AM, Marcelo Tosatti wrote:
+> On Sat, Sep 18, 2010 at 02:38:15PM -1000, Zachary Amsden wrote:
+>    
+>> Negate the effects of AN TYM spell while kvm thread is preempted by tracking
+>> conversion factor to the highest TSC rate and catching the TSC up when it has
+>> fallen behind the kernel view of time.  Note that once triggered, we don't
+>> turn off catchup mode.
+>>
+>> A slightly more clever version of this is possible, which only does catchup
+>> when TSC rate drops, and which specifically targets only CPUs with broken
+>> TSC, but since these all are considered unstable_tsc(), this patch covers
+>> all necessary cases.
+>>
+>> Signed-off-by: Zachary Amsden<zamsden@redhat.com>
+>> ---
+>>   arch/x86/include/asm/kvm_host.h |    6 +++
+>>   arch/x86/kvm/x86.c              |   87 +++++++++++++++++++++++++++++---------
+>>   2 files changed, 72 insertions(+), 21 deletions(-)
+>>
+>> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+>> index 8c5779d..e209078 100644
+>> --- a/arch/x86/include/asm/kvm_host.h
+>> +++ b/arch/x86/include/asm/kvm_host.h
+>> @@ -384,6 +384,9 @@ struct kvm_vcpu_arch {
+>>   	u64 last_host_tsc;
+>>   	u64 last_guest_tsc;
+>>   	u64 last_kernel_ns;
+>> +	u64 last_tsc_nsec;
+>> +	u64 last_tsc_write;
+>> +	bool tsc_catchup;
+>>
+>>   	bool nmi_pending;
+>>   	bool nmi_injected;
+>> @@ -444,6 +447,9 @@ struct kvm_arch {
+>>   	u64 last_tsc_nsec;
+>>   	u64 last_tsc_offset;
+>>   	u64 last_tsc_write;
+>> +	u32 virtual_tsc_khz;
+>> +	u32 virtual_tsc_mult;
+>> +	s8 virtual_tsc_shift;
+>>
+>>   	struct kvm_xen_hvm_config xen_hvm_config;
+>>
+>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+>> index 09f468a..9152156 100644
+>> --- a/arch/x86/kvm/x86.c
+>> +++ b/arch/x86/kvm/x86.c
+>> @@ -962,6 +962,7 @@ static inline u64 get_kernel_ns(void)
+>>   }
+>>
+>>   static DEFINE_PER_CPU(unsigned long, cpu_tsc_khz);
+>> +unsigned long max_tsc_khz;
+>>
+>>   static inline int kvm_tsc_changes_freq(void)
+>>   {
+>> @@ -985,6 +986,24 @@ static inline u64 nsec_to_cycles(u64 nsec)
+>>   	return ret;
+>>   }
+>>
+>> +static void kvm_arch_set_tsc_khz(struct kvm *kvm, u32 this_tsc_khz)
+>> +{
+>> +	/* Compute a scale to convert nanoseconds in TSC cycles */
+>> +	kvm_get_time_scale(this_tsc_khz, NSEC_PER_SEC / 1000,
+>> +			&kvm->arch.virtual_tsc_shift,
+>> +			&kvm->arch.virtual_tsc_mult);
+>> +	kvm->arch.virtual_tsc_khz = this_tsc_khz;
+>> +}
+>> +
+>> +static u64 compute_guest_tsc(struct kvm_vcpu *vcpu, s64 kernel_ns)
+>> +{
+>> +	u64 tsc = pvclock_scale_delta(kernel_ns-vcpu->arch.last_tsc_nsec,
+>> +				      vcpu->kvm->arch.virtual_tsc_mult,
+>> +				      vcpu->kvm->arch.virtual_tsc_shift);
+>> +	tsc += vcpu->arch.last_tsc_write;
+>> +	return tsc;
+>> +}
+>> +
+>>   void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
+>>   {
+>>   	struct kvm *kvm = vcpu->kvm;
+>> @@ -1029,6 +1048,8 @@ void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
+>>
+>>   	/* Reset of TSC must disable overshoot protection below */
+>>   	vcpu->arch.hv_clock.tsc_timestamp = 0;
+>> +	vcpu->arch.last_tsc_write = data;
+>> +	vcpu->arch.last_tsc_nsec = ns;
+>>   }
+>>   EXPORT_SYMBOL_GPL(kvm_write_tsc);
+>>
+>> @@ -1041,22 +1062,42 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
+>>   	s64 kernel_ns, max_kernel_ns;
+>>   	u64 tsc_timestamp;
+>>
+>> -	if ((!vcpu->time_page))
+>> -		return 0;
+>> -
+>>   	/* Keep irq disabled to prevent changes to the clock */
+>>   	local_irq_save(flags);
+>>   	kvm_get_msr(v, MSR_IA32_TSC,&tsc_timestamp);
+>>   	kernel_ns = get_kernel_ns();
+>>   	this_tsc_khz = __get_cpu_var(cpu_tsc_khz);
+>> -	local_irq_restore(flags);
+>>
+>>   	if (unlikely(this_tsc_khz == 0)) {
+>> +		local_irq_restore(flags);
+>>   		kvm_make_request(KVM_REQ_CLOCK_UPDATE, v);
+>>   		return 1;
+>>   	}
+>>
+>>   	/*
+>> +	 * We may have to catch up the TSC to match elapsed wall clock
+>> +	 * time for two reasons, even if kvmclock is used.
+>> +	 *   1) CPU could have been running below the maximum TSC rate
+>>      
+> kvmclock handles frequency changes?
+>
+>    
+>> +	 *   2) Broken TSC compensation resets the base at each VCPU
+>> +	 *      entry to avoid unknown leaps of TSC even when running
+>> +	 *      again on the same CPU.  This may cause apparent elapsed
+>> +	 *      time to disappear, and the guest to stand still or run
+>> +	 *	very slowly.
+>>      
+> I don't get this. Please explain.
+>    
 
-> Yes, sadly intel motherboard turn on zone_reclaim_mode by default. and
-> current zone_reclaim_mode doesn't fit file/web server usecase ;-)
-> 
-> So, I've created new proof concept patch. This doesn't disable zone_reclaim
-> at all. Instead, distinguish for file cache and for anon allocation and
-> only file cache doesn't use zone-reclaim.
-> 
-> That said, high-end hpc user often turn on cpuset.memory_spread_page and
-> they avoid this issue. But, why don't we consider avoid it by default?
-> 
-> 
-> Rob, I wonder if following patch help you. Could you please try it?
-> 
-> 
-> Subject: [RFC] vmscan: file cache doesn't use zone_reclaim by default
-> 
+This compensation in arch_vcpu_load, for unstable TSC case, causes time 
+while preempted to disappear from the TSC by adjusting the TSC back to 
+match the last observed TSC.
 
-Hm, can't we use migration of file caches rather than pageout in
-zone_reclaim_mode ? Doent' it fix anything ?
+         if (unlikely(vcpu->cpu != cpu) || check_tsc_unstable()) {
+                 /* Make sure TSC doesn't go backwards */
+                 s64 tsc_delta = !vcpu->arch.last_host_tsc ? 0 :
+                                 native_read_tsc() - 
+vcpu->arch.last_host_tsc;
+                 if (tsc_delta < 0)
+                         mark_tsc_unstable("KVM discovered backwards TSC");
+                 if (check_tsc_unstable())
+                         kvm_x86_ops->adjust_tsc_offset(vcpu, 
+-tsc_delta); <<<<<
 
-Thanks,
--Kame
+Note that this is the correct thing to do if there are cross-CPU deltas, 
+when switching CPUs, or if the TSC becomes inherently unpredictable 
+while preempted (CPU bugs, kernel resets TSC).
 
+However, all the time that elapsed while not running disappears from the 
+TSC (and thus even from kvmclock, without recalibration, as it is based 
+off the TSC).  Since we've got to recalibrate the kvmclock anyways, we 
+might as well catch the TSC up to the proper value.
+
+And if kvmclock is not in use, we must catch the tsc up to the proper value.
+
+Zach
