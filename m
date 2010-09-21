@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753758Ab0IUF4P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 01:56:15 -0400
-Received: from smtprelay.restena.lu ([158.64.1.62]:57484 "EHLO
-	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752566Ab0IUF4N (ORCPT
+	id S1753697Ab0IUGAP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 02:00:15 -0400
+Received: from outmail149120.authsmtp.net ([62.13.149.120]:56496 "EHLO
+	outmail149120.authsmtp.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750739Ab0IUGAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 01:56:13 -0400
-Date: Tue, 21 Sep 2010 07:56:10 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bernie Thompson <bernie@plugable.com>
-Subject: Re: [Patch, RFC] Make struct fb_info ref-counted with kref
-Message-ID: <20100921075610.1c016c12@pluto.restena.lu>
-In-Reply-To: <4C97E00B.6090103@gmx.de>
-References: <20100919172833.14bf291e@neptune.home>
-	<4C963E99.9080207@gmx.de>
-	<20100919190240.65762511@neptune.home>
-	<4C97B079.8050707@gmx.de>
-	<20100920213258.1218b284@neptune.home>
-	<4C97BF40.6030708@gmx.de>
-	<20100920223608.19b4d177@neptune.home>
-	<4C97E00B.6090103@gmx.de>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Sep 2010 02:00:13 -0400
+X-Greylist: delayed 1981 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Sep 2010 02:00:13 EDT
+From: Ben Pfaff <blp@cs.stanford.edu>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        "Maciej W. Rozycki" <macro@linux-mips.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Finn Thain <fthain@telegraphics.com.au>,
+        Randy Dunlap <rdunlap@xenotime.net>, Matt Turner <mattst88@gmail.com>,
+        Dimitry Torokhov <dmitry.torokhov@gmail.com>,
+        Mike Frysinger <vapier.adi@gmail.com>
+Subject: Re: [PATCH]Update-broken-web-addresses-in-the-kernel
+References: <1285042724-19135-1-git-send-email-justinmattock@gmail.com>
+Reply-To: Ben Pfaff <blp@cs.stanford.edu>
+Date: Mon, 20 Sep 2010 22:25:22 -0700
+In-Reply-To: <1285042724-19135-1-git-send-email-justinmattock@gmail.com>
+	(Justin P. Mattock's message of "Mon, 20 Sep 2010 21:18:44 -0700")
+Message-ID: <87aanbpt19.fsf@benpfaff.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Server-Quench: a3e4e868-c540-11df-80b9-0022640b883e
+X-AuthReport-Spam: If SPAM / abuse - report it at: http://www.authsmtp.com/abuse
+X-AuthRoute: OCdwYQ8QAVZfSBwy AC4CFCFJRwtjIQdD FxoeKRdbOF4EFV0J c1AAdx1oPUVbHwkA A3YLXV5WVVdzXy1y bRRQaRtZalRMXwd1 Uk1LR01TWlpgfRlh eUZbUhx6cQNONn90 ZUBrECFYCUAvfUB1 Xx1REW0bZGY0Pn0X UBJRagNUcgFMeh8X Ylh8AT1vNG8XDRoR IyQTCg0pMTxDJWFf WAYOIFRXXksBWzcw SwoPBi4iBggEQWAv LxFjKVMGGksVWgAA 
+X-Authentic-SMTP: 61633331373532.1015:706
+X-AuthFastPath: 0 (Was 255)
+X-AuthVirus-Status: No virus detected - but ensure you scan with your own anti-virus system.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Sep 2010 00:28:27 Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
-> > Tracking if/how often framebuffer is opened as such is a separate thing (though
-> > all users that have the framebuffer opened hold a reference to fb_info).
-> 
-> That's what I said. So as long as refcount <= 1 it does not matter whether you 
-> just count on open/release or additionally on every framebuffer operation, just 
-> that the later produces more noise.
+"Justin P. Mattock" <justinmattock@gmail.com> writes:
 
-Hm, I don't count on every framebuffer operation... in most cases
-fb_info is provided as function argument, in which case no further
-counting is needed as the caller has a valid reference.
+> Signed-off-by: Ben Pfaff <blp@cs.stanford.edu>
 
-With my patch applied refcount for registered but unsed framebuffer was
-2 (once for the driver, once for registered_fb entry) and went up to 3
-when userspace opened framebuffer. fbcon's usage only incremented
-refcount for very short timeframes when effectively using fb_info.
-
-When starting with the FB minor I have to take a new reference.
-(though I maybe should check if file's private data is set and use
-that reference instead of looking up fb_info by minor as is currently
-done)
-
-For fbcon all the references are taken by FB minor (I wondered why
-fbcon only remembers index into registered_fb aka minor instead of
-fb_info itself)
-
-> So I still don't see any advantage in counting users + uses.
-> Please note that I do not object the idea of the patch itself, it's only that I 
-> have a different preference on what to count. I only want to express that your 
-> way is more complicated than what I would recommend.
-
-I don't think I see how you would do the refcounting... would you just
-drop the changes in fb_open() and fb_release()?
-Could you describe your approach (with pseudo-code) or the differences
-to mine?
+Please change this to an Acked-by.
 
 Thanks,
-Bruno
 
-
-> But if you want to go on I do not object. As long as the end result works that's 
-> okay with me.
-> 
-> 
-> Thanks
-> 
-> Florian Tobias Schandinat
+Ben.
+-- 
+Ben Pfaff 
+http://benpfaff.org
