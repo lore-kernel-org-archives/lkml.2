@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995Ab0IUOMv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 10:12:51 -0400
-Received: from cantor.suse.de ([195.135.220.2]:57431 "EHLO mx1.suse.de"
+	id S1756032Ab0IUONn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 10:13:43 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46444 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755808Ab0IUOMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 10:12:50 -0400
-Date: Tue, 21 Sep 2010 16:12:48 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?St=E9phane_Chatty?= <chatty@enac.fr>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] hid: 3m: Adjust to sequential MT HID protocol
-In-Reply-To: <1213242F-BA51-4D3C-93F9-5CF29DEC513B@enac.fr>
-Message-ID: <alpine.LNX.2.00.1009211612400.26813@pobox.suse.cz>
-References: <1283005748-3293-1-git-send-email-rydberg@euromail.se> <1213242F-BA51-4D3C-93F9-5CF29DEC513B@enac.fr>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754647Ab0IUONm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 10:13:42 -0400
+Date: Tue, 21 Sep 2010 14:13:01 GMT
+From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, suresh.b.siddha@intel.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, suresh.b.siddha@intel.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <1284400941.2684.19.camel@sbsiddha-MOBL3.sc.intel.com>
+References: <1284400941.2684.19.camel@sbsiddha-MOBL3.sc.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched: Fix nohz balance kick
+Message-ID: <tip-f6c3f1686e7ec1dd8725a9a3dcb857dfd0c7a5bf@git.kernel.org>
+Git-Commit-ID: f6c3f1686e7ec1dd8725a9a3dcb857dfd0c7a5bf
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 21 Sep 2010 14:13:03 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Sep 2010, Stéphane Chatty wrote:
+Commit-ID:  f6c3f1686e7ec1dd8725a9a3dcb857dfd0c7a5bf
+Gitweb:     http://git.kernel.org/tip/f6c3f1686e7ec1dd8725a9a3dcb857dfd0c7a5bf
+Author:     Suresh Siddha <suresh.b.siddha@intel.com>
+AuthorDate: Mon, 13 Sep 2010 11:02:21 -0700
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 21 Sep 2010 13:50:50 +0200
 
-> > The multitouch extensions to the HID protocol allows for contact
-> > data to be sent over several reports, which is also the case for
-> > the 3M M2256PW touchscreen. This patch modifies the logic to only
-> > synchronize the input layer when all contacts have been received.
-> > Consequentially, the full 60-finger capacity of the device is enabled.
-> > 
-> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> > ---
-> >  drivers/hid/hid-3m-pct.c |   22 ++++++++++++++++++----
-> >  1 files changed, 18 insertions(+), 4 deletions(-)
-> 
-> You can add
-> 
-> Acked-by: Stephane Chatty <chatty@enac.fr>
+sched: Fix nohz balance kick
 
-Applied, thanks guys.
+There's a situation where the nohz balancer will try to wake itself:
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+cpu-x is idle which is also ilb_cpu
+got a scheduler tick during idle
+and the nohz_kick_needed() in trigger_load_balance() checks for
+rq_x->nr_running which might not be zero (because of someone waking a
+task on this rq etc) and this leads to the situation of the cpu-x
+sending a kick to itself.
+
+And this can cause a lockup.
+
+Avoid this by not marking ourself eligible for kicking.
+
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1284400941.2684.19.camel@sbsiddha-MOBL3.sc.intel.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/sched_fair.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index a171138..db3f674 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -3630,7 +3630,7 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
+ 	if (time_before(now, nohz.next_balance))
+ 		return 0;
+ 
+-	if (!rq->nr_running)
++	if (rq->idle_at_tick)
+ 		return 0;
+ 
+ 	first_pick_cpu = atomic_read(&nohz.first_pick_cpu);
