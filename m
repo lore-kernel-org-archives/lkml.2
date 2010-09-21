@@ -1,134 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547Ab0IULRz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 07:17:55 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:57089 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750756Ab0IULRy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 07:17:54 -0400
-Date: Tue, 21 Sep 2010 12:17:41 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, stable@kernel.org,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH 0/3] Reduce watermark-related problems with the per-cpu
-	allocator V4
-Message-ID: <20100921111741.GB11439@csn.ul.ie>
-References: <1283504926-2120-1-git-send-email-mel@csn.ul.ie> <20100903160551.05db4a92.akpm@linux-foundation.org>
+	id S1752796Ab0IULVY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 07:21:24 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:59321 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756Ab0IULVW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 07:21:22 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH] oprofile: Add Support for Intel CPU Family 6 / Model 29
+Date: Tue, 21 Sep 2010 13:21:05 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: robert.richter@amd.com, linux-kernel@vger.kernel.org,
+        oprofile-list@lists.sourceforge.net, tdm.rhbz@gmail.com
+References: <1285053995-3811-1-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1285053995-3811-1-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100903160551.05db4a92.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009211321.06172.arnd@arndb.de>
+X-Provags-ID: V02:K0:cV9UAbb2KG4uisujLZt8xt0ZHU4We3Dpo4+kDcarEEl
+ 1wcclZbrcUKvYOcDS6YtQE1F2tZL3nEAhnJHSkFee1VgLIWbCR
+ RNNsbRQgai5lEiGaox5Ua/ZWtYssGhsXV6tIHgjXM5TrdNalUs
+ Wp/Gn65zpH3xPTpeqDHDrGb9W2agMxg6a92NtEO9bDi+6tvWUx
+ P+xM3xW7MRfYc1bBEu14g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 03, 2010 at 04:05:51PM -0700, Andrew Morton wrote:
-> On Fri,  3 Sep 2010 10:08:43 +0100
-> Mel Gorman <mel@csn.ul.ie> wrote:
-> 
-> > The noteworthy change is to patch 2 which now uses the generic
-> > zone_page_state_snapshot() in zone_nr_free_pages(). Similar logic still
-> > applies for *when* zone_page_state_snapshot() to avoid ovedhead.
-> > 
-> > Changelog since V3
-> >   o Use generic helper for NR_FREE_PAGES estimate when necessary
-> > 
-> > Changelog since V2
-> >   o Minor clarifications
-> >   o Rebase to 2.6.36-rc3
-> > 
-> > Changelog since V1
-> >   o Fix for !CONFIG_SMP
-> >   o Correct spelling mistakes
-> >   o Clarify a ChangeLog
-> >   o Only check for counter drift on machines large enough for the counter
-> >     drift to breach the min watermark when NR_FREE_PAGES report the low
-> >     watermark is fine
-> > 
-> > Internal IBM test teams beta testing distribution kernels have reported
-> > problems on machines with a large number of CPUs whereby page allocator
-> > failure messages show huge differences between the nr_free_pages vmstat
-> > counter and what is available on the buddy lists. In an extreme example,
-> > nr_free_pages was above the min watermark but zero pages were on the buddy
-> > lists allowing the system to potentially livelock unable to make forward
-> > progress unless an allocation succeeds. There is no reason why the problems
-> > would not affect mainline so the following series mitigates the problems
-> > in the page allocator related to to per-cpu counter drift and lists.
-> > 
-> > The first patch ensures that counters are updated after pages are added to
-> > free lists.
-> > 
-> > The second patch notes that the counter drift between nr_free_pages and what
-> > is on the per-cpu lists can be very high. When memory is low and kswapd
-> > is awake, the per-cpu counters are checked as well as reading the value
-> > of NR_FREE_PAGES. This will slow the page allocator when memory is low and
-> > kswapd is awake but it will be much harder to breach the min watermark and
-> > potentially livelock the system.
-> > 
-> > The third patch notes that after direct-reclaim an allocation can
-> > fail because the necessary pages are on the per-cpu lists. After a
-> > direct-reclaim-and-allocation-failure, the per-cpu lists are drained and
-> > a second attempt is made.
-> > 
-> > Performance tests against 2.6.36-rc3 did not show up anything interesting. A
-> > version of this series that continually called vmstat_update() when
-> > memory was low was tested internally and found to help the counter drift
-> > problem. I described this during LSF/MM Summit and the potential for IPI
-> > storms was frowned upon. An alternative fix is in patch two which uses
-> > for_each_online_cpu() to read the vmstat deltas while memory is low and
-> > kswapd is awake. This should be functionally similar.
-> > 
-> > This patch should be merged after the patch "vmstat : update
-> > zone stat threshold at onlining a cpu" which is in mmotm as
-> > vmstat-update-zone-stat-threshold-when-onlining-a-cpu.patch .
-> > 
-> > If we can agree on it, this series is a stable candidate.
-> 
-> (cc stable@kernel.org)
-> 
-> >  include/linux/mmzone.h |   13 +++++++++++++
-> >  include/linux/vmstat.h |   22 ++++++++++++++++++++++
-> >  mm/mmzone.c            |   21 +++++++++++++++++++++
-> >  mm/page_alloc.c        |   29 +++++++++++++++++++++--------
-> >  mm/vmstat.c            |   15 ++++++++++++++-
-> >  5 files changed, 91 insertions(+), 9 deletions(-)
-> 
-> For the entire patch series I get
-> 
->  include/linux/mmzone.h |   13 +++++++++++++
->  include/linux/vmstat.h |   22 ++++++++++++++++++++++
->  mm/mmzone.c            |   21 +++++++++++++++++++++
->  mm/page_alloc.c        |   33 +++++++++++++++++++++++----------
->  mm/vmstat.c            |   16 +++++++++++++++-
->  5 files changed, 94 insertions(+), 11 deletions(-)
-> 
-> The patches do apply OK to 2.6.35.
-> 
-> Give the extent and the coreness of it all, it's a bit more than I'd
-> usually push at the -stable guys.  But I guess that if the patches fix
-> all the issues you've noted, as well as David's "minute-long livelocks
-> in memory reclaim" then yup, it's worth backporting it all.
-> 
+On Tuesday 21 September 2010, Jiri Olsa wrote:
+> --- a/arch/x86/oprofile/nmi_int.c
+> +++ b/arch/x86/oprofile/nmi_int.c
+> @@ -674,6 +674,7 @@ static int __init ppro_init(char **cpu_type)
+>         case 0x0f:
+>         case 0x16:
+>         case 0x17:
+> +       case 0x1d:
+>                 *cpu_type = "i386/core_2";
+>                 break;
+>         case 0x1a:
 
-These patches have made it to mainline as the following commits.
+Just curious about the other missing IDs: this now supports all Core
+microarchitecture CPUs, but only some Nehalem/Westmere ones.
 
-9ee493c mm: page allocator: drain per-cpu lists after direct reclaim allocation fails
-aa45484 mm: page allocator: calculate a better estimate of NR_FREE_PAGES when memory is low and kswapd is awake
-72853e2 mm: page allocator: update free page counters after pages are placed on the free list
+There is support for 0x1a (Bloomfield/Gainestown) and 0x2e (Beckton), but
+not for the much more common 0x1e (Lynnfield/Clarksfield/Jasper Forest),
+0x25 (Clarkdale/Arrandale) and 0x26 (Gulftown/Westmere-EP).
 
-I have not heard from the -stable guys, is there a reasonable
-expectation that they'll be picked up?
+Shouldn't those be added as well?
 
-Thanks
+When you're there, it probably also wouldn't hurt to fill in the blanks
+of some of the older CPUs like Tolopai (0x15) and newer Atoms (0x1c).
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+	Arnd
