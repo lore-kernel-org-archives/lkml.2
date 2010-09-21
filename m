@@ -1,141 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758043Ab0IUQzN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 12:55:13 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:34318 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758025Ab0IUQzM (ORCPT
+	id S1758057Ab0IUQzT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 12:55:19 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:8938 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758025Ab0IUQzP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 12:55:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=dMxNWfAV3eBRf4ikfA1JqQKjL48sVU6TkzRMVHuhvZEeiPeMuxw30tHHDKg61q46HM
-         TLnCRX8NR8ZPD+H2sBrwTkzXbeC+ej6YPwekc9RX0JG7lWi3+NnWHoe+Gvb4xMHpWOXD
-         g0icxF+yIA269PPX7UhLKYMJbu/gGrAgA7JqA=
+	Tue, 21 Sep 2010 12:55:15 -0400
+X-RZG-AUTH: :P3gBZUipdd93EFhLYvtPf8I/2nqnPwH62F+dj0BM8VcpI3CUbfbcqZHCwtQRXA==
+X-RZG-CLASS-ID: mo00
+Message-ID: <4C98E35F.6050207@gatzka.org>
+Date: Tue, 21 Sep 2010 18:54:55 +0200
+From: Stephan Gatzka <stephan@gatzka.org>
+Reply-To: stephan@gatzka.org
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Lightning/1.0b1 Thunderbird/3.0.8
 MIME-Version: 1.0
-Date: Tue, 21 Sep 2010 17:55:11 +0100
-Message-ID: <AANLkTikCHktMEKu_RfNCS4=jYf-Y5c871axmNRJFhr8a@mail.gmail.com>
-Subject: [2.6.36-rc5] DRM resource leak fixes...
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: netdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
+References: <363bd749a38d0b785d8431e591bf54c38db4c2d7.1281956490.git.richard.cochran@omicron.at>	<AANLkTik_2MKMhOuDGOmu8Kzyq-ipLe+Bxrb3FaD+Tv4U@mail.gmail.com>	<20100817085324.GB3330@riccoc20.at.omicron.at>	<1282090963.1734.97.camel@localhost>	<20100818071942.GA4096@riccoc20.at.omicron.at>	<1282176776.2865.100.camel@localhost.localdomain>	<20100819055518.GA4084@riccoc20.at.omicron.at>	<1282594125.3111.344.camel@localhost.localdomain>	<20100827123849.GC11657@riccoc20.at.omicron.at>	<1282948239.2268.155.camel@jstultz-laptop> <20100906063327.GA4549@riccoc20.at.omicron.at>
+In-Reply-To: <20100906063327.GA4549@riccoc20.at.omicron.at>
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms070909030708060909060906"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex; for your review:
+This is a cryptographically signed message in MIME format.
 
-Fix up some indirect and scratch buffer leaks, and correctly release a
-buffer object along various error paths.
+--------------ms070909030708060909060906
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/gpu/drm/radeon/r100.c b/drivers/gpu/drm/radeon/r100.c
-index e817a0b..5a7d6a0 100644
---- a/drivers/gpu/drm/radeon/r100.c
-+++ b/drivers/gpu/drm/radeon/r100.c
-@@ -3540,9 +3540,9 @@ int r100_ib_test(struct radeon_device *rdev)
- 	}
- 	WREG32(scratch, 0xCAFEDEAD);
- 	r = radeon_ib_get(rdev, &ib);
--	if (r) {
--		return r;
--	}
-+	if (r)
-+		goto out2;
-+
- 	ib->ptr[0] = PACKET0(scratch, 0);
- 	ib->ptr[1] = 0xDEADBEEF;
- 	ib->ptr[2] = PACKET2(0);
-@@ -3553,15 +3553,13 @@ int r100_ib_test(struct radeon_device *rdev)
- 	ib->ptr[7] = PACKET2(0);
- 	ib->length_dw = 8;
- 	r = radeon_ib_schedule(rdev, ib);
--	if (r) {
--		radeon_scratch_free(rdev, scratch);
--		radeon_ib_free(rdev, &ib);
--		return r;
--	}
-+	if (r)
-+		goto out1;
-+
- 	r = radeon_fence_wait(ib->fence, false);
--	if (r) {
--		return r;
--	}
-+	if (r)
-+		goto out1;
-+
- 	for (i = 0; i < rdev->usec_timeout; i++) {
- 		tmp = RREG32(scratch);
- 		if (tmp == 0xDEADBEEF) {
-@@ -3576,8 +3574,10 @@ int r100_ib_test(struct radeon_device *rdev)
- 			  scratch, tmp);
- 		r = -EINVAL;
- 	}
--	radeon_scratch_free(rdev, scratch);
-+out1:
- 	radeon_ib_free(rdev, &ib);
-+out2:
-+	radeon_scratch_free(rdev, scratch);
- 	return r;
- }
+Hi Richard,
 
-diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
-index afc18d8..bfdfa3e 100644
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -2689,7 +2689,7 @@ int r600_ib_test(struct radeon_device *rdev)
- 	r = radeon_ib_get(rdev, &ib);
- 	if (r) {
- 		DRM_ERROR("radeon: failed to get ib (%d).\n", r);
--		return r;
-+		goto out2;
- 	}
- 	ib->ptr[0] = PACKET3(PACKET3_SET_CONFIG_REG, 1);
- 	ib->ptr[1] = ((scratch - PACKET3_SET_CONFIG_REG_OFFSET) >> 2);
-@@ -2710,15 +2710,13 @@ int r600_ib_test(struct radeon_device *rdev)
- 	ib->length_dw = 16;
- 	r = radeon_ib_schedule(rdev, ib);
- 	if (r) {
--		radeon_scratch_free(rdev, scratch);
--		radeon_ib_free(rdev, &ib);
- 		DRM_ERROR("radeon: failed to schedule ib (%d).\n", r);
--		return r;
-+		goto out1;
- 	}
- 	r = radeon_fence_wait(ib->fence, false);
- 	if (r) {
- 		DRM_ERROR("radeon: fence wait failed (%d).\n", r);
--		return r;
-+		goto out1;
- 	}
- 	for (i = 0; i < rdev->usec_timeout; i++) {
- 		tmp = RREG32(scratch);
-@@ -2733,8 +2731,10 @@ int r600_ib_test(struct radeon_device *rdev)
- 			  scratch, tmp);
- 		r = -EINVAL;
- 	}
--	radeon_scratch_free(rdev, scratch);
-+out1:
- 	radeon_ib_free(rdev, &ib);
-+out2:
-+	radeon_scratch_free(rdev, scratch);
- 	return r;
- }
+> 1. Character device
+> 2. POSIX clock with dynamic ids
+>
+> Please, just take your pick ;^)
 
-diff --git a/drivers/gpu/drm/radeon/r600_blit_kms.c
-b/drivers/gpu/drm/radeon/r600_blit_kms.c
-index d13622a..e532a81 100644
---- a/drivers/gpu/drm/radeon/r600_blit_kms.c
-+++ b/drivers/gpu/drm/radeon/r600_blit_kms.c
-@@ -492,6 +492,7 @@ int r600_blit_init(struct radeon_device *rdev)
- 	r = radeon_bo_kmap(rdev->r600_blit.shader_obj, &ptr);
- 	if (r) {
- 		DRM_ERROR("failed to map blit object %d\n", r);
-+		radeon_bo_unreserve(rdev->r600_blit.shader_obj);
- 		return r;
- 	}
- 	if (rdev->family >= CHIP_RV770)
--- 
-Daniel J Blueman
+Just to reopen this nearly dead but very interesting thread: I'm happy=20
+with every solution that has no impact on the accuracy of the PTP clock.
+
+If I can choose, I would prefer the POSIX clock with dynamic ids solution=
+=2E
+
+Kind regards and thanks for your effort,
+
+Stephan Gatzka
+
+
+--------------ms070909030708060909060906
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIO5jCC
+BEYwggOvoAMCAQICEGb9R+PCGeToms2Z3fU6yyQwDQYJKoZIhvcNAQEFBQAwXzELMAkGA1UE
+BhMCVVMxFzAVBgNVBAoTDlZlcmlTaWduLCBJbmMuMTcwNQYDVQQLEy5DbGFzcyAxIFB1Ymxp
+YyBQcmltYXJ5IENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA1MTAyODAwMDAwMFoXDTE1
+MTAyNzIzNTk1OVowgd0xCzAJBgNVBAYTAlVTMRcwFQYDVQQKEw5WZXJpU2lnbiwgSW5jLjEf
+MB0GA1UECxMWVmVyaVNpZ24gVHJ1c3QgTmV0d29yazE7MDkGA1UECxMyVGVybXMgb2YgdXNl
+IGF0IGh0dHBzOi8vd3d3LnZlcmlzaWduLmNvbS9ycGEgKGMpMDUxHjAcBgNVBAsTFVBlcnNv
+bmEgTm90IFZhbGlkYXRlZDE3MDUGA1UEAxMuVmVyaVNpZ24gQ2xhc3MgMSBJbmRpdmlkdWFs
+IFN1YnNjcmliZXIgQ0EgLSBHMjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMnf
+rOfq+PgDFMQAktXBfjbCPO98chXLwKuMPRyVzm8eECw/AO2XJua2x+atQx0/pIdHR0w+VPhs
++Mf8sZ69MHC8l7EDBeqV8a1AxUR6SwWi8mD81zplYu//EHuiVrvFTnAt1qIfPO2wQuhejVch
+rKaZ2RHp0hoHwHRHQgv8xTTq/ea6JNEdCBU3otdzzwFBL2OyOj++pRpu9MlKWz2VphW7NQIZ
++dTvvI8OcXZZu0u2Ptb8Whb01g6J8kn+bAztFenZiHWcec5gJ925rXXOL3OVekA6hXVJsLjf
+aLyrzROChRFQo+A8C67AClPN1zBvhTJGG+RJEMJs4q8fef/btLUCAwEAAaOB/zCB/DASBgNV
+HRMBAf8ECDAGAQH/AgEAMEQGA1UdIAQ9MDswOQYLYIZIAYb4RQEHFwEwKjAoBggrBgEFBQcC
+ARYcaHR0cHM6Ly93d3cudmVyaXNpZ24uY29tL3JwYTALBgNVHQ8EBAMCAQYwEQYJYIZIAYb4
+QgEBBAQDAgEGMC4GA1UdEQQnMCWkIzAhMR8wHQYDVQQDExZQcml2YXRlTGFiZWwzLTIwNDgt
+MTU1MB0GA1UdDgQWBBQRfV4ZfTwE32ps1qKKGj8x2DuUUjAxBgNVHR8EKjAoMCagJKAihiBo
+dHRwOi8vY3JsLnZlcmlzaWduLmNvbS9wY2ExLmNybDANBgkqhkiG9w0BAQUFAAOBgQA8o9oC
+YzrEk6qrctPcrVA4HgyeFkqIt+7r2f8PjZWg1rv6aguuYYTYaEeJ70+ssh9JQZtJM3aTi55u
+uUMcYL3C3Ioth8FFwBFyBBprJCpsb+f8BxMp0Hc6I+f1wYVoGb/GAVQgGa41gsxiPGEJxvTV
+67APpp8zhZrTcY5Qj5ndYjCCBUowggQyoAMCAQICEGYeo7xQ0H5LubI9b+ru3w4wDQYJKoZI
+hvcNAQEFBQAwgd0xCzAJBgNVBAYTAlVTMRcwFQYDVQQKEw5WZXJpU2lnbiwgSW5jLjEfMB0G
+A1UECxMWVmVyaVNpZ24gVHJ1c3QgTmV0d29yazE7MDkGA1UECxMyVGVybXMgb2YgdXNlIGF0
+IGh0dHBzOi8vd3d3LnZlcmlzaWduLmNvbS9ycGEgKGMpMDUxHjAcBgNVBAsTFVBlcnNvbmEg
+Tm90IFZhbGlkYXRlZDE3MDUGA1UEAxMuVmVyaVNpZ24gQ2xhc3MgMSBJbmRpdmlkdWFsIFN1
+YnNjcmliZXIgQ0EgLSBHMjAeFw0wOTExMTMwMDAwMDBaFw0xMDExMTMyMzU5NTlaMIIBEzEX
+MBUGA1UEChMOVmVyaVNpZ24sIEluYy4xHzAdBgNVBAsTFlZlcmlTaWduIFRydXN0IE5ldHdv
+cmsxRjBEBgNVBAsTPXd3dy52ZXJpc2lnbi5jb20vcmVwb3NpdG9yeS9SUEEgSW5jb3JwLiBi
+eSBSZWYuLExJQUIuTFREKGMpOTgxHjAcBgNVBAsTFVBlcnNvbmEgTm90IFZhbGlkYXRlZDEz
+MDEGA1UECxMqRGlnaXRhbCBJRCBDbGFzcyAxIC0gTmV0c2NhcGUgRnVsbCBTZXJ2aWNlMRcw
+FQYDVQQDFA5TdGVwaGFuIEdhdHprYTEhMB8GCSqGSIb3DQEJARYSc3RlcGhhbkBnYXR6a2Eu
+b3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzoYff7/WOfp73wx1jWbTO26u
+vXBVo5E5ScnXuN1NozLAeUw7ZbFwLlRjQfbcz4oMQqhR5P4G620sF0MPu8PxkFwmiCmBPNcJ
+oFvlHtZEktXp4Zj6hzIRFKZjdjDZWmyL7niIHUr1mh1x1yHAyPgA74KrfwaZaHqawflfjVl5
+CJv8QwEFaTGSwW7XU3l5czwLrzUTSkdEytANFSSPI7aL5ub1uwzWltu9QsVa1mosFk4lKO4f
+jKhKaixKV03hoTm9Yv6p2arRbBprtrq076QjH6r28c6ndiTPveVbQ9WNNJ3UrFQjEK9AnJGR
+nfyA4FD62+YL5/s5aHMGd5zJeE793QIDAQABo4HMMIHJMAkGA1UdEwQCMAAwRAYDVR0gBD0w
+OzA5BgtghkgBhvhFAQcXATAqMCgGCCsGAQUFBwIBFhxodHRwczovL3d3dy52ZXJpc2lnbi5j
+b20vcnBhMAsGA1UdDwQEAwIFoDAdBgNVHSUEFjAUBggrBgEFBQcDBAYIKwYBBQUHAwIwSgYD
+VR0fBEMwQTA/oD2gO4Y5aHR0cDovL0luZEMxRGlnaXRhbElELWNybC52ZXJpc2lnbi5jb20v
+SW5kQzFEaWdpdGFsSUQuY3JsMA0GCSqGSIb3DQEBBQUAA4IBAQAntbPeTrLjXajrDpS4CKTK
+CW3SFpIJ7qxrvXhXO0aT1w/tmpWEmGJks7QkJkReDNTi9fb4qAoywb8XTdWcWRAxxiVHHvya
+o3quyuqa2yl7Te9UxqDUlXKV9d6WBGudlPDpcFGk/lgaMZ15Zb6mvfMx7IZMFCPJAOB3ns7g
+SW++HOm8d4mKKd/x5pY1zLCqD1RTp9wD+y4rj0Xm6v8tNgJXWLBO7d9bfZIhajfju907yEaA
+IyQXiLGq/AM52fbsss/RNp3qeOvRf81bAoseLhWV5CiuXCKsK5BTtREeMZwMLnl/rDwcsdzR
+Pu8ccRl3aKKR6gl40l3MZEy77bb1PP0HMIIFSjCCBDKgAwIBAgIQZh6jvFDQfku5sj1v6u7f
+DjANBgkqhkiG9w0BAQUFADCB3TELMAkGA1UEBhMCVVMxFzAVBgNVBAoTDlZlcmlTaWduLCBJ
+bmMuMR8wHQYDVQQLExZWZXJpU2lnbiBUcnVzdCBOZXR3b3JrMTswOQYDVQQLEzJUZXJtcyBv
+ZiB1c2UgYXQgaHR0cHM6Ly93d3cudmVyaXNpZ24uY29tL3JwYSAoYykwNTEeMBwGA1UECxMV
+UGVyc29uYSBOb3QgVmFsaWRhdGVkMTcwNQYDVQQDEy5WZXJpU2lnbiBDbGFzcyAxIEluZGl2
+aWR1YWwgU3Vic2NyaWJlciBDQSAtIEcyMB4XDTA5MTExMzAwMDAwMFoXDTEwMTExMzIzNTk1
+OVowggETMRcwFQYDVQQKEw5WZXJpU2lnbiwgSW5jLjEfMB0GA1UECxMWVmVyaVNpZ24gVHJ1
+c3QgTmV0d29yazFGMEQGA1UECxM9d3d3LnZlcmlzaWduLmNvbS9yZXBvc2l0b3J5L1JQQSBJ
+bmNvcnAuIGJ5IFJlZi4sTElBQi5MVEQoYyk5ODEeMBwGA1UECxMVUGVyc29uYSBOb3QgVmFs
+aWRhdGVkMTMwMQYDVQQLEypEaWdpdGFsIElEIENsYXNzIDEgLSBOZXRzY2FwZSBGdWxsIFNl
+cnZpY2UxFzAVBgNVBAMUDlN0ZXBoYW4gR2F0emthMSEwHwYJKoZIhvcNAQkBFhJzdGVwaGFu
+QGdhdHprYS5vcmcwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDOhh9/v9Y5+nvf
+DHWNZtM7bq69cFWjkTlJyde43U2jMsB5TDtlsXAuVGNB9tzPigxCqFHk/gbrbSwXQw+7w/GQ
+XCaIKYE81wmgW+Ue1kSS1enhmPqHMhEUpmN2MNlabIvueIgdSvWaHXHXIcDI+ADvgqt/Bplo
+eprB+V+NWXkIm/xDAQVpMZLBbtdTeXlzPAuvNRNKR0TK0A0VJI8jtovm5vW7DNaW271CxVrW
+aiwWTiUo7h+MqEpqLEpXTeGhOb1i/qnZqtFsGmu2urTvpCMfqvbxzqd2JM+95VtD1Y00ndSs
+VCMQr0CckZGd/IDgUPrb5gvn+zlocwZ3nMl4Tv3dAgMBAAGjgcwwgckwCQYDVR0TBAIwADBE
+BgNVHSAEPTA7MDkGC2CGSAGG+EUBBxcBMCowKAYIKwYBBQUHAgEWHGh0dHBzOi8vd3d3LnZl
+cmlzaWduLmNvbS9ycGEwCwYDVR0PBAQDAgWgMB0GA1UdJQQWMBQGCCsGAQUFBwMEBggrBgEF
+BQcDAjBKBgNVHR8EQzBBMD+gPaA7hjlodHRwOi8vSW5kQzFEaWdpdGFsSUQtY3JsLnZlcmlz
+aWduLmNvbS9JbmRDMURpZ2l0YWxJRC5jcmwwDQYJKoZIhvcNAQEFBQADggEBACe1s95OsuNd
+qOsOlLgIpMoJbdIWkgnurGu9eFc7RpPXD+2alYSYYmSztCQmRF4M1OL19vioCjLBvxdN1ZxZ
+EDHGJUce/Jqjeq7K6prbKXtN71TGoNSVcpX13pYEa52U8OlwUaT+WBoxnXllvqa98zHshkwU
+I8kA4HeezuBJb74c6bx3iYop3/HmljXMsKoPVFOn3AP7LiuPRebq/y02AldYsE7t31t9kiFq
+N+O73TvIRoAjJBeIsar8AznZ9uyyz9E2nep469F/zVsCix4uFZXkKK5cIqwrkFO1ER4xnAwu
+eX+sPByx3NE+7xxxGXdoopHqCXjSXcxkTLvttvU8/QcxggTsMIIE6AIBATCB8jCB3TELMAkG
+A1UEBhMCVVMxFzAVBgNVBAoTDlZlcmlTaWduLCBJbmMuMR8wHQYDVQQLExZWZXJpU2lnbiBU
+cnVzdCBOZXR3b3JrMTswOQYDVQQLEzJUZXJtcyBvZiB1c2UgYXQgaHR0cHM6Ly93d3cudmVy
+aXNpZ24uY29tL3JwYSAoYykwNTEeMBwGA1UECxMVUGVyc29uYSBOb3QgVmFsaWRhdGVkMTcw
+NQYDVQQDEy5WZXJpU2lnbiBDbGFzcyAxIEluZGl2aWR1YWwgU3Vic2NyaWJlciBDQSAtIEcy
+AhBmHqO8UNB+S7myPW/q7t8OMAkGBSsOAwIaBQCgggLOMBgGCSqGSIb3DQEJAzELBgkqhkiG
+9w0BBwEwHAYJKoZIhvcNAQkFMQ8XDTEwMDkyMTE2NTQ1NVowIwYJKoZIhvcNAQkEMRYEFDCM
+/8duUHF+gw6onqWgUyq5lJJ6MF8GCSqGSIb3DQEJDzFSMFAwCwYJYIZIAWUDBAECMAoGCCqG
+SIb3DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggqhkiG
+9w0DAgIBKDCCAQMGCSsGAQQBgjcQBDGB9TCB8jCB3TELMAkGA1UEBhMCVVMxFzAVBgNVBAoT
+DlZlcmlTaWduLCBJbmMuMR8wHQYDVQQLExZWZXJpU2lnbiBUcnVzdCBOZXR3b3JrMTswOQYD
+VQQLEzJUZXJtcyBvZiB1c2UgYXQgaHR0cHM6Ly93d3cudmVyaXNpZ24uY29tL3JwYSAoYykw
+NTEeMBwGA1UECxMVUGVyc29uYSBOb3QgVmFsaWRhdGVkMTcwNQYDVQQDEy5WZXJpU2lnbiBD
+bGFzcyAxIEluZGl2aWR1YWwgU3Vic2NyaWJlciBDQSAtIEcyAhBmHqO8UNB+S7myPW/q7t8O
+MIIBBQYLKoZIhvcNAQkQAgsxgfWggfIwgd0xCzAJBgNVBAYTAlVTMRcwFQYDVQQKEw5WZXJp
+U2lnbiwgSW5jLjEfMB0GA1UECxMWVmVyaVNpZ24gVHJ1c3QgTmV0d29yazE7MDkGA1UECxMy
+VGVybXMgb2YgdXNlIGF0IGh0dHBzOi8vd3d3LnZlcmlzaWduLmNvbS9ycGEgKGMpMDUxHjAc
+BgNVBAsTFVBlcnNvbmEgTm90IFZhbGlkYXRlZDE3MDUGA1UEAxMuVmVyaVNpZ24gQ2xhc3Mg
+MSBJbmRpdmlkdWFsIFN1YnNjcmliZXIgQ0EgLSBHMgIQZh6jvFDQfku5sj1v6u7fDjANBgkq
+hkiG9w0BAQEFAASCAQA3Y4uuJCOgplAkCBnh9AdqpvdyOCHyS0fQEiI6og30oczahk/jlAKf
+7gohYZ+P5UIQmGCvadd9O9A+AdR5FZVKJeZtGiRe2/R9SrzMN57eUNuJodHBIE4fEH6GpGuR
+NUx85QJQ+F0nJx9OvR26D2z5lG6nvKGvy/8c//CkIxtDpa5zvgKqv5NLi7m2ARb3jT12BrWn
++Vx2ldKgnCtpoiAY9CXNzNVE+WI9a01dw31nByATlsDQfYH2gnpwf0/oavqHe8Y94Rum2lXR
+2k7YmeDjkMI2GzRf7rjg36AVEK8JkDNPrQFT+q2iuj2EPWr/z6kYuGu8hpWHS2Emixv98fkX
+AAAAAAAA
+--------------ms070909030708060909060906--
