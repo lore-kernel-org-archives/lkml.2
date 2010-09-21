@@ -1,136 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163Ab0IUOaV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 10:30:21 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:55277 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753029Ab0IUOaU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 10:30:20 -0400
-Date: Tue, 21 Sep 2010 10:30:18 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Jiri Kosina <jkosina@suse.cz>
-cc: Phil Turmel <philip@turmel.org>, Mat <jackdachef@gmail.com>,
-        Guillaume Chazarain <guichaz@gmail.com>,
-        <linux-kernel@vger.kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Oliver Neukum <oliver@neukum.org>, Alan Ott <alan@signal11.us>,
-        <linux-usb@vger.kernel.org>, <linux-input@vger.kernel.org>,
-        Andreas Bombe <aeb@debian.org>, Alex Riesen <raa.lkml@gmail.com>,
-        Gabriel C <nix.or.die@googlemail.com>
-Subject: Re: [BUG, Regression, bisected] USB mouse causes bug on 1st insert,
- ignored on 2nd insert, lsusb stuck at usbdev_open
-In-Reply-To: <alpine.LNX.2.00.1009211156520.26813@pobox.suse.cz>
-Message-ID: <Pine.LNX.4.44L0.1009211013460.1644-100000@iolanthe.rowland.org>
+	id S1754364Ab0IUOhG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 10:37:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23611 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753462Ab0IUOhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 10:37:05 -0400
+Date: Tue, 21 Sep 2010 10:35:55 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
+        hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
+        roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com
+Subject: Re: [PATCH 03/10] jump label v11: base patch
+Message-ID: <20100921143555.GA2873@redhat.com>
+References: <cover.1284733808.git.jbaron@redhat.com> <ee8b3595967989fdaf84e698dc7447d315ce972a.1284733808.git.jbaron@redhat.com> <20100921131232.GA3024@one.firstfloor.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100921131232.GA3024@one.firstfloor.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Sep 2010, Jiri Kosina wrote:
-
-> I have just found out that it's actually CONFIG_USB_DYNAMIC_MINORS which 
-> makes the difference. When unset, the problem doesn't trigger, and 
-> usb_find_interface() always returns the proper interface. When 
-> CONFIG_USB_DYNAMIC_MINORS is being used, the oops happen.
+On Tue, Sep 21, 2010 at 03:12:32PM +0200, Andi Kleen wrote:
+> On Fri, Sep 17, 2010 at 11:09:00AM -0400, Jason Baron wrote:
+> > +extern void arch_jump_label_transform(struct jump_entry *entry,
+> > +				 enum jump_label_type type);
+> > +extern void jump_label_update(unsigned long key, enum jump_label_type type);
+> > +extern void jump_label_apply_nops(struct module *mod);
+> > +extern void arch_jump_label_text_poke_early(jump_label_t addr);
 > 
-> I'll look into that.
+> These function names are too long.
+> 
+> Also it would be better if the types for the pointers are kept
+> instead of casting to unsigned long. All the variables
+> are ints right?
+> 
 
-Apparently the problem is that intf->minors doesn't get initialized 
-properly.  This patch should fix it.  Everybody, please try it out.
+So far, yes. But I didn't want to force this, in case the users of the
+API wanted to use other types. But I'm ok with 'int *' here.
 
-Alan Stern
+> > +#define JUMP_LABEL_HASH_BITS 6
+> > +#define JUMP_LABEL_TABLE_SIZE (1 << JUMP_LABEL_HASH_BITS)
+> > +static struct hlist_head jump_label_table[JUMP_LABEL_TABLE_SIZE];
+> 
+> It's not clear to me why this hash table is needed. There should
+> not be that many trace points, is it that big a problem to simply
+> walk all the sections when something is changed?
+> 
+> Or maybe the sections could be just sorted and a binary search used
+> like with exception tables.
+> 
+> I suspect that would simplify a lot of code.
+> 
+> Overall I like the idea, but the current code is too complicated
+> for the benefit I think.
+> 
+> Can it be put on a diet?
+> 
+> -Andi
 
+So there are ~150 tracepoints, but this code is also being proposed for
+use with 'dynamic debug' of which there are > 1000, and I'm hoping for
+more users moving forward.
 
-Index: usb-2.6/drivers/usb/core/file.c
-===================================================================
---- usb-2.6.orig/drivers/usb/core/file.c
-+++ usb-2.6/drivers/usb/core/file.c
-@@ -159,9 +159,9 @@ void usb_major_cleanup(void)
- int usb_register_dev(struct usb_interface *intf,
- 		     struct usb_class_driver *class_driver)
- {
--	int retval = -EINVAL;
-+	int retval;
- 	int minor_base = class_driver->minor_base;
--	int minor = 0;
-+	int minor;
- 	char name[20];
- 	char *temp;
- 
-@@ -173,12 +173,17 @@ int usb_register_dev(struct usb_interfac
- 	 */
- 	minor_base = 0;
- #endif
--	intf->minor = -1;
--
--	dbg ("looking for a minor, starting at %d", minor_base);
- 
- 	if (class_driver->fops == NULL)
--		goto exit;
-+		return -EINVAL;
-+	if (intf->minor >= 0)
-+		return -EADDRINUSE;
-+
-+	retval = init_usb_class();
-+	if (retval)
-+		return retval;
-+
-+	dev_dbg(&intf->dev, "looking for a minor, starting at %d", minor_base);
- 
- 	down_write(&minor_rwsem);
- 	for (minor = minor_base; minor < MAX_USB_MINORS; ++minor) {
-@@ -186,20 +191,12 @@ int usb_register_dev(struct usb_interfac
- 			continue;
- 
- 		usb_minors[minor] = class_driver->fops;
--
--		retval = 0;
-+		intf->minor = minor;
- 		break;
- 	}
- 	up_write(&minor_rwsem);
--
--	if (retval)
--		goto exit;
--
--	retval = init_usb_class();
--	if (retval)
--		goto exit;
--
--	intf->minor = minor;
-+	if (intf->minor < 0)
-+		return -EXFULL;
- 
- 	/* create a usb class device for this usb interface */
- 	snprintf(name, sizeof(name), class_driver->name, minor - minor_base);
-@@ -212,12 +209,12 @@ int usb_register_dev(struct usb_interfac
- 				      MKDEV(USB_MAJOR, minor), class_driver,
- 				      "%s", temp);
- 	if (IS_ERR(intf->usb_dev)) {
-+		retval = PTR_ERR(intf->usb_dev);
- 		down_write(&minor_rwsem);
--		usb_minors[intf->minor] = NULL;
-+		usb_minors[minor] = NULL;
-+		intf->minor = -1;
- 		up_write(&minor_rwsem);
--		retval = PTR_ERR(intf->usb_dev);
- 	}
--exit:
- 	return retval;
- }
- EXPORT_SYMBOL_GPL(usb_register_dev);
-Index: usb-2.6/drivers/usb/core/message.c
-===================================================================
---- usb-2.6.orig/drivers/usb/core/message.c
-+++ usb-2.6/drivers/usb/core/message.c
-@@ -1803,6 +1803,7 @@ free_interfaces:
- 		intf->dev.groups = usb_interface_groups;
- 		intf->dev.dma_mask = dev->dev.dma_mask;
- 		INIT_WORK(&intf->reset_ws, __usb_queue_reset_device);
-+		intf->minor = -1;
- 		device_initialize(&intf->dev);
- 		dev_set_name(&intf->dev, "%d-%s:%d.%d",
- 			dev->bus->busnum, dev->devpath,
+Also, I think the hash table deals nicely with modules. I create a
+linked list of only those module sections that are relevant to each hash
+bucket. If you search through all the section on each enable/disable,
+its going to be proportional to the number of modules as well.
 
+thanks,
+
+-Jason
