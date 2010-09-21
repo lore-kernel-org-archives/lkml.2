@@ -1,155 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758057Ab0IUQzT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 12:55:19 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.160]:8938 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758025Ab0IUQzP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 12:55:15 -0400
-X-RZG-AUTH: :P3gBZUipdd93EFhLYvtPf8I/2nqnPwH62F+dj0BM8VcpI3CUbfbcqZHCwtQRXA==
-X-RZG-CLASS-ID: mo00
-Message-ID: <4C98E35F.6050207@gatzka.org>
-Date: Tue, 21 Sep 2010 18:54:55 +0200
-From: Stephan Gatzka <stephan@gatzka.org>
-Reply-To: stephan@gatzka.org
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Lightning/1.0b1 Thunderbird/3.0.8
+	id S1758075Ab0IUQzm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 12:55:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36916 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755873Ab0IUQzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 12:55:40 -0400
+Date: Tue, 21 Sep 2010 18:55:36 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Greg KH <gregkh@suse.de>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Phil Turmel <philip@turmel.org>,
+        Mat <jackdachef@gmail.com>, Guillaume Chazarain <guichaz@gmail.com>,
+        linux-kernel@vger.kernel.org, Oliver Neukum <oliver@neukum.org>,
+        Alan Ott <alan@signal11.us>, linux-usb@vger.kernel.org,
+        linux-input@vger.kernel.org, Andreas Bombe <aeb@debian.org>,
+        Alex Riesen <raa.lkml@gmail.com>,
+        Gabriel C <nix.or.die@googlemail.com>
+Subject: Re: [BUG, Regression, bisected] USB mouse causes bug on 1st insert,
+ ignored on 2nd insert, lsusb stuck at usbdev_open
+In-Reply-To: <20100921165048.GB8756@suse.de>
+Message-ID: <alpine.LNX.2.00.1009211852010.26813@pobox.suse.cz>
+References: <alpine.LNX.2.00.1009211156520.26813@pobox.suse.cz> <Pine.LNX.4.44L0.1009211013460.1644-100000@iolanthe.rowland.org> <20100921165048.GB8756@suse.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: netdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
-References: <363bd749a38d0b785d8431e591bf54c38db4c2d7.1281956490.git.richard.cochran@omicron.at>	<AANLkTik_2MKMhOuDGOmu8Kzyq-ipLe+Bxrb3FaD+Tv4U@mail.gmail.com>	<20100817085324.GB3330@riccoc20.at.omicron.at>	<1282090963.1734.97.camel@localhost>	<20100818071942.GA4096@riccoc20.at.omicron.at>	<1282176776.2865.100.camel@localhost.localdomain>	<20100819055518.GA4084@riccoc20.at.omicron.at>	<1282594125.3111.344.camel@localhost.localdomain>	<20100827123849.GC11657@riccoc20.at.omicron.at>	<1282948239.2268.155.camel@jstultz-laptop> <20100906063327.GA4549@riccoc20.at.omicron.at>
-In-Reply-To: <20100906063327.GA4549@riccoc20.at.omicron.at>
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms070909030708060909060906"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cryptographically signed message in MIME format.
+On Tue, 21 Sep 2010, Greg KH wrote:
 
---------------ms070909030708060909060906
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: quoted-printable
+> > > I have just found out that it's actually CONFIG_USB_DYNAMIC_MINORS which 
+> > > makes the difference. When unset, the problem doesn't trigger, and 
+> > > usb_find_interface() always returns the proper interface. When 
+> > > CONFIG_USB_DYNAMIC_MINORS is being used, the oops happen.
+> > > 
+> > > I'll look into that.
+> > 
+> > Apparently the problem is that intf->minors doesn't get initialized 
+> > properly.  This patch should fix it.  Everybody, please try it out.
+> 
+> Wow, what happened to suddenly cause this?  Nothing has changed here in
+> a long time.
+> 
+> wierd.
 
-Hi Richard,
+It doesn't hit you if you are calling usb_register_dev() for all the 
+instances you have, as the first device will have minor '0', the second 
+one '1', etc.
 
-> 1. Character device
-> 2. POSIX clock with dynamic ids
->
-> Please, just take your pick ;^)
+But if you are calling usb_find_interface() for devices that have never 
+been registered through usb_register_dev(), then you have a problem, as 
+usb_find_interface() will match those unregistered devices (as minor == 0 
+in such cases).
 
-Just to reopen this nearly dead but very interesting thread: I'm happy=20
-with every solution that has no impact on the accuracy of the PTP clock.
+This is probably quite rare scenario, and hiddev (which might be the only 
+in-kernel driver doing this?) has moved to usb_find_interface() only 
+recently.
 
-If I can choose, I would prefer the POSIX clock with dynamic ids solution=
-=2E
-
-Kind regards and thanks for your effort,
-
-Stephan Gatzka
-
-
---------------ms070909030708060909060906
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIO5jCC
-BEYwggOvoAMCAQICEGb9R+PCGeToms2Z3fU6yyQwDQYJKoZIhvcNAQEFBQAwXzELMAkGA1UE
-BhMCVVMxFzAVBgNVBAoTDlZlcmlTaWduLCBJbmMuMTcwNQYDVQQLEy5DbGFzcyAxIFB1Ymxp
-YyBQcmltYXJ5IENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA1MTAyODAwMDAwMFoXDTE1
-MTAyNzIzNTk1OVowgd0xCzAJBgNVBAYTAlVTMRcwFQYDVQQKEw5WZXJpU2lnbiwgSW5jLjEf
-MB0GA1UECxMWVmVyaVNpZ24gVHJ1c3QgTmV0d29yazE7MDkGA1UECxMyVGVybXMgb2YgdXNl
-IGF0IGh0dHBzOi8vd3d3LnZlcmlzaWduLmNvbS9ycGEgKGMpMDUxHjAcBgNVBAsTFVBlcnNv
-bmEgTm90IFZhbGlkYXRlZDE3MDUGA1UEAxMuVmVyaVNpZ24gQ2xhc3MgMSBJbmRpdmlkdWFs
-IFN1YnNjcmliZXIgQ0EgLSBHMjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMnf
-rOfq+PgDFMQAktXBfjbCPO98chXLwKuMPRyVzm8eECw/AO2XJua2x+atQx0/pIdHR0w+VPhs
-+Mf8sZ69MHC8l7EDBeqV8a1AxUR6SwWi8mD81zplYu//EHuiVrvFTnAt1qIfPO2wQuhejVch
-rKaZ2RHp0hoHwHRHQgv8xTTq/ea6JNEdCBU3otdzzwFBL2OyOj++pRpu9MlKWz2VphW7NQIZ
-+dTvvI8OcXZZu0u2Ptb8Whb01g6J8kn+bAztFenZiHWcec5gJ925rXXOL3OVekA6hXVJsLjf
-aLyrzROChRFQo+A8C67AClPN1zBvhTJGG+RJEMJs4q8fef/btLUCAwEAAaOB/zCB/DASBgNV
-HRMBAf8ECDAGAQH/AgEAMEQGA1UdIAQ9MDswOQYLYIZIAYb4RQEHFwEwKjAoBggrBgEFBQcC
-ARYcaHR0cHM6Ly93d3cudmVyaXNpZ24uY29tL3JwYTALBgNVHQ8EBAMCAQYwEQYJYIZIAYb4
-QgEBBAQDAgEGMC4GA1UdEQQnMCWkIzAhMR8wHQYDVQQDExZQcml2YXRlTGFiZWwzLTIwNDgt
-MTU1MB0GA1UdDgQWBBQRfV4ZfTwE32ps1qKKGj8x2DuUUjAxBgNVHR8EKjAoMCagJKAihiBo
-dHRwOi8vY3JsLnZlcmlzaWduLmNvbS9wY2ExLmNybDANBgkqhkiG9w0BAQUFAAOBgQA8o9oC
-YzrEk6qrctPcrVA4HgyeFkqIt+7r2f8PjZWg1rv6aguuYYTYaEeJ70+ssh9JQZtJM3aTi55u
-uUMcYL3C3Ioth8FFwBFyBBprJCpsb+f8BxMp0Hc6I+f1wYVoGb/GAVQgGa41gsxiPGEJxvTV
-67APpp8zhZrTcY5Qj5ndYjCCBUowggQyoAMCAQICEGYeo7xQ0H5LubI9b+ru3w4wDQYJKoZI
-hvcNAQEFBQAwgd0xCzAJBgNVBAYTAlVTMRcwFQYDVQQKEw5WZXJpU2lnbiwgSW5jLjEfMB0G
-A1UECxMWVmVyaVNpZ24gVHJ1c3QgTmV0d29yazE7MDkGA1UECxMyVGVybXMgb2YgdXNlIGF0
-IGh0dHBzOi8vd3d3LnZlcmlzaWduLmNvbS9ycGEgKGMpMDUxHjAcBgNVBAsTFVBlcnNvbmEg
-Tm90IFZhbGlkYXRlZDE3MDUGA1UEAxMuVmVyaVNpZ24gQ2xhc3MgMSBJbmRpdmlkdWFsIFN1
-YnNjcmliZXIgQ0EgLSBHMjAeFw0wOTExMTMwMDAwMDBaFw0xMDExMTMyMzU5NTlaMIIBEzEX
-MBUGA1UEChMOVmVyaVNpZ24sIEluYy4xHzAdBgNVBAsTFlZlcmlTaWduIFRydXN0IE5ldHdv
-cmsxRjBEBgNVBAsTPXd3dy52ZXJpc2lnbi5jb20vcmVwb3NpdG9yeS9SUEEgSW5jb3JwLiBi
-eSBSZWYuLExJQUIuTFREKGMpOTgxHjAcBgNVBAsTFVBlcnNvbmEgTm90IFZhbGlkYXRlZDEz
-MDEGA1UECxMqRGlnaXRhbCBJRCBDbGFzcyAxIC0gTmV0c2NhcGUgRnVsbCBTZXJ2aWNlMRcw
-FQYDVQQDFA5TdGVwaGFuIEdhdHprYTEhMB8GCSqGSIb3DQEJARYSc3RlcGhhbkBnYXR6a2Eu
-b3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzoYff7/WOfp73wx1jWbTO26u
-vXBVo5E5ScnXuN1NozLAeUw7ZbFwLlRjQfbcz4oMQqhR5P4G620sF0MPu8PxkFwmiCmBPNcJ
-oFvlHtZEktXp4Zj6hzIRFKZjdjDZWmyL7niIHUr1mh1x1yHAyPgA74KrfwaZaHqawflfjVl5
-CJv8QwEFaTGSwW7XU3l5czwLrzUTSkdEytANFSSPI7aL5ub1uwzWltu9QsVa1mosFk4lKO4f
-jKhKaixKV03hoTm9Yv6p2arRbBprtrq076QjH6r28c6ndiTPveVbQ9WNNJ3UrFQjEK9AnJGR
-nfyA4FD62+YL5/s5aHMGd5zJeE793QIDAQABo4HMMIHJMAkGA1UdEwQCMAAwRAYDVR0gBD0w
-OzA5BgtghkgBhvhFAQcXATAqMCgGCCsGAQUFBwIBFhxodHRwczovL3d3dy52ZXJpc2lnbi5j
-b20vcnBhMAsGA1UdDwQEAwIFoDAdBgNVHSUEFjAUBggrBgEFBQcDBAYIKwYBBQUHAwIwSgYD
-VR0fBEMwQTA/oD2gO4Y5aHR0cDovL0luZEMxRGlnaXRhbElELWNybC52ZXJpc2lnbi5jb20v
-SW5kQzFEaWdpdGFsSUQuY3JsMA0GCSqGSIb3DQEBBQUAA4IBAQAntbPeTrLjXajrDpS4CKTK
-CW3SFpIJ7qxrvXhXO0aT1w/tmpWEmGJks7QkJkReDNTi9fb4qAoywb8XTdWcWRAxxiVHHvya
-o3quyuqa2yl7Te9UxqDUlXKV9d6WBGudlPDpcFGk/lgaMZ15Zb6mvfMx7IZMFCPJAOB3ns7g
-SW++HOm8d4mKKd/x5pY1zLCqD1RTp9wD+y4rj0Xm6v8tNgJXWLBO7d9bfZIhajfju907yEaA
-IyQXiLGq/AM52fbsss/RNp3qeOvRf81bAoseLhWV5CiuXCKsK5BTtREeMZwMLnl/rDwcsdzR
-Pu8ccRl3aKKR6gl40l3MZEy77bb1PP0HMIIFSjCCBDKgAwIBAgIQZh6jvFDQfku5sj1v6u7f
-DjANBgkqhkiG9w0BAQUFADCB3TELMAkGA1UEBhMCVVMxFzAVBgNVBAoTDlZlcmlTaWduLCBJ
-bmMuMR8wHQYDVQQLExZWZXJpU2lnbiBUcnVzdCBOZXR3b3JrMTswOQYDVQQLEzJUZXJtcyBv
-ZiB1c2UgYXQgaHR0cHM6Ly93d3cudmVyaXNpZ24uY29tL3JwYSAoYykwNTEeMBwGA1UECxMV
-UGVyc29uYSBOb3QgVmFsaWRhdGVkMTcwNQYDVQQDEy5WZXJpU2lnbiBDbGFzcyAxIEluZGl2
-aWR1YWwgU3Vic2NyaWJlciBDQSAtIEcyMB4XDTA5MTExMzAwMDAwMFoXDTEwMTExMzIzNTk1
-OVowggETMRcwFQYDVQQKEw5WZXJpU2lnbiwgSW5jLjEfMB0GA1UECxMWVmVyaVNpZ24gVHJ1
-c3QgTmV0d29yazFGMEQGA1UECxM9d3d3LnZlcmlzaWduLmNvbS9yZXBvc2l0b3J5L1JQQSBJ
-bmNvcnAuIGJ5IFJlZi4sTElBQi5MVEQoYyk5ODEeMBwGA1UECxMVUGVyc29uYSBOb3QgVmFs
-aWRhdGVkMTMwMQYDVQQLEypEaWdpdGFsIElEIENsYXNzIDEgLSBOZXRzY2FwZSBGdWxsIFNl
-cnZpY2UxFzAVBgNVBAMUDlN0ZXBoYW4gR2F0emthMSEwHwYJKoZIhvcNAQkBFhJzdGVwaGFu
-QGdhdHprYS5vcmcwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDOhh9/v9Y5+nvf
-DHWNZtM7bq69cFWjkTlJyde43U2jMsB5TDtlsXAuVGNB9tzPigxCqFHk/gbrbSwXQw+7w/GQ
-XCaIKYE81wmgW+Ue1kSS1enhmPqHMhEUpmN2MNlabIvueIgdSvWaHXHXIcDI+ADvgqt/Bplo
-eprB+V+NWXkIm/xDAQVpMZLBbtdTeXlzPAuvNRNKR0TK0A0VJI8jtovm5vW7DNaW271CxVrW
-aiwWTiUo7h+MqEpqLEpXTeGhOb1i/qnZqtFsGmu2urTvpCMfqvbxzqd2JM+95VtD1Y00ndSs
-VCMQr0CckZGd/IDgUPrb5gvn+zlocwZ3nMl4Tv3dAgMBAAGjgcwwgckwCQYDVR0TBAIwADBE
-BgNVHSAEPTA7MDkGC2CGSAGG+EUBBxcBMCowKAYIKwYBBQUHAgEWHGh0dHBzOi8vd3d3LnZl
-cmlzaWduLmNvbS9ycGEwCwYDVR0PBAQDAgWgMB0GA1UdJQQWMBQGCCsGAQUFBwMEBggrBgEF
-BQcDAjBKBgNVHR8EQzBBMD+gPaA7hjlodHRwOi8vSW5kQzFEaWdpdGFsSUQtY3JsLnZlcmlz
-aWduLmNvbS9JbmRDMURpZ2l0YWxJRC5jcmwwDQYJKoZIhvcNAQEFBQADggEBACe1s95OsuNd
-qOsOlLgIpMoJbdIWkgnurGu9eFc7RpPXD+2alYSYYmSztCQmRF4M1OL19vioCjLBvxdN1ZxZ
-EDHGJUce/Jqjeq7K6prbKXtN71TGoNSVcpX13pYEa52U8OlwUaT+WBoxnXllvqa98zHshkwU
-I8kA4HeezuBJb74c6bx3iYop3/HmljXMsKoPVFOn3AP7LiuPRebq/y02AldYsE7t31t9kiFq
-N+O73TvIRoAjJBeIsar8AznZ9uyyz9E2nep469F/zVsCix4uFZXkKK5cIqwrkFO1ER4xnAwu
-eX+sPByx3NE+7xxxGXdoopHqCXjSXcxkTLvttvU8/QcxggTsMIIE6AIBATCB8jCB3TELMAkG
-A1UEBhMCVVMxFzAVBgNVBAoTDlZlcmlTaWduLCBJbmMuMR8wHQYDVQQLExZWZXJpU2lnbiBU
-cnVzdCBOZXR3b3JrMTswOQYDVQQLEzJUZXJtcyBvZiB1c2UgYXQgaHR0cHM6Ly93d3cudmVy
-aXNpZ24uY29tL3JwYSAoYykwNTEeMBwGA1UECxMVUGVyc29uYSBOb3QgVmFsaWRhdGVkMTcw
-NQYDVQQDEy5WZXJpU2lnbiBDbGFzcyAxIEluZGl2aWR1YWwgU3Vic2NyaWJlciBDQSAtIEcy
-AhBmHqO8UNB+S7myPW/q7t8OMAkGBSsOAwIaBQCgggLOMBgGCSqGSIb3DQEJAzELBgkqhkiG
-9w0BBwEwHAYJKoZIhvcNAQkFMQ8XDTEwMDkyMTE2NTQ1NVowIwYJKoZIhvcNAQkEMRYEFDCM
-/8duUHF+gw6onqWgUyq5lJJ6MF8GCSqGSIb3DQEJDzFSMFAwCwYJYIZIAWUDBAECMAoGCCqG
-SIb3DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggqhkiG
-9w0DAgIBKDCCAQMGCSsGAQQBgjcQBDGB9TCB8jCB3TELMAkGA1UEBhMCVVMxFzAVBgNVBAoT
-DlZlcmlTaWduLCBJbmMuMR8wHQYDVQQLExZWZXJpU2lnbiBUcnVzdCBOZXR3b3JrMTswOQYD
-VQQLEzJUZXJtcyBvZiB1c2UgYXQgaHR0cHM6Ly93d3cudmVyaXNpZ24uY29tL3JwYSAoYykw
-NTEeMBwGA1UECxMVUGVyc29uYSBOb3QgVmFsaWRhdGVkMTcwNQYDVQQDEy5WZXJpU2lnbiBD
-bGFzcyAxIEluZGl2aWR1YWwgU3Vic2NyaWJlciBDQSAtIEcyAhBmHqO8UNB+S7myPW/q7t8O
-MIIBBQYLKoZIhvcNAQkQAgsxgfWggfIwgd0xCzAJBgNVBAYTAlVTMRcwFQYDVQQKEw5WZXJp
-U2lnbiwgSW5jLjEfMB0GA1UECxMWVmVyaVNpZ24gVHJ1c3QgTmV0d29yazE7MDkGA1UECxMy
-VGVybXMgb2YgdXNlIGF0IGh0dHBzOi8vd3d3LnZlcmlzaWduLmNvbS9ycGEgKGMpMDUxHjAc
-BgNVBAsTFVBlcnNvbmEgTm90IFZhbGlkYXRlZDE3MDUGA1UEAxMuVmVyaVNpZ24gQ2xhc3Mg
-MSBJbmRpdmlkdWFsIFN1YnNjcmliZXIgQ0EgLSBHMgIQZh6jvFDQfku5sj1v6u7fDjANBgkq
-hkiG9w0BAQEFAASCAQA3Y4uuJCOgplAkCBnh9AdqpvdyOCHyS0fQEiI6og30oczahk/jlAKf
-7gohYZ+P5UIQmGCvadd9O9A+AdR5FZVKJeZtGiRe2/R9SrzMN57eUNuJodHBIE4fEH6GpGuR
-NUx85QJQ+F0nJx9OvR26D2z5lG6nvKGvy/8c//CkIxtDpa5zvgKqv5NLi7m2ARb3jT12BrWn
-+Vx2ldKgnCtpoiAY9CXNzNVE+WI9a01dw31nByATlsDQfYH2gnpwf0/oavqHe8Y94Rum2lXR
-2k7YmeDjkMI2GzRf7rjg36AVEK8JkDNPrQFT+q2iuj2EPWr/z6kYuGu8hpWHS2Emixv98fkX
-AAAAAAAA
---------------ms070909030708060909060906--
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
