@@ -1,63 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869Ab0IUWJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 18:09:26 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:37582 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752522Ab0IUWJZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 18:09:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=wq4Zo6cLotaxN1s9C09HOtxnx2al2dsj4yjnR8MLt5964E7604sDgc6B67yHNZDnFv
-         E5+VrBx4OpwQneoFzWkmxBHVZ2jSraZKzN8qwr4gsCtH0csHNohGk7KWMqPtaOLpshv+
-         P3saARLkmvboRw70bZPdJ4g/1F/3iD9MItV3w=
+	id S1757068Ab0IUWKX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 18:10:23 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:59228 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752522Ab0IUWKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 18:10:22 -0400
+Date: Tue, 21 Sep 2010 23:10:08 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH 8/8] writeback: Do not sleep on the congestion queue if
+	there are no congested BDIs or if significant congestion is not
+	being encountered in the current zone
+Message-ID: <20100921221008.GA16323@csn.ul.ie>
+References: <1284553671-31574-1-git-send-email-mel@csn.ul.ie> <1284553671-31574-9-git-send-email-mel@csn.ul.ie> <20100916152810.cb074e9f.akpm@linux-foundation.org> <20100920095239.GE1998@csn.ul.ie> <20100921144413.abc45d2f.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <2C3F2C02-35B6-46AF-82DA-44ACCBFB8362@digitaldans.com>
-References: <1285066638-7473-1-git-send-email-leoli@freescale.com>
- <877FD0B5-19A7-4A16-831E-369B80B104EA@kernel.crashing.org>
- <AANLkTimiwtoa6i10OTcgFnvbvcO9N4KWHyt4Poj-yj=T@mail.gmail.com>
- <20100921163456.7e2c9b32@udp111988uds.am.freescale.net> <AANLkTine--kry0c0n87WOqYyi3AQOb2KnmNRs-MeXcQt@mail.gmail.com>
- <20100921164944.164ed0af@udp111988uds.am.freescale.net> <2C3F2C02-35B6-46AF-82DA-44ACCBFB8362@digitaldans.com>
-From: Timur Tabi <timur.tabi@gmail.com>
-Date: Tue, 21 Sep 2010 17:08:54 -0500
-Message-ID: <AANLkTinKbBBbC1gmPewhn1f3MW-1MbARtiQZNX4w7Mi+@mail.gmail.com>
-Subject: Re: [PATCH] fsldma: add support to 36-bit physical address
-To: Dan Malek <ppc6dev@digitaldans.com>
-Cc: Scott Wood <scottwood@freescale.com>, dan.j.williams@intel.com,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100921144413.abc45d2f.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 21, 2010 at 5:05 PM, Dan Malek <ppc6dev@digitaldans.com> wrote:
+On Tue, Sep 21, 2010 at 02:44:13PM -0700, Andrew Morton wrote:
+> On Mon, 20 Sep 2010 10:52:39 +0100
+> Mel Gorman <mel@csn.ul.ie> wrote:
+> 
+> > > > This patch tracks how many pages backed by a congested BDI were found during
+> > > > scanning. If all the dirty pages encountered on a list isolated from the
+> > > > LRU belong to a congested BDI, the zone is marked congested until the zone
+> > > > reaches the high watermark.
+> > > 
+> > > High watermark, or low watermark?
+> > > 
+> > 
+> > High watermark. The check is made by kswapd.
+> > 
+> > > The terms are rather ambiguous so let's avoid them.  Maybe "full"
+> > > watermark and "empty"?
+> > > 
+> > 
+> > Unfortunately they are ambiguous to me. I know what the high watermark
+> > is but not what the full or empty watermarks are.
+> 
+> Really.  So what's the "high" watermark? 
 
-> The DMA descriptors are accessed using DMA by the
-> controller itself.
+The high watermark is the point where kswapd goes back to sleep because
+enough pages have been reclaimed. It's a proxy measure for memory pressure.
 
-Yes and no.  Technically, it is DMA, but it's not something that
-SWIOTLB could ever know about.  We just pass the physical address to
-the DMA controller, and it does a memory read to obtain the data.
-That's not the kind of DMA that SWIOTLB would deal with, I think.
+> From the above text I'm
+> thinking that you mean the high watermark is when the queue has a small
+> number of requests and the low watermark is when the queue has a large
+> number of requests.
+> 
 
-> The APIs need to ensure proper coherency
-> between the CPU and the DMA controller for the
-> descriptor access.  The underlying implementation of the
-> API will depend upon the hardware capabilities that
-> ensure this coherency.
+I was expecting "zone reaches the high watermark" was the clue that I was
+talking about zone watermarks and not an IO queue but it could be better.
 
-I think that's already covered.  The dma_set_mask() call is supposed
-to only affect the dma_map_single() calls that dmaengine makes, as
-Scott pointed out.
 
-My question is, should dmaengine be using the same 'dev' that fsldma
-uses to allocate the DMA descriptors?  I wonder if the 'dev' should be
-allocated internally by dmaengine, or provided by the client drivers.
+> I'd have thought that this is backwards: the "high" watermark is when
+> the queue has a large (ie: high) number of requests.
+> 
+> A problem.  How do we fix it?
+> 
+
+I will try and clarify. How about this as a replacement paragraph?
+
+==== CUT HERE ====
+This patch tracks how many pages backed by a congested BDI were found
+during scanning. If all the dirty pages isolated from the LRU are
+backed by a congested BDI, the zone is marked congested. A zone is marked
+uncongested with enough pages have been freed for the zone's high watermark
+to be reached indicating that the zone is no longer under any memory
+pressure. wait_iff_congested() checks if there are any congested BDIs and if
+so if the current zone is marked congested. If both conditions are met, the
+caller sleeps on the congestion queue. Otherwise it will call cond_reched()
+to yield the processor if necessary.
 
 -- 
-Timur Tabi
-Linux kernel developer at Freescale
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
