@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554Ab0IUXEc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 19:04:32 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:40842 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752411Ab0IUXEb (ORCPT
+	id S1752811Ab0IUXOG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 19:14:06 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:18942 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab0IUXOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 19:04:31 -0400
-Date: Wed, 22 Sep 2010 00:04:30 +0100 (BST)
-From: "Maciej W. Rozycki" <macro@linux-mips.org>
-To: Huang Ying <ying.huang@intel.com>
-cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [RFC 3/6] x86, NMI, Rename memory parity error to PCI SERR
- error
-In-Reply-To: <1284087065-32722-3-git-send-email-ying.huang@intel.com>
-Message-ID: <alpine.LFD.2.00.1009212333280.6717@eddie.linux-mips.org>
-References: <1284087065-32722-1-git-send-email-ying.huang@intel.com> <1284087065-32722-3-git-send-email-ying.huang@intel.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Tue, 21 Sep 2010 19:14:05 -0400
+Message-ID: <4C993BE1.1020506@kernel.org>
+Date: Tue, 21 Sep 2010 16:12:33 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Jack Steiner <steiner@sgi.com>, mingo@elte.hu,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86 - irq vector assignment
+References: <20100921200502.GA26587@sgi.com> <AANLkTinkiZC6bvRJ10EsG-CZSjdJtqW4N7pfq7vnvz3i@mail.gmail.com> <alpine.LFD.2.00.1009212310410.2416@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1009212310410.2416@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Sep 2010, Huang Ying wrote:
+On 09/21/2010 02:34 PM, Thomas Gleixner wrote:
+> On Tue, 21 Sep 2010, Yinghai Lu wrote:
+>>>  arch/x86/kernel/apic/io_apic.c |    5 +++++
+>>>  1 file changed, 5 insertions(+)
+>>>
+>>> Index: linux/arch/x86/kernel/apic/io_apic.c
+>>> ===================================================================
+>>> --- linux.orig/arch/x86/kernel/apic/io_apic.c   2010-09-17 13:00:19.164638447 -0500
+>>> +++ linux/arch/x86/kernel/apic/io_apic.c        2010-09-17 13:00:23.448595373 -0500
+>>> @@ -3253,6 +3253,11 @@ unsigned int create_irq_nr(unsigned int
+>>>                desc_new = move_irq_desc(desc_new, node);
+>>>                cfg_new = desc_new->chip_data;
+>>>
+>>> +#ifdef CONFIG_NUMA
+>>> +               if (node >= 0 && __assign_irq_vector(new, cfg_new, node_to_cpumask_map[node]) == 0)
+>>> +                       irq = new;
+>>> +               else
+>>> +#endif
+>>>                if (__assign_irq_vector(new, cfg_new, apic->target_cpus()) == 0)
+>>>                        irq = new;
+>>>                break;
+>>
+>> target_cpus() for uv_x and x2apic phys mode all have cpu_online_mask()
+>>
+>> so we should get the vector for other cpus. aka __assign_irq_vector()
+>> should not fail. unless you have so many irq > nr_irqs.
+> 
+> Did you even read the changelog ? It's not about "should".
+> 
+> All CPU0 vectors are assigned already just because the current code
+> takes the first cpu in the target_cpus mask regardless of the node on
+> which the irq_desc is allocated. That's crap. Why do we allocate
+> irq_desc on node and leave the vector assigned to node(cpu0) ?
 
-> memory parity error is only valid for IBM PC-AT, newer machine use 7
-> bit (0x80) of 0x61 port for PCI SERR. While memory error is usually
-> reported via MCE. So corresponding function name and kernel log string
-> is changed.
+ ok, i got it. vectors from cpus on node0 are used by devices from others nodes.
+later devices from node0 can not get vector from node0.
 
- Things perhaps changed over the last few years while I have not been 
-watching, but for many years the bit #7 of the NMI status port 
-(implemented by the southbridge at 0x61 in the port I/O space) was still 
-used for memory parity or ECC errors even after the original IBM PC/AT.  
-The usual arrangement was in the event of a memory error the memory 
-controller in the northbridge would assert the chip's PCI SERR output 
-line, which in turn would be trapped by the southbridge and converted to 
-an NMI event while setting the said bit in the NMI status port.  See e.g. 
-the 82349HX System Controller datasheet (Intel document number 290551).
-
- So the name of the error reported is not that unjustified except, of 
-course, to be precise the handler would have to scan the state of the SERR 
-output reported by all the PCI devices in the PCI configuration space to 
-find the originator and then interpret the event accordingly.  Which 
-obviously means the only piece of code that could exactly know what the 
-reason was is the respective device driver as causes of SERR are 
-device-specific and may require processing of device-specific registers to 
-determine the cause and/or recover (a device reset may be required in some 
-cases).
-
- Of course using the MCE seems natural and better, especially if the 
-exception can be raised synchronously and stop the failing memory load CPU 
-instruction from completion -- this is important for parity and MBE ECC 
-errors, where in some cases the handler may be able to retry the failing 
-operation having refreshed RAM from the backing store or otherwise the 
-affected process must be killed (unless a kernel memory location is 
-involved that is, where the whole system has to be brought down).
-
- OTOH, for CPU stores and DMA transactions the event will always be 
-asynchronous and an NMI might be a better option, as in the case of parity 
-and MBE ECC errors the whole system will probably have to be brought down, 
-and with SBE ECC errors scrubbing can be done at any time and otherwise 
-(except from logging and/or marking the physical page bad, as required) no 
-action is needed.
-
-  Maciej
+Yinghai
