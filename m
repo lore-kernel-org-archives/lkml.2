@@ -1,57 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517Ab0IUSs2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 14:48:28 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:60104 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750795Ab0IUSs1 (ORCPT
+	id S1753132Ab0IUSsg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 14:48:36 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:40552 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752745Ab0IUSse (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 14:48:27 -0400
-Date: Tue, 21 Sep 2010 20:48:20 +0200
-From: Heinz Diehl <htd@fancy-poultry.org>
-To: linux-kernel@vger.kernel.org
-Cc: Heinz Diehl <htd@fritha.org>, Alan Ott <alan@signal11.us>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [BUG] object: is not initialized, yet kobject_put() is being
- called
-Message-ID: <20100921184820.GA6379@fancy-poultry.org>
-References: <alpine.LNX.2.00.1008121457060.2702@pobox.suse.cz>
- <20100812130411.GA1626@arch.tripp.de>
- <4C63F285.8070801@signal11.us>
- <20100812164035.GB6761@fritha.org>
- <20100920181100.GA12295@fancy-poultry.org>
- <alpine.LNX.2.00.1009211653510.26813@pobox.suse.cz>
- <20100921150900.GA6801@fritha.org>
- <alpine.LNX.2.00.1009211714400.26813@pobox.suse.cz>
- <20100921152728.GA13464@fritha.org>
- <alpine.LNX.2.00.1009211821560.26813@pobox.suse.cz>
+	Tue, 21 Sep 2010 14:48:34 -0400
+Message-ID: <6ed1e9d88b6bce14f715416f5e801780.squirrel@www.firstfloor.org>
+In-Reply-To: <1285092337.26872.12.camel@gandalf.stny.rr.com>
+References: <cover.1284733808.git.jbaron@redhat.com>
+    <ee8b3595967989fdaf84e698dc7447d315ce972a.1284733808.git.jbaron@redhat.com>
+    <20100921131232.GA3024@one.firstfloor.org>
+    <20100921143555.GA2873@redhat.com>
+    <0e1f6b339e72a449fed0df7b801da607.squirrel@www.firstfloor.org>
+    <1285082049.23122.1930.camel@gandalf.stny.rr.com>
+    <140ee1c060f22286fe2f4d81170f76be.squirrel@www.firstfloor.org>
+    <1285092337.26872.12.camel@gandalf.stny.rr.com>
+Date: Tue, 21 Sep 2010 20:48:28 +0200
+Subject: Re: [PATCH 03/10] jump label v11: base patch
+From: "Andi Kleen" <andi@firstfloor.org>
+To: "Steven Rostedt" <rostedt@goodmis.org>
+Cc: "Andi Kleen" <andi@firstfloor.org>, "Jason Baron" <jbaron@redhat.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu,
+        mathieu.desnoyers@polymtl.ca, hpa@zytor.com, tglx@linutronix.de,
+        roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1009211821560.26813@pobox.suse.cz>
-X-Accept-Language: no,dk,se,en,de
-Organization: private site
-X-OpenPGP-KeyID: 0xA9353F12
-X-OpenPGP-Fingerprint: C67E 9A93 1033 DF8A 9321  9F90 DC39 B8C3 A935 3F12
-X-OpenPGP-URL: http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.20+20100810 (GNU/Linux)
-X-Provags-ID: V02:K0:3Wuc/Gd8rghCtkU4msjTHjO2kUhRypFVE51Q7N4wDdr
- nI6rVdfikZ1S7Y6DUjMvqH/vuoqXegwE55b5ra61ABiBAbvjEt
- fGwe7islf30gZgzzgGzU832ZuzIH14/vWxF8Qmd09F4KOsKfOV
- 9Ko4V2vD+JlHfeaz8CK36oRcBUQL50AoVplFTumlcWWQnKv69u
- MSmy8l44EfG8BLCPzUSUw==
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.09.2010, Jiri Kosina wrote: 
 
-> Do you have 8fe294caf8c868edd9046251824a0af91991bf43 commit applied? (it 
-> is included in -rc5).
+>> Doesn
+>
+> I suppose you were missing a 't'.
 
-That's it! All works fine now.
-Many thanks for your patience and help!
+Sorry sentence was eaten (I had to type it twice because the webmail
+thingy eat it first try and probably didn't finish
+it second time). I did not doubt your trace point number :)
 
-Heinz
+What I meant is that the number of trace points does not really
+matter much for binary search, unless you're going to gigantic numbers.
+100 is still searched in only a few tries.
+
+What matters is just how many tables you need to walk and that
+only scales with the number of modules, not the number of trace points.
+
+for ( each module )
+    binary search in section
+
+Advantage: no additional memory, no setup code other than a simple
+sort, less code overall.
+
+Also most modules are small so a binary search try is likely very
+fast.
+
+The methology is also long proven for *_user() exception handling
+and always worked well here.
+
+>> The only time you add one is when you load a module, right? When you do
+>> that you only sort the section of the new module.
+>
+> And on removing a module.
+
+On removing you simply free the module table, no real work to do.
+
+> Perhaps it can be cleaned up. But I have no issues with it now, and
+> using a hash (basic data structures 101) is not where the complexity
+> comes in.
+
+Hash tables are not complex in themselves, but all the code to
+maintain them still adds up. I think considerable parts of the
+new code were simply that. IMHO that can be done simpler
+at no real loss of functionality or performance.
+
+-Andi
+
