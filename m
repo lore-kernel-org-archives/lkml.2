@@ -1,98 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756370Ab0IUJEW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 05:04:22 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:59792 "EHLO gir.skynet.ie"
+	id S1756779Ab0IUJL1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 05:11:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5747 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755924Ab0IUJEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 05:04:21 -0400
-Date: Tue, 21 Sep 2010 10:04:07 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Rob Mueller <robm@fastmail.fm>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Bron Gondwana <brong@fastmail.fm>,
-        linux-mm <linux-mm@kvack.org>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: Default zone_reclaim_mode = 1 on NUMA kernel is bad
-	forfile/email/web servers
-Message-ID: <20100921090407.GA11439@csn.ul.ie>
-References: <1284349152.15254.1394658481@webmail.messagingengine.com> <20100916184240.3BC9.A69D9226@jp.fujitsu.com> <20100920093440.GD1998@csn.ul.ie> <52C8765522A740A4A5C027E8FDFFDFE3@jem>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <52C8765522A740A4A5C027E8FDFFDFE3@jem>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1752171Ab0IUJL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 05:11:26 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: nhorman@tuxdriver.com, eugene@redhat.com
+Cc: linux-kernel@vger.kernel.org, oleg@tv-sign.ru
+Subject: [RFC PATCH] proc: making "limits" world readable
+Date: Tue, 21 Sep 2010 11:10:55 +0200
+Message-Id: <1285060255-15784-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 21, 2010 at 09:41:21AM +1000, Rob Mueller wrote:
->> I don't think we will ever get the default value for this tunable right.
->> I would also worry that avoiding the reclaim_mode for file-backed
->> cache will hurt HPC applications that are dumping their data to disk
->> and depending on the existing default for zone_reclaim_mode to not
->> pollute other nodes.
->>
->> The ideal would be if distribution packages for mail, web servers
->> and others that are heavily IO orientated would prompt for a change
->> to the default value of zone_reclaim_mode in sysctl.
->
-> I would argue that there's a lot more mail/web/file servers out there 
-> than HPC machines. And HPC machines tend to have a team of people to  
-> monitor/tweak them. I think it would be much more sane to default this to 
-> 0 which works best for most people, and get the HPC people to change it.
->
+hi,
 
-No doubt this is true. The only real difference is that there are more NUMA
-machines running mail/web/file servers now than there might have been in the
-past. The default made sense once upon a time. Personally I wouldn't mind
-the default changing but my preference would be that distribution packages
-installing on NUMA machines would prompt if the default should be changed if it
-is likely to be of benefit for that package (e.g. the mail, file and web ones).
+I'd like to have the /proc/<pid>/limits file world readable,
+but I'm not sure this could cause some security issue.. thoughts?
 
-> However there's still another question, why is this problem happening at 
-> all for us? I know almost nothing about NUMA, but from other posts, it 
-> sounds like the problem is the memory allocations are all happening on 
-> one node?
+The "limit" file was as a debug feature by following commit:
+- proc: export a processes resource limits via /proc/pid
+  commit d85f50d5e1aa99ab082035f94265847521819e58
+  Author: Neil Horman <nhorman@tuxdriver.com>
 
-Yes.
 
-> But I don't understand why that would be happening.
+thanks for any ideas,
+jirka
+---
+ fs/proc/base.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Because in a situation where you have many NUMA-aware applications
-running bound to CPUs, it performs better if they always allocate from
-local nodes instead of accessing remote nodes. It's great for one type
-of workload but not so much for mail/web/file.
-
-> The machine 
-> runs the cyrus IMAP server, which is a classic unix forking server with 
-> 1000's of processes. Each process will mmap lots of different files to 
-> access them. Why would that all be happening on one node, not spread 
-> around?
->
-
-Honestly, I don't know and I don't have such a machine to investigate
-with. My guess is that there are a number of files that are hot and
-accessed by multiple processes on different nodes and they are evicting
-each other but it's only a guess.
-
-> One thing is that the machine is vastly more IO loaded than CPU loaded, 
-> in fact it uses very little CPU at all (a few % usually). Does the kernel 
-> prefer to run processes on one particular node if it's available?
-
-It prefers to run on the same node it ran previously. If they all
-happened to start up on a small subset of nodes, they could be
-continually getting running there.
-
-> So if a 
-> machine has very little CPU load, every process will generally end up  
-> running on the same node?
->
-
-It's possible they are running on a small subset. mpstat should be able
-to give a basic idea of what the spread across CPUs is.
-
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index a1c43e7..8e4adda 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -2675,7 +2675,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+ 	INF("auxv",       S_IRUSR, proc_pid_auxv),
+ 	ONE("status",     S_IRUGO, proc_pid_status),
+ 	ONE("personality", S_IRUSR, proc_pid_personality),
+-	INF("limits",	  S_IRUSR, proc_pid_limits),
++	INF("limits",	  S_IRUGO, proc_pid_limits),
+ #ifdef CONFIG_SCHED_DEBUG
+ 	REG("sched",      S_IRUGO|S_IWUSR, proc_pid_sched_operations),
+ #endif
+@@ -3011,7 +3011,7 @@ static const struct pid_entry tid_base_stuff[] = {
+ 	INF("auxv",      S_IRUSR, proc_pid_auxv),
+ 	ONE("status",    S_IRUGO, proc_pid_status),
+ 	ONE("personality", S_IRUSR, proc_pid_personality),
+-	INF("limits",	 S_IRUSR, proc_pid_limits),
++	INF("limits",	 S_IRUGO, proc_pid_limits),
+ #ifdef CONFIG_SCHED_DEBUG
+ 	REG("sched",     S_IRUGO|S_IWUSR, proc_pid_sched_operations),
+ #endif
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+1.7.1
+
