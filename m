@@ -1,82 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118Ab0IUClG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 22:41:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37291 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752149Ab0IUClF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 22:41:05 -0400
-Date: Tue, 21 Sep 2010 12:40:56 +1000
-From: Neil Brown <neilb@suse.de>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 07/10] ovl: add initial revalidate support
-Message-ID: <20100921124056.63408477@notabene>
-In-Reply-To: <E1OwFkH-000742-GV@pomaz-ex.szeredi.hu>
-References: <20100906004829.20775.68828.stgit@localhost.localdomain>
-	<20100906005029.20775.80833.stgit@localhost.localdomain>
-	<E1OwFkH-000742-GV@pomaz-ex.szeredi.hu>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757731Ab0IUClp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 22:41:45 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:51901 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755513Ab0IUClk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 22:41:40 -0400
+X-Authority-Analysis: v=1.1 cv=Ba7GFA6IM/Rlu/bGJ5lftWmk/oljGo5ZwASPcBcXAAo= c=1 sm=0 a=9djwmVDfYk8A:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=1nSz6Ew-AAAA:8 a=meVymXHHAAAA:8 a=6dgqTkKu9hYoR1qk6isA:9 a=7pFqqFLHdGiucYmFNxEA:7 a=EHmAdrPUI_iYo3OnE-NEyW1NpboA:4 a=jEp0ucaQiEUA:10 a=nj4rVwXhlm8A:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Message-Id: <20100921024139.369929073@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Mon, 20 Sep 2010 22:40:06 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Gregory Haskins <ghaskins@novell.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 4/4] tracing/sched: Add sched_rt_setprio tracepoint
+References: <20100921024002.672817629@goodmis.org>
+Content-Disposition: inline; filename=0004-tracing-sched-Add-sched_rt_setprio-tracepoint.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Sep 2010 16:47:29 +0200
-Miklos Szeredi <miklos@szeredi.hu> wrote:
+From: Steven Rostedt <srostedt@redhat.com>
 
-> On Mon, 06 Sep 2010, NeilBrown wrote:
-> > Add dentry_revalidate method and fail validation of either the
-> > upper or lower dentry has been renamed or unlinked directly in the
-> > otherlying filesystem.
-> > This allows such changes to appear promptly in the overlay providing
-> > the file isn't currently in use.
-> 
-> I fixed up some things in the revalidation logic and tested it out.
-> There are some unexpected effects, but they boil down to the fact that
-> busy directories can't be invalidated.  Mostly it works as expected.
-> 
-> However, the "rearange directories so that a/b becomes b/a" trick
-> still strikes in evil ways.  Consider the following script:
-> 
-> mkdir /upper/a/b
-> cd /mnt/overlay/a
-> while true; do
-> 	cd b
-> 	mv /upper/a/b /upper/b
-> 	mv /upper/a /upper/b/a
-> 	cd a
-> 	mv /upper/b/a /upper/a
-> 	mv /upper/b /upper/a/b
-> done
-> 
-> It will create an ever deeper directory tree on the overlay.
-> 
-> Can this be prevented?  Probably, e.g. lookup should make sure that
-> each new directory gets a *unique* set of lower and upper dentries
-> (e.g. by creating hash tables indexed by lower and upper dentries).
-> 
-> Is it worth the trouble?
+Add a tracepoint that shows the priority of a task being boosted
+via priority inheritance.
 
-The only real problem here is that an unprivileged user with direct access
-to 'upper' could consume unlimited kernel memory without using a
-corresponding mount of storage space (so quotas etc wouldn't stop them).
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Gregory Haskins <ghaskins@novell.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/trace/events/sched.h |   25 +++++++++++++++++++++++++
+ kernel/sched.c               |    1 +
+ 2 files changed, 26 insertions(+), 0 deletions(-)
 
-Maybe the easiest counter-measure to that is to keep track of a 'depth' of
-each dentry and disallow lookups that go much beyond PATH_MAX???
+diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+index 0e0c108..8feb641 100644
+--- a/include/trace/events/sched.h
++++ b/include/trace/events/sched.h
+@@ -398,6 +398,31 @@ DEFINE_EVENT_PRINT(sched_rt_push_pull, sched_rt_pull,
+ 			__entry->comm, __entry->pid,
+ 			__entry->prio, __entry->cpu));
+ 
++TRACE_EVENT(sched_rt_setprio,
++
++	TP_PROTO(struct task_struct *tsk, int newprio),
++
++	TP_ARGS(tsk, newprio),
++
++	TP_STRUCT__entry(
++		__array( char,	comm,	TASK_COMM_LEN	)
++		__field( pid_t,	pid			)
++		__field( int,	oldprio			)
++		__field( int,	newprio			)
++	),
++
++	TP_fast_assign(
++		memcpy(__entry->comm, tsk->comm, TASK_COMM_LEN);
++		__entry->pid		= tsk->pid;
++		__entry->oldprio	= tsk->prio;
++		__entry->newprio	= newprio;
++	),
++
++	TP_printk("comm=%s pid=%d oldprio=%d newprio=%d",
++			__entry->comm, __entry->pid,
++			__entry->oldprio, __entry->newprio)
++);
++
+ #endif /* _TRACE_SCHED_H */
+ 
+ /* This part must be outside protection */
+diff --git a/kernel/sched.c b/kernel/sched.c
+index ed09d4f..4d4f35e 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -4358,6 +4358,7 @@ void rt_mutex_setprio(struct task_struct *p, int prio)
+ 
+ 	rq = task_rq_lock(p, &flags);
+ 
++	trace_sched_rt_setprio(p, prio);
+ 	oldprio = p->prio;
+ 	prev_class = p->sched_class;
+ 	on_rq = p->se.on_rq;
+-- 
+1.7.1
 
-Either that or rely in the sysadmin to hide the upper/lower filesystems from
-untrusted users.  I particularly see value in sysadmins being able to modify
-these filesystem - not so much for 'regular users'.
 
-NeilBrown
-
-> 
-> Any other ideas?
-> 
-> Thanks,
-> Miklos
-> 
->
