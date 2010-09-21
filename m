@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757385Ab0IUB2b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 21:28:31 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:36378 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755145Ab0IUB2a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 21:28:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:reply-to:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=E1BZWiMm59RbFo+lAtFPT0T2kGxV21ZljXK3kK63VjM4nxpinfY1nK4zGrFD1IXYRS
-         EST7/uu+ayXpLkx4azkgJN+mHS8pNxrY0MecJAjS3yYR8bnpsXrMkqJGWEcdUM2YzPip
-         sNhFBMnckqV6VP4eod8UOYkZiJitpSoutIi4E=
-Message-ID: <4C980A38.8030608@gmail.com>
-Date: Tue, 21 Sep 2010 09:28:24 +0800
-From: =?UTF-8?B?Ik1yLiBUZW8gRW4gTWluZyAoWmhhbmcgRW5taW5nKSDlvKDmganpuKMgbw==?=
-	 =?UTF-8?B?ZiBTaW5nYXBvcmUi?= <space.time.universe@gmail.com>
-Reply-To: space.time.universe@gmail.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.1) Gecko/20090814 Fedora/3.0-2.6.b3.fc11 Thunderbird/3.0b3
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: "space.time.universe@gmail.com" <space.time.universe@gmail.com>,
-        "teoenming@hotmail.com" <teoenming@hotmail.com>,
-        zhang_enming@lavabit.com
-Subject: Google Inc. Could Be Compliant to the Chinese Government in Beijing,
- People's Republic of China (PRC)
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1757225Ab0IUBbN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 21:31:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36345 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751391Ab0IUBbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 21:31:12 -0400
+Date: Tue, 21 Sep 2010 11:31:01 +1000
+From: Neil Brown <neilb@suse.de>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vaurora@redhat.com, viro@zeniv.linux.org.uk
+Subject: Re: [PATCH 0/7 v3] overlay filesystem prototype
+Message-ID: <20100921113101.3bde59bd@notabene>
+In-Reply-To: <20100920180404.939991832@szeredi.hu>
+References: <20100920180404.939991832@szeredi.hu>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Article: Google Warns of China Exit Over Hacking
-Link: http://online.wsj.com/article/SB126333757451026659.html
+On Mon, 20 Sep 2010 20:04:04 +0200
+Miklos Szeredi <miklos@szeredi.hu> wrote:
 
-I don't think it is that easy to hack if you are using SSL connections 
-and very strong passwords. How long would it take supercomputers to 
-perform a brute force attack if you are using a strong password with at 
-least 20 characters, and a combination of upper case and lower case 
-letters, numbers, and symbols?
+> Here's an updated patch series.
+> 
+> For now I reverted Neil's revalidation patch.  Not requiring strict
+> read-only would make sense for just trying it out and experimenting.
+> But for real uses, I'm not sure...
 
-I am wondering if Chinese government officials could have secretly 
-approached specific Google China employees for direct access to the 
-Google GMail email accounts of human rights activists in China? It would 
-have been far simpler to do it that way. What is the size of China's 
-sovereign wealth fund?
+:-)
 
--- 
-Yours sincerely,
+I think you significantly reduce the value by insisting on read-only but as
+this is purely a theoretical perspective at the moment (I have no concrete
+use-case) I won't push it.
 
-Mr. Teo En Ming (Zhang Enming) 张恩鸣 Dip(Mechatronics) 
-BEng(Hons)(Mechanical Engineering)
-Citizenship: Singapore Citizen/Singaporean
-Alma Maters:
-[1] Singapore Polytechnic (Graduated 1998)
-[2] National University of Singapore (Graduated 2006)
-Facebook account: Teo En Ming (Zhang Enming)
-Facebook link: http://www.facebook.com/profile.php?id=100000750083982
-Facebook photos: 
-http://www.facebook.com/profile.php?id=100000750083982#!/profile.php?id=100000750083982&v=photos
-Facebook videos: 
-http://www.facebook.com/profile.php?id=100000750083982&v=app_2392950137
-Mobile Phone (Starhub pre-paid): +65-8369-2618
-Windows Live Messenger: teoenming-at-hotmail.com
-Location: Bedok Reservoir Road, Singapore
-ZIP: 470103
-My Open Letter (Plea for Medical Help/Assistance) to World Leaders 
-(Updated 28 August 2010):-
-http://lists.mcs.anl.gov/pipermail/mpich-discuss/2010-August/007811.html
-http://mythtv.org/pipermail/mythtv-users/2010-August/295952.html
-http://archives.gentoo.org/gentoo-user/msg_f6a341d9623fda17880159b137c07335.xml
-Photo of Mr. Teo En Ming (Zhang Enming) 张恩鸣 of Singapore: 
-http://i53.tinypic.com/207tamp.jpg
+I had another patch I was working on which caused overlayfs to keep negative
+dentries in upperdentry or lowerdentry rather than just setting them to
+NULL.  This would allow revalidation to notice objects appearing in the
+underlying filesystem.  I guess you won't want that now .... I think it made
+some of the code a bit neater, but I never finished it so I cannot be sure of
+the overall effect.
 
+I'm curious as to why upperdentry is now called __upperdentry - it isn't
+clear from a quick reading..
+
+Thanks,
+NeilBrown
 
