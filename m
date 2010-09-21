@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281Ab0IUNOY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 09:14:24 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55190 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753932Ab0IUNOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 09:14:22 -0400
-Date: Tue, 21 Sep 2010 15:14:18 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Heinz Diehl <htd@fritha.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Heinz Diehl <htd@fancy-poultry.org>, Alan Ott <alan@signal11.us>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-input@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [BUG] object: is not initialized, yet kobject_put() is being
- called
-In-Reply-To: <20100920193913.GA6448@fritha.org>
-Message-ID: <alpine.LNX.2.00.1009211513440.26813@pobox.suse.cz>
-References: <20100920181100.GA12295@fancy-poultry.org> <Pine.LNX.4.44L0.1009201456260.2010-100000@iolanthe.rowland.org> <20100920193913.GA6448@fritha.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754561Ab0IUNUX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 09:20:23 -0400
+Received: from mail-out123.unilogicnetworks.net ([62.133.206.123]:57869 "EHLO
+	mail.unilogicnetworks.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752811Ab0IUNUV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 09:20:21 -0400
+X-Greylist: delayed 1887 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Sep 2010 09:20:21 EDT
+Subject: [PATCH] Don't show error if Acer WMI is not found
+From: "Pascal de Bruijn | Unilogic Networks B.V." 
+	<pascal@unilogicnetworks.net>
+To: platform-driver-x86@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org,
+        akpm@linux-foundation.org
+Content-Type: text/plain; charset="UTF-8"
+Organization: Unilogic Networks B.V.
+Date: Tue, 21 Sep 2010 14:48:52 +0200
+Message-ID: <1285073332.9470.5.camel@carnifex>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Sep 2010, Heinz Diehl wrote:
+>From 6e5643d6b1c1e5250d29b8d6d82dae3ec6404055 Mon Sep 17 00:00:00 2001
+From: Pascal de Bruijn <pascal@unilogicnetworks.net>
+Date: Mon, 30 Aug 2010 09:09:53 +0200
+Subject: [PATCH] Don't show error if Acer WMI is not found
 
-> > No, you're wrong.  The patch _is_ in 2.6.36-rc4, and that's the reason 
-> > why it doesn't apply any longer.
-> 
-> Yes, you're right. 
-> 
-> > The error you see must have a different cause.  Have you read this 
-> > thread?
-> > 
-> > 	http://marc.info/?t=128494644600005&r=1&w=2
-> 
-> No, not before until now. This problem seems not to be related to what I 
-> see on my machines, and reverting commit 8fe294caf8c868edd9046251824a0af91991bf43 as
-> mentioned in there doesn't help either.
-> 
-> 2.6.35.4 works, 2.6.36-rc4 does not. What can I do to help to find the
-> issue?
-> 
-> Attached are the dmesg output for both 2.6.35.4 and 2.6.36-rc4.
+---
+ drivers/platform/x86/acer-wmi.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Just to verify that you are really being hit by the same issue -- you are 
-using CONFIG_USB_DYNAMIC_MINORS, aren't you? Does the problem go away if 
-you disable this?
-
-Thanks,
-
+diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+index 2badee2..c8c6537 100644
+--- a/drivers/platform/x86/acer-wmi.c
++++ b/drivers/platform/x86/acer-wmi.c
+@@ -1314,7 +1314,7 @@ static int __init acer_wmi_init(void)
+ 		AMW0_find_mailled();
+ 
+ 	if (!interface) {
+-		printk(ACER_ERR "No or unsupported WMI interface, unable to "
++		printk(ACER_INFO "No or unsupported WMI interface, unable to "
+ 				"load\n");
+ 		return -ENODEV;
+ 	}
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+1.7.0.4
+
+
+
