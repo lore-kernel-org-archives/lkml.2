@@ -1,187 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757228Ab0IUSS3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 14:18:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48306 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752923Ab0IUSS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 14:18:27 -0400
-Date: Tue, 21 Sep 2010 15:18:00 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Zachary Amsden <zamsden@redhat.com>
-Cc: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Glauber Costa <glommer@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [KVM timekeeping fixes 4/4] TSC catchup mode
-Message-ID: <20100921181800.GB22536@amt.cnet>
-References: <1284856695-19438-1-git-send-email-zamsden@redhat.com>
- <1284856695-19438-2-git-send-email-zamsden@redhat.com>
- <1284856695-19438-3-git-send-email-zamsden@redhat.com>
- <1284856695-19438-4-git-send-email-zamsden@redhat.com>
- <20100920153820.GA3088@amt.cnet>
- <4C980642.5000901@redhat.com>
+	id S1758120Ab0IUSTT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 14:19:19 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27465 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755543Ab0IUSTS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 14:19:18 -0400
+Message-ID: <4C98F6DC.1070005@oracle.com>
+Date: Tue, 21 Sep 2010 11:18:04 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C980642.5000901@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Henry Ptasinski <henryp@broadcom.com>
+CC: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        driverdevel <devel@driverdev.osuosl.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, "gregkh@suse.de" <gregkh@suse.de>,
+        Brett Rudley <brudley@broadcom.com>, Nohee Ko <noheek@broadcom.com>
+Subject: Re: [PATCH -next] staging: brcm80211 depends on MAC80211
+References: <20100921170055.4512dd19.sfr@canb.auug.org.au> <20100921093549.a39a2a8d.randy.dunlap@oracle.com> <4C98EA0B.6050903@broadcom.com> <20100921180614.GA24227@kroah.com> <4C98F66C.809@broadcom.com>
+In-Reply-To: <4C98F66C.809@broadcom.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 20, 2010 at 03:11:30PM -1000, Zachary Amsden wrote:
-> On 09/20/2010 05:38 AM, Marcelo Tosatti wrote:
-> >On Sat, Sep 18, 2010 at 02:38:15PM -1000, Zachary Amsden wrote:
-> >>Negate the effects of AN TYM spell while kvm thread is preempted by tracking
-> >>conversion factor to the highest TSC rate and catching the TSC up when it has
-> >>fallen behind the kernel view of time.  Note that once triggered, we don't
-> >>turn off catchup mode.
-> >>
-> >>A slightly more clever version of this is possible, which only does catchup
-> >>when TSC rate drops, and which specifically targets only CPUs with broken
-> >>TSC, but since these all are considered unstable_tsc(), this patch covers
-> >>all necessary cases.
-> >>
-> >>Signed-off-by: Zachary Amsden<zamsden@redhat.com>
-> >>---
-> >>  arch/x86/include/asm/kvm_host.h |    6 +++
-> >>  arch/x86/kvm/x86.c              |   87 +++++++++++++++++++++++++++++---------
-> >>  2 files changed, 72 insertions(+), 21 deletions(-)
-> >>
-> >>diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> >>index 8c5779d..e209078 100644
-> >>--- a/arch/x86/include/asm/kvm_host.h
-> >>+++ b/arch/x86/include/asm/kvm_host.h
-> >>@@ -384,6 +384,9 @@ struct kvm_vcpu_arch {
-> >>  	u64 last_host_tsc;
-> >>  	u64 last_guest_tsc;
-> >>  	u64 last_kernel_ns;
-> >>+	u64 last_tsc_nsec;
-> >>+	u64 last_tsc_write;
-> >>+	bool tsc_catchup;
-> >>
-> >>  	bool nmi_pending;
-> >>  	bool nmi_injected;
-> >>@@ -444,6 +447,9 @@ struct kvm_arch {
-> >>  	u64 last_tsc_nsec;
-> >>  	u64 last_tsc_offset;
-> >>  	u64 last_tsc_write;
-> >>+	u32 virtual_tsc_khz;
-> >>+	u32 virtual_tsc_mult;
-> >>+	s8 virtual_tsc_shift;
-> >>
-> >>  	struct kvm_xen_hvm_config xen_hvm_config;
-> >>
-> >>diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> >>index 09f468a..9152156 100644
-> >>--- a/arch/x86/kvm/x86.c
-> >>+++ b/arch/x86/kvm/x86.c
-> >>@@ -962,6 +962,7 @@ static inline u64 get_kernel_ns(void)
-> >>  }
-> >>
-> >>  static DEFINE_PER_CPU(unsigned long, cpu_tsc_khz);
-> >>+unsigned long max_tsc_khz;
-> >>
-> >>  static inline int kvm_tsc_changes_freq(void)
-> >>  {
-> >>@@ -985,6 +986,24 @@ static inline u64 nsec_to_cycles(u64 nsec)
-> >>  	return ret;
-> >>  }
-> >>
-> >>+static void kvm_arch_set_tsc_khz(struct kvm *kvm, u32 this_tsc_khz)
-> >>+{
-> >>+	/* Compute a scale to convert nanoseconds in TSC cycles */
-> >>+	kvm_get_time_scale(this_tsc_khz, NSEC_PER_SEC / 1000,
-> >>+			&kvm->arch.virtual_tsc_shift,
-> >>+			&kvm->arch.virtual_tsc_mult);
-> >>+	kvm->arch.virtual_tsc_khz = this_tsc_khz;
-> >>+}
-> >>+
-> >>+static u64 compute_guest_tsc(struct kvm_vcpu *vcpu, s64 kernel_ns)
-> >>+{
-> >>+	u64 tsc = pvclock_scale_delta(kernel_ns-vcpu->arch.last_tsc_nsec,
-> >>+				      vcpu->kvm->arch.virtual_tsc_mult,
-> >>+				      vcpu->kvm->arch.virtual_tsc_shift);
-> >>+	tsc += vcpu->arch.last_tsc_write;
-> >>+	return tsc;
-> >>+}
-> >>+
-> >>  void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
-> >>  {
-> >>  	struct kvm *kvm = vcpu->kvm;
-> >>@@ -1029,6 +1048,8 @@ void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
-> >>
-> >>  	/* Reset of TSC must disable overshoot protection below */
-> >>  	vcpu->arch.hv_clock.tsc_timestamp = 0;
-> >>+	vcpu->arch.last_tsc_write = data;
-> >>+	vcpu->arch.last_tsc_nsec = ns;
-> >>  }
-> >>  EXPORT_SYMBOL_GPL(kvm_write_tsc);
-> >>
-> >>@@ -1041,22 +1062,42 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
-> >>  	s64 kernel_ns, max_kernel_ns;
-> >>  	u64 tsc_timestamp;
-> >>
-> >>-	if ((!vcpu->time_page))
-> >>-		return 0;
-> >>-
-> >>  	/* Keep irq disabled to prevent changes to the clock */
-> >>  	local_irq_save(flags);
-> >>  	kvm_get_msr(v, MSR_IA32_TSC,&tsc_timestamp);
-> >>  	kernel_ns = get_kernel_ns();
-> >>  	this_tsc_khz = __get_cpu_var(cpu_tsc_khz);
-> >>-	local_irq_restore(flags);
-> >>
-> >>  	if (unlikely(this_tsc_khz == 0)) {
-> >>+		local_irq_restore(flags);
-> >>  		kvm_make_request(KVM_REQ_CLOCK_UPDATE, v);
-> >>  		return 1;
-> >>  	}
-> >>
-> >>  	/*
-> >>+	 * We may have to catch up the TSC to match elapsed wall clock
-> >>+	 * time for two reasons, even if kvmclock is used.
-> >>+	 *   1) CPU could have been running below the maximum TSC rate
-> >kvmclock handles frequency changes?
-> >
-> >>+	 *   2) Broken TSC compensation resets the base at each VCPU
-> >>+	 *      entry to avoid unknown leaps of TSC even when running
-> >>+	 *      again on the same CPU.  This may cause apparent elapsed
-> >>+	 *      time to disappear, and the guest to stand still or run
-> >>+	 *	very slowly.
-> >I don't get this. Please explain.
+On 09/21/10 11:16, Henry Ptasinski wrote:
+> On 09/21/2010 11:06 AM, Greg KH wrote:
+>> On Tue, Sep 21, 2010 at 10:23:23AM -0700, Henry Ptasinski wrote:
+>>> On 09/21/2010 09:35 AM, Randy Dunlap wrote:
+>>>> From: Randy Dunlap<randy.dunlap@oracle.com>
+>>>>
+>>>> Fix brcm890211 build: it should depend on MAC80211.
+>>>> MAC80211 depends on CFG80211, which takes care of<regulatory_hint>
+>>>> below.
+>>>>
+>>>> ERROR: "ieee80211_rx_irqsafe"
+>>>> [drivers/staging/brcm80211/brcm80211.ko] undefined!
+>>>> ERROR: "ieee80211_unregister_hw"
+>>>> [drivers/staging/brcm80211/brcm80211.ko] undefined!
+>>>> ERROR: "ieee80211_stop_queues"
+>>>> [drivers/staging/brcm80211/brcm80211.ko] undefined!
+>>>> ERROR: "ieee80211_wake_queues"
+>>>> [drivers/staging/brcm80211/brcm80211.ko] undefined!
+>>>> ERROR: "ieee80211_stop_tx_ba_cb_irqsafe"
+>>>> [drivers/staging/brcm80211/brcm80211.ko] undefined!
+>>>> ERROR: "ieee80211_tx_status_irqsafe"
+>>>> [drivers/staging/brcm80211/brcm80211.ko] undefined!
+>>>> ERROR: "ieee80211_register_hw"
+>>>> [drivers/staging/brcm80211/brcm80211.ko] undefined!
+>>>> ERROR: "regulatory_hint" [drivers/staging/brcm80211/brcm80211.ko]
+>>>> undefined!
+>>>> ERROR: "ieee80211_alloc_hw" [drivers/staging/brcm80211/brcm80211.ko]
+>>>> undefined!
+>>>> ERROR: "ieee80211_free_hw" [drivers/staging/brcm80211/brcm80211.ko]
+>>>> undefined!
+>>>> ERROR: "ieee80211_start_tx_ba_cb_irqsafe"
+>>>> [drivers/staging/brcm80211/brcm80211.ko] undefined!
+>>>>
+>>>> Signed-off-by: Randy Dunlap<randy.dunlap@oracle.com>
+>>>> Cc: Brett Rudley<brudley@broadcom.com>
+>>>> Cc: Henry Ptasinski<henryp@broadcom.com>
+>>>> Cc: Nohee Ko<noheek@broadcom.com>
+>>>> ---
+>>>>   drivers/staging/brcm80211/Kconfig |    2 +-
+>>>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>>>
+>>>> --- linux-next-20100921.orig/drivers/staging/brcm80211/Kconfig
+>>>> +++ linux-next-20100921/drivers/staging/brcm80211/Kconfig
+>>>> @@ -1,6 +1,6 @@
+>>>>   menuconfig BRCM80211
+>>>>       tristate "Broadcom 802.11 WLAN driver for bcm43xx chips"
+>>>> -    depends on PCI&&   WLAN
+>>>> +    depends on PCI&&   WLAN&&   MAC80211
+>>>>       select WIRELESS_EXT
+>>>>       select WEXT_PRIV
+>>>>       default N
+>>>>
+>>>
+>>> Actually, I think that should be something like:
+>>>
+>>> diff --git a/drivers/staging/brcm80211/Kconfig
+>>> b/drivers/staging/brcm80211/Kconf
+>>> index 6b74685..228ec37 100644
+>>> --- a/drivers/staging/brcm80211/Kconfig
+>>> +++ b/drivers/staging/brcm80211/Kconfig
+>>> @@ -1,6 +1,6 @@
+>>>   menuconfig BRCM80211
+>>>          tristate "Broadcom 802.11 WLAN driver for bcm43xx chips"
+>>> -       depends on PCI&&  WLAN
+>>> +       depends on WLAN
+>>>          select WIRELESS_EXT
+>>>          select WEXT_PRIV
+>>>          default N
+>>> @@ -9,6 +9,6 @@ menuconfig BRCM80211
+>>>
+>>>   config BRCM80211_PCI
+>>>          bool "Broadcom 802.11 WLAN NIC driver"
+>>> -       depends on BRCM80211
+>>> +       depends on BRCM80211&&  PCI&&  MAC80211
+>>>          default y
+>>>
+>>>
+>>> Our fullmac sdio driver is going to use the brcm80211 framework, and
+>>> it'll only need CFG80211.
+>>
+>> Care to send this in a patch-format that I can apply it (i.e. proper
+>> changelog entry, reported-by:, signed-off-by:, etc.)?
 > 
-> This compensation in arch_vcpu_load, for unstable TSC case, causes
-> time while preempted to disappear from the TSC by adjusting the TSC
-> back to match the last observed TSC.
-> 
->         if (unlikely(vcpu->cpu != cpu) || check_tsc_unstable()) {
->                 /* Make sure TSC doesn't go backwards */
->                 s64 tsc_delta = !vcpu->arch.last_host_tsc ? 0 :
->                                 native_read_tsc() -
-> vcpu->arch.last_host_tsc;
->                 if (tsc_delta < 0)
->                         mark_tsc_unstable("KVM discovered backwards TSC");
->                 if (check_tsc_unstable())
->                         kvm_x86_ops->adjust_tsc_offset(vcpu,
-> -tsc_delta); <<<<<
-> 
-> Note that this is the correct thing to do if there are cross-CPU
-> deltas, when switching CPUs, or if the TSC becomes inherently
-> unpredictable while preempted (CPU bugs, kernel resets TSC).
-> 
-> However, all the time that elapsed while not running disappears from
-> the TSC (and thus even from kvmclock, without recalibration, as it
-> is based off the TSC).  Since we've got to recalibrate the kvmclock
-> anyways, we might as well catch the TSC up to the proper value.
+> Yes, as soon as I figure out the full fix.  There's a build error if
+> BRCM80211 is set and BRCM80211_PCI is not set (somebody pointed this out
+> a couple days ago) that I'd like to resolve also.
 
-Updating kvmclock's tsc_timestamp and system_time should be enough then,
-to fix this particular issue?
+Yes, I reported that also.  Glad to hear that it will be addressed.
 
-The problem is you're sneaking in parts of trap mode (virtual_tsc_khz),
-without dealing with the issues raised in the past iteration. The
-interactions between catch and trap mode are not clear, migration is not
-handled, etc.
-
-> And if kvmclock is not in use, we must catch the tsc up to the proper value.
-> 
-> Zach
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
