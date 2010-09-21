@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594Ab0IUS6G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 14:58:06 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:55769 "EHLO ogre.sisk.pl"
+	id S1754484Ab0IUS7x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 14:59:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60918 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752942Ab0IUS6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 14:58:04 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Jack Wang" <jack_wang@usish.com>
-Subject: Re: [Bug #18862] [BUG]Kernel 2.6.36rc4 crash when rmmod pm8001
-Date: Tue, 21 Sep 2010 20:57:25 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: "'Linux Kernel Mailing List'" <linux-kernel@vger.kernel.org>,
-        "'Kernel Testers List'" <kernel-testers@vger.kernel.org>,
-        "'Maciej Rutecki'" <maciej.rutecki@gmail.com>,
-        "'Florian Mickler'" <florian@mickler.org>
-References: <1fwtoy8sG5H.A.veG.9D7lMB@chimera> <Wn2eLj_6KZG.A.0qG.DE7lMB@chimera> <3188494C116B49AE985B773F69378515@usish.com.cn>
-In-Reply-To: <3188494C116B49AE985B773F69378515@usish.com.cn>
+	id S1752894Ab0IUS7w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 14:59:52 -0400
+Message-ID: <4C990070.7080807@zytor.com>
+Date: Tue, 21 Sep 2010 11:58:56 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Jason Baron <jbaron@redhat.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, mathieu.desnoyers@polymtl.ca, tglx@linutronix.de,
+        rostedt@goodmis.org, andi@firstfloor.org, roland@redhat.com,
+        rth@redhat.com, mhiramat@redhat.com, fweisbec@gmail.com,
+        avi@redhat.com, davem@davemloft.net, vgoyal@redhat.com,
+        sam@ravnborg.org, tony@bakeyournoodle.com
+Subject: Re: [PATCH 03/10] jump label v11: base patch
+References: <cover.1284733808.git.jbaron@redhat.com> <ee8b3595967989fdaf84e698dc7447d315ce972a.1284733808.git.jbaron@redhat.com> <20100921182945.GA22088@dumpdata.com> <20100921185513.GA22929@dumpdata.com>
+In-Reply-To: <20100921185513.GA22929@dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009212057.25669.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, September 21, 2010, Jack Wang wrote:
-> Hi, Rafael and list
+On 09/21/2010 11:55 AM, Konrad Rzeszutek Wilk wrote:
+>>> +early_initcall(init_jump_label);
+>>
+>> Is there any danger of not patching the instructions with NOPs before
+>> early_initcall is called? I guess for your uses (tracing) there won't.
+>> And even if there are not patched it will just call the function.
 > 
-> I recompile a clean 2.6.36rc4 kernel, and try to reproduce this BUG, but I
-> cound not make this appear any more, sorry for that, maybe I hit the bug
-> during I
-> debug the libsas bug, sorry!
+> Ah, nevermind - if you don't patch the addresses which are in
+> _jump_label section, the untouched code will just do far jump (jmpq)
+> to right after the macro, which is ok.
 
-Thanks for the update, closing.
+Technical point of order: jmpq is *NOT* a far jump.  A far jump (called
+ljmp in gas) is a completely different x86 instruction with *very*
+different semantics.
 
-Rafael
+	-hpa
+
