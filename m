@@ -1,500 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350Ab0IULZn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 07:25:43 -0400
-Received: from messager.iut-bm.univ-fcomte.fr ([194.57.86.195]:48672 "EHLO
-	messager.iut-bm.univ-fcomte.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751268Ab0IULZl (ORCPT
+	id S1752471Ab0IULm1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 07:42:27 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:53901 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751767Ab0IULm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 07:25:41 -0400
-X-Greylist: delayed 480 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Sep 2010 07:25:40 EDT
-From: Arnaud Giersch <arnaud.giersch@free.fr>
-To: linux-nfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Trond Myklebust <trond.myklebust@fys.uio.no>
-Subject: [PATCH resend] NFSv4: Don't do idmapper upcalls during XDR decode
-References: <wwezkyas466.fsf@powwow.iut-bm.univ-fcomte.fr>
-	<1278075804.3258.20.camel@heimdal.trondhjem.org>
-	<wwed3v2rrai.fsf_-_@powwow.iut-bm.univ-fcomte.fr>
-	<87vd7gcf21.fsf_-_@free.fr>
-Date: Tue, 21 Sep 2010 13:17:34 +0200
-In-Reply-To: <87vd7gcf21.fsf_-_@free.fr> (Arnaud Giersch's message of "Thu, 12
-	Aug 2010 12:15:34 +0200")
-Message-ID: <wwesk13qrap.fsf_-_@powwow.iut-bm.univ-fcomte.fr>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 21 Sep 2010 07:42:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=wudiw1p8y/b224hiz+VmgQgTZYzfk93Wuv33sphzQY6N8RtxAZWxge7ibGmRTUlhm9
+         jQrZ7zQeaMzwYZUerPYFeHpMrEuU0gLdkHYa6PP4eAMmqHyUTukFJexJPrxpczVJjJ3/
+         w0Y4EdCj2ZdSW49J6/u7OJxbPaIUK8WSOW6SQ=
+Subject: Re: [REGRESSION] cdrom drive doesn't detect removal
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>, Tejun Heo <tj@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+In-Reply-To: <AANLkTin37rbEbcGDejhcsnxZNYhhUWGy+x=v4Y=s0_Qx@mail.gmail.com>
+References: <1284284969.2928.18.camel@maxim-laptop>
+	 <1284427621.4127.7.camel@maxim-laptop> <4C8F2699.3020509@kernel.org>
+	 <AANLkTinGHB9fbLw1Cm5wvPLGy8QEuoBBmFiqpnvXiZ8R@mail.gmail.com>
+	 <1284507516.4963.2.camel@maxim-laptop>
+	 <AANLkTimFpyYab69=XQVZc+P50v6_uVr6UbA246Fnm3-u@mail.gmail.com>
+	 <1284511071.3551.1.camel@maxim-laptop>
+	 <AANLkTikF37hN7dFqPbCp-gcim7SarveaTrjXipnGpJM7@mail.gmail.com>
+	 <20100915132731.GA20558@khazad-dum.debian.net>
+	 <AANLkTinGDUxsgaGey7EnYOu3kKP-YRE00gL33hiKvAWj@mail.gmail.com>
+	 <1284589207.4672.3.camel@maxim-laptop>
+	 <AANLkTin37rbEbcGDejhcsnxZNYhhUWGy+x=v4Y=s0_Qx@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 21 Sep 2010 13:42:18 +0200
+Message-ID: <1285069338.3124.4.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaud Giersch <arnaud.giersch@free.fr>
+On Thu, 2010-09-16 at 08:51 +0200, Kay Sievers wrote: 
+> On Thu, Sep 16, 2010 at 00:20, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+> > So it makes the sense.
+> > It turns out that hal is still running on ubuntu systems, and yes, it
+> > still polls the drives, and yes I disabled that feature....
+> > So restoring that polling feature indeed fixes that problem for now.
+> > Yet, why without that commit detection did work?
+> 
+> Really, I have no idea how this can happen. You could only find out
+> with blocktrace, if something else is trying to open the device. The
+> state change in the drive should not be able to get known to the host
+> unless something is causing i/o with open().
+> 
+> Kay
 
-Move the name to id mapping out of the XDR decode functions.
+Due to some unexplained laziness, I didn't put a printk to cdrom_open to
+figure out if drive is polled or not without hal.
+Today I finally found why kgdb didn't work (it was conflict with nmi
+watchdog), and just for fun I have put a breakpoint to cdrom_open.
+Well udisks *does* poll the drive, every few seconds, and therefore this
+is a regression.
+I will soon look at udisk source to see how it polls the drive.
+(Maybe it uses exclusive open and hal doesn't or something like that.)
 
-Add two new fields to struct nfs_fattr: user_name and group_name, that
-are defined iff a name to id mapping should be done.
-A new function, nfs_fattr_name_to_id(), is defined to call the
-idmapper if needed.
+Best regards,
+Maxim Levitsky
 
-This also fixes the empty core dumps that may be produced on NFSv4
-mounts since commit 80e52aced138bb41b045a8595a87510f27d8d8c5.
 
-Signed-off-by: Arnaud Giersch <arnaud.giersch@free.fr>
-
----
-Hi,
-
-[ Resend, since a previous sending on August 12 did not get any answer. ]
-
-The purpose of this patch is to avoid empty core dumps on NFS4 mounts,
-as reported in http://article.gmane.org/gmane.linux.kernel/998617, or
-http://article.gmane.org/gmane.linux.nfs/33390.
-
-This is my attempt to implement the suggestion made by Trond Myklebust
-in http://article.gmane.org/gmane.linux.nfs/33391.
-
-A previous submission (http://article.gmane.org/gmane.linux.nfs/33422)
-did not get any feedback.  The only difference with this first patch is
-the test in nfs_free_fattr(), as the fattr parameter may be NULL.
-
-I am currently running a patched kernel on my workstation, and did not
-notice any problem.
-
-Regards,
-        Arnaud Giersch
-
- fs/nfs/inode.c          |   35 ++++++++++++
- fs/nfs/nfs4xdr.c        |  109 ++++++++++++++-----------------------
- include/linux/nfs_fs.h  |    4 ++
- include/linux/nfs_xdr.h |    7 +++
- 4 files changed, 88 insertions(+), 67 deletions(-)
-
-diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-index 7d2d6c7..b1f7799 100644
---- a/fs/nfs/inode.c
-+++ b/fs/nfs/inode.c
-@@ -234,6 +234,35 @@ nfs_init_locked(struct inode *inode, void *opaque)
- 	return 0;
- }
- 
-+static void
-+nfs_fattr_name_to_id(struct nfs_client *clp, struct nfs_fattr *fattr)
-+{
-+	if (fattr->user_name) {
-+		struct nfs_name *name = fattr->user_name;
-+		if (nfs_map_name_to_uid(clp, name->buf, name->len,
-+					&fattr->uid) == 0)
-+			fattr->valid |= NFS_ATTR_FATTR_OWNER;
-+		else
-+			dprintk("%s: nfs_map_name_to_uid failed!\n",
-+				__func__);
-+		kfree(fattr->user_name);
-+		fattr->user_name = NULL;
-+		dprintk("%s: uid=%d\n", __func__, (int)fattr->uid);
-+	}
-+	if (fattr->group_name) {
-+		struct nfs_name *name = fattr->group_name;
-+		if (nfs_map_group_to_gid(clp, name->buf, name->len,
-+					 &fattr->gid) == 0)
-+			fattr->valid |= NFS_ATTR_FATTR_GROUP;
-+		else
-+			dprintk("%s: nfs_map_group_to_gid failed!\n",
-+				__func__);
-+		kfree(fattr->group_name);
-+		fattr->group_name = NULL;
-+		dprintk("%s: gid=%d\n", __func__, (int)fattr->gid);
-+	}
-+}
-+
- /* Don't use READDIRPLUS on directories that we believe are too large */
- #define NFS_LIMIT_READDIRPLUS (8*PAGE_SIZE)
- 
-@@ -263,6 +292,7 @@ nfs_fhget(struct super_block *sb, struct nfs_fh *fh, struct nfs_fattr *fattr)
- 		inode = ERR_PTR(-ENOMEM);
- 		goto out_no_inode;
- 	}
-+	nfs_fattr_name_to_id(NFS_SERVER(inode)->nfs_client, fattr);
- 
- 	if (inode->i_state & I_NEW) {
- 		struct nfs_inode *nfsi = NFS_I(inode);
-@@ -997,6 +1027,8 @@ unsigned long nfs_inc_attr_generation_counter(void)
- void nfs_fattr_init(struct nfs_fattr *fattr)
- {
- 	fattr->valid = 0;
-+	fattr->user_name = NULL;
-+	fattr->group_name = NULL;
- 	fattr->time_start = jiffies;
- 	fattr->gencount = nfs_inc_attr_generation_counter();
- }
-@@ -1071,6 +1103,7 @@ int nfs_refresh_inode(struct inode *inode, struct nfs_fattr *fattr)
- {
- 	int status;
- 
-+	nfs_fattr_name_to_id(NFS_SERVER(inode)->nfs_client, fattr);
- 	if ((fattr->valid & NFS_ATTR_FATTR) == 0)
- 		return 0;
- 	spin_lock(&inode->i_lock);
-@@ -1110,6 +1143,7 @@ int nfs_post_op_update_inode(struct inode *inode, struct nfs_fattr *fattr)
- {
- 	int status;
- 
-+	nfs_fattr_name_to_id(NFS_SERVER(inode)->nfs_client, fattr);
- 	spin_lock(&inode->i_lock);
- 	status = nfs_post_op_update_inode_locked(inode, fattr);
- 	spin_unlock(&inode->i_lock);
-@@ -1131,6 +1165,7 @@ int nfs_post_op_update_inode_force_wcc(struct inode *inode, struct nfs_fattr *fa
- {
- 	int status;
- 
-+	nfs_fattr_name_to_id(NFS_SERVER(inode)->nfs_client, fattr);
- 	spin_lock(&inode->i_lock);
- 	/* Don't do a WCC update if these attributes are already stale */
- 	if ((fattr->valid & NFS_ATTR_FATTR) == 0 ||
-diff --git a/fs/nfs/nfs4xdr.c b/fs/nfs/nfs4xdr.c
-index 08ef912..c6e7197 100644
---- a/fs/nfs/nfs4xdr.c
-+++ b/fs/nfs/nfs4xdr.c
-@@ -3271,13 +3271,13 @@ out_overflow:
- }
- 
- static int decode_attr_owner(struct xdr_stream *xdr, uint32_t *bitmap,
--		struct nfs_client *clp, uint32_t *uid, int may_sleep)
-+			     struct nfs_client *clp, struct nfs_name **owner)
- {
- 	uint32_t len;
- 	__be32 *p;
- 	int ret = 0;
- 
--	*uid = -2;
-+	BUG_ON(*owner);
- 	if (unlikely(bitmap[1] & (FATTR4_WORD1_OWNER - 1U)))
- 		return -EIO;
- 	if (likely(bitmap[1] & FATTR4_WORD1_OWNER)) {
-@@ -3288,20 +3288,18 @@ static int decode_attr_owner(struct xdr_stream *xdr, uint32_t *bitmap,
- 		p = xdr_inline_decode(xdr, len);
- 		if (unlikely(!p))
- 			goto out_overflow;
--		if (!may_sleep) {
--			/* do nothing */
--		} else if (len < XDR_MAX_NETOBJ) {
--			if (nfs_map_name_to_uid(clp, (char *)p, len, uid) == 0)
--				ret = NFS_ATTR_FATTR_OWNER;
--			else
--				dprintk("%s: nfs_map_name_to_uid failed!\n",
--						__func__);
-+		if (len < XDR_MAX_NETOBJ) {
-+			*owner = kmalloc((sizeof **owner) + len, GFP_NOFS);
-+			if (*owner) {
-+				(*owner)->len = len;
-+				memcpy((*owner)->buf, p, len);
-+			} else
-+				dprintk("%s: kmalloc failed!\n", __func__);
- 		} else
- 			dprintk("%s: name too long (%u)!\n",
- 					__func__, len);
- 		bitmap[1] &= ~FATTR4_WORD1_OWNER;
- 	}
--	dprintk("%s: uid=%d\n", __func__, (int)*uid);
- 	return ret;
- out_overflow:
- 	print_overflow_msg(__func__, xdr);
-@@ -3309,13 +3307,13 @@ out_overflow:
- }
- 
- static int decode_attr_group(struct xdr_stream *xdr, uint32_t *bitmap,
--		struct nfs_client *clp, uint32_t *gid, int may_sleep)
-+			     struct nfs_client *clp, struct nfs_name **group)
- {
- 	uint32_t len;
- 	__be32 *p;
- 	int ret = 0;
- 
--	*gid = -2;
-+	BUG_ON(*group);
- 	if (unlikely(bitmap[1] & (FATTR4_WORD1_OWNER_GROUP - 1U)))
- 		return -EIO;
- 	if (likely(bitmap[1] & FATTR4_WORD1_OWNER_GROUP)) {
-@@ -3326,20 +3324,18 @@ static int decode_attr_group(struct xdr_stream *xdr, uint32_t *bitmap,
- 		p = xdr_inline_decode(xdr, len);
- 		if (unlikely(!p))
- 			goto out_overflow;
--		if (!may_sleep) {
--			/* do nothing */
--		} else if (len < XDR_MAX_NETOBJ) {
--			if (nfs_map_group_to_gid(clp, (char *)p, len, gid) == 0)
--				ret = NFS_ATTR_FATTR_GROUP;
--			else
--				dprintk("%s: nfs_map_group_to_gid failed!\n",
--						__func__);
-+		if (len < XDR_MAX_NETOBJ) {
-+			*group = kmalloc((sizeof **group) + len, GFP_NOFS);
-+			if (*group) {
-+				(*group)->len = len;
-+				memcpy((*group)->buf, p, len);
-+			} else
-+				dprintk("%s: kmalloc failed!\n", __func__);
- 		} else
- 			dprintk("%s: name too long (%u)!\n",
- 					__func__, len);
- 		bitmap[1] &= ~FATTR4_WORD1_OWNER_GROUP;
- 	}
--	dprintk("%s: gid=%d\n", __func__, (int)*gid);
- 	return ret;
- out_overflow:
- 	print_overflow_msg(__func__, xdr);
-@@ -3745,7 +3741,7 @@ xdr_error:
- }
- 
- static int decode_getfattr(struct xdr_stream *xdr, struct nfs_fattr *fattr,
--		const struct nfs_server *server, int may_sleep)
-+			   const struct nfs_server *server)
- {
- 	__be32 *savep;
- 	uint32_t attrlen,
-@@ -3818,13 +3814,13 @@ static int decode_getfattr(struct xdr_stream *xdr, struct nfs_fattr *fattr,
- 	fattr->valid |= status;
- 
- 	status = decode_attr_owner(xdr, bitmap, server->nfs_client,
--			&fattr->uid, may_sleep);
-+				   &fattr->user_name);
- 	if (status < 0)
- 		goto xdr_error;
- 	fattr->valid |= status;
- 
- 	status = decode_attr_group(xdr, bitmap, server->nfs_client,
--			&fattr->gid, may_sleep);
-+				   &fattr->group_name);
- 	if (status < 0)
- 		goto xdr_error;
- 	fattr->valid |= status;
-@@ -4757,8 +4753,7 @@ static int nfs4_xdr_dec_open_downgrade(struct rpc_rqst *rqstp, __be32 *p, struct
- 	status = decode_open_downgrade(&xdr, res);
- 	if (status != 0)
- 		goto out;
--	decode_getfattr(&xdr, res->fattr, res->server,
--			!RPC_IS_ASYNC(rqstp->rq_task));
-+	decode_getfattr(&xdr, res->fattr, res->server);
- out:
- 	return status;
- }
-@@ -4785,8 +4780,7 @@ static int nfs4_xdr_dec_access(struct rpc_rqst *rqstp, __be32 *p, struct nfs4_ac
- 	status = decode_access(&xdr, res);
- 	if (status != 0)
- 		goto out;
--	decode_getfattr(&xdr, res->fattr, res->server,
--			!RPC_IS_ASYNC(rqstp->rq_task));
-+	decode_getfattr(&xdr, res->fattr, res->server);
- out:
- 	return status;
- }
-@@ -4813,8 +4807,7 @@ static int nfs4_xdr_dec_lookup(struct rpc_rqst *rqstp, __be32 *p, struct nfs4_lo
- 		goto out;
- 	if ((status = decode_getfh(&xdr, res->fh)) != 0)
- 		goto out;
--	status = decode_getfattr(&xdr, res->fattr, res->server
--			,!RPC_IS_ASYNC(rqstp->rq_task));
-+	status = decode_getfattr(&xdr, res->fattr, res->server);
- out:
- 	return status;
- }
-@@ -4838,8 +4831,7 @@ static int nfs4_xdr_dec_lookup_root(struct rpc_rqst *rqstp, __be32 *p, struct nf
- 	if ((status = decode_putrootfh(&xdr)) != 0)
- 		goto out;
- 	if ((status = decode_getfh(&xdr, res->fh)) == 0)
--		status = decode_getfattr(&xdr, res->fattr, res->server,
--				!RPC_IS_ASYNC(rqstp->rq_task));
-+		status = decode_getfattr(&xdr, res->fattr, res->server);
- out:
- 	return status;
- }
-@@ -4864,8 +4856,7 @@ static int nfs4_xdr_dec_remove(struct rpc_rqst *rqstp, __be32 *p, struct nfs_rem
- 		goto out;
- 	if ((status = decode_remove(&xdr, &res->cinfo)) != 0)
- 		goto out;
--	decode_getfattr(&xdr, res->dir_attr, res->server,
--			!RPC_IS_ASYNC(rqstp->rq_task));
-+	decode_getfattr(&xdr, res->dir_attr, res->server);
- out:
- 	return status;
- }
-@@ -4895,13 +4886,11 @@ static int nfs4_xdr_dec_rename(struct rpc_rqst *rqstp, __be32 *p, struct nfs4_re
- 	if ((status = decode_rename(&xdr, &res->old_cinfo, &res->new_cinfo)) != 0)
- 		goto out;
- 	/* Current FH is target directory */
--	if (decode_getfattr(&xdr, res->new_fattr, res->server,
--				!RPC_IS_ASYNC(rqstp->rq_task)) != 0)
-+	if (decode_getfattr(&xdr, res->new_fattr, res->server) != 0)
- 		goto out;
- 	if ((status = decode_restorefh(&xdr)) != 0)
- 		goto out;
--	decode_getfattr(&xdr, res->old_fattr, res->server,
--			!RPC_IS_ASYNC(rqstp->rq_task));
-+	decode_getfattr(&xdr, res->old_fattr, res->server);
- out:
- 	return status;
- }
-@@ -4934,13 +4923,11 @@ static int nfs4_xdr_dec_link(struct rpc_rqst *rqstp, __be32 *p, struct nfs4_link
- 	 * Note order: OP_LINK leaves the directory as the current
- 	 *             filehandle.
- 	 */
--	if (decode_getfattr(&xdr, res->dir_attr, res->server,
--				!RPC_IS_ASYNC(rqstp->rq_task)) != 0)
-+	if (decode_getfattr(&xdr, res->dir_attr, res->server) != 0)
- 		goto out;
- 	if ((status = decode_restorefh(&xdr)) != 0)
- 		goto out;
--	decode_getfattr(&xdr, res->fattr, res->server,
--			!RPC_IS_ASYNC(rqstp->rq_task));
-+	decode_getfattr(&xdr, res->fattr, res->server);
- out:
- 	return status;
- }
-@@ -4969,13 +4956,11 @@ static int nfs4_xdr_dec_create(struct rpc_rqst *rqstp, __be32 *p, struct nfs4_cr
- 		goto out;
- 	if ((status = decode_getfh(&xdr, res->fh)) != 0)
- 		goto out;
--	if (decode_getfattr(&xdr, res->fattr, res->server,
--				!RPC_IS_ASYNC(rqstp->rq_task)) != 0)
-+	if (decode_getfattr(&xdr, res->fattr, res->server) != 0)
- 		goto out;
- 	if ((status = decode_restorefh(&xdr)) != 0)
- 		goto out;
--	decode_getfattr(&xdr, res->dir_fattr, res->server,
--			!RPC_IS_ASYNC(rqstp->rq_task));
-+	decode_getfattr(&xdr, res->dir_fattr, res->server);
- out:
- 	return status;
- }
-@@ -5007,8 +4992,7 @@ static int nfs4_xdr_dec_getattr(struct rpc_rqst *rqstp, __be32 *p, struct nfs4_g
- 	status = decode_putfh(&xdr);
- 	if (status)
- 		goto out;
--	status = decode_getfattr(&xdr, res->fattr, res->server,
--			!RPC_IS_ASYNC(rqstp->rq_task));
-+	status = decode_getfattr(&xdr, res->fattr, res->server);
- out:
- 	return status;
- }
-@@ -5115,8 +5099,7 @@ static int nfs4_xdr_dec_close(struct rpc_rqst *rqstp, __be32 *p, struct nfs_clos
- 	 * 	an ESTALE error. Shouldn't be a problem,
- 	 * 	though, since fattr->valid will remain unset.
- 	 */
--	decode_getfattr(&xdr, res->fattr, res->server,
--			!RPC_IS_ASYNC(rqstp->rq_task));
-+	decode_getfattr(&xdr, res->fattr, res->server);
- out:
- 	return status;
- }
-@@ -5148,13 +5131,11 @@ static int nfs4_xdr_dec_open(struct rpc_rqst *rqstp, __be32 *p, struct nfs_openr
- 		goto out;
- 	if (decode_getfh(&xdr, &res->fh) != 0)
- 		goto out;
--	if (decode_getfattr(&xdr, res->f_attr, res->server,
--				!RPC_IS_ASYNC(rqstp->rq_task)) != 0)
-+	if (decode_getfattr(&xdr, res->f_attr, res->server) != 0)
- 		goto out;
- 	if (decode_restorefh(&xdr) != 0)
- 		goto out;
--	decode_getfattr(&xdr, res->dir_attr, res->server,
--			!RPC_IS_ASYNC(rqstp->rq_task));
-+	decode_getfattr(&xdr, res->dir_attr, res->server);
- out:
- 	return status;
- }
-@@ -5202,8 +5183,7 @@ static int nfs4_xdr_dec_open_noattr(struct rpc_rqst *rqstp, __be32 *p, struct nf
- 	status = decode_open(&xdr, res);
- 	if (status)
- 		goto out;
--	decode_getfattr(&xdr, res->f_attr, res->server,
--			!RPC_IS_ASYNC(rqstp->rq_task));
-+	decode_getfattr(&xdr, res->f_attr, res->server);
- out:
- 	return status;
- }
-@@ -5230,8 +5210,7 @@ static int nfs4_xdr_dec_setattr(struct rpc_rqst *rqstp, __be32 *p, struct nfs_se
- 	status = decode_setattr(&xdr);
- 	if (status)
- 		goto out;
--	decode_getfattr(&xdr, res->fattr, res->server,
--			!RPC_IS_ASYNC(rqstp->rq_task));
-+	decode_getfattr(&xdr, res->fattr, res->server);
- out:
- 	return status;
- }
-@@ -5418,8 +5397,7 @@ static int nfs4_xdr_dec_write(struct rpc_rqst *rqstp, __be32 *p, struct nfs_writ
- 	status = decode_write(&xdr, res);
- 	if (status)
- 		goto out;
--	decode_getfattr(&xdr, res->fattr, res->server,
--			!RPC_IS_ASYNC(rqstp->rq_task));
-+	decode_getfattr(&xdr, res->fattr, res->server);
- 	if (!status)
- 		status = res->count;
- out:
-@@ -5448,8 +5426,7 @@ static int nfs4_xdr_dec_commit(struct rpc_rqst *rqstp, __be32 *p, struct nfs_wri
- 	status = decode_commit(&xdr, res);
- 	if (status)
- 		goto out;
--	decode_getfattr(&xdr, res->fattr, res->server,
--			!RPC_IS_ASYNC(rqstp->rq_task));
-+	decode_getfattr(&xdr, res->fattr, res->server);
- out:
- 	return status;
- }
-@@ -5615,8 +5592,7 @@ static int nfs4_xdr_dec_delegreturn(struct rpc_rqst *rqstp, __be32 *p, struct nf
- 	status = decode_delegreturn(&xdr);
- 	if (status != 0)
- 		goto out;
--	decode_getfattr(&xdr, res->fattr, res->server,
--			!RPC_IS_ASYNC(rqstp->rq_task));
-+	decode_getfattr(&xdr, res->fattr, res->server);
- out:
- 	return status;
- }
-@@ -5644,8 +5620,7 @@ static int nfs4_xdr_dec_fs_locations(struct rpc_rqst *req, __be32 *p,
- 		goto out;
- 	xdr_enter_page(&xdr, PAGE_SIZE);
- 	status = decode_getfattr(&xdr, &res->fs_locations->fattr,
--				 res->fs_locations->server,
--				 !RPC_IS_ASYNC(req->rq_task));
-+				 res->fs_locations->server);
- out:
- 	return status;
- }
-diff --git a/include/linux/nfs_fs.h b/include/linux/nfs_fs.h
-index 508f8cf..6ce7a08 100644
---- a/include/linux/nfs_fs.h
-+++ b/include/linux/nfs_fs.h
-@@ -369,6 +369,10 @@ extern struct nfs_fattr *nfs_alloc_fattr(void);
- 
- static inline void nfs_free_fattr(const struct nfs_fattr *fattr)
- {
-+	if (!fattr)
-+		return;
-+	kfree(fattr->user_name);
-+	kfree(fattr->group_name);
- 	kfree(fattr);
- }
- 
-diff --git a/include/linux/nfs_xdr.h b/include/linux/nfs_xdr.h
-index fc46192..fc58d5d 100644
---- a/include/linux/nfs_xdr.h
-+++ b/include/linux/nfs_xdr.h
-@@ -27,10 +27,17 @@ static inline int nfs_fsid_equal(const struct nfs_fsid *a, const struct nfs_fsid
- 	return a->major == b->major && a->minor == b->minor;
- }
- 
-+struct nfs_name {
-+	size_t len;
-+	char buf[];
-+};
-+
- struct nfs_fattr {
- 	unsigned int		valid;		/* which fields are valid */
- 	umode_t			mode;
- 	__u32			nlink;
-+	struct nfs_name		*user_name;
-+	struct nfs_name		*group_name;
- 	__u32			uid;
- 	__u32			gid;
- 	dev_t			rdev;
