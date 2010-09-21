@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758052Ab0IURil (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 13:38:41 -0400
-Received: from cantor.suse.de ([195.135.220.2]:37926 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753013Ab0IURik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 13:38:40 -0400
-Date: Tue, 21 Sep 2010 10:37:19 -0700
-From: Greg KH <gregkh@suse.de>
-To: Anca Emanuel <anca.emanuel@gmail.com>
-Cc: "Savoy, Pavan" <pavan_savoy@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] drivers:staging:ti-st: remove st_get_plat_device
-Message-ID: <20100921173719.GA11404@suse.de>
-References: <19F8576C6E063C45BE387C64729E7394046836CB57@dbde02.ent.ti.com>
- <20100831041114.GA16009@suse.de>
- <19F8576C6E063C45BE387C64729E7394046836CE5C@dbde02.ent.ti.com>
- <20100831224238.GA13253@suse.de>
- <19F8576C6E063C45BE387C64729E739404687B2835@dbde02.ent.ti.com>
- <AANLkTimCkTFfe157dHK=caAdAeX_4m1A_p6ZRxp=2RWt@mail.gmail.com>
- <19F8576C6E063C45BE387C64729E739404687B2B27@dbde02.ent.ti.com>
- <AANLkTimZ2Pe5T2=ZUZnd_3-RQi8Qs4FrykkJy6Zvx89M@mail.gmail.com>
- <19F8576C6E063C45BE387C64729E739404687B2B81@dbde02.ent.ti.com>
- <AANLkTim0Z7AWeqCM4d26Z1UP1VsEaSBgqDCAUr1vqgMj@mail.gmail.com>
+	id S1758072Ab0IURjH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 13:39:07 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:44706 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753013Ab0IURjF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 13:39:05 -0400
+Message-ID: <04c02fdea99c71ad5f166152c9331f2d.squirrel@www.firstfloor.org>
+In-Reply-To: <1285082049.23122.1930.camel@gandalf.stny.rr.com>
+References: <cover.1284733808.git.jbaron@redhat.com>
+    <ee8b3595967989fdaf84e698dc7447d315ce972a.1284733808.git.jbaron@redhat.com>
+    <20100921131232.GA3024@one.firstfloor.org>
+    <20100921143555.GA2873@redhat.com>
+    <0e1f6b339e72a449fed0df7b801da607.squirrel@www.firstfloor.org>
+    <1285082049.23122.1930.camel@gandalf.stny.rr.com>
+Date: Tue, 21 Sep 2010 19:39:04 +0200
+Subject: Re: [PATCH 03/10] jump label v11: base patch
+From: "Andi Kleen" <andi@firstfloor.org>
+To: "Steven Rostedt" <rostedt@goodmis.org>
+Cc: "Andi Kleen" <andi@firstfloor.org>, "Jason Baron" <jbaron@redhat.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu,
+        mathieu.desnoyers@polymtl.ca, hpa@zytor.com, tglx@linutronix.de,
+        roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTim0Z7AWeqCM4d26Z1UP1VsEaSBgqDCAUr1vqgMj@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 21, 2010 at 08:34:51PM +0300, Anca Emanuel wrote:
-> > It is currently in linux-next.
-> [...]
-> >> >> Build error (kernel 2.6.36-rc3-git1):
-> >> >>
-> >> >>
-> >> >> Building modules, stage 2.
-> >> >>   MODPOST 3056 modules
-> >> >> ERROR: "st_get_plat_device" [drivers/staging/ti-st/st_drv.ko] undefined!
-> 
-> Greg,
-> 
-> you send some pull requests to Linus.
-> Can you compile the kernel without this patch ?
 
-It works here for me, doesn't it for you?
+>> Even 1000 is fine to walk, but if it was sorted a binary search
+>> would be much faster anyways. That is then you would still
+>> need to search for each module, but that is a relatively small
+>> number (< 100)
+>
+> xfs has > 100 tracepoints
 
-> see here:
-> http://kernel.ubuntu.com/~kernel-ppa/mainline/v2.6.36-rc5-maverick/0002-DISABLE-ti-st.patch
-> 
-> I know you are overburned. Just get 1 or 2 guys to teach them to help you.
+No problem for binary search.
 
-I still don't understand, what does that patch have to do with the
-staging tree?
+>> > Also, I think the hash table deals nicely with modules.
+>>
+>> Maybe but it's also a lot of code. And it seems to me
+>> that it is optimizing the wrong thing. Simpler is nicer.
+>
+> I guess simplicity is in the eye of the beholder. I find hashes easier
+> to deal with than binary searching sorted lists. Every time you add a
+> tracepoint, you need to resort the list.
 
-thanks,
+You only add trace points with new modules right?
+In this case you only sort the section of the new module, nothing else.
+And only once when you load it.
 
-greg k-h
+> Hashes are much easier to deal with and scale nicely. I don't think
+> there's enough rational to switch this to a binary list.
+
+The problem I see is that there's a lot of hashing related code
+and a lot of memory overhead. I suspect with inplace access
+everything would be much simpler and less overhead.
+
+For me the current implementation simply seems overengineered.
+
+-Andi
+
