@@ -1,49 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756231Ab0IUH0s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 03:26:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56604 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753560Ab0IUH0r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 03:26:47 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: robert.richter@amd.com
-Cc: linux-kernel@vger.kernel.org, oprofile-list@lists.sourceforge.net,
-        tdm.rhbz@gmail.com, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH] oprofile: Add Support for Intel CPU Family 6 / Model 29
-Date: Tue, 21 Sep 2010 09:26:35 +0200
-Message-Id: <1285053995-3811-1-git-send-email-jolsa@redhat.com>
+	id S1756113Ab0IUHcG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 03:32:06 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:34221 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754118Ab0IUHcF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 03:32:05 -0400
+Message-ID: <31aed4ad96866a97dc791186303c5719.squirrel@www.firstfloor.org>
+In-Reply-To: <20100921162316.3C03.A69D9226@jp.fujitsu.com>
+References: <20100921022112.GA10336@localhost>
+    <20100921061310.GA11526@localhost>
+    <20100921162316.3C03.A69D9226@jp.fujitsu.com>
+Date: Tue, 21 Sep 2010 09:31:58 +0200
+Subject: Re: Problem with debugfs
+From: "Andi Kleen" <andi@firstfloor.org>
+To: "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>
+Cc: "Kenneth" <liguozhu@huawei.com>, kosaki.motohiro@jp.fujitsu.com,
+        greg@kroah.com, linux-kernel@vger.kernel.org,
+        "Naoya Horiguchi" <n-horiguchi@ah.jp.nec.com>,
+        "Andi Kleen" <andi@firstfloor.org>, "linux-mm" <linux-mm@kvack.org>,
+        fengguang.wu@intel.com
+User-Agent: SquirrelMail/1.4.21
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds CPU type detection for dunnington processor (Family 6 / Model 29)
-to be identified as core 2 family cpu type (wikipedia source).
+x
 
-I tested oprofile on Intel(R) Xeon(R) CPU E7440 reporting itself as model 29,
-and it runs without an issue.
+>> I'm sorry I had not checked the git before sending my last mail.
+>>
+>> For the problem I mention, consider this scenarios:
+>>
+>> 1. mm/hwpoinson-inject.c create a debugfs file with
+>>    debugfs_create_u64("corrupt-filter-flags-mask", ...,
+>>    &hwpoison_filter_flags_mask)
+>> 2. hwpoison_filter_flags_mask is supposed to be protected by
+>> filp->priv->mutex
+>>    of this file when it is accessed from user space.
+>> 3. but when it is accessed from
+>> mm/memory-failure.c:hwpoison_filter_flags,
+>>    there is no way for the function to protect the operation (so it
+>> simply
+>>    ignore it). This may create a competition problem.
+>>
+>> It should be a problem.
+>>
+>> I'm sorry from my poor English skill.
+>
+> I think your english is very clear :)
+> Let's cc hwpoison folks.
 
-wbr,
-jirka
+Thanks for the report.
+Copying Fengguang who wrote that code.
+
+-Andi
 
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- arch/x86/oprofile/nmi_int.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
-index 009b819..f1575c9 100644
---- a/arch/x86/oprofile/nmi_int.c
-+++ b/arch/x86/oprofile/nmi_int.c
-@@ -674,6 +674,7 @@ static int __init ppro_init(char **cpu_type)
- 	case 0x0f:
- 	case 0x16:
- 	case 0x17:
-+	case 0x1d:
- 		*cpu_type = "i386/core_2";
- 		break;
- 	case 0x1a:
--- 
-1.7.1
+>  - kosaki
+>
+>
+>>
+>> Best Regards
+>> Kenneth Lee
+>>
+>> On Tue, Sep 21, 2010 at 10:21:12AM +0800, kenny wrote:
+>> > Hi, there,
+>> >
+>> > I do not know who is the maintainer for debugfs now. But I think there
+>> is
+>> > problem with its API: It uses filp->priv->mutex to protect the
+>> read/write (to
+>> > the file) for the value of its attribute, but the mutex is not
+>> exported to the
+>> > API user.  Therefore, there is no way to protect its value when you
+>> directly
+>> > use the value in your module.
+>> >
+>> > Is my understanding correct?
+>> >
+>> > Thanks
+>> >
+>> >
+>> > Best Regards
+>> > Kenneth Lee
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+>> in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
+>
+>
 
