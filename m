@@ -1,45 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753677Ab0IUCG5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 22:06:57 -0400
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:47215 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751205Ab0IUCG4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 22:06:56 -0400
-Date: Tue, 21 Sep 2010 11:06:55 +0900
-From: Norbert Preining <preining@logic.at>
-To: Lukas =?iso-8859-15?Q?Gr=E4sslin?= <lukasgraesslin@gmx.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: changing the default cpufreq governor freezes laptop on suspend
-Message-ID: <20100921020654.GU6121@gamma.logic.tuwien.ac.at>
-References: <20100723011514.GD19985@gamma.logic.tuwien.ac.at> <20100919202331.GA27077@home-server.graesslin.de>
+	id S1754619Ab0IUCHz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 22:07:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30288 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751205Ab0IUCHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 22:07:55 -0400
+Message-ID: <4C981483.5040003@redhat.com>
+Date: Tue, 21 Sep 2010 10:12:19 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100919202331.GA27077@home-server.graesslin.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Joe Perches <joe@perches.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: [PATCH 5/6] MAINTAINERS: Remove USB OV511 DRIVER
+References: <cover.1284937055.git.joe@perches.com> <635c8d639054e6497097a40fee080857b1ba39d0.1284937055.git.joe@perches.com>
+In-Reply-To: <635c8d639054e6497097a40fee080857b1ba39d0.1284937055.git.joe@perches.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On So, 19 Sep 2010, Lukas Grässlin wrote:
-> Are there any news? I have exactly the same problem with stable 2.6.35.
+On 09/20/10 07:10, Joe Perches wrote:
+> Removed by commit 7373ab3669aec93f8c8f1ace7845c41d54ed6e3e
+>
+> CC: Amerigo Wang<amwang@redhat.com>
+> CC: Mauro Carvalho Chehab<mchehab@redhat.com>
+>
+> Signed-off-by: Joe Perches<joe@perches.com>
 
-Not that I heard from. 
+Acked-by: Amerigo Wang<amwang@redhat.com>
 
-Best wishes
-
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-BLITTERLESS
-The little slivers of bamboo picked off a cane chair by a nervous
-guest which litter the carpet beneath and tell the chair's owner that
-the whole piece of furniture is about to uncoil terribly and slowly
-until it resembles a giant pencil sharpening.
-			--- Douglas Adams, The Meaning of Liff
+Thanks!
