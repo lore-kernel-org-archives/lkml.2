@@ -1,92 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab0IUOAP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 10:00:15 -0400
-Received: from lucidpixels.com ([75.144.35.66]:59863 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751456Ab0IUOAO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 10:00:14 -0400
-Date: Tue, 21 Sep 2010 10:00:11 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, davej@redhat.com,
-        cpufreq@vger.kernel.org
-cc: adam radford <aradford@gmail.com>, mingo@redhat.com
-Subject: Re: 2.6.35.x: acpi+no_hz+turboboost causing 3ware I/O controller
- resets
-In-Reply-To: <alpine.DEB.2.00.1009210515210.14504@p34.internal.lan>
-Message-ID: <alpine.DEB.2.00.1009210934380.4998@p34.internal.lan>
-References: <alpine.DEB.2.00.1009210515210.14504@p34.internal.lan>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+	id S1754860Ab0IUODp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 10:03:45 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:41120 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456Ab0IUODo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 10:03:44 -0400
+Subject: Re: [RFC PATCH 0/2] perf_events: add support for per-cpu
+ per-cgroup monitoring (v3)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
+        eranian@gmail.com, robert.richter@amd.com, acme@redhat.com,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+In-Reply-To: <AANLkTinmHGtLFRa4O5DNRGgoRtM4cy65JgCw=sYxEjNF@mail.gmail.com>
+References: <4c88dc9c.991ce30a.3d91.3e0e@mx.google.com>
+	 <1285061899.2275.824.camel@laptop> <1285062228.2275.826.camel@laptop>
+	 <AANLkTik-oMNJdakwsH=22LzgYvgd35aom+Zu2WkchUte@mail.gmail.com>
+	 <1285072975.2275.872.camel@laptop>
+	 <AANLkTinmHGtLFRa4O5DNRGgoRtM4cy65JgCw=sYxEjNF@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 21 Sep 2010 16:03:21 +0200
+Message-ID: <1285077801.2275.881.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2010-09-21 at 15:38 +0200, Stephane Eranian wrote:
+> > Hmm, indeed. One thing we can do about that is move perf into the
+> > cgroup, create the counter (disabled) using self to identify the cgroup,
+> > move perf back to where it came from, and enable the counter.
+> >
+> Yes, that's another possibility. I wonder if there are any non-obvious
+> difficulties with this approach.
 
+Yes, there is, but I think we can fix it. The problem with moving perf
+itself around is that perf is not a fully dormant process and can thus
+interact with the cgroup state.
 
-On Tue, 21 Sep 2010, Justin Piszcz wrote:
+If we were to fork a child that's simply sitting idle in waitpid() (or
+any other blocking syscall) we can move that around cgroup without
+affecting the cgroup itself.
 
-> Hello,
->
-> There has been discussion going on here:
-> http://forums.storagereview.com/index.php/topic/28920-3ware-9650se-controller-resets-under-load-on-linux/page__st__30__gopid__264286&#entry264286
->
+>  Is it as simple as:
+>    FILE *fp;
+>    fp = fopen("/dev/cgroup/test/tasks", "w");
+>    fprintf(fp, "%d", gettid());
+>    close(fp): 
 
-Some additional details from the poster on storage review:
-
-----------------------------------------------------------------------
-It's not specific for turbo boost, and it's not specific for 2.6.34. We had the
-freezes with 2.6.27 and 2.6.32, with both being the first kernels where we
-enabled NOHZ and cpufreq. The older machines are running 2.6.24 without
-frequency scaling, one even with the original firmware that was shipped with the
-9690SA when it came to the market. (yes, we tried downgrading a spare machine
-having issues to that firmware also, but no luck either).
-Our servers are still core2 based, some are just Core2Duo on Intel 3210 chipset,
-others are dual Xeon L5420 on Intel 5000P chipsets. All suffer the same problem:
-resetting 3Ware controllers when cpufreq and nohz were enabled.
-
-It's quite funny to read your issues here. When I contacted my vendor about
-this, they told me that I was the only one having these issues, while they're
-selling several hundreds of these controllers every month. LSI also gives me
-that impression when I contact their tech support.
-----------------------------------------------------------------------
-
-Adding Dave to CC list for CPU FREQ driver:
-
-CPU FREQUENCY DRIVERS
-M:  Dave Jones
-L:  cpufreq
-
-Per: kernel/time/tick-sched.c
-  *  Started by: Thomas Gleixner and Ingo Molnar
-
-Maybe someone can shed some light on what is going on here in ref to the 
-CPU FREQ/NO_HZ issue.  In the past I've never used CPU scaling until I got 
-a CPU that could make use of turboboost.  Using NO_HZ will improve 
-turboboost performance (basically makes it work correctly)..
-
-For my machine, the problem is immediately apparent between:
-2.6.34.1 -> 2.6.35.4
-
-With the options enabled; however, (for my case) it only seems to affect
-2.6.35.4 primarily.
-
-With the options mentioned earlier (disabled) I can now run 2.6.35.4 and 
-2.6.35.5 without any problems:
-
--# CONFIG_NO_HZ is not set
--# CONFIG_ACPI_PROCESSOR is not set
--# CONFIG_CPU_FREQ is not set
-
-However, now I can no longer use turbo boost for my i7 CPU.
-
-Opt 1: Enable parameters above with 2.6.34.x (there is no I/O locking, but 
-over several months there may be an occasional reset)
-Opt 2: Run any kernel with the parameters above disabled as shown and 
-forget about turbo boost, but then my system would not lockup/have the 
-controllers reset.
-Opt 3: Try to find out what is triggering this bug so turboboost/freq 
-scaling can be used with 3ware controllers?
-
-Justin.
+Except I've never in my life mounted a cgroup filesystem in /dev/ :-)
