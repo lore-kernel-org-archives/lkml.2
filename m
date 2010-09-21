@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756935Ab0IUPK6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 11:10:58 -0400
-Received: from mailb.microsoft.com ([131.107.115.215]:53603 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755842Ab0IUPK5 convert rfc822-to-8bit (ORCPT
+	id S1756869Ab0IUPOO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 11:14:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:56163 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754163Ab0IUPON (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 11:10:57 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Greg KH <greg@kroah.com>
-CC: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
-        "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
-        "'gregkh@suse.de'" <gregkh@suse.de>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: RE: [PATCH 2/2] staging: hv: Remove camel cases from vmbus channel
- functions
-Thread-Topic: [PATCH 2/2] staging: hv: Remove camel cases from vmbus channel
- functions
-Thread-Index: AQHLWQixMaGUjEdPd06Cf8+WB9z/TJMb+pWAgACQOvA=
-Date: Tue, 21 Sep 2010 15:10:50 +0000
-Message-ID: <1FB5E1D5CA062146B38059374562DF7289E6554F@TK5EX14MBXC121.redmond.corp.microsoft.com>
-References: <1FB5E1D5CA062146B38059374562DF7289E499E4@TK5EX14MBXC121.redmond.corp.microsoft.com>
- <20100920232921.GA31204@kroah.com>
-In-Reply-To: <20100920232921.GA31204@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 21 Sep 2010 11:14:13 -0400
+X-Authority-Analysis: v=1.1 cv=QPMnOuvfoRK4nyqTv0NRvva4Xk0fUUuJArrqv1I9dZo= c=1 sm=0 a=EgsJD7j8BzoA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=AarIoXAkcPmwHLwPV2oA:9 a=u9fQmqDAvJlQhgjIEokA:7 a=PdwsKtjE5jzBLebDH6NbWl-AVrYA:4 a=PUjeQqilurYA:10 a=qaB9cW9uIVSuaon0:21 a=D6cg33BtPCCz38qM:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 03/10] jump label v11: base patch
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Jason Baron <jbaron@redhat.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
+        tglx@linutronix.de, roland@redhat.com, rth@redhat.com,
+        mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org,
+        tony@bakeyournoodle.com
+In-Reply-To: <0e1f6b339e72a449fed0df7b801da607.squirrel@www.firstfloor.org>
+References: <cover.1284733808.git.jbaron@redhat.com>
+	 <ee8b3595967989fdaf84e698dc7447d315ce972a.1284733808.git.jbaron@redhat.com>
+	 <20100921131232.GA3024@one.firstfloor.org>
+	 <20100921143555.GA2873@redhat.com>
+	 <0e1f6b339e72a449fed0df7b801da607.squirrel@www.firstfloor.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 21 Sep 2010 11:14:09 -0400
+Message-ID: <1285082049.23122.1930.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Monday, September 20, 2010 7:29 PM
-> Function name changes are one thing.
+On Tue, 2010-09-21 at 16:41 +0200, Andi Kleen wrote:
+> >
+> > So there are ~150 tracepoints, but this code is also being proposed for
+> > use with 'dynamic debug' of which there are > 1000, and I'm hoping for
+> > more users moving forward.
 > 
-> Variable names are another thing.
-> 
-> Again, one patch per thing please.
-> 
-> It's easier to read and verify that everything is sane.
-> 
-> Please try this one again.
+> Even 1000 is fine to walk, but if it was sorted a binary search
+> would be much faster anyways. That is then you would still
+> need to search for each module, but that is a relatively small
+> number (< 100)
 
-I will separate the variable names and function names into two patches,
-And, incorporate your suggestions like - naming the functions as vmbus_*
-instead of vmbus_channel_*, updating the comments, and etc..
+xfs has > 100 tracepoints
 
-Thanks,
+> 
+> > Also, I think the hash table deals nicely with modules.
+> 
+> Maybe but it's also a lot of code. And it seems to me
+> that it is optimizing the wrong thing. Simpler is nicer.
 
-- Haiyang
+I guess simplicity is in the eye of the beholder. I find hashes easier
+to deal with than binary searching sorted lists. Every time you add a
+tracepoint, you need to resort the list.
+
+Hashes are much easier to deal with and scale nicely. I don't think
+there's enough rational to switch this to a binary list.
+
+-- Steve
+
+
