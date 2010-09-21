@@ -1,148 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757975Ab0IUQ75 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 12:59:57 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:57794 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757895Ab0IUQ74 (ORCPT
+	id S1758055Ab0IURAi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 13:00:38 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56392 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757861Ab0IURAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 12:59:56 -0400
+	Tue, 21 Sep 2010 13:00:36 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=MitsYv+fZDQMZMKULgHXoSVCOx62CaRGzNgzkqQMe63RN12XRWvX31YHIH1AdZhwwY
-         nksA3k2KBqjosd2eSSyHE02VvS12LCUIcw7V9LcJ6p9LRq3mo9CEQQ/ApdqGbO98npSc
-         Iweq9VMhreuLl0tsqSS7hX2DHCNnTSDflhwsY=
-MIME-Version: 1.0
-Date: Tue, 21 Sep 2010 17:59:52 +0100
-Message-ID: <AANLkTimc3oFBG8YiouuCiJ10hz-V8d-vThmMi56RpV9H@mail.gmail.com>
-Subject: [2.6.36-rc5] minor DRM fixes...
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=sMpECBg+LGn4AHb+N1xIbRVmsIJFUuq3ewvZanN+5FdCcDlB293NXrlAt3d/eqwdKo
+         TE3CGENklS53b7Dw91L3NnZJ3MPfjqxQqnzZv+zxhL2cKtUwf+b/p11f1O/gX9DWgcOQ
+         q8KFyRUvo6yTAnyKQy8+T44600DQHS/tKAnG0=
+Subject: Re: [PATCH] mm: do not print backtraces on GFP_ATOMIC failures
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        netdev@vger.kernel.org
+In-Reply-To: <20100921094638.9910add0.akpm@linux-foundation.org>
+References: <20100921121818.4745f038@annuminas.surriel.com>
+	 <20100921094638.9910add0.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 21 Sep 2010 19:00:27 +0200
+Message-ID: <1285088427.2617.723.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex; please review and let me know if you prefer this broken out
-further, and thanks.
+Le mardi 21 septembre 2010 à 09:46 -0700, Andrew Morton a écrit :
+> On Tue, 21 Sep 2010 12:18:18 -0400 Rik van Riel <riel@redhat.com> wrote:
+> 
+> > Atomic allocations cannot fall back to the page eviction code
+> > and are expected to fail.  In fact, in some network intensive
+> > workloads, it is common to experience hundreds of GFP_ATOMIC
+> > allocation failures.
+> > 
+> > Printing out a backtrace for every one of those expected
+> > allocation failures accomplishes nothing good. At multi-gigabit
+> > network speeds with jumbo frames, a burst of allocation failure
+> > backtraces could even slow down the system.
+> > 
+> > We're better off not printing out backtraces on GFP_ATOMIC
+> > allocation failures.
+> > 
+> > Signed-off-by: Rik van Riel <riel@redhat.com>
+> > 
+> > diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+> > index 975609c..5a0bddb 100644
+> > --- a/include/linux/gfp.h
+> > +++ b/include/linux/gfp.h
+> > @@ -72,7 +72,7 @@ struct vm_area_struct;
+> >  /* This equals 0, but use constants in case they ever change */
+> >  #define GFP_NOWAIT	(GFP_ATOMIC & ~__GFP_HIGH)
+> >  /* GFP_ATOMIC means both !wait (__GFP_WAIT not set) and use emergency pool */
+> > -#define GFP_ATOMIC	(__GFP_HIGH)
+> > +#define GFP_ATOMIC	(__GFP_HIGH | __GFP_NOWARN)
+> >  #define GFP_NOIO	(__GFP_WAIT)
+> >  #define GFP_NOFS	(__GFP_WAIT | __GFP_IO)
+> >  #define GFP_KERNEL	(__GFP_WAIT | __GFP_IO | __GFP_FS)
+> 
+> A much finer-tuned implementation would be to add __GFP_NOWARN just to
+> the networking call sites.  I asked about this in June and it got
+> nixed:
+> 
+> http://www.spinics.net/lists/netdev/msg131965.html
+> --
 
----
+Yes, I remember this particular report was useful to find and correct a
+bug.
 
-Fix a number of small compilation issues with DRM.
+I dont know what to say.
 
-Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+Being silent or verbose, it really depends on the context ?
 
-diff --git a/drivers/gpu/drm/drm_buffer.c b/drivers/gpu/drm/drm_buffer.c
-index 55d03ed..687de5f 100644
---- a/drivers/gpu/drm/drm_buffer.c
-+++ b/drivers/gpu/drm/drm_buffer.c
-@@ -98,7 +98,7 @@ EXPORT_SYMBOL(drm_buffer_alloc);
-  *   user_data: A pointer the data that is copied to the buffer.
-  *   size: The Number of bytes to copy.
-  */
--extern int drm_buffer_copy_from_user(struct drm_buffer *buf,
-+int drm_buffer_copy_from_user(struct drm_buffer *buf,
- 		void __user *user_data, int size)
- {
- 	int nr_pages = size / PAGE_SIZE + 1;
-@@ -163,7 +163,7 @@ void *drm_buffer_read_object(struct drm_buffer *buf,
- {
- 	int idx = drm_buffer_index(buf);
- 	int page = drm_buffer_page(buf);
--	void *obj = 0;
-+	void *obj = NULL;
 
- 	if (idx + objsize <= PAGE_SIZE) {
- 		obj = &buf->data[page][idx];
-diff --git a/drivers/gpu/drm/radeon/atombios.h
-b/drivers/gpu/drm/radeon/atombios.h
-index 1bc72c3..fe359a2 100644
---- a/drivers/gpu/drm/radeon/atombios.h
-+++ b/drivers/gpu/drm/radeon/atombios.h
-@@ -4999,7 +4999,7 @@ typedef struct _SW_I2C_IO_DATA_PARAMETERS
- #define SW_I2C_CNTL_WRITE1BIT 6
 
- //==============================VESA definition
-Portion===============================
--#define VESA_OEM_PRODUCT_REV			            '01.00'
-+#define VESA_OEM_PRODUCT_REV			            "01.00"
- #define VESA_MODE_ATTRIBUTE_MODE_SUPPORT	     0xBB	//refer to VBE
-spec p.32, no TTY support
- #define VESA_MODE_WIN_ATTRIBUTE						     7
- #define VESA_WIN_SIZE											     64
-diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
-index bfdfa3e..e3b47a5 100644
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -2727,7 +2727,7 @@ int r600_ib_test(struct radeon_device *rdev)
- 	if (i < rdev->usec_timeout) {
- 		DRM_INFO("ib test succeeded in %u usecs\n", i);
- 	} else {
--		DRM_ERROR("radeon: ib test failed (sracth(0x%04X)=0x%08X)\n",
-+		DRM_ERROR("radeon: ib test failed (scratch(0x%04X)=0x%08X)\n",
- 			  scratch, tmp);
- 		r = -EINVAL;
- 	}
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c
-b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-index ca90479..b1e02ff 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-@@ -69,7 +69,7 @@ struct ttm_page_pool {
- 	spinlock_t		lock;
- 	bool			fill_lock;
- 	struct list_head	list;
--	int			gfp_flags;
-+	gfp_t			gfp_flags;
- 	unsigned		npages;
- 	char			*name;
- 	unsigned long		nfrees;
-@@ -475,7 +475,7 @@ static void
-ttm_handle_caching_state_failure(struct list_head *pages,
-  * This function is reentrant if caller updates count depending on number of
-  * pages returned in pages array.
-  */
--static int ttm_alloc_new_pages(struct list_head *pages, int gfp_flags,
-+static int ttm_alloc_new_pages(struct list_head *pages, gfp_t gfp_flags,
- 		int ttm_flags, enum ttm_caching_state cstate, unsigned count)
- {
- 	struct page **caching_array;
-@@ -666,7 +666,7 @@ int ttm_get_pages(struct list_head *pages, int flags,
- {
- 	struct ttm_page_pool *pool = ttm_get_pool(flags, cstate);
- 	struct page *p = NULL;
--	int gfp_flags = GFP_USER;
-+	gfp_t gfp_flags = GFP_USER;
- 	int r;
-
- 	/* set zero flag for page allocation if required */
-@@ -818,7 +818,7 @@ int ttm_page_alloc_init(struct ttm_mem_global
-*glob, unsigned max_pages)
- 	return 0;
- }
-
--void ttm_page_alloc_fini()
-+void ttm_page_alloc_fini(void)
- {
- 	int i;
-
-diff --git a/drivers/gpu/vga/vgaarb.c b/drivers/gpu/vga/vgaarb.c
-index b87569e..f366f96 100644
---- a/drivers/gpu/vga/vgaarb.c
-+++ b/drivers/gpu/vga/vgaarb.c
-@@ -598,7 +598,7 @@ static inline void
-vga_update_device_decodes(struct vga_device *vgadev,
- 	pr_debug("vgaarb: decoding count now is: %d\n", vga_decode_count);
- }
-
--void __vga_set_legacy_decoding(struct pci_dev *pdev, unsigned int
-decodes, bool userspace)
-+static void __vga_set_legacy_decoding(struct pci_dev *pdev, unsigned
-int decodes, bool userspace)
- {
- 	struct vga_device *vgadev;
- 	unsigned long flags;
--- 
-Daniel J Blueman
