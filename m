@@ -1,45 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756076Ab0IURJi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 13:09:38 -0400
-Received: from cantor.suse.de ([195.135.220.2]:36701 "EHLO mx1.suse.de"
+	id S1755879Ab0IUROs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 13:14:48 -0400
+Received: from cantor.suse.de ([195.135.220.2]:36851 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753229Ab0IURJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 13:09:36 -0400
-Date: Tue, 21 Sep 2010 10:08:07 -0700
-From: Greg KH <gregkh@suse.de>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Al Cho <acho@novell.com>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        driverdevel <devel@driverdev.osuosl.org>
-Subject: Re: linux-next: Tree for September 21 (staging/keucr)
-Message-ID: <20100921170807.GB10105@suse.de>
-References: <20100921170055.4512dd19.sfr@canb.auug.org.au>
- <20100921095345.af7d4978.randy.dunlap@oracle.com>
+	id S1753593Ab0IUROq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 13:14:46 -0400
+Date: Tue, 21 Sep 2010 19:14:45 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Greg KH <gregkh@suse.de>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Phil Turmel <philip@turmel.org>,
+        Mat <jackdachef@gmail.com>, Guillaume Chazarain <guichaz@gmail.com>,
+        linux-kernel@vger.kernel.org, Oliver Neukum <oliver@neukum.org>,
+        Alan Ott <alan@signal11.us>, linux-usb@vger.kernel.org,
+        linux-input@vger.kernel.org, Andreas Bombe <aeb@debian.org>,
+        Alex Riesen <raa.lkml@gmail.com>,
+        Gabriel C <nix.or.die@googlemail.com>
+Subject: Re: [BUG, Regression, bisected] USB mouse causes bug on 1st insert,
+ ignored on 2nd insert, lsusb stuck at usbdev_open
+In-Reply-To: <20100921170728.GA10105@suse.de>
+Message-ID: <alpine.LNX.2.00.1009211913260.26813@pobox.suse.cz>
+References: <alpine.LNX.2.00.1009211156520.26813@pobox.suse.cz> <Pine.LNX.4.44L0.1009211013460.1644-100000@iolanthe.rowland.org> <20100921165048.GB8756@suse.de> <alpine.LNX.2.00.1009211852010.26813@pobox.suse.cz> <20100921170728.GA10105@suse.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100921095345.af7d4978.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 21, 2010 at 09:53:45AM -0700, Randy Dunlap wrote:
-> On Tue, 21 Sep 2010 17:00:55 +1000 Stephen Rothwell wrote:
-> 
-> > Hi all,
+On Tue, 21 Sep 2010, Greg KH wrote:
+
+> > It doesn't hit you if you are calling usb_register_dev() for all the 
+> > instances you have, as the first device will have minor '0', the 
+> > second one '1', etc.
 > > 
-> > Changes since 20100920:
+> > But if you are calling usb_find_interface() for devices that have never 
+> > been registered through usb_register_dev(), then you have a problem, as 
+> > usb_find_interface() will match those unregistered devices (as minor == 0 
+> > in such cases).
+> > 
+> > This is probably quite rare scenario, and hiddev (which might be the only 
+> > in-kernel driver doing this?) has moved to usb_find_interface() only 
+> > recently.
 > 
+> Ah, ok, that makes sense, I never thought of someone calling that
+> function if they had never registered a device :)
 > 
-> drivers/staging/keucr/smcommon.h:9:1: warning: "SUCCESS" redefined
-> drivers/staging/built-in.o: In function `usb_stor_bulk_srb':
-> (.text+0x5199e): multiple definition of `usb_stor_bulk_srb'
+> When did hiddev make this change?  We need to know that for the -stable
+> backport of this patch.
 
-Hm, I don't think the keucr driver can be build into the kernel at the
-moment, I'll go fix that.
+This all comes from BKL removal in bd25f4dd697275. Which has been merged 
+for 2.6.36-rc1, so it hasn't hit any release yet, so there shouldn't be 
+anything needed for any -stable release.
 
-thanks,
+> Alan, care to resend the patch in a format I can apply it?
 
-greg k-h
+It's definitely 2.6.36 material.
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
