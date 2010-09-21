@@ -1,121 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756881Ab0IUIUu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 04:20:50 -0400
-Received: from qmta07.emeryville.ca.mail.comcast.net ([76.96.30.64]:52939 "EHLO
-	qmta07.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755801Ab0IUIUr (ORCPT
+	id S1756961Ab0IUIVJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 04:21:09 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:3433 "EHLO
+	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756902Ab0IUIVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 04:20:47 -0400
-Date: Tue, 21 Sep 2010 01:20:07 -0700
-From: matt mooney <mfm@muteddisk.com>
-To: Jason Baron <jbaron@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
-        hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
-        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-        mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
-        davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org,
-        tony@bakeyournoodle.com
-Subject: Re: [PATCH 10/10] jump label v11: add docs
-Message-ID: <20100921082007.GA12118@haskell.muteddisk.com>
-Mail-Followup-To: Jason Baron <jbaron@redhat.com>,
-	linux-kernel@vger.kernel.org, mingo@elte.hu,
-	mathieu.desnoyers@polymtl.ca, hpa@zytor.com, tglx@linutronix.de,
-	rostedt@goodmis.org, andi@firstfloor.org, roland@redhat.com,
-	rth@redhat.com, mhiramat@redhat.com, fweisbec@gmail.com,
-	avi@redhat.com, davem@davemloft.net, vgoyal@redhat.com,
-	sam@ravnborg.org, tony@bakeyournoodle.com
-References: <cover.1284733808.git.jbaron@redhat.com>
- <f75207ca500d2be85ec049624bc70b01c0183db2.1284733808.git.jbaron@redhat.com>
+	Tue, 21 Sep 2010 04:21:06 -0400
+X-SpamScore: -26
+X-BigFish: VPS-26(zzbb2cK1432N98dN4015Lzz1202hzz8275bh5eeePz32i2a8h43h)
+X-WSS-ID: 0L938IK-01-JBO-02
+X-M-MSG: 
+Date: Tue, 21 Sep 2010 10:20:44 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Jiri Olsa <jolsa@redhat.com>, Andi Kleen <andi@firstfloor.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "oprofile-list@lists.sourceforge.net" 
+	<oprofile-list@lists.sourceforge.net>,
+        "tdm.rhbz@gmail.com" <tdm.rhbz@gmail.com>
+Subject: Re: [PATCH] oprofile: Add Support for Intel CPU Family 6 / Model 29
+Message-ID: <20100921082044.GS13563@erda.amd.com>
+References: <1285053995-3811-1-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <f75207ca500d2be85ec049624bc70b01c0183db2.1284733808.git.jbaron@redhat.com>
+In-Reply-To: <1285053995-3811-1-git-send-email-jolsa@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11:09 Fri 17 Sep     , Jason Baron wrote:
-> Add jump label docs as: Documentation/jump-label.txt
+On 21.09.10 03:26:35, Jiri Olsa wrote:
+> This patch adds CPU type detection for dunnington processor (Family 6 / Model 29)
+> to be identified as core 2 family cpu type (wikipedia source).
 > 
-> +Currently, tracepoints are implemented using a conditional. The conditional
-> +check requires checking a global variable for each tracepoint. Although,
+> I tested oprofile on Intel(R) Xeon(R) CPU E7440 reporting itself as model 29,
+> and it runs without an issue.
+> 
+> wbr,
+> jirka
+> 
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 
-No comma after although here.
+Andi,
 
-> +the overhead of this check is small, it increases under memory pressure. As we
-> +increase the number of tracepoints in the kernel this may become more of an
+found this spec:
 
-Comma after kernel is needed to separate the preposition, and I think the use of
-"this" in the sentence is unclear.
+ http://www.intel.com/Assets/en_US/PDF/specupdate/320336.pdf
 
-> +issue. In addition, tracepoints are often dormant (disabled), and provide no
+Please ack.
 
-Also, no comma before "and" because the second part is a subordinate clause.
+Thanks,
 
-> +direct kernel functionality. Thus, it is highly desirable to reduce their
-> +impact as much as possible. Although tracepoints are the original motivation
-> +for this work, other kernel code paths should be able to make use of the jump
-> +label optimization.
-> +
-> +
-> +For architectures that have not yet introduced jump label support its simply:
+-Robert
 
-..."support, it's" ...
+> ---
+>  arch/x86/oprofile/nmi_int.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
+> index 009b819..f1575c9 100644
+> --- a/arch/x86/oprofile/nmi_int.c
+> +++ b/arch/x86/oprofile/nmi_int.c
+> @@ -674,6 +674,7 @@ static int __init ppro_init(char **cpu_type)
+>  	case 0x0f:
+>  	case 0x16:
+>  	case 0x17:
+> +	case 0x1d:
+>  		*cpu_type = "i386/core_2";
+>  		break;
+>  	case 0x1a:
+> -- 
+> 1.7.1
+> 
+> 
 
-> +
-> +Thus, when tracing is disabled, we simply have a no-op followed by a jump around
-> +the dormant (disabled) tracing code. The 'JUMP_LABEL()' macro, produces a
-> +'jump_table' which has the following format:
-
-No comma after macro, but a comma is needed after jump_table because what
-follows is a nonrestrictive clause.
-
-> +[instruction address] [jump target] [tracepoint key]
-> +
-> +Thus, to enable a tracepoint, we simply patch the 'instruction address' with
-> +a jump to the 'jump target'.
-
-Punctuation is suppose to go inside quotes (I know it's ugly and illogical).
-
-> +
-> +The call to enable a jump label is: enable_jump_label(key); to disable:
-> +disable_jump_label(key);
-
-Hmm, maybe a better structure would be:
-"The calls to enable and disable a jump label are: enable_jump_label(key) and
-disable_jump_label(key)."
-
-> +There are a few functions and macros which arches must implement in order to
-
-"That" should be used here because it is restrictive.
-
-> +take advantage of this optimization. As previously mentioned, if there is no
-> +architecture support we simply fall back to a traditional, load, test, and
-
-Comma after support.
-
-> +
-> +In terms of code analysis the current code for the disabled case is a 'cmpl'
-
-Comma after analysis; it is a preposition.
-
-> +followed by a 'je' around the tracepoint code. so:
-
-Capitalize S in "so"
-
-> +
-> +
-> +The optimization depends on !CC_OPTIMIZE_FOR_SIZE. When CC_OPTIMIZE_FOR_SIZE is
-> +set, gcc does not always out of line the not taken label path in the same way
-> +that the "if unlikely()" paths are made out of line. Thus, with
-> +CC_OPTIMIZE_FOR_SIZE set, this optimization is not always optimal. This may be
-> +solved in subsequent gcc versions, that allow us to move labels out of line,
-
-"which" should be used here instead of that.
-
-Otherwise, from a writing standpoint, it looks good.
-
--mfm
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
