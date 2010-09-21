@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756247Ab0IUHtJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 03:49:09 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:37206 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755521Ab0IUHtH (ORCPT
+	id S1756545Ab0IUHty (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 03:49:54 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:59625 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756346Ab0IUHtx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 03:49:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=G0EJsYX0f4aoX9Tfp3eRR9zgoSjzxs/Uoh4v3+WbLXlicu1It+EiaLyEaQLRM//fjy
-         8oXFBztp1d4GXwHZohGkrkY/JOdSOyP3K/JEacDruublSQ0rsHb3VZLLyoeOtPJp2B2V
-         ANyTUyxBJ+Mmpq9tP2I8y4lYZW/+rKwek5Nzo=
-Date: Tue, 21 Sep 2010 15:53:34 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Rofail Qu <rofail@gmail.com>
-Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: A simple question of sys_
-Message-ID: <20100921075334.GA5427@cr0.nay.redhat.com>
-References: <AANLkTintKaxaAKarDPFgpDLQMVomhThYtZecp5R5Mi62@mail.gmail.com>
- <20100920074838.GB5503@cr0.nay.redhat.com>
- <AANLkTim2NWLE4vhPL-P8JLS3bu9f=V8GqwF0xhE7S87m@mail.gmail.com>
+	Tue, 21 Sep 2010 03:49:53 -0400
+Message-ID: <4C98639D.107@corscience.de>
+Date: Tue, 21 Sep 2010 09:49:49 +0200
+From: Bernhard Walle <walle@corscience.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTim2NWLE4vhPL-P8JLS3bu9f=V8GqwF0xhE7S87m@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ralf Baechle <ralf@linux-mips.org>
+CC: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MIPS: N32: Fix getdents64 syscall for n32
+References: <1283501734-6532-1-git-send-email-walle@corscience.de> <20100919235131.GA29977@linux-mips.org>
+In-Reply-To: <20100919235131.GA29977@linux-mips.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:85h7Ft0wYTX2bqeIzUUE0GJ6ICUJ1tqHNddVuUkkUcJ
+ Pm6D5CEDsF2dwNwq+cjIOQaKKsDYCDYB8Es07iOsbMok1t0ln/
+ LwGpFmlUG3mqastfqi4t7o8VF7/3cxvRwHb9q464KpHpPS5dUB
+ DuDwdiyxJeujGkTeSJiSB472veXvSz4u+R+auWm9yCBbq51HTu
+ gHU4jZUkw/UbWt4dol2OQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 20, 2010 at 04:28:36PM +0800, Rofail Qu wrote:
->2010/9/20 Américo Wang <xiyou.wangcong@gmail.com>:
->> On Fri, Sep 17, 2010 at 02:58:30PM +0800, Rofail Qu wrote:
->>>How to use macro IS_ERR() ?
->>>
->>>It defines as,
->>>...
->>>#define IS_ERR_VALUE(x) unlikely((x) >= (unsigned long)-MAX_ERRNO)
->>>static inline long __must_check IS_ERR(const void *ptr)
->>>{
->>>       return IS_ERR_VALUE((unsigned long)ptr);
->>>}
->>>...
->>>so when pass x as a pointer and x>=-MAX_ERRNO (including NULL or any
->>>valid address),
->>>IS_ERR() will return true!
+Am 20.09.2010 01:51, schrieb Ralf Baechle:
+> On Fri, Sep 03, 2010 at 10:15:34AM +0200, Bernhard Walle wrote:
+>
+>> Commit 31c984a5acabea5d8c7224dc226453022be46f33 introduced a new syscall
+>> getdents64. However, in the syscall table, the new syscall still refers
+>> to the old getdents which doesn't work.
 >>
->> NULL is not an error pointer, you missed the cast to unsigned long.
->Ahh, yeah. A stupid mistake i have.
->Thanks.
->>
->>
->>>IS_ERR(x) seems to use on judge if "x" is a valid error number, right?
->>>
->>
->> Strictly speaking, it checks if 'x' is an error pointer.
->Then what is the range of a valid pointer?
->At least less than (unsigned long)-MAX_ERRNO from this case.
+>> The problem appeared with a system that uses the eglibc 2.12-r11187
+>> (that utilizes that new syscall) is very confused. The fix has been
+>> tested with that eglibc version.
+>
+> Thanks Bernhard!
 
-Yeah, the last page in the virtual memory address is reserved,
-so all but the last page are non-error addresses.
+Wouldn't it make sense to put that fix also in the stable tree (2.6.35.6)?
+
+
+Regards,
+Bernhard
