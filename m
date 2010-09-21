@@ -1,128 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757252Ab0IUS3h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 14:29:37 -0400
-Received: from tomts22-srv.bellnexxia.net ([209.226.175.184]:42912 "EHLO
-	tomts22-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754157Ab0IUS3f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 14:29:35 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAKCVmExGGN6i/2dsb2JhbACiKXLEb4VBBA
-Date: Tue, 21 Sep 2010 14:24:32 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Jason Baron <jbaron@redhat.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, hpa@zytor.com,
-        tglx@linutronix.de, roland@redhat.com, rth@redhat.com,
+	id S1758156Ab0IUSa6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 14:30:58 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:51407 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754157Ab0IUSa5 (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 21 Sep 2010 14:30:57 -0400
+Date: Tue, 21 Sep 2010 14:30:03 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jason Baron <jbaron@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
+        hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
+        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
         mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
         davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org,
         tony@bakeyournoodle.com
-Subject: Re: [PATCH 03/10] jump label v11: base patch
-Message-ID: <20100921182431.GA30075@Krystal>
-References: <cover.1284733808.git.jbaron@redhat.com> <ee8b3595967989fdaf84e698dc7447d315ce972a.1284733808.git.jbaron@redhat.com> <20100921131232.GA3024@one.firstfloor.org> <20100921143555.GA2873@redhat.com> <0e1f6b339e72a449fed0df7b801da607.squirrel@www.firstfloor.org> <1285082049.23122.1930.camel@gandalf.stny.rr.com> <140ee1c060f22286fe2f4d81170f76be.squirrel@www.firstfloor.org> <1285092337.26872.12.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
+Subject: Re: [PATCH 08/10] jump label v11: x86 support
+Message-ID: <20100921183003.GB22088@dumpdata.com>
+References: <cover.1284733808.git.jbaron@redhat.com>
+ <f838f49f40fbea0254036194be66dc48b598dcea.1284733808.git.jbaron@redhat.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <1285092337.26872.12.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 14:14:36 up 167 days,  4:05,  2 users,  load average: 0.08, 0.04,
-	0.05
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <f838f49f40fbea0254036194be66dc48b598dcea.1284733808.git.jbaron@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Tue, 2010-09-21 at 19:36 +0200, Andi Kleen wrote:
-> > > On Tue, 2010-09-21 at 16:41 +0200, Andi Kleen wrote:
-> > >> >
-> > >> > So there are ~150 tracepoints, but this code is also being proposed
-> > >> for
-> > >> > use with 'dynamic debug' of which there are > 1000, and I'm hoping for
-> > >> > more users moving forward.
-> > >>
-> > >> Even 1000 is fine to walk, but if it was sorted a binary search
-> > >> would be much faster anyways. That is then you would still
-> > >> need to search for each module, but that is a relatively small
-> > >> number (< 100)
-> > >
-> > > xfs has > 100 tracepoints
-> > 
-> > Doesn
+On Fri, Sep 17, 2010 at 11:09:22AM -0400, Jason Baron wrote:
+> add x86 support for jump label. I'm keeping this patch separate so its clear to
+> arch maintainers what was required for x86 support this new feature. hopefully,
+> it wouldn't be too painful for other arches.
 > 
-> I suppose you were missing a 't'.
+> Signed-off-by: Jason Baron <jbaron@redhat.com>
+> ---
+>  arch/x86/Kconfig                  |    1 +
+>  arch/x86/include/asm/jump_label.h |   47 +++++++++++++++++++++++++++++++++++
+>  arch/x86/kernel/Makefile          |    2 +-
+>  arch/x86/kernel/jump_label.c      |   49 +++++++++++++++++++++++++++++++++++++
+>  arch/x86/kernel/module.c          |    3 ++
+>  5 files changed, 101 insertions(+), 1 deletions(-)
+>  create mode 100644 arch/x86/include/asm/jump_label.h
+>  create mode 100644 arch/x86/kernel/jump_label.c
 > 
-> Anyway:
-> 
->  $ find fs/xfs/ -name "*.c" ! -type d | xargs grep "[ ^I]trace_" | wc -l
->  313
-> 
-> The jump label occurs at the calling sight, not for defined tracepoints
-> (which can be used in multiple places).
-> 
-> Also take a look at fs/xfs/linux-2.6/xfs_trace.h, you will be surprised.
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 0c14369..a986079 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -60,6 +60,7 @@ config X86
+>  	select ANON_INODES
+>  	select HAVE_ARCH_KMEMCHECK
+>  	select HAVE_USER_RETURN_NOTIFIER
+> +	select HAVE_ARCH_JUMP_LABEL if !CC_OPTIMIZE_FOR_SIZE
+>  
+>  config INSTRUCTION_DECODER
+>  	def_bool (KPROBES || PERF_EVENTS)
+> diff --git a/arch/x86/include/asm/jump_label.h b/arch/x86/include/asm/jump_label.h
+> new file mode 100644
+> index 0000000..b4a2cb4
+> --- /dev/null
+> +++ b/arch/x86/include/asm/jump_label.h
+> @@ -0,0 +1,47 @@
+> +#ifndef _ASM_X86_JUMP_LABEL_H
+> +#define _ASM_X86_JUMP_LABEL_H
+> +
+> +#ifdef __KERNEL__
+> +
+> +#include <linux/types.h>
+> +#include <asm/nops.h>
+> +
+> +#define JUMP_LABEL_NOP_SIZE 5
+> +
+> +# define JUMP_LABEL_INITIAL_NOP ".byte 0xe9 \n\t .long 0\n\t"
+> +
+> +# define JUMP_LABEL(key, label)					\
+> +	do {							\
+> +		asm goto("1:"					\
+> +			JUMP_LABEL_INITIAL_NOP			\
+> +			".pushsection __jump_table,  \"a\" \n\t"\
+> +			_ASM_PTR "1b, %l[" #label "], %c0 \n\t" \
+> +			".popsection \n\t"			\
+> +			: :  "i" (key) :  : label);		\
+> +	} while (0)
+> +
+> +#endif /* __KERNEL__ */
+> +
+> +#ifdef CONFIG_X86_64
+> +
+> +typedef u64 jump_label_t;
+> +
+> +struct jump_entry {
+> +	jump_label_t code;
+> +	jump_label_t target;
+> +	jump_label_t key;
+> +};
+> +
+> +#else
+> +
+> +typedef u32 jump_label_t;
+> +
+> +struct jump_entry {
+> +	jump_label_t code;
+> +	jump_label_t target;
+> +	jump_label_t key;
 
-Yep, I'd be surprised to see how many tracepoints we can end up having
-with stuff like kmem tracing (trace_kmalloc). Each instance of the
-inline function will generate an entry. (!)
+The format is the same, why not just put the typedef
+within the #ifdef?
 
-> 
-> 
-> > >
-> > >>
-> > >> > Also, I think the hash table deals nicely with modules.
-> > >>
-> > >> Maybe but it's also a lot of code. And it seems to me
-> > >> that it is optimizing the wrong thing. Simpler is nicer.
-> > >
-> > > I guess simplicity is in the eye of the beholder. I find hashes easier
-> > > to deal with than binary searching sorted lists. Every time you add a
-> > > tracepoint, you need to resort the list.
-> > 
-> > The only time you add one is when you load a module, right? When you do
-> > that you only sort the section of the new module.
-> 
-> And on removing a module.
-> 
-> > 
-> > > Hashes are much easier to deal with and scale nicely. I don't think
-> > > there's enough rational to switch this to a binary list.
-> > 
-> > Well problem is that the code is very complicated today. I suspect
-> > this could be done much simpler if it wasn't so overengin
-> > 
-> 
-> Perhaps it can be cleaned up. But I have no issues with it now, and
-> using a hash (basic data structures 101) is not where the complexity
-> comes in.
+> +};
+> +
+> +#endif
+> +
+> +#endif
+> diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+> index 11a9925..dfa1443 100644
+> --- a/arch/x86/kernel/Makefile
+> +++ b/arch/x86/kernel/Makefile
+> @@ -32,7 +32,7 @@ GCOV_PROFILE_paravirt.o		:= n
+>  obj-y			:= process_$(BITS).o signal.o entry_$(BITS).o
+>  obj-y			+= traps.o irq.o irq_$(BITS).o dumpstack_$(BITS).o
+>  obj-y			+= time.o ioport.o ldt.o dumpstack.o
+> -obj-y			+= setup.o x86_init.o i8259.o irqinit.o
+> +obj-y			+= setup.o x86_init.o i8259.o irqinit.o jump_label.o
+>  obj-$(CONFIG_X86_VISWS)	+= visws_quirks.o
+>  obj-$(CONFIG_X86_32)	+= probe_roms_32.o
+>  obj-$(CONFIG_X86_32)	+= sys_i386_32.o i386_ksyms_32.o
+> diff --git a/arch/x86/kernel/jump_label.c b/arch/x86/kernel/jump_label.c
+> new file mode 100644
+> index 0000000..b3c0f37
+> --- /dev/null
+> +++ b/arch/x86/kernel/jump_label.c
+> @@ -0,0 +1,49 @@
+> +/*
+> + * jump label x86 support
+> + *
+> + * Copyright (C) 2009 Jason Baron <jbaron@redhat.com>
 
-I agree with Steven, Peter and Jason: due to the large amount of
-tracepoints we can end up patching, we should keep the hash tables. This
-code is very similar to what I have in the tracepoints already and in
-the immediate values. So this code is solid and has been tested over a
-large user base for quite some time already.
+Year.
 
-One change I would recommend is to use a separate memory pool to
-allocate the struct jump_label_entry, to favor better locality. I did
-not do it in tracepoints and markers because each entry have a variable
-length, but given that struct jump_label_entry seems to be fixed-size,
-then we should definitely go for a kmem_cache_alloc().
-
-Thanks,
-
-Mathieu
-
-> 
-> -- Steve
-> 
-> 
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
