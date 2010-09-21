@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440Ab0IUWFL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 18:05:11 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:37453 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752179Ab0IUWFJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 18:05:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=DW7FMW1oxCAboIR0M0DVHUd3UN8SCzb9Jtu2/D+2FqcUnHQ0kgjJDhHjURpjUyPSu5
-         ABHFL7rvIM2131XcHClJKH+rDdMdo53vLFNpJgLR7A1zXPkNMTIvkP0N1bw1uxvsPrwy
-         qbdC/0x3k8bO71eR4PfywGT+HpjcXf6P0SnUA=
-MIME-Version: 1.0
-In-Reply-To: <20100921164944.164ed0af@udp111988uds.am.freescale.net>
-References: <1285066638-7473-1-git-send-email-leoli@freescale.com>
- <877FD0B5-19A7-4A16-831E-369B80B104EA@kernel.crashing.org>
- <AANLkTimiwtoa6i10OTcgFnvbvcO9N4KWHyt4Poj-yj=T@mail.gmail.com>
- <20100921163456.7e2c9b32@udp111988uds.am.freescale.net> <AANLkTine--kry0c0n87WOqYyi3AQOb2KnmNRs-MeXcQt@mail.gmail.com>
- <20100921164944.164ed0af@udp111988uds.am.freescale.net>
-From: Timur Tabi <timur@freescale.com>
-Date: Tue, 21 Sep 2010 17:04:39 -0500
-X-Google-Sender-Auth: uZLdeUC6w1fy2iWFANn2j2sJQO8
-Message-ID: <AANLkTik3dNU1FdUG6sWnQ3P0eXQu62PrckQ9_-Dk7GEJ@mail.gmail.com>
-Subject: Re: [PATCH] fsldma: add support to 36-bit physical address
-To: Scott Wood <scottwood@freescale.com>
-Cc: Kumar Gala <galak@kernel.crashing.org>, dan.j.williams@intel.com,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756357Ab0IUWGq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 18:06:46 -0400
+Received: from core.signal11.us ([64.251.29.136]:56972 "EHLO core.signal11.us"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753013Ab0IUWGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 18:06:45 -0400
+From: Alan Ott <alan@signal11.us>
+To: Jiri Kosina <jkosina@suse.cz>, Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Alan Ott <alan@signal11.us>,
+        =?UTF-8?q?Bruno=20Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
+        linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Alan Ott <alan@signal11.us>
+Subject: [PATCH v3 1/1] Don't Send Feature Reports on Interrupt Endpoint
+Date: Tue, 21 Sep 2010 18:06:32 -0400
+Message-Id: <1285106792-5818-1-git-send-email-alan@signal11.us>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <4C98EAAE.3020409@signal11.us>
+References: <4C98EAAE.3020409@signal11.us>
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Tue Sep 21 18:06:44 2010
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 4c992c7411161992021194
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 21, 2010 at 4:49 PM, Scott Wood <scottwood@freescale.com> wrote:
+Feature reports should only be sent on the control endpoint.
 
-> Look in dmaengine.c, there are calls to dma_map_single() and
-> dma_map_page(), using what I assume is that same device pointer --
-> unless there's confusion between the channel and the controller.
+The USB HID standard is unclear and confusing on this issue. It seems to
+suggest that Feature reports can be sent on a HID device's Interrupt OUT
+endpoint.  This cannot be the case because the report type is not encoded in
+transfers sent out the Interrput OUT endpoint.  If Feature reports were sent
+on the Interrupt OUT endpint, they would be indistinguishable from Output
+reports in the case where Report IDs were not used.
 
-You're right.  I missed this line in the driver:
+Further, Windows and Mac OS X do not send Feature reports out the interrupt
+OUT Endpoint.  They will only go out the Control Endpoint.
 
-	fdev->common.dev = &op->dev;
+In addition, many devices simply do not hande Feature reports sent out the Interrupt OUT endpoint.
 
-Also, the driver does something stupid.  Sometimes "chan->dev" refers
-to dma_chan.chan, and sometimes it refers to fsldma_chan.chan.  I
-could have sworn I saw a patch that fixes that, though.
+Reported-by: simon@mungewell.org
+Signed-off-by: Alan Ott <alan@signal11.us>
+---
+ drivers/hid/usbhid/hid-core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
+index b729c02..b0ccc42 100644
+--- a/drivers/hid/usbhid/hid-core.c
++++ b/drivers/hid/usbhid/hid-core.c
+@@ -807,7 +807,7 @@ static int usbhid_output_raw_report(struct hid_device *hid, __u8 *buf, size_t co
+ 	struct usb_host_interface *interface = intf->cur_altsetting;
+ 	int ret;
+ 
+-	if (usbhid->urbout) {
++	if (usbhid->urbout && report_type != HID_FEATURE_REPORT) {
+ 		int actual_length;
+ 		int skipped_report_id = 0;
+ 		if (buf[0] == 0x0) {
 -- 
-Timur Tabi
-Linux kernel developer at Freescale
+1.7.0.4
+
+
