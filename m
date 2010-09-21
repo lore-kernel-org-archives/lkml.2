@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756032Ab0IUONn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 10:13:43 -0400
-Received: from hera.kernel.org ([140.211.167.34]:46444 "EHLO hera.kernel.org"
+	id S1756151Ab0IUON7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 10:13:59 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46454 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754647Ab0IUONm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 10:13:42 -0400
-Date: Tue, 21 Sep 2010 14:13:01 GMT
-From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
+	id S1756095Ab0IUON5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 10:13:57 -0400
+Date: Tue, 21 Sep 2010 14:13:26 GMT
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, suresh.b.siddha@intel.com, tglx@linutronix.de,
+        a.p.zijlstra@chello.nl, tj@kernel.org, tglx@linutronix.de,
         mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, suresh.b.siddha@intel.com, tglx@linutronix.de,
+        a.p.zijlstra@chello.nl, tj@kernel.org, tglx@linutronix.de,
         mingo@elte.hu
-In-Reply-To: <1284400941.2684.19.camel@sbsiddha-MOBL3.sc.intel.com>
-References: <1284400941.2684.19.camel@sbsiddha-MOBL3.sc.intel.com>
+In-Reply-To: <20100917093009.252867712@chello.nl>
+References: <20100917093009.252867712@chello.nl>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched: Fix nohz balance kick
-Message-ID: <tip-f6c3f1686e7ec1dd8725a9a3dcb857dfd0c7a5bf@git.kernel.org>
-Git-Commit-ID: f6c3f1686e7ec1dd8725a9a3dcb857dfd0c7a5bf
+Subject: [tip:perf/core] percpu: Add {get,put}_cpu_ptr
+Message-ID: <tip-8b8e2ec1eeca7f6941bc81cefc9663018d6ceb57@git.kernel.org>
+Git-Commit-ID: 8b8e2ec1eeca7f6941bc81cefc9663018d6ceb57
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 21 Sep 2010 14:13:03 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 21 Sep 2010 14:13:26 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f6c3f1686e7ec1dd8725a9a3dcb857dfd0c7a5bf
-Gitweb:     http://git.kernel.org/tip/f6c3f1686e7ec1dd8725a9a3dcb857dfd0c7a5bf
-Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-AuthorDate: Mon, 13 Sep 2010 11:02:21 -0700
+Commit-ID:  8b8e2ec1eeca7f6941bc81cefc9663018d6ceb57
+Gitweb:     http://git.kernel.org/tip/8b8e2ec1eeca7f6941bc81cefc9663018d6ceb57
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Thu, 16 Sep 2010 19:21:28 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 21 Sep 2010 13:50:50 +0200
+CommitDate: Tue, 21 Sep 2010 13:55:43 +0200
 
-sched: Fix nohz balance kick
+percpu: Add {get,put}_cpu_ptr
 
-There's a situation where the nohz balancer will try to wake itself:
+These are similar to {get,put}_cpu_var() except for dynamically
+allocated per-cpu memory.
 
-cpu-x is idle which is also ilb_cpu
-got a scheduler tick during idle
-and the nohz_kick_needed() in trigger_load_balance() checks for
-rq_x->nr_running which might not be zero (because of someone waking a
-task on this rq etc) and this leads to the situation of the cpu-x
-sending a kick to itself.
-
-And this can cause a lockup.
-
-Avoid this by not marking ourself eligible for kicking.
-
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1284400941.2684.19.camel@sbsiddha-MOBL3.sc.intel.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+LKML-Reference: <20100917093009.252867712@chello.nl>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/sched_fair.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ include/linux/percpu.h |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index a171138..db3f674 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -3630,7 +3630,7 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
- 	if (time_before(now, nohz.next_balance))
- 		return 0;
+diff --git a/include/linux/percpu.h b/include/linux/percpu.h
+index 49466b1..0eb5083 100644
+--- a/include/linux/percpu.h
++++ b/include/linux/percpu.h
+@@ -39,6 +39,15 @@
+ 	preempt_enable();				\
+ } while (0)
  
--	if (!rq->nr_running)
-+	if (rq->idle_at_tick)
- 		return 0;
++#define get_cpu_ptr(var) ({				\
++	preempt_disable();				\
++	this_cpu_ptr(var); })
++
++#define put_cpu_ptr(var) do {				\
++	(void)(var);					\
++	preempt_enable();				\
++} while (0)
++
+ #ifdef CONFIG_SMP
  
- 	first_pick_cpu = atomic_read(&nohz.first_pick_cpu);
+ /* minimum unit size, also is the maximum supported allocation size */
