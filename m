@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755413Ab0IUUvM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 16:51:12 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:38624 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752923Ab0IUUvK (ORCPT
+	id S1756260Ab0IUVUe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 17:20:34 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:63559 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981Ab0IUVUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 16:51:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <1282948239.2268.155.camel@jstultz-laptop>
-References: <cover.1281956490.git.richard.cochran@omicron.at>
- <363bd749a38d0b785d8431e591bf54c38db4c2d7.1281956490.git.richard.cochran@omicron.at>
- <AANLkTik_2MKMhOuDGOmu8Kzyq-ipLe+Bxrb3FaD+Tv4U@mail.gmail.com>
- <20100817085324.GB3330@riccoc20.at.omicron.at> <1282090963.1734.97.camel@localhost>
- <20100818071942.GA4096@riccoc20.at.omicron.at> <1282176776.2865.100.camel@localhost.localdomain>
- <20100819055518.GA4084@riccoc20.at.omicron.at> <1282594125.3111.344.camel@localhost.localdomain>
- <20100827123849.GC11657@riccoc20.at.omicron.at> <1282948239.2268.155.camel@jstultz-laptop>
-From: Kyle Moffett <kyle@moffetthome.net>
-Date: Tue, 21 Sep 2010 16:47:45 -0400
-Message-ID: <AANLkTinRM3_kBc5S3wV=_S6P8+x7A43kz0qSYbixJYnq@mail.gmail.com>
-Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
-To: John Stultz <johnstul@us.ibm.com>
-Cc: Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>,
-        Rodolfo Giometti <giometti@linux.it>, Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 21 Sep 2010 17:20:32 -0400
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: netdev@vger.kernel.org
+Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        padovan@profusion.mobi, marcel@holtmann.org, davem@davemloft.net,
+        mathewm@codeaurora.org
+Subject: Deadlock in Bluetooth code in 2.6.36
+Date: Tue, 21 Sep 2010 18:20:12 -0300
+Message-Id: <1285104013-9946-1-git-send-email-padovan@profusion.mobi>
+X-Mailer: git-send-email 1.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 27, 2010 at 18:30, John Stultz <johnstul@us.ibm.com> wrote:
-> On one side, there is the view that the kernel should abstract and hide
-> the hardware details to increase app portability. And the other is that
-> the raw hardware details should be exposed, so the OS stays out of the
-> way.
->
-> Neither of these views are always right. Ideally we can come up with a
-> abstracted way to provide the hardware data needed that's generic enough
-> that applications don't have to be changed when moving between hardware
-> or configurations.
->
-> The posix clock id interface is frustrating because the flat static
-> enumeration is really limiting.
->
-> I wonder if a dynamic enumeration for posix clocks would be possibly a
-> way to go?
+Hi,
 
-Well how about something much more straightforward:
+I would like to discuss here a problem we are having in the Bluetooth Layer.
 
-#define CLOCK_FD 0x80000000
-fd = open("/dev/clocks/some_clock_name", O_RDONLY);
-clock_gettime(CLOCK_FD | fd, &ts);
+There we have the Enhanced Retransmission Mode(ERTM) which is  a reliable mode
+of operation of the Bluetooth L2CAP layer. Think on it like a simplified
+version of TCP.
 
-This would provide all of the standard character-device semantics that
-everyone is accustomed to, and furthermore you could allow non-root
-users to manage specific clocks using just DAC permission bits.
+The problem we were facing was a deadlock. ERTM uses a backlog queue to
+queue incoming packets while the user held the lock. The problem is that
+at some moment the user doesn't have memory anymore to alloc new skbs and
+sleeps to wait for memory with the lock held, that stalls the ERTM connection
+because we can't read the acknowledgements packets in the backlog queue to
+free memory and then make the allocation of outcoming skb successful.
 
-You'd still probably need to add a clock_adjtimex() syscall, but it
-could easily fail with EINVAL for software or per-thread clocks, but
-that seems like it would nicely abstract the hardware without forcing
-a numeric address space.
+Looks like the solution to this issue is release the lock before go to sleep
+waiting for memory and then lock the sock lock again when we wake up and have
+memory.  That's the solution TCP does through sk_stream_alloc_skb() and
+sk_stream_wait_memory(). The sock lock is released and locked again inside
+sk_wait_event() macro.
+For bluetooth we do that in different way, we alloc memory through
+sock_alloc_send_skb() which differently from sk_stream_alloc_skb() sleeps
+with the lock held when waiting for memory.
 
-Cheers,
-Kyle Moffett
+The following patch is more like a proof of concept that sleeping
+without the lock fixes the problem for L2CAP. Mat Martineau also found out
+that some time ago.
+
+My questions here is on how to fix this properly. Maybe
+sock_alloc_send_skb() should not be used with SOCK_STREAM and reliable
+protocols and I'm not aware of that? And should I use something like
+sk_stream_alloc_skb() instead?
+
+Any comments are welcome. With lucky we can fix that for 2.6.36 and
+together with others fixes we have queued deliver a fully functional
+L2CAP layer on 2.6.36.
+
+Thanks,
+
+---
+
+Gustavo F. Padovan (1):
+      Bluetooth: Fix deadlock in the ERTM logic
+
+ net/bluetooth/l2cap.c |    4 ++++
+  1 files changed, 4 insertions(+), 0 deletions(-)
+
