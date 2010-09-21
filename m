@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753595Ab0IUFUa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 01:20:30 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:55789 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752227Ab0IUFU3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 01:20:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=RdEXl/KsUKIlG0UlfhZXB82t6bClyiRXZmYbwIdrJU+LMrbADpE72ExCGDOMvzkSqT
-         nE52KoMXiImPvfL74B4lacKT1p5kZWWZyLsO7Ki8X9fiNrlUn7CIYARTheUpuiSDQfvs
-         kUXj8BZOPDymfYeLtnPwehKRcAqv7qPU1hXzk=
-Message-ID: <4C9840A1.1030008@gmail.com>
-Date: Mon, 20 Sep 2010 22:20:33 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
-MIME-Version: 1.0
-To: Matt Turner <mattst88@gmail.com>
-CC: trivial@kernel.org, linux-kernel@vger.kernel.org,
-        "Maciej W. Rozycki" <macro@linux-mips.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Finn Thain <fthain@telegraphics.com.au>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Dimitry Torokhov <dmitry.torokhov@gmail.com>,
-        Ben Pfaff <blp@cs.stanford.edu>, Mike Frysinger <vapier.adi@gmail.com>
-Subject: Re: [PATCH]Update-broken-web-addresses-in-the-kernel
-References: <1285042724-19135-1-git-send-email-justinmattock@gmail.com> <AANLkTinE73z9QV0zriVE3bRtzMifWSGvG36hfvnA9biD@mail.gmail.com> <4C983C7D.1050000@gmail.com> <AANLkTimYp6ua743x9ze4fcU09ZZ=oZZd_iKCmU0WQ2h7@mail.gmail.com>
-In-Reply-To: <AANLkTimYp6ua743x9ze4fcU09ZZ=oZZd_iKCmU0WQ2h7@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753897Ab0IUFUo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 01:20:44 -0400
+Received: from mail.perches.com ([173.55.12.10]:2180 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753704Ab0IUFUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 01:20:37 -0400
+Subject: Re: [PATCH] scripts/get_maintainer.pl: fix .mailmap handling
+From: Joe Perches <joe@perches.com>
+To: Florian Mickler <florian@mickler.org>
+Cc: linux-kernel@vger.kernel.org, ebiederm@xmission.com, greg@kroah.com,
+        stefanr@s5r6.in-berlin.de, broonie@opensource.wolfsonmicro.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Hemminger <shemminger@vyatta.com>
+In-Reply-To: <20100921065921.03f06293@schatten.dmk.lab>
+References: <1285021645-14311-1-git-send-email-florian@mickler.org>
+	 <1285022156-14501-1-git-send-email-florian@mickler.org>
+	 <1285028085.25988.60.camel@Joe-Laptop>
+	 <20100921065921.03f06293@schatten.dmk.lab>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 20 Sep 2010 22:20:35 -0700
+Message-ID: <1285046435.25988.131.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20/2010 10:11 PM, Matt Turner wrote:
-> On Tue, Sep 21, 2010 at 1:02 AM, Justin P. Mattock
-> <justinmattock@gmail.com>  wrote:
->> didnt even think about that.. I really appreciate you pointing this out..
->>   I'll go through the whole thing and see if I can figure a good fix for the
->> archive.org stuff
->
-> Just checked, and you can modify the links like so:
->
-> - http://web.archive.org/web/*/http://ftp.digital.com/pub/DEC/axppci/ref_interrupts.txt
-> + http://web.archive.org/web/%2A/http://ftp.digital.com/pub/DEC/axppci/ref_interrupts.txt
->
-> So, change * to %2A (it's ASCII code in hex).
->
-> I guess that's the least clunky fix.
->
-> Matt
->
+On Tue, 2010-09-21 at 06:59 +0200, Florian Mickler wrote:
+> Come on, Joe! It was "sub mailmap" before. @addresses was @list before
+> and @ret is the list that get's returned by the function. 
 
+Tell me, what's better as an individual line in perl
+with typeless returns
+	return @ret;
+or
+	return @list;
 
-your a lifesaver I tell yeah... nice one..(just was crapping my pants 
-trying to think how to fix this).
+@ret is not descriptive.
+Yeah, it's an array.
+An array of what?
+btw: @list was sub-optimal too.
 
-So I'll go through and change this to what you have. should I still keep 
-alpha in?
+> If you think a patch is ok, you actually may say so. 
 
-then the signed-off's Ill put as Cc's until they give there signed-off.
+As we discussed privately, yes, .mailmap handling was broken
+but both of us seem to think that it's not even necessary as
+most .mailmap entries are created manually and it's not
+up-to-date.  Name de-duplication is more effective.
 
-Justin P. Mattock
+.mailmap could be used effectively I suppose, but I asked you
+to show a use case where it performs differently than the
+existing name de-duplication.
+
+And, I do ack a patch after I think it is ready to be applied.
+Until then, I note what I see as shortcomings and defects.
+
+cheers, Joe
+
