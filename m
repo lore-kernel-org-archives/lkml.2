@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab0IUXCX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 19:02:23 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:44550 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752394Ab0IUXCW (ORCPT
+	id S1754325Ab0IUXGI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 19:06:08 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:51211 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751484Ab0IUXGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 19:02:22 -0400
-Date: Tue, 21 Sep 2010 16:01:42 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        David Airlie <airlied@linux.ie>,
-        Alexander Shishkin <virtuoso@slind.org>
-Subject: [PATCH] documentation: update sysrq.txt key mappings
-Message-Id: <20100921160142.7c783105.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Sep 2010 19:06:06 -0400
+X-Sasl-enc: h+qhpXNRsHT8mlPaI7Mi35/COD8pNrlVEb843hHqdsBM 1285110365
+Date: Tue, 21 Sep 2010 20:06:02 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: David Miller <davem@davemloft.net>
+Cc: eric.dumazet@gmail.com, nbowler@elliptictech.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        jarkao2@gmail.com, kaber@trash.net
+Subject: Re: [PATCH v3] ip: fix truesize mismatch in ip fragmentation
+Message-ID: <20100921230601.GB32090@khazad-dum.debian.net>
+References: <20100921162657.GA22183@khazad-dum.debian.net>
+ <1285086679.2617.672.camel@edumazet-laptop>
+ <20100921180940.GA8754@khazad-dum.debian.net>
+ <20100921.122406.193718558.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100921.122406.193718558.davem@davemloft.net>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Tue, 21 Sep 2010, David Miller wrote:
+> > Since there wasn't one, and I didn't readly find any post in this thread
+> > that mentioned it should also go to stable, AND it looked at first glance
+> > like something that should go to stable, I asked about it.
+> 
+> Sorry, that is not how we typically handle things in the networking.
+> 
+> I queue up all appropriate -stable patches automatically.
 
-Update Documentation/sysrq.txt magic sysrq keys:
+I see.
 
-- 'g' is for kgdb (not arch-specific);
-- add 2 new uses for 'v', remove the Voyager info;
-- add 'y' info (SPARC-64 specific);
+>    I want fixes to sit and cook in Linus's tree for a while before
+>    they go to -stable unless it's an _incredibly_ obvious fix.
+>    This allows any bugs in the fix to be shaken out first.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc:	Jason Wessel <jason.wessel@windriver.com>
-Cc:	"David S. Miller" <davem@davemloft.net>
-Cc:	"James E.J. Bottomley" <James.Bottomley@suse.de>
-Cc:	David Airlie <airlied@linux.ie>
-Cc:	Alexander Shishkin <virtuoso@slind.org>
----
- Documentation/sysrq.txt |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+...
 
---- lnx-2636-rc5.orig/Documentation/sysrq.txt
-+++ lnx-2636-rc5/Documentation/sysrq.txt
-@@ -75,7 +75,7 @@ On all -  write a character to /proc/sys
- 
- 'f'	- Will call oom_kill to kill a memory hog process.
- 
--'g'	- Used by kgdb on ppc and sh platforms.
-+'g'	- Used by kgdb (kernel debugger)
- 
- 'h'     - Will display help (actually any other key than those listed
-           here will display help. but 'h' is easy to remember :-)
-@@ -110,12 +110,15 @@ On all -  write a character to /proc/sys
- 
- 'u'     - Will attempt to remount all mounted filesystems read-only.
- 
--'v'	- Dumps Voyager SMP processor info to your console.
-+'v'	- Forcefully restores framebuffer console
-+'v'	- Causes ETM buffer dump [ARM-specific]
- 
- 'w'	- Dumps tasks that are in uninterruptable (blocked) state.
- 
- 'x'	- Used by xmon interface on ppc/powerpc platforms.
- 
-+'y'	- Show global CPU Registers [SPARC-64 specific]
-+
- 'z'	- Dump the ftrace buffer
- 
- '0'-'9' - Sets the console log level, controlling which kernel messages
+> All of the rest should be carefully queued up for -stable and
+> submitted there after a week or two of the patch sitting in Linus's
+> tree.
+
+That is a very good way of doing things.  Thanks for the hard work!
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
