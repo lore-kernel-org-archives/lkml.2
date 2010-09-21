@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757126Ab0IURey (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 13:34:54 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:41466 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753276Ab0IURew convert rfc822-to-8bit (ORCPT
+	id S1754804Ab0IURgH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 13:36:07 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:44686 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475Ab0IURgF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 13:34:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=aZ3UrJgnwSVpOqwqzd9tSqix1DQeK6gJ6jZlxvk3y4oRfB6HICqO28rQwrdSmGWeZC
-         2R/fign0QTpB3cUScoYMhm8hYTgn7LQNbEk8EYrBwWhSi9RzHjIn+4DhbTOBmOqSKQYi
-         ud9CfJDpL9d50jdK1+xeWCO+UXx24X9xsccZI=
+	Tue, 21 Sep 2010 13:36:05 -0400
+Message-ID: <140ee1c060f22286fe2f4d81170f76be.squirrel@www.firstfloor.org>
+In-Reply-To: <1285082049.23122.1930.camel@gandalf.stny.rr.com>
+References: <cover.1284733808.git.jbaron@redhat.com>
+    <ee8b3595967989fdaf84e698dc7447d315ce972a.1284733808.git.jbaron@redhat.com>
+    <20100921131232.GA3024@one.firstfloor.org>
+    <20100921143555.GA2873@redhat.com>
+    <0e1f6b339e72a449fed0df7b801da607.squirrel@www.firstfloor.org>
+    <1285082049.23122.1930.camel@gandalf.stny.rr.com>
+Date: Tue, 21 Sep 2010 19:36:00 +0200
+Subject: Re: [PATCH 03/10] jump label v11: base patch
+From: "Andi Kleen" <andi@firstfloor.org>
+To: "Steven Rostedt" <rostedt@goodmis.org>
+Cc: "Andi Kleen" <andi@firstfloor.org>, "Jason Baron" <jbaron@redhat.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu,
+        mathieu.desnoyers@polymtl.ca, hpa@zytor.com, tglx@linutronix.de,
+        roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-In-Reply-To: <19F8576C6E063C45BE387C64729E739404687B2B81@dbde02.ent.ti.com>
-References: <1282241331-5178-1-git-send-email-pavan_savoy@ti.com>
-	<4C6D6A9A.3010409@oracle.com>
-	<19F8576C6E063C45BE387C64729E7394044F124F7B@dbde02.ent.ti.com>
-	<4C6D6BCB.2090307@oracle.com>
-	<AANLkTi==HVhXcS0Mxv4GJL1rB0nLc3YQ=b5RbzM0iFwG@mail.gmail.com>
-	<20100822033248.GA4886@suse.de>
-	<19F8576C6E063C45BE387C64729E7394046836CB57@dbde02.ent.ti.com>
-	<20100831041114.GA16009@suse.de>
-	<19F8576C6E063C45BE387C64729E7394046836CE5C@dbde02.ent.ti.com>
-	<20100831224238.GA13253@suse.de>
-	<19F8576C6E063C45BE387C64729E739404687B2835@dbde02.ent.ti.com>
-	<AANLkTimCkTFfe157dHK=caAdAeX_4m1A_p6ZRxp=2RWt@mail.gmail.com>
-	<19F8576C6E063C45BE387C64729E739404687B2B27@dbde02.ent.ti.com>
-	<AANLkTimZ2Pe5T2=ZUZnd_3-RQi8Qs4FrykkJy6Zvx89M@mail.gmail.com>
-	<19F8576C6E063C45BE387C64729E739404687B2B81@dbde02.ent.ti.com>
-Date: Tue, 21 Sep 2010 20:34:51 +0300
-Message-ID: <AANLkTim0Z7AWeqCM4d26Z1UP1VsEaSBgqDCAUr1vqgMj@mail.gmail.com>
-Subject: Re: [PATCH] drivers:staging:ti-st: remove st_get_plat_device
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: "Savoy, Pavan" <pavan_savoy@ti.com>
-Cc: Greg KH <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It is currently in linux-next.
-[...]
->> >> Build error (kernel 2.6.36-rc3-git1):
->> >>
->> >>
->> >> Building modules, stage 2.
->> >>   MODPOST 3056 modules
->> >> ERROR: "st_get_plat_device" [drivers/staging/ti-st/st_drv.ko] undefined!
+> On Tue, 2010-09-21 at 16:41 +0200, Andi Kleen wrote:
+>> >
+>> > So there are ~150 tracepoints, but this code is also being proposed
+>> for
+>> > use with 'dynamic debug' of which there are > 1000, and I'm hoping for
+>> > more users moving forward.
+>>
+>> Even 1000 is fine to walk, but if it was sorted a binary search
+>> would be much faster anyways. That is then you would still
+>> need to search for each module, but that is a relatively small
+>> number (< 100)
+>
+> xfs has > 100 tracepoints
 
-Greg,
+Doesn
+>
+>>
+>> > Also, I think the hash table deals nicely with modules.
+>>
+>> Maybe but it's also a lot of code. And it seems to me
+>> that it is optimizing the wrong thing. Simpler is nicer.
+>
+> I guess simplicity is in the eye of the beholder. I find hashes easier
+> to deal with than binary searching sorted lists. Every time you add a
+> tracepoint, you need to resort the list.
 
-you send some pull requests to Linus.
-Can you compile the kernel without this patch ?
+The only time you add one is when you load a module, right? When you do
+that you only sort the section of the new module.
 
-see here:
-http://kernel.ubuntu.com/~kernel-ppa/mainline/v2.6.36-rc5-maverick/0002-DISABLE-ti-st.patch
+> Hashes are much easier to deal with and scale nicely. I don't think
+> there's enough rational to switch this to a binary list.
 
-I know you are overburned. Just get 1 or 2 guys to teach them to help you.
+Well problem is that the code is very complicated today. I suspect
+this could be done much simpler if it wasn't so overengin
+
+-Andi
+
+
