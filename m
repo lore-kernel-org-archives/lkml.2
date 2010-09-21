@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756989Ab0IUVzG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 17:55:06 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:63983 "EHLO
+	id S1754440Ab0IUWFL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 18:05:11 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:37453 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753736Ab0IUVzE (ORCPT
+	with ESMTP id S1752179Ab0IUWFJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 17:55:04 -0400
+	Tue, 21 Sep 2010 18:05:09 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=Y/b5DwcD1GT/ST4hdXTwkZeFRdiyjrlrv3AUsQx4K46InW8QuVdyfAC9l2KyLCz7QN
-         rYqBN0yvq7BMaLOuIycQmSf8QXeTOQUOQSOI4pKWybDuwXG/kuGDN8L2znxn83xUhUNY
-         Mb8gyw7SKk5Ds0IGJgTWMqbfMLXBeeqpQr3p0=
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=DW7FMW1oxCAboIR0M0DVHUd3UN8SCzb9Jtu2/D+2FqcUnHQ0kgjJDhHjURpjUyPSu5
+         ABHFL7rvIM2131XcHClJKH+rDdMdo53vLFNpJgLR7A1zXPkNMTIvkP0N1bw1uxvsPrwy
+         qbdC/0x3k8bO71eR4PfywGT+HpjcXf6P0SnUA=
 MIME-Version: 1.0
-Date: Wed, 22 Sep 2010 09:55:04 +1200
-Message-ID: <AANLkTim9Sz6o46Rxs=YX0=+5FwmrCr0=rtrOvLXJAH91@mail.gmail.com>
-Subject: HDMI/DVI unplug/plug kernel uevent
-From: Keith Chew <keith.chew@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100921164944.164ed0af@udp111988uds.am.freescale.net>
+References: <1285066638-7473-1-git-send-email-leoli@freescale.com>
+ <877FD0B5-19A7-4A16-831E-369B80B104EA@kernel.crashing.org>
+ <AANLkTimiwtoa6i10OTcgFnvbvcO9N4KWHyt4Poj-yj=T@mail.gmail.com>
+ <20100921163456.7e2c9b32@udp111988uds.am.freescale.net> <AANLkTine--kry0c0n87WOqYyi3AQOb2KnmNRs-MeXcQt@mail.gmail.com>
+ <20100921164944.164ed0af@udp111988uds.am.freescale.net>
+From: Timur Tabi <timur@freescale.com>
+Date: Tue, 21 Sep 2010 17:04:39 -0500
+X-Google-Sender-Auth: uZLdeUC6w1fy2iWFANn2j2sJQO8
+Message-ID: <AANLkTik3dNU1FdUG6sWnQ3P0eXQu62PrckQ9_-Dk7GEJ@mail.gmail.com>
+Subject: Re: [PATCH] fsldma: add support to 36-bit physical address
+To: Scott Wood <scottwood@freescale.com>
+Cc: Kumar Gala <galak@kernel.crashing.org>, dan.j.williams@intel.com,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Tue, Sep 21, 2010 at 4:49 PM, Scott Wood <scottwood@freescale.com> wrote:
 
-First, I apologise if this is not the correct mailing list to post my
-question, it relates to both the kernel source and Xorg server. I will
-re-post this to the Xorg mailing list if I cannot get an answer here.
+> Look in dmaengine.c, there are calls to dma_map_single() and
+> dma_map_page(), using what I assume is that same device pointer --
+> unless there's confusion between the channel and the controller.
 
-I have a linux box which is connected to only one type of LCD. Using
-Fedora 13, I am on:
-- Xorg server 1.8.2
-- kernel 2.6.33.2
-- fluxbox with all services turned off (except crond, network), ie no
-other userspace daemons
+You're right.  I missed this line in the driver:
 
-My problem is when I unplug and plug in the HDMI, I can see
-/var/log/Xorg.0.log reprobing the LCD, and sometimes the screen goes
-blank. I would like to disable this probe on the even of unplug/plug.
+	fdev->common.dev = &op->dev;
 
-In drivers/gpu/drm/i915/i915_irq.c, there is this line:
--------------------
-	/* Just fire off a uevent and let userspace tell us what to do */
-	drm_sysfs_hotplug_event(dev);
--------------------
+Also, the driver does something stupid.  Sometimes "chan->dev" refers
+to dma_chan.chan, and sometimes it refers to fsldma_chan.chan.  I
+could have sworn I saw a patch that fixes that, though.
 
-If I uncomment drm_sysfs_hotplug_event(), the uvent is not fired
-(verified from udevadm --monitor) and no re-probing is done, perfect.
-However, my real goal is to change the userspace app that is consuming
-this uevent and not call the probe method. But I can't seem to find
-out which app is consuming the uevent. I looked at the Xorg server's
-sourcecode but cannot find see anykind of listener for this uevent (or
-even a polling routine to check the drm sysfs status).
-
-Can someone point me to the right direction please?
-
-Regards
-Keith
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
