@@ -1,81 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756902Ab0IUJoQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 05:44:16 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:55426 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755497Ab0IUJoP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 05:44:15 -0400
-Subject: Re: [RFC PATCH 0/2] perf_events: add support for per-cpu
- per-cgroup monitoring (v3)
-From: Peter Zijlstra <peterz@infradead.org>
-To: eranian@google.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
-        eranian@gmail.com, robert.richter@amd.com, acme@redhat.com,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-In-Reply-To: <1285061899.2275.824.camel@laptop>
-References: <4c88dc9c.991ce30a.3d91.3e0e@mx.google.com>
-	 <1285061899.2275.824.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 21 Sep 2010 11:43:48 +0200
-Message-ID: <1285062228.2275.826.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1757130Ab0IUJo1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 05:44:27 -0400
+Received: from www.tglx.de ([62.245.132.106]:47113 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757070Ab0IUJo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 05:44:26 -0400
+Date: Tue, 21 Sep 2010 11:43:47 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+cc: Ingo Molnar <mingo@elte.hu>, Andres Salomon <dilinger@queued.net>,
+        devicetree-discuss@lists.ozlabs.org, x86@kernel.org, mingo@redhat.com,
+        hpa@zytor.com, Mitch Bradley <wmb@laptop.org>,
+        linux-kernel@vger.kernel.org,
+        Stephen Neuendorffer <stephen.neuendorffer@xilinx.com>
+Subject: Re: [PATCH 2/2] x86: of: define irq functions to allow drivers/of/*
+ to build on x86
+In-Reply-To: <20100910182135.GG11284@angua.secretlab.ca>
+Message-ID: <alpine.LFD.2.00.1009211141040.2416@localhost6.localdomain6>
+References: <20100910060151.6613e9c3@debxo> <20100910172538.GC11284@angua.secretlab.ca> <20100910181458.GA7243@elte.hu> <20100910182135.GG11284@angua.secretlab.ca>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-09-21 at 11:38 +0200, Peter Zijlstra wrote:
-> On Thu, 2010-09-09 at 15:05 +0200, Stephane Eranian wrote:
-> > The cgroup to monitor is designated by passing a file descriptor opened
-> > on a new per-cgroup file in the cgroup filesystem (perf_event.perf). The
-> > option must be activated by setting perf_event_attr.cgroup=1 and passing
-> > a valid file descriptor in perf_event_attr.cgroup_fd. Those are the only
-> > two ABI extensions. 
-> 
-> > +++ b/include/linux/perf_event.h
-> > @@ -215,8 +215,9 @@ struct perf_event_attr {
-> >                                  */
-> >                                 precise_ip     :  2, /* skid constraint       */
-> >                                 mmap_data      :  1, /* non-exec mmap data    */
-> > +                               cgroup         :  1, /* cgroup aggregation    */
-> >  
-> > -                               __reserved_1   : 46;
-> > +                               __reserved_1   : 45;
-> >  
-> >         union {
-> >                 __u32           wakeup_events;    /* wakeup every n events */
-> > @@ -226,6 +227,8 @@ struct perf_event_attr {
-> >         __u32                   bp_type;
-> >         __u64                   bp_addr;
-> >         __u64                   bp_len;
-> > +
-> > +       int                     cgroup_fd;
-> >  };
-> >  
-> >  /*
-> 
-> I'm not sure I like this much.. so we attach to {pid,cpu}, for nodes we
-> can use cpu_to_node(cpu), which would suggest to use
-> cgroup_of_task(pid), except that a task can be part of multiple cgroups,
-> so its not unique.
-> 
-> One thing we could do is pass this cgroup identifier in the pid field
-> and use PERF_FLAG_CGROUP or something. Currently the syscall signature
-> uses pid_t, but I think we can safely change that to int.
-> 
-> You create a special new file in the cgroup stuff, I'm not sure about
-> that either, but its not something I feel too strongly about, why
-> wouldn't a fd of any file or even directory of that cgroup work? Do the
-> cgroup people have an opinion?
+On Fri, 10 Sep 2010, Grant Likely wrote:
 
-Ahh, I just read more of the patch, and you create a full perf cgroup,
-in which case cgroup_of_task(pid) will work, simply pick the perf
-cgroup's tasks.
+> On Fri, Sep 10, 2010 at 08:14:58PM +0200, Ingo Molnar wrote:
+> > 
+> > * Grant Likely <grant.likely@secretlab.ca> wrote:
+> > 
+> > > On Fri, Sep 10, 2010 at 06:01:51AM -0700, Andres Salomon wrote:
+> > > > 
+> > > >  - Define a stub irq_create_of_mapping for x86 as a stop-gap solution until
+> > > >    drivers/of/irq is further along.
+> > > >  - Define irq_dispose_mapping for x86 to appease of_i2c.c
+> > > > 
+> > > > Signed-off-by: Andres Salomon <dilinger@queued.net>
+> > > 
+> > > Applied to my test-devicetree branch.  I'll need an ack from the x86 
+> > > maintainers before I put it into my -next branch.
+> > 
+> > The purpose of the patch is not clear to me. What does it do and why? 
+> 
+> It allows CONFIG_OF to be enabled on x86 without a build failure.
+> 
+> > The changelog says it's a stopgap measure - what exactly is the long 
+> > term plan and how long will it take?
+> 
+> It is a stop gap because it performs a trivial direct map of an IRQ
+> number in the device tree data structure to a Linux irq number.  This
+> works for a single IRQ controller, but falls apart when cascaded
+> controller are described in the device tree.  The long term plan is to
+> have the drivers/of/ code handling the mapping intelligently like
+> powerpc currently does.
 
-No need to actually create that file, open it and pass fds around, just
-pick a task from that cgroup and attach to the cgroup through that.
+Sounds good. We need this for other embedded x86 platforms as well and
+I was looking into the powerpc code before and wondered how we can
+make that generic. The question is whether this should be tied into
+drivers/of/irq or just provided as an OF independent generic facility
+in kernel/irq.
+
+Thanks,
+
+	tglx
