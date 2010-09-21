@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756740Ab0IUVnp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 17:43:45 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:53485 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752158Ab0IUVno (ORCPT
+	id S1757270Ab0IUVov (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 17:44:51 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44627 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752475Ab0IUVou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 17:43:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=KOUKFVGu/Ip07+E463UI2zFTLn3Fm0tw+buc2tRCeJ9suJbY9ew+cpcdiJuVyj3B64
-         N3hknO1DgPyGtzZcSsdOniEtYH0wI8WG4N90ZSS4Nhd5fiAWlpUgi7vD5P1JsDgT5fmC
-         1ALhXCuLJZs5Wcs7xu1tVS/FtTuNN+YQMBrC8=
-MIME-Version: 1.0
-In-Reply-To: <20100921163456.7e2c9b32@udp111988uds.am.freescale.net>
-References: <1285066638-7473-1-git-send-email-leoli@freescale.com>
- <877FD0B5-19A7-4A16-831E-369B80B104EA@kernel.crashing.org>
- <AANLkTimiwtoa6i10OTcgFnvbvcO9N4KWHyt4Poj-yj=T@mail.gmail.com> <20100921163456.7e2c9b32@udp111988uds.am.freescale.net>
-From: Timur Tabi <timur.tabi@gmail.com>
-Date: Tue, 21 Sep 2010 16:43:12 -0500
-Message-ID: <AANLkTine--kry0c0n87WOqYyi3AQOb2KnmNRs-MeXcQt@mail.gmail.com>
-Subject: Re: [PATCH] fsldma: add support to 36-bit physical address
-To: Scott Wood <scottwood@freescale.com>
-Cc: Kumar Gala <galak@kernel.crashing.org>, dan.j.williams@intel.com,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 21 Sep 2010 17:44:50 -0400
+Date: Tue, 21 Sep 2010 14:44:13 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH 8/8] writeback: Do not sleep on the congestion queue if
+ there are no congested BDIs or if significant congestion is not being
+ encountered in the current zone
+Message-Id: <20100921144413.abc45d2f.akpm@linux-foundation.org>
+In-Reply-To: <20100920095239.GE1998@csn.ul.ie>
+References: <1284553671-31574-1-git-send-email-mel@csn.ul.ie>
+	<1284553671-31574-9-git-send-email-mel@csn.ul.ie>
+	<20100916152810.cb074e9f.akpm@linux-foundation.org>
+	<20100920095239.GE1998@csn.ul.ie>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 21, 2010 at 4:34 PM, Scott Wood <scottwood@freescale.com> wrote:
+On Mon, 20 Sep 2010 10:52:39 +0100
+Mel Gorman <mel@csn.ul.ie> wrote:
 
-> This doesn't control allocation (it probably should with
-> dma_alloc_coherent, though I don't see it in the code), it controls
-> whether swiotlb will create a bounce buffer -- defeating the point of
-> using DMA to accelerate a memcpy.
+> > > This patch tracks how many pages backed by a congested BDI were found during
+> > > scanning. If all the dirty pages encountered on a list isolated from the
+> > > LRU belong to a congested BDI, the zone is marked congested until the zone
+> > > reaches the high watermark.
+> > 
+> > High watermark, or low watermark?
+> > 
+> 
+> High watermark. The check is made by kswapd.
+> 
+> > The terms are rather ambiguous so let's avoid them.  Maybe "full"
+> > watermark and "empty"?
+> > 
+> 
+> Unfortunately they are ambiguous to me. I know what the high watermark
+> is but not what the full or empty watermarks are.
 
-But it would do that only for the 'dev' used in the dma_set_mask()
-call.  That dev is only used here:
+Really.  So what's the "high" watermark?  From the above text I'm
+thinking that you mean the high watermark is when the queue has a small
+number of requests and the low watermark is when the queue has a large
+number of requests.
 
-	chan->desc_pool = dma_pool_create("fsl_dma_engine_desc_pool",
-					  chan->dev,
-					  sizeof(struct fsl_desc_sw),
-					  __alignof__(struct fsl_desc_sw), 0);
+I'd have thought that this is backwards: the "high" watermark is when
+the queue has a large (ie: high) number of requests.
 
-Since we don't DMA the descriptors themselves, I just don't see how
-this patch does anything.
-
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+A problem.  How do we fix it?
