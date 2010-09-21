@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757270Ab0IUVov (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 17:44:51 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44627 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752475Ab0IUVou (ORCPT
+	id S1757400Ab0IUVpk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 17:45:40 -0400
+Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:42367 "EHLO
+	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755582Ab0IUVpi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 17:44:50 -0400
-Date: Tue, 21 Sep 2010 14:44:13 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 8/8] writeback: Do not sleep on the congestion queue if
- there are no congested BDIs or if significant congestion is not being
- encountered in the current zone
-Message-Id: <20100921144413.abc45d2f.akpm@linux-foundation.org>
-In-Reply-To: <20100920095239.GE1998@csn.ul.ie>
-References: <1284553671-31574-1-git-send-email-mel@csn.ul.ie>
-	<1284553671-31574-9-git-send-email-mel@csn.ul.ie>
-	<20100916152810.cb074e9f.akpm@linux-foundation.org>
-	<20100920095239.GE1998@csn.ul.ie>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 21 Sep 2010 17:45:38 -0400
+Message-ID: <4C992775.3000000@euromail.se>
+Date: Tue, 21 Sep 2010 23:45:25 +0200
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100916 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
+Subject: [RESEND] hid: 3m: Adjust major / minor axes to scale
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1OyAeW-0000W6-68.
+X-Scan-Signature: ch-smtp01.sth.basefarm.net 1OyAeW-0000W6-68 120fa39211d31acac0163e7ba10b14ff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Sep 2010 10:52:39 +0100
-Mel Gorman <mel@csn.ul.ie> wrote:
+By visual inspection, the reported touch_major and touch_minor axes
+are a factor of two too large. Presumably the device actually reports
+the width_major and width_minor, which are generally about a factor of
+two larger than the touches themselves.
 
-> > > This patch tracks how many pages backed by a congested BDI were found during
-> > > scanning. If all the dirty pages encountered on a list isolated from the
-> > > LRU belong to a congested BDI, the zone is marked congested until the zone
-> > > reaches the high watermark.
-> > 
-> > High watermark, or low watermark?
-> > 
-> 
-> High watermark. The check is made by kswapd.
-> 
-> > The terms are rather ambiguous so let's avoid them.  Maybe "full"
-> > watermark and "empty"?
-> > 
-> 
-> Unfortunately they are ambiguous to me. I know what the high watermark
-> is but not what the full or empty watermarks are.
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+---
+Just in case this patch got lost somewhere, here it is again.
 
-Really.  So what's the "high" watermark?  From the above text I'm
-thinking that you mean the high watermark is when the queue has a small
-number of requests and the low watermark is when the queue has a large
-number of requests.
+Cheers,
+Henrik
 
-I'd have thought that this is backwards: the "high" watermark is when
-the queue has a large (ie: high) number of requests.
+ drivers/hid/hid-3m-pct.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
-A problem.  How do we fix it?
+diff --git a/drivers/hid/hid-3m-pct.c b/drivers/hid/hid-3m-pct.c
+index 65441e0..cd4b125 100644
+--- a/drivers/hid/hid-3m-pct.c
++++ b/drivers/hid/hid-3m-pct.c
+@@ -162,16 +162,18 @@ static void mmm_filter_event(struct mmm_data *md, struct
+input_dev *input)
+ 		if (f->touch) {
+ 			/* this finger is on the screen */
+ 			int wide = (f->w > f->h);
++			/* divided by two to match visual scale of touch */
++			int major = max(f->w, f->h) >> 1;
++			int minor = min(f->w, f->h) >> 1;
++
+ 			if (!f->prev_touch)
+ 				f->id = md->id++;
+ 			input_event(input, EV_ABS, ABS_MT_TRACKING_ID, f->id);
+ 			input_event(input, EV_ABS, ABS_MT_POSITION_X, f->x);
+ 			input_event(input, EV_ABS, ABS_MT_POSITION_Y, f->y);
+ 			input_event(input, EV_ABS, ABS_MT_ORIENTATION, wide);
+-			input_event(input, EV_ABS, ABS_MT_TOUCH_MAJOR,
+-						wide ? f->w : f->h);
+-			input_event(input, EV_ABS, ABS_MT_TOUCH_MINOR,
+-						wide ? f->h : f->w);
++			input_event(input, EV_ABS, ABS_MT_TOUCH_MAJOR, major);
++			input_event(input, EV_ABS, ABS_MT_TOUCH_MINOR, minor);
+ 			/* touchscreen emulation: pick the oldest contact */
+ 			if (!oldest || ((f->id - oldest->id) & (SHRT_MAX + 1)))
+ 				oldest = f;
+-- 
+1.7.1
+
+
