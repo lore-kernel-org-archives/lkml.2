@@ -1,44 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab0IUMrs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 08:47:48 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:56897 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753229Ab0IUMrr (ORCPT
+	id S1754199Ab0IUMzh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 08:55:37 -0400
+Received: from gate.crashing.org ([63.228.1.57]:33380 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750823Ab0IUMzg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 08:47:47 -0400
-Date: Tue, 21 Sep 2010 14:47:46 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>, linux-acpi@vger.kernel.org,
-        Jin Dongming <jin.dongming@np.css.fujitsu.com>
-Subject: Re: [PATCH 2/5] ACPI, APEI, Fix acpi_pre_map() return value
-Message-ID: <20100921124746.GF18991@one.firstfloor.org>
-References: <1284865235-29920-1-git-send-email-ying.huang@intel.com> <1284865235-29920-3-git-send-email-ying.huang@intel.com>
-Mime-Version: 1.0
+	Tue, 21 Sep 2010 08:55:36 -0400
+Subject: Re: [PATCH] fsldma: add support to 36-bit physical address
+Mime-Version: 1.0 (Apple Message framework v1081)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284865235-29920-3-git-send-email-ying.huang@intel.com>
-User-Agent: Mutt/1.4.2.2i
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1285066638-7473-1-git-send-email-leoli@freescale.com>
+Date: Tue, 21 Sep 2010 07:55:22 -0500
+Cc: dan.j.williams@intel.com, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <877FD0B5-19A7-4A16-831E-369B80B104EA@kernel.crashing.org>
+References: <1285066638-7473-1-git-send-email-leoli@freescale.com>
+To: Li Yang <leoli@freescale.com>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 19, 2010 at 11:00:32AM +0800, Huang Ying wrote:
-> From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-> 
-> After we ioremap() a new region, we call __acpi_try_ioremap() to
-> see whether another thread has already mapped the same region.
-> This check clobbers "vaddr",  so compute the return value of
-> acpi_pre_map() using the ioremap() result "map->vaddr" instead.
-> 
-> v2:
->     Modified the unsuitable description of patch.
-> 
-> v3:
->     Removed unlikely() check and made description simpler.
 
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
+On Sep 21, 2010, at 5:57 AM, Li Yang wrote:
 
--Andi
+> Signed-off-by: Li Yang <leoli@freescale.com>
+> ---
+
+We really should have a sentence about how or why this works to address 36-bit addressing.
+
+> drivers/dma/fsldma.c |    3 ++-
+> 1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+> index cea08be..9163552 100644
+> --- a/drivers/dma/fsldma.c
+> +++ b/drivers/dma/fsldma.c
+> @@ -1,7 +1,7 @@
+> /*
+>  * Freescale MPC85xx, MPC83xx DMA Engine support
+>  *
+> - * Copyright (C) 2007 Freescale Semiconductor, Inc. All rights reserved.
+> + * Copyright (C) 2007-2009 Freescale Semiconductor, Inc. All rights reserved.
+>  *
+>  * Author:
+>  *   Zhang Wei <wei.zhang@freescale.com>, Jul 2007
+> @@ -1338,6 +1338,7 @@ static int __devinit fsldma_of_probe(struct platform_device *op,
+> 	fdev->common.device_control = fsl_dma_device_control;
+> 	fdev->common.dev = &op->dev;
+> 
+> +	dma_set_mask(&op->dev, DMA_BIT_MASK(36));
+> 	dev_set_drvdata(&op->dev, fdev);
+> 
+> 	/*
+> -- 
+> 1.6.6-rc1.GIT
+> 
+> 
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
+
