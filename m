@@ -1,206 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981Ab0IUSrx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 14:47:53 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:58524 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751015Ab0IUSrv (ORCPT
+	id S1752517Ab0IUSs2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 14:48:28 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:60104 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795Ab0IUSs1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 14:47:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=NtWhYxkyvkWP01G5wLzXaftXA/W71oEYnDPqbHbauKDfW2uC1zfE76XbwPg7lu44Gn
-         I6BZiybudkS9fVQ4lvg+lKr20BfF+lbjFycMrC7R4ccEX+AGnOJv3dIQ9TaiB+IZDyEN
-         yPuz+Zo3zlcT5dxUm6T0ePBAlyurx+PtU1zvM=
-Subject: Re: [PATCH v3] ip: fix truesize mismatch in ip fragmentation
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jarek Poplawski <jarkao2@gmail.com>
-Cc: Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Patrick McHardy <kaber@trash.net>
-In-Reply-To: <20100921175014.GA2066@del.dom.local>
-References: <20100920174443.GA5515@elliptictech.com>
-	 <1285006844.2323.17.camel@edumazet-laptop>
-	 <20100920195256.GA14330@elliptictech.com>
-	 <1285013853.2323.148.camel@edumazet-laptop>
-	 <1285018272.2323.243.camel@edumazet-laptop>
-	 <20100921140501.GA21572@elliptictech.com>
-	 <1285078613.2617.503.camel@edumazet-laptop>
-	 <1285084705.2617.636.camel@edumazet-laptop>
-	 <20100921175014.GA2066@del.dom.local>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 21 Sep 2010 20:47:45 +0200
-Message-ID: <1285094865.2452.2.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Sep 2010 14:48:27 -0400
+Date: Tue, 21 Sep 2010 20:48:20 +0200
+From: Heinz Diehl <htd@fancy-poultry.org>
+To: linux-kernel@vger.kernel.org
+Cc: Heinz Diehl <htd@fritha.org>, Alan Ott <alan@signal11.us>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [BUG] object: is not initialized, yet kobject_put() is being
+ called
+Message-ID: <20100921184820.GA6379@fancy-poultry.org>
+References: <alpine.LNX.2.00.1008121457060.2702@pobox.suse.cz>
+ <20100812130411.GA1626@arch.tripp.de>
+ <4C63F285.8070801@signal11.us>
+ <20100812164035.GB6761@fritha.org>
+ <20100920181100.GA12295@fancy-poultry.org>
+ <alpine.LNX.2.00.1009211653510.26813@pobox.suse.cz>
+ <20100921150900.GA6801@fritha.org>
+ <alpine.LNX.2.00.1009211714400.26813@pobox.suse.cz>
+ <20100921152728.GA13464@fritha.org>
+ <alpine.LNX.2.00.1009211821560.26813@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1009211821560.26813@pobox.suse.cz>
+X-Accept-Language: no,dk,se,en,de
+Organization: private site
+X-OpenPGP-KeyID: 0xA9353F12
+X-OpenPGP-Fingerprint: C67E 9A93 1033 DF8A 9321  9F90 DC39 B8C3 A935 3F12
+X-OpenPGP-URL: http://www.fritha.org/htd.asc
+User-Agent: Mutt/1.5.20+20100810 (GNU/Linux)
+X-Provags-ID: V02:K0:3Wuc/Gd8rghCtkU4msjTHjO2kUhRypFVE51Q7N4wDdr
+ nI6rVdfikZ1S7Y6DUjMvqH/vuoqXegwE55b5ra61ABiBAbvjEt
+ fGwe7islf30gZgzzgGzU832ZuzIH14/vWxF8Qmd09F4KOsKfOV
+ 9Ko4V2vD+JlHfeaz8CK36oRcBUQL50AoVplFTumlcWWQnKv69u
+ MSmy8l44EfG8BLCPzUSUw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 21.09.2010, Jiri Kosina wrote: 
 
-> Looks better and better to me, except, checkpatch complains about the
-> (existing) indentation fault here (and later), but I guess you've seen
-> that?
-> 
+> Do you have 8fe294caf8c868edd9046251824a0af91991bf43 commit applied? (it 
+> is included in -rc5).
 
-Indeed, there is checkpatch somewhere ;)
+That's it! All works fine now.
+Many thanks for your patience and help!
 
-Thanks !
-
-[PATCH v4] ip: fix truesize mismatch in ip fragmentation
-
-Special care should be taken when slow path is hit in ip_fragment() :
-
-When walking through frags, we transfert truesize ownership from skb to
-frags. Then if we hit a slow_path condition, we must undo this or risk
-uncharging frags->truesize twice, and in the end, having negative socket
-sk_wmem_alloc counter, or even freeing socket sooner than expected.
-
-Many thanks to Nick Bowler, who provided a very clean bug report and
-test program.
-
-Thanks to Jarek for reviewing my first patch and providing a V2
-
-While Nick bisection pointed to commit 2b85a34e911 (net: No more
-expensive sock_hold()/sock_put() on each tx), underlying bug is older
-(2.6.12-rc5)
-
-A side effect is to extend work done in commit b2722b1c3a893e
-(ip_fragment: also adjust skb->truesize for packets not owned by a
-socket) to ipv6 as well.
-
-Reported-and-bisected-by: Nick Bowler <nbowler@elliptictech.com>
-Tested-by: Nick Bowler <nbowler@elliptictech.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Jarek Poplawski <jarkao2@gmail.com>
-CC: Patrick McHardy <kaber@trash.net>
----
- net/ipv4/ip_output.c  |   19 +++++++++++++------
- net/ipv6/ip6_output.c |   18 +++++++++++++-----
- 2 files changed, 26 insertions(+), 11 deletions(-)
-
-diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
-index 04b6989..7649d77 100644
---- a/net/ipv4/ip_output.c
-+++ b/net/ipv4/ip_output.c
-@@ -488,9 +488,8 @@ int ip_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
- 	 * we can switch to copy when see the first bad fragment.
- 	 */
- 	if (skb_has_frags(skb)) {
--		struct sk_buff *frag;
-+		struct sk_buff *frag, *frag2;
- 		int first_len = skb_pagelen(skb);
--		int truesizes = 0;
- 
- 		if (first_len - hlen > mtu ||
- 		    ((first_len - hlen) & 7) ||
-@@ -503,18 +502,18 @@ int ip_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
- 			if (frag->len > mtu ||
- 			    ((frag->len & 7) && frag->next) ||
- 			    skb_headroom(frag) < hlen)
--			    goto slow_path;
-+				goto slow_path_clean;
- 
- 			/* Partially cloned skb? */
- 			if (skb_shared(frag))
--				goto slow_path;
-+				goto slow_path_clean;
- 
- 			BUG_ON(frag->sk);
- 			if (skb->sk) {
- 				frag->sk = skb->sk;
- 				frag->destructor = sock_wfree;
- 			}
--			truesizes += frag->truesize;
-+			skb->truesize -= frag->truesize;
- 		}
- 
- 		/* Everything is OK. Generate! */
-@@ -524,7 +523,6 @@ int ip_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
- 		frag = skb_shinfo(skb)->frag_list;
- 		skb_frag_list_init(skb);
- 		skb->data_len = first_len - skb_headlen(skb);
--		skb->truesize -= truesizes;
- 		skb->len = first_len;
- 		iph->tot_len = htons(first_len);
- 		iph->frag_off = htons(IP_MF);
-@@ -576,6 +574,15 @@ int ip_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
- 		}
- 		IP_INC_STATS(dev_net(dev), IPSTATS_MIB_FRAGFAILS);
- 		return err;
-+
-+slow_path_clean:
-+		skb_walk_frags(skb, frag2) {
-+			if (frag2 == frag)
-+				break;
-+			frag2->sk = NULL;
-+			frag2->destructor = NULL;
-+			skb->truesize += frag2->truesize;
-+		}
- 	}
- 
- slow_path:
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index d40b330..980912e 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -639,7 +639,7 @@ static int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
- 
- 	if (skb_has_frags(skb)) {
- 		int first_len = skb_pagelen(skb);
--		int truesizes = 0;
-+		struct sk_buff *frag2;
- 
- 		if (first_len - hlen > mtu ||
- 		    ((first_len - hlen) & 7) ||
-@@ -651,18 +651,18 @@ static int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
- 			if (frag->len > mtu ||
- 			    ((frag->len & 7) && frag->next) ||
- 			    skb_headroom(frag) < hlen)
--			    goto slow_path;
-+				goto slow_path_clean;
- 
- 			/* Partially cloned skb? */
- 			if (skb_shared(frag))
--				goto slow_path;
-+				goto slow_path_clean;
- 
- 			BUG_ON(frag->sk);
- 			if (skb->sk) {
- 				frag->sk = skb->sk;
- 				frag->destructor = sock_wfree;
--				truesizes += frag->truesize;
- 			}
-+			skb->truesize -= frag->truesize;
- 		}
- 
- 		err = 0;
-@@ -693,7 +693,6 @@ static int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
- 
- 		first_len = skb_pagelen(skb);
- 		skb->data_len = first_len - skb_headlen(skb);
--		skb->truesize -= truesizes;
- 		skb->len = first_len;
- 		ipv6_hdr(skb)->payload_len = htons(first_len -
- 						   sizeof(struct ipv6hdr));
-@@ -756,6 +755,15 @@ static int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
- 			      IPSTATS_MIB_FRAGFAILS);
- 		dst_release(&rt->dst);
- 		return err;
-+
-+slow_path_clean:
-+		skb_walk_frags(skb, frag2) {
-+			if (frag2 == frag)
-+				break;
-+			frag2->sk = NULL;
-+			frag2->destructor = NULL;
-+			skb->truesize += frag2->truesize;
-+		}
- 	}
- 
- slow_path:
-
-
+Heinz
