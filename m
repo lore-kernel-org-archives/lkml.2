@@ -1,39 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757241Ab0IUPOz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 11:14:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60871 "EHLO mx2.suse.de"
+	id S1756564Ab0IUP01 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 11:26:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14764 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755868Ab0IUPOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 11:14:53 -0400
-Date: Tue, 21 Sep 2010 17:14:52 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Heinz Diehl <htd@fritha.org>
-Cc: Heinz Diehl <htd@fancy-poultry.org>, Alan Ott <alan@signal11.us>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-input@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [BUG] object: is not initialized, yet kobject_put() is being
- called
-In-Reply-To: <20100921150900.GA6801@fritha.org>
-Message-ID: <alpine.LNX.2.00.1009211714400.26813@pobox.suse.cz>
-References: <20100812113624.GB1591@arch.tripp.de> <20100812114513.GA1584@arch.tripp.de> <20100812115657.GA1611@arch.tripp.de> <alpine.LNX.2.00.1008121401580.2702@pobox.suse.cz> <alpine.LNX.2.00.1008121457060.2702@pobox.suse.cz> <20100812130411.GA1626@arch.tripp.de>
- <4C63F285.8070801@signal11.us> <20100812164035.GB6761@fritha.org> <20100920181100.GA12295@fancy-poultry.org> <alpine.LNX.2.00.1009211653510.26813@pobox.suse.cz> <20100921150900.GA6801@fritha.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755859Ab0IUP0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 11:26:25 -0400
+Date: Tue, 21 Sep 2010 11:25:25 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
+        tglx@linutronix.de, rostedt@goodmis.org, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com
+Subject: Re: [PATCH 08/10] jump label v11: x86 support
+Message-ID: <20100921152525.GC2873@redhat.com>
+References: <cover.1284733808.git.jbaron@redhat.com> <f838f49f40fbea0254036194be66dc48b598dcea.1284733808.git.jbaron@redhat.com> <4C981BC4.90405@zytor.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C981BC4.90405@zytor.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Sep 2010, Heinz Diehl wrote:
-
-> > Could you perhaps strace apcupsd to see what it is doing before it fails?
+On Mon, Sep 20, 2010 at 07:43:16PM -0700, H. Peter Anvin wrote:
+> On 09/17/2010 08:09 AM, Jason Baron wrote:
+> > add x86 support for jump label. I'm keeping this patch separate so its clear to
+> > arch maintainers what was required for x86 support this new feature. hopefully,
+> > it wouldn't be too painful for other arches.
 > 
-> Yes, of course. The output is attached this mail.
+> > +	select HAVE_ARCH_JUMP_LABEL if !CC_OPTIMIZE_FOR_SIZE
+> 
+> Why?
+> 
+> 	-hpa
+> 
 
-strace -f would likely be more helpful.
+Hi,
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+>From the documentation patch:
+
+"
+The optimization depends on !CC_OPTIMIZE_FOR_SIZE. When CC_OPTIMIZE_FOR_SIZE is
+set, gcc does not always out of line the not taken label path in the same way
+that the "if unlikely()" paths are made out of line. Thus, with
+CC_OPTIMIZE_FOR_SIZE set, this optimization is not always optimal. This may be
+solved in subsequent gcc versions, that allow us to move labels out of line,
+while still optimizing for size.
+"
+
+This was also discuessed a bit on lkml previously:
+
+http://marc.info/?l=linux-kernel&m=127618233108964&w=2
+
+
+thanks,
+
+-Jason
+
+
+
