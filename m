@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757487Ab0IUPfa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 11:35:30 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:51962 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755434Ab0IUPf3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 11:35:29 -0400
-X-Authority-Analysis: v=1.1 cv=xllhIT3+0iZermAJQK9ulaVoiSOvD1gApk/LON5m1IU= c=1 sm=0 a=Ci446elm3-IA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=WpOxxcYV05c6l4cKtwoA:9 a=DSq63hbqmpWLkdaEpuuzymTsB88A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 08/10] jump label v11: x86 support
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Jason Baron <jbaron@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, mathieu.desnoyers@polymtl.ca,
-        tglx@linutronix.de, andi@firstfloor.org, roland@redhat.com,
-        rth@redhat.com, mhiramat@redhat.com, fweisbec@gmail.com,
-        avi@redhat.com, davem@davemloft.net, vgoyal@redhat.com,
-        sam@ravnborg.org, tony@bakeyournoodle.com
-In-Reply-To: <20100921152957.GA23380@elte.hu>
-References: <cover.1284733808.git.jbaron@redhat.com>
-	 <f838f49f40fbea0254036194be66dc48b598dcea.1284733808.git.jbaron@redhat.com>
-	 <4C981BC4.90405@zytor.com> <20100921152525.GC2873@redhat.com>
-	 <20100921152957.GA23380@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 21 Sep 2010 11:35:24 -0400
-Message-ID: <1285083324.23122.1955.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+	id S1757544Ab0IUPfi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 11:35:38 -0400
+Received: from hera.kernel.org ([140.211.167.34]:52738 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757519Ab0IUPfg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 11:35:36 -0400
+Message-ID: <4C98D0EB.30002@kernel.org>
+Date: Tue, 21 Sep 2010 17:36:11 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH/RFC] timer: fix deadlock on cpu hotplug
+References: <20100921142017.GA2291@osiris.boeblingen.de.ibm.com>
+In-Reply-To: <20100921142017.GA2291@osiris.boeblingen.de.ibm.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 21 Sep 2010 15:34:34 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-09-21 at 17:29 +0200, Ingo Molnar wrote:
+Hello,
 
-> > >From the documentation patch:
-> > 
-> > " The optimization depends on !CC_OPTIMIZE_FOR_SIZE. When 
-> > CC_OPTIMIZE_FOR_SIZE is set, gcc does not always out of line the not 
-> > taken label path in the same way that the "if unlikely()" paths are 
-> > made out of line. Thus, with CC_OPTIMIZE_FOR_SIZE set, this 
-> > optimization is not always optimal. This may be solved in subsequent 
-> > gcc versions, that allow us to move labels out of line, while still 
-> > optimizing for size. "
+On 09/21/2010 04:20 PM, Heiko Carstens wrote:
+> For some reason the scheduler decided to throttle RT tasks on the runqueue
+> of cpu 5 (rt_throttled = 1). So as long as rt_throttled == 1 we won't see the
+> migration thread coming back to execution.
+> The only thing that would unthrottle the runqueue would be the rt_period_timer.
+> The timer is indeed scheduled, however in the dump I have it has been expired
+> for more than four hours.
+> The reason is simply that the timer is pending on the offlined cpu 0 and
+> therefore would never fire before it gets migrated to an online cpu. Before
+> the cpu hotplug mechanisms (cpu hotplug notifier with state CPU_DEAD) would
+> migrate the timer to an online cpu stop_machine() must complete ---> deadlock.
 > 
-> OTOH making a difficult optimization (HAVE_ARCH_JUMP_LABEL) dependent on 
-> compiler flags is really asking for trouble.
-> 
-> So how about enabling it unconditionally, and just chalk up the cost 
-> under CC_OPTIMIZE_FOR_SIZE as one of the costs it already has? This also 
-> has the advantage that future compilers can improve things without 
-> having to wait for yet another kernel patch that re-enables 
-> HAVE_ARCH_JUMP_LABEL.
+> The fix _seems_ to be simple: just migrate timers after __cpu_disable() has
+> been called and use the CPU_DYING state. The subtle difference is of course
+> that the migration code now gets executed on the cpu that actually just is
+> going to disable itself instead of an arbitrary cpu that stays online.
 
-Agreed,
+I think this is the second time we're seeing deadlock during cpu down
+due to RT throttling and timer problem.  The rather delicate
+dependency there makes me somewhat nervous.  If possible, I think it
+would be better if we can simply turn the RT throttling off when
+cpu_stop kicks in.  It's intended to be a mechanism to monopolize all
+CPU cycles to begin with.  Would that be difficult?
 
-CC_OPTIMIZE_FOR_SIZE does not mean OPTIMIZE_FOR_PERFORMANCE. Although
-people have argued that with smaller size you gain better cache
-performance. I've noticed that the general case is that optimizing for
-size has decreased performance (although I have not done any official
-benchmarks, just my own personal observations).
+Thanks.
 
-I thought you may have had that there because OPTIMIZE_FOR_SIZE actually
-broke the code (as some gcc compilers do for function graph tracer). If
-its just a "we don't perform better with this set". Then get rid of it.
-
-Thanks,
-
--- Steve
-
-
+-- 
+tejun
