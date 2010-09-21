@@ -1,51 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab0IUGOb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 02:14:31 -0400
-Received: from isrv.corpit.ru ([86.62.121.231]:35009 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751008Ab0IUGOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 02:14:30 -0400
-Message-ID: <4C984D44.1080109@msgid.tls.msk.ru>
-Date: Tue, 21 Sep 2010 10:14:28 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
-MIME-Version: 1.0
-To: Tejun Heo <htejun@gmail.com>
-CC: Pedro Francisco <pedrogfrancisco@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org
-Subject: Re: ahci rmmodable and shouldn't
-References: <201009162256.04765.pedrogfrancisco@gmail.com> <47010.148.87.67.141.1284674336.squirrel@www.xenotime.net> <4C933A8F.2080305@gmail.com> <1284892106.2650.4.camel@sundae-v2> <4C9602E4.4090007@gmail.com> <1284974726.11757.9.camel@sundae-v2> <4C9729D7.70500@gmail.com>  <4C972C60.8010506@gmail.com> <1285015465.26023.10.camel@sundae-v2> <4C97DB80.4060403@gmail.com> <4C97DBE2.8070707@gmail.com>
-In-Reply-To: <4C97DBE2.8070707@gmail.com>
-X-Enigmail-Version: 1.0.1
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755545Ab0IUGQe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 02:16:34 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37395 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753169Ab0IUGQd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 02:16:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=kBusJuQFb6YTAh7ubpPMJPiLc3D+IkXYzr3fWglHprkU1c1Ax4L155xCZns0gZmNnC
+         xYXCA9+q60gENSvjlFcZMpvqPsWb3/iraYaiXqwRRRVw/20Bwfz3oTc2vWrJMrQg763s
+         yhQFFSXzDgFDVJEb8Rlee1JfR0+RAAGuiRWT0=
+Subject: [PATCH] ip : take care of last fragment in ip_append_data
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+In-Reply-To: <1285018272.2323.243.camel@edumazet-laptop>
+References: <20100920174443.GA5515@elliptictech.com>
+	 <1285006844.2323.17.camel@edumazet-laptop>
+	 <20100920195256.GA14330@elliptictech.com>
+	 <1285013853.2323.148.camel@edumazet-laptop>
+	 <1285018272.2323.243.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 21 Sep 2010 08:16:27 +0200
+Message-ID: <1285049787.2323.797.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-21.09.2010 02:10, Tejun Heo wrote:
-> On 09/21/2010 12:09 AM, Tejun Heo wrote:
->> Hello,
->>
->> On 09/20/2010 10:44 PM, Pedro Francisco wrote:
->>> To which tree shall I apply it? It currently fails both on Linus'
->>> linux-2.6 and
->>> git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata-dev.git .
->>
->> Hmm... weird.  It's against Linus' tree.  Checking, yeap, it applies
->> cleanly to 2.6.36-rc4, commit 2422084a (Merge branch 'for-linus' of
->> git://git.kernel.org/pub/scm/linux/kernel/git/mattst88/alpha-2.6).
+Le lundi 20 septembre 2010 à 23:31 +0200, Eric Dumazet a écrit :
+
+> OK, I found a bug in ip_fragment() and ip6_fragment()
 > 
-> Attaching the patch just in case.
+> In case slow_path is hit, we have a truesize mismatch
+> 
+> Could you try following patch ?
+> 
+> Thanks !
+> 
+> [PATCH] ip : fix truesize mismatch in ip fragmentation
+> 
+> We should not set frag->destructor to sock_wkfree() until we are sure we
+> dont hit slow path in ip_fragment(). Or we risk uncharging
+> frag->truesize twice, and in the end, having negative socket
+> sk_wmem_alloc counter, or even freeing socket sooner than expected.
+> 
+> Many thanks to Nick Bowler, who provided a very clean bug report and
+> test programs.
+> 
+> While Nick bisection pointed to commit 2b85a34e911bf483 (net: No more
+> expensive sock_hold()/sock_put() on each tx), underlying bug is older.
+> 
+> Reported-and-bisected-by: Nick Bowler <nbowler@elliptictech.com>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> ---
+>  net/ipv4/ip_output.c  |    8 ++++----
+>  net/ipv6/ip6_output.c |   10 +++++-----
+>  2 files changed, 9 insertions(+), 9 deletions(-)
 
-I tried it on 2.6.35 kernel.  The ahci module usage count now
-increases and decreases properly, at least from what I see here.
-That's definitely better than previous 2.6.35 variant.
+This previous patch works for me. I also cooked following fix, to not
+enter slow path on some lengthes (MTU + N*(MTU-20))
 
-Thanks!
+[PATCH] ip : take care of last fragment in ip_append_data
 
-/mjt
+While investigating a bit, I found ip_fragment() slow path was taken
+because ip_append_data() provides following layout for a send(MTU +
+N*(MTU - 20)) syscall :
+
+- one skb with 1500 (mtu) bytes
+- N fragments of 1480 (mtu-20) bytes (before adding IP header)
+last fragment gets 17 bytes of trail data because of following bit:
+
+	if (datalen == length + fraggap)
+		alloclen += rt->dst.trailer_len;
+
+Then esp4 adds 16 bytes of data (while trailer_len is 17... hmm...
+another bug ?)
+
+In ip_fragment(), we notice last fragment is too big (1496 + 20) > mtu,
+so we take slow path, building another skb chain.
+
+In order to avoid taking slow path, we should correct ip_append_data()
+to make sure last fragment has real trail space, under mtu...
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+---
+ net/ipv4/ip_output.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
+index 04b6989..dfd9a0d 100644
+--- a/net/ipv4/ip_output.c
++++ b/net/ipv4/ip_output.c
+@@ -927,16 +927,19 @@ alloc_new_skb:
+ 			    !(rt->dst.dev->features&NETIF_F_SG))
+ 				alloclen = mtu;
+ 			else
+-				alloclen = datalen + fragheaderlen;
++				alloclen = fraglen;
+ 
+ 			/* The last fragment gets additional space at tail.
+ 			 * Note, with MSG_MORE we overallocate on fragments,
+ 			 * because we have no idea what fragment will be
+ 			 * the last.
+ 			 */
+-			if (datalen == length + fraggap)
++			if (datalen == length + fraggap) {
+ 				alloclen += rt->dst.trailer_len;
+-
++				/* make sure mtu is not reached */
++				if (datalen > mtu - fragheaderlen - rt->dst.trailer_len)
++					datalen -= ALIGN(rt->dst.trailer_len, 8);
++			}
+ 			if (transhdrlen) {
+ 				skb = sock_alloc_send_skb(sk,
+ 						alloclen + hh_len + 15,
+
 
