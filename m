@@ -1,104 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113Ab0IUHcG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 03:32:06 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:34221 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754118Ab0IUHcF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 03:32:05 -0400
-Message-ID: <31aed4ad96866a97dc791186303c5719.squirrel@www.firstfloor.org>
-In-Reply-To: <20100921162316.3C03.A69D9226@jp.fujitsu.com>
-References: <20100921022112.GA10336@localhost>
-    <20100921061310.GA11526@localhost>
-    <20100921162316.3C03.A69D9226@jp.fujitsu.com>
-Date: Tue, 21 Sep 2010 09:31:58 +0200
-Subject: Re: Problem with debugfs
-From: "Andi Kleen" <andi@firstfloor.org>
-To: "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>
-Cc: "Kenneth" <liguozhu@huawei.com>, kosaki.motohiro@jp.fujitsu.com,
-        greg@kroah.com, linux-kernel@vger.kernel.org,
-        "Naoya Horiguchi" <n-horiguchi@ah.jp.nec.com>,
-        "Andi Kleen" <andi@firstfloor.org>, "linux-mm" <linux-mm@kvack.org>,
-        fengguang.wu@intel.com
-User-Agent: SquirrelMail/1.4.21
+	id S1756503Ab0IUHc2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 03:32:28 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:49805 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753595Ab0IUHc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 03:32:26 -0400
+Message-ID: <4C985F88.1010501@msgid.tls.msk.ru>
+Date: Tue, 21 Sep 2010 11:32:24 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+To: Tejun Heo <htejun@gmail.com>
+CC: Jeff Garzik <jeff@garzik.org>, Pedro Francisco <pedrogfrancisco@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Subject: Re: [PATCH #upstream-fixes] ahci: fix module refcount breakage introduced
+ by libahci split
+References: <201009162256.04765.pedrogfrancisco@gmail.com> <47010.148.87.67.141.1284674336.squirrel@www.xenotime.net> <4C933A8F.2080305@gmail.com> <1284892106.2650.4.camel@sundae-v2> <4C9602E4.4090007@gmail.com> <1284974726.11757.9.camel@sundae-v2> <4C9729D7.70500@gmail.com>  <4C972C60.8010506@gmail.com> <1285015465.26023.10.camel@sundae-v2> <4C97DB80.4060403@gmail.com> <4C97DBE2.8070707@gmail.com> <4C984D44.1080109@msgid.tls.msk.ru> <4C985DFC.7020203@gmail.com>
+In-Reply-To: <4C985DFC.7020203@gmail.com>
+X-Enigmail-Version: 1.0.1
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x
+21.09.2010 11:25, Tejun Heo wrote:
+> libata depends on scsi_host_template for module reference counting and
+> sht's should be owned by each low level driver.  During libahci split,
+> the sht was left with libahci.ko leaving the actual low level drivers
+> not reference counted.  This made ahci and ahci_platform always
+> unloadable even while they're being actively used.
+> 
+> Fix it by defining AHCI_SHT() macro in ahci.h and defining a sht for
+> each low level ahci driver.
+> 
+> stable: only applicable to 2.6.35.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Michael Tokarev <mjt@tls.msk.ru>
+> Cc: stable@kernel.org
+> ---
+> Michael, thanks a lot for spotting it and bearing with me.
 
->> I'm sorry I had not checked the git before sending my last mail.
->>
->> For the problem I mention, consider this scenarios:
->>
->> 1. mm/hwpoinson-inject.c create a debugfs file with
->>    debugfs_create_u64("corrupt-filter-flags-mask", ...,
->>    &hwpoison_filter_flags_mask)
->> 2. hwpoison_filter_flags_mask is supposed to be protected by
->> filp->priv->mutex
->>    of this file when it is accessed from user space.
->> 3. but when it is accessed from
->> mm/memory-failure.c:hwpoison_filter_flags,
->>    there is no way for the function to protect the operation (so it
->> simply
->>    ignore it). This may create a competition problem.
->>
->> It should be a problem.
->>
->> I'm sorry from my poor English skill.
->
-> I think your english is very clear :)
-> Let's cc hwpoison folks.
+Um.  All thanks goes to Pedro Francisco please, not to me -
+I just verified your patch on my system, it was Pedro who spotted
+and reported this.  You may add my
 
-Thanks for the report.
-Copying Fengguang who wrote that code.
+ Tested-Off-By: Michael Tokarev <mjt@tls.msk.ru>
 
--Andi
+, but not Reported-by... please ;)
 
+Thanks!
 
->  - kosaki
->
->
->>
->> Best Regards
->> Kenneth Lee
->>
->> On Tue, Sep 21, 2010 at 10:21:12AM +0800, kenny wrote:
->> > Hi, there,
->> >
->> > I do not know who is the maintainer for debugfs now. But I think there
->> is
->> > problem with its API: It uses filp->priv->mutex to protect the
->> read/write (to
->> > the file) for the value of its attribute, but the mutex is not
->> exported to the
->> > API user.  Therefore, there is no way to protect its value when you
->> directly
->> > use the value in your module.
->> >
->> > Is my understanding correct?
->> >
->> > Thanks
->> >
->> >
->> > Best Regards
->> > Kenneth Lee
->>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
->> in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
->
->
->
-
+/mjt
