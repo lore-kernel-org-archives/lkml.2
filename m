@@ -1,63 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756906Ab0IUVie (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 17:38:34 -0400
-Received: from www.tglx.de ([62.245.132.106]:36632 "EHLO www.tglx.de"
+	id S1757082Ab0IUVnq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 17:43:46 -0400
+Received: from www.tglx.de ([62.245.132.106]:35087 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751620Ab0IUVid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 17:38:33 -0400
-Date: Tue, 21 Sep 2010 23:38:26 +0200 (CEST)
+	id S1752475Ab0IUVno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 17:43:44 -0400
+Date: Tue, 21 Sep 2010 23:34:17 +0200 (CEST)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: Greg KH <greg@kroah.com>
-cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "Hans J. Koch" <hjk@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] uio: Support 2^MINOR_BITS minors
-In-Reply-To: <20100921210809.GA28026@kroah.com>
-Message-ID: <alpine.LFD.2.00.1009212337030.2416@localhost6.localdomain6>
-References: <m1y6b48973.fsf@fess.ebiederm.org> <m1eicw892p.fsf@fess.ebiederm.org> <alpine.LFD.2.00.1009172235490.2416@localhost6.localdomain6> <20100921210809.GA28026@kroah.com>
+To: Yinghai Lu <yinghai@kernel.org>
+cc: Jack Steiner <steiner@sgi.com>, mingo@elte.hu,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86 - irq vector assignment
+In-Reply-To: <AANLkTinkiZC6bvRJ10EsG-CZSjdJtqW4N7pfq7vnvz3i@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1009212310410.2416@localhost6.localdomain6>
+References: <20100921200502.GA26587@sgi.com> <AANLkTinkiZC6bvRJ10EsG-CZSjdJtqW4N7pfq7vnvz3i@mail.gmail.com>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-1251286666-1285103865=:2416"
+Content-ID: <alpine.LFD.2.00.1009212317570.2416@localhost6.localdomain6>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Sep 2010, Greg KH wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> On Fri, Sep 17, 2010 at 10:36:50PM +0200, Thomas Gleixner wrote:
-> > On Tue, 14 Sep 2010, Eric W. Biederman wrote:
-> > 
-> > > 
-> > > register_chrdev limits uio devices to 256 minor numbers which causes
-> > > problems on one system I have with 384+ uio devices.  So instead set
-> > > UIO_MAX_DEVICES to the maximum number of minors and use
-> > > alloc_chrdev_region to reserve the uio minors.
-> > > 
-> > > The final result is that the code works the same but the uio driver now
-> > > supports any minor the idr allocator comes up with.
-> > > 
-> > > Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
-> > 
-> > One minor nit:
-> > 
-> > > +	result = alloc_chrdev_region(&uio_dev, 0, UIO_MAX_DEVICES, name);
-> > > +	if (result)
-> > > +		goto out;
-> > 
-> >   		return result;
-> 
-> Wait, why?  It's the exact came code, as out does:
-> 
-> out:
-> 	return result;
-> 
-> and you need that line due to the code above it.  So I say leave it.
+---1463795968-1251286666-1285103865=:2416
+Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
+Content-ID: <alpine.LFD.2.00.1009212317571.2416@localhost6.localdomain6>
 
-s/goto out/return result/g
+On Tue, 21 Sep 2010, Yinghai Lu wrote:
+> >  arch/x86/kernel/apic/io_apic.c |    5 +++++
+> >  1 file changed, 5 insertions(+)
+> >
+> > Index: linux/arch/x86/kernel/apic/io_apic.c
+> > ===================================================================
+> > --- linux.orig/arch/x86/kernel/apic/io_apic.c   2010-09-17 13:00:19.164638447 -0500
+> > +++ linux/arch/x86/kernel/apic/io_apic.c        2010-09-17 13:00:23.448595373 -0500
+> > @@ -3253,6 +3253,11 @@ unsigned int create_irq_nr(unsigned int
+> >                desc_new = move_irq_desc(desc_new, node);
+> >                cfg_new = desc_new->chip_data;
+> >
+> > +#ifdef CONFIG_NUMA
+> > +               if (node >= 0 && __assign_irq_vector(new, cfg_new, node_to_cpumask_map[node]) == 0)
+> > +                       irq = new;
+> > +               else
+> > +#endif
+> >                if (__assign_irq_vector(new, cfg_new, apic->target_cpus()) == 0)
+> >                        irq = new;
+> >                break;
+> 
+> target_cpus() for uv_x and x2apic phys mode all have cpu_online_mask()
+> 
+> so we should get the vector for other cpus. aka __assign_irq_vector()
+> should not fail. unless you have so many irq > nr_irqs.
 
-Gotos which end up in a single line "return foo;" are pretty pointless.
+Did you even read the changelog ? It's not about "should".
+
+All CPU0 vectors are assigned already just because the current code
+takes the first cpu in the target_cpus mask regardless of the node on
+which the irq_desc is allocated. That's crap. Why do we allocate
+irq_desc on node and leave the vector assigned to node(cpu0) ?
+ 
+> current code we only make sure irq_desc on device local node.
+
+Brilliant.
+
+> for the vectors, user can set irq smp_affinity move the device local
+> cpus if needed.
+
+What a nonsense. If we allocate irq_desc on a target node it does not
+make any sense to target the vector to whatever random node/cpu in the
+first place and wait for user space to fix it up. What about running
+into that situation _before_ we hit user space ?
 
 Thanks,
 
 	tglx
+---1463795968-1251286666-1285103865=:2416--
