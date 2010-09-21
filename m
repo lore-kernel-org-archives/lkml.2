@@ -1,72 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752471Ab0IULm1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 07:42:27 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53901 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751767Ab0IULm0 (ORCPT
+	id S1752985Ab0IULsh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 07:48:37 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:62341 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752227Ab0IULsg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 07:42:26 -0400
+	Tue, 21 Sep 2010 07:48:36 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=wudiw1p8y/b224hiz+VmgQgTZYzfk93Wuv33sphzQY6N8RtxAZWxge7ibGmRTUlhm9
-         jQrZ7zQeaMzwYZUerPYFeHpMrEuU0gLdkHYa6PP4eAMmqHyUTukFJexJPrxpczVJjJ3/
-         w0Y4EdCj2ZdSW49J6/u7OJxbPaIUK8WSOW6SQ=
-Subject: Re: [REGRESSION] cdrom drive doesn't detect removal
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>, Tejun Heo <tj@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-In-Reply-To: <AANLkTin37rbEbcGDejhcsnxZNYhhUWGy+x=v4Y=s0_Qx@mail.gmail.com>
-References: <1284284969.2928.18.camel@maxim-laptop>
-	 <1284427621.4127.7.camel@maxim-laptop> <4C8F2699.3020509@kernel.org>
-	 <AANLkTinGHB9fbLw1Cm5wvPLGy8QEuoBBmFiqpnvXiZ8R@mail.gmail.com>
-	 <1284507516.4963.2.camel@maxim-laptop>
-	 <AANLkTimFpyYab69=XQVZc+P50v6_uVr6UbA246Fnm3-u@mail.gmail.com>
-	 <1284511071.3551.1.camel@maxim-laptop>
-	 <AANLkTikF37hN7dFqPbCp-gcim7SarveaTrjXipnGpJM7@mail.gmail.com>
-	 <20100915132731.GA20558@khazad-dum.debian.net>
-	 <AANLkTinGDUxsgaGey7EnYOu3kKP-YRE00gL33hiKvAWj@mail.gmail.com>
-	 <1284589207.4672.3.camel@maxim-laptop>
-	 <AANLkTin37rbEbcGDejhcsnxZNYhhUWGy+x=v4Y=s0_Qx@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 21 Sep 2010 13:42:18 +0200
-Message-ID: <1285069338.3124.4.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=OX/EftoAFQMuHLRnOFnDlL67YHKkAIeXsGnBcBxrcP+0POgwMycYfR14xQn73nzgDk
+         EU9DS8yPjqByNOwxO8Dg==
+MIME-Version: 1.0
+In-Reply-To: <1285062228.2275.826.camel@laptop>
+References: <4c88dc9c.991ce30a.3d91.3e0e@mx.google.com>
+	<1285061899.2275.824.camel@laptop>
+	<1285062228.2275.826.camel@laptop>
+Date: Tue, 21 Sep 2010 13:48:32 +0200
+Message-ID: <AANLkTik-oMNJdakwsH=22LzgYvgd35aom+Zu2WkchUte@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/2] perf_events: add support for per-cpu per-cgroup
+ monitoring (v3)
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
+        eranian@gmail.com, robert.richter@amd.com, acme@redhat.com,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-16 at 08:51 +0200, Kay Sievers wrote: 
-> On Thu, Sep 16, 2010 at 00:20, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-> > So it makes the sense.
-> > It turns out that hal is still running on ubuntu systems, and yes, it
-> > still polls the drives, and yes I disabled that feature....
-> > So restoring that polling feature indeed fixes that problem for now.
-> > Yet, why without that commit detection did work?
-> 
-> Really, I have no idea how this can happen. You could only find out
-> with blocktrace, if something else is trying to open the device. The
-> state change in the drive should not be able to get known to the host
-> unless something is causing i/o with open().
-> 
-> Kay
+Peter,
 
-Due to some unexplained laziness, I didn't put a printk to cdrom_open to
-figure out if drive is polled or not without hal.
-Today I finally found why kgdb didn't work (it was conflict with nmi
-watchdog), and just for fun I have put a breakpoint to cdrom_open.
-Well udisks *does* poll the drive, every few seconds, and therefore this
-is a regression.
-I will soon look at udisk source to see how it polls the drive.
-(Maybe it uses exclusive open and hal doesn't or something like that.)
+On Tue, Sep 21, 2010 at 11:43 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, 2010-09-21 at 11:38 +0200, Peter Zijlstra wrote:
+>> On Thu, 2010-09-09 at 15:05 +0200, Stephane Eranian wrote:
+>> > The cgroup to monitor is designated by passing a file descriptor opened
+>> > on a new per-cgroup file in the cgroup filesystem (perf_event.perf). The
+>> > option must be activated by setting perf_event_attr.cgroup=1 and passing
+>> > a valid file descriptor in perf_event_attr.cgroup_fd. Those are the only
+>> > two ABI extensions.
+>>
+>> > +++ b/include/linux/perf_event.h
+>> > @@ -215,8 +215,9 @@ struct perf_event_attr {
+>> >                                  */
+>> >                                 precise_ip     :  2, /* skid constraint       */
+>> >                                 mmap_data      :  1, /* non-exec mmap data    */
+>> > +                               cgroup         :  1, /* cgroup aggregation    */
+>> >
+>> > -                               __reserved_1   : 46;
+>> > +                               __reserved_1   : 45;
+>> >
+>> >         union {
+>> >                 __u32           wakeup_events;    /* wakeup every n events */
+>> > @@ -226,6 +227,8 @@ struct perf_event_attr {
+>> >         __u32                   bp_type;
+>> >         __u64                   bp_addr;
+>> >         __u64                   bp_len;
+>> > +
+>> > +       int                     cgroup_fd;
+>> >  };
+>> >
+>> >  /*
+>>
+>> I'm not sure I like this much.. so we attach to {pid,cpu}, for nodes we
+>> can use cpu_to_node(cpu), which would suggest to use
+>> cgroup_of_task(pid), except that a task can be part of multiple cgroups,
+>> so its not unique.
+>>
+>> One thing we could do is pass this cgroup identifier in the pid field
+>> and use PERF_FLAG_CGROUP or something. Currently the syscall signature
+>> uses pid_t, but I think we can safely change that to int.
+>>
+>> You create a special new file in the cgroup stuff, I'm not sure about
+>> that either, but its not something I feel too strongly about, why
+>> wouldn't a fd of any file or even directory of that cgroup work? Do the
+>> cgroup people have an opinion?
+>
+> Ahh, I just read more of the patch, and you create a full perf cgroup,
+> in which case cgroup_of_task(pid) will work, simply pick the perf
+> cgroup's tasks.
+>
+> No need to actually create that file, open it and pass fds around, just
+> pick a task from that cgroup and attach to the cgroup through that.
+>
+If I understand, you are proposing that we use the pid argument to the
+syscall to designate the cgroup. A task belongs to only one cgroup at
+a time. Thus with the pid you can identify a cgroup. No need for an
+entry in cgroup_fs and therefore no need for cgroup_fd in perf_event_attr.
+We would still need a flag somewhere to indicate that we don't want
+per-thread mode but per-cpu per-cgroup. It could be a new field in the
+bitfield in perf_event_attr. In fact, I already have such a field.
 
-Best regards,
-Maxim Levitsky
-
-
+The main issue I see with this is that it relies on having at least one
+task in the cgroup when you start the measurement. That is certainly
+not always the case.
