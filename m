@@ -1,82 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757082Ab0IUVnq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 17:43:46 -0400
-Received: from www.tglx.de ([62.245.132.106]:35087 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752475Ab0IUVno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756740Ab0IUVnp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 17:43:45 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:53485 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752158Ab0IUVno (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 21 Sep 2010 17:43:44 -0400
-Date: Tue, 21 Sep 2010 23:34:17 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Yinghai Lu <yinghai@kernel.org>
-cc: Jack Steiner <steiner@sgi.com>, mingo@elte.hu,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86 - irq vector assignment
-In-Reply-To: <AANLkTinkiZC6bvRJ10EsG-CZSjdJtqW4N7pfq7vnvz3i@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1009212310410.2416@localhost6.localdomain6>
-References: <20100921200502.GA26587@sgi.com> <AANLkTinkiZC6bvRJ10EsG-CZSjdJtqW4N7pfq7vnvz3i@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=KOUKFVGu/Ip07+E463UI2zFTLn3Fm0tw+buc2tRCeJ9suJbY9ew+cpcdiJuVyj3B64
+         N3hknO1DgPyGtzZcSsdOniEtYH0wI8WG4N90ZSS4Nhd5fiAWlpUgi7vD5P1JsDgT5fmC
+         1ALhXCuLJZs5Wcs7xu1tVS/FtTuNN+YQMBrC8=
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-1251286666-1285103865=:2416"
-Content-ID: <alpine.LFD.2.00.1009212317570.2416@localhost6.localdomain6>
+In-Reply-To: <20100921163456.7e2c9b32@udp111988uds.am.freescale.net>
+References: <1285066638-7473-1-git-send-email-leoli@freescale.com>
+ <877FD0B5-19A7-4A16-831E-369B80B104EA@kernel.crashing.org>
+ <AANLkTimiwtoa6i10OTcgFnvbvcO9N4KWHyt4Poj-yj=T@mail.gmail.com> <20100921163456.7e2c9b32@udp111988uds.am.freescale.net>
+From: Timur Tabi <timur.tabi@gmail.com>
+Date: Tue, 21 Sep 2010 16:43:12 -0500
+Message-ID: <AANLkTine--kry0c0n87WOqYyi3AQOb2KnmNRs-MeXcQt@mail.gmail.com>
+Subject: Re: [PATCH] fsldma: add support to 36-bit physical address
+To: Scott Wood <scottwood@freescale.com>
+Cc: Kumar Gala <galak@kernel.crashing.org>, dan.j.williams@intel.com,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Tue, Sep 21, 2010 at 4:34 PM, Scott Wood <scottwood@freescale.com> wrote:
 
----1463795968-1251286666-1285103865=:2416
-Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
-Content-ID: <alpine.LFD.2.00.1009212317571.2416@localhost6.localdomain6>
+> This doesn't control allocation (it probably should with
+> dma_alloc_coherent, though I don't see it in the code), it controls
+> whether swiotlb will create a bounce buffer -- defeating the point of
+> using DMA to accelerate a memcpy.
 
-On Tue, 21 Sep 2010, Yinghai Lu wrote:
-> >  arch/x86/kernel/apic/io_apic.c |    5 +++++
-> >  1 file changed, 5 insertions(+)
-> >
-> > Index: linux/arch/x86/kernel/apic/io_apic.c
-> > ===================================================================
-> > --- linux.orig/arch/x86/kernel/apic/io_apic.c   2010-09-17 13:00:19.164638447 -0500
-> > +++ linux/arch/x86/kernel/apic/io_apic.c        2010-09-17 13:00:23.448595373 -0500
-> > @@ -3253,6 +3253,11 @@ unsigned int create_irq_nr(unsigned int
-> >                desc_new = move_irq_desc(desc_new, node);
-> >                cfg_new = desc_new->chip_data;
-> >
-> > +#ifdef CONFIG_NUMA
-> > +               if (node >= 0 && __assign_irq_vector(new, cfg_new, node_to_cpumask_map[node]) == 0)
-> > +                       irq = new;
-> > +               else
-> > +#endif
-> >                if (__assign_irq_vector(new, cfg_new, apic->target_cpus()) == 0)
-> >                        irq = new;
-> >                break;
-> 
-> target_cpus() for uv_x and x2apic phys mode all have cpu_online_mask()
-> 
-> so we should get the vector for other cpus. aka __assign_irq_vector()
-> should not fail. unless you have so many irq > nr_irqs.
+But it would do that only for the 'dev' used in the dma_set_mask()
+call.  That dev is only used here:
 
-Did you even read the changelog ? It's not about "should".
+	chan->desc_pool = dma_pool_create("fsl_dma_engine_desc_pool",
+					  chan->dev,
+					  sizeof(struct fsl_desc_sw),
+					  __alignof__(struct fsl_desc_sw), 0);
 
-All CPU0 vectors are assigned already just because the current code
-takes the first cpu in the target_cpus mask regardless of the node on
-which the irq_desc is allocated. That's crap. Why do we allocate
-irq_desc on node and leave the vector assigned to node(cpu0) ?
- 
-> current code we only make sure irq_desc on device local node.
+Since we don't DMA the descriptors themselves, I just don't see how
+this patch does anything.
 
-Brilliant.
-
-> for the vectors, user can set irq smp_affinity move the device local
-> cpus if needed.
-
-What a nonsense. If we allocate irq_desc on a target node it does not
-make any sense to target the vector to whatever random node/cpu in the
-first place and wait for user space to fix it up. What about running
-into that situation _before_ we hit user space ?
-
-Thanks,
-
-	tglx
----1463795968-1251286666-1285103865=:2416--
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
