@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595Ab0IUNMg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 09:12:36 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:57624 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753478Ab0IUNMf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 09:12:35 -0400
-Date: Tue, 21 Sep 2010 15:12:32 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Jason Baron <jbaron@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
-        hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
-        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-        mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
-        davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org,
-        tony@bakeyournoodle.com
-Subject: Re: [PATCH 03/10] jump label v11: base patch
-Message-ID: <20100921131232.GA3024@one.firstfloor.org>
-References: <cover.1284733808.git.jbaron@redhat.com> <ee8b3595967989fdaf84e698dc7447d315ce972a.1284733808.git.jbaron@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ee8b3595967989fdaf84e698dc7447d315ce972a.1284733808.git.jbaron@redhat.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1755281Ab0IUNOY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 09:14:24 -0400
+Received: from cantor.suse.de ([195.135.220.2]:55190 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753932Ab0IUNOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 09:14:22 -0400
+Date: Tue, 21 Sep 2010 15:14:18 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Heinz Diehl <htd@fritha.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Heinz Diehl <htd@fancy-poultry.org>, Alan Ott <alan@signal11.us>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-input@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [BUG] object: is not initialized, yet kobject_put() is being
+ called
+In-Reply-To: <20100920193913.GA6448@fritha.org>
+Message-ID: <alpine.LNX.2.00.1009211513440.26813@pobox.suse.cz>
+References: <20100920181100.GA12295@fancy-poultry.org> <Pine.LNX.4.44L0.1009201456260.2010-100000@iolanthe.rowland.org> <20100920193913.GA6448@fritha.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 17, 2010 at 11:09:00AM -0400, Jason Baron wrote:
-> +extern void arch_jump_label_transform(struct jump_entry *entry,
-> +				 enum jump_label_type type);
-> +extern void jump_label_update(unsigned long key, enum jump_label_type type);
-> +extern void jump_label_apply_nops(struct module *mod);
-> +extern void arch_jump_label_text_poke_early(jump_label_t addr);
+On Mon, 20 Sep 2010, Heinz Diehl wrote:
 
-These function names are too long.
+> > No, you're wrong.  The patch _is_ in 2.6.36-rc4, and that's the reason 
+> > why it doesn't apply any longer.
+> 
+> Yes, you're right. 
+> 
+> > The error you see must have a different cause.  Have you read this 
+> > thread?
+> > 
+> > 	http://marc.info/?t=128494644600005&r=1&w=2
+> 
+> No, not before until now. This problem seems not to be related to what I 
+> see on my machines, and reverting commit 8fe294caf8c868edd9046251824a0af91991bf43 as
+> mentioned in there doesn't help either.
+> 
+> 2.6.35.4 works, 2.6.36-rc4 does not. What can I do to help to find the
+> issue?
+> 
+> Attached are the dmesg output for both 2.6.35.4 and 2.6.36-rc4.
 
-Also it would be better if the types for the pointers are kept
-instead of casting to unsigned long. All the variables
-are ints right?
+Just to verify that you are really being hit by the same issue -- you are 
+using CONFIG_USB_DYNAMIC_MINORS, aren't you? Does the problem go away if 
+you disable this?
 
-> +#define JUMP_LABEL_HASH_BITS 6
-> +#define JUMP_LABEL_TABLE_SIZE (1 << JUMP_LABEL_HASH_BITS)
-> +static struct hlist_head jump_label_table[JUMP_LABEL_TABLE_SIZE];
+Thanks,
 
-It's not clear to me why this hash table is needed. There should
-not be that many trace points, is it that big a problem to simply
-walk all the sections when something is changed?
-
-Or maybe the sections could be just sorted and a binary search used
-like with exception tables.
-
-I suspect that would simplify a lot of code.
-
-Overall I like the idea, but the current code is too complicated
-for the benefit I think.
-
-Can it be put on a diet?
-
--Andi
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+Jiri Kosina
+SUSE Labs, Novell Inc.
