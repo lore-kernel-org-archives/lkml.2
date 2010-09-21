@@ -1,106 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757434Ab0IUPtb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 11:49:31 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:51069 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753469Ab0IUPt3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 11:49:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=XatnW+h/J83y5ekYAjXiCPK0ZSBIRhxPP8eZEYUisMtO7XGSC/0axRsnHjgArJ5kwc
-         wWm1cyo6vhxzvJikSrkGa8gqzBrlKwIuVin4ZeTTmmYeNlzvNFVQ2UJIr7kO4xnzc+v+
-         UHXp4Fvqfu+aTbzIvbkqMglXQzc0wEUo40QVg=
-Message-ID: <4C98D403.3090509@gmail.com>
-Date: Tue, 21 Sep 2010 08:49:23 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
-MIME-Version: 1.0
-To: "Maciej W. Rozycki" <macro@linux-mips.org>
-CC: trivial@kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Finn Thain <fthain@telegraphics.com.au>,
-        Randy Dunlap <rdunlap@xenotime.net>, Matt Turner <mattst88@gmail.com>,
-        Dimitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mike Frysinger <vapier.adi@gmail.com>
-Subject: Re: [PATCH v2]Update broken web addresses in the kernel.
-References: <1285050654-15188-1-git-send-email-justinmattock@gmail.com> <alpine.LFD.2.00.1009211614590.6717@eddie.linux-mips.org>
-In-Reply-To: <alpine.LFD.2.00.1009211614590.6717@eddie.linux-mips.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1757562Ab0IUPuh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 11:50:37 -0400
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:46628 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753469Ab0IUPuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 11:50:35 -0400
+Date: Tue, 21 Sep 2010 09:11:36 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>, Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org, x86@kernel.org, mingo@redhat.com,
+        hpa@zytor.com, Mitch Bradley <wmb@laptop.org>,
+        linux-kernel@vger.kernel.org,
+        Stephen Neuendorffer <stephen.neuendorffer@xilinx.com>
+Subject: Re: [PATCH 2/2] x86: of: define irq functions to allow drivers/of/*
+ to build on x86
+Message-ID: <20100921091136.45f5f7fa@debxo>
+In-Reply-To: <alpine.LFD.2.00.1009211144070.2416@localhost6.localdomain6>
+References: <20100910060151.6613e9c3@debxo>
+	<20100910172538.GC11284@angua.secretlab.ca>
+	<20100910181458.GA7243@elte.hu>
+	<20100910182135.GG11284@angua.secretlab.ca>
+	<20100920190604.5a2118da@debxo>
+	<alpine.LFD.2.00.1009211144070.2416@localhost6.localdomain6>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/21/2010 08:31 AM, Maciej W. Rozycki wrote:
-> On Mon, 20 Sep 2010, Justin P. Mattock wrote:
->
->> Resend: This is an updated patch due to some mistakes that I had made with the original patch.
->> Below you will find a patch containing updates to broken web addresses in the kernel.
->> Some were easy to piece together, but some were knowhere to be found..Keep in mind this was
->> just a grep for "http", not sure how many other protocol's in there are working or not..
->> Note: Thanks to Matt Turner for pointing out that the archive.org address breaks
->> compiling with the "*" in it's url..(thankfully a simple fix provided by Matt "%2A" resolved this).
->> Thanks to everybody giving feedback on this, and let me know if I missed something..
->
->   It has fallen between the cracks, sorry.
->
->   Here's my proposal about the change we discussed before.  It refers to
-> HP's mirror of the original archive as well as another mirror run by
-> volunteers that happens to include a couple of extra files missing from
-> the former for some reason.  Hopefully either of these will stay online
-> for the foreseeable future.
->
->   Rather than some Digital Unix specific details these two archives provide
-> original TURBOchannel documentation supplied by DEC as a part of their
-> 1990s' TriAdd initiative.  Included are hardware- and software-level
-> TURBOchannel specifications suitable for use by hardware designers and
-> firmware and OS developers respectively, as well as a number of additional
-> related documents.  While not strictly related, there's Access.Bus
-> documentation too.
->
->   Then the linux-mips.org Wiki page documents Linux driver support (or the
-> lack of) for many TURBOchannel option cards -- while the page is specific
-> to the DECstation, the drivers are generic enough to work with any Linux
-> platform supporting TURBOchannel -- apart from the MIPS-based DECstation,
-> there are Alpha- and VAX-based TURBOchannel systems in existence we may
-> eventually add support for in Linux one day.  I still do hope to add some
-> more drivers to this page sometime too. :)
->
->   Thanks again for working on this.
->
-> Signed-off-by: Maciej W. Rozycki<macro@linux-mips.org>
-> ---
-> patch-mips-2.6.36-rc4-20100921-tc-doc-0
-> diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-> index 5526faa..b4759db 100644
-> --- a/arch/mips/Kconfig
-> +++ b/arch/mips/Kconfig
-> @@ -2192,10 +2192,14 @@ config TC
->   	bool "TURBOchannel support"
->   	depends on MACH_DECSTATION
->   	help
-> -	  TurboChannel is a DEC (now Compaq (now HP)) bus for Alpha and MIPS
-> -	  processors.  Documentation on writing device drivers for TurboChannel
-> -	  is available at:
-> -	<http://www.cs.arizona.edu/computer.help/policy/DIGITAL_unix/AA-PS3HD-TET1_html/TITLE.html>.
-> +	  TURBOchannel is a DEC (now Compaq (now HP)) bus for Alpha and MIPS
-> +	  processors.  TURBOchannel programming specifications are available
-> +	  at:
-> +	<ftp://ftp.hp.com/pub/alphaserver/archive/triadd/>
-> +	  and:
-> +	<http://www.computer-refuge.org/classiccmp/ftp.digital.com/pub/DEC/TriAdd/>
-> +	  Linux driver support status is documented at:
-> +	<http://www.linux-mips.org/wiki/DECstation>
->
->   #config ACCESSBUS
->   #	bool "Access.Bus support"
->
+On Tue, 21 Sep 2010 11:45:37 +0200 (CEST)
+Thomas Gleixner <tglx@linutronix.de> wrote:
+
+> On Mon, 20 Sep 2010, Andres Salomon wrote:
+> > On Fri, 10 Sep 2010 12:21:35 -0600
+> > Grant Likely <grant.likely@secretlab.ca> wrote:
+> > 
+> > > On Fri, Sep 10, 2010 at 08:14:58PM +0200, Ingo Molnar wrote:
+> > > > 
+> > > > * Grant Likely <grant.likely@secretlab.ca> wrote:
+> > > > 
+> > > > > On Fri, Sep 10, 2010 at 06:01:51AM -0700, Andres Salomon
+> > > > > wrote:
+> > > > > > 
+> > > > > >  - Define a stub irq_create_of_mapping for x86 as a stop-gap
+> > > > > > solution until drivers/of/irq is further along.
+> > > > > >  - Define irq_dispose_mapping for x86 to appease of_i2c.c
+> > > > > > 
+> > > > > > Signed-off-by: Andres Salomon <dilinger@queued.net>
+> > > > > 
+> > > > > Applied to my test-devicetree branch.  I'll need an ack from
+> > > > > the x86 maintainers before I put it into my -next branch.
+> > > > 
+> > > > The purpose of the patch is not clear to me. What does it do and
+> > > > why? 
+> > > 
+> > > It allows CONFIG_OF to be enabled on x86 without a build failure.
+> > > 
+> > > > The changelog says it's a stopgap measure - what exactly is the
+> > > > long term plan and how long will it take?
+> > > 
+> > > It is a stop gap because it performs a trivial direct map of an
+> > > IRQ number in the device tree data structure to a Linux irq
+> > > number.  This works for a single IRQ controller, but falls apart
+> > > when cascaded controller are described in the device tree.  The
+> > > long term plan is to have the drivers/of/ code handling the
+> > > mapping intelligently like powerpc currently does.
+> > > 
+> > > g.
+> > > 
+> > 
+> > Any additional comments (ACKs, NACKs, etc) on the patches?  If I
+> > need to rework it (or them), I can certainly make the patch
+> > description longer.
+> 
+> Fine with me, but you could make the "mapping" function an inline as
+> well. While at it, some sensible changelog would be helpful :)
+> 
+> Thanks,
+> 
+> 	tglx
+
+Hm, inlining it would require some additional x86 #ifdefs in
+include/linux/of_irq.h (where the mapping function is declared).  You'd
+prefer that?
 
 
-cool thanks for this.. I'll add the change..
-
-Justin P. Mattock
