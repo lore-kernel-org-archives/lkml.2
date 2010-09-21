@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755990Ab0IUUru (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 16:47:50 -0400
-Received: from kroah.org ([198.145.64.141]:39884 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754407Ab0IUUrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 16:47:46 -0400
-Date: Tue, 21 Sep 2010 13:42:38 -0700
-From: Greg KH <greg@kroah.com>
-To: Manuel Stahl <manuel.stahl@iis.fraunhofer.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH] Add sc16is7x2 driver
-Message-ID: <20100921204238.GE25112@kroah.com>
-References: <4C80F419.5070601@iis.fraunhofer.de>
- <20100913172544.a81e8422.akpm@linux-foundation.org>
- <4C8F7381.50300@iis.fraunhofer.de>
+	id S1755413Ab0IUUvM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 16:51:12 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:38624 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752923Ab0IUUvK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 16:51:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C8F7381.50300@iis.fraunhofer.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1282948239.2268.155.camel@jstultz-laptop>
+References: <cover.1281956490.git.richard.cochran@omicron.at>
+ <363bd749a38d0b785d8431e591bf54c38db4c2d7.1281956490.git.richard.cochran@omicron.at>
+ <AANLkTik_2MKMhOuDGOmu8Kzyq-ipLe+Bxrb3FaD+Tv4U@mail.gmail.com>
+ <20100817085324.GB3330@riccoc20.at.omicron.at> <1282090963.1734.97.camel@localhost>
+ <20100818071942.GA4096@riccoc20.at.omicron.at> <1282176776.2865.100.camel@localhost.localdomain>
+ <20100819055518.GA4084@riccoc20.at.omicron.at> <1282594125.3111.344.camel@localhost.localdomain>
+ <20100827123849.GC11657@riccoc20.at.omicron.at> <1282948239.2268.155.camel@jstultz-laptop>
+From: Kyle Moffett <kyle@moffetthome.net>
+Date: Tue, 21 Sep 2010 16:47:45 -0400
+Message-ID: <AANLkTinRM3_kBc5S3wV=_S6P8+x7A43kz0qSYbixJYnq@mail.gmail.com>
+Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
+To: John Stultz <johnstul@us.ibm.com>
+Cc: Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>,
+        Rodolfo Giometti <giometti@linux.it>, Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 14, 2010 at 03:07:13PM +0200, Manuel Stahl wrote:
-> --- a/include/linux/serial_core.h
-> +++ b/include/linux/serial_core.h
-> @@ -47,6 +47,9 @@
->  #define PORT_U6_16550A	19	/* ST-Ericsson U6xxx internal UART */
->  #define PORT_MAX_8250	19	/* max port ID */
->  
-> +/* SC16IS7x2 SPI UART */
-> +#define PORT_SC16IS7X2	19
+On Fri, Aug 27, 2010 at 18:30, John Stultz <johnstul@us.ibm.com> wrote:
+> On one side, there is the view that the kernel should abstract and hide
+> the hardware details to increase app portability. And the other is that
+> the raw hardware details should be exposed, so the OS stays out of the
+> way.
+>
+> Neither of these views are always right. Ideally we can come up with a
+> abstracted way to provide the hardware data needed that's generic enough
+> that applications don't have to be changed when moving between hardware
+> or configurations.
+>
+> The posix clock id interface is frustrating because the flat static
+> enumeration is really limiting.
+>
+> I wonder if a dynamic enumeration for posix clocks would be possibly a
+> way to go?
 
-Hm, didn't you just duplicate the number here?  Shouldn't that be "20"
-and you bump the max up?
+Well how about something much more straightforward:
 
-In the end, we need to just drop those, I don't think we need defines
-anymore, but I need to look at it some more to find out.
+#define CLOCK_FD 0x80000000
+fd = open("/dev/clocks/some_clock_name", O_RDONLY);
+clock_gettime(CLOCK_FD | fd, &ts);
 
-thanks,
+This would provide all of the standard character-device semantics that
+everyone is accustomed to, and furthermore you could allow non-root
+users to manage specific clocks using just DAC permission bits.
 
-greg k-h
+You'd still probably need to add a clock_adjtimex() syscall, but it
+could easily fail with EINVAL for software or per-thread clocks, but
+that seems like it would nicely abstract the hardware without forcing
+a numeric address space.
+
+Cheers,
+Kyle Moffett
