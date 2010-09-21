@@ -1,62 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab0IUXii (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 19:38:38 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:39471
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751132Ab0IUXih (ORCPT
+	id S1752517Ab0IUXuP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 19:50:15 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59168 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751981Ab0IUXuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 19:38:37 -0400
-Date: Tue, 21 Sep 2010 16:38:56 -0700 (PDT)
-Message-Id: <20100921.163856.71124744.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: nbowler@elliptictech.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] ip : take care of last fragment in ip_append_data
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1285049787.2323.797.camel@edumazet-laptop>
-References: <1285013853.2323.148.camel@edumazet-laptop>
-	<1285018272.2323.243.camel@edumazet-laptop>
-	<1285049787.2323.797.camel@edumazet-laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 21 Sep 2010 19:50:14 -0400
+Date: Tue, 21 Sep 2010 16:50:07 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Karsten Mehrhoff <kawime@gmx.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable@kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: regression in 2.6.35.4 'load is to heavy (video subsystem?)'
+Message-Id: <20100921165007.6200846f.akpm@linux-foundation.org>
+In-Reply-To: <op.vh8rams6gp7xae@127.0.0.1>
+References: <op.vh8rams6gp7xae@127.0.0.1>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Tue, 21 Sep 2010 08:16:27 +0200
+On Mon, 30 Aug 2010 10:02:36 +0200
+Karsten Mehrhoff <kawime@gmx.de> wrote:
 
-> [PATCH] ip : take care of last fragment in ip_append_data
-> 
-> While investigating a bit, I found ip_fragment() slow path was taken
-> because ip_append_data() provides following layout for a send(MTU +
-> N*(MTU - 20)) syscall :
-> 
-> - one skb with 1500 (mtu) bytes
-> - N fragments of 1480 (mtu-20) bytes (before adding IP header)
-> last fragment gets 17 bytes of trail data because of following bit:
-> 
-> 	if (datalen == length + fraggap)
-> 		alloclen += rt->dst.trailer_len;
-> 
-> Then esp4 adds 16 bytes of data (while trailer_len is 17... hmm...
-> another bug ?)
-> 
-> In ip_fragment(), we notice last fragment is too big (1496 + 20) > mtu,
-> so we take slow path, building another skb chain.
-> 
-> In order to avoid taking slow path, we should correct ip_append_data()
-> to make sure last fragment has real trail space, under mtu...
-> 
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> Using the same .config from 2.6.35.3 to compile 2.5.36.4 results in a  
+> heavy load with 2.6.35.4.
 
-This patch largely looks fine, but:
+A regression within -stable is rather bad.
 
-1) I want to find out where that "17" tailer_len comes from before
-   applying this, that doesn't make any sense.
+> Example:
+> 
+> Difference between 2.6.35.1/2/3 and 2.6.35.4 while watching some videos:
+> 2.6.35.4 switches the cpu for flash videos in the browser (opera or  
+> iceweasel) or other video outputs to 2200/2400/2600 MHz meanwhile 2.6.35.3  
+> (or older) stays at 1000 Mhz. That results in a higher cpu temperature,  
+> more power consumption and so one.
+> 
+> Using other GUI program results in nearly the same problems with 2.6.35.4,  
+> so this kernel is unusable for me.
+> 
+> Results to see the difference for the same action
+> 2.6.35.4
+> Core0 Temp:  +45.0__C
+> Core1 Temp:  +43.0__C
+> cpu MHz:	2200.000 or higher
+> 
+> 2.6.35.3
+> Core0 Temp:  +32.0__C
+> Core1 Temp:  +31.0__C
+> cpu MHz:	1000.000 (max. 1800, but falling back to 1000)
+> 
+> kernel compiled with 'CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y'
+> results for me in 1000, 1800, 2000, 2200, 2400, 2600 MHz.
+> 
+> I'm not the only one with this problem, other users experienced the same  
+> behavior on other systems on 386 systems, i.e. a regression for glxgears  
+> about 30% on slower systems. We all uses differnet AMD cpus and nNida  
+> graphic controllers. Same results for the nvidia-kernel from the repos or  
+> the nVidia driver from nvidia.com.
+> 
+> There must something be wrong in the video subsystem, which is causing  
+> this regression.
+> 
+> My system (overview using 2.5.35.3):
+> =====================
+> Processor:	2x AMD Athlon(tm) 64 X2 Dual Core Processor 5000+
+> Memory:		 4060MB
+> 
+> Display
+> Resolution:       1920x1080 pixels
+> OpenGL Renderer:  GeForce 9500 GT/PCI/SSE2
+> X11 Vendor:	      The X.Org Foundation
+> Version:          1.7.7
+> 
+> Version
+> Kernel:			Linux 2.6.35.3-kmt (x86_64)
+> Compiled:	SMP Mon Aug 23 00:58:37 CEST 2010
+> C Library:      GNU C Library version 2.11.2 (stable)
+> Default C Compiler: GNU C Compiler version 4.4.5 20100824 (prerelease)  
+> (Debian 4.4.4-11)
+> Distribution:	Debian GNU/Linux squeeze/sid
+> 
+> OpenGL
+> Vendor:        NVIDIA Corporation
+> Renderer:      GeForce 9500 GT/PCI/SSE2
+> Version:       3.3.0 NVIDIA 256.44
+> Direct Rendering: Yes
 
-2) Even with #1 addressed, this function is tricky so I want to review
-   this patch some more.
+I'm not seeing any relevant cpufreq changes in 2.6.35.3 -> 2.6.35.4
+(ftp://ftp.kernel.org/pub/linux/kernel/v2.6/ChangeLog-2.6.35.4).  There
+were a lot of DRM changes.
+
+
