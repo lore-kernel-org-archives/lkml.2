@@ -1,116 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758117Ab0IUSQc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 14:16:32 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:1382 "EHLO MMS3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758102Ab0IUSQa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 14:16:30 -0400
-X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
-Message-ID: <4C98F66C.809@broadcom.com>
-Date: Tue, 21 Sep 2010 11:16:12 -0700
-From: "Henry Ptasinski" <henryp@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.5)
- Gecko/20091204 Lightning/1.0b1 Thunderbird/3.0
+	id S1758131Ab0IUSQh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 14:16:37 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:46026 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758120Ab0IUSQg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 14:16:36 -0400
+Date: Tue, 21 Sep 2010 11:18:23 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: torvalds@linux-foundation.org
+cc: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
+Subject: [GIT PULL] Ceph fixes for v2.6.36-rc6
+Message-ID: <Pine.LNX.4.64.1009211109280.17668@cobra.newdream.net>
 MIME-Version: 1.0
-To: "Greg KH" <greg@kroah.com>
-cc: "Randy Dunlap" <randy.dunlap@oracle.com>,
-        "Stephen Rothwell" <sfr@canb.auug.org.au>,
-        driverdevel <devel@driverdev.osuosl.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, "gregkh@suse.de" <gregkh@suse.de>,
-        "Brett Rudley" <brudley@broadcom.com>,
-        "Nohee Ko" <noheek@broadcom.com>,
-        "Henry Ptasinski" <henryp@broadcom.com>
-Subject: Re: [PATCH -next] staging: brcm80211 depends on MAC80211
-References: <20100921170055.4512dd19.sfr@canb.auug.org.au>
- <20100921093549.a39a2a8d.randy.dunlap@oracle.com>
- <4C98EA0B.6050903@broadcom.com> <20100921180614.GA24227@kroah.com>
-In-Reply-To: <20100921180614.GA24227@kroah.com>
-X-WSS-ID: 608629F83KC113372582-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/21/2010 11:06 AM, Greg KH wrote:
-> On Tue, Sep 21, 2010 at 10:23:23AM -0700, Henry Ptasinski wrote:
->> On 09/21/2010 09:35 AM, Randy Dunlap wrote:
->>> From: Randy Dunlap<randy.dunlap@oracle.com>
->>>
->>> Fix brcm890211 build: it should depend on MAC80211.
->>> MAC80211 depends on CFG80211, which takes care of<regulatory_hint>
->>> below.
->>>
->>> ERROR: "ieee80211_rx_irqsafe" [drivers/staging/brcm80211/brcm80211.ko] undefined!
->>> ERROR: "ieee80211_unregister_hw" [drivers/staging/brcm80211/brcm80211.ko] undefined!
->>> ERROR: "ieee80211_stop_queues" [drivers/staging/brcm80211/brcm80211.ko] undefined!
->>> ERROR: "ieee80211_wake_queues" [drivers/staging/brcm80211/brcm80211.ko] undefined!
->>> ERROR: "ieee80211_stop_tx_ba_cb_irqsafe" [drivers/staging/brcm80211/brcm80211.ko] undefined!
->>> ERROR: "ieee80211_tx_status_irqsafe" [drivers/staging/brcm80211/brcm80211.ko] undefined!
->>> ERROR: "ieee80211_register_hw" [drivers/staging/brcm80211/brcm80211.ko] undefined!
->>> ERROR: "regulatory_hint" [drivers/staging/brcm80211/brcm80211.ko] undefined!
->>> ERROR: "ieee80211_alloc_hw" [drivers/staging/brcm80211/brcm80211.ko] undefined!
->>> ERROR: "ieee80211_free_hw" [drivers/staging/brcm80211/brcm80211.ko] undefined!
->>> ERROR: "ieee80211_start_tx_ba_cb_irqsafe" [drivers/staging/brcm80211/brcm80211.ko] undefined!
->>>
->>> Signed-off-by: Randy Dunlap<randy.dunlap@oracle.com>
->>> Cc: Brett Rudley<brudley@broadcom.com>
->>> Cc: Henry Ptasinski<henryp@broadcom.com>
->>> Cc: Nohee Ko<noheek@broadcom.com>
->>> ---
->>>   drivers/staging/brcm80211/Kconfig |    2 +-
->>>   1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> --- linux-next-20100921.orig/drivers/staging/brcm80211/Kconfig
->>> +++ linux-next-20100921/drivers/staging/brcm80211/Kconfig
->>> @@ -1,6 +1,6 @@
->>>   menuconfig BRCM80211
->>>   	tristate "Broadcom 802.11 WLAN driver for bcm43xx chips"
->>> -	depends on PCI&&   WLAN
->>> +	depends on PCI&&   WLAN&&   MAC80211
->>>   	select WIRELESS_EXT
->>>   	select WEXT_PRIV
->>>   	default N
->>>
->>
->> Actually, I think that should be something like:
->>
->> diff --git a/drivers/staging/brcm80211/Kconfig
->> b/drivers/staging/brcm80211/Kconf
->> index 6b74685..228ec37 100644
->> --- a/drivers/staging/brcm80211/Kconfig
->> +++ b/drivers/staging/brcm80211/Kconfig
->> @@ -1,6 +1,6 @@
->>   menuconfig BRCM80211
->>          tristate "Broadcom 802.11 WLAN driver for bcm43xx chips"
->> -       depends on PCI&&  WLAN
->> +       depends on WLAN
->>          select WIRELESS_EXT
->>          select WEXT_PRIV
->>          default N
->> @@ -9,6 +9,6 @@ menuconfig BRCM80211
->>
->>   config BRCM80211_PCI
->>          bool "Broadcom 802.11 WLAN NIC driver"
->> -       depends on BRCM80211
->> +       depends on BRCM80211&&  PCI&&  MAC80211
->>          default y
->>
->>
->> Our fullmac sdio driver is going to use the brcm80211 framework, and
->> it'll only need CFG80211.
->
-> Care to send this in a patch-format that I can apply it (i.e. proper
-> changelog entry, reported-by:, signed-off-by:, etc.)?
+Hi Linus,
 
-Yes, as soon as I figure out the full fix.  There's a build error if 
-BRCM80211 is set and BRCM80211_PCI is not set (somebody pointed this out 
-a couple days ago) that I'd like to resolve also.
+Please pull the following Ceph fixes for v2.6.36-rc6 from
 
-- Henry
+  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
+
+There are a few fixes for bugs introduced in -rc1 (mds reconnect, bad 
+kunmap), a corruption fix for 32 bit archs (wrap at 4GB), a crash 
+triggered with multiple mounts (e.g., both server:/foo and server:/), a 
+Kconfig fixup, and a cap logic fix.  The balance are more fixes for 
+snapped metadata writeback to the MDS.
+
+Thanks!
+sage
 
 
+Sage Weil (10):
+      ceph: fix null pointer deref on anon root dentry release
+      ceph: fix reconnect encoding for old servers
+      ceph: fix file offset wrapping at 4GB on 32-bit archs
+      ceph: fix dn offset during readdir_prepopulate
+      ceph: correctly set 'follows' in flushsnap messages
+      ceph: stop sending FLUSHSNAPs when we hit a dirty capsnap
+      ceph: fix cap_snap and realm split
+      ceph: only send one flushsnap per cap_snap per mds session
+      ceph: check mapping to determine if FILE_CACHE cap is used
+      ceph: select CRYPTO
+
+Yehuda Sadeh (1):
+      ceph: fix pagelist kunmap tail
+
+ fs/ceph/Kconfig      |    1 +
+ fs/ceph/addr.c       |    7 ++--
+ fs/ceph/caps.c       |   27 ++++++++++----
+ fs/ceph/dir.c        |   10 ++++--
+ fs/ceph/inode.c      |   11 +++---
+ fs/ceph/mds_client.c |    2 +
+ fs/ceph/pagelist.c   |   12 +++++-
+ fs/ceph/snap.c       |   92 +++++++++++++++++---------------------------------
+ fs/ceph/super.h      |    5 ++-
+ 9 files changed, 84 insertions(+), 83 deletions(-)
