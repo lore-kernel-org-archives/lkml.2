@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756545Ab0IUHty (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 03:49:54 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:59625 "EHLO
+	id S1756527Ab0IUH75 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 03:59:57 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:49910 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756346Ab0IUHtx (ORCPT
+	with ESMTP id S1755521Ab0IUH7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 03:49:53 -0400
-Message-ID: <4C98639D.107@corscience.de>
-Date: Tue, 21 Sep 2010 09:49:49 +0200
-From: Bernhard Walle <walle@corscience.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+	Tue, 21 Sep 2010 03:59:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Steve French <smfrench@gmail.com>
+Subject: Re: linux-next: manual merge of the bkl-vfs tree with the cifs tree
+Date: Tue, 21 Sep 2010 09:59:49 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ben Greear <greearb@candelatech.com>,
+        linux-cifs@vger.kernel.org, Jan Blunck <jblunck@infradead.org>
+References: <20100921161031.7745150e.sfr@canb.auug.org.au> <AANLkTikbM17xs41abm+6DTa9DJLYM8XYeVg=bZr_n8M5@mail.gmail.com>
+In-Reply-To: <AANLkTikbM17xs41abm+6DTa9DJLYM8XYeVg=bZr_n8M5@mail.gmail.com>
 MIME-Version: 1.0
-To: Ralf Baechle <ralf@linux-mips.org>
-CC: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MIPS: N32: Fix getdents64 syscall for n32
-References: <1283501734-6532-1-git-send-email-walle@corscience.de> <20100919235131.GA29977@linux-mips.org>
-In-Reply-To: <20100919235131.GA29977@linux-mips.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:85h7Ft0wYTX2bqeIzUUE0GJ6ICUJ1tqHNddVuUkkUcJ
- Pm6D5CEDsF2dwNwq+cjIOQaKKsDYCDYB8Es07iOsbMok1t0ln/
- LwGpFmlUG3mqastfqi4t7o8VF7/3cxvRwHb9q464KpHpPS5dUB
- DuDwdiyxJeujGkTeSJiSB472veXvSz4u+R+auWm9yCBbq51HTu
- gHU4jZUkw/UbWt4dol2OQ==
+Message-Id: <201009210959.50115.arnd@arndb.de>
+X-Provags-ID: V02:K0:V8SrW6MiE4r/hT+6y0J7OxzCeNM75QP6LT2xy8IoxzE
+ BiXE6if1+JkjTcbgy1YUxuR15700AGRnZytTjTm63CPGoaaFHA
+ +LT0/GVJ2zd/xL35B7yHo2fnoQ762wUSkj7hxZo3Tua9fS/S++
+ KljodtLBBMtjvSEvs8ighIkHqNYEyoDsPC81y4bLfOdRpSrOvD
+ 7F/4HbsFLLhmNTo2c7FFg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 20.09.2010 01:51, schrieb Ralf Baechle:
-> On Fri, Sep 03, 2010 at 10:15:34AM +0200, Bernhard Walle wrote:
->
->> Commit 31c984a5acabea5d8c7224dc226453022be46f33 introduced a new syscall
->> getdents64. However, in the syscall table, the new syscall still refers
->> to the old getdents which doesn't work.
->>
->> The problem appeared with a system that uses the eglibc 2.12-r11187
->> (that utilizes that new syscall) is very confused. The fix has been
->> tested with that eglibc version.
->
-> Thanks Bernhard!
+On Tuesday 21 September 2010, Steve French wrote:
+> Alternatively - I could merge the trivially modified bkl cifs patch
+> into the cifs-2.6.git tree if that is easier
 
-Wouldn't it make sense to put that fix also in the stable tree (2.6.35.6)?
+Well, this is the most trivial sort of conflict, I guess we don't have
+to worry about it.
 
+Part of my patch reverts part of an earlier patch in the bkl-vfs series
+(by design, not by accident).
+We could sort that out, but my feeling is that it's not worth it.
 
-Regards,
-Bernhard
+	Arnd
