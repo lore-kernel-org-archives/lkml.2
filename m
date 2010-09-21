@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756628Ab0IUCJY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Sep 2010 22:09:24 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:46911 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752338Ab0IUCJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Sep 2010 22:09:23 -0400
-Date: Tue, 21 Sep 2010 12:09:19 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Grazvydas Ignotas <notasas@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, Ohad Ben-Cohen <ohad@wizery.com>
-Subject: linux-next: manual merge of the wireless tree with Linus' tree
-Message-Id: <20100921120919.a38723d3.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755203Ab0IUCUV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Sep 2010 22:20:21 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:59081 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752322Ab0IUCUU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Sep 2010 22:20:20 -0400
+Date: Mon, 20 Sep 2010 22:20:18 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: ltt-dev@lists.casi.polymtl.ca, linux-kernel@vger.kernel.org
+Subject: [RELEASE] LTTng 0.231 for Linux 2.6.35.5
+Message-ID: <20100921022018.GA22847@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 22:07:56 up 241 days,  4:44,  4 users,  load average: 0.24, 0.12,
+	0.03
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
+LTTng, the Linux Trace Toolkit Next Generation, is a project that aims at
+producing a highly efficient full system tracing solution.  It is composed of
+several components to allow tracing of the kernel, of userspace, trace viewing
+and analysis and trace streaming.  LTTng is open source software. It is being
+actively developed with the community.
 
-Today's linux-next merge of the wireless tree got a conflict in
-arch/arm/mach-omap2/board-omap3pandora.c between commit
-79ccf549b33c613b57eebcb03f8b24644c545a88 ("omap3: pandora: add NAND and
-wifi support") from Linus' tree and commit
-664279b5121b480f31ffecf202cd2d1591ff356e ("wl12xx: make wl12xx.h common
-to both spi and sdio") from the wireless tree.
+Changelog:
+* LTTng 0.231 is rebased on kernel 2.6.35.5. All 2.6.35.x LTTng users are
+  encouraged to upgrade, as this stable kernel release fixes security issues in
+  the Linux kernel mainline x86-64 32-bit compatibility code as well as a
+  sigreturn bug on ARM. Please note that the x86-64 security issue affects a
+  much wider range of kernel versions. For reference: CVE-2010-3081 affects
+  2.6.26-rc1 to 2.6.36-rc4 [1], CVE-2010-3301 affects 2.6.27-rc1 to
+  2.6.36-rc4 [2].
 
-The wireless tree commit copied the include/linux/spi/wl12xx.h to
-include/linux but did not remove the spi/ one.  Later patches modified
-only the new one ... I fixed the above conflict (see below) on the
-assumption that the spi/ version of the header file should have been
-removed.
+  [1] https://access.redhat.com/kb/docs/DOC-40265
+  [2] https://access.redhat.com/kb/docs/DOC-40330
+
+Project website: http://lttng.org
+Download link: http://lttng.org/content/download
+(please refer to the LTTng Manual for installation instructions)
+
+Mathieu
+
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/mach-omap2/board-omap3pandora.c
-index dd3af2b,9b62b62..0000000
---- a/arch/arm/mach-omap2/board-omap3pandora.c
-+++ b/arch/arm/mach-omap2/board-omap3pandora.c
-@@@ -25,9 -25,7 +25,9 @@@
-  #include <linux/spi/ads7846.h>
-  #include <linux/regulator/machine.h>
-  #include <linux/i2c/twl.h>
-- #include <linux/spi/wl12xx.h>
-+ #include <linux/wl12xx.h>
- +#include <linux/mtd/partitions.h>
- +#include <linux/mtd/nand.h>
-  #include <linux/leds.h>
-  #include <linux/input.h>
-  #include <linux/input/matrix_keypad.h>
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
