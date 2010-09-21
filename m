@@ -1,56 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565Ab0IUUrq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 16:47:46 -0400
-Received: from kroah.org ([198.145.64.141]:39876 "EHLO coco.kroah.org"
+	id S1756144Ab0IUUry (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 16:47:54 -0400
+Received: from kroah.org ([198.145.64.141]:39900 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754407Ab0IUUrn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 16:47:43 -0400
-Date: Tue, 21 Sep 2010 13:35:44 -0700
-From: Greg KH <greg@kroah.com>
-To: Joe Perches <joe@perches.com>
-Cc: Jiri Kosina <trivial@kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+	id S1756024Ab0IUUrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 16:47:51 -0400
+Subject: patch "serial: max3107: Fix memory leaks when returning on error" added to gregkh-2.6 tree
+To: dave@gnu.org, alan@linux.intel.com, gregkh@suse.de,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/11] drivers/usb/gadget: Remove pr_<level> uses of
- KERN_<level>
-Message-ID: <20100921203544.GC25112@kroah.com>
-References: <cover.1284267142.git.joe@perches.com>
- <141dd5ea20749b4b37d60cae53d1751bb88ba15c.1284267142.git.joe@perches.com>
- <1285085494.6816.0.camel@Joe-Laptop>
+From: <gregkh@suse.de>
+Date: Tue, 21 Sep 2010 13:47:28 -0700
+In-Reply-To: <1284394091.2055.5.camel@cowboy>
+Message-ID: <12851020483286@site>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1285085494.6816.0.camel@Joe-Laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=ANSI_X3.4-1968
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 21, 2010 at 09:11:34AM -0700, Joe Perches wrote:
-> On Sat, 2010-09-11 at 22:10 -0700, Joe Perches wrote:
-> > Signed-off-by: Joe Perches <joe@perches.com>
-> > ---
-> >  drivers/usb/gadget/r8a66597-udc.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/usb/gadget/r8a66597-udc.c b/drivers/usb/gadget/r8a66597-udc.c
-> > index 2456ccd..8040c85 100644
-> > --- a/drivers/usb/gadget/r8a66597-udc.c
-> > +++ b/drivers/usb/gadget/r8a66597-udc.c
-> > @@ -274,7 +274,7 @@ static int pipe_buffer_setting(struct r8a66597 *r8a66597,
-> >  	}
-> >  
-> >  	if (buf_bsize && ((bufnum + 16) >= R8A66597_MAX_BUFNUM)) {
-> > -		pr_err(KERN_ERR "r8a66597 pipe memory is insufficient\n");
-> > +		pr_err("r8a66597 pipe memory is insufficient\n");
-> >  		return -ENOMEM;
-> >  	}
-> >  
-> 
-> Ping?
 
-Sorry for the delay, now applied.
+This is a note to let you know that I've just added the patch titled
 
-greg k-h
+    serial: max3107: Fix memory leaks when returning on error
+
+to my gregkh-2.6 tree which can be found in directory form at:
+    http://www.kernel.org/pub/linux/kernel/people/gregkh/gregkh-2.6/patches/
+ and in git form at:
+    git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/patches.git
+
+The filename of this patch is:
+    serial-max3107-fix-memory-leaks-when-returning-on-error.patch
+
+The patch will show up in the next release of the linux-next tree
+(usually sometime within the next 24 hours during the week.)
+
+If this patch meets the merge guidelines for a bugfix, it should be
+merged into Linus's tree before the next major kernel release.
+If not, it will be merged into Linus's tree during the next merge window.
+
+Either way, you will probably be copied on the patch when it gets sent
+to Linus for merging so that others can see what is happening in kernel
+development.
+
+If you have any questions about this process, please let me know.
+
+
+>From dave@gnu.org  Tue Sep 21 13:40:18 2010
+Subject: serial: max3107: Fix memory leaks when returning on error
+From: Davidlohr Bueso <dave@gnu.org>
+To: jianwei.yang@intel.com, alan@linux.intel.com, gregkh@suse.de
+Cc: linux-serial@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 13 Sep 2010 12:08:11 -0400
+Message-ID: <1284394091.2055.5.camel@cowboy>
+
+Fix memory leaks in max3107_probe() when returning on error.
+
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+Acked-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/serial/max3107.c |   34 +++++++++++++++++++++++++---------
+ 1 file changed, 25 insertions(+), 9 deletions(-)
+
+--- a/drivers/serial/max3107.c
++++ b/drivers/serial/max3107.c
+@@ -986,12 +986,14 @@ int max3107_probe(struct spi_device *spi
+ 	s->rxbuf = kzalloc(sizeof(u16) * (MAX3107_RX_FIFO_SIZE+2), GFP_KERNEL);
+ 	if (!s->rxbuf) {
+ 		pr_err("Allocating RX buffer failed\n");
+-		return -ENOMEM;
++		retval = -ENOMEM;
++		goto err_free4;
+ 	}
+ 	s->rxstr = kzalloc(sizeof(u8) * MAX3107_RX_FIFO_SIZE, GFP_KERNEL);
+ 	if (!s->rxstr) {
+ 		pr_err("Allocating RX buffer failed\n");
+-		return -ENOMEM;
++		retval = -ENOMEM;
++		goto err_free3;
+ 	}
+ 	/* SPI Tx buffer
+ 	 * SPI transfer buffer
+@@ -1002,7 +1004,8 @@ int max3107_probe(struct spi_device *spi
+ 	s->txbuf = kzalloc(sizeof(u16) * MAX3107_TX_FIFO_SIZE + 3, GFP_KERNEL);
+ 	if (!s->txbuf) {
+ 		pr_err("Allocating TX buffer failed\n");
+-		return -ENOMEM;
++		retval = -ENOMEM;
++		goto err_free2;
+ 	}
+ 	/* Initialize shared data lock */
+ 	spin_lock_init(&s->data_lock);
+@@ -1021,13 +1024,15 @@ int max3107_probe(struct spi_device *spi
+ 	buf[0] = MAX3107_REVID_REG;
+ 	if (max3107_rw(s, (u8 *)buf, (u8 *)buf, 2)) {
+ 		dev_err(&s->spi->dev, "SPI transfer for REVID read failed\n");
+-		return -EIO;
++		retval = -EIO;
++		goto err_free1;
+ 	}
+ 	if ((buf[0] & MAX3107_SPI_RX_DATA_MASK) != MAX3107_REVID1 &&
+ 		(buf[0] & MAX3107_SPI_RX_DATA_MASK) != MAX3107_REVID2) {
+ 		dev_err(&s->spi->dev, "REVID %x does not match\n",
+ 				(buf[0] & MAX3107_SPI_RX_DATA_MASK));
+-		return -ENODEV;
++		retval = -ENODEV;
++		goto err_free1;
+ 	}
+ 
+ 	/* Disable all interrupts */
+@@ -1047,7 +1052,8 @@ int max3107_probe(struct spi_device *spi
+ 	/* Perform SPI transfer */
+ 	if (max3107_rw(s, (u8 *)buf, NULL, 4)) {
+ 		dev_err(&s->spi->dev, "SPI transfer for init failed\n");
+-		return -EIO;
++		retval = -EIO;
++		goto err_free1;
+ 	}
+ 
+ 	/* Register UART driver */
+@@ -1055,7 +1061,7 @@ int max3107_probe(struct spi_device *spi
+ 		retval = uart_register_driver(&max3107_uart_driver);
+ 		if (retval) {
+ 			dev_err(&s->spi->dev, "Registering UART driver failed\n");
+-			return retval;
++			goto err_free1;
+ 		}
+ 		driver_registered = 1;
+ 	}
+@@ -1074,13 +1080,13 @@ int max3107_probe(struct spi_device *spi
+ 	retval = uart_add_one_port(&max3107_uart_driver, &s->port);
+ 	if (retval < 0) {
+ 		dev_err(&s->spi->dev, "Adding UART port failed\n");
+-		return retval;
++		goto err_free1;
+ 	}
+ 
+ 	if (pdata->configure) {
+ 		retval = pdata->configure(s);
+ 		if (retval < 0)
+-			return retval;
++			goto err_free1;
+ 	}
+ 
+ 	/* Go to suspend mode */
+@@ -1088,6 +1094,16 @@ int max3107_probe(struct spi_device *spi
+ 		pdata->hw_suspend(s, 1);
+ 
+ 	return 0;
++
++err_free1:
++	kfree(s->txbuf);
++err_free2:
++	kfree(s->rxstr);
++err_free3:
++	kfree(s->rxbuf);
++err_free4:
++	kfree(s);
++	return retval;
+ }
+ EXPORT_SYMBOL_GPL(max3107_probe);
+ 
+
