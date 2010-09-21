@@ -1,127 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756210Ab0IUOOS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 10:14:18 -0400
-Received: from hera.kernel.org ([140.211.167.34]:46482 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755761Ab0IUOOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756309Ab0IUOOT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 10:14:19 -0400
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:45553 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753521Ab0IUOOQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 21 Sep 2010 10:14:16 -0400
-Date: Tue, 21 Sep 2010 14:13:48 GMT
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, tj@kernel.org, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tj@kernel.org, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <20100917093009.308453028@chello.nl>
-References: <20100917093009.308453028@chello.nl>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Avoid RCU vs preemption assumptions
-Message-ID: <tip-41945f6ccf1e86f87fddf6b32db9cf431c05fb54@git.kernel.org>
-Git-Commit-ID: 41945f6ccf1e86f87fddf6b32db9cf431c05fb54
-X-Mailer: tip-git-log-daemon
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: FfQNcV0VM1lrhVD6UZ.Yqthmz.Et1vaH1nvCdO.1tdL.LYr
+ cLmPlre8Ci8EPD_.z4FF7.yDq1o.eSpb7v7K.JwbDbbWJQSiJ3SCnC_BvFgh
+ Vo.F.N2sRL9LOy5lG84jyMGdiImN8Dsch4yQ5bpXTCbCvAPklw3w430oDr5H
+ h0vDkiQZd_PACWOB6wmVtxeHJFbJvx22.pJAyfnnVbZi2A8aL1eiPfuOmM7n
+ 3chpZ70xCdNf6iYSHHGQF.crjRn1g
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 21 Sep 2010 09:14:13 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mel Gorman <mel@csn.ul.ie>
+cc: Rob Mueller <robm@fastmail.fm>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Bron Gondwana <brong@fastmail.fm>,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: Default zone_reclaim_mode = 1 on NUMA kernel is bad forfile/email/web
+ servers
+In-Reply-To: <20100921090407.GA11439@csn.ul.ie>
+Message-ID: <alpine.DEB.2.00.1009210911270.1271@router.home>
+References: <1284349152.15254.1394658481@webmail.messagingengine.com> <20100916184240.3BC9.A69D9226@jp.fujitsu.com> <20100920093440.GD1998@csn.ul.ie> <52C8765522A740A4A5C027E8FDFFDFE3@jem> <20100921090407.GA11439@csn.ul.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 21 Sep 2010 14:13:48 +0000 (UTC)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  41945f6ccf1e86f87fddf6b32db9cf431c05fb54
-Gitweb:     http://git.kernel.org/tip/41945f6ccf1e86f87fddf6b32db9cf431c05fb54
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Thu, 16 Sep 2010 19:17:24 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 21 Sep 2010 13:55:44 +0200
+On Tue, 21 Sep 2010, Mel Gorman wrote:
 
-perf: Avoid RCU vs preemption assumptions
+> > However there's still another question, why is this problem happening at
+> > all for us? I know almost nothing about NUMA, but from other posts, it
+> > sounds like the problem is the memory allocations are all happening on
+> > one node?
+>
+> Yes.
 
-The per-pmu per-cpu context patch converted things from
-get_cpu_var() to this_cpu_ptr(), but that only works if
-rcu_read_lock() actually disables preemption, and since
-there is no such guarantee, we need to fix that.
-
-Use the newly introduced {get,put}_cpu_ptr().
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Tejun Heo <tj@kernel.org>
-LKML-Reference: <20100917093009.308453028@chello.nl>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/perf_event.c |   18 ++++++++++++------
- 1 files changed, 12 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index baae136..c16158c 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -3836,18 +3836,20 @@ static void perf_event_task_event(struct perf_task_event *task_event)
- 
- 	rcu_read_lock();
- 	list_for_each_entry_rcu(pmu, &pmus, entry) {
--		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
-+		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
- 		perf_event_task_ctx(&cpuctx->ctx, task_event);
- 
- 		ctx = task_event->task_ctx;
- 		if (!ctx) {
- 			ctxn = pmu->task_ctx_nr;
- 			if (ctxn < 0)
--				continue;
-+				goto next;
- 			ctx = rcu_dereference(current->perf_event_ctxp[ctxn]);
- 		}
- 		if (ctx)
- 			perf_event_task_ctx(ctx, task_event);
-+next:
-+		put_cpu_ptr(pmu->pmu_cpu_context);
- 	}
- 	rcu_read_unlock();
- }
-@@ -3969,16 +3971,18 @@ static void perf_event_comm_event(struct perf_comm_event *comm_event)
- 
- 	rcu_read_lock();
- 	list_for_each_entry_rcu(pmu, &pmus, entry) {
--		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
-+		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
- 		perf_event_comm_ctx(&cpuctx->ctx, comm_event);
- 
- 		ctxn = pmu->task_ctx_nr;
- 		if (ctxn < 0)
--			continue;
-+			goto next;
- 
- 		ctx = rcu_dereference(current->perf_event_ctxp[ctxn]);
- 		if (ctx)
- 			perf_event_comm_ctx(ctx, comm_event);
-+next:
-+		put_cpu_ptr(pmu->pmu_cpu_context);
- 	}
- 	rcu_read_unlock();
- }
-@@ -4152,19 +4156,21 @@ got_name:
- 
- 	rcu_read_lock();
- 	list_for_each_entry_rcu(pmu, &pmus, entry) {
--		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
-+		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
- 		perf_event_mmap_ctx(&cpuctx->ctx, mmap_event,
- 					vma->vm_flags & VM_EXEC);
- 
- 		ctxn = pmu->task_ctx_nr;
- 		if (ctxn < 0)
--			continue;
-+			goto next;
- 
- 		ctx = rcu_dereference(current->perf_event_ctxp[ctxn]);
- 		if (ctx) {
- 			perf_event_mmap_ctx(ctx, mmap_event,
- 					vma->vm_flags & VM_EXEC);
- 		}
-+next:
-+		put_cpu_ptr(pmu->pmu_cpu_context);
- 	}
- 	rcu_read_unlock();
- 
+This could be a screwy hardware issue as pointed out before. Certain
+controllers restrict the memory that I/O can be done to also (32 bit
+controller only able to do I/O to lower 2G?, controller on a PCI bus that
+is local only to a particular node) which would make balancing
+the file cache difficult.
