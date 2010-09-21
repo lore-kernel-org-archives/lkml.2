@@ -1,118 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754735Ab0IUTC3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 15:02:29 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:26298 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751749Ab0IUTC1 convert rfc822-to-8bit (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 21 Sep 2010 15:02:27 -0400
-Date: Tue, 21 Sep 2010 15:00:06 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: matthieu castet <castet.matthieu@free.fr>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-next@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
-        James Morris <jmorris@namei.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, Rusty Russell <rusty@rustcorp.com.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
-        Siarhei Liakh <sliakh.lkml@gmail.com>
-Subject: Re: [PATCH 2/3 V8] [tip:x86/mm] NX protection for kernel data
-Message-ID: <20100921190006.GA23067@dumpdata.com>
-References: <4C856211.7080802@free.fr>
- <4C8FB616.2070807@free.fr>
+	id S1755120Ab0IUTFB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 15:05:01 -0400
+Received: from www.tglx.de ([62.245.132.106]:55944 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752204Ab0IUTFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 15:05:00 -0400
+Date: Tue, 21 Sep 2010 21:04:39 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Ben Hutchings <bhutchings@solarflare.com>
+cc: Tom Herbert <therbert@google.com>, netdev@vger.kernel.org,
+        linux-net-drivers@solarflare.com,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [RFC][PATCH 1/4] IRQ: IRQ groups for multiqueue devices
+In-Reply-To: <alpine.LFD.2.00.1009211455140.2416@localhost6.localdomain6>
+Message-ID: <alpine.LFD.2.00.1009211827440.2416@localhost6.localdomain6>
+References: <1285009290.2282.121.camel@achroite.uk.solarflarecom.com>  <1285009685.2282.127.camel@achroite.uk.solarflarecom.com>  <alpine.LFD.2.00.1009202137580.2416@localhost6.localdomain6> <1285071945.2307.21.camel@achroite.uk.solarflarecom.com>
+ <alpine.LFD.2.00.1009211455140.2416@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <4C8FB616.2070807@free.fr>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 14, 2010 at 07:51:18PM +0200, matthieu castet wrote:
-> Hi,
+On Tue, 21 Sep 2010, Thomas Gleixner wrote:
+> On Tue, 21 Sep 2010, Ben Hutchings wrote:
+> > On Mon, 2010-09-20 at 23:27 +0200, Thomas Gleixner wrote:
+> Lemme summarize what I understand so far. For multiqueue devices with
+> several queues and interrupts you want to lookup the closest queue/irq
+> to the cpu on which you are currently running to avoid expensive cross
+> node memory access. Now you need to follow affinity changes for this
+> lookup table.
 > 
-> any feedback on that ?
+> The basic idea of your code is ok. The lookup table itself is fine,
+> but the integration into the genirq code sucks. What needs to be done:
+> 
+> 1) Remove the references to irq_desc in the group. They are not needed
+>    and will never work. The group does not need any information about
+>    the irq number and the irq descriptor.
+> 
+> 2) Add proper refcounting to struct irq_group so it can be accessed
+>    outside of irq_desc->lock.
+> 
+> 3) Move the update of the map outside of irq_desc->lock and the irq
+>    disabled region. Update the map in setup_affinity() as well. That
+>    code can be called from various atomic contexts, so it's probably
+>    the best thing to delegate the update to a workqueue or such unless
+>    you come up with a nice prebuilt lookup table.
+> 
+> 4) Add comments so the code is understandable for mere mortals
+> 
+> 5) Add proper install/free handling. Hint: affinity_hint
+> 
+> 6) All modifications of irq_desc need a check whether irq_to_desc
+>    returned a valid pointer and must hold desc->lock
+> 
+> 7) Deal with concurrent updates of multiple irqs in a group (at least
+>    a comment why the code does not need serialization)
+> 
+> 8) Move the code to kernel/irq/irqgroup.c or some other sensible name
+>    and make it configurable so embedded folks don't have to carry it
+>    around as useless binary bloat.
 
-I was hoping to run your patch through a Xen guest. In the past modifications
-in that area caused unbootable kernels :-( But I am still suffering from
-post-vacation-amnesia and e-mails so haven't gotten to look at this.
+Talked to Peter about it and we came to the conclusion, that we should
+just provide a callback infrastructure in the irq code which does not
+care about the action behind it. That's going to solve #1,#2,#3,#5,#6
+and parts of #8
 
-> 
-> Thanks,
-> 
-> Matthieu
-> 
-> 
-> matthieu castet a écrit :
-> >   Note: this patch depends on "Correct improper large page
-> >preservation" patch
-> >      This patch expands functionality of CONFIG_DEBUG_RODATA to set main
-> >   (static) kernel data area as NX.
-> >   The following steps are taken to achieve this:
-> >   1. Linker script is adjusted so .text always starts and ends on
-> >a page bound
-> >   2. Linker script is adjusted so .rodata always start and
-> >   end on a page boundary
-> >   3. NX is set for all pages from _etext through _end in mark_rodata_ro.
-> >   4. free_init_pages() sets released memory NX in arch/x86/mm/init.c
-> >   5. bios rom is set to x when pcibios is used.
-> >      The results of patch application may be observed in the diff
-> >of kernel page
-> >   table dumps.
-> >   pcibios :
-> >   --- data_nx_pt_before.txt       2009-10-13 07:48:59.000000000 -0400
-> >   +++ data_nx_pt_after.txt        2009-10-13 07:26:46.000000000 -0400
-> >   @@ -2,8 +2,9 @@
-> >    0x00000000-0xc0000000           3G                           pmd
-> >    ---[ Kernel Mapping ]---
-> >   -0xc0000000-0xc0100000           1M     RW             GLB x  pte
-> >   +0xc0000000-0xc00a0000         640K     RW             GLB NX pte
-> >   +0xc00a0000-0xc0100000         384K     RW             GLB x  pte
-> >   -0xc0100000-0xc03d7000        2908K     ro             GLB x  pte
-> >   +0xc0100000-0xc0318000        2144K     ro             GLB x  pte
-> >   +0xc0318000-0xc03d7000         764K     ro             GLB NX pte
-> >   -0xc03d7000-0xc0600000        2212K     RW             GLB x  pte
-> >   +0xc03d7000-0xc0600000        2212K     RW             GLB NX pte
-> >    0xc0600000-0xf7a00000         884M     RW         PSE GLB NX pmd
-> >    0xf7a00000-0xf7bfe000        2040K     RW             GLB NX pte
-> >    0xf7bfe000-0xf7c00000           8K                           pte
-> >      no pcibios :
-> >   --- data_nx_pt_before.txt       2009-10-13 07:48:59.000000000 -0400
-> >   +++ data_nx_pt_after.txt        2009-10-13 07:26:46.000000000 -0400
-> >   @@ -2,8 +2,9 @@
-> >    0x00000000-0xc0000000           3G                           pmd
-> >    ---[ Kernel Mapping ]---
-> >   -0xc0000000-0xc0100000           1M     RW             GLB x  pte
-> >   +0xc0000000-0xc0100000           1M     RW             GLB NX pte
-> >   -0xc0100000-0xc03d7000        2908K     ro             GLB x  pte
-> >   +0xc0100000-0xc0318000        2144K     ro             GLB x  pte
-> >   +0xc0318000-0xc03d7000         764K     ro             GLB NX pte
-> >   -0xc03d7000-0xc0600000        2212K     RW             GLB x  pte
-> >   +0xc03d7000-0xc0600000        2212K     RW             GLB NX pte
-> >    0xc0600000-0xf7a00000         884M     RW         PSE GLB NX pmd
-> >    0xf7a00000-0xf7bfe000        2040K     RW             GLB NX pte
-> >    0xf7bfe000-0xf7c00000           8K                           pte
-> >      The patch have been developed for Linux 2.6.34-rc2 x86 by
-> >Siarhei Liakh
-> >   <sliakh.lkml@gmail.com> and Xuxian Jiang <jiang@cs.ncsu.edu>.
-> >      V1:  initial patch for 2.6.30
-> >   V2:  patch for 2.6.31-rc7
-> >   V3:  moved all code into arch/x86, adjusted credits
-> >   V4:  fixed ifdef, removed credits from CREDITS
-> >   V5:  fixed an address calculation bug in mark_nxdata_nx()
-> >   V6:  added acked-by and PT dump diff to commit log
-> >   V7:  minor adjustments for -tip
-> >   V8:  rework with the merge of "Set first MB as RW+NX"
-> >      Signed-off-by: Siarhei Liakh <sliakh.lkml@gmail.com>
-> >   Signed-off-by: Xuxian Jiang <jiang@cs.ncsu.edu>
-> >   Signed-off-by: Matthieu CASTET <castet.matthieu@free.fr>
-> >
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-next" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+That queue/index map code should move to lib/ or some other
+appropriate place so it can be shared with storage or whatever is
+going to grow multiqueue. comments #4, #7, #8 (s@kernel/irq@lib/@)
+above still apply :)
+
+The modification to the genirq code would be based on registering
+
+struct irq_affinity_callback {
+	unsigned int irq;
+	struct kref kref;
+	struct work work;
+	void (*callback)(struct irq_affinity_callback *, const cpumask_t *mask);
+	void (*release)(struct kref *ref);
+};
+
+for an interrupt via 
+
+int irq_set_affinity_callback(unsigned int irq,
+    			      struct irq_affinity_callback *cb);
+
+That function can be called with cb=NULL to remove the callback. if
+cb!=NULL, irq, kref and work are initialized.
+
+The genirq code schedules work when affinity changes and the callback
+struct pointer is non NULL. The callback is then called from the
+worker thread with a copy of the irq affinity mask.
+
+So on any affinity change, we do with desc->lock held:
+
+   if (desc->affinity_callback) {
+      	kref_get(&desc->affinity_callback->kref);
+	schedule_work(&desc->affinity_callback->work);
+   }
+
+The worker function in the genirq code does:
+{
+    struct irq_affinity_callback *cb;
+    struct irq_desc *desc;
+    cpu_mask_t cpumask;
+
+    cb = container_of(work, struct irq_affinity_callback, work);
+
+    desc = irq_to_desc(cb->irq);
+    if (!desc)
+       goto out;
+
+    if (!alloc_cpumask_var(&cpumask, GFP_KERNEL)
+       goto out;
+
+    raw_spin_lock_irqsave(&desc->lock, flags);
+    cpumask_copy(cpumask, desc->affinity);
+    raw_spin_unlock_irqrestore(&desc->lock, flags);
+
+    cb->callback(cb, cpumask);
+
+    free_cpumask_var(cpumask);
+out:
+    kref_put(&cb->kref, cb->release);
+}
+
+That allows you to do all kind of magic in thread context, updating
+the queue map, reallocating queue memory when the node affinity
+changes (I know that you want to), go wild.
+
+Thoughts ?
+
+	 tglx
