@@ -1,138 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755120Ab0IUTFB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 15:05:01 -0400
-Received: from www.tglx.de ([62.245.132.106]:55944 "EHLO www.tglx.de"
+	id S1755449Ab0IUTIu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 15:08:50 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:55818 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752204Ab0IUTFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 15:05:00 -0400
-Date: Tue, 21 Sep 2010 21:04:39 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Ben Hutchings <bhutchings@solarflare.com>
-cc: Tom Herbert <therbert@google.com>, netdev@vger.kernel.org,
-        linux-net-drivers@solarflare.com,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [RFC][PATCH 1/4] IRQ: IRQ groups for multiqueue devices
-In-Reply-To: <alpine.LFD.2.00.1009211455140.2416@localhost6.localdomain6>
-Message-ID: <alpine.LFD.2.00.1009211827440.2416@localhost6.localdomain6>
-References: <1285009290.2282.121.camel@achroite.uk.solarflarecom.com>  <1285009685.2282.127.camel@achroite.uk.solarflarecom.com>  <alpine.LFD.2.00.1009202137580.2416@localhost6.localdomain6> <1285071945.2307.21.camel@achroite.uk.solarflarecom.com>
- <alpine.LFD.2.00.1009211455140.2416@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751749Ab0IUTIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 15:08:49 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: paulmck@linux.vnet.ibm.com
+Subject: Re: [Bug #16537] TREE_RCU hangs at boot
+Date: Tue, 21 Sep 2010 21:07:54 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Rolf Eike Beer <eike-kernel@sf-tec.de>
+References: <QnCvudbe2FD.A.XiE.DgSjMB@chimera> <20100920182626.GE2408@linux.vnet.ibm.com> <20100921185953.GA7880@linux.vnet.ibm.com>
+In-Reply-To: <20100921185953.GA7880@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009212107.54606.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Sep 2010, Thomas Gleixner wrote:
-> On Tue, 21 Sep 2010, Ben Hutchings wrote:
-> > On Mon, 2010-09-20 at 23:27 +0200, Thomas Gleixner wrote:
-> Lemme summarize what I understand so far. For multiqueue devices with
-> several queues and interrupts you want to lookup the closest queue/irq
-> to the cpu on which you are currently running to avoid expensive cross
-> node memory access. Now you need to follow affinity changes for this
-> lookup table.
+On Tuesday, September 21, 2010, Paul E. McKenney wrote:
+> On Mon, Sep 20, 2010 at 11:26:27AM -0700, Paul E. McKenney wrote:
+> > On Sun, Sep 12, 2010 at 09:08:42PM +0200, Rafael J. Wysocki wrote:
+> > > This message has been generated automatically as a part of a report
+> > > of regressions introduced between 2.6.34 and 2.6.35.
+> > > 
+> > > The following bug entry is on the current list of known regressions
+> > > introduced between 2.6.34 and 2.6.35.  Please verify if it still should
+> > > be listed and let the tracking team know (either way).
+> > > 
+> > > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16537
+> > > Subject		: TREE_RCU hangs at boot
+> > > Submitter	: Rolf Eike Beer <eike-kernel@sf-tec.de>
+> > > Date		: 2010-08-07 12:18 (37 days old)
+> > > Handled-By	: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > 
+> > I cannot reproduce this.  The function that is claimed to hang contains
+> > only printk()s.  I have asked the guys who can actually reproduce it
+> > to try a later kernel, and will let you know how this goes.
+> > 
+> > If you cannot trust printk(), who can you trust?  ;-)
 > 
-> The basic idea of your code is ok. The lookup table itself is fine,
-> but the integration into the genirq code sucks. What needs to be done:
+> It turns out that this problem is due to tab processing in the PA-RISC
+> firmware, which certainly explains my inability to reproduce it.  It
+> turns out that it is fixed by:
 > 
-> 1) Remove the references to irq_desc in the group. They are not needed
->    and will never work. The group does not need any information about
->    the irq number and the irq descriptor.
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=d9b68e5e88248bb24fd4e455588bea1d56108fd6
 > 
-> 2) Add proper refcounting to struct irq_group so it can be accessed
->    outside of irq_desc->lock.
+> So we can close this regression.
 > 
-> 3) Move the update of the map outside of irq_desc->lock and the irq
->    disabled region. Update the map in setup_affinity() as well. That
->    code can be called from various atomic contexts, so it's probably
->    the best thing to delegate the update to a workqueue or such unless
->    you come up with a nice prebuilt lookup table.
-> 
-> 4) Add comments so the code is understandable for mere mortals
-> 
-> 5) Add proper install/free handling. Hint: affinity_hint
-> 
-> 6) All modifications of irq_desc need a check whether irq_to_desc
->    returned a valid pointer and must hold desc->lock
-> 
-> 7) Deal with concurrent updates of multiple irqs in a group (at least
->    a comment why the code does not need serialization)
-> 
-> 8) Move the code to kernel/irq/irqgroup.c or some other sensible name
->    and make it configurable so embedded folks don't have to carry it
->    around as useless binary bloat.
+> Many thanks to Guy Martin <gmsoft@tuxicoman.be> for much help with
+> this!!!
 
-Talked to Peter about it and we came to the conclusion, that we should
-just provide a callback infrastructure in the irq code which does not
-care about the action behind it. That's going to solve #1,#2,#3,#5,#6
-and parts of #8
+Thanks, closed.
 
-That queue/index map code should move to lib/ or some other
-appropriate place so it can be shared with storage or whatever is
-going to grow multiqueue. comments #4, #7, #8 (s@kernel/irq@lib/@)
-above still apply :)
-
-The modification to the genirq code would be based on registering
-
-struct irq_affinity_callback {
-	unsigned int irq;
-	struct kref kref;
-	struct work work;
-	void (*callback)(struct irq_affinity_callback *, const cpumask_t *mask);
-	void (*release)(struct kref *ref);
-};
-
-for an interrupt via 
-
-int irq_set_affinity_callback(unsigned int irq,
-    			      struct irq_affinity_callback *cb);
-
-That function can be called with cb=NULL to remove the callback. if
-cb!=NULL, irq, kref and work are initialized.
-
-The genirq code schedules work when affinity changes and the callback
-struct pointer is non NULL. The callback is then called from the
-worker thread with a copy of the irq affinity mask.
-
-So on any affinity change, we do with desc->lock held:
-
-   if (desc->affinity_callback) {
-      	kref_get(&desc->affinity_callback->kref);
-	schedule_work(&desc->affinity_callback->work);
-   }
-
-The worker function in the genirq code does:
-{
-    struct irq_affinity_callback *cb;
-    struct irq_desc *desc;
-    cpu_mask_t cpumask;
-
-    cb = container_of(work, struct irq_affinity_callback, work);
-
-    desc = irq_to_desc(cb->irq);
-    if (!desc)
-       goto out;
-
-    if (!alloc_cpumask_var(&cpumask, GFP_KERNEL)
-       goto out;
-
-    raw_spin_lock_irqsave(&desc->lock, flags);
-    cpumask_copy(cpumask, desc->affinity);
-    raw_spin_unlock_irqrestore(&desc->lock, flags);
-
-    cb->callback(cb, cpumask);
-
-    free_cpumask_var(cpumask);
-out:
-    kref_put(&cb->kref, cb->release);
-}
-
-That allows you to do all kind of magic in thread context, updating
-the queue map, reallocating queue memory when the node affinity
-changes (I know that you want to), go wild.
-
-Thoughts ?
-
-	 tglx
+Rafael
