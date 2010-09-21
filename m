@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757339Ab0IUJzy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 05:55:54 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60605 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756850Ab0IUJzw (ORCPT
+	id S1757352Ab0IUJ7G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 05:59:06 -0400
+Received: from sr-smtp.usish.com ([210.5.144.203]:60548 "EHLO
+	sr-smtp.usish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755497Ab0IUJ7F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 05:55:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=UXMMSTQpkpEysKbGDBBhDaVwnOLrTV/9fvs9QjrhwWJEfE9hM1KkkzvIDY5FLUlF4n
-         je38xMvKNYBl7RaqdIXH8cEh4/2YQGX3Nf6bQxaxiDdedXKbBM2sKUc+LWjCczXZeBqG
-         DJfR22mqhqRsS8qeRbIaK059/BjRQFjvIWF4o=
-Subject: Re: Regression, bisected: reference leak with IPSec since ~2.6.31
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jarek Poplawski <jarkao2@gmail.com>
-Cc: Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-In-Reply-To: <20100921093853.GA8664@ff.dom.local>
-References: <20100921091248.GA8424@ff.dom.local>
-	 <1285060860.2617.158.camel@edumazet-laptop>
-	 <20100921093853.GA8664@ff.dom.local>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 21 Sep 2010 11:55:48 +0200
-Message-ID: <1285062948.2617.204.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Tue, 21 Sep 2010 05:59:05 -0400
+From: "Jack Wang" <jack_wang@usish.com>
+To: "'Rafael J. Wysocki'" <rjw@sisk.pl>,
+        "'Linux Kernel Mailing List'" <linux-kernel@vger.kernel.org>
+Cc: "'Kernel Testers List'" <kernel-testers@vger.kernel.org>,
+        "'Maciej Rutecki'" <maciej.rutecki@gmail.com>,
+        "'Florian Mickler'" <florian@mickler.org>
+References: <1fwtoy8sG5H.A.veG.9D7lMB@chimera> <Wn2eLj_6KZG.A.0qG.DE7lMB@chimera>
+Subject: RE: [Bug #18862] [BUG]Kernel 2.6.36rc4 crash when rmmod pm8001
+Date: Tue, 21 Sep 2010 17:56:58 +0800
+Message-ID: <3188494C116B49AE985B773F69378515@usish.com.cn>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <Wn2eLj_6KZG.A.0qG.DE7lMB@chimera>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5931
+Thread-Index: ActY+mY02Tvr8fzhTxCXoCBprm11QAAeAAzw
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 21 septembre 2010 à 09:38 +0000, Jarek Poplawski a écrit :
-> On Tue, Sep 21, 2010 at 11:21:00AM +0200, Eric Dumazet wrote:
+Hi, Rafael and list
 
-> I hope you're right with this.
-> 
-> > 
-> > I liked the :
-> > 
-> > <check everything without changing state>
-> > if something wrong
-> > 	goto slow_path
-> > else
-> > 	<OK, lets do destructive things>
-> > 
-> 
-> But it's an optimization of the "unlikely" case btw. ;-)
-> 
+I recompile a clean 2.6.36rc4 kernel, and try to reproduce this BUG, but I
+cound not make this appear any more, sorry for that, maybe I hit the bug
+during I
+debug the libsas bug, sorry!
 
-This is a bug fix, in a complex function.
+Jack
 
-in -next branch, we can try to be smart, adding more code in slow_path
-to revert what was done in the hope fast path would be taken.
-And pray we dont add another bug :)
+
+This message has been generated automatically as a part of a summary report
+of recent regressions.
+
+The following bug entry is on the current list of known regressions
+from 2.6.35.  Please verify if it still should be listed and let the
+tracking team
+know (either way).
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=18862
+Subject		: [BUG]Kernel 2.6.36rc4 crash when rmmod pm8001
+Submitter	: Jack Wang <jack_wang@usish.com>
+Date		: 2010-09-17 10:11 (4 days old)
+Message-ID	: <3219F4D1734640238A632382C50F633E@usish.com.cn>
+References	: http://marc.info/?l=linux-kernel&m=128471846828998&w=2
 
 
