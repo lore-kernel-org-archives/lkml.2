@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242Ab0IUFqx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 01:46:53 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:33105 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167Ab0IUFqu (ORCPT
+	id S1753758Ab0IUF4P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 01:56:15 -0400
+Received: from smtprelay.restena.lu ([158.64.1.62]:57484 "EHLO
+	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752566Ab0IUF4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 01:46:50 -0400
-Message-ID: <007601cb5950$55d52980$LocalHost@wipblrx0099946>
-From: "Hemanth V" <hemanthv@ti.com>
-To: "Jonathan Cameron" <kernel@jic23.retrosnub.co.uk>,
-        "Dmitry Torokhov" <dmitry.torokhov@gmail.com>
-Cc: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-References: <61033.10.24.255.18.1283926671.squirrel@dbdmail.itg.ti.com> <4C877584.7000902@jic23.retrosnub.co.uk> <20100914080003.GD15167@core.coreip.homeip.net> <4C8F7429.1080105@jic23.retrosnub.co.uk>
-Subject: Re: [PATCH V3 1/2] input: CMA3000 Accelerometer driver
-Date: Tue, 21 Sep 2010 11:16:25 +0530
-MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
+	Tue, 21 Sep 2010 01:56:13 -0400
+Date: Tue, 21 Sep 2010 07:56:10 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bernie Thompson <bernie@plugable.com>
+Subject: Re: [Patch, RFC] Make struct fb_info ref-counted with kref
+Message-ID: <20100921075610.1c016c12@pluto.restena.lu>
+In-Reply-To: <4C97E00B.6090103@gmx.de>
+References: <20100919172833.14bf291e@neptune.home>
+	<4C963E99.9080207@gmx.de>
+	<20100919190240.65762511@neptune.home>
+	<4C97B079.8050707@gmx.de>
+	<20100920213258.1218b284@neptune.home>
+	<4C97BF40.6030708@gmx.de>
+	<20100920223608.19b4d177@neptune.home>
+	<4C97E00B.6090103@gmx.de>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.3598
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3350
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message ----- 
-From: "Jonathan Cameron" <kernel@jic23.retrosnub.co.uk>
-To: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>
-Cc: "Hemanth V" <hemanthv@ti.com>; <linux-input@vger.kernel.org>; 
-<linux-kernel@vger.kernel.org>; <linux-omap@vger.kernel.org>
-Sent: Tuesday, September 14, 2010 6:40 PM
-Subject: Re: [PATCH V3 1/2] input: CMA3000 Accelerometer driver
+On Tue, 21 Sep 2010 00:28:27 Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
+> > Tracking if/how often framebuffer is opened as such is a separate thing (though
+> > all users that have the framebuffer opened hold a reference to fb_info).
+> 
+> That's what I said. So as long as refcount <= 1 it does not matter whether you 
+> just count on open/release or additionally on every framebuffer operation, just 
+> that the later produces more noise.
+
+Hm, I don't count on every framebuffer operation... in most cases
+fb_info is provided as function argument, in which case no further
+counting is needed as the caller has a valid reference.
+
+With my patch applied refcount for registered but unsed framebuffer was
+2 (once for the driver, once for registered_fb entry) and went up to 3
+when userspace opened framebuffer. fbcon's usage only incremented
+refcount for very short timeframes when effectively using fb_info.
+
+When starting with the FB minor I have to take a new reference.
+(though I maybe should check if file's private data is set and use
+that reference instead of looking up fb_info by minor as is currently
+done)
+
+For fbcon all the references are taken by FB minor (I wondered why
+fbcon only remembers index into registered_fb aka minor instead of
+fb_info itself)
+
+> So I still don't see any advantage in counting users + uses.
+> Please note that I do not object the idea of the patch itself, it's only that I 
+> have a different preference on what to count. I only want to express that your 
+> way is more complicated than what I would recommend.
+
+I don't think I see how you would do the refcounting... would you just
+drop the changes in fb_open() and fb_release()?
+Could you describe your approach (with pseudo-code) or the differences
+to mine?
+
+Thanks,
+Bruno
 
 
-> On 09/14/10 09:00, Dmitry Torokhov wrote:
->> On Wed, Sep 08, 2010 at 12:37:40PM +0100, Jonathan Cameron wrote:
->>>
->>> I'm happy to see your driver go in as it is currently, what bothers me 
->>> is that we will end
->>> up with incompatible interfaces for all the accelerometers Dmitry takes!
->>>
->>
->> This is a valid concern. How about I chicken out and will not merge any
->> new sysfs knobs until you guys decide on reasonable interface? Most set
->> up is done by board code anyways, sysfs is more of nice-to-have?
-> Hemanth, would removing the sysfs hooks from this driver be ok with you?
-> I'd personally have favoured a merge, add new interfaces when agreed and
-> deprecate old ones approach, but it is Dmitry's call.  Perhaps it is 
-> better
-> to get the majority of the device functionality in place now and add
-> the bells and whistles later.
->
-> For input device things are probably mostly fixed for a particular board
-> design.  There are definitely interesting things one can do if the knobs
-> are available but they (I think) mostly fall outside of using the device
-> for input!
->
-
-Dmitry, Jonathan
-
-I am ok to remove the sysfs entries for now, but would cause some 
-limitations
-like not being able to change sampling frequency / disabling interrupts 
-runtime.
-
-Wanted to clarify if the intention is to come up with a standard sysfs 
-interface
-for all accelerometer drivers under input/misc including adxl34x.
-
-Thanks
-Hemanth 
-
+> But if you want to go on I do not object. As long as the end result works that's 
+> okay with me.
+> 
+> 
+> Thanks
+> 
+> Florian Tobias Schandinat
