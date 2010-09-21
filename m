@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756998Ab0IUWSR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 18:18:17 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:40316 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755540Ab0IUWSN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 18:18:13 -0400
-X-SpamScore: -25
-X-BigFish: VS-25(zz1432N98dN1521M9371Pzz1202hzz8275bhz2dh2a8h61h)
-X-Spam-TCS-SCL: 0:0
-Date: Tue, 21 Sep 2010 17:17:46 -0500
-From: Scott Wood <scottwood@freescale.com>
-To: Timur Tabi <timur.tabi@gmail.com>
-CC: Dan Malek <ppc6dev@digitaldans.com>, dan.j.williams@intel.com,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fsldma: add support to 36-bit physical address
-Message-ID: <20100921171746.381f2e89@udp111988uds.am.freescale.net>
-In-Reply-To: <AANLkTinKbBBbC1gmPewhn1f3MW-1MbARtiQZNX4w7Mi+@mail.gmail.com>
-References: <1285066638-7473-1-git-send-email-leoli@freescale.com>
-	<877FD0B5-19A7-4A16-831E-369B80B104EA@kernel.crashing.org>
-	<AANLkTimiwtoa6i10OTcgFnvbvcO9N4KWHyt4Poj-yj=T@mail.gmail.com>
-	<20100921163456.7e2c9b32@udp111988uds.am.freescale.net>
-	<AANLkTine--kry0c0n87WOqYyi3AQOb2KnmNRs-MeXcQt@mail.gmail.com>
-	<20100921164944.164ed0af@udp111988uds.am.freescale.net>
-	<2C3F2C02-35B6-46AF-82DA-44ACCBFB8362@digitaldans.com>
-	<AANLkTinKbBBbC1gmPewhn1f3MW-1MbARtiQZNX4w7Mi+@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 21 Sep 2010 22:17:47.0775 (UTC) FILETIME=[D264B8F0:01CB59DA]
-X-Reverse-DNS: az33egw01.freescale.net
+	id S1757514Ab0IUWSh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 18:18:37 -0400
+Received: from core.signal11.us ([64.251.29.136]:47868 "EHLO core.signal11.us"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755544Ab0IUWSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 18:18:35 -0400
+From: Alan Ott <alan@signal11.us>
+To: Jiri Kosina <jkosina@suse.cz>, Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Alan Ott <alan@signal11.us>,
+        =?UTF-8?q?Bruno=20Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
+        linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: Alan Ott <alan@signal11.us>
+Subject: [PATCH v2 1/1] trivial: usbhid: Formatting fix
+Date: Tue, 21 Sep 2010 18:18:32 -0400
+Message-Id: <1285107512-6940-1-git-send-email-alan@signal11.us>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <4C98F245.2000002@ru.mvista.com>
+References: <4C98F245.2000002@ru.mvista.com>
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Tue Sep 21 18:18:34 2010
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 4c992f3a12031788331892
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Sep 2010 17:08:54 -0500
-Timur Tabi <timur.tabi@gmail.com> wrote:
+Added blank line after declarations.
 
-> On Tue, Sep 21, 2010 at 5:05 PM, Dan Malek <ppc6dev@digitaldans.com> wrote:
-> 
-> > The DMA descriptors are accessed using DMA by the
-> > controller itself.
-> 
-> Yes and no.  Technically, it is DMA, but it's not something that
-> SWIOTLB could ever know about.  We just pass the physical address to
-> the DMA controller, and it does a memory read to obtain the data.
-> That's not the kind of DMA that SWIOTLB would deal with, I think.
+Signed-off-by: Alan Ott <alan@signal11.us>
+---
+ drivers/hid/usbhid/hid-core.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-SWIOTLB should see that the address is directly DMAable and do nothing,
-but you don't want to skip the DMA API altogether.  You still need to
-flush caches if DMA is noncoherent, etc.
+diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
+index b729c02..ff90069 100644
+--- a/drivers/hid/usbhid/hid-core.c
++++ b/drivers/hid/usbhid/hid-core.c
+@@ -810,6 +810,7 @@ static int usbhid_output_raw_report(struct hid_device *hid, __u8 *buf, size_t co
+ 	if (usbhid->urbout) {
+ 		int actual_length;
+ 		int skipped_report_id = 0;
++
+ 		if (buf[0] == 0x0) {
+ 			/* Don't send the Report ID */
+ 			buf++;
+-- 
+1.7.0.4
 
-> My question is, should dmaengine be using the same 'dev' that fsldma
-> uses to allocate the DMA descriptors?  I wonder if the 'dev' should be
-> allocated internally by dmaengine, or provided by the client drivers.
-
-It needs to be the actual device that is performing the DMA -- the
-platform may need to do things such as IOMMU manipulation where
-knowing the device matters.
-
--Scott
 
