@@ -1,233 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757535Ab0IUP6e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 11:58:34 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41235 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753469Ab0IUP6c (ORCPT
+	id S1757696Ab0IUQAa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 12:00:30 -0400
+Received: from mail.nusquama.org ([85.131.211.20]:60649 "EHLO
+	mail.nusquama.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757650Ab0IUQA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 11:58:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=FSM1wH+Nv3W05Y8XnrmmL3aAUfIxu3hL2CKmox8kWWMon6c3iOKWAupGLaVQy5RqNo
-         j8FOGloRa/+vYkTnjKMIN2PdeCYokMjooQ3TmG8qyr2YCze1qdCLzwM2aKn1DA69m1Wp
-         ExGfRFnSEYaqtwH5mqQmFvdyMhwes+0+5VTkQ=
-Subject: [PATCH v3] ip: fix truesize mismatch in ip fragmentation
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Jarek Poplawski <jarkao2@gmail.com>, Patrick McHardy <kaber@trash.net>
-In-Reply-To: <1285078613.2617.503.camel@edumazet-laptop>
-References: <20100920174443.GA5515@elliptictech.com>
-	 <1285006844.2323.17.camel@edumazet-laptop>
-	 <20100920195256.GA14330@elliptictech.com>
-	 <1285013853.2323.148.camel@edumazet-laptop>
-	 <1285018272.2323.243.camel@edumazet-laptop>
-	 <20100921140501.GA21572@elliptictech.com>
-	 <1285078613.2617.503.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 21 Sep 2010 17:58:25 +0200
-Message-ID: <1285084705.2617.636.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Tue, 21 Sep 2010 12:00:28 -0400
+X-Greylist: delayed 1720 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Sep 2010 12:00:28 EDT
+Date: Tue, 21 Sep 2010 17:31:40 +0200
+From: Max Vozeler <mvz@vozeler.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: hirofuchi@users.sourceforge.net, hschauhan@nulltrace.org,
+        "Robert P. J. Day" <rpjday@crashcourse.ca>,
+        "Brian G. Merrell" <bgmerrell@novell.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Marco Lancione <marco@optikam.com>,
+        Luc Jalbert <ljalbert@optikam.com>
+Subject: [PATCH] staging: usbip: Notify usb core of port status changes
+Message-ID: <20100921153140.GA4635@quark.vpn.nusquama.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 21 septembre 2010 à 16:16 +0200, Eric Dumazet a écrit :
-> Le mardi 21 septembre 2010 à 10:05 -0400, Nick Bowler a écrit :
-> 
-> > This hunk introduces some whitespace damage.
-> > 
-> > Anyway, I tried this with ESP on both IPv4 and IPv6 and it appears to
-> > correct the issue.  Thanks!
-> > 
-> 
-> Indeed good catch.
-> 
-> Here is an updated patch, I added your Tested-by
-> 
-> Thanks for testing !
-> 
-> [PATCH] ip : fix truesize mismatch in ip fragmentation
-> 
-> We should not set frag->destructor to sock_wkfree() until we are sure we
-> dont hit slow path in ip_fragment(). Or we risk uncharging
-> frag->truesize twice, and in the end, having negative socket
-> sk_wmem_alloc counter, or even freeing socket sooner than expected.
-> 
-> Many thanks to Nick Bowler, who provided a very clean bug report and
-> test program.
-> 
-> While Nick bisection pointed to commit 2b85a34e911bf483 (net: No more
-> expensive sock_hold()/sock_put() on each tx), underlying bug is older.
-> 
+This patch changes vhci to behave like dummy and 
+other hcds when disconnecting a device.
 
+Previously detaching a device from the root hub 
+did not notify the usb core of the disconnect and
+left the device visible.
 
-Hmm, while looking at git history, I found commit from Patrick
-b2722b1c3a893e (ip_fragment: also adjust skb->truesize for packets not
-owned by a socket)
-As my patch reverts it, we probably want a more polished patch.
-
-(Also port Patrick work to ipv6)
-
-So here is a V3
-
-[PATCH v3] ip: fix truesize mismatch in ip fragmentation
-
-Special care should be taken when slow path is hit in ip_fragment() :
-
-When walking through frags, we transfert truesize ownership from skb to
-frags. Then if we hit a slow_path condition, we must undo this or risk
-uncharging frags->truesize twice, and in the end, having negative socket
-sk_wmem_alloc counter, or even freeing socket sooner than expected.
-
-Many thanks to Nick Bowler, who provided a very clean bug report and
-test program.
-
-Thanks to Jarek for reviewing my first patch and providing a V2
-
-While Nick bisection pointed to commit 2b85a34e911 (net: No more
-expensive sock_hold()/sock_put() on each tx), underlying bug is older
-(2.6.12-rc5)
-
-A side effect is to extend work done in commit b2722b1c3a893e
-(ip_fragment: also adjust skb->truesize for packets not owned by a
-socket) to ipv6 as well.
-
-Reported-and-bisected-by: Nick Bowler <nbowler@elliptictech.com>
-Tested-by: Nick Bowler <nbowler@elliptictech.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Jarek Poplawski <jarkao2@gmail.com>
-CC: Patrick McHardy <kaber@trash.net>
+Signed-off-by: Max Vozeler <mvz@vozeler.com>
+Reported-by: Marco Lancione <marco@optikam.com>
+Tested-by: Luc Jalbert <ljalbert@optikam.com>
+Cc: stable@kernel.org
 ---
- net/ipv4/ip_output.c  |   19 +++++++++++++------
- net/ipv6/ip6_output.c |   18 +++++++++++++-----
- 2 files changed, 26 insertions(+), 11 deletions(-)
+ drivers/staging/usbip/vhci_hcd.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
-index 04b6989..a643f7a 100644
---- a/net/ipv4/ip_output.c
-+++ b/net/ipv4/ip_output.c
-@@ -488,9 +488,8 @@ int ip_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
- 	 * we can switch to copy when see the first bad fragment.
- 	 */
- 	if (skb_has_frags(skb)) {
--		struct sk_buff *frag;
-+		struct sk_buff *frag, *frag2;
- 		int first_len = skb_pagelen(skb);
--		int truesizes = 0;
+diff --git a/drivers/staging/usbip/vhci_hcd.c b/drivers/staging/usbip/vhci_hcd.c
+index 0574d84..832608d 100644
+--- a/drivers/staging/usbip/vhci_hcd.c
++++ b/drivers/staging/usbip/vhci_hcd.c
+@@ -164,6 +164,8 @@ void rh_port_disconnect(int rhport)
+ 	 * spin_unlock(&vdev->ud.lock); */
  
- 		if (first_len - hlen > mtu ||
- 		    ((first_len - hlen) & 7) ||
-@@ -503,18 +502,18 @@ int ip_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
- 			if (frag->len > mtu ||
- 			    ((frag->len & 7) && frag->next) ||
- 			    skb_headroom(frag) < hlen)
--			    goto slow_path;
-+			    goto slow_path_undo;
- 
- 			/* Partially cloned skb? */
- 			if (skb_shared(frag))
--				goto slow_path;
-+				goto slow_path_undo;
- 
- 			BUG_ON(frag->sk);
- 			if (skb->sk) {
- 				frag->sk = skb->sk;
- 				frag->destructor = sock_wfree;
- 			}
--			truesizes += frag->truesize;
-+			skb->truesize -= frag->truesize;
- 		}
- 
- 		/* Everything is OK. Generate! */
-@@ -524,7 +523,6 @@ int ip_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
- 		frag = skb_shinfo(skb)->frag_list;
- 		skb_frag_list_init(skb);
- 		skb->data_len = first_len - skb_headlen(skb);
--		skb->truesize -= truesizes;
- 		skb->len = first_len;
- 		iph->tot_len = htons(first_len);
- 		iph->frag_off = htons(IP_MF);
-@@ -576,6 +574,15 @@ int ip_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
- 		}
- 		IP_INC_STATS(dev_net(dev), IPSTATS_MIB_FRAGFAILS);
- 		return err;
+ 	spin_unlock_irqrestore(&the_controller->lock, flags);
 +
-+slow_path_undo:
-+		skb_walk_frags(skb, frag2) {
-+			if (frag2 == frag)
-+				break;
-+			frag2->sk = NULL;
-+			frag2->destructor = NULL;
-+			skb->truesize += frag2->truesize;
-+		}
- 	}
++	usb_hcd_poll_rh_status(vhci_to_hcd(the_controller));
+ }
  
- slow_path:
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index d40b330..ca7ba44 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -639,7 +639,7 @@ static int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
  
- 	if (skb_has_frags(skb)) {
- 		int first_len = skb_pagelen(skb);
--		int truesizes = 0;
-+		struct sk_buff *frag2;
- 
- 		if (first_len - hlen > mtu ||
- 		    ((first_len - hlen) & 7) ||
-@@ -651,18 +651,18 @@ static int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
- 			if (frag->len > mtu ||
- 			    ((frag->len & 7) && frag->next) ||
- 			    skb_headroom(frag) < hlen)
--			    goto slow_path;
-+			    goto slow_path_undo;
- 
- 			/* Partially cloned skb? */
- 			if (skb_shared(frag))
--				goto slow_path;
-+				goto slow_path_undo;
- 
- 			BUG_ON(frag->sk);
- 			if (skb->sk) {
- 				frag->sk = skb->sk;
- 				frag->destructor = sock_wfree;
--				truesizes += frag->truesize;
- 			}
-+			skb->truesize -= frag->truesize;
- 		}
- 
- 		err = 0;
-@@ -693,7 +693,6 @@ static int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
- 
- 		first_len = skb_pagelen(skb);
- 		skb->data_len = first_len - skb_headlen(skb);
--		skb->truesize -= truesizes;
- 		skb->len = first_len;
- 		ipv6_hdr(skb)->payload_len = htons(first_len -
- 						   sizeof(struct ipv6hdr));
-@@ -756,6 +755,15 @@ static int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
- 			      IPSTATS_MIB_FRAGFAILS);
- 		dst_release(&rt->dst);
- 		return err;
-+
-+slow_path_undo:
-+		skb_walk_frags(skb, frag2) {
-+			if (frag2 == frag)
-+				break;
-+			frag2->sk = NULL;
-+			frag2->destructor = NULL;
-+			skb->truesize += frag2->truesize;
-+		}
- 	}
- 
- slow_path:
-
+-- 
+1.7.1
 
