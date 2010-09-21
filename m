@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756813Ab0IUVtu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 17:49:50 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:8975 "EHLO
-	VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755901Ab0IUVtt (ORCPT
+	id S1757087Ab0IUVuO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 17:50:14 -0400
+Received: from shakespeare.ccsl.carleton.ca ([134.117.225.11]:37219 "EHLO
+	shakespeare.ccsl.carleton.ca" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755435Ab0IUVuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 17:49:49 -0400
-X-SpamScore: -20
-X-BigFish: VS-20(zz1432N98dN9371Pzz1202hzz8275bhz2dh2a8h61h)
-X-Spam-TCS-SCL: 0:0
-Date: Tue, 21 Sep 2010 16:49:44 -0500
-From: Scott Wood <scottwood@freescale.com>
-To: Timur Tabi <timur.tabi@gmail.com>
-CC: Kumar Gala <galak@kernel.crashing.org>, dan.j.williams@intel.com,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fsldma: add support to 36-bit physical address
-Message-ID: <20100921164944.164ed0af@udp111988uds.am.freescale.net>
-In-Reply-To: <AANLkTine--kry0c0n87WOqYyi3AQOb2KnmNRs-MeXcQt@mail.gmail.com>
-References: <1285066638-7473-1-git-send-email-leoli@freescale.com>
-	<877FD0B5-19A7-4A16-831E-369B80B104EA@kernel.crashing.org>
-	<AANLkTimiwtoa6i10OTcgFnvbvcO9N4KWHyt4Poj-yj=T@mail.gmail.com>
-	<20100921163456.7e2c9b32@udp111988uds.am.freescale.net>
-	<AANLkTine--kry0c0n87WOqYyi3AQOb2KnmNRs-MeXcQt@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 21 Sep 2010 21:49:45.0431 (UTC) FILETIME=[E7A36670:01CB59D6]
-X-Reverse-DNS: de01egw02.freescale.net
+	Tue, 21 Sep 2010 17:50:12 -0400
+X-Greylist: delayed 3039 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Sep 2010 17:50:12 EDT
+Message-Id: <E1Oy9va-0001v2-CP@shakespeare.ccsl.carleton.ca>
+From: gwurster@scs.carleton.ca
+Date: Tue, 21 Sep 2010 16:59:02 -0400
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Sep 2010 16:43:12 -0500
-Timur Tabi <timur.tabi@gmail.com> wrote:
+>From ca1c566f51eeff4195b483addb86c6a73eaa37e0 Mon Sep 17 00:00:00 2001
+From: Glenn Wurster <gwurster@scs.carleton.ca>
+Date: Tue, 21 Sep 2010 16:59:00 -0400
+Subject: [PATCH 2.6.36-rc3 1/1] IPv6: Create temporary address if none exists.
+Cc: "David S. Miller" <davem@davemloft.net>,
+ Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+ "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+ James Morris <jmorris@namei.org>,
+ Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+ Patrick McHardy <kaber@trash.net>,
+ Stephen Hemminger <shemminger@vyatta.com>,
+ Eric Dumazet <eric.dumazet@gmail.com>,
+ Herbert Xu <herbert@gondor.apana.org.au>,
+ netdev@vger.kernel.org
+To: linux-kernel@vger.kernel.org
+X-Length: 1674
+X-UID: 10
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201009211659.02014.gwurster@scs.carleton.ca>
 
-> On Tue, Sep 21, 2010 at 4:34 PM, Scott Wood <scottwood@freescale.com> wrote:
-> 
-> > This doesn't control allocation (it probably should with
-> > dma_alloc_coherent, though I don't see it in the code), it controls
-> > whether swiotlb will create a bounce buffer -- defeating the point of
-> > using DMA to accelerate a memcpy.
-> 
-> But it would do that only for the 'dev' used in the dma_set_mask()
-> call.  That dev is only used here:
-> 
-> 	chan->desc_pool = dma_pool_create("fsl_dma_engine_desc_pool",
-> 					  chan->dev,
-> 					  sizeof(struct fsl_desc_sw),
-> 					  __alignof__(struct fsl_desc_sw), 0);
-> 
-> Since we don't DMA the descriptors themselves, I just don't see how
-> this patch does anything.
+If privacy extentions are enabled, but no current temporary address exists,
+then create one when we get a router advertisement.
 
-Look in dmaengine.c, there are calls to dma_map_single() and
-dma_map_page(), using what I assume is that same device pointer --
-unless there's confusion between the channel and the controller.
+Signed-off-by: Glenn Wurster <gwurster@scs.carleton.ca>
+---
+ net/ipv6/addrconf.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
--Scott
+diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+index ab70a3f..cfee6ae 100644
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -2022,10 +2022,11 @@ ok:
+ 					ipv6_ifa_notify(0, ift);
+ 			}
+ 
+-			if (create && in6_dev->cnf.use_tempaddr > 0) {
++			if ((create || list_empty(&in6_dev->tempaddr_list)) && 
+in6_dev->cnf.use_tempaddr > 0) {
+ 				/*
+ 				 * When a new public address is created as described in [ADDRCONF],
+-				 * also create a new temporary address.
++				 * also create a new temporary address. Also create a temporary
++				 * address if it's enabled but no temporary address currently exists.
+ 				 */
+ 				read_unlock_bh(&in6_dev->lock);
+ 				ipv6_create_tempaddr(ifp, NULL);
 
