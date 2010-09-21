@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449Ab0IUTIu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 15:08:50 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:55818 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751749Ab0IUTIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 15:08:49 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: paulmck@linux.vnet.ibm.com
-Subject: Re: [Bug #16537] TREE_RCU hangs at boot
-Date: Tue, 21 Sep 2010 21:07:54 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Rolf Eike Beer <eike-kernel@sf-tec.de>
-References: <QnCvudbe2FD.A.XiE.DgSjMB@chimera> <20100920182626.GE2408@linux.vnet.ibm.com> <20100921185953.GA7880@linux.vnet.ibm.com>
-In-Reply-To: <20100921185953.GA7880@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009212107.54606.rjw@sisk.pl>
+	id S1755593Ab0IUTUn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 15:20:43 -0400
+Received: from 89-230.252-81.static-ip.oleane.fr ([81.252.230.89]:54717 "EHLO
+	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752517Ab0IUTUl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 15:20:41 -0400
+In-Reply-To: <alpine.LNX.2.00.1009211904290.26813@pobox.suse.cz>
+References: <1283005748-3293-1-git-send-email-rydberg@euromail.se>  <1283005748-3293-3-git-send-email-rydberg@euromail.se>  <B5146B49-1D7A-4AFD-B925-3F35E83A2A96@enac.fr> <alpine.LNX.2.00.1009211904290.26813@pobox.suse.cz>
+Mime-Version: 1.0 (Apple Message framework v752.3)
+Content-Type: text/plain; charset=ISO-8859-1; delsp=yes; format=flowed
+Message-Id: <6B445E9B-2146-4AD8-B9F4-94A68E4BFA0C@enac.fr>
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+From: =?ISO-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
+Subject: Re: [PATCH 3/3] hid: 3m: Correct touchscreen emulation
+Date: Tue, 21 Sep 2010 21:20:34 +0200
+To: Jiri Kosina <jkosina@suse.cz>
+X-Mailer: Apple Mail (2.752.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, September 21, 2010, Paul E. McKenney wrote:
-> On Mon, Sep 20, 2010 at 11:26:27AM -0700, Paul E. McKenney wrote:
-> > On Sun, Sep 12, 2010 at 09:08:42PM +0200, Rafael J. Wysocki wrote:
-> > > This message has been generated automatically as a part of a report
-> > > of regressions introduced between 2.6.34 and 2.6.35.
-> > > 
-> > > The following bug entry is on the current list of known regressions
-> > > introduced between 2.6.34 and 2.6.35.  Please verify if it still should
-> > > be listed and let the tracking team know (either way).
-> > > 
-> > > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16537
-> > > Subject		: TREE_RCU hangs at boot
-> > > Submitter	: Rolf Eike Beer <eike-kernel@sf-tec.de>
-> > > Date		: 2010-08-07 12:18 (37 days old)
-> > > Handled-By	: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > 
-> > I cannot reproduce this.  The function that is claimed to hang contains
-> > only printk()s.  I have asked the guys who can actually reproduce it
-> > to try a later kernel, and will let you know how this goes.
-> > 
-> > If you cannot trust printk(), who can you trust?  ;-)
-> 
-> It turns out that this problem is due to tab processing in the PA-RISC
-> firmware, which certainly explains my inability to reproduce it.  It
-> turns out that it is fixed by:
-> 
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=d9b68e5e88248bb24fd4e455588bea1d56108fd6
-> 
-> So we can close this regression.
-> 
-> Many thanks to Guy Martin <gmsoft@tuxicoman.be> for much help with
-> this!!!
 
-Thanks, closed.
+Le 21 sept. 10 à 19:05, Jiri Kosina a écrit :
 
-Rafael
+> On Tue, 21 Sep 2010, Stéphane Chatty wrote:
+>
+>>> The current code sometimes misses to report the last BTN_TOUCH event
+>>> when multiple fingers are lifted simultaneously.  With the
+>>> introduction of MT slots, the tracking id is available to determine
+>>> the oldest active contact. Use this information to simplify and
+>>> correct the touchscreen emulation logic.
+>>>
+>>
+>> Acked-by: Stéphane Chatty <chatty@enac.fr>
+>
+> It doesn't apply without 2/3 being applied as well. So I'll not be
+> applying it for now, and either please rebase it, or re-send  
+> together with
+> 2/3 once the situation with 0eef:72xx is sorted out. Ok?
+
+Er, there must be some confusion here: 0eef:72xx is about hid-egalax,  
+in a different thread.
+
+Cheers,
+
+St.
+
