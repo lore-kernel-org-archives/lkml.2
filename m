@@ -1,98 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517Ab0IUXuP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 19:50:15 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59168 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751981Ab0IUXuO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 19:50:14 -0400
-Date: Tue, 21 Sep 2010 16:50:07 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Karsten Mehrhoff <kawime@gmx.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable@kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: regression in 2.6.35.4 'load is to heavy (video subsystem?)'
-Message-Id: <20100921165007.6200846f.akpm@linux-foundation.org>
-In-Reply-To: <op.vh8rams6gp7xae@127.0.0.1>
-References: <op.vh8rams6gp7xae@127.0.0.1>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754910Ab0IUXIi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 19:08:38 -0400
+Received: from kroah.org ([198.145.64.141]:34999 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754092Ab0IUXIg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 19:08:36 -0400
+Date: Tue, 21 Sep 2010 16:08:04 -0700
+From: Greg KH <greg@kroah.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg KH <gregkh@suse.de>, Jiri Slaby <jslaby@suse.cz>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        Rogier Wolff <R.E.Wolff@bitwizard.nl>,
+        "Michael H. Warfield" <mhw@wittsend.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 1/2] TTY: create /tty and move the tty core files there
+Message-ID: <20100921230804.GB32346@kroah.com>
+References: <1283115995-4734-1-git-send-email-arnd@arndb.de>
+ <20100830184737.GA21339@suse.de>
+ <201008302333.22447.arnd@arndb.de>
+ <201009031729.58102.arnd@arndb.de>
+ <20100921230733.GA32346@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100921230733.GA32346@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Aug 2010 10:02:36 +0200
-Karsten Mehrhoff <kawime@gmx.de> wrote:
+The tty code should be at the root of the tree, as everyone
+needs it, and it's always built, and it's not really a "driver"
 
-> Using the same .config from 2.6.35.3 to compile 2.5.36.4 results in a  
-> heavy load with 2.6.35.4.
+Based on work done by Arnd Bergmann <arnd@arndb.de>
 
-A regression within -stable is rather bad.
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ Makefile                           |    2 +-
+ drivers/char/Makefile              |    4 +---
+ tty/Makefile                       |    8 ++++++++
+ {drivers/char => tty}/n_tty.c      |    0
+ {drivers/char => tty}/tty_audit.c  |    0
+ {drivers/char => tty}/tty_buffer.c |    0
+ {drivers/char => tty}/tty_io.c     |    0
+ {drivers/char => tty}/tty_ioctl.c  |    0
+ {drivers/char => tty}/tty_ldisc.c  |    0
+ {drivers/char => tty}/tty_mutex.c  |    0
+ {drivers/char => tty}/tty_port.c   |    0
+ 11 files changed, 10 insertions(+), 4 deletions(-)
+ create mode 100644 tty/Makefile
+ rename {drivers/char => tty}/n_tty.c (100%)
+ rename {drivers/char => tty}/tty_audit.c (100%)
+ rename {drivers/char => tty}/tty_buffer.c (100%)
+ rename {drivers/char => tty}/tty_io.c (100%)
+ rename {drivers/char => tty}/tty_ioctl.c (100%)
+ rename {drivers/char => tty}/tty_ldisc.c (100%)
+ rename {drivers/char => tty}/tty_mutex.c (100%)
+ rename {drivers/char => tty}/tty_port.c (100%)
 
-> Example:
-> 
-> Difference between 2.6.35.1/2/3 and 2.6.35.4 while watching some videos:
-> 2.6.35.4 switches the cpu for flash videos in the browser (opera or  
-> iceweasel) or other video outputs to 2200/2400/2600 MHz meanwhile 2.6.35.3  
-> (or older) stays at 1000 Mhz. That results in a higher cpu temperature,  
-> more power consumption and so one.
-> 
-> Using other GUI program results in nearly the same problems with 2.6.35.4,  
-> so this kernel is unusable for me.
-> 
-> Results to see the difference for the same action
-> 2.6.35.4
-> Core0 Temp:  +45.0__C
-> Core1 Temp:  +43.0__C
-> cpu MHz:	2200.000 or higher
-> 
-> 2.6.35.3
-> Core0 Temp:  +32.0__C
-> Core1 Temp:  +31.0__C
-> cpu MHz:	1000.000 (max. 1800, but falling back to 1000)
-> 
-> kernel compiled with 'CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y'
-> results for me in 1000, 1800, 2000, 2200, 2400, 2600 MHz.
-> 
-> I'm not the only one with this problem, other users experienced the same  
-> behavior on other systems on 386 systems, i.e. a regression for glxgears  
-> about 30% on slower systems. We all uses differnet AMD cpus and nNida  
-> graphic controllers. Same results for the nvidia-kernel from the repos or  
-> the nVidia driver from nvidia.com.
-> 
-> There must something be wrong in the video subsystem, which is causing  
-> this regression.
-> 
-> My system (overview using 2.5.35.3):
-> =====================
-> Processor:	2x AMD Athlon(tm) 64 X2 Dual Core Processor 5000+
-> Memory:		 4060MB
-> 
-> Display
-> Resolution:       1920x1080 pixels
-> OpenGL Renderer:  GeForce 9500 GT/PCI/SSE2
-> X11 Vendor:	      The X.Org Foundation
-> Version:          1.7.7
-> 
-> Version
-> Kernel:			Linux 2.6.35.3-kmt (x86_64)
-> Compiled:	SMP Mon Aug 23 00:58:37 CEST 2010
-> C Library:      GNU C Library version 2.11.2 (stable)
-> Default C Compiler: GNU C Compiler version 4.4.5 20100824 (prerelease)  
-> (Debian 4.4.4-11)
-> Distribution:	Debian GNU/Linux squeeze/sid
-> 
-> OpenGL
-> Vendor:        NVIDIA Corporation
-> Renderer:      GeForce 9500 GT/PCI/SSE2
-> Version:       3.3.0 NVIDIA 256.44
-> Direct Rendering: Yes
-
-I'm not seeing any relevant cpufreq changes in 2.6.35.3 -> 2.6.35.4
-(ftp://ftp.kernel.org/pub/linux/kernel/v2.6/ChangeLog-2.6.35.4).  There
-were a lot of DRM changes.
-
+diff --git a/Makefile b/Makefile
+index 3133a57..0867819 100644
+--- a/Makefile
++++ b/Makefile
+@@ -483,7 +483,7 @@ scripts: scripts_basic include/config/auto.conf include/config/tristate.conf
+ 
+ # Objects we will link into vmlinux / subdirs we need to visit
+ init-y		:= init/
+-drivers-y	:= drivers/ sound/ firmware/
++drivers-y	:= tty/ drivers/ sound/ firmware/
+ net-y		:= net/
+ libs-y		:= lib/
+ core-y		:= usr/
+diff --git a/drivers/char/Makefile b/drivers/char/Makefile
+index dc96416..c999eac 100644
+--- a/drivers/char/Makefile
++++ b/drivers/char/Makefile
+@@ -7,9 +7,8 @@
+ #
+ FONTMAPFILE = cp437.uni
+ 
+-obj-y	 += mem.o random.o tty_io.o n_tty.o tty_ioctl.o tty_ldisc.o tty_buffer.o tty_port.o
++obj-y	 += mem.o random.o
+ 
+-obj-y				+= tty_mutex.o
+ obj-$(CONFIG_LEGACY_PTYS)	+= pty.o
+ obj-$(CONFIG_UNIX98_PTYS)	+= pty.o
+ obj-y				+= misc.o
+@@ -17,7 +16,6 @@ obj-$(CONFIG_VT)		+= vt_ioctl.o vc_screen.o selection.o keyboard.o
+ obj-$(CONFIG_BFIN_JTAG_COMM)	+= bfin_jtag_comm.o
+ obj-$(CONFIG_CONSOLE_TRANSLATIONS) += consolemap.o consolemap_deftbl.o
+ obj-$(CONFIG_HW_CONSOLE)	+= vt.o defkeymap.o
+-obj-$(CONFIG_AUDIT)		+= tty_audit.o
+ obj-$(CONFIG_MAGIC_SYSRQ)	+= sysrq.o
+ obj-$(CONFIG_MVME147_SCC)	+= generic_serial.o vme_scc.o
+ obj-$(CONFIG_MVME162_SCC)	+= generic_serial.o vme_scc.o
+diff --git a/tty/Makefile b/tty/Makefile
+new file mode 100644
+index 0000000..3862838
+--- /dev/null
++++ b/tty/Makefile
+@@ -0,0 +1,8 @@
++obj-y				+= tty_io.o
++obj-y				+= n_tty.o
++obj-y				+= tty_ioctl.o
++obj-y				+= tty_ldisc.o
++obj-y				+= tty_buffer.o
++obj-y				+= tty_port.o
++obj-y				+= tty_mutex.o
++obj-$(CONFIG_AUDIT)		+= tty_audit.o
+diff --git a/drivers/char/n_tty.c b/tty/n_tty.c
+similarity index 100%
+rename from drivers/char/n_tty.c
+rename to tty/n_tty.c
+diff --git a/drivers/char/tty_audit.c b/tty/tty_audit.c
+similarity index 100%
+rename from drivers/char/tty_audit.c
+rename to tty/tty_audit.c
+diff --git a/drivers/char/tty_buffer.c b/tty/tty_buffer.c
+similarity index 100%
+rename from drivers/char/tty_buffer.c
+rename to tty/tty_buffer.c
+diff --git a/drivers/char/tty_io.c b/tty/tty_io.c
+similarity index 100%
+rename from drivers/char/tty_io.c
+rename to tty/tty_io.c
+diff --git a/drivers/char/tty_ioctl.c b/tty/tty_ioctl.c
+similarity index 100%
+rename from drivers/char/tty_ioctl.c
+rename to tty/tty_ioctl.c
+diff --git a/drivers/char/tty_ldisc.c b/tty/tty_ldisc.c
+similarity index 100%
+rename from drivers/char/tty_ldisc.c
+rename to tty/tty_ldisc.c
+diff --git a/drivers/char/tty_mutex.c b/tty/tty_mutex.c
+similarity index 100%
+rename from drivers/char/tty_mutex.c
+rename to tty/tty_mutex.c
+diff --git a/drivers/char/tty_port.c b/tty/tty_port.c
+similarity index 100%
+rename from drivers/char/tty_port.c
+rename to tty/tty_port.c
+-- 
+1.7.1
 
