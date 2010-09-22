@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753626Ab0IVCIi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 22:08:38 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38514 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752517Ab0IVCIh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 22:08:37 -0400
-Date: Tue, 21 Sep 2010 19:08:16 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Josh Hill <joshua.hill@gmail.com>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        alan@redhat.com, stable@kernel.org, Thomas Renninger <trenn@suse.de>,
-        Matthew Garrett <mjg@redhat.com>, "Zhang, Rui" <rui.zhang@intel.com>,
-        linux-acpi@vger.kernel.org
-Subject: Re: [2.6.35-rc5] hp-wmi patch missed .35 merge window, requesting
- addition to next rc
-Message-Id: <20100921190816.e6ca6a72.akpm@linux-foundation.org>
-In-Reply-To: <AANLkTimOVY+iOOMKhwFfX5Wcw1y_PcvoCCfEcjoPmj3J@mail.gmail.com>
-References: <AANLkTimOVY+iOOMKhwFfX5Wcw1y_PcvoCCfEcjoPmj3J@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754148Ab0IVCVE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 22:21:04 -0400
+Received: from void.printf.net ([89.145.121.20]:59680 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752923Ab0IVCVD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 22:21:03 -0400
+Date: Wed, 22 Sep 2010 03:20:47 +0100
+From: Chris Ball <cjb@laptop.org>
+To: "Ghorai, Sukumar" <s-ghorai@ti.com>
+Cc: Adrian Hunter <adrian.hunter@nokia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matt Fleming <matt@console-pimps.org>,
+        Linus Walleij <linus.ml.walleij@gmail.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "STEricsson_nomadik_linux@list.st.com" 
+	<STEricsson_nomadik_linux@list.st.com>,
+        Hanumath Prasad <hanumath.prasad@stericsson.com>,
+        Kyungmin Park <kmpark@infradead.org>
+Subject: Re: [PATCH] mmc: MMC 4.4 DDR support
+Message-ID: <20100922022047.GA3821@void.printf.net>
+References: <1278658780-26397-1-git-send-email-hanumath.prasad@stericsson.com> <AANLkTikBdBhJeQ-t2+0echJfAxz529QZEYPJtyHUsROd@mail.gmail.com> <m3pqxbsibq.fsf@pullcord.laptop.org> <20100823204829.GB6510@console-pimps.org> <20100823142816.59b12253.akpm@linux-foundation.org> <4C739F55.8030301@nokia.com> <20100914112143.GA16039@void.printf.net> <2A3DCF3DA181AD40BDE86A3150B27B6B031606223F@dbde02.ent.ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2A3DCF3DA181AD40BDE86A3150B27B6B031606223F@dbde02.ent.ti.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc's added)
+Hi,
 
-On Tue, 21 Sep 2010 10:23:57 -0700 Josh Hill <joshua.hill@gmail.com> wrote:
+On Mon, Sep 20, 2010 at 10:04:39AM +0530, Ghorai, Sukumar wrote:
+> Chris and all,
+> Can we plan these patches for 2.6.37 release? 
+> Also let me know if I can do anything!
 
-> please cc as i'm unsubscribed
-> as reported in this bug: https://bugzilla.kernel.org/show_bug.cgi?id=15344
-> and the patch: http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=751ae808f6b29803228609f51aa1ae057f5c576e
-> 
-> the backlight on this laptop goes down one level whenever
-> /proc/acpi/ac_adapter/*/status is read.
-> i've been told the patch missed the .35 merge window, and is going to
-> be in .36, but ubuntu is
-> going to release 10.10 soon with .35 in it, and if this patch doesn't
-> make it into .35 my laptop
-> will be doing this for its (10.10) entire lifetime. i didn't know who
-> to really contact and request this sort
-> of thing so i'm doing it here.
+I would like to merge this for .37, and the quirk and merge conflicts
+are not a big deal.  First, though, I'd like to see at least some of:
 
-The suggestion is that mainline's
-751ae808f6b29803228609f51aa1ae057f5c576e ("x86 platform drivers: hp-wmi
-Reorder event id processing") be backported into 2.6.35.x to fix the
-post-2.6.32 regression described in
-https://bugzilla.kernel.org/show_bug.cgi?id=15344
+* a reply from Hanumath to Kyungmin on the use of MMC_DDR_MODE,
+  and which host controller the submitted patch was tested on.
+* an acknowledgement/comment on Adrian's fixup patch
+* an ACK on the original+fixup patch as mergeable from Adrian
+* some explicit Tested-by: lines for the commit.
 
+Thanks!
 
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
