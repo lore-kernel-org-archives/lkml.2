@@ -1,47 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521Ab0IVJqQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 05:46:16 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:50173 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753361Ab0IVJqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 05:46:15 -0400
-Date: Wed, 22 Sep 2010 11:46:12 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Meelis Roos <mroos@linux.ee>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [Bug #16971] qla4xxx compile failure on 32-bit PowerPC: missing
- readq and writeq
-Message-ID: <20100922114612.6eeae729@schatten.dmk.lab>
-In-Reply-To: <alpine.SOC.1.00.1009221148550.14750@math.ut.ee>
-References: <1fwtoy8sG5H.A.veG.9D7lMB@chimera>
-	<Wn2eLj_6KZG.A.SpH.KF7lMB@chimera>
-	<alpine.SOC.1.00.1009221148550.14750@math.ut.ee>
-X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753599Ab0IVJrM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 05:47:12 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:45298 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753361Ab0IVJrK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 05:47:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=IMOjpkMKwohdCqjvafmYS9/mVHhr5OzH5fIvQVyXhI4TmgIrBnJj38Mcy56D09wGOA
+         7h0AeGclHm537UV1ZKNL/WpySwrfRsdpBgXq3LbdATXEDKQlG/qWMRIRmozQVwT3U157
+         fu5sTwoBkqrTkdxezg/htcs4zzm7yQtBtUFYY=
+MIME-Version: 1.0
+In-Reply-To: <4C98D892.7030605@googlemail.com>
+References: <Pine.LNX.4.44L0.1009211013460.1644-100000@iolanthe.rowland.org>
+	<4C98C70B.3080407@turmel.org>
+	<4C98D892.7030605@googlemail.com>
+Date: Wed, 22 Sep 2010 11:47:09 +0200
+Message-ID: <AANLkTinQVNy4yOSW=aEbuYh6b_F8nKBLxsjxBDk8zq8O@mail.gmail.com>
+Subject: Re: [BUG, Regression, bisected] USB mouse causes bug on 1st insert,
+ ignored on 2nd insert, lsusb stuck at usbdev_open
+From: Mat <jackdachef@gmail.com>
+To: Gabriel C <nix.or.die@googlemail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Jiri Kosina <jkosina@suse.cz>,
+        Guillaume Chazarain <guichaz@gmail.com>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>, Oliver Neukum <oliver@neukum.org>,
+        Alan Ott <alan@signal11.us>, linux-usb@vger.kernel.org,
+        linux-input@vger.kernel.org, Andreas Bombe <aeb@debian.org>,
+        Alex Riesen <raa.lkml@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Sep 2010 11:50:03 +0300 (EEST)
-Meelis Roos <mroos@linux.ee> wrote:
+On Tue, Sep 21, 2010 at 6:08 PM, Gabriel C <nix.or.die@googlemail.com> wrote:
+> On 21.09.2010 16:54, Phil Turmel wrote:
+>
+>> On 09/21/2010 10:30 AM, Alan Stern wrote:
+>>> On Tue, 21 Sep 2010, Jiri Kosina wrote:
+>>>
+>>>> I have just found out that it's actually CONFIG_USB_DYNAMIC_MINORS which
+>>>> makes the difference. When unset, the problem doesn't trigger, and
+>>>> usb_find_interface() always returns the proper interface. When
+>>>> CONFIG_USB_DYNAMIC_MINORS is being used, the oops happen.
+>>>>
+>>>> I'll look into that.
+>>>
+>>> Apparently the problem is that intf->minors doesn't get initialized
+>>> properly.  This patch should fix it.  Everybody, please try it out.
+>>
+>> Yes, this works for me.  (as did Jiri's version.)
+>
+>
+> Both versions of the patch are working fine for me too also.
+>
+>>
+>> Thank you both for the support.
+>>
+>> Feel free to add my:
+>>
+>> Tested-by: Philip J. Turmel <philip@turmel.org>
+>
+>
+> And mine if you wish.
+> Tested-by: Gabriel Craciunescu  <nix.or.die@googlemail.com>
+>
+>
 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16971
-> > Subject		: qla4xxx compile failure on 32-bit PowerPC: missing readq and writeq
-> > Submitter	: Meelis Roos <mroos@linux.ee>
-> > Date		: 2010-08-19 21:03 (33 days old)
-> > Message-ID	: <alpine.SOC.1.00.1008192359310.19654@math.ut.ee>
-> > References	: http://marc.info/?l=linux-kernel&m=128225184900892&w=2
-> 
-> Still present. The maintainer of the driver has a patch that I have 
-> tested, and for quite some time now, but it still does not appear in 
-> mainline.
-> 
+confirmed !
 
-Do you have a pointer to the maintainer and the patch, so that we can
-update the bugzilla entry and ping the maintainer? 
+I also tested both and it works fine so far :)
+
+I don't know if it's too late already:
+Tested-by: Matthias Bayer <jackdachef@gmail.com>
+
+Thanks !
+
+Matt
