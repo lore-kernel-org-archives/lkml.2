@@ -1,121 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092Ab0IVDCa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 23:02:30 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:57243 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751039Ab0IVDC2 (ORCPT
+	id S1751612Ab0IVDMM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 23:12:12 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:43745 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab0IVDML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 23:02:28 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: akpm@linux-foundation.org, Richard Purdie <rpurdie@rpsys.net>,
-        Chris Ball <cjb@laptop.org>, Hein_Tibosch <hein_tibosch@yahoo.es>
-Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
-Subject: mmotm 2010-09-15 - BUG in mmc driver calling led_trigger_event()
-In-Reply-To: Your message of "Wed, 15 Sep 2010 16:21:43 PDT."
-             <201009152352.o8FNqXGr022752@imap1.linux-foundation.org>
-From: Valdis.Kletnieks@vt.edu
-References: <201009152352.o8FNqXGr022752@imap1.linux-foundation.org>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1285124506_4916P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	Tue, 21 Sep 2010 23:12:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=HFkPpq5lIY2qtIq/amo9YeDCrdyndrnJK4IKCLpT7jGwdIy90Ah/rn1yU+m2dgqmxb
+         dLESMDakmQ1UFQUbNeBjBOuhehQu76OgAYxOydRcDA9t4Poy4u63ePDGGMnJ8GPNmxER
+         Wl9FehBs8GDo02BIMIF9Fep3J6GInwBT3QjIM=
+Message-ID: <4C99740E.307@gmail.com>
+Date: Tue, 21 Sep 2010 20:12:14 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
+MIME-Version: 1.0
+To: Finn Thain <fthain@telegraphics.com.au>
+CC: Matt Turner <mattst88@gmail.com>, trivial@kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Maciej W. Rozycki" <macro@linux-mips.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Dimitry Torokhov <dmitry.torokhov@gmail.com>,
+        Ben Pfaff <blp@cs.stanford.edu>, Mike Frysinger <vapier.adi@gmail.com>
+Subject: Re: [PATCH]Update-broken-web-addresses-in-the-kernel
+References: <1285042724-19135-1-git-send-email-justinmattock@gmail.com> <AANLkTinE73z9QV0zriVE3bRtzMifWSGvG36hfvnA9biD@mail.gmail.com> <4C983C7D.1050000@gmail.com> <AANLkTimYp6ua743x9ze4fcU09ZZ=oZZd_iKCmU0WQ2h7@mail.gmail.com> <alpine.LNX.2.00.1009211516180.9370@nippy.intranet> <4C98D8AA.80606@gmail.com> <alpine.LNX.2.00.1009221205330.4570@nippy.intranet>
+In-Reply-To: <alpine.LNX.2.00.1009221205330.4570@nippy.intranet>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Tue, 21 Sep 2010 23:01:47 -0400
-Message-ID: <8581.1285124507@localhost>
-X-Mirapoint-Received-SPF: 128.173.34.103 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020205.4C99719C.00B0,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1285124506_4916P
-Content-Type: text/plain; charset=us-ascii
+On 09/21/2010 07:41 PM, Finn Thain wrote:
+>
+> On Tue, 21 Sep 2010, Justin P. Mattock wrote:
+>
+>> On 09/20/2010 10:17 PM, Finn Thain wrote:
+>>>
+>>> I would say that if a URL is in the web archive, then no patch is needed.
+>>>
+>>> Finn
+>>>
+>>
+>> before I go and remove all of the archive.org stuff, can I get some feedback
+>> from other people as well on having this used? i.e. if keeping the old broken
+>> link in the kernel, how will people know to go to archive.org or any other
+>> archive site to read the old info?, as opposed to already having this in there
+>> so people can just click and go?..
+>>
+>> The idea to use archive.org came from this thread:
+>> http://amailbox.org/mailarchive/linux-kernel/2010/7/21/4596207/thread
+>> where there are people still wanting to read the old info.
+>
+> If people want to read the old links, and they don't know about
+> archive.org, then they should. If you've seen one
+> "http://web.archive.org/web/*/foo/bar", you've seen them all. So this is
+> bloat in some sense.
+>
 
-On Wed, 15 Sep 2010 16:21:43 PDT, akpm@linux-foundation.org said:
-> The mm-of-the-moment snapshot 2010-09-15-16-21 has been uploaded to
-> 
->    http://userweb.kernel.org/~akpm/mmotm/
+I dont like this.. reason for just ripping them out from the first 
+series back in july/august(but to accommodate peoples needs I added this).
 
-Dell Latitude E6500. lspci -v says:
+> As the web matures, and more and more information disappears from the web,
+> archive.org will become common knowledge (if it isn't already).
+>
 
-03:01.2 SD Host controller: Ricoh Co Ltd R5C822 SD/SDIO/MMC/MS/MSPro Host Adapter (rev 21) (prog-if 01)
-        Subsystem: Dell Device 024f
-        Flags: bus master, medium devsel, latency 64, IRQ 18
-        Memory at f1bff600 (32-bit, non-prefetchable) [size=256]
-        Capabilities: [80] Power Management version 2
-        Kernel driver in use: sdhci-pci
+I had never heard of it.. but nor do I ever really search for some 
+technology back in the 90's(but then again I suppose I do from time to 
+time).
 
-Not consistently repeatable - I had 3 clean boots of this kernel, hit this the 4th time.
+> Applying your reasoning that "people are still wanting to read the old
+> info", a policy to accept patches like:
+> - http://foo/bar
+> + http://web.archive.org/web/*/foo/bar
+> would imply another continual stream of patches when the domain foo
+> changes hands. Then you have to pach,
+> - http://web.archive.org/web/*/foo/bar
+> + http://web.archive.org/web/YYYYMMDDHHMMSS/foo/bar
+>
+> Then the problem becomes what is the correct YYYYMMMDDHHMMSS? The one
+> closest to the datestamp of submission of the patch? Or the datestamp from
+> the email that submitted the patch? When these questions arise, it becomes
+> a new burden on maintainers to determine the right version of the web page
+> in the archive, and whether or not the latest version is the best one.
+>
 
-[    2.928661] Freeing unused kernel memory: 892k freed
-[    2.934051] BUG: sleeping function called from invalid context at kernel/mutex.c:278
-[    2.934440] in_atomic(): 1, irqs_disabled(): 0, pid: 11, name: kworker/0:1
-[    2.934777] 3 locks held by kworker/0:1/11:
-[    2.934780]  #0:  (((dev_name(&(mmc)->class_dev)))){+.+...}, at: [<ffffffff81052388>] process_one_work+0x1b5/0x49d
-[    2.934796]  #1:  ((&host->finish_work)){+.+...}, at: [<ffffffff81052388>] process_one_work+0x1b5/0x49d
-[    2.934806]  #2:  (&trigger->leddev_list_lock){.+.+..}, at: [<ffffffff813d464e>] led_trigger_event+0x22/0x75
-[    2.934821] Pid: 11, comm: kworker/0:1 Not tainted 2.6.36-rc4-mmotm0915 #2
-[    2.934825] Call Trace:
-[    2.934833]  [<ffffffff8102e456>] __might_sleep+0x124/0x129
-[    2.934840]  [<ffffffff8156559e>] mutex_lock_nested+0x20/0x39
-[    2.934846]  [<ffffffff813d1412>] sdhci_led_control+0x24/0x52
-[    2.934852]  [<ffffffff813d464e>] ? led_trigger_event+0x22/0x75
-[    2.934858]  [<ffffffff813d4682>] led_trigger_event+0x56/0x75
-[    2.934865]  [<ffffffff813c74c8>] mmc_request_done+0x5c/0x7a
-[    2.934871]  [<ffffffff813d1aba>] sdhci_finish_work+0xe6/0xef
-[    2.934877]  [<ffffffff81052472>] process_one_work+0x29f/0x49d
-[    2.934882]  [<ffffffff81052388>] ? process_one_work+0x1b5/0x49d
-[    2.934888]  [<ffffffff813d19d4>] ? sdhci_finish_work+0x0/0xef
-[    2.934895]  [<ffffffff81052d10>] worker_thread+0x17e/0x251
-[    2.934901]  [<ffffffff81052b92>] ? worker_thread+0x0/0x251
-[    2.934908]  [<ffffffff81056882>] kthread+0x7d/0x85
-[    2.934915]  [<ffffffff81003554>] kernel_thread_helper+0x4/0x10
-[    2.934922]  [<ffffffff815676c0>] ? restore_args+0x0/0x30
-[    2.934928]  [<ffffffff81056805>] ? kthread+0x0/0x85
-[    2.934934]  [<ffffffff81003550>] ? kernel_thread_helper+0x0/0x10
-[    2.941048] mmc0: mmc_rescan: trying to init card at 200000 Hz
+just was looking for apmv1.1.doc my search results are not so 
+good(everything is pointing to v2) but it is tricky to decipher..
 
-Only config diff between the first 3 boots and this one:
+> So both of these (arguably) continuous streams of patches would become a
+> burden on maintainers and offer little or no benefit to those reading the
+> source code.
+>
 
- #
- CONFIG_BINFMT_ELF=y
- CONFIG_COMPAT_BINFMT_ELF=y
--CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
-+# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
- # CONFIG_HAVE_AOUT is not set
- CONFIG_BINFMT_MISC=y
- CONFIG_IA32_EMULATION=y
+true.. I see it as accommodating.. but then again maybe a museum if you 
+want to search about the first commador64 as opposed to ps3/xbox(I know 
+bad analogy, but only thing I can think of).
 
-which shouldn't matter.
+> The benefit to end users is also dubious, because you're chasing web pages
+> that were abandoned, implying low value in the first place.
+>
 
-Anything obvious to you guys? Race condition of some sort, or somebody else
-leaving a dangling in_atomic() status for us to get ambushed by? Maybe Hein's
-patches to retry at multiple freqs are causing one of the retries to happen at a
-bad time? I'm mystified.
+but at the time that was hot off the press info..(which I need to 
+respect, and should be taken care of).
+
+> Though they move from one URL to another, the links that are valuable are
+> the web pages that are regularly updated. These are are the links that
+> need to be kept up-to-date. And I think your work in that direction is
+> valuable.
+>
+> Thanks.
+>
+> Finn
+>
 
 
---==_Exmh_1285124506_4916P
-Content-Type: application/pgp-signature
+one thing that gets me.. is, is the maintainer/author/company of their 
+_old project_, (even if it's a link)can be that irresponsible to abandon 
+their child like that? atleast have the responsibility to update the 
+kernel, or have one of the hyperlink forward things etc..(the leave it, 
+im on to bigger better things I don't need this anymore _misfit_ eeks 
+me, but we all are guilty of this one way or another..) keep in mind 
+that's just my 00.02$
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+Thanks for the help as well my friend.. FWIW I went through the arch 
+stuff and resent, ended putting the archive.org links on a separate 
+patch to make things easier..(and in the meanwhile I'm going through the 
+rest...(but might crap out..and end up having a beer..(we will see though)).
 
-iD8DBQFMmXGacC3lWbTT17ARAs4KAJ9Q2rUE2Y72X0NSjgFjswTyO5JU1gCfaS8u
-3v1oy8XxvKHOAguPo5iuN9U=
-=tFPQ
------END PGP SIGNATURE-----
-
---==_Exmh_1285124506_4916P--
-
+Justin P. Mattock
