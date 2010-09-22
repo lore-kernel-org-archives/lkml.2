@@ -1,89 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751158Ab0IVEed (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 00:34:33 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:34582 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750763Ab0IVEec (ORCPT
+	id S1751316Ab0IVEks (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 00:40:48 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:60153 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736Ab0IVEks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 00:34:32 -0400
-Date: Wed, 22 Sep 2010 10:04:24 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
-        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
-        robert.richter@amd.com, acme@redhat.com,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>
-Subject: Re: [RFC PATCH 0/2] perf_events: add support for per-cpu per-cgroup
- monitoring (v3)
-Message-ID: <20100922043424.GH6676@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <4c88dc9c.991ce30a.3d91.3e0e@mx.google.com>
- <1285061899.2275.824.camel@laptop>
- <1285062228.2275.826.camel@laptop>
- <AANLkTik-oMNJdakwsH=22LzgYvgd35aom+Zu2WkchUte@mail.gmail.com>
- <1285072975.2275.872.camel@laptop>
- <AANLkTinmHGtLFRa4O5DNRGgoRtM4cy65JgCw=sYxEjNF@mail.gmail.com>
- <1285077801.2275.881.camel@laptop>
- <AANLkTimFgsOkMaX9FFidqL-6SHStgqW6v73F3rM-Kmmz@mail.gmail.com>
- <1285086447.2275.887.camel@laptop>
+	Wed, 22 Sep 2010 00:40:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=hPKdQrGzRqsKDVoQtiJlVOQjBI72yaxlwc0c7v0ipEMLPpHWmLkW4v/ULGbZgNj9zO
+         CsCDOO55rTxSgVbxg70XTzkPHUE2L0oHoIZeE8rwIuGwpEQTd9pQjDrsTFJjbKAN5XW0
+         T8XF0jPS3MuIWf3wbUcQMhyfWWHhKxVXZhO8A=
+Message-ID: <4C9988D5.5010700@gmail.com>
+Date: Tue, 21 Sep 2010 21:40:53 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1285086447.2275.887.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Finn Thain <fthain@telegraphics.com.au>
+CC: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        "Maciej W. Rozycki" <macro@linux-mips.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Matt Turner <mattst88@gmail.com>,
+        Dimitry Torokhov <dmitry.torokhov@gmail.com>,
+        Ben Pfaff <blp@cs.stanford.edu>, Mike Frysinger <vapier.adi@gmail.com>
+Subject: Re: [PATCH]Update-broken-web-addresses-in-the-kernel
+References: <1285042724-19135-1-git-send-email-justinmattock@gmail.com> <alpine.LNX.2.00.1009211518290.9370@nippy.intranet>
+In-Reply-To: <alpine.LNX.2.00.1009211518290.9370@nippy.intranet>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2010-09-21 18:27:27]:
 
-> On Tue, 2010-09-21 at 18:17 +0200, Stephane Eranian wrote:
-> > On Tue, Sep 21, 2010 at 4:03 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > > On Tue, 2010-09-21 at 15:38 +0200, Stephane Eranian wrote:
-> > >> > Hmm, indeed. One thing we can do about that is move perf into the
-> > >> > cgroup, create the counter (disabled) using self to identify the cgroup,
-> > >> > move perf back to where it came from, and enable the counter.
-> > >> >
-> > >> Yes, that's another possibility. I wonder if there are any non-obvious
-> > >> difficulties with this approach.
-> > >
-> > > Yes, there is, but I think we can fix it. The problem with moving perf
-> > > itself around is that perf is not a fully dormant process and can thus
-> > > interact with the cgroup state.
-> > >
-> > I was thinking about memory accounting for instance.
-> 
-> I think the memory controller only accounts things when the process
-> actually touches something. A process that never wakes will never touch
-> anything.
+ > diff --git a/drivers/hwmon/adcxx.c b/drivers/hwmon/adcxx.c
+ > index fbdc765..8803ed9 100644
+ > --- a/drivers/hwmon/adcxx.c
+ > +++ b/drivers/hwmon/adcxx.c
+ > @@ -14,7 +14,7 @@
+ >   *   and 101 for 1 MSPS)
+ >   *
+ >   * Complete datasheets are available at National's website here:
+ > - * http://www.national.com/ds/DC/ADC<bb><c>S<sss>.pdf
+ > + * http://www.national.com/products/catalog.do
+ >Wrong. Google this and you will see what I mean.
 
-That understanding is correct, but the whole approach sounds more
-complex due to several subsystems involved, the expectation is that
-we'll move perf to all the correct cgroups for each subsystem.
+ >site:www.national.com inurl:ds/DC
 
-> 
-> > > If we were to fork a child that's simply sitting idle in waitpid() (or
-> > > any other blocking syscall) we can move that around cgroup without
-> > > affecting the cgroup itself.
-> > 
-> > But then things get a bit more complicated because the perf_event_open()
-> > has to be done in that child. File descriptors created in child processes
-> > and not shared with their parent. You'd have to pass file descriptors around.
-> > That seems overly complicated.
-> 
-> Uhm, no the trick is that the child remains absolutely dormant and
-> therefore doesn't accrue any accounting, all you need is a known task in
-> the cgroup, the parent can then specify the child pid to identify the
-> group.
-> 
-> Once you've opened the counter, you can move the kid out and kill it.
-> Note that moving it out of the cgroup before killing it ensure it never
-> wakes up inside that cgroup.
+looking at this one, I think it might be better to leave alone,
+reading the info above the url gives better insight on how they came up 
+with: ADC<bb><c>S<sss>.pdf
 
-What the benefits of this complexity, not chaning perf_event_attr?
+or I can just use: http://www.national.com/analog/documents/guides
+googling does gives results, but the part number is up to the person 
+doing the designing etc..(searches are showing nothing with adcxx
+just the companies product numbers for their products).
 
--- 
-	Three Cheers,
-	Balbir
+Justin P. Mattock
