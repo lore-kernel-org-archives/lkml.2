@@ -1,89 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858Ab0IVLRN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 07:17:13 -0400
-Received: from qmta15.emeryville.ca.mail.comcast.net ([76.96.27.228]:49458
-	"EHLO qmta15.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753468Ab0IVLRM (ORCPT
+	id S1753902Ab0IVLSt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 07:18:49 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:21027 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751876Ab0IVLSr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 07:17:12 -0400
-X-Greylist: delayed 346 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Sep 2010 07:17:12 EDT
-From: Brian Rogers <brian@xyzw.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: =?UTF-8?q?David=20H=C3=A4rdeman?= <david@hardeman.nu>,
-        Jarod Wilson <jarod@redhat.com>, linux-media@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Brian Rogers <brian@xyzw.org>
-Subject: [PATCH] ir-core: Fix null dereferences in the protocols sysfs interface
-Date: Wed, 22 Sep 2010 04:06:43 -0700
-Message-Id: <1285153603-1527-1-git-send-email-brian@xyzw.org>
-X-Mailer: git-send-email 1.7.1
+	Wed, 22 Sep 2010 07:18:47 -0400
+Message-ID: <4C99E613.6000004@panasas.com>
+Date: Wed, 22 Sep 2010 13:18:43 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: Joel Becker <Joel.Becker@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
+        Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jens Axboe <axboe@kernel.dk>,
+        Linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [RFC 02/22] configfs: Add struct	configfs_item_operations->check_link()
+ in configfs_unlink()
+References: <1283456440.5598.108.camel@haakon2.linux-iscsi.org>	 <201009071701.02847.konrad@darnok.org>	 <20100907224413.GC21935@mail.oracle.com>	 <1283911739.556.420.camel@haakon2.linux-iscsi.org>	 <20100908192639.GD29545@mail.oracle.com>	 <1283979207.556.510.camel@haakon2.linux-iscsi.org>	 <20100910152802.GG885@mail.oracle.com>	 <1284145606.19890.68.camel@haakon2.linux-iscsi.org>	 <20100910194404.GJ885@mail.oracle.com>	 <1284148323.19890.94.camel@haakon2.linux-iscsi.org>	 <20100920220633.GC8405@mail.oracle.com> <1285139802.1849.13.camel@haakon2.linux-iscsi.org>
+In-Reply-To: <1285139802.1849.13.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 22 Sep 2010 11:18:46.0849 (UTC) FILETIME=[EC93FB10:01CB5A47]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For some cards, ir_dev->props and ir_dev->raw are both NULL. These cards are
-using built-in IR decoding instead of raw, and can't easily be made to switch
-protocols.
+On 09/22/2010 09:16 AM, Nicholas A. Bellinger wrote:
+> On Mon, 2010-09-20 at 15:06 -0700, Joel Becker wrote:
+>> [Sorry on the delay, I was out of town]
+>>
+> 
+> Hi Joel,
+> 
+> Many, thanks for your followup on this item, my comments are below.
+> 
+>> On Fri, Sep 10, 2010 at 12:52:03PM -0700, Nicholas A. Bellinger wrote:
+>>> On Fri, 2010-09-10 at 12:44 -0700, Joel Becker wrote:
+>>>> 	You can refcount without check_link().
+>>>
+>>> So what do you recommend here..?
+>>
+>> 	That your ACL object, or whatever it is that considers itself to
+>> be refcounted by the number of links, keep track of that and only free
+>> itself when all are gone rather than freeing itself when the first goes
+>> away.
+>>
+> 
+> Ok, I see what you mean by internal refcounting within the configfs
+> consumer to handle this case..
+> 
+>>> The problem is that the 'unlink sub_child/group1/src_0/src_link' can't
+>>> signal to the other struct config_group to also call an internal 'unlink
+>>> sub_child/group2/dst_0/dst_link' to drop the child link outside of it's
+>>> struct config_group.
+>>
+>> 	Nor should it.  I'm asking what is so wrong about a world where
+>> sub_child/group1/src_0/src_link is gone but
+>> sub_child/group2/dst_0/dst_link remains?  Maybe that target object can't
+>> work anymore, but the user broke it by breaking the link.
+>>
+> 
+> Yes, so trying to avoid the unlink alltogether here was my main
+> intention thus far.  
+> 
+> Actually leaving the sub_child/group2/dst_0/dst_link in the example here
+> would be acceptable for the TCM MappedLUN case, because really we never
+> expect this case to this unless someone is poking at configfs directly,
+> and our userspace code will never do this intentionally.
+> 
+>>>> 	You're still fighting allowing the links to go away.  You
+>>>> haven't explained why that is necessary.  You had a problem with a crash
+>>>> because you expected one reference to your ACLs and actually have two,
+>>>> but you can fix that without modifying configfs.
+>>>
+>>> If this is the case then I must be mis-understanding what you mean by
+>>> configfs consumer refcounting from allow_link() and drop_link().  Can
+>>> you give me a bit more detail where I should be looking..?
+>>
+>> 	Here's how I sort of understood things.  First, you create the
+>> src_link pointing to $object.  This somehow allocates some sort of ACL
+>> structure hanging off of $object.  Then you create dst_link pointing to
+>> src_link, which really ends up pointing to the $object.  So now you have
+>> src_link and dst_link pointing to $object.
+>> 	Finally, someone unlinks src_link.  This triggers $object to
+>> free the ACL structure.  When the caller later removes dst_link, it
+>> crashes because it was expecting ACL to still be there.  Do I have it
+>> right?
+> 
+> Correct.
+> 
+>> 	I'm saying that $object should count how many people are
+>> pointing to it, so that when you remove src_link, ACL is *not* freed.
+>> It will only be freed when both src_link and dst_link are removed.  This
+>> way you do not crash.  Perhaps I'm not understanding the ACL object.
+>> Perhaps I'm missing the mechanism entirely.  But I don't see why the ACL
+>> object must necessarily be freed when one symlink is removed but not the
+>> other.
+>>
+> 
+> No, I think your points here make perfect sense.  I will look into a
+> patch that leaves the TCM fabric MappedLUNs symlinks in place when the
+> underlying TPG fabric LUN symlink is removed without breaking anything,
+> but still does the necessary accounting to ensure that shutdown with
+> active I/Os still works as expected.  
 
-So upon reading /sys/class/rc/rc?/protocols on such a card, return 'builtin' as
-the supported and enabled protocol. Return -EINVAL on any attempts to change
-the protocol. And most important of all, don't crash.
+Perhaps a strengthen chmod here. And if then, done by root, a big fat
+"shoot self in the foot" message in dmsg for the poking where you don't
+need to. type.
 
-Signed-off-by: Brian Rogers <brian@xyzw.org>
-Acked-by: Jarod Wilson <jarod@redhat.com>
----
- drivers/media/IR/ir-sysfs.c |   17 +++++++++++------
- 1 files changed, 11 insertions(+), 6 deletions(-)
+(BTW: could you re establish the link after it's deleted the way you
+ do at setup?)
 
-diff --git a/drivers/media/IR/ir-sysfs.c b/drivers/media/IR/ir-sysfs.c
-index 96dafc4..46d4246 100644
---- a/drivers/media/IR/ir-sysfs.c
-+++ b/drivers/media/IR/ir-sysfs.c
-@@ -67,13 +67,14 @@ static ssize_t show_protocols(struct device *d,
- 	char *tmp = buf;
- 	int i;
- 
--	if (ir_dev->props->driver_type == RC_DRIVER_SCANCODE) {
-+	if (ir_dev->props && ir_dev->props->driver_type == RC_DRIVER_SCANCODE) {
- 		enabled = ir_dev->rc_tab.ir_type;
- 		allowed = ir_dev->props->allowed_protos;
--	} else {
-+	} else if (ir_dev->raw) {
- 		enabled = ir_dev->raw->enabled_protocols;
- 		allowed = ir_raw_get_allowed_protocols();
--	}
-+	} else
-+		return sprintf(tmp, "[builtin]\n");
- 
- 	IR_dprintk(1, "allowed - 0x%llx, enabled - 0x%llx\n",
- 		   (long long)allowed,
-@@ -121,10 +122,14 @@ static ssize_t store_protocols(struct device *d,
- 	int rc, i, count = 0;
- 	unsigned long flags;
- 
--	if (ir_dev->props->driver_type == RC_DRIVER_SCANCODE)
-+	if (ir_dev->props && ir_dev->props->driver_type == RC_DRIVER_SCANCODE)
- 		type = ir_dev->rc_tab.ir_type;
--	else
-+	else if (ir_dev->raw)
- 		type = ir_dev->raw->enabled_protocols;
-+	else {
-+		IR_dprintk(1, "Protocol switching not supported\n");
-+		return -EINVAL;
-+	}
- 
- 	while ((tmp = strsep((char **) &data, " \n")) != NULL) {
- 		if (!*tmp)
-@@ -185,7 +190,7 @@ static ssize_t store_protocols(struct device *d,
- 		}
- 	}
- 
--	if (ir_dev->props->driver_type == RC_DRIVER_SCANCODE) {
-+	if (ir_dev->props && ir_dev->props->driver_type == RC_DRIVER_SCANCODE) {
- 		spin_lock_irqsave(&ir_dev->rc_tab.lock, flags);
- 		ir_dev->rc_tab.ir_type = type;
- 		spin_unlock_irqrestore(&ir_dev->rc_tab.lock, flags);
--- 
-1.7.1
-
+Boaz
+> I will plan to drop the
+> ->check_link() patch from the forthcoming RFC v2 series.
+> 
+> In the end I think his is the best approach for .37, eg: no configfs
+> change required.  I am still open to the discussion for resolving this
+> within fs/configfs proper, but at this point I don't have a strong
+> preference and will follow your direction here.
+> 
+> Many thanks for your invaluable input Joel!
+> 
+> --nab
+> 
