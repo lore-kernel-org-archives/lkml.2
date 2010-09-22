@@ -1,302 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755632Ab0IVVCv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 17:02:51 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:51305 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755596Ab0IVVCs (ORCPT
+	id S1755533Ab0IVVE7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 17:04:59 -0400
+Received: from smtp104.sbc.mail.gq1.yahoo.com ([67.195.15.63]:31844 "HELO
+	smtp104.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753150Ab0IVVE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 17:02:48 -0400
-Date: Wed, 22 Sep 2010 13:59:52 -0700
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-        hughd@google.com, ngupta@vflare.org, JBeulich@novell.com,
-        chris.mason@oracle.com, kurt.hackel@oracle.com,
-        dave.mccracken@oracle.com, npiggin@kernel.dk,
-        akpm@linux-foundation.org, riel@redhat.com, mel@csn.ul.ie,
-        yinghan@google.com, gthelen@google.com, konrad.wilk@oracle.com
-Subject: [PATCH V3 0/4] Frontswap: overview
-Message-ID: <20100922205952.GA27025@ca-server1.us.oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.16 (2007-06-11)
+	Wed, 22 Sep 2010 17:04:57 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: QZa2G4gVM1mtp7hsOTuBjRkNtRxGfn3lkzJPBcR._4V_FeN
+ 34pTGeowGQ87OkLyjJdys97lVfqhKl3RNXuQevgeDw_RHEQPCa8JAhW.l7i6
+ YfsUWGTJoKPZu86wW7ZfHMQb_AeqEvJUXMpnRETgShOsEY1oGiq.UpTwRF21
+ Txf2mUQIKkZQmstwod7EH_WGuaHzzZShOPA1MYxEcmtXRszTRFUfPzqr0yVo
+ oP0cPxjvr4qHo5zhNQHBil2Ml1OcNf781dntVG1V2CGGXsiP8TtNFY2V_IbR
+ AHQihRw9QOExrtgQu5DI7l7w-
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [PATCH 2/2] siw: Add support for CRC32C offload instruction
+	using libcrypto crc32c-intel
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Andi Kleen <ak@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        linux-rdma <linux-rdma@vger.kernel.org>,
+        Bernard Metzler <BMT@zurich.ibm.com>,
+        David Miller <davem@davemloft.net>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Roland Dreier <rdreier@cisco.com>
+In-Reply-To: <20100922205943.GI11157@obsidianresearch.com>
+References: <1285187425-10950-1-git-send-email-nab@linux-iscsi.org>
+	 <4C9A698B.90806@linux.intel.com>
+	 <1285187901.1849.85.camel@haakon2.linux-iscsi.org>
+	 <20100922205943.GI11157@obsidianresearch.com>
+Content-Type: text/plain
+Date: Wed, 22 Sep 2010 14:00:41 -0700
+Message-Id: <1285189241.1849.112.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCH V3 0/4] Frontswap: overview
+On Wed, 2010-09-22 at 14:59 -0600, Jason Gunthorpe wrote:
+> On Wed, Sep 22, 2010 at 01:38:21PM -0700, Nicholas A. Bellinger wrote:
+> 
+> > Indeed, this would clean up the explict RX/TX CRC32C case quite a
+> > bit..  Unfortuately I am too busy with other items atm to cook up
+> > this patch, but I would be happy to test it if someone wants to take
+> > it.  ;)
+> 
+> Do you even need to do anything at all? crc32c is provided by
+> crc32c-intel at a higher priority already, so it should be used if it
+> is available..
 
-Changes since V2:
-- Rebased to 2.6.36-rc5 (main change: swap_info is now array of pointers)
-- Added set/end_page_writeback calls around page unlock on successful put
-- Changed frontswap_init to hide frontswap_poolid (which is cleancache/tmem
-  oddity that need not be exposed to frontswap)
-- Document and ensure PageLocked requirements are met (per Andrew Morton
-  feedback in cleancache thread)
-- Remove incorrect flags set/clear around partial swapoff call in
-  frontswap_shrink
-- Clarified code testing if frontswap is enabled
-- Add frontswap_register_ops interface to avoid an unnecessary global (per
-  Christoph Hellwig suggestion in cleancache thread)
-- Use standard success/fail codes (0/<0) (per Nitin Gupta feedback on
-  cleancache patch)
-- Added Documentations/vm/frontswap.txt including a FAQ (per Andrew Morton
-  feedback in cleancache thread)
-- Added Documentation/ABI/testing/sysfs-kernel-mm-frontswap to describe
-  sysfs usage (per Andrew Morton feedback in cleancache thread)
-- Minor static variable naming cleanup (per Jeremy Fitzhardinge feedback
-  in cleancache thread)
+I believe with the current libcrypto code that consumers are still
+required to explictly ask for crc32c-intel offload.
 
-Changes since V1:
-- Rebased to 2.6.34 (no functional changes)
-- Convert to sane types (per Al Viro comment in cleancache thread)
-- Define some raw constants (Konrad Wilk)
-- Performance analysis shows significant advantage for frontswap's
-  synchronous page-at-a-time design (vs batched asynchronous speculated
-  as an alternative design).  See http://lkml.org/lkml/2010/5/20/314
+>  
+> > > Need CPUID module auto probing. I have an older patch that needs
+> > > some fixes.
+> 
+> > Hmm, I don't see how that fits in here exactly.  Would you mind
+> > elaborating a bit..?
+> 
+> Unless the module is loaded the optimized algorithm will not be
+> available for automatic use. Maybe your patch causes it to autoload
+> because of the by-name reference? Identifying modules to load by CPUID
+> will let userspace auto load the appropriate ones based on CPU...
+> 
 
-In previous patch postings, frontswap was part of the Transcendent
-Memory ("tmem") patchset.  This patchset refocuses not on the underlying
-technology (tmem) but instead on the useful functionality provided for Linux,
-and provides a clean API so that frontswap can provide this very useful
-functionality via a Xen tmem driver OR completely independent of tmem.
-For example: an in-kernel compression "backend" for frontswap can be
-implemented and some believe frontswap will be a very nice interface
-for building RAM-like functionality for pseudo-RAM devices such as
-on-memory-bus SSD or phase-change memory.
+Correct, this patch is so that autoload of crc32c-intel.ko 'just works'
+and we do the fallback to the legacy slicing by 1x crc32c.ko when the
+former is not availabe.
 
-A more complete description of frontswap can be found in the introductory
-comment in Documentation/vm/frontswap.txt (in PATCH 2/4) which is included
-below for convenience.
+But I definately agree with Andi here that we should just add a wrapper
+around the crypto_alloc_hash() usage of crc32c-intel and crc32c for
+libcrypto consumers..
 
-Note that an earlier version of this patch is now shipping in OpenSuSE 11.2
-and will soon ship in a release of Oracle Enterprise Linux.  Underlying
-tmem technology is now shipping in Oracle VM 2.2 and Xen 4.0.
+Thanks for your comments Jason!
 
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-Reviewed-by: Jeremy Fitzhardinge <jeremy@goop.org>
+--nab
 
- Documentation/ABI/testing/sysfs-kernel-mm-frontswap |   16 
- Documentation/vm/frontswap.txt                      |  209 ++++++++++++
- include/linux/frontswap.h                           |   86 +++++
- include/linux/swap.h                                |    2 
- include/linux/swapfile.h                            |   13 
- mm/Kconfig                                          |   17 +
- mm/Makefile                                         |    1 
- mm/frontswap.c                                      |  331 ++++++++++++++++++++
- mm/page_io.c                                        |   12 
- mm/swapfile.c                                       |   58 ++-
- 10 files changed, 736 insertions(+), 9 deletions(-)
 
-(following is a copy of Documentation/vm/frontswap.txt including a FAQ)
-
-Frontswap provides a page-accessible-memory (PAM) interface for swap pages.
-In some environments, dramatic performance savings may be obtained because
-swapped pages are saved in RAM (or a RAM-like device) instead of a swap disk.
-
-Frontswap is so named because it can be thought of as the opposite of
-a "backing" store for a swap device.  The storage is assumed to be
-a synchronous concurrency-safe page-oriented pseudo-RAM device (such as
-Xen's Transcendent Memory, aka "tmem", or in-kernel compressed memory,
-aka "zmem", or other RAM-like devices) which is not directly accessible
-or addressable by the kernel and is of unknown and possibly time-varying
-size.  This pseudo-RAM device links itself to frontswap by calling
-frontswap_register_ops to set the frontswap_ops funcs appropriately and
-the functions it provides must conform to certain policies as follows:
-
-An "init" prepares the pseudo-RAM to receive frontswap pages associated
-with the specified swap device number (aka "type").  A "put_page" will
-copy the page to pseudo-RAM and associate it with the type and offset
-associated with the page. A "get_page" will copy the page, if found,
-from pseudo-RAM into kernel memory, but will NOT remove the page from
-pseudo-RAM.  A "flush_page" will remove the page from pseudo-RAM and a
-"flush_area" will remove ALL pages associated with the swap type
-(e.g., like swapoff) and notify the pseudo-RAM device to refuse
-further puts with that swap type.
-
-Once a page is successfully put, a matching get on the page will always
-succeed.  So when the kernel finds itself in a situation where it needs
-to swap out a page, it first attempts to use frontswap.  If the put returns
-non-zero, the data has been successfully saved to pseudo-RAM and
-a disk write and, if the data is later read back, a disk read are avoided.
-If a put returns zero, pseudo-RAM has rejected the data, and the page can
-be written to swap as usual.
-
-Note that if a page is put and the page already exists in pseudo-RAM
-(a "duplicate" put), either the put succeeds and the data is overwritten,
-or the put fails AND the page is flushed.  This ensures stale data may
-never be obtained from psuedo-RAM.
-
-Monitoring and control of frontswap is done by sysfs files in the
-/sys/kernel/mm/frontswap directory.  The effectiveness of frontswap can
-be measured (across all swap devices) with:
-
-curr_pages	- number of pages currently contained in frontswap
-failed_puts	- how many put attempts have failed
-gets		- how many gets were attempted (all should succeed)
-succ_puts	- how many put attempts have succeeded
-flushes		- how many flushes were attempted
-
-The number can be reduced by root by writing an integer target to curr_pages,
-which results in a "partial swapoff", thus reducing the number of frontswap
-pages to that target if memory constraints permit.
-
-FAQ
-
-1) Where's the value?
-
-When a workload starts swapping, performance falls through the floor.
-Frontswap significantly increases performance in many such workloads by
-providing a clean, dynamic interface to read and write swap pages to
-pseudo-RAM -- RAM that is otherwise not directly addressable to the kernel.
-This interface is ideal when data is transformed to a different form
-and size (such as with compression) or secretly moved (as might be
-useful for write-balancing for some RAM-like devices).  Swap pages (and
-evicted page-cache pages) are a great use for this kind of slower-than-RAM-
-but-much-faster-than-disk pseudo-RAM and the frontswap (and cleancache)
-"page-object-oriented" specification provides a nice way to read
-and write -- and indirectly "name" -- the pages.
-
-In the virtual case, the whole point of virtualization is to statistically
-multiplex physical resources acrosst the varying demands of multiple
-virtual machines.  This is really hard to do with RAM and efforts to do
-it well with no kernel changes have essentially failed (except in some
-well-publicized special-case workloads).  Frontswap -- and cleancache --
-with a fairly small impact on the kernel, provides a huge amount
-of flexibility for more dynamic, flexible RAM multiplexing.
-Specifically, the Xen Transcendent Memory backend allows otherwise
-"fallow" hypervisor-owned RAM to not only be "time-shared" between multiple
-virtual machines, but the pages can be compressed and deduplicated to
-optimize RAM utilization.  And when guest OS's are induced to surrender
-underutilized RAM (e.g. with "self-ballooning"), sudden unexpected
-memory pressure may result in swapping; frontswap allows those pages
-to be swapped to and from hypervisor RAM if overall host system memory
-conditions allow.
-
-2) Sure there may be performance advantages in some situations, but
-   what's the space/time overhead of frontswap?
-
-If CONFIG_FRONTSWAP is disabled, every frontswap hook compiles into
-nothingness and the only overhead is a few extra bytes per swapon'ed
-swap device.  If CONFIG_FRONTSWAP is enabled but no frontswap "backend"
-registers, there is one extra global variable compared to zero for
-every swap page read or written.  If CONFIG_FRONTSWAP is enabled
-AND a frontswap backend registers AND the backend fails every "put"
-request (i.e. provides no memory despite claiming it might),
-CPU overhead is still negligible -- and since every frontswap fail
-precedes a swap page write-to-disk, the system is highly likely
-to be I/O bound and using a small fraction of a percent of a CPU
-will be irrelevant anyway.
-
-As for space, if CONFIG_FRONTSWAP is enabled AND a frontswap backend
-registers, one bit is allocated for every swap page for every swap
-device that is swapon'd.  This is added to the EIGHT bits (which
-was sixteen until about 2.6.34) that the kernel already allocates
-for every swap page for every swap device that is swapon'd.  (Hugh
-Dickins has observed that frontswap could probably steal one of
-the existing eight bits, but let's worry about that minor optimization
-later.)  For very large swap disks (which are rare) on a standard
-4K pagesize, this is 1MB per 32GB swap.
-
-3) OK, how about a quick overview of what this frontswap patch does
-   in terms that a kernel hacker can grok?
-
-Let's assume that a frontswap "backend" has registered during
-kernel initialization; this registration indicates that this
-frontswap backend has access to some "memory" that is not directly
-accessible by the kernel.  Exactly how much memory it provides is
-entirely dynamic and random.
-
-Whenever a swap-device is swapon'd frontswap_init() is called,
-passing the swap device number (aka "type") as a parameter.
-This notifies frontswap to expect attempts to "put" swap pages
-associated with that number.
-
-Whenever the swap subsystem is readying a page to write to a swap
-device (c.f swap_writepage()), frontswap_put_page is called.  Frontswap
-consults with the frontswap backend and if the backend says
-it does NOT have room, frontswap_put_page returns 0 and the page is
-swapped as normal.  Note that the response from the frontswap
-backend is essentially random; it may choose to never accept a
-page, it could accept every ninth page, or it might accept every
-page.  But if the backend does accept a page, the data from the page
-has already been copied and associated with the type and offset,
-and the backend guarantees the persistence of the data.  In this case,
-frontswap sets a bit in the "frontswap_map" for the swap device
-corresponding to the page offset on the swap device to which it would
-otherwise have written the data.
-
-When the swap subsystem needs to swap-in a page (swap_readpage()),
-it first calls frontswap_get_page() which checks the frontswap_map to
-see if the page was earlier accepted by the frontswap backend.  If
-it was, the page of data is filled from the frontswap backend and
-the swap-in is complete.  If not, the normal swap-in code is
-executed to obtain the page of data from the real swap device.
-
-So every time the frontswap backend accepts a page, a swap device read
-and (potentially) a swap device write are replaced by a "frontswap backend
-put" and (possibly) a "frontswap backend get", which are presumably much
-faster.
-
-4) Can't frontswap be configured as a "special" swap device that is
-   just higher priority than any real swap device (e.g. like zswap)?
-
-No.  Recall that acceptance of any swap page by the frontswap
-backend is entirely unpredictable. This is critical to the definition
-of frontswap because it grants completely dynamic discretion to the
-backend.  But since any "put" might fail, there must always be a real
-slot on a real swap device to swap the page.  Thus frontswap must be
-implemented as a "shadow" to every swapon'd device with the potential
-capability of holding every page that the swap device might have held
-and the possibility that it might hold no pages at all.
-On the downside, this also means that frontswap cannot contain more
-pages than the total of swapon'd swap devices.  For example, if NO
-swap device is configured on some installation, frontswap is useless.
-
-Further, frontswap is entirely synchronous whereas a real swap
-device is, by definition, asynchronous and uses block I/O.  The
-block I/O layer is not only unnecessary, but may perform "optimizations"
-that are inappropriate for a RAM-oriented device including delaying
-the write of some pages for a significant amount of time.
-Synchrony is required to ensure the dynamicity of the backend.
-
-In a virtualized environment, the dynamicity allows the hypervisor
-(or host OS) to do "intelligent overcommit".  For example, it can
-choose to accept pages only until host-swapping might be imminent,
-then force guests to do their own swapping.
-
-5) Why this weird definition about "duplicate puts"?  If a page
-   has been previously successfully put, can't it always be
-   successfully overwritten?
-
-Nearly always it can, but no, sometimes it cannot.  Consider an example
-where data is compressed and the original 4K page has been compressed
-to 1K.  Now an attempt is made to overwrite the page with data that
-is non-compressible and so would take the entire 4K.  But the backend
-has no more space.  In this case, the put must be rejected.  Whenever
-frontswap rejects a put that would overwrite, it also must flush
-the old data and ensure that it is no longer accessible.  Since the
-swap subsystem then writes the new data to the read swap device,
-this is the correct course of action to ensure coherency.
-
-6) What is frontswap_shrink for?
-
-When the (non-frontswap) swap subsystem swaps out a page to a real
-swap device, that page is only taking up low-value pre-allocated disk
-space.  But if frontswap has placed a page in pseudo-RAM, that
-page may be taking up valuable real estate.  The frontswap_shrink
-routine allows a process outside of the swap subsystem (such as
-a userland service via the sysfs interface, or a kernel thread)
-to force pages out of the memory managed by frontswap and back into
-kernel-addressable memory.
-
-7) Why does the frontswap patch create the new include file swapfile.h?
-
-The frontswap code depends on some swap-subsystem-internal data
-structures that have, over the years, moved back and forth between
-static and global.  This seemed a reasonable compromise:  Define
-them as global but declare them in a new include file that isn't
-included by the large number of source files that include swap.h.
-
-Dan Magenheimer, September 21 2010
