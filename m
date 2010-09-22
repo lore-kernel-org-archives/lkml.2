@@ -1,89 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab0IVRgV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 13:36:21 -0400
-Received: from cantor.suse.de ([195.135.220.2]:54277 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753096Ab0IVRgU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 13:36:20 -0400
-From: Thomas Renninger <trenn@suse.de>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH] tracing, perf: add more power related events
-Date: Wed, 22 Sep 2010 19:36:01 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.34.4-0.1.99.9.f8e4270-desktop; KDE/4.4.4; x86_64; ; )
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Jean Pihet <jean.pihet@newoldbits.com>, Ingo Molnar <mingo@elte.hu>,
-        Len Brown <len.brown@intel.com>, arjan@infradead.org,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        linux-omap@vger.kernel.org, linux-perf-users@vger.kernel.org,
-        linux-trace-users@vger.kernel.org
-References: <AANLkTinUmbSUUuxUzc8++pcb9gd1CZFdyTQFrveTBXyV@mail.gmail.com> <1285173835.2275.1026.camel@laptop> <4C9A37AE.2010509@linux.intel.com>
-In-Reply-To: <4C9A37AE.2010509@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009221936.02245.trenn@suse.de>
+	id S1753850Ab0IVRnj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 13:43:39 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:50053 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753096Ab0IVRnh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 13:43:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=references:in-reply-to:mime-version:content-transfer-encoding
+         :content-type:message-id:cc:x-mailer:from:subject:date:to;
+        b=alIUvlKMqH+ljOplfeI0SoTRNsqQfpJLxozexzY1RIhi4tEh0I9W6E0WrpqjjyJvY9
+         OPvRVVgasDx956j8mvDR0wEiU+YhBxQu+16Alv6N/NdcNrXypSjoQutWieaAjEcGbGXm
+         7BwjUeEgYCOCMN0V7Dxm7t2V4P5FX84FovCgM=
+References: <AANLkTi=g-6ywz4AoGyBKTp_gfFW6jkBrmGUW5E_Um9LX@mail.gmail.com> <1285137524.6378.160.camel@edumazet-laptop> <1285165636.2639.421.camel@edumazet-laptop>
+In-Reply-To: <1285165636.2639.421.camel@edumazet-laptop>
+Mime-Version: 1.0 (iPhone Mail 8B117)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset=utf-8
+Message-Id: <C481C327-3E01-45CE-B2FF-A863E1AD8744@gmail.com>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "David S.Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+X-Mailer: iPhone Mail (8B117)
+From: Miles Lane <miles.lane@gmail.com>
+Subject: Re: 2.6.36-rc5-git1 -- include/linux/netpoll.h:67 invoked rcu_dereference_check() without protection!
+Date: Wed, 22 Sep 2010 13:43:26 -0400
+To: Eric Dumazet <eric.dumazet@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 22 September 2010 19:06:54 Arjan van de Ven wrote:
->   On 9/22/2010 9:43 AM, Peter Zijlstra wrote:
-> > On Wed, 2010-09-22 at 09:32 -0700, Arjan van de Ven wrote:
-> >>> What are the apps that are using it? I know about builtin-timechart,
-> >>> pytimechart. Is powertop using this as well?
-> >> powertop 2.x codebase is as well.
-> >>
-> >> and a bunch of tools we have internal here at Intel.
-> >>
-> >> the thing with ABIs is that you don't know how many users you have.. at
-> >> least here you know the lower bound is 3 different tools that are open
-> >> source.
-> >> .... and likely many local tools that aren't.
-> > These tools should be smart enough to look up the tracepoint name, fail
-> > it its not available, read the tracepoint format, again fail if not
-> > compatible.
-> it's not very useful if none of the critical information is available.
+That worked for me.
+Thanks!
+       Miles
+
+This message sent using my interplanetary mobile messaging device.
+
+On Sep 22, 2010, at 10:27 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+
+> Le mercredi 22 septembre 2010 à 08:38 +0200, Eric Dumazet a écrit :
+>> Le mercredi 22 septembre 2010 à 00:22 -0400, Miles Lane a écrit :
+>>> [ INFO: suspicious rcu_dereference_check() usage. ]
+>>> ---------------------------------------------------
+>>> include/linux/netpoll.h:67 invoked rcu_dereference_check() without protection!
+>>> 
+>>> other info that might help us debug this:
+>>> 
+>>> 
+>>> rcu_scheduler_active = 1, debug_locks = 1
+>>> 1 lock held by avahi-daemon/1597:
+>>> #0:  (sk_lock-AF_INET6){+.+.+.}, at: [<ffffffffa03673b7>]
+>>> udpv6_sendmsg+0x6c2/0x9e6 [ipv6]
+>>> 
+>>> stack backtrace:
+>>> Pid: 1597, comm: avahi-daemon Not tainted 2.6.36-rc5 #13
+>>> Call Trace:
+>>> [<ffffffff810618d7>] lockdep_rcu_dereference+0x9d/0xa6
+>>> [<ffffffff8129d543>] netif_rx+0x4e/0x1a7
+>>> [<ffffffff8102fe4e>] ? get_parent_ip+0x11/0x41
+>>> [<ffffffff8129d7e3>] netif_rx_ni+0x1e/0x58
+>>> [<ffffffffa0352d50>] ip6_dev_loopback_xmit+0xc0/0xc7 [ipv6]
+>>> [<ffffffffa0352ef0>] ip6_finish_output2+0x199/0x3b6 [ipv6]
+>>> [<ffffffffa035401c>] ip6_finish_output+0xf0f/0xf27 [ipv6]
+>>> [<ffffffff8131e08a>] ? csum_partial_copy_from_user+0xb4/0xea
+>>> [<ffffffff812968a8>] ? csum_partial_copy_fromiovecend+0x178/0x1bd
+>>> [<ffffffffa035418c>] ip6_output+0x158/0x161 [ipv6]
+>>> [<ffffffff8102fe4e>] ? get_parent_ip+0x11/0x41
+>>> [<ffffffffa035262d>] ip6_local_out+0x5d/0x62 [ipv6]
+>>> [<ffffffffa0352a98>] ip6_push_pending_frames+0x466/0x524 [ipv6]
+>>> [<ffffffffa0366a93>] udp_v6_push_pending_frames+0x27f/0x2fb [ipv6]
+>>> [<ffffffffa03673b7>] ? udpv6_sendmsg+0x6c2/0x9e6 [ipv6]
+>>> [<ffffffffa03674ba>] udpv6_sendmsg+0x7c5/0x9e6 [ipv6]
+>>> [<ffffffff812fb634>] ? inet_sendmsg+0x0/0x11f
+>>> [<ffffffff812fb746>] inet_sendmsg+0x112/0x11f
+>>> [<ffffffff812fb634>] ? inet_sendmsg+0x0/0x11f
+>>> [<ffffffff8128ca91>] sock_sendmsg+0xe7/0x108
+>>> [<ffffffff810a4c3b>] ? might_fault+0x63/0xb3
+>>> [<ffffffff810a4c84>] ? might_fault+0xac/0xb3
+>>> [<ffffffff810a4c3b>] ? might_fault+0x63/0xb3
+>>> [<ffffffff8128d346>] sys_sendmsg+0x24f/0x2d6
+>>> [<ffffffff8102fe4e>] ? get_parent_ip+0x11/0x41
+>>> [<ffffffff81031ef7>] ? sub_preempt_count+0x92/0xa6
+>>> [<ffffffff810570ce>] ? __srcu_read_unlock+0x3b/0x57
+>>> [<ffffffff81001f9c>] ? sysret_check+0x27/0x62
+>>> [<ffffffff81001f6b>] system_call_fastpath+0x16/0x1b#
+>> 
+>> Oh well.
+>> 
+>> Thanks for the report. Could you please test following patch ?
+>> 
+>> 
+>> [PATCH] rcu: rcu_dereference_bh() is hard irq safe
+>> 
+>> rcu_dereference_bh() doesnt know yet about hard irq being disabled, so
+>> lockdep can trigger in netpoll_rx() after commit f0f9deae9e7c4 (netpoll:
+>> Disable IRQ around RCU dereference in netpoll_rx)
+>> 
+>> Reported-by: Miles Lane <miles.lane@gmail.com>
+>> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+>> ---
+>> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+>> index 9fbc54a..435c502 100644
+>> --- a/include/linux/rcupdate.h
+>> +++ b/include/linux/rcupdate.h
+>> @@ -454,7 +454,7 @@ static inline notrace void rcu_read_unlock_sched_notrace(void)
+>>  * Makes rcu_dereference_check() do the dirty work.
+>>  */
+>> #define rcu_dereference_bh(p) \
+>> -        rcu_dereference_check(p, rcu_read_lock_bh_held())
+>> +        rcu_dereference_check(p, rcu_read_lock_bh_held() || in_irq())
 > 
-> you can't at the one hand push people to use perf for critical pieces 
-> (like machine checks etc etc) and on
-> the other hand say that it's not ABI stable and should not be used really.
-I provided an ABI stable solution, by marking the broken parts deprecated, etc.
-I'll rework the CONFIG_DEPRECATED_POWER_EVENTS (or similar config).
-
-> In this case we're talking about basically a suprious rename of 
-> something that isn't really an improvement
-...
-
-> (because it makes it harder to subscribe to only one type of event)... 
-> that's not a good thing.
-Finally there is some talking about the details.
-You say they should be differed by the name and not the type?
-Why does the type= attribute exist at all then?
-
-/sys/kernel/debug/tracing/:[0]# cat available_events  |grep power
-power:power_start
-power:power_frequency
-power:power_end
-
-So which one do I set to get C-, processor sleep, state traces?
-
-What you mean is that instead of passing the type= as attribute, an
-additional macro layer could be put in or each type is statically defined.
-The type itself needs not to get passed anymore then, because this
-info is already in the name and you get:
-power:power_cstates
-power:power_pstates
-power:power_sstates
-or
-power:power_processor_sleep
-power:power_processor_frequency
-power:power_machine_suspend
-...
-right?
-This more looks like an interface that can get exposed
-to userspace...
-
-       Thomas
+> oops, I meant irqs_disabled() here, not in_irq()
+> 
+>> 
+>> /**
+>>  * rcu_dereference_sched - fetch RCU-protected pointer, checking for RCU-sched
+>> 
+> 
+> 
