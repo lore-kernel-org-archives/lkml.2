@@ -1,62 +1,335 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656Ab0IVNGv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 09:06:51 -0400
-Received: from ozlabs.org ([203.10.76.45]:43829 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751532Ab0IVNGt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 09:06:49 -0400
-Subject: Re: [PATCH 1/2 v3]Update broken web addresses.
-From: Jeremy Kerr <jk@ozlabs.org>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: patchwork@lists.ozlabs.org, linux-mips@linux-mips.org,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-m32r@ml.linux-m32r.org,
-        trivial@kernel.org, "Maciej W. Rozycki" <macro@linux-mips.org>,
-        linux-laptop@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Finn Thain <fthain@telegraphics.com.au>, linux-m68k@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>,
-        linux-omap@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <20100922105852.GC4710@linux-mips.org>
-References: <1285118957-24965-1-git-send-email-justinmattock@gmail.com>
-	 <20100922105852.GC4710@linux-mips.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 22 Sep 2010 21:06:45 +0800
-Message-ID: <1285160805.2796.0.camel@pororo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754691Ab0IVNH0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 09:07:26 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:42274 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532Ab0IVNHZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 09:07:25 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andi Kleen <ak@linux.intel.com>, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, tglx@linutronix.de
+Subject: [PATCH] Convert preempt_disabled in module.c to rcu read lock
+Date: Wed, 22 Sep 2010 15:07:20 +0200
+Message-Id: <1285160840-16506-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ralf,
+From: Andi Kleen <ak@linux.intel.com>
 
-> On Tue, Sep 21, 2010 at 06:29:16PM -0700, Justin P. Mattock wrote:
-> > Date:   Tue, 21 Sep 2010 18:29:16 -0700
-> > From: "Justin P. Mattock" <justinmattock@gmail.com>
-> > To: trivial@kernel.org
-> > Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-> >  linux-omap@vger.kernel.org, linux-m32r@ml.linux-m32r.org,
-> >  linux-m68k@lists.linux-m68k.org, linux-mips@linux-mips.org,
-> >  linuxppc-dev@lists.ozlabs.org, linux-laptop@vger.kernel.org, "Justin P.
-> >  Mattock" <justinmattock@gmail.com>, "Maciej W. Rozycki"
-> >  <macro@linux-mips.org>, Finn Thain <fthain@telegraphics.com.au>, Randy
-> >  Dunlap <rdunlap@xenotime.net>
-> > Subject: [PATCH 1/2 v3]Update broken web addresses.
-> > Content-Type: text/plain; charset=UTF-8
-> 
-> Patchwork MIME butchers the subject of this patch, see
-> 
-> https://patchwork.linux-mips.org/patch/1587/
-> https://patchwork.kernel.org/patch/198382/
-> 
+Thomas Gleixner pointed out that the list_for_each_rcu()
+in module really need to use RCU read lock, not preempt disable.
+This is especially needed for the preemptive RCU code.
+>From what I understand the only reason for the preemption
+disabling is to protect against rcu, so using rcu_read_lock()
+is correct.
 
-Thanks for the heads-up - I'll see what's happening with the header
-decoding here.
+Open: this will do rcu_read_lock() asynchronously in oopses. That's ok
+with all RCU implementations without deadlocks?
 
-Cheers,
+Cc: paulmck@linux.vnet.ibm.com
+Cc: rusty@rustcorp.com.au
+Cc: tglx@linutronix.de
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ kernel/module.c |   78 ++++++++++++++++++++++++++----------------------------
+ 1 files changed, 38 insertions(+), 40 deletions(-)
 
-
-Jeremy
+diff --git a/kernel/module.c b/kernel/module.c
+index d0b5f8d..ea99f4c 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -74,7 +74,7 @@
+ 
+ /*
+  * Mutex protects:
+- * 1) List of modules (also safely readable with preempt_disable),
++ * 1) List of modules (also safely readable with rcu_read_lock),
+  * 2) module_use links,
+  * 3) module_addr_min/module_addr_max.
+  * (delete uses stop_machine/add uses RCU list operations). */
+@@ -344,7 +344,7 @@ static bool find_symbol_in_section(const struct symsearch *syms,
+ }
+ 
+ /* Find a symbol and return it, along with, (optional) crc and
+- * (optional) module which owns it.  Needs preempt disabled or module_mutex. */
++ * (optional) module which owns it.  Needs rcu_read_lock or module_mutex. */
+ const struct kernel_symbol *find_symbol(const char *name,
+ 					struct module **owner,
+ 					const unsigned long **crc,
+@@ -443,8 +443,7 @@ bool is_module_percpu_address(unsigned long addr)
+ 	struct module *mod;
+ 	unsigned int cpu;
+ 
+-	preempt_disable();
+-
++	rcu_read_lock();
+ 	list_for_each_entry_rcu(mod, &modules, list) {
+ 		if (!mod->percpu_size)
+ 			continue;
+@@ -453,13 +452,13 @@ bool is_module_percpu_address(unsigned long addr)
+ 
+ 			if ((void *)addr >= start &&
+ 			    (void *)addr < start + mod->percpu_size) {
+-				preempt_enable();
++				rcu_read_unlock();
+ 				return true;
+ 			}
+ 		}
+ 	}
+ 
+-	preempt_enable();
++	rcu_read_unlock();
+ 	return false;
+ }
+ 
+@@ -831,11 +830,11 @@ void __symbol_put(const char *symbol)
+ {
+ 	struct module *owner;
+ 
+-	preempt_disable();
++	rcu_read_lock();
+ 	if (!find_symbol(symbol, &owner, NULL, true, false))
+ 		BUG();
+ 	module_put(owner);
+-	preempt_enable();
++	rcu_read_unlock();
+ }
+ EXPORT_SYMBOL(__symbol_put);
+ 
+@@ -870,7 +869,7 @@ static struct module_attribute refcnt = {
+ void module_put(struct module *module)
+ {
+ 	if (module) {
+-		preempt_disable();
++		rcu_read_lock();
+ 		smp_wmb(); /* see comment in module_refcount */
+ 		__this_cpu_inc(module->refptr->decs);
+ 
+@@ -878,7 +877,7 @@ void module_put(struct module *module)
+ 		/* Maybe they're waiting for us to drop reference? */
+ 		if (unlikely(!module_is_live(module)))
+ 			wake_up_process(module->waiter);
+-		preempt_enable();
++		rcu_read_unlock();
+ 	}
+ }
+ EXPORT_SYMBOL(module_put);
+@@ -1584,11 +1583,11 @@ void *__symbol_get(const char *symbol)
+ 	struct module *owner;
+ 	const struct kernel_symbol *sym;
+ 
+-	preempt_disable();
++	rcu_read_lock();
+ 	sym = find_symbol(symbol, &owner, NULL, true, true);
+ 	if (sym && strong_try_module_get(owner))
+ 		sym = NULL;
+-	preempt_enable();
++	rcu_read_unlock();
+ 
+ 	return sym ? (void *)sym->value : NULL;
+ }
+@@ -2813,7 +2812,7 @@ static const char *get_ksymbol(struct module *mod,
+ }
+ 
+ /* For kallsyms to ask for address resolution.  NULL means not found.  Careful
+- * not to lock to avoid deadlock on oopses, simply disable preemption. */
++ * not to lock to avoid deadlock on oopses, simply use rcu read lock. */
+ const char *module_address_lookup(unsigned long addr,
+ 			    unsigned long *size,
+ 			    unsigned long *offset,
+@@ -2823,7 +2822,7 @@ const char *module_address_lookup(unsigned long addr,
+ 	struct module *mod;
+ 	const char *ret = NULL;
+ 
+-	preempt_disable();
++	rcu_read_lock();
+ 	list_for_each_entry_rcu(mod, &modules, list) {
+ 		if (within_module_init(addr, mod) ||
+ 		    within_module_core(addr, mod)) {
+@@ -2834,11 +2833,12 @@ const char *module_address_lookup(unsigned long addr,
+ 		}
+ 	}
+ 	/* Make a copy in here where it's safe */
++	/* AK: The string copy is likely racy. */
+ 	if (ret) {
+ 		strncpy(namebuf, ret, KSYM_NAME_LEN - 1);
+ 		ret = namebuf;
+ 	}
+-	preempt_enable();
++	rcu_read_unlock();
+ 	return ret;
+ }
+ 
+@@ -2846,7 +2846,7 @@ int lookup_module_symbol_name(unsigned long addr, char *symname)
+ {
+ 	struct module *mod;
+ 
+-	preempt_disable();
++	rcu_read_lock();
+ 	list_for_each_entry_rcu(mod, &modules, list) {
+ 		if (within_module_init(addr, mod) ||
+ 		    within_module_core(addr, mod)) {
+@@ -2854,14 +2854,13 @@ int lookup_module_symbol_name(unsigned long addr, char *symname)
+ 
+ 			sym = get_ksymbol(mod, addr, NULL, NULL);
+ 			if (!sym)
+-				goto out;
++				break;
+ 			strlcpy(symname, sym, KSYM_NAME_LEN);
+-			preempt_enable();
++			rcu_read_unlock();
+ 			return 0;
+ 		}
+ 	}
+-out:
+-	preempt_enable();
++	rcu_read_unlock();
+ 	return -ERANGE;
+ }
+ 
+@@ -2870,7 +2869,7 @@ int lookup_module_symbol_attrs(unsigned long addr, unsigned long *size,
+ {
+ 	struct module *mod;
+ 
+-	preempt_disable();
++	rcu_read_lock();
+ 	list_for_each_entry_rcu(mod, &modules, list) {
+ 		if (within_module_init(addr, mod) ||
+ 		    within_module_core(addr, mod)) {
+@@ -2878,17 +2877,16 @@ int lookup_module_symbol_attrs(unsigned long addr, unsigned long *size,
+ 
+ 			sym = get_ksymbol(mod, addr, size, offset);
+ 			if (!sym)
+-				goto out;
++				break;
+ 			if (modname)
+ 				strlcpy(modname, mod->name, MODULE_NAME_LEN);
+ 			if (name)
+ 				strlcpy(name, sym, KSYM_NAME_LEN);
+-			preempt_enable();
++			rcu_read_unlock();
+ 			return 0;
+ 		}
+ 	}
+-out:
+-	preempt_enable();
++	rcu_read_unlock();
+ 	return -ERANGE;
+ }
+ 
+@@ -2897,7 +2895,7 @@ int module_get_kallsym(unsigned int symnum, unsigned long *value, char *type,
+ {
+ 	struct module *mod;
+ 
+-	preempt_disable();
++	rcu_read_lock();
+ 	list_for_each_entry_rcu(mod, &modules, list) {
+ 		if (symnum < mod->num_symtab) {
+ 			*value = mod->symtab[symnum].st_value;
+@@ -2906,12 +2904,12 @@ int module_get_kallsym(unsigned int symnum, unsigned long *value, char *type,
+ 				KSYM_NAME_LEN);
+ 			strlcpy(module_name, mod->name, MODULE_NAME_LEN);
+ 			*exported = is_exported(name, *value, mod);
+-			preempt_enable();
++			rcu_read_unlock();
+ 			return 0;
+ 		}
+ 		symnum -= mod->num_symtab;
+ 	}
+-	preempt_enable();
++	rcu_read_unlock();
+ 	return -ERANGE;
+ }
+ 
+@@ -2934,7 +2932,7 @@ unsigned long module_kallsyms_lookup_name(const char *name)
+ 	unsigned long ret = 0;
+ 
+ 	/* Don't lock: we're in enough trouble already. */
+-	preempt_disable();
++	rcu_read_lock();
+ 	if ((colon = strchr(name, ':')) != NULL) {
+ 		*colon = '\0';
+ 		if ((mod = find_module(name)) != NULL)
+@@ -2945,7 +2943,7 @@ unsigned long module_kallsyms_lookup_name(const char *name)
+ 			if ((ret = mod_find_symname(mod, name)) != 0)
+ 				break;
+ 	}
+-	preempt_enable();
++	rcu_read_unlock();
+ 	return ret;
+ }
+ 
+@@ -3083,7 +3081,7 @@ const struct exception_table_entry *search_module_extables(unsigned long addr)
+ 	const struct exception_table_entry *e = NULL;
+ 	struct module *mod;
+ 
+-	preempt_disable();
++	rcu_read_lock();
+ 	list_for_each_entry_rcu(mod, &modules, list) {
+ 		if (mod->num_exentries == 0)
+ 			continue;
+@@ -3094,7 +3092,7 @@ const struct exception_table_entry *search_module_extables(unsigned long addr)
+ 		if (e)
+ 			break;
+ 	}
+-	preempt_enable();
++	rcu_read_unlock();
+ 
+ 	/* Now, if we found one, we are running inside it now, hence
+ 	   we cannot unload the module, hence no refcnt needed. */
+@@ -3112,9 +3110,9 @@ bool is_module_address(unsigned long addr)
+ {
+ 	bool ret;
+ 
+-	preempt_disable();
++	rcu_read_lock();
+ 	ret = __module_address(addr) != NULL;
+-	preempt_enable();
++	rcu_read_unlock();
+ 
+ 	return ret;
+ }
+@@ -3153,9 +3151,9 @@ bool is_module_text_address(unsigned long addr)
+ {
+ 	bool ret;
+ 
+-	preempt_disable();
++	rcu_read_lock();
+ 	ret = __module_text_address(addr) != NULL;
+-	preempt_enable();
++	rcu_read_unlock();
+ 
+ 	return ret;
+ }
+@@ -3164,7 +3162,7 @@ bool is_module_text_address(unsigned long addr)
+  * __module_text_address - get the module whose code contains an address.
+  * @addr: the address.
+  *
+- * Must be called with preempt disabled or module mutex held so that
++ * Must be called with rcu read lock or module mutex held so that
+  * module doesn't get freed during this.
+  */
+ struct module *__module_text_address(unsigned long addr)
+@@ -3187,11 +3185,11 @@ void print_modules(void)
+ 	char buf[8];
+ 
+ 	printk(KERN_DEFAULT "Modules linked in:");
+-	/* Most callers should already have preempt disabled, but make sure */
+-	preempt_disable();
++	/* Most callers should already have rcu read lock but make sure */
++	rcu_read_lock();
+ 	list_for_each_entry_rcu(mod, &modules, list)
+ 		printk(" %s%s", mod->name, module_flags(mod, buf));
+-	preempt_enable();
++	rcu_read_unlock();
+ 	if (last_unloaded_module[0])
+ 		printk(" [last unloaded: %s]", last_unloaded_module);
+ 	printk("\n");
+-- 
+1.7.1
 
