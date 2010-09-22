@@ -1,132 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800Ab0IVOe5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 10:34:57 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:41431 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754762Ab0IVOeZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 10:34:25 -0400
-Message-ID: <4C9A13ED.2050703@austin.ibm.com>
-Date: Wed, 22 Sep 2010 09:34:21 -0500
-From: Nathan Fontenot <nfont@austin.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+	id S1754857Ab0IVOfV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 10:35:21 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:57496 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753505Ab0IVOfU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 10:35:20 -0400
+Date: Wed, 22 Sep 2010 16:35:15 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: Andi Kleen <andi@firstfloor.org>, jbaron@redhat.com, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, hpa@zytor.com,
+        tglx@linutronix.de, roland@redhat.com, rth@redhat.com,
+        mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org,
+        tony@bakeyournoodle.com, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/2] Add for_each_module iterator function v2
+Message-ID: <20100922143515.GF5766@basil.fritz.box>
+References: <1285162001-9556-1-git-send-email-andi@firstfloor.org>
+ <20100922141432.GB30730@Krystal>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org
-CC: Greg KH <greg@kroah.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: [PATCH 6/8] Update node sysfs code
-References: <4C9A0F8F.2030409@austin.ibm.com>
-In-Reply-To: <4C9A0F8F.2030409@austin.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100922141432.GB30730@Krystal>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the node sysfs code to be aware of the new capability for a memory
-block to span multiple memory sections.  This requires an additional
-parameter to unregister_mem_sect_under_nodes so that we know which memory
-section of the memory block to unregister.
+On Wed, Sep 22, 2010 at 10:14:32AM -0400, Mathieu Desnoyers wrote:
+> * Andi Kleen (andi@firstfloor.org) wrote:
+> > From: Andi Kleen <ak@linux.intel.com>
+> > 
+> > This is a generic function to iterate over all modules.
+> > To be used in the next patch.
+> > 
+> > v2: Use module_mutex instead of preempt disabling
+> > 
+> > Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> > ---
+> >  include/linux/module.h |    1 +
+> >  kernel/module.c        |   10 ++++++++++
+> >  2 files changed, 11 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/include/linux/module.h b/include/linux/module.h
+> > index 403ac26..809b6db 100644
+> > --- a/include/linux/module.h
+> > +++ b/include/linux/module.h
+> > @@ -410,6 +410,7 @@ struct module *__module_address(unsigned long addr);
+> >  bool is_module_address(unsigned long addr);
+> >  bool is_module_percpu_address(unsigned long addr);
+> >  bool is_module_text_address(unsigned long addr);
+> > +void for_each_module(void (*op)(struct module *, void *arg), void *arg);
+> >  
+> >  static inline int within_module_core(unsigned long addr, struct module *mod)
+> >  {
+> > diff --git a/kernel/module.c b/kernel/module.c
+> > index eba1341..9e2a561 100644
+> > --- a/kernel/module.c
+> > +++ b/kernel/module.c
+> > @@ -384,6 +384,16 @@ struct module *find_module(const char *name)
+> >  }
+> >  EXPORT_SYMBOL_GPL(find_module);
+> >  
+> > +void for_each_module(void (*op)(struct module *, void *arg), void *arg)
+> > +{
+> > +	struct module *mod;
+> > +
+> > +	mutex_lock(&module_mutex);
+> 
+> I'm concerned about the following mutex dependency chain:
+> 
+> module_mutex -> jump_label_mutex (on module load)
+> jump_label_mutex -> module_mutex (on jump_label_update)
 
-Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
+There are actually more problems in this version with using
+module_mutex().  Looking at a fix.
 
----
- drivers/base/memory.c |    4 +++-
- drivers/base/node.c   |   12 ++++++++----
- include/linux/node.h  |    6 ++++--
- 3 files changed, 15 insertions(+), 7 deletions(-)
+> 
+> Actually, I think your module notifier is missing in your version. This
+> is why you don't see this dependency problem.
 
-Index: linux-next/drivers/base/node.c
-===================================================================
---- linux-next.orig/drivers/base/node.c	2010-09-21 11:59:24.000000000 -0500
-+++ linux-next/drivers/base/node.c	2010-09-21 12:38:02.000000000 -0500
-@@ -346,8 +346,10 @@ int register_mem_sect_under_node(struct
- 		return -EFAULT;
- 	if (!node_online(nid))
- 		return 0;
--	sect_start_pfn = section_nr_to_pfn(mem_blk->phys_index);
--	sect_end_pfn = sect_start_pfn + PAGES_PER_SECTION - 1;
-+
-+	sect_start_pfn = section_nr_to_pfn(mem_blk->start_phys_index);
-+	sect_end_pfn = section_nr_to_pfn(mem_blk->end_phys_index);
-+	sect_end_pfn += PAGES_PER_SECTION - 1;
- 	for (pfn = sect_start_pfn; pfn <= sect_end_pfn; pfn++) {
- 		int page_nid;
- 
-@@ -371,7 +373,8 @@ int register_mem_sect_under_node(struct
- }
- 
- /* unregister memory section under all nodes that it spans */
--int unregister_mem_sect_under_nodes(struct memory_block *mem_blk)
-+int unregister_mem_sect_under_nodes(struct memory_block *mem_blk,
-+				    unsigned long phys_index)
- {
- 	NODEMASK_ALLOC(nodemask_t, unlinked_nodes, GFP_KERNEL);
- 	unsigned long pfn, sect_start_pfn, sect_end_pfn;
-@@ -383,7 +386,8 @@ int unregister_mem_sect_under_nodes(stru
- 	if (!unlinked_nodes)
- 		return -ENOMEM;
- 	nodes_clear(*unlinked_nodes);
--	sect_start_pfn = section_nr_to_pfn(mem_blk->phys_index);
-+
-+	sect_start_pfn = section_nr_to_pfn(phys_index);
- 	sect_end_pfn = sect_start_pfn + PAGES_PER_SECTION - 1;
- 	for (pfn = sect_start_pfn; pfn <= sect_end_pfn; pfn++) {
- 		int nid;
-Index: linux-next/drivers/base/memory.c
-===================================================================
---- linux-next.orig/drivers/base/memory.c	2010-09-21 12:37:30.000000000 -0500
-+++ linux-next/drivers/base/memory.c	2010-09-21 12:38:02.000000000 -0500
-@@ -555,9 +555,9 @@ int remove_memory_block(unsigned long no
- 
- 	mutex_lock(&mem_sysfs_mutex);
- 	mem = find_memory_block(section);
-+	unregister_mem_sect_under_nodes(mem, __section_nr(section));
- 
- 	if (atomic_dec_and_test(&mem->section_count)) {
--		unregister_mem_sect_under_nodes(mem);
- 		mem_remove_simple_file(mem, phys_index);
- 		mem_remove_simple_file(mem, end_phys_index);
- 		mem_remove_simple_file(mem, state);
-@@ -631,6 +631,7 @@ int __init memory_dev_init(void)
- 	 * Create entries for memory sections that were found
- 	 * during boot and have been initialized
- 	 */
-+	printk(KERN_ERR "Memory Start\n");
- 	for (i = 0; i < NR_MEM_SECTIONS; i++) {
- 		if (!present_section_nr(i))
- 			continue;
-@@ -639,6 +640,7 @@ int __init memory_dev_init(void)
- 		if (!ret)
- 			ret = err;
- 	}
-+	printk(KERN_ERR "Memory End\n");
- 
- 	err = memory_probe_init();
- 	if (!ret)
-Index: linux-next/include/linux/node.h
-===================================================================
---- linux-next.orig/include/linux/node.h	2010-09-21 11:59:28.000000000 -0500
-+++ linux-next/include/linux/node.h	2010-09-21 12:38:02.000000000 -0500
-@@ -44,7 +44,8 @@ extern int register_cpu_under_node(unsig
- extern int unregister_cpu_under_node(unsigned int cpu, unsigned int nid);
- extern int register_mem_sect_under_node(struct memory_block *mem_blk,
- 						int nid);
--extern int unregister_mem_sect_under_nodes(struct memory_block *mem_blk);
-+extern int unregister_mem_sect_under_nodes(struct memory_block *mem_blk,
-+					   unsigned long phys_index);
- 
- #ifdef CONFIG_HUGETLBFS
- extern void register_hugetlbfs_with_node(node_registration_func_t doregister,
-@@ -72,7 +73,8 @@ static inline int register_mem_sect_unde
- {
- 	return 0;
- }
--static inline int unregister_mem_sect_under_nodes(struct memory_block *mem_blk)
-+static inline int unregister_mem_sect_under_nodes(struct memory_block *mem_blk,
-+						  unsigned long phys_index)
- {
- 	return 0;
- }
+The module notifier is not needed anymore, but there's another 
+callback through the trace point code on module load.
 
+Unload notifier is not needed anymore because there is no
+state to tear down.
+
+-Andi
