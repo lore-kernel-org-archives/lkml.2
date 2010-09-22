@@ -1,57 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab0IVQo1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 12:44:27 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34117 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650Ab0IVQoZ convert rfc822-to-8bit (ORCPT
+	id S1753334Ab0IVQos (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 12:44:48 -0400
+Received: from mtaout01-winn.ispmail.ntl.com ([81.103.221.47]:19593 "EHLO
+	mtaout01-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752650Ab0IVQor (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 12:44:25 -0400
-Subject: Re: [PATCH] tracing, perf: add more power related events
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Jean Pihet <jean.pihet@newoldbits.com>, Thomas Renninger <trenn@suse.de>,
-        Ingo Molnar <mingo@elte.hu>, Len Brown <len.brown@intel.com>,
-        arjan@infradead.org, Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-kernel@vger.kernel.org, discuss@lesswatts.org,
-        linux-pm@lists.linux-foundation.org, linux-omap@vger.kernel.org,
-        linux-perf-users@vger.kernel.org, linux-trace-users@vger.kernel.org
-In-Reply-To: <4C9A2FB3.105@linux.intel.com>
-References: <AANLkTinUmbSUUuxUzc8++pcb9gd1CZFdyTQFrveTBXyV@mail.gmail.com>
-	 <201009171736.14170.trenn@suse.de>	<20100917162412.GB3341@elte.hu>
-	 <201009180026.59482.trenn@suse.de>
-	 <AANLkTimMAr9kEzybFGai3qGyXx36v055iPpXq_C1vW8C@mail.gmail.com>
-	 <4C9A21AD.1000800@linux.intel.com>
-	 <AANLkTim6B+Je=LykgJb9=0vK5Br1rkft619BRJkBcHdP@mail.gmail.com>
-	 <4C9A2FB3.105@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 22 Sep 2010 18:43:55 +0200
-Message-ID: <1285173835.2275.1026.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 22 Sep 2010 12:44:47 -0400
+From: Daniel Drake <dsd@laptop.org>
+To: tglx@linutronix.de
+Cc: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: dilinger@queued.net
+Subject: [PATCH 3/3] OLPC: Extend BIOS signature check
+Message-Id: <20100922164437.5712F9D401B@zog.reactivated.net>
+Date: Wed, 22 Sep 2010 17:44:37 +0100 (BST)
+X-Cloudmark-Analysis: v=1.1 cv=DhNl2YeytwJssBBGe49HJX82LNDFEEVkpVB34RXKaPo= c=1 sm=0 a=zEniI-0oLhoA:10 a=Op-mwl0xAAAA:8 a=xxf6Gh7Pd-4U25aQabwA:9 a=Nv0QrfaMCrRxAVo4gq4A:7 a=866CqDku5OpZPgGCEPrTKy_POukA:4 a=d4CUUju0HPYA:10 a=wDda77cqL8FMGv8_:21 a=yjSnRRjsHjwwyRaT:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-09-22 at 09:32 -0700, Arjan van de Ven wrote:
-> > What are the apps that are using it? I know about builtin-timechart,
-> > pytimechart. Is powertop using this as well?
-> 
-> powertop 2.x codebase is as well.
-> 
-> and a bunch of tools we have internal here at Intel.
-> 
-> the thing with ABIs is that you don't know how many users you have.. at 
-> least here you know the lower bound is 3 different tools that are open 
-> source.
-> .... and likely many local tools that aren't.
+The XO-1.5 laptop is not currently detected as an OLPC machine because
+it fails this XO-1-centric check.
 
-These tools should be smart enough to look up the tracepoint name, fail
-it its not available, read the tracepoint format, again fail if not
-compatible.
+Now that we have OLPC OFW support in the kernel, a more sensible check is
+to see if we found OFW during boot. This also eliminates the need to check
+the BIOS signature, since we trust the detection code in olpc_ofw.c
 
-I really object to treating tracepoints as ABI and being tied to any
-implementation details due to that.
+Also remove a now-meaningless codepath, as we're always going to have
+OFW support with OLPC.
 
-Tools really should be flexible and allow for change.
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+---
+ arch/x86/Kconfig                |    2 +-
+ arch/x86/include/asm/olpc_ofw.h |    4 ++++
+ arch/x86/kernel/olpc.c          |   28 +---------------------------
+ arch/x86/kernel/olpc_ofw.c      |    6 ++++++
+ 4 files changed, 12 insertions(+), 28 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 708ee0d..405237a 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -2055,6 +2055,7 @@ config OLPC
+ 	select PCI
+ 	select PCI_GOANY
+ 	select GPIOLIB
++	select OLPC_OPENFIRMWARE
+ 	---help---
+ 	  Add support for detecting the unique features of the OLPC
+ 	  XO hardware.
+@@ -2062,7 +2063,6 @@ config OLPC
+ config OLPC_OPENFIRMWARE
+ 	bool "Support for OLPC's Open Firmware"
+ 	depends on !X86_64 && !X86_PAE
+-	default y if OLPC
+ 	help
+ 	  This option adds support for the implementation of Open Firmware
+ 	  that is used on the OLPC XO-1 Children's Machine.
+diff --git a/arch/x86/include/asm/olpc_ofw.h b/arch/x86/include/asm/olpc_ofw.h
+index 08fde47..3db5556 100644
+--- a/arch/x86/include/asm/olpc_ofw.h
++++ b/arch/x86/include/asm/olpc_ofw.h
+@@ -21,10 +21,14 @@ extern void olpc_ofw_detect(void);
+ /* install OFW's pde permanently into the kernel's pgtable */
+ extern void setup_olpc_ofw_pgd(void);
+ 
++/* check if OFW was detected during boot */
++int olpc_ofw_present(void);
++
+ #else /* !CONFIG_OLPC_OPENFIRMWARE */
+ 
+ static inline void olpc_ofw_detect(void) { }
+ static inline void setup_olpc_ofw_pgd(void) { }
++static inline int olpc_ofw_present(void) { return 0; }
+ 
+ #endif /* !CONFIG_OLPC_OPENFIRMWARE */
+ 
+diff --git a/arch/x86/kernel/olpc.c b/arch/x86/kernel/olpc.c
+index 10b4dce..52ecc3f 100644
+--- a/arch/x86/kernel/olpc.c
++++ b/arch/x86/kernel/olpc.c
+@@ -183,7 +183,6 @@ err:
+ }
+ EXPORT_SYMBOL_GPL(olpc_ec_cmd);
+ 
+-#ifdef CONFIG_OLPC_OPENFIRMWARE
+ static void __init platform_detect(void)
+ {
+ 	size_t propsize;
+@@ -197,37 +196,14 @@ static void __init platform_detect(void)
+ 	}
+ 	olpc_platform_info.boardrev = be32_to_cpu(rev);
+ }
+-#else
+-static void __init platform_detect(void)
+-{
+-	/* stopgap until OFW support is added to the kernel */
+-	olpc_platform_info.boardrev = olpc_board(0xc2);
+-}
+-#endif
+ 
+ static int __init olpc_init(void)
+ {
+-	unsigned char *romsig;
+-
+-	/* The ioremap check is dangerous; limit what we run it on */
+-	if (!is_geode() || cs5535_has_vsa2())
++	if (!olpc_ofw_present())
+ 		return 0;
+ 
+ 	spin_lock_init(&ec_lock);
+ 
+-	romsig = ioremap(0xffffffc0, 16);
+-	if (!romsig)
+-		return 0;
+-
+-	if (strncmp(romsig, "CL1   Q", 7))
+-		goto unmap;
+-	if (strncmp(romsig+6, romsig+13, 3)) {
+-		printk(KERN_INFO "OLPC BIOS signature looks invalid.  "
+-				"Assuming not OLPC\n");
+-		goto unmap;
+-	}
+-
+-	printk(KERN_INFO "OLPC board with OpenFirmware %.16s\n", romsig);
+ 	olpc_platform_info.flags |= OLPC_F_PRESENT;
+ 
+ 	/* get the platform revision */
+@@ -250,8 +226,6 @@ static int __init olpc_init(void)
+ 			olpc_platform_info.boardrev >> 4,
+ 			olpc_platform_info.ecver);
+ 
+-unmap:
+-	iounmap(romsig);
+ 	return 0;
+ }
+ 
+diff --git a/arch/x86/kernel/olpc_ofw.c b/arch/x86/kernel/olpc_ofw.c
+index 3218aa7..e7bfcc4 100644
+--- a/arch/x86/kernel/olpc_ofw.c
++++ b/arch/x86/kernel/olpc_ofw.c
+@@ -74,6 +74,12 @@ int __olpc_ofw(const char *name, int nr_args, const void **args, int nr_res,
+ }
+ EXPORT_SYMBOL_GPL(__olpc_ofw);
+ 
++int olpc_ofw_present(void)
++{
++	return olpc_ofw_cif != NULL;
++}
++EXPORT_SYMBOL_GPL(olpc_ofw_present);
++
+ /* OFW cif _should_ be above this address */
+ #define OFW_MIN 0xff000000
+ 
+-- 
+1.7.2.2
+
