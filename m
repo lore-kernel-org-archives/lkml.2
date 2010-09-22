@@ -1,74 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777Ab0IVWkp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 18:40:45 -0400
-Received: from smtp125.sbc.mail.sp1.yahoo.com ([69.147.65.184]:38632 "HELO
-	smtp125.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751967Ab0IVWko (ORCPT
+	id S1752611Ab0IVWm1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 18:42:27 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:45096 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365Ab0IVWm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 18:40:44 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: OfEhDIsVM1l9O6z07Y6cT3q.jlvxi.tajkZUvlxBOXicWvU
- RNADzQdSMjuD0FPv4oWN_00Z1c8KagljFnoIMmkFbGIqqlg0NjgjLjxmYX30
- W4kznkPLi7gjWGq_mXOsPML5gKMQhSH3UhJS_IfgF4RO4yBEQ6HwNSvf7dOi
- HJPR4yemX9Vq3RnqiVJ5Q0MeJhENvHWd0mbVm5b2cTxBrSAdTVeWUBigC4cO
- tFR.ATcqg02ZAXPOaNwIEAorTVYCyHlqP.DHWfgioGlH3Jj0voLRTJkzAPF3
- ar_Ykk.AJwoglxkSEJN8nQeA-
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [PATCH 2/2] siw: Add support for CRC32C offload instruction
-	using libcrypto crc32c-intel
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        linux-rdma <linux-rdma@vger.kernel.org>,
-        Bernard Metzler <BMT@zurich.ibm.com>
-In-Reply-To: <20100922220611.GL11157@obsidianresearch.com>
-References: <1285187425-10950-1-git-send-email-nab@linux-iscsi.org>
-	 <4C9A698B.90806@linux.intel.com>
-	 <1285187901.1849.85.camel@haakon2.linux-iscsi.org>
-	 <20100922205943.GI11157@obsidianresearch.com>
-	 <1285189241.1849.112.camel@haakon2.linux-iscsi.org>
-	 <20100922211808.GJ11157@obsidianresearch.com>
-	 <1285191511.1849.126.camel@haakon2.linux-iscsi.org>
-	 <20100922220611.GL11157@obsidianresearch.com>
-Content-Type: text/plain
-Date: Wed, 22 Sep 2010 15:36:29 -0700
-Message-Id: <1285194989.1849.130.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	Wed, 22 Sep 2010 18:42:26 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [tip:x86/pci] x86, pci: Ignore any PCI BARs that match an HPET we already know about
+Date: Wed, 22 Sep 2010 16:41:35 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        simon@fire.lp0.eu, tglx@linutronix.de, hpa@linux.intel.com,
+        linux-tip-commits@vger.kernel.org
+References: <20100922201547.3197.33702.stgit@bob.kio> <tip-e72a6c8f7ac715a9cdb473afbc30743348d0a1e2@git.kernel.org> <4C9A79BC.6020305@kernel.org>
+In-Reply-To: <4C9A79BC.6020305@kernel.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201009221641.35871.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-09-22 at 16:06 -0600, Jason Gunthorpe wrote:
-> On Wed, Sep 22, 2010 at 02:38:31PM -0700, Nicholas A. Bellinger wrote:
+On Wednesday, September 22, 2010 03:48:44 pm Yinghai Lu wrote:
+> On 09/22/2010 02:22 PM, tip-bot for Bjorn Helgaas wrote:
+> > Commit-ID:  e72a6c8f7ac715a9cdb473afbc30743348d0a1e2
+> > Gitweb:     http://git.kernel.org/tip/e72a6c8f7ac715a9cdb473afbc30743348d0a1e2
+> > Author:     Bjorn Helgaas <bjorn.helgaas@hp.com>
+> > AuthorDate: Wed, 22 Sep 2010 14:15:47 -0600
+> > Committer:  H. Peter Anvin <hpa@linux.intel.com>
+> > CommitDate: Wed, 22 Sep 2010 13:29:39 -0700
+> > 
+> > x86, pci: Ignore any PCI BARs that match an HPET we already know about
+> > 
+> > We often discover the HPET early, via the static ACPI HPET table,
+> > before enumerating PCI devices.  If the HPET is implemented as a PCI
+> > function, we will discover it again during PCI device enumeration.  We
+> > must ignore the PCI function so we don't inadvertently move it out
+> > from under the driver.
+> > 
+> > I think it's better to ignore *any* PCI BAR that matches a previously
+> > discovered HPET; that way we don't need platform-specific knowledge,
+> > and we won't have to add more quirks for future machines.
+> > 
+> > This is for a regression from 2.6.34, but the reporter has been
+> > unable to test it yet.
+> > 
+> > [ hpa: if this fixes the regression, it should be promoted to x86/urgent ]
+> > 
+> > Reference: https://bugzilla.kernel.org/show_bug.cgi?id=18482
+> > Reported-by: Simon Arlott <simon@fire.lp0.eu>
+> > Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+> > LKML-Reference: <20100922201547.3197.33702.stgit@bob.kio>
+> > Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> > ---
+> >  arch/x86/kernel/quirks.c |   21 +++++++++++++++++++++
+> >  arch/x86/pci/fixup.c     |   28 ----------------------------
+> >  2 files changed, 21 insertions(+), 28 deletions(-)
+> > 
+> > diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
+> > index 939b9e9..99a7d4b 100644
+> > --- a/arch/x86/kernel/quirks.c
+> > +++ b/arch/x86/kernel/quirks.c
+> > @@ -507,6 +507,27 @@ static void force_disable_hpet_msi(struct pci_dev *unused)
+> >  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_SBX00_SMBUS,
+> >  			 force_disable_hpet_msi);
+> >  
+> > +static void disable_pci_hpet(struct pci_dev *dev)
+> > +{
+> > +	int i;
+> > +
+> > +	if (!hpet_address)
+> > +		return;
+> > +
+> > +	for (i = 0; i < 6; i++) {
+> > +		struct resource *res = &dev->resource[i];
+> > +
+> > +		if (resource_type(res) == IORESOURCE_MEM &&
+> > +		    res->start == hpet_address) {
+> > +			dev_info(&dev->dev, "BAR %d: %pR is an HPET we found earlier; ignoring this BAR\n",
+> > +				 i, res);
+> > +			res->flags = 0;
+> > +			res->start = 0;
+> > +			res->end = 0;
+> > +		}
+> > +	}
+> > +}
 > 
-> > So I think the main bit here is the ability to request
-> > crc32c-intel.ko first, and then fall back to crc32c.ko when the
-> > former is not available on CONFIG_X86.
+> It seems there is some problem here:
 > 
-> Well, it is what Andi said, everything is working fine but there is no
-> mechanism to autoload the accelerated crypto module. If you did
-> modprobe crc32c_intel prior to loading your driver it would
-> automatically get crc32c-intel when it asks for crc32c since it is
-> loaded and a higher priority.
-> 
+> hpet_res is inserted to resource with late_initcall().
+> so if you don't touch that hpet address in bar and not put in the resource.
+> kernel could allocate that address to other devices that doesn't get resource from BIOS.
 
-Ah, OK.  I see what you mean now here wrt to libcrypto priorities and
-crc32c + crc32c_intel modules.   My apologies for the in-experience with
-libcrypto here..
+Hmm, yes, that's a problem.  Let me look into it tomorrow; maybe we
+can do something like setting IORESOURCE_PCI_FIXED instead of just
+clearing out the resource.
 
-> So, the drivers are correct to just request crc32c .. The work around
-> to limited autoprobing is so trivial (modprob crc32_intel) I'm not
-> sure including extra autoprobing code in the drivers is worthwhile?
-> 
-
-Indeed, I am happy to drop this patch if Bernard would be nice enough to
-add a 'modprobe crc32_intel' into the SIW scripts.
-
-Thanks for your comments Jason!
-
---nab
-
+Bjorn
