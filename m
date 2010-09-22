@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753151Ab0IVJDm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 05:03:42 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:49914 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752892Ab0IVJDl (ORCPT
+	id S1752803Ab0IVJK7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 05:10:59 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:49651 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752187Ab0IVJK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 05:03:41 -0400
-Date: Wed, 22 Sep 2010 11:03:37 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] perf build fixes for opensuse 10.0
-Message-ID: <20100922090336.GA5338@basil.fritz.box>
+	Wed, 22 Sep 2010 05:10:57 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Greg KH <greg@kroah.com>
+Subject: Re: [PATCH 2/2] TTY: create tty/vt and move the vt code there
+Date: Wed, 22 Sep 2010 11:10:48 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: Greg KH <gregkh@suse.de>, Jiri Slaby <jslaby@suse.cz>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        Rogier Wolff <R.E.Wolff@bitwizard.nl>,
+        "Michael H. Warfield" <mhw@wittsend.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+References: <1283115995-4734-1-git-send-email-arnd@arndb.de> <20100921230804.GB32346@kroah.com> <20100921230830.GC32346@kroah.com>
+In-Reply-To: <20100921230830.GC32346@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009221110.48313.arnd@arndb.de>
+X-Provags-ID: V02:K0:AjBZ2aSFhb2YLV+5VJHgkPA9ACussQ/mJh6idaOJnYU
+ 28U1eeRoLaQ9IZ8c5M8Cw+Jeox5XOSPQUVxk+5Axi5GPrTlbnJ
+ iAz8tNTOd5tzVB+r7AcwNeYPU1CWW1uKsufWd0YIUGdG2B7cL1
+ KCytGxv70VUCtZ8gYgQ7VOKNoyJ4oL6FDikwVnT5x3csnwvotT
+ BFVKW2pq1oZRQCsAD0IAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the perf Makefile to compile on opensuse 10.0
+On Wednesday 22 September 2010, Greg KH wrote:
+> diff --git a/drivers/char/Makefile b/drivers/char/Makefile
+> index c999eac..acd1710 100644
+> --- a/drivers/char/Makefile
+> +++ b/drivers/char/Makefile
+> @@ -12,10 +12,8 @@ obj-y         += mem.o random.o
+>  obj-$(CONFIG_LEGACY_PTYS)      += pty.o
+>  obj-$(CONFIG_UNIX98_PTYS)      += pty.o
+>  obj-y                          += misc.o
+> -obj-$(CONFIG_VT)               += vt_ioctl.o vc_screen.o selection.o keyboard.o
+>  obj-$(CONFIG_BFIN_JTAG_COMM)   += bfin_jtag_comm.o
+>  obj-$(CONFIG_CONSOLE_TRANSLATIONS) += consolemap.o consolemap_deftbl.o
+> -obj-$(CONFIG_HW_CONSOLE)       += vt.o defkeymap.o
+>  obj-$(CONFIG_MAGIC_SYSRQ)      += sysrq.o
+>  obj-$(CONFIG_MVME147_SCC)      += generic_serial.o vme_scc.o
+>  obj-$(CONFIG_MVME162_SCC)      += generic_serial.o vme_scc.o
+> @@ -114,7 +112,7 @@ obj-$(CONFIG_JS_RTC)                += js-rtc.o
+>  js-rtc-y = rtc.o
+>  
+>  # Files generated that shall be removed upon make clean
+> -clean-files := consolemap_deftbl.c defkeymap.c
+> +clean-files := consolemap_deftbl.c
 
--Werror in shipping code is usually a bad idea. Remove that.
-Also remove warning options that are not supported in older compilers.
-And fix a missing include for __always_inline.
-    
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+IMHO the CONFIG_CONSOLE_TRANSLATIONS stuff belongs in the same directory
+as the VT driver, because it is only used in VT. It also puts all teh
+unusual Makefile bits into one place.
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 4f1fa77..1bf4d9c 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -201,13 +201,13 @@ EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wshadow
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Winit-self
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wpacked
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wredundant-decls
--EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstack-protector
-+#EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstack-protector
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstrict-aliasing=3
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wswitch-default
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wswitch-enum
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wno-system-headers
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wundef
--EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wvolatile-register-var
-+#EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wvolatile-register-var
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wwrite-strings
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wbad-function-cast
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wmissing-declarations
-@@ -224,7 +224,7 @@ ifndef PERF_DEBUG
-   CFLAGS_OPTIMIZE = -O6
- endif
- 
--CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 -Werror $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS)
-+CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS)
- EXTLIBS = -lpthread -lrt -lelf -lm
- ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
- ALL_LDFLAGS = $(LDFLAGS)
-diff --git a/tools/perf/util/include/linux/bitops.h b/tools/perf/util/include/linux/bitops.h
-index bb4ac2e..305f1c2 100644
---- a/tools/perf/util/include/linux/bitops.h
-+++ b/tools/perf/util/include/linux/bitops.h
-@@ -2,6 +2,7 @@
- #define _PERF_LINUX_BITOPS_H_
- 
- #include <linux/kernel.h>
-+#include <linux/compiler.h>
- #include <asm/hweight.h>
- 
- #define BITS_PER_LONG __WORDSIZE
+	Arnd
