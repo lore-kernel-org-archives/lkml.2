@@ -1,84 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803Ab0IVI4N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 04:56:13 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:55201 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422Ab0IVI4M (ORCPT
+	id S1752833Ab0IVI7x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 04:59:53 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:46338 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752040Ab0IVI7w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 04:56:12 -0400
-Subject: Re: [RFC] led-class: always implement blinking
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1285104248.1290.551.camel@rex>
-References: <1282296102.3785.28.camel@jlt3.sipsolutions.net>
-	 <20100921124419.6b88f7f6.akpm@linux-foundation.org>
-	 <1285098497.12764.18.camel@jlt3.sipsolutions.net>
-	 <1285104248.1290.551.camel@rex>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 22 Sep 2010 10:56:06 +0200
-Message-ID: <1285145766.3684.6.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 22 Sep 2010 04:59:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=iWB/OXS7yxYtBkt3kSk5QbfJhjTIt3cEHHV47XHEXSbs/mweLt6It8hBc65F6yBPrY
+         /4udPcIkly+orKmMm2A587tdvYUG6O12TlFv3zP8wCutrAyvG+zMfYafLlSzTlReUhFv
+         iEtI80jnjwfreaBpCniHF1ZRGbiXiBVCkyciU=
+Date: Wed, 22 Sep 2010 12:00:12 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH] avoid second smp_processor_id() call in __touch_watchdog
+Message-ID: <20100922090012.GA5459@swordfish.minsk.epam.com>
+References: <20100813102158.GA5434@swordfish.minsk.epam.com>
+ <20100818123346.02028e96.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100818123346.02028e96.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-09-21 at 22:24 +0100, Richard Purdie wrote:
+Hello,
 
-> > Well, this function gets assigned to led_cdev->blink_set(), which is a
-> > function pointer that takes pass-by-reference arguments. The comment
-> > there says:
-> > 
-> >         /* Activate hardware accelerated blink, delays are in
-> >          * miliseconds and if none is provided then a sensible default
-> >          * should be chosen. The call can adjust the timings if it can't
-> >          * match the values specified exactly. */
-> >         int             (*blink_set)(struct led_classdev *led_cdev,
-> >                                      unsigned long *delay_on,
-> >                                      unsigned long *delay_off);
-> > 
-> > but the software implementation doesn't adjust the timings, of course. I
-> > suppose the "adjust the timings" was also meant to update the values.
+Per our previous conversation:
+
+Andrew Morton wrote:
+> Fair enough, although strictly speaking this should be done in a
+> separate and later patch.
 > 
-> The idea was that hardware fallbacks would let the caller know what
-> values it had actually fallen back to. The software fallback using
-> timers is generic so doesn't need to change the values.
-> 
-> I've been meaning to look more closely at the patch but I haven't got to
-> it yet, sorry :(.
 
-Right. But I actually ran into problems here. I had to add another
-"blink_stop" software function, because even though the _internal_ code
-in led-class.c currently assumes calling blink_set(0, 0) will stop
-blinking, the documentation says that then it should chose a
-"user-friendly" blinking speed... So there are bugs in the current
-implementation, and not all LEDs implement this either.
 
-Additionally, blink_set() may return an error, in which case software
-fallback should be used.
+Avoid double smp_processor_id() call in __touch_watchdog (smp_processor_id() 
+itself and later call in __get_cpu_var())
 
-I solved this yesterday in a new version of my patch by adding new API
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-void led_classdev_blink_set(*dev, *on, *off)
+---
 
-that will use blink_set() and then fall back to software.
-
-HOWEVER, if you use that, then just doing brightness_set(dev, LED_OFF)
-will not turn off blinking because we cannot hook into that from the
-software blinking implementation. There are two ways to solve this:
-
-a) provide a wrapper for brightness_set() as well, that will disable
-   software blink, and should be used in preference of calling the
-   function pointer directly, it may be an inline.
-
-b) provide a function led_classdev_blink_stop() that will turn off the
-   LED and stop the blinking
-
-Which one would you prefer?
-
-johannes
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 7f9c3c5..03d97c5 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -116,8 +116,7 @@ static unsigned long get_sample_period(void)
+ static void __touch_watchdog(void)
+ {
+ 	int this_cpu = smp_processor_id();
+-
+-	__get_cpu_var(watchdog_touch_ts) = get_timestamp(this_cpu);
++	per_cpu(watchdog_touch_ts, this_cpu) = get_timestamp(this_cpu);
+ }
+ 
+ void touch_softlockup_watchdog(void)
 
