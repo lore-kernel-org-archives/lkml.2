@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754318Ab0IVPGi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 11:06:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48915 "EHLO mx2.suse.de"
+	id S1754851Ab0IVPGj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 11:06:39 -0400
+Received: from kroah.org ([198.145.64.141]:41791 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751831Ab0IVPGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 11:06:37 -0400
-Date: Wed, 22 Sep 2010 07:56:07 -0700
-From: Greg KH <gregkh@suse.de>
-To: Raju Rameshwar Uprade <rajsingh@ncra.tifr.res.in>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: Regarding USB-to-serial device driver
-Message-ID: <20100922145607.GB26309@suse.de>
-References: <20100913091318.M67834@admin-gateway.ncra.tifr.res.in>
- <20100913154843.GA27496@suse.de>
- <20100914060649.M96376@admin-gateway.ncra.tifr.res.in>
- <20100914131925.GC375@suse.de>
- <20100922052107.M44650@admin-gateway.ncra.tifr.res.in>
+	id S1751831Ab0IVPGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 11:06:38 -0400
+Date: Wed, 22 Sep 2010 08:06:03 -0700
+From: Greg KH <greg@kroah.com>
+To: Andy Walls <awalls@md.metrocast.net>
+Cc: linux-kernel@vger.kernel.org,
+        =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+        Dave Airlie <airlied@redhat.com>, dri-devel@lists.freedesktop.org,
+        Jon Smirl <jonsmirl@gmail.com>
+Subject: Re: [PATCH v2 2/2] Doc/ABI: sysfs-drm initial document; "polled"
+ entry
+Message-ID: <20100922150603.GB26401@kroah.com>
+References: <1284987540.2242.29.camel@morgan.silverblock.net>
+ <AANLkTikj4biBS7wQsRM6o3kEmyaPNMaSUBEktMmmOy89@mail.gmail.com>
+ <1285023750.30856.99.camel@morgan.silverblock.net>
+ <1285125622.2518.21.camel@morgan.silverblock.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100922052107.M44650@admin-gateway.ncra.tifr.res.in>
+In-Reply-To: <1285125622.2518.21.camel@morgan.silverblock.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 22, 2010 at 11:02:46AM +0530, Raju Rameshwar Uprade wrote:
-> 
-> 
-> Greg,
->       I am facing some problem in data copying.
-> I am having a const unsigned char *buf which contains 02 08 00 00 00 00 00 00 f8.
-> which is copied in port->write_urb->transfer_buffer and sent on ttyUSB0 using
-> usb_submit_urb(port->write_urb, GFP_ATOMIC).
+On Tue, Sep 21, 2010 at 11:20:22PM -0400, Andy Walls wrote:
+> +Where:		/sys/devices/<...>/drm/cardN/cardN-C-M/polled
+> +		For N a decimal system graphics adapter number: 0, 1, 2, ...
+> +		For C a connector type name (including spaces) from the set:
 
-For what driver?
+Spaces?  Really?  Yeah, I know it will work just fine, but why go out of
+your way to make it hard for people?
 
-> But  I want to send the data bytes is a particular fashion.
-> 
-> 1. I want to Add Mark parity. 
+> +			Unknown
+> +			VGA
+> +			DVI-I
+> +			DVI-D
+> +			DVI-A
+> +			Composite
+> +			SVIDEO
+> +			LVDS
+> +			Component
+> +			9-pin DIN
+> +			DisplayPort
+> +			HDMI Type A
+> +			HDMI Type B
+> +			TV
+> +			Embedded DisplayPort
 
-That's a control signal and is independant of the data payload, right?
+You could always just use a '_' instead of a space for those that need
+it.
 
-> 2. Send the data byte 02 ( Address of a device )
-
-That means you need to modify the data.  Why not do that in userspace?
-
-> 3. Add Space parity .
-
-Again, control signal.
-
-> 4. send the data byte 08 00 00 00 00 00 00 f8 ( Null cmd + check sum )
-
-Should be fine.
-
-> Kindly help me.I am facing the problem in separating the data bytes so
-> that I can send the data bytes separately using usb_submit_urb.
-
-It all depends on the driver you are using.  Why not do all of this from
-userspace?  That way it works on any device you are talking to.
-
-good luck,
+thanks,
 
 greg k-h
