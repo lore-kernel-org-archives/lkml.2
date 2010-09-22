@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751749Ab0IWAH3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 20:07:29 -0400
-Received: from claw.goop.org ([74.207.240.146]:37245 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750983Ab0IWAH3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 20:07:29 -0400
-Message-ID: <4C9A9A3F.4040201@goop.org>
-Date: Wed, 22 Sep 2010 17:07:27 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.3
+	id S1751953Ab0IWALi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 20:11:38 -0400
+Received: from if09-mail-fb05-mia.mta.terra.com ([208.84.243.229]:47476 "EHLO
+	if09-mail-fb05-mia.mta.terra.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750983Ab0IWALg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 20:11:36 -0400
+X-Greylist: delayed 1173 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Sep 2010 20:11:36 EDT
+X-Terra-Karma: -2%
+X-Terra-Hash: 21740a0ade221ebc8255c5d4043e7675
+BrmaOutput: localhost.localdomain [127.0.0.1]
+From: "HELP DESK" <helpdesk@mail.torricelli.edu.br>
+Reply-To: account.upgrade@ok.ms
+Subject: Your Webmail Quota Has Exceeded The Set Quota/Limit
+Date: Wed, 22 Sep 2010 21:06:20 -0200
+Message-Id: <20100922213458.M75588@mail.com>
+X-Mailer: Open WebMail 2.51 - <B>BRMA</B> 20050522
+X-OriginatingIP: 41.138.179.139 (edmir_kuazaqui)
 MIME-Version: 1.0
-To: the arch/x86 maintainers <x86@kernel.org>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>
-Subject: [PATCH] x86: don't use mcount in pvclock.c
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset=iso-8859-1
+To: undisclosed-recipients:;
+X-CLX-Rate-Response: fi=10.235.200.250:2001; MB=0; GT=0; fs=1011; ns=0; id=a103GLF8p57R0VH-8M23520; rv=5892/208.84.242.250:14051; ts=D0Ds7; fl=IAI; ip=200.143.136.74; he=C3hRgROaz5K; ht=1; nr=93; nt=0; ho=N5K7G2bWSKF; hd=JaLXq9aYriN; hf=N+vp7rau2+1; hF=Oteg35/qCVC; hj=D/vYB6WRddj; ZM=ODX6+h11/QB; ZB=P5VSHRYW1oX; ZB=EI6H14A1/MJ; ZB=D0bmwFCWIFY; ZB=CwZtFq2bv5Q; ZB=MH4gyMjb6jP; ZF=NxZn5+pz9bW;
+X-Abaca-Score-Saida: 1011
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Your Webmail Quota Has Exceeded The Set Quota/Limit
+Which Is 20GB. Your Are Currently Running On 23GB due
+to hidden files and folder on your Mailbox.You are to
+follow the Below information to Validate Your Mailbox And 
+Increase Your Quota.
 
+First Name:
+Last Name:
+Username/ID:
+Password:
+Date of Birth:
 
-When using a paravirt clock, pvclock.c can be used by sched_clock(),
-which in turn is used by the tracing mechanism for timestamps,
-which leads to infinite recursion.
+Failure to follow this process to Validate Your Quota
+may result in loss Of important information in your 
+Mailbox/Or Cause Limited Access To It.
 
-Disable mcount/tracing for pvclock.o.
+*Important*
+Make sure you provide all these information completely
+and correctly otherwise due to security reasons we may
+have to close your account temporarily.
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+We have been sending this notice to all our email account
+owners and this is the last notice/verification exercise.
 
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index f3477bb..35b447c 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -11,6 +11,7 @@ ifdef CONFIG_FUNCTION_TRACER
- CFLAGS_REMOVE_tsc.o = -pg
- CFLAGS_REMOVE_rtc.o = -pg
- CFLAGS_REMOVE_paravirt-spinlocks.o = -pg
-+CFLAGS_REMOVE_pvclock.o = -pg
- CFLAGS_REMOVE_ftrace.o = -pg
- CFLAGS_REMOVE_early_printk.o = -pg
- endif
-
-
+Thanks
+Webmail HelpDesk Support.
