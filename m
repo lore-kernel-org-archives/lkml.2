@@ -1,109 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab0IVPXA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 11:23:00 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53350 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753741Ab0IVPW6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 11:22:58 -0400
-Subject: Re: [PATCH] x86/mrst: add SFI platform device parsing code
-From: David Woodhouse <dwmw2@infradead.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <AANLkTi=1dkVOWc2WHhYgqKh_awUhp1-uKN8W7Xx3AB_X@mail.gmail.com>
-References: <20100920140049.31408.67527.stgit@localhost.localdomain>
-	 <20100920150431.GD31167@sirena.org.uk>
-	 <20100920152726.68ac2d84@linux.intel.com>
-	 <20100920152705.GJ3414@rakim.wolfsonmicro.main>
-	 <AANLkTi=1dkVOWc2WHhYgqKh_awUhp1-uKN8W7Xx3AB_X@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 22 Sep 2010 16:22:13 +0100
-Message-ID: <1285168933.4498.119.camel@i7.infradead.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.33.1 
+	id S1754960Ab0IVPYp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 11:24:45 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:33110 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753741Ab0IVPYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 11:24:44 -0400
+Message-ID: <4C9A1FB7.4070308@fusionio.com>
+Date: Wed, 22 Sep 2010 17:24:39 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] block fixes for 2.6.36-rc5
+References: <4C99B4F3.6070403@fusionio.com> <AANLkTi=KGhG6jbAuFngw3p_rsJu944Kn+UUhYkhZ0vLA@mail.gmail.com>
+In-Reply-To: <AANLkTi=KGhG6jbAuFngw3p_rsJu944Kn+UUhYkhZ0vLA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-09-22 at 01:03 -0300, Grant Likely wrote:
-> Shudder.
->
-> Okay, before I start a long rant I'll start with this disclaimer; at
-> least this patch is isolated to the mrst platform so that it doesn't
-> impact the rest of the kernel.  Feel free to take the stance that this
-> is platform specific code and therefore will never have to handle the
-> general-case of multiple machines.  In that case each machine will
-> need to have a separate copy of this functionality, but at least the
-> damage is contained. </disclaim>
+On 2010-09-22 17:06, Linus Torvalds wrote:
+> Gaah. This is just _incredibly_ ugly:
 > 
-> This will be an utter nightmare to maintain over the long term.  It
-> combines the worst parts of both static device tables and firmware
-> data parsers.  From the former it uses large statically allocated
-> tables that cannot be either extended or freed at runtime which is
-> unfriendly for multiplatform kernels.
+> On Wed, Sep 22, 2010 at 12:49 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
+>>
+>> -       /* Add group onto cgroup list */
+>> -       sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+>> -       cfq_blkiocg_add_blkio_group(blkcg, &cfqg->blkg, (void *)cfqd,
+>> +       /*
+>> +        * Add group onto cgroup list. It might happen that bdi->dev is
+>> +        * not initiliazed yet. Initialize this new group without major
+>> +        * and minor info and this info will be filled in once a new thread
+>> +        * comes for IO. See code above.
+>> +        */
+>> +       if (bdi->dev) {
+>> +               sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+>> +               cfq_blkiocg_add_blkio_group(blkcg, &cfqg->blkg, (void *)cfqd,
+>>                                        MKDEV(major, minor));
+>> +       } else
+>> +               cfq_blkiocg_add_blkio_group(blkcg, &cfqg->blkg, (void *)cfqd,
+>> +                                       0);
+>> +
 > 
-> From the latter it takes the approach of abstracting all the details
-> of the firmware interface away from the device drivers which forces
-> the abstraction layer to encode every possible permutation and
-> combination of devices in a hunk of code that cannot be modularized
-> and will become larger and larger for each new device that is
-> supported.  The lesson was learned with OF that the device driver is
-> the only place where it makes sense to decode device specific data
-> (addresses and irqs can have common code decoders, but the binding
-> name and extra data is device driver specific).  Trying to do it
-> anywhere else is insanity.
+> and quite frankly, anything that does that kind of thing is total
+> sh*t. Not only is the sscanf() just broken (really? figuring out
+> things from some internal string? Using dev_t in this time and age for
+> kernel internal stuff?) to begin with, but if you have to then do it
+> conditionally, for chrissake do it _cleanly_.
 > 
-> That being said, there already is a defined method for passing in
-> external data about the machine layout.  I'm certainly not keen on
-> adding another.  It is already an uphill battle to convince device
-> driver maintainers that adding device tree parsing code (appropriately
-> contained) to .probe() hooks is the right thing to do.  Asking them to
-> also support SFI hooks (plus the next firmware-interface-of-the-month)
-> is likely to end in a revolt.
+> Make a small helper function that does "get me the dev_t of this
+> 'dev'", and make that one do
 > 
-> Both tglx and dwmw2 [cc'd] have stated that they they are in favor of
-> standardizing on OF device tree for x86 embedded.  dwmw2 suggested
-> translating data in other formats into the device tree during early
-> boot so that existing OF routines can be used to parse the data by
-> device drivers.  That would keep the support code in the device
-> drivers where it belongs without creating new SFI-specific device
-> infrastructure.  It also eliminates the statically allocated tables
-> and board specific hacks.
+>    static unsigned int device_dev_t(struct device *dev)
+>    {
+>       unsigned int major = 0, minor = 0;
 > 
-> Since data in the tree is free-form key-value properties, any
-> device-specific SFI data can be imported into the tree verbatim to
-> eliminate the risk that critical data will get discarded in the
-> translation process.  Well understood properties, like address ranges,
-> IRQs and GPIOs would be straight forward to translate into the device
-> tree form to make it parsable by common code.
+>       if (dev)
+>          sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+> 
+>       return MKDEV(major, minor);
+>    }
+> 
+> and then just have a single 'cfq_blkiocg_add_blkio_group()' there.
+> 
+> But more seriously, why the hell does anything internal to cfq use a
+> 'dev_t' in the first place? Why isn't that 'struct blkio_group' using
+> a pointer to the 'struct device' or something like that instead (or
+> the pointer to the queue, or whatever)? It's just damn wrong to use
+> dev_t in this day and age, and the fact that you need to make it up
+> using sscanf() should have clued people into that fact.
+> 
+> I hate seeing obvious crap-workarounds this late in an -rc.
 
-What Grant said.
+I don't think anybody will disagree. The major problem here is that we
+still have some drivers using multiple devices per queue, one of them
+will be gone for .37 at least and I hope we can get mtd blk converted
+too. When that happens, we can place a dev in the queue and get rid of
+this hack and similar hacks on double bdi etc registrations.
 
-This patch (and SFI in general) seems like entirely the wrong approach.
-You're gratuitously reinventing the wheel, and your proposed replacement
-isn't even round.
-
-As Grant says, we already have a defined method for passing this kind of
-information to the kernel. We have well-thought-out bindings for various
-different types of devices -- which have been designed to ensure that
-we're describing the *hardware* and not specifically tied to
-implementation details in the current Linux driver setup.
-
-It makes *no* sense to add probe support for your 'special' platform
-devices to drivers which already have (or will need anyway) proper
-device-tree support.
-
-Seriously, just convert whatever crap you have into a device-tree at
-early boot (or preferably in the bootloader, and *beat* the firmware
-idiots until they provide it natively), and don't pollute the kernel any
-more than you have to with this idiocy.
+So we can put some makeup on the corpse like you describe, or we can
+just live with this until we can kill off abominations like this for
+2.6.37.
 
 -- 
-dwmw2
+Jens Axboe
 
