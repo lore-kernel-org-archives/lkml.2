@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755353Ab0IVUmk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 16:42:40 -0400
-Received: from smtp106.sbc.mail.mud.yahoo.com ([68.142.198.104]:46594 "HELO
-	smtp106.sbc.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753964Ab0IVUmj (ORCPT
+	id S1755341Ab0IVUn2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 16:43:28 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:35687 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753150Ab0IVUn0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 16:42:39 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: h.Y46J4VM1mq_A1V04SkWRtKF2rCSAF7CwHgVJjfvfp_7rx
- TABeAaI0Sr2hWo.mn1fN_OKg4XwZ5sMn8Kp53aDWvugk8Uq7BhScSn9U3M4L
- KDebBLlYHWc2Pw4uDqoxBavrm0x_yiB1jNAn7Ek6mTfo9xw3VJeQEO5bv6M1
- H4oT6AJA77Oq4Z1JW0ol5noyU2fmZHsD4zJmO3oiEQBXC2vb.lM9egJfbAq7
- p5bEdu5aH0qT2yexJYWKuh7NB9IgYFqh_3K5XjmJmCdxHWnodsxvxqn3BcME
- IW5zPrCO8o6Yf1rqedPGRxz9xPTpkhKVRAOrHZmZDSMLnwrpVCIYu7Jo_eNa
- GFOYHDydS9k.LTcjFRRM-
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [PATCH 2/2] siw: Add support for CRC32C offload instruction
-	using libcrypto crc32c-intel
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        linux-rdma <linux-rdma@vger.kernel.org>,
-        Bernard Metzler <BMT@zurich.ibm.com>,
-        David Miller <davem@davemloft.net>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Roland Dreier <rdreier@cisco.com>
-In-Reply-To: <4C9A698B.90806@linux.intel.com>
-References: <1285187425-10950-1-git-send-email-nab@linux-iscsi.org>
-	 <4C9A698B.90806@linux.intel.com>
-Content-Type: text/plain
-Date: Wed, 22 Sep 2010 13:38:21 -0700
-Message-Id: <1285187901.1849.85.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 22 Sep 2010 16:43:26 -0400
+Date: Wed, 22 Sep 2010 21:43:24 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Sparc
+Message-ID: <20100922204323.GG19804@ZenIV.linux.org.uk>
+References: <20100922.111019.200357319.davem@davemloft.net>
+ <20100922183200.GC19804@ZenIV.linux.org.uk>
+ <AANLkTi=DWk2_=wMqcM1jgJEuNRj_ni2OkM3osYCUg57Y@mail.gmail.com>
+ <20100922185328.GD19804@ZenIV.linux.org.uk>
+ <AANLkTi=pJUKRUQhpcVV8XAJF+BO1440v1Py5Opr34DR1@mail.gmail.com>
+ <20100922195349.GF19804@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100922195349.GF19804@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-09-22 at 22:39 +0200, Andi Kleen wrote:
-> On 9/22/2010 10:30 PM, Nicholas A. Bellinger wrote:
-> > From: Nicholas Bellinger<nab@linux-iscsi.org>
-> >
-> > This patch updates siw_create_qp() to check for the CONFIG_X86 + cpu_has_xmm4_2
-> > dependent use of the CRC32C instruction offload using libcrypto crc32c-intel.ko.
-> > This patch will by default use crc32c-intel when available, and fall back to the
-> > legacy slicing by 1x libcrypto crc32c.ko code when the instruction offload is not
-> > availabe.
+On Wed, Sep 22, 2010 at 08:53:49PM +0100, Al Viro wrote:
+> On Wed, Sep 22, 2010 at 12:08:53PM -0700, Linus Torvalds wrote:
+> > On Wed, Sep 22, 2010 at 11:53 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> > >
+> > > Um, no. ?You've *already* called get_signal_to_deliver(). ?There had been
+> > > no SIGSEGV in sight. ?You happily went on to set a sigframe for e.g.
+> > > SIGHUP, but ran out of stack. ?At that point you get force_sigsegv()
+> > > from handle_signal(). ?_NOW_ you have a pending SIGSEGV
+> > 
+> > Ahh. Ok. Different case from the one I thought you were worried about.
+> > And yeah, I guess that one does require us to mess with the low-level
+> > asm code (although I do wonder if we could not make the whole
+> > do_notify_resume + reschedule code be generic C code - it's a lot of
+> > duplicated subtle asm as it is).
 > 
-> I don't think every caller should handle checks like this. The crypto 
-> layer should load the right driver
-> instead and provide the best driver under a generic algorithm name.
-> 
+> Worse than just that...  Note that on sparc you need to deal with
+> fault_in_user_windows(), which can also trigger signals.
 
-Indeed, this would clean up the explict RX/TX CRC32C case quite a bit..
-Unfortuately I am too busy with other items atm to cook up this patch,
-but I would be happy to test it if someone wants to take it.  ;)
+	Actually, I wonder why don't we do the following:
+1) check wsaved first, do fault_in_user_windows() if needed (and probably do
+Something Cruel(tm) if we fail copy_to_user() in there)
+2) in a loop check if we need to reschedule / if we need to handle signals
+3) don't bother with wsaved checks in setup_frame() variants at all -
+wsaved can't grow back at that point; we also can use flush_user_windows()
+instead of full synchronize_user_stack() in there.
 
-> Need CPUID module auto probing. I have an older patch that needs some fixes.
-> 
-
-Hmm, I don't see how that fits in here exactly.  Would you mind
-elaborating a bit..?
-
-Thanks!
-
---nab
-
-
+It's definitely a separate patch, but it looks like it might be worth
+doing...  Comments?
