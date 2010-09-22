@@ -1,110 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814Ab0IVCXW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 22:23:22 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64411 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752317Ab0IVCXV convert rfc822-to-8bit (ORCPT
+	id S1753038Ab0IVCle (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 22:41:34 -0400
+Received: from www.telegraphics.com.au ([204.15.192.19]:34361 "EHLO
+	mail.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751767Ab0IVCld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 22:23:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=DzIusNx5tr3JmGhG6af2wm1JZyKfUpFmrIACZEZv9e2SSfCNlS5QOnUYIRB762mIj/
-         0wvWkTpP7Gt+TSUKvnwdH1OnQhiw0L/YvMEjztts8qNRot9hgMWW2tnpYNAiRCLYiXek
-         vk9/SEnzhokAYUiadzkBndM9leYasBiiRGTu8=
+	Tue, 21 Sep 2010 22:41:33 -0400
+Date: Wed, 22 Sep 2010 12:41:25 +1000 (EST)
+From: Finn Thain <fthain@telegraphics.com.au>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+cc: Matt Turner <mattst88@gmail.com>, trivial@kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Maciej W. Rozycki" <macro@linux-mips.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Dimitry Torokhov <dmitry.torokhov@gmail.com>,
+        Ben Pfaff <blp@cs.stanford.edu>, Mike Frysinger <vapier.adi@gmail.com>
+Subject: Re: [PATCH]Update-broken-web-addresses-in-the-kernel
+In-Reply-To: <4C98D8AA.80606@gmail.com>
+Message-ID: <alpine.LNX.2.00.1009221205330.4570@nippy.intranet>
+References: <1285042724-19135-1-git-send-email-justinmattock@gmail.com> <AANLkTinE73z9QV0zriVE3bRtzMifWSGvG36hfvnA9biD@mail.gmail.com> <4C983C7D.1050000@gmail.com> <AANLkTimYp6ua743x9ze4fcU09ZZ=oZZd_iKCmU0WQ2h7@mail.gmail.com> <alpine.LNX.2.00.1009211516180.9370@nippy.intranet>
+ <4C98D8AA.80606@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <201009191943.21021.wolfgang@iksw-muees.de>
-References: <711BBECDEF81BA439A6038E213C1DF140957B9F8@ism-mail03.corp.ad.wrs.com>
-	<201009180954.52965.wolfgang@iksw-muees.de>
-	<AANLkTikj01UhkiVrGJg4jgoOtXZ6dJjnwTsskDUVLD_H@mail.gmail.com>
-	<201009191943.21021.wolfgang@iksw-muees.de>
-Date: Wed, 22 Sep 2010 10:23:19 +0800
-Message-ID: <AANLkTikQQOB43UkQKhtm8qL_UvBRFCDSMFUKhjLvswzH@mail.gmail.com>
-Subject: Re: USB: free coherent buffer into atomic context
-From: Ming Lei <tom.leiming@gmail.com>
-To: =?ISO-8859-1?Q?Wolfgang_M=FCes?= <wolfgang@iksw-muees.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/9/20 Wolfgang Mües <wolfgang@iksw-muees.de>:
-> Hi Ming,
->
-> Am Samstag, 18. September 2010 10:50:20 schrieb Ming Lei:
->> IMO, it is not necessary for a coherent buffer to be kept for
->> the whole time a driver operates on a device.
->
-> From DMA-mapping.txt:
->>There are two types of DMA mappings:
->>
->>- Consistent DMA mappings which are usually mapped at driver
->>  initialization, unmapped at the end and for which the hardware should
->>  guarantee that the device and the CPU can access the data
->>  in parallel and will see updates made by each other without any
->>  explicit software flushing.
->
->>- Streaming DMA mappings which are usually mapped for one DMA transfer,
->>  unmapped right after it (unless you use pci_dma_sync_* below) and for which
->>  hardware can optimize for sequential accesses.
->
-> You wrote:
->> Also, coherent buffer
->> is very limited in some arch(such as ARM), maybe we should use it
->> more dynamically, instead of keeping it for long time.
->
-> No, this is against the design (see above).
->
-> If you want to be dynamic, please use streaming DMA mapping.
 
-The dynamic here is that allocate and free dynamically, not map and unmap
-dynamically. As I said, some arch may have very limited coherent buffer
-space, so allocate and free coherent memory for one driver does make sense.
+On Tue, 21 Sep 2010, Justin P. Mattock wrote:
 
->
-> If a DMA buffer is needed often and you want to avoid the overhead of streaming
-> dma mapping, use a coherent buffer.
+> On 09/20/2010 10:17 PM, Finn Thain wrote:
+> > 
+> > I would say that if a URL is in the web archive, then no patch is needed.
+> > 
+> > Finn
+> > 
+> 
+> before I go and remove all of the archive.org stuff, can I get some feedback
+> from other people as well on having this used? i.e. if keeping the old broken
+> link in the kernel, how will people know to go to archive.org or any other
+> archive site to read the old info?, as opposed to already having this in there
+> so people can just click and go?..
+> 
+> The idea to use archive.org came from this thread:
+> http://amailbox.org/mailarchive/linux-kernel/2010/7/21/4596207/thread
+> where there are people still wanting to read the old info.
 
-This is nothing to do with the topic.
+If people want to read the old links, and they don't know about 
+archive.org, then they should. If you've seen one 
+"http://web.archive.org/web/*/foo/bar", you've seen them all. So this is 
+bloat in some sense.
 
->
->> irqs_disabled() doesn't mean the buffer is freed in an interrupt context.
->
-> I am very sure that the writer of this code has used irqs_disabled() as an
-> indication of interrupt context. Maybe in_interrupt() will be more precise.
+As the web matures, and more and more information disappears from the web, 
+archive.org will become common knowledge (if it isn't already).
 
-You mean WARN_ON(irqs_disables) is wrong?  Anyway, irqs_disabled is very
-different with in_interrupt, isn't it?
+Applying your reasoning that "people are still wanting to read the old 
+info", a policy to accept patches like:
+- http://foo/bar
++ http://web.archive.org/web/*/foo/bar
+would imply another continual stream of patches when the domain foo 
+changes hands. Then you have to pach,
+- http://web.archive.org/web/*/foo/bar
++ http://web.archive.org/web/YYYYMMDDHHMMSS/foo/bar
 
-You still not reply the root cause of WARN_ON(irqs_disables) is added
-into dma_free_coherent. I want to know there is any catastrophic or
-side effect if dma_free_coherent is called with irq disabled, seems
-you just said it is against the initial design.
+Then the problem becomes what is the correct YYYYMMMDDHHMMSS? The one 
+closest to the datestamp of submission of the patch? Or the datestamp from 
+the email that submitted the patch? When these questions arise, it becomes 
+a new burden on maintainers to determine the right version of the web page 
+in the archive, and whether or not the latest version is the best one.
 
->
->> If it is only a misuse, seems WARN_ON can be removed.
->
-> How on earth will you detect the misuse if there is no visible indication at
-> runtime?
+So both of these (arguably) continuous streams of patches would become a 
+burden on maintainers and offer little or no benefit to those reading the 
+source code.
 
-In fact, some usb host controller only can DMA data using its internal sram,
-which is generally declared as coherent memory using
-dma_declare_coherent_memory. When submiting urb to usbcore, the
-internal coherent buffer is allocated as bounce buffer to do dma transfer
-, and after the transfer is over the bounce buffer will be deallocated using
-dma_free_coherent, which can cause the warning since urb->complete always
-run in irq context.
+The benefit to end users is also dubious, because you're chasing web pages 
+that were abandoned, implying low value in the first place.
 
-So I want to know the root cause of the warning.  If there is very little side
-effect to call dma_free_coherent in irq context, we can keep the current usb
-implementation in this case and just remove the WARN_ON from
-dma_free_coherent.
+Though they move from one URL to another, the links that are valuable are 
+the web pages that are regularly updated. These are are the links that 
+need to be kept up-to-date. And I think your work in that direction is 
+valuable.
 
+Thanks.
 
-thanks,
--- 
-Lei Ming
+Finn
+
+> 
+> Justin P. Mattock
+> 
+> 
