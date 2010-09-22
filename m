@@ -1,62 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751316Ab0IVEks (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 00:40:48 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60153 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736Ab0IVEks (ORCPT
+	id S1751637Ab0IVEoO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 00:44:14 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59872 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750730Ab0IVEoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 00:40:48 -0400
+	Wed, 22 Sep 2010 00:44:12 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=hPKdQrGzRqsKDVoQtiJlVOQjBI72yaxlwc0c7v0ipEMLPpHWmLkW4v/ULGbZgNj9zO
-         CsCDOO55rTxSgVbxg70XTzkPHUE2L0oHoIZeE8rwIuGwpEQTd9pQjDrsTFJjbKAN5XW0
-         T8XF0jPS3MuIWf3wbUcQMhyfWWHhKxVXZhO8A=
-Message-ID: <4C9988D5.5010700@gmail.com>
-Date: Tue, 21 Sep 2010 21:40:53 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
-MIME-Version: 1.0
-To: Finn Thain <fthain@telegraphics.com.au>
-CC: trivial@kernel.org, linux-kernel@vger.kernel.org,
-        "Maciej W. Rozycki" <macro@linux-mips.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Randy Dunlap <rdunlap@xenotime.net>, Matt Turner <mattst88@gmail.com>,
-        Dimitry Torokhov <dmitry.torokhov@gmail.com>,
-        Ben Pfaff <blp@cs.stanford.edu>, Mike Frysinger <vapier.adi@gmail.com>
-Subject: Re: [PATCH]Update-broken-web-addresses-in-the-kernel
-References: <1285042724-19135-1-git-send-email-justinmattock@gmail.com> <alpine.LNX.2.00.1009211518290.9370@nippy.intranet>
-In-Reply-To: <alpine.LNX.2.00.1009211518290.9370@nippy.intranet>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=FimVB6cATGe5ymOta78hfCgXMIyJZWm2cUE+4yvD8GNOql4pAQq92z8wWdzY6godLs
+         5VJ11NDPL/TfGsSsuxqohfWEP4txvg+33QC6Kun+RtAus/3fLK9a0CiGGzuaSImTlRFO
+         lZmLyeIBHH1RuQOfA2MeR142ybpRHLnZrbGrc=
+Subject: Re: [PATCH] ip : take care of last fragment in ip_append_data
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: nbowler@elliptictech.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+In-Reply-To: <20100921.163856.71124744.davem@davemloft.net>
+References: <1285013853.2323.148.camel@edumazet-laptop>
+	 <1285018272.2323.243.camel@edumazet-laptop>
+	 <1285049787.2323.797.camel@edumazet-laptop>
+	 <20100921.163856.71124744.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Sep 2010 06:44:06 +0200
+Message-ID: <1285130646.6378.45.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Le mardi 21 septembre 2010 à 16:38 -0700, David Miller a écrit :
+> From: Eric Dumazet <eric.dumazet@gmail.com>
+> Date: Tue, 21 Sep 2010 08:16:27 +0200
+> 
+> > [PATCH] ip : take care of last fragment in ip_append_data
+> > 
+> > While investigating a bit, I found ip_fragment() slow path was taken
+> > because ip_append_data() provides following layout for a send(MTU +
+> > N*(MTU - 20)) syscall :
+> > 
+> > - one skb with 1500 (mtu) bytes
+> > - N fragments of 1480 (mtu-20) bytes (before adding IP header)
+> > last fragment gets 17 bytes of trail data because of following bit:
+> > 
+> > 	if (datalen == length + fraggap)
+> > 		alloclen += rt->dst.trailer_len;
+> > 
+> > Then esp4 adds 16 bytes of data (while trailer_len is 17... hmm...
+> > another bug ?)
+> > 
+> > In ip_fragment(), we notice last fragment is too big (1496 + 20) > mtu,
+> > so we take slow path, building another skb chain.
+> > 
+> > In order to avoid taking slow path, we should correct ip_append_data()
+> > to make sure last fragment has real trail space, under mtu...
+> > 
+> > Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> 
+> This patch largely looks fine, but:
+> 
+> 1) I want to find out where that "17" tailer_len comes from before
+>    applying this, that doesn't make any sense.
+> 
+> 2) Even with #1 addressed, this function is tricky so I want to review
+>    this patch some more.
 
- > diff --git a/drivers/hwmon/adcxx.c b/drivers/hwmon/adcxx.c
- > index fbdc765..8803ed9 100644
- > --- a/drivers/hwmon/adcxx.c
- > +++ b/drivers/hwmon/adcxx.c
- > @@ -14,7 +14,7 @@
- >   *   and 101 for 1 MSPS)
- >   *
- >   * Complete datasheets are available at National's website here:
- > - * http://www.national.com/ds/DC/ADC<bb><c>S<sss>.pdf
- > + * http://www.national.com/products/catalog.do
- >Wrong. Google this and you will see what I mean.
 
- >site:www.national.com inurl:ds/DC
 
-looking at this one, I think it might be better to leave alone,
-reading the info above the url gives better insight on how they came up 
-with: ADC<bb><c>S<sss>.pdf
+The "17" (instead of probable 16 need) comes from :
 
-or I can just use: http://www.national.com/analog/documents/guides
-googling does gives results, but the part number is up to the person 
-doing the designing etc..(searches are showing nothing with adcxx
-just the companies product numbers for their products).
+net/ipv4/esp4.c line 599 :
 
-Justin P. Mattock
+x->props.trailer_len = align + 1 + crypto_aead_authsize(esp->aead);
+
+In my Nick ipsec script case, 
+crypto_aead_blocksize(aead) = 16, 
+crypto_aead_authsize(esp->aead) = 0
+
+-> align = 16
+trailer_len = 16 + 1 + 0;
+
+I am not sure we need the "+ 1", but I know nothing about this stuff.
+
+Same in net/ipv6/esp6.c ?
+
+
+Anyway the last frag problem is for packets with lengths :
+ MTU + N*(MTU - 20) + LAST
+
+LAST being from [(MTU - trailer_len) ... MTU], not only MTU as I wrote
+in changelog
+
+
+
