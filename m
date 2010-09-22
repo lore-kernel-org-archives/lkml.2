@@ -1,66 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab0IVO2A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 10:28:00 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:58924 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753456Ab0IVO16 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 10:27:58 -0400
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org
-In-reply-to: <20100916123752.00294cfb.akpm@linux-foundation.org> (message from
-	Andrew Morton on Thu, 16 Sep 2010 12:37:52 -0700)
-Subject: [PATCH] fuse: use release_pages()
-References: <20100916123752.00294cfb.akpm@linux-foundation.org>
-Message-Id: <E1OyQId-0004Q4-CT@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Wed, 22 Sep 2010 16:27:55 +0200
+	id S1754806Ab0IVO2l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 10:28:41 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:40633 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753456Ab0IVO2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 10:28:40 -0400
+Message-ID: <4C9A1293.4060803@austin.ibm.com>
+Date: Wed, 22 Sep 2010 09:28:35 -0500
+From: Nathan Fontenot <nfont@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org
+CC: Greg KH <greg@kroah.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: [PATCH 1/8] Move find_memory_block() routine
+References: <4C9A0F8F.2030409@austin.ibm.com>
+In-Reply-To: <4C9A0F8F.2030409@austin.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+Move the find_memory_block() routine up to avoid needing a forward
+declaration in subsequent patches.
 
-Replace iterated page_cache_release() with release_pages(), which is
-faster and shorter.
+Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 
-Needs release_pages() to be exported to modules.
-
-Suggested-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/fuse/dev.c |    7 +------
- mm/swap.c     |    1 +
- 2 files changed, 2 insertions(+), 6 deletions(-)
+ drivers/base/memory.c |   62 +++++++++++++++++++++++++-------------------------
+ 1 file changed, 31 insertions(+), 31 deletions(-)
 
-Index: linux-2.6/fs/fuse/dev.c
+Index: linux-next/drivers/base/memory.c
 ===================================================================
---- linux-2.6.orig/fs/fuse/dev.c	2010-09-22 16:14:36.000000000 +0200
-+++ linux-2.6/fs/fuse/dev.c	2010-09-22 16:14:49.000000000 +0200
-@@ -1336,12 +1336,7 @@ out_finish:
+--- linux-next.orig/drivers/base/memory.c	2010-09-21 11:59:24.000000000 -0500
++++ linux-next/drivers/base/memory.c	2010-09-21 12:32:45.000000000 -0500
+@@ -435,6 +435,37 @@ int __weak arch_get_memory_phys_device(u
+ 	return 0;
+ }
  
- static void fuse_retrieve_end(struct fuse_conn *fc, struct fuse_req *req)
++/*
++ * For now, we have a linear search to go find the appropriate
++ * memory_block corresponding to a particular phys_index. If
++ * this gets to be a real problem, we can always use a radix
++ * tree or something here.
++ *
++ * This could be made generic for all sysdev classes.
++ */
++struct memory_block *find_memory_block(struct mem_section *section)
++{
++	struct kobject *kobj;
++	struct sys_device *sysdev;
++	struct memory_block *mem;
++	char name[sizeof(MEMORY_CLASS_NAME) + 9 + 1];
++
++	/*
++	 * This only works because we know that section == sysdev->id
++	 * slightly redundant with sysdev_register()
++	 */
++	sprintf(&name[0], "%s%d", MEMORY_CLASS_NAME, __section_nr(section));
++
++	kobj = kset_find_obj(&memory_sysdev_class.kset, name);
++	if (!kobj)
++		return NULL;
++
++	sysdev = container_of(kobj, struct sys_device, kobj);
++	mem = container_of(sysdev, struct memory_block, sysdev);
++
++	return mem;
++}
++
+ static int add_memory_block(int nid, struct mem_section *section,
+ 			unsigned long state, enum mem_add_context context)
  {
--	int i;
+@@ -468,37 +499,6 @@ static int add_memory_block(int nid, str
+ 	return ret;
+ }
+ 
+-/*
+- * For now, we have a linear search to go find the appropriate
+- * memory_block corresponding to a particular phys_index. If
+- * this gets to be a real problem, we can always use a radix
+- * tree or something here.
+- *
+- * This could be made generic for all sysdev classes.
+- */
+-struct memory_block *find_memory_block(struct mem_section *section)
+-{
+-	struct kobject *kobj;
+-	struct sys_device *sysdev;
+-	struct memory_block *mem;
+-	char name[sizeof(MEMORY_CLASS_NAME) + 9 + 1];
 -
--	for (i = 0; i < req->num_pages; i++) {
--		struct page *page = req->pages[i];
--		page_cache_release(page);
--	}
-+	release_pages(req->pages, req->num_pages, 0);
- }
- 
- static int fuse_retrieve(struct fuse_conn *fc, struct inode *inode,
-Index: linux-2.6/mm/swap.c
-===================================================================
---- linux-2.6.orig/mm/swap.c	2010-08-06 13:58:19.000000000 +0200
-+++ linux-2.6/mm/swap.c	2010-09-22 16:15:55.000000000 +0200
-@@ -378,6 +378,7 @@ void release_pages(struct page **pages,
- 
- 	pagevec_free(&pages_to_free);
- }
-+EXPORT_SYMBOL(release_pages);
- 
- /*
-  * The pages which we're about to release may be in the deferred lru-addition
+-	/*
+-	 * This only works because we know that section == sysdev->id
+-	 * slightly redundant with sysdev_register()
+-	 */
+-	sprintf(&name[0], "%s%d", MEMORY_CLASS_NAME, __section_nr(section));
+-
+-	kobj = kset_find_obj(&memory_sysdev_class.kset, name);
+-	if (!kobj)
+-		return NULL;
+-
+-	sysdev = container_of(kobj, struct sys_device, kobj);
+-	mem = container_of(sysdev, struct memory_block, sysdev);
+-
+-	return mem;
+-}
+-
+ int remove_memory_block(unsigned long node_id, struct mem_section *section,
+ 		int phys_device)
+ {
+
+
