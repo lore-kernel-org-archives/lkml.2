@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754149Ab0IVCw4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 22:52:56 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:44935 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752643Ab0IVCwz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 22:52:55 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX19WKdAy6KxWcYYfWNs+byABpYrYVBYNj9X50uxyCY
-	3Qckkuw2pFksa+
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-To: linux-fbdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Joseph Chan <JosephChan@via.com.tw>, Daniel Drake <dsd@laptop.org>,
-        Jon Nettleton <jon.nettleton@gmail.com>
-Subject: [PATCH] viafb: use proper register for colour when doing fill ops
-Date: Wed, 22 Sep 2010 03:03:19 +0000
-Message-Id: <1285124599-5997-1-git-send-email-FlorianSchandinat@gmx.de>
-X-Mailer: git-send-email 1.6.3.2
-In-Reply-To: <AANLkTin7ZD19NSec58gOCNrbYzeWq5XW4LNte50Nsm8M@mail.gmail.com>
-References: <AANLkTin7ZD19NSec58gOCNrbYzeWq5XW4LNte50Nsm8M@mail.gmail.com>
-X-Y-GMX-Trusted: 0
+	id S1754186Ab0IVCz5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 22:55:57 -0400
+Received: from smtp102.vzn.mail.re1.yahoo.com ([69.147.103.189]:33376 "HELO
+	smtp102.vzn.mail.re1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752643Ab0IVCz4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 22:55:56 -0400
+X-Yahoo-SMTP: fqWQs0mswBBtcNE4XkkshIohcKqpeDUh8nXJG.biWOZq
+X-YMail-OSG: 1ctDs7UVM1lmZ5M0qOA241xAWYphCL.VyFFuo2m3yhFtSoE
+ s1f3s_0NBioN55.JRSYEgBIEswRYDhwc3QZNsYbvu3cZkl_KKs5dIQLDz.CU
+ 5OnnDeOJvC_6Any1cM9JDiX_hwb77yDoJUUg_ZheBaLa3HUJTlcJGLM2PwHC
+ SW9.zc1kmQy9dW5eE0lg5oD2klaBXF7dbLBzwMv9GtxYxLRrGCDUH2cFpC5q
+ qU4Pn_T9LAMJMkgy8kypwIyhk.zEuo7fBGWu6P8hQqT6ozUe51MVD85WELLB
+ lAJPUwMQbZSkYP8Rr5Xfrj4J3YEzRipa3TONQLYARmQ6Y6eZscaW61gnXTDe
+ eh.DPvj.U29t4RTJOMoVgp9LOHTNCzWby7VMO4wvGhqhlmZTqdZ3WBZ84vCB
+ zv3CF9QoK
+X-Yahoo-Newman-Property: ymail-3
+From: Johan Kullstam <kullstj_ml@verizon.net>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [Bug #16515] [bisected] Radeon rv280 can't boot on kernel 2.6.35.
+Organization: none
+References: <r2gGqgg1zFC.A.LrE.w97lMB@chimera>
+	<aRnAGz9xZ8K.A.P4F.D_7lMB@chimera>
+Date: Tue, 21 Sep 2010 22:55:53 -0400
+In-Reply-To: <aRnAGz9xZ8K.A.P4F.D_7lMB@chimera> (Rafael J. Wysocki's message
+	of "Mon, 20 Sep 2010 21:57:18 +0200 (CEST)")
+Message-ID: <87tyli4hc6.fsf@emmy.axel.nom>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The colour was written to a wrong register for fillrect operations.
-This sometimes caused empty console space (for example after 'clear')
-to have a different colour than desired. Fix this by writing to the
-correct register.
-Many thanks to Daniel Drake and Jon Nettleton for pointing out this
-issue and pointing me in the right direction for the fix.
+"Rafael J. Wysocki" <rjw@sisk.pl> writes:
 
-Fixes http://dev.laptop.org/ticket/9323
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.34 and 2.6.35.
+>
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.34 and 2.6.35.  Please verify if it still should
+> be listed and let the tracking team know (either way).
 
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: Joseph Chan <JosephChan@via.com.tw>
-Cc: Daniel Drake <dsd@laptop.org>
-Cc: Jon Nettleton <jon.nettleton@gmail.com>
----
- drivers/video/via/accel.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+Please keep this listed.  As of 2.6.36-rc5 this bug is still with us.
+It was introduced in 2.6.35-rc1.  The 2.6.34.7 kernel is fine.
 
-diff --git a/drivers/video/via/accel.c b/drivers/video/via/accel.c
-index e44893e..c2f4e6e 100644
---- a/drivers/video/via/accel.c
-+++ b/drivers/video/via/accel.c
-@@ -283,11 +283,12 @@ static int hw_bitblt_2(void __iomem *engine, u8 op, u32 width, u32 height,
- 		writel(tmp, engine + 0x1C);
- 	}
- 
--	if (op != VIA_BITBLT_COLOR)
-+	if (op == VIA_BITBLT_FILL) {
-+		writel(fg_color, engine + 0x58);
-+	} else if (op == VIA_BITBLT_MONO) {
- 		writel(fg_color, engine + 0x4C);
--
--	if (op == VIA_BITBLT_MONO)
- 		writel(bg_color, engine + 0x50);
-+	}
- 
- 	if (op == VIA_BITBLT_FILL)
- 		ge_cmd |= fill_rop << 24 | 0x00002000 | 0x00000001;
+Monitor is on the DVI port.  Once I load the module radeon with
+modeset=1, the machine locks hard.  There are no logs.
+
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16515
+> Subject		: [bisected] Radeon rv280 can't boot on kernel 2.6.35.
+> Submitter	: Albert Gall <ss3vdr@gmail.com>
+> Date		: 2010-08-04 16:10 (48 days old)
+> First-Bad-Commit: http://git.kernel.org/linus/https://bugzilla.kernel.org/attachment.cgi?id=27350
+> Handled-By	: Alex Deucher <alexdeucher@gmail.com>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
 -- 
-1.6.3.2
-
+Johan KULLSTAM
