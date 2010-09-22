@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135Ab0IVLUK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 07:20:10 -0400
-Received: from smtp127.sbc.mail.sp1.yahoo.com ([69.147.65.186]:28279 "HELO
-	smtp127.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754037Ab0IVLUG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 07:20:06 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: gyENorgVM1nA8faJuyVgchNjP6n9M7RKYk2M7AtP6UPYfsf
- 4ihK.rZrR4RwoELhKjrBDmIQmDqZZw30OR5xDLk5hebSJ9tEku8QmMYnj24z
- _GWMBxuZCLka.Rd1Yh0TUF_P04kgBEKiKNSZRs5A8JxrykvAydxwzF0Bks7H
- CaBeUyKZpIlOhhuVyj.JY5Y_oZnfxKXkYOpAPHicn8fSGEpHy1BWJgmUT2RH
- 66DBYPNoauXR5qwZt5pptWhux71hILDJc6SObVTLZxVJ_5HUHxI3euyk_ZLM
- OE_8Vt5Sfm5lCbiEBoAVkUqwrfI8nsbDP9d1LJFfrCMpF8ltUv2BoToSU_ln
- OsrNC9r7pfNaAdh7Yhg--
-X-Yahoo-Newman-Property: ymail-3
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Joel Becker <Joel.Becker@oracle.com>
-Cc: Christoph Hellwig <hch@lst.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Boaz Harrosh <bharrosh@panasas.com>, Joe Eykholt <jeykholt@cisco.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 2/2] tcm: Remove struct list_head lookup from core_dev_[add,del]_initiator_node_lun_acl()
-Date: Wed, 22 Sep 2010 04:20:03 -0700
-Message-Id: <1285154403-6405-1-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.5.6.5
+	id S1754073Ab0IVLXQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 07:23:16 -0400
+Received: from cantor.suse.de ([195.135.220.2]:39641 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752359Ab0IVLXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 07:23:15 -0400
+Date: Wed, 22 Sep 2010 13:23:08 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Alan Ott <alan@signal11.us>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
+        linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, simon@mungewell.org
+Subject: Re: [PATCH v3 1/1] Don't Send Feature Reports on Interrupt
+ Endpoint
+In-Reply-To: <1285106792-5818-1-git-send-email-alan@signal11.us>
+Message-ID: <alpine.LNX.2.00.1009221322310.26813@pobox.suse.cz>
+References: <4C98EAAE.3020409@signal11.us> <1285106792-5818-1-git-send-email-alan@signal11.us>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+On Tue, 21 Sep 2010, Alan Ott wrote:
 
-This patch removes the usage of core_tpg_get_initiator_node_acl() that contains an
-unnecessary lookup of struct se_node_acl from struct se_portal_group->acl_node_list
-which can be located directly via struct se_lun_acl->se_lun_nacl.
+> Feature reports should only be sent on the control endpoint.
+> 
+> The USB HID standard is unclear and confusing on this issue. It seems to
+> suggest that Feature reports can be sent on a HID device's Interrupt OUT
+> endpoint.  This cannot be the case because the report type is not encoded in
+> transfers sent out the Interrput OUT endpoint.  If Feature reports were sent
+> on the Interrupt OUT endpint, they would be indistinguishable from Output
+> reports in the case where Report IDs were not used.
+> 
+> Further, Windows and Mac OS X do not send Feature reports out the interrupt
+> OUT Endpoint.  They will only go out the Control Endpoint.
+> 
+> In addition, many devices simply do not hande Feature reports sent out the Interrupt OUT endpoint.
+> 
+> Reported-by: simon@mungewell.org
+> Signed-off-by: Alan Ott <alan@signal11.us>
+> ---
+>  drivers/hid/usbhid/hid-core.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
+> index b729c02..b0ccc42 100644
+> --- a/drivers/hid/usbhid/hid-core.c
+> +++ b/drivers/hid/usbhid/hid-core.c
+> @@ -807,7 +807,7 @@ static int usbhid_output_raw_report(struct hid_device *hid, __u8 *buf, size_t co
+>  	struct usb_host_interface *interface = intf->cur_altsetting;
+>  	int ret;
+>  
+> -	if (usbhid->urbout) {
+> +	if (usbhid->urbout && report_type != HID_FEATURE_REPORT) {
+>  		int actual_length;
+>  		int skipped_report_id = 0;
+>  		if (buf[0] == 0x0) {
 
-Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
----
- drivers/target/target_core_device.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Applied to the 'logitech' branch (as Simon's new Logitech driver is 
+depending on this).
 
-diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
-index 6fe4408..1e8be47 100644
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -1524,7 +1524,7 @@ int core_dev_add_initiator_node_lun_acl(
- 		return -EINVAL;
- 	}
- 
--	nacl = core_tpg_get_initiator_node_acl(tpg, lacl->initiatorname);
-+	nacl = lacl->se_lun_nacl;
- 	if (!(nacl))
- 		return -EINVAL;
- 
-@@ -1569,7 +1569,7 @@ int core_dev_del_initiator_node_lun_acl(
- {
- 	struct se_node_acl *nacl;
- 
--	nacl = core_tpg_get_initiator_node_acl(tpg, lacl->initiatorname);
-+	nacl = lacl->se_lun_nacl;
- 	if (!(nacl))
- 		return -EINVAL;
- 
 -- 
-1.5.6.5
-
+Jiri Kosina
+SUSE Labs, Novell Inc.
