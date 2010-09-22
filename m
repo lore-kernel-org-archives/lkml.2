@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032Ab0IVMSv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 08:18:51 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:44542 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752334Ab0IVMSu (ORCPT
+	id S1754263Ab0IVMXG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 08:23:06 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48413 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752334Ab0IVMXE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 08:18:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=jCbwKPPjVN/z+EMq5HR0jOb2XM819722JAkQxXvv3BLrNAQkQhS9rMOsBEhMRuhk/h
-         x67szINblpZc0P/C9zl1nBFMQu/XcFTOQ5pl6pYu8tZ1LRaKDsFL/kVqNmdSuPrdra8p
-         H6II+nMhCL8qMpItz0ZUGdXuke+UQnR9e5WAI=
-Date: Wed, 22 Sep 2010 16:18:45 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Balaji Rao <balajirrao@openmoko.org>,
-        Paul Fertser <fercerpav@gmail.com>
-Subject: Re: [PATCH] drivers/power: add missing sysfs_remove_group() in
- pcf50633_mbc_remove()
-Message-ID: <20100922121658.GA24829@oksana.dev.rtsoft.ru>
-References: <1285058157.26315.1.camel@mola>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1285058157.26315.1.camel@mola>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 22 Sep 2010 08:23:04 -0400
+Subject: Re: [tip:perf/core] perf events: Clean up pid passing
+From: Peter Zijlstra <peterz@infradead.org>
+To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
+        linux-kernel@vger.kernel.org, will.deacon@arm.com, matthltc@us.ibm.com,
+        mahesh@linux.vnet.ibm.com, rostedt@goodmis.org, tglx@linutronix.de,
+        prasad@linux.vnet.ibm.com, greenrd@greenrd.org, mingo@elte.hu
+Cc: linux-tip-commits@vger.kernel.org
+In-Reply-To: <tip-38a81da2205f94e8a2a834b51a6b99c91fc7c2e8@git.kernel.org>
+References: <a134e5e392ab0204961fd1a62c84a222bf5874a9.1284407763.git.matthltc@us.ibm.com>
+	 <tip-38a81da2205f94e8a2a834b51a6b99c91fc7c2e8@git.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 22 Sep 2010 14:22:22 +0200
+Message-ID: <1285158142.2275.898.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 21, 2010 at 04:35:57PM +0800, Axel Lin wrote:
-> sysfs entries should be removed when unload the module.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+On Wed, 2010-09-15 at 10:03 +0000, tip-bot for Matt Helsley wrote:
+> +++ b/kernel/hw_breakpoint.c
+> @@ -433,8 +433,7 @@ register_user_hw_breakpoint(struct perf_event_attr *attr,
+>                             perf_overflow_handler_t triggered,
+>                             struct task_struct *tsk)
+>  {
+> -       return perf_event_create_kernel_counter(attr, -1, task_pid_vnr(tsk),
+> -                                               triggered);
+> +       return perf_event_create_kernel_counter(attr, -1, tsk, triggered);
+>  }
+>  EXPORT_SYMBOL_GPL(register_user_hw_breakpoint);
+>   
 
-Applied, thanks!
+That seems to have gotten lost somehow..
 
-> ---
->  drivers/power/pcf50633-charger.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/power/pcf50633-charger.c b/drivers/power/pcf50633-charger.c
-> index 066f994..4fa52e1 100644
-> --- a/drivers/power/pcf50633-charger.c
-> +++ b/drivers/power/pcf50633-charger.c
-> @@ -456,6 +456,7 @@ static int __devexit pcf50633_mbc_remove(struct platform_device *pdev)
->  	for (i = 0; i < ARRAY_SIZE(mbc_irq_handlers); i++)
->  		pcf50633_free_irq(mbc->pcf, mbc_irq_handlers[i]);
->  
-> +	sysfs_remove_group(&pdev->dev.kobj, &mbc_attr_group);
->  	power_supply_unregister(&mbc->usb);
->  	power_supply_unregister(&mbc->adapter);
->  	power_supply_unregister(&mbc->ac);
+/usr/src/linux-2.6/kernel/hw_breakpoint.c: In function ‘register_user_hw_breakpoint’:
+/usr/src/linux-2.6/kernel/hw_breakpoint.c:436: warning: passing argument 3 of ‘perf_event_create_kernel_counter’ makes pointer from integer without a cast
+/usr/src/linux-2.6/include/linux/perf_event.h:909: note: expected ‘struct task_struct *’ but argument is of type ‘pid_t’
 
--- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
+The below cures it
+
+---
+diff --git a/kernel/hw_breakpoint.c b/kernel/hw_breakpoint.c
+index 8f36c99..3b714e8 100644
+--- a/kernel/hw_breakpoint.c
++++ b/kernel/hw_breakpoint.c
+@@ -433,7 +433,7 @@ register_user_hw_breakpoint(struct perf_event_attr *attr,
+ 			    perf_overflow_handler_t triggered,
+ 			    struct task_struct *tsk)
+ {
+-	return perf_event_create_kernel_counter(attr, -1, task_pid_vnr(tsk), triggered);
++	return perf_event_create_kernel_counter(attr, -1, tsk, triggered);
+ }
+ EXPORT_SYMBOL_GPL(register_user_hw_breakpoint);
+ 
+
