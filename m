@@ -1,57 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857Ab0IVQNg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 12:13:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56087 "EHLO mail.zytor.com"
+	id S1753248Ab0IVQUM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 12:20:12 -0400
+Received: from kroah.org ([198.145.64.141]:41734 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752284Ab0IVQNg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 12:13:36 -0400
-Message-ID: <4C9A2AED.3050801@zytor.com>
-Date: Wed, 22 Sep 2010 09:12:29 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+	id S1752033Ab0IVQUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 12:20:10 -0400
+Date: Wed, 22 Sep 2010 09:20:06 -0700
+From: Greg KH <greg@kroah.com>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Boaz Harrosh <bharrosh@panasas.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vasiliy Kulikov <segooon@gmail.com>, kernel-janitors@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Jiri Slaby <jirislaby@gmail.com>,
+        linux-kernel@vger.kernel.org, Dan Carpenter <error27@gmail.com>
+Subject: Re: [PATCH 04/14] memstick: core: fix device_register() error
+ handling
+Message-ID: <20100922162006.GA27853@kroah.com>
+References: <1284900889-24369-1-git-send-email-segooon@gmail.com>
+ <20100921152031.30365b3f.akpm@linux-foundation.org>
+ <20100921224947.GA20183@kroah.com>
+ <AANLkTimQWtQTBe3RBSbYd7vM4Y+SckkoBDbO8E+SwtJj@mail.gmail.com>
+ <4C99D436.700@panasas.com>
+ <20100922154746.GB26178@kroah.com>
+ <1285170996.2993.134.camel@mulgrave.site>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: jbaron@redhat.com, rostedt@goodmis.com, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, mathieu.desnoyers@polymtl.ca, tglx@linutronix.de,
-        roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 2/2] Rewrite jump_label.c to use binary search
-References: <1285150102-5506-1-git-send-email-andi@firstfloor.org> <1285150102-5506-2-git-send-email-andi@firstfloor.org>
-In-Reply-To: <1285150102-5506-2-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285170996.2993.134.camel@mulgrave.site>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2010 03:08 AM, Andi Kleen wrote:
->
-> I believe it's also much cleaner than before.
->
-> I did some performance tests comparing the hash implementation
-> with the binary search. This was with a moderate config x86-64
-> kernel with 68 modules loaded and about 480 trace points active
-> in several modules and 1340 dynamic debug statements.
->
+On Wed, Sep 22, 2010 at 10:56:36AM -0500, James Bottomley wrote:
+> On Wed, 2010-09-22 at 08:47 -0700, Greg KH wrote:
+> > On Wed, Sep 22, 2010 at 12:02:30PM +0200, Boaz Harrosh wrote:
+> > > On 09/22/2010 10:53 AM, Kay Sievers wrote:
+> > > > On Wed, Sep 22, 2010 at 00:49, Greg KH <greg@kroah.com> wrote:
+> > > > 
+> > > >>  int device_register(struct device *dev)
+> > > >>  {
+> > > >> +       int retval;
+> > > >> +
+> > > >>        device_initialize(dev);
+> > > >> -       return device_add(dev);
+> > > >> +       retval = device_add(dev);
+> > > >> +       if (retval)
+> > > >> +               put_device(dev);
+> > > >> +       return retval;
+> > > >>  }
+> > > > 
+> > > >> Kay, what am I missing here, why can't we just do this?  Hm, the
+> > > >> side-affect might be that if device_register() fails, NO ONE had better
+> > > >> touch that device again, as it might have just been freed from the
+> > > >> system.  I wonder if that will cause problems...
+> > > > 
+> > > > That looks right, besides that there might be callers already doing
+> > > > this. Which needs to be checked.
+> > > > 
+> > > > I never liked this pretty useless "convenience API", which just wraps
+> > > > two simple functions and the first one can never fail anyway.
+> > > > 
+> > > > We better remove that device_register() stuff entirely in the long
+> > > > run, it's not doing any good. At the kobject level we killed the same
+> > > > stuff already long ago.
+> > > > 
+> > > 
+> > > That would be fine, and ping me when you do it, I'll help with my
+> > > driver. But don't forget to let us have a way to embed a device inside
+> > > a bigger structure.
+> > 
+> > That's what you should be doing anyway, so it shouldn't be a problem.
+> > 
+> > > For meanwhile Please check the patch James sent to add_device that cleans
+> > > up the allocation of the kobj.name member. (And the comment made there)
+> > 
+> > See my other email why that isn't a good idea.
+> 
+> What other email? ... neither you nor Kay replied after either Boaz's
+> patch or the corrected one were posted.
 
-Now, the ideal data structure for this stuff is something called a 
-minimal perfect hash.  This is something that would have to be generated 
-(for each module and for the monolithic kernel) at compile time -- 
-presumably in modpost -- because the static generation of them is fairly 
-complex.
+See my other email a minute ago in response to this thread.
 
-That would provide extremely simple handling in the kernel (just do some 
-shifts and a table lookup and you have your answer) and if combined with 
-an AVL or red-black tree holding the module addresses it would give 
-extremely fast address-to-metadata lookup, not just for this but also 
-for things like exception handling.
+thanks,
 
-I have used MPH's in other projects and pitched them to Linus at one 
-point for exception handling.  What is clear, though, is that we should 
-do the same thing for exceptions, trace points, and any other similar 
-things that depend on exact PC.
-
-	-hpa
+greg k-h
