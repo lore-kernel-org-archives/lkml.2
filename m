@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753606Ab0IVWxi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 18:53:38 -0400
-Received: from smtp128.sbc.mail.sp1.yahoo.com ([69.147.65.187]:35649 "HELO
-	smtp128.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753504Ab0IVWuW (ORCPT
+	id S1753473Ab0IVWuB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 18:50:01 -0400
+Received: from smtp127.sbc.mail.sp1.yahoo.com ([69.147.65.186]:34773 "HELO
+	smtp127.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753236Ab0IVWtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 18:50:22 -0400
+	Wed, 22 Sep 2010 18:49:43 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: B9XoljgVM1nwX.OADjJLlEBUX4uB5pqp0fMMNutthjV0DGq
- vfFiWLxn3I8KtNxLyT1CFqiAb5yjR4CBzjCBrcQtbq.hwWwh3voE69QmltZ4
- 4RF3TEtKeZG.Oj.G3MUgr2ed.KGix_fQrGmw53zqdYe4uIbybcGL2Yqze91H
- JzKOOUMXI5.OaR6RvRqHg3m_uEnueK9yJaSHSZqML8cgk.E54_ObveMorpdY
- TbUKlaUVzvYl5YcWFs57ZarNFGDOqg.Mg6KxmTby1Jy87iSrEf.JGBtG0ggQ
- h.0R3PvXGAyDlrsZ1O6JTHxVuSnNZU7ur3nLNvGRORPTt0OCekn4CfSr_
+X-YMail-OSG: uFMfytQVM1mInG7IpABIWsY.66RCH89VerZQLC1L5g_A8m7
+ o7jpdt3OfzYX8ZVGd.RjveyLOOoi_P1uUtx71LY.b3fTK.6sSsSm0AqOoMyj
+ oUjJ5DLnIahwiEkZrPS4a88RrcAWqj3M33.tJ2hvTptah2sR2AlhjHbC.n1I
+ 8xQ8NDe76hsQpr3dtzwfINRiivZ7NmP1Z.ai7vMtZMto2YQwXD4i_TMLEfAk
+ ByOlnWfi7.uZdcRxfNtI4z5QuqK3W7.PRxh1CREoO53jgVuiWLKdbykzN51U
+ jumYyIin_gmEpY4i8ZDeF2NZy.RPznvjCra6w1AjK1ko3XM40rELA56EJ
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -24,9 +24,9 @@ Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
         James Bottomley <James.Bottomley@suse.de>,
         Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [RFC v2 11/21] tcm: Add Task Management infrastructure
-Date: Wed, 22 Sep 2010 15:50:19 -0700
-Message-Id: <1285195819-11633-1-git-send-email-nab@linux-iscsi.org>
+Subject: [RFC v2 07/21] tcm: Add HBA core infrastructure
+Date: Wed, 22 Sep 2010 15:49:40 -0700
+Message-Id: <1285195780-11554-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,31 +34,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch adds SPC-3 task management infrastructure and functionality for
-LUN_RESET with TASK_ABORTED status (TAS) and in combination with handling
-Persistent Reservation PREEMPT_AND_ABORT service action.
+This patch adds the core struct se_hba functionality that is used internally by
+target_core_mod to group the same subsystem storage objects types until a single
+/sys/kernel/config/target/core/$HBA directory.  The HBA code supports boths
+physical storage objects (from Linux/SCSI) and virtual storage objects (from Linux/BLOCK,
+Linux/VFS, RAMDISK)
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/target_core_tmr.c |  405 ++++++++++++++++++++++++++++++++++++++
- include/target/target_core_tmr.h |   43 ++++
- 2 files changed, 448 insertions(+), 0 deletions(-)
- create mode 100644 drivers/target/target_core_tmr.c
- create mode 100644 include/target/target_core_tmr.h
+ drivers/target/target_core_hba.c |  211 ++++++++++++++++++++++++++++++++++++++
+ drivers/target/target_core_hba.h |   14 +++
+ 2 files changed, 225 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/target/target_core_hba.c
+ create mode 100644 drivers/target/target_core_hba.h
 
-diff --git a/drivers/target/target_core_tmr.c b/drivers/target/target_core_tmr.c
+diff --git a/drivers/target/target_core_hba.c b/drivers/target/target_core_hba.c
 new file mode 100644
-index 0000000..34f53de
+index 0000000..d9e286c
 --- /dev/null
-+++ b/drivers/target/target_core_tmr.c
-@@ -0,0 +1,405 @@
++++ b/drivers/target/target_core_hba.c
+@@ -0,0 +1,211 @@
 +/*******************************************************************************
-+ * Filename:  target_core_tmr.c
++ * Filename:  target_core_hba.c
 + *
-+ * This file contains SPC-3 task management infrastructure
++ * This file copntains the iSCSI HBA Transport related functions.
 + *
-+ * Copyright (c) 2009,2010 Rising Tide Systems
-+ * Copyright (c) 2009,2010 Linux-iSCSI.org
++ * Copyright (c) 2003, 2004, 2005 PyX Technologies, Inc.
++ * Copyright (c) 2005, 2006, 2007 SBE, Inc.
++ * Copyright (c) 2007-2010 Rising Tide Systems
++ * Copyright (c) 2008-2010 Linux-iSCSI.org
 + *
 + * Nicholas A. Bellinger <nab@kernel.org>
 + *
@@ -78,434 +82,209 @@ index 0000000..34f53de
 + *
 + ******************************************************************************/
 +
-+#include <linux/version.h>
++#include <linux/net.h>
++#include <linux/string.h>
++#include <linux/timer.h>
 +#include <linux/slab.h>
 +#include <linux/spinlock.h>
-+#include <linux/list.h>
-+#include <scsi/scsi.h>
-+#include <scsi/scsi_cmnd.h>
++#include <linux/smp_lock.h>
++#include <linux/in.h>
++#include <net/sock.h>
++#include <net/tcp.h>
 +
 +#include <target/target_core_base.h>
 +#include <target/target_core_device.h>
-+#include <target/target_core_tmr.h>
++#include <target/target_core_device.h>
++#include <target/target_core_tpg.h>
 +#include <target/target_core_transport.h>
-+#include <target/target_core_fabric_ops.h>
-+#include <target/target_core_configfs.h>
 +
-+#include "target_core_alua.h"
-+#include "target_core_pr.h"
++#include "target_core_hba.h"
 +
-+#define DEBUG_LUN_RESET
-+#ifdef DEBUG_LUN_RESET
-+#define DEBUG_LR(x...) printk(KERN_INFO x)
-+#else
-+#define DEBUG_LR(x...)
-+#endif
-+
-+struct se_tmr_req *core_tmr_alloc_req(
-+	struct se_cmd *se_cmd,
-+	void *fabric_tmr_ptr,
-+	u8 function)
++int core_get_hba(struct se_hba *hba)
 +{
-+	struct se_tmr_req *tmr;
-+
-+	tmr = kmem_cache_zalloc(se_tmr_req_cache, GFP_KERNEL);
-+	if (!(tmr)) {
-+		printk(KERN_ERR "Unable to allocate struct se_tmr_req\n");
-+		return ERR_PTR(-ENOMEM);
-+	}
-+	tmr->task_cmd = se_cmd;
-+	tmr->fabric_tmr_ptr = fabric_tmr_ptr;
-+	tmr->function = function;
-+	INIT_LIST_HEAD(&tmr->tmr_list);
-+
-+	return tmr;
++	return ((mutex_lock_interruptible(&hba->hba_access_mutex) != 0) ?
++		-1 : 0);
 +}
-+EXPORT_SYMBOL(core_tmr_alloc_req);
 +
-+/*
-+ * Called with struct se_device->se_tmr_lock held.
++struct se_hba *core_alloc_hba(void)
++{
++	struct se_hba *hba;
++
++	hba = kmem_cache_zalloc(se_hba_cache, GFP_KERNEL);
++	if (!(hba)) {
++		printk(KERN_ERR "Unable to allocate struct se_hba\n");
++		return NULL;
++	}
++
++	hba->hba_status |= HBA_STATUS_FREE;
++	INIT_LIST_HEAD(&hba->hba_dev_list);
++	spin_lock_init(&hba->device_lock);
++	spin_lock_init(&hba->hba_queue_lock);
++	mutex_init(&hba->hba_access_mutex);
++	hba->hba_index = scsi_get_new_index(SCSI_INST_INDEX);
++
++	return hba;
++}
++EXPORT_SYMBOL(core_alloc_hba);
++
++void core_put_hba(struct se_hba *hba)
++{
++	mutex_unlock(&hba->hba_access_mutex);
++}
++EXPORT_SYMBOL(core_put_hba);
++
++/*	se_core_add_hba():
++ *
++ *
 + */
-+void __core_tmr_release_req(
-+	struct se_tmr_req *tmr)
++int se_core_add_hba(
++	struct se_hba *hba,
++	const char *plugin_name,
++	u32 plugin_dep_id)
 +{
-+	list_del(&tmr->tmr_list);
-+	kmem_cache_free(se_tmr_req_cache, tmr);
-+}
++	struct se_subsystem_api *t;
++	int ret = 0;
 +
-+void core_tmr_release_req(
-+	struct se_tmr_req *tmr)
-+{
-+	struct se_device *dev = tmr->tmr_dev;
++	if (hba->hba_status & HBA_STATUS_ACTIVE)
++		return -EEXIST;
 +
-+	spin_lock(&dev->se_tmr_lock);
-+	__core_tmr_release_req(tmr);
-+	spin_unlock(&dev->se_tmr_lock);
-+}
++	atomic_set(&hba->max_queue_depth, 0);
++	atomic_set(&hba->left_queue_depth, 0);
 +
-+static void core_tmr_handle_tas_abort(
-+	struct se_node_acl *tmr_nacl,
-+	struct se_cmd *cmd,
-+	int tas,
-+	int fe_count)
-+{
-+	if (!(fe_count)) {
-+		transport_cmd_finish_abort(cmd, 1);
-+		return;
-+	}
++	t = transport_core_get_sub_by_name(plugin_name);
++	if (!(t))
++		return -EINVAL;
++
++	hba->transport = t;
 +	/*
-+	 * TASK ABORTED status (TAS) bit support
-+	*/
-+	if (((tmr_nacl != NULL) &&
-+	     (tmr_nacl == cmd->se_sess->se_node_acl)) || tas)
-+		transport_send_task_abort(cmd);
-+
-+	transport_cmd_finish_abort(cmd, 0);
-+}
-+
-+int core_tmr_lun_reset(
-+	struct se_device *dev,
-+	struct se_tmr_req *tmr,
-+	struct list_head *preempt_and_abort_list,
-+	struct se_cmd *prout_cmd)
-+{
-+	struct se_cmd *cmd;
-+	struct se_queue_req *qr, *qr_tmp;
-+	struct se_node_acl *tmr_nacl = NULL;
-+	struct se_portal_group *tmr_tpg = NULL;
-+	struct se_queue_obj *qobj = dev->dev_queue_obj;
-+	struct se_tmr_req *tmr_p, *tmr_pp;
-+	struct se_task *task, *task_tmp;
-+	unsigned long flags;
-+	int fe_count, state, tas;
-+	/*
-+	 * TASK_ABORTED status bit, this is configurable via ConfigFS
-+	 * struct se_device attributes.  spc4r17 section 7.4.6 Control mode page
-+	 *
-+	 * A task aborted status (TAS) bit set to zero specifies that aborted
-+	 * tasks shall be terminated by the device server without any response
-+	 * to the application client. A TAS bit set to one specifies that tasks
-+	 * aborted by the actions of an I_T nexus other than the I_T nexus on
-+	 * which the command was received shall be completed with TASK ABORTED
-+	 * status (see SAM-4).
++	 * Get TCM subsystem api struct module reference to struct se_hba
 +	 */
-+	tas = DEV_ATTRIB(dev)->emulate_tas;
-+	/*
-+	 * Determine if this se_tmr is coming from a $FABRIC_MOD
-+	 * or struct se_device passthrough..
-+	 */
-+	if (tmr && tmr->task_cmd && tmr->task_cmd->se_sess) {
-+		tmr_nacl = tmr->task_cmd->se_sess->se_node_acl;
-+		tmr_tpg = tmr->task_cmd->se_sess->se_tpg;
-+		if (tmr_nacl && tmr_tpg) {
-+			DEBUG_LR("LUN_RESET: TMR caller fabric: %s"
-+				" initiator port %s\n",
-+				TPG_TFO(tmr_tpg)->get_fabric_name(),
-+				tmr_nacl->initiatorname);
++	if (t->external_submod) {
++		if (!(t->sub_owner)) {
++			printk(KERN_ERR "Pointer to struct module does not"
++				" exist for %s\n", t->name);
++			hba->transport = NULL;
++			transport_core_put_sub(t);
++			return -EINVAL;
++		}
++		/*
++		 * Grab a struct module reference count for subsystem plugin
++		 */
++		if (!(try_module_get(t->sub_owner))) {
++			printk(KERN_ERR "try_module_get() failed for"
++				" t->sub_owner\n");
++			hba->transport = NULL;
++			transport_core_put_sub(t);
++			return -EINVAL;
 +		}
 +	}
-+	DEBUG_LR("LUN_RESET: %s starting for [%s], tas: %d\n",
-+		(preempt_and_abort_list) ? "Preempt" : "TMR",
-+		TRANSPORT(dev)->name, tas);
-+	/*
-+	 * Release all pending and outgoing TMRs aside from the received
-+	 * LUN_RESET tmr..
-+	 */
-+	spin_lock(&dev->se_tmr_lock);
-+	list_for_each_entry_safe(tmr_p, tmr_pp, &dev->dev_tmr_list, tmr_list) {
-+		/*
-+		 * Allow the received TMR to return with FUNCTION_COMPLETE.
-+		 */
-+		if (tmr && (tmr_p == tmr))
-+			continue;
 +
-+		cmd = tmr_p->task_cmd;
-+		if (!(cmd)) {
-+			printk(KERN_ERR "Unable to locate struct se_cmd for TMR\n");
-+			continue;
-+		}
-+		/*
-+		 * If this function was called with a valid pr_res_key
-+		 * parameter (eg: for PROUT PREEMPT_AND_ABORT service action
-+		 * skip non regisration key matching TMRs.
-+		 */
-+		if ((preempt_and_abort_list != NULL) &&
-+		    (core_scsi3_check_cdb_abort_and_preempt(
-+					preempt_and_abort_list, cmd) != 0))
-+			continue;
-+		spin_unlock(&dev->se_tmr_lock);
-+
-+		spin_lock_irqsave(&T_TASK(cmd)->t_state_lock, flags);
-+		if (!(atomic_read(&T_TASK(cmd)->t_transport_active))) {
-+			spin_unlock_irqrestore(&T_TASK(cmd)->t_state_lock, flags);
-+			spin_lock(&dev->se_tmr_lock);
-+			continue;
-+		}
-+		if (cmd->t_state == TRANSPORT_ISTATE_PROCESSING) {
-+			spin_unlock_irqrestore(&T_TASK(cmd)->t_state_lock, flags);
-+			spin_lock(&dev->se_tmr_lock);
-+			continue;
-+		}
-+		DEBUG_LR("LUN_RESET: %s releasing TMR %p Function: 0x%02x,"
-+			" Response: 0x%02x, t_state: %d\n",
-+			(preempt_and_abort_list) ? "Preempt" : "", tmr_p,
-+			tmr_p->function, tmr_p->response, cmd->t_state);
-+		spin_unlock_irqrestore(&T_TASK(cmd)->t_state_lock, flags);
-+
-+		transport_cmd_finish_abort_tmr(cmd);
-+		spin_lock(&dev->se_tmr_lock);
++	ret = t->attach_hba(hba, plugin_dep_id);
++	if (ret < 0) {
++		hba->transport = NULL;
++		if (t->external_submod)
++			module_put(t->sub_owner);
++		transport_core_put_sub(t);
++		return ret;
 +	}
-+	spin_unlock(&dev->se_tmr_lock);
-+	/*
-+	 * Complete outstanding struct se_task CDBs with TASK_ABORTED SAM status.
-+	 * This is following sam4r17, section 5.6 Aborting commands, Table 38
-+	 * for TMR LUN_RESET:
-+	 *
-+	 * a) "Yes" indicates that each command that is aborted on an I_T nexus
-+	 * other than the one that caused the SCSI device condition is
-+	 * completed with TASK ABORTED status, if the TAS bit is set to one in
-+	 * the Control mode page (see SPC-4). "No" indicates that no status is
-+	 * returned for aborted commands.
-+	 *
-+	 * d) If the logical unit reset is caused by a particular I_T nexus
-+	 * (e.g., by a LOGICAL UNIT RESET task management function), then "yes"
-+	 * (TASK_ABORTED status) applies.
-+	 *
-+	 * Otherwise (e.g., if triggered by a hard reset), "no"
-+	 * (no TASK_ABORTED SAM status) applies.
-+	 *
-+	 * Note that this seems to be independent of TAS (Task Aborted Status)
-+	 * in the Control Mode Page.
-+	 */
-+	spin_lock_irqsave(&dev->execute_task_lock, flags);
-+	list_for_each_entry_safe(task, task_tmp, &dev->state_task_list,
-+				t_state_list) {
-+		if (!(TASK_CMD(task))) {
-+			printk(KERN_ERR "TASK_CMD(task) is NULL!\n");
-+			continue;
-+		}
-+		cmd = TASK_CMD(task);
 +
-+		if (!T_TASK(cmd)) {
-+			printk(KERN_ERR "T_TASK(cmd) is NULL for task: %p cmd:"
-+				" %p ITT: 0x%08x\n", task, cmd,
-+				CMD_TFO(cmd)->get_task_tag(cmd));
-+			continue;
-+		}
-+		/*
-+		 * For PREEMPT_AND_ABORT usage, only process commands
-+		 * with a matching reservation key.
-+		 */
-+		if ((preempt_and_abort_list != NULL) &&
-+		    (core_scsi3_check_cdb_abort_and_preempt(
-+					preempt_and_abort_list, cmd) != 0))
-+			continue;
-+		/*
-+		 * Not aborting PROUT PREEMPT_AND_ABORT CDB..
-+		 */
-+		if (prout_cmd == cmd)
-+			continue;
++	hba->hba_status &= ~HBA_STATUS_FREE;
++	hba->hba_status |= HBA_STATUS_ACTIVE;
 +
-+		list_del(&task->t_state_list);
-+		atomic_set(&task->task_state_active, 0);
-+		spin_unlock_irqrestore(&dev->execute_task_lock, flags);
++	spin_lock(&se_global->hba_lock);
++	hba->hba_id = se_global->g_hba_id_counter++;
++	list_add_tail(&hba->hba_list, &se_global->g_hba_list);
++	spin_unlock(&se_global->hba_lock);
 +
-+		spin_lock_irqsave(&T_TASK(cmd)->t_state_lock, flags);
-+		DEBUG_LR("LUN_RESET: %s cmd: %p se_fabric_cmd_ptr: %p task: %p"
-+			" ITT/CmdSN: 0x%08x/0x%08x, i_state: %d, t_state/"
-+			"def_t_state: %d/%d cdb: 0x%02x\n",
-+			(preempt_and_abort_list) ? "Preempt" : "", cmd,
-+			cmd->se_fabric_cmd_ptr, task,
-+			CMD_TFO(cmd)->get_task_tag(cmd), 0,
-+			CMD_TFO(cmd)->get_cmd_state(cmd), cmd->t_state,
-+			cmd->deferred_t_state, T_TASK(cmd)->t_task_cdb[0]);
-+		DEBUG_LR("LUN_RESET: ITT[0x%08x] - pr_res_key: 0x%016Lx"
-+			" t_task_cdbs: %d t_task_cdbs_left: %d"
-+			" t_task_cdbs_sent: %d -- t_transport_active: %d"
-+			" t_transport_stop: %d t_transport_sent: %d\n",
-+			CMD_TFO(cmd)->get_task_tag(cmd), cmd->pr_res_key,
-+			T_TASK(cmd)->t_task_cdbs,
-+			atomic_read(&T_TASK(cmd)->t_task_cdbs_left),
-+			atomic_read(&T_TASK(cmd)->t_task_cdbs_sent),
-+			atomic_read(&T_TASK(cmd)->t_transport_active),
-+			atomic_read(&T_TASK(cmd)->t_transport_stop),
-+			atomic_read(&T_TASK(cmd)->t_transport_sent));
++	printk(KERN_INFO "CORE_HBA[%d] - Attached HBA to Generic Target"
++			" Core\n", hba->hba_id);
 +
-+		if (atomic_read(&task->task_active)) {
-+			atomic_set(&task->task_stop, 1);
-+			spin_unlock_irqrestore(
-+				&T_TASK(cmd)->t_state_lock, flags);
-+
-+			DEBUG_LR("LUN_RESET: Waiting for task: %p to shutdown"
-+				" for dev: %p\n", task, dev);
-+			wait_for_completion(&task->task_stop_comp);
-+			DEBUG_LR("LUN_RESET Completed task: %p shutdown for"
-+				" dev: %p\n", task, dev);
-+			spin_lock_irqsave(&T_TASK(cmd)->t_state_lock, flags);
-+			atomic_dec(&T_TASK(cmd)->t_task_cdbs_left);
-+
-+			atomic_set(&task->task_active, 0);
-+			atomic_set(&task->task_stop, 0);
-+		}
-+		__transport_stop_task_timer(task, &flags);
-+
-+		if (!(atomic_dec_and_test(&T_TASK(cmd)->t_task_cdbs_ex_left))) {
-+			spin_unlock_irqrestore(
-+					&T_TASK(cmd)->t_state_lock, flags);
-+			DEBUG_LR("LUN_RESET: Skipping task: %p, dev: %p for"
-+				" t_task_cdbs_ex_left: %d\n", task, dev,
-+				atomic_read(&T_TASK(cmd)->t_task_cdbs_ex_left));
-+
-+			spin_lock_irqsave(&dev->execute_task_lock, flags);
-+			continue;
-+		}
-+		fe_count = atomic_read(&T_TASK(cmd)->t_fe_count);
-+
-+		if (atomic_read(&T_TASK(cmd)->t_transport_active)) {
-+			DEBUG_LR("LUN_RESET: got t_transport_active = 1 for"
-+				" task: %p, t_fe_count: %d dev: %p\n", task,
-+				fe_count, dev);
-+			spin_unlock_irqrestore(&T_TASK(cmd)->t_state_lock,
-+						flags);
-+			core_tmr_handle_tas_abort(tmr_nacl, cmd, tas, fe_count);
-+
-+			spin_lock_irqsave(&dev->execute_task_lock, flags);
-+			continue;
-+		}
-+		DEBUG_LR("LUN_RESET: Got t_transport_active = 0 for task: %p,"
-+			" t_fe_count: %d dev: %p\n", task, fe_count, dev);
-+		spin_unlock_irqrestore(&T_TASK(cmd)->t_state_lock, flags);
-+		core_tmr_handle_tas_abort(tmr_nacl, cmd, tas, fe_count);
-+
-+		spin_lock_irqsave(&dev->execute_task_lock, flags);
-+	}
-+	spin_unlock_irqrestore(&dev->execute_task_lock, flags);
-+	/*
-+	 * Release all commands remaining in the struct se_device cmd queue.
-+	 *
-+	 * This follows the same logic as above for the struct se_device
-+	 * struct se_task state list, where commands are returned with
-+	 * TASK_ABORTED status, if there is an outstanding $FABRIC_MOD
-+	 * reference, otherwise the struct se_cmd is released.
-+	 */
-+	spin_lock_irqsave(&qobj->cmd_queue_lock, flags);
-+	list_for_each_entry_safe(qr, qr_tmp, &qobj->qobj_list, qr_list) {
-+		cmd = (struct se_cmd *)qr->cmd;
-+		if (!(cmd)) {
-+			/*
-+			 * Skip these for non PREEMPT_AND_ABORT usage..
-+			 */
-+			if (preempt_and_abort_list != NULL)
-+				continue;
-+
-+			atomic_dec(&qobj->queue_cnt);
-+			list_del(&qr->qr_list);
-+			kfree(qr);
-+			continue;
-+		}
-+		/*
-+		 * For PREEMPT_AND_ABORT usage, only process commands
-+		 * with a matching reservation key.
-+		 */
-+		if ((preempt_and_abort_list != NULL) &&
-+		    (core_scsi3_check_cdb_abort_and_preempt(
-+					preempt_and_abort_list, cmd) != 0))
-+			continue;
-+		/*
-+		 * Not aborting PROUT PREEMPT_AND_ABORT CDB..
-+		 */
-+		if (prout_cmd == cmd)
-+			continue;
-+
-+		atomic_dec(&T_TASK(cmd)->t_transport_queue_active);
-+		atomic_dec(&qobj->queue_cnt);
-+		list_del(&qr->qr_list);
-+		spin_unlock_irqrestore(&qobj->cmd_queue_lock, flags);
-+
-+		state = qr->state;
-+		kfree(qr);
-+
-+		DEBUG_LR("LUN_RESET: %s from Device Queue: cmd: %p t_state:"
-+			" %d t_fe_count: %d\n", (preempt_and_abort_list) ?
-+			"Preempt" : "", cmd, state,
-+			atomic_read(&T_TASK(cmd)->t_fe_count));
-+
-+		core_tmr_handle_tas_abort(tmr_nacl, cmd, tas,
-+				atomic_read(&T_TASK(cmd)->t_fe_count));
-+		spin_lock_irqsave(&qobj->cmd_queue_lock, flags);
-+	}
-+	spin_unlock_irqrestore(&qobj->cmd_queue_lock, flags);
-+	/*
-+	 * Clear any legacy SPC-2 reservation when called during
-+	 * LOGICAL UNIT RESET
-+	 */
-+	if (!(preempt_and_abort_list) &&
-+	     (dev->dev_flags & DF_SPC2_RESERVATIONS)) {
-+		spin_lock(&dev->dev_reservation_lock);
-+		dev->dev_reserved_node_acl = NULL;
-+		dev->dev_flags &= ~DF_SPC2_RESERVATIONS;
-+		spin_unlock(&dev->dev_reservation_lock);
-+		printk(KERN_INFO "LUN_RESET: SCSI-2 Released reservation\n");	
-+	}	
-+
-+	spin_lock(&dev->stats_lock);
-+	dev->num_resets++;
-+	spin_unlock(&dev->stats_lock);
-+
-+	DEBUG_LR("LUN_RESET: %s for [%s] Complete\n",
-+			(preempt_and_abort_list) ? "Preempt" : "TMR",
-+			TRANSPORT(dev)->name);
 +	return 0;
 +}
-diff --git a/include/target/target_core_tmr.h b/include/target/target_core_tmr.h
++EXPORT_SYMBOL(se_core_add_hba);
++
++static int se_core_shutdown_hba(
++	struct se_hba *hba)
++{
++	struct se_subsystem_api *t = hba->transport;;
++
++	if (t->detach_hba(hba) < 0)
++		return -1;
++	/*
++	 * Release TCM subsystem api struct module reference from struct se_hba
++	 */
++	if (t->external_submod)
++		module_put(t->sub_owner);
++
++	return 0;
++}
++
++/*	se_core_del_hba():
++ *
++ *
++ */
++int se_core_del_hba(
++	struct se_hba *hba)
++{
++	struct se_device *dev, *dev_tmp;
++
++	if (!(hba->hba_status & HBA_STATUS_ACTIVE)) {
++		printk(KERN_ERR "HBA ID: %d Status: INACTIVE, ignoring"
++			" delhbafromtarget request\n", hba->hba_id);
++		return -EINVAL;
++	}
++
++	spin_lock(&hba->device_lock);
++	list_for_each_entry_safe(dev, dev_tmp, &hba->hba_dev_list, dev_list) {
++
++		se_clear_dev_ports(dev);
++		spin_unlock(&hba->device_lock);
++
++		se_release_device_for_hba(dev);
++
++		spin_lock(&hba->device_lock);
++	}
++	spin_unlock(&hba->device_lock);
++
++	se_core_shutdown_hba(hba);
++	if (!(hba->hba_flags & HBA_FLAGS_INTERNAL_USE))
++		transport_core_put_sub(hba->transport);
++
++	spin_lock(&se_global->hba_lock);
++	list_del(&hba->hba_list);
++	spin_unlock(&se_global->hba_lock);
++
++	hba->transport = NULL;
++	hba->hba_status &= ~HBA_STATUS_ACTIVE;
++	hba->hba_status |= HBA_STATUS_FREE;
++
++	printk(KERN_INFO "CORE_HBA[%d] - Detached HBA from Generic Target"
++			" Core\n", hba->hba_id);
++
++	kmem_cache_free(se_hba_cache, hba);
++	return 0;
++}
++EXPORT_SYMBOL(se_core_del_hba);
+diff --git a/drivers/target/target_core_hba.h b/drivers/target/target_core_hba.h
 new file mode 100644
-index 0000000..6c8248b
+index 0000000..01cf4fe
 --- /dev/null
-+++ b/include/target/target_core_tmr.h
-@@ -0,0 +1,43 @@
-+#ifndef TARGET_CORE_TMR_H
-+#define TARGET_CORE_TMR_H
++++ b/drivers/target/target_core_hba.h
+@@ -0,0 +1,14 @@
++#ifndef TARGET_CORE_HBA_H
++#define TARGET_CORE_HBA_H
 +
-+/* task management function values */
-+#ifdef ABORT_TASK
-+#undef ABORT_TASK
-+#endif /* ABORT_TASK */
-+#define ABORT_TASK				1
-+#ifdef ABORT_TASK_SET
-+#undef ABORT_TASK_SET
-+#endif /* ABORT_TASK_SET */
-+#define ABORT_TASK_SET				2
-+#ifdef CLEAR_ACA
-+#undef CLEAR_ACA
-+#endif /* CLEAR_ACA */
-+#define CLEAR_ACA				3
-+#ifdef CLEAR_TASK_SET
-+#undef CLEAR_TASK_SET
-+#endif /* CLEAR_TASK_SET */
-+#define CLEAR_TASK_SET				4
-+#define LUN_RESET				5
-+#define TARGET_WARM_RESET			6
-+#define TARGET_COLD_RESET			7
-+#define TASK_REASSIGN				8
++extern struct se_global *se_global;
 +
-+/* task management response values */
-+#define TMR_FUNCTION_COMPLETE			0
-+#define TMR_TASK_DOES_NOT_EXIST			1
-+#define TMR_LUN_DOES_NOT_EXIST			2
-+#define TMR_TASK_STILL_ALLEGIANT		3
-+#define TMR_TASK_FAILOVER_NOT_SUPPORTED		4
-+#define TMR_TASK_MGMT_FUNCTION_NOT_SUPPORTED	5
-+#define TMR_FUNCTION_AUTHORIZATION_FAILED	6
-+#define TMR_FUNCTION_REJECTED			255
++extern struct kmem_cache *se_hba_cache;
 +
-+extern struct kmem_cache *se_tmr_req_cache;
++extern int core_get_hba(struct se_hba *);
++extern struct se_hba *core_alloc_hba(void);
++extern void core_put_hba(struct se_hba *);
++extern int se_core_add_hba(struct se_hba *, const char *, u32);
++extern int se_core_del_hba(struct se_hba *);
 +
-+extern struct se_tmr_req *core_tmr_alloc_req(struct se_cmd *, void *, u8);
-+extern void core_tmr_release_req(struct se_tmr_req *);
-+extern int core_tmr_lun_reset(struct se_device *, struct se_tmr_req *,
-+				struct list_head *, struct se_cmd *);
-+
-+#endif /* TARGET_CORE_TMR_H */
++#endif /* TARGET_CORE_HBA_H */
 -- 
 1.7.3
 
