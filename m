@@ -1,146 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728Ab0IVV4W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 17:56:22 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:59848 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751271Ab0IVV4U (ORCPT
+	id S1752648Ab0IVV7V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 17:59:21 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:51037 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751973Ab0IVV7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 17:56:20 -0400
-Message-ID: <4C9A79BC.6020305@kernel.org>
-Date: Wed, 22 Sep 2010 14:48:44 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	Wed, 22 Sep 2010 17:59:20 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Hugh Dickins <hughd@google.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+References: <m1aanc3l3e.fsf@fess.ebiederm.org>
+	<m1vd6026gg.fsf@fess.ebiederm.org>
+	<alpine.LSU.2.00.1009221231251.29127@tigran.mtv.corp.google.com>
+Date: Wed, 22 Sep 2010 14:59:15 -0700
+In-Reply-To: <alpine.LSU.2.00.1009221231251.29127@tigran.mtv.corp.google.com>
+	(Hugh Dickins's message of "Wed, 22 Sep 2010 12:49:51 -0700 (PDT)")
+Message-ID: <m1zkv9v3rg.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        simon@fire.lp0.eu, tglx@linutronix.de, bjorn.helgaas@hp.com,
-        hpa@linux.intel.com
-CC: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/pci] x86, pci: Ignore any PCI BARs that match an HPET
- we already know about
-References: <20100922201547.3197.33702.stgit@bob.kio> <tip-e72a6c8f7ac715a9cdb473afbc30743348d0a1e2@git.kernel.org>
-In-Reply-To: <tip-e72a6c8f7ac715a9cdb473afbc30743348d0a1e2@git.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 98.207.157.188
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Hugh Dickins <hughd@google.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 2/2] sysfs: only access bin file vm_ops with the active lock
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2010 02:22 PM, tip-bot for Bjorn Helgaas wrote:
-> Commit-ID:  e72a6c8f7ac715a9cdb473afbc30743348d0a1e2
-> Gitweb:     http://git.kernel.org/tip/e72a6c8f7ac715a9cdb473afbc30743348d0a1e2
-> Author:     Bjorn Helgaas <bjorn.helgaas@hp.com>
-> AuthorDate: Wed, 22 Sep 2010 14:15:47 -0600
-> Committer:  H. Peter Anvin <hpa@linux.intel.com>
-> CommitDate: Wed, 22 Sep 2010 13:29:39 -0700
-> 
-> x86, pci: Ignore any PCI BARs that match an HPET we already know about
-> 
-> We often discover the HPET early, via the static ACPI HPET table,
-> before enumerating PCI devices.  If the HPET is implemented as a PCI
-> function, we will discover it again during PCI device enumeration.  We
-> must ignore the PCI function so we don't inadvertently move it out
-> from under the driver.
-> 
-> I think it's better to ignore *any* PCI BAR that matches a previously
-> discovered HPET; that way we don't need platform-specific knowledge,
-> and we won't have to add more quirks for future machines.
-> 
-> This is for a regression from 2.6.34, but the reporter has been
-> unable to test it yet.
-> 
-> [ hpa: if this fixes the regression, it should be promoted to x86/urgent ]
-> 
-> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=18482
-> Reported-by: Simon Arlott <simon@fire.lp0.eu>
-> Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
-> LKML-Reference: <20100922201547.3197.33702.stgit@bob.kio>
-> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-> ---
->  arch/x86/kernel/quirks.c |   21 +++++++++++++++++++++
->  arch/x86/pci/fixup.c     |   28 ----------------------------
->  2 files changed, 21 insertions(+), 28 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
-> index 939b9e9..99a7d4b 100644
-> --- a/arch/x86/kernel/quirks.c
-> +++ b/arch/x86/kernel/quirks.c
-> @@ -507,6 +507,27 @@ static void force_disable_hpet_msi(struct pci_dev *unused)
->  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_SBX00_SMBUS,
->  			 force_disable_hpet_msi);
->  
-> +static void disable_pci_hpet(struct pci_dev *dev)
-> +{
-> +	int i;
-> +
-> +	if (!hpet_address)
-> +		return;
-> +
-> +	for (i = 0; i < 6; i++) {
-> +		struct resource *res = &dev->resource[i];
-> +
-> +		if (resource_type(res) == IORESOURCE_MEM &&
-> +		    res->start == hpet_address) {
-> +			dev_info(&dev->dev, "BAR %d: %pR is an HPET we found earlier; ignoring this BAR\n",
-> +				 i, res);
-> +			res->flags = 0;
-> +			res->start = 0;
-> +			res->end = 0;
-> +		}
-> +	}
-> +}
+Hugh Dickins <hughd@google.com> writes:
 
-It seems there is some problem here:
+> On Mon, 20 Sep 2010, Eric W. Biederman wrote:
+>> 
+>> bb->vm_ops is a cached copy of the vm_ops of the underlying
+>> sysfs bin file, which means that after sysfs_bin_remove_file
+>> completes it is only longer valid to deference bb->vm_ops.
+>> 
+>> So move all of the tests of bb->vm_ops inside of where
+>> we hold the sysfs active lock.
+>> 
+>> Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
+>
+> Good point.  There's a couple of cases (the ones below) where you've
+> changed the return value from success to failure when the entry point
+> didn't exist for an object that is no longer active; but on reflection,
+> I accept that's just not worth worrying about.
 
-hpet_res is inserted to resource with late_initcall().
-so if you don't touch that hpet address in bar and not put in the resource.
-kernel could allocate that address to other devices that doesn't get resource from BIOS.
+Good spotting and thanks for the review.
 
-Yinghai
+Thinking about this it looks like bin_set_policy should only ever
+error if the underlying function errors, and that will clear up
+one inconsistency.
 
+As for bin_page_mkwrite if sysfs_get_active fails there is no mapping
+because we have called unmap_mapping_range to zap everything, so
+page_mkwrite should simply not be called.  However there is the
+interesting case what should page_mkwrite return if there are no
+vm_ops at all.
 
-> +DECLARE_PCI_FIXUP_HEADER(PCI_ANY_ID, PCI_ANY_ID, disable_pci_hpet);
->  #endif
->  
->  #if defined(CONFIG_PCI) && defined(CONFIG_NUMA)
-> diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
-> index 6dd8955..08eba69 100644
-> --- a/arch/x86/pci/fixup.c
-> +++ b/arch/x86/pci/fixup.c
-> @@ -493,31 +493,3 @@ static void __devinit pci_siemens_interrupt_controller(struct pci_dev *dev)
->  }
->  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_SIEMENS, 0x0015,
->  			  pci_siemens_interrupt_controller);
-> -
-> -/*
-> - * SB600: Disable BAR1 on device 14.0 to avoid HPET resources from
-> - * confusing the PCI engine:
-> - */
-> -static void sb600_disable_hpet_bar(struct pci_dev *dev)
-> -{
-> -	u8 val;
-> -
-> -	/*
-> -	 * The SB600 and SB700 both share the same device
-> -	 * ID, but the PM register 0x55 does something different
-> -	 * for the SB700, so make sure we are dealing with the
-> -	 * SB600 before touching the bit:
-> -	 */
-> -
-> -	pci_read_config_byte(dev, 0x08, &val);
-> -
-> -	if (val < 0x2F) {
-> -		outb(0x55, 0xCD6);
-> -		val = inb(0xCD7);
-> -
-> -		/* Set bit 7 in PM register 0x55 */
-> -		outb(0x55, 0xCD6);
-> -		outb(val | 0x80, 0xCD7);
-> -	}
-> -}
-> -DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_ATI, 0x4385, sb600_disable_hpet_bar);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-tip-commits" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I expect the right choice for page_mkwrite it to simply have to
+different sets of vm_ops and only write of page_mkwrite in one
+of them and to simply call VM_FAULT_NOPAGE on error.  Implementing
+page_mkwrite when it isn't needed appears to have all kinds of
+interesting side effects where we do a lot more work than we other
+wise would.  Lock dropping and regrabbing, as well as some extra
+dirty page balancing logic gets triggered.
 
+I will see if I can cook up a patch to that effect.
+
+Eric
