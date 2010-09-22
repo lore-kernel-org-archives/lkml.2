@@ -1,42 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753427Ab0IVUlw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 16:41:52 -0400
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:26569 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752420Ab0IVUlv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 16:41:51 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: B09JL8sVM1nm5.cSNGZpeyU5BND1AJ3XBPQTpQ7bzYsHYtI
- ttHFbGY2xxWyoEhd4VxmuVV6sblUjgC9y_wWQ8jwfmaZmtJhWXvQab4dKAIj
- YvRSerepnT5zhdlxA5Fq9c0FKk50q_6CY0KOxreLMRqeVFza17osof26Xnl8
- QKaLAA2TIAkJ.iiy5eYTO.ybvTTHPOiTdd4TLh6kv5i7dVY6qK6wpequuD61
- QG424YJW.3xIwcl4Nij7whtoHvC5DBs6gGJa4ig--
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 22 Sep 2010 15:41:46 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Mel Gorman <mel@csn.ul.ie>
-cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/10] hugetlb: fix metadata corruption in
- hugetlb_fault()
-In-Reply-To: <20100920104723.GG1998@csn.ul.ie>
-Message-ID: <alpine.DEB.2.00.1009221541350.32661@router.home>
-References: <1283908781-13810-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1283908781-13810-2-git-send-email-n-horiguchi@ah.jp.nec.com> <20100920104723.GG1998@csn.ul.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753218Ab0IVUmV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 16:42:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64792 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753850Ab0IVUmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 16:42:20 -0400
+Date: Wed, 22 Sep 2010 16:42:16 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Christoph Hellwig <hch@lst.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>
+Subject: Re: [PATCH] floppy: switch to one queue per drive instead of sharing
+ a queue (Was: Re: cgq vs bdi names, was "cfq-iosched: fix a kernel OOPs when
+ usb key  is inserted")
+Message-ID: <20100922204216.GA7487@redhat.com>
+References: <20100920130318.GA29565@lst.de>
+ <4C975DCC.9050902@fusionio.com>
+ <20100920223001.GJ6138@redhat.com>
+ <20100921182529.GA31132@redhat.com>
+ <4C992F12.5090000@fusionio.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C992F12.5090000@fusionio.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 22, 2010 at 12:17:54AM +0200, Jens Axboe wrote:
 
-Reviewed-by: Christoph Lameter <cl@linux.com>
+[..]
+> Super, thanks a lot! I will queue this up. If you want to continue
+> this (very noble) crusade, the next target is
+> drivers/mtd/mtd_blkdevs.c. I never got that one started, but it was
+> next on my list.
 
+Hi Jens,
 
+IIUC, for MTD this conversion is already done and we seem to be using separate
+request queue for each gendisk instead of some disks sharing a single
+request queue. I think by following is relevant commit. Maxim should be
+able to confirm though.
+
+-----------------------------------------------------------------------
+commit a863862257b7dd08d855bafcb0aedd9ad848ed91
+Author: Maxim Levitsky <maximlevitsky@gmail.com>
+Date:   Mon Feb 22 20:39:29 2010 +0200
+
+    mtd: blktrans: remove mtd_blkcore_priv, switch to per device queue and
+threa
+    
+    This is the biggest change. To make hotplug possible, and this layer
+    clean, the mtd_blktrans_dev now contains everything for a single mtd
+    block translation device. Also removed some very old leftovers.
+    
+    Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
+    Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+-----------------------------------------------------------------------
+
+I did create two mtd devices (from block devices, block2mtd), then then
+created two block devices on top of those mtd devices (using mtdblock)
+and these two devices mtdblock0 and mtdblock1 seems to be using their
+own separate request queues. (Change in ioscheduler on one does not change
+it on other queue).
+
+So to me it looks like MTD is all set, until and unless I am missing
+something.
+
+Vivek
