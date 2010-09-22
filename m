@@ -1,130 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002Ab0IVNtx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 09:49:53 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:61145 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751947Ab0IVNtv (ORCPT
+	id S1753949Ab0IVNvy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 09:51:54 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34382 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752543Ab0IVNvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 09:49:51 -0400
+	Wed, 22 Sep 2010 09:51:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=nV0HycE/e60Cq3oHtbahK2vr0R8bChjI8TkmoebABmTJaSxL83NEhooNY3C86WH2Et
-         3jf/v+XKfve8yx3SAi7tjlSEC1i+77+XALDVmPpB2hDoFFnmKtJ33BRH7sGWLlAZGLGi
-         EAxfp3IfxL46++38BpkcXqxAMadYtbUOe5Ba8=
-Date: Wed, 22 Sep 2010 15:49:48 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jarek Poplawski <jarkao2@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        reiserfs-devel@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: Re: [Bug] possible circular locking in reiserfs_unpack
-Message-ID: <20100922134944.GA6549@nowhere>
-References: <20100905113121.GA1876@del.dom.local> <20100908153730.5ad13f71.akpm@linux-foundation.org> <20100909015346.GA5999@nowhere> <4C88F566.7080600@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C88F566.7080600@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=RrpH29QgjnENEHwd3JUYN0dUmWLdND4l9x+XRZTbn0Rdn7vcakRoDWOk0kFk4AImPH
+         F8Qp50rqm2ssJ/iteBu32JPDsoXhrxe7IdbjCcfK8dtJJCmUlNeNzfR0JdfbBnRIeNbi
+         jsxYS+frSjImeqrb32V6c/Q8rwVnO4+3x1FJ4=
+Subject: Re: [REGRESSION] cdrom drive doesn't detect removal
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Kay Sievers <kay.sievers@vrfy.org>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+In-Reply-To: <4C99B25D.20805@kernel.org>
+References: <1284284969.2928.18.camel@maxim-laptop>
+	 <1284427621.4127.7.camel@maxim-laptop> <4C8F2699.3020509@kernel.org>
+	 <AANLkTinGHB9fbLw1Cm5wvPLGy8QEuoBBmFiqpnvXiZ8R@mail.gmail.com>
+	 <1284507516.4963.2.camel@maxim-laptop>
+	 <AANLkTimFpyYab69=XQVZc+P50v6_uVr6UbA246Fnm3-u@mail.gmail.com>
+	 <1284511071.3551.1.camel@maxim-laptop>
+	 <AANLkTikF37hN7dFqPbCp-gcim7SarveaTrjXipnGpJM7@mail.gmail.com>
+	 <20100915132731.GA20558@khazad-dum.debian.net>
+	 <AANLkTinGDUxsgaGey7EnYOu3kKP-YRE00gL33hiKvAWj@mail.gmail.com>
+	 <1284589207.4672.3.camel@maxim-laptop>
+	 <AANLkTin37rbEbcGDejhcsnxZNYhhUWGy+x=v4Y=s0_Qx@mail.gmail.com>
+	 <1285069338.3124.4.camel@maxim-laptop>
+	 <1285110590.2822.9.camel@maxim-laptop>  <4C99B25D.20805@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Sep 2010 15:41:40 +0200
+Message-ID: <1285162900.3335.15.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 09, 2010 at 04:55:34PM +0200, Jarek Poplawski wrote:
-> Frederic Weisbecker wrote, On 12/23/-28158 08:59 PM:
+On Wed, 2010-09-22 at 09:38 +0200, Tejun Heo wrote: 
+> Hello,
 > 
-> > On Wed, Sep 08, 2010 at 03:37:30PM -0700, Andrew Morton wrote:
-> >> On Sun, 5 Sep 2010 13:31:21 +0200
-> >> Jarek Poplawski <jarkao2@gmail.com> wrote:
-> >>
-> >>> Hi,
-> >>> I get this warning on every lilo write with 2.6.35.4 and a bit/git
-> >>> later too.
-> >>>
-> >> Can you tell us the latest kernel version which did *not* have this
-> >> bug?  That way we can narrow the problem down a bit.
-> >>
-> >> Thanks.
+> On 09/22/2010 01:09 AM, Maxim Levitsky wrote:
+> > I just did a strace on udisks, and it is pretty much self explanatory.
+> > (While CD is mounted).
 > > 
+> > open("/dev/sr0", O_RDONLY|O_EXCL|O_NONBLOCK) = -1 EBUSY (Device or resource busy)
+> > poll([{fd=5, events=POLLIN}, {fd=3, events=POLLIN}], 2, 1997) = 0 (Timeout)
+> > open("/dev/sr0", O_RDONLY|O_EXCL|O_NONBLOCK) = -1 EBUSY (Device or resource busy)
+> > poll([{fd=5, events=POLLIN}, {fd=3, events=POLLIN}], 2, 1997) = 0 (Timeout)
+> > open("/dev/sr0", O_RDONLY|O_EXCL|O_NONBLOCK) = -1 EBUSY (Device or resource busy)
+> > poll([{fd=5, events=POLLIN}, {fd=3, events=POLLIN}], 2, 1997) = 0 (Timeout)
+> > open("/dev/sr0", O_RDONLY|O_EXCL|O_NONBLOCK) = -1 EBUSY (Device or resource busy)
 > > 
+> > Sure, a filesystem is mounted, so exclusive access fails...
 > > 
-> > Ah, when you see &REISERFS_SB(s)->lock in a bug report, don't hesitate to blame me :-)
-> > 
-> > This is a problem resulting from the bkl conversion to a mutex that introduced
-> > a lot of new locking dependencies. Most of them have been fixed, but for less
-> > tested paths like ioctl, we hear about it later.
-> > 
-> > Does the following patch fixes the issue?
-> > If so, I'll make a proper changelog and put the appropriate 2.6.33-35 stable
-> > tags for the backport.
-> > 
-> > Thnaks!
-> > 
-> > 
-> > diff --git a/fs/reiserfs/ioctl.c b/fs/reiserfs/ioctl.c
-> > index f53505d..679d502 100644
-> > --- a/fs/reiserfs/ioctl.c
-> > +++ b/fs/reiserfs/ioctl.c
-> > @@ -188,7 +188,7 @@ int reiserfs_unpack(struct inode *inode, struct file *filp)
-> >  	/* we need to make sure nobody is changing the file size beneath
-> >  	 ** us
-> >  	 */
-> > -	mutex_lock(&inode->i_mutex);
-> > +	reiserfs_mutex_lock_safe(&inode->i_mutex, inode->i_sb);
-> >  	reiserfs_write_lock(inode->i_sb);
-> >  
-> >  	write_from = inode->i_size & (blocksize - 1);
-> > 
+> > So, we end up with impossible to solve problem.  We want on one hand
+> > to guard the burner against polling programs that disturb it, but
+> > one the other hand we must do polling to check CD status.
+> >
+> > Unless the kernel does the polling, but then we also must stop it
+> > when burning is done.  I think that we need new ioctl in the CD
+> > driver that would give absolute access to the burning application,
+> > and lock it fully.
 > 
-> 
-> So, there is still a warning but a bit different now.
-> 
-> Jarek P.
+> One thing I don't get is why the behavior changed after the claiming
+> block patch.  Can you please trace udisks from a previous working
+> kernel?
 
+It shows pretty much same output.
+The difference here is, even though open fails, it still has a side
+effect of polling the driver, a bug that bisected commit fixed.
 
-I can reproduce your first case, but not this one.
+So problem is clear, but how to fix it, I don't know...
 
-So, I hope you can give a try to the following fix,
+Also about the exclusive mode, how exactly is it defined?
+open manpage is somewhat sparse about it.
 
-Thanks!
+Regardless of the above a complete solution is:
 
+1. Make exclusive opens really exclusive.
+That is if someone opens a device with exclusive access, no more opens
+will succeed.
 
-diff --git a/fs/reiserfs/ioctl.c b/fs/reiserfs/ioctl.c
-index f53505d..90a757b 100644
---- a/fs/reiserfs/ioctl.c
-+++ b/fs/reiserfs/ioctl.c
-@@ -170,7 +170,7 @@ int reiserfs_prepare_write(struct file *f, struct page *page,
- int reiserfs_unpack(struct inode *inode, struct file *filp)
- {
- 	int retval = 0;
--	int index;
-+	int index, depth;
- 	struct page *page;
- 	struct address_space *mapping;
- 	unsigned long write_from;
-@@ -185,11 +185,12 @@ int reiserfs_unpack(struct inode *inode, struct file *filp)
- 		return 0;
- 	}
- 
-+	depth = reiserfs_write_lock_once(inode->i_sb);
-+
- 	/* we need to make sure nobody is changing the file size beneath
- 	 ** us
- 	 */
--	mutex_lock(&inode->i_mutex);
--	reiserfs_write_lock(inode->i_sb);
-+	reiserfs_mutex_lock_safe(&inode->i_mutex, inode->i_sb);
- 
- 	write_from = inode->i_size & (blocksize - 1);
- 	/* if we are on a block boundary, we are already unpacked.  */
-@@ -224,6 +225,6 @@ int reiserfs_unpack(struct inode *inode, struct file *filp)
- 
-       out:
- 	mutex_unlock(&inode->i_mutex);
--	reiserfs_write_unlock(inode->i_sb);
-+	reiserfs_write_unlock_once(inode->i_sb, depth);
- 	return retval;
- }
+2. Add in-kernel polling, and stop it as as soon as an exclusive open is
+done.
+
+3. Make sure that userspace doesn't touch the cdrom device anymore.
+Few patches to udisks and hal will do.
+
+Best regards,
+Maxim Levitsky
 
