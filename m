@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab0IVWuq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 18:50:46 -0400
-Received: from smtp105.sbc.mail.ac4.yahoo.com ([76.13.13.244]:36044 "HELO
-	smtp105.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753527Ab0IVWum (ORCPT
+	id S1753896Ab0IVWuz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 18:50:55 -0400
+Received: from smtp103.sbc.mail.re3.yahoo.com ([66.196.96.86]:29688 "HELO
+	smtp103.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753577Ab0IVWuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 18:50:42 -0400
+	Wed, 22 Sep 2010 18:50:52 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: 17mMOIgVM1lXfLDpjck5ZPtMrvHbRxrCldKnv.1V_6kjl.8
- H5Xf1W0994rk8yzhtYGvJTEjkBkLJUw4JZ0UJFdgPeuGwUyATv1ksCn_JAbT
- ZU_hjE03vp.gyfw.yVQNrDutkSF.RZE8lU1tQZ2ahPJuWRbPDQx_Mynfk0WN
- JzVRzc91grFeUHBt76LnBuGZ0_twaELffrugL3IyZReX2jx8TSdaxgoIDfsa
- M3dxuT32HTYowecivW2NP16CG7UmWKzNWOEelFT8b81krcdH06DHb2rkeI71
- 1iaq_DVx0_36tuwj1SICv3TG5GyqXeiLOEQszcPU6dVYxa1tyWOoF0rkxWxK
- N.Cmi
+X-YMail-OSG: pigdkAsVM1l5d6KrMRx0Kyj9mAbxCdUEm8gvFV0OFEUGD4H
+ GWGp0gSyDbtzzObfrHEZviEGybpZarH8l52VQ8F0rPN0hGEDAgf0sSEstgYx
+ 291PTXOnMO0HeMmiuqsX8rIkYJL4Fd3b2p.8O55zKMc1p5xvVRskaD9ELcLb
+ LpytRA5V90mVc_aatac7m1RojdQMiQs5HRA6W9T4Wx5T.cfnaCYunUlQKcDt
+ S4dKJ3zsQrEpTtp648RGjfA2bO7aLw5kGde0NhPAk0LWgKNNNXgKufZdiT8b
+ j7JyzfJiRF4kt.o2z3YRwvic6eclF4xVJyn7bhgfhF.B8rYhF_tB3k89thV_
+ uZqMCR8ooOGx_Ih8cFf_AMD.Au8P2Z3CZVP76Xb34YPdUNmq5bbSVTmCr9CK
+ 9rvaxfju2uOKa7kLdZjWvnjBJv_ssb7SwURLYSU8jusUUuwkspfc-
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -25,9 +26,9 @@ Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
         James Bottomley <James.Bottomley@suse.de>,
         Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [RFC v2 13/21] tcm: Add SCSI MIB statistics support
-Date: Wed, 22 Sep 2010 15:50:37 -0700
-Message-Id: <1285195837-11671-1-git-send-email-nab@linux-iscsi.org>
+Subject: [RFC v2 14/21] tcm: Add FILEIO subsystem plugin
+Date: Wed, 22 Sep 2010 15:50:47 -0700
+Message-Id: <1285195847-11690-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -35,31 +36,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch adds support for read-only SCSI MIBs through /proc/scsi_target/mib
-following RFC-4455.
+This patch adds the O_SYNC FILEIO subsystem plugin for accessing struct file
+using Linux/VFS struct file_operations.  It also includes WriteCache and FUA
+Write Emulation support to struct file using fs/sync.c/vfs_fsync_range()
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/target_core_mib.c | 1081 ++++++++++++++++++++++++++++++++++++++
- drivers/target/target_core_mib.h |   31 ++
- 2 files changed, 1112 insertions(+), 0 deletions(-)
- create mode 100644 drivers/target/target_core_mib.c
- create mode 100644 drivers/target/target_core_mib.h
+ drivers/target/target_core_file.c | 1197 +++++++++++++++++++++++++++++++++++++
+ drivers/target/target_core_file.h |   81 +++
+ 2 files changed, 1278 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/target/target_core_file.c
+ create mode 100644 drivers/target/target_core_file.h
 
-diff --git a/drivers/target/target_core_mib.c b/drivers/target/target_core_mib.c
+diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
 new file mode 100644
-index 0000000..78abf49
+index 0000000..93d3f63
 --- /dev/null
-+++ b/drivers/target/target_core_mib.c
-@@ -0,0 +1,1081 @@
++++ b/drivers/target/target_core_file.c
+@@ -0,0 +1,1197 @@
 +/*******************************************************************************
-+ * Filename:  target_core_mib.c
++ * Filename:  target_core_file.c
 + *
-+ * Copyright (c) 2006-2007 SBE, Inc.  All Rights Reserved.
++ * This file contains the Storage Engine <-> FILEIO transport specific functions
++ *
++ * Copyright (c) 2005 PyX Technologies, Inc.
++ * Copyright (c) 2005-2006 SBE, Inc.  All Rights Reserved.
 + * Copyright (c) 2007-2010 Rising Tide Systems
 + * Copyright (c) 2008-2010 Linux-iSCSI.org
 + *
-+ * Nicholas A. Bellinger <nab@linux-iscsi.org>
++ * Nicholas A. Bellinger <nab@kernel.org>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
@@ -77,1099 +82,1262 @@ index 0000000..78abf49
 + *
 + ******************************************************************************/
 +
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/delay.h>
-+#include <linux/timer.h>
-+#include <linux/string.h>
 +#include <linux/version.h>
-+#include <generated/utsrelease.h>
-+#include <linux/utsname.h>
-+#include <linux/proc_fs.h>
-+#include <linux/seq_file.h>
++#include <linux/string.h>
++#include <linux/timer.h>
 +#include <linux/blkdev.h>
++#include <linux/slab.h>
++#include <linux/spinlock.h>
++#include <linux/smp_lock.h>
 +#include <scsi/scsi.h>
-+#include <scsi/scsi_device.h>
 +#include <scsi/scsi_host.h>
 +
 +#include <target/target_core_base.h>
++#include <target/target_core_device.h>
 +#include <target/target_core_transport.h>
-+#include <target/target_core_fabric_ops.h>
-+#include <target/target_core_configfs.h>
 +
-+#include "target_core_hba.h"
-+#include "target_core_mib.h"
++#include "target_core_file.h"
 +
-+/* SCSI mib table index */
-+struct scsi_index_table scsi_index_table;
-+
-+#ifndef INITIAL_JIFFIES
-+#define INITIAL_JIFFIES ((unsigned long)(unsigned int) (-300*HZ))
++#if 1
++#define DEBUG_FD_CACHE(x...) printk(x)
++#else
++#define DEBUG_FD_CACHE(x...)
 +#endif
 +
-+/* SCSI Instance Table */
-+#define SCSI_INST_SW_INDEX		1
-+#define SCSI_TRANSPORT_INDEX		1
++#if 1
++#define DEBUG_FD_FUA(x...) printk(x)
++#else
++#define DEBUG_FD_FUA(x...)
++#endif
 +
-+#define NONE		"None"
-+#define ISPRINT(a)   ((a >= ' ') && (a <= '~'))
++static struct se_subsystem_api fileio_template;
 +
-+static inline int list_is_first(const struct list_head *list,
-+				const struct list_head *head)
-+{
-+	return list->prev == head;
-+}
++static void __fd_get_dev_info(struct fd_dev *, char *, int *);
 +
-+static void *locate_hba_start(
-+	struct seq_file *seq,
-+	loff_t *pos)
-+{
-+	spin_lock(&se_global->g_device_lock);
-+	return seq_list_start(&se_global->g_se_dev_list, *pos);
-+}
-+
-+static void *locate_hba_next(
-+	struct seq_file *seq,
-+	void *v,
-+	loff_t *pos)
-+{
-+	return seq_list_next(v, &se_global->g_se_dev_list, pos);
-+}
-+
-+static void locate_hba_stop(struct seq_file *seq, void *v)
-+{
-+	spin_unlock(&se_global->g_device_lock);
-+}
-+
-+/****************************************************************************
-+ * SCSI MIB Tables
-+ ****************************************************************************/
-+
-+/*
-+ * SCSI Instance Table
++/*	fd_attach_hba(): (Part of se_subsystem_api_t template)
++ *
++ *
 + */
-+static void *scsi_inst_seq_start(
-+	struct seq_file *seq,
-+	loff_t *pos)
++static int fd_attach_hba(struct se_hba *hba, u32 host_id)
 +{
-+	spin_lock(&se_global->hba_lock);
-+	return seq_list_start(&se_global->g_hba_list, *pos);
-+}
++	struct fd_host *fd_host;
 +
-+static void *scsi_inst_seq_next(
-+	struct seq_file *seq,
-+	void *v,
-+	loff_t *pos)
-+{
-+	return seq_list_next(v, &se_global->g_hba_list, pos);
-+}
++	fd_host = kzalloc(sizeof(struct fd_host), GFP_KERNEL);
++	if (!(fd_host)) {
++		printk(KERN_ERR "Unable to allocate memory for struct fd_host\n");
++		return -1;
++	}
 +
-+static void scsi_inst_seq_stop(struct seq_file *seq, void *v)
-+{
-+	spin_unlock(&se_global->hba_lock);
-+}
++	fd_host->fd_host_id = host_id;
 +
-+static int scsi_inst_seq_show(struct seq_file *seq, void *v)
-+{
-+	struct se_hba *hba = list_entry(v, struct se_hba, hba_list);
++	atomic_set(&hba->left_queue_depth, FD_HBA_QUEUE_DEPTH);
++	atomic_set(&hba->max_queue_depth, FD_HBA_QUEUE_DEPTH);
++	hba->hba_ptr = (void *) fd_host;
 +
-+	if (list_is_first(&hba->hba_list, &se_global->g_hba_list))
-+		seq_puts(seq, "inst sw_indx\n");
-+
-+	if (!(hba->hba_status & HBA_STATUS_ACTIVE))
-+		return 0;
-+
-+	seq_printf(seq, "%u %u\n", hba->hba_index, SCSI_INST_SW_INDEX);
-+	seq_printf(seq, "plugin: %s version: %s\n",
-+			hba->transport->name, TARGET_CORE_VERSION);
++	printk(KERN_INFO "CORE_HBA[%d] - TCM FILEIO HBA Driver %s on Generic"
++		" Target Core Stack %s\n", hba->hba_id, FD_VERSION,
++		TARGET_CORE_MOD_VERSION);
++	printk(KERN_INFO "CORE_HBA[%d] - Attached FILEIO HBA: %u to Generic"
++		" Target Core with TCQ Depth: %d MaxSectors: %u\n",
++		hba->hba_id, fd_host->fd_host_id,
++		atomic_read(&hba->max_queue_depth), FD_MAX_SECTORS);
 +
 +	return 0;
 +}
 +
-+static const struct seq_operations scsi_inst_seq_ops = {
-+	.start	= scsi_inst_seq_start,
-+	.next	= scsi_inst_seq_next,
-+	.stop	= scsi_inst_seq_stop,
-+	.show	= scsi_inst_seq_show
-+};
-+
-+static int scsi_inst_seq_open(struct inode *inode, struct file *file)
-+{
-+	return seq_open(file, &scsi_inst_seq_ops);
-+}
-+
-+static const struct file_operations scsi_inst_seq_fops = {
-+	.owner	 = THIS_MODULE,
-+	.open	 = scsi_inst_seq_open,
-+	.read	 = seq_read,
-+	.llseek	 = seq_lseek,
-+	.release = seq_release,
-+};
-+
-+/*
-+ * SCSI Device Table
++/*	fd_detach_hba(): (Part of se_subsystem_api_t template)
++ *
++ *
 + */
-+static void *scsi_dev_seq_start(struct seq_file *seq, loff_t *pos)
++static int fd_detach_hba(struct se_hba *hba)
 +{
-+	return locate_hba_start(seq, pos);
-+}
++	struct fd_host *fd_host;
 +
-+static void *scsi_dev_seq_next(struct seq_file *seq, void *v, loff_t *pos)
-+{
-+	return locate_hba_next(seq, v, pos);
-+}
-+
-+static void scsi_dev_seq_stop(struct seq_file *seq, void *v)
-+{
-+	locate_hba_stop(seq, v);
-+}
-+
-+static int scsi_dev_seq_show(struct seq_file *seq, void *v)
-+{
-+	struct se_hba *hba;
-+	struct se_subsystem_dev *se_dev = list_entry(v, struct se_subsystem_dev,
-+						g_se_dev_list);
-+	struct se_device *dev = se_dev->se_dev_ptr;
-+	char str[28];
-+	int k;
-+
-+	if (list_is_first(&se_dev->g_se_dev_list, &se_global->g_se_dev_list))
-+		seq_puts(seq, "inst indx role ports\n");
-+
-+	if (!(dev))
-+		return 0;
-+
-+	hba = dev->se_hba;
-+	if (!(hba)) {
-+		/* Log error ? */
-+		return 0;
++	if (!hba->hba_ptr) {
++		printk(KERN_ERR "hba->hba_ptr is NULL!\n");
++		return -1;
 +	}
++	fd_host = (struct fd_host *) hba->hba_ptr;
 +
-+	seq_printf(seq, "%u %u %s %u\n", hba->hba_index,
-+		   dev->dev_index, "Target", dev->dev_port_count);
++	printk(KERN_INFO "CORE_HBA[%d] - Detached FILEIO HBA: %u from Generic"
++		" Target Core\n", hba->hba_id, fd_host->fd_host_id);
 +
-+	memcpy(&str[0], (void *)DEV_T10_WWN(dev), 28);
-+
-+	/* vendor */
-+	for (k = 0; k < 8; k++)
-+		str[k] = ISPRINT(DEV_T10_WWN(dev)->vendor[k]) ?
-+				DEV_T10_WWN(dev)->vendor[k] : 0x20;
-+	str[k] = 0x20;
-+
-+	/* model */
-+	for (k = 0; k < 16; k++)
-+		str[k+9] = ISPRINT(DEV_T10_WWN(dev)->model[k]) ?
-+				DEV_T10_WWN(dev)->model[k] : 0x20;
-+	str[k + 9] = 0;
-+
-+	seq_printf(seq, "dev_alias: %s\n", str);
++	kfree(fd_host);
++	hba->hba_ptr = NULL;
 +
 +	return 0;
 +}
 +
-+static const struct seq_operations scsi_dev_seq_ops = {
-+	.start  = scsi_dev_seq_start,
-+	.next   = scsi_dev_seq_next,
-+	.stop   = scsi_dev_seq_stop,
-+	.show   = scsi_dev_seq_show
-+};
-+
-+static int scsi_dev_seq_open(struct inode *inode, struct file *file)
++static void *fd_allocate_virtdevice(struct se_hba *hba, const char *name)
 +{
-+	return seq_open(file, &scsi_dev_seq_ops);
++	struct fd_dev *fd_dev;
++	struct fd_host *fd_host = (struct fd_host *) hba->hba_ptr;
++
++	fd_dev = kzalloc(sizeof(struct fd_dev), GFP_KERNEL);
++	if (!(fd_dev)) {
++		printk(KERN_ERR "Unable to allocate memory for struct fd_dev\n");
++		return NULL;
++	}
++
++	fd_dev->fd_host = fd_host;
++
++	printk(KERN_INFO "FILEIO: Allocated fd_dev for %p\n", name);
++
++	return fd_dev;
 +}
 +
-+static const struct file_operations scsi_dev_seq_fops = {
-+	.owner	 = THIS_MODULE,
-+	.open	 = scsi_dev_seq_open,
-+	.read	 = seq_read,
-+	.llseek	 = seq_lseek,
-+	.release = seq_release,
-+};
-+
-+/*
-+ * SCSI Port Table
++/*	fd_create_virtdevice(): (Part of se_subsystem_api_t template)
++ *
++ *
 + */
-+static void *scsi_port_seq_start(struct seq_file *seq, loff_t *pos)
++static struct se_device *fd_create_virtdevice(
++	struct se_hba *hba,
++	struct se_subsystem_dev *se_dev,
++	void *p)
 +{
-+	return locate_hba_start(seq, pos);
-+}
++	char *dev_p = NULL;
++	struct se_device *dev;
++	struct fd_dev *fd_dev = (struct fd_dev *) p;
++	struct fd_host *fd_host = (struct fd_host *) hba->hba_ptr;
++	mm_segment_t old_fs;
++	struct file *file;
++	struct inode *inode = NULL;
++	int dev_flags = 0, flags;
 +
-+static void *scsi_port_seq_next(struct seq_file *seq, void *v, loff_t *pos)
-+{
-+	return locate_hba_next(seq, v, pos);
-+}
++	old_fs = get_fs();
++	set_fs(get_ds());
++	dev_p = getname(fd_dev->fd_dev_name);
++	set_fs(old_fs);
 +
-+static void scsi_port_seq_stop(struct seq_file *seq, void *v)
-+{
-+	locate_hba_stop(seq, v);
-+}
++	if (IS_ERR(dev_p)) {
++		printk(KERN_ERR "getname(%s) failed: %lu\n",
++			fd_dev->fd_dev_name, IS_ERR(dev_p));
++		goto fail;
++	}
++#if 0
++	if (di->no_create_file)
++		flags = O_RDWR | O_LARGEFILE;
++	else
++		flags = O_RDWR | O_CREAT | O_LARGEFILE;
++#else
++	flags = O_RDWR | O_CREAT | O_LARGEFILE;
++#endif
++/*	flags |= O_DIRECT; */
++	/*
++	 * If fd_buffered_io=1 has not been set explictly (the default),
++	 * use O_SYNC to force FILEIO writes to disk.
++	 */
++	if (!(fd_dev->fbd_flags & FDBD_USE_BUFFERED_IO))
++		flags |= O_SYNC;
 +
-+static int scsi_port_seq_show(struct seq_file *seq, void *v)
-+{
-+	struct se_hba *hba;
-+	struct se_subsystem_dev *se_dev = list_entry(v, struct se_subsystem_dev,
-+						g_se_dev_list);
-+	struct se_device *dev = se_dev->se_dev_ptr;
-+	struct se_port *sep, *sep_tmp;
++	file = filp_open(dev_p, flags, 0600);
 +
-+	if (list_is_first(&se_dev->g_se_dev_list, &se_global->g_se_dev_list))
-+		seq_puts(seq, "inst device indx role busy_count\n");
++	if (IS_ERR(file) || !file || !file->f_dentry) {
++		printk(KERN_ERR "filp_open(%s) failed\n", dev_p);
++		goto fail;
++	}
++	fd_dev->fd_file = file;
++	/*
++	 * If we are claiming a blockend for this struct file, we extract
++	 * fd_dev->fd_size from struct block_device.
++	 *
++	 * Otherwise, we use the passed fd_size= from configfs
++	 */
++	inode = igrab(file->f_mapping->host);
++	if (!(inode)) {
++		printk(KERN_ERR "FILEIO: Unable to locate struct inode from"
++			" struct file\n");
++		goto fail;
++	}
++	/*
++	 * If struct file is referencing a underlying struct block_device,
++	 * claim it now.
++	 */
++	if (S_ISBLK(inode->i_mode)) {
++		/*
++		 * Determine the number of bytes from i_size_read() minus
++		 * one (1) logical sector from underlying struct block_device
++		 */
++		fd_dev->fd_block_size = bdev_logical_block_size(inode->i_bdev);
++		fd_dev->fd_dev_size = (i_size_read(file->f_mapping->host) -
++		  		       fd_dev->fd_block_size);
 +
++		printk(KERN_INFO "FILEIO: Using size: %llu bytes from struct"
++			" block_device blocks: %llu logical_block_size: %d\n",
++			fd_dev->fd_dev_size,
++			div_u64(fd_dev->fd_dev_size, fd_dev->fd_block_size),
++			fd_dev->fd_block_size);
++	} else {
++		if (!(fd_dev->fbd_flags & FBDF_HAS_SIZE)) {
++			printk(KERN_ERR "FILEIO: Missing fd_dev_size="
++				" parameter, and no backing struct"
++				" block_device\n");
++			goto fail;
++		}
++		fd_dev->fd_block_size = FD_BLOCKSIZE;
++	}
++	/*
++	 * Pass dev_flags for linux_blockdevice_claim_bd or
++	 * linux_blockdevice_claim() from the usage above.
++	 *
++	 * Note that transport_add_device_to_core_hba() will call
++	 * linux_blockdevice_release() internally on failure to
++	 * call bd_release() on the referenced struct block_device.
++	 */
++	dev = transport_add_device_to_core_hba(hba, &fileio_template,
++				se_dev, dev_flags, (void *)fd_dev);
 +	if (!(dev))
-+		return 0;
++		goto fail;
 +
-+	hba = dev->se_hba;
-+	if (!(hba)) {
-+		/* Log error ? */
-+		return 0;
-+	}
++	fd_dev->fd_dev_id = fd_host->fd_host_dev_id_count++;
++	fd_dev->fd_queue_depth = dev->queue_depth;
 +
-+	/* FIXME: scsiPortBusyStatuses count */
-+	spin_lock(&dev->se_port_lock);
-+	list_for_each_entry_safe(sep, sep_tmp, &dev->dev_sep_list, sep_list) {
-+		seq_printf(seq, "%u %u %u %s%u %u\n", hba->hba_index,
-+			dev->dev_index, sep->sep_index, "Device",
-+			dev->dev_index, 0);
++	printk(KERN_INFO "CORE_FILE[%u] - Added TCM FILEIO Device ID: %u at %s,"
++		" %llu total bytes\n", fd_host->fd_host_id, fd_dev->fd_dev_id,
++			fd_dev->fd_dev_name, fd_dev->fd_dev_size);
++
++	iput(inode);
++	putname(dev_p);
++	return dev;
++fail:
++	if (fd_dev->fd_file) {
++		filp_close(fd_dev->fd_file, NULL);
++		fd_dev->fd_file = NULL;
 +	}
-+	spin_unlock(&dev->se_port_lock);
++	if (inode)
++		iput(inode);
++	putname(dev_p);
++	return NULL;
++}
++
++/*	fd_activate_device(): (Part of se_subsystem_api_t template)
++ *
++ *
++ */
++static int fd_activate_device(struct se_device *dev)
++{
++	struct fd_dev *fd_dev = (struct fd_dev *) dev->dev_ptr;
++	struct fd_host *fd_host = fd_dev->fd_host;
++
++	printk(KERN_INFO "CORE_FILE[%u] - Activating Device with TCQ: %d at"
++		" FILEIO Device ID: %d\n", fd_host->fd_host_id,
++		fd_dev->fd_queue_depth, fd_dev->fd_dev_id);
 +
 +	return 0;
 +}
 +
-+static const struct seq_operations scsi_port_seq_ops = {
-+	.start  = scsi_port_seq_start,
-+	.next   = scsi_port_seq_next,
-+	.stop   = scsi_port_seq_stop,
-+	.show   = scsi_port_seq_show
-+};
-+
-+static int scsi_port_seq_open(struct inode *inode, struct file *file)
-+{
-+	return seq_open(file, &scsi_port_seq_ops);
-+}
-+
-+static const struct file_operations scsi_port_seq_fops = {
-+	.owner	 = THIS_MODULE,
-+	.open	 = scsi_port_seq_open,
-+	.read	 = seq_read,
-+	.llseek	 = seq_lseek,
-+	.release = seq_release,
-+};
-+
-+/*
-+ * SCSI Transport Table
++/*	fd_deactivate_device(): (Part of se_subsystem_api_t template)
++ *
++ *
 + */
-+static void *scsi_transport_seq_start(struct seq_file *seq, loff_t *pos)
++static void fd_deactivate_device(struct se_device *dev)
 +{
-+	return locate_hba_start(seq, pos);
++	struct fd_dev *fd_dev = (struct fd_dev *) dev->dev_ptr;
++	struct fd_host *fd_host = fd_dev->fd_host;
++
++	printk(KERN_INFO "CORE_FILE[%u] - Deactivating Device with TCQ: %d at"
++		" FILEIO Device ID: %d\n", fd_host->fd_host_id,
++		fd_dev->fd_queue_depth, fd_dev->fd_dev_id);
++
++	return;
 +}
 +
-+static void *scsi_transport_seq_next(struct seq_file *seq, void *v, loff_t *pos)
++/*	fd_free_device(): (Part of se_subsystem_api_t template)
++ *
++ *
++ */
++static void fd_free_device(void *p)
 +{
-+	return locate_hba_next(seq, v, pos);
-+}
++	struct fd_dev *fd_dev = (struct fd_dev *) p;
 +
-+static void scsi_transport_seq_stop(struct seq_file *seq, void *v)
-+{
-+	locate_hba_stop(seq, v);
-+}
-+
-+static int scsi_transport_seq_show(struct seq_file *seq, void *v)
-+{
-+	struct se_hba *hba;
-+	struct se_subsystem_dev *se_dev = list_entry(v, struct se_subsystem_dev,
-+						g_se_dev_list);
-+	struct se_device *dev = se_dev->se_dev_ptr;
-+	struct se_port *se, *se_tmp;
-+	struct se_portal_group *tpg;
-+	struct t10_wwn *wwn;
-+	char buf[64];
-+
-+	if (list_is_first(&se_dev->g_se_dev_list, &se_global->g_se_dev_list))
-+		seq_puts(seq, "inst device indx dev_name\n");
-+
-+	if (!(dev))
-+		return 0;
-+
-+	hba = dev->se_hba;
-+	if (!(hba)) {
-+		/* Log error ? */
-+		return 0;
++	if (fd_dev->fd_file) {
++		filp_close(fd_dev->fd_file, NULL);
++		fd_dev->fd_file = NULL;
 +	}
 +
-+	wwn = DEV_T10_WWN(dev);
++	kfree(fd_dev);
++}
 +
-+	spin_lock(&dev->se_port_lock);
-+	list_for_each_entry_safe(se, se_tmp, &dev->dev_sep_list, sep_list) {
-+		tpg = se->sep_tpg;
-+		sprintf(buf, "scsiTransport%s",
-+				TPG_TFO(tpg)->get_fabric_name());
-+
-+		seq_printf(seq, "%u %s %u %s+%s\n",
-+			hba->hba_index, /* scsiTransportIndex */
-+			buf,  /* scsiTransportType */
-+			(TPG_TFO(tpg)->tpg_get_inst_index != NULL) ?
-+			TPG_TFO(tpg)->tpg_get_inst_index(tpg) :
-+			0,
-+			TPG_TFO(tpg)->tpg_get_wwn(tpg),
-+			(strlen(wwn->unit_serial)) ?
-+			/* scsiTransportDevName */
-+			wwn->unit_serial : wwn->vendor);
-+	}
-+	spin_unlock(&dev->se_port_lock);
-+
++/*	fd_transport_complete(): (Part of se_subsystem_api_t template)
++ *
++ *
++ */
++static int fd_transport_complete(struct se_task *task)
++{
 +	return 0;
 +}
 +
-+static const struct seq_operations scsi_transport_seq_ops = {
-+	.start  = scsi_transport_seq_start,
-+	.next   = scsi_transport_seq_next,
-+	.stop   = scsi_transport_seq_stop,
-+	.show   = scsi_transport_seq_show
-+};
-+
-+static int scsi_transport_seq_open(struct inode *inode, struct file *file)
-+{
-+	return seq_open(file, &scsi_transport_seq_ops);
-+}
-+
-+static const struct file_operations scsi_transport_seq_fops = {
-+	.owner	 = THIS_MODULE,
-+	.open	 = scsi_transport_seq_open,
-+	.read	 = seq_read,
-+	.llseek	 = seq_lseek,
-+	.release = seq_release,
-+};
-+
-+/*
-+ * SCSI Target Device Table
++/*	fd_allocate_request(): (Part of se_subsystem_api_t template)
++ *
++ *
 + */
-+static void *scsi_tgt_dev_seq_start(struct seq_file *seq, loff_t *pos)
++static void *fd_allocate_request(
++	struct se_task *task,
++	struct se_device *dev)
 +{
-+	return locate_hba_start(seq, pos);
-+}
++	struct fd_request *fd_req;
 +
-+static void *scsi_tgt_dev_seq_next(struct seq_file *seq, void *v, loff_t *pos)
-+{
-+	return locate_hba_next(seq, v, pos);
-+}
-+
-+static void scsi_tgt_dev_seq_stop(struct seq_file *seq, void *v)
-+{
-+	locate_hba_stop(seq, v);
-+}
-+
-+
-+#define LU_COUNT	1  /* for now */
-+static int scsi_tgt_dev_seq_show(struct seq_file *seq, void *v)
-+{
-+	struct se_hba *hba;
-+	struct se_subsystem_dev *se_dev = list_entry(v, struct se_subsystem_dev,
-+						g_se_dev_list);
-+	struct se_device *dev = se_dev->se_dev_ptr;
-+	int non_accessible_lus = 0;
-+	char status[16];
-+
-+	if (list_is_first(&se_dev->g_se_dev_list, &se_global->g_se_dev_list))
-+		seq_puts(seq, "inst indx num_LUs status non_access_LUs"
-+			" resets\n");
-+
-+	if (!(dev))
-+		return 0;
-+
-+	hba = dev->se_hba;
-+	if (!(hba)) {
-+		/* Log error ? */
-+		return 0;
++	fd_req = kzalloc(sizeof(struct fd_request), GFP_KERNEL);
++	if (!(fd_req)) {
++		printk(KERN_ERR "Unable to allocate struct fd_request\n");
++		return NULL;
 +	}
 +
-+	switch (dev->dev_status) {
-+	case TRANSPORT_DEVICE_ACTIVATED:
-+		strcpy(status, "activated");
++	fd_req->fd_dev = (struct fd_dev *) dev->dev_ptr;
++
++	return (void *)fd_req;
++}
++
++/*	fd_emulate_inquiry():
++ *
++ *
++ */
++static int fd_emulate_inquiry(struct se_task *task)
++{
++	unsigned char prod[64], se_location[128];
++	struct se_cmd *cmd = TASK_CMD(task);
++	struct fd_dev *fdev = (struct fd_dev *) task->se_dev->dev_ptr;
++	struct se_hba *hba = task->se_dev->se_hba;
++
++	memset(prod, 0, 64);
++	memset(se_location, 0, 128);
++
++	sprintf(prod, "FILEIO");
++	sprintf(se_location, "%u_%u", hba->hba_id, fdev->fd_dev_id);
++
++	return transport_generic_emulate_inquiry(cmd, TYPE_DISK, prod,
++		FD_VERSION, se_location);
++}
++
++/*	fd_emulate_read_cap():
++ *
++ *
++ */
++static int fd_emulate_read_cap(struct se_task *task)
++{
++	struct fd_dev *fd_dev = (struct fd_dev *) task->se_dev->dev_ptr;
++	unsigned long long blocks_long = div_u64(fd_dev->fd_dev_size,
++				DEV_ATTRIB(task->se_dev)->block_size);
++	u32 blocks;
++
++	if (blocks_long >= 0x00000000ffffffff)
++		blocks = 0xffffffff;
++	else
++		blocks = (u32)blocks_long;
++
++	return transport_generic_emulate_readcapacity(TASK_CMD(task), blocks);
++}
++
++static int fd_emulate_read_cap16(struct se_task *task)
++{
++	struct fd_dev *fd_dev = (struct fd_dev *) task->se_dev->dev_ptr;
++	unsigned long long blocks_long = div_u64(fd_dev->fd_dev_size,
++				  DEV_ATTRIB(task->se_dev)->block_size);
++
++	return transport_generic_emulate_readcapacity_16(TASK_CMD(task),
++		blocks_long);
++}
++
++/*	fd_emulate_scsi_cdb():
++ *
++ *
++ */
++static int fd_emulate_scsi_cdb(struct se_task *task)
++{
++	int ret;
++	struct se_cmd *cmd = TASK_CMD(task);
++	struct fd_request *fd_req = (struct fd_request *) task->transport_req;
++
++	switch (fd_req->fd_scsi_cdb[0]) {
++	case INQUIRY:
++		if (fd_emulate_inquiry(task) < 0)
++			return PYX_TRANSPORT_INVALID_CDB_FIELD;
 +		break;
-+	case TRANSPORT_DEVICE_DEACTIVATED:
-+		strcpy(status, "deactivated");
-+		non_accessible_lus = 1;
++	case READ_CAPACITY:
++		ret = fd_emulate_read_cap(task);
++		if (ret < 0)
++			return ret;
 +		break;
-+	case TRANSPORT_DEVICE_SHUTDOWN:
-+		strcpy(status, "shutdown");
-+		non_accessible_lus = 1;
++	case MODE_SENSE:
++		ret = transport_generic_emulate_modesense(TASK_CMD(task),
++				fd_req->fd_scsi_cdb, fd_req->fd_buf, 0,
++				TYPE_DISK);
++		if (ret < 0)
++			return ret;
 +		break;
-+	case TRANSPORT_DEVICE_OFFLINE_ACTIVATED:
-+	case TRANSPORT_DEVICE_OFFLINE_DEACTIVATED:
-+		strcpy(status, "offline");
-+		non_accessible_lus = 1;
++	case MODE_SENSE_10:
++		ret = transport_generic_emulate_modesense(TASK_CMD(task),
++				fd_req->fd_scsi_cdb, fd_req->fd_buf, 1,
++				TYPE_DISK);
++		if (ret < 0)
++			return ret;
++		break;
++	case SERVICE_ACTION_IN:
++		if ((T_TASK(cmd)->t_task_cdb[1] & 0x1f) !=
++		     SAI_READ_CAPACITY_16) {
++			printk(KERN_ERR "Unsupported SA: 0x%02x\n",
++				T_TASK(cmd)->t_task_cdb[1] & 0x1f);
++			return PYX_TRANSPORT_UNKNOWN_SAM_OPCODE;
++		}
++		ret = fd_emulate_read_cap16(task);
++		if (ret < 0)
++			return ret;
++		break;
++	case REQUEST_SENSE:
++		ret = transport_generic_emulate_request_sense(cmd,
++				T_TASK(cmd)->t_task_cdb);
++		if (ret < 0)
++			return ret;
++		break;
++	case ALLOW_MEDIUM_REMOVAL:
++	case ERASE:
++	case REZERO_UNIT:
++	case SEEK_10:
++	case SPACE:
++	case START_STOP:
++	case SYNCHRONIZE_CACHE:
++	case TEST_UNIT_READY:
++	case VERIFY:
++	case WRITE_FILEMARKS:
++	case RESERVE:
++	case RESERVE_10:
++	case RELEASE:
++	case RELEASE_10:
 +		break;
 +	default:
-+		sprintf(status, "unknown(%d)", dev->dev_status);
-+		non_accessible_lus = 1;
++		printk(KERN_ERR "Unsupported SCSI Opcode: 0x%02x for FILEIO\n",
++				fd_req->fd_scsi_cdb[0]);
++		return PYX_TRANSPORT_UNKNOWN_SAM_OPCODE;
 +	}
 +
-+	seq_printf(seq, "%u %u %u %s %u %u\n",
-+		   hba->hba_index, dev->dev_index, LU_COUNT,
-+		   status, non_accessible_lus, dev->num_resets);
++	task->task_scsi_status = GOOD;
++	transport_complete_task(task, 1);
++
++	return PYX_TRANSPORT_SENT_TO_TRANSPORT;
++}
++
++static inline int fd_iovec_alloc(struct fd_request *req)
++{
++	req->fd_iovs = kzalloc(sizeof(struct iovec) * req->fd_sg_count,
++				GFP_KERNEL);
++	if (!(req->fd_iovs)) {
++		printk(KERN_ERR "Unable to allocate req->fd_iovs\n");
++		return -1;
++	}
 +
 +	return 0;
 +}
 +
-+static const struct seq_operations scsi_tgt_dev_seq_ops = {
-+	.start  = scsi_tgt_dev_seq_start,
-+	.next   = scsi_tgt_dev_seq_next,
-+	.stop   = scsi_tgt_dev_seq_stop,
-+	.show   = scsi_tgt_dev_seq_show
-+};
-+
-+static int scsi_tgt_dev_seq_open(struct inode *inode, struct file *file)
++static int fd_do_readv(struct fd_request *req, struct se_task *task)
 +{
-+	return seq_open(file, &scsi_tgt_dev_seq_ops);
-+}
++	struct file *fd = req->fd_dev->fd_file;
++	struct scatterlist *sg = task->task_sg;
++	struct iovec *iov;
++	mm_segment_t old_fs;
++	loff_t pos = (req->fd_lba * DEV_ATTRIB(task->se_dev)->block_size);
++	int ret = 0, i;
 +
-+static const struct file_operations scsi_tgt_dev_seq_fops = {
-+	.owner	 = THIS_MODULE,
-+	.open	 = scsi_tgt_dev_seq_open,
-+	.read	 = seq_read,
-+	.llseek	 = seq_lseek,
-+	.release = seq_release,
-+};
-+
-+/*
-+ * SCSI Target Port Table
-+ */
-+static void *scsi_tgt_port_seq_start(struct seq_file *seq, loff_t *pos)
-+{
-+	return locate_hba_start(seq, pos);
-+}
-+
-+static void *scsi_tgt_port_seq_next(struct seq_file *seq, void *v, loff_t *pos)
-+{
-+	return locate_hba_next(seq, v, pos);
-+}
-+
-+static void scsi_tgt_port_seq_stop(struct seq_file *seq, void *v)
-+{
-+	locate_hba_stop(seq, v);
-+}
-+
-+static int scsi_tgt_port_seq_show(struct seq_file *seq, void *v)
-+{
-+	struct se_hba *hba;
-+	struct se_subsystem_dev *se_dev = list_entry(v, struct se_subsystem_dev,
-+						g_se_dev_list);
-+	struct se_device *dev = se_dev->se_dev_ptr;
-+	struct se_port *sep, *sep_tmp;
-+	struct se_portal_group *tpg;
-+	u32 rx_mbytes, tx_mbytes;
-+	unsigned long long num_cmds;
-+	char buf[64];
-+
-+	if (list_is_first(&se_dev->g_se_dev_list, &se_global->g_se_dev_list))
-+		seq_puts(seq, "inst device indx name port_index in_cmds"
-+			" write_mbytes read_mbytes hs_in_cmds\n");
-+
-+	if (!(dev))
-+		return 0;
-+
-+	hba = dev->se_hba;
-+	if (!(hba)) {
-+		/* Log error ? */
-+		return 0;
++	iov = kzalloc(sizeof(struct iovec) * req->fd_sg_count, GFP_KERNEL);
++	if (!(iov)) {
++		printk(KERN_ERR "Unable to allocate fd_do_readv iov[]\n");
++		return -1;
 +	}
 +
-+	spin_lock(&dev->se_port_lock);
-+	list_for_each_entry_safe(sep, sep_tmp, &dev->dev_sep_list, sep_list) {
-+		tpg = sep->sep_tpg;
-+		sprintf(buf, "%sPort#",
-+			TPG_TFO(tpg)->get_fabric_name());
-+
-+		seq_printf(seq, "%u %u %u %s%d %s%s%d ",
-+		     hba->hba_index,
-+		     dev->dev_index,
-+		     sep->sep_index,
-+		     buf, sep->sep_index,
-+		     TPG_TFO(tpg)->tpg_get_wwn(tpg), "+t+",
-+		     TPG_TFO(tpg)->tpg_get_tag(tpg));
-+
-+		spin_lock(&sep->sep_lun->lun_sep_lock);
-+		num_cmds = sep->sep_stats.cmd_pdus;
-+		rx_mbytes = (sep->sep_stats.rx_data_octets >> 20);
-+		tx_mbytes = (sep->sep_stats.tx_data_octets >> 20);
-+		spin_unlock(&sep->sep_lun->lun_sep_lock);
-+
-+		seq_printf(seq, "%llu %u %u %u\n", num_cmds,
-+			rx_mbytes, tx_mbytes, 0);
++	for (i = 0; i < req->fd_sg_count; i++) {
++		iov[i].iov_len = sg[i].length;
++		iov[i].iov_base = sg_virt(&sg[i]);
 +	}
-+	spin_unlock(&dev->se_port_lock);
 +
-+	return 0;
-+}
++	old_fs = get_fs();
++	set_fs(get_ds());
++	ret = vfs_readv(fd, &iov[0], req->fd_sg_count, &pos);
++	set_fs(old_fs);
 +
-+static const struct seq_operations scsi_tgt_port_seq_ops = {
-+	.start  = scsi_tgt_port_seq_start,
-+	.next   = scsi_tgt_port_seq_next,
-+	.stop   = scsi_tgt_port_seq_stop,
-+	.show   = scsi_tgt_port_seq_show
-+};
-+
-+static int scsi_tgt_port_seq_open(struct inode *inode, struct file *file)
-+{
-+	return seq_open(file, &scsi_tgt_port_seq_ops);
-+}
-+
-+static const struct file_operations scsi_tgt_port_seq_fops = {
-+	.owner	 = THIS_MODULE,
-+	.open	 = scsi_tgt_port_seq_open,
-+	.read	 = seq_read,
-+	.llseek	 = seq_lseek,
-+	.release = seq_release,
-+};
-+
-+/*
-+ * SCSI Authorized Initiator Table:
-+ * It contains the SCSI Initiators authorized to be attached to one of the
-+ * local Target ports.
-+ * Iterates through all active TPGs and extracts the info from the ACLs
-+ */
-+static void *scsi_auth_intr_seq_start(struct seq_file *seq, loff_t *pos)
-+{
-+	spin_lock_bh(&se_global->se_tpg_lock);
-+	return seq_list_start(&se_global->g_se_tpg_list, *pos);
-+}
-+
-+static void *scsi_auth_intr_seq_next(struct seq_file *seq, void *v,
-+					 loff_t *pos)
-+{
-+	return seq_list_next(v, &se_global->g_se_tpg_list, pos);
-+}
-+
-+static void scsi_auth_intr_seq_stop(struct seq_file *seq, void *v)
-+{
-+	spin_unlock_bh(&se_global->se_tpg_lock);
-+}
-+
-+static int scsi_auth_intr_seq_show(struct seq_file *seq, void *v)
-+{
-+	struct se_portal_group *se_tpg = list_entry(v, struct se_portal_group,
-+						se_tpg_list);
-+	struct se_dev_entry *deve;
-+	struct se_lun *lun;
-+	struct se_node_acl *se_nacl;
-+	int j;
-+
-+	if (list_is_first(&se_tpg->se_tpg_list,
-+			  &se_global->g_se_tpg_list))
-+		seq_puts(seq, "inst dev port indx dev_or_port intr_name "
-+			 "map_indx att_count num_cmds read_mbytes "
-+			 "write_mbytes hs_num_cmds creation_time row_status\n");
-+
-+	if (!(se_tpg))
-+		return 0;
-+
-+	spin_lock(&se_tpg->acl_node_lock);
-+	list_for_each_entry(se_nacl, &se_tpg->acl_node_list, acl_list) {
-+
-+		atomic_inc(&se_nacl->mib_ref_count);
-+		smp_mb__after_atomic_inc();
-+		spin_unlock(&se_tpg->acl_node_lock);
-+
-+		spin_lock_irq(&se_nacl->device_list_lock);
-+		for (j = 0; j < TRANSPORT_MAX_LUNS_PER_TPG; j++) {
-+			deve = &se_nacl->device_list[j];
-+			if (!(deve->lun_flags &
-+					TRANSPORT_LUNFLAGS_INITIATOR_ACCESS) ||
-+			    (!deve->se_lun))
-+				continue;
-+			lun = deve->se_lun;
-+			if (!lun->lun_se_dev)
-+				continue;
-+
-+			seq_printf(seq, "%u %u %u %u %u %s %u %u %u %u %u %u"
-+					" %u %s\n",
-+				/* scsiInstIndex */
-+				(TPG_TFO(se_tpg)->tpg_get_inst_index != NULL) ?
-+				TPG_TFO(se_tpg)->tpg_get_inst_index(se_tpg) :
-+				0,
-+				/* scsiDeviceIndex */
-+				lun->lun_se_dev->dev_index,
-+				/* scsiAuthIntrTgtPortIndex */
-+				TPG_TFO(se_tpg)->tpg_get_tag(se_tpg),
-+				/* scsiAuthIntrIndex */
-+				se_nacl->acl_index,
-+				/* scsiAuthIntrDevOrPort */
-+				1,
-+				/* scsiAuthIntrName */
-+				se_nacl->initiatorname[0] ?
-+					se_nacl->initiatorname : NONE,
-+				/* FIXME: scsiAuthIntrLunMapIndex */
-+				0,
-+				/* scsiAuthIntrAttachedTimes */
-+				deve->attach_count,
-+				/* scsiAuthIntrOutCommands */
-+				deve->total_cmds,
-+				/* scsiAuthIntrReadMegaBytes */
-+				(u32)(deve->read_bytes >> 20),
-+				/* scsiAuthIntrWrittenMegaBytes */
-+				(u32)(deve->write_bytes >> 20),
-+				/* FIXME: scsiAuthIntrHSOutCommands */
-+				0,
-+				/* scsiAuthIntrLastCreation */
-+				(u32)(((u32)deve->creation_time -
-+					    INITIAL_JIFFIES) * 100 / HZ),
-+				/* FIXME: scsiAuthIntrRowStatus */
-+				"Ready");
++	kfree(iov);
++	/*
++	 * Return zeros and GOOD status even if the READ did not return
++	 * the expected virt_size for struct file w/o a backing struct
++	 * block_device.
++	 */
++	if (S_ISBLK(fd->f_dentry->d_inode->i_mode)) {
++		if (ret < 0 || ret != req->fd_size) {
++			printk(KERN_ERR "vfs_readv() returned %d,"
++				" expecting %d for S_ISBLK\n", ret,
++				(int)req->fd_size);
++			return -1;
 +		}
-+		spin_unlock_irq(&se_nacl->device_list_lock);
-+
-+		spin_lock(&se_tpg->acl_node_lock);
-+		atomic_dec(&se_nacl->mib_ref_count);
-+		smp_mb__after_atomic_dec();
++	} else {
++		if (ret < 0) {
++			printk(KERN_ERR "vfs_readv() returned %d for non"
++				" S_ISBLK\n", ret);
++			return -1;
++		}
 +	}
-+	spin_unlock(&se_tpg->acl_node_lock);
++
++	return 1;
++}
++
++#if 0
++
++static void fd_sendfile_free_DMA(struct se_cmd *cmd)
++{
++	printk(KERN_INFO "Release reference to pages now..\n");
++}
++
++static static int fd_sendactor(
++	read_descriptor_t *desc,
++	struct page *page,
++	unsigned long offset,
++	unsigned long size)
++{
++	unsigned long count = desc->count;
++	struct se_task *task = desc->arg.data;
++	struct fd_request *req = (struct fd_request *) task->transport_req;
++	struct scatterlist *sg = task->task_sg;
++
++	printk(KERN_INFO "page: %p offset: %lu size: %lu\n", page,
++			offset, size);
++
++	__free_page(sg[req->fd_cur_offset].page);
++
++	printk(KERN_INFO "page_address(page): %p\n", page_address(page));
++	sg[req->fd_cur_offset].page = page;
++	sg[req->fd_cur_offset].offset = offset;
++	sg[req->fd_cur_offset].length = size;
++
++	printk(KERN_INFO "sg[%d:%p].page %p length: %d\n", req->fd_cur_offset,
++		&sg[req->fd_cur_offset], sg[req->fd_cur_offset].page,
++		sg[req->fd_cur_offset].length);
++
++	req->fd_cur_size += size;
++	printk(KERN_INFO "fd_cur_size: %u\n", req->fd_cur_size);
++
++	req->fd_cur_offset++;
++
++	desc->count--;
++	desc->written += size;
++	return size;
++}
++
++static int fd_do_sendfile(struct fd_request *req, struct se_task *task)
++{
++	int ret = 0;
++	struct file *fd = req->fd_dev->fd_file;
++
++	if (fd_seek(fd, req->fd_lba, DEV_ATTRIB(task->se_dev)->block_size) < 0)
++		return -1;
++
++	TASK_CMD(task)->transport_free_DMA = &fd_sendfile_free_DMA;
++
++	ret = fd->f_op->sendfile(fd, &fd->f_pos, req->fd_sg_count,
++			fd_sendactor, (void *)task);
++
++	if (ret < 0) {
++		printk(KERN_ERR "fd->f_op->sendfile() returned %d\n", ret);
++		return -1;
++	}
++
++	return 1;
++}
++#endif
++
++static int fd_do_writev(struct fd_request *req, struct se_task *task)
++{
++	struct file *fd = req->fd_dev->fd_file;
++	struct scatterlist *sg = task->task_sg;
++	struct iovec *iov;
++	mm_segment_t old_fs;
++	loff_t pos = (req->fd_lba * DEV_ATTRIB(task->se_dev)->block_size);
++	int ret, i = 0;
++
++	iov = kzalloc(sizeof(struct iovec) * req->fd_sg_count, GFP_KERNEL);
++	if (!(iov)) {
++		printk(KERN_ERR "Unable to allocate fd_do_writev iov[]\n");
++		return -1;
++	}
++
++	for (i = 0; i < req->fd_sg_count; i++) {
++		iov[i].iov_len = sg[i].length;
++		iov[i].iov_base = sg_virt(&sg[i]);
++	}
++
++	old_fs = get_fs();
++	set_fs(get_ds());
++	ret = vfs_writev(fd, &iov[0], req->fd_sg_count, &pos);
++	set_fs(old_fs);
++
++	kfree(iov);
++
++	if (ret < 0 || ret != req->fd_size) {
++		printk(KERN_ERR "vfs_writev() returned %d\n", ret);
++		return -1;
++	}
++
++	return 1;
++}
++
++/*
++ * Called from transport_generic_synchronize_cache() to flush the entire
++ * struct file (and possibly backing struct block_device) using vfs_fsync().
++ */
++static int fd_do_sync_cache(struct se_cmd *cmd, int immed)
++{
++	struct fd_dev *fd_dev = (struct fd_dev *)cmd->se_dev->dev_ptr;
++	struct file *fd = fd_dev->fd_file;
++	int ret;
++
++	ret = vfs_fsync(fd, 0);
++	if (ret != 0) {
++		printk(KERN_ERR "FILEIO: vfs_fsync(fd, 0) returned: %d\n", ret);
++		return ret;
++	}
++	DEBUG_FD_CACHE("FILEIO: vfs_fsync(fd, 0) called, immed: %d\n", immed);
++	return ret;
++}
++
++/*
++ * Called from transport_generic_synchronize_cache() to flush LBA range
++ */
++int __fd_do_sync_cache_range(
++	struct se_cmd *cmd,
++	unsigned long long lba,
++	u32 size_in_bytes)
++{
++	struct se_device *dev = cmd->se_dev;
++	struct fd_dev *fd_dev = (struct fd_dev *)dev->dev_ptr;
++	struct file *fd = fd_dev->fd_file;
++	loff_t start = (lba * DEV_ATTRIB(dev)->block_size);
++	loff_t bytes;
++	int ret, immed = (T_TASK(cmd)->t_task_cdb[1] & 0x2);
++	/*
++	 * If the Immediate bit is set, queue up the GOOD response
++	 * for this SYNCHRONIZE_CACHE op
++	 */
++	if (immed)
++		transport_complete_sync_cache(cmd, 1);
++	/*
++	 * Determine if we will be flushing the entire device.
++	 */
++	if ((T_TASK(cmd)->t_task_lba == 0) && (cmd->data_length == 0)) {
++		ret = fd_do_sync_cache(cmd, immed);		
++		if (!(immed))
++			transport_complete_sync_cache(cmd, (ret == 0) ? 1 : 0);
++		return 0;
++	}
++	/*
++	 * If a explict number of bytes fo flush has been provied by
++	 * the initiator, use this value with vfs_sync_range().  Otherwise
++	 * bytes = LLONG_MAX (matching fs/sync.c:vfs_fsync().
++	 */
++	bytes = (size_in_bytes != 0) ? size_in_bytes : LLONG_MAX;
++	ret = vfs_fsync_range(fd, start, bytes, 0);
++	if (ret != 0) {
++		printk(KERN_ERR "FILEIO: vfs_fsync_range() failed: %d\n", ret);
++		if (!(immed))
++			transport_complete_sync_cache(cmd, 0);
++		return -1;
++	}
++	DEBUG_FD_CACHE("FILEIO: vfs_fsync_range(): LBA: %llu Starting offset:"
++		" %llu, bytes: %llu, immed: %d\n", lba, (unsigned long long)start,
++		(unsigned long long)bytes, immed);
++
++	if (!(immed))
++		transport_complete_sync_cache(cmd, 1);
 +
 +	return 0;
 +}
 +
-+static const struct seq_operations scsi_auth_intr_seq_ops = {
-+	.start	= scsi_auth_intr_seq_start,
-+	.next	= scsi_auth_intr_seq_next,
-+	.stop	= scsi_auth_intr_seq_stop,
-+	.show	= scsi_auth_intr_seq_show
-+};
-+
-+static int scsi_auth_intr_seq_open(struct inode *inode, struct file *file)
++void fd_do_sync_cache_range(
++	struct se_cmd *cmd,
++	unsigned long long lba,
++	u32 size_in_bytes)
 +{
-+	return seq_open(file, &scsi_auth_intr_seq_ops);
++	__fd_do_sync_cache_range(cmd, lba, size_in_bytes);	
 +}
-+
-+static const struct file_operations scsi_auth_intr_seq_fops = {
-+	.owner	 = THIS_MODULE,
-+	.open	 = scsi_auth_intr_seq_open,
-+	.read	 = seq_read,
-+	.llseek	 = seq_lseek,
-+	.release = seq_release,
-+};
 +
 +/*
-+ * SCSI Attached Initiator Port Table:
-+ * It lists the SCSI Initiators attached to one of the local Target ports.
-+ * Iterates through all active TPGs and use active sessions from each TPG
-+ * to list the info fo this table.
++ * Tell TCM Core that we are capable of WriteCache emulation for
++ * an underlying struct se_device.
 + */
-+static void *scsi_att_intr_port_seq_start(struct seq_file *seq, loff_t *pos)
++int fd_emulated_write_cache(struct se_device *dev)
 +{
-+	spin_lock_bh(&se_global->se_tpg_lock);
-+	return seq_list_start(&se_global->g_se_tpg_list, *pos);
++	return 1;
 +}
 +
-+static void *scsi_att_intr_port_seq_next(struct seq_file *seq, void *v,
-+					 loff_t *pos)
++int fd_emulated_dpo(struct se_device *dev)
 +{
-+	return seq_list_next(v, &se_global->g_se_tpg_list, pos);
++	return 0;
++}
++/*
++ * Tell TCM Core that we will be emulating Forced Unit Access (FUA) for WRITEs
++ * for TYPE_DISK.
++ */
++int fd_emulated_fua_write(struct se_device *dev)
++{
++	return 1;
 +}
 +
-+static void scsi_att_intr_port_seq_stop(struct seq_file *seq, void *v)
++int fd_emulated_fua_read(struct se_device *dev)
 +{
-+	spin_unlock_bh(&se_global->se_tpg_lock);
++	return 0;
 +}
 +
-+static int scsi_att_intr_port_seq_show(struct seq_file *seq, void *v)
++/*
++ * WRITE Force Unit Access (FUA) emulation on a per struct se_task
++ * LBA range basis..
++ */
++static inline int fd_emulate_write_fua(
++	struct se_cmd *cmd,
++	struct se_task *task)
 +{
-+	struct se_portal_group *se_tpg = list_entry(v, struct se_portal_group,
-+						se_tpg_list);
-+	struct se_dev_entry *deve;
-+	struct se_lun *lun;
-+	struct se_node_acl *se_nacl;
-+	struct se_session *se_sess;
-+	unsigned char buf[64];
-+	int j;
++	DEBUG_FD_CACHE("FILEIO: FUA WRITE LBA: %llu, bytes: %u\n",
++			task->task_lba, task->task_size);
 +
-+	if (list_is_first(&se_tpg->se_tpg_list,
-+			  &se_global->g_se_tpg_list))
-+		seq_puts(seq, "inst dev port indx port_auth_indx port_name"
-+			" port_ident\n");
++	return __fd_do_sync_cache_range(cmd, task->task_lba, task->task_size);
++}
 +
-+	if (!(se_tpg))
++static int fd_do_task(struct se_task *task)
++{
++	struct se_cmd *cmd = task->task_se_cmd;
++	struct se_device *dev = cmd->se_dev;
++	struct fd_request *req = (struct fd_request *) task->transport_req;
++	int ret = 0;
++
++	if (!(TASK_CMD(task)->se_cmd_flags & SCF_SCSI_DATA_SG_IO_CDB))
++		return fd_emulate_scsi_cdb(task);
++
++	req->fd_lba = task->task_lba;
++	req->fd_size = task->task_size;
++	/*
++	 * Call vectorized fileio functions to map struct scatterlist
++	 * physical memory addresses to struct iovec virtual memory.
++	 */
++	if (req->fd_data_direction == FD_DATA_READ)
++		ret = fd_do_readv(req, task);
++	else
++		ret = fd_do_writev(req, task);
++
++	if (ret < 0)
++		return ret;
++
++	if (ret) {
++		/*
++		 * Check for Forced Unit Access WRITE emulation
++		 */
++		if ((DEV_ATTRIB(dev)->emulate_write_cache > 0) &&
++		    (DEV_ATTRIB(dev)->emulate_fua_write > 0) &&
++		    (req->fd_data_direction == FD_DATA_WRITE) &&
++		    (T_TASK(cmd)->t_tasks_fua)) {
++			/*
++			 * We might need to be a bit smarter here
++			 * and return some sense data to let the initiator
++			 * know the FUA WRITE cache sync failed..?
++			 */
++			ret = fd_emulate_write_fua(cmd, task);
++			if (ret < 0) {
++				printk(KERN_ERR "FILEIO: fd_emulate"
++					"_write_fua() failed\n");
++			}
++		}
++
++		task->task_scsi_status = GOOD;
++		transport_complete_task(task, 1);
++	}
++
++	return PYX_TRANSPORT_SENT_TO_TRANSPORT;
++}
++
++/*	fd_free_task(): (Part of se_subsystem_api_t template)
++ *
++ *
++ */
++static void fd_free_task(struct se_task *task)
++{
++	struct fd_request *req;
++
++	req = (struct fd_request *) task->transport_req;
++	kfree(req->fd_iovs);
++
++	kfree(req);
++}
++
++static ssize_t fd_set_configfs_dev_params(
++	struct se_hba *hba,
++	struct se_subsystem_dev *se_dev,
++	const char *page, ssize_t count)
++{
++	struct fd_dev *fd_dev = (struct fd_dev *) se_dev->se_dev_su_ptr;
++	char *buf, *cur, *ptr, *ptr2;
++	int params = 0;
++
++	buf = kzalloc(count, GFP_KERNEL);
++	if (!(buf)) {
++		printk(KERN_ERR "Unable to allocate memory for"
++				" temporary buffer\n");
 +		return 0;
++	}
++	memcpy(buf, page, count);
++	cur = buf;
 +
-+	spin_lock(&se_tpg->session_lock);
-+	list_for_each_entry(se_sess, &se_tpg->tpg_sess_list, sess_list) {
-+		if ((TPG_TFO(se_tpg)->sess_logged_in(se_sess)) ||
-+		    (!se_sess->se_node_acl) ||
-+		    (!se_sess->se_node_acl->device_list))
++	while (cur) {
++		ptr = strstr(cur, "=");
++		if (!(ptr))
++			goto out;
++
++		*ptr = '\0';
++		ptr++;
++
++		ptr2 = strstr(cur, "fd_dev_name");
++		if (ptr2) {
++			transport_check_dev_params_delim(ptr, &cur);
++			ptr = strstrip(ptr);
++			snprintf(fd_dev->fd_dev_name, FD_MAX_DEV_NAME,
++					"%s", ptr);
++			printk(KERN_INFO "FILEIO: Referencing Path: %s\n",
++					fd_dev->fd_dev_name);
++			fd_dev->fbd_flags |= FBDF_HAS_PATH;
++			params++;
 +			continue;
-+
-+		atomic_inc(&se_sess->mib_ref_count);
-+		smp_mb__after_atomic_inc();
-+		se_nacl = se_sess->se_node_acl;
-+		atomic_inc(&se_nacl->mib_ref_count);
-+		smp_mb__after_atomic_inc();
-+		spin_unlock(&se_tpg->session_lock);
-+
-+		spin_lock_irq(&se_nacl->device_list_lock);
-+		for (j = 0; j < TRANSPORT_MAX_LUNS_PER_TPG; j++) {
-+			deve = &se_nacl->device_list[j];
-+			if (!(deve->lun_flags &
-+					TRANSPORT_LUNFLAGS_INITIATOR_ACCESS) ||
-+			   (!deve->se_lun))
-+				continue;
-+
-+			lun = deve->se_lun;
-+			if (!lun->lun_se_dev)
-+				continue;
-+
-+			memset(buf, 0, 64);
-+			if (TPG_TFO(se_tpg)->sess_get_initiator_sid != NULL)
-+				TPG_TFO(se_tpg)->sess_get_initiator_sid(
-+					se_sess, (unsigned char *)&buf[0], 64);
-+
-+			seq_printf(seq, "%u %u %u %u %u %s+i+%s\n",
-+				/* scsiInstIndex */
-+				(TPG_TFO(se_tpg)->tpg_get_inst_index != NULL) ?
-+				TPG_TFO(se_tpg)->tpg_get_inst_index(se_tpg) :
-+				0,
-+				/* scsiDeviceIndex */
-+				lun->lun_se_dev->dev_index,
-+				/* scsiPortIndex */
-+				TPG_TFO(se_tpg)->tpg_get_tag(se_tpg),
-+				/* scsiAttIntrPortIndex */
-+				(TPG_TFO(se_tpg)->sess_get_index != NULL) ?
-+				TPG_TFO(se_tpg)->sess_get_index(se_sess) :
-+				0,
-+				/* scsiAttIntrPortAuthIntrIdx */
-+				se_nacl->acl_index,
-+				/* scsiAttIntrPortName */
-+				se_nacl->initiatorname[0] ?
-+					se_nacl->initiatorname : NONE,
-+				/* scsiAttIntrPortIdentifier */
-+				buf);
 +		}
-+		spin_unlock_irq(&se_nacl->device_list_lock);
++		ptr2 = strstr(cur, "fd_dev_size");
++		if (ptr2) {
++			transport_check_dev_params_delim(ptr, &cur);
++			if (strict_strtoull(ptr, 0, &fd_dev->fd_dev_size) < 0) {
++				printk(KERN_ERR "strict_strtoull() failed for"
++						" fd_dev_size=\n");
++				continue;
++			}
++			printk(KERN_INFO "FILEIO: Referencing Size: %llu"
++					" bytes\n", fd_dev->fd_dev_size);
++			fd_dev->fbd_flags |= FBDF_HAS_SIZE;
++			params++;
++			continue;
++		}
++		ptr2 = strstr(cur, "fd_buffered_io");
++		if (ptr2) {
++			transport_check_dev_params_delim(ptr, &cur);
++			if (strncmp(ptr, "1", 1))
++				continue;
 +
-+		spin_lock(&se_tpg->session_lock);
-+		atomic_dec(&se_nacl->mib_ref_count);
-+		smp_mb__after_atomic_dec();
-+		atomic_dec(&se_sess->mib_ref_count);
-+		smp_mb__after_atomic_dec();
-+	}
-+	spin_unlock(&se_tpg->session_lock);
++			printk(KERN_INFO "FILEIO: Using buffered I/O"
++				" operations for struct fd_dev\n");
 +
-+	return 0;
-+}
-+
-+static const struct seq_operations scsi_att_intr_port_seq_ops = {
-+	.start	= scsi_att_intr_port_seq_start,
-+	.next	= scsi_att_intr_port_seq_next,
-+	.stop	= scsi_att_intr_port_seq_stop,
-+	.show	= scsi_att_intr_port_seq_show
-+};
-+
-+static int scsi_att_intr_port_seq_open(struct inode *inode, struct file *file)
-+{
-+	return seq_open(file, &scsi_att_intr_port_seq_ops);
-+}
-+
-+static const struct file_operations scsi_att_intr_port_seq_fops = {
-+	.owner	 = THIS_MODULE,
-+	.open	 = scsi_att_intr_port_seq_open,
-+	.read	 = seq_read,
-+	.llseek	 = seq_lseek,
-+	.release = seq_release,
-+};
-+
-+/*
-+ * SCSI Logical Unit Table
-+ */
-+static void *scsi_lu_seq_start(struct seq_file *seq, loff_t *pos)
-+{
-+	return locate_hba_start(seq, pos);
-+}
-+
-+static void *scsi_lu_seq_next(struct seq_file *seq, void *v, loff_t *pos)
-+{
-+	return locate_hba_next(seq, v, pos);
-+}
-+
-+static void scsi_lu_seq_stop(struct seq_file *seq, void *v)
-+{
-+	locate_hba_stop(seq, v);
-+}
-+
-+#define SCSI_LU_INDEX		1
-+static int scsi_lu_seq_show(struct seq_file *seq, void *v)
-+{
-+	struct se_hba *hba;
-+	struct se_subsystem_dev *se_dev = list_entry(v, struct se_subsystem_dev,
-+						g_se_dev_list);
-+	struct se_device *dev = se_dev->se_dev_ptr;
-+	int j;
-+	char str[28];
-+
-+	if (list_is_first(&se_dev->g_se_dev_list, &se_global->g_se_dev_list))
-+		seq_puts(seq, "inst dev indx LUN lu_name vend prod rev"
-+		" dev_type status state-bit num_cmds read_mbytes"
-+		" write_mbytes resets full_stat hs_num_cmds creation_time\n");
-+
-+	if (!(dev))
-+		return 0;
-+
-+	hba = dev->se_hba;
-+	if (!(hba)) {
-+		/* Log error ? */
-+		return 0;
++			fd_dev->fbd_flags |= FDBD_USE_BUFFERED_IO;
++			params++;
++			continue;
++		} else
++			cur = NULL;
 +	}
 +
-+	/* Fix LU state, if we can read it from the device */
-+	seq_printf(seq, "%u %u %u %llu %s", hba->hba_index,
-+			dev->dev_index, SCSI_LU_INDEX,
-+			(unsigned long long)0, /* FIXME: scsiLuDefaultLun */
-+			(strlen(DEV_T10_WWN(dev)->unit_serial)) ?
-+			/* scsiLuWwnName */
-+			(char *)&DEV_T10_WWN(dev)->unit_serial[0] :
-+			"None");
-+
-+	memcpy(&str[0], (void *)DEV_T10_WWN(dev), 28);
-+	/* scsiLuVendorId */
-+	for (j = 0; j < 8; j++)
-+		str[j] = ISPRINT(DEV_T10_WWN(dev)->vendor[j]) ?
-+			DEV_T10_WWN(dev)->vendor[j] : 0x20;
-+	str[8] = 0;
-+	seq_printf(seq, " %s", str);
-+
-+	/* scsiLuProductId */
-+	for (j = 0; j < 16; j++)
-+		str[j] = ISPRINT(DEV_T10_WWN(dev)->model[j]) ?
-+			DEV_T10_WWN(dev)->model[j] : 0x20;
-+	str[16] = 0;
-+	seq_printf(seq, " %s", str);
-+
-+	/* scsiLuRevisionId */
-+	for (j = 0; j < 4; j++)
-+		str[j] = ISPRINT(DEV_T10_WWN(dev)->revision[j]) ?
-+			DEV_T10_WWN(dev)->revision[j] : 0x20;
-+	str[4] = 0;
-+	seq_printf(seq, " %s", str);
-+
-+	seq_printf(seq, " %u %s %s %llu %u %u %u %u %u %u\n",
-+		/* scsiLuPeripheralType */
-+		   TRANSPORT(dev)->get_device_type(dev),
-+		   (dev->dev_status == TRANSPORT_DEVICE_ACTIVATED) ?
-+		"available" : "notavailable", /* scsiLuStatus */
-+		"exposed", 	/* scsiLuState */
-+		(unsigned long long)dev->num_cmds,
-+		/* scsiLuReadMegaBytes */
-+		(u32)(dev->read_bytes >> 20),
-+		/* scsiLuWrittenMegaBytes */
-+		(u32)(dev->write_bytes >> 20),
-+		dev->num_resets, /* scsiLuInResets */
-+		0, /* scsiLuOutTaskSetFullStatus */
-+		0, /* scsiLuHSInCommands */
-+		(u32)(((u32)dev->creation_time - INITIAL_JIFFIES) *
-+							100 / HZ));
-+
-+	return 0;
++out:
++	kfree(buf);
++	return (params) ? count : -EINVAL;
 +}
 +
-+static const struct seq_operations scsi_lu_seq_ops = {
-+	.start  = scsi_lu_seq_start,
-+	.next   = scsi_lu_seq_next,
-+	.stop   = scsi_lu_seq_stop,
-+	.show   = scsi_lu_seq_show
-+};
-+
-+static int scsi_lu_seq_open(struct inode *inode, struct file *file)
++static ssize_t fd_check_configfs_dev_params(struct se_hba *hba, struct se_subsystem_dev *se_dev)
 +{
-+	return seq_open(file, &scsi_lu_seq_ops);
-+}
++	struct fd_dev *fd_dev = (struct fd_dev *) se_dev->se_dev_su_ptr;
 +
-+static const struct file_operations scsi_lu_seq_fops = {
-+	.owner	 = THIS_MODULE,
-+	.open	 = scsi_lu_seq_open,
-+	.read	 = seq_read,
-+	.llseek	 = seq_lseek,
-+	.release = seq_release,
-+};
-+
-+/****************************************************************************/
-+
-+/*
-+ * Remove proc fs entries
-+ */
-+void remove_scsi_target_mib(void)
-+{
-+	remove_proc_entry("scsi_target/mib/scsi_inst", NULL);
-+	remove_proc_entry("scsi_target/mib/scsi_dev", NULL);
-+	remove_proc_entry("scsi_target/mib/scsi_port", NULL);
-+	remove_proc_entry("scsi_target/mib/scsi_transport", NULL);
-+	remove_proc_entry("scsi_target/mib/scsi_tgt_dev", NULL);
-+	remove_proc_entry("scsi_target/mib/scsi_tgt_port", NULL);
-+	remove_proc_entry("scsi_target/mib/scsi_auth_intr", NULL);
-+	remove_proc_entry("scsi_target/mib/scsi_att_intr_port", NULL);
-+	remove_proc_entry("scsi_target/mib/scsi_lu", NULL);
-+	remove_proc_entry("scsi_target/mib", NULL);
-+}
-+
-+/*
-+ * Create proc fs entries for the mib tables
-+ */
-+int init_scsi_target_mib(void)
-+{
-+	struct proc_dir_entry *dir_entry;
-+	struct proc_dir_entry *scsi_inst_entry;
-+	struct proc_dir_entry *scsi_dev_entry;
-+	struct proc_dir_entry *scsi_port_entry;
-+	struct proc_dir_entry *scsi_transport_entry;
-+	struct proc_dir_entry *scsi_tgt_dev_entry;
-+	struct proc_dir_entry *scsi_tgt_port_entry;
-+	struct proc_dir_entry *scsi_auth_intr_entry;
-+	struct proc_dir_entry *scsi_att_intr_port_entry;
-+	struct proc_dir_entry *scsi_lu_entry;
-+
-+	dir_entry = proc_mkdir("scsi_target/mib", NULL);
-+	if (!(dir_entry)) {
-+		printk(KERN_ERR "proc_mkdir() failed.\n");
++	if (!(fd_dev->fbd_flags & FBDF_HAS_PATH)) {
++		printk(KERN_ERR "Missing fd_dev_name=\n");
 +		return -1;
 +	}
 +
-+	scsi_inst_entry =
-+		create_proc_entry("scsi_target/mib/scsi_inst", 0, NULL);
-+	if (scsi_inst_entry)
-+		scsi_inst_entry->proc_fops = &scsi_inst_seq_fops;
-+	else
-+		goto error;
++	return 0;
++}
 +
-+	scsi_dev_entry =
-+		create_proc_entry("scsi_target/mib/scsi_dev", 0, NULL);
-+	if (scsi_dev_entry)
-+		scsi_dev_entry->proc_fops = &scsi_dev_seq_fops;
-+	else
-+		goto error;
++static ssize_t fd_show_configfs_dev_params(
++	struct se_hba *hba,
++	struct se_subsystem_dev *se_dev,
++	char *page)
++{
++	struct fd_dev *fd_dev = (struct fd_dev *) se_dev->se_dev_su_ptr;
++	int bl = 0;
 +
-+	scsi_port_entry =
-+		create_proc_entry("scsi_target/mib/scsi_port", 0, NULL);
-+	if (scsi_port_entry)
-+		scsi_port_entry->proc_fops = &scsi_port_seq_fops;
-+	else
-+		goto error;
++	__fd_get_dev_info(fd_dev, page, &bl);
++	return (ssize_t)bl;
++}
 +
-+	scsi_transport_entry =
-+		create_proc_entry("scsi_target/mib/scsi_transport", 0, NULL);
-+	if (scsi_transport_entry)
-+		scsi_transport_entry->proc_fops = &scsi_transport_seq_fops;
-+	else
-+		goto error;
++static void fd_get_plugin_info(void *p, char *b, int *bl)
++{
++	*bl += sprintf(b + *bl, "TCM FILEIO Plugin %s\n", FD_VERSION);
++}
 +
-+	scsi_tgt_dev_entry =
-+		create_proc_entry("scsi_target/mib/scsi_tgt_dev", 0, NULL);
-+	if (scsi_tgt_dev_entry)
-+		scsi_tgt_dev_entry->proc_fops = &scsi_tgt_dev_seq_fops;
-+	else
-+		goto error;
++static void fd_get_hba_info(struct se_hba *hba, char *b, int *bl)
++{
++	struct fd_host *fd_host = (struct fd_host *)hba->hba_ptr;
 +
-+	scsi_tgt_port_entry =
-+		create_proc_entry("scsi_target/mib/scsi_tgt_port", 0, NULL);
-+	if (scsi_tgt_port_entry)
-+		scsi_tgt_port_entry->proc_fops = &scsi_tgt_port_seq_fops;
-+	else
-+		goto error;
++	*bl += sprintf(b + *bl, "SE Host ID: %u  FD Host ID: %u\n",
++		 hba->hba_id, fd_host->fd_host_id);
++	*bl += sprintf(b + *bl, "        TCM FILEIO HBA\n");
++}
 +
-+	scsi_auth_intr_entry =
-+		create_proc_entry("scsi_target/mib/scsi_auth_intr", 0, NULL);
-+	if (scsi_auth_intr_entry)
-+		scsi_auth_intr_entry->proc_fops = &scsi_auth_intr_seq_fops;
-+	else
-+		goto error;
++static void fd_get_dev_info(struct se_device *dev, char *b, int *bl)
++{
++	struct fd_dev *fd_dev = (struct fd_dev *) dev->dev_ptr;
 +
-+	scsi_att_intr_port_entry =
-+	      create_proc_entry("scsi_target/mib/scsi_att_intr_port", 0, NULL);
-+	if (scsi_att_intr_port_entry)
-+		scsi_att_intr_port_entry->proc_fops =
-+				&scsi_att_intr_port_seq_fops;
-+	else
-+		goto error;
++	__fd_get_dev_info(fd_dev, b, bl);
++}
 +
-+	scsi_lu_entry = create_proc_entry("scsi_target/mib/scsi_lu", 0, NULL);
-+	if (scsi_lu_entry)
-+		scsi_lu_entry->proc_fops = &scsi_lu_seq_fops;
-+	else
-+		goto error;
++static void __fd_get_dev_info(struct fd_dev *fd_dev, char *b, int *bl)
++{
++	*bl += sprintf(b + *bl, "TCM FILEIO ID: %u", fd_dev->fd_dev_id);
++	*bl += sprintf(b + *bl, "        File: %s  Size: %llu  Mode: %s\n",
++		fd_dev->fd_dev_name, fd_dev->fd_dev_size,
++		(fd_dev->fbd_flags & FDBD_USE_BUFFERED_IO) ?
++		"Buffered" : "Synchronous");
++}
++
++/*	fd_map_task_non_SG():
++ *
++ *
++ */
++static void fd_map_task_non_SG(struct se_task *task)
++{
++	struct se_cmd *cmd = TASK_CMD(task);
++	struct fd_request *req = (struct fd_request *) task->transport_req;
++
++	req->fd_bufflen		= task->task_size;
++	req->fd_buf		= (void *) T_TASK(cmd)->t_task_buf;
++	req->fd_sg_count	= 0;
++}
++
++/*	fd_map_task_SG():
++ *
++ *
++ */
++static void fd_map_task_SG(struct se_task *task)
++{
++	struct fd_request *req = (struct fd_request *) task->transport_req;
++
++	req->fd_bufflen		= task->task_size;
++	req->fd_buf		= NULL;
++	req->fd_sg_count	= task->task_sg_num;
++}
++
++/*      fd_CDB_none():
++ *
++ *
++ */
++static int fd_CDB_none(struct se_task *task, u32 size)
++{
++	struct fd_request *req = (struct fd_request *) task->transport_req;
++
++	req->fd_data_direction	= FD_DATA_NONE;
++	req->fd_bufflen		= 0;
++	req->fd_sg_count	= 0;
++	req->fd_buf		= NULL;
 +
 +	return 0;
-+
-+error:
-+	printk(KERN_ERR "create_proc_entry() failed.\n");
-+	remove_scsi_target_mib();
-+	return -1;
 +}
 +
-+/*
-+ * Initialize the index table for allocating unique row indexes to various mib
-+ * tables
++/*	fd_CDB_read_non_SG():
++ *
++ *
 + */
-+void init_scsi_index_table(void)
++static int fd_CDB_read_non_SG(struct se_task *task, u32 size)
 +{
-+	memset(&scsi_index_table, 0, sizeof(struct scsi_index_table));
-+	spin_lock_init(&scsi_index_table.lock);
++	struct fd_request *req = (struct fd_request *) task->transport_req;
++
++	req->fd_data_direction = FD_DATA_READ;
++	fd_map_task_non_SG(task);
++
++	return 0;
 +}
 +
-+/*
-+ * Allocate a new row index for the entry type specified
++/*	fd_CDB_read_SG):
++ *
++ *
 + */
-+u32 scsi_get_new_index(scsi_index_t type)
++static int fd_CDB_read_SG(struct se_task *task, u32 size)
 +{
-+	u32 new_index;
++	struct fd_request *req = (struct fd_request *) task->transport_req;
 +
-+	if ((type < 0) || (type >= SCSI_INDEX_TYPE_MAX)) {
-+		printk(KERN_ERR "Invalid index type %d\n", type);
-+		return -1;
-+	}
++	req->fd_data_direction = FD_DATA_READ;
++	fd_map_task_SG(task);
 +
-+	spin_lock(&scsi_index_table.lock);
-+	new_index = ++scsi_index_table.scsi_mib_index[type];
-+	if (new_index == 0)
-+		new_index = ++scsi_index_table.scsi_mib_index[type];
-+	spin_unlock(&scsi_index_table.lock);
-+
-+	return new_index;
++	return req->fd_sg_count;
 +}
-+EXPORT_SYMBOL(scsi_get_new_index);
-diff --git a/drivers/target/target_core_mib.h b/drivers/target/target_core_mib.h
++
++/*	fd_CDB_write_non_SG():
++ *
++ *
++ */
++static int fd_CDB_write_non_SG(struct se_task *task, u32 size)
++{
++	struct fd_request *req = (struct fd_request *) task->transport_req;
++
++	req->fd_data_direction = FD_DATA_WRITE;
++	fd_map_task_non_SG(task);
++
++	return 0;
++}
++
++/*	fd_CDB_write_SG():
++ *
++ *
++ */
++static int fd_CDB_write_SG(struct se_task *task, u32 size)
++{
++	struct fd_request *req = (struct fd_request *) task->transport_req;
++
++	req->fd_data_direction = FD_DATA_WRITE;
++	fd_map_task_SG(task);
++
++	return req->fd_sg_count;
++}
++
++/*	fd_check_lba():
++ *
++ *
++ */
++static int fd_check_lba(unsigned long long lba, struct se_device *dev)
++{
++	return 0;
++}
++
++/*	fd_check_for_SG(): (Part of se_subsystem_api_t template)
++ *
++ *
++ */
++static int fd_check_for_SG(struct se_task *task)
++{
++	struct fd_request *req = (struct fd_request *) task->transport_req;
++
++	return req->fd_sg_count;
++}
++
++/*	fd_get_cdb(): (Part of se_subsystem_api_t template)
++ *
++ *
++ */
++static unsigned char *fd_get_cdb(struct se_task *task)
++{
++	struct fd_request *req = (struct fd_request *) task->transport_req;
++
++	return req->fd_scsi_cdb;
++}
++
++/*	fd_get_blocksize(): (Part of se_subsystem_api_t template)
++ *
++ *
++ */
++static u32 fd_get_blocksize(struct se_device *dev)
++{
++	struct fd_dev *fd_dev = (struct fd_dev *) dev->dev_ptr;
++
++	return fd_dev->fd_block_size;
++}
++
++/*	fd_get_device_rev(): (Part of se_subsystem_api_t template)
++ *
++ *
++ */
++static u32 fd_get_device_rev(struct se_device *dev)
++{
++	return SCSI_SPC_2; /* Returns SPC-3 in Initiator Data */
++}
++
++/*	fd_get_device_type(): (Part of se_subsystem_api_t template)
++ *
++ *
++ */
++static u32 fd_get_device_type(struct se_device *dev)
++{
++	return TYPE_DISK;
++}
++
++/*	fd_get_dma_length(): (Part of se_subsystem_api_t template)
++ *
++ *
++ */
++static u32 fd_get_dma_length(u32 task_size, struct se_device *dev)
++{
++	return PAGE_SIZE;
++}
++
++/*	fd_get_max_sectors(): (Part of se_subsystem_api_t template)
++ *
++ *
++ */
++static u32 fd_get_max_sectors(struct se_device *dev)
++{
++	return FD_MAX_SECTORS;
++}
++
++/*	fd_get_queue_depth(): (Part of se_subsystem_api_t template)
++ *
++ *
++ */
++static u32 fd_get_queue_depth(struct se_device *dev)
++{
++	return FD_DEVICE_QUEUE_DEPTH;
++}
++
++static u32 fd_get_max_queue_depth(struct se_device *dev)
++{
++	return FD_MAX_DEVICE_QUEUE_DEPTH;
++}
++
++/*#warning FIXME v2.8: transport_type for FILEIO will need to change
++  with DIRECT_IO to blockdevs */
++
++static struct se_subsystem_api fileio_template = {
++	.name			= "fileio",
++	.type			= FILEIO,
++	.transport_type		= TRANSPORT_PLUGIN_VHBA_PDEV,
++	.external_submod	= 1,
++	.attach_hba		= fd_attach_hba,
++	.detach_hba		= fd_detach_hba,
++	.cdb_none		= fd_CDB_none,
++	.cdb_read_non_SG	= fd_CDB_read_non_SG,
++	.cdb_read_SG		= fd_CDB_read_SG,
++	.cdb_write_non_SG	= fd_CDB_write_non_SG,
++	.cdb_write_SG		= fd_CDB_write_SG,
++	.allocate_virtdevice	= fd_allocate_virtdevice,
++	.create_virtdevice	= fd_create_virtdevice,
++	.activate_device	= fd_activate_device,
++	.deactivate_device	= fd_deactivate_device,
++	.free_device		= fd_free_device,
++	.do_sync_cache_range	= fd_do_sync_cache_range,
++	.dpo_emulated		= fd_emulated_dpo,
++	.fua_write_emulated	= fd_emulated_fua_write,
++	.fua_read_emulated	= fd_emulated_fua_read,
++	.write_cache_emulated	= fd_emulated_write_cache,
++	.transport_complete	= fd_transport_complete,
++	.allocate_request	= fd_allocate_request,
++	.do_task		= fd_do_task,
++	.free_task		= fd_free_task,
++	.check_configfs_dev_params = fd_check_configfs_dev_params,
++	.set_configfs_dev_params = fd_set_configfs_dev_params,
++	.show_configfs_dev_params = fd_show_configfs_dev_params,
++	.get_plugin_info	= fd_get_plugin_info,
++	.get_hba_info		= fd_get_hba_info,
++	.get_dev_info		= fd_get_dev_info,
++	.check_lba		= fd_check_lba,
++	.check_for_SG		= fd_check_for_SG,
++	.get_cdb		= fd_get_cdb,
++	.get_blocksize		= fd_get_blocksize,
++	.get_device_rev		= fd_get_device_rev,
++	.get_device_type	= fd_get_device_type,
++	.get_dma_length		= fd_get_dma_length,
++	.get_max_sectors	= fd_get_max_sectors,
++	.get_queue_depth	= fd_get_queue_depth,
++	.get_max_queue_depth	= fd_get_max_queue_depth,
++	.write_pending		= NULL,
++};
++
++int __init fileio_module_init(void)
++{
++	int ret;
++
++	INIT_LIST_HEAD(&fileio_template.sub_api_list);
++
++	ret = transport_subsystem_register(&fileio_template, THIS_MODULE);
++	if (ret < 0)
++		return ret;
++
++	return 0;
++}
++
++void fileio_module_exit(void)
++{
++	transport_subsystem_release(&fileio_template);
++}
++
++MODULE_DESCRIPTION("TCM FILEIO subsystem plugin");
++MODULE_AUTHOR("nab@Linux-iSCSI.org");
++MODULE_LICENSE("GPL");
++
++module_init(fileio_module_init);
++module_exit(fileio_module_exit);
+diff --git a/drivers/target/target_core_file.h b/drivers/target/target_core_file.h
 new file mode 100644
-index 0000000..5a53dbb
+index 0000000..35726f1
 --- /dev/null
-+++ b/drivers/target/target_core_mib.h
-@@ -0,0 +1,31 @@
-+#ifndef TARGET_CORE_MIB_H
-+#define TARGET_CORE_MIB_H
++++ b/drivers/target/target_core_file.h
+@@ -0,0 +1,81 @@
++#ifndef TARGET_CORE_FILE_H
++#define TARGET_CORE_FILE_H
++
++#define FD_VERSION		"4.0"
++
++#define FD_MAX_DEV_NAME		256
++/* Maximum queuedepth for the FILEIO HBA */
++#define FD_HBA_QUEUE_DEPTH	256
++#define FD_DEVICE_QUEUE_DEPTH	32
++#define FD_MAX_DEVICE_QUEUE_DEPTH 128
++#define FD_BLOCKSIZE		512
++#define FD_MAX_SECTORS		1024
++
++#define FD_DATA_READ		1
++#define FD_DATA_WRITE		2
++#define FD_DATA_NONE		3
 +
 +extern struct se_global *se_global;
++extern struct block_device *__linux_blockdevice_claim(int, int, void *, int *);
++extern struct block_device *linux_blockdevice_claim(int, int, void *);
++extern int linux_blockdevice_release(int, int, struct block_device *);
++extern int linux_blockdevice_check(int, int);
 +
-+typedef enum {
-+	SCSI_INST_INDEX,
-+	SCSI_DEVICE_INDEX,
-+	SCSI_AUTH_INTR_INDEX,
-+	SCSI_INDEX_TYPE_MAX
-+} scsi_index_t;
++#define RRF_EMULATE_CDB		0x01
++#define RRF_GOT_LBA		0x02
 +
-+struct scsi_index_table {
-+	spinlock_t	lock;
-+	u32 		scsi_mib_index[SCSI_INDEX_TYPE_MAX];
++struct fd_request {
++	/* SCSI CDB from iSCSI Command PDU */
++	unsigned char	fd_scsi_cdb[TCM_MAX_COMMAND_SIZE];
++	/* Data Direction */
++	u8		fd_data_direction;
++	/* Total length of request */
++	u32		fd_bufflen;
++	/* RD request flags */
++	u32		fd_req_flags;
++	/* Offset from start of page */
++	u32		fd_offset;
++	u32		fd_cur_size;
++	u32		fd_cur_offset;
++	/* Scatterlist count */
++	u32		fd_sg_count;
++	/* Logical Block Address */
++	unsigned long long	fd_lba;
++	u64		fd_size;
++	struct kiocb	fd_iocb;
++	struct iovec	*fd_iovs;
++	/* Data buffer containing scatterlists(s) or contingous
++	   memory segments */
++	void		*fd_buf;
++	/* FILEIO device */
++	struct fd_dev	*fd_dev;
 +} ____cacheline_aligned;
 +
-+/* SCSI Port stats */
-+struct scsi_port_stats {
-+	u64	cmd_pdus;
-+	u64	tx_data_octets;
-+	u64	rx_data_octets;
++#define FBDF_HAS_PATH		0x01
++#define FBDF_HAS_SIZE		0x02
++#define FDBD_USE_BUFFERED_IO	0x04
++
++struct fd_dev {
++	u32		fbd_flags;
++	unsigned char	fd_dev_name[FD_MAX_DEV_NAME];
++	/* Unique Ramdisk Device ID in Ramdisk HBA */
++	u32		fd_dev_id;
++	/* Number of SG tables in sg_table_array */
++	u32		fd_table_count;
++	u32		fd_queue_depth;
++	u32		fd_block_size;
++	unsigned long long fd_dev_size;
++	struct file	*fd_file;
++	/* FILEIO HBA device is connected to */
++	struct fd_host *fd_host;
++	int (*fd_do_read)(struct fd_request *, struct se_task *);
++	int (*fd_do_write)(struct fd_request *, struct se_task *);
 +} ____cacheline_aligned;
 +
-+extern int init_scsi_target_mib(void);
-+extern void remove_scsi_target_mib(void);
-+extern void init_scsi_index_table(void);
-+extern u32 scsi_get_new_index(scsi_index_t);
++struct fd_host {
++	u32		fd_host_dev_id_count;
++	/* Unique FILEIO Host ID */
++	u32		fd_host_id;
++} ____cacheline_aligned;
 +
-+#endif   /*** TARGET_CORE_MIB_H ***/
-+
++#endif /* TARGET_CORE_FILE_H */
 -- 
 1.7.3
 
