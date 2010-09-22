@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265Ab0IVUjq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 16:39:46 -0400
-Received: from mga11.intel.com ([192.55.52.93]:57845 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752224Ab0IVUjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 16:39:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,219,1283756400"; 
-   d="scan'208";a="609431213"
-Message-ID: <4C9A698B.90806@linux.intel.com>
-Date: Wed, 22 Sep 2010 22:39:39 +0200
-From: Andi Kleen <ak@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1753427Ab0IVUlw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 16:41:52 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:26569 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752420Ab0IVUlv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 16:41:51 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: B09JL8sVM1nm5.cSNGZpeyU5BND1AJ3XBPQTpQ7bzYsHYtI
+ ttHFbGY2xxWyoEhd4VxmuVV6sblUjgC9y_wWQ8jwfmaZmtJhWXvQab4dKAIj
+ YvRSerepnT5zhdlxA5Fq9c0FKk50q_6CY0KOxreLMRqeVFza17osof26Xnl8
+ QKaLAA2TIAkJ.iiy5eYTO.ybvTTHPOiTdd4TLh6kv5i7dVY6qK6wpequuD61
+ QG424YJW.3xIwcl4Nij7whtoHvC5DBs6gGJa4ig--
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 22 Sep 2010 15:41:46 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mel Gorman <mel@csn.ul.ie>
+cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/10] hugetlb: fix metadata corruption in
+ hugetlb_fault()
+In-Reply-To: <20100920104723.GG1998@csn.ul.ie>
+Message-ID: <alpine.DEB.2.00.1009221541350.32661@router.home>
+References: <1283908781-13810-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1283908781-13810-2-git-send-email-n-horiguchi@ah.jp.nec.com> <20100920104723.GG1998@csn.ul.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        linux-rdma <linux-rdma@vger.kernel.org>,
-        Bernard Metzler <BMT@zurich.ibm.com>,
-        David Miller <davem@davemloft.net>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Roland Dreier <rdreier@cisco.com>
-Subject: Re: [PATCH 2/2] siw: Add support for CRC32C offload instruction using
- libcrypto crc32c-intel
-References: <1285187425-10950-1-git-send-email-nab@linux-iscsi.org>
-In-Reply-To: <1285187425-10950-1-git-send-email-nab@linux-iscsi.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 9/22/2010 10:30 PM, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger<nab@linux-iscsi.org>
->
-> This patch updates siw_create_qp() to check for the CONFIG_X86 + cpu_has_xmm4_2
-> dependent use of the CRC32C instruction offload using libcrypto crc32c-intel.ko.
-> This patch will by default use crc32c-intel when available, and fall back to the
-> legacy slicing by 1x libcrypto crc32c.ko code when the instruction offload is not
-> availabe.
 
-I don't think every caller should handle checks like this. The crypto 
-layer should load the right driver
-instead and provide the best driver under a generic algorithm name.
+Reviewed-by: Christoph Lameter <cl@linux.com>
 
-Need CPUID module auto probing. I have an older patch that needs some fixes.
-
--Andi
 
