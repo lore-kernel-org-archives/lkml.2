@@ -1,40 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab0IVB4q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 21:56:46 -0400
-Received: from qmta07.emeryville.ca.mail.comcast.net ([76.96.30.64]:39007 "EHLO
-	qmta07.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752517Ab0IVB4p (ORCPT
+	id S1753626Ab0IVCIi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 22:08:38 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38514 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752517Ab0IVCIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 21:56:45 -0400
-Date: Tue, 21 Sep 2010 18:56:02 -0700
-From: matt mooney <mfm@muteddisk.com>
-To: Tim Gardner <tim.gardner@canonical.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org,
-        Brett Rudley <brudley@broadcom.com>,
-        Henry Ptasinski <henryp@broadcom.com>, Nohee Ko <noheek@broadcom.com>
-Subject: Re: [PATCH] staging: brcm80211: Make CFLAGS explicit
-Message-ID: <20100922015602.GB12118@haskell.muteddisk.com>
-Mail-Followup-To: Tim Gardner <tim.gardner@canonical.com>, gregkh@suse.de,
-	linux-kernel@vger.kernel.org, Brett Rudley <brudley@broadcom.com>,
-	Henry Ptasinski <henryp@broadcom.com>,
-	Nohee Ko <noheek@broadcom.com>
-References: <1284736810-2940-1-git-send-email-tim.gardner@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284736810-2940-1-git-send-email-tim.gardner@canonical.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 21 Sep 2010 22:08:37 -0400
+Date: Tue, 21 Sep 2010 19:08:16 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Josh Hill <joshua.hill@gmail.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        alan@redhat.com, stable@kernel.org, Thomas Renninger <trenn@suse.de>,
+        Matthew Garrett <mjg@redhat.com>, "Zhang, Rui" <rui.zhang@intel.com>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [2.6.35-rc5] hp-wmi patch missed .35 merge window, requesting
+ addition to next rc
+Message-Id: <20100921190816.e6ca6a72.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTimOVY+iOOMKhwFfX5Wcw1y_PcvoCCfEcjoPmj3J@mail.gmail.com>
+References: <AANLkTimOVY+iOOMKhwFfX5Wcw1y_PcvoCCfEcjoPmj3J@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09:20 Fri 17 Sep     , Tim Gardner wrote:
-> -EXTRA_CFLAGS := -DBCMDBG -DWLC_HIGH -DSTA -DWME -DWL11N -DDBAND -DBCMDMA32 -DBCMNVRAMR -Idrivers/staging/brcm80211/sys -Idrivers/staging/brcm80211/phy -Idrivers/staging/brcm80211/util -Idrivers/staging/brcm80211/include -Wall -Wstrict-prototypes -Werror -Wmissing-prototypes
-> +EXTRA_CFLAGS := -DBCMDBG -DWME -DWL11N -DDBAND -DBCMDMA32 -DBCMNVRAMR -Idrivers/staging/brcm80211/sys -Idrivers/staging/brcm80211/phy -Idrivers/staging/brcm80211/util -Idrivers/staging/brcm80211/include -Wall -Wstrict-prototypes -Werror -Wmissing-prototypes
+(cc's added)
 
-Also, since you are changing this file, you should use ccflags-y instead of the
-deprecated EXTRA_CFLAGS.
+On Tue, 21 Sep 2010 10:23:57 -0700 Josh Hill <joshua.hill@gmail.com> wrote:
 
-Thanks,
-mfm
+> please cc as i'm unsubscribed
+> as reported in this bug: https://bugzilla.kernel.org/show_bug.cgi?id=15344
+> and the patch: http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=751ae808f6b29803228609f51aa1ae057f5c576e
+> 
+> the backlight on this laptop goes down one level whenever
+> /proc/acpi/ac_adapter/*/status is read.
+> i've been told the patch missed the .35 merge window, and is going to
+> be in .36, but ubuntu is
+> going to release 10.10 soon with .35 in it, and if this patch doesn't
+> make it into .35 my laptop
+> will be doing this for its (10.10) entire lifetime. i didn't know who
+> to really contact and request this sort
+> of thing so i'm doing it here.
+
+The suggestion is that mainline's
+751ae808f6b29803228609f51aa1ae057f5c576e ("x86 platform drivers: hp-wmi
+Reorder event id processing") be backported into 2.6.35.x to fix the
+post-2.6.32 regression described in
+https://bugzilla.kernel.org/show_bug.cgi?id=15344
+
+
