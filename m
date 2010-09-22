@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524Ab0IVIyz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 04:54:55 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:52833 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422Ab0IVIyy (ORCPT
+	id S1752803Ab0IVI4N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 04:56:13 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:55201 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751422Ab0IVI4M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 04:54:54 -0400
-To: Neeraj Kumar <neeraj.kumar01@ymail.com>
-CC: linux-kernel@vger.kernel.org
-In-reply-to: <633175.66987.qm@web113411.mail.gq1.yahoo.com> (message from
-	Neeraj Kumar on Mon, 20 Sep 2010 13:12:22 -0700 (PDT))
-Subject: Re: Doing a zero-copy move of data from a kernel buffer to hard disk
-References: <633175.66987.qm@web113411.mail.gq1.yahoo.com>
-Message-Id: <E1OyL6H-0002wC-GV@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Wed, 22 Sep 2010 10:54:49 +0200
+	Wed, 22 Sep 2010 04:56:12 -0400
+Subject: Re: [RFC] led-class: always implement blinking
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Richard Purdie <rpurdie@rpsys.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1285104248.1290.551.camel@rex>
+References: <1282296102.3785.28.camel@jlt3.sipsolutions.net>
+	 <20100921124419.6b88f7f6.akpm@linux-foundation.org>
+	 <1285098497.12764.18.camel@jlt3.sipsolutions.net>
+	 <1285104248.1290.551.camel@rex>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Sep 2010 10:56:06 +0200
+Message-ID: <1285145766.3684.6.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Sep 2010, Neeraj Kumar wrote:
-> I am trying to move data from a buffer in kernel space into the hard
-> disk without having to incur any additional copies from kernel buffer to
-> user buffers or any other kernel buffers. Any ideas/suggestions would be
-> most helpful.
+On Tue, 2010-09-21 at 22:24 +0100, Richard Purdie wrote:
+
+> > Well, this function gets assigned to led_cdev->blink_set(), which is a
+> > function pointer that takes pass-by-reference arguments. The comment
+> > there says:
+> > 
+> >         /* Activate hardware accelerated blink, delays are in
+> >          * miliseconds and if none is provided then a sensible default
+> >          * should be chosen. The call can adjust the timings if it can't
+> >          * match the values specified exactly. */
+> >         int             (*blink_set)(struct led_classdev *led_cdev,
+> >                                      unsigned long *delay_on,
+> >                                      unsigned long *delay_off);
+> > 
+> > but the software implementation doesn't adjust the timings, of course. I
+> > suppose the "adjust the timings" was also meant to update the values.
 > 
-> The use case is basically a demux driver which collects data into a
-> demux buffer in kernel space and this buffer has to be emptied
-> periodically by copying the contents into a FUSE-based partition on the
-> disk. As the buffer gets full, a user process is signalled which then
-> determines the sector numbers on the disk the contents need to be copied
-> to.
+> The idea was that hardware fallbacks would let the caller know what
+> values it had actually fallen back to. The software fallback using
+> timers is generic so doesn't need to change the values.
 > 
-> I was hoping to mmap the above demux kernel buffer into user address
-> space and issue a write system call to the raw partition device. But
-> from what I can see, the this data is being cached by the kernel on its
-> way to the Hard Disk driver. And so I am assuming that involves
-> additional copies by the linux kernel.
+> I've been meaning to look more closely at the patch but I haven't got to
+> it yet, sorry :(.
 
-Isn't this functionality already served by relayfs?
+Right. But I actually ran into problems here. I had to add another
+"blink_stop" software function, because even though the _internal_ code
+in led-class.c currently assumes calling blink_set(0, 0) will stop
+blinking, the documentation says that then it should chose a
+"user-friendly" blinking speed... So there are bugs in the current
+implementation, and not all LEDs implement this either.
 
-> At this point I am wondering if there is any other mechansim to do this
-> without involving additional copies by the kernel. I realize this is an
-> unsual usage scenario for non-embedded environments, but I would
-> appreciate any feedback on possible options.
-> 
-> BTW - I have tried using O_DIRECT when opening the raw partition, but
-> the subsequent write call fails if the buffer being passed is the
-> mmapped buffer.
+Additionally, blink_set() may return an error, in which case software
+fallback should be used.
 
-The other zero-copy  mechanism is splice(2).
+I solved this yesterday in a new version of my patch by adding new API
 
-Thanks,
-Miklos
+void led_classdev_blink_set(*dev, *on, *off)
+
+that will use blink_set() and then fall back to software.
+
+HOWEVER, if you use that, then just doing brightness_set(dev, LED_OFF)
+will not turn off blinking because we cannot hook into that from the
+software blinking implementation. There are two ways to solve this:
+
+a) provide a wrapper for brightness_set() as well, that will disable
+   software blink, and should be used in preference of calling the
+   function pointer directly, it may be an inline.
+
+b) provide a function led_classdev_blink_stop() that will turn off the
+   LED and stop the blinking
+
+Which one would you prefer?
+
+johannes
+
