@@ -1,118 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449Ab0IVVBs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 17:01:48 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:43895 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752085Ab0IVVBr (ORCPT
+	id S1755489Ab0IVVCe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 17:02:34 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:51247 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085Ab0IVVCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 17:01:47 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Hugh Dickins <hughd@google.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-References: <m1aanc3l3e.fsf@fess.ebiederm.org>
-	<m1zkvc26hg.fsf@fess.ebiederm.org>
-	<alpine.LSU.2.00.1009221215250.29127@tigran.mtv.corp.google.com>
-Date: Wed, 22 Sep 2010 14:01:41 -0700
-In-Reply-To: <alpine.LSU.2.00.1009221215250.29127@tigran.mtv.corp.google.com>
-	(Hugh Dickins's message of "Wed, 22 Sep 2010 12:31:05 -0700 (PDT)")
-Message-ID: <m1k4mdwkzu.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Wed, 22 Sep 2010 17:02:33 -0400
+Date: Wed, 22 Sep 2010 14:00:54 -0700
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
+        hughd@google.com, ngupta@vflare.org, JBeulich@novell.com,
+        chris.mason@oracle.com, kurt.hackel@oracle.com,
+        dave.mccracken@oracle.com, npiggin@kernel.dk,
+        akpm@linux-foundation.org, riel@redhat.com, mel@csn.ul.ie,
+        yinghan@google.com, gthelen@google.com, konrad.wilk@oracle.com
+Subject: [PATCH V3 3/4] Frontswap: add hooks in swap subsystem and extend
+Message-ID: <20100922210054.GA27690@ca-server1.us.oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 98.207.157.188
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Hugh Dickins <hughd@google.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 1/2] sysfs: Fail bin file mmap if vma close is implemented.
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Disposition: inline
+User-Agent: Mutt/1.5.16 (2007-06-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hugh Dickins <hughd@google.com> writes:
+[PATCH V3 3/4] Frontswap: add hooks in swap subsystem and extend
+try_to_unuse so that frontswap_shrink can do a "partial swapoff"
 
-> On Mon, 20 Sep 2010, Eric W. Biederman wrote:
->> 
->> It is not reasonably possible to wrap vma->close().  To correctly
->> wrap close would imply calling close on any vmas that remain when
->> sysfs_remove_bin_file is called.  Finding the proper lists walking
->> them getting the locking right etc, requires deep knowledge of the
->> mm subsystem and as such would require assistence from the mm
->> subsystem to implement.  That assistence does not currently exist.
->
-> Isn't it fair to assume that the call to sysfs_remove_bin_file() would
-> come from the module (or whatever) that would be handling the ->mmap,
-> ->open, ->close, ->fault etc. calls?
+Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 
-It is.
+Diffstat:
+ page_io.c                                |   12 ++++
+ swapfile.c                               |   58 +++++++++++++++++----
+ 2 files changed, 61 insertions(+), 9 deletions(-)
 
-> In which case, it has been kept up to date with the reference counting
-> so far: and if it judges that it's apppropriate now to remove bin file,
-> despite having received more mmaps and opens than closes, then I think
-> it should be allowed to make that decision (knowing that your sysfs end
-> will take care not to call it further), even though it wanted to support
-> close while the sysfs bin file was still there.
-
-sysfs is that reference counting layer and removes the burden of that
-decision from the drivers.
-
-There are two cases this can happen that are interesting: on rmmod of
-the driver, and when the underlying hardware for the driver is removed,
-thing usb or pci hotplug.  In those cases the driver really doesn't have
-much choice but to clean as best it can, blocking and waiting for
-references counts to go to zero is not a good option.
-
-> I think it would be nicer to leave the bin_vma_close() handling as you
-> had it before (but repositioning its sysfs_get_active more carefully,
-> as in your 2/2).
-
-I definitely agree that allowing an implementing that implements close
-would definitely be a good thing.  Especially as 44 out of 99
-vm_operations_structs implement close.  To implement close properly
-requires finding all of the vmas and calling the underlying close
-method, and for that I need support from the mm layer which I don't yet
-have.  Close is typically used to either free per vma state, or to
-decrement a reference count that open creates, so having mismatched
-open and closes really is a problem.
-
-In practice there are only two files that implement the mmap method
-of sysfs bin files.
-
-drivers/pci/pci-sysfs.c
-arch/alpha/kernel/pci-sysfs.c
-
-Which in their own way implement mmap for the pci memory mapped resource
-bars of given platform.   Each arch implements
-pci_mmap_legacy_page_range and pci_mmap_resource in their own way.  The
-few I have traced come down to io_remap_pfn_range which boils down to
-remap_pfn_range.  remap_pfn_range doesn't even install
-vm_operations_struct so in practice none of the sysfs vma methods get
-exercised.
-
-I complain in mmap in case some arch or some implementation is doing
-something strange that I missed, because I really do want to be as
-general as possible.
-
-I do have a generic version of this brewing that I hope to replace the
-sysfs version with that modifies the mm layer with the support I need,
-and I will copy you on that when I post it.  sysfs is not quite perfect
-but proc is actively broken in this area, and I don't know how many
-other places in the kernel need fixes.
-
-Eric
+--- linux-2.6.36-rc5/mm/swapfile.c	2010-09-20 17:56:53.000000000 -0600
++++ linux-2.6.36-rc5-frontswap/mm/swapfile.c	2010-09-22 09:45:01.000000000 -0600
+@@ -30,6 +30,8 @@
+ #include <linux/capability.h>
+ #include <linux/syscalls.h>
+ #include <linux/memcontrol.h>
++#include <linux/frontswap.h>
++#include <linux/swapfile.h>
+ 
+ #include <asm/pgtable.h>
+ #include <asm/tlbflush.h>
+@@ -41,7 +43,7 @@ static bool swap_count_continued(struct 
+ static void free_swap_count_continuations(struct swap_info_struct *);
+ static sector_t map_swap_entry(swp_entry_t, struct block_device**);
+ 
+-static DEFINE_SPINLOCK(swap_lock);
++DEFINE_SPINLOCK(swap_lock);
+ static unsigned int nr_swapfiles;
+ long nr_swap_pages;
+ long total_swap_pages;
+@@ -52,9 +54,9 @@ static const char Unused_file[] = "Unuse
+ static const char Bad_offset[] = "Bad swap offset entry ";
+ static const char Unused_offset[] = "Unused swap offset entry ";
+ 
+-static struct swap_list_t swap_list = {-1, -1};
++struct swap_list_t swap_list = {-1, -1};
+ 
+-static struct swap_info_struct *swap_info[MAX_SWAPFILES];
++struct swap_info_struct *swap_info[MAX_SWAPFILES];
+ 
+ static DEFINE_MUTEX(swapon_mutex);
+ 
+@@ -584,6 +586,7 @@ static unsigned char swap_entry_free(str
+ 			swap_list.next = p->type;
+ 		nr_swap_pages++;
+ 		p->inuse_pages--;
++		frontswap_flush_page(p->type, offset);
+ 		if ((p->flags & SWP_BLKDEV) &&
+ 				disk->fops->swap_slot_free_notify)
+ 			disk->fops->swap_slot_free_notify(p->bdev, offset);
+@@ -1047,7 +1050,7 @@ static int unuse_mm(struct mm_struct *mm
+  * Recycle to start on reaching the end, returning 0 when empty.
+  */
+ static unsigned int find_next_to_unuse(struct swap_info_struct *si,
+-					unsigned int prev)
++					unsigned int prev, bool frontswap)
+ {
+ 	unsigned int max = si->max;
+ 	unsigned int i = prev;
+@@ -1073,6 +1076,12 @@ static unsigned int find_next_to_unuse(s
+ 			prev = 0;
+ 			i = 1;
+ 		}
++		if (frontswap) {
++			if (frontswap_test(si, i))
++				break;
++			else
++				continue;
++		}
+ 		count = si->swap_map[i];
+ 		if (count && swap_count(count) != SWAP_MAP_BAD)
+ 			break;
+@@ -1084,8 +1093,12 @@ static unsigned int find_next_to_unuse(s
+  * We completely avoid races by reading each swap page in advance,
+  * and then search for the process using it.  All the necessary
+  * page table adjustments can then be made atomically.
++ *
++ * if the boolean frontswap is true, only unuse pages_to_unuse pages;
++ * pages_to_unuse==0 means all pages
+  */
+-static int try_to_unuse(unsigned int type)
++int try_to_unuse(unsigned int type, bool frontswap,
++		 unsigned long pages_to_unuse)
+ {
+ 	struct swap_info_struct *si = swap_info[type];
+ 	struct mm_struct *start_mm;
+@@ -1118,7 +1131,7 @@ static int try_to_unuse(unsigned int typ
+ 	 * one pass through swap_map is enough, but not necessarily:
+ 	 * there are races when an instance of an entry might be missed.
+ 	 */
+-	while ((i = find_next_to_unuse(si, i)) != 0) {
++	while ((i = find_next_to_unuse(si, i, frontswap)) != 0) {
+ 		if (signal_pending(current)) {
+ 			retval = -EINTR;
+ 			break;
+@@ -1285,6 +1298,10 @@ static int try_to_unuse(unsigned int typ
+ 		 * interactive performance.
+ 		 */
+ 		cond_resched();
++		if (frontswap && pages_to_unuse > 0) {
++			if (!--pages_to_unuse)
++				break;
++		}
+ 	}
+ 
+ 	mmput(start_mm);
+@@ -1610,7 +1627,7 @@ SYSCALL_DEFINE1(swapoff, const char __us
+ 	spin_unlock(&swap_lock);
+ 
+ 	current->flags |= PF_OOM_ORIGIN;
+-	err = try_to_unuse(type);
++	err = try_to_unuse(type, false, 0);
+ 	current->flags &= ~PF_OOM_ORIGIN;
+ 
+ 	if (err) {
+@@ -1662,9 +1679,12 @@ SYSCALL_DEFINE1(swapoff, const char __us
+ 	swap_map = p->swap_map;
+ 	p->swap_map = NULL;
+ 	p->flags = 0;
++	frontswap_flush_area(type);
+ 	spin_unlock(&swap_lock);
+ 	mutex_unlock(&swapon_mutex);
+ 	vfree(swap_map);
++	if (p->frontswap_map)
++		vfree(p->frontswap_map);
+ 	/* Destroy swap account informatin */
+ 	swap_cgroup_swapoff(type);
+ 
+@@ -1820,6 +1840,7 @@ SYSCALL_DEFINE2(swapon, const char __use
+ 	unsigned long maxpages;
+ 	unsigned long swapfilepages;
+ 	unsigned char *swap_map = NULL;
++	unsigned long *frontswap_map = NULL;
+ 	struct page *page = NULL;
+ 	struct inode *inode = NULL;
+ 	int did_down = 0;
+@@ -2041,6 +2062,12 @@ SYSCALL_DEFINE2(swapon, const char __use
+ 		error = -EINVAL;
+ 		goto bad_swap;
+ 	}
++	/* frontswap enabled? set up bit-per-page map for frontswap */
++	if (frontswap_enabled) {
++		frontswap_map = vmalloc(maxpages / sizeof(long));
++		if (frontswap_map)
++			memset(frontswap_map, 0, maxpages / sizeof(long));
++	}
+ 
+ 	if (p->bdev) {
+ 		if (blk_queue_nonrot(bdev_get_queue(p->bdev))) {
+@@ -2059,16 +2086,18 @@ SYSCALL_DEFINE2(swapon, const char __use
+ 	else
+ 		p->prio = --least_priority;
+ 	p->swap_map = swap_map;
++	p->frontswap_map = frontswap_map;
+ 	p->flags |= SWP_WRITEOK;
+ 	nr_swap_pages += nr_good_pages;
+ 	total_swap_pages += nr_good_pages;
+ 
+ 	printk(KERN_INFO "Adding %uk swap on %s.  "
+-			"Priority:%d extents:%d across:%lluk %s%s\n",
++			 "Priority:%d extents:%d across:%lluk %s%s%s\n",
+ 		nr_good_pages<<(PAGE_SHIFT-10), name, p->prio,
+ 		nr_extents, (unsigned long long)span<<(PAGE_SHIFT-10),
+ 		(p->flags & SWP_SOLIDSTATE) ? "SS" : "",
+-		(p->flags & SWP_DISCARDABLE) ? "D" : "");
++		(p->flags & SWP_DISCARDABLE) ? "D" : "",
++		(p->frontswap_map) ? "FS" : "");
+ 
+ 	/* insert swap space into swap_list: */
+ 	prev = -1;
+@@ -2082,6 +2111,7 @@ SYSCALL_DEFINE2(swapon, const char __use
+ 		swap_list.head = swap_list.next = type;
+ 	else
+ 		swap_info[prev]->next = type;
++	frontswap_init(type);
+ 	spin_unlock(&swap_lock);
+ 	mutex_unlock(&swapon_mutex);
+ 	error = 0;
+@@ -2266,6 +2296,10 @@ int valid_swaphandles(swp_entry_t entry,
+ 		base++;
+ 
+ 	spin_lock(&swap_lock);
++	if (frontswap_test(si, target)) {
++		spin_unlock(&swap_lock);
++		return 0;
++	}
+ 	if (end > si->max)	/* don't go beyond end of map */
+ 		end = si->max;
+ 
+@@ -2276,6 +2310,9 @@ int valid_swaphandles(swp_entry_t entry,
+ 			break;
+ 		if (swap_count(si->swap_map[toff]) == SWAP_MAP_BAD)
+ 			break;
++		/* Don't read in frontswap pages */
++		if (frontswap_test(si, toff))
++			break;
+ 	}
+ 	/* Count contiguous allocated slots below our target */
+ 	for (toff = target; --toff >= base; nr_pages++) {
+@@ -2284,6 +2321,9 @@ int valid_swaphandles(swp_entry_t entry,
+ 			break;
+ 		if (swap_count(si->swap_map[toff]) == SWAP_MAP_BAD)
+ 			break;
++		/* Don't read in frontswap pages */
++		if (frontswap_test(si, toff))
++			break;
+ 	}
+ 	spin_unlock(&swap_lock);
+ 
+--- linux-2.6.36-rc5/mm/page_io.c	2010-09-20 17:56:53.000000000 -0600
++++ linux-2.6.36-rc5-frontswap/mm/page_io.c	2010-09-21 13:58:02.000000000 -0600
+@@ -18,6 +18,7 @@
+ #include <linux/bio.h>
+ #include <linux/swapops.h>
+ #include <linux/writeback.h>
++#include <linux/frontswap.h>
+ #include <asm/pgtable.h>
+ 
+ static struct bio *get_swap_bio(gfp_t gfp_flags,
+@@ -98,6 +99,12 @@ int swap_writepage(struct page *page, st
+ 		unlock_page(page);
+ 		goto out;
+ 	}
++	if (frontswap_put_page(page) == 0) {
++		set_page_writeback(page);
++		unlock_page(page);
++		end_page_writeback(page);
++		goto out;
++	}
+ 	bio = get_swap_bio(GFP_NOIO, page, end_swap_bio_write);
+ 	if (bio == NULL) {
+ 		set_page_dirty(page);
+@@ -122,6 +129,11 @@ int swap_readpage(struct page *page)
+ 
+ 	VM_BUG_ON(!PageLocked(page));
+ 	VM_BUG_ON(PageUptodate(page));
++	if (frontswap_get_page(page) == 0) {
++		SetPageUptodate(page);
++		unlock_page(page);
++		goto out;
++	}
+ 	bio = get_swap_bio(GFP_KERNEL, page, end_swap_bio_read);
+ 	if (bio == NULL) {
+ 		unlock_page(page);
