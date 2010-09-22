@@ -1,95 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533Ab0IVRKx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 13:10:53 -0400
-Received: from xenotime.net ([72.52.115.56]:37393 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752650Ab0IVRKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 13:10:51 -0400
-Date: Wed, 22 Sep 2010 10:10:47 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Daniel Drake <dsd@laptop.org>
-Cc: tglx@linutronix.de, jbarnes@virtuousgeek.org, linux-pci@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org, dilinger@queued.net
-Subject: Re: [PATCH 2/3] PCI: OLPC configuration cleanup
-Message-Id: <20100922101047.86a6cfcb.rdunlap@xenotime.net>
-In-Reply-To: <20100922164402.A72D49D401B@zog.reactivated.net>
-References: <20100922164402.A72D49D401B@zog.reactivated.net>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753653Ab0IVRNu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 13:13:50 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:57286 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753205Ab0IVRNt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 13:13:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:from:date:message-id:subject:to:content-type;
+        b=NNv4hqoyX5NogkYkyH5zaJ/dtA4aFQYbJCoUptrBoLtmJH3fZvkPU8qEDxzIMXD5A3
+         zmu3lAKgvWFP5Wu4BfjBrpgozCn0oOwnVw7EANkBOF17MjUUu/RQ8NirfaXBCAJVkWiP
+         p5TFXF8UJBtX60CxuDeZ8vMuHhYVDFSDzT8Fw=
+MIME-Version: 1.0
+Reply-To: mtk.manpages@gmail.com
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+Date: Wed, 22 Sep 2010 19:13:26 +0200
+Message-ID: <AANLkTimurFK6syJRZaxzZ7i64t45z5ePqrTKS_epoKCo@mail.gmail.com>
+Subject: man-pages-3.27 is released
+To: lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Sep 2010 17:44:02 +0100 (BST) Daniel Drake wrote:
+Gidday,
 
-> An OLPC system isn't usable without PCI, so we can simplify the
-> configuration here.
+I've released man-pages-3.27.tar.gz - man pages for Linux
 
-preferably by using "depends on" instead of "select".
+This release is now available for download at:
 
+http://www.kernel.org/pub/linux/docs/man-pages
+or ftp://ftp.kernel.org/pub/linux/docs/man-pages
 
-> Also updated the code to be clearer that this is only for XO-1, and
-> fixed an issue where the XO-1 PCI configuration override was being
-> applied for XO-1.5 laptops.
-> 
-> Based on earlier work by Deepak Saxena.
-> 
-> Signed-off-by: Daniel Drake <dsd@laptop.org>
-> ---
->  arch/x86/Kconfig       |   12 +++---------
->  arch/x86/kernel/olpc.c |    4 +---
->  arch/x86/pci/Makefile  |    2 +-
->  arch/x86/pci/olpc.c    |    4 ++--
->  4 files changed, 7 insertions(+), 15 deletions(-)
-> 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index cea0cd9..708ee0d 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -1899,10 +1899,6 @@ config PCI_GOMMCONFIG
->  config PCI_GODIRECT
->  	bool "Direct"
->  
-> -config PCI_GOOLPC
-> -	bool "OLPC"
-> -	depends on OLPC
-> -
->  config PCI_GOANY
->  	bool "Any"
->  
-> @@ -1915,16 +1911,12 @@ config PCI_BIOS
->  # x86-64 doesn't support PCI BIOS access from long mode so always go direct.
->  config PCI_DIRECT
->  	def_bool y
-> -	depends on PCI && (X86_64 || (PCI_GODIRECT || PCI_GOANY || PCI_GOOLPC))
-> +	depends on PCI && (X86_64 || (PCI_GODIRECT || PCI_GOANY))
->  
->  config PCI_MMCONFIG
->  	def_bool y
->  	depends on X86_32 && PCI && (ACPI || SFI) && (PCI_GOMMCONFIG || PCI_GOANY)
->  
-> -config PCI_OLPC
-> -	def_bool y
-> -	depends on PCI && OLPC && (PCI_GOOLPC || PCI_GOANY)
-> -
->  config PCI_DOMAINS
->  	def_bool y
->  	depends on PCI
-> @@ -2060,6 +2052,8 @@ config SCx200HR_TIMER
->  
->  config OLPC
->  	bool "One Laptop Per Child support"
-> +	select PCI
-> +	select PCI_GOANY
->  	select GPIOLIB
->  	---help---
->  	  Add support for detecting the unique features of the OLPC
+The man-pages git repository is here:
+
+git://git.kernel.org/pub/scm/docs/man-pages/man-pages.git
+
+The online changelog is available at
+http://www.kernel.org/doc/man-pages/changelog.html (blogged at
+http://linux-man-pages.blogspot.com/2010/09/man-pages-327-is-released.html
+) and the current version of the pages is browsable at
+http://www.kernel.org/doc/man-pages/
+A few changes in this release that may be of interest to readers of this
+list are listed below.
+
+Cheers,
+
+Michael
+
+==================== Changes in man-pages-3.27 ====================
+
+New and rewritten pages
+-----------------------
+
+sigevent.7
+    Petr Baudis, Michael Kerrisk
+        New page to centralize description of sigevent structure
+            Several interfaces use this structure. Best to centralize the
+            common details in one place. Content taken from the existing
+            timerfd_create.2 and mq_open.3 pages, with additions by
+            Petr Baudis and Michael Kerrisk.
 
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Newly documented interfaces in existing pages
+---------------------------------------------
+
+ip.7
+    Jiri Olsa
+        Document IP_NODEFRAG
+            This option is new in Linux 2.6.36
+
+unix.7
+    Michael Kerrisk
+        Document SIOCINQ ioctl() operation
+
+
+Many pages
+    Michael Kerrisk
+        Add/fix/update feature test macro requirements in SYNOPSIS
+            Various changes to:
+            * Update feature test requirements to note changes in
+              recent glibc releases
+            * Correct errors in feature test macro requirements
+            * Add feature test macro requirements to pages where
+              the requirements were not previously stated.
+
+
+Changes to individual pages
+---------------------------
+
+getrlimit.2
+    Michael Kerrisk
+        Document units for RLIMIT_RTTIME limit
+            This limit is in microseconds
+
+            http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=596492
+
+mount.2
+    Michael Kerrisk
+        Definitions of various MS_* constants only appeared in glibc 2.12
+            See http://sourceware.org/bugzilla/show_bug.cgi?id=11235
+
+stat.2
+    Michael Kerrisk
+        Update information on nanosecond timestamp fields
+            Update feature test macro requirements for exposing these fields.
+            Note that these fields are specified in POSIX.1-2008.
+
+rand.3
+    Michael Kerrisk
+        Clarify description of range of returned value
+        Add an example program
+        Expand description of rand_r()
+
+random.3
+    W. Trevor King
+        Update initstate() return value description to match glibc
+
+feature_test_macros.7
+    Michael Kerrisk
+        Make text on required placement of macros more prominent
+            Move the text that notes the requirement that feature test macros
+            must be defined before including any header files to the top of
+            the page, and highlight the text further, so that the reader will
+            not miss this point.
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
