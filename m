@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751141Ab0IVXZs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 19:25:48 -0400
-Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:39043 "EHLO
-	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750782Ab0IVXZr (ORCPT
+	id S1751953Ab0IVX1Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 19:27:25 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:19598 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983Ab0IVX1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 19:25:47 -0400
-Date: Wed, 22 Sep 2010 16:24:58 -0700
-From: matt mooney <mfm@muteddisk.com>
-To: Tracey Dent <tdent48227@gmail.com>
-Cc: greg@kroah.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] Staging: rtl8187se: r8180.h: fixed alot of
- checkpatch.pl issues
-Message-ID: <20100922232458.GB18432@haskell.muteddisk.com>
-Mail-Followup-To: Tracey Dent <tdent48227@gmail.com>, greg@kroah.com,
-	linux-kernel@vger.kernel.org
-References: <1285031982-3870-1-git-send-email-tdent48227@gmail.com>
+	Wed, 22 Sep 2010 19:27:24 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=Yw84+dNNJCnkb7oJoMnztskJT3/iE5yOLfGMCeDixMX6HcPoiubMtGwp3PAWE85Po
+	LyG/ejv1TGwM7mTIzYG8A==
+Date: Wed, 22 Sep 2010 16:27:16 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Bjorn Helgaas <bjorn.helgaas@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: tidy e820 output
+In-Reply-To: <4C9A8E4C.9030504@zytor.com>
+Message-ID: <alpine.DEB.2.00.1009221622410.27644@chino.kir.corp.google.com>
+References: <20100922172744.19085.41844.stgit@bob.kio> <201009221220.34066.bjorn.helgaas@hp.com> <4C9A4AAF.3030503@zytor.com> <201009221253.01049.bjorn.helgaas@hp.com> <4C9A51DC.5020009@zytor.com> <alpine.DEB.2.00.1009221541350.22070@chino.kir.corp.google.com>
+ <4C9A881B.9010309@zytor.com> <alpine.DEB.2.00.1009221607590.22070@chino.kir.corp.google.com> <4C9A8E4C.9030504@zytor.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1285031982-3870-1-git-send-email-tdent48227@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21:19 Mon 20 Sep     , Tracey Dent wrote:
-> Fixed numerous coding style issues
+On Wed, 22 Sep 2010, H. Peter Anvin wrote:
+
+> > I'm referring to using [start, start + addr - 1] in the output, like 
+> > /sys/firmware/memmap does, as opposed to [start, start + addr].  Is it not 
+> > valuable to include the actual e820 map in some way, especially when you 
+> > have your own BIOS?  We've always used this output since it isn't 
+> > available later.
 > 
-The subject should be more specific as to what the patch does, such as
-"Staging: rtl8187se: r8180.h: whitespace cleanup."
+> "The actual e820 map" contains (start, length, type) -- the end bracket
+> is not part of it at all.  Either way, /sys/firmware/memmap does provide
+> the memory map as provided by the firmware through whatever means.
+> 
 
-And the explanation in the commit should also be more specific. There are
-plenty of examples if you look through the log. Greg might except them as is,
-but any future patches should follow the advice mentioned. Next time for a
-patch of this nature remember to CC kernel-janitors too. 
-
-Thanks,
-mfm
+Ok, I agree that fixing the off-by-1 problem that's been there for ages is 
+better and worth modifying our scripts when they break.  Thanks!
