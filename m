@@ -1,119 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812Ab0IVOIk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 10:08:40 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43623 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752016Ab0IVOIj (ORCPT
+	id S1754073Ab0IVONQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 10:13:16 -0400
+Received: from tomts40.bellnexxia.net ([209.226.175.97]:51048 "EHLO
+	tomts40-srv.bellnexxia.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753102Ab0IVONP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 10:08:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=On636Apv04jz61/IpV3O5rmSwW/8EScQfws7cTHvHJu05c0wPz6A22i5gVa1hlrO+R
-         KnKEbFguoxd15K/Xv/iAdBbc27TndZCNWlGryADyGcNrXecAkx6b86woy1dJ5t5xhtkC
-         zCavP4UUzjfAko5K0s3Q8eNhhogztSeUyZ4Gk=
-Subject: Re: [REGRESSION] cdrom drive doesn't detect removal
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Kay Sievers <kay.sievers@vrfy.org>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-In-Reply-To: <1285162900.3335.15.camel@maxim-laptop>
-References: <1284284969.2928.18.camel@maxim-laptop>
-	 <1284427621.4127.7.camel@maxim-laptop> <4C8F2699.3020509@kernel.org>
-	 <AANLkTinGHB9fbLw1Cm5wvPLGy8QEuoBBmFiqpnvXiZ8R@mail.gmail.com>
-	 <1284507516.4963.2.camel@maxim-laptop>
-	 <AANLkTimFpyYab69=XQVZc+P50v6_uVr6UbA246Fnm3-u@mail.gmail.com>
-	 <1284511071.3551.1.camel@maxim-laptop>
-	 <AANLkTikF37hN7dFqPbCp-gcim7SarveaTrjXipnGpJM7@mail.gmail.com>
-	 <20100915132731.GA20558@khazad-dum.debian.net>
-	 <AANLkTinGDUxsgaGey7EnYOu3kKP-YRE00gL33hiKvAWj@mail.gmail.com>
-	 <1284589207.4672.3.camel@maxim-laptop>
-	 <AANLkTin37rbEbcGDejhcsnxZNYhhUWGy+x=v4Y=s0_Qx@mail.gmail.com>
-	 <1285069338.3124.4.camel@maxim-laptop>
-	 <1285110590.2822.9.camel@maxim-laptop>  <4C99B25D.20805@kernel.org>
-	 <1285162900.3335.15.camel@maxim-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 22 Sep 2010 15:58:31 +0200
-Message-ID: <1285163911.3159.5.camel@maxim-laptop>
+	Wed, 22 Sep 2010 10:13:15 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEALqpmUxGGN6i/2dsb2JhbACiLnLDUoVBBI8w
+Date: Wed, 22 Sep 2010 10:03:11 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Andi Kleen <andi@firstfloor.org>, jbaron@redhat.com, rostedt@goodmis.com,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, hpa@zytor.com,
+        roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/2] Add for_each_module iterator function
+Message-ID: <20100922140310.GA30730@Krystal>
+References: <1285150102-5506-1-git-send-email-andi@firstfloor.org> <alpine.LFD.2.00.1009221424590.2416@localhost6.localdomain6>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1009221424590.2416@localhost6.localdomain6>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 10:02:05 up 167 days, 23:52,  2 users,  load average: 0.12, 0.12,
+	0.04
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-09-22 at 15:41 +0200, Maxim Levitsky wrote: 
-> On Wed, 2010-09-22 at 09:38 +0200, Tejun Heo wrote: 
-> > Hello,
+* Thomas Gleixner (tglx@linutronix.de) wrote:
+> 
+> 
+> On Wed, 22 Sep 2010, Andi Kleen wrote:
+> 
+> > From: Andi Kleen <ak@linux.intel.com>
 > > 
-> > On 09/22/2010 01:09 AM, Maxim Levitsky wrote:
-> > > I just did a strace on udisks, and it is pretty much self explanatory.
-> > > (While CD is mounted).
-> > > 
-> > > open("/dev/sr0", O_RDONLY|O_EXCL|O_NONBLOCK) = -1 EBUSY (Device or resource busy)
-> > > poll([{fd=5, events=POLLIN}, {fd=3, events=POLLIN}], 2, 1997) = 0 (Timeout)
-> > > open("/dev/sr0", O_RDONLY|O_EXCL|O_NONBLOCK) = -1 EBUSY (Device or resource busy)
-> > > poll([{fd=5, events=POLLIN}, {fd=3, events=POLLIN}], 2, 1997) = 0 (Timeout)
-> > > open("/dev/sr0", O_RDONLY|O_EXCL|O_NONBLOCK) = -1 EBUSY (Device or resource busy)
-> > > poll([{fd=5, events=POLLIN}, {fd=3, events=POLLIN}], 2, 1997) = 0 (Timeout)
-> > > open("/dev/sr0", O_RDONLY|O_EXCL|O_NONBLOCK) = -1 EBUSY (Device or resource busy)
-> > > 
-> > > Sure, a filesystem is mounted, so exclusive access fails...
-> > > 
-> > > So, we end up with impossible to solve problem.  We want on one hand
-> > > to guard the burner against polling programs that disturb it, but
-> > > one the other hand we must do polling to check CD status.
-> > >
-> > > Unless the kernel does the polling, but then we also must stop it
-> > > when burning is done.  I think that we need new ioctl in the CD
-> > > driver that would give absolute access to the burning application,
-> > > and lock it fully.
+> > This is a generic function to iterate over all modules.
+> > To be used in the next patch.
 > > 
-> > One thing I don't get is why the behavior changed after the claiming
-> > block patch.  Can you please trace udisks from a previous working
-> > kernel?
+> > Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> > ---
+> >  include/linux/module.h |    1 +
+> >  kernel/module.c        |   10 ++++++++++
+> >  2 files changed, 11 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/include/linux/module.h b/include/linux/module.h
+> > index 403ac26..809b6db 100644
+> > --- a/include/linux/module.h
+> > +++ b/include/linux/module.h
+> > @@ -410,6 +410,7 @@ struct module *__module_address(unsigned long addr);
+> >  bool is_module_address(unsigned long addr);
+> >  bool is_module_percpu_address(unsigned long addr);
+> >  bool is_module_text_address(unsigned long addr);
+> > +void for_each_module(void (*op)(struct module *, void *arg), void *arg);
+> >  
+> >  static inline int within_module_core(unsigned long addr, struct module *mod)
+> >  {
+> > diff --git a/kernel/module.c b/kernel/module.c
+> > index eba1341..b8fb3e6 100644
+> > --- a/kernel/module.c
+> > +++ b/kernel/module.c
+> > @@ -384,6 +384,16 @@ struct module *find_module(const char *name)
+> >  }
+> >  EXPORT_SYMBOL_GPL(find_module);
+> >  
+> > +void for_each_module(void (*op)(struct module *, void *arg), void *arg)
+> > +{
+> > +	struct module *mod;
+> > +
+> > +	preempt_disable();
 > 
-> It shows pretty much same output.
-> The difference here is, even though open fails, it still has a side
-> effect of polling the driver, a bug that bisected commit fixed.
-> 
-> So problem is clear, but how to fix it, I don't know...
-> 
-> Also about the exclusive mode, how exactly is it defined?
-> open manpage is somewhat sparse about it.
-> 
-> Regardless of the above a complete solution is:
-> 
-> 1. Make exclusive opens really exclusive.
-> That is if someone opens a device with exclusive access, no more opens
-> will succeed.
-And as a follow-up, indeed hal first tries exclusive open, and if it
-fails, it retries with non-exclusive open, and it succeeds.
-And that somewhat makes me think that exclusive open is pretty much
-useless.
-Look if it fails. sure the device is open, but if doesn't fail, nothing
-prevents a bit less honest clients (that don't use exclusive open) to
-open the device. How exclusive such an open is then?
+>   That wants rcu_read_lock()
 
-So I mean exclusive open should really block _all_ following opens of
-the device, exclusive or not.
-Btw I had few failed dual layer disk burns that failed just after write
-of few MBs. I wouldn't be surprised if this was the cause.
+Then we might need to add synchronize_rcu() call when modules are
+unloaded. For now, there is only synchronize_sched().
 
+Mathieu
 
 > 
-> 2. Add in-kernel polling, and stop it as as soon as an exclusive open is
-> done.
+> > +	list_for_each_entry_rcu(mod, &modules, list)
+> > +		op(mod, arg);
+> > +	preempt_enable();
 > 
-> 3. Make sure that userspace doesn't touch the cdrom device anymore.
-> Few patches to udisks and hal will do.
+> Thanks,
 > 
+> 	tglx
 
-Best regards,
-	Maxim Levitsky
-
-
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
