@@ -1,87 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755457Ab0IVTuL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 15:50:11 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:5808 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752803Ab0IVTuK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 15:50:10 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=Y3m52sWPA2Ym0x4eJJLk3irQXH9dLa7gY+mAaZI8dl8zsR5EG19I2UKtkl7JhvWan
-	mHuO41YVdEFTY7KF4tkZQ==
-Date: Wed, 22 Sep 2010 12:49:51 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hughd@tigran.mtv.corp.google.com
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 2/2] sysfs: only access bin file vm_ops with the active
- lock
-In-Reply-To: <m1vd6026gg.fsf@fess.ebiederm.org>
-Message-ID: <alpine.LSU.2.00.1009221231251.29127@tigran.mtv.corp.google.com>
-References: <m1aanc3l3e.fsf@fess.ebiederm.org> <m1vd6026gg.fsf@fess.ebiederm.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S1755489Ab0IVTu4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 15:50:56 -0400
+Received: from mx2.compro.net ([12.186.155.4]:44420 "EHLO mx2.compro.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752492Ab0IVTuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 15:50:55 -0400
+X-Greylist: delayed 846 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Sep 2010 15:50:55 EDT
+X-IronPort-AV: E=Sophos;i="4.57,219,1283745600"; 
+   d="scan'208";a="5845344"
+Message-ID: <4C9A5AD0.5070804@compro.net>
+Date: Wed, 22 Sep 2010 15:36:48 -0400
+From: Mark Hounschell <markh@compro.net>
+Reply-To: markh@compro.net
+Organization: Compro Computer Svcs.
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: linux-kernel@vger.kernel.org
+Subject: line BRK detection on ttyS0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Sep 2010, Eric W. Biederman wrote:
-> 
-> bb->vm_ops is a cached copy of the vm_ops of the underlying
-> sysfs bin file, which means that after sysfs_bin_remove_file
-> completes it is only longer valid to deference bb->vm_ops.
-> 
-> So move all of the tests of bb->vm_ops inside of where
-> we hold the sysfs active lock.
-> 
-> Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
+Does the kernel support sending a SIGINT from a line BRK on ttyS0 to a thread of a process
+where the process has a controlling terminal that is NOT ttyS0 and the thread is using ttyS0
+in a cfmakeraw mode? I see doc that implies that ttyS0 must be the controlling terminal but
+can my thread have a controlling terminal while my main process has it's own? My thread
+cannot use the \377 \0 \0 char sequence because it is receiving and transmitting 8-bit binary
+data. Is there a way for the kernel to inform my thread, not my main process, of a line BRK?
+Or a way for my thread to ask the kernel if a line BRK occurred on ttyS0?
 
-Good point.  There's a couple of cases (the ones below) where you've
-changed the return value from success to failure when the entry point
-didn't exist for an object that is no longer active; but on reflection,
-I accept that's just not worth worrying about.
+Thanks and regards
+Mark
 
-Hugh
-
-> @@ -219,13 +222,12 @@ static int bin_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
->  	if (!bb->vm_ops)
->  		return VM_FAULT_SIGBUS;
->  
-> -	if (!bb->vm_ops->page_mkwrite)
-> -		return 0;
-> -
->  	if (!sysfs_get_active(attr_sd))
->  		return VM_FAULT_SIGBUS;
->  
-> -	ret = bb->vm_ops->page_mkwrite(vma, vmf);
-> +	ret = 0;
-> +	if (bb->vm_ops->page_mkwrite)
-> +		ret = bb->vm_ops->page_mkwrite(vma, vmf);
->  
->  	sysfs_put_active(attr_sd);
->  	return ret;
-
-> @@ -259,13 +263,15 @@ static int bin_set_policy(struct vm_area_struct *vma, struct mempolicy *new)
->  	struct sysfs_dirent *attr_sd = file->f_path.dentry->d_fsdata;
->  	int ret;
->  
-> -	if (!bb->vm_ops || !bb->vm_ops->set_policy)
-> +	if (!bb->vm_ops)
->  		return 0;
->  
->  	if (!sysfs_get_active(attr_sd))
->  		return -EINVAL;
->  
-> -	ret = bb->vm_ops->set_policy(vma, new);
-> +	ret = 0;
-> +	if (bb->vm_ops->set_policy)
-> +		ret = bb->vm_ops->set_policy(vma, new);
->  
->  	sysfs_put_active(attr_sd);
->  	return ret;
