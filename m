@@ -1,290 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab0IVWuB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 18:50:01 -0400
-Received: from smtp127.sbc.mail.sp1.yahoo.com ([69.147.65.186]:34773 "HELO
-	smtp127.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753236Ab0IVWtn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 18:49:43 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: uFMfytQVM1mInG7IpABIWsY.66RCH89VerZQLC1L5g_A8m7
- o7jpdt3OfzYX8ZVGd.RjveyLOOoi_P1uUtx71LY.b3fTK.6sSsSm0AqOoMyj
- oUjJ5DLnIahwiEkZrPS4a88RrcAWqj3M33.tJ2hvTptah2sR2AlhjHbC.n1I
- 8xQ8NDe76hsQpr3dtzwfINRiivZ7NmP1Z.ai7vMtZMto2YQwXD4i_TMLEfAk
- ByOlnWfi7.uZdcRxfNtI4z5QuqK3W7.PRxh1CREoO53jgVuiWLKdbykzN51U
- jumYyIin_gmEpY4i8ZDeF2NZy.RPznvjCra6w1AjK1ko3XM40rELA56EJ
-X-Yahoo-Newman-Property: ymail-3
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [RFC v2 07/21] tcm: Add HBA core infrastructure
-Date: Wed, 22 Sep 2010 15:49:40 -0700
-Message-Id: <1285195780-11554-1-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.5.6.5
+	id S1754426Ab0IVWxt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 18:53:49 -0400
+Received: from mga01.intel.com ([192.55.52.88]:58617 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754240Ab0IVWxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 18:53:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,220,1283756400"; 
+   d="scan'208";a="609475314"
+Message-ID: <4C9A88F3.7080802@linux.intel.com>
+Date: Wed, 22 Sep 2010 15:53:39 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+Organization: Intel Open Source Technology Center
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
+MIME-Version: 1.0
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+CC: Yinghai Lu <yinghai@kernel.org>, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, simon@fire.lp0.eu, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/pci] x86, pci: Ignore any PCI BARs that match an HPET
+ we already know about
+References: <20100922201547.3197.33702.stgit@bob.kio> <tip-e72a6c8f7ac715a9cdb473afbc30743348d0a1e2@git.kernel.org> <4C9A79BC.6020305@kernel.org> <201009221641.35871.bjorn.helgaas@hp.com>
+In-Reply-To: <201009221641.35871.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+On 09/22/2010 03:41 PM, Bjorn Helgaas wrote:
+>>
+>> It seems there is some problem here:
+>>
+>> hpet_res is inserted to resource with late_initcall().
+>> so if you don't touch that hpet address in bar and not put in the resource.
+>> kernel could allocate that address to other devices that doesn't get resource from BIOS.
+> 
+> Hmm, yes, that's a problem.  Let me look into it tomorrow; maybe we
+> can do something like setting IORESOURCE_PCI_FIXED instead of just
+> clearing out the resource.
+> 
+> Bjorn
 
-This patch adds the core struct se_hba functionality that is used internally by
-target_core_mod to group the same subsystem storage objects types until a single
-/sys/kernel/config/target/core/$HBA directory.  The HBA code supports boths
-physical storage objects (from Linux/SCSI) and virtual storage objects (from Linux/BLOCK,
-Linux/VFS, RAMDISK)
+OK, dropping the patch for now.
 
-Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
----
- drivers/target/target_core_hba.c |  211 ++++++++++++++++++++++++++++++++++++++
- drivers/target/target_core_hba.h |   14 +++
- 2 files changed, 225 insertions(+), 0 deletions(-)
- create mode 100644 drivers/target/target_core_hba.c
- create mode 100644 drivers/target/target_core_hba.h
-
-diff --git a/drivers/target/target_core_hba.c b/drivers/target/target_core_hba.c
-new file mode 100644
-index 0000000..d9e286c
---- /dev/null
-+++ b/drivers/target/target_core_hba.c
-@@ -0,0 +1,211 @@
-+/*******************************************************************************
-+ * Filename:  target_core_hba.c
-+ *
-+ * This file copntains the iSCSI HBA Transport related functions.
-+ *
-+ * Copyright (c) 2003, 2004, 2005 PyX Technologies, Inc.
-+ * Copyright (c) 2005, 2006, 2007 SBE, Inc.
-+ * Copyright (c) 2007-2010 Rising Tide Systems
-+ * Copyright (c) 2008-2010 Linux-iSCSI.org
-+ *
-+ * Nicholas A. Bellinger <nab@kernel.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ *
-+ ******************************************************************************/
-+
-+#include <linux/net.h>
-+#include <linux/string.h>
-+#include <linux/timer.h>
-+#include <linux/slab.h>
-+#include <linux/spinlock.h>
-+#include <linux/smp_lock.h>
-+#include <linux/in.h>
-+#include <net/sock.h>
-+#include <net/tcp.h>
-+
-+#include <target/target_core_base.h>
-+#include <target/target_core_device.h>
-+#include <target/target_core_device.h>
-+#include <target/target_core_tpg.h>
-+#include <target/target_core_transport.h>
-+
-+#include "target_core_hba.h"
-+
-+int core_get_hba(struct se_hba *hba)
-+{
-+	return ((mutex_lock_interruptible(&hba->hba_access_mutex) != 0) ?
-+		-1 : 0);
-+}
-+
-+struct se_hba *core_alloc_hba(void)
-+{
-+	struct se_hba *hba;
-+
-+	hba = kmem_cache_zalloc(se_hba_cache, GFP_KERNEL);
-+	if (!(hba)) {
-+		printk(KERN_ERR "Unable to allocate struct se_hba\n");
-+		return NULL;
-+	}
-+
-+	hba->hba_status |= HBA_STATUS_FREE;
-+	INIT_LIST_HEAD(&hba->hba_dev_list);
-+	spin_lock_init(&hba->device_lock);
-+	spin_lock_init(&hba->hba_queue_lock);
-+	mutex_init(&hba->hba_access_mutex);
-+	hba->hba_index = scsi_get_new_index(SCSI_INST_INDEX);
-+
-+	return hba;
-+}
-+EXPORT_SYMBOL(core_alloc_hba);
-+
-+void core_put_hba(struct se_hba *hba)
-+{
-+	mutex_unlock(&hba->hba_access_mutex);
-+}
-+EXPORT_SYMBOL(core_put_hba);
-+
-+/*	se_core_add_hba():
-+ *
-+ *
-+ */
-+int se_core_add_hba(
-+	struct se_hba *hba,
-+	const char *plugin_name,
-+	u32 plugin_dep_id)
-+{
-+	struct se_subsystem_api *t;
-+	int ret = 0;
-+
-+	if (hba->hba_status & HBA_STATUS_ACTIVE)
-+		return -EEXIST;
-+
-+	atomic_set(&hba->max_queue_depth, 0);
-+	atomic_set(&hba->left_queue_depth, 0);
-+
-+	t = transport_core_get_sub_by_name(plugin_name);
-+	if (!(t))
-+		return -EINVAL;
-+
-+	hba->transport = t;
-+	/*
-+	 * Get TCM subsystem api struct module reference to struct se_hba
-+	 */
-+	if (t->external_submod) {
-+		if (!(t->sub_owner)) {
-+			printk(KERN_ERR "Pointer to struct module does not"
-+				" exist for %s\n", t->name);
-+			hba->transport = NULL;
-+			transport_core_put_sub(t);
-+			return -EINVAL;
-+		}
-+		/*
-+		 * Grab a struct module reference count for subsystem plugin
-+		 */
-+		if (!(try_module_get(t->sub_owner))) {
-+			printk(KERN_ERR "try_module_get() failed for"
-+				" t->sub_owner\n");
-+			hba->transport = NULL;
-+			transport_core_put_sub(t);
-+			return -EINVAL;
-+		}
-+	}
-+
-+	ret = t->attach_hba(hba, plugin_dep_id);
-+	if (ret < 0) {
-+		hba->transport = NULL;
-+		if (t->external_submod)
-+			module_put(t->sub_owner);
-+		transport_core_put_sub(t);
-+		return ret;
-+	}
-+
-+	hba->hba_status &= ~HBA_STATUS_FREE;
-+	hba->hba_status |= HBA_STATUS_ACTIVE;
-+
-+	spin_lock(&se_global->hba_lock);
-+	hba->hba_id = se_global->g_hba_id_counter++;
-+	list_add_tail(&hba->hba_list, &se_global->g_hba_list);
-+	spin_unlock(&se_global->hba_lock);
-+
-+	printk(KERN_INFO "CORE_HBA[%d] - Attached HBA to Generic Target"
-+			" Core\n", hba->hba_id);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(se_core_add_hba);
-+
-+static int se_core_shutdown_hba(
-+	struct se_hba *hba)
-+{
-+	struct se_subsystem_api *t = hba->transport;;
-+
-+	if (t->detach_hba(hba) < 0)
-+		return -1;
-+	/*
-+	 * Release TCM subsystem api struct module reference from struct se_hba
-+	 */
-+	if (t->external_submod)
-+		module_put(t->sub_owner);
-+
-+	return 0;
-+}
-+
-+/*	se_core_del_hba():
-+ *
-+ *
-+ */
-+int se_core_del_hba(
-+	struct se_hba *hba)
-+{
-+	struct se_device *dev, *dev_tmp;
-+
-+	if (!(hba->hba_status & HBA_STATUS_ACTIVE)) {
-+		printk(KERN_ERR "HBA ID: %d Status: INACTIVE, ignoring"
-+			" delhbafromtarget request\n", hba->hba_id);
-+		return -EINVAL;
-+	}
-+
-+	spin_lock(&hba->device_lock);
-+	list_for_each_entry_safe(dev, dev_tmp, &hba->hba_dev_list, dev_list) {
-+
-+		se_clear_dev_ports(dev);
-+		spin_unlock(&hba->device_lock);
-+
-+		se_release_device_for_hba(dev);
-+
-+		spin_lock(&hba->device_lock);
-+	}
-+	spin_unlock(&hba->device_lock);
-+
-+	se_core_shutdown_hba(hba);
-+	if (!(hba->hba_flags & HBA_FLAGS_INTERNAL_USE))
-+		transport_core_put_sub(hba->transport);
-+
-+	spin_lock(&se_global->hba_lock);
-+	list_del(&hba->hba_list);
-+	spin_unlock(&se_global->hba_lock);
-+
-+	hba->transport = NULL;
-+	hba->hba_status &= ~HBA_STATUS_ACTIVE;
-+	hba->hba_status |= HBA_STATUS_FREE;
-+
-+	printk(KERN_INFO "CORE_HBA[%d] - Detached HBA from Generic Target"
-+			" Core\n", hba->hba_id);
-+
-+	kmem_cache_free(se_hba_cache, hba);
-+	return 0;
-+}
-+EXPORT_SYMBOL(se_core_del_hba);
-diff --git a/drivers/target/target_core_hba.h b/drivers/target/target_core_hba.h
-new file mode 100644
-index 0000000..01cf4fe
---- /dev/null
-+++ b/drivers/target/target_core_hba.h
-@@ -0,0 +1,14 @@
-+#ifndef TARGET_CORE_HBA_H
-+#define TARGET_CORE_HBA_H
-+
-+extern struct se_global *se_global;
-+
-+extern struct kmem_cache *se_hba_cache;
-+
-+extern int core_get_hba(struct se_hba *);
-+extern struct se_hba *core_alloc_hba(void);
-+extern void core_put_hba(struct se_hba *);
-+extern int se_core_add_hba(struct se_hba *, const char *, u32);
-+extern int se_core_del_hba(struct se_hba *);
-+
-+#endif /* TARGET_CORE_HBA_H */
--- 
-1.7.3
-
+	-hpa
