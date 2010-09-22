@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754716Ab0IVSlF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 14:41:05 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:36660 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753701Ab0IVSlC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 14:41:02 -0400
-Message-ID: <4C9A4DBB.6080500@austin.ibm.com>
-Date: Wed, 22 Sep 2010 13:40:59 -0500
-From: Nathan Fontenot <nfont@austin.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+	id S1754755Ab0IVSl4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 14:41:56 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:47591 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754246Ab0IVSly (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 14:41:54 -0400
+Date: Wed, 22 Sep 2010 11:41:44 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Michael Cree <mcree@orcon.net.nz>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, James.Bottomley@HansenPartnership.com,
+        benh@kernel.crashing.org, dhowells@redhat.com,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: memory barrier question
+Message-ID: <20100922184144.GA11741@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100919152638.GF3060@linux.vnet.ibm.com>
+ <E1OxQIg-0005Nw-WE@pomaz-ex.szeredi.hu>
+ <20100919215909.GG3060@linux.vnet.ibm.com>
+ <1284944316.2957.795.camel@mulgrave.site>
+ <20100920012915.GI3060@linux.vnet.ibm.com>
+ <E1OxioY-0006nd-M9@pomaz-ex.szeredi.hu>
+ <20100920182504.GD2408@linux.vnet.ibm.com>
+ <4C97C366.80206@orcon.net.nz>
+ <20100920204055.GJ2408@linux.vnet.ibm.com>
+ <20100921145910.GA3358@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
-        Greg KH <greg@kroah.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 0/8] De-couple sysfs memory directories from memory sections
-References: <4C9A0F8F.2030409@austin.ibm.com> <1285168800.3292.5228.camel@nimitz>
-In-Reply-To: <1285168800.3292.5228.camel@nimitz>
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20100921145910.GA3358@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2010 10:20 AM, Dave Hansen wrote:
-> On Wed, 2010-09-22 at 09:15 -0500, Nathan Fontenot wrote:
->> For architectures that define their own version of this routine,
->> as is done for powerpc in this patchset, the view in userspace
->> would change such that each memoryXXX directory would span
->> multiple memory sections.  The number of sections spanned would
->> depend on the value reported by memory_block_size_bytes.
->>
->> In both cases a new file 'end_phys_index' is created in each
->> memoryXXX directory.  This file will contain the physical id
->> of the last memory section covered by the sysfs directory.  For
->> the default case, the value in 'end_phys_index' will be the same
->> as in the existing 'phys_index' file.
+On Tue, Sep 21, 2010 at 07:59:10AM -0700, Paul E. McKenney wrote:
+> On Mon, Sep 20, 2010 at 01:40:55PM -0700, Paul E. McKenney wrote:
+> > On Tue, Sep 21, 2010 at 08:26:14AM +1200, Michael Cree wrote:
+> > > On 21/09/10 06:25, Paul E. McKenney wrote:
+> > > >But do we really care about Alpha anymore?  (I can see it now... The
+> > > >Alpha portion of the kernel tree moves to staging...)
+> > > 
+> > > I do.
+> > > 
+> > > Sent from my Compaq Alpha XP1000 :-)
+> > 
+> > In that case, an smp_read_barrier_depends() or rcu_dereference() is
+> > also required...
 > 
-> Hi Nathan,
+> Wait a minute...  I finally got a chance to look up the system.  This
+> system has only a single Alpha CPU, right?
 > 
-> There's one bit missing here, I think.
+> If so, just build a UP kernel and be happy.  No need to worry about
+> any of these SMP issues.
 > 
-> "block_size_bytes" today means two things today:
-> 1. the SECTION_SIZE from sparsemem
-> 2. the size covered by each memoryXXXX directory
-> 
-> SECTION_SIZE isn't exposed to userspace, but the memoryXXXX directories
-> are.  You've done all of the heavy lifting here to make sure that the
-> memory directories are no longer bound to SECTION_SIZE, but you've also
-> broken the assumption that _each_ directory covers "block_size_bytes".
-> 
-> I think it's fairly simple to fix.  block_size_bytes() needs to return
-> memory_block_size_bytes(),
+> So, an alternative proposal -- support only UP kernels on Alpha.  ;-)
 
-yes, missed that.  I will update the patch set to include this.
+And there do seem to be some SMP Alpha systems still in use:
 
->                            and phys_index's calculation needs to be:
-> 
-> 	mem->start_phys_index * SECTION_SIZE / memory_block_size_bytes()
+	http://www.alphalinux.org/wiki/index.php/User:Armin76/HW_list
 
-I'm not sure if  I follow where you suggest using this formula.  Is this
-instead of what is used now, the base_memory_block_id() calculation?
-
-If so, then I'm not sure it would work. The formula used in base_memory_block_id()
-is done because the memory sections are not guaranteed to be added to the
-memory block starting with the first section of the block.
-
-If you meant somewhere else let me know.
-
--Nathan
-> 
-> That way, to userspace, it just looks like before, but with a larger
-> SECTION_SIZE.  Doing that preserves the ABI pretty nicely, I believe.
-> 
-> -- Dave
-> 
-
+							Thanx, Paul
