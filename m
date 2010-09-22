@@ -1,94 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038Ab0IVCle (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 22:41:34 -0400
-Received: from www.telegraphics.com.au ([204.15.192.19]:34361 "EHLO
-	mail.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751767Ab0IVCld (ORCPT
+	id S1753120Ab0IVCtj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 22:49:39 -0400
+Received: from antispam01.maxim-ic.com ([205.153.101.182]:43818 "EHLO
+	antispam01.maxim-ic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751767Ab0IVCth convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 22:41:33 -0400
-Date: Wed, 22 Sep 2010 12:41:25 +1000 (EST)
-From: Finn Thain <fthain@telegraphics.com.au>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-cc: Matt Turner <mattst88@gmail.com>, trivial@kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Maciej W. Rozycki" <macro@linux-mips.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Dimitry Torokhov <dmitry.torokhov@gmail.com>,
-        Ben Pfaff <blp@cs.stanford.edu>, Mike Frysinger <vapier.adi@gmail.com>
-Subject: Re: [PATCH]Update-broken-web-addresses-in-the-kernel
-In-Reply-To: <4C98D8AA.80606@gmail.com>
-Message-ID: <alpine.LNX.2.00.1009221205330.4570@nippy.intranet>
-References: <1285042724-19135-1-git-send-email-justinmattock@gmail.com> <AANLkTinE73z9QV0zriVE3bRtzMifWSGvG36hfvnA9biD@mail.gmail.com> <4C983C7D.1050000@gmail.com> <AANLkTimYp6ua743x9ze4fcU09ZZ=oZZd_iKCmU0WQ2h7@mail.gmail.com> <alpine.LNX.2.00.1009211516180.9370@nippy.intranet>
- <4C98D8AA.80606@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Tue, 21 Sep 2010 22:49:37 -0400
+X-ASG-Debug-ID: 1285123777-6a7a99970001-xx1T2L
+X-Barracuda-Envelope-From: Peter.Hsiang@maxim-ic.com
+From: Peter Hsiang <Peter.Hsiang@maxim-ic.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Jesse Marroquin <Jesse.Marroquin@maxim-ic.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Peter Ujfalusi <peter.ujfalusi@nokia.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 21 Sep 2010 19:49:30 -0700
+X-ASG-Orig-Subj: RE: [PATCH] ASoC: Add max98088 CODEC driver
+Subject: RE: [PATCH] ASoC: Add max98088 CODEC driver
+Thread-Topic: [PATCH] ASoC: Add max98088 CODEC driver
+Thread-Index: ActLUUNR8Bor+1e8SOePvX+lx2HMFgOYi4aw
+Message-ID: <B2150E1E4418E1438554A300EA5040E40D46E1B8E7@ITSVLEX06.it.maxim-ic.internal>
+References: <B2150E1E4418E1438554A300EA5040E40D469C123B@ITSVLEX06.it.maxim-ic.internal>
+ <20100901111432.GE17548@opensource.wolfsonmicro.com>
+ <B2150E1E4418E1438554A300EA5040E40D46A5BB13@ITSVLEX06.it.maxim-ic.internal>
+ <20100903101721.GE16587@rakim.wolfsonmicro.main>
+In-Reply-To: <20100903101721.GE16587@rakim.wolfsonmicro.main>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-OriginalArrivalTime: 22 Sep 2010 02:49:59.0430 (UTC) FILETIME=[D8D18260:01CB5A00]
+X-Barracuda-Connect: terlingua.dalsemi.com[180.0.34.46]
+X-Barracuda-Start-Time: 1285123777
+X-Barracuda-URL: http://AntiSpam02.maxim-ic.com:8000/cgi-mod/mark.cgi
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Tue, 21 Sep 2010, Justin P. Mattock wrote:
-
-> On 09/20/2010 10:17 PM, Finn Thain wrote:
-> > 
-> > I would say that if a URL is in the web archive, then no patch is needed.
-> > 
-> > Finn
-> > 
+On Fri, Sep 03, 2010, Mark Brown wrote:
+> On Thu, Sep 02, 2010 at 04:30:14PM -0700, Peter Hsiang wrote:
+> > On Wed, Sep 01, 2010, Mark Brown wrote:
 > 
-> before I go and remove all of the archive.org stuff, can I get some feedback
-> from other people as well on having this used? i.e. if keeping the old broken
-> link in the kernel, how will people know to go to archive.org or any other
-> archive site to read the old info?, as opposed to already having this in there
-> so people can just click and go?..
+> > > > +/*
+> > > > + * Read the MAX98088 I2C register space
+> > > > + * Note: this driver source code is backward compatible to kernel
+> > > > + * version 2.6.32.
+> > > > + */
+> > > > +static unsigned int max98088_read(struct snd_soc_codec *codec,
+> > > > +                                 unsigned int reg)
 > 
-> The idea to use archive.org came from this thread:
-> http://amailbox.org/mailarchive/linux-kernel/2010/7/21/4596207/thread
-> where there are people still wanting to read the old info.
-
-If people want to read the old links, and they don't know about 
-archive.org, then they should. If you've seen one 
-"http://web.archive.org/web/*/foo/bar", you've seen them all. So this is 
-bloat in some sense.
-
-As the web matures, and more and more information disappears from the web, 
-archive.org will become common knowledge (if it isn't already).
-
-Applying your reasoning that "people are still wanting to read the old 
-info", a policy to accept patches like:
-- http://foo/bar
-+ http://web.archive.org/web/*/foo/bar
-would imply another continual stream of patches when the domain foo 
-changes hands. Then you have to pach,
-- http://web.archive.org/web/*/foo/bar
-+ http://web.archive.org/web/YYYYMMDDHHMMSS/foo/bar
-
-Then the problem becomes what is the correct YYYYMMMDDHHMMSS? The one 
-closest to the datestamp of submission of the patch? Or the datestamp from 
-the email that submitted the patch? When these questions arise, it becomes 
-a new burden on maintainers to determine the right version of the web page 
-in the archive, and whether or not the latest version is the best one.
-
-So both of these (arguably) continuous streams of patches would become a 
-burden on maintainers and offer little or no benefit to those reading the 
-source code.
-
-The benefit to end users is also dubious, because you're chasing web pages 
-that were abandoned, implying low value in the first place.
-
-Though they move from one URL to another, the links that are valuable are 
-the web pages that are regularly updated. These are are the links that 
-need to be kept up-to-date. And I think your work in that direction is 
-valuable.
-
-Thanks.
-
-Finn
-
+> > > Just use soc-cache.  Compatibility code for older kernels isn't really
+> > > acceptable for mainline due to the increased maintainance burden and it
+> > > will at best result in a driver that doesn't work as well as possible.
 > 
-> Justin P. Mattock
+> > This integrated registers feature is not available in 2.6.32
+> > Is it ok with you to keep it this way for this release?  Thanks.
 > 
-> 
+> No, you should use the features of the current kernel.  For your
+> backport you can do things like supply soc-cache.c as well.
+
+The soc-cache.c in the latest kernel-next version supports codecs
+with volatile registers in 16 bit mode, but not for the 8 bit mode.
+See snd_soc_8_8_write.
+
+The source code comments confirmed this:
+"Note at present this code can not be used by CODECs with 
+volatile registers."  
+
+For this codec (with volatile registers), should we use the read
+and write functions in the codec driver until the 8-bit mode is
+supported by Linux soc-cache.c?
+
