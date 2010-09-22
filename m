@@ -1,141 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728Ab0IVHVF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 03:21:05 -0400
-Received: from smtp104.sbc.mail.ac4.yahoo.com ([76.13.13.243]:24082 "HELO
-	smtp104.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751854Ab0IVHVD (ORCPT
+	id S1752921Ab0IVH0V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 03:26:21 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:60623 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752383Ab0IVH0U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 03:21:03 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: CINQl7gVM1kytOn8pcNfsvn33zMIkwdT_t6Qc39QzpKLI7J
- NASbG9t_CCwI4U4TGmJWZt5CFMzLmqRZ79PqSf44kOu5bW_hZFYuvXOF9J3G
- iFbs0UtZObkl6DLhHF3aPii9O3sOKOPIbFWSnQbxPvbN0XzWhworK_xH13K2
- qhW9DnSd7zZD2ZHnTUIPR5htF.azck2FYPG3rgwFMff_lHIkc5gSVg4kSr_j
- agYBJ.jUPRsMsU6wV_LhkNVgyoUP6kmBEmI7ZObmTHDDTf6i4igeOr8w_Dz.
- 7Nh_CjmCuxtX7lBoKOohag.4-
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [RFC 02/22] configfs: Add struct
-	configfs_item_operations->check_link() in configfs_unlink()
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Joel Becker <Joel.Becker@oracle.com>
-Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
-        Linux-fsdevel <linux-fsdevel@vger.kernel.org>
-In-Reply-To: <20100920220633.GC8405@mail.oracle.com>
-References: <1283456440.5598.108.camel@haakon2.linux-iscsi.org>
-	 <201009071701.02847.konrad@darnok.org>
-	 <20100907224413.GC21935@mail.oracle.com>
-	 <1283911739.556.420.camel@haakon2.linux-iscsi.org>
-	 <20100908192639.GD29545@mail.oracle.com>
-	 <1283979207.556.510.camel@haakon2.linux-iscsi.org>
-	 <20100910152802.GG885@mail.oracle.com>
-	 <1284145606.19890.68.camel@haakon2.linux-iscsi.org>
-	 <20100910194404.GJ885@mail.oracle.com>
-	 <1284148323.19890.94.camel@haakon2.linux-iscsi.org>
-	 <20100920220633.GC8405@mail.oracle.com>
-Content-Type: text/plain
-Date: Wed, 22 Sep 2010 00:16:42 -0700
-Message-Id: <1285139802.1849.13.camel@haakon2.linux-iscsi.org>
+	Wed, 22 Sep 2010 03:26:20 -0400
+Subject: Re: [RFC PATCH 0/2] perf_events: add support for per-cpu
+ per-cgroup monitoring (v3)
+From: Peter Zijlstra <peterz@infradead.org>
+To: balbir@linux.vnet.ibm.com
+Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
+        robert.richter@amd.com, acme@redhat.com,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>
+In-Reply-To: <20100922043424.GH6676@balbir.in.ibm.com>
+References: <4c88dc9c.991ce30a.3d91.3e0e@mx.google.com>
+	 <1285061899.2275.824.camel@laptop> <1285062228.2275.826.camel@laptop>
+	 <AANLkTik-oMNJdakwsH=22LzgYvgd35aom+Zu2WkchUte@mail.gmail.com>
+	 <1285072975.2275.872.camel@laptop>
+	 <AANLkTinmHGtLFRa4O5DNRGgoRtM4cy65JgCw=sYxEjNF@mail.gmail.com>
+	 <1285077801.2275.881.camel@laptop>
+	 <AANLkTimFgsOkMaX9FFidqL-6SHStgqW6v73F3rM-Kmmz@mail.gmail.com>
+	 <1285086447.2275.887.camel@laptop>
+	 <20100922043424.GH6676@balbir.in.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 22 Sep 2010 09:25:58 +0200
+Message-ID: <1285140358.2275.891.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-20 at 15:06 -0700, Joel Becker wrote:
-> [Sorry on the delay, I was out of town]
-> 
+On Wed, 2010-09-22 at 10:04 +0530, Balbir Singh wrote:
 
-Hi Joel,
+> That understanding is correct, but the whole approach sounds more
+> complex due to several subsystems involved, the expectation is that
+> we'll move perf to all the correct cgroups for each subsystem.
 
-Many, thanks for your followup on this item, my comments are below.
+Well, we'll only move a completely dormant task to a cgroup and out
+again.
 
-> On Fri, Sep 10, 2010 at 12:52:03PM -0700, Nicholas A. Bellinger wrote:
-> > On Fri, 2010-09-10 at 12:44 -0700, Joel Becker wrote:
-> > > 	You can refcount without check_link().
+> > > > If we were to fork a child that's simply sitting idle in waitpid() (or
+> > > > any other blocking syscall) we can move that around cgroup without
+> > > > affecting the cgroup itself.
+> > > 
+> > > But then things get a bit more complicated because the perf_event_open()
+> > > has to be done in that child. File descriptors created in child processes
+> > > and not shared with their parent. You'd have to pass file descriptors around.
+> > > That seems overly complicated.
 > > 
-> > So what do you recommend here..?
-> 
-> 	That your ACL object, or whatever it is that considers itself to
-> be refcounted by the number of links, keep track of that and only free
-> itself when all are gone rather than freeing itself when the first goes
-> away.
-> 
-
-Ok, I see what you mean by internal refcounting within the configfs
-consumer to handle this case..
-
-> > The problem is that the 'unlink sub_child/group1/src_0/src_link' can't
-> > signal to the other struct config_group to also call an internal 'unlink
-> > sub_child/group2/dst_0/dst_link' to drop the child link outside of it's
-> > struct config_group.
-> 
-> 	Nor should it.  I'm asking what is so wrong about a world where
-> sub_child/group1/src_0/src_link is gone but
-> sub_child/group2/dst_0/dst_link remains?  Maybe that target object can't
-> work anymore, but the user broke it by breaking the link.
-> 
-
-Yes, so trying to avoid the unlink alltogether here was my main
-intention thus far.  
-
-Actually leaving the sub_child/group2/dst_0/dst_link in the example here
-would be acceptable for the TCM MappedLUN case, because really we never
-expect this case to this unless someone is poking at configfs directly,
-and our userspace code will never do this intentionally.
-
-> > > 	You're still fighting allowing the links to go away.  You
-> > > haven't explained why that is necessary.  You had a problem with a crash
-> > > because you expected one reference to your ACLs and actually have two,
-> > > but you can fix that without modifying configfs.
+> > Uhm, no the trick is that the child remains absolutely dormant and
+> > therefore doesn't accrue any accounting, all you need is a known task in
+> > the cgroup, the parent can then specify the child pid to identify the
+> > group.
 > > 
-> > If this is the case then I must be mis-understanding what you mean by
-> > configfs consumer refcounting from allow_link() and drop_link().  Can
-> > you give me a bit more detail where I should be looking..?
+> > Once you've opened the counter, you can move the kid out and kill it.
+> > Note that moving it out of the cgroup before killing it ensure it never
+> > wakes up inside that cgroup.
 > 
-> 	Here's how I sort of understood things.  First, you create the
-> src_link pointing to $object.  This somehow allocates some sort of ACL
-> structure hanging off of $object.  Then you create dst_link pointing to
-> src_link, which really ends up pointing to the $object.  So now you have
-> src_link and dst_link pointing to $object.
-> 	Finally, someone unlinks src_link.  This triggers $object to
-> free the ACL structure.  When the caller later removes dst_link, it
-> crashes because it was expecting ACL to still be there.  Do I have it
-> right?
+> What the benefits of this complexity, not chaning perf_event_attr?
 
-Correct.
-
-> 	I'm saying that $object should count how many people are
-> pointing to it, so that when you remove src_link, ACL is *not* freed.
-> It will only be freed when both src_link and dst_link are removed.  This
-> way you do not crash.  Perhaps I'm not understanding the ACL object.
-> Perhaps I'm missing the mechanism entirely.  But I don't see why the ACL
-> object must necessarily be freed when one symlink is removed but not the
-> other.
-> 
-
-No, I think your points here make perfect sense.  I will look into a
-patch that leaves the TCM fabric MappedLUNs symlinks in place when the
-underlying TPG fabric LUN symlink is removed without breaking anything,
-but still does the necessary accounting to ensure that shutdown with
-active I/Os still works as expected.  I will plan to drop the
-->check_link() patch from the forthcoming RFC v2 series.
-
-In the end I think his is the best approach for .37, eg: no configfs
-change required.  I am still open to the discussion for resolving this
-within fs/configfs proper, but at this point I don't have a strong
-preference and will follow your direction here.
-
-Many thanks for your invaluable input Joel!
-
---nab
-
-
+Yes, attach information should not be in _attr. And you avoid the hassle
+of creating a special file and passing fds to it around.
