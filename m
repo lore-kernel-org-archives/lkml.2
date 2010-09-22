@@ -1,49 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752522Ab0IVWqj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 18:46:39 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:46630 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708Ab0IVWqh (ORCPT
+	id S1753177Ab0IVWsi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 18:48:38 -0400
+Received: from smtp103.sbc.mail.re3.yahoo.com ([66.196.96.86]:26992 "HELO
+	smtp103.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752899Ab0IVWsg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 18:46:37 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=ZLHPbd8OPvZa0hjMslzB6N9JfgPachId9pM0+8TzG/T8rTkVKrbVf0DJsT0mkhbiy
-	0/W864h/nCWxYncKj28eg==
-Date: Wed, 22 Sep 2010 15:46:29 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "H. Peter Anvin" <hpa@zytor.com>
-cc: Bjorn Helgaas <bjorn.helgaas@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: tidy e820 output
-In-Reply-To: <4C9A51DC.5020009@zytor.com>
-Message-ID: <alpine.DEB.2.00.1009221541350.22070@chino.kir.corp.google.com>
-References: <20100922172744.19085.41844.stgit@bob.kio> <201009221220.34066.bjorn.helgaas@hp.com> <4C9A4AAF.3030503@zytor.com> <201009221253.01049.bjorn.helgaas@hp.com> <4C9A51DC.5020009@zytor.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Wed, 22 Sep 2010 18:48:36 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: 2GlRSaAVM1mp3HRuM.k3bFCm_lTCQeIhCJnA3q9JU6BeUQy
+ vXM6_dcNFUw.eQHBMDcU9hr3dn1Vd7ZwJR53jSidaW7qqFIqwrjZD_lpELk0
+ 1tGUgnwAuH6MvF7OdVjEAT4eDKp9Hz67Ee93JmXHXoEaxDSHuDmq6MpmtvfI
+ my7X4Hs7C8BPCWcbCKicVxgTGmc.li5PfhwDaqJ06dxUzUXyqUc1fvevha9A
+ T3_jcwh42MLcEPInpTZoiOUinPSMcCwmiAblr2w2tpXDmgpZt81OpQg4z2Sd
+ .NZ5kr9JuaA2yB7OnZIG8ESPtVxKr04CI82AqI0LoxPW64zE9a0tBnZ.iYgx
+ Sc5DNgb1c4fAGchBarSViEQhUF_PrW6E3HJPB0e5XlXSSpUXZMj.IAiUj70G
+ RfNJg933GqJsi3kjhvqEK_YBSa1vzugC9_GCeR5Mh5zYNDES4eeXla1dxpZH
+ drC1N0XfVXg2b
+X-Yahoo-Newman-Property: ymail-3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
+        Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [RFC v2 01/21] scsi: Add missing SPC-4 CDB and MAINTENANCE_[IN,OUT] and VARIABLE_LENGTH_CMD service actions
+Date: Wed, 22 Sep 2010 15:48:32 -0700
+Message-Id: <1285195712-11440-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Sep 2010, H. Peter Anvin wrote:
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-> > It's true, they don't (well, everything below 4G still lines up, but
-> > not above that).  Do you like this any better?
-> > 
-> 
-> That's fine with me.  I don't mind the [mem ] bracket either if you
-> think it's useful.
-> 
+This patch adds a handful of missing CDBs defs that are used by TCM
+persistent reservation logic in the SPC-4 defined CDB exclusion table for
+registrations and reservations.
 
-This patch is going to break our userspace parsing scripts if you change 
-the output format.  Admittedly, we're probably one of the few users who 
-actually parses this output, but we do have reasons to do it for our 
-firmware.  If there was some improvement being introduced here, we'd 
-happily handle multiple regexs (we constantly add new patterns when new 
-kernels are released), but I'm not seeing how this is better.
+This includes a number of missing MI_* and MO_* prefixed service actions defs
+for MAINTENANCE_IN and MAINTENANCE_OUT that are mentioned wrt to persistent
+registration and reservation status for the SCSI Initiator Port.
+
+Finally it adds the remaining missing VARIABLE_LENGTH_CMD service actions
+XDREAD_32, XDWRITE_32, XPWRITE_32 and XDWRITEREAD_32.
+
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+---
+ include/scsi/scsi.h |   28 ++++++++++++++++++++++++++++
+ 1 files changed, 28 insertions(+), 0 deletions(-)
+
+diff --git a/include/scsi/scsi.h b/include/scsi/scsi.h
+index 8fcb6e0..c927661 100644
+--- a/include/scsi/scsi.h
++++ b/include/scsi/scsi.h
+@@ -107,33 +107,61 @@ struct scsi_cmnd;
+ #define PERSISTENT_RESERVE_OUT 0x5f
+ #define VARIABLE_LENGTH_CMD   0x7f
+ #define REPORT_LUNS           0xa0
++#define SECURITY_PROTOCOL_IN  0xa2
+ #define MAINTENANCE_IN        0xa3
+ #define MAINTENANCE_OUT       0xa4
+ #define MOVE_MEDIUM           0xa5
+ #define EXCHANGE_MEDIUM       0xa6
+ #define READ_12               0xa8
+ #define WRITE_12              0xaa
++#define READ_MEDIA_SERIAL_NUMBER 0xab
+ #define WRITE_VERIFY_12       0xae
+ #define VERIFY_12	      0xaf
+ #define SEARCH_HIGH_12        0xb0
+ #define SEARCH_EQUAL_12       0xb1
+ #define SEARCH_LOW_12         0xb2
++#define SECURITY_PROTOCOL_OUT 0xb5
+ #define READ_ELEMENT_STATUS   0xb8
+ #define SEND_VOLUME_TAG       0xb6
+ #define WRITE_LONG_2          0xea
++#define EXTENDED_COPY         0x83
++#define RECEIVE_COPY_RESULTS  0x84
++#define ACCESS_CONTROL_IN     0x86
++#define ACCESS_CONTROL_OUT    0x87
+ #define READ_16               0x88
+ #define WRITE_16              0x8a
++#define READ_ATTRIBUTE        0x8c
++#define WRITE_ATTRIBUTE	      0x8d
+ #define VERIFY_16	      0x8f
+ #define WRITE_SAME_16	      0x93
+ #define SERVICE_ACTION_IN     0x9e
+ /* values for service action in */
+ #define	SAI_READ_CAPACITY_16  0x10
+ #define SAI_GET_LBA_STATUS    0x12
++/* values for VARIABLE_LENGTH_CMD service action codes
++ * see spc4r17 Section D.3.5, table D.7 and D.8 */
++#define VLC_SA_RECEIVE_CREDENTIAL 0x1800
+ /* values for maintenance in */
++#define MI_REPORT_IDENTIFYING_INFORMATION 0x05
+ #define MI_REPORT_TARGET_PGS  0x0a
++#define MI_REPORT_ALIASES     0x0b
++#define MI_REPORT_SUPPORTED_OPERATION_CODES 0x0c
++#define MI_REPORT_SUPPORTED_TASK_MANAGEMENT_FUNCTIONS 0x0d
++#define MI_REPORT_PRIORITY   0x0e
++#define MI_REPORT_TIMESTAMP  0x0f
++#define MI_MANAGEMENT_PROTOCOL_IN 0x10
+ /* values for maintenance out */
++#define MO_SET_IDENTIFYING_INFORMATION 0x06
+ #define MO_SET_TARGET_PGS     0x0a
++#define MO_CHANGE_ALIASES     0x0b
++#define MO_SET_PRIORITY       0x0e
++#define MO_SET_TIMESTAMP      0x0f
++#define MO_MANAGEMENT_PROTOCOL_OUT 0x10
+ /* values for variable length command */
++#define XDREAD_32	      0x03
++#define XDWRITE_32	      0x04
++#define XPWRITE_32	      0x06
++#define XDWRITEREAD_32	      0x07
+ #define READ_32		      0x09
+ #define VERIFY_32	      0x0a
+ #define WRITE_32	      0x0b
+-- 
+1.7.3
+
