@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780Ab0IVNZL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 09:25:11 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:41791 "EHLO
+	id S1753772Ab0IVN06 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 09:26:58 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:36669 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365Ab0IVNZK (ORCPT
+	with ESMTP id S1751365Ab0IVN05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 09:25:10 -0400
-Date: Wed, 22 Sep 2010 15:25:09 +0200
+	Wed, 22 Sep 2010 09:26:57 -0400
 From: Andi Kleen <andi@firstfloor.org>
-To: John Kacur <jkacur@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, acme@redhat.com, a.p.zijlstra@chello.nl,
-        mingo@elte.hu, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf build fixes for opensuse 10.0
-Message-ID: <20100922132509.GD5766@basil.fritz.box>
-References: <20100922090336.GA5338@basil.fritz.box>
- <AANLkTimqa1++9kNcODikTVMOExhypX6+kY_m7dCKb=64@mail.gmail.com>
- <fdf800a16e7e44f19a684d4a4bf67288.squirrel@www.firstfloor.org>
- <AANLkTimqTva4gYncxzeMokT19rYqZ4kj5p=jONYXmP7Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimqTva4gYncxzeMokT19rYqZ4kj5p=jONYXmP7Q@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: jbaron@redhat.com
+Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        mathieu.desnoyers@polymtl.ca, hpa@zytor.com, tglx@linutronix.de,
+        roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 1/2] Add for_each_module iterator function v2
+Date: Wed, 22 Sep 2010 15:26:40 +0200
+Message-Id: <1285162001-9556-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 22, 2010 at 03:10:04PM +0200, John Kacur wrote:
-> On Wed, Sep 22, 2010 at 1:15 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> >> On Wed, Sep 22, 2010 at 11:03 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> >>> Fix the perf Makefile to compile on opensuse 10.0
-> >>>
-> >>> -Werror in shipping code is usually a bad idea. Remove that.
-> >>
-> >> Why not remove it then when you ship the code, but leave it in the kernel
-> >> where it is useful?
-> >
-> > What do you mean with "you ship"?
-> 
-> The subject of your email is "perf build fixes for opensuse 10.0"
-> So, I inferred from there.
+From: Andi Kleen <ak@linux.intel.com>
 
-You inferred wrong.  That was just using it on opensuse 10.0
+This is a generic function to iterate over all modules.
+To be used in the next patch.
 
-(opensuse 10.0 has already shipped a very long time ago, it's really
-old by now)
+v2: Use module_mutex instead of preempt disabling
 
-> 
-> > I downloaded a kernel from kernel.org, it shipped to me and didn't
-> > build.
-> 
-> Any reason you can't fix the build errors instead?
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ include/linux/module.h |    1 +
+ kernel/module.c        |   10 ++++++++++
+ 2 files changed, 11 insertions(+), 0 deletions(-)
 
-That's what I did -- and then sent the patch.
-
-> Btw, I just tried building the lastest perf in tip/master
-> and I had no problems.
-
-Because you're not using opensuse 10.0
-
--Andi
-
+diff --git a/include/linux/module.h b/include/linux/module.h
+index 403ac26..809b6db 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -410,6 +410,7 @@ struct module *__module_address(unsigned long addr);
+ bool is_module_address(unsigned long addr);
+ bool is_module_percpu_address(unsigned long addr);
+ bool is_module_text_address(unsigned long addr);
++void for_each_module(void (*op)(struct module *, void *arg), void *arg);
+ 
+ static inline int within_module_core(unsigned long addr, struct module *mod)
+ {
+diff --git a/kernel/module.c b/kernel/module.c
+index eba1341..9e2a561 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -384,6 +384,16 @@ struct module *find_module(const char *name)
+ }
+ EXPORT_SYMBOL_GPL(find_module);
+ 
++void for_each_module(void (*op)(struct module *, void *arg), void *arg)
++{
++	struct module *mod;
++
++	mutex_lock(&module_mutex);
++	list_for_each_entry_rcu(mod, &modules, list)
++		op(mod, arg);
++	mutex_unlock(&module_mutex);
++}
++
+ #ifdef CONFIG_SMP
+ 
+ static inline void __percpu *mod_percpu(struct module *mod)
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+1.7.1
+
