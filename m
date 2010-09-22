@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab0IVSoI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 14:44:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48537 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753701Ab0IVSoF convert rfc822-to-8bit (ORCPT
+	id S1754793Ab0IVSrp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 14:47:45 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52975 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752104Ab0IVSro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 14:44:05 -0400
-Subject: Re: [PATCH] tracing, perf: add more power related events
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>,
-        Jean Pihet <jean.pihet@newoldbits.com>,
-        Thomas Renninger <trenn@suse.de>, Ingo Molnar <mingo@elte.hu>,
-        Len Brown <len.brown@intel.com>, arjan@infradead.org,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        linux-omap@vger.kernel.org, linux-perf-users@vger.kernel.org,
-        linux-trace-users@vger.kernel.org
-In-Reply-To: <1285180574.26872.51.camel@gandalf.stny.rr.com>
-References: <AANLkTinUmbSUUuxUzc8++pcb9gd1CZFdyTQFrveTBXyV@mail.gmail.com>
-	 <201009171736.14170.trenn@suse.de>	<20100917162412.GB3341@elte.hu>
-	 <201009180026.59482.trenn@suse.de>
-	 <AANLkTimMAr9kEzybFGai3qGyXx36v055iPpXq_C1vW8C@mail.gmail.com>
-	 <4C9A21AD.1000800@linux.intel.com>
-	 <AANLkTim6B+Je=LykgJb9=0vK5Br1rkft619BRJkBcHdP@mail.gmail.com>
-	 <4C9A2FB3.105@linux.intel.com> <1285173835.2275.1026.camel@laptop>
-	 <4C9A37AE.2010509@linux.intel.com>  <1285176629.2275.1033.camel@laptop>
-	 <1285179355.26872.27.camel@gandalf.stny.rr.com>
-	 <1285180000.2275.1036.camel@laptop>
-	 <1285180574.26872.51.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 22 Sep 2010 20:43:53 +0200
-Message-ID: <1285181033.2275.1042.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 22 Sep 2010 14:47:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <20100922183200.GC19804@ZenIV.linux.org.uk>
+References: <20100922.111019.200357319.davem@davemloft.net> <20100922183200.GC19804@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 22 Sep 2010 11:46:27 -0700
+Message-ID: <AANLkTi=DWk2_=wMqcM1jgJEuNRj_ni2OkM3osYCUg57Y@mail.gmail.com>
+Subject: Re: [GIT] Sparc
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-09-22 at 14:36 -0400, Steven Rostedt wrote:
-> > I still don't see why you need TRACE_EVENT_ABI for that, if its the same
-> > name and the format can be extended you get the same results with what
-> > we've got. Apps need to read/parse the format thing anyway.
-> 
-> Just a marker that these trace points are being used by apps.
+On Wed, Sep 22, 2010 at 11:32 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> That has unpleasant results - for starters, delivery of SIGSEGV upon
+> failure to set sigframe up is delayed unpredictably; we will take it
+> only when we trap again.
 
-I really don't see any additional value in that. Its not like we won't
-change them if we have to.
+I think this whole argument is a total red herring.
 
-> But then again, we present the fields in the data. The tools should use
-> a parse library (which a generic one will soon be out too). This way, we
-> don't need them at the "end" but the parsing tools could find the fields
-> no matter where they are in the record. 
+It's a bug in next_signal() if we allow this to happen. We need to
+enqueue those synchronous signals first, and NO AMOUNT OF SIGNAL
+QUEUEING will ever change that.
 
-Right. They should use the full format specification.
+The fact is, even if you queue up all the signals at once, you need to
+queue up the synchronous ones first. Otherwise their instruction
+pointer information etc will simply be bogus. It's that simple. Your
+argument about queuing up one, two, or more signals is bogus, for the
+simple reason that it doesn't matter: whether you queue or not is
+irrelevant, since the "innermost" one in the queue always has to be
+the SIGSEGV.
+
+Whether we queue other signals on top of that (and they get executed
+first, since it's a stack) doesn't matter. That's a timing issue, and
+the program acts as if those asynchronous signals happened before the
+trap. But that's fine. All that matters is that the actual synchronous
+signal has the register contents of the time of the synchronous trap,
+ie it gets enqueued first.
+
+It's why we have that "if (x & SYNCHRONOUS_MASK)" in next_signal().
+It's not pretty, it's not perfect, but it's required.
+
+                  Linus
