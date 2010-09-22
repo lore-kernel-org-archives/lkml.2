@@ -1,95 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380Ab0IVL5h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 07:57:37 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53210 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412Ab0IVL5g (ORCPT
+	id S1754347Ab0IVL6v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 07:58:51 -0400
+Received: from smtp102.sbc.mail.re3.yahoo.com ([66.196.96.85]:25844 "HELO
+	smtp102.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752437Ab0IVL6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 07:57:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=GzLisly/pDxFNIICBDnJjH081366Hf8N7kyB5ORegPhIKTRUALUrN6FXp5KcY85apv
-         oWLLtQRMl8FWz9ezt6Tip/6E1VH6NdvdX/d9xTyAXFJwNHJyC8to4AuXvChCgthS4bGH
-         0Z3vk6/LaOBTOx333SYGG44mF0gwwexSRNNeI=
-Date: Wed, 22 Sep 2010 13:57:33 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: Andi Kleen <andi@firstfloor.org>, jbaron@redhat.com, rostedt@goodmis.com,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, hpa@zytor.com,
-        tglx@linutronix.de, roland@redhat.com, rth@redhat.com,
-        mhiramat@redhat.com, avi@redhat.com, davem@davemloft.net,
-        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 2/2] Rewrite jump_label.c to use binary search
-Message-ID: <20100922115729.GA5336@nowhere>
-References: <1285150102-5506-1-git-send-email-andi@firstfloor.org> <1285150102-5506-2-git-send-email-andi@firstfloor.org> <20100922113114.GA14179@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100922113114.GA14179@Krystal>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 22 Sep 2010 07:58:50 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: rJjL.SYVM1kOvnijR7RidXP1DlLvK7xI3pl16X3G9UX6fwp
+ bLgpYLhbvbwe9KAl9Vpd7zxFfBRlg.mcqLm1yl9pmLFTI9NE9nBKMOQQ1mCs
+ rwYO32Cn9Abn7VZxbikJJ1GOZGMhe4GOpBFzCY4UnMRJEVIsnUJLKo9FMpuk
+ dbiyQqwOobt1BsVQREouZIz3thGJE.lFJi.s1KzNhW47CwkGJWXRDRSangsM
+ pF331lRt1Br4b2leafc.zC0iOo5EbXkw0y4X7cvTFyYYFUs3FmFPq0T6f1.9
+ DuymetKl_NbeV.8JAM5hVhv4JwdOBGd8D5Bj8rAKOuXY6KlO5UpJUqGrWIxM
+ NdwVPeXQHCpF2pvp4x2oJC43PmQ1z.m9Hd0JmxakSV2Lboz5lviawOuxdvla
+ dQEm5AFn.8BKRcNFSKQ--
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [RFC 02/22] configfs: Add
+	struct	configfs_item_operations->check_link() in configfs_unlink()
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Joel Becker <Joel.Becker@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
+        Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jens Axboe <axboe@kernel.dk>,
+        Linux-fsdevel <linux-fsdevel@vger.kernel.org>
+In-Reply-To: <4C99E613.6000004@panasas.com>
+References: <1283456440.5598.108.camel@haakon2.linux-iscsi.org>
+	 <201009071701.02847.konrad@darnok.org>
+	 <20100907224413.GC21935@mail.oracle.com>
+	 <1283911739.556.420.camel@haakon2.linux-iscsi.org>
+	 <20100908192639.GD29545@mail.oracle.com>
+	 <1283979207.556.510.camel@haakon2.linux-iscsi.org>
+	 <20100910152802.GG885@mail.oracle.com>
+	 <1284145606.19890.68.camel@haakon2.linux-iscsi.org>
+	 <20100910194404.GJ885@mail.oracle.com>
+	 <1284148323.19890.94.camel@haakon2.linux-iscsi.org>
+	 <20100920220633.GC8405@mail.oracle.com>
+	 <1285139802.1849.13.camel@haakon2.linux-iscsi.org>
+	 <4C99E613.6000004@panasas.com>
+Content-Type: text/plain
+Date: Wed, 22 Sep 2010 04:54:32 -0700
+Message-Id: <1285156472.1849.60.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 22, 2010 at 07:31:14AM -0400, Mathieu Desnoyers wrote:
-> > -static struct jump_label_entry *add_jump_label_entry(jump_label_t key, int nr_entries, struct jump_entry *table)
-> > +void patch_jump_table(unsigned long key, enum jump_label_type type,
-> > +	 	      struct jump_entry *start, struct jump_entry *stop)
-> >  {
-> > -	struct hlist_head *head;
-> > -	struct jump_label_entry *e;
-> > -	u32 hash;
-> > -
-> > -	e = get_jump_label_entry(key);
-> > -	if (e)
-> > -		return ERR_PTR(-EEXIST);
-> > -
-> > -	e = kmalloc(sizeof(struct jump_label_entry), GFP_KERNEL);
-> > -	if (!e)
-> > -		return ERR_PTR(-ENOMEM);
-> > -
-> > -	hash = jhash((void *)&key, sizeof(jump_label_t), 0);
-> > -	head = &jump_label_table[hash & (JUMP_LABEL_TABLE_SIZE - 1)];
-> > -	e->key = key;
-> > -	e->table = table;
-> > -	e->nr_entries = nr_entries;
-> > -	INIT_HLIST_HEAD(&(e->modules));
-> > -	hlist_add_head(&e->hlist, head);
-> > -	return e;
-> > +	struct jump_entry *entry = search_jump_table(start, stop, key);
-> > +	if (!entry)
-> > +		return;
-> > +	while (entry > start && entry[-1].key == key)
-> > +		entry--;
+On Wed, 2010-09-22 at 13:18 +0200, Boaz Harrosh wrote:
+> On 09/22/2010 09:16 AM, Nicholas A. Bellinger wrote:
+> > On Mon, 2010-09-20 at 15:06 -0700, Joel Becker wrote:
+> >> [Sorry on the delay, I was out of town]
+> >>
+> > 
+> > Hi Joel,
+> > 
+> > Many, thanks for your followup on this item, my comments are below.
+> > 
+> >> On Fri, Sep 10, 2010 at 12:52:03PM -0700, Nicholas A. Bellinger wrote:
+> >>> On Fri, 2010-09-10 at 12:44 -0700, Joel Becker wrote:
+> >>>> 	You can refcount without check_link().
+> >>>
+> >>> So what do you recommend here..?
+> >>
+> >> 	That your ACL object, or whatever it is that considers itself to
+> >> be refcounted by the number of links, keep track of that and only free
+> >> itself when all are gone rather than freeing itself when the first goes
+> >> away.
+> >>
+> > 
+> > Ok, I see what you mean by internal refcounting within the configfs
+> > consumer to handle this case..
+> > 
+> >>> The problem is that the 'unlink sub_child/group1/src_0/src_link' can't
+> >>> signal to the other struct config_group to also call an internal 'unlink
+> >>> sub_child/group2/dst_0/dst_link' to drop the child link outside of it's
+> >>> struct config_group.
+> >>
+> >> 	Nor should it.  I'm asking what is so wrong about a world where
+> >> sub_child/group1/src_0/src_link is gone but
+> >> sub_child/group2/dst_0/dst_link remains?  Maybe that target object can't
+> >> work anymore, but the user broke it by breaking the link.
+> >>
+> > 
+> > Yes, so trying to avoid the unlink alltogether here was my main
+> > intention thus far.  
+> > 
+> > Actually leaving the sub_child/group2/dst_0/dst_link in the example here
+> > would be acceptable for the TCM MappedLUN case, because really we never
+> > expect this case to this unless someone is poking at configfs directly,
+> > and our userspace code will never do this intentionally.
+> > 
+> >>>> 	You're still fighting allowing the links to go away.  You
+> >>>> haven't explained why that is necessary.  You had a problem with a crash
+> >>>> because you expected one reference to your ACLs and actually have two,
+> >>>> but you can fix that without modifying configfs.
+> >>>
+> >>> If this is the case then I must be mis-understanding what you mean by
+> >>> configfs consumer refcounting from allow_link() and drop_link().  Can
+> >>> you give me a bit more detail where I should be looking..?
+> >>
+> >> 	Here's how I sort of understood things.  First, you create the
+> >> src_link pointing to $object.  This somehow allocates some sort of ACL
+> >> structure hanging off of $object.  Then you create dst_link pointing to
+> >> src_link, which really ends up pointing to the $object.  So now you have
+> >> src_link and dst_link pointing to $object.
+> >> 	Finally, someone unlinks src_link.  This triggers $object to
+> >> free the ACL structure.  When the caller later removes dst_link, it
+> >> crashes because it was expecting ACL to still be there.  Do I have it
+> >> right?
+> > 
+> > Correct.
+> > 
+> >> 	I'm saying that $object should count how many people are
+> >> pointing to it, so that when you remove src_link, ACL is *not* freed.
+> >> It will only be freed when both src_link and dst_link are removed.  This
+> >> way you do not crash.  Perhaps I'm not understanding the ACL object.
+> >> Perhaps I'm missing the mechanism entirely.  But I don't see why the ACL
+> >> object must necessarily be freed when one symlink is removed but not the
+> >> other.
+> >>
+> > 
+> > No, I think your points here make perfect sense.  I will look into a
+> > patch that leaves the TCM fabric MappedLUNs symlinks in place when the
+> > underlying TPG fabric LUN symlink is removed without breaking anything,
+> > but still does the necessary accounting to ensure that shutdown with
+> > active I/Os still works as expected.  
 > 
-> OK, I like the way it handles patching of multiple entries with the same
-> key at once. Sorting really makes sense here.
+> Perhaps a strengthen chmod here. And if then, done by root, a big fat
+> "shoot self in the foot" message in dmsg for the poking where you don't
+> need to. type.
 > 
-> > +	for (; entry < stop && entry->key == key; entry++)
-> > +		if (kernel_text_address(entry->code))
+
+Hmm, I don't believe configfs currently supports a distinction between
+permissions for something along these lines.
+
+> (BTW: could you re establish the link after it's deleted the way you
+>  do at setup?)
 > 
-> This does not work for modules I'm afraid, only for the core kernel. You
-> should test for __module_text_address() somewhere.
 
+Yes, the "dangling" MappedLUNs symlinks for this special case would need
+to be explictly removed via unlink(2) and then re-created using a new
+TPG LUN struct se_lun->lun_group containing a valid symlink back to
+a TCM Core backstore a valid configfs symlink source.
 
+Thanks!
 
-No, look:
-
-int kernel_text_address(unsigned long addr)
-{
-	if (core_kernel_text(addr))
-		return 1;
-	return is_module_text_address(addr);
-}
-
-
- 
-> Dumb question: why do you need this test at all ?
-
-
-I wonder about that too.
+--nab
 
