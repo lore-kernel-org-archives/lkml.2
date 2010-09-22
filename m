@@ -1,50 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751919Ab0IVPjr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 11:39:47 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59105 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750739Ab0IVPjq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 11:39:46 -0400
-Date: Wed, 22 Sep 2010 16:39:44 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Alan Cox <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86/mrst: add SFI platform device parsing code
-Message-ID: <20100922153944.GH26395@rakim.wolfsonmicro.main>
-References: <20100920140049.31408.67527.stgit@localhost.localdomain>
- <20100920150431.GD31167@sirena.org.uk>
- <20100920152726.68ac2d84@linux.intel.com>
- <20100920152705.GJ3414@rakim.wolfsonmicro.main>
- <AANLkTi=1dkVOWc2WHhYgqKh_awUhp1-uKN8W7Xx3AB_X@mail.gmail.com>
- <1285168933.4498.119.camel@i7.infradead.org>
- <20100922153321.GD32476@sirena.org.uk>
- <1285169717.4498.121.camel@i7.infradead.org>
+	id S1752087Ab0IVPkQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 11:40:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10120 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751029Ab0IVPkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 11:40:14 -0400
+Date: Wed, 22 Sep 2010 11:40:10 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Plamen Petrov <pvp-lsts@fs.uni-ruse.bg>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [2.6.36-rc5 backtrace] NMI watchdog detects rcu_sched_state stall
+Message-ID: <20100922154010.GJ26290@redhat.com>
+References: <courier.4C98F124.00000CF9@fs.uni-ruse.bg>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1285169717.4498.121.camel@i7.infradead.org>
-X-Cookie: Do students of Zen Buddhism do Om-work?
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <courier.4C98F124.00000CF9@fs.uni-ruse.bg>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 22, 2010 at 04:35:17PM +0100, David Woodhouse wrote:
-> On Wed, 2010-09-22 at 16:33 +0100, Mark Brown wrote:
+On Tue, Sep 21, 2010 at 08:53:40PM +0300, Plamen Petrov wrote:
+> Hello!
+> 
+> Kernel 2.6.35-rc5 just wrote the following into system logs:
+> 
 
-> > This is roughly what it's doing except that it's going to native Linux
-> > bus types and platform data rather than to device tree.
+<snipped backtrace>
 
-> It still means that drivers for chips which are seen both on this
-> bizarre abomination and also on other machines which use a device-tree
-> will need to support *both* probe types.
+> sched_clock_idle_sleep_event+0xe/0x10
+> Sep 21 19:57:33 fs kernel: [11358.100853]  [<c10297a9>]
+> common_interrupt+0x29/0x30
+> Sep 21 19:57:33 fs kernel: [11358.100853]  [<c102f166>] ?
+> mwait_idle+0x45/0x57
+> Sep 21 19:57:33 fs kernel: [11358.100853]  [<c1028353>] cpu_idle+0x3d/0x7a
+> Sep 21 19:57:33 fs kernel: [11358.100853]  [<c13f88b8>] rest_init+0x58/0x5a
+> Sep 21 19:57:33 fs kernel: [11358.100853]  [<c15fa93a>]
+> start_kernel+0x26a/0x270
+> Sep 21 19:57:33 fs kernel: [11358.100853]  [<c15fa4fb>] ?
+> unknown_bootoption+0x0/0x19f
+> Sep 21 19:57:33 fs kernel: [11358.100853]  [<c15fa089>]
+> i386_start_kernel+0x89/0x8b
+> 
+> This got caught with the help of NMI watchdog. I enabled NMI after
+> the machine got
+> so slow a couple of times I tought it hanged, but when I attached a
+> monitor I saw
+> this:
+> 
+> http://picpaste.com/536639578e2a95d666f695f4833453ed.jpg
+> 
+> Unfortunately, I was too busy at the time to post, and in need of a
+> quick solution
+> switched to an old stable kernel.
+> 
+> Should I open a bugreport with the details (hardware, kernel
+> config)?
 
-No, the drivers don't see any of this but instead someone has to
-write (and maintain) explicit code to do the translation in arch/x86
-outside the drivers.  The drivers just see platform data and regular bus
-probes which they'll be doing anyway until such time as device tree is
-well enough established for people to stop doing platform data.
+Hello Plamen,
+
+Thanks for the report.  Unfortunately, you compiled with the old nmi
+watchdog which is known to give false positives (because it has not been
+updated to handle the new clock source).
+
+If you have the time could you recompile with 
+CONFIG_LOCKUP_DETECTOR=y
+CONFIG_HARDLOCKUP_DETECTOR=y
+
+This should utilize a new modern nmi watchdog detector and probably won't
+output false positives like cpu 1 stuck in the idle loop.
+
+Also perhaps next time could you attach the output of 'dmesg' instead of
+/var/log/messages?  Your attachment is hard to read (it line wrapped on
+me), making it difficult to see what is going on.
+
+Cheers,
+Don
