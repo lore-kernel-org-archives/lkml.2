@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083Ab0IVQxj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 12:53:39 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50229 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543Ab0IVQxi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 12:53:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=bDz2fJPWculbNTy3ryp13trNzadXaLDRmfYQqt8P9flARSDHp0neqlMGYmQ0lNPPx2
-         Ev0ItwO11zxuUdQU8X/0lj4iQ/hmPzjGVIOuUHouMRbgTu8tZoDIOYISHyYQot+Y4dNC
-         wT5hPjLeiBfvJzX1lyVfEzqLSd4rbFL0qL11c=
+	id S1753379Ab0IVQy3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 12:54:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58788 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752828Ab0IVQy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 12:54:28 -0400
+Message-ID: <4C9A3487.6080005@zytor.com>
+Date: Wed, 22 Sep 2010 09:53:27 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-Date: Wed, 22 Sep 2010 17:53:38 +0100
-Message-ID: <AANLkTi=VfZrWzCmij+_a=YVLNNV9U7Udqm=3tUt2-cQx@mail.gmail.com>
-Subject: [2.6.36-rc5] DRM fixes...
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: David Airlie <airlied@linux.ie>
-Cc: dri-devel@lists.freedesktop.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Alex Deucher <alexdeucher@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+CC: mingo@redhat.com, linux-kernel@vger.kernel.org, yinghai@kernel.org,
+        just.for.lkml@googlemail.com, tglx@linutronix.de, hpa@linux.intel.com,
+        Feng Tang <feng.tang@intel.com>, Alan Cox <alan@linux.intel.com>,
+        greg@kroah.com
+Subject: Re: Early console confusion
+References: <4C7B0578.8090807@kernel.org> <201009220912.45360.bjorn.helgaas@hp.com> <4C9A271F.30608@zytor.com> <201009221044.58735.bjorn.helgaas@hp.com>
+In-Reply-To: <201009221044.58735.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct function storage class, and correct assignment type.
+On 09/22/2010 09:44 AM, Bjorn Helgaas wrote:
+>
+> If we don't like "uart8250,io,0x3f8" (which I agree is awfully clunky),
+> we could easily add something like "console=com1" which encapsulated
+> the well-defined PC concept.
 
-Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
-Reviewed-by: Alex Deucher <alexdeucher@gmail.com>
+console=ttyS0 ... already works fine.
 
-diff --git a/drivers/gpu/drm/drm_buffer.c b/drivers/gpu/drm/drm_buffer.c
-index 55d03ed..687de5f 100644
---- a/drivers/gpu/drm/drm_buffer.c
-+++ b/drivers/gpu/drm/drm_buffer.c
-@@ -98,7 +98,7 @@ EXPORT_SYMBOL(drm_buffer_alloc);
-  *   user_data: A pointer the data that is copied to the buffer.
-  *   size: The Number of bytes to copy.
-  */
--extern int drm_buffer_copy_from_user(struct drm_buffer *buf,
-+int drm_buffer_copy_from_user(struct drm_buffer *buf,
-         void __user *user_data, int size)
- {
-     int nr_pages = size / PAGE_SIZE + 1;
-@@ -163,7 +163,7 @@ void *drm_buffer_read_object(struct drm_buffer *buf,
- {
-     int idx = drm_buffer_index(buf);
-     int page = drm_buffer_page(buf);
--    void *obj = 0;
-+    void *obj = NULL;
+> It would be similar to "earlyprintk=ttyS0",
+> and if it could be made *enough* like it, maybe "earlyprintk=ttyS0"
+> could be dropped.
+>
+> I also see the recent "earlyprintk=hsu" patch from  Feng Tang, and I
+> wonder whether that could be recast in the "console=hsu" style.  Like
+> "com1", "hsu" is apparently enough to specifically identify a device.
+>
+> I think it's nicer to extend "console=" in ways that allow early
+> devices, because then users don't have to mess with both "console="
+> and "earlyprintk=".  The 8250_early driver has a reasonable model
+> of switching from the early device to the real one automatically,
+> so maybe something like this is all we would need:
 
-     if (idx + objsize <= PAGE_SIZE) {
-         obj = &buf->data[page][idx];
--- 
-Daniel J Blueman
+console= is supported multiple times, and enabling console= shouldn't 
+necessarily enable earlyprintk...
+
+But yes, it's ugly and we have bass-ackwards compatibility problem...
+
+	-hpa
