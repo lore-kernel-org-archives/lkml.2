@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178Ab0IVJOR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 05:14:17 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:65132 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752932Ab0IVJOQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 05:14:16 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Greg KH <greg@kroah.com>
-Subject: Re: [PATCH 1/2] TTY: create /tty and move the tty core files there
-Date: Wed, 22 Sep 2010 11:13:58 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Greg KH <gregkh@suse.de>, Jiri Slaby <jslaby@suse.cz>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        Rogier Wolff <R.E.Wolff@bitwizard.nl>,
-        "Michael H. Warfield" <mhw@wittsend.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-References: <1283115995-4734-1-git-send-email-arnd@arndb.de> <20100921230733.GA32346@kroah.com> <20100921230804.GB32346@kroah.com>
-In-Reply-To: <20100921230804.GB32346@kroah.com>
+	id S1752547Ab0IVJSo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 05:18:44 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:53943 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751797Ab0IVJSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 05:18:43 -0400
+Date: Wed, 22 Sep 2010 14:48:34 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: eranian@google.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
+        perfmon2-devel@lists.sf.net, eranian@gmail.com, robert.richter@amd.com,
+        acme@redhat.com, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>
+Subject: Re: [RFC PATCH 0/2] perf_events: add support for per-cpu per-cgroup
+ monitoring (v3)
+Message-ID: <20100922091834.GJ6676@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <4c88dc9c.991ce30a.3d91.3e0e@mx.google.com>
+ <1285061899.2275.824.camel@laptop>
+ <20100922042354.GG6676@balbir.in.ibm.com>
+ <1285140479.2275.893.camel@laptop>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009221113.58202.arnd@arndb.de>
-X-Provags-ID: V02:K0:JtHG/Bj33LwhebxJcgvcL6CnNPoz3LiPMdFZss3cdSY
- 8XDPOWkUlhqpFkzHGJd9iwNM3fYNcsXMqATkjy8uVK4kSmk9RJ
- ZBG8SKQfdCPl6HCJDU7k6LpxqT8dBCMxpk6g9WAC8il8tQreFl
- QfxNnaak8UHqmZUFLXKjetwhwfBt/o4Ux3zrr/mUD7LkICbjxh
- rO1UuF/rzTMkBqEIdBFkg==
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1285140479.2275.893.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 22 September 2010, Greg KH wrote:
-> The tty code should be at the root of the tree, as everyone
-> needs it, and it's always built, and it's not really a "driver"
-> 
-> Based on work done by Arnd Bergmann <arnd@arndb.de>
-> 
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Jiri Slaby <jslaby@suse.cz>
-> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> ---
->  Makefile                           |    2 +-
->  drivers/char/Makefile              |    4 +---
->  tty/Makefile                       |    8 ++++++++
->  {drivers/char => tty}/n_tty.c      |    0
->  {drivers/char => tty}/tty_audit.c  |    0
->  {drivers/char => tty}/tty_buffer.c |    0
->  {drivers/char => tty}/tty_io.c     |    0
->  {drivers/char => tty}/tty_ioctl.c  |    0
->  {drivers/char => tty}/tty_ldisc.c  |    0
->  {drivers/char => tty}/tty_mutex.c  |    0
->  {drivers/char => tty}/tty_port.c   |    0
+* Peter Zijlstra <peterz@infradead.org> [2010-09-22 09:27:59]:
 
-My original patch also moved pty.o, sysrq.o and the n_*.o line disciplines.
-It's probably debatable where the line disciplines should go (I don't care
-much, so don't ask me), but pty and sysrq seem like they should really
-be part of the tty core directory.
+> On Wed, 2010-09-22 at 09:53 +0530, Balbir Singh wrote:
+> > Yes, a task can belong to multiple subsystems, hence multiple cgroups.
+> > Ideally we'd want to use pid + subsystem
+> 
+> Apparently we create a perf subsystem, and we only care about that. So
+> pid will uniquely identify a cgroup, since for each subsystem a task can
+> only belong to one cgroup.
 
-	Arnd
+Hmm.. I misread the intention to mean we care about monitoring all
+data and aggregate it for each cgroup.
+
+> 
+> > > One thing we could do is pass this cgroup identifier in the pid field
+> > > and use PERF_FLAG_CGROUP or something. Currently the syscall signature
+> > > uses pid_t, but I think we can safely change that to int.
+> > 
+> > Or union it and overload the field to contain either pid_t or fd of the cgroup
+> 
+> Its not a field, its an argument.
+
+Thanks!
+
+-- 
+	Three Cheers,
+	Balbir
