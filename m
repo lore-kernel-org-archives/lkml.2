@@ -1,151 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702Ab0IVSmt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 14:42:49 -0400
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:56306 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753701Ab0IVSms convert rfc822-to-8bit (ORCPT
+	id S1754768Ab0IVSoI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 14:44:08 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48537 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753701Ab0IVSoF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 14:42:48 -0400
-Date: Wed, 22 Sep 2010 12:02:19 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: Daniel Drake <dsd@laptop.org>
-Cc: tglx@linutronix.de, jbarnes@virtuousgeek.org, linux-pci@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] PCI: OLPC configuration cleanup
-Message-ID: <20100922120219.407ec023@debxo>
-In-Reply-To: <20100922164402.A72D49D401B@zog.reactivated.net>
-References: <20100922164402.A72D49D401B@zog.reactivated.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Wed, 22 Sep 2010 14:44:05 -0400
+Subject: Re: [PATCH] tracing, perf: add more power related events
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        Jean Pihet <jean.pihet@newoldbits.com>,
+        Thomas Renninger <trenn@suse.de>, Ingo Molnar <mingo@elte.hu>,
+        Len Brown <len.brown@intel.com>, arjan@infradead.org,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-omap@vger.kernel.org, linux-perf-users@vger.kernel.org,
+        linux-trace-users@vger.kernel.org
+In-Reply-To: <1285180574.26872.51.camel@gandalf.stny.rr.com>
+References: <AANLkTinUmbSUUuxUzc8++pcb9gd1CZFdyTQFrveTBXyV@mail.gmail.com>
+	 <201009171736.14170.trenn@suse.de>	<20100917162412.GB3341@elte.hu>
+	 <201009180026.59482.trenn@suse.de>
+	 <AANLkTimMAr9kEzybFGai3qGyXx36v055iPpXq_C1vW8C@mail.gmail.com>
+	 <4C9A21AD.1000800@linux.intel.com>
+	 <AANLkTim6B+Je=LykgJb9=0vK5Br1rkft619BRJkBcHdP@mail.gmail.com>
+	 <4C9A2FB3.105@linux.intel.com> <1285173835.2275.1026.camel@laptop>
+	 <4C9A37AE.2010509@linux.intel.com>  <1285176629.2275.1033.camel@laptop>
+	 <1285179355.26872.27.camel@gandalf.stny.rr.com>
+	 <1285180000.2275.1036.camel@laptop>
+	 <1285180574.26872.51.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Wed, 22 Sep 2010 20:43:53 +0200
+Message-ID: <1285181033.2275.1042.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Sep 2010 17:44:02 +0100 (BST)
-Daniel Drake <dsd@laptop.org> wrote:
-
-> An OLPC system isn't usable without PCI, so we can simplify the
-> configuration here.
-
-Hm, I think I'm opposed to tying it into CONFIG_OLPC like that.  Future
-plans call for an ARM-based OLPC which will presumably not have a PCI
-bus.
-
-..However, I'm also failing to come up w/ a good alternative right
-now.  
-
+On Wed, 2010-09-22 at 14:36 -0400, Steven Rostedt wrote:
+> > I still don't see why you need TRACE_EVENT_ABI for that, if its the same
+> > name and the format can be extended you get the same results with what
+> > we've got. Apps need to read/parse the format thing anyway.
 > 
-> Also updated the code to be clearer that this is only for XO-1, and
-> fixed an issue where the XO-1 PCI configuration override was being
-> applied for XO-1.5 laptops.
-> 
-> Based on earlier work by Deepak Saxena.
-> 
-> Signed-off-by: Daniel Drake <dsd@laptop.org>
-> ---
->  arch/x86/Kconfig       |   12 +++---------
->  arch/x86/kernel/olpc.c |    4 +---
->  arch/x86/pci/Makefile  |    2 +-
->  arch/x86/pci/olpc.c    |    4 ++--
->  4 files changed, 7 insertions(+), 15 deletions(-)
-> 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index cea0cd9..708ee0d 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -1899,10 +1899,6 @@ config PCI_GOMMCONFIG
->  config PCI_GODIRECT
->  	bool "Direct"
->  
-> -config PCI_GOOLPC
-> -	bool "OLPC"
-> -	depends on OLPC
-> -
->  config PCI_GOANY
->  	bool "Any"
->  
-> @@ -1915,16 +1911,12 @@ config PCI_BIOS
->  # x86-64 doesn't support PCI BIOS access from long mode so always go
-> direct. config PCI_DIRECT
->  	def_bool y
-> -	depends on PCI && (X86_64 || (PCI_GODIRECT || PCI_GOANY ||
-> PCI_GOOLPC))
-> +	depends on PCI && (X86_64 || (PCI_GODIRECT || PCI_GOANY))
->  
->  config PCI_MMCONFIG
->  	def_bool y
->  	depends on X86_32 && PCI && (ACPI || SFI) && (PCI_GOMMCONFIG
-> || PCI_GOANY) 
-> -config PCI_OLPC
-> -	def_bool y
-> -	depends on PCI && OLPC && (PCI_GOOLPC || PCI_GOANY)
-> -
->  config PCI_DOMAINS
->  	def_bool y
->  	depends on PCI
-> @@ -2060,6 +2052,8 @@ config SCx200HR_TIMER
->  
->  config OLPC
->  	bool "One Laptop Per Child support"
-> +	select PCI
-> +	select PCI_GOANY
->  	select GPIOLIB
->  	---help---
->  	  Add support for detecting the unique features of the OLPC
-> diff --git a/arch/x86/kernel/olpc.c b/arch/x86/kernel/olpc.c
-> index 0e0cdde..10b4dce 100644
-> --- a/arch/x86/kernel/olpc.c
-> +++ b/arch/x86/kernel/olpc.c
-> @@ -241,11 +241,9 @@ static int __init olpc_init(void)
->  	olpc_ec_cmd(EC_FIRMWARE_REV, NULL, 0,
->  			(unsigned char *) &olpc_platform_info.ecver,
-> 1); 
-> -#ifdef CONFIG_PCI_OLPC
->  	/* If the VSA exists let it emulate PCI, if not emulate in
-> kernel */
-> -	if (!cs5535_has_vsa2())
-> +	if (machine_is_olpc_xo_1() && !cs5535_has_vsa2())
->  		x86_init.pci.arch_init = pci_olpc_init;
-> -#endif
->  
->  	printk(KERN_INFO "OLPC board revision %s%X (EC=%x)\n",
->  			((olpc_platform_info.boardrev & 0xf) < 8) ?
-> "pre" : "", diff --git a/arch/x86/pci/Makefile b/arch/x86/pci/Makefile
-> index a0207a7..b0f2712 100644
-> --- a/arch/x86/pci/Makefile
-> +++ b/arch/x86/pci/Makefile
-> @@ -3,7 +3,7 @@ obj-y				:= i386.o init.o
->  obj-$(CONFIG_PCI_BIOS)		+= pcbios.o
->  obj-$(CONFIG_PCI_MMCONFIG)	+= mmconfig_$(BITS).o direct.o
-> mmconfig-shared.o obj-$(CONFIG_PCI_DIRECT)	+= direct.o
-> -obj-$(CONFIG_PCI_OLPC)		+= olpc.o
-> +obj-$(CONFIG_OLPC)		+= olpc.o
->  
->  obj-y				+= fixup.o
->  obj-$(CONFIG_ACPI)		+= acpi.o
-> diff --git a/arch/x86/pci/olpc.c b/arch/x86/pci/olpc.c
-> index b348154..fa5ba7b 100644
-> --- a/arch/x86/pci/olpc.c
-> +++ b/arch/x86/pci/olpc.c
-> @@ -1,5 +1,5 @@
->  /*
-> - * Low-level PCI config space access for OLPC systems who lack the
-> VSA
-> + * Low-level PCI config space access for OLPC XO-1 systems who lack
-> the VSA
->   * PCI virtualization software.
->   *
->   * Copyright © 2006  Advanced Micro Devices, Inc.
-> @@ -304,7 +304,7 @@ static struct pci_raw_ops pci_olpc_conf = {
->  
->  int __init pci_olpc_init(void)
->  {
-> -	printk(KERN_INFO "PCI: Using configuration type OLPC\n");
-> +	printk(KERN_INFO "PCI: Using configuration type OLPC
-> XO-1\n"); raw_pci_ops = &pci_olpc_conf;
->  	is_lx = is_geode_lx();
->  	return 0;
+> Just a marker that these trace points are being used by apps.
 
+I really don't see any additional value in that. Its not like we won't
+change them if we have to.
+
+> But then again, we present the fields in the data. The tools should use
+> a parse library (which a generic one will soon be out too). This way, we
+> don't need them at the "end" but the parsing tools could find the fields
+> no matter where they are in the record. 
+
+Right. They should use the full format specification.
