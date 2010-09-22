@@ -1,61 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366Ab0IVSWu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 14:22:50 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:13502 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751967Ab0IVSWt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 14:22:49 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: Early console confusion
-Date: Wed, 22 Sep 2010 12:21:59 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, yinghai@kernel.org,
-        just.for.lkml@googlemail.com, tglx@linutronix.de, hpa@linux.intel.com,
-        Feng Tang <feng.tang@intel.com>, Alan Cox <alan@linux.intel.com>,
-        greg@kroah.com
-References: <4C7B0578.8090807@kernel.org> <201009221044.58735.bjorn.helgaas@hp.com> <4C9A3487.6080005@zytor.com>
-In-Reply-To: <4C9A3487.6080005@zytor.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1754517Ab0IVSX7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 14:23:59 -0400
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:41181 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752187Ab0IVSX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 14:23:58 -0400
+Date: Wed, 22 Sep 2010 11:43:04 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: Daniel Drake <dsd@laptop.org>
+Cc: tglx@linutronix.de, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] OLPC: Extend BIOS signature check
+Message-ID: <20100922114304.4afb936d@debxo>
+In-Reply-To: <20100922164437.5712F9D401B@zog.reactivated.net>
+References: <20100922164437.5712F9D401B@zog.reactivated.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009221222.00475.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 22, 2010 10:53:27 am H. Peter Anvin wrote:
-> On 09/22/2010 09:44 AM, Bjorn Helgaas wrote:
-> >
-> > If we don't like "uart8250,io,0x3f8" (which I agree is awfully clunky),
-> > we could easily add something like "console=com1" which encapsulated
-> > the well-defined PC concept.
+On Wed, 22 Sep 2010 17:44:37 +0100 (BST)
+Daniel Drake <dsd@laptop.org> wrote:
+
+> The XO-1.5 laptop is not currently detected as an OLPC machine because
+> it fails this XO-1-centric check.
 > 
-> console=ttyS0 ... already works fine.
+> Now that we have OLPC OFW support in the kernel, a more sensible
+> check is to see if we found OFW during boot. This also eliminates the
+> need to check the BIOS signature, since we trust the detection code
+> in olpc_ofw.c
+> 
+> Also remove a now-meaningless codepath, as we're always going to have
+> OFW support with OLPC.
+> 
+> Signed-off-by: Daniel Drake <dsd@laptop.org>
+[...]
+> diff --git a/arch/x86/kernel/olpc.c b/arch/x86/kernel/olpc.c
+> index 10b4dce..52ecc3f 100644
+> --- a/arch/x86/kernel/olpc.c
+> +++ b/arch/x86/kernel/olpc.c
+> @@ -183,7 +183,6 @@ err:
+>  }
+>  EXPORT_SYMBOL_GPL(olpc_ec_cmd);
+>  
+> -#ifdef CONFIG_OLPC_OPENFIRMWARE
+>  static void __init platform_detect(void)
+>  {
+>  	size_t propsize;
+> @@ -197,37 +196,14 @@ static void __init platform_detect(void)
+>  	}
+>  	olpc_platform_info.boardrev = be32_to_cpu(rev);
+>  }
+> -#else
+> -static void __init platform_detect(void)
+> -{
+> -	/* stopgap until OFW support is added to the kernel */
+> -	olpc_platform_info.boardrev = olpc_board(0xc2);
+> -}
+> -#endif
+>  
+>  static int __init olpc_init(void)
+>  {
+> -	unsigned char *romsig;
+> -
+> -	/* The ioremap check is dangerous; limit what we run it on */
+> -	if (!is_geode() || cs5535_has_vsa2())
+> +	if (!olpc_ofw_present())
+>  		return 0;
+>  
+>  	spin_lock_init(&ec_lock);
+>  
+> -	romsig = ioremap(0xffffffc0, 16);
+> -	if (!romsig)
+> -		return 0;
+> -
+> -	if (strncmp(romsig, "CL1   Q", 7))
+> -		goto unmap;
+> -	if (strncmp(romsig+6, romsig+13, 3)) {
+> -		printk(KERN_INFO "OLPC BIOS signature looks
+> invalid.  "
+> -				"Assuming not OLPC\n");
+> -		goto unmap;
+> -	}
+> -
+> -	printk(KERN_INFO "OLPC board with OpenFirmware %.16s\n",
+> romsig); 
+>  
+>  	/* get the platform revision */
+> @@ -250,8 +226,6 @@ static int __init olpc_init(void)
+>  			olpc_platform_info.boardrev >> 4,
+>  			olpc_platform_info.ecver);
+>  
+> -unmap:
+> -	iounmap(romsig);
+>  	return 0;
+>  }
+>  
 
-Yes, but it doesn't give you early output.  You have to wait until the
-8250 driver loads and figures out which device will be ttyS0.
+I'm ecstatic to see this stuff go away.  However, Mitch has pointed out
+that there are embedded x86 machines running OFW, so just checking for
+the existence of OFW is not enough.
 
-If we use "console=tty0" or "console=ttyS0", those are device names
-that don't work until the driver is loaded.  But if we specify the
-device explicitly, via "uart8250", "com1", "hsu", "vga", etc., we
-can make the console work early using a minimal driver, then switch
-to the regular driver later.
+My suggestion would be to change to code to something like:
 
-The question is whether that would be good enough to let us remove
-the "earlycon=" and "earlyprintk=" stuff.
 
-> But yes, it's ugly and we have bass-ackwards compatibility problem...
+spin_lock_init(&ec_lock);
+if (!olpc_ofw_present() && !olpc_platform_detect())
+	return 0;  
+olpc_platform_info.flags |= OLPC_F_PRESENT;
 
-I think earlycon and earlyprintk have minimal backwards compatibility
-problems, since they're mostly for developers.  And if we decided
-we did need to keep them, they could be undocumented and implemented
-on top of "console=" with the appropriate explicit device.
 
-I guess this is all just hot air since I don't have time to actually
-produce any patches :-(
+static int __init olpc_platform_detect(void)
+{
+	const char *olpc_arch = NULL;
+	void *res[] = { &olpc_arch };
 
-Bjorn
+	/* fetch "architecture" property from / of devtree here */
+ 
+	if (!olpc_arch || strncmp(olpc_arch, "olpc"))
+		return -ENODEV;
+
+	return platform_detect();
+}
+
+And actually, once the device-tree stuff is upstream (still pending
+reviews), you can probably fetch the architecture from that rather than
+calling into OFW.
+
+> diff --git a/arch/x86/kernel/olpc_ofw.c b/arch/x86/kernel/olpc_ofw.c
+> index 3218aa7..e7bfcc4 100644
+> --- a/arch/x86/kernel/olpc_ofw.c
+> +++ b/arch/x86/kernel/olpc_ofw.c
+> @@ -74,6 +74,12 @@ int __olpc_ofw(const char *name, int nr_args,
+> const void **args, int nr_res, }
+>  EXPORT_SYMBOL_GPL(__olpc_ofw);
+>  
+> +int olpc_ofw_present(void)
+> +{
+> +	return olpc_ofw_cif != NULL;
+> +}
+> +EXPORT_SYMBOL_GPL(olpc_ofw_present);
+
+Definitely should return a bool.
+
+> +
+>  /* OFW cif _should_ be above this address */
+>  #define OFW_MIN 0xff000000
+>  
+
