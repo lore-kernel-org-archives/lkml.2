@@ -1,71 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256Ab0IVP0I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 11:26:08 -0400
-Received: from xenon13.um.es ([155.54.212.167]:44452 "EHLO xenon13.um.es"
+	id S1755136Ab0IVP3j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 11:29:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34197 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754778Ab0IVP0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 11:26:07 -0400
-Subject: Re: CFQ I/O scheduler better than AS?
-From: Juan PC <piernas@ditec.um.es>
-To: diegocg@gmail.com
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <201009221410.17056.diegocg@gmail.com>
-References: <1285152908.10774.306.camel@albahaca.inf.um.es>
-	 <201009221410.17056.diegocg@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 22 Sep 2010 17:26:00 +0200
-Message-Id: <1285169160.10774.317.camel@albahaca.inf.um.es>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 8bit
+	id S1753788Ab0IVP3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 11:29:38 -0400
+Date: Wed, 22 Sep 2010 11:28:34 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: Andi Kleen <andi@firstfloor.org>, rusty@rustcorp.co.au,
+        rostedt@goodmis.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        hpa@zytor.com, tglx@linutronix.de, roland@redhat.com, rth@redhat.com,
+        mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org,
+        tony@bakeyournoodle.com, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/2] Rewrite jump_label.c to use binary search
+Message-ID: <20100922152833.GD2816@redhat.com>
+References: <1285150102-5506-1-git-send-email-andi@firstfloor.org> <1285150102-5506-2-git-send-email-andi@firstfloor.org> <20100922113114.GA14179@Krystal> <4a8f3ad8416ed61cba1746883da1f839.squirrel@www.firstfloor.org> <589c3dd38437c80704d8224523efbccc.squirrel@www.firstfloor.org> <20100922150250.GB4897@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100922150250.GB4897@Krystal>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Diego,
-
-El mié, 22-09-2010 a las 14:10 +0200, Diego Calleja escribió:
-> On Miércoles, 22 de Septiembre de 2010 12:55:08 Juan PC escribió:
-> > Hi:
+On Wed, Sep 22, 2010 at 11:02:50AM -0400, Mathieu Desnoyers wrote:
+> * Andi Kleen (andi@firstfloor.org) wrote:
 > > 
-> > I am sure that, for most people, the clear answer is "yes" (after all,
-> > CFQ is the default I/O scheduler in Linux), but we are having serious
-> > difficulties to find a benchmark which shows that CFQ is undoubtedly
-> > better than AS.
+> > >
+> > >>> +	for (; entry < stop && entry->key == key; entry++)
+> > >>> +		if (kernel_text_address(entry->code))
+> > >>
+> > >> This does not work for modules I'm afraid, only for the core kernel. You
+> > >> should test for __module_text_address() somewhere.
+> > >
+> > > I thought it was shared now, but ok.
+> > 
+> > Double checked. This is ok because kernel_text_address()
+> > already checks for modules. You were probably thinking
+> > of __kernel_text_address()
 > 
-> The AS io scheduler was removed in 2.6.33 (7 months ago, in commit 
-> 492af6350a5ccf087e4964104a276ed358811458), so you must be running
-> benchmarks in old kernels. The CFQ scheduler used in recent kernels
-> should have good performance (if it doesn't, you probably should
-> write a bug report ccing jens.axboe@oracle.com)
+> Ah right,
 > 
-Well, 2.6.30/31 are not so old ;-)
+> Although we have another problem:
+> 
+> __module_text_address() includes module init text, which defeats the
+> purpose of the check put in there by Jason.
+> 
+> So the check works for the core kernel, but not for modules.
+> 
+> Mathieu
+> 
 
-However, this fact reinforces my question. I guess that AS was removed
-due to a good reason, probably, some benchmark results. If so, those are
-the benchmarks I am looking for. Do you know their names?
+it works for modules too...it does:
 
-Thanks in advance!
+struct module *__module_text_address(unsigned long addr)
+{
+        struct module *mod = __module_address(addr);
+        if (mod) {
+                /* Make sure it's within the text section. */
+                if (!within(addr, mod->module_init, mod->init_text_size)
+                    && !within(addr, mod->module_core,
+mod->core_text_size))
+                        mod = NULL;
+        }
+        return mod;
+}
 
-	Juan
+and then in kernel/module.c we have :
 
-PD: BTW, congratulations for your D'Oh blog ;-)
 
-> Saludos ;)
--- 
-D. Juan Piernas Cánovas
-Departamento de Ingeniería y Tecnología de Computadores
-Facultad de Informática. Universidad de Murcia
-Campus de Espinardo - 30080 Murcia (SPAIN)
-Tel.: +34868887657    Fax: +34868884151
-email: piernas@ditec.um.es
-PGP public key:
-http://pgp.rediris.es:11371/pks/lookup?search=piernas%
-40ditec.um.es&op=index
+        module_free(mod, mod->module_init);
+        mod->module_init = NULL;
 
-*** Por favor, envíeme sus documentos en formato texto, HTML, PDF o
-PostScript :-) ***
-You have new mail in /var/spool/mail/piernas
+
+So, I was relying on the fact module_init gets set to NULL after the
+free happens. However, there a small race there in that the vfree()
+happens before module_init() is set to NULL. So that is probably most
+easily fixed be wrapping those two lines with the jump_label_mutex.
+
+thanks,
+
+-Jason
 
 
