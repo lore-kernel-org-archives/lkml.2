@@ -1,46 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752932Ab0IVWGN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 18:06:13 -0400
-Received: from quartz.orcorp.ca ([139.142.54.143]:39258 "EHLO quartz.orcorp.ca"
+	id S1753035Ab0IVWHs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 18:07:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50579 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751217Ab0IVWGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 18:06:12 -0400
-Date: Wed, 22 Sep 2010 16:06:11 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        linux-rdma <linux-rdma@vger.kernel.org>,
-        Bernard Metzler <BMT@zurich.ibm.com>
-Subject: Re: [PATCH 2/2] siw: Add support for CRC32C offload instruction
-	using libcrypto crc32c-intel
-Message-ID: <20100922220611.GL11157@obsidianresearch.com>
-References: <1285187425-10950-1-git-send-email-nab@linux-iscsi.org> <4C9A698B.90806@linux.intel.com> <1285187901.1849.85.camel@haakon2.linux-iscsi.org> <20100922205943.GI11157@obsidianresearch.com> <1285189241.1849.112.camel@haakon2.linux-iscsi.org> <20100922211808.GJ11157@obsidianresearch.com> <1285191511.1849.126.camel@haakon2.linux-iscsi.org>
+	id S1751651Ab0IVWHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 18:07:47 -0400
+Message-ID: <4C9A7E1C.4080509@zytor.com>
+Date: Wed, 22 Sep 2010 15:07:24 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1285191511.1849.126.camel@haakon2.linux-iscsi.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.11
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+CC: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: tidy e820 output
+References: <20100922172744.19085.41844.stgit@bob.kio> <201009221522.06873.bjorn.helgaas@hp.com> <4C9A764B.5030600@zytor.com> <201009221605.21447.bjorn.helgaas@hp.com>
+In-Reply-To: <201009221605.21447.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 22, 2010 at 02:38:31PM -0700, Nicholas A. Bellinger wrote:
+On 09/22/2010 03:05 PM, Bjorn Helgaas wrote:
+> 
+> OK, I managed to overcome my aversion to KERN_CONT to try again:
+> 
 
-> So I think the main bit here is the ability to request
-> crc32c-intel.ko first, and then fall back to crc32c.ko when the
-> former is not available on CONFIG_X86.
+If you don't want to use KERN_CONT there is always sprintf.
 
-Well, it is what Andi said, everything is working fine but there is no
-mechanism to autoload the accelerated crypto module. If you did
-modprobe crc32c_intel prior to loading your driver it would
-automatically get crc32c-intel when it asks for crc32c since it is
-loaded and a higher priority.
-
-So, the drivers are correct to just request crc32c .. The work around
-to limited autoprobing is so trivial (modprob crc32_intel) I'm not
-sure including extra autoprobing code in the drivers is worthwhile?
-
-Jason
+	-hpa
