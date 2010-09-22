@@ -1,73 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755148Ab0IVPHy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 11:07:54 -0400
-Received: from tomts10-srv.bellnexxia.net ([209.226.175.54]:40514 "EHLO
-	tomts10-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755101Ab0IVPHw (ORCPT
+	id S1755009Ab0IVPNi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 11:13:38 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:36601 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754894Ab0IVPNg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 11:07:52 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAL63mUxGGN6i/2dsb2JhbACiLnLEGIVBBI8w
-Date: Wed, 22 Sep 2010 11:02:50 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: jbaron@redhat.com, rusty@rustcorp.co.au, rostedt@goodmis.com,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, hpa@zytor.com,
-        tglx@linutronix.de, roland@redhat.com, rth@redhat.com,
-        mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
-        davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org,
-        tony@bakeyournoodle.com, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 2/2] Rewrite jump_label.c to use binary search
-Message-ID: <20100922150250.GB4897@Krystal>
-References: <1285150102-5506-1-git-send-email-andi@firstfloor.org> <1285150102-5506-2-git-send-email-andi@firstfloor.org> <20100922113114.GA14179@Krystal> <4a8f3ad8416ed61cba1746883da1f839.squirrel@www.firstfloor.org> <589c3dd38437c80704d8224523efbccc.squirrel@www.firstfloor.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 22 Sep 2010 11:13:36 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, just.for.lkml@googlemail.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Subject: Early console confusion
+Date: Wed, 22 Sep 2010 09:12:44 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
+References: <4C7B0578.8090807@kernel.org> <tip-83d9f65bdae6f6b34d75282c6618d3f50846849a@git.kernel.org>
+In-Reply-To: <tip-83d9f65bdae6f6b34d75282c6618d3f50846849a@git.kernel.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <589c3dd38437c80704d8224523efbccc.squirrel@www.firstfloor.org>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 11:01:29 up 168 days, 52 min,  3 users,  load average: 0.07,
-	0.12, 0.09
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Message-Id: <201009220912.45360.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Andi Kleen (andi@firstfloor.org) wrote:
-> 
-> >
-> >>> +	for (; entry < stop && entry->key == key; entry++)
-> >>> +		if (kernel_text_address(entry->code))
-> >>
-> >> This does not work for modules I'm afraid, only for the core kernel. You
-> >> should test for __module_text_address() somewhere.
-> >
-> > I thought it was shared now, but ok.
-> 
-> Double checked. This is ok because kernel_text_address()
-> already checks for modules. You were probably thinking
-> of __kernel_text_address()
+Can somebody explain the differences between
 
-Ah right,
+	earlycon=uart,...
+	earlycon=uart8250,...
+	earlyprintk=serial,...
+	console=uart,...
+	console=uart8250,...
 
-Although we have another problem:
+I'm not really convinced we need them all, and it's getting a
+little confusing.
 
-__module_text_address() includes module init text, which defeats the
-purpose of the check put in there by Jason.
-
-So the check works for the core kernel, but not for modules.
-
-Mathieu
-
-> 
-> -Andi
-> 
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Bjorn
