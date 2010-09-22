@@ -1,81 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab0IVROy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 13:14:54 -0400
-Received: from xenotime.net ([72.52.115.56]:53528 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753427Ab0IVROx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 13:14:53 -0400
-Date: Wed, 22 Sep 2010 10:14:50 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: x0130808@ti.com
-Cc: linux-kernel@vger.kernel.org, Raja Mani <raja_mani@ti.com>,
-        Pramodh AG <pramodh_ag@ti.com>
-Subject: Re: [RFC/PATCH 9/9] Staging:ti-st: Update Kconfig and Makefile for
-Message-Id: <20100922101450.8abc7b7e.rdunlap@xenotime.net>
-In-Reply-To: <1285156119-28531-10-git-send-email-x0130808@ti.com>
-References: <1285156119-28531-1-git-send-email-x0130808@ti.com>
-	<1285156119-28531-2-git-send-email-x0130808@ti.com>
-	<1285156119-28531-3-git-send-email-x0130808@ti.com>
-	<1285156119-28531-4-git-send-email-x0130808@ti.com>
-	<1285156119-28531-5-git-send-email-x0130808@ti.com>
-	<1285156119-28531-6-git-send-email-x0130808@ti.com>
-	<1285156119-28531-7-git-send-email-x0130808@ti.com>
-	<1285156119-28531-8-git-send-email-x0130808@ti.com>
-	<1285156119-28531-9-git-send-email-x0130808@ti.com>
-	<1285156119-28531-10-git-send-email-x0130808@ti.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753565Ab0IVRWw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 13:22:52 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:32928 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752332Ab0IVRWu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 13:22:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ZlqNngEAArwTKNtEJ6Mbidy0RJNQR8ha+oSJAigsjaq/U2RDX4Q4IZVNNIsq2rP9J5
+         l9ErxgZXIKMdCen/fDbT6MeZGTAPb2mPQqgn1SmkwpXB1gSvKRrI7w3CsAHKM3iL1Moo
+         2CE0jrGYArykVfD4pahBmwhSe6A351i+mTl4M=
+Date: Wed, 22 Sep 2010 19:22:31 +0200
+From: Jarek Poplawski <jarkao2@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        reiserfs-devel@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: Re: [Bug] possible circular locking in reiserfs_unpack
+Message-ID: <20100922172231.GA1924@del.dom.local>
+References: <20100905113121.GA1876@del.dom.local>
+ <20100908153730.5ad13f71.akpm@linux-foundation.org>
+ <20100909015346.GA5999@nowhere>
+ <4C88F566.7080600@gmail.com>
+ <20100922134944.GA6549@nowhere>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100922134944.GA6549@nowhere>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Sep 2010 07:48:39 -0400 x0130808@ti.com wrote:
+On Wed, Sep 22, 2010 at 03:49:48PM +0200, Frederic Weisbecker wrote:
+> 
+> I can reproduce your first case, but not this one.
+> 
+> So, I hope you can give a try to the following fix,
+> 
+> Thanks!
+> 
 
-> From: Raja Mani <raja_mani@ti.com>
+With this patch I don't have any lockdep warnings during lilo writes.
+
+Well done, thanks!
+
+Tested-by: Jarek Poplawski <jarkao2@gmail.com>
+
 > 
-> Add new menu option in Kconfig and compilation option in Makefile for
-> TI FM driver.
-> 
-> Signed-off-by: Raja Mani <raja_mani@ti.com>
-> Signed-off-by: Pramodh AG <pramodh_ag@ti.com>
-> Signed-off-by: Manjunatha Halli <x0130808@ti.com>
-> ---
->  drivers/staging/ti-st/Kconfig  |    8 ++++++++
->  drivers/staging/ti-st/Makefile |    2 ++
->  2 files changed, 10 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/staging/ti-st/Kconfig b/drivers/staging/ti-st/Kconfig
-> index 1b264a3..7e48749 100644
-> --- a/drivers/staging/ti-st/Kconfig
-> +++ b/drivers/staging/ti-st/Kconfig
-> @@ -23,4 +23,12 @@ config ST_BT
->  	  This makes use of shared transport line discipline core driver to
->  	  communicate with the BT core of the combo chip.
+> diff --git a/fs/reiserfs/ioctl.c b/fs/reiserfs/ioctl.c
+> index f53505d..90a757b 100644
+> --- a/fs/reiserfs/ioctl.c
+> +++ b/fs/reiserfs/ioctl.c
+> @@ -170,7 +170,7 @@ int reiserfs_prepare_write(struct file *f, struct page *page,
+>  int reiserfs_unpack(struct inode *inode, struct file *filp)
+>  {
+>  	int retval = 0;
+> -	int index;
+> +	int index, depth;
+>  	struct page *page;
+>  	struct address_space *mapping;
+>  	unsigned long write_from;
+> @@ -185,11 +185,12 @@ int reiserfs_unpack(struct inode *inode, struct file *filp)
+>  		return 0;
+>  	}
 >  
-> +config ST_FM
-> +	tristate "fm driver for ST"
-> +	depends on VIDEO_DEV
-
-	depends on VIDEO_DEV && RFKILL
-
-since TI_ST depends on RFKILL.
-
-> +	select TI_ST
-> +	help
-> +	  This enables the FM driver for TI BT/FM/GPS combo devices
-
-	End above sentence with '.', please.
-
-> +	  This makes use of shared transport line discipline core driver to
-> +	  communicate with the FM core of the combo chip.
->  endmenu
-
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+> +	depth = reiserfs_write_lock_once(inode->i_sb);
+> +
+>  	/* we need to make sure nobody is changing the file size beneath
+>  	 ** us
+>  	 */
+> -	mutex_lock(&inode->i_mutex);
+> -	reiserfs_write_lock(inode->i_sb);
+> +	reiserfs_mutex_lock_safe(&inode->i_mutex, inode->i_sb);
+>  
+>  	write_from = inode->i_size & (blocksize - 1);
+>  	/* if we are on a block boundary, we are already unpacked.  */
+> @@ -224,6 +225,6 @@ int reiserfs_unpack(struct inode *inode, struct file *filp)
+>  
+>        out:
+>  	mutex_unlock(&inode->i_mutex);
+> -	reiserfs_write_unlock(inode->i_sb);
+> +	reiserfs_write_unlock_once(inode->i_sb, depth);
+>  	return retval;
+>  }
+> 
