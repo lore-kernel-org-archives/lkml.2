@@ -1,89 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136Ab0IVP3j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 11:29:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34197 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753788Ab0IVP3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 11:29:38 -0400
-Date: Wed, 22 Sep 2010 11:28:34 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: Andi Kleen <andi@firstfloor.org>, rusty@rustcorp.co.au,
-        rostedt@goodmis.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        hpa@zytor.com, tglx@linutronix.de, roland@redhat.com, rth@redhat.com,
-        mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
-        davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org,
-        tony@bakeyournoodle.com, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 2/2] Rewrite jump_label.c to use binary search
-Message-ID: <20100922152833.GD2816@redhat.com>
-References: <1285150102-5506-1-git-send-email-andi@firstfloor.org> <1285150102-5506-2-git-send-email-andi@firstfloor.org> <20100922113114.GA14179@Krystal> <4a8f3ad8416ed61cba1746883da1f839.squirrel@www.firstfloor.org> <589c3dd38437c80704d8224523efbccc.squirrel@www.firstfloor.org> <20100922150250.GB4897@Krystal>
+	id S1755265Ab0IVPba (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 11:31:30 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:52010 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754880Ab0IVPb3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 11:31:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=VrQfsl23MCihs766Xuw5IBGSrMml0wI0CtSfUggEfFlhmg8QCs4iTpyfJC8svMmoVi
+         wi3MLOKSgVTeiKFbLQxmHANEeqNxXN/slHycOVxualg/sMTpRaPNjv8+b1ufeJrqHVXj
+         LOWDVMlR18rpAX8bZ2WH2Wrmh3hhuTdR+eUmc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100922150250.GB4897@Krystal>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <s5hmxr97sfb.wl%tiwai@suse.de>
+References: <20100921173254.GA3037@ht>
+	<s5hwrqenmz4.wl%tiwai@suse.de>
+	<AANLkTikgOaBizi2z+AuAgD+anvmc+kG3z9KTqfzXs1zm@mail.gmail.com>
+	<s5hmxr97sfb.wl%tiwai@suse.de>
+Date: Wed, 22 Sep 2010 18:31:26 +0300
+X-Google-Sender-Auth: d263gtYEUnqfbBitiqaWedE7Cs4
+Message-ID: <AANLkTi=Tctwyz=wLWSpf09Ex18wNgHqDv7PRSxXQ8LTw@mail.gmail.com>
+Subject: Re: PROBLEM: snd_intel_hda audio regression in 2.6.36-rc5
+From: Aki Parviainen <aki.parviainen@iki.fi>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org, perex@perex.cz
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 22, 2010 at 11:02:50AM -0400, Mathieu Desnoyers wrote:
-> * Andi Kleen (andi@firstfloor.org) wrote:
-> > 
-> > >
-> > >>> +	for (; entry < stop && entry->key == key; entry++)
-> > >>> +		if (kernel_text_address(entry->code))
-> > >>
-> > >> This does not work for modules I'm afraid, only for the core kernel. You
-> > >> should test for __module_text_address() somewhere.
-> > >
-> > > I thought it was shared now, but ok.
-> > 
-> > Double checked. This is ok because kernel_text_address()
-> > already checks for modules. You were probably thinking
-> > of __kernel_text_address()
-> 
-> Ah right,
-> 
-> Although we have another problem:
-> 
-> __module_text_address() includes module init text, which defeats the
-> purpose of the check put in there by Jason.
-> 
-> So the check works for the core kernel, but not for modules.
-> 
-> Mathieu
-> 
+>
+> So, you are testing only over SPDIF output, right?
 
-it works for modules too...it does:
+Yes, I'm only using SPDIF output!
 
-struct module *__module_text_address(unsigned long addr)
-{
-        struct module *mod = __module_address(addr);
-        if (mod) {
-                /* Make sure it's within the text section. */
-                if (!within(addr, mod->module_init, mod->init_text_size)
-                    && !within(addr, mod->module_core,
-mod->core_text_size))
-                        mod = NULL;
-        }
-        return mod;
-}
+> Looks like the SPDIF status bits has been reset by some reason.
+> Try to restore via iecset program included in alsa-utils package,
+> e.g.
+>    iecset original on
+>    iecset category 0x02
 
-and then in kernel/module.c we have :
+I tried this and didn't notice any difference.
 
+>
+> If this doesn't help, try to unload sound driver once, remove (or
+> backup) /etc/asound.state (which might be in a different path
+> depending on the distro), then load sound modules again.
+> This will restore the default SPDIF status.  Unmute / adjust mixer
+> setups appropriately after doing this.
 
-        module_free(mod, mod->module_init);
-        mod->module_init = NULL;
+I also tried this but didn't notice a difference but however I noticed
+a workaround to this problem that might be related to deleting the
+asound.state (debian places it btw to /var/lib/alsa/asound.state): now
+the regular audio works via SPDIF once again if I first play a file
+with digital preencoded audio. Ie:
 
+-Boot with 2.6.36-rc5
+-Start kaffeine
+-Play mp3 file -> no sound at all via spdif
+-Play mkv file with 5.1 sound -> sound ok
+-Play mp3 file again -> sound ok!
+-Exit kaffeine & restart kaffeine or vlc
+-Play mp3 file again -> sound ok!
 
-So, I was relying on the fact module_init gets set to NULL after the
-free happens. However, there a small race there in that the vfree()
-happens before module_init() is set to NULL. So that is probably most
-easily fixed be wrapping those two lines with the jump_label_mutex.
+Unfortunately the fix isn't permanent because after reboot I cannot
+get regular sound via spdif until I have once played a file with 5.1
+audio track.
 
-thanks,
+Yours,
 
--Jason
-
-
+Aki
