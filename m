@@ -1,88 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751178Ab0IVEYD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 00:24:03 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:33353 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750736Ab0IVEYC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 00:24:02 -0400
-Date: Wed, 22 Sep 2010 09:53:54 +0530
+	id S1751158Ab0IVEed (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 00:34:33 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:34582 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750763Ab0IVEec (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 00:34:32 -0400
+Date: Wed, 22 Sep 2010 10:04:24 +0530
 From: Balbir Singh <balbir@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: eranian@google.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-        perfmon2-devel@lists.sf.net, eranian@gmail.com, robert.richter@amd.com,
-        acme@redhat.com, Paul Menage <menage@google.com>,
-        Li Zefan <lizf@cn.fujitsu.com>
+Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
+        robert.richter@amd.com, acme@redhat.com,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>
 Subject: Re: [RFC PATCH 0/2] perf_events: add support for per-cpu per-cgroup
  monitoring (v3)
-Message-ID: <20100922042354.GG6676@balbir.in.ibm.com>
+Message-ID: <20100922043424.GH6676@balbir.in.ibm.com>
 Reply-To: balbir@linux.vnet.ibm.com
 References: <4c88dc9c.991ce30a.3d91.3e0e@mx.google.com>
  <1285061899.2275.824.camel@laptop>
+ <1285062228.2275.826.camel@laptop>
+ <AANLkTik-oMNJdakwsH=22LzgYvgd35aom+Zu2WkchUte@mail.gmail.com>
+ <1285072975.2275.872.camel@laptop>
+ <AANLkTinmHGtLFRa4O5DNRGgoRtM4cy65JgCw=sYxEjNF@mail.gmail.com>
+ <1285077801.2275.881.camel@laptop>
+ <AANLkTimFgsOkMaX9FFidqL-6SHStgqW6v73F3rM-Kmmz@mail.gmail.com>
+ <1285086447.2275.887.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1285061899.2275.824.camel@laptop>
+In-Reply-To: <1285086447.2275.887.camel@laptop>
 User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2010-09-21 11:38:19]:
+* Peter Zijlstra <peterz@infradead.org> [2010-09-21 18:27:27]:
 
-> On Thu, 2010-09-09 at 15:05 +0200, Stephane Eranian wrote:
-> > The cgroup to monitor is designated by passing a file descriptor opened
-> > on a new per-cgroup file in the cgroup filesystem (perf_event.perf). The
-> > option must be activated by setting perf_event_attr.cgroup=1 and passing
-> > a valid file descriptor in perf_event_attr.cgroup_fd. Those are the only
-> > two ABI extensions. 
+> On Tue, 2010-09-21 at 18:17 +0200, Stephane Eranian wrote:
+> > On Tue, Sep 21, 2010 at 4:03 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > > On Tue, 2010-09-21 at 15:38 +0200, Stephane Eranian wrote:
+> > >> > Hmm, indeed. One thing we can do about that is move perf into the
+> > >> > cgroup, create the counter (disabled) using self to identify the cgroup,
+> > >> > move perf back to where it came from, and enable the counter.
+> > >> >
+> > >> Yes, that's another possibility. I wonder if there are any non-obvious
+> > >> difficulties with this approach.
+> > >
+> > > Yes, there is, but I think we can fix it. The problem with moving perf
+> > > itself around is that perf is not a fully dormant process and can thus
+> > > interact with the cgroup state.
+> > >
+> > I was thinking about memory accounting for instance.
 > 
-> > +++ b/include/linux/perf_event.h
-> > @@ -215,8 +215,9 @@ struct perf_event_attr {
-> >                                  */
-> >                                 precise_ip     :  2, /* skid constraint       */
-> >                                 mmap_data      :  1, /* non-exec mmap data    */
-> > +                               cgroup         :  1, /* cgroup aggregation    */
-> >  
-> > -                               __reserved_1   : 46;
-> > +                               __reserved_1   : 45;
-> >  
-> >         union {
-> >                 __u32           wakeup_events;    /* wakeup every n events */
-> > @@ -226,6 +227,8 @@ struct perf_event_attr {
-> >         __u32                   bp_type;
-> >         __u64                   bp_addr;
-> >         __u64                   bp_len;
-> > +
-> > +       int                     cgroup_fd;
-> >  };
-> >  
-> >  /*
-> 
-> I'm not sure I like this much.. so we attach to {pid,cpu}, for nodes we
-> can use cpu_to_node(cpu), which would suggest to use
-> cgroup_of_task(pid), except that a task can be part of multiple cgroups,
-> so its not unique.
+> I think the memory controller only accounts things when the process
+> actually touches something. A process that never wakes will never touch
+> anything.
 
-Yes, a task can belong to multiple subsystems, hence multiple cgroups.
-Ideally we'd want to use pid + subsystem
+That understanding is correct, but the whole approach sounds more
+complex due to several subsystems involved, the expectation is that
+we'll move perf to all the correct cgroups for each subsystem.
 
 > 
-> One thing we could do is pass this cgroup identifier in the pid field
-> and use PERF_FLAG_CGROUP or something. Currently the syscall signature
-> uses pid_t, but I think we can safely change that to int.
-
-Or union it and overload the field to contain either pid_t or fd of the cgroup
-
+> > > If we were to fork a child that's simply sitting idle in waitpid() (or
+> > > any other blocking syscall) we can move that around cgroup without
+> > > affecting the cgroup itself.
+> > 
+> > But then things get a bit more complicated because the perf_event_open()
+> > has to be done in that child. File descriptors created in child processes
+> > and not shared with their parent. You'd have to pass file descriptors around.
+> > That seems overly complicated.
 > 
-> You create a special new file in the cgroup stuff, I'm not sure about
-> that either, but its not something I feel too strongly about, why
-> wouldn't a fd of any file or even directory of that cgroup work? Do the
-> cgroup people have an opinion?
+> Uhm, no the trick is that the child remains absolutely dormant and
+> therefore doesn't accrue any accounting, all you need is a known task in
+> the cgroup, the parent can then specify the child pid to identify the
+> group.
+> 
+> Once you've opened the counter, you can move the kid out and kill it.
+> Note that moving it out of the cgroup before killing it ensure it never
+> wakes up inside that cgroup.
 
-No strong opinions either way at my end.
-
+What the benefits of this complexity, not chaning perf_event_attr?
 
 -- 
 	Three Cheers,
