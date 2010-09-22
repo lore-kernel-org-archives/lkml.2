@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab0IVJ7b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 05:59:31 -0400
-Received: from smtp1.it.da.ut.ee ([193.40.5.66]:52762 "EHLO smtp1.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751511Ab0IVJ7a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 05:59:30 -0400
-Date: Wed, 22 Sep 2010 12:59:28 +0300 (EEST)
-From: Meelis Roos <mroos@linux.ee>
-To: Florian Mickler <florian@mickler.org>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Vikas Chaudhary <vikas.chaudhary@qlogic.com>
-Subject: Re: [Bug #16971] qla4xxx compile failure on 32-bit PowerPC: missing
- readq and writeq
-In-Reply-To: <20100922114612.6eeae729@schatten.dmk.lab>
-Message-ID: <alpine.SOC.1.00.1009221253450.14750@math.ut.ee>
-References: <1fwtoy8sG5H.A.veG.9D7lMB@chimera> <Wn2eLj_6KZG.A.SpH.KF7lMB@chimera> <alpine.SOC.1.00.1009221148550.14750@math.ut.ee> <20100922114612.6eeae729@schatten.dmk.lab>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+	id S1752587Ab0IVKCf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 06:02:35 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:43591 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751532Ab0IVKCe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 06:02:34 -0400
+Message-ID: <4C99D436.700@panasas.com>
+Date: Wed, 22 Sep 2010 12:02:30 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Kay Sievers <kay.sievers@vrfy.org>
+CC: Greg KH <greg@kroah.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Vasiliy Kulikov <segooon@gmail.com>, kernel-janitors@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Jiri Slaby <jirislaby@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        James Bottomley <James.Bottomley@suse.de>,
+        Dan Carpenter <error27@gmail.com>
+Subject: Re: [PATCH 04/14] memstick: core: fix device_register() error handling
+References: <1284900889-24369-1-git-send-email-segooon@gmail.com> <20100921152031.30365b3f.akpm@linux-foundation.org> <20100921224947.GA20183@kroah.com> <AANLkTimQWtQTBe3RBSbYd7vM4Y+SckkoBDbO8E+SwtJj@mail.gmail.com>
+In-Reply-To: <AANLkTimQWtQTBe3RBSbYd7vM4Y+SckkoBDbO8E+SwtJj@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 22 Sep 2010 10:02:33.0757 (UTC) FILETIME=[46CD84D0:01CB5A3D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16971
-> > > Subject		: qla4xxx compile failure on 32-bit PowerPC: missing readq and writeq
-> > > Submitter	: Meelis Roos <mroos@linux.ee>
-> > > Date		: 2010-08-19 21:03 (33 days old)
-> > > Message-ID	: <alpine.SOC.1.00.1008192359310.19654@math.ut.ee>
-> > > References	: http://marc.info/?l=linux-kernel&m=128225184900892&w=2
-> > 
-> > Still present. The maintainer of the driver has a patch that I have 
-> > tested, and for quite some time now, but it still does not appear in 
-> > mainline.
+On 09/22/2010 10:53 AM, Kay Sievers wrote:
+> On Wed, Sep 22, 2010 at 00:49, Greg KH <greg@kroah.com> wrote:
 > 
-> Do you have a pointer to the maintainer and the patch, so that we can
-> update the bugzilla entry and ping the maintainer? 
+>>  int device_register(struct device *dev)
+>>  {
+>> +       int retval;
+>> +
+>>        device_initialize(dev);
+>> -       return device_add(dev);
+>> +       retval = device_add(dev);
+>> +       if (retval)
+>> +               put_device(dev);
+>> +       return retval;
+>>  }
+> 
+>> Kay, what am I missing here, why can't we just do this?  Hm, the
+>> side-affect might be that if device_register() fails, NO ONE had better
+>> touch that device again, as it might have just been freed from the
+>> system.  I wonder if that will cause problems...
+> 
+> That looks right, besides that there might be callers already doing
+> this. Which needs to be checked.
+> 
+> I never liked this pretty useless "convenience API", which just wraps
+> two simple functions and the first one can never fail anyway.
+> 
+> We better remove that device_register() stuff entirely in the long
+> run, it's not doing any good. At the kobject level we killed the same
+> stuff already long ago.
+> 
 
-The patch was made by Vikas Chaudhary <vikas.chaudhary@qlogic.com> 
-(CC:d) and sent to me by private me-mail. I was first dubious about 
-possible endianness problem with qla4xxx private readq and writeq 
-implementation but he told they forcefully tested it on PPC64 and it 
-worked.
+That would be fine, and ping me when you do it, I'll help with my
+driver. But don't forget to let us have a way to embed a device inside
+a bigger structure.
 
-Last I heard from him on September 6th when he wrote he intended to push 
-the patch upstream together with other patches the same week.
+For meanwhile Please check the patch James sent to add_device that cleans
+up the allocation of the kobj.name member. (And the comment made there)
 
--- 
-Meelis Roos (mroos@linux.ee)
+> Kay
+
+Thanks
+Boaz
