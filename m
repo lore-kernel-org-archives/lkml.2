@@ -1,153 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517Ab0IVSX7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 14:23:59 -0400
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:41181 "EHLO lunge.queued.net"
+	id S1754577Ab0IVSYN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 14:24:13 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:46761 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752187Ab0IVSX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 14:23:58 -0400
-Date: Wed, 22 Sep 2010 11:43:04 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: Daniel Drake <dsd@laptop.org>
-Cc: tglx@linutronix.de, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] OLPC: Extend BIOS signature check
-Message-ID: <20100922114304.4afb936d@debxo>
-In-Reply-To: <20100922164437.5712F9D401B@zog.reactivated.net>
-References: <20100922164437.5712F9D401B@zog.reactivated.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753932Ab0IVSYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 14:24:10 -0400
+Date: Wed, 22 Sep 2010 20:23:56 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Jean Pihet <jean.pihet@newoldbits.com>,
+        Thomas Renninger <trenn@suse.de>, Len Brown <len.brown@intel.com>,
+        arjan@infradead.org, Kevin Hilman <khilman@deeprootsystems.com>,
+        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-omap@vger.kernel.org, linux-perf-users@vger.kernel.org,
+        linux-trace-users@vger.kernel.org
+Subject: Re: [PATCH] tracing, perf: add more power related events
+Message-ID: <20100922182356.GB9058@elte.hu>
+References: <20100917162412.GB3341@elte.hu>
+ <201009180026.59482.trenn@suse.de>
+ <AANLkTimMAr9kEzybFGai3qGyXx36v055iPpXq_C1vW8C@mail.gmail.com>
+ <4C9A21AD.1000800@linux.intel.com>
+ <AANLkTim6B+Je=LykgJb9=0vK5Br1rkft619BRJkBcHdP@mail.gmail.com>
+ <4C9A2FB3.105@linux.intel.com>
+ <1285173835.2275.1026.camel@laptop>
+ <4C9A37AE.2010509@linux.intel.com>
+ <1285176629.2275.1033.camel@laptop>
+ <1285179355.26872.27.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285179355.26872.27.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0003]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Sep 2010 17:44:37 +0100 (BST)
-Daniel Drake <dsd@laptop.org> wrote:
 
-> The XO-1.5 laptop is not currently detected as an OLPC machine because
-> it fails this XO-1-centric check.
-> 
-> Now that we have OLPC OFW support in the kernel, a more sensible
-> check is to see if we found OFW during boot. This also eliminates the
-> need to check the BIOS signature, since we trust the detection code
-> in olpc_ofw.c
-> 
-> Also remove a now-meaningless codepath, as we're always going to have
-> OFW support with OLPC.
-> 
-> Signed-off-by: Daniel Drake <dsd@laptop.org>
-[...]
-> diff --git a/arch/x86/kernel/olpc.c b/arch/x86/kernel/olpc.c
-> index 10b4dce..52ecc3f 100644
-> --- a/arch/x86/kernel/olpc.c
-> +++ b/arch/x86/kernel/olpc.c
-> @@ -183,7 +183,6 @@ err:
->  }
->  EXPORT_SYMBOL_GPL(olpc_ec_cmd);
->  
-> -#ifdef CONFIG_OLPC_OPENFIRMWARE
->  static void __init platform_detect(void)
->  {
->  	size_t propsize;
-> @@ -197,37 +196,14 @@ static void __init platform_detect(void)
->  	}
->  	olpc_platform_info.boardrev = be32_to_cpu(rev);
->  }
-> -#else
-> -static void __init platform_detect(void)
-> -{
-> -	/* stopgap until OFW support is added to the kernel */
-> -	olpc_platform_info.boardrev = olpc_board(0xc2);
-> -}
-> -#endif
->  
->  static int __init olpc_init(void)
->  {
-> -	unsigned char *romsig;
-> -
-> -	/* The ioremap check is dangerous; limit what we run it on */
-> -	if (!is_geode() || cs5535_has_vsa2())
-> +	if (!olpc_ofw_present())
->  		return 0;
->  
->  	spin_lock_init(&ec_lock);
->  
-> -	romsig = ioremap(0xffffffc0, 16);
-> -	if (!romsig)
-> -		return 0;
-> -
-> -	if (strncmp(romsig, "CL1   Q", 7))
-> -		goto unmap;
-> -	if (strncmp(romsig+6, romsig+13, 3)) {
-> -		printk(KERN_INFO "OLPC BIOS signature looks
-> invalid.  "
-> -				"Assuming not OLPC\n");
-> -		goto unmap;
-> -	}
-> -
-> -	printk(KERN_INFO "OLPC board with OpenFirmware %.16s\n",
-> romsig); 
->  
->  	/* get the platform revision */
-> @@ -250,8 +226,6 @@ static int __init olpc_init(void)
->  			olpc_platform_info.boardrev >> 4,
->  			olpc_platform_info.ecver);
->  
-> -unmap:
-> -	iounmap(romsig);
->  	return 0;
->  }
->  
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-I'm ecstatic to see this stuff go away.  However, Mitch has pointed out
-that there are embedded x86 machines running OFW, so just checking for
-the existence of OFW is not enough.
+> We could add a TRACE_EVENT_ABI() as Ingo has been suggesting. [...]
 
-My suggestion would be to change to code to something like:
+That would be rather useful.
 
+We could still be flexible about experimental tracepoints (they dont 
+hurt), but apps should stick to ABI bits - or at least not complain when 
+non-ABI tracepoints change for good reasons. (arbitrary, avoidable 
+changes are still bad obviously, regardless of the type of the 
+tracepoint)
 
-spin_lock_init(&ec_lock);
-if (!olpc_ofw_present() && !olpc_platform_detect())
-	return 0;  
-olpc_platform_info.flags |= OLPC_F_PRESENT;
+We'd be more stringent with marking tracepoints an ABI.
 
+So yes, this would be lovely to have.
 
-static int __init olpc_platform_detect(void)
-{
-	const char *olpc_arch = NULL;
-	void *res[] = { &olpc_arch };
-
-	/* fetch "architecture" property from / of devtree here */
- 
-	if (!olpc_arch || strncmp(olpc_arch, "olpc"))
-		return -ENODEV;
-
-	return platform_detect();
-}
-
-And actually, once the device-tree stuff is upstream (still pending
-reviews), you can probably fetch the architecture from that rather than
-calling into OFW.
-
-> diff --git a/arch/x86/kernel/olpc_ofw.c b/arch/x86/kernel/olpc_ofw.c
-> index 3218aa7..e7bfcc4 100644
-> --- a/arch/x86/kernel/olpc_ofw.c
-> +++ b/arch/x86/kernel/olpc_ofw.c
-> @@ -74,6 +74,12 @@ int __olpc_ofw(const char *name, int nr_args,
-> const void **args, int nr_res, }
->  EXPORT_SYMBOL_GPL(__olpc_ofw);
->  
-> +int olpc_ofw_present(void)
-> +{
-> +	return olpc_ofw_cif != NULL;
-> +}
-> +EXPORT_SYMBOL_GPL(olpc_ofw_present);
-
-Definitely should return a bool.
-
-> +
->  /* OFW cif _should_ be above this address */
->  #define OFW_MIN 0xff000000
->  
-
+	Ingo
