@@ -1,67 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754186Ab0IVCz5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 22:55:57 -0400
-Received: from smtp102.vzn.mail.re1.yahoo.com ([69.147.103.189]:33376 "HELO
-	smtp102.vzn.mail.re1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752643Ab0IVCz4 (ORCPT
+	id S1752092Ab0IVDCa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 23:02:30 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:57243 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751039Ab0IVDC2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 22:55:56 -0400
-X-Yahoo-SMTP: fqWQs0mswBBtcNE4XkkshIohcKqpeDUh8nXJG.biWOZq
-X-YMail-OSG: 1ctDs7UVM1lmZ5M0qOA241xAWYphCL.VyFFuo2m3yhFtSoE
- s1f3s_0NBioN55.JRSYEgBIEswRYDhwc3QZNsYbvu3cZkl_KKs5dIQLDz.CU
- 5OnnDeOJvC_6Any1cM9JDiX_hwb77yDoJUUg_ZheBaLa3HUJTlcJGLM2PwHC
- SW9.zc1kmQy9dW5eE0lg5oD2klaBXF7dbLBzwMv9GtxYxLRrGCDUH2cFpC5q
- qU4Pn_T9LAMJMkgy8kypwIyhk.zEuo7fBGWu6P8hQqT6ozUe51MVD85WELLB
- lAJPUwMQbZSkYP8Rr5Xfrj4J3YEzRipa3TONQLYARmQ6Y6eZscaW61gnXTDe
- eh.DPvj.U29t4RTJOMoVgp9LOHTNCzWby7VMO4wvGhqhlmZTqdZ3WBZ84vCB
- zv3CF9QoK
-X-Yahoo-Newman-Property: ymail-3
-From: Johan Kullstam <kullstj_ml@verizon.net>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [Bug #16515] [bisected] Radeon rv280 can't boot on kernel 2.6.35.
-Organization: none
-References: <r2gGqgg1zFC.A.LrE.w97lMB@chimera>
-	<aRnAGz9xZ8K.A.P4F.D_7lMB@chimera>
-Date: Tue, 21 Sep 2010 22:55:53 -0400
-In-Reply-To: <aRnAGz9xZ8K.A.P4F.D_7lMB@chimera> (Rafael J. Wysocki's message
-	of "Mon, 20 Sep 2010 21:57:18 +0200 (CEST)")
-Message-ID: <87tyli4hc6.fsf@emmy.axel.nom>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 21 Sep 2010 23:02:28 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: akpm@linux-foundation.org, Richard Purdie <rpurdie@rpsys.net>,
+        Chris Ball <cjb@laptop.org>, Hein_Tibosch <hein_tibosch@yahoo.es>
+Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: mmotm 2010-09-15 - BUG in mmc driver calling led_trigger_event()
+In-Reply-To: Your message of "Wed, 15 Sep 2010 16:21:43 PDT."
+             <201009152352.o8FNqXGr022752@imap1.linux-foundation.org>
+From: Valdis.Kletnieks@vt.edu
+References: <201009152352.o8FNqXGr022752@imap1.linux-foundation.org>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1285124506_4916P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 21 Sep 2010 23:01:47 -0400
+Message-ID: <8581.1285124507@localhost>
+X-Mirapoint-Received-SPF: 128.173.34.103 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020205.4C99719C.00B0,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Rafael J. Wysocki" <rjw@sisk.pl> writes:
+--==_Exmh_1285124506_4916P
+Content-Type: text/plain; charset=us-ascii
 
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.34 and 2.6.35.
->
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.34 and 2.6.35.  Please verify if it still should
-> be listed and let the tracking team know (either way).
+On Wed, 15 Sep 2010 16:21:43 PDT, akpm@linux-foundation.org said:
+> The mm-of-the-moment snapshot 2010-09-15-16-21 has been uploaded to
+> 
+>    http://userweb.kernel.org/~akpm/mmotm/
 
-Please keep this listed.  As of 2.6.36-rc5 this bug is still with us.
-It was introduced in 2.6.35-rc1.  The 2.6.34.7 kernel is fine.
+Dell Latitude E6500. lspci -v says:
 
-Monitor is on the DVI port.  Once I load the module radeon with
-modeset=1, the machine locks hard.  There are no logs.
+03:01.2 SD Host controller: Ricoh Co Ltd R5C822 SD/SDIO/MMC/MS/MSPro Host Adapter (rev 21) (prog-if 01)
+        Subsystem: Dell Device 024f
+        Flags: bus master, medium devsel, latency 64, IRQ 18
+        Memory at f1bff600 (32-bit, non-prefetchable) [size=256]
+        Capabilities: [80] Power Management version 2
+        Kernel driver in use: sdhci-pci
 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16515
-> Subject		: [bisected] Radeon rv280 can't boot on kernel 2.6.35.
-> Submitter	: Albert Gall <ss3vdr@gmail.com>
-> Date		: 2010-08-04 16:10 (48 days old)
-> First-Bad-Commit: http://git.kernel.org/linus/https://bugzilla.kernel.org/attachment.cgi?id=27350
-> Handled-By	: Alex Deucher <alexdeucher@gmail.com>
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Not consistently repeatable - I had 3 clean boots of this kernel, hit this the 4th time.
 
--- 
-Johan KULLSTAM
+[    2.928661] Freeing unused kernel memory: 892k freed
+[    2.934051] BUG: sleeping function called from invalid context at kernel/mutex.c:278
+[    2.934440] in_atomic(): 1, irqs_disabled(): 0, pid: 11, name: kworker/0:1
+[    2.934777] 3 locks held by kworker/0:1/11:
+[    2.934780]  #0:  (((dev_name(&(mmc)->class_dev)))){+.+...}, at: [<ffffffff81052388>] process_one_work+0x1b5/0x49d
+[    2.934796]  #1:  ((&host->finish_work)){+.+...}, at: [<ffffffff81052388>] process_one_work+0x1b5/0x49d
+[    2.934806]  #2:  (&trigger->leddev_list_lock){.+.+..}, at: [<ffffffff813d464e>] led_trigger_event+0x22/0x75
+[    2.934821] Pid: 11, comm: kworker/0:1 Not tainted 2.6.36-rc4-mmotm0915 #2
+[    2.934825] Call Trace:
+[    2.934833]  [<ffffffff8102e456>] __might_sleep+0x124/0x129
+[    2.934840]  [<ffffffff8156559e>] mutex_lock_nested+0x20/0x39
+[    2.934846]  [<ffffffff813d1412>] sdhci_led_control+0x24/0x52
+[    2.934852]  [<ffffffff813d464e>] ? led_trigger_event+0x22/0x75
+[    2.934858]  [<ffffffff813d4682>] led_trigger_event+0x56/0x75
+[    2.934865]  [<ffffffff813c74c8>] mmc_request_done+0x5c/0x7a
+[    2.934871]  [<ffffffff813d1aba>] sdhci_finish_work+0xe6/0xef
+[    2.934877]  [<ffffffff81052472>] process_one_work+0x29f/0x49d
+[    2.934882]  [<ffffffff81052388>] ? process_one_work+0x1b5/0x49d
+[    2.934888]  [<ffffffff813d19d4>] ? sdhci_finish_work+0x0/0xef
+[    2.934895]  [<ffffffff81052d10>] worker_thread+0x17e/0x251
+[    2.934901]  [<ffffffff81052b92>] ? worker_thread+0x0/0x251
+[    2.934908]  [<ffffffff81056882>] kthread+0x7d/0x85
+[    2.934915]  [<ffffffff81003554>] kernel_thread_helper+0x4/0x10
+[    2.934922]  [<ffffffff815676c0>] ? restore_args+0x0/0x30
+[    2.934928]  [<ffffffff81056805>] ? kthread+0x0/0x85
+[    2.934934]  [<ffffffff81003550>] ? kernel_thread_helper+0x0/0x10
+[    2.941048] mmc0: mmc_rescan: trying to init card at 200000 Hz
+
+Only config diff between the first 3 boots and this one:
+
+ #
+ CONFIG_BINFMT_ELF=y
+ CONFIG_COMPAT_BINFMT_ELF=y
+-CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
++# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
+ # CONFIG_HAVE_AOUT is not set
+ CONFIG_BINFMT_MISC=y
+ CONFIG_IA32_EMULATION=y
+
+which shouldn't matter.
+
+Anything obvious to you guys? Race condition of some sort, or somebody else
+leaving a dangling in_atomic() status for us to get ambushed by? Maybe Hein's
+patches to retry at multiple freqs are causing one of the retries to happen at a
+bad time? I'm mystified.
+
+
+--==_Exmh_1285124506_4916P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFMmXGacC3lWbTT17ARAs4KAJ9Q2rUE2Y72X0NSjgFjswTyO5JU1gCfaS8u
+3v1oy8XxvKHOAguPo5iuN9U=
+=tFPQ
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1285124506_4916P--
+
