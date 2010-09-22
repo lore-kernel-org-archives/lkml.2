@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379Ab0IVQy3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 12:54:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58788 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752828Ab0IVQy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 12:54:28 -0400
-Message-ID: <4C9A3487.6080005@zytor.com>
-Date: Wed, 22 Sep 2010 09:53:27 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+	id S1753464Ab0IVQ5V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 12:57:21 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:54942 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752205Ab0IVQ5U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 12:57:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=Oz45X9k3Ej0NlKzc4CYOQlvafoz8Phy+107J0MjgRJGlxc6LQZgxBX7T/MUOsbUY6h
+         fJdDJ/dVE6Px/jt7blFsiYTb5b3J4gXrsXi9JoY4RoXvynU814Nv5An8LiSQ3d3Himby
+         r0c3XBH+3sEy6TWBMqxFHjZ8dPMqUUdB4N/Es=
 MIME-Version: 1.0
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-CC: mingo@redhat.com, linux-kernel@vger.kernel.org, yinghai@kernel.org,
-        just.for.lkml@googlemail.com, tglx@linutronix.de, hpa@linux.intel.com,
-        Feng Tang <feng.tang@intel.com>, Alan Cox <alan@linux.intel.com>,
-        greg@kroah.com
-Subject: Re: Early console confusion
-References: <4C7B0578.8090807@kernel.org> <201009220912.45360.bjorn.helgaas@hp.com> <4C9A271F.30608@zytor.com> <201009221044.58735.bjorn.helgaas@hp.com>
-In-Reply-To: <201009221044.58735.bjorn.helgaas@hp.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Wed, 22 Sep 2010 17:57:19 +0100
+Message-ID: <AANLkTinv8x495Ga+xKa3RvowjAF02_uL9CH8=-+xDN9X@mail.gmail.com>
+Subject: [2.6.36-rc5] radeon fixes...
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: dri-devel@lists.freedesktop.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2010 09:44 AM, Bjorn Helgaas wrote:
->
-> If we don't like "uart8250,io,0x3f8" (which I agree is awfully clunky),
-> we could easily add something like "console=com1" which encapsulated
-> the well-defined PC concept.
+Fix string interpreted as trigraph and typo.
 
-console=ttyS0 ... already works fine.
+Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+Reviewed-by: Alex Deucher <alexdeucher@gmail.com>
 
-> It would be similar to "earlyprintk=ttyS0",
-> and if it could be made *enough* like it, maybe "earlyprintk=ttyS0"
-> could be dropped.
->
-> I also see the recent "earlyprintk=hsu" patch from  Feng Tang, and I
-> wonder whether that could be recast in the "console=hsu" style.  Like
-> "com1", "hsu" is apparently enough to specifically identify a device.
->
-> I think it's nicer to extend "console=" in ways that allow early
-> devices, because then users don't have to mess with both "console="
-> and "earlyprintk=".  The 8250_early driver has a reasonable model
-> of switching from the early device to the real one automatically,
-> so maybe something like this is all we would need:
+diff --git a/drivers/gpu/drm/radeon/atombios.h
+b/drivers/gpu/drm/radeon/atombios.h
+index 1bc72c3..fe359a2 100644
+--- a/drivers/gpu/drm/radeon/atombios.h
++++ b/drivers/gpu/drm/radeon/atombios.h
+@@ -4999,7 +4999,7 @@ typedef struct _SW_I2C_IO_DATA_PARAMETERS
+ #define SW_I2C_CNTL_WRITE1BIT 6
 
-console= is supported multiple times, and enabling console= shouldn't 
-necessarily enable earlyprintk...
-
-But yes, it's ugly and we have bass-ackwards compatibility problem...
-
-	-hpa
+ //==============================VESA definition
+Portion===============================
+-#define VESA_OEM_PRODUCT_REV			            '01.00'
++#define VESA_OEM_PRODUCT_REV			            "01.00"
+ #define VESA_MODE_ATTRIBUTE_MODE_SUPPORT	     0xBB	//refer to VBE
+spec p.32, no TTY support
+ #define VESA_MODE_WIN_ATTRIBUTE						     7
+ #define VESA_WIN_SIZE											     64
+diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
+index bfdfa3e..e3b47a5 100644
+--- a/drivers/gpu/drm/radeon/r600.c
++++ b/drivers/gpu/drm/radeon/r600.c
+@@ -2727,7 +2727,7 @@ int r600_ib_test(struct radeon_device *rdev)
+ 	if (i < rdev->usec_timeout) {
+ 		DRM_INFO("ib test succeeded in %u usecs\n", i);
+ 	} else {
+-		DRM_ERROR("radeon: ib test failed (sracth(0x%04X)=0x%08X)\n",
++		DRM_ERROR("radeon: ib test failed (scratch(0x%04X)=0x%08X)\n",
+ 			  scratch, tmp);
+ 		r = -EINVAL;
+ 	}
+-- 
+Daniel J Blueman
