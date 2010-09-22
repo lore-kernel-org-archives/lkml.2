@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab0IVPdF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 11:33:05 -0400
-Received: from mga14.intel.com ([143.182.124.37]:19016 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753788Ab0IVPdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 11:33:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,407,1280732400"; 
-   d="scan'208";a="327485726"
-Message-ID: <4C9A21AD.1000800@linux.intel.com>
-Date: Wed, 22 Sep 2010 08:33:01 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
+	id S1755356Ab0IVPd1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 11:33:27 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:41082 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755117Ab0IVPd0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 11:33:26 -0400
+Date: Wed, 22 Sep 2010 16:33:21 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Alan Cox <alan@linux.intel.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] x86/mrst: add SFI platform device parsing code
+Message-ID: <20100922153321.GD32476@sirena.org.uk>
+References: <20100920140049.31408.67527.stgit@localhost.localdomain> <20100920150431.GD31167@sirena.org.uk> <20100920152726.68ac2d84@linux.intel.com> <20100920152705.GJ3414@rakim.wolfsonmicro.main> <AANLkTi=1dkVOWc2WHhYgqKh_awUhp1-uKN8W7Xx3AB_X@mail.gmail.com> <1285168933.4498.119.camel@i7.infradead.org>
 MIME-Version: 1.0
-To: Jean Pihet <jean.pihet@newoldbits.com>
-CC: Thomas Renninger <trenn@suse.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
-        arjan@infradead.org, Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-kernel@vger.kernel.org, discuss@lesswatts.org,
-        linux-pm@lists.linux-foundation.org, linux-omap@vger.kernel.org,
-        linux-perf-users@vger.kernel.org, linux-trace-users@vger.kernel.org
-Subject: Re: [PATCH] tracing, perf: add more power related events
-References: <AANLkTinUmbSUUuxUzc8++pcb9gd1CZFdyTQFrveTBXyV@mail.gmail.com>	<201009171736.14170.trenn@suse.de>	<20100917162412.GB3341@elte.hu>	<201009180026.59482.trenn@suse.de> <AANLkTimMAr9kEzybFGai3qGyXx36v055iPpXq_C1vW8C@mail.gmail.com>
-In-Reply-To: <AANLkTimMAr9kEzybFGai3qGyXx36v055iPpXq_C1vW8C@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285168933.4498.119.camel@i7.infradead.org>
+X-Cookie: They just buzzed and buzzed...buzzed.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 9/22/2010 8:31 AM, Jean Pihet wrote:
-> Hi,
->
-> Here is a patch that redefines the power events API. The advantages
-> are: easier maintainance of the kernel and the
-> user space tools, a cleaner and more generic interface, more
-> parameters for fine tracing and even documentation!
->
-> Thomas, this patch has your patch above merged in ('power-trace: Use
-> power_switch_state instead of power_start and power_end'). The revised
-> ACPI patch is coming asap.
->
-> The trace points for x86 and OMAP are also udated accordingly.
->
-> The pytimechart tool needs an update for the new API. This can be done
-> as soon as the kernel code gets merged in.
+On Wed, Sep 22, 2010 at 04:22:13PM +0100, David Woodhouse wrote:
 
-unfortunately this code is changing a userspace ABI... we really 
-shouldn't do that if we can avoid it,
-and here we can avoid it.
+> It makes *no* sense to add probe support for your 'special' platform
+> devices to drivers which already have (or will need anyway) proper
+> device-tree support.
 
-applications ARE using this stuff!
+To be fair they're not doing this, all this code is in the arch code
+rather than the driver code (which is a separate concern).
+
+> Seriously, just convert whatever crap you have into a device-tree at
+> early boot (or preferably in the bootloader, and *beat* the firmware
+> idiots until they provide it natively), and don't pollute the kernel any
+> more than you have to with this idiocy.
+
+This is roughly what it's doing except that it's going to native Linux
+bus types and platform data rather than to device tree.
