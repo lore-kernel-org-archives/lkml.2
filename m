@@ -1,94 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796Ab0IVQnN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 12:43:13 -0400
-Received: from mtaout01-winn.ispmail.ntl.com ([81.103.221.47]:33055 "EHLO
-	mtaout01-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751868Ab0IVQnM (ORCPT
+	id S1753205Ab0IVQoM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 12:44:12 -0400
+Received: from mtaout03-winn.ispmail.ntl.com ([81.103.221.49]:40708 "EHLO
+	mtaout03-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753092Ab0IVQoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 12:43:12 -0400
+	Wed, 22 Sep 2010 12:44:10 -0400
 From: Daniel Drake <dsd@laptop.org>
 To: tglx@linutronix.de
+Cc: jbarnes@virtuousgeek.org
+Cc: linux-pci@vger.kernel.org
 Cc: x86@kernel.org
 Cc: linux-kernel@vger.kernel.org
 Cc: dilinger@queued.net
-Subject: [PATCH 1/3] OLPC: extended board revision detection
-Message-Id: <20100922164307.8D7F09D401B@zog.reactivated.net>
-Date: Wed, 22 Sep 2010 17:43:07 +0100 (BST)
-X-Cloudmark-Analysis: v=1.1 cv=3ENABmdyEd/Fm7fR7+mZIuMDn6+IErAeEhlfWBImZFk= c=1 sm=0 a=iJWZOT5mzuEA:10 a=Op-mwl0xAAAA:8 a=AGgCn4eQgtZ7TJQTVoEA:9 a=oAIC01FxrKkWChBc78DiC1kwmNYA:4 a=d4CUUju0HPYA:10 a=o98uK1cdWnhKTUMc:21 a=OfbMJ7nQnDu_sdXD:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: [PATCH 2/3] PCI: OLPC configuration cleanup
+Message-Id: <20100922164402.A72D49D401B@zog.reactivated.net>
+Date: Wed, 22 Sep 2010 17:44:02 +0100 (BST)
+X-Cloudmark-Analysis: v=1.1 cv=3ENABmdyEd/Fm7fR7+mZIuMDn6+IErAeEhlfWBImZFk= c=1 sm=0 a=X5ZFu2o22j4A:10 a=Op-mwl0xAAAA:8 a=DySL3vGdnNX8MgIUZGUA:9 a=Rulk_ySxeunnYebRE2ef6UHgLxIA:4 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add some functions to easily detect which version of the laptop we are
-running on, and document the board IDs which are accepted by olpc_board().
+An OLPC system isn't usable without PCI, so we can simplify the
+configuration here.
+
+Also updated the code to be clearer that this is only for XO-1, and
+fixed an issue where the XO-1 PCI configuration override was being
+applied for XO-1.5 laptops.
+
+Based on earlier work by Deepak Saxena.
 
 Signed-off-by: Daniel Drake <dsd@laptop.org>
 ---
- arch/x86/include/asm/olpc.h |   37 +++++++++++++++++++++++++++++++++++++
- 1 files changed, 37 insertions(+), 0 deletions(-)
+ arch/x86/Kconfig       |   12 +++---------
+ arch/x86/kernel/olpc.c |    4 +---
+ arch/x86/pci/Makefile  |    2 +-
+ arch/x86/pci/olpc.c    |    4 ++--
+ 4 files changed, 7 insertions(+), 15 deletions(-)
 
-diff --git a/arch/x86/include/asm/olpc.h b/arch/x86/include/asm/olpc.h
-index 101229b..9f3219b 100644
---- a/arch/x86/include/asm/olpc.h
-+++ b/arch/x86/include/asm/olpc.h
-@@ -23,6 +23,21 @@ extern struct olpc_platform_t olpc_platform_info;
-  * and the minor build number withing 0x000f.  Pre-builds have a minor
-  * number less than 8, and normal builds start at 8.  For example, 0x0B10
-  * is a PreB1, and 0x0C18 is a C1.
-+ *
-+ * History of board IDs that you can pass into this function:
-+ *  0xb1 - XO-1 B1
-+ *  0xb2 - XO-1 B2
-+ *  0xb3 - XO-1 B3
-+ *  0xc1 - XO-1 C1
-+ *  0xc2 - XO-1 C2
-+ *  0xd0 - XO-1.5 A0 and A1 test
-+ *  0xd1 - XO-1.5 B1 and B2 test
-+ *  0xd2 - XO-1.5 B3 test
-+ *  0xd3 - XO-1.5 C1 initial factory build (12/2009)
-+ *  0xd4 - XO-1.5 C2 ramp build (02/2010)
-+ *  0xd3 - XO-1.5 mass production
-+ *  0xd4 - XO-1.5
-+ *  0xd5 - XO-1.5
-  */
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index cea0cd9..708ee0d 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1899,10 +1899,6 @@ config PCI_GOMMCONFIG
+ config PCI_GODIRECT
+ 	bool "Direct"
  
- static inline uint32_t olpc_board(uint8_t id)
-@@ -40,6 +55,18 @@ static inline int machine_is_olpc(void)
- 	return (olpc_platform_info.flags & OLPC_F_PRESENT) ? 1 : 0;
- }
+-config PCI_GOOLPC
+-	bool "OLPC"
+-	depends on OLPC
+-
+ config PCI_GOANY
+ 	bool "Any"
  
-+static inline int machine_is_olpc_xo_1(void)
-+{
-+	return machine_is_olpc() &&
-+		olpc_platform_info.boardrev < olpc_board_pre(0xd0);
-+}
-+
-+static inline int machine_is_olpc_xo_1_5(void)
-+{
-+	return machine_is_olpc() &&
-+		olpc_platform_info.boardrev >= olpc_board_pre(0xd0);
-+}
-+
+@@ -1915,16 +1911,12 @@ config PCI_BIOS
+ # x86-64 doesn't support PCI BIOS access from long mode so always go direct.
+ config PCI_DIRECT
+ 	def_bool y
+-	depends on PCI && (X86_64 || (PCI_GODIRECT || PCI_GOANY || PCI_GOOLPC))
++	depends on PCI && (X86_64 || (PCI_GODIRECT || PCI_GOANY))
+ 
+ config PCI_MMCONFIG
+ 	def_bool y
+ 	depends on X86_32 && PCI && (ACPI || SFI) && (PCI_GOMMCONFIG || PCI_GOANY)
+ 
+-config PCI_OLPC
+-	def_bool y
+-	depends on PCI && OLPC && (PCI_GOOLPC || PCI_GOANY)
+-
+ config PCI_DOMAINS
+ 	def_bool y
+ 	depends on PCI
+@@ -2060,6 +2052,8 @@ config SCx200HR_TIMER
+ 
+ config OLPC
+ 	bool "One Laptop Per Child support"
++	select PCI
++	select PCI_GOANY
+ 	select GPIOLIB
+ 	---help---
+ 	  Add support for detecting the unique features of the OLPC
+diff --git a/arch/x86/kernel/olpc.c b/arch/x86/kernel/olpc.c
+index 0e0cdde..10b4dce 100644
+--- a/arch/x86/kernel/olpc.c
++++ b/arch/x86/kernel/olpc.c
+@@ -241,11 +241,9 @@ static int __init olpc_init(void)
+ 	olpc_ec_cmd(EC_FIRMWARE_REV, NULL, 0,
+ 			(unsigned char *) &olpc_platform_info.ecver, 1);
+ 
+-#ifdef CONFIG_PCI_OLPC
+ 	/* If the VSA exists let it emulate PCI, if not emulate in kernel */
+-	if (!cs5535_has_vsa2())
++	if (machine_is_olpc_xo_1() && !cs5535_has_vsa2())
+ 		x86_init.pci.arch_init = pci_olpc_init;
+-#endif
+ 
+ 	printk(KERN_INFO "OLPC board revision %s%X (EC=%x)\n",
+ 			((olpc_platform_info.boardrev & 0xf) < 8) ? "pre" : "",
+diff --git a/arch/x86/pci/Makefile b/arch/x86/pci/Makefile
+index a0207a7..b0f2712 100644
+--- a/arch/x86/pci/Makefile
++++ b/arch/x86/pci/Makefile
+@@ -3,7 +3,7 @@ obj-y				:= i386.o init.o
+ obj-$(CONFIG_PCI_BIOS)		+= pcbios.o
+ obj-$(CONFIG_PCI_MMCONFIG)	+= mmconfig_$(BITS).o direct.o mmconfig-shared.o
+ obj-$(CONFIG_PCI_DIRECT)	+= direct.o
+-obj-$(CONFIG_PCI_OLPC)		+= olpc.o
++obj-$(CONFIG_OLPC)		+= olpc.o
+ 
+ obj-y				+= fixup.o
+ obj-$(CONFIG_ACPI)		+= acpi.o
+diff --git a/arch/x86/pci/olpc.c b/arch/x86/pci/olpc.c
+index b348154..fa5ba7b 100644
+--- a/arch/x86/pci/olpc.c
++++ b/arch/x86/pci/olpc.c
+@@ -1,5 +1,5 @@
  /*
-  * The DCON is OLPC's Display Controller.  It has a number of unique
-  * features that we might want to take advantage of..
-@@ -69,6 +96,16 @@ static inline int machine_is_olpc(void)
- 	return 0;
- }
+- * Low-level PCI config space access for OLPC systems who lack the VSA
++ * Low-level PCI config space access for OLPC XO-1 systems who lack the VSA
+  * PCI virtualization software.
+  *
+  * Copyright © 2006  Advanced Micro Devices, Inc.
+@@ -304,7 +304,7 @@ static struct pci_raw_ops pci_olpc_conf = {
  
-+static inline int machine_is_olpc_xo_1(void)
-+{
-+	return 0;
-+}
-+
-+static inline int machine_is_olpc_xo_1_5(void)
-+{
-+	return 0;
-+}
-+
- static inline int olpc_has_dcon(void)
+ int __init pci_olpc_init(void)
  {
+-	printk(KERN_INFO "PCI: Using configuration type OLPC\n");
++	printk(KERN_INFO "PCI: Using configuration type OLPC XO-1\n");
+ 	raw_pci_ops = &pci_olpc_conf;
+ 	is_lx = is_geode_lx();
  	return 0;
 -- 
 1.7.2.2
