@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753863Ab0IVKh7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 06:37:59 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:42749 "EHLO arroyo.ext.ti.com"
+	id S1753911Ab0IVKiA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 06:38:00 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42748 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753724Ab0IVKhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753521Ab0IVKhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 22 Sep 2010 06:37:48 -0400
 From: x0130808@ti.com
 To: linux-kernel@vger.kernel.org
 Cc: Raja Mani <raja_mani@ti.com>, Pramodh AG <pramodh_ag@ti.com>,
         Manjunatha Halli <x0130808@ti.com>
-Subject: [RFC/PATCH 9/9] Staging:ti-st: Update Kconfig and Makefile for
-Date: Wed, 22 Sep 2010 07:48:39 -0400
-Message-Id: <1285156119-28531-10-git-send-email-x0130808@ti.com>
+Subject: [RFC/PATCH 8/9] Documentation:DocBook:v4l: Update the controls.xml
+Date: Wed, 22 Sep 2010 07:48:38 -0400
+Message-Id: <1285156119-28531-9-git-send-email-x0130808@ti.com>
 X-Mailer: git-send-email 1.6.5
-In-Reply-To: <1285156119-28531-9-git-send-email-x0130808@ti.com>
+In-Reply-To: <1285156119-28531-8-git-send-email-x0130808@ti.com>
 References: <1285156119-28531-1-git-send-email-x0130808@ti.com>
  <1285156119-28531-2-git-send-email-x0130808@ti.com>
  <1285156119-28531-3-git-send-email-x0130808@ti.com>
@@ -23,51 +23,46 @@ References: <1285156119-28531-1-git-send-email-x0130808@ti.com>
  <1285156119-28531-6-git-send-email-x0130808@ti.com>
  <1285156119-28531-7-git-send-email-x0130808@ti.com>
  <1285156119-28531-8-git-send-email-x0130808@ti.com>
- <1285156119-28531-9-git-send-email-x0130808@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Raja Mani <raja_mani@ti.com>
 
-Add new menu option in Kconfig and compilation option in Makefile for
-TI FM driver.
+Added entries for following 2 new CID's which are added for TI FM driver:
+- V4L2_CID_RSSI_THRESHOLD
+- V4L2_CID_TUNE_AF
 
 Signed-off-by: Raja Mani <raja_mani@ti.com>
 Signed-off-by: Pramodh AG <pramodh_ag@ti.com>
 Signed-off-by: Manjunatha Halli <x0130808@ti.com>
 ---
- drivers/staging/ti-st/Kconfig  |    8 ++++++++
- drivers/staging/ti-st/Makefile |    2 ++
- 2 files changed, 10 insertions(+), 0 deletions(-)
+ Documentation/DocBook/v4l/controls.xml |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/staging/ti-st/Kconfig b/drivers/staging/ti-st/Kconfig
-index 1b264a3..7e48749 100644
---- a/drivers/staging/ti-st/Kconfig
-+++ b/drivers/staging/ti-st/Kconfig
-@@ -23,4 +23,12 @@ config ST_BT
- 	  This makes use of shared transport line discipline core driver to
- 	  communicate with the BT core of the combo chip.
- 
-+config ST_FM
-+	tristate "fm driver for ST"
-+	depends on VIDEO_DEV
-+	select TI_ST
-+	help
-+	  This enables the FM driver for TI BT/FM/GPS combo devices
-+	  This makes use of shared transport line discipline core driver to
-+	  communicate with the FM core of the combo chip.
- endmenu
-diff --git a/drivers/staging/ti-st/Makefile b/drivers/staging/ti-st/Makefile
-index 0167d1d..bd29c83 100644
---- a/drivers/staging/ti-st/Makefile
-+++ b/drivers/staging/ti-st/Makefile
-@@ -5,3 +5,5 @@
- obj-$(CONFIG_TI_ST) 		+= st_drv.o
- st_drv-objs			:= st_core.o st_kim.o st_ll.o
- obj-$(CONFIG_ST_BT) 		+= bt_drv.o
-+obj-$(CONFIG_ST_FM) 		+= fm_drv.o
-+fm_drv-objs     		:= fmdrv_common.o fmdrv_rx.o fmdrv_tx.o fmdrv_v4l2.o
+diff --git a/Documentation/DocBook/v4l/controls.xml b/Documentation/DocBook/v4l/controls.xml
+index 8408caa..e074f73 100644
+--- a/Documentation/DocBook/v4l/controls.xml
++++ b/Documentation/DocBook/v4l/controls.xml
+@@ -132,6 +132,18 @@ consumption state.</entry>
+ 	    <entry>Loudness mode (bass boost).</entry>
+ 	  </row>
+ 	  <row>
++           <entry><constant>V4L2_CID_RSSI_THRESHOLD</constant></entry>
++           <entry>integer</entry>
++           <entry>Set RSSI threshold level. Change the default threshold
++level used to select valid frequencies during vidioc_s_hw_freq_seek.</entry>
++         </row>
++         <row>
++           <entry><constant>V4L2_CID_TUNE_AF</constant></entry>
++           <entry>integer</entry>
++           <entry>Set Alternative Frequency mode. Enable or disable
++alternative frequency mode.</entry>
++         </row>
++         <row>
+ 	    <entry><constant>V4L2_CID_BLACK_LEVEL</constant></entry>
+ 	    <entry>integer</entry>
+ 	    <entry>Another name for brightness (not a synonym of
 -- 
 1.5.6.3
 
