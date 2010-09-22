@@ -1,207 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752420Ab0IVGh4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 02:37:56 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:35558 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541Ab0IVGhz (ORCPT
+	id S1752603Ab0IVGiy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 02:38:54 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58087 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751963Ab0IVGix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 02:37:55 -0400
+	Wed, 22 Sep 2010 02:38:53 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=IyXt+PyVVH5dlwYSkCly1FwQDhsNkWIFS4XFJ1EBNnih4vnFZenqUCbERgX/1XENO+
-         dTibdm2mBb2z+A29Km5ezXQZO9KY1mrXwlu7Y0ZBQwql1XmPFUJYXrV2P2A/kuPHui1s
-         4erQW7gWvsn/p9ksKSHKrlRbTc4J22JfzK3Sw=
-MIME-Version: 1.0
-Date: Tue, 21 Sep 2010 23:37:54 -0700
-Message-ID: <AANLkTinnaA3Qgny45BRyW3i5u+nXn1XgWwkxA_QbN8xN@mail.gmail.com>
-Subject: tcp_fastretrans_alert since 2.6.32 ?
-From: Sunny <sunyucong@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=up1N6fcvJv02FeYg+rHm89U4lbX6GSUXOeQXmJYmPxOlXwX8gKlbqbkKwEcW98u617
+         vjFDU+/nQCet44JIcuoS9WXlGqZirawX5ru0Dp07Bv3OiHPTV69lBu6pSshR1yYsp2lp
+         720AmsPgxIK/eN22RxqeZp5gg7EiUjq5URdLA=
+Subject: Re: 2.6.36-rc5-git1 -- include/linux/netpoll.h:67 invoked
+ rcu_dereference_check() without protection!
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Miles Lane <miles.lane@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+In-Reply-To: <AANLkTi=g-6ywz4AoGyBKTp_gfFW6jkBrmGUW5E_Um9LX@mail.gmail.com>
+References: <AANLkTi=g-6ywz4AoGyBKTp_gfFW6jkBrmGUW5E_Um9LX@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Sep 2010 08:38:44 +0200
+Message-ID: <1285137524.6378.160.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Le mercredi 22 septembre 2010 à 00:22 -0400, Miles Lane a écrit :
+> [ INFO: suspicious rcu_dereference_check() usage. ]
+> ---------------------------------------------------
+> include/linux/netpoll.h:67 invoked rcu_dereference_check() without protection!
+> 
+> other info that might help us debug this:
+> 
+> 
+> rcu_scheduler_active = 1, debug_locks = 1
+> 1 lock held by avahi-daemon/1597:
+>  #0:  (sk_lock-AF_INET6){+.+.+.}, at: [<ffffffffa03673b7>]
+> udpv6_sendmsg+0x6c2/0x9e6 [ipv6]
+> 
+> stack backtrace:
+> Pid: 1597, comm: avahi-daemon Not tainted 2.6.36-rc5 #13
+> Call Trace:
+>  [<ffffffff810618d7>] lockdep_rcu_dereference+0x9d/0xa6
+>  [<ffffffff8129d543>] netif_rx+0x4e/0x1a7
+>  [<ffffffff8102fe4e>] ? get_parent_ip+0x11/0x41
+>  [<ffffffff8129d7e3>] netif_rx_ni+0x1e/0x58
+>  [<ffffffffa0352d50>] ip6_dev_loopback_xmit+0xc0/0xc7 [ipv6]
+>  [<ffffffffa0352ef0>] ip6_finish_output2+0x199/0x3b6 [ipv6]
+>  [<ffffffffa035401c>] ip6_finish_output+0xf0f/0xf27 [ipv6]
+>  [<ffffffff8131e08a>] ? csum_partial_copy_from_user+0xb4/0xea
+>  [<ffffffff812968a8>] ? csum_partial_copy_fromiovecend+0x178/0x1bd
+>  [<ffffffffa035418c>] ip6_output+0x158/0x161 [ipv6]
+>  [<ffffffff8102fe4e>] ? get_parent_ip+0x11/0x41
+>  [<ffffffffa035262d>] ip6_local_out+0x5d/0x62 [ipv6]
+>  [<ffffffffa0352a98>] ip6_push_pending_frames+0x466/0x524 [ipv6]
+>  [<ffffffffa0366a93>] udp_v6_push_pending_frames+0x27f/0x2fb [ipv6]
+>  [<ffffffffa03673b7>] ? udpv6_sendmsg+0x6c2/0x9e6 [ipv6]
+>  [<ffffffffa03674ba>] udpv6_sendmsg+0x7c5/0x9e6 [ipv6]
+>  [<ffffffff812fb634>] ? inet_sendmsg+0x0/0x11f
+>  [<ffffffff812fb746>] inet_sendmsg+0x112/0x11f
+>  [<ffffffff812fb634>] ? inet_sendmsg+0x0/0x11f
+>  [<ffffffff8128ca91>] sock_sendmsg+0xe7/0x108
+>  [<ffffffff810a4c3b>] ? might_fault+0x63/0xb3
+>  [<ffffffff810a4c84>] ? might_fault+0xac/0xb3
+>  [<ffffffff810a4c3b>] ? might_fault+0x63/0xb3
+>  [<ffffffff8128d346>] sys_sendmsg+0x24f/0x2d6
+>  [<ffffffff8102fe4e>] ? get_parent_ip+0x11/0x41
+>  [<ffffffff81031ef7>] ? sub_preempt_count+0x92/0xa6
+>  [<ffffffff810570ce>] ? __srcu_read_unlock+0x3b/0x57
+>  [<ffffffff81001f9c>] ? sysret_check+0x27/0x62
+>  [<ffffffff81001f6b>] system_call_fastpath+0x16/0x1b#
 
-After upgrading to the latest ubuntu kernel, I started to have this
-alert showing up, this is a vm running on ESXi host with vmxnet3
-adapter, mainly serving large traffic ~70Mbps towards overboard
-customers, so I expect packet loss and retrans is pretty high. So I'm
-posting to ask whether others been seeing the same issue? When this
-happens, machine freeze several seconds for about three times in a row
-then seems to start working again.
+Oh well.
 
-Please cc me on the thread, thanks in advance.
-
-
-[212670.327617] ------------[ cut here ]------------
-[212670.327689] WARNING: at
-/build/buildd/linux-2.6.32/net/ipv4/tcp_input.c:2919 tcp_fastret
-rans_alert+0x3f9/0xd90()
-[212670.327692] Hardware name: VMware Virtual Platform
-[212670.327693] Modules linked in: btrfs zlib_deflate crc32c libcrc32c
-ufs qnx4 hfsplus hfs  minix ntfs vfat msdos fat jfs xfs exportfs
-reiserfs sch_sfq cls_u32 sch_htb nf_conntrack_ipv 6 ip6table_filter
-ip6_tables xt_tcpudp xt_state xt_multiport iptable_filter iptable_nat
-nf_n at nf_conntrack_ipv4 sit nf_conntrack nf_defrag_ipv4 tunnel4
-ip_tables x_tables acpiphp ppde v psmouse parport_pc serio_raw fbcon
-tileblit font bitblit softcursor vmxnet3 vga16fb vgasta te lp parport
-floppy vmw_pvscsi
-[212670.327741] Pid: 0, comm: swapper Not tainted 2.6.32-24-server #42-Ubuntu
-[212670.327742] Call Trace:
-[212670.327744]  <IRQ>  [<ffffffff81066dab>] warn_slowpath_common+0x7b/0xc0
-[212670.327754]  [<ffffffff81066e04>] warn_slowpath_null+0x14/0x20
-[212670.327757]  [<ffffffff814b98f9>] tcp_fastretrans_alert+0x3f9/0xd90
-[212670.327759]  [<ffffffff814bad24>] tcp_ack+0x284/0x6b0
-[212670.327762]  [<ffffffff814bbab0>] tcp_rcv_established+0x400/0x730
-[212670.327766]  [<ffffffff814c3553>] tcp_v4_do_rcv+0xf3/0x160
-[212670.327769]  [<ffffffff814c4ca5>] tcp_v4_rcv+0x5b5/0x7e0
-[212670.327772]  [<ffffffff814a2c00>] ? ip_local_deliver_finish+0x0/0x2d0
-[212670.327776]  [<ffffffff8149a6b4>] ? nf_hook_slow+0x74/0x100
-[212670.327779]  [<ffffffff814a2c00>] ? ip_local_deliver_finish+0x0/0x2d0
-[212670.327781]  [<ffffffff814a2cdd>] ip_local_deliver_finish+0xdd/0x2d0
-[212670.327783]  [<ffffffff814a2f60>] ip_local_deliver+0x90/0xa0
-[212670.327785]  [<ffffffff814a241d>] ip_rcv_finish+0x12d/0x440
-[212670.327787]  [<ffffffff814a29a5>] ip_rcv+0x275/0x360
-[212670.327794]  [<ffffffff8147319a>] netif_receive_skb+0x38a/0x5d0
-[212670.327801]  [<ffffffffa005203c>]
-vmxnet3_rq_rx_complete+0x23c/0x610 [vmxnet3]
-[212670.327806]  [<ffffffffa005245f>] vmxnet3_do_poll+0x4f/0xf0 [vmxnet3]
-[212670.327809]  [<ffffffffa005252d>] vmxnet3_poll+0x2d/0x60 [vmxnet3]
-[212670.327816]  [<ffffffff810397a9>] ? default_spin_lock_flags+0x9/0x10
-[212670.327820]  [<ffffffff81473c8f>] net_rx_action+0x10f/0x250
-[212670.327824]  [<ffffffff8106e2f7>] __do_softirq+0xb7/0x1e0
-[212670.327828]  [<ffffffff810c4d40>] ? handle_IRQ_event+0x60/0x170
-[212670.327833]  [<ffffffff810142ec>] call_softirq+0x1c/0x30
-[212670.327836]  [<ffffffff81015cb5>] do_softirq+0x65/0xa0
-[212670.327837]  [<ffffffff8106e195>] irq_exit+0x85/0x90
-[212670.327845]  [<ffffffff8155fd45>] do_IRQ+0x75/0xf0
-[212670.327848]  [<ffffffff81013b13>] ret_from_intr+0x0/0x11
-[212670.327849]  <EOI>  [<ffffffff81038acb>] ? native_safe_halt+0xb/0x10
-[212670.327855]  [<ffffffff8101b69d>] ? default_idle+0x3d/0x90
-[212670.327860]  [<ffffffff81011e63>] ? cpu_idle+0xb3/0x110
-[212670.327867]  [<ffffffff81552b53>] ? start_secondary+0xa8/0xaa
-[212670.327869] ---[ end trace e26694ca94def524 ]---
+Thanks for the report. Could you please test following patch ?
 
 
-Here's netstat -s output
+[PATCH] rcu: rcu_dereference_bh() is hard irq safe
 
-Ip:
-    362267935 total packets received
-    0 forwarded
-    0 incoming packets discarded
-    362257901 incoming packets delivered
-    326868094 requests sent out
-    9 fragments dropped after timeout
-    2777 reassemblies required
-    1357 packets reassembled ok
-    9 packet reassembles failed
-    490 fragments received ok
-    1034 fragments created
-Icmp:
-    22430 ICMP messages received
-    283 input ICMP message failed.
-    ICMP input histogram:
-        destination unreachable: 17113
-        timeout in transit: 613
-        redirects: 9
-        echo requests: 4685
-        echo replies: 10
-    7383 ICMP messages sent
-    0 ICMP messages failed
-    ICMP output histogram:
-        destination unreachable: 2695
-        echo request: 11
-        echo replies: 4677
-IcmpMsg:
-        InType0: 10
-        InType3: 17113
-        InType5: 9
-        InType8: 4685
-        InType11: 613
-        OutType0: 4677
-        OutType3: 2695
-        OutType8: 11
-Tcp:
-    6563076 active connections openings
-    1610183 passive connection openings
-    1646225 failed connection attempts
-    75246 connection resets received
-    1141 connections established
-    361192315 segments received
-    323797760 segments send out
-    1997456 segments retransmited
-    12990 bad segments received.
-    1851272 resets sent
-Udp:
-    4138313 packets received
-    186 packets to unknown port received.
-    0 packet receive errors
-    4161268 packets sent
-UdpLite:
-TcpExt:
-    5096 invalid SYN cookies received
-    167 resets received for embryonic SYN_RECV sockets
-    58826 packets pruned from receive queue because of socket buffer overrun
-    312 packets pruned from receive queue
-    19 packets dropped from out-of-order queue because of socket buffer overrun
-    365 ICMP packets dropped because they were out-of-window
-    2712111 TCP sockets finished time wait in fast timer
-    82068 time wait sockets recycled by time stamp
-    311 packets rejects in established connections because of timestamp
-    11516250 delayed acks sent
-    6415 delayed acks further delayed because of locked socket
-    Quick ack mode was activated 208750 times
-    41789 packets directly queued to recvmsg prequeue.
-    1 bytes directly in process context from backlog
-    2969 bytes directly received in process context from prequeue
-    155660989 packet headers predicted
-    55448128 acknowledgments not containing data payload received
-    89389461 predicted acknowledgments
-    9544 times recovered from packet loss due to fast retransmit
-    585991 times recovered from packet loss by selective acknowledgements
-    710 bad SACK blocks received
-    Detected reordering 1944 times using FACK
-    Detected reordering 26599 times using SACK
-    Detected reordering 267 times using reno fast retransmit
-    Detected reordering 1819 times using time stamp
-    3169 congestion windows fully recovered without slow start
-    26810 congestion windows partially recovered using Hoe heuristic
-    14402 congestion windows recovered without slow start by DSACK
-    40392 congestion windows recovered without slow start after partial ack
-    115772 TCP data loss events
-    TCPLostRetransmit: 5320
-    1922 timeouts after reno fast retransmit
-    69095 timeouts after SACK recovery
-    11101 timeouts in loss state
-    1151834 fast retransmits
-    74479 forward retransmits
-    225380 retransmits in slow start
-    275631 other TCP timeouts
-    2606 classic Reno fast retransmits failed
-    30507 SACK retransmits failed
-    4862645 packets collapsed in receive queue due to low socket buffer
-    260934 DSACKs sent for old packets
-    5109 DSACKs sent for out of order packets
-    95650 DSACKs received
-    819 DSACKs for out of order packets received
-    28142 connections reset due to unexpected data
-    22325 connections reset due to early user close
-    85423 connections aborted due to timeout
-    TCPSACKDiscard: 2319
-    TCPDSACKIgnoredOld: 52587
-    TCPDSACKIgnoredNoUndo: 29859
-    TCPSpuriousRTOs: 2605
-    TCPSackShifted: 3539688
-    TCPSackMerged: 3241543
-    TCPSackShiftFallback: 8938458
-IpExt:
-    InMcastPkts: 2105
-    InBcastPkts: 12
-    InOctets: 1670966745
-    OutOctets: -417434189
-    InMcastOctets: 58940
-    InBcastOctets: 1792
+rcu_dereference_bh() doesnt know yet about hard irq being disabled, so
+lockdep can trigger in netpoll_rx() after commit f0f9deae9e7c4 (netpoll:
+Disable IRQ around RCU dereference in netpoll_rx)
+
+Reported-by: Miles Lane <miles.lane@gmail.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+---
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 9fbc54a..435c502 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -454,7 +454,7 @@ static inline notrace void rcu_read_unlock_sched_notrace(void)
+  * Makes rcu_dereference_check() do the dirty work.
+  */
+ #define rcu_dereference_bh(p) \
+-		rcu_dereference_check(p, rcu_read_lock_bh_held())
++		rcu_dereference_check(p, rcu_read_lock_bh_held() || in_irq())
+ 
+ /**
+  * rcu_dereference_sched - fetch RCU-protected pointer, checking for RCU-sched
+
+
