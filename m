@@ -1,70 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab0IVLXQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 07:23:16 -0400
-Received: from cantor.suse.de ([195.135.220.2]:39641 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752359Ab0IVLXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 07:23:15 -0400
-Date: Wed, 22 Sep 2010 13:23:08 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Alan Ott <alan@signal11.us>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
-        linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, simon@mungewell.org
-Subject: Re: [PATCH v3 1/1] Don't Send Feature Reports on Interrupt
- Endpoint
-In-Reply-To: <1285106792-5818-1-git-send-email-alan@signal11.us>
-Message-ID: <alpine.LNX.2.00.1009221322310.26813@pobox.suse.cz>
-References: <4C98EAAE.3020409@signal11.us> <1285106792-5818-1-git-send-email-alan@signal11.us>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753276Ab0IVL0W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 07:26:22 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56023 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751401Ab0IVL0U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 07:26:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=g7y1FRvf4Tk1b4kzo2aM4DjiSRDp1fOMl2Ffx69IvsKgS5a1JgvYJWDalArPH8rT0I
+         1IrPLOBhRIYsd+rmZ7WZTm1majOlp331KmcaYhwrmJO1faXZy1WulHrOGPL2D+isVSZg
+         oPgAOQtFZMz+4bnqiaoT5xsLMAeRS99RWnxzQ=
+Message-ID: <4C99E7D6.1040004@gmail.com>
+Date: Wed, 22 Sep 2010 13:26:14 +0200
+From: Boaz Harrosh <openosd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Fubo Chen <fubo.chen@gmail.com>
+Subject: Re: [PATCH] tcm/fileio: Convert to iov allocations for fd_do_readv()
+ and fd_do_writev()
+References: <1285142558-13219-1-git-send-email-nab@linux-iscsi.org>
+In-Reply-To: <1285142558-13219-1-git-send-email-nab@linux-iscsi.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Sep 2010, Alan Ott wrote:
-
-> Feature reports should only be sent on the control endpoint.
+On 09/22/2010 10:02 AM, Nicholas A. Bellinger wrote:
+> From: Nicholas Bellinger <nab@linux-iscsi.org>
 > 
-> The USB HID standard is unclear and confusing on this issue. It seems to
-> suggest that Feature reports can be sent on a HID device's Interrupt OUT
-> endpoint.  This cannot be the case because the report type is not encoded in
-> transfers sent out the Interrput OUT endpoint.  If Feature reports were sent
-> on the Interrupt OUT endpint, they would be indistinguishable from Output
-> reports in the case where Report IDs were not used.
+> Greetings all,
 > 
-> Further, Windows and Mac OS X do not send Feature reports out the interrupt
-> OUT Endpoint.  They will only go out the Control Endpoint.
+> This patch converts target_core_file.c fd_do_readv() and fd_do_writev() code to
+> use dynamic allocation for *iov[] instead of local scope static memory to
+> properly handle cases with TCM_Loop that can potentially exceed the 8K stack
+> on 64-bit kernels with per 1:1 struct scatterlist <-> 512-byte block_size SGL length
+> mapping up to the current FD_MAX_SECTORS=1024.  For more information please see:
 > 
-> In addition, many devices simply do not hande Feature reports sent out the Interrupt OUT endpoint.
+> http://lkml.org/lkml/2010/9/22/42
 > 
-> Reported-by: simon@mungewell.org
-> Signed-off-by: Alan Ott <alan@signal11.us>
+> Many thanks to Fubo Chen for spotting this one!
+> 
+> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 > ---
->  drivers/hid/usbhid/hid-core.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+>  drivers/target/target_core_file.c |   20 ++++++++++++++++----
+>  1 files changed, 16 insertions(+), 4 deletions(-)
 > 
-> diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-> index b729c02..b0ccc42 100644
-> --- a/drivers/hid/usbhid/hid-core.c
-> +++ b/drivers/hid/usbhid/hid-core.c
-> @@ -807,7 +807,7 @@ static int usbhid_output_raw_report(struct hid_device *hid, __u8 *buf, size_t co
->  	struct usb_host_interface *interface = intf->cur_altsetting;
->  	int ret;
+> diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
+> index 221b41e..93d3f63 100644
+> --- a/drivers/target/target_core_file.c
+> +++ b/drivers/target/target_core_file.c
+> @@ -476,12 +476,16 @@ static int fd_do_readv(struct fd_request *req, struct se_task *task)
+>  {
+>  	struct file *fd = req->fd_dev->fd_file;
+>  	struct scatterlist *sg = task->task_sg;
+> -	struct iovec iov[req->fd_sg_count];
+> +	struct iovec *iov;
+>  	mm_segment_t old_fs;
+>  	loff_t pos = (req->fd_lba * DEV_ATTRIB(task->se_dev)->block_size);
+>  	int ret = 0, i;
 >  
-> -	if (usbhid->urbout) {
-> +	if (usbhid->urbout && report_type != HID_FEATURE_REPORT) {
->  		int actual_length;
->  		int skipped_report_id = 0;
->  		if (buf[0] == 0x0) {
+> -	memset(iov, 0, sizeof(struct iovec) * req->fd_sg_count);
+> +	iov = kzalloc(sizeof(struct iovec) * req->fd_sg_count, GFP_KERNEL);
 
-Applied to the 'logitech' branch (as Simon's new Logitech driver is 
-depending on this).
+A kzalloc allocation bigger then PAG_SIZE is very unstable, more so when
+the system is up for a long time.
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Better prepare to loop here, up to PAG_SIZE iov at a time.
+
+Boaz
+
+> +	if (!(iov)) {
+> +		printk(KERN_ERR "Unable to allocate fd_do_readv iov[]\n");
+> +		return -1;
+> +	}
+>  
+>  	for (i = 0; i < req->fd_sg_count; i++) {
+>  		iov[i].iov_len = sg[i].length;
+> @@ -492,6 +496,8 @@ static int fd_do_readv(struct fd_request *req, struct se_task *task)
+>  	set_fs(get_ds());
+>  	ret = vfs_readv(fd, &iov[0], req->fd_sg_count, &pos);
+>  	set_fs(old_fs);
+> +
+> +	kfree(iov);
+>  	/*
+>  	 * Return zeros and GOOD status even if the READ did not return
+>  	 * the expected virt_size for struct file w/o a backing struct
+> @@ -583,12 +589,16 @@ static int fd_do_writev(struct fd_request *req, struct se_task *task)
+>  {
+>  	struct file *fd = req->fd_dev->fd_file;
+>  	struct scatterlist *sg = task->task_sg;
+> -	struct iovec iov[req->fd_sg_count];
+> +	struct iovec *iov;
+>  	mm_segment_t old_fs;
+>  	loff_t pos = (req->fd_lba * DEV_ATTRIB(task->se_dev)->block_size);
+>  	int ret, i = 0;
+>  
+> -	memset(iov, 0, sizeof(struct iovec) * req->fd_sg_count);
+> +	iov = kzalloc(sizeof(struct iovec) * req->fd_sg_count, GFP_KERNEL);
+> +	if (!(iov)) {
+> +		printk(KERN_ERR "Unable to allocate fd_do_writev iov[]\n");
+> +		return -1;
+> +	}
+>  
+>  	for (i = 0; i < req->fd_sg_count; i++) {
+>  		iov[i].iov_len = sg[i].length;
+> @@ -600,6 +610,8 @@ static int fd_do_writev(struct fd_request *req, struct se_task *task)
+>  	ret = vfs_writev(fd, &iov[0], req->fd_sg_count, &pos);
+>  	set_fs(old_fs);
+>  
+> +	kfree(iov);
+> +
+>  	if (ret < 0 || ret != req->fd_size) {
+>  		printk(KERN_ERR "vfs_writev() returned %d\n", ret);
+>  		return -1;
+
