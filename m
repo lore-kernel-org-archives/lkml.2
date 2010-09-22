@@ -1,56 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751593Ab0IVIBn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 04:01:43 -0400
-Received: from relay03-haj2.antispameurope.com ([83.246.65.53]:49207 "EHLO
-	relay03-haj2.antispameurope.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751187Ab0IVIBl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 04:01:41 -0400
-Message-ID: <4C99B7E3.4070501@iis.fraunhofer.de>
-Date: Wed, 22 Sep 2010 10:01:39 +0200
-From: Manuel Stahl <manuel.stahl@iis.fraunhofer.de>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; de; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH] Add sc16is7x2 driver
-References: <4C80F419.5070601@iis.fraunhofer.de> <20100913172544.a81e8422.akpm@linux-foundation.org> <4C8F7381.50300@iis.fraunhofer.de> <20100921204238.GE25112@kroah.com>
-In-Reply-To: <20100921204238.GE25112@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-MIME-Autoconverted: from 8bit to quoted-printable by iis.fhg.de id KAA12622
+	id S1751797Ab0IVIJd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 04:09:33 -0400
+Received: from nm28-vm0.bullet.mail.ne1.yahoo.com ([98.138.91.22]:42523 "HELO
+	nm28-vm0.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751316Ab0IVIJc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 04:09:32 -0400
+X-Greylist: delayed 409 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Sep 2010 04:09:32 EDT
+X-Yahoo-Newman-Id: 913354.4939.bm@omp1023.mail.ne1.yahoo.com
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: DhsfIaUVM1nTcyD5d1uSGlfpkPKVQ8MXPdx5sbrrTBLZHBN
+ tuJJNXA9lqVdCc6sVc3fJFMnIMQUI0EwpcxuEAF5eeFznuhnaSUE.t1gLIye
+ AaubQqw35xguGJnXH7q46HEv4KgciK2uMFiRZU7TwoUMXmIR3pz6QNHedfK6
+ wke3EYBWlWqHea.zwjIf05fhmL3EM9KH5hkVBeCe2QNUEMbe9TIDlCcpiw9q
+ 27PKb_GcvNkslUJ6ZtDjTinU12iM3UZJLfodfuiIIrNrr.6YDTfzUDaIurHt
+ fgkuM_lbRtJGJ2az25bOycAdFgtsjdZqe3ofXPsq56mHiFCjyy_B2yi4-
+X-Yahoo-Newman-Property: ymail-3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>
+Cc: Fubo Chen <fubo.chen@gmail.com>, Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH] tcm/fileio: Convert to iov allocations for fd_do_readv() and fd_do_writev()
+Date: Wed, 22 Sep 2010 01:02:38 -0700
+Message-Id: <1285142558-13219-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 21.09.2010 22:42, schrieb Greg KH:
-> On Tue, Sep 14, 2010 at 03:07:13PM +0200, Manuel Stahl wrote:
->> --- a/include/linux/serial_core.h
->> +++ b/include/linux/serial_core.h
->> @@ -47,6 +47,9 @@
->>   #define PORT_U6_16550A	19	/* ST-Ericsson U6xxx internal UART */
->>   #define PORT_MAX_8250	19	/* max port ID */
->>
->> +/* SC16IS7x2 SPI UART */
->> +#define PORT_SC16IS7X2	19
->
-> Hm, didn't you just duplicate the number here?  Shouldn't that be "20"
-> and you bump the max up?
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Oh, that might be true.
+Greetings all,
 
-> In the end, we need to just drop those, I don't think we need defines
-> anymore, but I need to look at it some more to find out.
+This patch converts target_core_file.c fd_do_readv() and fd_do_writev() code to
+use dynamic allocation for *iov[] instead of local scope static memory to
+properly handle cases with TCM_Loop that can potentially exceed the 8K stack
+on 64-bit kernels with per 1:1 struct scatterlist <-> 512-byte block_size SGL length
+mapping up to the current FD_MAX_SECTORS=1024.  For more information please see:
 
-Thank you for doing that, Greg.
+http://lkml.org/lkml/2010/9/22/42
 
-Regards,
+Many thanks to Fubo Chen for spotting this one!
+
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+---
+ drivers/target/target_core_file.c |   20 ++++++++++++++++----
+ 1 files changed, 16 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
+index 221b41e..93d3f63 100644
+--- a/drivers/target/target_core_file.c
++++ b/drivers/target/target_core_file.c
+@@ -476,12 +476,16 @@ static int fd_do_readv(struct fd_request *req, struct se_task *task)
+ {
+ 	struct file *fd = req->fd_dev->fd_file;
+ 	struct scatterlist *sg = task->task_sg;
+-	struct iovec iov[req->fd_sg_count];
++	struct iovec *iov;
+ 	mm_segment_t old_fs;
+ 	loff_t pos = (req->fd_lba * DEV_ATTRIB(task->se_dev)->block_size);
+ 	int ret = 0, i;
+ 
+-	memset(iov, 0, sizeof(struct iovec) * req->fd_sg_count);
++	iov = kzalloc(sizeof(struct iovec) * req->fd_sg_count, GFP_KERNEL);
++	if (!(iov)) {
++		printk(KERN_ERR "Unable to allocate fd_do_readv iov[]\n");
++		return -1;
++	}
+ 
+ 	for (i = 0; i < req->fd_sg_count; i++) {
+ 		iov[i].iov_len = sg[i].length;
+@@ -492,6 +496,8 @@ static int fd_do_readv(struct fd_request *req, struct se_task *task)
+ 	set_fs(get_ds());
+ 	ret = vfs_readv(fd, &iov[0], req->fd_sg_count, &pos);
+ 	set_fs(old_fs);
++
++	kfree(iov);
+ 	/*
+ 	 * Return zeros and GOOD status even if the READ did not return
+ 	 * the expected virt_size for struct file w/o a backing struct
+@@ -583,12 +589,16 @@ static int fd_do_writev(struct fd_request *req, struct se_task *task)
+ {
+ 	struct file *fd = req->fd_dev->fd_file;
+ 	struct scatterlist *sg = task->task_sg;
+-	struct iovec iov[req->fd_sg_count];
++	struct iovec *iov;
+ 	mm_segment_t old_fs;
+ 	loff_t pos = (req->fd_lba * DEV_ATTRIB(task->se_dev)->block_size);
+ 	int ret, i = 0;
+ 
+-	memset(iov, 0, sizeof(struct iovec) * req->fd_sg_count);
++	iov = kzalloc(sizeof(struct iovec) * req->fd_sg_count, GFP_KERNEL);
++	if (!(iov)) {
++		printk(KERN_ERR "Unable to allocate fd_do_writev iov[]\n");
++		return -1;
++	}
+ 
+ 	for (i = 0; i < req->fd_sg_count; i++) {
+ 		iov[i].iov_len = sg[i].length;
+@@ -600,6 +610,8 @@ static int fd_do_writev(struct fd_request *req, struct se_task *task)
+ 	ret = vfs_writev(fd, &iov[0], req->fd_sg_count, &pos);
+ 	set_fs(old_fs);
+ 
++	kfree(iov);
++
+ 	if (ret < 0 || ret != req->fd_size) {
+ 		printk(KERN_ERR "vfs_writev() returned %d\n", ret);
+ 		return -1;
 -- 
-Dipl.-Inf. Manuel Stahl
-Fraunhofer-Institut für Integrierte Schaltungen IIS
-- Leistungsoptimierte Systeme -
-Nordostpark 93                Telefon  +49 (0)911/58061-6419
-90411 Nürnberg                Fax      +49 (0)911/58061-6398
-http://www.iis.fraunhofer.de  manuel.stahl@iis.fraunhofer.de
+1.5.6.5
+
