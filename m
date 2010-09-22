@@ -1,160 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392Ab0IVMBV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 08:01:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37097 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753396Ab0IVMBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 08:01:20 -0400
-Date: Wed, 22 Sep 2010 13:55:05 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Xin, Xiaohui" <xiaohui.xin@intel.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "herbert@gondor.hengli.com.au" <herbert@gondor.hengli.com.au>,
-        "jdike@linux.intel.com" <jdike@linux.intel.com>
-Subject: Re: [RFC PATCH v9 12/16] Add mp(mediate passthru) device.
-Message-ID: <20100922115505.GF16423@redhat.com>
-References: <20100915112811.GB29267@redhat.com>
- <1284970128-7343-1-git-send-email-xiaohui.xin@intel.com>
- <20100920113643.GB23898@redhat.com>
- <F2E9EB7348B8264F86B6AB8151CE2D792B8CAA0F6A@shsmsx502.ccr.corp.intel.com>
- <20100921131421.GA10439@redhat.com>
- <F2E9EB7348B8264F86B6AB8151CE2D792D171853DF@shsmsx502.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <F2E9EB7348B8264F86B6AB8151CE2D792D171853DF@shsmsx502.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1754453Ab0IVMCz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 08:02:55 -0400
+Received: from smtp105.sbc.mail.gq1.yahoo.com ([67.195.14.108]:47687 "HELO
+	smtp105.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754295Ab0IVMCx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 08:02:53 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: 3KpX83oVM1nSt5_5IiRIwaOPLY4nmkLpbZU3a5kMVymYEEl
+ uWrgskGH7TeAVeQsHl.mz_dGlatH10QM_7nSzmdxc5jkQeIoP6QHhJeDbf3t
+ YB8Q0k7gRXPelDxXinqx7vlNFbr993ClDUrx.DVq4w0d2tKBRkK17wRhqxao
+ h.g1EgVT5xt5KSxs9jU43qCkNNaJljuX_RF00nTdSIjkOV7jwHPoBOlwYtgp
+ 3XVKrfhnnpUj1YBa24_Xv171MVs4.JDaY5HXtwfD5tK.F.RUMd3bGdxXLCEB
+ TADrF8_I04h8w5k46VjkhiDWs8HVR_BVP3iWg9jT6e87QsUjJvHH5xQ--
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [PATCH] tcm/fileio: Convert to iov allocations for
+	fd_do_readv() and fd_do_writev()
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Boaz Harrosh <openosd@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Fubo Chen <fubo.chen@gmail.com>
+In-Reply-To: <4C99E7D6.1040004@gmail.com>
+References: <1285142558-13219-1-git-send-email-nab@linux-iscsi.org>
+	 <4C99E7D6.1040004@gmail.com>
+Content-Type: text/plain
+Date: Wed, 22 Sep 2010 04:58:38 -0700
+Message-Id: <1285156718.1849.63.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 22, 2010 at 07:41:36PM +0800, Xin, Xiaohui wrote:
-> >-----Original Message-----
-> >From: Michael S. Tsirkin [mailto:mst@redhat.com]
-> >Sent: Tuesday, September 21, 2010 9:14 PM
-> >To: Xin, Xiaohui
-> >Cc: netdev@vger.kernel.org; kvm@vger.kernel.org; linux-kernel@vger.kernel.org;
-> >mingo@elte.hu; davem@davemloft.net; herbert@gondor.hengli.com.au;
-> >jdike@linux.intel.com
-> >Subject: Re: [RFC PATCH v9 12/16] Add mp(mediate passthru) device.
-> >
-> >On Tue, Sep 21, 2010 at 09:39:31AM +0800, Xin, Xiaohui wrote:
-> >> >From: Michael S. Tsirkin [mailto:mst@redhat.com]
-> >> >Sent: Monday, September 20, 2010 7:37 PM
-> >> >To: Xin, Xiaohui
-> >> >Cc: netdev@vger.kernel.org; kvm@vger.kernel.org; linux-kernel@vger.kernel.org;
-> >> >mingo@elte.hu; davem@davemloft.net; herbert@gondor.hengli.com.au;
-> >> >jdike@linux.intel.com
-> >> >Subject: Re: [RFC PATCH v9 12/16] Add mp(mediate passthru) device.
-> >> >
-> >> >On Mon, Sep 20, 2010 at 04:08:48PM +0800, xiaohui.xin@intel.com wrote:
-> >> >> From: Xin Xiaohui <xiaohui.xin@intel.com>
-> >> >>
-> >> >> ---
-> >> >> Michael,
-> >> >> I have move the ioctl to configure the locked memory to vhost
-> >> >
-> >> >It's ok to move this to vhost but vhost does not
-> >> >know how much memory is needed by the backend.
-> >>
-> >> I think the backend here you mean is mp device.
-> >> Actually, the memory needed is related to vq->num to run zero-copy
-> >> smoothly.
-> >> That means mp device did not know it but vhost did.
-> >
-> >Well, this might be so if you insist on locking
-> >all posted buffers immediately. However, let's assume I have a
-> >very large ring and prepost a ton of RX buffers:
-> >there's no need to lock all of them directly:
-> >
-> >if we have buffers A and B, we can lock A, pass it
-> >to hardware, and when A is consumed unlock A, lock B
-> >and pass it to hardware.
-> >
-> >
-> >It's not really critical. But note we can always have userspace
-> >tell MP device all it wants to know, after all.
-> >
-> Ok. Here are two values we have mentioned, one is how much memory
-> user application wants to lock, and one is how much memory locked
-> is needed to run smoothly. When net backend is setup, we first need
-> an ioctl to get how much memory is needed to lock, and then we call
-> another ioctl to set how much it want to lock. Is that what's in your mind? 
-
-That's fine.
-
-> >> And the rlimt stuff is per process, we use current pointer to set
-> >> and check the rlimit, the operations should be in the same process.
-> >
-> >Well no, the ring is handled from the kernel thread: we switch the mm to
-> >point to the owner task so copy from/to user and friends work, but you
-> >can't access the rlimit etc.
-> >
-> Yes, the userspace and vhost kernel is not the same process. But we can
-> record the task pointer as mm.
-
-So you will have to store mm and do device->mm, not current->mm.
-Anyway, better not touch mm on data path.
-
-> >> Now the check operations are in vhost process, as mp_recvmsg() or
-> >> mp_sendmsg() are called by vhost.
-> >
-> >Hmm, what do you mean by the check operations?
-> >send/recv are data path operations, they shouldn't
-> >do any checks, should they?
-> >
-> As you mentioned what infiniband driver done:
->         down_write(&current->mm->mmap_sem);
+On Wed, 2010-09-22 at 13:26 +0200, Boaz Harrosh wrote:
+> On 09/22/2010 10:02 AM, Nicholas A. Bellinger wrote:
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> > 
+> > Greetings all,
+> > 
+> > This patch converts target_core_file.c fd_do_readv() and fd_do_writev() code to
+> > use dynamic allocation for *iov[] instead of local scope static memory to
+> > properly handle cases with TCM_Loop that can potentially exceed the 8K stack
+> > on 64-bit kernels with per 1:1 struct scatterlist <-> 512-byte block_size SGL length
+> > mapping up to the current FD_MAX_SECTORS=1024.  For more information please see:
+> > 
+> > http://lkml.org/lkml/2010/9/22/42
+> > 
+> > Many thanks to Fubo Chen for spotting this one!
+> > 
+> > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> > ---
+> >  drivers/target/target_core_file.c |   20 ++++++++++++++++----
+> >  1 files changed, 16 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
+> > index 221b41e..93d3f63 100644
+> > --- a/drivers/target/target_core_file.c
+> > +++ b/drivers/target/target_core_file.c
+> > @@ -476,12 +476,16 @@ static int fd_do_readv(struct fd_request *req, struct se_task *task)
+> >  {
+> >  	struct file *fd = req->fd_dev->fd_file;
+> >  	struct scatterlist *sg = task->task_sg;
+> > -	struct iovec iov[req->fd_sg_count];
+> > +	struct iovec *iov;
+> >  	mm_segment_t old_fs;
+> >  	loff_t pos = (req->fd_lba * DEV_ATTRIB(task->se_dev)->block_size);
+> >  	int ret = 0, i;
+> >  
+> > -	memset(iov, 0, sizeof(struct iovec) * req->fd_sg_count);
+> > +	iov = kzalloc(sizeof(struct iovec) * req->fd_sg_count, GFP_KERNEL);
 > 
->         locked     = npages + current->mm->locked_vm;
->         lock_limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
+> A kzalloc allocation bigger then PAG_SIZE is very unstable, more so when
+> the system is up for a long time.
 > 
->         if ((locked > lock_limit) && !capable(CAP_IPC_LOCK)) {
->                 ret = -ENOMEM;
->                 goto out;
->         }
+> Better prepare to loop here, up to PAG_SIZE iov at a time.
 > 
->         cur_base = addr & PAGE_MASK;
-> 
->         ret = 0;
->         while (npages) {
->                 ret = get_user_pages(current, current->mm, cur_base,
->                                      min_t(unsigned long, npages,
->                                            PAGE_SIZE / sizeof (struct page *)),
->                                      1, !umem->writable, page_list, vma_list);
-> 
-> I think it's a data path too.
 
-in infiniband this is used to 'register memory' which is not data path.
+Hmmm, good point for the extreme TCM_Loop single 512-byte block per SGL
+case.  Looks like we need to split up the struct iovec mappings for
+FILEIO into multiple allocations in fd_do_readv() and fd_do_writev()..?
 
-> We do the check because get_user_pages() really pin and locked
-> the memory. 
+Best,
 
-Don't do this. Performance will be bad.
-Do the check once in ioctl and increment locked_vm by max amount you will use.
-On data path just make sure you do not exceed what userspace told you
-to.
+--nab
 
-> 
-> >> So set operations should be in
-> >> vhost process too, it's natural.
-> >>
-> >> >So I think we'll need another ioctl in the backend
-> >> >to tell userspace how much memory is needed?
-> >> >
-> >> Except vhost tells it to mp device, mp did not know
-> >> how much memory is needed to run zero-copy smoothly.
-> >> Is userspace interested about the memory mp is needed?
-> >
-> >Couldn't parse this last question.
-> >I think userspace generally does want control over
-> >how much memory we'll lock. We should not just lock
-> >as much as we can.
-> >
-> >--
-> >MST
+
