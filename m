@@ -1,89 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754960Ab0IVPYp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 11:24:45 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:33110 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753741Ab0IVPYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 11:24:44 -0400
-Message-ID: <4C9A1FB7.4070308@fusionio.com>
-Date: Wed, 22 Sep 2010 17:24:39 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1755224Ab0IVPY7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 11:24:59 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:47036 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755132Ab0IVPY5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 11:24:57 -0400
+Message-ID: <4C9A1FB7.9050902@oracle.com>
+Date: Wed, 22 Sep 2010 08:24:39 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] block fixes for 2.6.36-rc5
-References: <4C99B4F3.6070403@fusionio.com> <AANLkTi=KGhG6jbAuFngw3p_rsJu944Kn+UUhYkhZ0vLA@mail.gmail.com>
-In-Reply-To: <AANLkTi=KGhG6jbAuFngw3p_rsJu944Kn+UUhYkhZ0vLA@mail.gmail.com>
+To: Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Any SYSRQ key to force mode switch to console mode when using
+ KMS?
+References: <19601.1301.803816.92851@elektron.ikp.physik.tu-darmstadt.de>	<20100921151033.80e61747.randy.dunlap@oracle.com> <19609.53242.674915.369484@elektron.ikp.physik.tu-darmstadt.de>
+In-Reply-To: <19609.53242.674915.369484@elektron.ikp.physik.tu-darmstadt.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-09-22 17:06, Linus Torvalds wrote:
-> Gaah. This is just _incredibly_ ugly:
+On 09/22/10 02:44, Uwe Bonnes wrote:
+>>>>>> "Randy" == Randy Dunlap <randy.dunlap@oracle.com> writes:
 > 
-> On Wed, Sep 22, 2010 at 12:49 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
->>
->> -       /* Add group onto cgroup list */
->> -       sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
->> -       cfq_blkiocg_add_blkio_group(blkcg, &cfqg->blkg, (void *)cfqd,
->> +       /*
->> +        * Add group onto cgroup list. It might happen that bdi->dev is
->> +        * not initiliazed yet. Initialize this new group without major
->> +        * and minor info and this info will be filled in once a new thread
->> +        * comes for IO. See code above.
->> +        */
->> +       if (bdi->dev) {
->> +               sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
->> +               cfq_blkiocg_add_blkio_group(blkcg, &cfqg->blkg, (void *)cfqd,
->>                                        MKDEV(major, minor));
->> +       } else
->> +               cfq_blkiocg_add_blkio_group(blkcg, &cfqg->blkg, (void *)cfqd,
->> +                                       0);
->> +
+>     Randy> On Wed, 15 Sep 2010 19:40:37 +0200 Uwe Bonnes wrote:
+>     >> Hello,
+>     >> 
+>     >> is there any SYSRQ key that forces the video system to console mode,
+>     >> especially when using KMS and allows to work on.
 > 
-> and quite frankly, anything that does that kind of thing is total
-> sh*t. Not only is the sscanf() just broken (really? figuring out
-> things from some internal string? Using dev_t in this time and age for
-> kernel internal stuff?) to begin with, but if you have to then do it
-> conditionally, for chrissake do it _cleanly_.
+>     Randy> sysrq-v help message says:
 > 
-> Make a small helper function that does "get me the dev_t of this
-> 'dev'", and make that one do
+>     Randy> force-fb(V) = "Restore framebuffer console"
 > 
->    static unsigned int device_dev_t(struct device *dev)
->    {
->       unsigned int major = 0, minor = 0;
+> How is that documented outside the sysrq itself?
 > 
->       if (dev)
->          sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+> /usr/src/linux-2.6.36-rc4-19/Documentation/sysrq.txt:
 > 
->       return MKDEV(major, minor);
->    }
-> 
-> and then just have a single 'cfq_blkiocg_add_blkio_group()' there.
-> 
-> But more seriously, why the hell does anything internal to cfq use a
-> 'dev_t' in the first place? Why isn't that 'struct blkio_group' using
-> a pointer to the 'struct device' or something like that instead (or
-> the pointer to the queue, or whatever)? It's just damn wrong to use
-> dev_t in this day and age, and the fact that you need to make it up
-> using sscanf() should have clued people into that fact.
-> 
-> I hate seeing obvious crap-workarounds this late in an -rc.
+> 'v'     - Dumps Voyager SMP processor info to your console
 
-I don't think anybody will disagree. The major problem here is that we
-still have some drivers using multiple devices per queue, one of them
-will be gone for .37 at least and I hope we can get mtd blk converted
-too. When that happens, we can place a dev in the queue and get rid of
-this hack and similar hacks on double bdi etc registrations.
-
-So we can put some makeup on the corpse like you describe, or we can
-just live with this until we can kill off abominations like this for
-2.6.37.
+Yes, I noticed that and I posted a patch for it yesterday.
 
 -- 
-Jens Axboe
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
