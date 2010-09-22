@@ -1,146 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755073Ab0IVVP4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 17:15:56 -0400
-Received: from sj-iport-6.cisco.com ([171.71.176.117]:58889 "EHLO
-	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752866Ab0IVVPz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 17:15:55 -0400
-Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-AV: E=Sophos;i="4.57,219,1283731200"; 
-   d="scan'208";a="593325553"
-Date: Wed, 22 Sep 2010 14:15:57 -0700
-From: Tom Lyon <pugs@cisco.com>
-To: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, jbarnes@virtuousgeek.org, randy.dunlap@oracle.com,
-        arnd@arndb.de, joro@8bytes.org, hjk@linutronix.de, avi@redhat.com,
-        gregkh@suse.de, chrisw@sous-sol.org, alex.williamson@redhat.com,
-        mst@redhat.com
-Subject: [PATCH 0/3] VFIO V4: VFIO driver: Non-privileged user level PCI
- drivers
-Message-ID: <4c9a720d.kfMPk+Yyq+IUUwiw%pugs@cisco.com>
-User-Agent: Heirloom mailx 12.2 01/07/07
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1755389Ab0IVVRw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 17:17:52 -0400
+Received: from lo.gmane.org ([80.91.229.12]:41362 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753921Ab0IVVRv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 17:17:51 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Alessandro Guido <ag@alessandroguido.name>
+Subject: Re: idr_remove called for id=0 which is not allocated
+Date: Wed, 22 Sep 2010 23:17:40 +0200
+Message-ID: <i7drpl$5sc$1@dough.gmane.org>
+References: <4C9A70B2.3090101@alessandroguido.name>
+Mime-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="------------080601010100050704000402"
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: 151.65.190.197
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100908 Lightning/1.0b3pre Thunderbird/3.1.3
+In-Reply-To: <4C9A70B2.3090101@alessandroguido.name>
+Cc: dri-devel@lists.freedesktop.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After a long summer break, it's tanned, it's rested, and it's ready to rumble!
+This is a multi-part message in MIME format.
+--------------080601010100050704000402
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-In this version:	*** REBASE to 2.6.35 ***
+config attached
 
-There's new code using generic netlink messages which allows the kernel
-to notify the user level of weird events and allows the user level to 
-respond. This is currently used to handle device removal (whether software
-or hardware driven), PCI error events, and system suspend & hibernate.
+--------------080601010100050704000402
+Content-Type: application/x-gzip;
+ name="config.gz"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="config.gz"
 
-The driver now supports devices which use multiple MSI interrupts, reflecting
-the actual number of interrupts allocated by the system to the user level.
-
-PCI config accesses are now done through the pci_user_{read,write)_config
-routines from drivers/pci/access.c.
-
-Numerous other tweaks and cleanups.
-
-Blurb from version 3:
-
-There are lots of bug fixes and cleanups in this version, but the main
-change is to check to make sure that the IOMMU has interrupt remapping
-enabled, which is necessary to prevent user level code from triggering
-spurious interrupts for other devices.  Since most platforms today
-do not have the necessary hardware and/or software for this, a module
-option can override this check, thus making vfio useful (but not safe)
-on many more platforms.
-
-In the next version I plan to add kernel to user messaging using the
-generic netlink mechanism to allow the user driver to react to hot add
-and remove, and power management requests.
-
-Blurb from version 2:
-
-This version now requires an IOMMU domain to be set before any access to
-device registers is granted (except that config space may be read).  In
-addition, the VFIO_DMA_MAP_ANYWHERE is dropped - it used the dma_map_sg API
-which does not have sufficient controls around IOMMU usage.  The IOMMU domain
-is obtained from the 'uiommu' driver which is included in this patch.
-
-Various locking, security, and documentation issues have also been fixed.
-
-Please commit - it or me!
-But seriously, who gets to commit this? Avi for KVM? or GregKH for drivers?
-
-Blurb from version 1:
-
-This patch is the evolution of code which was first proposed as a patch to
-uio/uio_pci_generic, then as a more generic uio patch. Now it is taken entirely
-out of the uio framework, and things seem much cleaner. Of course, there is
-a lot of functional overlap with uio, but the previous version just seemed
-like a giant mode switch in the uio code that did not lead to clarity for
-either the new or old code.
-
-[a pony for avi...]
-The major new functionality in this version is the ability to deal with
-PCI config space accesses (through read & write calls) - but includes table
-driven code to determine whats safe to write and what is not. Also, some
-virtualization of the config space to allow drivers to think they're writing
-some registers when they're not.  Also, IO space accesses are also allowed.
-Drivers for devices which use MSI-X are now prevented from directly writing
-the MSI-X vector area.
-
-All interrupts are now handled using eventfds, which makes things very simple.
-
-The name VFIO refers to the Virtual Function capabilities of SR-IOV devices
-but the driver does support many more types of devices.  I was none too sure
-what driver directory this should live in, so for now I made up my own under
-drivers/vfio. As a new driver/new directory, who makes the commit decision?
-
-I currently have user level drivers working for 3 different network adapters
-- the Cisco "Palo" enic, the Intel 82599 VF, and the Intel 82576 VF (but the
-whole user level framework is a long ways from release).  This driver could
-also clearly replace a number of other drivers written just to give user
-access to certain devices - but that will take time.
-
-Tom Lyon (3):
-  VFIO V4: export pci_user_{read,write}_config
-  VFIO V4: uiommu driver - allow user progs to manipulate iommu domains
-  VFIO V4: VFIO driver: Non-privileged user level PCI drivers
-
- Documentation/ioctl/ioctl-number.txt |    1 +
- Documentation/vfio.txt               |  183 ++++++++
- MAINTAINERS                          |    8 +
- drivers/Kconfig                      |    2 +
- drivers/Makefile                     |    2 +
- drivers/pci/access.c                 |    6 +-
- drivers/pci/pci.h                    |    7 -
- drivers/vfio/Kconfig                 |   18 +
- drivers/vfio/Makefile                |   11 +
- drivers/vfio/uiommu.c                |  126 ++++++
- drivers/vfio/vfio_dma.c              |  346 +++++++++++++++
- drivers/vfio/vfio_intrs.c            |  257 ++++++++++++
- drivers/vfio/vfio_main.c             |  768 ++++++++++++++++++++++++++++++++++
- drivers/vfio/vfio_netlink.c          |  459 ++++++++++++++++++++
- drivers/vfio/vfio_pci_config.c       |  698 ++++++++++++++++++++++++++++++
- drivers/vfio/vfio_rdwr.c             |  158 +++++++
- drivers/vfio/vfio_sysfs.c            |  118 ++++++
- include/linux/Kbuild                 |    1 +
- include/linux/pci.h                  |    8 +
- include/linux/uiommu.h               |   76 ++++
- include/linux/vfio.h                 |  267 ++++++++++++
- 21 files changed, 3511 insertions(+), 9 deletions(-)
- create mode 100644 Documentation/vfio.txt
- create mode 100644 drivers/vfio/Kconfig
- create mode 100644 drivers/vfio/Makefile
- create mode 100644 drivers/vfio/uiommu.c
- create mode 100644 drivers/vfio/vfio_dma.c
- create mode 100644 drivers/vfio/vfio_intrs.c
- create mode 100644 drivers/vfio/vfio_main.c
- create mode 100644 drivers/vfio/vfio_netlink.c
- create mode 100644 drivers/vfio/vfio_pci_config.c
- create mode 100644 drivers/vfio/vfio_rdwr.c
- create mode 100644 drivers/vfio/vfio_sysfs.c
- create mode 100644 include/linux/uiommu.h
- create mode 100644 include/linux/vfio.h
+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
+--------------080601010100050704000402--
 
