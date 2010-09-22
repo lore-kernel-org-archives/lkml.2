@@ -1,80 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615Ab0IVJuj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 05:50:39 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:39439 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753396Ab0IVJui (ORCPT
+	id S1753643Ab0IVJww (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 05:52:52 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49027 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753361Ab0IVJwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 05:50:38 -0400
-To: Neil Brown <neilb@suse.de>
-CC: miklos@szeredi.hu, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vaurora@redhat.com,
-        viro@zeniv.linux.org.uk
-In-reply-to: <20100921113101.3bde59bd@notabene> (message from Neil Brown on
-	Tue, 21 Sep 2010 11:31:01 +1000)
-Subject: Re: [PATCH 0/7 v3] overlay filesystem prototype
-References: <20100920180404.939991832@szeredi.hu> <20100921113101.3bde59bd@notabene>
-Message-Id: <E1OyLyA-00033R-D0@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Wed, 22 Sep 2010 11:50:30 +0200
+	Wed, 22 Sep 2010 05:52:51 -0400
+From: Michael Grzeschik <m.grzeschik@pengutronix.de>
+To: dan.j.williams@intel.com
+Cc: linux-kernel@vger.kernel.org, g.liakhovetski@gmx.de, trivial@kernel.org,
+        Michael Grzeschik <m.grzeschik@pengutronix.de>
+Subject: [PATCH] ipu_idmac: fixup comment based on color case
+Date: Wed, 22 Sep 2010 11:52:30 +0200
+Message-Id: <1285149150-12183-1-git-send-email-m.grzeschik@pengutronix.de>
+X-Mailer: git-send-email 1.7.2.3
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: mgr@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Sep 2010, Neil Brown wrote:
-> On Mon, 20 Sep 2010 20:04:04 +0200
-> Miklos Szeredi <miklos@szeredi.hu> wrote:
-> 
-> > Here's an updated patch series.
-> > 
-> > For now I reverted Neil's revalidation patch.  Not requiring strict
-> > read-only would make sense for just trying it out and experimenting.
-> > But for real uses, I'm not sure...
-> 
-> :-)
-> 
-> I think you significantly reduce the value by insisting on read-only but as
-> this is purely a theoretical perspective at the moment (I have no concrete
-> use-case) I won't push it.
+Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
+---
+ drivers/dma/ipu/ipu_idmac.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I'm not insisting on read-only.  I think there's value to enabling
-external modification in special circumstances, but not by default.
+diff --git a/drivers/dma/ipu/ipu_idmac.c b/drivers/dma/ipu/ipu_idmac.c
+index cb26ee9..e065703 100644
+--- a/drivers/dma/ipu/ipu_idmac.c
++++ b/drivers/dma/ipu/ipu_idmac.c
+@@ -321,7 +321,7 @@ static void ipu_ch_param_set_size(union chan_param_mem *params,
+ 		params->ip.wid2	= 4;		/* Blue bit width - 1 */
+ 		break;
+ 	case IPU_PIX_FMT_BGR24:
+-		params->ip.bpp	= 1;		/* 24 BPP & RGB PFS */
++		params->ip.bpp	= 1;		/* 24 BPP & BGR PFS */
+ 		params->ip.pfs	= 4;
+ 		params->ip.npb	= 7;
+ 		params->ip.sat	= 2;		/* SAT = 32-bit access */
+-- 
+1.7.2.3
 
-I also think it might not be a good idea to waste CPU cycles and brain
-cycles on implementing (an always imperfect) revalidation.  A similar
-mechanism is "mount -oremount mountpoint", which simply throws out all
-unused dentries, effectively forcing a revalidation of the whole
-filesystem.  Less selective than ->d_revalidate(), but it shouldn't be
-a big issue since the underlying filesystem dentries remain cached.
-
-> I had another patch I was working on which caused overlayfs to keep negative
-> dentries in upperdentry or lowerdentry rather than just setting them to
-> NULL.  This would allow revalidation to notice objects appearing in the
-> underlying filesystem.  I guess you won't want that now .... I think it made
-> some of the code a bit neater, but I never finished it so I cannot be sure of
-> the overall effect.
-> 
-> I'm curious as to why upperdentry is now called __upperdentry - it isn't
-> clear from a quick reading..
-
-(I need to add more comments to the code...)
-
-The underscores are meant to imply that unlinke ->lowerdentry it's not
-qute safe to access directly.  See discussion about memory barriers:
-
-  http://lkml.org/lkml/2010/9/19/142
-
-It's not as clear as one might like.  To sum up:
-
-  - an smp_read_barrier_depends() is needed on SMP Alpha, but not on
-    other archs
-
-  - an ACCESS_ONCE() is needed on some theoretical compiler that does
-    weird optimizations, but apparently not on current versions of gcc
-
-The VFS lives happily without either, locklessly accessing
-dentry->d_inode.
-
-Thanks,
-Miklos
