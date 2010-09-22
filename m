@@ -1,158 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754347Ab0IVL6v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 07:58:51 -0400
-Received: from smtp102.sbc.mail.re3.yahoo.com ([66.196.96.85]:25844 "HELO
-	smtp102.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752437Ab0IVL6u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 07:58:50 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: rJjL.SYVM1kOvnijR7RidXP1DlLvK7xI3pl16X3G9UX6fwp
- bLgpYLhbvbwe9KAl9Vpd7zxFfBRlg.mcqLm1yl9pmLFTI9NE9nBKMOQQ1mCs
- rwYO32Cn9Abn7VZxbikJJ1GOZGMhe4GOpBFzCY4UnMRJEVIsnUJLKo9FMpuk
- dbiyQqwOobt1BsVQREouZIz3thGJE.lFJi.s1KzNhW47CwkGJWXRDRSangsM
- pF331lRt1Br4b2leafc.zC0iOo5EbXkw0y4X7cvTFyYYFUs3FmFPq0T6f1.9
- DuymetKl_NbeV.8JAM5hVhv4JwdOBGd8D5Bj8rAKOuXY6KlO5UpJUqGrWIxM
- NdwVPeXQHCpF2pvp4x2oJC43PmQ1z.m9Hd0JmxakSV2Lboz5lviawOuxdvla
- dQEm5AFn.8BKRcNFSKQ--
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [RFC 02/22] configfs: Add
-	struct	configfs_item_operations->check_link() in configfs_unlink()
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Joel Becker <Joel.Becker@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jens Axboe <axboe@kernel.dk>,
-        Linux-fsdevel <linux-fsdevel@vger.kernel.org>
-In-Reply-To: <4C99E613.6000004@panasas.com>
-References: <1283456440.5598.108.camel@haakon2.linux-iscsi.org>
-	 <201009071701.02847.konrad@darnok.org>
-	 <20100907224413.GC21935@mail.oracle.com>
-	 <1283911739.556.420.camel@haakon2.linux-iscsi.org>
-	 <20100908192639.GD29545@mail.oracle.com>
-	 <1283979207.556.510.camel@haakon2.linux-iscsi.org>
-	 <20100910152802.GG885@mail.oracle.com>
-	 <1284145606.19890.68.camel@haakon2.linux-iscsi.org>
-	 <20100910194404.GJ885@mail.oracle.com>
-	 <1284148323.19890.94.camel@haakon2.linux-iscsi.org>
-	 <20100920220633.GC8405@mail.oracle.com>
-	 <1285139802.1849.13.camel@haakon2.linux-iscsi.org>
-	 <4C99E613.6000004@panasas.com>
-Content-Type: text/plain
-Date: Wed, 22 Sep 2010 04:54:32 -0700
-Message-Id: <1285156472.1849.60.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1754392Ab0IVMBV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 08:01:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37097 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753396Ab0IVMBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 08:01:20 -0400
+Date: Wed, 22 Sep 2010 13:55:05 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "herbert@gondor.hengli.com.au" <herbert@gondor.hengli.com.au>,
+        "jdike@linux.intel.com" <jdike@linux.intel.com>
+Subject: Re: [RFC PATCH v9 12/16] Add mp(mediate passthru) device.
+Message-ID: <20100922115505.GF16423@redhat.com>
+References: <20100915112811.GB29267@redhat.com>
+ <1284970128-7343-1-git-send-email-xiaohui.xin@intel.com>
+ <20100920113643.GB23898@redhat.com>
+ <F2E9EB7348B8264F86B6AB8151CE2D792B8CAA0F6A@shsmsx502.ccr.corp.intel.com>
+ <20100921131421.GA10439@redhat.com>
+ <F2E9EB7348B8264F86B6AB8151CE2D792D171853DF@shsmsx502.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <F2E9EB7348B8264F86B6AB8151CE2D792D171853DF@shsmsx502.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-09-22 at 13:18 +0200, Boaz Harrosh wrote:
-> On 09/22/2010 09:16 AM, Nicholas A. Bellinger wrote:
-> > On Mon, 2010-09-20 at 15:06 -0700, Joel Becker wrote:
-> >> [Sorry on the delay, I was out of town]
+On Wed, Sep 22, 2010 at 07:41:36PM +0800, Xin, Xiaohui wrote:
+> >-----Original Message-----
+> >From: Michael S. Tsirkin [mailto:mst@redhat.com]
+> >Sent: Tuesday, September 21, 2010 9:14 PM
+> >To: Xin, Xiaohui
+> >Cc: netdev@vger.kernel.org; kvm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> >mingo@elte.hu; davem@davemloft.net; herbert@gondor.hengli.com.au;
+> >jdike@linux.intel.com
+> >Subject: Re: [RFC PATCH v9 12/16] Add mp(mediate passthru) device.
+> >
+> >On Tue, Sep 21, 2010 at 09:39:31AM +0800, Xin, Xiaohui wrote:
+> >> >From: Michael S. Tsirkin [mailto:mst@redhat.com]
+> >> >Sent: Monday, September 20, 2010 7:37 PM
+> >> >To: Xin, Xiaohui
+> >> >Cc: netdev@vger.kernel.org; kvm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> >> >mingo@elte.hu; davem@davemloft.net; herbert@gondor.hengli.com.au;
+> >> >jdike@linux.intel.com
+> >> >Subject: Re: [RFC PATCH v9 12/16] Add mp(mediate passthru) device.
+> >> >
+> >> >On Mon, Sep 20, 2010 at 04:08:48PM +0800, xiaohui.xin@intel.com wrote:
+> >> >> From: Xin Xiaohui <xiaohui.xin@intel.com>
+> >> >>
+> >> >> ---
+> >> >> Michael,
+> >> >> I have move the ioctl to configure the locked memory to vhost
+> >> >
+> >> >It's ok to move this to vhost but vhost does not
+> >> >know how much memory is needed by the backend.
 > >>
-> > 
-> > Hi Joel,
-> > 
-> > Many, thanks for your followup on this item, my comments are below.
-> > 
-> >> On Fri, Sep 10, 2010 at 12:52:03PM -0700, Nicholas A. Bellinger wrote:
-> >>> On Fri, 2010-09-10 at 12:44 -0700, Joel Becker wrote:
-> >>>> 	You can refcount without check_link().
-> >>>
-> >>> So what do you recommend here..?
-> >>
-> >> 	That your ACL object, or whatever it is that considers itself to
-> >> be refcounted by the number of links, keep track of that and only free
-> >> itself when all are gone rather than freeing itself when the first goes
-> >> away.
-> >>
-> > 
-> > Ok, I see what you mean by internal refcounting within the configfs
-> > consumer to handle this case..
-> > 
-> >>> The problem is that the 'unlink sub_child/group1/src_0/src_link' can't
-> >>> signal to the other struct config_group to also call an internal 'unlink
-> >>> sub_child/group2/dst_0/dst_link' to drop the child link outside of it's
-> >>> struct config_group.
-> >>
-> >> 	Nor should it.  I'm asking what is so wrong about a world where
-> >> sub_child/group1/src_0/src_link is gone but
-> >> sub_child/group2/dst_0/dst_link remains?  Maybe that target object can't
-> >> work anymore, but the user broke it by breaking the link.
-> >>
-> > 
-> > Yes, so trying to avoid the unlink alltogether here was my main
-> > intention thus far.  
-> > 
-> > Actually leaving the sub_child/group2/dst_0/dst_link in the example here
-> > would be acceptable for the TCM MappedLUN case, because really we never
-> > expect this case to this unless someone is poking at configfs directly,
-> > and our userspace code will never do this intentionally.
-> > 
-> >>>> 	You're still fighting allowing the links to go away.  You
-> >>>> haven't explained why that is necessary.  You had a problem with a crash
-> >>>> because you expected one reference to your ACLs and actually have two,
-> >>>> but you can fix that without modifying configfs.
-> >>>
-> >>> If this is the case then I must be mis-understanding what you mean by
-> >>> configfs consumer refcounting from allow_link() and drop_link().  Can
-> >>> you give me a bit more detail where I should be looking..?
-> >>
-> >> 	Here's how I sort of understood things.  First, you create the
-> >> src_link pointing to $object.  This somehow allocates some sort of ACL
-> >> structure hanging off of $object.  Then you create dst_link pointing to
-> >> src_link, which really ends up pointing to the $object.  So now you have
-> >> src_link and dst_link pointing to $object.
-> >> 	Finally, someone unlinks src_link.  This triggers $object to
-> >> free the ACL structure.  When the caller later removes dst_link, it
-> >> crashes because it was expecting ACL to still be there.  Do I have it
-> >> right?
-> > 
-> > Correct.
-> > 
-> >> 	I'm saying that $object should count how many people are
-> >> pointing to it, so that when you remove src_link, ACL is *not* freed.
-> >> It will only be freed when both src_link and dst_link are removed.  This
-> >> way you do not crash.  Perhaps I'm not understanding the ACL object.
-> >> Perhaps I'm missing the mechanism entirely.  But I don't see why the ACL
-> >> object must necessarily be freed when one symlink is removed but not the
-> >> other.
-> >>
-> > 
-> > No, I think your points here make perfect sense.  I will look into a
-> > patch that leaves the TCM fabric MappedLUNs symlinks in place when the
-> > underlying TPG fabric LUN symlink is removed without breaking anything,
-> > but still does the necessary accounting to ensure that shutdown with
-> > active I/Os still works as expected.  
+> >> I think the backend here you mean is mp device.
+> >> Actually, the memory needed is related to vq->num to run zero-copy
+> >> smoothly.
+> >> That means mp device did not know it but vhost did.
+> >
+> >Well, this might be so if you insist on locking
+> >all posted buffers immediately. However, let's assume I have a
+> >very large ring and prepost a ton of RX buffers:
+> >there's no need to lock all of them directly:
+> >
+> >if we have buffers A and B, we can lock A, pass it
+> >to hardware, and when A is consumed unlock A, lock B
+> >and pass it to hardware.
+> >
+> >
+> >It's not really critical. But note we can always have userspace
+> >tell MP device all it wants to know, after all.
+> >
+> Ok. Here are two values we have mentioned, one is how much memory
+> user application wants to lock, and one is how much memory locked
+> is needed to run smoothly. When net backend is setup, we first need
+> an ioctl to get how much memory is needed to lock, and then we call
+> another ioctl to set how much it want to lock. Is that what's in your mind? 
+
+That's fine.
+
+> >> And the rlimt stuff is per process, we use current pointer to set
+> >> and check the rlimit, the operations should be in the same process.
+> >
+> >Well no, the ring is handled from the kernel thread: we switch the mm to
+> >point to the owner task so copy from/to user and friends work, but you
+> >can't access the rlimit etc.
+> >
+> Yes, the userspace and vhost kernel is not the same process. But we can
+> record the task pointer as mm.
+
+So you will have to store mm and do device->mm, not current->mm.
+Anyway, better not touch mm on data path.
+
+> >> Now the check operations are in vhost process, as mp_recvmsg() or
+> >> mp_sendmsg() are called by vhost.
+> >
+> >Hmm, what do you mean by the check operations?
+> >send/recv are data path operations, they shouldn't
+> >do any checks, should they?
+> >
+> As you mentioned what infiniband driver done:
+>         down_write(&current->mm->mmap_sem);
 > 
-> Perhaps a strengthen chmod here. And if then, done by root, a big fat
-> "shoot self in the foot" message in dmsg for the poking where you don't
-> need to. type.
+>         locked     = npages + current->mm->locked_vm;
+>         lock_limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
 > 
-
-Hmm, I don't believe configfs currently supports a distinction between
-permissions for something along these lines.
-
-> (BTW: could you re establish the link after it's deleted the way you
->  do at setup?)
+>         if ((locked > lock_limit) && !capable(CAP_IPC_LOCK)) {
+>                 ret = -ENOMEM;
+>                 goto out;
+>         }
 > 
+>         cur_base = addr & PAGE_MASK;
+> 
+>         ret = 0;
+>         while (npages) {
+>                 ret = get_user_pages(current, current->mm, cur_base,
+>                                      min_t(unsigned long, npages,
+>                                            PAGE_SIZE / sizeof (struct page *)),
+>                                      1, !umem->writable, page_list, vma_list);
+> 
+> I think it's a data path too.
 
-Yes, the "dangling" MappedLUNs symlinks for this special case would need
-to be explictly removed via unlink(2) and then re-created using a new
-TPG LUN struct se_lun->lun_group containing a valid symlink back to
-a TCM Core backstore a valid configfs symlink source.
+in infiniband this is used to 'register memory' which is not data path.
 
-Thanks!
+> We do the check because get_user_pages() really pin and locked
+> the memory. 
 
---nab
+Don't do this. Performance will be bad.
+Do the check once in ioctl and increment locked_vm by max amount you will use.
+On data path just make sure you do not exceed what userspace told you
+to.
 
+> 
+> >> So set operations should be in
+> >> vhost process too, it's natural.
+> >>
+> >> >So I think we'll need another ioctl in the backend
+> >> >to tell userspace how much memory is needed?
+> >> >
+> >> Except vhost tells it to mp device, mp did not know
+> >> how much memory is needed to run zero-copy smoothly.
+> >> Is userspace interested about the memory mp is needed?
+> >
+> >Couldn't parse this last question.
+> >I think userspace generally does want control over
+> >how much memory we'll lock. We should not just lock
+> >as much as we can.
+> >
+> >--
+> >MST
