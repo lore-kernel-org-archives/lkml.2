@@ -1,37 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701Ab0IVKGs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 06:06:48 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33712 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751484Ab0IVKGr (ORCPT
+	id S1753339Ab0IVKHF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 06:07:05 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:47992 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752936Ab0IVKHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 06:06:47 -0400
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: dave@gnu.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kmemleak: add unlikely() optimization to kmemleak_late_init
-References: <1285089797.2177.2.camel@cowboy>
-Date: Wed, 22 Sep 2010 11:06:35 +0100
-In-Reply-To: <1285089797.2177.2.camel@cowboy> (Davidlohr Bueso's message of
-	"Tue, 21 Sep 2010 13:23:17 -0400")
-Message-ID: <tnxlj6uhz2s.fsf@e102109-lin.cambridge.arm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Wed, 22 Sep 2010 06:07:03 -0400
+Date: Wed, 22 Sep 2010 11:07:01 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: jiang.adam@gmail.com
+Cc: dmitri.vorobiev@movial.com, wuzhangjin@gmail.com,
+        ddaney@caviumnetworks.com, peterz@infradead.org, fweisbec@gmail.com,
+        tj@kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] mips: irq: add stackoverflow detection
+Message-ID: <20100922100701.GA4710@linux-mips.org>
+References: <linux-mips@linux-mips.org>
+ <1282901526-28405-1-git-send-email-jiang.adam@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-OriginalArrivalTime: 22 Sep 2010 10:06:38.0599 (UTC) FILETIME=[D8BD7170:01CB5A3D]
+Content-Disposition: inline
+In-Reply-To: <1282901526-28405-1-git-send-email-jiang.adam@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Davidlohr Bueso <dave@gnu.org> wrote:
-> kmemleak: add unlikely() optimization to kmemleak_late_init()
->
-> Since there it is not very probable that kmemleak_disable() was called right after setting kmemleak_initialized, we could benefit from predicting it.
+On Fri, Aug 27, 2010 at 06:32:06PM +0900, jiang.adam@gmail.com wrote:
 
-The patch is correct and you can add my Acked-by but I don't really
-think it's worth. We save ~2 cycles during booting, no-one would ever
-notice.
+> diff --git a/arch/mips/Kconfig.debug b/arch/mips/Kconfig.debug
+> index 43dc279..f437cd1 100644
+> --- a/arch/mips/Kconfig.debug
+> +++ b/arch/mips/Kconfig.debug
+> @@ -67,6 +67,15 @@ config CMDLINE_OVERRIDE
+>  
+>  	  Normally, you will choose 'N' here.
+>  
+> +config DEBUG_STACKOVERFLOW
+> +	bool "Check for stack overflows"
+> +	depends on DEBUG_KERNEL
+> +	help
+> +	  This option will cause messages to be printed if free stack space
+> +	  drops below a certain limit(2GB on MIPS). The debugging option
 
--- 
-Catalin
+I better upgrade my meory then.  2GB is a LOTS :)
+
+> +	  provides another way to check stack overflow happened on kernel mode
+> +	  stack usually caused by nested interruption.
+> +
+>  config DEBUG_STACK_USAGE
+>  	bool "Enable stack utilization instrumentation"
+>  	depends on DEBUG_KERNEL
+> diff --git a/arch/mips/kernel/irq.c b/arch/mips/kernel/irq.c
+> index c6345f5..d0b924d 100644
+> --- a/arch/mips/kernel/irq.c
+> +++ b/arch/mips/kernel/irq.c
+> @@ -151,6 +151,26 @@ void __init init_IRQ(void)
+>  #endif
+>  }
+>  
+> +#ifdef DEBUG_STACKOVERFLOW
+> +static inline void check_stack_overflow(void)
+> +{
+> +	long sp;
+
+Addresses in Linux should always be unsigned long.
+
+> +
+> +	__asm__ __volatile__("move %0, $sp" : "=r" (sp));
+> +	sp = sp & (THREAD_SIZE-1);
+
+For THREAD_SIZE - 1 there is the symbol THREAD_MASK.
+
+> +	/* check for stack overflow: is there less than 2KB free? */
+> +	if (unlikely(sp < (sizeof(struct thread_info) + 2048))) {
+
+Looks good otherwise, will queue.
+
+  Ralf
