@@ -1,73 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846Ab0IVXVc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 19:21:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10739 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750819Ab0IVXVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 19:21:31 -0400
-Date: Wed, 22 Sep 2010 19:21:11 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Miklos Szeredi <miklos@szeredi.hu>, Jens Axboe <axboe@kernel.dk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, neilb@suse.de,
-        viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 6/7 v3] overlay: hybrid overlay filesystem prototype
-Message-ID: <20100922232110.GC26268@shell>
-References: <20100920180404.939991832@szeredi.hu> <20100920180447.854260354@szeredi.hu>
-Mime-Version: 1.0
+	id S1751141Ab0IVXZs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 19:25:48 -0400
+Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:39043 "EHLO
+	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750782Ab0IVXZr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 19:25:47 -0400
+Date: Wed, 22 Sep 2010 16:24:58 -0700
+From: matt mooney <mfm@muteddisk.com>
+To: Tracey Dent <tdent48227@gmail.com>
+Cc: greg@kroah.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] Staging: rtl8187se: r8180.h: fixed alot of
+ checkpatch.pl issues
+Message-ID: <20100922232458.GB18432@haskell.muteddisk.com>
+Mail-Followup-To: Tracey Dent <tdent48227@gmail.com>, greg@kroah.com,
+	linux-kernel@vger.kernel.org
+References: <1285031982-3870-1-git-send-email-tdent48227@gmail.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100920180447.854260354@szeredi.hu>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <1285031982-3870-1-git-send-email-tdent48227@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 20, 2010 at 08:04:10PM +0200, Miklos Szeredi wrote:
-> From: Miklos Szeredi <mszeredi@suse.cz>
+On 21:19 Mon 20 Sep     , Tracey Dent wrote:
+> Fixed numerous coding style issues
 > 
-> This overlay filesystem is a hybrid of entirely filesystem based
-> (unionfs, aufs) and entierly VFS based (union mounts) solutions.
+The subject should be more specific as to what the patch does, such as
+"Staging: rtl8187se: r8180.h: whitespace cleanup."
 
-[...]
+And the explanation in the commit should also be more specific. There are
+plenty of examples if you look through the log. Greg might except them as is,
+but any future patches should follow the advice mentioned. Next time for a
+patch of this nature remember to CC kernel-janitors too. 
 
-> +static int ovl_copy_up_data(struct path *old, struct path *new, loff_t len)
-> +{
-> +	struct file *old_file;
-> +	struct file *new_file;
-> +	int error = 0;
-> +
-> +	if (len == 0)
-> +		return 0;
-> +
-> +	old_file = path_open(old, O_RDONLY);
-> +	if (IS_ERR(old_file))
-> +		return PTR_ERR(old_file);
-> +
-> +	new_file = path_open(new, O_WRONLY);
-> +	if (IS_ERR(new_file)) {
-> +		error = PTR_ERR(new_file);
-> +		goto out_fput;
-> +	}
-> +
-> +	/* FIXME: copy up sparse files efficiently */
-> +	while (len) {
-> +		loff_t offset = new_file->f_pos;
-> +		size_t this_len = OVL_COPY_UP_CHUNK_SIZE;
-> +		long bytes;
-> +
-> +		if (len < this_len)
-> +			this_len = len;
-> +
-> +		if (signal_pending_state(TASK_KILLABLE, current))
-> +			return -EINTR;
-> +
-> +		bytes = do_splice_direct(old_file, &offset, new_file, this_len,
-> +				 SPLICE_F_MOVE);
-
-Interruptible copyup is good.  But it looks like splice setup is kind
-of heavyweight and we should do it as seldom as possible.
-
-What about implementing splice flag SPLICE_F_INTERRUPTIBLE instead?
-
--VAL
+Thanks,
+mfm
