@@ -1,59 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753580Ab0IVRHV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 13:07:21 -0400
-Received: from mga01.intel.com ([192.55.52.88]:20011 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751868Ab0IVRHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 13:07:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,218,1283756400"; 
-   d="scan'208";a="839966044"
-Message-ID: <4C9A37AE.2010509@linux.intel.com>
-Date: Wed, 22 Sep 2010 10:06:54 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Jean Pihet <jean.pihet@newoldbits.com>, Thomas Renninger <trenn@suse.de>,
-        Ingo Molnar <mingo@elte.hu>, Len Brown <len.brown@intel.com>,
-        arjan@infradead.org, Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        linux-omap@vger.kernel.org, linux-perf-users@vger.kernel.org,
-        linux-trace-users@vger.kernel.org
-Subject: Re: [PATCH] tracing, perf: add more power related events
-References: <AANLkTinUmbSUUuxUzc8++pcb9gd1CZFdyTQFrveTBXyV@mail.gmail.com>	 <201009171736.14170.trenn@suse.de>	<20100917162412.GB3341@elte.hu>	 <201009180026.59482.trenn@suse.de>	 <AANLkTimMAr9kEzybFGai3qGyXx36v055iPpXq_C1vW8C@mail.gmail.com>	 <4C9A21AD.1000800@linux.intel.com>	 <AANLkTim6B+Je=LykgJb9=0vK5Br1rkft619BRJkBcHdP@mail.gmail.com>	 <4C9A2FB3.105@linux.intel.com> <1285173835.2275.1026.camel@laptop>
-In-Reply-To: <1285173835.2275.1026.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1753533Ab0IVRKx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 13:10:53 -0400
+Received: from xenotime.net ([72.52.115.56]:37393 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752650Ab0IVRKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 13:10:51 -0400
+Date: Wed, 22 Sep 2010 10:10:47 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Daniel Drake <dsd@laptop.org>
+Cc: tglx@linutronix.de, jbarnes@virtuousgeek.org, linux-pci@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org, dilinger@queued.net
+Subject: Re: [PATCH 2/3] PCI: OLPC configuration cleanup
+Message-Id: <20100922101047.86a6cfcb.rdunlap@xenotime.net>
+In-Reply-To: <20100922164402.A72D49D401B@zog.reactivated.net>
+References: <20100922164402.A72D49D401B@zog.reactivated.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 9/22/2010 9:43 AM, Peter Zijlstra wrote:
-> On Wed, 2010-09-22 at 09:32 -0700, Arjan van de Ven wrote:
->>> What are the apps that are using it? I know about builtin-timechart,
->>> pytimechart. Is powertop using this as well?
->> powertop 2.x codebase is as well.
->>
->> and a bunch of tools we have internal here at Intel.
->>
->> the thing with ABIs is that you don't know how many users you have.. at
->> least here you know the lower bound is 3 different tools that are open
->> source.
->> .... and likely many local tools that aren't.
-> These tools should be smart enough to look up the tracepoint name, fail
-> it its not available, read the tracepoint format, again fail if not
-> compatible.
-it's not very useful if none of the critical information is available.
+On Wed, 22 Sep 2010 17:44:02 +0100 (BST) Daniel Drake wrote:
 
-you can't at the one hand push people to use perf for critical pieces 
-(like machine checks etc etc) and on
-the other hand say that it's not ABI stable and should not be used really.
+> An OLPC system isn't usable without PCI, so we can simplify the
+> configuration here.
 
-In this case we're talking about basically a suprious rename of 
-something that isn't really an improvement
-(because it makes it harder to subscribe to only one type of event)... 
-that's not a good thing.
+preferably by using "depends on" instead of "select".
 
 
+> Also updated the code to be clearer that this is only for XO-1, and
+> fixed an issue where the XO-1 PCI configuration override was being
+> applied for XO-1.5 laptops.
+> 
+> Based on earlier work by Deepak Saxena.
+> 
+> Signed-off-by: Daniel Drake <dsd@laptop.org>
+> ---
+>  arch/x86/Kconfig       |   12 +++---------
+>  arch/x86/kernel/olpc.c |    4 +---
+>  arch/x86/pci/Makefile  |    2 +-
+>  arch/x86/pci/olpc.c    |    4 ++--
+>  4 files changed, 7 insertions(+), 15 deletions(-)
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index cea0cd9..708ee0d 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -1899,10 +1899,6 @@ config PCI_GOMMCONFIG
+>  config PCI_GODIRECT
+>  	bool "Direct"
+>  
+> -config PCI_GOOLPC
+> -	bool "OLPC"
+> -	depends on OLPC
+> -
+>  config PCI_GOANY
+>  	bool "Any"
+>  
+> @@ -1915,16 +1911,12 @@ config PCI_BIOS
+>  # x86-64 doesn't support PCI BIOS access from long mode so always go direct.
+>  config PCI_DIRECT
+>  	def_bool y
+> -	depends on PCI && (X86_64 || (PCI_GODIRECT || PCI_GOANY || PCI_GOOLPC))
+> +	depends on PCI && (X86_64 || (PCI_GODIRECT || PCI_GOANY))
+>  
+>  config PCI_MMCONFIG
+>  	def_bool y
+>  	depends on X86_32 && PCI && (ACPI || SFI) && (PCI_GOMMCONFIG || PCI_GOANY)
+>  
+> -config PCI_OLPC
+> -	def_bool y
+> -	depends on PCI && OLPC && (PCI_GOOLPC || PCI_GOANY)
+> -
+>  config PCI_DOMAINS
+>  	def_bool y
+>  	depends on PCI
+> @@ -2060,6 +2052,8 @@ config SCx200HR_TIMER
+>  
+>  config OLPC
+>  	bool "One Laptop Per Child support"
+> +	select PCI
+> +	select PCI_GOANY
+>  	select GPIOLIB
+>  	---help---
+>  	  Add support for detecting the unique features of the OLPC
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
