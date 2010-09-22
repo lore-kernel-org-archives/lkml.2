@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328Ab0IVKMT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 06:12:19 -0400
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:36351 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752421Ab0IVKMS (ORCPT
+	id S1753565Ab0IVKOf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 06:14:35 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42231 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753046Ab0IVKOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 06:12:18 -0400
-Date: Wed, 22 Sep 2010 13:05:20 +0300
-From: Alexander Shishkin <virtuoso@slind.org>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        David Airlie <airlied@linux.ie>
-Subject: Re: [PATCH] documentation: update sysrq.txt key mappings
-Message-ID: <20100922100519.GD10463@shisha.kicks-ass.net>
-References: <20100921160142.7c783105.randy.dunlap@oracle.com>
+	Wed, 22 Sep 2010 06:14:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=GNlv9ce5J6wDGiYPCjnzEZ3FUaCl+B8KXzZqPqbd0nzf4JfwDs7l/PkgjW5eOBCuNJ
+         iqGapClRB1SiHcfR8Kjwwc9E8OCMblzWre3skWiYMqNNrq1vlApD7CN9b5HCJ11FEa1q
+         wQ/CtVjGzmkjW03rTW65Yz40HGal1MpbuLyEE=
+Date: Wed, 22 Sep 2010 12:14:21 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Kyle Moffett <kyle@moffetthome.net>
+Cc: John Stultz <johnstul@us.ibm.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>,
+        Rodolfo Giometti <giometti@linux.it>, Arnd Bergmann <arnd@arndb.de>,
+        Stephan Gatzka <stephan@gatzka.org>
+Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
+Message-ID: <20100922101421.GA3337@riccoc20.at.omicron.at>
+References: <AANLkTik_2MKMhOuDGOmu8Kzyq-ipLe+Bxrb3FaD+Tv4U@mail.gmail.com>
+ <20100817085324.GB3330@riccoc20.at.omicron.at>
+ <1282090963.1734.97.camel@localhost>
+ <20100818071942.GA4096@riccoc20.at.omicron.at>
+ <1282176776.2865.100.camel@localhost.localdomain>
+ <20100819055518.GA4084@riccoc20.at.omicron.at>
+ <1282594125.3111.344.camel@localhost.localdomain>
+ <20100827123849.GC11657@riccoc20.at.omicron.at>
+ <1282948239.2268.155.camel@jstultz-laptop>
+ <AANLkTinRM3_kBc5S3wV=_S6P8+x7A43kz0qSYbixJYnq@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100921160142.7c783105.randy.dunlap@oracle.com>
+In-Reply-To: <AANLkTinRM3_kBc5S3wV=_S6P8+x7A43kz0qSYbixJYnq@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 21, 2010 at 04:01:42 -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> Update Documentation/sysrq.txt magic sysrq keys:
-> 
-> - 'g' is for kgdb (not arch-specific);
-> - add 2 new uses for 'v', remove the Voyager info;
-> - add 'y' info (SPARC-64 specific);
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Cc:	Jason Wessel <jason.wessel@windriver.com>
-> Cc:	"David S. Miller" <davem@davemloft.net>
-> Cc:	"James E.J. Bottomley" <James.Bottomley@suse.de>
-> Cc:	David Airlie <airlied@linux.ie>
-> Cc:	Alexander Shishkin <virtuoso@slind.org>
+On Tue, Sep 21, 2010 at 04:47:45PM -0400, Kyle Moffett wrote:
+> Well how about something much more straightforward:
 
-Acked-by: Alexander Shishkin <virtuoso@slind.org>
+I am about to post another patch set for discussion, so please comment
+on it when it appears.
 
-> ---
->  Documentation/sysrq.txt |    7 +++++--
->  1 file changed, 5 insertions(+), 2 deletions(-)
-> 
-> --- lnx-2636-rc5.orig/Documentation/sysrq.txt
-> +++ lnx-2636-rc5/Documentation/sysrq.txt
-> @@ -75,7 +75,7 @@ On all -  write a character to /proc/sys
->  
->  'f'	- Will call oom_kill to kill a memory hog process.
->  
-> -'g'	- Used by kgdb on ppc and sh platforms.
-> +'g'	- Used by kgdb (kernel debugger)
->  
->  'h'     - Will display help (actually any other key than those listed
->            here will display help. but 'h' is easy to remember :-)
-> @@ -110,12 +110,15 @@ On all -  write a character to /proc/sys
->  
->  'u'     - Will attempt to remount all mounted filesystems read-only.
->  
-> -'v'	- Dumps Voyager SMP processor info to your console.
-> +'v'	- Forcefully restores framebuffer console
-> +'v'	- Causes ETM buffer dump [ARM-specific]
->  
->  'w'	- Dumps tasks that are in uninterruptable (blocked) state.
->  
->  'x'	- Used by xmon interface on ppc/powerpc platforms.
->  
-> +'y'	- Show global CPU Registers [SPARC-64 specific]
-> +
->  'z'	- Dump the ftrace buffer
->  
->  '0'-'9' - Sets the console log level, controlling which kernel messages
+Thanks,
+Richard
