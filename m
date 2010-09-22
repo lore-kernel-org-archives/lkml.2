@@ -1,92 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754453Ab0IVMCz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 08:02:55 -0400
-Received: from smtp105.sbc.mail.gq1.yahoo.com ([67.195.14.108]:47687 "HELO
-	smtp105.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754295Ab0IVMCx (ORCPT
+	id S1754477Ab0IVME7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 08:04:59 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:41226 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751703Ab0IVME6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 08:02:53 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: 3KpX83oVM1nSt5_5IiRIwaOPLY4nmkLpbZU3a5kMVymYEEl
- uWrgskGH7TeAVeQsHl.mz_dGlatH10QM_7nSzmdxc5jkQeIoP6QHhJeDbf3t
- YB8Q0k7gRXPelDxXinqx7vlNFbr993ClDUrx.DVq4w0d2tKBRkK17wRhqxao
- h.g1EgVT5xt5KSxs9jU43qCkNNaJljuX_RF00nTdSIjkOV7jwHPoBOlwYtgp
- 3XVKrfhnnpUj1YBa24_Xv171MVs4.JDaY5HXtwfD5tK.F.RUMd3bGdxXLCEB
- TADrF8_I04h8w5k46VjkhiDWs8HVR_BVP3iWg9jT6e87QsUjJvHH5xQ--
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [PATCH] tcm/fileio: Convert to iov allocations for
-	fd_do_readv() and fd_do_writev()
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Boaz Harrosh <openosd@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Fubo Chen <fubo.chen@gmail.com>
-In-Reply-To: <4C99E7D6.1040004@gmail.com>
-References: <1285142558-13219-1-git-send-email-nab@linux-iscsi.org>
-	 <4C99E7D6.1040004@gmail.com>
-Content-Type: text/plain
-Date: Wed, 22 Sep 2010 04:58:38 -0700
-Message-Id: <1285156718.1849.63.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 22 Sep 2010 08:04:58 -0400
+Message-ID: <589c3dd38437c80704d8224523efbccc.squirrel@www.firstfloor.org>
+In-Reply-To: <4a8f3ad8416ed61cba1746883da1f839.squirrel@www.firstfloor.org>
+References: <1285150102-5506-1-git-send-email-andi@firstfloor.org>
+    <1285150102-5506-2-git-send-email-andi@firstfloor.org>
+    <20100922113114.GA14179@Krystal>
+    <4a8f3ad8416ed61cba1746883da1f839.squirrel@www.firstfloor.org>
+Date: Wed, 22 Sep 2010 14:04:57 +0200
+Subject: Re: [PATCH 2/2] Rewrite jump_label.c to use binary search
+From: "Andi Kleen" <andi@firstfloor.org>
+To: "Andi Kleen" <andi@firstfloor.org>
+Cc: "Mathieu Desnoyers" <mathieu.desnoyers@polymtl.ca>,
+        "Andi Kleen" <andi@firstfloor.org>, jbaron@redhat.com,
+        rusty@rustcorp.co.au, rostedt@goodmis.com,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, hpa@zytor.com,
+        tglx@linutronix.de, roland@redhat.com, rth@redhat.com,
+        mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org,
+        tony@bakeyournoodle.com, "Andi Kleen" <ak@linux.intel.com>
+User-Agent: SquirrelMail/1.4.21
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-09-22 at 13:26 +0200, Boaz Harrosh wrote:
-> On 09/22/2010 10:02 AM, Nicholas A. Bellinger wrote:
-> > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> > 
-> > Greetings all,
-> > 
-> > This patch converts target_core_file.c fd_do_readv() and fd_do_writev() code to
-> > use dynamic allocation for *iov[] instead of local scope static memory to
-> > properly handle cases with TCM_Loop that can potentially exceed the 8K stack
-> > on 64-bit kernels with per 1:1 struct scatterlist <-> 512-byte block_size SGL length
-> > mapping up to the current FD_MAX_SECTORS=1024.  For more information please see:
-> > 
-> > http://lkml.org/lkml/2010/9/22/42
-> > 
-> > Many thanks to Fubo Chen for spotting this one!
-> > 
-> > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-> > ---
-> >  drivers/target/target_core_file.c |   20 ++++++++++++++++----
-> >  1 files changed, 16 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
-> > index 221b41e..93d3f63 100644
-> > --- a/drivers/target/target_core_file.c
-> > +++ b/drivers/target/target_core_file.c
-> > @@ -476,12 +476,16 @@ static int fd_do_readv(struct fd_request *req, struct se_task *task)
-> >  {
-> >  	struct file *fd = req->fd_dev->fd_file;
-> >  	struct scatterlist *sg = task->task_sg;
-> > -	struct iovec iov[req->fd_sg_count];
-> > +	struct iovec *iov;
-> >  	mm_segment_t old_fs;
-> >  	loff_t pos = (req->fd_lba * DEV_ATTRIB(task->se_dev)->block_size);
-> >  	int ret = 0, i;
-> >  
-> > -	memset(iov, 0, sizeof(struct iovec) * req->fd_sg_count);
-> > +	iov = kzalloc(sizeof(struct iovec) * req->fd_sg_count, GFP_KERNEL);
-> 
-> A kzalloc allocation bigger then PAG_SIZE is very unstable, more so when
-> the system is up for a long time.
-> 
-> Better prepare to loop here, up to PAG_SIZE iov at a time.
-> 
 
-Hmmm, good point for the extreme TCM_Loop single 512-byte block per SGL
-case.  Looks like we need to split up the struct iovec mappings for
-FILEIO into multiple allocations in fd_do_readv() and fd_do_writev()..?
+>
+>>> +	for (; entry < stop && entry->key == key; entry++)
+>>> +		if (kernel_text_address(entry->code))
+>>
+>> This does not work for modules I'm afraid, only for the core kernel. You
+>> should test for __module_text_address() somewhere.
+>
+> I thought it was shared now, but ok.
 
-Best,
+Double checked. This is ok because kernel_text_address()
+already checks for modules. You were probably thinking
+of __kernel_text_address()
 
---nab
-
+-Andi
 
