@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753046Ab0IVJNN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 05:13:13 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:60083 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752524Ab0IVJNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 05:13:12 -0400
-Date: Wed, 22 Sep 2010 11:13:08 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Mark Hills <mark@pogo.org.uk>
-Newsgroups: gmane.linux.kernel
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
-Subject: Re: make headers_install
-Message-ID: <20100922111308.19d7c162@schatten.dmk.lab>
-In-Reply-To: <alpine.LNX.2.01.1009192055520.28631@fgnk.ybpnyqbznva>
-References: <alpine.LNX.2.01.1009192055520.28631@fgnk.ybpnyqbznva>
-X-Newsreader: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753178Ab0IVJOR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 05:14:17 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:65132 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752932Ab0IVJOQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 05:14:16 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Greg KH <greg@kroah.com>
+Subject: Re: [PATCH 1/2] TTY: create /tty and move the tty core files there
+Date: Wed, 22 Sep 2010 11:13:58 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: Greg KH <gregkh@suse.de>, Jiri Slaby <jslaby@suse.cz>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        Rogier Wolff <R.E.Wolff@bitwizard.nl>,
+        "Michael H. Warfield" <mhw@wittsend.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+References: <1283115995-4734-1-git-send-email-arnd@arndb.de> <20100921230733.GA32346@kroah.com> <20100921230804.GB32346@kroah.com>
+In-Reply-To: <20100921230804.GB32346@kroah.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201009221113.58202.arnd@arndb.de>
+X-Provags-ID: V02:K0:JtHG/Bj33LwhebxJcgvcL6CnNPoz3LiPMdFZss3cdSY
+ 8XDPOWkUlhqpFkzHGJd9iwNM3fYNcsXMqATkjy8uVK4kSmk9RJ
+ ZBG8SKQfdCPl6HCJDU7k6LpxqT8dBCMxpk6g9WAC8il8tQreFl
+ QfxNnaak8UHqmZUFLXKjetwhwfBt/o4Ux3zrr/mUD7LkICbjxh
+ rO1UuF/rzTMkBqEIdBFkg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[cc's added]
-On Sun, 19 Sep 2010 21:15:37 +0100 (BST)
-Mark Hills <mark@pogo.org.uk> wrote:
+On Wednesday 22 September 2010, Greg KH wrote:
+> The tty code should be at the root of the tree, as everyone
+> needs it, and it's always built, and it's not really a "driver"
+> 
+> Based on work done by Arnd Bergmann <arnd@arndb.de>
+> 
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Jiri Slaby <jslaby@suse.cz>
+> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> ---
+>  Makefile                           |    2 +-
+>  drivers/char/Makefile              |    4 +---
+>  tty/Makefile                       |    8 ++++++++
+>  {drivers/char => tty}/n_tty.c      |    0
+>  {drivers/char => tty}/tty_audit.c  |    0
+>  {drivers/char => tty}/tty_buffer.c |    0
+>  {drivers/char => tty}/tty_io.c     |    0
+>  {drivers/char => tty}/tty_ioctl.c  |    0
+>  {drivers/char => tty}/tty_ldisc.c  |    0
+>  {drivers/char => tty}/tty_mutex.c  |    0
+>  {drivers/char => tty}/tty_port.c   |    0
 
-> Hi David, I tried to update my kernel headers using the instructions in 
-> Documentation/make/headers_install.txt. I followed the example:
-> 
->   make headers_install INSTALL_HDR_PATH=/usr/include
-> 
-> but it installed them in /usr/include/include. So I modified the path:
-> 
->   make headers_install INSTALL_HDR_PATH=/usr
-> 
-> The command installed the headers, but then automatically deleted 
-> /usr/include/*.h (nasty!). This is with kernel 2.6.35.4.
-> 
-> Do the docs need an update (and I should always be installing to a staging 
-> area?) Or is this a bug in the process -- where is should be removing 
-> unknown files in /usr/include/linux or similar?
-> 
-> I seem to remember that I used to be able to install headers direct to the 
-> system, is this still the case?
-> 
-> Thanks
-> 
+My original patch also moved pty.o, sysrq.o and the n_*.o line disciplines.
+It's probably debatable where the line disciplines should go (I don't care
+much, so don't ask me), but pty and sysrq seem like they should really
+be part of the tty core directory.
 
+	Arnd
