@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339Ab0IVSPw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 14:15:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23198 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754115Ab0IVSPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 14:15:51 -0400
-Date: Wed, 22 Sep 2010 14:14:44 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>, rusty@rustcorp.co.au,
-        rostedt@goodmis.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        hpa@zytor.com, tglx@linutronix.de, roland@redhat.com, rth@redhat.com,
-        mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
-        davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org,
-        tony@bakeyournoodle.com, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 2/2] Rewrite jump_label.c to use binary search
-Message-ID: <20100922181444.GF2816@redhat.com>
-References: <1285150102-5506-1-git-send-email-andi@firstfloor.org> <1285150102-5506-2-git-send-email-andi@firstfloor.org> <20100922113114.GA14179@Krystal> <4a8f3ad8416ed61cba1746883da1f839.squirrel@www.firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4a8f3ad8416ed61cba1746883da1f839.squirrel@www.firstfloor.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754503Ab0IVSQB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 14:16:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:59950 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754426Ab0IVSP7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 14:15:59 -0400
+X-Authority-Analysis: v=1.1 cv=Ba7GFA6IM/Rlu/bGJ5lftWmk/oljGo5ZwASPcBcXAAo= c=1 sm=0 a=LtE-Q6vqAlEA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=G_TA8Vs6uij7JSv_l-YA:9 a=pa21BatRe-T5R4Qo32IA:7 a=h4UroesIrAqOaBLb11oxfC3yWswA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] tracing, perf: add more power related events
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        Jean Pihet <jean.pihet@newoldbits.com>,
+        Thomas Renninger <trenn@suse.de>, Ingo Molnar <mingo@elte.hu>,
+        Len Brown <len.brown@intel.com>, arjan@infradead.org,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-omap@vger.kernel.org, linux-perf-users@vger.kernel.org,
+        linux-trace-users@vger.kernel.org
+In-Reply-To: <1285176629.2275.1033.camel@laptop>
+References: <AANLkTinUmbSUUuxUzc8++pcb9gd1CZFdyTQFrveTBXyV@mail.gmail.com>
+	 <201009171736.14170.trenn@suse.de>	<20100917162412.GB3341@elte.hu>
+	 <201009180026.59482.trenn@suse.de>
+	 <AANLkTimMAr9kEzybFGai3qGyXx36v055iPpXq_C1vW8C@mail.gmail.com>
+	 <4C9A21AD.1000800@linux.intel.com>
+	 <AANLkTim6B+Je=LykgJb9=0vK5Br1rkft619BRJkBcHdP@mail.gmail.com>
+	 <4C9A2FB3.105@linux.intel.com> <1285173835.2275.1026.camel@laptop>
+	 <4C9A37AE.2010509@linux.intel.com>  <1285176629.2275.1033.camel@laptop>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 22 Sep 2010 14:15:55 -0400
+Message-ID: <1285179355.26872.27.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 22, 2010 at 01:56:48PM +0200, Andi Kleen wrote:
-> >> +	struct jump_entry *entry;
-> >>
-> >> +	for (entry = jstart; entry < jstop; entry++)
-> >> +		if (entry->code <= (unsigned long)start &&
-> >
-> > start -> end ?
-> 
-> I copied this from the original code too. I remember stumbling
-> over it too. Yes it was probably wrong in the original too.
+On Wed, 2010-09-22 at 19:30 +0200, Peter Zijlstra wrote:
+> On Wed, 2010-09-22 at 10:06 -0700, Arjan van de Ven wrote:
 > 
 
-No...the original version had it correct, check the archive.
+> That said, I really didn't read this discussion much, but your stance
+> seems to be that any tracepoint you use must stay valid, and I object to
+> that.
 
-This bug was introduced in your version.
+We could add a TRACE_EVENT_ABI() as Ingo has been suggesting. If
+anything, it could mean that the given tracepoint will always have the
+same name. And perhaps the data it holds will always be there, but may
+also be extended.
 
-thanks,
+> 
+> What will do you do when we include a new scheduling policy and all the
+> scheduler tracepoints need to change? (yes that's really going to
+> happen)
 
--Jason
+The tracepoint sched_switch should stay the same. We may add more data,
+but the comm, pid, prio => comm, pid, prio, I don't see going away.
+
+> 
+> I'm not going to carry double tracepoints, and I'm not going to not
+> merge that policy. 
+
+Not sure what you mean by "double tracepoints"
+
+-- Steve
+
 
