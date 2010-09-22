@@ -1,101 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190Ab0IVHdp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 03:33:45 -0400
-Received: from smtp102.sbc.mail.re3.yahoo.com ([66.196.96.85]:24823 "HELO
-	smtp102.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753035Ab0IVHdn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 03:33:43 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: u1Nt6ckVM1n2nLfuLkQpqcLLNUo4yUHVVUU.KBkhUpePYpE
- gefHETUCPNNG1pRK4B__amrgJBu.cTjE3uMM2q2.Jyms6EgX_TcjlvfOoJ3_
- N793S7Ssh8vZ.OkQnVL20ZBcao.Bqb.dnedZO8XwFJ8dslY07..VSO5oQvH6
- bjtThrdYf3DiEX_AI9bxSDfs1jUqc1ohm8ef7A0TOUa1JCml7rnmIPYcNwVQ
- GQjlTJZEJR1lWM9ELnKoEYiUJBqIRuvp3d_hfc9o29HrsqHrVPSaBqnvabKh
- .2mR0aPGtYRngJzxue8hTsNw6zKckC0GYQU1ORqgefpOAqFsGkEYXWJzU.RT
- epUZVB4AY_sxgeB8w2wYzgd_lfKbzilgHsTwQuBYgkiEtrZt3ojj2CfCeX1y
- eWDpofNUmSUZBscORA72D1hNobTyTvLVZ0Yn8FbCtf7YQSYCNd.vwrHoZGCQ
- xZAUKFLu8HIk1fZCHYt0T_XeNnYc4Bl7g
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [RFC 15/22] tcm: Add FILEIO subsystem plugin
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Fubo Chen <fubo.chen@gmail.com>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+	id S1753240Ab0IVHgf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 03:36:35 -0400
+Received: from hera.kernel.org ([140.211.167.34]:52125 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753016Ab0IVHge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 03:36:34 -0400
+Message-ID: <4C99B25D.20805@kernel.org>
+Date: Wed, 22 Sep 2010 09:38:05 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+CC: Kay Sievers <kay.sievers@vrfy.org>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
         linux-kernel <linux-kernel@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>
-In-Reply-To: <AANLkTimPh+SNroYoavomwVtQ5UHsr7Lsq_229Vkbc1CB@mail.gmail.com>
-References: <1283160144-6848-1-git-send-email-nab@linux-iscsi.org>
-	 <AANLkTimPh+SNroYoavomwVtQ5UHsr7Lsq_229Vkbc1CB@mail.gmail.com>
-Content-Type: text/plain
-Date: Wed, 22 Sep 2010 00:29:26 -0700
-Message-Id: <1285140566.1849.27.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [REGRESSION] cdrom drive doesn't detect removal
+References: <1284284969.2928.18.camel@maxim-laptop>	 <1284427621.4127.7.camel@maxim-laptop> <4C8F2699.3020509@kernel.org>	 <AANLkTinGHB9fbLw1Cm5wvPLGy8QEuoBBmFiqpnvXiZ8R@mail.gmail.com>	 <1284507516.4963.2.camel@maxim-laptop>	 <AANLkTimFpyYab69=XQVZc+P50v6_uVr6UbA246Fnm3-u@mail.gmail.com>	 <1284511071.3551.1.camel@maxim-laptop>	 <AANLkTikF37hN7dFqPbCp-gcim7SarveaTrjXipnGpJM7@mail.gmail.com>	 <20100915132731.GA20558@khazad-dum.debian.net>	 <AANLkTinGDUxsgaGey7EnYOu3kKP-YRE00gL33hiKvAWj@mail.gmail.com>	 <1284589207.4672.3.camel@maxim-laptop>	 <AANLkTin37rbEbcGDejhcsnxZNYhhUWGy+x=v4Y=s0_Qx@mail.gmail.com>	 <1285069338.3124.4.camel@maxim-laptop> <1285110590.2822.9.camel@maxim-laptop>
+In-Reply-To: <1285110590.2822.9.camel@maxim-laptop>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 22 Sep 2010 07:36:27 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-20 at 18:18 +0200, Fubo Chen wrote:
-> On Mon, Aug 30, 2010 at 11:22 AM, Nicholas A. Bellinger
-> <nab@linux-iscsi.org> wrote:
-> > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> >
-> > This patch adds the O_SYNC FILEIO subsystem plugin for accessing struct file
-> > using Linux/VFS struct file_operations.  It also includes WriteCache and FUA
-> > Write Emulation support to struct file using fs/sync.c/vfs_fsync_range()
-> >
-> > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-> >
-> > [ ... ]
-> >
-> > +static int fd_do_writev(struct fd_request *req, struct se_task *task)
-> > +{
-> > +       struct file *fd = req->fd_dev->fd_file;
-> > +       struct scatterlist *sg = task->task_sg;
-> > +       struct iovec iov[req->fd_sg_count];
+Hello,
+
+On 09/22/2010 01:09 AM, Maxim Levitsky wrote:
+> I just did a strace on udisks, and it is pretty much self explanatory.
+> (While CD is mounted).
 > 
-> Kernel stack size is 8 KB. On a 64-bit system struct iovec takes 16
-> bytes. What happens if req->fd_sg_count is large ? Kernel crash ?
+> open("/dev/sr0", O_RDONLY|O_EXCL|O_NONBLOCK) = -1 EBUSY (Device or resource busy)
+> poll([{fd=5, events=POLLIN}, {fd=3, events=POLLIN}], 2, 1997) = 0 (Timeout)
+> open("/dev/sr0", O_RDONLY|O_EXCL|O_NONBLOCK) = -1 EBUSY (Device or resource busy)
+> poll([{fd=5, events=POLLIN}, {fd=3, events=POLLIN}], 2, 1997) = 0 (Timeout)
+> open("/dev/sr0", O_RDONLY|O_EXCL|O_NONBLOCK) = -1 EBUSY (Device or resource busy)
+> poll([{fd=5, events=POLLIN}, {fd=3, events=POLLIN}], 2, 1997) = 0 (Timeout)
+> open("/dev/sr0", O_RDONLY|O_EXCL|O_NONBLOCK) = -1 EBUSY (Device or resource busy)
 > 
+> Sure, a filesystem is mounted, so exclusive access fails...
+> 
+> So, we end up with impossible to solve problem.  We want on one hand
+> to guard the burner against polling programs that disturb it, but
+> one the other hand we must do polling to check CD status.
+>
+> Unless the kernel does the polling, but then we also must stop it
+> when burning is done.  I think that we need new ioctl in the CD
+> driver that would give absolute access to the burning application,
+> and lock it fully.
 
-Greetings Fubo,
+One thing I don't get is why the behavior changed after the claiming
+block patch.  Can you please trace udisks from a previous working
+kernel?
 
-So wrt to a potential 8K stack over here for the local scope iov[]
-arrays in fd_do_writev() and fd_do_read()..
+Thanks.
 
-Currently target_core_file.h defines a FD_MAX_SECTORS of 1024, which
-means that each struct se_task *task here will be containing at most a
-1024 sector request.
-
-In scatterlist terms for a TCM fabric module like LIO-Target that does
-1:1 struct scatterlist w/ PAGE_SIZE allocations, this would be:
-
-	((1024 * block_size) / PAGE_SIZE) * sizeof(struct iovec);
-
-which for 64-bit uses 2048 bytes of stack for a FD_MAX_SECTORS task.
-
-For a fabric module like TCM_Loop that maps incoming Linux/SCSI
-scatterlist memory to internal TCM memory points and down to FILEIO
-code, the maximum here is a scatterlist + offset for every block_size
-sector for certain cases like mkfs* and friends, which means:
-
-	((1024 * block_size) / block_size) * sizeof(struct iovec);
-
-which for 64-bit uses 16384 bytes for a FD_MAX_SECTORS task with a
-scatterlist entry per 512-byte logical block.
-
-For at least for the latter case this is a problem with 8K stacks, so it
-looks these will need to convert to dynamic allocation within the local
-scope.  I will push a patch to fix this shortly.
-
-Many thanks for your astute observation!
-
---nab
-
-
+-- 
+tejun
