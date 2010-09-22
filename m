@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547Ab0IVJSo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 05:18:44 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:53943 "EHLO e6.ny.us.ibm.com"
+	id S1753021Ab0IVJTJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 05:19:09 -0400
+Received: from sh.osrg.net ([192.16.179.4]:37916 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751797Ab0IVJSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 05:18:43 -0400
-Date: Wed, 22 Sep 2010 14:48:34 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: eranian@google.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-        perfmon2-devel@lists.sf.net, eranian@gmail.com, robert.richter@amd.com,
-        acme@redhat.com, Paul Menage <menage@google.com>,
-        Li Zefan <lizf@cn.fujitsu.com>
-Subject: Re: [RFC PATCH 0/2] perf_events: add support for per-cpu per-cgroup
- monitoring (v3)
-Message-ID: <20100922091834.GJ6676@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <4c88dc9c.991ce30a.3d91.3e0e@mx.google.com>
- <1285061899.2275.824.camel@laptop>
- <20100922042354.GG6676@balbir.in.ibm.com>
- <1285140479.2275.893.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1285140479.2275.893.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1752394Ab0IVJTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 05:19:08 -0400
+Date: Wed, 22 Sep 2010 18:18:26 +0900
+To: ralf@linux-mips.org
+Cc: fujita.tomonori@lab.ntt.co.jp, akpm@linux-foundation.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org
+Subject: Re: [PATCH -mm 4/8] mips: enable ARCH_DMA_ADDR_T_64BIT with
+ (HIGHMEM && 64BIT_PHYS_ADDR) || 64BIT
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100920133434.GB15938@linux-mips.org>
+References: <20100903094753S.fujita.tomonori@lab.ntt.co.jp>
+	<1283474956-14710-4-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+	<20100920133434.GB15938@linux-mips.org>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100922181454N.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 22 Sep 2010 18:18:27 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2010-09-22 09:27:59]:
+On Mon, 20 Sep 2010 14:34:35 +0100
+Ralf Baechle <ralf@linux-mips.org> wrote:
 
-> On Wed, 2010-09-22 at 09:53 +0530, Balbir Singh wrote:
-> > Yes, a task can belong to multiple subsystems, hence multiple cgroups.
-> > Ideally we'd want to use pid + subsystem
+> On Fri, Sep 03, 2010 at 09:49:12AM +0900, FUJITA Tomonori wrote:
 > 
-> Apparently we create a perf subsystem, and we only care about that. So
-> pid will uniquely identify a cgroup, since for each subsystem a task can
-> only belong to one cgroup.
-
-Hmm.. I misread the intention to mean we care about monitoring all
-data and aggregate it for each cgroup.
-
+> > Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> > Cc: linux-mips@linux-mips.org
 > 
-> > > One thing we could do is pass this cgroup identifier in the pid field
-> > > and use PERF_FLAG_CGROUP or something. Currently the syscall signature
-> > > uses pid_t, but I think we can safely change that to int.
-> > 
-> > Or union it and overload the field to contain either pid_t or fd of the cgroup
+> Looks good:
 > 
-> Its not a field, its an argument.
+> Acked-by: Ralf Baechle <ralf@linux-mips.org>
 
-Thanks!
+Thanks,
 
--- 
-	Three Cheers,
-	Balbir
+
+> As this patch by itself doesn't make any sense in the MIPS tree and would
+> only cry for a janitor to remove it again I suggest you merge this with
+> the rest of the series.
+
+I expect akpm to merge all the patches.
