@@ -1,161 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530Ab0IVEx3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 00:53:29 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56060 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752255Ab0IVEx1 convert rfc822-to-8bit (ORCPT
+	id S1751384Ab0IVFBi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 01:01:38 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:40638 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750730Ab0IVFBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 00:53:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=uF1KSA1gd2UIw98gHTCukaEMIubCM/ShBXX4+hAzqCNPd72R+3Bf/YPrjgswlp+8hD
-         VA9YWaYVNStZEfAP/wxldF3pUaE0cp42Nv8Rg8mJRsrXg4HZTgNbT4xI8tMLicvXAcJl
-         aczCAW1ywjP5EvAg+DLF+Tq+/NjLEMVp9CThA=
+	Wed, 22 Sep 2010 01:01:37 -0400
+Date: Wed, 22 Sep 2010 13:41:51 +0900
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/10] hugetlb: add allocate function for hugepage
+ migration
+Message-ID: <20100922044151.GB2538@spritzera.linux.bs1.fc.nec.co.jp>
+References: <1283908781-13810-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1283908781-13810-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20100920105916.GH1998@csn.ul.ie>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimc3oFBG8YiouuCiJ10hz-V8d-vThmMi56RpV9H@mail.gmail.com>
-References: <AANLkTimc3oFBG8YiouuCiJ10hz-V8d-vThmMi56RpV9H@mail.gmail.com>
-Date: Wed, 22 Sep 2010 00:53:24 -0400
-Message-ID: <AANLkTin0WaY+xXUM59NjAJqVetBK-PDY-g-Hb7zC5Ohx@mail.gmail.com>
-Subject: Re: [2.6.36-rc5] minor DRM fixes...
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Daniel J Blueman <daniel.blueman@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-2022-jp
+Content-Disposition: inline
+In-Reply-To: <20100920105916.GH1998@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 21, 2010 at 12:59 PM, Daniel J Blueman
-<daniel.blueman@gmail.com> wrote:
-> Hi Alex; please review and let me know if you prefer this broken out
-> further, and thanks.
->
+Hi,
 
-These look good.  Please break them out into separate patches for drm,
-ttm, radeon, and vgaarb.
+Thank you for your review.
 
-Reviewed By: Alex Deucher <alexdeucher@gmail.com>
+On Mon, Sep 20, 2010 at 11:59:16AM +0100, Mel Gorman wrote:
+> On Wed, Sep 08, 2010 at 10:19:33AM +0900, Naoya Horiguchi wrote:
+...
+> > @@ -770,11 +776,10 @@ static int free_pool_huge_page(struct hstate *h, nodemask_t *nodes_allowed,
+> >  	return ret;
+> >  }
+> >  
+> > -static struct page *alloc_buddy_huge_page(struct hstate *h,
+> > -			struct vm_area_struct *vma, unsigned long address)
+> > +static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
+> >  {
+> >  	struct page *page;
+> > -	unsigned int nid;
+> > +	unsigned int r_nid;
+> >  
+> 
+> Why the rename, just to avoid changing the value of a function parameter?
 
-> ---
->
-> Fix a number of small compilation issues with DRM.
->
-> Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
->
-> diff --git a/drivers/gpu/drm/drm_buffer.c b/drivers/gpu/drm/drm_buffer.c
-> index 55d03ed..687de5f 100644
-> --- a/drivers/gpu/drm/drm_buffer.c
-> +++ b/drivers/gpu/drm/drm_buffer.c
-> @@ -98,7 +98,7 @@ EXPORT_SYMBOL(drm_buffer_alloc);
->  *   user_data: A pointer the data that is copied to the buffer.
->  *   size: The Number of bytes to copy.
->  */
-> -extern int drm_buffer_copy_from_user(struct drm_buffer *buf,
-> +int drm_buffer_copy_from_user(struct drm_buffer *buf,
->                void __user *user_data, int size)
->  {
->        int nr_pages = size / PAGE_SIZE + 1;
-> @@ -163,7 +163,7 @@ void *drm_buffer_read_object(struct drm_buffer *buf,
->  {
->        int idx = drm_buffer_index(buf);
->        int page = drm_buffer_page(buf);
-> -       void *obj = 0;
-> +       void *obj = NULL;
->
->        if (idx + objsize <= PAGE_SIZE) {
->                obj = &buf->data[page][idx];
-> diff --git a/drivers/gpu/drm/radeon/atombios.h
-> b/drivers/gpu/drm/radeon/atombios.h
-> index 1bc72c3..fe359a2 100644
-> --- a/drivers/gpu/drm/radeon/atombios.h
-> +++ b/drivers/gpu/drm/radeon/atombios.h
-> @@ -4999,7 +4999,7 @@ typedef struct _SW_I2C_IO_DATA_PARAMETERS
->  #define SW_I2C_CNTL_WRITE1BIT 6
->
->  //==============================VESA definition
-> Portion===============================
-> -#define VESA_OEM_PRODUCT_REV                               '01.00'
-> +#define VESA_OEM_PRODUCT_REV                               "01.00"
->  #define VESA_MODE_ATTRIBUTE_MODE_SUPPORT            0xBB       //refer to VBE
-> spec p.32, no TTY support
->  #define VESA_MODE_WIN_ATTRIBUTE                                                     7
->  #define VESA_WIN_SIZE                                                                                       64
-> diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
-> index bfdfa3e..e3b47a5 100644
-> --- a/drivers/gpu/drm/radeon/r600.c
-> +++ b/drivers/gpu/drm/radeon/r600.c
-> @@ -2727,7 +2727,7 @@ int r600_ib_test(struct radeon_device *rdev)
->        if (i < rdev->usec_timeout) {
->                DRM_INFO("ib test succeeded in %u usecs\n", i);
->        } else {
-> -               DRM_ERROR("radeon: ib test failed (sracth(0x%04X)=0x%08X)\n",
-> +               DRM_ERROR("radeon: ib test failed (scratch(0x%04X)=0x%08X)\n",
->                          scratch, tmp);
->                r = -EINVAL;
->        }
-> diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c
-> b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-> index ca90479..b1e02ff 100644
-> --- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
-> +++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-> @@ -69,7 +69,7 @@ struct ttm_page_pool {
->        spinlock_t              lock;
->        bool                    fill_lock;
->        struct list_head        list;
-> -       int                     gfp_flags;
-> +       gfp_t                   gfp_flags;
->        unsigned                npages;
->        char                    *name;
->        unsigned long           nfrees;
-> @@ -475,7 +475,7 @@ static void
-> ttm_handle_caching_state_failure(struct list_head *pages,
->  * This function is reentrant if caller updates count depending on number of
->  * pages returned in pages array.
->  */
-> -static int ttm_alloc_new_pages(struct list_head *pages, int gfp_flags,
-> +static int ttm_alloc_new_pages(struct list_head *pages, gfp_t gfp_flags,
->                int ttm_flags, enum ttm_caching_state cstate, unsigned count)
->  {
->        struct page **caching_array;
-> @@ -666,7 +666,7 @@ int ttm_get_pages(struct list_head *pages, int flags,
->  {
->        struct ttm_page_pool *pool = ttm_get_pool(flags, cstate);
->        struct page *p = NULL;
-> -       int gfp_flags = GFP_USER;
-> +       gfp_t gfp_flags = GFP_USER;
->        int r;
->
->        /* set zero flag for page allocation if required */
-> @@ -818,7 +818,7 @@ int ttm_page_alloc_init(struct ttm_mem_global
-> *glob, unsigned max_pages)
->        return 0;
->  }
->
-> -void ttm_page_alloc_fini()
-> +void ttm_page_alloc_fini(void)
->  {
->        int i;
->
-> diff --git a/drivers/gpu/vga/vgaarb.c b/drivers/gpu/vga/vgaarb.c
-> index b87569e..f366f96 100644
-> --- a/drivers/gpu/vga/vgaarb.c
-> +++ b/drivers/gpu/vga/vgaarb.c
-> @@ -598,7 +598,7 @@ static inline void
-> vga_update_device_decodes(struct vga_device *vgadev,
->        pr_debug("vgaarb: decoding count now is: %d\n", vga_decode_count);
->  }
->
-> -void __vga_set_legacy_decoding(struct pci_dev *pdev, unsigned int
-> decodes, bool userspace)
-> +static void __vga_set_legacy_decoding(struct pci_dev *pdev, unsigned
-> int decodes, bool userspace)
->  {
->        struct vga_device *vgadev;
->        unsigned long flags;
-> --
-> Daniel J Blueman
->
+I think it's better that a simple name is given to function parameter
+than to internal variable, because the former is paid more attention
+from other developers than the latter is.
+
+> >  	if (h->order >= MAX_ORDER)
+> >  		return NULL;
+> > @@ -812,9 +817,14 @@ static struct page *alloc_buddy_huge_page(struct hstate *h,
+> >  	}
+> >  	spin_unlock(&hugetlb_lock);
+> >  
+> > -	page = alloc_pages(htlb_alloc_mask|__GFP_COMP|
+> > -					__GFP_REPEAT|__GFP_NOWARN,
+> > -					huge_page_order(h));
+> > +	if (nid == NUMA_NO_NODE)
+> > +		page = alloc_pages(htlb_alloc_mask|__GFP_COMP|
+> > +				   __GFP_REPEAT|__GFP_NOWARN,
+> > +				   huge_page_order(h));
+> > +	else
+> > +		page = alloc_pages_exact_node(nid,
+> > +			htlb_alloc_mask|__GFP_COMP|__GFP_THISNODE|
+> > +			__GFP_REPEAT|__GFP_NOWARN, huge_page_order(h));
+> >  
+> 
+> Why not just call alloc_pages_node()?
+
+Ah, we can bring together these two allocate functions.
+I'll do it.
+
+Here is a revised patch.
+
+Thanks,
+Naoya Horiguchi
+---
+Date: Wed, 22 Sep 2010 13:18:54 +0900
+Subject: [PATCH 02/10] hugetlb: add allocate function for hugepage migration
+
+We can't use existing hugepage allocation functions to allocate hugepage
+for page migration, because page migration can happen asynchronously with
+the running processes and page migration users should call the allocation
+function with physical addresses (not virtual addresses) as arguments.
+
+ChangeLog since v3:
+- unify alloc_buddy_huge_page() and alloc_buddy_huge_page_node()
+- bring together branched allocate functions
+
+ChangeLog since v2:
+- remove unnecessary get/put_mems_allowed() (thanks to David Rientjes)
+
+ChangeLog since v1:
+- add comment on top of alloc_huge_page_no_vma()
+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+---
+ include/linux/hugetlb.h |    3 ++
+ mm/hugetlb.c            |   70 +++++++++++++++++++++++++++++++---------------
+ 2 files changed, 50 insertions(+), 23 deletions(-)
+
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index f479700..0b73c53 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -228,6 +228,8 @@ struct huge_bootmem_page {
+ 	struct hstate *hstate;
+ };
+ 
++struct page *alloc_huge_page_node(struct hstate *h, int nid);
++
+ /* arch callback */
+ int __init alloc_bootmem_huge_page(struct hstate *h);
+ 
+@@ -303,6 +305,7 @@ static inline struct hstate *page_hstate(struct page *page)
+ 
+ #else
+ struct hstate {};
++#define alloc_huge_page_node(h, nid) NULL
+ #define alloc_bootmem_huge_page(h) NULL
+ #define hstate_file(f) NULL
+ #define hstate_vma(v) NULL
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 6871b41..cb32a32 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -466,11 +466,23 @@ static void enqueue_huge_page(struct hstate *h, struct page *page)
+ 	h->free_huge_pages_node[nid]++;
+ }
+ 
++static struct page *dequeue_huge_page_node(struct hstate *h, int nid)
++{
++	struct page *page;
++
++	if (list_empty(&h->hugepage_freelists[nid]))
++		return NULL;
++	page = list_entry(h->hugepage_freelists[nid].next, struct page, lru);
++	list_del(&page->lru);
++	h->free_huge_pages--;
++	h->free_huge_pages_node[nid]--;
++	return page;
++}
++
+ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ 				struct vm_area_struct *vma,
+ 				unsigned long address, int avoid_reserve)
+ {
+-	int nid;
+ 	struct page *page = NULL;
+ 	struct mempolicy *mpol;
+ 	nodemask_t *nodemask;
+@@ -496,19 +508,13 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ 
+ 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+ 						MAX_NR_ZONES - 1, nodemask) {
+-		nid = zone_to_nid(zone);
+-		if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask) &&
+-		    !list_empty(&h->hugepage_freelists[nid])) {
+-			page = list_entry(h->hugepage_freelists[nid].next,
+-					  struct page, lru);
+-			list_del(&page->lru);
+-			h->free_huge_pages--;
+-			h->free_huge_pages_node[nid]--;
+-
+-			if (!avoid_reserve)
+-				decrement_hugepage_resv_vma(h, vma);
+-
+-			break;
++		if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask)) {
++			page = dequeue_huge_page_node(h, zone_to_nid(zone));
++			if (page) {
++				if (!avoid_reserve)
++					decrement_hugepage_resv_vma(h, vma);
++				break;
++			}
+ 		}
+ 	}
+ err:
+@@ -770,11 +776,10 @@ static int free_pool_huge_page(struct hstate *h, nodemask_t *nodes_allowed,
+ 	return ret;
+ }
+ 
+-static struct page *alloc_buddy_huge_page(struct hstate *h,
+-			struct vm_area_struct *vma, unsigned long address)
++static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
+ {
+ 	struct page *page;
+-	unsigned int nid;
++	unsigned int r_nid;
+ 
+ 	if (h->order >= MAX_ORDER)
+ 		return NULL;
+@@ -812,7 +817,7 @@ static struct page *alloc_buddy_huge_page(struct hstate *h,
+ 	}
+ 	spin_unlock(&hugetlb_lock);
+ 
+-	page = alloc_pages(htlb_alloc_mask|__GFP_COMP|
++	page = alloc_pages_node(nid, htlb_alloc_mask|__GFP_COMP|
+ 					__GFP_REPEAT|__GFP_NOWARN,
+ 					huge_page_order(h));
+ 
+@@ -829,13 +834,13 @@ static struct page *alloc_buddy_huge_page(struct hstate *h,
+ 		 */
+ 		put_page_testzero(page);
+ 		VM_BUG_ON(page_count(page));
+-		nid = page_to_nid(page);
++		r_nid = page_to_nid(page);
+ 		set_compound_page_dtor(page, free_huge_page);
+ 		/*
+ 		 * We incremented the global counters already
+ 		 */
+-		h->nr_huge_pages_node[nid]++;
+-		h->surplus_huge_pages_node[nid]++;
++		h->nr_huge_pages_node[r_nid]++;
++		h->surplus_huge_pages_node[r_nid]++;
+ 		__count_vm_event(HTLB_BUDDY_PGALLOC);
+ 	} else {
+ 		h->nr_huge_pages--;
+@@ -848,6 +853,25 @@ static struct page *alloc_buddy_huge_page(struct hstate *h,
+ }
+ 
+ /*
++ * This allocation function is useful in the context where vma is irrelevant.
++ * E.g. soft-offlining uses this function because it only cares physical
++ * address of error page.
++ */
++struct page *alloc_huge_page_node(struct hstate *h, int nid)
++{
++	struct page *page;
++
++	spin_lock(&hugetlb_lock);
++	page = dequeue_huge_page_node(h, nid);
++	spin_unlock(&hugetlb_lock);
++
++	if (!page)
++		page = alloc_buddy_huge_page(h, nid);
++
++	return page;
++}
++
++/*
+  * Increase the hugetlb pool such that it can accomodate a reservation
+  * of size 'delta'.
+  */
+@@ -871,7 +895,7 @@ static int gather_surplus_pages(struct hstate *h, int delta)
+ retry:
+ 	spin_unlock(&hugetlb_lock);
+ 	for (i = 0; i < needed; i++) {
+-		page = alloc_buddy_huge_page(h, NULL, 0);
++		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
+ 		if (!page) {
+ 			/*
+ 			 * We were not able to allocate enough pages to
+@@ -1052,7 +1076,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+ 	spin_unlock(&hugetlb_lock);
+ 
+ 	if (!page) {
+-		page = alloc_buddy_huge_page(h, vma, addr);
++		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
+ 		if (!page) {
+ 			hugetlb_put_quota(inode->i_mapping, chg);
+ 			return ERR_PTR(-VM_FAULT_SIGBUS);
+-- 
+1.7.2.3
+
