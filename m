@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464Ab0IVQ1s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 12:27:48 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:36029 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753390Ab0IVQ1r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 12:27:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=gqYxSBm25We0iok+UzegoPB0pGMWWjq8WkkSku1MG3vrRAmadtbErY/9n5+mI1iIL8
-         SYoHKqL79QliRZYZ5v1fG80JPnMxol3TD/VJyUf88f8UPf7nIh5uiDYN/g3WO60brgeW
-         Vpnl0tMpjEkhdSI1CF043zzig6j/+TM/LtCNo=
+	id S1752250Ab0IVQdU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 12:33:20 -0400
+Received: from mga02.intel.com ([134.134.136.20]:1085 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750819Ab0IVQdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 12:33:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,408,1280732400"; 
+   d="scan'208";a="660004241"
+Message-ID: <4C9A2FB3.105@linux.intel.com>
+Date: Wed, 22 Sep 2010 09:32:51 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <20100922145737.GA12663@linux-mips.org>
-References: <1285156021-4973-1-git-send-email-jkacur@redhat.com>
-	<20100922145737.GA12663@linux-mips.org>
-Date: Wed, 22 Sep 2010 18:27:46 +0200
-X-Google-Sender-Auth: lWliCi2HNXNzdCVze1Uyw2vHAFo
-Message-ID: <AANLkTi=L9vJ9Bfek8HGb30c0U949H0EgiXX7oHxj-F_=@mail.gmail.com>
-Subject: Re: [PATCH] SOUND-OSS: Remove sh_dac_audio
-From: John Kacur <jkacur@redhat.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        Jaroslav Kysela <perex@perex.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jean Pihet <jean.pihet@newoldbits.com>
+CC: Thomas Renninger <trenn@suse.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
+        arjan@infradead.org, Kevin Hilman <khilman@deeprootsystems.com>,
+        linux-kernel@vger.kernel.org, discuss@lesswatts.org,
+        linux-pm@lists.linux-foundation.org, linux-omap@vger.kernel.org,
+        linux-perf-users@vger.kernel.org, linux-trace-users@vger.kernel.org
+Subject: Re: [PATCH] tracing, perf: add more power related events
+References: <AANLkTinUmbSUUuxUzc8++pcb9gd1CZFdyTQFrveTBXyV@mail.gmail.com>	<201009171736.14170.trenn@suse.de>	<20100917162412.GB3341@elte.hu>	<201009180026.59482.trenn@suse.de>	<AANLkTimMAr9kEzybFGai3qGyXx36v055iPpXq_C1vW8C@mail.gmail.com>	<4C9A21AD.1000800@linux.intel.com> <AANLkTim6B+Je=LykgJb9=0vK5Br1rkft619BRJkBcHdP@mail.gmail.com>
+In-Reply-To: <AANLkTim6B+Je=LykgJb9=0vK5Br1rkft619BRJkBcHdP@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 22, 2010 at 4:57 PM, Ralf Baechle <ralf@linux-mips.org> wrote:
-> On Wed, Sep 22, 2010 at 01:47:01PM +0200, John Kacur wrote:
->
->> Remove the SH DAC oss driver since there is an equivalent alsa driver.
->> oss has been deprecated for years. Furthermore this driver has BKL code
->> which we are trying to remove. Rather than attempt to fix this, simply
->> remove the driver.
+  On 9/22/2010 8:36 AM, Jean Pihet wrote:
+> On Wed, Sep 22, 2010 at 5:33 PM, Arjan van de Ven<arjan@linux.intel.com>  wrote:
+>>   On 9/22/2010 8:31 AM, Jean Pihet wrote:
+>>> Hi,
+>>>
+>>> Here is a patch that redefines the power events API. The advantages
+>>> are: easier maintainance of the kernel and the
+>>> user space tools, a cleaner and more generic interface, more
+>>> parameters for fine tracing and even documentation!
+>>>
+>>> Thomas, this patch has your patch above merged in ('power-trace: Use
+>>> power_switch_state instead of power_start and power_end'). The revised
+>>> ACPI patch is coming asap.
+>>>
+>>> The trace points for x86 and OMAP are also udated accordingly.
+>>>
+>>> The pytimechart tool needs an update for the new API. This can be done
+>>> as soon as the kernel code gets merged in.
+>> unfortunately this code is changing a userspace ABI... we really shouldn't
+>> do that if we can avoid it,
+>> and here we can avoid it.
 >>
->> Signed-off-by: John Kacur <jkacur@redhat.com>
->
-> No idea why I was cc'ed as I have no interested in the driver but certainly
-> support the motivation behind the patch:
->
-> Acked-by: Ralf Baechle <ralf@linux-mips.org>
->
+>> applications ARE using this stuff!
+> What are the apps that are using it? I know about builtin-timechart,
+> pytimechart. Is powertop using this as well?
 
-Thanks. FWIW, I cced you because you were part of the original conversation
-back in the Stone Ages (or maybe it was just May) about removing certain
-OSS drivers that had equivalent ALSA drivers.
+powertop 2.x codebase is as well.
+
+and a bunch of tools we have internal here at Intel.
+
+the thing with ABIs is that you don't know how many users you have.. at 
+least here you know the lower bound is 3 different tools that are open 
+source.
+.... and likely many local tools that aren't.
+
