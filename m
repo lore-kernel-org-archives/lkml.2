@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153Ab0IVKij (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 06:38:39 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59799 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751678Ab0IVKhr (ORCPT
+	id S1752949Ab0IVKhq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 06:37:46 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:41872 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751665Ab0IVKhp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 06:37:47 -0400
-Date: Wed, 22 Sep 2010 11:38:07 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Peter Hsiang <Peter.Hsiang@maxim-ic.com>
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Jesse Marroquin <Jesse.Marroquin@maxim-ic.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Peter Ujfalusi <peter.ujfalusi@nokia.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ASoC: Add max98088 CODEC driver
-Message-ID: <20100922103806.GC22361@opensource.wolfsonmicro.com>
-References: <B2150E1E4418E1438554A300EA5040E40D469C123B@ITSVLEX06.it.maxim-ic.internal>
- <20100901111432.GE17548@opensource.wolfsonmicro.com>
- <B2150E1E4418E1438554A300EA5040E40D46A5BB13@ITSVLEX06.it.maxim-ic.internal>
- <20100903101721.GE16587@rakim.wolfsonmicro.main>
- <B2150E1E4418E1438554A300EA5040E40D46E1B8E7@ITSVLEX06.it.maxim-ic.internal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <B2150E1E4418E1438554A300EA5040E40D46E1B8E7@ITSVLEX06.it.maxim-ic.internal>
-X-Cookie: You have a truly strong individuality.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 22 Sep 2010 06:37:45 -0400
+From: x0130808@ti.com
+To: linux-kernel@vger.kernel.org
+Cc: Raja Mani <raja_mani@ti.com>
+Subject: [RFC/PATCH 0/9] V4L2 FM driver for TI WL127x and WL128x
+Date: Wed, 22 Sep 2010 07:48:30 -0400
+Message-Id: <1285156119-28531-1-git-send-email-x0130808@ti.com>
+X-Mailer: git-send-email 1.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 21, 2010 at 07:49:30PM -0700, Peter Hsiang wrote:
-> On Fri, Sep 03, 2010, Mark Brown wrote:
+From: Raja Mani <raja_mani@ti.com>
 
-> > No, you should use the features of the current kernel.  For your
-> > backport you can do things like supply soc-cache.c as well.
+This is third patch set for TI FM driver for TI WiLink chips.
+It provides FM Receive and Transmit support for TI WL127x and WL128x chips.
+It also extends V4L2 CIDs to support few FM Receive features.
 
-> The soc-cache.c in the latest kernel-next version supports codecs
-> with volatile registers in 16 bit mode, but not for the 8 bit mode.
-> See snd_soc_8_8_write.
+Note:
+This patch set re-uses new FM RX CID definitions by Nokia FM driver for
+TI WL127x chip. Recent Nokia patch can be found at
+http://www.spinics.net/lists/linux-media/msg22484.html.
 
-> The source code comments confirmed this:
-> "Note at present this code can not be used by CODECs with 
-> volatile registers."  
+TI FM driver makes use of TI Shared Transport solution for TI WL chips.
+TI Shared Transport driver is available in mainline kernel staging
+folder - /drivers/staging/ti-st/.
 
-> For this codec (with volatile registers), should we use the read
-> and write functions in the codec driver until the 8-bit mode is
-> supported by Linux soc-cache.c?
+Raja Mani (9):
+  drivers:staging:ti-st: sources for FM common interfaces
+  drivers:staging:ti-st: Sources for FM RX
+  drivers:staging:ti-st: Sources for FM TX
+  drivers:staging:ti-st: Sources for FM V4L2 interfaces
+  drivers:staging:ti-st: Sources for FM common header
+  drivers:media:video: Adding new CIDs for FM RX ctls
+  include:linux:videodev2: Define 2 new CIDs for FM RX ctls
+  Documentation:DocBook:v4l: Update the controls.xml for FM driver
+  Staging:ti-st: Update Kconfig and Makefile for FM driver
 
-You should modify soc-cache.c to support volatile registers if you need
-this; it's not been implemented because nobody needed it yet (someone
-may get to it before you get round to resubmitting, but if they haven't
-then just extend the core functionality).
+ Documentation/DocBook/v4l/controls.xml |   12 +
+ drivers/media/video/v4l2-common.c      |    4 +
+ drivers/staging/ti-st/Makefile         |    2 +-
+ drivers/staging/ti-st/fm.h             |   13 +
+ drivers/staging/ti-st/fmdrv.h          |  230 ++++
+ drivers/staging/ti-st/fmdrv_common.c   | 2149 ++++++++++++++++++++++++++++++++
+ drivers/staging/ti-st/fmdrv_common.h   |  476 +++++++
+ drivers/staging/ti-st/fmdrv_rx.c       |  927 ++++++++++++++
+ drivers/staging/ti-st/fmdrv_rx.h       |   57 +
+ drivers/staging/ti-st/fmdrv_tx.c       |  451 +++++++
+ drivers/staging/ti-st/fmdrv_tx.h       |   37 +
+ drivers/staging/ti-st/fmdrv_v4l2.c     |  731 +++++++++++
+ drivers/staging/ti-st/fmdrv_v4l2.h     |   32 +
+ include/linux/videodev2.h              |    7 +
+ 14 files changed, 5127 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/staging/ti-st/fm.h
+ create mode 100644 drivers/staging/ti-st/fmdrv.h
+ create mode 100644 drivers/staging/ti-st/fmdrv_common.c
+ create mode 100644 drivers/staging/ti-st/fmdrv_common.h
+ create mode 100644 drivers/staging/ti-st/fmdrv_rx.c
+ create mode 100644 drivers/staging/ti-st/fmdrv_rx.h
+ create mode 100644 drivers/staging/ti-st/fmdrv_tx.c
+ create mode 100644 drivers/staging/ti-st/fmdrv_tx.h
+ create mode 100644 drivers/staging/ti-st/fmdrv_v4l2.c
+ create mode 100644 drivers/staging/ti-st/fmdrv_v4l2.h
+
