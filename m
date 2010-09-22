@@ -1,133 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653Ab0IVRNu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 13:13:50 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:57286 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753205Ab0IVRNt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 13:13:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:from:date:message-id:subject:to:content-type;
-        b=NNv4hqoyX5NogkYkyH5zaJ/dtA4aFQYbJCoUptrBoLtmJH3fZvkPU8qEDxzIMXD5A3
-         zmu3lAKgvWFP5Wu4BfjBrpgozCn0oOwnVw7EANkBOF17MjUUu/RQ8NirfaXBCAJVkWiP
-         p5TFXF8UJBtX60CxuDeZ8vMuHhYVDFSDzT8Fw=
-MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-From: Michael Kerrisk <mtk.manpages@gmail.com>
-Date: Wed, 22 Sep 2010 19:13:26 +0200
-Message-ID: <AANLkTimurFK6syJRZaxzZ7i64t45z5ePqrTKS_epoKCo@mail.gmail.com>
-Subject: man-pages-3.27 is released
-To: lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753781Ab0IVROy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 13:14:54 -0400
+Received: from xenotime.net ([72.52.115.56]:53528 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753427Ab0IVROx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 13:14:53 -0400
+Date: Wed, 22 Sep 2010 10:14:50 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: x0130808@ti.com
+Cc: linux-kernel@vger.kernel.org, Raja Mani <raja_mani@ti.com>,
+        Pramodh AG <pramodh_ag@ti.com>
+Subject: Re: [RFC/PATCH 9/9] Staging:ti-st: Update Kconfig and Makefile for
+Message-Id: <20100922101450.8abc7b7e.rdunlap@xenotime.net>
+In-Reply-To: <1285156119-28531-10-git-send-email-x0130808@ti.com>
+References: <1285156119-28531-1-git-send-email-x0130808@ti.com>
+	<1285156119-28531-2-git-send-email-x0130808@ti.com>
+	<1285156119-28531-3-git-send-email-x0130808@ti.com>
+	<1285156119-28531-4-git-send-email-x0130808@ti.com>
+	<1285156119-28531-5-git-send-email-x0130808@ti.com>
+	<1285156119-28531-6-git-send-email-x0130808@ti.com>
+	<1285156119-28531-7-git-send-email-x0130808@ti.com>
+	<1285156119-28531-8-git-send-email-x0130808@ti.com>
+	<1285156119-28531-9-git-send-email-x0130808@ti.com>
+	<1285156119-28531-10-git-send-email-x0130808@ti.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gidday,
+On Wed, 22 Sep 2010 07:48:39 -0400 x0130808@ti.com wrote:
 
-I've released man-pages-3.27.tar.gz - man pages for Linux
+> From: Raja Mani <raja_mani@ti.com>
+> 
+> Add new menu option in Kconfig and compilation option in Makefile for
+> TI FM driver.
+> 
+> Signed-off-by: Raja Mani <raja_mani@ti.com>
+> Signed-off-by: Pramodh AG <pramodh_ag@ti.com>
+> Signed-off-by: Manjunatha Halli <x0130808@ti.com>
+> ---
+>  drivers/staging/ti-st/Kconfig  |    8 ++++++++
+>  drivers/staging/ti-st/Makefile |    2 ++
+>  2 files changed, 10 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/staging/ti-st/Kconfig b/drivers/staging/ti-st/Kconfig
+> index 1b264a3..7e48749 100644
+> --- a/drivers/staging/ti-st/Kconfig
+> +++ b/drivers/staging/ti-st/Kconfig
+> @@ -23,4 +23,12 @@ config ST_BT
+>  	  This makes use of shared transport line discipline core driver to
+>  	  communicate with the BT core of the combo chip.
+>  
+> +config ST_FM
+> +	tristate "fm driver for ST"
+> +	depends on VIDEO_DEV
 
-This release is now available for download at:
+	depends on VIDEO_DEV && RFKILL
 
-http://www.kernel.org/pub/linux/docs/man-pages
-or ftp://ftp.kernel.org/pub/linux/docs/man-pages
+since TI_ST depends on RFKILL.
 
-The man-pages git repository is here:
+> +	select TI_ST
+> +	help
+> +	  This enables the FM driver for TI BT/FM/GPS combo devices
 
-git://git.kernel.org/pub/scm/docs/man-pages/man-pages.git
+	End above sentence with '.', please.
 
-The online changelog is available at
-http://www.kernel.org/doc/man-pages/changelog.html (blogged at
-http://linux-man-pages.blogspot.com/2010/09/man-pages-327-is-released.html
-) and the current version of the pages is browsable at
-http://www.kernel.org/doc/man-pages/
-A few changes in this release that may be of interest to readers of this
-list are listed below.
-
-Cheers,
-
-Michael
-
-==================== Changes in man-pages-3.27 ====================
-
-New and rewritten pages
------------------------
-
-sigevent.7
-    Petr Baudis, Michael Kerrisk
-        New page to centralize description of sigevent structure
-            Several interfaces use this structure. Best to centralize the
-            common details in one place. Content taken from the existing
-            timerfd_create.2 and mq_open.3 pages, with additions by
-            Petr Baudis and Michael Kerrisk.
-
-
-Newly documented interfaces in existing pages
----------------------------------------------
-
-ip.7
-    Jiri Olsa
-        Document IP_NODEFRAG
-            This option is new in Linux 2.6.36
-
-unix.7
-    Michael Kerrisk
-        Document SIOCINQ ioctl() operation
+> +	  This makes use of shared transport line discipline core driver to
+> +	  communicate with the FM core of the combo chip.
+>  endmenu
 
 
-Many pages
-    Michael Kerrisk
-        Add/fix/update feature test macro requirements in SYNOPSIS
-            Various changes to:
-            * Update feature test requirements to note changes in
-              recent glibc releases
-            * Correct errors in feature test macro requirements
-            * Add feature test macro requirements to pages where
-              the requirements were not previously stated.
 
-
-Changes to individual pages
----------------------------
-
-getrlimit.2
-    Michael Kerrisk
-        Document units for RLIMIT_RTTIME limit
-            This limit is in microseconds
-
-            http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=596492
-
-mount.2
-    Michael Kerrisk
-        Definitions of various MS_* constants only appeared in glibc 2.12
-            See http://sourceware.org/bugzilla/show_bug.cgi?id=11235
-
-stat.2
-    Michael Kerrisk
-        Update information on nanosecond timestamp fields
-            Update feature test macro requirements for exposing these fields.
-            Note that these fields are specified in POSIX.1-2008.
-
-rand.3
-    Michael Kerrisk
-        Clarify description of range of returned value
-        Add an example program
-        Expand description of rand_r()
-
-random.3
-    W. Trevor King
-        Update initstate() return value description to match glibc
-
-feature_test_macros.7
-    Michael Kerrisk
-        Make text on required placement of macros more prominent
-            Move the text that notes the requirement that feature test macros
-            must be defined before including any header files to the top of
-            the page, and highlight the text further, so that the reader will
-            not miss this point.
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
