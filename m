@@ -1,301 +1,943 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755514Ab0IVAJL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 20:09:11 -0400
-Received: from claw.goop.org ([74.207.240.146]:38691 "EHLO claw.goop.org"
+	id S1755449Ab0IVAOJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 20:14:09 -0400
+Received: from trinity.fluff.org ([89.16.178.74]:57250 "EHLO trinity.fluff.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751905Ab0IVAJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 20:09:09 -0400
-Message-ID: <4C994924.4050501@goop.org>
-Date: Tue, 21 Sep 2010 17:09:08 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.3
+	id S1752227Ab0IVAOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 20:14:07 -0400
+Date: Wed, 22 Sep 2010 01:14:03 +0100
+From: Ben Dooks <ben-i2c@fluff.org>
+To: Samu Onkalo <samu.p.onkalo@nokia.com>
+Cc: rpurdie@linux.intel.com, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] leds: driver for National Semiconductor LP5521 chip
+Message-ID: <20100922001403.GI7494@trinity.fluff.org>
+References: <1284631946-5350-1-git-send-email-samu.p.onkalo@nokia.com> <1284631946-5350-2-git-send-email-samu.p.onkalo@nokia.com>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: memblock vs early_res
-References: <4C93D3F0.3030307@goop.org> <4C93EFF6.5050806@kernel.org> <4C93F5B6.4050508@goop.org> <4C9457C5.5060307@kernel.org>
-In-Reply-To: <4C9457C5.5060307@kernel.org>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284631946-5350-2-git-send-email-samu.p.onkalo@nokia.com>
+X-Disclaimer: These are my views alone.
+X-URL: http://www.fluff.org/
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@trinity.fluff.org
+X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 09/17/2010 11:10 PM, Yinghai Lu wrote:
-> On 09/17/2010 04:11 PM, Jeremy Fitzhardinge wrote:
->>  On 09/17/2010 03:47 PM, Yinghai Lu wrote:
->>> On 09/17/2010 01:47 PM, Jeremy Fitzhardinge wrote:
->>>>  Hi Yinghai,
->>>>
->>>> I have the patch below floating around in my tree to make sure that
->>>> early-reserved highmem is honoured when freeing unreserved memory.  I
->>>> was trying to rebase it to current linux-next and noticed that all the
->>>> early_res stuff has been replaced with memblock.
->>>>
->>>> Is this still an issue?  What would the memblock version of this patch
->>>> look like?
->>>>
->>> Not sure why this patch is needed.
->>>
->>> For the early reserve ranges, that could be overlapped with high pages, is "KVA RAM",
->>> but We do remove those range in active ranges array. [ in calculate_numa_remap_pages() ].
->>> [
->>> ...
->>>                 memblock_x86_reserve_range(node_kva_final,
->>>                               node_kva_final+(((u64)size)<<PAGE_SHIFT),
->>>                               "KVA RAM");
->>>
->>>                 node_remap_start_pfn[nid] = node_kva_final>>PAGE_SHIFT;
->>>                 remove_active_range(nid, node_remap_start_pfn[nid],
->>>                                          node_remap_start_pfn[nid] + size);
->>> ...
->>> ]
->>>
->>> Can you check if Gianluca Guida still can duplicate the problem that will need his patch ?
->> The specific motivation for this patch is to handle Xen ballooning where
->> the domain can be built with X pages of memory available to it
->> initially, but Y pages are presented in the E820 map (Y >= X).  The
->> extra pages in the E820 are not physically present, but I want the
->> kernel to allocate page structures for them, so I reserve_early() them
->> to stop them from being used.  Later on, the balloon driver can
->> incrementally populate these pfns and return them to the kernel for use
->> as real memory.
->>
->> Without this patch, the reservations of the highmem pages are ignored
->> and the kernel ends up trying to use these non-resident pages.  (At
->> least that's what used to happen, and I didn't see any changes which
->> looked like they would address this.)
->>
->> Does the code you quote above address this case?
-> please check
->
-> [PATCH] x86, mm, memblock, 32bit: Make higepages honor early reserved ranges
-
-It isn't working yet, but I don't think its related to this patch, which
-seems basically sound.
-
-However, I also needed another patch to allow memblock_init() to be
-called early.
-
-Thanks,
-J
-
-From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Date: Tue, 21 Sep 2010 17:05:35 -0700
-Subject: [PATCH] memblock: allow memblock_init to be called early
-
-The Xen setup code needs to call memblock_x86_reserve_range() very early,
-so allow it to initialize the memblock subsystem before doing so.  The
-second memblock_init() is ignored.
-
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 7d46c84..63b83ce 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -30,6 +30,7 @@
- #include <linux/console.h>
- #include <linux/pci.h>
- #include <linux/gfp.h>
-+#include <linux/memblock.h>
- 
- #include <xen/xen.h>
- #include <xen/interface/xen.h>
-@@ -1183,6 +1184,8 @@ asmlinkage void __init xen_start_kernel(void)
- 	local_irq_disable();
- 	early_boot_irqs_off();
- 
-+	memblock_init();
-+
- 	xen_raw_console_write("mapping kernel into physical memory\n");
- 	pgd = xen_setup_kernel_pagetable(pgd, xen_start_info->nr_pages);
- 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index d5d63ac..66bb0c5 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -747,6 +747,12 @@ void __init memblock_analyze(void)
- 
- void __init memblock_init(void)
- {
-+	static int init_done __initdata = 0;
-+
-+	if (init_done)
-+		return;
-+	init_done = 1;
-+
- 	/* Hookup the initial arrays */
- 	memblock.memory.regions	= memblock_memory_init_regions;
- 	memblock.memory.max		= INIT_MEMBLOCK_REGIONS;
-
-
-
-> Originally the only early reserved range that is overlapped with high pages :
->  "KVA RAM", but We do remove them from active ranges.
->
-> It turns out xen could have that kind of overlapping to support memory bollaon.
->
-> So We need to make add_highpage_with_active_regions() to subtract memblock
-> reserved just like low ram.
->
-> In this patch, refactering get_freel_all_memory_range() to make it can be used
-> by add_highpage_with_active_regions().
-> Also we don't need to remove "KVA RAM" from active ranges.
->
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+On Thu, Sep 16, 2010 at 01:12:23PM +0300, Samu Onkalo wrote:
+> LP5521 chip is three channel led driver with programmable engines.
+> Driver provides support for that chip for direct access via led class or
+> via programmable engines.
+> 
+> Signed-off-by: Samu Onkalo <samu.p.onkalo@nokia.com>
 > ---
->  arch/x86/include/asm/memblock.h |    2 +
->  arch/x86/mm/init_32.c           |   59 ++++++++++++----------------------------
->  arch/x86/mm/memblock.c          |   19 ++++++++++--
->  arch/x86/mm/numa_32.c           |    2 -
->  4 files changed, 36 insertions(+), 46 deletions(-)
->
-> Index: linux-2.6/arch/x86/include/asm/memblock.h
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/include/asm/memblock.h
-> +++ linux-2.6/arch/x86/include/asm/memblock.h
-> @@ -9,6 +9,8 @@ void memblock_x86_to_bootmem(u64 start,
->  void memblock_x86_reserve_range(u64 start, u64 end, char *name);
->  void memblock_x86_free_range(u64 start, u64 end);
->  struct range;
-> +int __get_free_all_memory_range(struct range **range, int nodeid,
-> +			 unsigned long start_pfn, unsigned long end_pfn);
->  int get_free_all_memory_range(struct range **rangep, int nodeid);
->  
->  void memblock_x86_register_active_regions(int nid, unsigned long start_pfn,
-> Index: linux-2.6/arch/x86/mm/init_32.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/mm/init_32.c
-> +++ linux-2.6/arch/x86/mm/init_32.c
-> @@ -426,49 +426,28 @@ static void __init add_one_highpage_init
->  	totalhigh_pages++;
->  }
->  
-> -struct add_highpages_data {
-> -	unsigned long start_pfn;
-> -	unsigned long end_pfn;
-> -};
-> -
-> -static int __init add_highpages_work_fn(unsigned long start_pfn,
-> -					 unsigned long end_pfn, void *datax)
-> +void __init add_highpages_with_active_regions(int nid,
-> +			 unsigned long start_pfn, unsigned long end_pfn)
->  {
-> -	int node_pfn;
-> -	struct page *page;
-> -	unsigned long final_start_pfn, final_end_pfn;
-> -	struct add_highpages_data *data;
-> -
-> -	data = (struct add_highpages_data *)datax;
-> -
-> -	final_start_pfn = max(start_pfn, data->start_pfn);
-> -	final_end_pfn = min(end_pfn, data->end_pfn);
-> -	if (final_start_pfn >= final_end_pfn)
-> -		return 0;
-> -
-> -	for (node_pfn = final_start_pfn; node_pfn < final_end_pfn;
-> -	     node_pfn++) {
-> -		if (!pfn_valid(node_pfn))
-> -			continue;
-> -		page = pfn_to_page(node_pfn);
-> -		add_one_highpage_init(page);
-> +	struct range *range;
-> +	int nr_range;
-> +	int i;
+>  drivers/leds/leds-lp5521.c  |  820 +++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/leds-lp5521.h |   46 +++
+>  2 files changed, 866 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/leds/leds-lp5521.c
+>  create mode 100644 include/linux/leds-lp5521.h
+> 
+> diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
+> new file mode 100644
+> index 0000000..f57adb0
+> --- /dev/null
+> +++ b/drivers/leds/leds-lp5521.c
+> @@ -0,0 +1,820 @@
+> +/*
+> + * LP5521 LED chip driver.
+> + *
+> + * Copyright (C) 2010 Nokia Corporation
+> + *
+> + * Contact: Samu Onkalo <samu.p.onkalo@nokia.com>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful, but
+> + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the GNU
+> + * General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+> + * 02110-1301 USA
+> + */
 > +
-> +	nr_range = __get_free_all_memory_range(&range, nid, start_pfn, end_pfn);
+> +#include <linux/module.h>
+> +#include <linux/init.h>
+> +#include <linux/i2c.h>
+> +#include <linux/mutex.h>
+> +#include <linux/gpio.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/delay.h>
+> +#include <linux/ctype.h>
+> +#include <linux/spinlock.h>
+> +#include <linux/wait.h>
+> +#include <linux/leds.h>
+> +#include <linux/leds-lp5521.h>
+> +#include <linux/workqueue.h>
+> +#include <linux/slab.h>
 > +
-> +	for (i = 0; i < nr_range; i++) {
-> +		struct page *page;
-> +		int node_pfn;
+> +#define LP5521_PROGRAM_LENGTH		32	/* in bytes */
 > +
-> +		for (node_pfn = range[i].start; node_pfn < range[i].end;
-> +		     node_pfn++) {
-> +			if (!pfn_valid(node_pfn))
-> +				continue;
-> +			page = pfn_to_page(node_pfn);
-> +			add_one_highpage_init(page);
-> +		}
->  	}
-> -
-> -	return 0;
-> -
->  }
-> -
-> -void __init add_highpages_with_active_regions(int nid, unsigned long start_pfn,
-> -					      unsigned long end_pfn)
-> -{
-> -	struct add_highpages_data data;
-> -
-> -	data.start_pfn = start_pfn;
-> -	data.end_pfn = end_pfn;
-> -
-> -	work_with_active_regions(nid, add_highpages_work_fn, &data);
-> -}
-> -
->  #else
->  static inline void permanent_kmaps_init(pgd_t *pgd_base)
->  {
-> Index: linux-2.6/arch/x86/mm/memblock.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/mm/memblock.c
-> +++ linux-2.6/arch/x86/mm/memblock.c
-> @@ -139,7 +139,8 @@ static int __init count_early_node_map(i
->  	return data.nr;
->  }
->  
-> -int __init get_free_all_memory_range(struct range **rangep, int nodeid)
-> +int __init __get_free_all_memory_range(struct range **rangep, int nodeid,
-> +			 unsigned long start_pfn, unsigned long end_pfn)
->  {
->  	int count;
->  	struct range *range;
-> @@ -155,9 +156,9 @@ int __init get_free_all_memory_range(str
->  	 * at first
->  	 */
->  	nr_range = add_from_early_node_map(range, count, nr_range, nodeid);
-> -#ifdef CONFIG_X86_32
-> -	subtract_range(range, count, max_low_pfn, -1ULL);
-> -#endif
-> +	subtract_range(range, count, 0, start_pfn);
-> +	subtract_range(range, count, end_pfn, -1ULL);
+> +#define LP5521_MAX_LEDS			3	/* Maximum number of LEDs */
+> +#define LP5521_MAX_ENGINES		3	/* Maximum number of engines */
 > +
->  	memblock_x86_subtract_reserved(range, count);
->  	nr_range = clean_sort_range(range, count);
->  
-> @@ -165,6 +166,16 @@ int __init get_free_all_memory_range(str
->  	return nr_range;
->  }
->  
-> +int __init get_free_all_memory_range(struct range **rangep, int nodeid)
+> +#define LP5521_ENG_MASK_BASE		0x30	/* 00110000 */
+> +#define LP5521_ENG_STATUS_MASK		0x07	/* 00000111 */
+> +
+> +#define LP5521_CMD_LOAD			0x15	/* 00010101 */
+> +#define LP5521_CMD_RUN			0x2a	/* 00101010 */
+> +#define LP5521_CMD_DIRECT		0x3f	/* 00111111 */
+> +#define LP5521_CMD_DISABLED		0x00	/* 00000000 */
+> +
+> +/* Registers */
+> +#define LP5521_REG_ENABLE		0x00
+> +#define LP5521_REG_OP_MODE		0x01
+> +#define LP5521_REG_R_PWM		0x02
+> +#define LP5521_REG_G_PWM		0x03
+> +#define LP5521_REG_B_PWM		0x04
+> +#define LP5521_REG_R_CURRENT		0x05
+> +#define LP5521_REG_G_CURRENT		0x06
+> +#define LP5521_REG_B_CURRENT		0x07
+> +#define LP5521_REG_CONFIG		0x08
+> +#define LP5521_REG_R_CHANNEL_PC		0x09
+> +#define LP5521_REG_G_CHANNEL_PC		0x0A
+> +#define LP5521_REG_B_CHANNEL_PC		0x0B
+> +#define LP5521_REG_STATUS		0x0C
+> +#define LP5521_REG_RESET		0x0D
+> +#define LP5521_REG_GPO			0x0E
+> +#define LP5521_REG_R_PROG_MEM		0x10
+> +#define LP5521_REG_G_PROG_MEM		0x30
+> +#define LP5521_REG_B_PROG_MEM		0x50
+> +
+> +#define LP5521_PROG_MEM_BASE		LP5521_REG_R_PROG_MEM
+> +#define LP5521_PROG_MEM_SIZE		0x20
+> +
+> +/* Base register to set LED current */
+> +#define LP5521_REG_LED_CURRENT_BASE	LP5521_REG_R_CURRENT
+> +
+> +/* Base register to set the brightness */
+> +#define LP5521_REG_LED_PWM_BASE		LP5521_REG_R_PWM
+> +
+> +/* Bits in ENABLE register */
+> +#define LP5521_MASTER_ENABLE		0x40	/* Chip master enable */
+> +#define LP5521_LOGARITHMIC_PWM		0x80	/* Logarithmic PWM adjustment */
+> +#define LP5521_EXEC_RUN			0x2A
+> +
+> +/* Bits in CONFIG register */
+> +#define LP5521_PWM_HF			0x40	/* PWM: 0 = 256Hz, 1 = 558Hz */
+> +#define LP5521_PWRSAVE_EN		0x20	/* 1 = Power save mode */
+> +#define LP5521_CP_MODE_OFF		0	/* Charge pump (CP) off */
+> +#define LP5521_CP_MODE_BYPASS		8	/* CP forced to bypass mode */
+> +#define LP5521_CP_MODE_1X5		0x10	/* CP forced to 1.5x mode */
+> +#define LP5521_CP_MODE_AUTO		0x18	/* Automatic mode selection */
+> +#define LP5521_R_TO_BATT		4	/* R out: 0 = CP, 1 = Vbat */
+> +#define LP5521_CLK_SRC_EXT		0	/* Ext-clk source (CLK_32K) */
+> +#define LP5521_CLK_INT			1	/* Internal clock */
+> +#define LP5521_CLK_AUTO			2	/* Automatic clock selection */
+> +
+> +/* Status */
+> +#define LP5521_EXT_CLK_USED		0x08
+> +
+> +struct lp5521_engine {
+> +	const struct attribute_group *attributes;
+> +	int		id;
+> +	u8		mode;
+> +	u8		prog_page;
+> +	u8		engine_mask;
+> +};
+> +
+> +struct lp5521_led {
+> +	int			id;
+> +	u8			chan_nr;
+> +	u8			led_current;
+> +	u8			max_current;
+> +	struct led_classdev	cdev;
+> +	struct work_struct	brightness_work;
+> +	u8			brightness;
+> +};
+> +
+> +struct lp5521_chip {
+> +	struct lp5521_platform_data *pdata;
+> +	struct mutex		lock; /* Serialize control */
+> +	struct i2c_client	*client;
+> +	struct lp5521_engine	engines[LP5521_MAX_ENGINES];
+> +	struct lp5521_led	leds[LP5521_MAX_LEDS];
+> +	u8			num_channels;
+> +	u8			num_leds;
+> +};
+> +
+> +#define cdev_to_led(c)		container_of(c, struct lp5521_led, cdev)
+> +#define engine_to_lp5521(eng)	container_of((eng), struct lp5521_chip, \
+> +						engines[(eng)->id - 1])
+> +#define led_to_lp5521(led)	container_of((led), struct lp5521_chip, \
+> +						leds[(led)->id])
+> +
+> +static void lp5521_led_brightness_work(struct work_struct *work);
+> +
+> +static inline int lp5521_write(struct i2c_client *client, u8 reg, u8 value)
 > +{
-> +	unsigned long end_pfn = -1ULL;
-> +
-> +#ifdef CONFIG_X86_32
-> +	end_pfn = max_low_pfn;
-> +#endif
-> +	return __get_free_all_memory_range(rangep, nodeid, 0, end_pfn);
+> +	return i2c_smbus_write_byte_data(client, reg, value);
 > +}
 > +
->  static u64 __init __memblock_x86_memory_in_range(u64 addr, u64 limit, bool get_free)
->  {
->  	int i, count;
-> Index: linux-2.6/arch/x86/mm/numa_32.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/mm/numa_32.c
-> +++ linux-2.6/arch/x86/mm/numa_32.c
-> @@ -326,8 +326,6 @@ static __init unsigned long calculate_nu
->  			      "KVA RAM");
->  
->  		node_remap_start_pfn[nid] = node_kva_final>>PAGE_SHIFT;
-> -		remove_active_range(nid, node_remap_start_pfn[nid],
-> -					 node_remap_start_pfn[nid] + size);
->  	}
->  	printk(KERN_INFO "Reserving total of %lx pages for numa KVA remap\n",
->  			reserve_pages);
->
+> +static int lp5521_read(struct i2c_client *client, u8 reg, u8 *buf)
+> +{
+> +	s32 ret;
+> +
+> +	ret = i2c_smbus_read_byte_data(client, reg);
+> +	if (ret < 0)
+> +		return -EIO;
+> +
+> +	*buf = ret;
+> +	return 0;
+> +}
+> +
+> +static int lp5521_set_engine_mode(struct lp5521_engine *engine, u8 mode)
+> +{
+> +	struct lp5521_chip *chip = engine_to_lp5521(engine);
+> +	struct i2c_client *client = chip->client;
+> +	int ret;
+> +	u8 engine_state;
+> +
+> +	/* Only transition between RUN and DIRECT mode are handled here */
+> +	if (mode == LP5521_CMD_LOAD)
+> +		return 0;
+> +
+> +	if (mode == LP5521_CMD_DISABLED)
+> +		mode = LP5521_CMD_DIRECT;
+> +
+> +	ret = lp5521_read(client, LP5521_REG_OP_MODE, &engine_state);
+> +
+> +	/* set mode only for this engine */
+> +	engine_state &= ~(engine->engine_mask);
+> +	mode &= engine->engine_mask;
+> +	engine_state |= mode;
+> +	ret |= lp5521_write(client, LP5521_REG_OP_MODE, engine_state);
+> +
+> +	return ret;
+> +}
+> +
+> +static int lp5521_load_program(struct lp5521_engine *eng, const u8 *pattern)
+> +{
+> +	struct lp5521_chip *chip = engine_to_lp5521(eng);
+> +	struct i2c_client *client = chip->client;
+> +	int ret;
+> +	int addr;
+> +	u8 mode;
+> +
+> +	/* move current engine to direct mode and remember the state */
+> +	ret = lp5521_set_engine_mode(eng, LP5521_CMD_DIRECT);
+> +	usleep_range(1000, 10000);
+> +	ret |= lp5521_read(client, LP5521_REG_OP_MODE, &mode);
+> +
+> +	/* For loading, all the engines to load mode */
+> +	lp5521_write(client, LP5521_REG_OP_MODE, LP5521_CMD_DIRECT);
+> +	usleep_range(1000, 10000);
+> +	lp5521_write(client, LP5521_REG_OP_MODE, LP5521_CMD_LOAD);
+> +	usleep_range(1000, 10000);
+> +
+> +	addr = LP5521_PROG_MEM_BASE + eng->prog_page * LP5521_PROG_MEM_SIZE;
+> +	i2c_smbus_write_i2c_block_data(client,
+> +				addr,
+> +				LP5521_PROG_MEM_SIZE,
+> +				pattern);
+> +
+> +	ret |= lp5521_write(client, LP5521_REG_OP_MODE, mode);
+> +	return ret;
+> +}
+> +
+> +static int lp5521_set_led_current(struct lp5521_chip *chip, int led, u8 curr)
+> +{
+> +	return lp5521_write(chip->client,
+> +		    LP5521_REG_LED_CURRENT_BASE + chip->leds[led].chan_nr,
+> +		    curr);
+> +}
+> +
+> +static void lp5521_init_engine(struct lp5521_chip *chip,
+> +			const struct attribute_group *attr_group)
+> +{
+> +	int i;
+> +	for (i = 0; i < LP5521_MAX_ENGINES; i++) {
+
+you could use ARRAY_SIZE(chip->engines) ?
+
+> +		chip->engines[i].id = i + 1;
+> +		chip->engines[i].engine_mask = LP5521_ENG_MASK_BASE >> (i * 2);
+> +		chip->engines[i].prog_page = i;
+> +		chip->engines[i].attributes = &attr_group[i];
+> +	}
+> +}
+> +
+> +static int lp5521_configure(struct i2c_client *client,
+> +			const struct attribute_group *attr_group)
+> +{
+> +	struct lp5521_chip *chip = i2c_get_clientdata(client);
+> +	int ret;
+> +
+> +	lp5521_init_engine(chip, attr_group);
+> +
+> +	lp5521_write(client, LP5521_REG_RESET, 0xff);
+> +
+> +	usleep_range(10000, 20000);
+> +
+> +	/* Set all PWMs to direct control mode */
+> +	ret = lp5521_write(client, LP5521_REG_OP_MODE, 0x3F);
+> +
+> +	/* Enable auto-powersave, set charge pump to auto, red to battery */
+> +	ret |= lp5521_write(client, LP5521_REG_CONFIG,
+> +		LP5521_PWRSAVE_EN | LP5521_CP_MODE_AUTO | LP5521_R_TO_BATT);
+> +
+> +	/* Initialize all channels PWM to zero -> leds off */
+> +	ret |= lp5521_write(client, LP5521_REG_R_PWM, 0);
+> +	ret |= lp5521_write(client, LP5521_REG_G_PWM, 0);
+> +	ret |= lp5521_write(client, LP5521_REG_B_PWM, 0);
+> +
+> +	/* Set engines are set to run state when OP_MODE enables engines */
+> +	ret |= lp5521_write(client, LP5521_REG_ENABLE,
+> +			LP5521_MASTER_ENABLE | LP5521_LOGARITHMIC_PWM |
+> +			LP5521_EXEC_RUN);
+> +	/* enable takes 500us */
+> +	usleep_range(500, 20000);
+> +
+> +	return ret;
+> +}
+> +
+> +static ssize_t lp5521_run_selftest(struct lp5521_chip *chip, char *buf)
+> +{
+> +	int ret;
+> +	u8 status;
+> +
+> +	ret = lp5521_read(chip->client, LP5521_REG_STATUS, &status);
+> +	if (ret < 0)
+> +		goto fail;
+> +
+> +	/* Check that ext clock is really in use if requested */
+> +	if (chip->pdata && chip->pdata->clock_mode == LP5521_CLOCK_EXT)
+> +		if  ((status & LP5521_EXT_CLK_USED) == 0)
+> +			goto fail;
+> +
+> +	return sprintf(buf, "OK\n");
+> +fail:
+> +	return sprintf(buf, "FAIL\n");
+> +}
+
+why not return an error code here?
+
+> +static void lp5521_set_brightness(struct led_classdev *cdev,
+> +			     enum led_brightness brightness)
+> +{
+> +	struct lp5521_led *led = cdev_to_led(cdev);
+> +	led->brightness = (u8)brightness;
+> +	schedule_work(&led->brightness_work);
+> +}
+> +
+> +static void lp5521_led_brightness_work(struct work_struct *work)
+> +{
+> +	struct lp5521_led *led = container_of(work,
+> +					      struct lp5521_led,
+> +					      brightness_work);
+> +	struct lp5521_chip *chip = led_to_lp5521(led);
+> +	struct i2c_client *client = chip->client;
+> +
+> +	mutex_lock(&chip->lock);
+> +	lp5521_write(client, LP5521_REG_LED_PWM_BASE + led->chan_nr,
+> +		led->brightness);
+> +	mutex_unlock(&chip->lock);
+> +}
+> +
+> +/* Detect the chip by setting its ENABLE register and reading it back. */
+> +static int lp5521_detect(struct i2c_client *client)
+> +{
+> +	int ret;
+> +	u8 buf;
+> +
+> +	ret = lp5521_write(client, LP5521_REG_ENABLE,
+> +			LP5521_MASTER_ENABLE | LP5521_LOGARITHMIC_PWM);
+> +	if (ret)
+> +		return ret;
+> +	usleep_range(1000, 10000);
+> +	ret = lp5521_read(client, LP5521_REG_ENABLE, &buf);
+> +	if (ret)
+> +		return ret;
+> +	if (buf != (LP5521_MASTER_ENABLE | LP5521_LOGARITHMIC_PWM))
+> +		return -ENODEV;
+> +
+> +	return 0;
+> +}
+> +
+> +/* Set engine mode and create appropriate sysfs attributes, if required. */
+> +static int lp5521_set_mode(struct lp5521_engine *engine, u8 mode)
+> +{
+> +	struct lp5521_chip *chip = engine_to_lp5521(engine);
+> +	struct i2c_client *client = chip->client;
+> +	struct device *dev = &client->dev;
+> +	int ret = 0;
+> +
+> +	/* if in that mode already do nothing, except for run */
+> +	if (mode == engine->mode && mode != LP5521_CMD_RUN)
+> +		return 0;
+> +
+> +	if (mode == LP5521_CMD_RUN)
+> +		ret = lp5521_set_engine_mode(engine, LP5521_CMD_RUN);
+> +
+> +	else if (mode == LP5521_CMD_LOAD) {
+> +		lp5521_set_engine_mode(engine, LP5521_CMD_DISABLED);
+> +		lp5521_set_engine_mode(engine, LP5521_CMD_LOAD);
+> +
+> +		ret = sysfs_create_group(&dev->kobj, engine->attributes);
+> +		if (ret)
+> +			return ret;
+> +	}
+> +
+> +	else if (mode == LP5521_CMD_DISABLED)
+> +		lp5521_set_engine_mode(engine, LP5521_CMD_DISABLED);
+> +
+> +	/* remove load attribute from sysfs if not in load mode */
+> +	if (engine->mode == LP5521_CMD_LOAD && mode != LP5521_CMD_LOAD)
+> +		sysfs_remove_group(&dev->kobj, engine->attributes);
+> +
+> +	engine->mode = mode;
+> +
+> +	return ret;
+> +}
+> +
+> +static int lp5521_do_store_load(struct lp5521_engine *engine,
+> +				const char *buf, size_t len)
+> +{
+> +	struct lp5521_chip *chip = engine_to_lp5521(engine);
+> +	struct i2c_client *client = chip->client;
+> +	int  ret, nrchars, offset = 0, i = 0;
+> +	char c[3];
+> +	unsigned cmd;
+> +	u8 pattern[LP5521_PROGRAM_LENGTH] = {0};
+> +
+> +	while ((offset < len - 1) && (i < LP5521_PROGRAM_LENGTH)) {
+> +		/* separate sscanfs because length is working only for %s */
+> +		ret = sscanf(buf + offset, "%2s%n ", c, &nrchars);
+> +		ret = sscanf(c, "%2x", &cmd);
+> +		if (ret != 1)
+> +			goto fail;
+> +		pattern[i] = (u8)cmd;
+> +
+> +		offset += nrchars;
+> +		i++;
+> +	}
+> +
+> +	/* Pattern commands are always two bytes long */
+> +	if (i % 2)
+> +		goto fail;
+> +
+> +	mutex_lock(&chip->lock);
+> +	ret = lp5521_load_program(engine, pattern);
+> +	mutex_unlock(&chip->lock);
+> +
+> +	if (ret) {
+> +		dev_err(&client->dev, "failed loading pattern\n");
+> +		return ret;
+> +	}
+> +
+> +	return len;
+> +fail:
+> +	dev_err(&client->dev, "wrong pattern format\n");
+> +	return -EINVAL;
+> +}
+> +
+> +static ssize_t store_engine_load(struct device *dev,
+> +				     struct device_attribute *attr,
+> +				     const char *buf, size_t len, int nr)
+> +{
+> +	struct i2c_client *client = to_i2c_client(dev);
+> +	struct lp5521_chip *chip = i2c_get_clientdata(client);
+> +	return lp5521_do_store_load(&chip->engines[nr - 1], buf, len);
+> +}
+> +
+> +#define store_load(nr)							\
+> +static ssize_t store_engine##nr##_load(struct device *dev,		\
+> +				     struct device_attribute *attr,	\
+> +				     const char *buf, size_t len)	\
+> +{									\
+> +	return store_engine_load(dev, attr, buf, len, nr);		\
+> +}
+> +store_load(1)
+> +store_load(2)
+> +store_load(3)
+> +
+> +static ssize_t show_engine_mode(struct device *dev,
+> +				struct device_attribute *attr,
+> +				char *buf, int nr)
+> +{
+> +	struct i2c_client *client = to_i2c_client(dev);
+> +	struct lp5521_chip *chip = i2c_get_clientdata(client);
+> +	switch (chip->engines[nr - 1].mode) {
+> +	case LP5521_CMD_RUN:
+> +		return sprintf(buf, "run\n");
+> +	case LP5521_CMD_LOAD:
+> +		return sprintf(buf, "load\n");
+> +	case LP5521_CMD_DISABLED:
+> +		return sprintf(buf, "disabled\n");
+> +	default:
+> +		return sprintf(buf, "disabled\n");
+> +	}
+> +}
+> +
+> +#define show_mode(nr)							\
+> +static ssize_t show_engine##nr##_mode(struct device *dev,		\
+> +				    struct device_attribute *attr,	\
+> +				    char *buf)				\
+> +{									\
+> +	return show_engine_mode(dev, attr, buf, nr);			\
+> +}
+> +show_mode(1)
+> +show_mode(2)
+> +show_mode(3)
+> +
+> +static ssize_t store_engine_mode(struct device *dev,
+> +				 struct device_attribute *attr,
+> +				 const char *buf, size_t len, int nr)
+> +{
+> +	struct i2c_client *client = to_i2c_client(dev);
+> +	struct lp5521_chip *chip = i2c_get_clientdata(client);
+> +	struct lp5521_engine *engine = &chip->engines[nr - 1];
+> +	mutex_lock(&chip->lock);
+> +
+> +	if (!strncmp(buf, "run", 3))
+> +		lp5521_set_mode(engine, LP5521_CMD_RUN);
+> +	else if (!strncmp(buf, "load", 4))
+> +		lp5521_set_mode(engine, LP5521_CMD_LOAD);
+> +	else if (!strncmp(buf, "disabled", 8))
+> +		lp5521_set_mode(engine, LP5521_CMD_DISABLED);
+> +
+> +	mutex_unlock(&chip->lock);
+> +	return len;
+> +}
+> +
+> +#define store_mode(nr)							\
+> +static ssize_t store_engine##nr##_mode(struct device *dev,		\
+> +				     struct device_attribute *attr,	\
+> +				     const char *buf, size_t len)	\
+> +{									\
+> +	return store_engine_mode(dev, attr, buf, len, nr);		\
+> +}
+> +store_mode(1)
+> +store_mode(2)
+> +store_mode(3)
+> +
+> +static ssize_t show_max_current(struct device *dev,
+> +			    struct device_attribute *attr,
+> +			    char *buf)
+> +{
+> +	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+> +	struct lp5521_led *led = cdev_to_led(led_cdev);
+> +
+> +	return sprintf(buf, "%d\n", led->max_current);
+> +}
+> +
+> +static ssize_t show_current(struct device *dev,
+> +			    struct device_attribute *attr,
+> +			    char *buf)
+> +{
+> +	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+> +	struct lp5521_led *led = cdev_to_led(led_cdev);
+> +
+> +	return sprintf(buf, "%d\n", led->led_current);
+> +}
+> +
+> +static ssize_t store_current(struct device *dev,
+> +			     struct device_attribute *attr,
+> +			     const char *buf, size_t len)
+> +{
+> +	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+> +	struct lp5521_led *led = cdev_to_led(led_cdev);
+> +	struct lp5521_chip *chip = led_to_lp5521(led);
+> +	ssize_t ret;
+> +	unsigned long curr;
+> +
+> +	if (strict_strtoul(buf, 0, &curr))
+> +		return -EINVAL;
+> +
+> +	if (curr > led->max_current)
+> +		return -EINVAL;
+> +
+> +	mutex_lock(&chip->lock);
+> +	ret = lp5521_set_led_current(chip, led->id, curr);
+> +	mutex_unlock(&chip->lock);
+> +
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	led->led_current = (u8)curr;
+> +
+> +	return len;
+> +}
+> +
+> +static ssize_t lp5521_selftest(struct device *dev,
+> +			       struct device_attribute *attr,
+> +			       char *buf)
+> +{
+> +	struct i2c_client *client = to_i2c_client(dev);
+> +	struct lp5521_chip *chip = i2c_get_clientdata(client);
+> +	ssize_t ret = 0;
+> +
+> +	mutex_lock(&chip->lock);
+> +	ret = lp5521_run_selftest(chip, buf);
+> +	mutex_unlock(&chip->lock);
+> +	return ret;
+> +}
+> +
+> +/* led class device attributes */
+> +static DEVICE_ATTR(led_current, S_IRUGO | S_IWUGO, show_current, store_current);
+> +static DEVICE_ATTR(max_current, S_IRUGO , show_max_current, NULL);
+> +
+> +static struct attribute *lp5521_led_attributes[] = {
+> +	&dev_attr_led_current.attr,
+> +	&dev_attr_max_current.attr,
+> +	NULL,
+> +};
+> +
+> +static struct attribute_group lp5521_led_attribute_group = {
+> +	.attrs = lp5521_led_attributes
+> +};
+> +
+> +/* device attributes */
+> +static DEVICE_ATTR(engine1_mode, S_IRUGO | S_IWUGO,
+> +		   show_engine1_mode, store_engine1_mode);
+> +static DEVICE_ATTR(engine2_mode, S_IRUGO | S_IWUGO,
+> +		   show_engine2_mode, store_engine2_mode);
+> +static DEVICE_ATTR(engine3_mode, S_IRUGO | S_IWUGO,
+> +		   show_engine3_mode, store_engine3_mode);
+> +static DEVICE_ATTR(engine1_load, S_IWUGO, NULL, store_engine1_load);
+> +static DEVICE_ATTR(engine2_load, S_IWUGO, NULL, store_engine2_load);
+> +static DEVICE_ATTR(engine3_load, S_IWUGO, NULL, store_engine3_load);
+> +static DEVICE_ATTR(selftest, S_IRUGO, lp5521_selftest, NULL);
+> +
+> +static struct attribute *lp5521_attributes[] = {
+> +	&dev_attr_engine1_mode.attr,
+> +	&dev_attr_engine2_mode.attr,
+> +	&dev_attr_engine3_mode.attr,
+> +	&dev_attr_selftest.attr,
+> +	NULL
+> +};
+> +
+> +static struct attribute *lp5521_engine1_attributes[] = {
+> +	&dev_attr_engine1_load.attr,
+> +	NULL
+> +};
+> +
+> +static struct attribute *lp5521_engine2_attributes[] = {
+> +	&dev_attr_engine2_load.attr,
+> +	NULL
+> +};
+> +
+> +static struct attribute *lp5521_engine3_attributes[] = {
+> +	&dev_attr_engine3_load.attr,
+> +	NULL
+> +};
+> +
+> +static const struct attribute_group lp5521_group = {
+> +	.attrs = lp5521_attributes,
+> +};
+> +
+> +static const struct attribute_group lp5521_engine_group[] = {
+> +	{.attrs = lp5521_engine1_attributes },
+> +	{.attrs = lp5521_engine2_attributes },
+> +	{.attrs = lp5521_engine3_attributes },
+> +};
+> +
+> +static int lp5521_register_sysfs(struct i2c_client *client)
+> +{
+> +	struct device *dev = &client->dev;
+> +	return sysfs_create_group(&dev->kobj, &lp5521_group);
+> +}
+> +
+> +static void lp5521_unregister_sysfs(struct i2c_client *client)
+> +{
+> +	struct lp5521_chip *chip = i2c_get_clientdata(client);
+> +	struct device *dev = &client->dev;
+> +	int i;
+> +
+> +	sysfs_remove_group(&dev->kobj, &lp5521_group);
+> +
+> +	for (i = 0; i < LP5521_MAX_ENGINES; i++) {
+> +		if (chip->engines[i].mode == LP5521_CMD_LOAD)
+> +			sysfs_remove_group(&dev->kobj,
+> +					chip->engines[i].attributes);
+> +	}
+> +
+> +	for (i = 0; i < chip->num_leds; i++)
+> +		sysfs_remove_group(&chip->leds[i].cdev.dev->kobj,
+> +				&lp5521_led_attribute_group);
+> +}
+> +
+> +static int __init lp5521_init_led(struct lp5521_led *led,
+> +				struct i2c_client *client,
+> +				int chan, struct lp5521_platform_data *pdata)
+> +{
+> +	struct device *dev = &client->dev;
+> +	char name[32];
+> +	int res;
+> +
+> +	if (chan >= LP5521_MAX_LEDS)
+> +		return -EINVAL;
+> +
+> +	if (pdata->led_config[chan].led_current == 0)
+> +		return 0;
+> +
+> +	led->led_current = pdata->led_config[chan].led_current;
+> +	led->max_current = pdata->led_config[chan].max_current;
+> +	led->chan_nr = pdata->led_config[chan].chan_nr;
+> +
+> +	snprintf(name, sizeof(name), "%s:channel%d", client->name, chan);
+> +	led->cdev.brightness_set = lp5521_set_brightness;
+> +	led->cdev.name = name;
+> +	res = led_classdev_register(dev, &led->cdev);
+> +	if (res < 0) {
+> +		dev_err(dev, "couldn't register led on channel %d\n", chan);
+> +		return res;
+> +	}
+> +
+> +	res = sysfs_create_group(&led->cdev.dev->kobj,
+> +			&lp5521_led_attribute_group);
+> +	if (res < 0) {
+> +		dev_err(dev, "couldn't register current attribute\n");
+> +		led_classdev_unregister(&led->cdev);
+> +		return res;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static int lp5521_probe(struct i2c_client *client,
+> +			const struct i2c_device_id *id)
+> +{
+> +	struct lp5521_chip		*chip;
+> +	struct lp5521_platform_data	*pdata;
+> +	int ret, i, led;
+> +
+> +	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
+> +	if (!chip)
+> +		return -ENOMEM;
+> +
+> +	i2c_set_clientdata(client, chip);
+> +	chip->client = client;
+> +
+> +	pdata = client->dev.platform_data;
+> +
+> +	if (!pdata) {
+> +		dev_err(&client->dev, "no platform data\n");
+> +		ret = -EINVAL;
+> +		goto fail1;
+> +	}
+> +
+> +	mutex_init(&chip->lock);
+> +
+> +	chip->pdata   = pdata;
+> +
+> +	if (pdata->setup_resources) {
+> +		ret = pdata->setup_resources();
+> +		if (ret < 0)
+> +			goto fail1;
+> +	}
+> +
+> +	if (pdata->enable) {
+> +		pdata->enable(0);
+> +		usleep_range(1000, 10000);
+> +		pdata->enable(1);
+> +		usleep_range(1000, 10000); /* Spec says min 500us */
+> +	}
+> +
+> +	ret = lp5521_detect(client);
+> +
+> +	if (ret) {
+> +		dev_err(&client->dev, "Chip not found\n");
+> +		goto fail2;
+> +	}
+> +
+> +	dev_info(&client->dev, "%s programmable led chip found\n", id->name);
+> +
+> +	ret = lp5521_configure(client, lp5521_engine_group);
+> +	if (ret < 0) {
+> +		dev_err(&client->dev, "error configuring chip\n");
+> +		goto fail2;
+> +	}
+> +
+> +	/* Initialize leds */
+> +	chip->num_channels = pdata->num_channels;
+> +	chip->num_leds = 0;
+> +	led = 0;
+> +	for (i = 0; i < pdata->num_channels; i++) {
+> +		/* Do not initialize channels that are not connected */
+> +		if (pdata->led_config[i].led_current == 0)
+> +			continue;
+> +
+> +		chip->num_leds++;
+> +		ret = lp5521_init_led(&chip->leds[led], client, i, pdata);
+> +		if (ret) {
+> +			dev_err(&client->dev, "error initializing leds\n");
+> +			goto fail3;
+> +		}
+> +
+> +		chip->leds[led].id = led;
+> +		/* Set initial LED current */
+> +		lp5521_set_led_current(chip, led,
+> +				chip->leds[led].led_current);
+> +
+> +		INIT_WORK(&(chip->leds[led].brightness_work),
+> +			lp5521_led_brightness_work);
+> +
+> +		led++;
+> +	}
+> +
+> +	ret = lp5521_register_sysfs(client);
+> +	if (ret) {
+> +		dev_err(&client->dev, "registering sysfs failed\n");
+> +		goto fail3;
+> +	}
+> +	return ret;
+> +fail3:
+> +	for (i = 0; i < chip->num_leds; i++) {
+> +		led_classdev_unregister(&chip->leds[i].cdev);
+> +		cancel_work_sync(&chip->leds[i].brightness_work);
+> +	}
+> +fail2:
+> +	if (pdata->enable)
+> +		pdata->enable(0);
+> +	if (pdata->release_resources)
+> +		pdata->release_resources();
+> +fail1:
+> +	kfree(chip);
+> +	return ret;
+> +}
+> +
+> +static int lp5521_remove(struct i2c_client *client)
+> +{
+> +	struct lp5521_chip *chip = i2c_get_clientdata(client);
+> +	int i;
+> +
+> +	lp5521_unregister_sysfs(client);
+> +
+> +	for (i = 0; i < chip->num_leds; i++) {
+> +		led_classdev_unregister(&chip->leds[i].cdev);
+> +		cancel_work_sync(&chip->leds[i].brightness_work);
+> +	}
+> +
+> +	if (chip->pdata->enable)
+> +		chip->pdata->enable(0);
+> +	if (chip->pdata->release_resources)
+> +		chip->pdata->release_resources();
+> +	kfree(chip);
+> +	return 0;
+> +}
+> +
+> +static const struct i2c_device_id lp5521_id[] = {
+> +	{ "lp5521", 0 }, /* Three channel chip */
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(i2c, lp5521_id);
+> +
+> +static struct i2c_driver lp5521_driver = {
+> +	.driver = {
+> +		.name	= "lp5521",
+> +	},
+> +	.probe		= lp5521_probe,
+> +	.remove		= lp5521_remove,
+> +	.id_table	= lp5521_id,
+> +};
+> +
+> +static int __init lp5521_init(void)
+> +{
+> +	int ret;
+> +
+> +	ret = i2c_add_driver(&lp5521_driver);
+> +
+> +	if (ret < 0)
+> +		printk(KERN_ALERT "Adding lp5521 driver failed\n");
+> +
+> +	return ret;
+> +}
+> +
+> +static void __exit lp5521_exit(void)
+> +{
+> +	i2c_del_driver(&lp5521_driver);
+> +}
+> +
+> +module_init(lp5521_init);
+> +module_exit(lp5521_exit);
+> +
+> +MODULE_AUTHOR("Mathias Nyman, Yuri Zaporozhets, Samu Onkalo");
+> +MODULE_DESCRIPTION("LP5521 LED engine");
+> +MODULE_LICENSE("GPL v2");
+> diff --git a/include/linux/leds-lp5521.h b/include/linux/leds-lp5521.h
+> new file mode 100644
+> index 0000000..2d3aca2
+> --- /dev/null
+> +++ b/include/linux/leds-lp5521.h
+> @@ -0,0 +1,46 @@
+> +/*
+> + * LP5521 LED chip driver.
+> + *
+> + * Copyright (C) 2010 Nokia Corporation
+> + *
+> + * Contact: Samu Onkalo <samu.p.onkalo@nokia.com>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful, but
+> + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> + * General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+> + * 02110-1301 USA
+> + */
+> +
+> +#ifndef __LINUX_LP5521_H
+> +#define __LINUX_LP5521_H
+> +
+> +struct lp5521_led_config {
+> +	u8		chan_nr;
+> +	u8		led_current; /* mA x10, 0 if led is not connected */
+> +	u8		max_current;
+> +};
+
+documentation would be useful. kerneldoc fo preference.
+
+> +#define LP5521_CLOCK_AUTO	0
+> +#define LP5521_CLOCK_INT	1
+> +#define LP5521_CLOCK_EXT	2
+> +
+> +struct lp5521_platform_data {
+> +	struct lp5521_led_config *led_config;
+> +	u8	num_channels;
+> +	u8	clock_mode;
+> +	int	(*setup_resources)(void);
+> +	void	(*release_resources)(void);
+> +	void	(*enable)(bool state);
+> +};
+> +
+> +#endif /* __LINUX_LP5521_H */
+> +
+> -- 
+> 1.6.0.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+-- 
+Ben
+
+Q:      What's a light-year?
+A:      One-third less calories than a regular year.
 
