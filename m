@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339Ab0IVKHF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 06:07:05 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:47992 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752936Ab0IVKHD (ORCPT
+	id S1752805Ab0IVKId (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 06:08:33 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:34409 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752266Ab0IVKIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 06:07:03 -0400
-Date: Wed, 22 Sep 2010 11:07:01 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: jiang.adam@gmail.com
-Cc: dmitri.vorobiev@movial.com, wuzhangjin@gmail.com,
-        ddaney@caviumnetworks.com, peterz@infradead.org, fweisbec@gmail.com,
-        tj@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] mips: irq: add stackoverflow detection
-Message-ID: <20100922100701.GA4710@linux-mips.org>
-References: <linux-mips@linux-mips.org>
- <1282901526-28405-1-git-send-email-jiang.adam@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282901526-28405-1-git-send-email-jiang.adam@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	Wed, 22 Sep 2010 06:08:32 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: jbaron@redhat.com
+Cc: rostedt@goodmis.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        mathieu.desnoyers@polymtl.ca, hpa@zytor.com, tglx@linutronix.de,
+        roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 1/2] Add for_each_module iterator function
+Date: Wed, 22 Sep 2010 12:08:21 +0200
+Message-Id: <1285150102-5506-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 27, 2010 at 06:32:06PM +0900, jiang.adam@gmail.com wrote:
+From: Andi Kleen <ak@linux.intel.com>
 
-> diff --git a/arch/mips/Kconfig.debug b/arch/mips/Kconfig.debug
-> index 43dc279..f437cd1 100644
-> --- a/arch/mips/Kconfig.debug
-> +++ b/arch/mips/Kconfig.debug
-> @@ -67,6 +67,15 @@ config CMDLINE_OVERRIDE
->  
->  	  Normally, you will choose 'N' here.
->  
-> +config DEBUG_STACKOVERFLOW
-> +	bool "Check for stack overflows"
-> +	depends on DEBUG_KERNEL
-> +	help
-> +	  This option will cause messages to be printed if free stack space
-> +	  drops below a certain limit(2GB on MIPS). The debugging option
+This is a generic function to iterate over all modules.
+To be used in the next patch.
 
-I better upgrade my meory then.  2GB is a LOTS :)
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ include/linux/module.h |    1 +
+ kernel/module.c        |   10 ++++++++++
+ 2 files changed, 11 insertions(+), 0 deletions(-)
 
-> +	  provides another way to check stack overflow happened on kernel mode
-> +	  stack usually caused by nested interruption.
-> +
->  config DEBUG_STACK_USAGE
->  	bool "Enable stack utilization instrumentation"
->  	depends on DEBUG_KERNEL
-> diff --git a/arch/mips/kernel/irq.c b/arch/mips/kernel/irq.c
-> index c6345f5..d0b924d 100644
-> --- a/arch/mips/kernel/irq.c
-> +++ b/arch/mips/kernel/irq.c
-> @@ -151,6 +151,26 @@ void __init init_IRQ(void)
->  #endif
->  }
->  
-> +#ifdef DEBUG_STACKOVERFLOW
-> +static inline void check_stack_overflow(void)
-> +{
-> +	long sp;
+diff --git a/include/linux/module.h b/include/linux/module.h
+index 403ac26..809b6db 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -410,6 +410,7 @@ struct module *__module_address(unsigned long addr);
+ bool is_module_address(unsigned long addr);
+ bool is_module_percpu_address(unsigned long addr);
+ bool is_module_text_address(unsigned long addr);
++void for_each_module(void (*op)(struct module *, void *arg), void *arg);
+ 
+ static inline int within_module_core(unsigned long addr, struct module *mod)
+ {
+diff --git a/kernel/module.c b/kernel/module.c
+index eba1341..b8fb3e6 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -384,6 +384,16 @@ struct module *find_module(const char *name)
+ }
+ EXPORT_SYMBOL_GPL(find_module);
+ 
++void for_each_module(void (*op)(struct module *, void *arg), void *arg)
++{
++	struct module *mod;
++
++	preempt_disable();
++	list_for_each_entry_rcu(mod, &modules, list)
++		op(mod, arg);
++	preempt_enable();
++}
++
+ #ifdef CONFIG_SMP
+ 
+ static inline void __percpu *mod_percpu(struct module *mod)
+-- 
+1.7.1
 
-Addresses in Linux should always be unsigned long.
-
-> +
-> +	__asm__ __volatile__("move %0, $sp" : "=r" (sp));
-> +	sp = sp & (THREAD_SIZE-1);
-
-For THREAD_SIZE - 1 there is the symbol THREAD_MASK.
-
-> +	/* check for stack overflow: is there less than 2KB free? */
-> +	if (unlikely(sp < (sizeof(struct thread_info) + 2048))) {
-
-Looks good otherwise, will queue.
-
-  Ralf
