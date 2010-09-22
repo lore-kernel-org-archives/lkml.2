@@ -1,36 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754956Ab0IVS7F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 14:59:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56099 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754895Ab0IVS7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 14:59:03 -0400
-Message-ID: <4C9A51DC.5020009@zytor.com>
-Date: Wed, 22 Sep 2010 11:58:36 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
-MIME-Version: 1.0
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: tidy e820 output
-References: <20100922172744.19085.41844.stgit@bob.kio> <201009221220.34066.bjorn.helgaas@hp.com> <4C9A4AAF.3030503@zytor.com> <201009221253.01049.bjorn.helgaas@hp.com>
-In-Reply-To: <201009221253.01049.bjorn.helgaas@hp.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1755042Ab0IVTBP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 15:01:15 -0400
+Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:38031 "EHLO
+	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754937Ab0IVTBN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 15:01:13 -0400
+X-Greylist: delayed 1002 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Sep 2010 15:01:13 EDT
+Date: Wed, 22 Sep 2010 14:43:29 -0400
+From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+To: Mikko Vinni <mmvinni@yahoo.com>
+Cc: Karl Hiramoto <karl@hiramoto.org>, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: scheduling while atomic: br2684ctl (atm)
+Message-ID: <20100922144329.0cb3cf86@thirdoffive.cmf.nrl.navy.mil>
+In-Reply-To: <647401.39574.qm@web58406.mail.re3.yahoo.com>
+References: <647401.39574.qm@web58406.mail.re3.yahoo.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-NRLCMF-Spam-Score: () hits=-0.001
+X-NRLCMF-Virus-Scanned: No virus found
+X-NRLCMF-Languages: en
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2010 11:53 AM, Bjorn Helgaas wrote:
-> 
-> It's true, they don't (well, everything below 4G still lines up, but
-> not above that).  Do you like this any better?
-> 
+On Wed, 22 Sep 2010 00:42:29 -0700 (PDT)
+Mikko Vinni <mmvinni@yahoo.com> wrote:
 
-That's fine with me.  I don't mind the [mem ] bracket either if you
-think it's useful.
+> I get the following message apparently every time (on 2.6.36-rc4+ at
+> least) when killing any old br2684ctl processes.
+> "unregister_atmdevice_notifier" was added by
+> 7313bb8f ("atm: propagate signal changes via notifier") so perhaps
+> the unregister
+> part was not tested properly for rcu interaction?
 
-	-hpa
+it looks like atomic_notifier_chain_unregister() cannot be called in an
+atomic context.  the only reason there is a lock is to the list of
+br2684_devs atomically.  however, i think the event handler could be
+made to just register/unregister on module load/unload instead.
+
+> So far I haven't noticed any ill effects from the message. Let me
+> know if I should test something. Thanks.
+
+it isnt good.  it should be fixed.  unless someone has a better idea i
+will go ahead with the above.
+
