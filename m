@@ -1,215 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754910Ab0IVSxv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 14:53:51 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:23709 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754866Ab0IVSxt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 14:53:49 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] x86: tidy e820 output
-Date: Wed, 22 Sep 2010 12:53:00 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        linux-kernel@vger.kernel.org
-References: <20100922172744.19085.41844.stgit@bob.kio> <201009221220.34066.bjorn.helgaas@hp.com> <4C9A4AAF.3030503@zytor.com>
-In-Reply-To: <4C9A4AAF.3030503@zytor.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1754887Ab0IVS6y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 14:58:54 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:52624 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754783Ab0IVS6x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 14:58:53 -0400
+Subject: Re: [PATCH 0/8] De-couple sysfs memory directories from memory
+ sections
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Nathan Fontenot <nfont@austin.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
+        Greg KH <greg@kroah.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4C9A4DBB.6080500@austin.ibm.com>
+References: <4C9A0F8F.2030409@austin.ibm.com>
+	 <1285168800.3292.5228.camel@nimitz>  <4C9A4DBB.6080500@austin.ibm.com>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Wed, 22 Sep 2010 11:58:49 -0700
+Message-ID: <1285181929.3292.6287.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009221253.01049.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 22, 2010 12:27:59 pm H. Peter Anvin wrote:
-> Yes, but I think you can also see why I really don't like the thought of
-> the numbers in the BIOS-e820: block not even lining up anymore.
+On Wed, 2010-09-22 at 13:40 -0500, Nathan Fontenot wrote:
+> On 09/22/2010 10:20 AM, Dave Hansen wrote:
+> >                            and phys_index's calculation needs to be:
+> > 
+> > 	mem->start_phys_index * SECTION_SIZE / memory_block_size_bytes()
+> 
+> I'm not sure if  I follow where you suggest using this formula.  Is this
+> instead of what is used now, the base_memory_block_id() calculation?
+> 
+> If so, then I'm not sure it would work. The formula used in base_memory_block_id()
+> is done because the memory sections are not guaranteed to be added to the
+> memory block starting with the first section of the block.
+> 
+> If you meant somewhere else let me know.
 
-It's true, they don't (well, everything below 4G still lines up, but
-not above that).  Do you like this any better?
+My point was just that if we change the "block_size_bytes" contents,
+then we have to scale down the "memoryXXXX/phys_index" by that same
+amount.
 
-commit bc43bea8f02ae27dd04f6a8bccc818888362ea0d
-Author: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Date:   Tue Sep 21 12:32:34 2010 -0600
+It *used* to be in numbers of SECTION_SIZE units, and I think it still
+is:
 
-    x86: tidy e820 output
-    
-    This tidies e820 output by adding an "e820" prefix and printing ranges
-    similarly to the way we print struct resource with %pR, e.g.:
-    
-        - BIOS-e820: 0000000000000000 - 000000000009f400 (usable)
-        + BIOS-e820: 0x0000000000000000-0x000000000009f3ff (usable)
-    
-    Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+-       mem->start_phys_index = __section_nr(section);
++       mem->start_phys_index = base_memory_block_id(__section_nr(section));
++       mem->end_phys_index = mem->start_phys_index + sections_per_block - 1;
 
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index 0d6fc71..aabae8d 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -108,7 +108,9 @@ static void __init __e820_add_region(struct e820map *e820x, u64 start, u64 size,
- 	int x = e820x->nr_map;
- 
- 	if (x >= ARRAY_SIZE(e820x->map)) {
--		printk(KERN_ERR "Ooops! Too many entries in the memory map!\n");
-+		printk(KERN_ERR "e820: too many entries; ignoring [mem %#010llx-%#010llx]\n",
-+		       (unsigned long long) start,
-+		       (unsigned long long) (start + size - 1));
- 		return;
- 	}
- 
-@@ -123,29 +125,22 @@ void __init e820_add_region(u64 start, u64 size, int type)
- 	__e820_add_region(&e820, start, size, type);
- }
- 
--static void __init e820_print_type(u32 type)
-+static char * __init e820_type_name(u32 type)
- {
- 	switch (type) {
- 	case E820_RAM:
- 	case E820_RESERVED_KERN:
--		printk(KERN_CONT "(usable)");
--		break;
-+		return "(usable)";
- 	case E820_RESERVED:
--		printk(KERN_CONT "(reserved)");
--		break;
-+		return "(reserved)";
- 	case E820_ACPI:
--		printk(KERN_CONT "(ACPI data)");
--		break;
-+		return "(ACPI data)";
- 	case E820_NVS:
--		printk(KERN_CONT "(ACPI NVS)");
--		break;
-+		return "(ACPI NVS)";
- 	case E820_UNUSABLE:
--		printk(KERN_CONT "(unusable)");
--		break;
--	default:
--		printk(KERN_CONT "type %u", type);
--		break;
-+		return "(unusable)";
- 	}
-+	return "(unknown)";
- }
- 
- void __init e820_print_map(char *who)
-@@ -153,12 +148,11 @@ void __init e820_print_map(char *who)
- 	int i;
- 
- 	for (i = 0; i < e820.nr_map; i++) {
--		printk(KERN_INFO " %s: %016Lx - %016Lx ", who,
-+		printk(KERN_INFO " %s: %#018Lx-%#018Lx %s\n", who,
- 		       (unsigned long long) e820.map[i].addr,
- 		       (unsigned long long)
--		       (e820.map[i].addr + e820.map[i].size));
--		e820_print_type(e820.map[i].type);
--		printk(KERN_CONT "\n");
-+		       (e820.map[i].addr + e820.map[i].size - 1),
-+		       e820_type_name(e820.map[i].type));
- 	}
- }
- 
-@@ -435,13 +429,9 @@ static u64 __init __e820_update_range(struct e820map *e820x, u64 start,
- 		size = ULLONG_MAX - start;
- 
- 	end = start + size;
--	printk(KERN_DEBUG "e820 update range: %016Lx - %016Lx ",
--		       (unsigned long long) start,
--		       (unsigned long long) end);
--	e820_print_type(old_type);
--	printk(KERN_CONT " ==> ");
--	e820_print_type(new_type);
--	printk(KERN_CONT "\n");
-+	printk(KERN_DEBUG "e820: update [mem %#010Lx-%#010Lx] %s ==> %s\n",
-+	       (unsigned long long) start, (unsigned long long) end - 1,
-+	       e820_type_name(old_type), e820_type_name(new_type));
- 
- 	for (i = 0; i < e820x->nr_map; i++) {
- 		struct e820entry *ei = &e820x->map[i];
-@@ -511,17 +501,16 @@ u64 __init e820_remove_range(u64 start, u64 size, unsigned old_type,
- 	int i;
- 	u64 end;
- 	u64 real_removed_size = 0;
-+	char *type = "";
- 
- 	if (size > (ULLONG_MAX - start))
- 		size = ULLONG_MAX - start;
- 
- 	end = start + size;
--	printk(KERN_DEBUG "e820 remove range: %016Lx - %016Lx ",
--		       (unsigned long long) start,
--		       (unsigned long long) end);
- 	if (checktype)
--		e820_print_type(old_type);
--	printk(KERN_CONT "\n");
-+		type = e820_type_name(old_type);
-+	printk(KERN_DEBUG "e820: remove [mem %#010Lx-%#010Lx] %s\n",
-+	       (unsigned long long) start, (unsigned long long) end - 1, type);
- 
- 	for (i = 0; i < e820.nr_map; i++) {
- 		struct e820entry *ei = &e820.map[i];
-@@ -574,7 +563,7 @@ void __init update_e820(void)
- 	if (sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr_map))
- 		return;
- 	e820.nr_map = nr_map;
--	printk(KERN_INFO "modified physical RAM map:\n");
-+	printk(KERN_INFO "e820: modified physical RAM map:\n");
- 	e820_print_map("modified");
- }
- static void __init update_e820_saved(void)
-@@ -655,8 +644,8 @@ __init void e820_setup_gap(void)
- 	pci_mem_start = gapstart;
- 
- 	printk(KERN_INFO
--	       "Allocating PCI resources starting at %lx (gap: %lx:%lx)\n",
--	       pci_mem_start, gapstart, gapsize);
-+	       "e820: [mem %#010lx-%#010lx] available for PCI devices\n",
-+	       gapstart, gapstart + gapsize - 1);
- }
- 
- /**
-@@ -680,7 +669,7 @@ void __init parse_e820_ext(struct setup_data *sdata, unsigned long pa_data)
- 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
- 	if (map_len > PAGE_SIZE)
- 		early_iounmap(sdata, map_len);
--	printk(KERN_INFO "extended physical RAM map:\n");
-+	printk(KERN_INFO "e820: extended physical RAM map:\n");
- 	e820_print_map("extended");
- }
- 
-@@ -882,7 +871,7 @@ static unsigned long __init e820_end_pfn(unsigned long limit_pfn, unsigned type)
- 	if (last_pfn > max_arch_pfn)
- 		last_pfn = max_arch_pfn;
- 
--	printk(KERN_INFO "last_pfn = %#lx max_arch_pfn = %#lx\n",
-+	printk(KERN_INFO "e820: last_pfn = %#lx max_arch_pfn = %#lx\n",
- 			 last_pfn, max_arch_pfn);
- 	return last_pfn;
- }
-@@ -1048,7 +1037,7 @@ void __init finish_e820_parsing(void)
- 			early_panic("Invalid user supplied memory map");
- 		e820.nr_map = nr;
- 
--		printk(KERN_INFO "user-defined physical RAM map:\n");
-+		printk(KERN_INFO "e820: user-defined physical RAM map:\n");
- 		e820_print_map("user");
- 	}
- }
-@@ -1156,8 +1145,9 @@ void __init e820_reserve_resources_late(void)
- 			end = MAX_RESOURCE_SIZE;
- 		if (start >= end)
- 			continue;
--		printk(KERN_DEBUG "reserve RAM buffer: %016llx - %016llx ",
--			       start, end);
-+		printk(KERN_DEBUG
-+		       "e820: reserve RAM buffer [mem %#010llx-%#010llx]\n",
-+		       start, end);
- 		reserve_region_with_split(&iomem_resource, start, end,
- 					  "RAM buffer");
- 	}
+but now it needs to be changed to be in memory_block_size_bytes() units,
+*NOT* SECTION_SIZE units.
+
+Let's say we have a system with 4 16MB sections starting at 0x0.
+Before, we would have:
+
+	block_size_bytes: 16777216
+	memory0/phys_index: 0
+	memory1/phys_index: 1
+	memory2/phys_index: 2
+	memory3/phys_index: 3
+
+Now, we change memory_block_size_bytes() to be 32MB instead.  We reduce
+the number of sections in half, and I think the right thing to get is:
+
+	block_size_bytes: 33554432
+	memory0/phys_index: 0
+	memory1/phys_index: 1
+
+I think, with your code (as it stands in these patches, no fixes) that
+we'd instead get this:
+
+	block_size_bytes: 16777216
+	memory0/phys_index: 0
+	memory1/phys_index: 2
+
+Without consulting "end_phys_index" (which isn't and can't be a part of
+the existing ABI), we'd think that we have two 16MB banks instead of
+four.
+
+
+-- Dave
+
