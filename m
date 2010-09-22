@@ -1,177 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754526Ab0IVMIc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 08:08:32 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:19684 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754334Ab0IVMIa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 08:08:30 -0400
-Message-ID: <4C99F1B7.4000806@panasas.com>
-Date: Wed, 22 Sep 2010 14:08:23 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
+	id S1754594Ab0IVMJb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 08:09:31 -0400
+Received: from cantor.suse.de ([195.135.220.2]:41102 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753400Ab0IVMJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 08:09:29 -0400
+Date: Wed, 22 Sep 2010 14:09:25 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Alan Ott <alan@signal11.us>, Marcel Holtmann <marcel@holtmann.org>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: Stefan Achatz <erazor_de@users.sourceforge.net>,
+        Antonio Ospite <ospite@studenti.unina.it>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Stephane Chatty <chatty@enac.fr>,
+        Michael Poole <mdpoole@troilus.org>,
+        Bastien Nocera <hadess@hadess.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH v4 0/2] Get and Set Feature Reports on HIDRAW (USB and
+ Bluetooth)
+In-Reply-To: <alpine.LNX.2.00.1009021724480.26813@pobox.suse.cz>
+Message-ID: <alpine.LNX.2.00.1009221408330.26813@pobox.suse.cz>
+References: <1281442367.12579.206.camel@localhost.localdomain> <1281990059-3562-1-git-send-email-alan@signal11.us> <alpine.LNX.2.00.1008231459370.1019@pobox.suse.cz> <alpine.LNX.2.00.1009021724480.26813@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>
-Subject: Re: [PATCH 2/3] tcm/pscsi: Add proper BIDI-COMMAND passthrough to
- SCSI MidLayer
-References: <1285135732-8350-1-git-send-email-nab@linux-iscsi.org>	 <4C99E4BC.5010301@panasas.com> <1285155525.1849.55.camel@haakon2.linux-iscsi.org>
-In-Reply-To: <1285155525.1849.55.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 22 Sep 2010 12:08:29.0493 (UTC) FILETIME=[DE5F5650:01CB5A4E]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2010 01:38 PM, Nicholas A. Bellinger wrote:
-> On Wed, 2010-09-22 at 13:13 +0200, Boaz Harrosh wrote:
->>
->> OK, I'm begining to suspect task->task_size is the size of what?
->> See below (below)
-> 
-> Btw task->task_size is to set to (task->task_sectors * block_size) in
-> target_core_transport.c:transport_generic_get_cdb_count()
-> 
+On Thu, 2 Sep 2010, Jiri Kosina wrote:
 
-Maybe you are confused by these XOR functions. But there is no
-task->task_sectors, only for these TYPE_DISK pesky writes/reads
-
-For general SCSI from tapes, scanners, printers to OSD There is
-in_transfer_length and out_transfer_length. For READ_XXX/WRITE_XXX
-these happen to be task->task_sectors.
-
-<snip>
-
->>>  	return task->task_sg_num;
->>
->> OK Now I'm sure!
->> You have completely missed the fact that bidi entails two sg_list(s)
->> two sg_num(s) and two io_byte_count(s).
->>
->> The use of sg_table will clear that confusion a bit, though I wanted it
->> to carry an  io_byte_count as well, but never came to do that.
+> > > This is version 4. Built against 2.6.35+ revision 320b2b8de12698 .
+> > > 
+> > > Alan Ott (2):
+> > >   HID: Add Support for Setting and Getting Feature Reports from hidraw
+> > >   Bluetooth: hidp: Add support for hidraw  HIDIOCGFEATURE  and
+> > >     HIDIOCSFEATURE
+> > > 
+> > >  drivers/hid/hidraw.c          |  105 ++++++++++++++++++++++++++++++++++++--
+> > >  drivers/hid/usbhid/hid-core.c |   37 +++++++++++++-
+> > >  include/linux/hid.h           |    3 +
+> > >  include/linux/hidraw.h        |    3 +
+> > >  net/bluetooth/hidp/core.c     |  114 +++++++++++++++++++++++++++++++++++++++--
+> > >  net/bluetooth/hidp/hidp.h     |    8 +++
+> > >  6 files changed, 260 insertions(+), 10 deletions(-)
+> > 
+> > Marcel, as per our previous discussion -- what is your word on this? I'd 
+> > be glad taking it once you Ack the bluetooth bits (which, as far as I 
+> > understood from your last mail, don't have strong objections against any 
+> > more).
 > 
-> Hmmm, so this patch currently assumes that BIDI-COMMAND WRITE and extra
-> READ payloads contain the same struct se_task->task_sg_num for both
-> struct se_task->task_sg[] and struct se_task->task_sg_bidi[].
+> ... Marcel?
 > 
-> If we need to assume that the internally allocated (LIO-Target iSCSI)
+> I'd really like not to miss 2.6.37 merge window with this.
 
-There is no assumption they are completely separate (Even if they happen
-to be the equal).
+Seemingly I have not enought powers to get statement from Marcel here 
+these days/weeks.
 
-The fabric(s) know that. For pSCSI this comes in the scsi_in()->length
-and the scsi_out()->length (and ->sg_count). For iscsi it has an rlenght
-AHS header that tells it the transfer length of the bidi_read side.
-In iSER and I think FB it is completely symmetrical like with the BSG
-API. (Member for "in" and member for "out")
+Davem, would you perhaps be able to step in here?
 
-And so on. Each side is completely orthogonal to the other, in every
-respect. (They might even execute in parallel)
+Thanks,
 
-> *or* pre-exiting SGL mapped T_TASK(cmd)->t_mem_list (TCM_Loop Virtual
-> SCSI LLD) and T_TASK(cmd)->t_mem_bidi_list memory can be mapped
-> differently, then an seperate second call to transport_calc_sg_num() in
-> order to determine a struct se_task->task_sg_bidi_num is required.
-> 
-
-Perhaps it would be easier to do, if you convert to use of scsi_data_buffer
-in current code. Then apply the double instance. You might also need a similar
-mechanics for your ->t_mem_list and associated members. Group them together
-then double the handling.
-
-Down the road you'll need a third one for supporting DIFF
-
-Boaz
->>
->>>  fail:
->>> @@ -1181,6 +1213,27 @@ fail:
->>>  	return ret;
->>>  }
->>>  
->>> +static int pscsi_map_task_SG(struct se_task *task)
->>> +{
->>> +	int ret;
->>> +	/*
->>> +	 * Setup the main struct request for the task->task_sg[] payload
->>> +	 */
->>> +
->>> +	ret = __pscsi_map_task_SG(task, task->task_sg, task->task_sg_num, 0);
->>> +	if (ret < 0)
->>> +		return ret;
->>> +
->>> +	if (!(task->task_sg_bidi))
->>> +		return ret;
->>> +	/*
->>> +	 * If present, set up the extra BIDI-COMMAND SCSI READ
->>> +	 * struct request and payload.
->>> +	 */
->>> +	return __pscsi_map_task_SG(task, task->task_sg_bidi,
->>> +				task->task_sg_num, 1);
->>
->> What? the task->task_sg_bidi as the same sg_num as the above
->> task->task_sg. (See you should use sg_table to remove these
->> bugs.
->>
-> 
-> <nod>
-> 
->> (I wrote this comment before I wrote the above one ;-))
->>
->>> +}
->>> +
->>>  /*	pscsi_map_task_non_SG():
->>>   *
->>>   *
->>> @@ -1438,6 +1491,12 @@ static void pscsi_req_done(struct request *req, int uptodate)
->>>  	pt->pscsi_resid = req->resid_len;
->>>  
->>>  	pscsi_process_SAM_status(task, pt);
->>> +
->>> +	if (req->next_rq != NULL) {
->>> +		__blk_put_request(req->q, req->next_rq);
->>
->> 		req->next_rq = NULL;
->>
->>> +		pt->pscsi_req_bidi = NULL;
->>> +	}
->>> +
->>>  	__blk_put_request(req->q, req);
->>>  	pt->pscsi_req = NULL;
->>>  }
->>> diff --git a/drivers/target/target_core_pscsi.h b/drivers/target/target_core_pscsi.h
->>> index 086e6f1..d3c8972 100644
->>> --- a/drivers/target/target_core_pscsi.h
->>> +++ b/drivers/target/target_core_pscsi.h
->>> @@ -34,6 +34,7 @@ struct pscsi_plugin_task {
->>>  	int	pscsi_result;
->>>  	u32	pscsi_resid;
->>>  	struct request *pscsi_req;
->>> +	struct request *pscsi_req_bidi;
->>
->> You don't really need to, you know. You have it right here at
->> pscsi_req->next_rq. But it's your call
-> 
-> OK, I will go ahead and drop this item.
-> 
->>
->>>  } ____cacheline_aligned;
->>>  
->>>  #define PDF_HAS_CHANNEL_ID	0x01
->>
->> Cheers (life is hard)
->> Boaz
-> 
-> Many thanks Boaz!
-> 
-> --nab
-> 
-> 
-
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
