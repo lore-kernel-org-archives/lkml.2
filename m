@@ -1,68 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561Ab0IVIhQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 04:37:16 -0400
-Received: from mtagate7.de.ibm.com ([195.212.17.167]:47182 "EHLO
-	mtagate7.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739Ab0IVIhO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 04:37:14 -0400
-Date: Wed, 22 Sep 2010 10:37:07 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC] timer: fix deadlock on cpu hotplug
-Message-ID: <20100922083706.GA2177@osiris.boeblingen.de.ibm.com>
-References: <20100921142017.GA2291@osiris.boeblingen.de.ibm.com>
- <4C98D0EB.30002@kernel.org>
- <1285083618.2275.884.camel@laptop>
+	id S1752832Ab0IVIhp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 04:37:45 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:45758 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752650Ab0IVIho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 04:37:44 -0400
+Date: Wed, 22 Sep 2010 09:37:31 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/10] hugetlb: add allocate function for hugepage
+	migration
+Message-ID: <20100922083731.GB1382@csn.ul.ie>
+References: <1283908781-13810-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1283908781-13810-3-git-send-email-n-horiguchi@ah.jp.nec.com> <20100920105916.GH1998@csn.ul.ie> <20100922044151.GB2538@spritzera.linux.bs1.fc.nec.co.jp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1285083618.2275.884.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100922044151.GB2538@spritzera.linux.bs1.fc.nec.co.jp>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 21, 2010 at 05:40:18PM +0200, Peter Zijlstra wrote:
-> On Tue, 2010-09-21 at 17:36 +0200, Tejun Heo wrote:
-> > I think this is the second time we're seeing deadlock during cpu down
-> > due to RT throttling and timer problem.  The rather delicate
-> > dependency there makes me somewhat nervous.  If possible, I think it
-> > would be better if we can simply turn the RT throttling off when
-> > cpu_stop kicks in.  It's intended to be a mechanism to monopolize all
-> > CPU cycles to begin with.  Would that be difficult?
+On Wed, Sep 22, 2010 at 01:41:51PM +0900, Naoya Horiguchi wrote:
+> Hi,
 > 
-> I've wanted to pull the whole migration thread out from SCHED_FIFO for a
-> while. Doing that is probably the easiest thing.
+> Thank you for your review.
+> 
+> On Mon, Sep 20, 2010 at 11:59:16AM +0100, Mel Gorman wrote:
+> > On Wed, Sep 08, 2010 at 10:19:33AM +0900, Naoya Horiguchi wrote:
+> ...
+> > > @@ -770,11 +776,10 @@ static int free_pool_huge_page(struct hstate *h, nodemask_t *nodes_allowed,
+> > >  	return ret;
+> > >  }
+> > >  
+> > > -static struct page *alloc_buddy_huge_page(struct hstate *h,
+> > > -			struct vm_area_struct *vma, unsigned long address)
+> > > +static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
+> > >  {
+> > >  	struct page *page;
+> > > -	unsigned int nid;
+> > > +	unsigned int r_nid;
+> > >  
+> > 
+> > Why the rename, just to avoid changing the value of a function parameter?
+> 
+> I think it's better that a simple name is given to function parameter
+> than to internal variable, because the former is paid more attention
+> from other developers than the latter is.
+> 
 
-Something like this?
+Ok.
 
-diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
-index 4372ccb..854fd57 100644
---- a/kernel/stop_machine.c
-+++ b/kernel/stop_machine.c
-@@ -291,7 +291,6 @@ repeat:
- static int __cpuinit cpu_stop_cpu_callback(struct notifier_block *nfb,
- 					   unsigned long action, void *hcpu)
- {
--	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
- 	unsigned int cpu = (unsigned long)hcpu;
- 	struct cpu_stopper *stopper = &per_cpu(cpu_stopper, cpu);
- 	struct task_struct *p;
-@@ -304,7 +303,6 @@ static int __cpuinit cpu_stop_cpu_callback(struct notifier_block *nfb,
- 				   cpu);
- 		if (IS_ERR(p))
- 			return NOTIFY_BAD;
--		sched_setscheduler_nocheck(p, SCHED_FIFO, &param);
- 		get_task_struct(p);
- 		stopper->thread = p;
- 		break;
+> > >  	if (h->order >= MAX_ORDER)
+> > >  		return NULL;
+> > > @@ -812,9 +817,14 @@ static struct page *alloc_buddy_huge_page(struct hstate *h,
+> > >  	}
+> > >  	spin_unlock(&hugetlb_lock);
+> > >  
+> > > -	page = alloc_pages(htlb_alloc_mask|__GFP_COMP|
+> > > -					__GFP_REPEAT|__GFP_NOWARN,
+> > > -					huge_page_order(h));
+> > > +	if (nid == NUMA_NO_NODE)
+> > > +		page = alloc_pages(htlb_alloc_mask|__GFP_COMP|
+> > > +				   __GFP_REPEAT|__GFP_NOWARN,
+> > > +				   huge_page_order(h));
+> > > +	else
+> > > +		page = alloc_pages_exact_node(nid,
+> > > +			htlb_alloc_mask|__GFP_COMP|__GFP_THISNODE|
+> > > +			__GFP_REPEAT|__GFP_NOWARN, huge_page_order(h));
+> > >  
+> > 
+> > Why not just call alloc_pages_node()?
+> 
+> Ah, we can bring together these two allocate functions.
+> I'll do it.
+> 
+> Here is a revised patch.
+> 
+> Thanks,
+> Naoya Horiguchi
+> ---
+> Date: Wed, 22 Sep 2010 13:18:54 +0900
+> Subject: [PATCH 02/10] hugetlb: add allocate function for hugepage migration
+> 
+> We can't use existing hugepage allocation functions to allocate hugepage
+> for page migration, because page migration can happen asynchronously with
+> the running processes and page migration users should call the allocation
+> function with physical addresses (not virtual addresses) as arguments.
+> 
+> ChangeLog since v3:
+> - unify alloc_buddy_huge_page() and alloc_buddy_huge_page_node()
+> - bring together branched allocate functions
+> 
+> ChangeLog since v2:
+> - remove unnecessary get/put_mems_allowed() (thanks to David Rientjes)
+> 
+> ChangeLog since v1:
+> - add comment on top of alloc_huge_page_no_vma()
+> 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
 
-...gets stuck nearly immediatly on cpu hotplug stress if the machine is
-doing anything but idling around.
-I was too lazy to figure out why it got stuck. I'm afraid that with such
-a change a new class of bugs will appear.
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
