@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389Ab0IVTgy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 15:36:54 -0400
-Received: from legolas.restena.lu ([158.64.1.34]:35009 "EHLO
-	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401Ab0IVTgw (ORCPT
+	id S1755281Ab0IVTne (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 15:43:34 -0400
+Received: from tomts36.bellnexxia.net ([209.226.175.93]:36269 "EHLO
+	tomts36-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751767Ab0IVTnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 15:36:52 -0400
-Date: Wed, 22 Sep 2010 21:35:41 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: James Simmons <jsimmons@infradead.org>
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Bernie Thompson <bernie@plugable.com>
-Subject: Re: [Patch, RFC] Make struct fb_info ref-counted with kref
-Message-ID: <20100922213541.09452849@neptune.home>
-In-Reply-To: <alpine.LFD.2.00.1009222013390.25874@casper.infradead.org>
-References: <20100919172833.14bf291e@neptune.home>
-	<4C963E99.9080207@gmx.de>
-	<20100919190240.65762511@neptune.home>
-	<4C97B079.8050707@gmx.de>
-	<20100920213258.1218b284@neptune.home>
-	<4C97BF40.6030708@gmx.de>
-	<20100920223608.19b4d177@neptune.home>
-	<4C97E00B.6090103@gmx.de>
-	<20100921075610.1c016c12@pluto.restena.lu>
-	<4C985309.5020205@gmx.de>
-	<20100921090255.410da2d7@pluto.restena.lu>
-	<alpine.LFD.2.00.1009221829590.25874@casper.infradead.org>
-	<20100922203927.6ff60f7b@neptune.home>
-	<alpine.LFD.2.00.1009222013390.25874@casper.infradead.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i686-pc-linux-gnu)
+	Wed, 22 Sep 2010 15:43:33 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAOb4mUxGGN6i/2dsb2JhbACiK3LFYYVBBI8w
+Date: Wed, 22 Sep 2010 15:43:31 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <andi@firstfloor.org>, jbaron@redhat.com, rostedt@goodmis.com,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, tglx@linutronix.de,
+        roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/2] Rewrite jump_label.c to use binary search
+Message-ID: <20100922194331.GB28463@Krystal>
+References: <1285150102-5506-1-git-send-email-andi@firstfloor.org> <1285150102-5506-2-git-send-email-andi@firstfloor.org> <4C9A2AED.3050801@zytor.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <4C9A2AED.3050801@zytor.com>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 15:29:02 up 168 days,  5:19,  5 users,  load average: 0.61, 0.32,
+	0.17
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 September 2010 James Simmons <jsimmons@infradead.org> wrote:
-> > > I have a tree at
-> > > 
-> > > http://git.infradead.org/users/jsimmons/linuxconsole-2.6.git
-> > > 
-> > > but currently fbcon is broken so I'm tracing down the problem.
-> > 
-> > Thanks for the reference to your tree!
-> > 
-> > What's you opinion regarding my changes to fbcon in my RFC patch?
-> > Are they ok or would you prefer having fbcon changed to stop peeking
-> > at registered_fb list and just operate directly on fb_info everywhere
-> > it needs it? (that is let con2fb_map[] point to fb_info instead of
-> > indexes into registered_fb? (I have a preference for the second one
-> > and will try it out)
-> 
-> I'm aiming to kill off registered_fb. I agree that fb_info should be used 
-> directly and we can avoid the ref-count. As for con2fb_map that is a 
-> little more complex. 
+* H. Peter Anvin (hpa@zytor.com) wrote:
+> On 09/22/2010 03:08 AM, Andi Kleen wrote:
+>>
+>> I believe it's also much cleaner than before.
+>>
+>> I did some performance tests comparing the hash implementation
+>> with the binary search. This was with a moderate config x86-64
+>> kernel with 68 modules loaded and about 480 trace points active
+>> in several modules and 1340 dynamic debug statements.
+>>
+>
+> Now, the ideal data structure for this stuff is something called a  
+> minimal perfect hash.  This is something that would have to be generated  
+> (for each module and for the monolithic kernel) at compile time --  
+> presumably in modpost -- because the static generation of them is fairly  
+> complex.
+>
+> That would provide extremely simple handling in the kernel (just do some  
+> shifts and a table lookup and you have your answer) and if combined with  
+> an AVL or red-black tree holding the module addresses it would give  
+> extremely fast address-to-metadata lookup, not just for this but also  
+> for things like exception handling.
+>
+> I have used MPH's in other projects and pitched them to Linus at one  
+> point for exception handling.  What is clear, though, is that we should  
+> do the same thing for exceptions, trace points, and any other similar  
+> things that depend on exact PC.
 
-Refcounting can't be fully avoided on fb side but certainly can be on
-(most of) fbcon side (except around fbcon's calls to fbops.fb_open and
-fbops.fb_release).
+That's a very interesting idea, which applies very well to exception
+handlers, but tracepoints and static jumps suffer from the problem that
+there are many possible instances of the same key.
 
-Will attempt the fbcon change as a separate patch my ref-counted fb_info
-patch will depend on. (will probably happen during week-end)
+Tracepoints use a lookup by tracepoint name. Static jumps use a lookup
+by associated variable address (but this variable can be associated with
+many instances, e.g. in the case of static inline functions, or just
+when the same variable is used to control many instances of static
+jumps).
+
+But maybe we could find a way to do an initial sort phase, so the
+perfect hash could point to the first entry corresponding to the looked
+up key ?
 
 Thanks,
-Bruno
+
+Mathieu
+
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
