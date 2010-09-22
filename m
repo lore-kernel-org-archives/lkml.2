@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240Ab0IVHgf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 03:36:35 -0400
-Received: from hera.kernel.org ([140.211.167.34]:52125 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753016Ab0IVHge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 03:36:34 -0400
-Message-ID: <4C99B25D.20805@kernel.org>
-Date: Wed, 22 Sep 2010 09:38:05 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	id S1753080Ab0IVHps (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 03:45:48 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:33407 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752633Ab0IVHpr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 03:45:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=JVp3BLqFe/VZ1vvws1ri8z06G1AwAIrUob0DbzWLBk/6BjXeoGVak0vVFb1S4PUHKa
+         KR9OXRdK+MIt8NAH5ORTK1IH6cDLcWHLIoEcUo6fj7LWOlUu1kfI7eOKIXwNRRPT52TO
+         P0yJ6NXuKosZg3U97AyTI05e6I47w7AemQ6oY=
 MIME-Version: 1.0
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-CC: Kay Sievers <kay.sievers@vrfy.org>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [REGRESSION] cdrom drive doesn't detect removal
-References: <1284284969.2928.18.camel@maxim-laptop>	 <1284427621.4127.7.camel@maxim-laptop> <4C8F2699.3020509@kernel.org>	 <AANLkTinGHB9fbLw1Cm5wvPLGy8QEuoBBmFiqpnvXiZ8R@mail.gmail.com>	 <1284507516.4963.2.camel@maxim-laptop>	 <AANLkTimFpyYab69=XQVZc+P50v6_uVr6UbA246Fnm3-u@mail.gmail.com>	 <1284511071.3551.1.camel@maxim-laptop>	 <AANLkTikF37hN7dFqPbCp-gcim7SarveaTrjXipnGpJM7@mail.gmail.com>	 <20100915132731.GA20558@khazad-dum.debian.net>	 <AANLkTinGDUxsgaGey7EnYOu3kKP-YRE00gL33hiKvAWj@mail.gmail.com>	 <1284589207.4672.3.camel@maxim-laptop>	 <AANLkTin37rbEbcGDejhcsnxZNYhhUWGy+x=v4Y=s0_Qx@mail.gmail.com>	 <1285069338.3124.4.camel@maxim-laptop> <1285110590.2822.9.camel@maxim-laptop>
-In-Reply-To: <1285110590.2822.9.camel@maxim-laptop>
-X-Enigmail-Version: 1.1.1
+In-Reply-To: <1284675049-23479-6-git-send-email-virtuoso@slind.org>
+References: <1284675049-23479-1-git-send-email-virtuoso@slind.org> <1284675049-23479-6-git-send-email-virtuoso@slind.org>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Wed, 22 Sep 2010 03:45:22 -0400
+X-Google-Sender-Auth: NbIVV2kbumLMoLD7Sn7E5dzZnJs
+Message-ID: <AANLkTinPQxUPsNyK8nGvLVEQgpy4S1Y=-GQi=w3UuWYn@mail.gmail.com>
+Subject: Re: [PATCH 5/7] wire up sys_time_change_notify() on blackfin
+To: Alexander Shishkin <virtuoso@slind.org>
+Cc: linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        Greg KH <gregkh@suse.de>, Chris Friesen <chris.friesen@genband.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Robin Getz <robin.getz@analog.com>, Philippe Gerum <rpm@xenomai.org>,
+        "David S. Miller" <davem@davemloft.net>, Yi Li <yi.li@analog.com>,
+        uclinux-dist-devel@blackfin.uclinux.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 22 Sep 2010 07:36:27 +0000 (UTC)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Sep 16, 2010 at 18:10, Alexander Shishkin wrote:
+> +#define __NR_time_change_notify        374
 
-On 09/22/2010 01:09 AM, Maxim Levitsky wrote:
-> I just did a strace on udisks, and it is pretty much self explanatory.
-> (While CD is mounted).
-> 
-> open("/dev/sr0", O_RDONLY|O_EXCL|O_NONBLOCK) = -1 EBUSY (Device or resource busy)
-> poll([{fd=5, events=POLLIN}, {fd=3, events=POLLIN}], 2, 1997) = 0 (Timeout)
-> open("/dev/sr0", O_RDONLY|O_EXCL|O_NONBLOCK) = -1 EBUSY (Device or resource busy)
-> poll([{fd=5, events=POLLIN}, {fd=3, events=POLLIN}], 2, 1997) = 0 (Timeout)
-> open("/dev/sr0", O_RDONLY|O_EXCL|O_NONBLOCK) = -1 EBUSY (Device or resource busy)
-> poll([{fd=5, events=POLLIN}, {fd=3, events=POLLIN}], 2, 1997) = 0 (Timeout)
-> open("/dev/sr0", O_RDONLY|O_EXCL|O_NONBLOCK) = -1 EBUSY (Device or resource busy)
-> 
-> Sure, a filesystem is mounted, so exclusive access fails...
-> 
-> So, we end up with impossible to solve problem.  We want on one hand
-> to guard the burner against polling programs that disturb it, but
-> one the other hand we must do polling to check CD status.
->
-> Unless the kernel does the polling, but then we also must stop it
-> when burning is done.  I think that we need new ioctl in the CD
-> driver that would give absolute access to the burning application,
-> and lock it fully.
-
-One thing I don't get is why the behavior changed after the claiming
-block patch.  Can you please trace udisks from a previous working
-kernel?
-
-Thanks.
-
--- 
-tejun
+we're in the process of allocating NR 374 for cacheflush (for
+userspace trampoline handling with gcc), so this will need to be
+changed
+-mike
