@@ -1,220 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643Ab0IVGsy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 02:48:54 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51698 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899Ab0IVGsx (ORCPT
+	id S1752728Ab0IVHVF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 03:21:05 -0400
+Received: from smtp104.sbc.mail.ac4.yahoo.com ([76.13.13.243]:24082 "HELO
+	smtp104.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751854Ab0IVHVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 02:48:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=AXeXpZLH+1b/tgwsZDFrJlxFohyhwbvHG4f/7eNgLtpC5fdQg9J21kDElTQVeN1J5y
-         MZy6hOg1r7ehPfLgXuuDOPVUMvy3mM1gpjaEUrjoUwQoajloGMZyB6yEbNJUL14OsexJ
-         jtnzs03SqESsyFC+aLWNI7PX6tTshdz/4un2w=
-Subject: Re: tcp_fastretrans_alert since 2.6.32 ?
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Sunny <sunyucong@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Ilpo =?ISO-8859-1?Q?J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>
-In-Reply-To: <AANLkTinnaA3Qgny45BRyW3i5u+nXn1XgWwkxA_QbN8xN@mail.gmail.com>
-References: <AANLkTinnaA3Qgny45BRyW3i5u+nXn1XgWwkxA_QbN8xN@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 22 Sep 2010 08:48:46 +0200
-Message-ID: <1285138126.6378.174.camel@edumazet-laptop>
+	Wed, 22 Sep 2010 03:21:03 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: CINQl7gVM1kytOn8pcNfsvn33zMIkwdT_t6Qc39QzpKLI7J
+ NASbG9t_CCwI4U4TGmJWZt5CFMzLmqRZ79PqSf44kOu5bW_hZFYuvXOF9J3G
+ iFbs0UtZObkl6DLhHF3aPii9O3sOKOPIbFWSnQbxPvbN0XzWhworK_xH13K2
+ qhW9DnSd7zZD2ZHnTUIPR5htF.azck2FYPG3rgwFMff_lHIkc5gSVg4kSr_j
+ agYBJ.jUPRsMsU6wV_LhkNVgyoUP6kmBEmI7ZObmTHDDTf6i4igeOr8w_Dz.
+ 7Nh_CjmCuxtX7lBoKOohag.4-
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [RFC 02/22] configfs: Add struct
+	configfs_item_operations->check_link() in configfs_unlink()
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Joel Becker <Joel.Becker@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
+        Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
+        Linux-fsdevel <linux-fsdevel@vger.kernel.org>
+In-Reply-To: <20100920220633.GC8405@mail.oracle.com>
+References: <1283456440.5598.108.camel@haakon2.linux-iscsi.org>
+	 <201009071701.02847.konrad@darnok.org>
+	 <20100907224413.GC21935@mail.oracle.com>
+	 <1283911739.556.420.camel@haakon2.linux-iscsi.org>
+	 <20100908192639.GD29545@mail.oracle.com>
+	 <1283979207.556.510.camel@haakon2.linux-iscsi.org>
+	 <20100910152802.GG885@mail.oracle.com>
+	 <1284145606.19890.68.camel@haakon2.linux-iscsi.org>
+	 <20100910194404.GJ885@mail.oracle.com>
+	 <1284148323.19890.94.camel@haakon2.linux-iscsi.org>
+	 <20100920220633.GC8405@mail.oracle.com>
+Content-Type: text/plain
+Date: Wed, 22 Sep 2010 00:16:42 -0700
+Message-Id: <1285139802.1849.13.camel@haakon2.linux-iscsi.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC netdev and Ilpo
+On Mon, 2010-09-20 at 15:06 -0700, Joel Becker wrote:
+> [Sorry on the delay, I was out of town]
+> 
 
-Le mardi 21 septembre 2010 à 23:37 -0700, Sunny a écrit :
-> Hi,
+Hi Joel,
+
+Many, thanks for your followup on this item, my comments are below.
+
+> On Fri, Sep 10, 2010 at 12:52:03PM -0700, Nicholas A. Bellinger wrote:
+> > On Fri, 2010-09-10 at 12:44 -0700, Joel Becker wrote:
+> > > 	You can refcount without check_link().
+> > 
+> > So what do you recommend here..?
 > 
-> After upgrading to the latest ubuntu kernel, I started to have this
-> alert showing up, this is a vm running on ESXi host with vmxnet3
-> adapter, mainly serving large traffic ~70Mbps towards overboard
-> customers, so I expect packet loss and retrans is pretty high. So I'm
-> posting to ask whether others been seeing the same issue? When this
-> happens, machine freeze several seconds for about three times in a row
-> then seems to start working again.
+> 	That your ACL object, or whatever it is that considers itself to
+> be refcounted by the number of links, keep track of that and only free
+> itself when all are gone rather than freeing itself when the first goes
+> away.
 > 
-> Please cc me on the thread, thanks in advance.
+
+Ok, I see what you mean by internal refcounting within the configfs
+consumer to handle this case..
+
+> > The problem is that the 'unlink sub_child/group1/src_0/src_link' can't
+> > signal to the other struct config_group to also call an internal 'unlink
+> > sub_child/group2/dst_0/dst_link' to drop the child link outside of it's
+> > struct config_group.
 > 
+> 	Nor should it.  I'm asking what is so wrong about a world where
+> sub_child/group1/src_0/src_link is gone but
+> sub_child/group2/dst_0/dst_link remains?  Maybe that target object can't
+> work anymore, but the user broke it by breaking the link.
 > 
-> [212670.327617] ------------[ cut here ]------------
-> [212670.327689] WARNING: at
-> /build/buildd/linux-2.6.32/net/ipv4/tcp_input.c:2919 tcp_fastret
-> rans_alert+0x3f9/0xd90()
-> [212670.327692] Hardware name: VMware Virtual Platform
-> [212670.327693] Modules linked in: btrfs zlib_deflate crc32c libcrc32c
-> ufs qnx4 hfsplus hfs  minix ntfs vfat msdos fat jfs xfs exportfs
-> reiserfs sch_sfq cls_u32 sch_htb nf_conntrack_ipv 6 ip6table_filter
-> ip6_tables xt_tcpudp xt_state xt_multiport iptable_filter iptable_nat
-> nf_n at nf_conntrack_ipv4 sit nf_conntrack nf_defrag_ipv4 tunnel4
-> ip_tables x_tables acpiphp ppde v psmouse parport_pc serio_raw fbcon
-> tileblit font bitblit softcursor vmxnet3 vga16fb vgasta te lp parport
-> floppy vmw_pvscsi
-> [212670.327741] Pid: 0, comm: swapper Not tainted 2.6.32-24-server #42-Ubuntu
-> [212670.327742] Call Trace:
-> [212670.327744]  <IRQ>  [<ffffffff81066dab>] warn_slowpath_common+0x7b/0xc0
-> [212670.327754]  [<ffffffff81066e04>] warn_slowpath_null+0x14/0x20
-> [212670.327757]  [<ffffffff814b98f9>] tcp_fastretrans_alert+0x3f9/0xd90
-> [212670.327759]  [<ffffffff814bad24>] tcp_ack+0x284/0x6b0
-> [212670.327762]  [<ffffffff814bbab0>] tcp_rcv_established+0x400/0x730
-> [212670.327766]  [<ffffffff814c3553>] tcp_v4_do_rcv+0xf3/0x160
-> [212670.327769]  [<ffffffff814c4ca5>] tcp_v4_rcv+0x5b5/0x7e0
-> [212670.327772]  [<ffffffff814a2c00>] ? ip_local_deliver_finish+0x0/0x2d0
-> [212670.327776]  [<ffffffff8149a6b4>] ? nf_hook_slow+0x74/0x100
-> [212670.327779]  [<ffffffff814a2c00>] ? ip_local_deliver_finish+0x0/0x2d0
-> [212670.327781]  [<ffffffff814a2cdd>] ip_local_deliver_finish+0xdd/0x2d0
-> [212670.327783]  [<ffffffff814a2f60>] ip_local_deliver+0x90/0xa0
-> [212670.327785]  [<ffffffff814a241d>] ip_rcv_finish+0x12d/0x440
-> [212670.327787]  [<ffffffff814a29a5>] ip_rcv+0x275/0x360
-> [212670.327794]  [<ffffffff8147319a>] netif_receive_skb+0x38a/0x5d0
-> [212670.327801]  [<ffffffffa005203c>]
-> vmxnet3_rq_rx_complete+0x23c/0x610 [vmxnet3]
-> [212670.327806]  [<ffffffffa005245f>] vmxnet3_do_poll+0x4f/0xf0 [vmxnet3]
-> [212670.327809]  [<ffffffffa005252d>] vmxnet3_poll+0x2d/0x60 [vmxnet3]
-> [212670.327816]  [<ffffffff810397a9>] ? default_spin_lock_flags+0x9/0x10
-> [212670.327820]  [<ffffffff81473c8f>] net_rx_action+0x10f/0x250
-> [212670.327824]  [<ffffffff8106e2f7>] __do_softirq+0xb7/0x1e0
-> [212670.327828]  [<ffffffff810c4d40>] ? handle_IRQ_event+0x60/0x170
-> [212670.327833]  [<ffffffff810142ec>] call_softirq+0x1c/0x30
-> [212670.327836]  [<ffffffff81015cb5>] do_softirq+0x65/0xa0
-> [212670.327837]  [<ffffffff8106e195>] irq_exit+0x85/0x90
-> [212670.327845]  [<ffffffff8155fd45>] do_IRQ+0x75/0xf0
-> [212670.327848]  [<ffffffff81013b13>] ret_from_intr+0x0/0x11
-> [212670.327849]  <EOI>  [<ffffffff81038acb>] ? native_safe_halt+0xb/0x10
-> [212670.327855]  [<ffffffff8101b69d>] ? default_idle+0x3d/0x90
-> [212670.327860]  [<ffffffff81011e63>] ? cpu_idle+0xb3/0x110
-> [212670.327867]  [<ffffffff81552b53>] ? start_secondary+0xa8/0xaa
-> [212670.327869] ---[ end trace e26694ca94def524 ]---
+
+Yes, so trying to avoid the unlink alltogether here was my main
+intention thus far.  
+
+Actually leaving the sub_child/group2/dst_0/dst_link in the example here
+would be acceptable for the TCM MappedLUN case, because really we never
+expect this case to this unless someone is poking at configfs directly,
+and our userspace code will never do this intentionally.
+
+> > > 	You're still fighting allowing the links to go away.  You
+> > > haven't explained why that is necessary.  You had a problem with a crash
+> > > because you expected one reference to your ACLs and actually have two,
+> > > but you can fix that without modifying configfs.
+> > 
+> > If this is the case then I must be mis-understanding what you mean by
+> > configfs consumer refcounting from allow_link() and drop_link().  Can
+> > you give me a bit more detail where I should be looking..?
 > 
+> 	Here's how I sort of understood things.  First, you create the
+> src_link pointing to $object.  This somehow allocates some sort of ACL
+> structure hanging off of $object.  Then you create dst_link pointing to
+> src_link, which really ends up pointing to the $object.  So now you have
+> src_link and dst_link pointing to $object.
+> 	Finally, someone unlinks src_link.  This triggers $object to
+> free the ACL structure.  When the caller later removes dst_link, it
+> crashes because it was expecting ACL to still be there.  Do I have it
+> right?
+
+Correct.
+
+> 	I'm saying that $object should count how many people are
+> pointing to it, so that when you remove src_link, ACL is *not* freed.
+> It will only be freed when both src_link and dst_link are removed.  This
+> way you do not crash.  Perhaps I'm not understanding the ACL object.
+> Perhaps I'm missing the mechanism entirely.  But I don't see why the ACL
+> object must necessarily be freed when one symlink is removed but not the
+> other.
 > 
-> Here's netstat -s output
-> 
-> Ip:
->     362267935 total packets received
->     0 forwarded
->     0 incoming packets discarded
->     362257901 incoming packets delivered
->     326868094 requests sent out
->     9 fragments dropped after timeout
->     2777 reassemblies required
->     1357 packets reassembled ok
->     9 packet reassembles failed
->     490 fragments received ok
->     1034 fragments created
-> Icmp:
->     22430 ICMP messages received
->     283 input ICMP message failed.
->     ICMP input histogram:
->         destination unreachable: 17113
->         timeout in transit: 613
->         redirects: 9
->         echo requests: 4685
->         echo replies: 10
->     7383 ICMP messages sent
->     0 ICMP messages failed
->     ICMP output histogram:
->         destination unreachable: 2695
->         echo request: 11
->         echo replies: 4677
-> IcmpMsg:
->         InType0: 10
->         InType3: 17113
->         InType5: 9
->         InType8: 4685
->         InType11: 613
->         OutType0: 4677
->         OutType3: 2695
->         OutType8: 11
-> Tcp:
->     6563076 active connections openings
->     1610183 passive connection openings
->     1646225 failed connection attempts
->     75246 connection resets received
->     1141 connections established
->     361192315 segments received
->     323797760 segments send out
->     1997456 segments retransmited
->     12990 bad segments received.
->     1851272 resets sent
-> Udp:
->     4138313 packets received
->     186 packets to unknown port received.
->     0 packet receive errors
->     4161268 packets sent
-> UdpLite:
-> TcpExt:
->     5096 invalid SYN cookies received
->     167 resets received for embryonic SYN_RECV sockets
->     58826 packets pruned from receive queue because of socket buffer overrun
->     312 packets pruned from receive queue
->     19 packets dropped from out-of-order queue because of socket buffer overrun
->     365 ICMP packets dropped because they were out-of-window
->     2712111 TCP sockets finished time wait in fast timer
->     82068 time wait sockets recycled by time stamp
->     311 packets rejects in established connections because of timestamp
->     11516250 delayed acks sent
->     6415 delayed acks further delayed because of locked socket
->     Quick ack mode was activated 208750 times
->     41789 packets directly queued to recvmsg prequeue.
->     1 bytes directly in process context from backlog
->     2969 bytes directly received in process context from prequeue
->     155660989 packet headers predicted
->     55448128 acknowledgments not containing data payload received
->     89389461 predicted acknowledgments
->     9544 times recovered from packet loss due to fast retransmit
->     585991 times recovered from packet loss by selective acknowledgements
->     710 bad SACK blocks received
->     Detected reordering 1944 times using FACK
->     Detected reordering 26599 times using SACK
->     Detected reordering 267 times using reno fast retransmit
->     Detected reordering 1819 times using time stamp
->     3169 congestion windows fully recovered without slow start
->     26810 congestion windows partially recovered using Hoe heuristic
->     14402 congestion windows recovered without slow start by DSACK
->     40392 congestion windows recovered without slow start after partial ack
->     115772 TCP data loss events
->     TCPLostRetransmit: 5320
->     1922 timeouts after reno fast retransmit
->     69095 timeouts after SACK recovery
->     11101 timeouts in loss state
->     1151834 fast retransmits
->     74479 forward retransmits
->     225380 retransmits in slow start
->     275631 other TCP timeouts
->     2606 classic Reno fast retransmits failed
->     30507 SACK retransmits failed
->     4862645 packets collapsed in receive queue due to low socket buffer
->     260934 DSACKs sent for old packets
->     5109 DSACKs sent for out of order packets
->     95650 DSACKs received
->     819 DSACKs for out of order packets received
->     28142 connections reset due to unexpected data
->     22325 connections reset due to early user close
->     85423 connections aborted due to timeout
->     TCPSACKDiscard: 2319
->     TCPDSACKIgnoredOld: 52587
->     TCPDSACKIgnoredNoUndo: 29859
->     TCPSpuriousRTOs: 2605
->     TCPSackShifted: 3539688
->     TCPSackMerged: 3241543
->     TCPSackShiftFallback: 8938458
-> IpExt:
->     InMcastPkts: 2105
->     InBcastPkts: 12
->     InOctets: 1670966745
->     OutOctets: -417434189
->     InMcastOctets: 58940
->     InBcastOctets: 1792
+
+No, I think your points here make perfect sense.  I will look into a
+patch that leaves the TCM fabric MappedLUNs symlinks in place when the
+underlying TPG fabric LUN symlink is removed without breaking anything,
+but still does the necessary accounting to ensure that shutdown with
+active I/Os still works as expected.  I will plan to drop the
+->check_link() patch from the forthcoming RFC v2 series.
+
+In the end I think his is the best approach for .37, eg: no configfs
+change required.  I am still open to the discussion for resolving this
+within fs/configfs proper, but at this point I don't have a strong
+preference and will follow your direction here.
+
+Many thanks for your invaluable input Joel!
+
+--nab
 
 
