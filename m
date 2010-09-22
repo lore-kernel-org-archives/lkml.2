@@ -1,91 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857Ab0IVOfV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 10:35:21 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:57496 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753505Ab0IVOfU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 10:35:20 -0400
-Date: Wed, 22 Sep 2010 16:35:15 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: Andi Kleen <andi@firstfloor.org>, jbaron@redhat.com, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, hpa@zytor.com,
-        tglx@linutronix.de, roland@redhat.com, rth@redhat.com,
-        mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
-        davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org,
-        tony@bakeyournoodle.com, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/2] Add for_each_module iterator function v2
-Message-ID: <20100922143515.GF5766@basil.fritz.box>
-References: <1285162001-9556-1-git-send-email-andi@firstfloor.org>
- <20100922141432.GB30730@Krystal>
+	id S1754952Ab0IVOfh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 10:35:37 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:32835 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754866Ab0IVOff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 10:35:35 -0400
+Message-ID: <4C9A1433.7050001@austin.ibm.com>
+Date: Wed, 22 Sep 2010 09:35:31 -0500
+From: Nathan Fontenot <nfont@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100922141432.GB30730@Krystal>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org
+CC: Greg KH <greg@kroah.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: [PATCH 7/8] Define memory_block_size_bytes() for powerpc/pseries
+References: <4C9A0F8F.2030409@austin.ibm.com>
+In-Reply-To: <4C9A0F8F.2030409@austin.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 22, 2010 at 10:14:32AM -0400, Mathieu Desnoyers wrote:
-> * Andi Kleen (andi@firstfloor.org) wrote:
-> > From: Andi Kleen <ak@linux.intel.com>
-> > 
-> > This is a generic function to iterate over all modules.
-> > To be used in the next patch.
-> > 
-> > v2: Use module_mutex instead of preempt disabling
-> > 
-> > Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> > ---
-> >  include/linux/module.h |    1 +
-> >  kernel/module.c        |   10 ++++++++++
-> >  2 files changed, 11 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/include/linux/module.h b/include/linux/module.h
-> > index 403ac26..809b6db 100644
-> > --- a/include/linux/module.h
-> > +++ b/include/linux/module.h
-> > @@ -410,6 +410,7 @@ struct module *__module_address(unsigned long addr);
-> >  bool is_module_address(unsigned long addr);
-> >  bool is_module_percpu_address(unsigned long addr);
-> >  bool is_module_text_address(unsigned long addr);
-> > +void for_each_module(void (*op)(struct module *, void *arg), void *arg);
-> >  
-> >  static inline int within_module_core(unsigned long addr, struct module *mod)
-> >  {
-> > diff --git a/kernel/module.c b/kernel/module.c
-> > index eba1341..9e2a561 100644
-> > --- a/kernel/module.c
-> > +++ b/kernel/module.c
-> > @@ -384,6 +384,16 @@ struct module *find_module(const char *name)
-> >  }
-> >  EXPORT_SYMBOL_GPL(find_module);
-> >  
-> > +void for_each_module(void (*op)(struct module *, void *arg), void *arg)
-> > +{
-> > +	struct module *mod;
-> > +
-> > +	mutex_lock(&module_mutex);
-> 
-> I'm concerned about the following mutex dependency chain:
-> 
-> module_mutex -> jump_label_mutex (on module load)
-> jump_label_mutex -> module_mutex (on jump_label_update)
+Define a version of memory_block_size_bytes() for powerpc/pseries such that
+a memory block spans an entire lmb.
 
-There are actually more problems in this version with using
-module_mutex().  Looking at a fix.
+Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 
-> 
-> Actually, I think your module notifier is missing in your version. This
-> is why you don't see this dependency problem.
+---
+ arch/powerpc/platforms/pseries/hotplug-memory.c |   66 +++++++++++++++++++-----
+ 1 file changed, 53 insertions(+), 13 deletions(-)
 
-The module notifier is not needed anymore, but there's another 
-callback through the trace point code on module load.
+Index: linux-next/arch/powerpc/platforms/pseries/hotplug-memory.c
+===================================================================
+--- linux-next.orig/arch/powerpc/platforms/pseries/hotplug-memory.c	2010-09-21 11:59:24.000000000 -0500
++++ linux-next/arch/powerpc/platforms/pseries/hotplug-memory.c	2010-09-21 12:38:31.000000000 -0500
+@@ -17,6 +17,54 @@
+ #include <asm/pSeries_reconfig.h>
+ #include <asm/sparsemem.h>
+ 
++static u32 get_memblock_size(void)
++{
++	struct device_node *np;
++	unsigned int memblock_size = 0;
++
++	np = of_find_node_by_path("/ibm,dynamic-reconfiguration-memory");
++	if (np) {
++		const unsigned long *size;
++
++		size = of_get_property(np, "ibm,lmb-size", NULL);
++		memblock_size = size ? *size : 0;
++
++		of_node_put(np);
++	} else {
++		unsigned int memzero_size = 0;
++		const unsigned int *regs;
++
++		np = of_find_node_by_path("/memory@0");
++		if (np) {
++			regs = of_get_property(np, "reg", NULL);
++			memzero_size = regs ? regs[3] : 0;
++			of_node_put(np);
++		}
++
++		if (memzero_size) {
++			/* We now know the size of memory@0, use this to find
++			 * the first memoryblock and get its size.
++			 */
++			char buf[64];
++
++			sprintf(buf, "/memory@%x", memzero_size);
++			np = of_find_node_by_path(buf);
++			if (np) {
++				regs = of_get_property(np, "reg", NULL);
++				memblock_size = regs ? regs[3] : 0;
++				of_node_put(np);
++			}
++		}
++	}
++
++	return memblock_size;
++}
++
++u32 memory_block_size_bytes(void)
++{
++	return get_memblock_size();
++}
++
+ static int pseries_remove_memblock(unsigned long base, unsigned int memblock_size)
+ {
+ 	unsigned long start, start_pfn;
+@@ -127,30 +175,22 @@ static int pseries_add_memory(struct dev
+ 
+ static int pseries_drconf_memory(unsigned long *base, unsigned int action)
+ {
+-	struct device_node *np;
+-	const unsigned long *lmb_size;
++	unsigned long memblock_size;
+ 	int rc;
+ 
+-	np = of_find_node_by_path("/ibm,dynamic-reconfiguration-memory");
+-	if (!np)
++	memblock_size = get_memblock_size();
++	if (!memblock_size)
+ 		return -EINVAL;
+ 
+-	lmb_size = of_get_property(np, "ibm,lmb-size", NULL);
+-	if (!lmb_size) {
+-		of_node_put(np);
+-		return -EINVAL;
+-	}
+-
+ 	if (action == PSERIES_DRCONF_MEM_ADD) {
+-		rc = memblock_add(*base, *lmb_size);
++		rc = memblock_add(*base, memblock_size);
+ 		rc = (rc < 0) ? -EINVAL : 0;
+ 	} else if (action == PSERIES_DRCONF_MEM_REMOVE) {
+-		rc = pseries_remove_memblock(*base, *lmb_size);
++		rc = pseries_remove_memblock(*base, memblock_size);
+ 	} else {
+ 		rc = -EINVAL;
+ 	}
+ 
+-	of_node_put(np);
+ 	return rc;
+ }
 
-Unload notifier is not needed anymore because there is no
-state to tear down.
 
--Andi
