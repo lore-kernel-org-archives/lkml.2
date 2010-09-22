@@ -1,77 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777Ab0IVIkt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 04:40:49 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:58958 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751938Ab0IVIks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 04:40:48 -0400
-Date: Wed, 22 Sep 2010 09:40:35 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/10] hugetlb: hugepage migration core
-Message-ID: <20100922084035.GC1382@csn.ul.ie>
-References: <1283908781-13810-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1283908781-13810-5-git-send-email-n-horiguchi@ah.jp.nec.com> <20100920111054.GJ1998@csn.ul.ie> <20100922045907.GC2538@spritzera.linux.bs1.fc.nec.co.jp>
+	id S1752907Ab0IVIlS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 04:41:18 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:55075 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab0IVIlQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 04:41:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=b/2aZp+Tt1zpWiiyBYy/0sEzI2AAYZ0QKZgdy8ojzZdLPEP7apvhVscECiuu7z1bOH
+         nuSPQ+wFuxBPjRmCWSEIw7hV1ufAPu6pqj7NhTZsOFARxYbAmX8/TvV8ebLyjQKabzjS
+         0SikD4fl8FV9oSQxL0UCAwejP9w7v56Ah5cCU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100922045907.GC2538@spritzera.linux.bs1.fc.nec.co.jp>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <1284213395.2986.9.camel@mulgrave.site>
+References: <1284212280-25944-1-git-send-email-andy.shevchenko@gmail.com>
+	<1284213395.2986.9.camel@mulgrave.site>
+Date: Wed, 22 Sep 2010 11:41:15 +0300
+Message-ID: <AANLkTin8C-3ktNzDc1dz0wTrq0915BibZRdNR7O4L9fw@mail.gmail.com>
+Subject: Re: [PATCH] drivers: scsi: remove private hex_to_bin() implementation
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 22, 2010 at 01:59:07PM +0900, Naoya Horiguchi wrote:
-> On Mon, Sep 20, 2010 at 12:10:55PM +0100, Mel Gorman wrote:
-> > On Wed, Sep 08, 2010 at 10:19:35AM +0900, Naoya Horiguchi wrote:
-> ...
-> > > @@ -95,26 +96,34 @@ static int remove_migration_pte(struct page *new, struct vm_area_struct *vma,
-> > >  	pte_t *ptep, pte;
-> > >   	spinlock_t *ptl;
-> > >  
-> > > - 	pgd = pgd_offset(mm, addr);
-> > > -	if (!pgd_present(*pgd))
-> > > -		goto out;
-> > > +	if (unlikely(PageHuge(new))) {
-> > > +		ptep = huge_pte_offset(mm, addr);
-> > > +		if (!ptep)
-> > > +			goto out;
-> > > +		ptl = &mm->page_table_lock;
-> > > +	} else {
-> > > +		pgd = pgd_offset(mm, addr);
-> > > +		if (!pgd_present(*pgd))
-> > > +			goto out;
-> > >  
-> > > -	pud = pud_offset(pgd, addr);
-> > > -	if (!pud_present(*pud))
-> > > -		goto out;
-> > > +		pud = pud_offset(pgd, addr);
-> > > +		if (!pud_present(*pud))
-> > > +			goto out;
-> > >  
-> > 
-> > Why are the changes to teh rest of the walkers necessary? Instead, why
-> > did you not identify which PTL lock you needed and then goto the point
-> > where spin_lock(ptl) is called? Similar to what page_check_address()
-> > does for example.
-> 
-> This is because Andi-san commented to avoid using goto sentense.
-> But honestly I'm not sure which is a clear way.
-> 
-
-Ok, personally I would prefer to have matched page_check_address() so we use
-similar code patterns when the intention is the same but as functionally it
-seems fine, I'm not going to fight over it either.
-
-Thanks.
+On Sat, Sep 11, 2010 at 4:56 PM, James Bottomley
+<James.Bottomley@suse.de> wrote:
+> the hex_to_bin() is really to prevent open coded mistakes.  When the
+> open coding pre-dates the hex_to_bin macro, I'm inclined to leave it
+> alone unless it contains an actual bug.
+It's also a matter of speed/size optimization. Nevertheless SCSI
+subsystem already has such clean up.
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+With Best Regards,
+Andy Shevchenko
