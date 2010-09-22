@@ -1,104 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752611Ab0IVWm1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 18:42:27 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:45096 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365Ab0IVWm0 (ORCPT
+	id S1752522Ab0IVWqj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 18:46:39 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:46630 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708Ab0IVWqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 18:42:26 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [tip:x86/pci] x86, pci: Ignore any PCI BARs that match an HPET we already know about
-Date: Wed, 22 Sep 2010 16:41:35 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        simon@fire.lp0.eu, tglx@linutronix.de, hpa@linux.intel.com,
-        linux-tip-commits@vger.kernel.org
-References: <20100922201547.3197.33702.stgit@bob.kio> <tip-e72a6c8f7ac715a9cdb473afbc30743348d0a1e2@git.kernel.org> <4C9A79BC.6020305@kernel.org>
-In-Reply-To: <4C9A79BC.6020305@kernel.org>
+	Wed, 22 Sep 2010 18:46:37 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=ZLHPbd8OPvZa0hjMslzB6N9JfgPachId9pM0+8TzG/T8rTkVKrbVf0DJsT0mkhbiy
+	0/W864h/nCWxYncKj28eg==
+Date: Wed, 22 Sep 2010 15:46:29 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Bjorn Helgaas <bjorn.helgaas@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: tidy e820 output
+In-Reply-To: <4C9A51DC.5020009@zytor.com>
+Message-ID: <alpine.DEB.2.00.1009221541350.22070@chino.kir.corp.google.com>
+References: <20100922172744.19085.41844.stgit@bob.kio> <201009221220.34066.bjorn.helgaas@hp.com> <4C9A4AAF.3030503@zytor.com> <201009221253.01049.bjorn.helgaas@hp.com> <4C9A51DC.5020009@zytor.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009221641.35871.bjorn.helgaas@hp.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 22, 2010 03:48:44 pm Yinghai Lu wrote:
-> On 09/22/2010 02:22 PM, tip-bot for Bjorn Helgaas wrote:
-> > Commit-ID:  e72a6c8f7ac715a9cdb473afbc30743348d0a1e2
-> > Gitweb:     http://git.kernel.org/tip/e72a6c8f7ac715a9cdb473afbc30743348d0a1e2
-> > Author:     Bjorn Helgaas <bjorn.helgaas@hp.com>
-> > AuthorDate: Wed, 22 Sep 2010 14:15:47 -0600
-> > Committer:  H. Peter Anvin <hpa@linux.intel.com>
-> > CommitDate: Wed, 22 Sep 2010 13:29:39 -0700
-> > 
-> > x86, pci: Ignore any PCI BARs that match an HPET we already know about
-> > 
-> > We often discover the HPET early, via the static ACPI HPET table,
-> > before enumerating PCI devices.  If the HPET is implemented as a PCI
-> > function, we will discover it again during PCI device enumeration.  We
-> > must ignore the PCI function so we don't inadvertently move it out
-> > from under the driver.
-> > 
-> > I think it's better to ignore *any* PCI BAR that matches a previously
-> > discovered HPET; that way we don't need platform-specific knowledge,
-> > and we won't have to add more quirks for future machines.
-> > 
-> > This is for a regression from 2.6.34, but the reporter has been
-> > unable to test it yet.
-> > 
-> > [ hpa: if this fixes the regression, it should be promoted to x86/urgent ]
-> > 
-> > Reference: https://bugzilla.kernel.org/show_bug.cgi?id=18482
-> > Reported-by: Simon Arlott <simon@fire.lp0.eu>
-> > Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
-> > LKML-Reference: <20100922201547.3197.33702.stgit@bob.kio>
-> > Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-> > ---
-> >  arch/x86/kernel/quirks.c |   21 +++++++++++++++++++++
-> >  arch/x86/pci/fixup.c     |   28 ----------------------------
-> >  2 files changed, 21 insertions(+), 28 deletions(-)
-> > 
-> > diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
-> > index 939b9e9..99a7d4b 100644
-> > --- a/arch/x86/kernel/quirks.c
-> > +++ b/arch/x86/kernel/quirks.c
-> > @@ -507,6 +507,27 @@ static void force_disable_hpet_msi(struct pci_dev *unused)
-> >  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_SBX00_SMBUS,
-> >  			 force_disable_hpet_msi);
-> >  
-> > +static void disable_pci_hpet(struct pci_dev *dev)
-> > +{
-> > +	int i;
-> > +
-> > +	if (!hpet_address)
-> > +		return;
-> > +
-> > +	for (i = 0; i < 6; i++) {
-> > +		struct resource *res = &dev->resource[i];
-> > +
-> > +		if (resource_type(res) == IORESOURCE_MEM &&
-> > +		    res->start == hpet_address) {
-> > +			dev_info(&dev->dev, "BAR %d: %pR is an HPET we found earlier; ignoring this BAR\n",
-> > +				 i, res);
-> > +			res->flags = 0;
-> > +			res->start = 0;
-> > +			res->end = 0;
-> > +		}
-> > +	}
-> > +}
-> 
-> It seems there is some problem here:
-> 
-> hpet_res is inserted to resource with late_initcall().
-> so if you don't touch that hpet address in bar and not put in the resource.
-> kernel could allocate that address to other devices that doesn't get resource from BIOS.
+On Wed, 22 Sep 2010, H. Peter Anvin wrote:
 
-Hmm, yes, that's a problem.  Let me look into it tomorrow; maybe we
-can do something like setting IORESOURCE_PCI_FIXED instead of just
-clearing out the resource.
+> > It's true, they don't (well, everything below 4G still lines up, but
+> > not above that).  Do you like this any better?
+> > 
+> 
+> That's fine with me.  I don't mind the [mem ] bracket either if you
+> think it's useful.
+> 
 
-Bjorn
+This patch is going to break our userspace parsing scripts if you change 
+the output format.  Admittedly, we're probably one of the few users who 
+actually parses this output, but we do have reasons to do it for our 
+firmware.  If there was some improvement being introduced here, we'd 
+happily handle multiple regexs (we constantly add new patterns when new 
+kernels are released), but I'm not seeing how this is better.
