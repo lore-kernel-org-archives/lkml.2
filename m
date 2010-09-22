@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923Ab0IVPun (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 11:50:43 -0400
-Received: from kroah.org ([198.145.64.141]:44043 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752215Ab0IVPuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 11:50:12 -0400
-Date: Wed, 22 Sep 2010 08:50:04 -0700
-From: Greg KH <greg@kroah.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Vasiliy Kulikov <segooon@gmail.com>, kernel-janitors@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Jiri Slaby <jirislaby@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        James Bottomley <James.Bottomley@suse.de>,
-        Dan Carpenter <error27@gmail.com>, Boaz Harrosh <bharrosh@panasas.com>
-Subject: Re: [PATCH 04/14] memstick: core: fix device_register() error
- handling
-Message-ID: <20100922155004.GC26178@kroah.com>
-References: <1284900889-24369-1-git-send-email-segooon@gmail.com>
- <20100921152031.30365b3f.akpm@linux-foundation.org>
- <20100921224947.GA20183@kroah.com>
- <AANLkTimQWtQTBe3RBSbYd7vM4Y+SckkoBDbO8E+SwtJj@mail.gmail.com>
+	id S1752417Ab0IVPy7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 11:54:59 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:30780 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751635Ab0IVPy6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 11:54:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=dGZMszjBdrdzY3/V/nnWhsMEKAXHtedvTkSlyjI42iDavAc4S0sS/ABcQh4oNj+gw5
+         C8dFwmXhuRmcdz6BfI+Q==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimQWtQTBe3RBSbYd7vM4Y+SckkoBDbO8E+SwtJj@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100917.165120.139548355.davem@davemloft.net>
+References: <AANLkTimXnjnkNgwtEVpXKYMxXgmBdye=Gtjeggd4N9UA@mail.gmail.com>
+	<AANLkTimRSjqewc_mC5vwdXy1t4Ax5rAf5svpOTbUEF7o@mail.gmail.com>
+	<20100917.165120.139548355.davem@davemloft.net>
+Date: Wed, 22 Sep 2010 10:54:54 -0500
+Message-ID: <AANLkTim3V4yp+_LY8iN3R0xhV8hpPw_7o-uqwPFqXokz@mail.gmail.com>
+Subject: Re: [PATCH] Move "struct net" declaration inside the __KERNEL__ macro guard
+From: Ollie Wild <aaw@google.com>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        akpm@linux-foundation.org, davem@google.com
+Content-Type: multipart/mixed; boundary=000e0cd29daaa11d2c0490db2a57
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 22, 2010 at 10:53:21AM +0200, Kay Sievers wrote:
-> On Wed, Sep 22, 2010 at 00:49, Greg KH <greg@kroah.com> wrote:
-> 
-> >  int device_register(struct device *dev)
-> >  {
-> > +       int retval;
-> > +
-> >        device_initialize(dev);
-> > -       return device_add(dev);
-> > +       retval = device_add(dev);
-> > +       if (retval)
-> > +               put_device(dev);
-> > +       return retval;
-> >  }
-> 
-> > Kay, what am I missing here, why can't we just do this?  Hm, the
-> > side-affect might be that if device_register() fails, NO ONE had better
-> > touch that device again, as it might have just been freed from the
-> > system.  I wonder if that will cause problems...
-> 
-> That looks right, besides that there might be callers already doing
-> this. Which needs to be checked.
+--000e0cd29daaa11d2c0490db2a57
+Content-Type: text/plain; charset=ISO-8859-1
 
-Yes, it would be.  I'll go through the tree.
+On Fri, Sep 17, 2010 at 6:51 PM, David Miller <davem@davemloft.net> wrote:
+>
+> From: Ollie Wild <aaw@google.com>
+> Date: Fri, 17 Sep 2010 14:38:59 -0500
+>
+> > (Resending with a proper signoff.)
+>
+> Your patch is still unusable because your email client white-space mangled
+> the patch, turning tabs into space characters.
+>
+> Please fix this up and resubmit, thanks.
 
-> I never liked this pretty useless "convenience API", which just wraps
-> two simple functions and the first one can never fail anyway.
+Third time's a charm ...
 
-Agreed.
+Signed-off-by: Ollie Wild <aaw@google.com>
 
-> We better remove that device_register() stuff entirely in the long
-> run, it's not doing any good. At the kobject level we killed the same
-> stuff already long ago.
+--000e0cd29daaa11d2c0490db2a57
+Content-Type: text/plain; charset=US-ASCII; name="netlink.txt"
+Content-Disposition: attachment; filename="netlink.txt"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_geedip340
 
-It's one of the things on my "to change" list.
-
-thanks,
-
-greg k-h
+Y29tbWl0IDI3ZmIxZWMzZmUyOTk3OGNhN2YxOTVhYWM1ZGJkYTZmMzAxYzdjMjQKQXV0aG9yOiBP
+bGxpZSBXaWxkIDxhYXdAZ29vZ2xlLmNvbT4KRGF0ZTogICBGcmkgQXVnIDEzIDE0OjIxOjQ0IDIw
+MTAgLTA1MDAKCiAgICBNb3ZlICJzdHJ1Y3QgbmV0IiBkZWNsYXJhdGlvbiBpbnNpZGUgdGhlIF9f
+S0VSTkVMX18gbWFjcm8gZ3VhcmQuCiAgICAKICAgIFRoaXMgcGF0Y2ggcmVkdWNlcyBuYW1lc3Bh
+Y2UgcG9sbHV0aW9uIGJ5IG1vdmluZyB0aGUgInN0cnVjdCBuZXQiIGRlY2xhcmF0aW9uCiAgICBv
+dXQgb2YgdGhlIHVzZXJzcGFjZS1mYWNpbmcgcG9ydGlvbiBvZiBsaW51eC9uZXRsaW5rLmguICBJ
+dCBoYXMgbm8gaW1wYWN0IG9uCiAgICB0aGUga2VybmVsLgogICAgCiAgICAoVGhpcyBjYW1lIHVw
+IGJlY2F1c2Ugd2UgaGF2ZSBzZXZlcmFsIEMrKyBhcHBsaWNhdGlvbnMgd2hpY2ggdXNlICJuZXQi
+IGFzIGEKICAgIG5hbWVzcGFjZSBuYW1lLikKICAgIAogICAgT2xsaWUKCmRpZmYgLS1naXQgYS9p
+bmNsdWRlL2xpbnV4L25ldGxpbmsuaCBiL2luY2x1ZGUvbGludXgvbmV0bGluay5oCmluZGV4IDU5
+ZDA2NjkuLjEyMzU2NjkgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUvbGludXgvbmV0bGluay5oCisrKyBi
+L2luY2x1ZGUvbGludXgvbmV0bGluay5oCkBAIC0yNyw4ICsyNyw2IEBACiAKICNkZWZpbmUgTUFY
+X0xJTktTIDMyCQkKIAotc3RydWN0IG5ldDsKLQogc3RydWN0IHNvY2thZGRyX25sIHsKIAlzYV9m
+YW1pbHlfdAlubF9mYW1pbHk7CS8qIEFGX05FVExJTksJKi8KIAl1bnNpZ25lZCBzaG9ydAlubF9w
+YWQ7CQkvKiB6ZXJvCQkqLwpAQCAtMTUxLDYgKzE0OSw4IEBAIHN0cnVjdCBubGF0dHIgewogI2lu
+Y2x1ZGUgPGxpbnV4L2NhcGFiaWxpdHkuaD4KICNpbmNsdWRlIDxsaW51eC9za2J1ZmYuaD4KIAor
+c3RydWN0IG5ldDsKKwogc3RhdGljIGlubGluZSBzdHJ1Y3Qgbmxtc2doZHIgKm5sbXNnX2hkcihj
+b25zdCBzdHJ1Y3Qgc2tfYnVmZiAqc2tiKQogewogCXJldHVybiAoc3RydWN0IG5sbXNnaGRyICop
+c2tiLT5kYXRhOwo=
+--000e0cd29daaa11d2c0490db2a57--
