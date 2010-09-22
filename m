@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755224Ab0IVPY7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 11:24:59 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:47036 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755132Ab0IVPY5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 11:24:57 -0400
-Message-ID: <4C9A1FB7.9050902@oracle.com>
-Date: Wed, 22 Sep 2010 08:24:39 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
-MIME-Version: 1.0
-To: Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Any SYSRQ key to force mode switch to console mode when using
- KMS?
-References: <19601.1301.803816.92851@elektron.ikp.physik.tu-darmstadt.de>	<20100921151033.80e61747.randy.dunlap@oracle.com> <19609.53242.674915.369484@elektron.ikp.physik.tu-darmstadt.de>
-In-Reply-To: <19609.53242.674915.369484@elektron.ikp.physik.tu-darmstadt.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755256Ab0IVP0I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 11:26:08 -0400
+Received: from xenon13.um.es ([155.54.212.167]:44452 "EHLO xenon13.um.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754778Ab0IVP0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 11:26:07 -0400
+Subject: Re: CFQ I/O scheduler better than AS?
+From: Juan PC <piernas@ditec.um.es>
+To: diegocg@gmail.com
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <201009221410.17056.diegocg@gmail.com>
+References: <1285152908.10774.306.camel@albahaca.inf.um.es>
+	 <201009221410.17056.diegocg@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Sep 2010 17:26:00 +0200
+Message-Id: <1285169160.10774.317.camel@albahaca.inf.um.es>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/10 02:44, Uwe Bonnes wrote:
->>>>>> "Randy" == Randy Dunlap <randy.dunlap@oracle.com> writes:
-> 
->     Randy> On Wed, 15 Sep 2010 19:40:37 +0200 Uwe Bonnes wrote:
->     >> Hello,
->     >> 
->     >> is there any SYSRQ key that forces the video system to console mode,
->     >> especially when using KMS and allows to work on.
-> 
->     Randy> sysrq-v help message says:
-> 
->     Randy> force-fb(V) = "Restore framebuffer console"
-> 
-> How is that documented outside the sysrq itself?
-> 
-> /usr/src/linux-2.6.36-rc4-19/Documentation/sysrq.txt:
-> 
-> 'v'     - Dumps Voyager SMP processor info to your console
+Hi Diego,
 
-Yes, I noticed that and I posted a patch for it yesterday.
+El mié, 22-09-2010 a las 14:10 +0200, Diego Calleja escribió:
+> On Miércoles, 22 de Septiembre de 2010 12:55:08 Juan PC escribió:
+> > Hi:
+> > 
+> > I am sure that, for most people, the clear answer is "yes" (after all,
+> > CFQ is the default I/O scheduler in Linux), but we are having serious
+> > difficulties to find a benchmark which shows that CFQ is undoubtedly
+> > better than AS.
+> 
+> The AS io scheduler was removed in 2.6.33 (7 months ago, in commit 
+> 492af6350a5ccf087e4964104a276ed358811458), so you must be running
+> benchmarks in old kernels. The CFQ scheduler used in recent kernels
+> should have good performance (if it doesn't, you probably should
+> write a bug report ccing jens.axboe@oracle.com)
+> 
+Well, 2.6.30/31 are not so old ;-)
 
+However, this fact reinforces my question. I guess that AS was removed
+due to a good reason, probably, some benchmark results. If so, those are
+the benchmarks I am looking for. Do you know their names?
+
+Thanks in advance!
+
+	Juan
+
+PD: BTW, congratulations for your D'Oh blog ;-)
+
+> Saludos ;)
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+D. Juan Piernas Cánovas
+Departamento de Ingeniería y Tecnología de Computadores
+Facultad de Informática. Universidad de Murcia
+Campus de Espinardo - 30080 Murcia (SPAIN)
+Tel.: +34868887657    Fax: +34868884151
+email: piernas@ditec.um.es
+PGP public key:
+http://pgp.rediris.es:11371/pks/lookup?search=piernas%
+40ditec.um.es&op=index
+
+*** Por favor, envíeme sus documentos en formato texto, HTML, PDF o
+PostScript :-) ***
+You have new mail in /var/spool/mail/piernas
+
+
