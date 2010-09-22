@@ -1,44 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752293Ab0IVWkg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 18:40:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47796 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751603Ab0IVWkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 18:40:35 -0400
-Message-ID: <4C9A85A3.4020903@zytor.com>
-Date: Wed, 22 Sep 2010 15:39:31 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
-MIME-Version: 1.0
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-CC: Venkatesh Pallipadi <venki@google.com>,
-        Prarit Bhargava <prarit@redhat.com>, Simon Arlott <simon@fire.lp0.eu>,
-        x86@kernel.org, Clemens Ladisch <clemens@ladisch.de>,
-        linux-kernel@vger.kernel.org, Marc Jones <marcj303@gmail.com>,
-        Jordan Crouse <jcrouse@codeaurora.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86, HPET: ignore any PCI BARs that match an HPET we
- already know about
-References: <20100922201547.3197.33702.stgit@bob.kio> <201009221552.21896.bjorn.helgaas@hp.com> <4C9A7EDC.5030809@zytor.com> <201009221637.18151.bjorn.helgaas@hp.com>
-In-Reply-To: <201009221637.18151.bjorn.helgaas@hp.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1752777Ab0IVWkp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 18:40:45 -0400
+Received: from smtp125.sbc.mail.sp1.yahoo.com ([69.147.65.184]:38632 "HELO
+	smtp125.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751967Ab0IVWko (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 18:40:44 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: OfEhDIsVM1l9O6z07Y6cT3q.jlvxi.tajkZUvlxBOXicWvU
+ RNADzQdSMjuD0FPv4oWN_00Z1c8KagljFnoIMmkFbGIqqlg0NjgjLjxmYX30
+ W4kznkPLi7gjWGq_mXOsPML5gKMQhSH3UhJS_IfgF4RO4yBEQ6HwNSvf7dOi
+ HJPR4yemX9Vq3RnqiVJ5Q0MeJhENvHWd0mbVm5b2cTxBrSAdTVeWUBigC4cO
+ tFR.ATcqg02ZAXPOaNwIEAorTVYCyHlqP.DHWfgioGlH3Jj0voLRTJkzAPF3
+ ar_Ykk.AJwoglxkSEJN8nQeA-
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [PATCH 2/2] siw: Add support for CRC32C offload instruction
+	using libcrypto crc32c-intel
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        linux-rdma <linux-rdma@vger.kernel.org>,
+        Bernard Metzler <BMT@zurich.ibm.com>
+In-Reply-To: <20100922220611.GL11157@obsidianresearch.com>
+References: <1285187425-10950-1-git-send-email-nab@linux-iscsi.org>
+	 <4C9A698B.90806@linux.intel.com>
+	 <1285187901.1849.85.camel@haakon2.linux-iscsi.org>
+	 <20100922205943.GI11157@obsidianresearch.com>
+	 <1285189241.1849.112.camel@haakon2.linux-iscsi.org>
+	 <20100922211808.GJ11157@obsidianresearch.com>
+	 <1285191511.1849.126.camel@haakon2.linux-iscsi.org>
+	 <20100922220611.GL11157@obsidianresearch.com>
+Content-Type: text/plain
+Date: Wed, 22 Sep 2010 15:36:29 -0700
+Message-Id: <1285194989.1849.130.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/22/2010 03:37 PM, Bjorn Helgaas wrote:
+On Wed, 2010-09-22 at 16:06 -0600, Jason Gunthorpe wrote:
+> On Wed, Sep 22, 2010 at 02:38:31PM -0700, Nicholas A. Bellinger wrote:
 > 
-> That actually raises another question I had: we currently look at the
-> HPET table pretty early, but I don't know whether the earliness is a
-> requirement.  It would be cleaner if we could ignore the table and
-> discover the HPET later in normal ways like pnp_register_driver() and
-> pci_register_driver().  Then I could imagine someday dealing with the
-> resources in a more generic way, i.e., in the PCI and PNP cores.
+> > So I think the main bit here is the ability to request
+> > crc32c-intel.ko first, and then fall back to crc32c.ko when the
+> > former is not available on CONFIG_X86.
+> 
+> Well, it is what Andi said, everything is working fine but there is no
+> mechanism to autoload the accelerated crypto module. If you did
+> modprobe crc32c_intel prior to loading your driver it would
+> automatically get crc32c-intel when it asks for crc32c since it is
+> loaded and a higher priority.
 > 
 
-Well, depends on how early we need timers...
-	
-	-hpa
+Ah, OK.  I see what you mean now here wrt to libcrypto priorities and
+crc32c + crc32c_intel modules.   My apologies for the in-experience with
+libcrypto here..
+
+> So, the drivers are correct to just request crc32c .. The work around
+> to limited autoprobing is so trivial (modprob crc32_intel) I'm not
+> sure including extra autoprobing code in the drivers is worthwhile?
+> 
+
+Indeed, I am happy to drop this patch if Bernard would be nice enough to
+add a 'modprobe crc32_intel' into the SIW scripts.
+
+Thanks for your comments Jason!
+
+--nab
 
