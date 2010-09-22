@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753921Ab0IVUUh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 16:20:37 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:9761 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751298Ab0IVUUg (ORCPT
+	id S1754634Ab0IVUUz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 16:20:55 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35008
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754240Ab0IVUUy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 16:20:36 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Venkatesh Pallipadi <venki@google.com>
-Subject: Re: [PATCH] x86, HPET: ignore any PCI BARs that match an HPET we already know about
-Date: Wed, 22 Sep 2010 14:19:36 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
-Cc: Prarit Bhargava <prarit@redhat.com>, Simon Arlott <simon@fire.lp0.eu>,
-        x86@kernel.org, Clemens Ladisch <clemens@ladisch.de>,
-        linux-kernel@vger.kernel.org, Marc Jones <marcj303@gmail.com>,
-        Jordan Crouse <jcrouse@codeaurora.org>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-References: <20100922201547.3197.33702.stgit@bob.kio>
-In-Reply-To: <20100922201547.3197.33702.stgit@bob.kio>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	Wed, 22 Sep 2010 16:20:54 -0400
+Date: Wed, 22 Sep 2010 13:21:13 -0700 (PDT)
+Message-Id: <20100922.132113.115922473.davem@davemloft.net>
+To: aaw@google.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        akpm@linux-foundation.org, davem@google.com
+Subject: Re: [PATCH] Move "struct net" declaration inside the __KERNEL__
+ macro guard
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <AANLkTim3V4yp+_LY8iN3R0xhV8hpPw_7o-uqwPFqXokz@mail.gmail.com>
+References: <AANLkTimRSjqewc_mC5vwdXy1t4Ax5rAf5svpOTbUEF7o@mail.gmail.com>
+	<20100917.165120.139548355.davem@davemloft.net>
+	<AANLkTim3V4yp+_LY8iN3R0xhV8hpPw_7o-uqwPFqXokz@mail.gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009221419.47283.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 22, 2010 02:15:47 pm Bjorn Helgaas wrote:
-> 
-> We often discover the HPET early, via the static ACPI HPET table, before
-> enumerating PCI devices.  If the HPET is implemented as a PCI function,
-> we will discover it again during PCI device enumeration.  We must ignore
-> the PCI function so we don't inadvertently move it out from under the
-> driver.
-> 
-> I think it's better to ignore *any* PCI BAR that matches a previously
-> discovered HPET; that way we don't need platform-specific knowledge,
-> and we won't have to add more quirks for future machines.
-> 
-> This is for a regression from 2.6.34, but the reporter has been
-> unable to test it yet.
-> 
-> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=18482
+From: Ollie Wild <aaw@google.com>
+Date: Wed, 22 Sep 2010 10:54:54 -0500
 
-I've tried hard to find somebody who can test this, but nobody who
-can reproduce the original failure has been able to test it.  I
-propose that we put it in linux-next and see what happens there.
+> On Fri, Sep 17, 2010 at 6:51 PM, David Miller <davem@davemloft.net> wrote:
+>>
+>> From: Ollie Wild <aaw@google.com>
+>> Date: Fri, 17 Sep 2010 14:38:59 -0500
+>>
+>> > (Resending with a proper signoff.)
+>>
+>> Your patch is still unusable because your email client white-space mangled
+>> the patch, turning tabs into space characters.
+>>
+>> Please fix this up and resubmit, thanks.
+> 
+> Third time's a charm ...
+> 
+> Signed-off-by: Ollie Wild <aaw@google.com>
 
-Bjorn
+Applied, thanks.
