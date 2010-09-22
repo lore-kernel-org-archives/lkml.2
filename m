@@ -1,34 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757336Ab0IVBHz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Sep 2010 21:07:55 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54216
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757158Ab0IVBHx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Sep 2010 21:07:53 -0400
-Date: Tue, 21 Sep 2010 18:08:12 -0700 (PDT)
-Message-Id: <20100921.180812.179933975.davem@davemloft.net>
-To: andy.shevchenko@gmail.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCHv1.5 3/3] net: core: use kernel's converter from hex to
- bin
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <3998a210e172f58814e2b559f67d42c9ba78ba6a.1285051188.git.andy.shevchenko@gmail.com>
-References: <2d00b66224535ae82be1a1e638b86b81fb890f58.1285051188.git.andy.shevchenko@gmail.com>
-	<2d00b66224535ae82be1a1e638b86b81fb890f58.1285051188.git.andy.shevchenko@gmail.com>
-	<3998a210e172f58814e2b559f67d42c9ba78ba6a.1285051188.git.andy.shevchenko@gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1755935Ab0IVBSS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Sep 2010 21:18:18 -0400
+Received: from tomasu.net ([64.85.170.234]:60497 "EHLO mail.tomasu.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755547Ab0IVBSR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Sep 2010 21:18:17 -0400
+From: Thomas Fjellstrom <thomas@fjellstrom.ca>
+Reply-To: thomas@fjellstrom.ca
+To: linux-kernel@vger.kernel.org
+Subject: Re: rsync causing high loads on 2.6.36-rc4
+Date: Tue, 21 Sep 2010 19:18:02 -0600
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4; KDE/4.5.1; x86_64; svn-1174823; 2010-09-12)
+References: <201009211859.05770.thomas@fjellstrom.ca>
+In-Reply-To: <201009211859.05770.thomas@fjellstrom.ca>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201009211918.02364.thomas@fjellstrom.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-Date: Tue, 21 Sep 2010 09:40:26 +0300
+On September 21, 2010, Thomas Fjellstrom wrote:
+> This isn't something I remember happening with older kernels, but I just
+> started an rsync from an nfs share over GbE, to a external SATA drive over
+> usb 2, and I'm seeing both of my laptop's cores hitting 80-100% cpu use,
+> two rsync processes are using 20-40% each, some kworker's are using tiny
+> bits (2-10%), and kswapd0 is hovering around 5%. Quite a lot of the time
+> seems to be io- wait. load average is almost at 6.
+> 
+> This is a dual core T9400 core2duo laptop, with 4GB ram, running full amd64
+> (64bit 2.6.36-rc4 kernel and userspace).
+> 
+> Its impacting desktop interactivity quite a lot.
 
-> Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
+It's not quite as bad with a regular cp, but it does affect my laptop in the 
+same way.
 
-Applied.
+-- 
+Thomas Fjellstrom
+thomas@fjellstrom.ca
