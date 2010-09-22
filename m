@@ -1,120 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352Ab0IVHtM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 03:49:12 -0400
-Received: from web58406.mail.re3.yahoo.com ([68.142.236.174]:30495 "HELO
-	web58406.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750955Ab0IVHtK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751762Ab0IVHtK (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 22 Sep 2010 03:49:10 -0400
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Sep 2010 03:49:10 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:MIME-Version:Content-Type;
-  b=d8GAjtRCMp4Mj/NQYAYlNP9rMw5g5r4Qi6QBD1wCChUBB867fKZg9MnHsGqZ0RveiOD1JEz905I0DVLawcL9hDWGm/LK54dv5BITJtxsMBVSuEQaP6Mvsj3TXkNM9xc2iWO5pz8ackzVmXt8cv4jadjGRPrGgDXgAu3TLXwIkyM=;
-Message-ID: <647401.39574.qm@web58406.mail.re3.yahoo.com>
-X-YMail-OSG: N4fX.mwVM1mTtzp6D5E9aE2jXEkgmLNoFzKvCo5W_q6l0QE
- We4McgEVUY..sgu8dlpQtdhvYgKywmJHMM8owK8B3rTeoZPdi9jl4Z3DXjLc
- kmBYvssCBXBpol6cb2ymFjUlfaTRClEXfpE60IWZgOJMUrTC1HQjCSwuK30y
- 2rEjWtFmAPCdWRT8ShbKAyK_.j_lIMEg8PSx7.ZDjnN7gU31D.pPsNNPCSo.
- iuekusyiq40nRZZVZoL2rW9GWw6Jaoiy2reNWIMOI8oMgCe0X8QZeI8ii8G5
- lK.2thF0JR6o_n_SniE3W
-X-Mailer: YahooMailRC/497 YahooMailWebService/0.8.105.279950
-Date: Wed, 22 Sep 2010 00:42:29 -0700 (PDT)
-From: Mikko Vinni <mmvinni@yahoo.com>
-Subject: scheduling while atomic: br2684ctl (atm)
-To: Karl Hiramoto <karl@hiramoto.org>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Chas Williams - CONTRACTOR <chas@cmf.nrl.navy.mil>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:57545 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750713Ab0IVHtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 03:49:09 -0400
+Message-ID: <4C99B4F3.6070403@fusionio.com>
+Date: Wed, 22 Sep 2010 09:49:07 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] block fixes for 2.6.36-rc5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Hi Linus,
 
-I get the following message apparently every time (on 2.6.36-rc4+ at least) when
-killing any old br2684ctl processes. "unregister_atmdevice_notifier" was added 
-by
-7313bb8f ("atm: propagate signal changes via notifier") so perhaps the 
-unregister
-part was not tested properly for rcu interaction?
+A small batch of fixes. Two important fixes, correcting a bug in the
+unified request/bio command flags causing blk_rq_map_kern() to
+flag writes incorrectly, and the oops in CFQ with cgroups and a usb key.
+The small 3-patch series from Jan fixes a long standing regression
+dating back to 2.6.32.
 
-So far I haven't noticed any ill effects from the message. Let me know if I
-should test something. Thanks.
+Please pull.
 
-Mikko
+  git://git.kernel.dk/linux-2.6-block.git for-linus
 
+Benny Halevy (1):
+      block: fix blk_rq_map_kern bio direction flag
 
-[29874.827053] PM: restore of devices complete after 3623.342 msecs
-[29874.827053] wlan0: Trigger new scan to find an IBSS to join
-[29875.020370] wlan0: Creating new IBSS network, BSSID 8a:4c:35:ef:eb:6b
-[29875.613701] wlan0: no IPv6 routers present
-[29876.027033] nas0: no IPv6 routers present
-[29876.831216] cxacru 3-1:1.0: receive of cm 0x90 failed (-104)
-[29876.844328] r8169 0000:09:00.0: PME# enabled
-[29876.878731] snapshot_ioctl: ioctl '4004330c' is deprecated and will be 
-removed soon, update your suspend-to-disk utilities
-[29876.878741] Restarting tasks ... done.
-[29876.903718] PM: Basic memory bitmaps freed
-[29876.903718] video LNXVIDEO:01: Restoring backlight state
-[29879.703963] cxacru 3-1:1.0: found firmware cxacru-fw.bin
-[29879.708273] cxacru 3-1:1.0: loading firmware
-[29881.277932] cxacru 3-1:1.0: starting device
-[29882.346357] cxacru0: ADSL USB MODEM (usb-0000:00:12.0-1) 00:04:ed:09:1e:5a
-[29882.362575] ATM dev 0: ADSL state: running
-[29882.362593] ATM dev 0: ADSL line: down
-[29882.580484] BUG: scheduling while atomic: br2684ctl/28543/0x00000002
-[29882.580498] Modules linked in: nls_cp437 vfat fat usb_storage cpufreq_stats 
-iptable_filter ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_conntrack 
-nf_defrag_ipv4 ip_tables x_tables br2684 ipv6 sco bnep l2cap bluetooth ext2 
-cxacru arc4 ecb usbatm atm uvcvideo videodev v4l1_compat v4l2_compat_ioctl32 
-snd_seq_dummy snd_seq_oss snd_hda_codec_atihdmi snd_seq_midi_event 
-snd_hda_codec_idt snd_seq snd_seq_device ath5k snd_hda_intel snd_pcm_oss 
-snd_hda_codec snd_mixer_oss mac80211 joydev ath snd_hwdep snd_pcm video ohci_hcd 
-hp_wmi output snd_timer cfg80211 ehci_hcd hp_accel lis3lv02d battery rfkill 
-input_polldev snd wmi thermal ohci1394 psmouse jmb38x_ms pcspkr ac edac_core 
-i2c_piix4 sg soundcore usbcore snd_page_alloc button serio_raw evdev memstick 
-powernow_k8 led_class r8169 processor k10temp mii ieee1394 mperf rtc_cmos 
-rtc_core rtc_lib ext4 mbcache jbd2 crc16 sr_mod cdrom sd_mod ahci libahci 
-pata_atiixp pata_acpi libata scsi_mod radeon ttm drm_kms_helper drm i2c_algo_bit 
-i2c_core [last unloaded: mmc_core]
-[29882.580796] Pid: 28543, comm: br2684ctl Not tainted 
-2.6.36-rc4-CUST-00214-g2422084 #49
-[29882.580808] Call Trace:
-[29882.580845]  [<ffffffff8103cfd1>] __schedule_bug+0x61/0x70
-[29882.580865]  [<ffffffff8131202e>] schedule+0x8de/0xa90
-[29882.580882]  [<ffffffff81312745>] schedule_timeout+0x215/0x350
-[29882.580900]  [<ffffffff8127f470>] ? flush_backlog+0x0/0x120
-[29882.580924]  [<ffffffff81080722>] ? smp_call_function_single+0x172/0x190
-[29882.580937]  [<ffffffff8127f470>] ? flush_backlog+0x0/0x120
-[29882.580951]  [<ffffffff81311610>] wait_for_common+0xc0/0x150
-[29882.580968]  [<ffffffff81046050>] ? default_wake_function+0x0/0x10
-[29882.580985]  [<ffffffff81311748>] wait_for_completion+0x18/0x20
-[29882.581004]  [<ffffffff810a95d6>] synchronize_rcu+0x46/0x50
-[29882.581025]  [<ffffffff810683a0>] ? wakeme_after_rcu+0x0/0x10
-[29882.581051]  [<ffffffff81070eb0>] atomic_notifier_chain_unregister+0x60/0x80
-[29882.581083]  [<ffffffffa050ddc3>] unregister_atmdevice_notifier+0x13/0x20 
-[atm]
-[29882.581102]  [<ffffffffa05d588d>] br2684_push+0x2bd/0x320 [br2684]
-[29882.581124]  [<ffffffffa050e2f6>] vcc_release+0x76/0x130 [atm]
-[29882.581142]  [<ffffffff8126ef94>] sock_release+0x24/0x90
-[29882.581155]  [<ffffffff8126f012>] sock_close+0x12/0x30
-[29882.581174]  [<ffffffff8110c5c5>] fput+0xd5/0x230
-[29882.581188]  [<ffffffff81108edb>] filp_close+0x5b/0x80
-[29882.581207]  [<ffffffff8104ee67>] put_files_struct+0x97/0x100
-[29882.581221]  [<ffffffff8104ef8d>] exit_files+0x4d/0x60
-[29882.581234]  [<ffffffff8104f118>] do_exit+0x178/0x810
-[29882.581256]  [<ffffffff8100cc9c>] ? fpu_finit+0x1c/0x30
-[29882.581270]  [<ffffffff8104fa3f>] do_group_exit+0x4f/0xb0
-[29882.581283]  [<ffffffff8104fab2>] sys_exit_group+0x12/0x20
-[29882.581300]  [<ffffffff81002e82>] system_call_fastpath+0x16/0x1b
-[29883.353415] ATM dev 0: ADSL line: initializing
-[29884.359446] ATM dev 0: ADSL line: down
-[29887.862669] ata3.00: configured for UDMA/100
-[29887.862688] ata3: EH complete
+Dan Carpenter (1):
+      cciss: freeing uninitialized data on error path
+
+Jan Kara (3):
+      bdi: Initialize noop_backing_dev_info properly
+      char: Mark /dev/zero and /dev/kmem as not capable of writeback
+      bdi: Fix warnings in __mark_inode_dirty for /dev/zero and friends
+
+Vivek Goyal (1):
+      cfq-iosched: fix a kernel OOPs when usb key is inserted
+
+ block/blk-map.c       |    2 +-
+ block/cfq-iosched.c   |   16 +++++++++++++---
+ drivers/block/cciss.c |    2 +-
+ drivers/char/mem.c    |    3 ++-
+ fs/char_dev.c         |    4 +++-
+ fs/fs-writeback.c     |   23 +++++++++++++++++++++--
+ mm/backing-dev.c      |    2 ++
+ 7 files changed, 43 insertions(+), 9 deletions(-)
 
 
-      
+diff --git a/block/blk-map.c b/block/blk-map.c
+index c65d759..ade0a08 100644
+--- a/block/blk-map.c
++++ b/block/blk-map.c
+@@ -307,7 +307,7 @@ int blk_rq_map_kern(struct request_queue *q, struct request *rq, void *kbuf,
+ 		return PTR_ERR(bio);
+ 
+ 	if (rq_data_dir(rq) == WRITE)
+-		bio->bi_rw |= (1 << REQ_WRITE);
++		bio->bi_rw |= REQ_WRITE;
+ 
+ 	if (do_copy)
+ 		rq->cmd_flags |= REQ_COPY_USER;
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index f65c6f0..9eba291 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -1019,10 +1019,20 @@ cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
+ 	 */
+ 	atomic_set(&cfqg->ref, 1);
+ 
+-	/* Add group onto cgroup list */
+-	sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+-	cfq_blkiocg_add_blkio_group(blkcg, &cfqg->blkg, (void *)cfqd,
++	/*
++	 * Add group onto cgroup list. It might happen that bdi->dev is
++	 * not initiliazed yet. Initialize this new group without major
++	 * and minor info and this info will be filled in once a new thread
++	 * comes for IO. See code above.
++	 */
++	if (bdi->dev) {
++		sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
++		cfq_blkiocg_add_blkio_group(blkcg, &cfqg->blkg, (void *)cfqd,
+ 					MKDEV(major, minor));
++	} else
++		cfq_blkiocg_add_blkio_group(blkcg, &cfqg->blkg, (void *)cfqd,
++					0);
++
+ 	cfqg->weight = blkcg_get_weight(blkcg, cfqg->blkg.dev);
+ 
+ 	/* Add group on cfqd list */
+diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+index 6124c2f..5e4fadc 100644
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -4792,7 +4792,7 @@ static int __devinit cciss_init_one(struct pci_dev *pdev,
+ clean4:
+ 	kfree(h->cmd_pool_bits);
+ 	/* Free up sg elements */
+-	for (k = 0; k < h->nr_cmds; k++)
++	for (k-- ; k >= 0; k--)
+ 		kfree(h->scatter_list[k]);
+ 	kfree(h->scatter_list);
+ 	cciss_free_sg_chain_blocks(h->cmd_sg_list, h->nr_cmds);
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index a398ecd..1f528fa 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -788,10 +788,11 @@ static const struct file_operations zero_fops = {
+ /*
+  * capabilities for /dev/zero
+  * - permits private mappings, "copies" are taken of the source of zeros
++ * - no writeback happens
+  */
+ static struct backing_dev_info zero_bdi = {
+ 	.name		= "char/mem",
+-	.capabilities	= BDI_CAP_MAP_COPY,
++	.capabilities	= BDI_CAP_MAP_COPY | BDI_CAP_NO_ACCT_AND_WRITEBACK,
+ };
+ 
+ static const struct file_operations full_fops = {
+diff --git a/fs/char_dev.c b/fs/char_dev.c
+index f80a4f2..143d393 100644
+--- a/fs/char_dev.c
++++ b/fs/char_dev.c
+@@ -40,7 +40,9 @@ struct backing_dev_info directly_mappable_cdev_bdi = {
+ #endif
+ 		/* permit direct mmap, for read, write or exec */
+ 		BDI_CAP_MAP_DIRECT |
+-		BDI_CAP_READ_MAP | BDI_CAP_WRITE_MAP | BDI_CAP_EXEC_MAP),
++		BDI_CAP_READ_MAP | BDI_CAP_WRITE_MAP | BDI_CAP_EXEC_MAP |
++		/* no writeback happens */
++		BDI_CAP_NO_ACCT_AND_WRITEBACK),
+ };
+ 
+ static struct kobj_map *cdev_map;
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 81e086d..5581122 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -52,8 +52,6 @@ struct wb_writeback_work {
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/writeback.h>
+ 
+-#define inode_to_bdi(inode)	((inode)->i_mapping->backing_dev_info)
+-
+ /*
+  * We don't actually have pdflush, but this one is exported though /proc...
+  */
+@@ -71,6 +69,27 @@ int writeback_in_progress(struct backing_dev_info *bdi)
+ 	return test_bit(BDI_writeback_running, &bdi->state);
+ }
+ 
++static inline struct backing_dev_info *inode_to_bdi(struct inode *inode)
++{
++	struct super_block *sb = inode->i_sb;
++	struct backing_dev_info *bdi = inode->i_mapping->backing_dev_info;
++
++	/*
++	 * For inodes on standard filesystems, we use superblock's bdi. For
++	 * inodes on virtual filesystems, we want to use inode mapping's bdi
++	 * because they can possibly point to something useful (think about
++	 * block_dev filesystem).
++	 */
++	if (sb->s_bdi && sb->s_bdi != &noop_backing_dev_info) {
++		/* Some device inodes could play dirty tricks. Catch them... */
++		WARN(bdi != sb->s_bdi && bdi_cap_writeback_dirty(bdi),
++			"Dirtiable inode bdi %s != sb bdi %s\n",
++			bdi->name, sb->s_bdi->name);
++		return sb->s_bdi;
++	}
++	return bdi;
++}
++
+ static void bdi_queue_work(struct backing_dev_info *bdi,
+ 		struct wb_writeback_work *work)
+ {
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index c2bf86f..65d4204 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -30,6 +30,7 @@ EXPORT_SYMBOL_GPL(default_backing_dev_info);
+ 
+ struct backing_dev_info noop_backing_dev_info = {
+ 	.name		= "noop",
++	.capabilities	= BDI_CAP_NO_ACCT_AND_WRITEBACK,
+ };
+ EXPORT_SYMBOL_GPL(noop_backing_dev_info);
+ 
+@@ -243,6 +244,7 @@ static int __init default_bdi_init(void)
+ 	err = bdi_init(&default_backing_dev_info);
+ 	if (!err)
+ 		bdi_register(&default_backing_dev_info, NULL, "default");
++	err = bdi_init(&noop_backing_dev_info);
+ 
+ 	return err;
+ }
+-- 
+Jens Axboe
+
