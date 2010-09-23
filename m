@@ -1,185 +1,379 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab0IWFHz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 01:07:55 -0400
-Received: from mgw-mx06.nokia.com ([192.100.122.233]:51003 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752880Ab0IWFHy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 01:07:54 -0400
-From: <samu.p.onkalo@nokia.com>
-To: <tiwai@suse.de>
-CC: <akpm@linux-foundation.org>, <Eric.Piel@tremplin-utc.net>,
-        <linux-kernel@vger.kernel.org>, <lm-sensors@lm-sensors.org>
-Date: Thu, 23 Sep 2010 07:06:22 +0200
-Subject: RE: [PATCH resent] lis3: Fix Oops with NULL platform data
-Thread-Topic: [PATCH resent] lis3: Fix Oops with NULL platform data
-Thread-Index: ActaXOsyRepttxv+RCqKB8eNsrJReAAfOJxg
-Message-ID: <62697B07E9803846BC582181BD6FB6B835EF20D9D1@NOK-EUMSG-02.mgdnok.nokia.com>
-References: <s5htyli811o.wl%tiwai@suse.de>
-	<62697B07E9803846BC582181BD6FB6B831300D2218@NOK-EUMSG-02.mgdnok.nokia.com>
- <s5h8w2t99gk.wl%tiwai@suse.de>
-In-Reply-To: <s5h8w2t99gk.wl%tiwai@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginalArrivalTime: 23 Sep 2010 05:06:27.0025 (UTC) FILETIME=[136B1C10:01CB5ADD]
-X-Nokia-AV: Clean
+	id S1753248Ab0IWFOK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 01:14:10 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:52965 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752880Ab0IWFOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 01:14:07 -0400
+Date: Thu, 23 Sep 2010 15:14:00 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for September 23
+Message-Id: <20100923151400.75e73ecc.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__23_Sep_2010_15_14_00_+1000_.fBggtGBpdjt3xb7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o8N582VN018470
 
-Added lm-sensors list...
+--Signature=_Thu__23_Sep_2010_15_14_00_+1000_.fBggtGBpdjt3xb7
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->-----Original Message-----
->From: ext Takashi Iwai [mailto:tiwai@suse.de]
->Sent: 22 September, 2010 16:47
->To: Onkalo Samu.P (Nokia-MS/Tampere)
->Cc: akpm@linux-foundation.org; Eric.Piel@tremplin-utc.net; linux-
->kernel@vger.kernel.org
->Subject: Re: [PATCH resent] lis3: Fix Oops with NULL platform data
->
->At Wed, 22 Sep 2010 13:56:15 +0200,
-><samu.p.onkalo@nokia.com> wrote:
->>
->>
->> Hi
->>
->> >-----Original Message-----
->> >From: ext Takashi Iwai [mailto:tiwai@suse.de]
->> >Sent: 22 September, 2010 14:34
->> >To: Andrew Morton
->> >Cc: Onkalo Samu.P (Nokia-MS/Tampere); √âric Piel; linux-
->> >kernel@vger.kernel.org
->> >Subject: [PATCH resent] lis3: Fix Oops with NULL platform data
->> >
->> >The recent addition of threaded irq handler causes a NULL dereference
->> >when used with hp_accel driver, which has NULL pdata.
->> >
->> >Cc: <stable@kernel.org>
->> >Signed-off-by: Takashi Iwai <tiwai@suse.de>
->> >---
->> >
->> >This should go to 2.6.36 and 2.6.35-stable tree.
->> >
->> > drivers/hwmon/lis3lv02d.c |    6 ++++--
->> > 1 files changed, 4 insertions(+), 2 deletions(-)
->> >
->> >diff --git a/drivers/hwmon/lis3lv02d.c b/drivers/hwmon/lis3lv02d.c
->> >index 5e15967..1c266ec 100644
->> >--- a/drivers/hwmon/lis3lv02d.c
->> >+++ b/drivers/hwmon/lis3lv02d.c
->> >@@ -354,7 +354,8 @@ static irqreturn_t
->lis302dl_interrupt_thread1_8b(int
->> >irq, void *data)
->> >
->> > 	struct lis3lv02d *lis3 = data;
->> >
->> >-	if ((lis3->pdata->irq_cfg & LIS3_IRQ1_MASK) == LIS3_IRQ1_CLICK)
->> >+	if (lis3->pdata &&
->> >+	    (lis3->pdata->irq_cfg & LIS3_IRQ1_MASK) == LIS3_IRQ1_CLICK)
->> > 		lis302dl_interrupt_handle_click(lis3);
->> > 	else
->> > 		lis302dl_interrupt_handle_ff_wu(lis3);
->> >@@ -367,7 +368,8 @@ static irqreturn_t
->lis302dl_interrupt_thread2_8b(int
->> >irq, void *data)
->> >
->> > 	struct lis3lv02d *lis3 = data;
->> >
->> >-	if ((lis3->pdata->irq_cfg & LIS3_IRQ2_MASK) == LIS3_IRQ2_CLICK)
->> >+	if (lis3->pdata &&
->> >+	    (lis3->pdata->irq_cfg & LIS3_IRQ2_MASK) == LIS3_IRQ2_CLICK)
->> > 		lis302dl_interrupt_handle_click(lis3);
->> > 	else
->> > 		lis302dl_interrupt_handle_ff_wu(lis3);
->>
->> Yes, that will remove the kernel oops definitely, but I'm wondering if
->> this thread should be executed at all if there is no pdata available.
->
->We may control the caller of request_threaded_irq(), instead.
->The revised patch is below.  (With this patch, the patch for the new
->LIS3CD chip must be revised, too.)
->
->> Eric, is it so that in laptops interrupts are used for free fall
->detection
->> and polled input device is for joystick?
->
->Yes, it's so for HP laptops.
->
->> Interrupts can (and are used) also for other purposes but in that case
->> some additional configurations are done based on platform data.
->>
->> With this patch, there are just some additional input event refreshes
->in
->> top of polled device updates. It should really not matter. So,
->>
->> Acked-by: Samu Onkalo <samu.p.onkalo@nokia.com>
->>
->> -Samu
->
->
->thanks,
->
->Takashi
->
->===
->From 0e5bdc7516915e92fe471a77da36ecb75d995c0f Mon Sep 17 00:00:00 2001
->From: Takashi Iwai <tiwai@suse.de>
->Date: Wed, 22 Sep 2010 12:16:04 +0200
->Subject: [PATCH] lis3: Fix Oops with NULL platform data
->
->The recent addition of threaded irq handler causes a NULL dereference
->when used with hp_accel driver, which has NULL pdata.
->
->Signed-off-by: Takashi Iwai <tiwai@suse.de>
->---
->this version avoids the unnecessary thread_irq call instead of checking
->pdata in the irq handler.
->
-> drivers/hwmon/lis3lv02d.c |    4 ++--
-> 1 files changed, 2 insertions(+), 2 deletions(-)
->
->diff --git a/drivers/hwmon/lis3lv02d.c b/drivers/hwmon/lis3lv02d.c
->index 5e15967..0a24177 100644
->--- a/drivers/hwmon/lis3lv02d.c
->+++ b/drivers/hwmon/lis3lv02d.c
->@@ -301,7 +301,7 @@ static irqreturn_t lis302dl_interrupt(int irq, void
->*dummy)
-> 	wake_up_interruptible(&lis3_dev.misc_wait);
-> 	kill_fasync(&lis3_dev.async_queue, SIGIO, POLL_IN);
-> out:
->-	if (lis3_dev.whoami == WAI_8B && lis3_dev.idev &&
->+	if (lis3_dev.pdata && lis3_dev.whoami == WAI_8B && lis3_dev.idev
->&&
-> 	    lis3_dev.idev->input->users)
-> 		return IRQ_WAKE_THREAD;
-> 	return IRQ_HANDLED;
->@@ -742,7 +742,7 @@ int lis3lv02d_init_device(struct lis3lv02d *dev)
-> 	 * io-apic is not configurable (and generates a warning) but I
->keep it
-> 	 * in case of support for other hardware.
-> 	 */
->-	if (dev->whoami == WAI_8B)
->+	if (dev->pdata && dev->whoami == WAI_8B)
-> 		thread_fn = lis302dl_interrupt_thread1_8b;
-> 	else
-> 		thread_fn = NULL;
->--
+Hi all,
 
+Changes since 20100921:
 
-With hp_accel.c irq-thread is not needed so this is ok from that point of view.
-On the other hand, wakeup / click flags are not configured without platformdata
-so there is no need to run irq-thread. If the pdata is not prodived at all
-there is no need to IRQ thread.
+New tree: i7300_edac
 
-Acked-by: Samu Onkalo <samu.p.onkalo@nokia.com>
+The powerpc tree still has its build failure for which I applied a patch.
 
+The ceph tree gained conflicts against Linus' tree.
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+The cifs tree gained a build failure so I used the version from
+next-20100921.
+
+The nfsd tree gained a build failure so I used the version from
+next-20100921.
+
+The net tree gained a conflict against the net-current tree.
+
+The wireless tree lost its conflicts.
+
+The sound tree lost its build failure but gained another so I used the
+version from next-20100921 (with a commit reverted).
+
+The kgdb tree still has its build failure for which I applied a patch.
+
+The viafb tree lost its build failure.
+
+The tip tree gained conflicts against Linus' tree and the slab tree.
+
+I still have a patch to the drivers-x86 tree to remove a Kconfig warning.
+
+The tty tree gained a build failure so I reverted a commit.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 174 trees (counting Linus' and 22 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/rc-fixes
+Merging quilt/driver-core.current
+Merging quilt/tty.current
+Merging quilt/usb.current
+Merging quilt/staging.current
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging gcl-current/merge
+Merging arm/devel
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+CONFLICT (content): Merge conflict in arch/arm/mach-s3c64xx/Makefile
+CONFLICT (content): Merge conflict in arch/arm/mach-s3c64xx/mach-smdk6410.c
+CONFLICT (content): Merge conflict in arch/arm/plat-samsung/Kconfig
+CONFLICT (content): Merge conflict in drivers/input/touchscreen/s3c2410_ts.c
+Merging s5p/for-next
+Merging tegra/for-next
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/next
+Merging powerpc/next
+Applying: powerpc: define a compat_sys_recv cond_syscall
+Merging 4xx/next
+Merging 52xx-and-virtex/next
+Merging galak/next
+CONFLICT (content): Merge conflict in arch/powerpc/platforms/85xx/mpc85xx_m=
+ds.c
+Merging s390/features
+Merging sh/master
+Merging genesis/master
+Merging sparc/master
+Merging tile/master
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+CONFLICT (content): Merge conflict in fs/ceph/Kconfig
+CONFLICT (content): Merge conflict in fs/ceph/mds_client.c
+CONFLICT (delete/modify): fs/ceph/pagelist.c deleted in ceph/for-next and m=
+odified in HEAD. Version HEAD of fs/ceph/pagelist.c left in tree.
+$ git rm -f fs/ceph/pagelist.c
+Merging cifs/master
+$ git reset --hard HEAD^
+Merging refs/next/20100921/cifs
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+$ git reset --hard HEAD^
+Merging refs/next/20100921/nfsd
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+CONFLICT (content): Merge conflict in drivers/media/IR/ir-keytable.c
+CONFLICT (content): Merge conflict in drivers/media/IR/ir-lirc-codec.c
+CONFLICT (content): Merge conflict in drivers/media/IR/ir-raw-event.c
+CONFLICT (add/add): Merge conflict in drivers/media/IR/streamzap.c
+CONFLICT (content): Merge conflict in drivers/media/dvb/siano/smscoreapi.c
+CONFLICT (add/add): Merge conflict in drivers/media/video/s5p-fimc/fimc-cor=
+e.c
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging swiotlb-xen/master
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+CONFLICT (content): Merge conflict in drivers/net/pcmcia/pcnet_cs.c
+CONFLICT (content): Merge conflict in drivers/net/qlcnic/qlcnic_init.c
+CONFLICT (content): Merge conflict in net/ipv4/ip_output.c
+Merging wireless/master
+Merging mtd/master
+Merging crypto/master
+Merging sound-asoc/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-s3c64xx/mach-smdk6410.c
+CONFLICT (content): Merge conflict in drivers/video/sh_mobile_hdmi.c
+Merging sound/for-next
+$ git reset --hard HEAD^
+Merging refs/next/20100921/sound
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+CONFLICT (content): Merge conflict in drivers/input/keyboard/Kconfig
+Merging lsm/for-next
+Merging block/for-next
+CONFLICT (content): Merge conflict in fs/ext4/mballoc.c
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+CONFLICT (content): Merge conflict in drivers/net/pcmcia/smc91c92_cs.c
+Merging battery/master
+Merging leds/for-mm
+Merging backlight/for-mm
+Merging mmc/mmc-next
+Merging kgdb/kgdb-next
+Applying: kgdb: merge fix for mode_set_base_atomic API change
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+CONFLICT (content): Merge conflict in drivers/mfd/sh_mobile_sdhi.c
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging viafb/viafb-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging lblnet/master
+Merging agp/agp-next
+Merging uwb/for-upstream
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging quilt/aoe
+Merging suspend/linux-next
+Merging bluetooth/master
+Merging fsnotify/for-next
+Merging irda/for-next
+CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
+Merging catalin/for-next
+CONFLICT (content): Merge conflict in arch/arm/include/asm/smp_plat.h
+CONFLICT (content): Merge conflict in arch/arm/kernel/Makefile
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+Merging i7core_edac/linux_next
+CONFLICT (content): Merge conflict in MAINTAINERS
+Merging i7300_edac/linux_next
+Merging devicetree/next-devicetree
+Merging spi/next-spi
+Merging omap_dss2/for-next
+Merging xen/upstream/xen
+Merging rcu/rcu/next
+Merging tip/auto-latest
+CONFLICT (content): Merge conflict in arch/sparc/kernel/perf_event.c
+CONFLICT (content): Merge conflict in include/linux/percpu.h
+CONFLICT (content): Merge conflict in net/core/dev.c
+Merging lost-spurious-irq/lost-spurious-irq
+CONFLICT (content): Merge conflict in drivers/ata/libata-core.c
+CONFLICT (content): Merge conflict in include/linux/libata.h
+Merging edac-amd/for-next
+Merging oprofile/for-next
+Merging percpu/for-next
+CONFLICT (content): Merge conflict in include/linux/percpu.h
+CONFLICT (content): Merge conflict in mm/percpu.c
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Applying: Fix Kconfig mistaken update
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging quilt/driver-core
+CONFLICT (content): Merge conflict in drivers/misc/Makefile
+Merging quilt/tty
+Merging quilt/usb
+CONFLICT (content): Merge conflict in drivers/usb/gadget/rndis.c
+Merging staging-next/staging-next
+CONFLICT (content): Merge conflict in drivers/staging/Makefile
+CONFLICT (content): Merge conflict in drivers/staging/batman-adv/hard-inter=
+face.c
+CONFLICT (delete/modify): drivers/staging/mrst-touchscreen/Makefile deleted=
+ in HEAD and modified in staging-next/staging-next. Version staging-next/st=
+aging-next of drivers/staging/mrst-touchscreen/Makefile left in tree.
+CONFLICT (delete/modify): drivers/staging/mrst-touchscreen/intel-mid-touch.=
+c deleted in HEAD and modified in staging-next/staging-next. Version stagin=
+g-next/staging-next of drivers/staging/mrst-touchscreen/intel-mid-touch.c l=
+eft in tree.
+CONFLICT (delete/modify): drivers/staging/ti-st/st.h deleted in staging-nex=
+t/staging-next and modified in HEAD. Version HEAD of drivers/staging/tiReco=
+rded preimage for 'drivers/staging/ti-st/st_kim.c'
+CONFLICT (delete/modify): drivers/staging/ti-st/st_core.h deleted in stagin=
+g-next/staging-next and modified in HEAD. Version HEAD of drivers/staging/t=
+i-st/st_core.h left in tree.
+CONFLICT (content): Merge conflict in drivers/staging/ti-st/st_kim.c
+$ git rm -f drivers/staging/mrst-touchscreen/Makefile drivers/staging/mrst-=
+touchscreen/intel-mid-touch.c
+$ git rm -f drivers/staging/ti-st/st.h drivers/staging/ti-st/st_core.h
+[master 2a9761a] Revert "tty: icount changeover for other main devices"
+Merging slabh/slabh
+Merging bkl-trivial/trivial
+CONFLICT (content): Merge conflict in drivers/char/pcmcia/cm4000_cs.c
+CONFLICT (content): Merge conflict in drivers/char/pcmcia/cm4040_cs.c
+CONFLICT (content): Merge conflict in drivers/mmc/card/block.c
+Merging bkl-llseek/llseek
+CONFLICT (content): Merge conflict in drivers/staging/batman-adv/bat_debugf=
+s.c
+CONFLICT (content): Merge conflict in drivers/staging/batman-adv/icmp_socke=
+t.c
+Merging bkl-vfs/vfs
+CONFLICT (content): Merge conflict in fs/cifs/cifsfs.c
+CONFLICT (content): Merge conflict in fs/nilfs2/super.c
+Merging bkl-config/config
+Merging irqflags/master
+Merging scsi-post-merge/merge-base:master
+[master f323a74] Revert "ALSA: hda - Refactor ALC269 power-ups/downs in PM =
+callbacks"
+
+--Signature=_Thu__23_Sep_2010_15_14_00_+1000_.fBggtGBpdjt3xb7
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMmuIYAAoJEDMEi1NhKgbsaaUH/3lId3jThWYHFiLauFoZ0uPX
+dPVRcoBUNz7WW8YsHV5JmuFcMgROvoDu76TzwSLjitfiF/vzlG2VVV9oN9mxoGpp
+A8e/S57Y8E26g89udiYf//PXQhWo+sfxHe4mHIGGOh5TcmxUEGzMghtEFVn7jgEt
+knMWOYOTQbQhAF8t7dUUxQ3PLzAlumW1K3j1F1xQX7xlB7GWnNChIoibE7b6Yzp+
+qRdziVnvrwvagGBD/NlMD7n/ExyuxfRMi04wCiEBBHuUP0ibX267Z8AvO1sb1DD8
+A48vhjhCTy+7ESQ6UHAPlLjwgVKtTob5RddIicF0GS/CPfgvsNvjYK/mlq+1UGM=
+=byrh
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__23_Sep_2010_15_14_00_+1000_.fBggtGBpdjt3xb7--
