@@ -1,58 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756561Ab0IWUvn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 16:51:43 -0400
-Received: from mga11.intel.com ([192.55.52.93]:19446 "EHLO mga11.intel.com"
+	id S1755752Ab0IWUxL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 16:53:11 -0400
+Received: from kroah.org ([198.145.64.141]:36909 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751990Ab0IWUvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 16:51:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,225,1283756400"; 
-   d="scan'208";a="840395430"
-Message-ID: <4C9BBDDD.6050803@linux.intel.com>
-Date: Thu, 23 Sep 2010 13:51:41 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-Organization: Intel Open Source Technology Center
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
+	id S1751919Ab0IWUxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 16:53:10 -0400
+Date: Thu, 23 Sep 2010 13:53:00 -0700
+From: Greg KH <greg@kroah.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
+        Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Chris Mason <chris.mason@oracle.com>, linux-fsdevel@vger.kernel.org,
+        stable@kernel.org, linux-btrfs@vger.kernel.org,
+        Cesar Eduardo Barros <cesarb@cesarb.net>
+Subject: Re: [stable] Dirtiable inode bdi default != sb bdi btrfs
+Message-ID: <20100923205300.GA6853@kroah.com>
+References: <4C9AA546.6050201@cesarb.net>
+ <20100923123849.8975fe47.akpm@linux-foundation.org>
+ <4C9BAD1E.2030007@fusionio.com>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Jan Engelhardt <jengelh@medozas.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: "Glove box" BIOS patch causes boot flicker
-References: <alpine.LNX.2.01.1009220135380.25692@obet.zrqbmnf.qr> <4C994F0B.6030004@linux.intel.com> <alpine.LNX.2.01.1009232052230.16976@obet.zrqbmnf.qr> <4C9BB1C5.80808@zytor.com> <alpine.LNX.2.01.1009232243110.21529@obet.zrqbmnf.qr> <4C9BBD0C.6070905@zytor.com>
-In-Reply-To: <4C9BBD0C.6070905@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C9BAD1E.2030007@fusionio.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2010 01:48 PM, H. Peter Anvin wrote:
-> On 09/23/2010 01:46 PM, Jan Engelhardt wrote:
->>
->> On Thursday 2010-09-23 22:00, H. Peter Anvin wrote:
->>> On 09/23/2010 11:54 AM, Jan Engelhardt wrote:
->>>> On Wednesday 2010-09-22 02:34, H. Peter Anvin wrote:
->>>>
->>>>> There were some minor bugs (typos) in the conversion to the glove box 
->>>>> coding style. The ones we have found have been fixed, so the first 
->>>>> thing is to try the current mainline or the current tip tree.  
->>>>> Otherwise I would look for issues where either the wrong register is 
->>>>> changed, or something like a variable is changed instead of a field.
->>>>
->>>> I tried v2.6.36-rc5 now, and it looks better. The cursor position is 
->>>> retained as desired. The mode switch is still there, albeit much 
->>>> shorter than it used to be.
->>>
->>> The mode switch was there in the original code.
->>
->> That may very well be so, but there clearly is distinguished behavior 
->> w.r.t. that in 2.6.36 compared to .30.
+On Thu, Sep 23, 2010 at 09:40:14PM +0200, Jens Axboe wrote:
+> On 2010-09-23 21:38, Andrew Morton wrote:
+> > 
+> > (Cc stable@kernel.org)
+> > 
+> > On Wed, 22 Sep 2010 21:54:30 -0300
+> > Cesar Eduardo Barros <cesarb@cesarb.net> wrote:
+> > 
+> >> This started appearing for me on v2.6.36-rc5-49-gc79bd89; it did not 
+> >> happen on v2.6.36-rc5-33-g1ce1e41, probably because it does not have 
+> >> commit 692ebd17c2905313fff3c504c249c6a0faad16ec which introduces the 
+> >> warning.
+> >>
+> >> [...]
+> >> device fsid 44d595920ddedfa-3ece6b56e80f689e devid 1 transid 22342 
+> >> /dev/mapper/vg_cesarbinspiro-lv_home
+> >> SELinux: initialized (dev dm-3, type btrfs), uses xattr
+> >> ------------[ cut here ]------------
+> >> WARNING: at fs/fs-writeback.c:87 inode_to_bdi+0x62/0x6d()
+> >> Hardware name: Inspiron N4010
+> >> Dirtiable inode bdi default != sb bdi btrfs
+> >> Modules linked in: ipv6 kvm_intel kvm uinput arc4 ecb 
+> >> snd_hda_codec_intelhdmi snd_hda_codec_realtek iwlagn snd_hda_intel 
+> >> iwlcore snd_hda_codec uvcvideo snd_hwdep mac80211 videodev snd_seq 
+> >> snd_seq_device v4l1_compat snd_pcm atl1c v4l2_compat_ioctl32 btusb 
+> >> cfg80211 snd_timer i2c_i801 bluetooth iTCO_wdt dell_wmi dell_laptop snd 
+> >> pcspkr wmi dcdbas shpchp iTCO_vendor_support soundcore snd_page_alloc 
+> >> rfkill joydev microcode btrfs zlib_deflate libcrc32c cryptd aes_x86_64 
+> >> aes_generic xts gf128mul dm_crypt usb_storage i915 drm_kms_helper drm 
+> >> i2c_algo_bit i2c_core video output [last unloaded: scsi_wait_scan]
+> >> Pid: 1073, comm: find Not tainted 2.6.36-rc5+ #8
+> >> Call Trace:
+> >>   [<ffffffff8104d0e4>] warn_slowpath_common+0x85/0x9d
+> >>   [<ffffffff8104d19f>] warn_slowpath_fmt+0x46/0x48
+> >>   [<ffffffff811308b7>] inode_to_bdi+0x62/0x6d
+> >>   [<ffffffff81131b48>] __mark_inode_dirty+0xd0/0x177
+> >>   [<ffffffff81127168>] touch_atime+0x107/0x12a
+> >>   [<ffffffff81122384>] ? filldir+0x0/0xd0
+> >>   [<ffffffff8112259b>] vfs_readdir+0x8d/0xb4
+> >>   [<ffffffff8112270b>] sys_getdents+0x81/0xd1
+> >>   [<ffffffff81009c72>] system_call_fastpath+0x16/0x1b
+> > 
+> > Thanks.  692ebd17c2905313fff3c504c249c6a0faad16ec had a cc:stable in
+> > the changelog.  I'd suggest it not be merged into -stable until this
+> > regression is sorted out!
 > 
-> Yes, but that caused regressions from the old assembly code.
-> 
+> It was just added, I'm discussing this with Chris on irc as I type this.
+> But yes, lets not replace a regression with a new regression :-). So
+> Greg, please hold off on these for a little while.
 
-By the way, if you don't want a mode reset, use "vga=current".
+Ok, so which ones should I take out of the -stable tree?  Just this one:
+	692ebd17c2905313fff3c504c249c6a0faad16ec
+or it and something else?
 
-	-hpa
+thanks,
 
+greg k-h
