@@ -1,73 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404Ab0IWD6O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 23:58:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:50745 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752600Ab0IWD4J (ORCPT
+	id S1750863Ab0IWEBL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 00:01:11 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:49102 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709Ab0IWEBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 23:56:09 -0400
-X-Authority-Analysis: v=1.1 cv=GglhOq9PVtWDmzXFaQc2b9ix+3dKCE90LyQFAZ1FxMQ= c=1 sm=0 a=psu0DXbS6mkA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=rts_7bUoPt5dgaVSQ2UA:9 a=_52qpH_b1W8qyDsWck0A:7 a=rq2Rf6fPHzSXtX4v9iuU83sGB6gA:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Message-Id: <20100923035608.469217320@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Wed, 22 Sep 2010 23:49:14 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <compudj@krystal.dyndns.org>,
-        Andi Kleen <andi@firstfloor.org>, Jason Baron <jbaron@redhat.com>,
-        David Miller <davem@davemloft.net>
-Subject: [PATCH 04/11] jump label: Initialize workqueue tracepoints *before* they are registered
-References: <20100923034910.867858597@goodmis.org>
-Content-Disposition: inline; filename=0004-jump-label-Initialize-workqueue-tracepoints-before-t.patch
+	Thu, 23 Sep 2010 00:01:09 -0400
+Date: Wed, 22 Sep 2010 20:59:17 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
+        Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
+        Linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [RFC 02/22] configfs: Add struct
+ configfs_item_operations->check_link() in configfs_unlink()
+Message-ID: <20100923035916.GA11202@mail.oracle.com>
+Mail-Followup-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+	Konrad Rzeszutek Wilk <konrad@darnok.org>,
+	linux-scsi <linux-scsi@vger.kernel.org>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+	Mike Christie <michaelc@cs.wisc.edu>,
+	Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+	James Bottomley <James.Bottomley@suse.de>,
+	Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
+	Linux-fsdevel <linux-fsdevel@vger.kernel.org>
+References: <20100907224413.GC21935@mail.oracle.com>
+ <1283911739.556.420.camel@haakon2.linux-iscsi.org>
+ <20100908192639.GD29545@mail.oracle.com>
+ <1283979207.556.510.camel@haakon2.linux-iscsi.org>
+ <20100910152802.GG885@mail.oracle.com>
+ <1284145606.19890.68.camel@haakon2.linux-iscsi.org>
+ <20100910194404.GJ885@mail.oracle.com>
+ <1284148323.19890.94.camel@haakon2.linux-iscsi.org>
+ <20100920220633.GC8405@mail.oracle.com>
+ <1285139802.1849.13.camel@haakon2.linux-iscsi.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285139802.1849.13.camel@haakon2.linux-iscsi.org>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Baron <jbaron@redhat.com>
+On Wed, Sep 22, 2010 at 12:16:42AM -0700, Nicholas A. Bellinger wrote:
+> On Mon, 2010-09-20 at 15:06 -0700, Joel Becker wrote:
+> > [Sorry on the delay, I was out of town]
+> > 
+> 
+> Many, thanks for your followup on this item, my comments are below.
 
-Initialize the workqueue data structures *before* they are registered
-so that they are ready for callbacks.
+	No problem.  I'm sorry I was so busy that we couldn't iron this
+out a few months ago.  I'm glad we're getting somewhere.
 
-Signed-off-by: Jason Baron <jbaron@redhat.com>
-LKML-Reference: <e3a3383fc370ac7086625bebe89d9480d7caf372.1284733808.git.jbaron@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace_workqueue.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+> > On Fri, Sep 10, 2010 at 12:52:03PM -0700, Nicholas A. Bellinger wrote:
+> > > On Fri, 2010-09-10 at 12:44 -0700, Joel Becker wrote:
+> 
+> Actually leaving the sub_child/group2/dst_0/dst_link in the example here
+> would be acceptable for the TCM MappedLUN case, because really we never
+> expect this case to this unless someone is poking at configfs directly,
+> and our userspace code will never do this intentionally.
 
-diff --git a/kernel/trace/trace_workqueue.c b/kernel/trace/trace_workqueue.c
-index a7cc379..209b379 100644
---- a/kernel/trace/trace_workqueue.c
-+++ b/kernel/trace/trace_workqueue.c
-@@ -263,6 +263,11 @@ int __init trace_workqueue_early_init(void)
- {
- 	int ret, cpu;
- 
-+	for_each_possible_cpu(cpu) {
-+		spin_lock_init(&workqueue_cpu_stat(cpu)->lock);
-+		INIT_LIST_HEAD(&workqueue_cpu_stat(cpu)->list);
-+	}
-+
- 	ret = register_trace_workqueue_insertion(probe_workqueue_insertion, NULL);
- 	if (ret)
- 		goto out;
-@@ -279,11 +284,6 @@ int __init trace_workqueue_early_init(void)
- 	if (ret)
- 		goto no_creation;
- 
--	for_each_possible_cpu(cpu) {
--		spin_lock_init(&workqueue_cpu_stat(cpu)->lock);
--		INIT_LIST_HEAD(&workqueue_cpu_stat(cpu)->list);
--	}
--
- 	return 0;
- 
- no_creation:
+	Right.  If someone pokes around and makes it stop working,
+that's their fault.  What we (configfs and TCM) must guarantee is that
+user poking doesn't cause a crash or put things in an unrecoverable
+state.  "Remove all TCM mappins" is a valid recovery state, though
+"Recreate the symlink and it works again" is a better one.
+
+> > 	I'm saying that $object should count how many people are
+> > pointing to it, so that when you remove src_link, ACL is *not* freed.
+> > It will only be freed when both src_link and dst_link are removed.  This
+> > way you do not crash.  Perhaps I'm not understanding the ACL object.
+> > Perhaps I'm missing the mechanism entirely.  But I don't see why the ACL
+> > object must necessarily be freed when one symlink is removed but not the
+> > other.
+> > 
+> 
+> No, I think your points here make perfect sense.  I will look into a
+> patch that leaves the TCM fabric MappedLUNs symlinks in place when the
+> underlying TPG fabric LUN symlink is removed without breaking anything,
+> but still does the necessary accounting to ensure that shutdown with
+> active I/Os still works as expected.  I will plan to drop the
+> ->check_link() patch from the forthcoming RFC v2 series.
+
+	This sounds like a good plan for initial inclusion.
+
+> In the end I think his is the best approach for .37, eg: no configfs
+> change required.  I am still open to the discussion for resolving this
+> within fs/configfs proper, but at this point I don't have a strong
+> preference and will follow your direction here.
+
+	I think we can revisit this as necessary.
+
+Joel
+
 -- 
-1.7.1
 
+Life's Little Instruction Book #313
 
+	"Never underestimate the power of love."
+
+Joel Becker
+Consulting Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
