@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755128Ab0IWWLx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 18:11:53 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:51654 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751844Ab0IWWLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 18:11:43 -0400
-Date: Thu, 23 Sep 2010 15:11:39 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: holzheu@linux.vnet.ibm.com, Shailabh Nagar <nagar1234@in.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        John stultz <johnstul@us.ibm.com>,
-        containers@lists.linux-foundation.org, linux-s390@vger.kernel.org,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: [RFC][PATCH 00/10] taskstats: Enhancements for precise
- accounting
-Message-ID: <20100923221139.GI23839@count0.beaverton.ibm.com>
-References: <1285249681.1837.28.camel@holzheu-laptop>
- <20100923131136.356075f4.akpm@linux-foundation.org>
+	id S1755684Ab0IWWMD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 18:12:03 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33256 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755389Ab0IWWL7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 18:11:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=nqFry1mUg5zRISjpHQzr+d2HpmLjaZgErjBwfC6kja43LPV7VMvaDyMXqz+GZU/S08
+         itHpY0CLExVn6LgjZhWuXkzD8Nyf47V9OAYX3aEphiC8+uIJeLWSnoomAO1h4o4UQpTn
+         rOj8BVKuKFS07bH63LnM/EKXlkKoWDmkQixkM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100923131136.356075f4.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <492E9153-2D3E-4DA2-AD04-4F92C94DB3A7@kernel.crashing.org>
+References: <1285066638-7473-1-git-send-email-leoli@freescale.com>
+	<877FD0B5-19A7-4A16-831E-369B80B104EA@kernel.crashing.org>
+	<AANLkTimiwtoa6i10OTcgFnvbvcO9N4KWHyt4Poj-yj=T@mail.gmail.com>
+	<20100921163456.7e2c9b32@udp111988uds.am.freescale.net>
+	<AANLkTine--kry0c0n87WOqYyi3AQOb2KnmNRs-MeXcQt@mail.gmail.com>
+	<20100921164944.164ed0af@udp111988uds.am.freescale.net>
+	<2C3F2C02-35B6-46AF-82DA-44ACCBFB8362@digitaldans.com>
+	<AANLkTinKbBBbC1gmPewhn1f3MW-1MbARtiQZNX4w7Mi+@mail.gmail.com>
+	<20100921171746.381f2e89@udp111988uds.am.freescale.net>
+	<AANLkTinbjb+uQdby999rs1eF1sqPHY2vXJ1mVrznFv=0@mail.gmail.com>
+	<492E9153-2D3E-4DA2-AD04-4F92C94DB3A7@kernel.crashing.org>
+Date: Thu, 23 Sep 2010 15:11:57 -0700
+X-Google-Sender-Auth: jzuUGpwZdGkBEojyWz1QfgAaEmg
+Message-ID: <AANLkTinfHQGqWx2txwG4-nORcwcFD9dYstmVv8iK9oZ8@mail.gmail.com>
+Subject: Re: [PATCH] fsldma: add support to 36-bit physical address
+From: Dan Williams <dan.j.williams@intel.com>
+To: Kumar Gala <galak@kernel.crashing.org>
+Cc: Timur Tabi <timur.tabi@gmail.com>, Scott Wood <scottwood@freescale.com>,
+        Dan Malek <ppc6dev@digitaldans.com>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        Becky Bruce <beckyb@kernel.crashing.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 23, 2010 at 01:11:36PM -0700, Andrew Morton wrote:
-> On Thu, 23 Sep 2010 15:48:01 +0200
-> Michael Holzheu <holzheu@linux.vnet.ibm.com> wrote:
-> 
-> > Currently tools like "top" gather the task information by reading procfs
-> > files. This has several disadvantages:
-> > 
+On Tue, Sep 21, 2010 at 10:41 PM, Kumar Gala <galak@kernel.crashing.org> wrote:
+>
+> On Sep 21, 2010, at 5:34 PM, Timur Tabi wrote:
+>
+>> On Tue, Sep 21, 2010 at 5:17 PM, Scott Wood <scottwood@freescale.com> wrote:
+>>
+>>> It needs to be the actual device that is performing the DMA -- the
+>>> platform may need to do things such as IOMMU manipulation where
+>>> knowing the device matters.
+>>
+>> Ok, this all makes sense.  So it appears that the patch is valid, at
+>> least in theory.  I would like to see some testing of it, but I
+>> realize that may be too difficult.  There's no easy way to force an
+>> allocation above 4GB.
+>
+> I think the patch is pretty safe w/o testing.  However I agree we need a better solution to testing 36-bit addressing.
 
-<snip>
+I'll take that as an acked-by, but I'll wait for the next version of
+the patch with the completed changelog before acting on it.
 
-> >      3. A new tool "ptop" (precise top) that uses the libraries
-> 
-> Talk to me about namespaces, please.  A lot of the new code involves
-> PIDs, but PIDs are not system-wide unique.  A PID is relative to a PID
-> namespace.  Does everything Just Work?  When userspace sends a PID to
-> the kernel, that PID is assumed to be within the sending process's PID
-> namespace?  If so, then please spell it all out in the changelogs.  If
-> not then that is a problem!
-
-Good point.
-
-The pid ought to be valid in the _receiving_ task's pid namespace. That
-can be difficult or impossible if we're talking about netlink broadcasts.
-In this regard process events connector is an example of what not to do.
-
-> If I can only observe processes in my PID namespace then is that a
-> problem?  Should I be allowed to observe another PID namespace's
-> processes?  I assume so, because I might be root.  If so, how is that
-> to be done?
-
-I don't think even "root" can see/use pids outside its namespace (without
-Eric's setns patches). If you want to see all the tasks then rely on root
-being able to do stuff in the initial pid namespace. If you really want
-to use/know pids in the child pid namespaces then setns is also a
-nice solution.
-
-Cheers,
-	-Matt Helsley
+--
+Dan
