@@ -1,104 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776Ab0IXAFk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 20:05:40 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:60191 "EHLO smtp.infotech.no"
+	id S1754957Ab0IXAKY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 20:10:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15209 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753579Ab0IXAFi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 20:05:38 -0400
-Message-ID: <4C9BEB49.2060208@interlog.com>
-Date: Thu, 23 Sep 2010 20:05:29 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+	id S1753540Ab0IXAKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 20:10:22 -0400
+Date: Thu, 23 Sep 2010 16:57:06 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Zachary Amsden <zamsden@redhat.com>
+Cc: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Glauber Costa <glommer@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [KVM timekeeping fixes 4/4] TSC catchup mode
+Message-ID: <20100923195706.GA11988@amt.cnet>
+References: <1284856695-19438-1-git-send-email-zamsden@redhat.com>
+ <1284856695-19438-2-git-send-email-zamsden@redhat.com>
+ <1284856695-19438-3-git-send-email-zamsden@redhat.com>
+ <1284856695-19438-4-git-send-email-zamsden@redhat.com>
+ <20100920153820.GA3088@amt.cnet>
+ <4C980642.5000901@redhat.com>
+ <20100921181800.GB22536@amt.cnet>
+ <4C9A583D.7010806@redhat.com>
 MIME-Version: 1.0
-To: Mark Lord <kernel@teksavvy.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        IDE/ATA development list <linux-ide@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: "blocked for more than 120 secs" --> a valid situation, how to
- prevent?
-References: <4C9BE5A8.1090002@teksavvy.com>
-In-Reply-To: <4C9BE5A8.1090002@teksavvy.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C9A583D.7010806@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark,
-If you issued the SG_IO ioctl with a timeout of at
-least 66 minutes (expressed in milliseconds) then
-it looks like ata_scsi_queuecmd() has a problem.
+On Wed, Sep 22, 2010 at 09:25:49AM -1000, Zachary Amsden wrote:
+> On 09/21/2010 08:18 AM, Marcelo Tosatti wrote:
+> >On Mon, Sep 20, 2010 at 03:11:30PM -1000, Zachary Amsden wrote:
+> >>On 09/20/2010 05:38 AM, Marcelo Tosatti wrote:
+> >>>On Sat, Sep 18, 2010 at 02:38:15PM -1000, Zachary Amsden wrote:
+> >>>>Negate the effects of AN TYM spell while kvm thread is preempted by tracking
+> >>>>conversion factor to the highest TSC rate and catching the TSC up when it has
+> >>>>fallen behind the kernel view of time.  Note that once triggered, we don't
+> >>>>turn off catchup mode.
+> >>>>
+> >>>>A slightly more clever version of this is possible, which only does catchup
+> >>>>when TSC rate drops, and which specifically targets only CPUs with broken
+> >>>>TSC, but since these all are considered unstable_tsc(), this patch covers
+> >>>>all necessary cases.
+> >>>>
+> >>>>Signed-off-by: Zachary Amsden<zamsden@redhat.com>
+> >>>>---
+> >>>>  arch/x86/include/asm/kvm_host.h |    6 +++
+> >>>>  arch/x86/kvm/x86.c              |   87 +++++++++++++++++++++++++++++---------
+> >>>>  2 files changed, 72 insertions(+), 21 deletions(-)
+> >>>>
+> >>>>diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> >>>>index 8c5779d..e209078 100644
+> >>>>--- a/arch/x86/include/asm/kvm_host.h
+> >>>>+++ b/arch/x86/include/asm/kvm_host.h
+> >>>>@@ -384,6 +384,9 @@ struct kvm_vcpu_arch {
+> >>>>  	u64 last_host_tsc;
+> >>>>  	u64 last_guest_tsc;
+> >>>>  	u64 last_kernel_ns;
+> >>>>+	u64 last_tsc_nsec;
+> >>>>+	u64 last_tsc_write;
+> >>>>+	bool tsc_catchup;
+> >>>>
+> >>>>  	bool nmi_pending;
+> >>>>  	bool nmi_injected;
+> >>>>@@ -444,6 +447,9 @@ struct kvm_arch {
+> >>>>  	u64 last_tsc_nsec;
+> >>>>  	u64 last_tsc_offset;
+> >>>>  	u64 last_tsc_write;
+> >>>>+	u32 virtual_tsc_khz;
+> >>>>+	u32 virtual_tsc_mult;
+> >>>>+	s8 virtual_tsc_shift;
+> >>>>
+> >>>>  	struct kvm_xen_hvm_config xen_hvm_config;
+> >>>>
+> >>>>diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> >>>>index 09f468a..9152156 100644
+> >>>>--- a/arch/x86/kvm/x86.c
+> >>>>+++ b/arch/x86/kvm/x86.c
+> >>>>@@ -962,6 +962,7 @@ static inline u64 get_kernel_ns(void)
+> >>>>  }
+> >>>>
+> >>>>  static DEFINE_PER_CPU(unsigned long, cpu_tsc_khz);
+> >>>>+unsigned long max_tsc_khz;
+> >>>>
+> >>>>  static inline int kvm_tsc_changes_freq(void)
+> >>>>  {
+> >>>>@@ -985,6 +986,24 @@ static inline u64 nsec_to_cycles(u64 nsec)
+> >>>>  	return ret;
+> >>>>  }
+> >>>>
+> >>>>+static void kvm_arch_set_tsc_khz(struct kvm *kvm, u32 this_tsc_khz)
+> >>>>+{
+> >>>>+	/* Compute a scale to convert nanoseconds in TSC cycles */
+> >>>>+	kvm_get_time_scale(this_tsc_khz, NSEC_PER_SEC / 1000,
+> >>>>+			&kvm->arch.virtual_tsc_shift,
+> >>>>+			&kvm->arch.virtual_tsc_mult);
+> >>>>+	kvm->arch.virtual_tsc_khz = this_tsc_khz;
+> >>>>+}
+> >>>>+
+> >>>>+static u64 compute_guest_tsc(struct kvm_vcpu *vcpu, s64 kernel_ns)
+> >>>>+{
+> >>>>+	u64 tsc = pvclock_scale_delta(kernel_ns-vcpu->arch.last_tsc_nsec,
+> >>>>+				      vcpu->kvm->arch.virtual_tsc_mult,
+> >>>>+				      vcpu->kvm->arch.virtual_tsc_shift);
+> >>>>+	tsc += vcpu->arch.last_tsc_write;
+> >>>>+	return tsc;
+> >>>>+}
+> >>>>+
+> >>>>  void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
+> >>>>  {
+> >>>>  	struct kvm *kvm = vcpu->kvm;
+> >>>>@@ -1029,6 +1048,8 @@ void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
+> >>>>
+> >>>>  	/* Reset of TSC must disable overshoot protection below */
+> >>>>  	vcpu->arch.hv_clock.tsc_timestamp = 0;
+> >>>>+	vcpu->arch.last_tsc_write = data;
+> >>>>+	vcpu->arch.last_tsc_nsec = ns;
+> >>>>  }
+> >>>>  EXPORT_SYMBOL_GPL(kvm_write_tsc);
+> >>>>
+> >>>>@@ -1041,22 +1062,42 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
+> >>>>  	s64 kernel_ns, max_kernel_ns;
+> >>>>  	u64 tsc_timestamp;
+> >>>>
+> >>>>-	if ((!vcpu->time_page))
+> >>>>-		return 0;
+> >>>>-
+> >>>>  	/* Keep irq disabled to prevent changes to the clock */
+> >>>>  	local_irq_save(flags);
+> >>>>  	kvm_get_msr(v, MSR_IA32_TSC,&tsc_timestamp);
+> >>>>  	kernel_ns = get_kernel_ns();
+> >>>>  	this_tsc_khz = __get_cpu_var(cpu_tsc_khz);
+> >>>>-	local_irq_restore(flags);
+> >>>>
+> >>>>  	if (unlikely(this_tsc_khz == 0)) {
+> >>>>+		local_irq_restore(flags);
+> >>>>  		kvm_make_request(KVM_REQ_CLOCK_UPDATE, v);
+> >>>>  		return 1;
+> >>>>  	}
+> >>>>
+> >>>>  	/*
+> >>>>+	 * We may have to catch up the TSC to match elapsed wall clock
+> >>>>+	 * time for two reasons, even if kvmclock is used.
+> >>>>+	 *   1) CPU could have been running below the maximum TSC rate
+> >>>kvmclock handles frequency changes?
+> >>>
+> >>>>+	 *   2) Broken TSC compensation resets the base at each VCPU
+> >>>>+	 *      entry to avoid unknown leaps of TSC even when running
+> >>>>+	 *      again on the same CPU.  This may cause apparent elapsed
+> >>>>+	 *      time to disappear, and the guest to stand still or run
+> >>>>+	 *	very slowly.
+> >>>I don't get this. Please explain.
+> >>This compensation in arch_vcpu_load, for unstable TSC case, causes
+> >>time while preempted to disappear from the TSC by adjusting the TSC
+> >>back to match the last observed TSC.
+> >>
+> >>         if (unlikely(vcpu->cpu != cpu) || check_tsc_unstable()) {
+> >>                 /* Make sure TSC doesn't go backwards */
+> >>                 s64 tsc_delta = !vcpu->arch.last_host_tsc ? 0 :
+> >>                                 native_read_tsc() -
+> >>vcpu->arch.last_host_tsc;
+> >>                 if (tsc_delta<  0)
+> >>                         mark_tsc_unstable("KVM discovered backwards TSC");
+> >>                 if (check_tsc_unstable())
+> >>                         kvm_x86_ops->adjust_tsc_offset(vcpu,
+> >>-tsc_delta);<<<<<
+> >>
+> >>Note that this is the correct thing to do if there are cross-CPU
+> >>deltas, when switching CPUs, or if the TSC becomes inherently
+> >>unpredictable while preempted (CPU bugs, kernel resets TSC).
+> >>
+> >>However, all the time that elapsed while not running disappears from
+> >>the TSC (and thus even from kvmclock, without recalibration, as it
+> >>is based off the TSC).  Since we've got to recalibrate the kvmclock
+> >>anyways, we might as well catch the TSC up to the proper value.
+> >Updating kvmclock's tsc_timestamp and system_time should be enough then,
+> >to fix this particular issue?
+> 
+> Yes, it is, for kvmclock guests.  For TSC based kernels (RHEL < 5.5,
+> FreeBSD, Darwin?), and guests which have userspace TSC, we still
+> need this.
+> 
+> >The problem is you're sneaking in parts of trap mode (virtual_tsc_khz),
+> >without dealing with the issues raised in the past iteration. The
+> >interactions between catch and trap mode are not clear, migration is not
+> >handled, etc.
+> 
+> Yes, I am :)
+> 
+> While I haven't yet resolved those issues to a successful
+> conclusion, the situation is at least improved, and incremental
+> progress is better than nothing.
+> 
+> I do believe that the catchup mode is at least clean and easy to
+> understand, it is the transition to and from trap mode that raised a
+> lot of problems, and that is what I'm reworking.  Regardless of how
+> that turns out, it should integrate smoothly on top of the catchup
+> mode, at least, that is the design goal I'm shooting for, so I'd
+> like to get these pieces upstream now as I don't expect them to
+> change much.
+> 
+> Zach
 
-The SCSI FORMAT UNIT command can take a long time.
-It has an IMMED bit which when set will return
-after the command and its parameters have been
-received. The progress of the format can then be
-polled by other commands. With the IMMED bit clear
-the FORMAT UNIT returns when the format completes
-(i.e. after an hour or so). Either way, setting the
-timeout on the SG_IO ioctl works as expected.
+OK, applied. I don't like catchup mode being used to fix a bug in
+last_host_tsc logic, hopefully it can be killed with trap mode.
 
-Doug Gilbert
-
-
-On 10-09-23 07:41 PM, Mark Lord wrote:
-> What's the purpose of this stack dump,
-> and how can it be prevented in this NORMAL situation??
->
-> The command was "hdparm --security-erase NULL /dev/sdb",
-> which takes about 66 minutes to complete on this particular drive.
->
-> I don't see any obvious way for the task to mark itself
-> as needing longer than 120 secs to complete the operation.
->
-> Thanks.
->
-> [ 1800.373281] INFO: task hdparm:1979 blocked for more than 120 seconds.
-> [ 1800.373288] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
-> disables this message.
-> [ 1800.373294] hdparm D f64a4c00 0 1979 1718 0x00000000
-> [ 1800.373303] f3065c38 00200086 c11be0e3 f64a4c00 c1439ac0 c1439ac0
-> c1439ac0 c1439ac0
-> [ 1800.373317] f571bdb8 c1439ac0 c1439ac0 dbdc5ec7 00000163 dbdb0cfb
-> 00000163 f571bb60
-> [ 1800.373329] 00000001 f3065d18 7fffffff f571bb60 f3065c64 c1270527
-> f684ca50 f684ca50
-> [ 1800.373341] Call Trace:
-> [ 1800.373355] [<c11be0e3>] ? ata_scsi_queuecmd+0x6a/0x73
-> [ 1800.373366] [<c1270527>] schedule_timeout+0x16/0xa5
-> [ 1800.373376] [<c111a4a2>] ? __blk_run_queue+0x3d/0x5e
-> [ 1800.373383] [<c1118626>] ? elv_insert+0x67/0x18f
-> [ 1800.373389] [<c126fd6a>] wait_for_common+0x8a/0xd9
-> [ 1800.373399] [<c1028b75>] ? default_wake_function+0x0/0xd
-> [ 1800.373406] [<c126fe3a>] wait_for_completion+0x12/0x14
-> [ 1800.373413] [<c111d02f>] blk_execute_rq+0x76/0x8f
-> [ 1800.373420] [<c111cf1c>] ? blk_end_sync_rq+0x0/0x28
-> [ 1800.373428] [<c111cc3f>] ? blk_rq_append_bio+0x14/0x3b
-> [ 1800.373434] [<c111ce95>] ? blk_rq_map_user+0x12e/0x1b5
-> [ 1800.373442] [<c11201f8>] sg_io+0x269/0x343
-> [ 1800.373450] [<c11204be>] scsi_cmd_ioctl+0x1ec/0x396
-> [ 1800.373457] [<c11993cf>] ? get_device+0x13/0x18
-> [ 1800.373464] [<c11aeabd>] ? sd_open+0x45/0x104
-> [ 1800.373472] [<c11aea0e>] sd_ioctl+0x6b/0x8c
-> [ 1800.373479] [<c111e2fe>] __blkdev_driver_ioctl+0x66/0x87
-> [ 1800.373486] [<c111ebb2>] blkdev_ioctl+0x5fe/0x62c
-> [ 1800.373495] [<c1061e3f>] ? filemap_fault+0xb5/0x2fc
-> [ 1800.373503] [<c10a7bde>] block_ioctl+0x2a/0x32
-> [ 1800.373509] [<c10a7bde>] ? block_ioctl+0x2a/0x32
-> [ 1800.373518] [<c109345a>] vfs_ioctl+0x27/0x91
-> [ 1800.373524] [<c10a7bb4>] ? block_ioctl+0x0/0x32
-> [ 1800.373531] [<c109398d>] do_vfs_ioctl+0x42a/0x45b
-> [ 1800.373538] [<c10727b7>] ? handle_mm_fault+0x3d8/0x7c2
-> [ 1800.373547] [<c1088e98>] ? fsnotify_modify+0x4f/0x5a
-> [ 1800.373555] [<c101b8f9>] ? do_page_fault+0x1e4/0x243
-> [ 1800.373562] [<c10939ec>] sys_ioctl+0x2e/0x48
-> [ 1800.373570] [<c1002750>] sysenter_do_call+0x12/0x26
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at http://vger.kernel.org/majordomo-info.html
->
 
