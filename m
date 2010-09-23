@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756287Ab0IWVSY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 17:18:24 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:40075 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753841Ab0IWVSW convert rfc822-to-8bit (ORCPT
+	id S1753128Ab0IWV1H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 17:27:07 -0400
+Received: from smtprelay02.ispgateway.de ([80.67.31.29]:45672 "EHLO
+	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223Ab0IWV1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 17:18:22 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Jeff Garzik <jgarzik@pobox.com>
-Subject: Re: [PATCH] de2104x: disable autonegotiation on broken hardware
-Date: Thu, 23 Sep 2010 23:18:08 +0200
-User-Agent: KMail/1.9.10
-Cc: netdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-References: <201009232259.20261.linux@rainbow-software.org> <AANLkTikwXyr4pH5rqkoXpiYvkvpLc7s8tq-EwmM1+r7m@mail.gmail.com>
-In-Reply-To: <AANLkTikwXyr4pH5rqkoXpiYvkvpLc7s8tq-EwmM1+r7m@mail.gmail.com>
+	Thu, 23 Sep 2010 17:27:05 -0400
+Message-ID: <4C9BC620.3@riesch.at>
+Date: Thu, 23 Sep 2010 23:26:56 +0200
+From: Christian Riesch <christian@riesch.at>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
-Message-Id: <201009232318.11541.linux@rainbow-software.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Christoph Lameter <cl@linux.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-api@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, David Miller <davem@davemloft.net>,
+        John Stultz <johnstul@us.ibm.com>, Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 6/8] ptp: Added a clock that uses the eTSEC found on the
+ MPC85xx.
+References: <cover.1285261533.git.richard.cochran@omicron.at>	<57b64051c816dc9cb856bbb9f38fc901c9d3d651.1285261535.git.richard.cochran@omicron.at>	<alpine.DEB.2.00.1009231348150.2962@router.home> <20100923214359.3f287b11@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100923214359.3f287b11@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: christian@riesch.at
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 23 September 2010 23:03:13 Jeff Garzik wrote:
-> On Thu, Sep 23, 2010 at 4:59 PM, Ondrej Zary <linux@rainbow-software.org> 
-wrote:
-> > At least on older 21041-AA chips (mine is rev. 11), TP duplex
-> > autonegotiation causes the card not to work at all (link is up but no
-> > packets are transmitted).
-> >
-> > de4x5 disables autonegotiation completely. But it seems to work on newer
-> > (21041-PA rev. 21) so disable it only on rev<20 chips.
-> >
-> > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-> >
-> > --- linux-2.6.36-rc3-orig/drivers/net/tulip/de2104x.c   2010-08-29
-> > 17:36:04.000000000 +0200 +++ linux-2.6.36-rc3/drivers/net/tulip/de2104x.c
-> >        2010-09-24 00:27:41.000000000 +0200 @@ -364,6 +364,8 @@ static u16
-> > t21040_csr15[] = { 0, 0, 0x00
-> >  /* 21041 transceiver register settings: TP AUTO, BNC, AUI, TP, TP FD*/
-> >  static u16 t21041_csr13[] = { 0xEF01, 0xEF09, 0xEF09, 0xEF01, 0xEF09, };
-> >  static u16 t21041_csr14[] = { 0xFFFF, 0xF7FD, 0xF7FD, 0x6F3F, 0x6F3D, };
-> > +/* If on-chip autonegotiation is broken, use half-duplex (FF3F) instead
-> > */ +static u16 t21041_csr14_brk[] = { 0xFF3F, 0xF7FD, 0xF7FD, 0x6F3F,
-> > 0x6F3D, }; static u16 t21041_csr15[] = { 0x0008, 0x0006, 0x000E, 0x0008,
-> > 0x0008, };
-> >
-> >
-> > @@ -1911,8 +1913,14 @@ fill_defaults:
-> >        for (i = 0; i < DE_MAX_MEDIA; i++) {
-> >                if (de->media[i].csr13 == 0xffff)
-> >                        de->media[i].csr13 = t21041_csr13[i];
-> > -               if (de->media[i].csr14 == 0xffff)
-> > -                       de->media[i].csr14 = t21041_csr14[i];
-> > +               if (de->media[i].csr14 == 0xffff) {
-> > +                       /* autonegotiation is broken at least on some
-> > chip +                          revisions - rev. 0x21 works, 0x11 does
-> > not */ +                       if (de->pdev->revision < 0x20)
-> > +                               de->media[i].csr14 = t21041_csr14_brk[i];
-> > +                       else
-> > +                               de->media[i].csr14 = t21041_csr14[i];
-> > +               }
->
-> Interesting...  I never knew about that quirk.
+Alan Cox wrote:
+>> Please do not introduce useless additional layers for clock sync. Load
+>> these ptp clocks like the other regular clock modules and make them sync
+>> system time like any other clock.
+> 
+> I don't think you understand PTP. PTP has masters, a system can need to
+> be honouring multiple conflicting masters at once.
 
-This errata document says that autonegotiation is somehow broken but it does 
-not specify it further:
-http://ftp.nluug.nl/ftp/ftp/pub/os/NetBSD/misc/dec-docs/ec-qd2ma-te.ps.gz
+AFAIK the master's should not be conflicting. The Best Master Clock 
+algorithm (BMC) defined in IEEE1588 selects the best master clock. This 
+clock distributes its notion of time on the network while the other 
+masters, that is the other clocks/nodes that are configured to 
+potentially become a master, keep quiet. So usually we will only have 
+one source of time (the master clock selected by the BMC) and we will 
+steer our single PHC (PTP hardware clock) to follow this master (Of 
+course there may be use-cases that require more than one PTP clock, 
+e.g., for research purposes).
 
--- 
-Ondrej Zary
+However, if the clock selected by the BMC is switched off, loses its 
+network connection..., the second best clock is selected by the BMC and 
+becomes master. This clock may be less accurate and thus our slave clock 
+has to switch from one notion of time to another. Is that the conflict 
+you mentioned?
+
+Christian
