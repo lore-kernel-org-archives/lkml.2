@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650Ab0IWDms (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 23:42:48 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42532 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752094Ab0IWDmr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 23:42:47 -0400
-Date: Wed, 22 Sep 2010 20:43:05 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Valdis.Kletnieks@vt.edu
-Cc: Anton Blanchard <anton@samba.org>, linux-kernel@vger.kernel.org,
-        Greg KH <greg@kroah.com>
-Subject: Re: mmotm 2010-09-22 - build error in drivers/staging/zram
-Message-Id: <20100922204305.2fdc5b66.akpm@linux-foundation.org>
-In-Reply-To: <56264.1285212366@localhost>
-References: <201009222343.o8MNh9Mp023931@imap1.linux-foundation.org>
-	<56264.1285212366@localhost>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	id S1752491Ab0IWDoS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 23:44:18 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:39908 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751783Ab0IWDoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 23:44:16 -0400
+Date: Thu, 23 Sep 2010 13:44:14 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: linux-next: manual merge of the tip tree with the slab tree
+Message-Id: <20100923134414.7aa7f696.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -25,25 +24,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Sep 2010 23:26:06 -0400 Valdis.Kletnieks@vt.edu wrote:
+Hi all,
 
-> On Wed, 22 Sep 2010 16:12:09 PDT, akpm@linux-foundation.org said:
-> > The mm-of-the-moment snapshot 2010-09-22-16-11 has been uploaded to
-> > 
-> >    http://userweb.kernel.org/~akpm/mmotm/
-> 
-> Looks like zram-free-percpu-data-on-module-exit.patch has issues:
-> 
->   CC [M]  drivers/staging/zram/zram_drv.o
-> drivers/staging/zram/zram_drv.c: In function 'zram_reset_device':
-> drivers/staging/zram/zram_drv.c:500:2: error: incompatible type for argument 1 of 'free_percpu'
-> include/linux/percpu.h:153:13: note: expected 'void *' but argument is of type 'struct zram_stats'
-> make[3]: *** [drivers/staging/zram/zram_drv.o] Error 1
-> 
+Today's linux-next merge of the tip tree got a conflict in
+include/linux/percpu.h between commit
+6fc80ef491b981f59233beaf6aeaccc0c947031d ("percpu: use percpu allocator
+on UP too") from the slab tree and commit
+8b8e2ec1eeca7f6941bc81cefc9663018d6ceb57 ("percpu: Add {get,put}
+_cpu_ptr") from the tip tree.
 
-bah.  `make allmodconfig' enables CONFIG_STAGING_EXCLUDE_BUILD, so
-nothing under staging gets built.  Seems rather dumb.
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-zram-free-percpu-data-on-module-exit.patch seems to be unneeded in the
-current zram driver - I'll drop the patch, thanks.
-
+diff --cc include/linux/percpu.h
+index aeeeef1,0eb5083..0000000
+--- a/include/linux/percpu.h
++++ b/include/linux/percpu.h
+@@@ -39,8 -39,19 +39,17 @@@
+  	preempt_enable();				\
+  } while (0)
+  
++ #define get_cpu_ptr(var) ({				\
++ 	preempt_disable();				\
++ 	this_cpu_ptr(var); })
++ 
++ #define put_cpu_ptr(var) do {				\
++ 	(void)(var);					\
++ 	preempt_enable();				\
++ } while (0)
++ 
+ -#ifdef CONFIG_SMP
+ -
+  /* minimum unit size, also is the maximum supported allocation size */
+ -#define PCPU_MIN_UNIT_SIZE		PFN_ALIGN(64 << 10)
+ +#define PCPU_MIN_UNIT_SIZE		PFN_ALIGN(32 << 10)
+  
+  /*
+   * Percpu allocator can serve percpu allocations before slab is
