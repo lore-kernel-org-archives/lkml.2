@@ -1,89 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755759Ab0IWUfB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 16:35:01 -0400
-Received: from xenotime.net ([72.52.115.56]:54052 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754083Ab0IWUfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 16:35:00 -0400
-Date: Thu, 23 Sep 2010 13:34:54 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Greg KH <gregkh@suse.de>
-Cc: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -next] driver core: fix build for CONFIG_BLOCK=n
-Message-Id: <20100923133454.786049c2.rdunlap@xenotime.net>
-In-Reply-To: <20100923203006.GB10687@suse.de>
-References: <20100920161239.f204a507.sfr@canb.auug.org.au>
-	<20100920092034.0b3f5898.randy.dunlap@oracle.com>
-	<20100921223115.GB21202@kroah.com>
-	<20100923111541.97abcd05.rdunlap@xenotime.net>
-	<20100923191629.GB18736@kroah.com>
-	<20100923124751.cc59a349.rdunlap@xenotime.net>
-	<20100923203006.GB10687@suse.de>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755635Ab0IWUho (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 16:37:44 -0400
+Received: from fanny.its.uu.se ([130.238.4.241]:49166 "EHLO fanny.its.uu.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753502Ab0IWUhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 16:37:43 -0400
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-ID: <19611.47764.491500.541850@pilspetsen.it.uu.se>
+Date: Thu, 23 Sep 2010 22:37:40 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: linux-kernel@vger.kernel.org
+Subject: HPET broken again/still in 2.6.36-rc5?
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Sep 2010 13:30:06 -0700 Greg KH wrote:
+I just had a weird partial hang with 2.6.36-rc5 on x86.
+I was trying to start a new xterm but it just wouldn't
+appear on the screen.  I then noticed that a gcc build
+in one xterm had frozen.  Running dmesg in yet another
+xterm hanged.
 
-> On Thu, Sep 23, 2010 at 12:47:51PM -0700, Randy Dunlap wrote:
-> > On Thu, 23 Sep 2010 12:16:29 -0700 Greg KH wrote:
-> > 
-> > > On Thu, Sep 23, 2010 at 11:15:41AM -0700, Randy Dunlap wrote:
-> > > > On Tue, 21 Sep 2010 15:31:15 -0700 Greg KH wrote:
-> > > > 
-> > > > > On Mon, Sep 20, 2010 at 09:20:34AM -0700, Randy Dunlap wrote:
-> > > > > > From: Randy Dunlap <randy.dunlap@oracle.com>
-> > > > > > 
-> > > > > > Fix build when CONFIG_BLOCK is not enabled (since SEP-06).
-> > > > > > Fixes these build errors:
-> > > > > > 
-> > > > > > drivers/base/core.c: In function 'get_device_parent':
-> > > > > > drivers/base/core.c:622: error: 'block_class' undeclared (first use in this function)
-> > > > > > drivers/base/core.c: In function 'device_add_class_symlinks':
-> > > > > > drivers/base/core.c:712: error: 'block_class' undeclared (first use in this function)
-> > > > > > drivers/base/core.c: In function 'device_remove_class_symlinks':
-> > > > > > drivers/base/core.c:742: error: 'block_class' undeclared (first use in this function)
-> > > > > > 
-> > > > > > Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> > > > > 
-> > > > > This should no longer be needed with the next linux-next tree as the
-> > > > > logic in this area has changed thanks to Andi's patch.
-> >                                      ~~~~~~~~~~~~~~~~~~~~~~~
-> > 
-> > > > 
-> > > > {sorry about resend, email problems}
-> > > > 
-> > > > 
-> > > > Still seeing this build error. (linux-next 2010-0923)
-> > > > Will you be merging some patch soon?
-> > > 
-> > > Not unless someone provides it.  I know of no valid user of the kernel
-> > > that does not enable CONFIG_BLOCK, so I really doubt this will ever hit
-> > > anyone in "real life" so it's _way_ down the list of things I have to do
-> > > at the moment, sorry.
+Meanwhile I had no problems shifting focus between windows,
+or typing commands in ssh connections to other machines.
 
-Maybe you should just submit a patch to remove CONFIG_BLOCK.
-(and many other kconfig symbols)
+After about two minutes the hanging operations suddenly
+resumed without errors, and the following was at the end
+of the kernel log:
 
-> > so what was your comment about Andi's patch (above)?
-> 
-> It's merged already, and because of it, your patch failed to apply.
+CE: hpet increased min_delta_ns to 7500 nsec
 
-
-OK, so I disagree with your comment:
-> > > > > This should no longer be needed with the next linux-next tree as the
-> > > > > logic in this area has changed thanks to Andi's patch.
-
-but I now understand that my patch failed to apply.  Thanks for the info.
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+The machine is a Core i7 with X58 chipset.
