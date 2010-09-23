@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756604Ab0IWUrK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 16:47:10 -0400
-Received: from mail.perches.com ([173.55.12.10]:2306 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756561Ab0IWUrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 16:47:07 -0400
-Subject: Re: [PATCH] intel_ips: quieten "power or thermal limit exceeded"
- messages
-From: Joe Perches <joe@perches.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Cesar Eduardo Barros <cesarb@cesarb.net>, Matthew Garrett <mjg@redhat.com>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20100923133132.3faae5b3@jbarnes-desktop>
-References: <Pine.LNX.4.30.1008261631410.13713-100000@mail.perches.com>
-	 <4C770299.6000708@cesarb.net> <1282869660.1836.5.camel@Joe-Laptop>
-	 <4C77171E.6060008@cesarb.net> <1282894751.1836.41.camel@Joe-Laptop>
-	 <4C784650.2030200@cesarb.net> <1282962104.1946.179.camel@Joe-Laptop>
-	 <20100923133132.3faae5b3@jbarnes-desktop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 23 Sep 2010 13:47:05 -0700
-Message-ID: <1285274825.25928.19.camel@Joe-Laptop>
+	id S1756632Ab0IWUsW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 16:48:22 -0400
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:54624 "HELO
+	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755358Ab0IWUsU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 16:48:20 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=hg5ckP2oayjeqt9F19P4tsUGvldhqBaJFfKMWXzt+F3HhsMCBYJHvjzcBYsB/kUPBLqQ2uYRo6+DAmwJTTebb5LttoX5wFjwtYvOy+U7X6mmm2K1oH0NkjekQ9T3Gdpi;
+Date: Thu, 23 Sep 2010 13:48:16 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: tim.gardner@canonical.com
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: MCP limit log messages, 2.6.36-rc4
+Message-ID: <20100923134816.57e932fc@jbarnes-desktop>
+In-Reply-To: <4C9106C1.4080505@canonical.com>
+References: <4C9106C1.4080505@canonical.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-23 at 13:31 -0700, Jesse Barnes wrote:
-> I think the programmed limits are valid if they're nonzero and less
-> than one of the available default limits.  If they're not valid, we
-> should just use the default values.  I was thinking something like the
-> below for MCP, but Joe you may want to just update your patch instead
-> since it's more complete.
+On Wed, 15 Sep 2010 11:47:45 -0600
+Tim Gardner <tim.gardner@canonical.com> wrote:
 
-You have my patch yes?
+> I've been getting regular MCP limit log messages on a Dell Studio 1458 
+> (i5 CPU) with an A02 BIOS. With the attached debug hack it prints the 
+> following values:
+> 
+> [   33.605098] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power 
+> 30123, limit 1023
+> [   38.597998] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power 
+> 21697, limit 1023
+> [   43.590917] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power 
+> 15390, limit 1023
+> [   48.583821] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power 
+> 43370, limit 1023
+> [   53.576740] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power 
+> 64728, limit 1023
+> 
+> This is an idle machine which starts printing these messages about 30 
+> seconds after boot. Any thoughts?
 
-You can probably integrate and validate it
-better than I can with your proposed change.
+Actually, it looks like you have some non-upstream patches to the IPS
+driver, maybe one of Joe's patches to add more debug output when limits
+are exceeded?
 
-I don't have any of the hardware to test.
-If I can otherwise help somehow, let me know.
+At any rate, I think we're setting the MCP power limit incorrectly.
+The BIOS must be giving us a limit in 0.1W units (though even then it
+looks bogus); we need to clamp it to one of the available defaults.
 
-cheers, Joe
+Joe has some code for that as well, I've just asked him to update his
+patch, which we should get into 2.6.35.x.
 
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
