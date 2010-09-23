@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754969Ab0IWLxY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 07:53:24 -0400
-Received: from fanny.its.uu.se ([130.238.4.241]:47519 "EHLO fanny.its.uu.se"
+	id S1755008Ab0IWLyZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 07:54:25 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:31378 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754528Ab0IWLxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 07:53:23 -0400
+	id S1754528Ab0IWLyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 07:54:23 -0400
+Message-ID: <4C9B3F9C.8080506@parallels.com>
+Date: Thu, 23 Sep 2010 15:53:00 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: hadi@cyberus.ca
+CC: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
+        Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Ulrich Drepper <drepper@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+        David Miller <davem@davemloft.net>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        Ben Greear <greearb@candelatech.com>,
+        Matt Helsley <matthltc@us.ibm.com>, Jonathan Corbet <corbet@lwn.net>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>
+Subject: Re: [PATCH 8/8] net: Implement socketat.
+References: <m1ocborgq7.fsf@fess.ebiederm.org>	 <m1bp7oq1u8.fsf@fess.ebiederm.org>  <4C9B162E.7040201@parallels.com>	 <1285240797.5036.5.camel@bigi>  <4C9B3B06.900@parallels.com> <1285242055.5036.9.camel@bigi>
+In-Reply-To: <1285242055.5036.9.camel@bigi>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-ID: <19611.16302.262307.129176@pilspetsen.it.uu.se>
-Date: Thu, 23 Sep 2010 13:53:18 +0200
-From: Mikael Pettersson <mikpe@it.uu.se>
-To: linux-kernel@vger.kernel.org
-Cc: linux-i2c@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: [BUG 2.6.36-rc5] of_i2c.ko <-> i2c-core.ko dependency loop
-X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Running modules_install from a newly built 2.6.36-rc5 kernel
-on my 32-bit PowerMac results in:
+On 09/23/2010 03:40 PM, jamal wrote:
+> On Thu, 2010-09-23 at 15:33 +0400, Pavel Emelyanov wrote:
+> 
+>> This particular usecase is unneeded once you have the "enter" ability.
+> 
+> Is that cheaper from a syscall count/cost?
 
-WARNING: Module /lib/modules/2.6.36-rc5/kernel/drivers/i2c/busses/i2c-powermac.ko ignored, due to loop
-WARNING: Loop detected: /lib/modules/2.6.36-rc5/kernel/drivers/i2c/i2c-core.ko needs of_i2c.ko which needs i2c-core.ko again!
-WARNING: Module /lib/modules/2.6.36-rc5/kernel/drivers/i2c/i2c-core.ko ignored, due to loop
-WARNING: Module /lib/modules/2.6.36-rc5/kernel/drivers/i2c/i2c-dev.ko ignored, due to loop
-WARNING: Module /lib/modules/2.6.36-rc5/kernel/drivers/of/of_i2c.ko ignored, due to loop
-WARNING: Module /lib/modules/2.6.36-rc5/kernel/sound/ppc/snd-powermac.ko ignored, due to loop
+Why does it matter? You told, that the usage scenario was to
+add routes to container. If I do 2 syscalls instead of 1, is
+it THAT worse?
 
-> grep '.*I2C.*=' .config
-CONFIG_OF_I2C=m
-CONFIG_I2C=m
-CONFIG_I2C_BOARDINFO=y
-CONFIG_I2C_CHARDEV=m
-CONFIG_I2C_POWERMAC=m
+> i.e do I have to enter every time i want to write/read this fd?
 
-I can't say exactly when this started, haven't built kernels on this
-box in a while.
+No - you enter once, create a socket and do whatever you need
+withing the enterned namespace.
 
-/Mikael
+> How does poll/select work in that enter scenario?
+
+Just like it used to before the enter.
+
+> cheers,
+> jamal
+> 
+> 
+
