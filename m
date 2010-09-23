@@ -1,62 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab0IWNBt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 09:01:49 -0400
-Received: from lnx500.hrz.tu-darmstadt.de ([130.83.156.225]:45795 "EHLO
-	lnx500.hrz.tu-darmstadt.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753080Ab0IWNBr (ORCPT
+	id S1755283Ab0IWNN0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 09:13:26 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:38839 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753646Ab0IWNNZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 09:01:47 -0400
-From: Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
+	Thu, 23 Sep 2010 09:13:25 -0400
+Date: Thu, 23 Sep 2010 09:13:02 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Michael Neuling <mikey@neuling.org>
+Cc: michael@ellerman.id.au, Neil Horman <nhorman@gmail.com>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+        Arjen Van De Ven <arjanvandeven@gmail.com>, arjan@linux.intel.com
+Subject: Re: [PATCH] irqbalance, powerpc: add IRQs without settable SMP
+ affinity to banned list
+Message-ID: <20100923131302.GA6560@shamino.rdu.redhat.com>
+References: <12972.1285135457@neuling.org>
+ <1285230159.30617.2.camel@concordia>
+ <1243.1285239440@neuling.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <19611.20403.865248.695829@elektron.ikp.physik.tu-darmstadt.de>
-Date: Thu, 23 Sep 2010 15:01:39 +0200
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Any SYSRQ key to force mode switch to console mode when using
- KMS?
-In-Reply-To: <19611.8986.142128.168878@elektron.ikp.physik.tu-darmstadt.de>
-References: <19601.1301.803816.92851@elektron.ikp.physik.tu-darmstadt.de>
-	<20100921151033.80e61747.randy.dunlap@oracle.com>
-	<19609.53242.674915.369484@elektron.ikp.physik.tu-darmstadt.de>
-	<4C9A1FB7.9050902@oracle.com>
-	<19611.8986.142128.168878@elektron.ikp.physik.tu-darmstadt.de>
-X-Mailer: VM 7.19 under Emacs 21.3.1
-X-PMX-TU: seen v0.99a by 5.5.9.395186, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.9.23.124818
-X-PMX-RELAY: mailout
+Content-Disposition: inline
+In-Reply-To: <1243.1285239440@neuling.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Uwe" == Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de> writes:
+On Thu, Sep 23, 2010 at 08:57:20PM +1000, Michael Neuling wrote:
+> 
+> > > +		if (fwrite(line, strlen(line) - 1, 1, file) == 0)
+> > 
+> > if (fputs(line, file) == EOF)
+> 
+> Good point thanks... new patch below
+> 
+> Mikey
+> 
+> irqbalance, powerpc: add IRQs without settable SMP affinity to banned list
+> 
+> On pseries powerpc, IPIs are registered with an IRQ number so
+> /proc/interrupts looks like this on a 2 core/2 thread machine:
+> 
+>            CPU0       CPU1       CPU2       CPU3
+>  16:    3164282    3290514    1138794     983121   XICS             Level        IPI
+>  18:    2605674          0     304994          0   XICS             Level        lan0
+>  30:     400057          0     169209          0   XICS             Level        ibmvscsi
+> LOC:     133734      77250     106425      91951   Local timer interrupts
+> SPU:          0          0          0          0   Spurious interrupts
+> CNT:          0          0          0          0   Performance monitoring interrupts
+> MCE:          0          0          0          0   Machine check exceptions
+> 
+> Unfortunately this means irqbalance attempts to set the affinity of IPIs
+> which is not possible.  So in the above case, when irqbalance is in
+> performance mode due to heavy IPI, lan0 and ibmvscsi activity, it
+> sometimes attempts to put the IPIs on one core (CPU0&1) and lan0 and
+> ibmvscsi on the other core (CPU2&3).  This is suboptimal as we want lan0
+> and ibmvscsi to be on separate cores and IPIs to be ignored.
+> 
+> When irqblance attempts writes to the IPI smp_affinity (ie.
+> /proc/irq/16/smp_affinity in the above example) it fails but irqbalance
+> ignores currently ignores this.
+> 
+> This patch catches these write fails and in this case adds that IRQ
+> number to the banned IRQ list.  This will catch the above IPI case and
+> any other IRQ where the SMP affinity can't be set.
+> 
+> Tested on POWER6, POWER7 and x86.
+> 
+> Signed-off-by: Michael Neuling <mikey@neuling.org>
+> 
+> Index: irqbalance/irqlist.c
+> ===================================================================
+> --- irqbalance.orig/irqlist.c
+> +++ irqbalance/irqlist.c
+> @@ -67,7 +67,7 @@
+>  	DIR *dir;
+>  	struct dirent *entry;
+>  	char *c, *c2;
+> -	int nr , count = 0;
+> +	int nr , count = 0, can_set = 1;
+>  	char buf[PATH_MAX];
+>  	sprintf(buf, "/proc/irq/%i", number);
+>  	dir = opendir(buf);
+> @@ -80,7 +80,7 @@
+>  			size_t size = 0;
+>  			FILE *file;
+>  			sprintf(buf, "/proc/irq/%i/smp_affinity", number);
+> -			file = fopen(buf, "r");
+> +			file = fopen(buf, "r+");
+>  			if (!file)
+>  				continue;
+>  			if (getline(&line, &size, file)==0) {
+> @@ -89,7 +89,14 @@
+>  				continue;
+>  			}
+>  			cpumask_parse_user(line, strlen(line), irq->mask);
+> -			fclose(file);
+> +			/*
+> +			 * Check that we can write the affinity, if
+> +			 * not take it out of the list.
+> +			 */
+> +			if (fputs(line, file) == EOF)
+> +				can_set = 0;
+This is maybe a nit, but writing to the affinity file can fail for a few
+different reasons, some of them permanent, some transient.  For instance, if
+we're in a memory constrained condition temporarily irq_affinity_proc_write
+might return -ENOMEM.  Might it be better to modify this code so that, instead
+of using fputs to merge the various errors into an EOF, we use some other write
+method that lets us better determine the error and selectively ban the interrupt
+only for those errors which we consider permanent?
 
->>>>> "Randy" == Randy Dunlap <randy.dunlap@oracle.com> writes:
-...
-    Uwe> However 2.6.36-rc4 also fixed my hibernate problem:
+Otherwise this looks fine to me.
 
-    Uwe> commit 84e1d836ef0759a152578a961894824bde89596f Merge: 20f4cad
-    Uwe> 6715045 Author: Linus Torvalds <torvalds@linux-foundation.org>
-    Uwe> Date: Sat Sep 11 15:50:53 2010 -0700
+Thanks
+Neil
 
-    Uwe>     Merge branch 'pm-fixes' of
-    Uwe> git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6
-    
-    Uwe>     * 'pm-fixes' of ...  PM / Hibernate: Avoid hitting OOM during
-    Uwe> preallocation of memory ...
-
-    Uwe> so I no longer hit the problem with the dark screen...
-
-I burried the problem too early. 
-
-On another hibernate attempt on 2.6.36-rc4, now the image again was not
-written to disk, the screen turn black and no ALT-CTL-SYSRQ combination
-helped. Especially I tried  ALT-CTL-SYSRQ ad 'v','V', ALT-CTL 'v' and
-ALT-CTL 'V'...
- 
--- 
-Uwe Bonnes                bon@elektron.ikp.physik.tu-darmstadt.de
-
-Institut fuer Kernphysik  Schlossgartenstrasse 9  64289 Darmstadt
---------- Tel. 06151 162516 -------- Fax. 06151 164321 ----------
