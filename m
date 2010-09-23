@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172Ab0IWMRK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 08:17:10 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:55037 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754697Ab0IWMRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 08:17:08 -0400
-Date: Thu, 23 Sep 2010 07:17:04 -0500
-From: Robin Holt <holt@sgi.com>
-To: Al Viro <viro@zeniv.linux.org.uk>, Benjamin LaHaise <bcrl@kvack.org>,
-        "Denis V. Lunev" <den@openvz.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Miklos Szeredi <mszeredi@suse.cz>, Mingming Cao <cmm@us.ibm.com>,
-        Nick Piggin <npiggin@kernel.dk>, Pavel Emelyanov <xemul@openvz.org>
-Cc: holt@sgi.com, linux-kernel@vger.kernel.org
-Subject: When booting a 16TB system, unix_create1 fails due to integer
- overflow.
-Message-ID: <20100923121704.GR14064@sgi.com>
+	id S1755211Ab0IWMfS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 08:35:18 -0400
+Received: from hera.kernel.org ([140.211.167.34]:56191 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755189Ab0IWMfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 08:35:16 -0400
+Message-ID: <4C9B497B.4060302@kernel.org>
+Date: Thu, 23 Sep 2010 14:35:07 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: lkml <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC] workqueue: remove in_workqueue_context()
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 23 Sep 2010 12:35:10 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit a25909a4 (lockdep: Add an in_workqueue_context() lockdep-based
+test function) added in_workqueue_context() but there hasn't been any
+in-kernel user and the lockdep annotation in workqueue is scheduled to
+change.  Remove the unused function.
 
-I do not know which direction to take, but here is the summary of the
-problem.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+Paul, I was looking through lockdep annotations to see how they can be
+improved and noticed that in_workqueue_context() isn't used by anyone
+and it seems like there hasn't been any in-kernel user either.  Can
+this be removed or do you expect to use it somewhere?
 
-We recently started trying to boot a customer's two new machines which
-are configured with 384GB short of 16TB of memory.
+Thanks.
 
-We were seeing a failure which prevented boot.  The kernel was incapable
-of creating either a named pipe or unix domain socket.  This comes down
-to a common kernel function called unix_create1() which does:
+ include/linux/workqueue.h |    4 ----
+ kernel/workqueue.c        |   15 ---------------
+ 2 files changed, 19 deletions(-)
 
-	atomic_inc(&unix_nr_socks);
-	if (atomic_read(&unix_nr_socks) > 2 * get_max_files())
-		goto out;
+diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
+index e33ff4a..f6eaf56 100644
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -429,8 +429,4 @@ extern bool freeze_workqueues_busy(void);
+ extern void thaw_workqueues(void);
+ #endif /* CONFIG_FREEZER */
 
-The function get_max_files() is a simple return of files_stat.max_files.
-files_stat.max_files is a signed integer and is computed in
-fs/file_table.c's files_init().
+-#ifdef CONFIG_LOCKDEP
+-int in_workqueue_context(struct workqueue_struct *wq);
+-#endif
+-
+ #endif
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 19e4bc1..c758e78 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -310,21 +310,6 @@ static inline int __next_wq_cpu(int cpu, const struct cpumask *mask,
+ 	     (cpu) < WORK_CPU_NONE;					\
+ 	     (cpu) = __next_wq_cpu((cpu), cpu_possible_mask, (wq)))
 
-	n = (mempages * (PAGE_SIZE / 1024)) / 10;
-	files_stat.max_files = n;
+-#ifdef CONFIG_LOCKDEP
+-/**
+- * in_workqueue_context() - in context of specified workqueue?
+- * @wq: the workqueue of interest
+- *
+- * Checks lockdep state to see if the current task is executing from
+- * within a workqueue item.  This function exists only if lockdep is
+- * enabled.
+- */
+-int in_workqueue_context(struct workqueue_struct *wq)
+-{
+-	return lock_is_held(&wq->lockdep_map);
+-}
+-#endif
+-
+ #ifdef CONFIG_DEBUG_OBJECTS_WORK
 
-In our case, mempages (total_ram_pages) is approx 3,758,096,384
-(0xe0000000).  That leaves max_files at approximately 1,503,238,553.
-This causes 2 * get_max_files() to integer overflow.
-
-We came up with a few possible solutions:
-
-Our first response was to limit max_files to (INT_MAX / 2)  This at
-least got us past the problem and seemed reasonable.
-
-We could also have changed the 2 * get_max_files() to 2UL *
-get_max_files() and gotten past this point in boot.  That was not tested.
-
-We could also have changed the definition of max_files to at least an
-unsigned int instead of an int and gotten past the problem, but again,
-not tested.
-
-
-Any suggestions for a direction would be appreciated.
-
-Thank you,
-Robin Holt
+ static struct debug_obj_descr work_debug_descr;
