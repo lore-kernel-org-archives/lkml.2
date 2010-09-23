@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754941Ab0IWLxB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 07:53:01 -0400
-Received: from cantor.suse.de ([195.135.220.2]:54334 "EHLO mx1.suse.de"
+	id S1754969Ab0IWLxY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 07:53:24 -0400
+Received: from fanny.its.uu.se ([130.238.4.241]:47519 "EHLO fanny.its.uu.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753240Ab0IWLxA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 07:53:00 -0400
-Date: Thu, 23 Sep 2010 13:52:59 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: Namhyung Kim <namhyung@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ida: document IDA_BITMAP_LONGS calculation
-In-Reply-To: <4C9B39DC.8050409@kernel.org>
-Message-ID: <alpine.LNX.2.00.1009231352410.26813@pobox.suse.cz>
-References: <1283506698-21369-1-git-send-email-namhyung@gmail.com> <alpine.LNX.2.00.1009231325370.26813@pobox.suse.cz> <4C9B39DC.8050409@kernel.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754528Ab0IWLxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 07:53:23 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <19611.16302.262307.129176@pilspetsen.it.uu.se>
+Date: Thu, 23 Sep 2010 13:53:18 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: linux-kernel@vger.kernel.org
+Cc: linux-i2c@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: [BUG 2.6.36-rc5] of_i2c.ko <-> i2c-core.ko dependency loop
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Sep 2010, Tejun Heo wrote:
+Running modules_install from a newly built 2.6.36-rc5 kernel
+on my 32-bit PowerMac results in:
 
-> >> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> >> Acked-by: Tejun Heo <tj@kernel.org>
-> >> ---
-> >>  include/linux/idr.h |    5 ++++-
-> >>  1 files changed, 4 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/include/linux/idr.h b/include/linux/idr.h
-> >> index e968db7..3f4b718 100644
-> >> --- a/include/linux/idr.h
-> >> +++ b/include/linux/idr.h
-> >> @@ -117,10 +117,13 @@ void idr_init(struct idr *idp);
-> >>  /*
-> >>   * IDA - IDR based id allocator, use when translation from id to
-> >>   * pointer isn't necessary.
-> >> + *
-> >> + * IDA_BITMAP_LONGS is calculated to be one less to accommodate
-> >> + * ida_bitmap->nr_busy so that the whole struct fits in 128 bytes.
-> >>   */
-> >>  #define IDA_CHUNK_SIZE		128	/* 128 bytes per chunk */
-> >>  #define IDA_BITMAP_LONGS	(128 / sizeof(long) - 1)
-> >> -#define IDA_BITMAP_BITS		(IDA_BITMAP_LONGS * sizeof(long) * 8)
-> >> +#define IDA_BITMAP_BITS 	(IDA_BITMAP_LONGS * sizeof(long) * 8)
-> >>  
-> >>  struct ida_bitmap {
-> >>  	long			nr_busy;
-> > 
-> > Tejun, any word on this patch? Doesn't seem to be present in linux-next.
-> 
-> Ooh, I was hoping this one could go through the trivial tree.  It
-> would be great if you can pick up the patch.
+WARNING: Module /lib/modules/2.6.36-rc5/kernel/drivers/i2c/busses/i2c-powermac.ko ignored, due to loop
+WARNING: Loop detected: /lib/modules/2.6.36-rc5/kernel/drivers/i2c/i2c-core.ko needs of_i2c.ko which needs i2c-core.ko again!
+WARNING: Module /lib/modules/2.6.36-rc5/kernel/drivers/i2c/i2c-core.ko ignored, due to loop
+WARNING: Module /lib/modules/2.6.36-rc5/kernel/drivers/i2c/i2c-dev.ko ignored, due to loop
+WARNING: Module /lib/modules/2.6.36-rc5/kernel/drivers/of/of_i2c.ko ignored, due to loop
+WARNING: Module /lib/modules/2.6.36-rc5/kernel/sound/ppc/snd-powermac.ko ignored, due to loop
 
-Bah, I missed your Acked-by, sorry for the noise. Applied now, thanks.
+> grep '.*I2C.*=' .config
+CONFIG_OF_I2C=m
+CONFIG_I2C=m
+CONFIG_I2C_BOARDINFO=y
+CONFIG_I2C_CHARDEV=m
+CONFIG_I2C_POWERMAC=m
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+I can't say exactly when this started, haven't built kernels on this
+box in a while.
+
+/Mikael
