@@ -1,37 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755600Ab0IWQm7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 12:42:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:64430 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754278Ab0IWQm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 12:42:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,224,1283756400"; 
-   d="scan'208";a="660428046"
-Date: Thu, 23 Sep 2010 16:55:55 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86/mrst: add SFI platform device parsing code
-Message-ID: <20100923165555.7f26127d@linux.intel.com>
-In-Reply-To: <20100923144606.GH25663@rakim.wolfsonmicro.main>
-References: <20100922231514.5e9967c7@linux.intel.com>
-	<20100923060703.GB11198@angua.secretlab.ca>
-	<20100923095411.GA25663@rakim.wolfsonmicro.main>
-	<20100923112703.543b0b86@lxorguk.ukuu.org.uk>
-	<20100923102708.GC25663@rakim.wolfsonmicro.main>
-	<20100923115818.0cac8d06@lxorguk.ukuu.org.uk>
-	<20100923105208.GD25663@rakim.wolfsonmicro.main>
-	<20100923111347.0cf93bb3@linux.intel.com>
-	<20100923141133.GG25663@rakim.wolfsonmicro.main>
-	<20100923142720.13bf9d69@linux.intel.com>
-	<20100923144606.GH25663@rakim.wolfsonmicro.main>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	id S1755752Ab0IWQtX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 12:49:23 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:53397 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755428Ab0IWQtW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 12:49:22 -0400
+Date: Thu, 23 Sep 2010 18:12:12 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Alan Cox <alan@linux.intel.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the tty tree
+Message-ID: <20100923181212.422e76c1@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100923081350.e028c4ac.rdunlap@xenotime.net>
+References: <20100923142018.55019d59.sfr@canb.auug.org.au>
+	<20100923141433.GC31738@kroah.com>
+	<20100923081350.e028c4ac.rdunlap@xenotime.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -39,12 +28,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> usually what causes things to break down.  However, if you're totally
-> confident that all the BIOS authors at the OEMs are going to work
-> well together here then I guess it's only Moorestown that's affected.
+On Thu, 23 Sep 2010 08:13:50 -0700
+Randy Dunlap <rdunlap@xenotime.net> wrote:
 
-I'm not 100% confident which is why we lobbied hard to get DMI into the
-firmware, but I think there is a good chance the SFI stuff will be
-fine. My bigger worry to be honest is going to be people adding stuff
-which isn't even in firmware enumerations.
+> On Thu, 23 Sep 2010 07:14:33 -0700 Greg KH wrote:
+> 
+> > On Thu, Sep 23, 2010 at 02:20:18PM +1000, Stephen Rothwell wrote:
+> > > Hi Greg,
+> > > 
+> > > After merging the tty tree, today's linux-next build (x86_64
+> > > allmodconfig) failed like this:
+> > > 
+> > > drivers/char/ip2/ip2main.c:459: error: 'ip2_get_icount' undeclared here (not in a function)
+> > > 
+> > > Caused by commit 157be28e51ed476aa357c8718aaef4832f4da66b ("tty: icount
+> > > changeover for other main devices").
+> > > 
+> > > Please build test (especially the trivial "cut and paste" changes) ...
+> > > 
+> > > I have reverted that commit for today.
+> > 
+> > Ick, sorry about that.  Alan, care to send a fixup patch for this?
+> 
+> 
+> So developers and maintainers are not doing allmodconfig builds?
+> I can understand not doing randconfig builds.
+
+drivers/staging/ti-st/st_kim.c:34:20: error: st_kim.h: No such file or
+directory
+
+So there isn't actually much point trying allmodconfig builds (thats not
+the only fail either).
+
 
