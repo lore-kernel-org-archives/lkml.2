@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016Ab0IWKwM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 06:52:12 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44308 "EHLO
+	id S1754270Ab0IWKyl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 06:54:41 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44317 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750713Ab0IWKwL (ORCPT
+	by vger.kernel.org with ESMTP id S1752651Ab0IWKyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 06:52:11 -0400
-Date: Thu, 23 Sep 2010 11:52:09 +0100
+	Thu, 23 Sep 2010 06:54:40 -0400
+Date: Thu, 23 Sep 2010 11:54:39 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Alan Cox <alan@lxorguk.ukuu.org.uk>
 Cc: Grant Likely <grant.likely@secretlab.ca>, Alan Cox <alan@linux.intel.com>,
@@ -15,47 +15,39 @@ Cc: Grant Likely <grant.likely@secretlab.ca>, Alan Cox <alan@linux.intel.com>,
         David Woodhouse <dwmw2@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>
 Subject: Re: [PATCH] x86/mrst: add SFI platform device parsing code
-Message-ID: <20100923105208.GD25663@rakim.wolfsonmicro.main>
-References: <20100920150431.GD31167@sirena.org.uk>
+Message-ID: <20100923105438.GE25663@rakim.wolfsonmicro.main>
+References: <20100920140049.31408.67527.stgit@localhost.localdomain>
+ <20100920150431.GD31167@sirena.org.uk>
  <20100920152726.68ac2d84@linux.intel.com>
  <20100920152705.GJ3414@rakim.wolfsonmicro.main>
  <AANLkTi=1dkVOWc2WHhYgqKh_awUhp1-uKN8W7Xx3AB_X@mail.gmail.com>
  <20100922231514.5e9967c7@linux.intel.com>
  <20100923060703.GB11198@angua.secretlab.ca>
- <20100923095411.GA25663@rakim.wolfsonmicro.main>
- <20100923112703.543b0b86@lxorguk.ukuu.org.uk>
- <20100923102708.GC25663@rakim.wolfsonmicro.main>
- <20100923115818.0cac8d06@lxorguk.ukuu.org.uk>
+ <20100923114845.1938d9dc@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100923115818.0cac8d06@lxorguk.ukuu.org.uk>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100923114845.1938d9dc@lxorguk.ukuu.org.uk>
 X-Cookie: BOFH excuse
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 23, 2010 at 11:58:18AM +0100, Alan Cox wrote:
-> Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+On Thu, Sep 23, 2010 at 11:48:45AM +0100, Alan Cox wrote:
+> > any of this code could ever be made generic.  The spec seems to only
+> > cover the data structure, and relationships between devices seem to be
+> > left to whatever convention the firmware writer feels like using, or
+> > am I missing something?
 
-> > So what is the plan for coping with OEM systems?  Right now the code
-> > makes no provision at all that I can see for system-specific handling
-> > of the SFI data which seems very optimistic.
+> Not really no. It's basically little more than a component and IRQ list.
+> The GPIO table in 0.8 exposes the GPIO lines a bit more sanely.
 
-> There are various system specific drivers which have their own sfi entry
-> and name. Telling platforms apart is a problem with SFI but the latest
-> firmware also supports DMI so we can get platform identification via the
-> normal PC interfaces.
+> In fact all that SFI provides generically pretty much fits into
+> platform_foo() already because there is so little - or into the I²C or
+> SPI bus data.
 
-So the expectation is that the platform data parser functions in the SFI
-device list will be querying the DMI data and selecting the actual
-parsing based on that?  Perhaps adding DMI keys to the match tables so
-the infrastructure is there for doing the device specific things would
-cover it; minor differences could be worked out in the default match
-function and we can drop back to board specific functions when it gets
-too messy.
-
-My main issue here is that the code is working on the assumption that we
-have one standard idea of what the SFI data means and provides no
-guidance to users about handling the inevitable variations.
+I believe the issue here is the handling of things where the
+functionality Linux needs is implemented over multiple chips so we need
+a way for the chips to find each other.
