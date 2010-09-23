@@ -1,69 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754461Ab0IWVkZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 17:40:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56586 "EHLO mx1.redhat.com"
+	id S1754408Ab0IWVm1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 17:42:27 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:35633 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752936Ab0IWVkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 17:40:24 -0400
-Date: Thu, 23 Sep 2010 17:40:15 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Christoph Hellwig <hch@lst.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>
-Subject: Re: [PATCH] floppy: switch to one queue per drive instead of sharing
- a queue (Was: Re: cgq vs bdi names, was "cfq-iosched: fix a kernel OOPs when
- usb key  is inserted")
-Message-ID: <20100923214015.GK20338@redhat.com>
-References: <20100920130318.GA29565@lst.de>
- <4C975DCC.9050902@fusionio.com>
- <20100920223001.GJ6138@redhat.com>
- <20100921182529.GA31132@redhat.com>
- <4C992F12.5090000@fusionio.com>
- <20100922204216.GA7487@redhat.com>
- <4C9B08CF.6000504@fusionio.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C9B08CF.6000504@fusionio.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1752540Ab0IWVmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 17:42:25 -0400
+Subject: Re: [PATCH v6 0/8] ptp: IEEE 1588 hardware clock support
+From: john stultz <johnstul@us.ibm.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Richard Cochran <richardcochran@gmail.com>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-api@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        netdev@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        David Miller <davem@davemloft.net>, Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <alpine.DEB.2.00.1009231533040.7522@router.home>
+References: <cover.1285261533.git.richard.cochran@omicron.at>
+	 <alpine.DEB.2.00.1009231238170.2962@router.home>
+	 <1285268380.2587.11.camel@localhost.localdomain>
+	 <alpine.DEB.2.00.1009231402420.2962@router.home>
+	 <1285273684.2587.92.camel@localhost.localdomain>
+	 <alpine.DEB.2.00.1009231533040.7522@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 23 Sep 2010 14:42:16 -0700
+Message-ID: <1285278136.2587.154.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 23, 2010 at 09:59:11AM +0200, Jens Axboe wrote:
-> On 2010-09-22 22:42, Vivek Goyal wrote:
-> > On Wed, Sep 22, 2010 at 12:17:54AM +0200, Jens Axboe wrote:
-> > 
-> > [..]
-> >> Super, thanks a lot! I will queue this up. If you want to continue
-> >> this (very noble) crusade, the next target is
-> >> drivers/mtd/mtd_blkdevs.c. I never got that one started, but it was
-> >> next on my list.
-> > 
-> > Hi Jens,
-> > 
-> > IIUC, for MTD this conversion is already done and we seem to be using separate
-> > request queue for each gendisk instead of some disks sharing a single
-> > request queue. I think by following is relevant commit. Maxim should be
-> > able to confirm though.
+On Thu, 2010-09-23 at 15:49 -0500, Christoph Lameter wrote:
+> On Thu, 23 Sep 2010, john stultz wrote:
 > 
-> Great! So the question is if other drivers with shared queues remain.
+> > > The HPET or pit timesource are also quite slow these days. You only need
+> > > access periodically to essentially tune the TSC ratio.
+> >
+> > If we're using the TSC, then we're not using the PTP clock as you
+> > suggest. Further the HPET and PIT aren't used to steer the system time
+> > when we are using the TSC as a clocksource. Its only used to calibrate
+> > the initial constant freq used by the timekeeping code (and if its
+> > non-constant, we throw it out).
 > 
+> There is no other scalable time source available for fast timer access
+> than the time stamp counter in the cpu. Other time source require
+> memory accesses which is inherently slower.
 
-I was browsing through drivers/blcok/ dir and apart from amiga and atari
-floppy drivers, following also seems to be sharing the request queue across
-gendisks.
+Right, but no one likes the HPET or ACPI PM for a clocksource, its just
+the TSC isn't usable in some cases, so they have to be used.
 
-drivers/block/cpqarray.c
-drivers/block/hd.c
-drivers/block/swim3.c
-drivers/block/swim.c
-drivers/block/xd.c
+We don't want to force folks to decide between closely sycned time and
+fast time reads. So that is part of the reason why PTP as a clocksource
+isn't a good idea.
 
-I will look into fixing those, the biggest challenge in front of me is
-testing the changes. Especially arch specific drivers.
+> An accurate other time source is used to adjust this clock. NTP does that
+> via the clock interfaces from user space which has its problems with
+> accuracy. PTP can provide the network synced time access
+> that would a more accurate calibration of the time.
 
-Thanks
-Vivek
+Calibration isn't whats needed here (it is an issue, but a separate one
+- and I've got some patches if you're interested!) as its a one-time
+source of error and can be corrected by ntp today without trouble.
+Adjustments to the system time is something that has to be done
+continuously to handle for variable thermal drift over time.
+
+> > 2) The way PTP clocks are steered to sync with network time causes their
+> > hardware freq to actually change. Since these adjustments are done on
+> > the hardware clock level, and not on the system time level, the
+> > adjustments to sync the system time/freq would then be made incorrect by
+> > PTP hardware adjustments.
+> 
+> Right. So use these as a way to fine tune the TSC clock (and thereby the
+> system time).
+
+So you're then not suggesting to "use the PTP as a clocksource".
+
+Using the PTP hardware to adjust the system time freq is exactly whats
+being proposed.
+
+> > 3) Further, the PTP hardware counter can be simply set to a new offset
+> > to put it in line with the network time. This could cause trouble with
+> > timekeeping much like unsynced TSCs do.
+> 
+> You can do the same for system time.
+
+Settimeofday does allow CLOCK_REALTIME to jump, but the CLOCK_MONOTONIC
+time cannot jump around. Having a clocksource that is non-monotonic
+would break this.
+
+> > Now, what you seem to be suggesting is to use the TSC (or whatever
+> > clocksource the system time is using) but to steer the system time using
+> > the PTP clock. This is actually what is being proposed, however, the
+> > steering is done in userland. This is due to the fact that there are two
+> > components to the steering, 1) adjusting the PTP clock hardware to
+> > network time and 2) adjusting the system time to the PTP hardware. By
+> > exposing the PTP clock to userland via the posix clocks interface, we
+> > allow this to easily be done.
+> 
+> Userland code would introduce latencies that would make sub microsecond
+> time sync very difficult.
+
+The design actually avoids most userland induced latency.
+
+1) On the PTP hardware syncing point, the reference packet gets
+timestamped with the PTP hardware time on arrival. This allows the
+offset calculation to be done in userland without introducing latency.
+
+2) On the system syncing side, the proposal for the PPS interrupt allows
+the PTP hardware to trigger an interrupt on the second boundary that
+would take a timestamp of the system time. Then the pps interface allows
+for the timestamp to be read from userland allowing the offset to be
+calculated without introducing additional latency.
+
+
+> > > We can switch underlying clocks for system time already. We can adapt to a
+> > > different hw frequency.
+> >
+> > Actually no. The timekeeping code requires a fixed freq counter. Dealing
+> > with hardware freq changes is difficult, because error is introduced by
+> > the latency between when the freq changes and when the timekeeping code
+> > is notified of it. So the system treats the hardware counters as fixed
+> > freq. Now, hardware does vary freq ever so slightly as thermal
+> > conditions change, but this is addressed in userland and corrected via
+> > adjtimex.
+> 
+> Acadmic hair splitting? I have repeatedly switched between different
+> clocks on various systems. So its difficult but we do it?
+
+Sure, we handle the fairly-rare case of switching clocksources. And that
+introduces a bit of error each time. But one doesn't expect to be
+switching clock-sources every second and still keep synced time.
+
+
+> > Unnecessary layers? Where? This approach has less in-kernel layers, as
+> > it exposes the PTP clock to userland, instead of trying to layer things
+> > on top of it and stretching the system time abstraction to cover it.
+> 
+> You dont need the user APIs if you directly use the PTP time source to
+> steer the system clock. In fact I think you have to do it in kernel space
+> since user space latencies will degrade accuracy otherwise.
+
+Via the PPS interface, this can be done easily without large latency.
+
+Additionally, even just in userland, it would be easy to bracket two
+reads of the system time around one read of the PTP clock to bound any
+userland latency fairly well. It may not be as good as the PPS interface
+(although that depends on the interrupt latency), but if the accesses
+are all local, it probably could get fairly close.
+
+> > I've argued through the approach trying to keep it all internal to the
+> > kernel, but to do so would be anything but trivial. Further, there's the
+> > case of master-clocks, where the PTP hardware must be synced to system
+> > time, instead of the other way around. And then there's the case of
+> > boundary-clocks, which may have multiple PTP hardware clocks that have
+> > to be synced.
+> 
+> Ok maybe we need some sort of control interface to manage the clock like
+> the others have.
+
+That's what the clock_adjtime call provides.
+
+
+> > I think exposing this through the posix clock interface is really the
+> > best approach. Its not a static clockid, so its not something most apps
+> > will ever have to deal with, but it allows the few apps that really need
+> > to have access to the PTP clock hardware can do so in a clean way.
+> 
+> It implies clock tuning in userspace for a potential sub microsecond
+> accurate clock. The clock accuracy will be limited by user space
+> latencies and noise. You wont be able to discipline the system clock
+> accurately.
+
+I think you'll find that the userspace latency issue is fairly well
+addressed by the existing design.
+
+
+> The posix clocks today assumes one notion of real "time" in the kernel.
+> All clocks increase in lockstep (aside from offset updates).
+
+Not true. The cputime clockids do not increment at the same rate (as the
+apps don't always run). Further CLOCK_MONOTONIC_RAW provides a non-freq
+corrected view of CLOCK_MONOTONIC, so it increments at a slightly
+different rate.
+
+>  This approach
+> here result in multiple notions of "time" increasing at various speeds.
+
+Yes. I found this initially to be distasteful as well. But the more I
+realized its just a reality of the hardware, and that as long as its not
+advertised along side of CLOCK_REALTIME and CLOCK_MONOTONIC (the ptp
+clock ids are dynamic and somewhat hidden in the sysfs tree), so
+userland developers don't get confused, its not so bad. 
+
+Especially since driver writers will just expose the same stuff via a
+chardev ioctl in a less standard way and its likely no one will notice.
+Re-using the fairly nice (Alan of course disagrees :) posix interface
+seems at least a little better for application developers who actually
+have to use the hardware.
+
+thanks
+-john
+
+
