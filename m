@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761Ab0IWLgH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 07:36:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54261 "EHLO mx2.suse.de"
+	id S1754749Ab0IWLhY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 07:37:24 -0400
+Received: from cantor.suse.de ([195.135.220.2]:53819 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754599Ab0IWLgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 07:36:06 -0400
-Date: Thu, 23 Sep 2010 13:36:04 +0200 (CEST)
+	id S1752952Ab0IWLhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 07:37:23 -0400
+Date: Thu, 23 Sep 2010 13:37:21 +0200 (CEST)
 From: Jiri Kosina <jkosina@suse.cz>
 To: Joe Perches <joe@perches.com>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/13] drivers/gpu/drm: Remove unnecessary casts of
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 10/13] kernel/trace: Remove unnecessary casts of
  private_data
-In-Reply-To: <41dc995dbe142151c89cff07db0f34277af9446e.1283650107.git.joe@perches.com>
-Message-ID: <alpine.LNX.2.00.1009231335470.26813@pobox.suse.cz>
-References: <cover.1283650107.git.joe@perches.com> <41dc995dbe142151c89cff07db0f34277af9446e.1283650107.git.joe@perches.com>
+In-Reply-To: <3c301ab7b883206341b34562c6101a8b310b7aa2.1283650107.git.joe@perches.com>
+Message-ID: <alpine.LNX.2.00.1009231337070.26813@pobox.suse.cz>
+References: <cover.1283650107.git.joe@perches.com> <3c301ab7b883206341b34562c6101a8b310b7aa2.1283650107.git.joe@perches.com>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -27,55 +28,23 @@ On Sat, 4 Sep 2010, Joe Perches wrote:
 
 > Signed-off-by: Joe Perches <joe@perches.com>
 > ---
->  drivers/gpu/drm/radeon/radeon_ttm.c      |    2 +-
->  drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c     |    2 +-
->  drivers/gpu/drm/vmwgfx/vmwgfx_ttm_glue.c |    2 +-
->  3 files changed, 3 insertions(+), 3 deletions(-)
+>  kernel/trace/ftrace.c |    4 ++--
+>  kernel/trace/trace.c  |    2 +-
+>  2 files changed, 3 insertions(+), 3 deletions(-)
 > 
-> diff --git a/drivers/gpu/drm/radeon/radeon_ttm.c b/drivers/gpu/drm/radeon/radeon_ttm.c
-> index 84c53e4..a823d8f 100644
-> --- a/drivers/gpu/drm/radeon/radeon_ttm.c
-> +++ b/drivers/gpu/drm/radeon/radeon_ttm.c
-> @@ -631,7 +631,7 @@ int radeon_mmap(struct file *filp, struct vm_area_struct *vma)
->  		return drm_mmap(filp, vma);
->  	}
+> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+> index 7cb1f45..fc9ee37 100644
+> --- a/kernel/trace/ftrace.c
+> +++ b/kernel/trace/ftrace.c
+> @@ -1599,7 +1599,7 @@ ftrace_failures_open(struct inode *inode, struct file *file)
 >  
-> -	file_priv = (struct drm_file *)filp->private_data;
-> +	file_priv = filp->private_data;
->  	rdev = file_priv->minor->dev->dev_private;
->  	if (rdev == NULL) {
->  		return -EINVAL;
-> diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c b/drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c
-> index e6a1eb7..dc043c3 100644
-> --- a/drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c
-> +++ b/drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c
-> @@ -542,7 +542,7 @@ int vmw_fifo_mmap(struct file *filp, struct vm_area_struct *vma)
->  	struct drm_file *file_priv;
->  	struct vmw_private *dev_priv;
->  
-> -	file_priv = (struct drm_file *)filp->private_data;
-> +	file_priv = filp->private_data;
->  	dev_priv = vmw_priv(file_priv->minor->dev);
->  
->  	if (vma->vm_pgoff != (dev_priv->mmio_start >> PAGE_SHIFT) ||
-> diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_ttm_glue.c b/drivers/gpu/drm/vmwgfx/vmwgfx_ttm_glue.c
-> index 8312328..1e8eedd 100644
-> --- a/drivers/gpu/drm/vmwgfx/vmwgfx_ttm_glue.c
-> +++ b/drivers/gpu/drm/vmwgfx/vmwgfx_ttm_glue.c
-> @@ -39,7 +39,7 @@ int vmw_mmap(struct file *filp, struct vm_area_struct *vma)
->  		return drm_mmap(filp, vma);
->  	}
->  
-> -	file_priv = (struct drm_file *)filp->private_data;
-> +	file_priv = filp->private_data;
->  	dev_priv = vmw_priv(file_priv->minor->dev);
->  	return ttm_bo_mmap(filp, vma, &dev_priv->bdev);
->  }
+>  	ret = ftrace_avail_open(inode, file);
+>  	if (!ret) {
+> -		m = (struct seq_file *)file->private_data;
+> +		m = file->private_data;
+>  		iter = (struct ftrace_iterator *)m->private;
 
-This patch isn't present in linux-next as of today. Taking through trivial 
-queue.
-
-Thanks,
+How about m->private here?
 
 -- 
 Jiri Kosina
