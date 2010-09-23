@@ -1,34 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab0IWPpI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 11:45:08 -0400
-Received: from pfepa.post.tele.dk ([195.41.46.235]:53157 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753190Ab0IWPpH (ORCPT
+	id S1755167Ab0IWPvC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 11:51:02 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:38295 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411Ab0IWPvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 11:45:07 -0400
-Date: Thu, 23 Sep 2010 17:45:05 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-pcmcia@lists.infradead.org,
-        David Woodhouse <dwmw2@infradead.org>, Michal Marek <mmarek@suse.cz>
-Subject: Re: [PATCH 1/5] Makefile.fwinst: include Makefile.lib
-Message-ID: <20100923154505.GB30836@merkur.ravnborg.org>
-References: <1285255197-9262-1-git-send-email-dbaryshkov@gmail.com>
+	Thu, 23 Sep 2010 11:51:00 -0400
+Date: Thu, 23 Sep 2010 11:50:37 -0400
+From: Kyle McMartin <kyle@mcmartin.ca>
+To: matt mooney <mfm@muteddisk.com>
+Cc: Kyle McMartin <kyle@mcmartin.ca>, Helge Deller <deller@gmx.de>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 11/20] parisc: change to new flag variable
+Message-ID: <20100923155037.GA27175@bombadil.infradead.org>
+References: <1285224665-29831-1-git-send-email-mfm@muteddisk.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1285255197-9262-1-git-send-email-dbaryshkov@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1285224665-29831-1-git-send-email-mfm@muteddisk.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 23, 2010 at 07:19:53PM +0400, Dmitry Eremin-Solenikov wrote:
-> Include Makefile.lib into Makefile.fwinst to enable _shipped processing.
+On Wed, Sep 22, 2010 at 11:51:05PM -0700, matt mooney wrote:
+> Replace EXTRA_CFLAGS with ccflags-y.
+> 
 
-The mess in Makefile.lib is better not exposed too much.
+Looks reasonable, thanks! Applied.
 
-I suggest to move the _shipped processing to Kbuild.include.
-
-	Sam
+--Kyle
