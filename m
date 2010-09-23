@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756674Ab0IWUu2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 16:50:28 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:54179 "HELO
-	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755358Ab0IWUu0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 16:50:26 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=id9ldDUY+CafyKYse4+qmVBvDVro0BuOyEGkB59g5GeUZ2+K7eDhyPNlcjGTNmjsPSGF2rjt9eEy/KTyLKeDuNviuS2TgGZthiJtW5PY1vZ+hyAQhVSCvsv3aYNhu7VR;
-Date: Thu, 23 Sep 2010 13:50:23 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Joe Perches <joe@perches.com>
-Cc: Cesar Eduardo Barros <cesarb@cesarb.net>, Matthew Garrett <mjg@redhat.com>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] intel_ips: quieten "power or thermal limit exceeded"
- messages
-Message-ID: <20100923135023.39febc7e@jbarnes-desktop>
-In-Reply-To: <1285274825.25928.19.camel@Joe-Laptop>
-References: <Pine.LNX.4.30.1008261631410.13713-100000@mail.perches.com>
-	<4C770299.6000708@cesarb.net>
-	<1282869660.1836.5.camel@Joe-Laptop>
-	<4C77171E.6060008@cesarb.net>
-	<1282894751.1836.41.camel@Joe-Laptop>
-	<4C784650.2030200@cesarb.net>
-	<1282962104.1946.179.camel@Joe-Laptop>
-	<20100923133132.3faae5b3@jbarnes-desktop>
-	<1285274825.25928.19.camel@Joe-Laptop>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756561Ab0IWUvn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 16:51:43 -0400
+Received: from mga11.intel.com ([192.55.52.93]:19446 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751990Ab0IWUvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 16:51:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,225,1283756400"; 
+   d="scan'208";a="840395430"
+Message-ID: <4C9BBDDD.6050803@linux.intel.com>
+Date: Thu, 23 Sep 2010 13:51:41 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+Organization: Intel Open Source Technology Center
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Jan Engelhardt <jengelh@medozas.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: "Glove box" BIOS patch causes boot flicker
+References: <alpine.LNX.2.01.1009220135380.25692@obet.zrqbmnf.qr> <4C994F0B.6030004@linux.intel.com> <alpine.LNX.2.01.1009232052230.16976@obet.zrqbmnf.qr> <4C9BB1C5.80808@zytor.com> <alpine.LNX.2.01.1009232243110.21529@obet.zrqbmnf.qr> <4C9BBD0C.6070905@zytor.com>
+In-Reply-To: <4C9BBD0C.6070905@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Sep 2010 13:47:05 -0700
-Joe Perches <joe@perches.com> wrote:
-
-> On Thu, 2010-09-23 at 13:31 -0700, Jesse Barnes wrote:
-> > I think the programmed limits are valid if they're nonzero and less
-> > than one of the available default limits.  If they're not valid, we
-> > should just use the default values.  I was thinking something like the
-> > below for MCP, but Joe you may want to just update your patch instead
-> > since it's more complete.
+On 09/23/2010 01:48 PM, H. Peter Anvin wrote:
+> On 09/23/2010 01:46 PM, Jan Engelhardt wrote:
+>>
+>> On Thursday 2010-09-23 22:00, H. Peter Anvin wrote:
+>>> On 09/23/2010 11:54 AM, Jan Engelhardt wrote:
+>>>> On Wednesday 2010-09-22 02:34, H. Peter Anvin wrote:
+>>>>
+>>>>> There were some minor bugs (typos) in the conversion to the glove box 
+>>>>> coding style. The ones we have found have been fixed, so the first 
+>>>>> thing is to try the current mainline or the current tip tree.  
+>>>>> Otherwise I would look for issues where either the wrong register is 
+>>>>> changed, or something like a variable is changed instead of a field.
+>>>>
+>>>> I tried v2.6.36-rc5 now, and it looks better. The cursor position is 
+>>>> retained as desired. The mode switch is still there, albeit much 
+>>>> shorter than it used to be.
+>>>
+>>> The mode switch was there in the original code.
+>>
+>> That may very well be so, but there clearly is distinguished behavior 
+>> w.r.t. that in 2.6.36 compared to .30.
 > 
-> You have my patch yes?
+> Yes, but that caused regressions from the old assembly code.
 > 
-> You can probably integrate and validate it
-> better than I can with your proposed change.
-> 
-> I don't have any of the hardware to test.
-> If I can otherwise help somehow, let me know.
 
-Ah ok, I'll fix it up and respin then, thanks.
+By the way, if you don't want a mode reset, use "vga=current".
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+	-hpa
+
