@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184Ab0IWBE5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 21:04:57 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:55947 "EHLO smtps.tip.net.au"
+	id S1752030Ab0IWBUL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 21:20:11 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:46744 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752679Ab0IWBE4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 21:04:56 -0400
-Date: Thu, 23 Sep 2010 11:04:52 +1000
+	id S1750983Ab0IWBUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 21:20:09 -0400
+Date: Thu, 23 Sep 2010 11:20:04 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Sage Weil <sage@newdream.net>
+To: Steve French <smfrench@gmail.com>, <linux-cifs@vger.kernel.org>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yehuda Sadeh <yehuda@hq.newdream.net>
-Subject: linux-next: manual merge of the ceph tree with Linus' tree
-Message-Id: <20100923110452.70c5e572.sfr@canb.auug.org.au>
+        Jeff Layton <jlayton@redhat.com>
+Subject: linux-next: build failure after merge of the cifs tree
+Message-Id: <20100923112004.b47923b7.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA1";
- boundary="Signature=_Thu__23_Sep_2010_11_04_52_+1000_8t0C85JHXj7Xs935"
+ boundary="Signature=_Thu__23_Sep_2010_11_20_04_+1000_VmlG_6+.M+3MrtVF"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__23_Sep_2010_11_04_52_+1000_8t0C85JHXj7Xs935
+--Signature=_Thu__23_Sep_2010_11_20_04_+1000_VmlG_6+.M+3MrtVF
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Sage,
+Hi all,
 
-Today's linux-next merge of the ceph tree got a conflict in
-fs/ceph/pagelist.c between commit
-3d4401d9d0aef5c40706350685ddea3df6708496 ("ceph: fix pagelist kunmap
-tail") from Linus' tree and commit
-49dde0c8bee346a349862c4a3eddcd58e0d0ae90 ("ceph: factor out libceph from
-Ceph file system") from the ceph tree.
+After merging the cifs tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-The latter moved the file to net/ceph/pagelist.c, and the former patch
-has been applied there, so I just removed the fs/ceph version of the file.
+fs/cifs/file.c: In function 'cifs_writepages':
+fs/cifs/file.c:1365: error: 'struct cifs_sb_info' has no member named 'tcon'
+fs/cifs/file.c:1365: error: 'struct cifs_sb_info' has no member named 'tcon'
+fs/cifs/file.c:1366: error: 'struct cifs_sb_info' has no member named 'tcon'
+
+Caused by commit 2eff6be391f00d606b43e60d9727b70c44917b7e ("cifs:
+temporarily rename cifs_sb->tcon to ptcon to catch stragglers").
+
+Really, such testing code should not be in linux-next ...
+
+I have used the cifs tree fomr next-20100921 for today.
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 http://www.canb.auug.org.au/~sfr/
 
---Signature=_Thu__23_Sep_2010_11_04_52_+1000_8t0C85JHXj7Xs935
+--Signature=_Thu__23_Sep_2010_11_20_04_+1000_VmlG_6+.M+3MrtVF
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQEcBAEBAgAGBQJMmqe0AAoJEDMEi1NhKgbsFeMH/jGt4bj31QGGc1d62Fsiu/JS
-UezrK/sFal+CMdHhJYfrk9OhLlHvq6U95lCB9OSeX6ItinE/DxHvr06q7or8xyph
-LnxK5HWEG0oi4Fwfrv3Zm0v4yQadx5Vp9xjgADV1sv7/eEeml21EJj0lR7mKXNVj
-Qt262Ps9Rok6uF9MbYA5fGeaZ0YTqekU2cfHtjP8MlxeCNALk/JG4C4T436RdiRv
-BbF5RTX7xX3FO67pfxeW2zvp0zNIxohJ49XlY2GlJjmG99b4whh6moV59LNEant9
-JtO9qp4e4znnEiLcnRH7TyzktWo2jmu/9AJ10movRpxY/PWReJ7ud3/sc5M0WGU=
-=rEKs
+iQEcBAEBAgAGBQJMmqtEAAoJEDMEi1NhKgbslIcH+wbgmWft1bgYI1bKhVx0MYqJ
+jEJmU4qsk6b1VOHy8TeMnh7qDsZo6eh0531LEP9EWlR9qvyoZ0EisyVoQZCvVbPi
+9uaFDxEKtxOhcC4UwDyqSTk+AH82OBm75AYm40MyQZXCCLKED2NQPh1+rgkWtRHo
+o6hrHYu8Ci3+B49Knf71vgvSWEOZQIJ5hnKqe9E9KJWHtWfoRgmYwuF2lZhtVEnD
+VrXC4TKC1WdWu+6hqVnuvK/DSWDOGFcURi7nj3Dl9LPHwHMn4rgPjEQMUMVWbKKo
+l2Oa9fj39AGOG7aOs7uabMYNH0UAc20u1fG+7J/eC7u4Kl9GSsaitxg6r5yxXv4=
+=X3SY
 -----END PGP SIGNATURE-----
 
---Signature=_Thu__23_Sep_2010_11_04_52_+1000_8t0C85JHXj7Xs935--
+--Signature=_Thu__23_Sep_2010_11_20_04_+1000_VmlG_6+.M+3MrtVF--
