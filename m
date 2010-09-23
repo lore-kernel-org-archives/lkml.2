@@ -1,133 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab0IWIrv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 04:47:51 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:53550 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753917Ab0IWIrt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753905Ab0IWIrt (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 23 Sep 2010 04:47:49 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: <linux-kernel@vger.kernel.org>
-Cc: Linux Containers <containers@lists.osdl.org>, <netdev@vger.kernel.org>,
-        netfilter-devel@vger.kernel.org, <linux-fsdevel@vger.kernel.org>,
-        jamal <hadi@cyberus.ca>, Daniel Lezcano <daniel.lezcano@free.fr>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Ulrich Drepper <drepper@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        David Miller <davem@davemloft.net>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Ben Greear <greearb@candelatech.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Jonathan Corbet <corbet@lwn.net>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>
-References: <m1ocborgq7.fsf@fess.ebiederm.org>
-Date: Thu, 23 Sep 2010 01:47:42 -0700
-In-Reply-To: <m1ocborgq7.fsf@fess.ebiederm.org> (Eric W. Biederman's message
-	of "Thu, 23 Sep 2010 01:45:04 -0700")
-Message-ID: <m17hicrglt.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+Received: from hera.kernel.org ([140.211.167.34]:35666 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752347Ab0IWIrr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 04:47:47 -0400
+Message-ID: <4C9B141F.3050908@kernel.org>
+Date: Thu, 23 Sep 2010 10:47:27 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 98.207.157.188
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;<linux-kernel@vger.kernel.org>
-X-Spam-Relay-Country: 
-Subject: [PATCH 3/8] ns proc: Add support for the network namespace.
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Maxim Levitsky <maximlevitsky@gmail.com>,
+        Kay Sievers <kay.sievers@vrfy.org>
+CC: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [REGRESSION] cdrom drive doesn't detect removal
+References: <1284284969.2928.18.camel@maxim-laptop>	 <1284427621.4127.7.camel@maxim-laptop> <4C8F2699.3020509@kernel.org>	 <AANLkTinGHB9fbLw1Cm5wvPLGy8QEuoBBmFiqpnvXiZ8R@mail.gmail.com>	 <1284507516.4963.2.camel@maxim-laptop>	 <AANLkTimFpyYab69=XQVZc+P50v6_uVr6UbA246Fnm3-u@mail.gmail.com>	 <1284511071.3551.1.camel@maxim-laptop>	 <AANLkTikF37hN7dFqPbCp-gcim7SarveaTrjXipnGpJM7@mail.gmail.com>	 <20100915132731.GA20558@khazad-dum.debian.net>	 <AANLkTinGDUxsgaGey7EnYOu3kKP-YRE00gL33hiKvAWj@mail.gmail.com>	 <1284589207.4672.3.camel@maxim-laptop>	 <AANLkTin37rbEbcGDejhcsnxZNYhhUWGy+x=v4Y=s0_Qx@mail.gmail.com>	 <1285069338.3124.4.camel@maxim-laptop>	 <1285110590.2822.9.camel@maxim-laptop>  <4C99B25D.20805@kernel.org>	 <1285162900.3335.15.camel@maxim-laptop> <1285163911.3159.5.camel@maxim-laptop>
+In-Reply-To: <1285163911.3159.5.camel@maxim-laptop>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 23 Sep 2010 08:47:29 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-Implementing file descriptors for the network namespace is simple and
-straight forward.
+On 09/22/2010 03:58 PM, Maxim Levitsky wrote:
+>> 1. Make exclusive opens really exclusive.
+>> That is if someone opens a device with exclusive access, no more opens
+>> will succeed.
+> And as a follow-up, indeed hal first tries exclusive open, and if it
+> fails, it retries with non-exclusive open, and it succeeds.
+> And that somewhat makes me think that exclusive open is pretty much
+> useless.
 
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
----
- fs/proc/namespaces.c     |    3 +++
- include/linux/proc_fs.h  |    1 +
- net/core/net_namespace.c |   30 ++++++++++++++++++++++++++++++
- 3 files changed, 34 insertions(+), 0 deletions(-)
+Yeah, what I'm curious about is why hal behaves differently with
+claiming block patch.  Exclusive open still fails with EBUSY with or
+without the patch, right?  So, why does hal behave differently?
 
-diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
-index f33537f..31e32f3 100644
---- a/fs/proc/namespaces.c
-+++ b/fs/proc/namespaces.c
-@@ -16,6 +16,9 @@
- 
- 
- static const struct proc_ns_operations *ns_entries[] = {
-+#ifdef CONFIG_NET_NS
-+	&netns_operations,
-+#endif
- };
- 
- static const struct file_operations ns_file_operations = {
-diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
-index a6c26f0..9cd3fae 100644
---- a/include/linux/proc_fs.h
-+++ b/include/linux/proc_fs.h
-@@ -262,6 +262,7 @@ struct proc_ns_operations {
- 	int (*install)(struct nsproxy *nsproxy, void *ns);
- };
- #define PROC_NSNAME(NAME) { .name = (NAME), .len = (sizeof(NAME) - 1), }
-+extern const struct proc_ns_operations netns_operations;
- extern struct file *proc_ns_fget(int fd);
- 
- union proc_op {
-diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
-index c988e68..581a088 100644
---- a/net/core/net_namespace.c
-+++ b/net/core/net_namespace.c
-@@ -571,3 +571,33 @@ void unregister_pernet_device(struct pernet_operations *ops)
- 	mutex_unlock(&net_mutex);
- }
- EXPORT_SYMBOL_GPL(unregister_pernet_device);
-+
-+#ifdef CONFIG_NET_NS
-+static void *netns_get(struct task_struct *task)
-+{
-+	struct net *net;
-+	rcu_read_lock();
-+	net = get_net(task->nsproxy->net_ns);
-+	rcu_read_unlock();
-+	return net;
-+}
-+
-+static void netns_put(void *ns)
-+{
-+	put_net(ns);
-+}
-+
-+static int netns_install(struct nsproxy *nsproxy, void *ns)
-+{
-+	put_net(nsproxy->net_ns);
-+	nsproxy->net_ns = get_net(ns);
-+	return 0;
-+}
-+
-+const struct proc_ns_operations netns_operations = {
-+	.name		= PROC_NSNAME("net"),
-+	.get		= netns_get,
-+	.put		= netns_put,
-+	.install	= netns_install,
-+};
-+#endif
+> Look if it fails. sure the device is open, but if doesn't fail, nothing
+> prevents a bit less honest clients (that don't use exclusive open) to
+> open the device. How exclusive such an open is then?
+
+It's cooperative exclusion.  It doesn't assume the presence of hostile
+programs having access to the device.
+
+> So I mean exclusive open should really block _all_ following opens of
+> the device, exclusive or not.
+
+That will probably break a lot of stuff.
+
+> Btw I had few failed dual layer disk burns that failed just after write
+> of few MBs. I wouldn't be surprised if this was the cause.
+
+Usually open sequence just inserts TEST UNIT READY which usually is
+safe but yeah it's possible that some device might react badly.
+
+I'm currently working on in-kernel media presence polling to handle
+the open and polling command sequence issues.  That said, it's not
+entirely clear how the mount case should be handled.  If a media is
+mounted, the device is exclusively open and media presence polling
+shouldn't be inserting commands in the middle but then how can it
+detect the media has been ejected by the user?  Kay, can you please
+enlighten me on how it's supposed to work?
+
+Thanks.
+
 -- 
-1.6.5.2.143.g8cc62
-
+tejun
