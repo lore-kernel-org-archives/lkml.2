@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680Ab0IWLvA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 07:51:00 -0400
-Received: from cantor.suse.de ([195.135.220.2]:54306 "EHLO mx1.suse.de"
+	id S1754941Ab0IWLxB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 07:53:01 -0400
+Received: from cantor.suse.de ([195.135.220.2]:54334 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752952Ab0IWLu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 07:50:59 -0400
-Date: Thu, 23 Sep 2010 13:50:58 +0200 (CEST)
+	id S1753240Ab0IWLxA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 07:53:00 -0400
+Date: Thu, 23 Sep 2010 13:52:59 +0200 (CEST)
 From: Jiri Kosina <jkosina@suse.cz>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH UPDATED] ext2: trivial: fix typo on comments in
- ext2/inode.c
-In-Reply-To: <87eid2peb2.fsf@gmail.com>
-Message-ID: <alpine.LNX.2.00.1009231350530.26813@pobox.suse.cz>
-References: <1283962489-15842-1-git-send-email-namhyung@gmail.com> <87eid2peb2.fsf@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Namhyung Kim <namhyung@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ida: document IDA_BITMAP_LONGS calculation
+In-Reply-To: <4C9B39DC.8050409@kernel.org>
+Message-ID: <alpine.LNX.2.00.1009231352410.26813@pobox.suse.cz>
+References: <1283506698-21369-1-git-send-email-namhyung@gmail.com> <alpine.LNX.2.00.1009231325370.26813@pobox.suse.cz> <4C9B39DC.8050409@kernel.org>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -22,40 +21,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Sep 2010, Namhyung Kim wrote:
+On Thu, 23 Sep 2010, Tejun Heo wrote:
 
+> >> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> >> Acked-by: Tejun Heo <tj@kernel.org>
+> >> ---
+> >>  include/linux/idr.h |    5 ++++-
+> >>  1 files changed, 4 insertions(+), 1 deletions(-)
+> >>
+> >> diff --git a/include/linux/idr.h b/include/linux/idr.h
+> >> index e968db7..3f4b718 100644
+> >> --- a/include/linux/idr.h
+> >> +++ b/include/linux/idr.h
+> >> @@ -117,10 +117,13 @@ void idr_init(struct idr *idp);
+> >>  /*
+> >>   * IDA - IDR based id allocator, use when translation from id to
+> >>   * pointer isn't necessary.
+> >> + *
+> >> + * IDA_BITMAP_LONGS is calculated to be one less to accommodate
+> >> + * ida_bitmap->nr_busy so that the whole struct fits in 128 bytes.
+> >>   */
+> >>  #define IDA_CHUNK_SIZE		128	/* 128 bytes per chunk */
+> >>  #define IDA_BITMAP_LONGS	(128 / sizeof(long) - 1)
+> >> -#define IDA_BITMAP_BITS		(IDA_BITMAP_LONGS * sizeof(long) * 8)
+> >> +#define IDA_BITMAP_BITS 	(IDA_BITMAP_LONGS * sizeof(long) * 8)
+> >>  
+> >>  struct ida_bitmap {
+> >>  	long			nr_busy;
+> > 
+> > Tejun, any word on this patch? Doesn't seem to be present in linux-next.
 > 
-> 'excpet' should be 'except'.
-> 'ext3_get_branch' should be 'ext2_get_branch'.
->     
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> ---
-> I found another one.
-> 
-> diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-> index 940c961..533699c 100644
-> --- a/fs/ext2/inode.c
-> +++ b/fs/ext2/inode.c
-> @@ -458,7 +458,7 @@ failed_out:
->   *     the same format as ext2_get_branch() would do. We are calling it after
->   *     we had read the existing part of chain and partial points to the last
->   *     triple of that (one with zero ->key). Upon the exit we have the same
-> - *     picture as after the successful ext2_get_block(), excpet that in one
-> + *     picture as after the successful ext2_get_block(), except that in one
->   *     place chain is disconnected - *branch->p is still zero (we did not
->   *     set the last link), but branch->key contains the number that should
->   *     be placed into *branch->p to fill that gap.
-> @@ -662,7 +662,7 @@ static int ext2_get_blocks(struct inode *inode,
->         mutex_lock(&ei->truncate_mutex);
->         /*
->          * If the indirect block is missing while we are reading
-> -        * the chain(ext3_get_branch() returns -EAGAIN err), or
-> +        * the chain(ext2_get_branch() returns -EAGAIN err), or
->          * if the chain has been changed after we grab the semaphore,
->          * (either because another process truncated this branch, or
->          * another get_block allocated this branch) re-grab the chain to see if
+> Ooh, I was hoping this one could go through the trivial tree.  It
+> would be great if you can pick up the patch.
 
-Applied.
+Bah, I missed your Acked-by, sorry for the noise. Applied now, thanks.
 
 -- 
 Jiri Kosina
