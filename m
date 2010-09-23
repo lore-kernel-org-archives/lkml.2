@@ -1,38 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896Ab0IWLtA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 07:49:00 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47864 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754508Ab0IWLs6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 07:48:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=mhLCfb7Fp1G/1PFA9koJuEUGeNAEANS1SjyV+GruupYchj85l98FbdXA4X4DA1g0cK
-         wX5/6FKO5QZ7fUUYBIPFGeaRQZdA+5t0AHl8AIQfw5r3xrWL8/+qI2ooMfwoTgDiwXU2
-         AlE0RemwhlhHoSpLhcqEs4pANn6S1VePeBgBw=
+	id S1754680Ab0IWLvA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 07:51:00 -0400
+Received: from cantor.suse.de ([195.135.220.2]:54306 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752952Ab0IWLu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 07:50:59 -0400
+Date: Thu, 23 Sep 2010 13:50:58 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH UPDATED] ext2: trivial: fix typo on comments in
+ ext2/inode.c
+In-Reply-To: <87eid2peb2.fsf@gmail.com>
+Message-ID: <alpine.LNX.2.00.1009231350530.26813@pobox.suse.cz>
+References: <1283962489-15842-1-git-send-email-namhyung@gmail.com> <87eid2peb2.fsf@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1285224715-30137-1-git-send-email-mfm@muteddisk.com>
-References: <1285224715-30137-1-git-send-email-mfm@muteddisk.com>
-Date: Thu, 23 Sep 2010 13:48:57 +0200
-Message-ID: <AANLkTinzTKdjAqWB-US-Nh2CM+MzL+iuedWScCCaH+mX@mail.gmail.com>
-Subject: Re: [PATCH 20/20] net: change to new flag variable
-From: =?UTF-8?Q?Sjur_Br=C3=A6ndeland?= <sjurbren@gmail.com>
-To: matt mooney <mfm@muteddisk.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        "John W. Linville" <linville@tuxdriver.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-matt mooney wrote:
-> Replace EXTRA_CFLAGS with ccflags-y.
-Thank you,
-CAIF parts looks good to me.
+On Fri, 10 Sep 2010, Namhyung Kim wrote:
 
-Acked-by: Sjur Braendeland <sjur.brandeland@stericsson.com>
+> 
+> 'excpet' should be 'except'.
+> 'ext3_get_branch' should be 'ext2_get_branch'.
+>     
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> ---
+> I found another one.
+> 
+> diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
+> index 940c961..533699c 100644
+> --- a/fs/ext2/inode.c
+> +++ b/fs/ext2/inode.c
+> @@ -458,7 +458,7 @@ failed_out:
+>   *     the same format as ext2_get_branch() would do. We are calling it after
+>   *     we had read the existing part of chain and partial points to the last
+>   *     triple of that (one with zero ->key). Upon the exit we have the same
+> - *     picture as after the successful ext2_get_block(), excpet that in one
+> + *     picture as after the successful ext2_get_block(), except that in one
+>   *     place chain is disconnected - *branch->p is still zero (we did not
+>   *     set the last link), but branch->key contains the number that should
+>   *     be placed into *branch->p to fill that gap.
+> @@ -662,7 +662,7 @@ static int ext2_get_blocks(struct inode *inode,
+>         mutex_lock(&ei->truncate_mutex);
+>         /*
+>          * If the indirect block is missing while we are reading
+> -        * the chain(ext3_get_branch() returns -EAGAIN err), or
+> +        * the chain(ext2_get_branch() returns -EAGAIN err), or
+>          * if the chain has been changed after we grab the semaphore,
+>          * (either because another process truncated this branch, or
+>          * another get_block allocated this branch) re-grab the chain to see if
+
+Applied.
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
