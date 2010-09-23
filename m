@@ -1,80 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755112Ab0IWP0W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 11:26:22 -0400
-Received: from mtagate2.de.ibm.com ([195.212.17.162]:57492 "EHLO
-	mtagate2.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998Ab0IWP0U (ORCPT
+	id S1755287Ab0IWP3R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 11:29:17 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38272 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998Ab0IWP3Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 11:26:20 -0400
-In-Reply-To: <1285187417-10928-1-git-send-email-nab@linux-iscsi.org>
-Subject: Re: [PATCH 1/2] siw: Fix ib_register_device() for > v2.6.34 kernels
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Andi Keen <ak@linux.intel.com>, David Miller <davem@davemloft.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-rdma <linux-rdma@vger.kernel.org>,
-        linux-rdma-owner@vger.kernel.org,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        netdev <netdev@vger.kernel.org>, Roland Dreier <rdreier@cisco.com>,
-        Matthew Wilcox <willy@linux.intel.com>
-X-Mailer: Lotus Notes Release 7.0.1 January 17, 2006
-Message-ID: <OF5AB6498C.AF25B239-ONC12577A7.0054B7CD-C12577A7.0054CDCD@ch.ibm.com>
-From: Bernard Metzler <BMT@zurich.ibm.com>
-Date: Thu, 23 Sep 2010 17:26:16 +0200
-X-MIMETrack: Serialize by Router on D12MC302/12/M/IBM(Release 8.5|December 05, 2008) at
- 23/09/2010 17:26:16
-MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
+	Thu, 23 Sep 2010 11:29:16 -0400
+Subject: Re: [PATCH 2/5] Add mkcis - a program that can create .cis from
+ text description
+From: David Woodhouse <dwmw2@infradead.org>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-pcmcia@lists.infradead.org
+In-Reply-To: <1285255197-9262-2-git-send-email-dbaryshkov@gmail.com>
+References: <1285255197-9262-1-git-send-email-dbaryshkov@gmail.com>
+	 <1285255197-9262-2-git-send-email-dbaryshkov@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 23 Sep 2010 16:29:12 +0100
+Message-ID: <1285255752.10687.20.camel@i7.infradead.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.33.1 
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, Nicholas. Just applied your patch.
+On Thu, 2010-09-23 at 19:19 +0400, Dmitry Eremin-Solenikov wrote:
+> For CIS files (describing hardware on PCMCIA and some other busses)
+> binary file isn't the 'preferred for for modification' in most cases.
+> pcmcia-cs project have developed pack_cis program which can be used
+> (and was used most probably) to generate .cis files from simple text
+> descriptions. Import this code to the kernel under the name of mkcis.
 
-Bernard.
+This is useful, thanks -- but NACK. The firmware/ directory of the
+kernel will hopefully die soon, and is no longer what's actually shipped
+by many distributions.
 
-linux-rdma-owner@vger.kernel.org wrote on 09/22/2010 10:30:17 PM:
+We should be concentrating on the linux-firmware.git repository instead.
 
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
->
-> This patch adds a LINUX_VERSION_CODE > v2.6.34 check inside of
-> siw_main.c:siw_register_device()
-> around the use of ib_register_device().  In post v2.6.34 kernels
-> this function accepts a second
-> parameter used a sysfs port callback described here:
->
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;
-> a=commitdiff;h=9a6edb60ec10d86b1025a0cdad68fd89f1ddaf02
->
-> This patch currently sets this second parameter to NULL.
->
-> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-> ---
->  softiwarp/siw_main.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
->
-> diff --git a/softiwarp/siw_main.c b/softiwarp/siw_main.c
-> index cacedea..c97adee 100644
-> --- a/softiwarp/siw_main.c
-> +++ b/softiwarp/siw_main.c
-> @@ -233,8 +233,11 @@ int siw_register_device(struct siw_dev *dev)
->     ibdev->iwcm->add_ref = siw_qp_get_ref;
->     ibdev->iwcm->rem_ref = siw_qp_put_ref;
->     ibdev->iwcm->get_qp = siw_get_ofaqp;
-> -
-> +#if LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 34)
-> +   rv = ib_register_device(ibdev, NULL);
-> +#else
->     rv = ib_register_device(ibdev);
-> +#endif
->     if (rv) {
->        dprint(DBG_DM|DBG_ON, "(dev=%s): "
->           "ib_register_device failed: rv=%d\n", ibdev->name, rv);
-> --
-> 1.5.6.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-rdma" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
 
