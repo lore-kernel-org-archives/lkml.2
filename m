@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854Ab0IWLot (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 07:44:49 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:35638 "EHLO e5.ny.us.ibm.com"
+	id S1754880Ab0IWLpU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 07:45:20 -0400
+Received: from cantor.suse.de ([195.135.220.2]:54119 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753156Ab0IWLos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 07:44:48 -0400
-Date: Thu, 23 Sep 2010 17:14:42 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: robm@fastmail.fm, linux-kernel@vger.kernel.org,
-        Bron Gondwana <brong@fastmail.fm>, linux-mm <linux-mm@kvack.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: Default zone_reclaim_mode = 1 on NUMA kernel is bad for
- file/email/web servers
-Message-ID: <20100923114442.GK3952@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <1284349152.15254.1394658481@webmail.messagingengine.com>
- <20100916184240.3BC9.A69D9226@jp.fujitsu.com>
+	id S1752497Ab0IWLpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 07:45:18 -0400
+Date: Thu, 23 Sep 2010 13:45:13 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Joe Perches <joe@perches.com>
+Cc: Adaptec OEM Raid Solutions <aacraid@adaptec.com>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Doug Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/13] drivers/scsi: Remove unnecessary casts of
+ private_data
+In-Reply-To: <ce0592fde56f01f9027bf5d1cfa83536b2aca8e4.1283650107.git.joe@perches.com>
+Message-ID: <alpine.LNX.2.00.1009231344150.26813@pobox.suse.cz>
+References: <cover.1283650107.git.joe@perches.com> <ce0592fde56f01f9027bf5d1cfa83536b2aca8e4.1283650107.git.joe@perches.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100916184240.3BC9.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> [2010-09-16 19:01:32]:
+On Sat, 4 Sep 2010, Joe Perches wrote:
 
-> +			if (!(zone_reclaim_mode & RECLAIM_CACHE) &&
-> +			    (gfp_mask & GFP_MOVABLE_MASK) == GFP_MOVABLE_MASK) {
-> +				inc_zone_state(zone, NR_ZONE_CACHE_AVOID);
-> +				goto try_next_zone;
-> +			}
-> +
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  drivers/scsi/aacraid/linit.c |    2 +-
+>  drivers/scsi/sg.c            |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/scsi/aacraid/linit.c b/drivers/scsi/aacraid/linit.c
+> index cad6f9a..aa40036 100644
+> --- a/drivers/scsi/aacraid/linit.c
+> +++ b/drivers/scsi/aacraid/linit.c
+> @@ -770,7 +770,7 @@ static long aac_compat_cfg_ioctl(struct file *file, unsigned cmd, unsigned long
+>  {
+>  	if (!capable(CAP_SYS_RAWIO))
+>  		return -EPERM;
+> -	return aac_compat_do_ioctl((struct aac_dev *)file->private_data, cmd, arg);
+> +	return aac_compat_do_ioctl(file->private_data, cmd, arg);
+>  }
+>  #endif
+>  
+> diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
+> index 78d6163..6efa8dd 100644
+> --- a/drivers/scsi/sg.c
+> +++ b/drivers/scsi/sg.c
+> @@ -210,7 +210,7 @@ static void sg_put_dev(Sg_device *sdp);
+>  
+>  static int sg_allow_access(struct file *filp, unsigned char *cmd)
+>  {
+> -	struct sg_fd *sfp = (struct sg_fd *)filp->private_data;
+> +	struct sg_fd *sfp = filp->private_data;
+>  
+>  	if (sfp->parentdp->device->type == TYPE_SCANNER)
+>  		return 0;
 
-Interesting approach, so for page cache related applications we expect
-RECLAIM_CACHE to be set and hence zone_reclaim to occur. I have
-another variation, a new gfp flag called __GFP_FREE_CACHE. You can
-find the patches at
-
-http://lwn.net/Articles/391293/
-http://article.gmane.org/gmane.linux.kernel.mm/49155
+This patch isn't present in linux-next as of today. Applying to my tree 
+now.
 
 -- 
-	Three Cheers,
-	Balbir
+Jiri Kosina
+SUSE Labs, Novell Inc.
