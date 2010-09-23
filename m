@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756690Ab0IWXi7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 19:38:59 -0400
-Received: from smtp125.sbc.mail.sp1.yahoo.com ([69.147.65.184]:28813 "HELO
-	smtp125.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756561Ab0IWXi5 (ORCPT
+	id S1756697Ab0IWXjL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 19:39:11 -0400
+Received: from smtp104.sbc.mail.ac4.yahoo.com ([76.13.13.243]:26914 "HELO
+	smtp104.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753679Ab0IWXjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 19:38:57 -0400
+	Thu, 23 Sep 2010 19:39:08 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: Y6JWXrMVM1k4AF4hnWJPi6GKbeY7mmy1RQoT3nKMgtZ74zq
- RNwWNQr.CdwnAksDQZ7k0wquohgV8TIHQz5qdAEw2erwOQm2gRA7ARI6QkUU
- DXQpNWJ4BTkbXNeUBKvOsWYtVvSXuk8GfOCoj1Vhq_YF9cPpgI1PPB4jL.u2
- yNsgcxN10eCa3sqYMUrmgNy3SykfVNDVKKdTv5UP_UT4jkcO8KN5Ge6.umce
- cYxFuh42i30G_3Oqg24rVgP7E1ZyTSs45ppQZBDgrNBptS_NzO49DddCjr.V
- IK7mHZRGRpSPN9IDhCaCYoGc9wVKYp7f07xknuS2VdbZdSp4Y35Wx6X76Tvx
- rVOAiAM_71Ch2DGCJZg--
+X-YMail-OSG: Fsje1m8VM1lUGzX6BoNJzOP9Rx6h7a_gc05cp2r2Z__YaOf
+ VCeg5_c.3taLSlgedqBYNqh8fgnoYIlvmSR8JD.2dSZc8PCwrDkIolH_tzek
+ 3Liah.1Qtnb3ruk..fnGfb4jtJ.dYlPCoTV3YiuEzP6UR2PdbhE0mGvQo.z5
+ a_GVtft5vJajbteiggU8d5naXXjK3Fgy8YR3UsK_5VPmODMSmooWeEYetJkr
+ 9yNQbE7hK1K5oVOfq6kPtpWUt8tC0csftRPgI_bB_zKyh39yvuCumvD0QQwu
+ ey.bsaz7brvkIJ.iflSKBg5LSOnVLBT4btkqsmDf8onJhK1h_ZA--
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -32,9 +31,9 @@ Cc: James Smart <james.smart@emulex.com>,
         MPTFusionLinux <DL-MPTFusionLinux@lsi.com>,
         "eata.c maintainer" <dario.ballabio@inwind.it>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [RFC v3 10/15] buslogic: Remove host_lock unlock() + lock() from BusLogic_QueueCommand()
-Date: Thu, 23 Sep 2010 16:38:54 -0700
-Message-Id: <1285285134-16531-1-git-send-email-nab@linux-iscsi.org>
+Subject: [RFC v3 11/15] mpt2sas: Add scsi_cmd_get_serial() call
+Date: Thu, 23 Sep 2010 16:39:02 -0700
+Message-Id: <1285285142-16561-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -42,39 +41,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch removes the now legacy host_lock unlock() + lock() optimization
-from buslogic.c:BusLogic_QueueCommand()
+This patch adds a scsi_cmd_get_serial() call in _scsih_qcmd() to setup a
+valid struct scsi_cmnd->serial_number because mpt2sas_scsih_issue_tm()
+still depends upon this being set.
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/scsi/BusLogic.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/scsi/BusLogic.c b/drivers/scsi/BusLogic.c
-index fc0b4b8..f39b4fc 100644
---- a/drivers/scsi/BusLogic.c
-+++ b/drivers/scsi/BusLogic.c
-@@ -2837,9 +2837,7 @@ static int BusLogic_QueueCommand(struct scsi_cmnd *Command, void (*CompletionRou
- 	 */
- 	CCB = BusLogic_AllocateCCB(HostAdapter);
- 	if (CCB == NULL) {
--		spin_unlock_irq(HostAdapter->SCSI_Host->host_lock);
- 		BusLogic_Delay(1);
--		spin_lock_irq(HostAdapter->SCSI_Host->host_lock);
- 		CCB = BusLogic_AllocateCCB(HostAdapter);
- 		if (CCB == NULL) {
- 			Command->result = DID_ERROR << 16;
-@@ -2965,10 +2963,8 @@ static int BusLogic_QueueCommand(struct scsi_cmnd *Command, void (*CompletionRou
- 		   error as a Host Adapter Hard Reset should be initiated soon.
- 		 */
- 		if (!BusLogic_WriteOutgoingMailbox(HostAdapter, BusLogic_MailboxStartCommand, CCB)) {
--			spin_unlock_irq(HostAdapter->SCSI_Host->host_lock);
- 			BusLogic_Warning("Unable to write Outgoing Mailbox - " "Pausing for 1 second\n", HostAdapter);
- 			BusLogic_Delay(1);
--			spin_lock_irq(HostAdapter->SCSI_Host->host_lock);
- 			if (!BusLogic_WriteOutgoingMailbox(HostAdapter, BusLogic_MailboxStartCommand, CCB)) {
- 				BusLogic_Warning("Still unable to write Outgoing Mailbox - " "Host Adapter Dead?\n", HostAdapter);
- 				BusLogic_DeallocateCCB(CCB);
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+index 16e99b6..1234134 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -3325,6 +3325,11 @@ _scsih_qcmd(struct scsi_cmnd *scmd, void (*done)(struct scsi_cmnd *))
+ 	u16 smid;
+ 
+ 	scmd->scsi_done = done;
++	/*
++	 * Call scsi_cmd_get_serial() because we need a valid serial number
++	 * in mpt2sas_scsih_issue_tm()
++	 */
++	scsi_cmd_get_serial(scmd);
+ 	sas_device_priv_data = scmd->device->hostdata;
+ 	if (!sas_device_priv_data || !sas_device_priv_data->sas_target) {
+ 		scmd->result = DID_NO_CONNECT << 16;
 -- 
 1.7.3
 
