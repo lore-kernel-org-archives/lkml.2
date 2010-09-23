@@ -1,82 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755211Ab0IWMfS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 08:35:18 -0400
-Received: from hera.kernel.org ([140.211.167.34]:56191 "EHLO hera.kernel.org"
+	id S1755236Ab0IWMfc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 08:35:32 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:48027 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755189Ab0IWMfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 08:35:16 -0400
-Message-ID: <4C9B497B.4060302@kernel.org>
-Date: Thu, 23 Sep 2010 14:35:07 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	id S1755214Ab0IWMf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 08:35:29 -0400
+Message-ID: <4C9B495D.70200@parallels.com>
+Date: Thu, 23 Sep 2010 16:34:37 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
 MIME-Version: 1.0
-To: lkml <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC] workqueue: remove in_workqueue_context()
-X-Enigmail-Version: 1.1.1
+To: hadi@cyberus.ca, "Eric W. Biederman" <ebiederm@xmission.com>
+CC: linux-kernel@vger.kernel.org, Linux Containers <containers@lists.osdl.org>,
+        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Daniel Lezcano <daniel.lezcano@free.fr>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Ulrich Drepper <drepper@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+        David Miller <davem@davemloft.net>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Ben Greear <greearb@candelatech.com>,
+        Matt Helsley <matthltc@us.ibm.com>, Jonathan Corbet <corbet@lwn.net>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>
+Subject: Re: [PATCH 8/8] net: Implement socketat.
+References: <m1ocborgq7.fsf@fess.ebiederm.org>	 <m1bp7oq1u8.fsf@fess.ebiederm.org>  <4C9B162E.7040201@parallels.com>	 <1285240797.5036.5.camel@bigi>  <4C9B3B06.900@parallels.com>	 <1285242055.5036.9.camel@bigi>  <4C9B3F9C.8080506@parallels.com> <1285243881.5036.22.camel@bigi>
+In-Reply-To: <1285243881.5036.22.camel@bigi>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 23 Sep 2010 12:35:10 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit a25909a4 (lockdep: Add an in_workqueue_context() lockdep-based
-test function) added in_workqueue_context() but there hasn't been any
-in-kernel user and the lockdep annotation in workqueue is scheduled to
-change.  Remove the unused function.
+On 09/23/2010 04:11 PM, jamal wrote:
+> On Thu, 2010-09-23 at 15:53 +0400, Pavel Emelyanov wrote:
+> 
+>> Why does it matter? You told, that the usage scenario was to
+>> add routes to container. If I do 2 syscalls instead of 1, is
+>> it THAT worse?
+>>
+> 
+> Anything to do with socket IO that requires namespace awareness
+> applies for usage; it could be tcp/udp/etc socket. If it doesnt
+> make any difference performance wise using one scheme vs other
+> to write/read heavy messages then i dont see an issue and socketat
+> is redundant.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
-Paul, I was looking through lockdep annotations to see how they can be
-improved and noticed that in_workqueue_context() isn't used by anyone
-and it seems like there hasn't been any in-kernel user either.  Can
-this be removed or do you expect to use it somewhere?
+That's what my point is about - unless we know why would we need it
+we don't need it.
 
-Thanks.
-
- include/linux/workqueue.h |    4 ----
- kernel/workqueue.c        |   15 ---------------
- 2 files changed, 19 deletions(-)
-
-diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
-index e33ff4a..f6eaf56 100644
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -429,8 +429,4 @@ extern bool freeze_workqueues_busy(void);
- extern void thaw_workqueues(void);
- #endif /* CONFIG_FREEZER */
-
--#ifdef CONFIG_LOCKDEP
--int in_workqueue_context(struct workqueue_struct *wq);
--#endif
--
- #endif
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 19e4bc1..c758e78 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -310,21 +310,6 @@ static inline int __next_wq_cpu(int cpu, const struct cpumask *mask,
- 	     (cpu) < WORK_CPU_NONE;					\
- 	     (cpu) = __next_wq_cpu((cpu), cpu_possible_mask, (wq)))
-
--#ifdef CONFIG_LOCKDEP
--/**
-- * in_workqueue_context() - in context of specified workqueue?
-- * @wq: the workqueue of interest
-- *
-- * Checks lockdep state to see if the current task is executing from
-- * within a workqueue item.  This function exists only if lockdep is
-- * enabled.
-- */
--int in_workqueue_context(struct workqueue_struct *wq)
--{
--	return lock_is_held(&wq->lockdep_map);
--}
--#endif
--
- #ifdef CONFIG_DEBUG_OBJECTS_WORK
-
- static struct debug_obj_descr work_debug_descr;
+Eric, please clarify, what is the need in creating a socket in foreign
+net namespace?
