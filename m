@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754461Ab0IWJvc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 05:51:32 -0400
-Received: from lnx503.hrz.tu-darmstadt.de ([130.83.156.232]:40667 "EHLO
-	lnx503.hrz.tu-darmstadt.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754432Ab0IWJva (ORCPT
+	id S1753806Ab0IWJyO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 05:54:14 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38678 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752481Ab0IWJyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 05:51:30 -0400
-From: Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
+	Thu, 23 Sep 2010 05:54:13 -0400
+Date: Thu, 23 Sep 2010 10:54:11 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] x86/mrst: add SFI platform device parsing code
+Message-ID: <20100923095411.GA25663@rakim.wolfsonmicro.main>
+References: <20100920140049.31408.67527.stgit@localhost.localdomain>
+ <20100920150431.GD31167@sirena.org.uk>
+ <20100920152726.68ac2d84@linux.intel.com>
+ <20100920152705.GJ3414@rakim.wolfsonmicro.main>
+ <AANLkTi=1dkVOWc2WHhYgqKh_awUhp1-uKN8W7Xx3AB_X@mail.gmail.com>
+ <20100922231514.5e9967c7@linux.intel.com>
+ <20100923060703.GB11198@angua.secretlab.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <19611.8986.142128.168878@elektron.ikp.physik.tu-darmstadt.de>
-Date: Thu, 23 Sep 2010 11:51:22 +0200
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Any SYSRQ key to force mode switch to console mode when using
- KMS?
-In-Reply-To: <4C9A1FB7.9050902@oracle.com>
-References: <19601.1301.803816.92851@elektron.ikp.physik.tu-darmstadt.de>
-	<20100921151033.80e61747.randy.dunlap@oracle.com>
-	<19609.53242.674915.369484@elektron.ikp.physik.tu-darmstadt.de>
-	<4C9A1FB7.9050902@oracle.com>
-X-Mailer: VM 7.19 under Emacs 21.3.1
-X-PMX-TU: seen v0.99a by 5.5.9.395186, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.9.23.94216
-X-PMX-RELAY: mailout
+Content-Disposition: inline
+In-Reply-To: <20100923060703.GB11198@angua.secretlab.ca>
+X-Cookie: BOFH excuse
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Randy" == Randy Dunlap <randy.dunlap@oracle.com> writes:
+On Thu, Sep 23, 2010 at 03:07:03AM -0300, Grant Likely wrote:
 
-    Randy> On 09/22/10 02:44, Uwe Bonnes wrote:
-    >> >> is there any SYSRQ key that forces the video system to console
-    >> mode, >> especially when using KMS and allows to work on.
-    >> 
-    Randy> sysrq-v help message says:
-    >>
-    Randy> force-fb(V) = "Restore framebuffer console"
-    >>  How is that documented outside the sysrq itself?
-    >> 
-    >> /usr/src/linux-2.6.36-rc4-19/Documentation/sysrq.txt:
-    >> 
-    >> 'v' - Dumps Voyager SMP processor info to your console
+> My point is that an isolated translation layer becomes
+> (exponentially?) more difficult to maintain for each additional
+> platform that depends on it.  Support must be explicitly added for
+> every device that gets attached to a moorestown system in a way that
+> cannot be modularized and has the potential to become very large.
 
-    Randy> Yes, I noticed that and I posted a patch for it yesterday.
+It's not just the per-device aspect of it, it's also what happens when
+OEMs start placing devices with no upstream defined mappings on their
+boards.  Regardless of any specs it seems unlikely that OEMs can be
+reliably persuaded to coordinate the creation of new SFI mappings for
+these devices with anyone which means that we're likely to end up with
+multiple incompatible definitions.  Looking at the code as it is I don't
+see any structure in there for handling that - it's assuming that we
+know what the platform data for a given device is going to look like.
 
-Thanks for caring!
+> From what I've seen tonight, dumping SFI data verbatim into a device
+> tree isn't an option because SFI doesn't naturally group device data.
+> I withdraw the suggestion.  So, I guess I agree.  There doesn't seem
+> to be any way around machine-specific SFI translation code, regardless
+> of whether it translates into direct registrations, or into a device
+> tree.
 
-However 2.6.36-rc4 also fixed my hibernate problem:
+One thing that might help here is to put in place the mechanisms for
+adding board-specific overrides now (I'm presuming there's board naming
+data in the SFI somewhere, I've not looked).  That should hopefully
+provide some hints to people and would at least mean we've got something
+to hang machine specific workarounds on.
 
-commit 84e1d836ef0759a152578a961894824bde89596f
-Merge: 20f4cad 6715045
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Sat Sep 11 15:50:53 2010 -0700
+To be honest I'd actually be inclined to go more towards the way the
+non-DT embedded platforms have gone and just ignore the data we get
+from SFI as much as possible and have board specific initialisation in
+code; it's boring and repetitive but it's also clear and *relatively*
+robust.
 
-    Merge branch 'pm-fixes' of
-    git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6
-    
-    * 'pm-fixes' of
-      ...
-      PM / Hibernate: Avoid hitting OOM during preallocation of memory
-      ...
+> > If a driver wants device tree the SFI parser would ideally supply it
+> > with device tree. If the entire kernel goes device tree I will whoop
+> > with joy and make SFI use it.
 
-so I no longer hit the problem with the dark screen...
+> :-)
 
-Bye
--- 
-Uwe Bonnes                bon@elektron.ikp.physik.tu-darmstadt.de
-
-Institut fuer Kernphysik  Schlossgartenstrasse 9  64289 Darmstadt
---------- Tel. 06151 162516 -------- Fax. 06151 164321 ----------
+To be honest I suspect we'll have similar issue with or without device
+tree.
