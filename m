@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756509Ab0IWVDQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 17:03:16 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47676 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752337Ab0IWVDO convert rfc822-to-8bit (ORCPT
+	id S1756690Ab0IWVEK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 17:04:10 -0400
+Received: from smtp.microsoft.com ([131.107.115.215]:43326 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752485Ab0IWVEI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 17:03:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=XDyZGNq5MOcpqzi82gsyX02Ag8gZxwP9IXfacY/7EbHaqKpFzymzbkkb9Xe/p1UnBr
-         cKKa02Lq2+0EMlMu7NwKLF6Xd2HJRpB3Io3ZijBzXZjprXXe3kzZuhVpk7TkP9QIgITV
-         51fyiUp8kHBEypjBGeqLlfTsg/EmSOVFH861M=
+	Thu, 23 Sep 2010 17:04:08 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Joe Perches <joe@perches.com>
+CC: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
+        "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
+        "'gregkh@suse.de'" <gregkh@suse.de>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: RE: [PATCH 1/1] Rename camel case variables in channel.c
+Thread-Topic: [PATCH 1/1] Rename camel case variables in channel.c
+Thread-Index: ActbXSVeNM8VuoYfSBWx7n8ZoE23BQAPS1IAAA4PeoA=
+Date: Thu, 23 Sep 2010 21:04:02 +0000
+Message-ID: <1FB5E1D5CA062146B38059374562DF7289ED3968@TK5EX14MBXC130.redmond.corp.microsoft.com>
+References: <1FB5E1D5CA062146B38059374562DF7289EBB57C@TK5EX14MBXC128.redmond.corp.microsoft.com>
+ <1285274468.25928.15.camel@Joe-Laptop>
+In-Reply-To: <1285274468.25928.15.camel@Joe-Laptop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.123.12]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <201009232259.20261.linux@rainbow-software.org>
-References: <201009232259.20261.linux@rainbow-software.org>
-Date: Thu, 23 Sep 2010 17:03:13 -0400
-X-Google-Sender-Auth: Ch0WBr7_KJZXavHjVBAeaf23Fj0
-Message-ID: <AANLkTikwXyr4pH5rqkoXpiYvkvpLc7s8tq-EwmM1+r7m@mail.gmail.com>
-Subject: Re: [PATCH] de2104x: disable autonegotiation on broken hardware
-From: Jeff Garzik <jgarzik@pobox.com>
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: netdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o8NL4INA025825
 
-On Thu, Sep 23, 2010 at 4:59 PM, Ondrej Zary <linux@rainbow-software.org> wrote:
-> At least on older 21041-AA chips (mine is rev. 11), TP duplex autonegotiation
-> causes the card not to work at all (link is up but no packets are transmitted).
->
-> de4x5 disables autonegotiation completely. But it seems to work on newer
-> (21041-PA rev. 21) so disable it only on rev<20 chips.
->
-> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
->
-> --- linux-2.6.36-rc3-orig/drivers/net/tulip/de2104x.c Â  2010-08-29 17:36:04.000000000 +0200
-> +++ linux-2.6.36-rc3/drivers/net/tulip/de2104x.c Â  Â  Â  Â 2010-09-24 00:27:41.000000000 +0200
-> @@ -364,6 +364,8 @@ static u16 t21040_csr15[] = { 0, 0, 0x00
-> Â /* 21041 transceiver register settings: TP AUTO, BNC, AUI, TP, TP FD*/
-> Â static u16 t21041_csr13[] = { 0xEF01, 0xEF09, 0xEF09, 0xEF01, 0xEF09, };
-> Â static u16 t21041_csr14[] = { 0xFFFF, 0xF7FD, 0xF7FD, 0x6F3F, 0x6F3D, };
-> +/* If on-chip autonegotiation is broken, use half-duplex (FF3F) instead */
-> +static u16 t21041_csr14_brk[] = { 0xFF3F, 0xF7FD, 0xF7FD, 0x6F3F, 0x6F3D, };
-> Â static u16 t21041_csr15[] = { 0x0008, 0x0006, 0x000E, 0x0008, 0x0008, };
->
->
-> @@ -1911,8 +1913,14 @@ fill_defaults:
-> Â  Â  Â  Â for (i = 0; i < DE_MAX_MEDIA; i++) {
-> Â  Â  Â  Â  Â  Â  Â  Â if (de->media[i].csr13 == 0xffff)
-> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â de->media[i].csr13 = t21041_csr13[i];
-> - Â  Â  Â  Â  Â  Â  Â  if (de->media[i].csr14 == 0xffff)
-> - Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  de->media[i].csr14 = t21041_csr14[i];
-> + Â  Â  Â  Â  Â  Â  Â  if (de->media[i].csr14 == 0xffff) {
-> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  /* autonegotiation is broken at least on some chip
-> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â revisions - rev. 0x21 works, 0x11 does not */
-> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  if (de->pdev->revision < 0x20)
-> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  de->media[i].csr14 = t21041_csr14_brk[i];
-> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  else
-> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  de->media[i].csr14 = t21041_csr14[i];
-> + Â  Â  Â  Â  Â  Â  Â  }
+> From: Joe Perches [mailto:joe@perches.com]
+> Sent: Thursday, September 23, 2010 4:41 PM
+> > -	struct hv_monitor_page *monitorPage;
+> > +	struct hv_monitor_page *monitorpage;
+> 
+> Some of these renames would be better with a "_" for
+> the CamelCase conversions (ie: CamelCase -> camel_case).
 
-Interesting...  I never knew about that quirk.
+Yes, for longer names I usually insert underscore. For example, 
+I changed packetLenAligned to packetlen_aligned.
 
-Acked-by: Jeff Garzik <jgarzik@redhat.com>
+> > +	struct hv_monitor_page *monitorpage;
+> > +	u8 monitorGroup = (u8)channel->OfferMsg.MonitorId / 32;
+> > +	u8 monitorOffset = (u8)channel->OfferMsg.MonitorId % 32;
+> 
+> Why not convert these to monitor_(group|offset)?
+
+That's a good catch. I will update it.
+
+Thanks,
+
+- Haiyang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
