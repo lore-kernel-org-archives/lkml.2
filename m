@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166Ab0IWGok (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 02:44:40 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64616 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976Ab0IWGoj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 02:44:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ftEO+afmxBG2d38bDHylL0qf5MPZEZjct14TTfZbQFOfmYkSZ3E+2GMxFqd2wGNDNi
-         1kjxiWQr+BlwDprpI1l1nZJjdL8GqOvzjmaIuI9gfgTo8+p84ekWp9FC7Kn8qCS2jf+D
-         lrTDnoh9Q0DOVScZBQ9/Th35PIfCLW14lWamU=
-From: Ben Skeggs <skeggsb@gmail.com>
-To: dri-devel@lists.freedesktop.org
-Cc: airlied@redhat.com, linux-kernel@vger.kernel.org,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [PATCH] drm/nouveau: fix panels using straps-based mode detection
-Date: Thu, 23 Sep 2010 16:44:01 +1000
-Message-Id: <1285224241-32683-1-git-send-email-skeggsb@gmail.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <20100922225612.826b0553.akpm@linux-foundation.org>
-References: <20100922225612.826b0553.akpm@linux-foundation.org>
+	id S1753391Ab0IWGsU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 02:48:20 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:58102 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753224Ab0IWGsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 02:48:19 -0400
+Date: Thu, 23 Sep 2010 08:48:08 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 0/2] [GIT PULL][v2.6.36] tracing: fixes for tracing virt
+ guests
+Message-ID: <20100923064808.GC17733@elte.hu>
+References: <20100923030359.649647055@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100923030359.649647055@goodmis.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -1.1
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.1 required=5.9 tests=BAYES_05 autolearn=no SpamAssassin version=3.2.5
+	-1.1 BAYES_05               BODY: Bayesian spam probability is 1 to 5%
+	[score: 0.0286]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Skeggs <bskeggs@redhat.com>
 
-nouveau_bios_fp_mode() zeroes the mode struct before filling in relevant
-entries.  This nukes the mode id initialised by drm_mode_create(), and
-causes warnings from idr when we try to remove the mode.
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
----
- drivers/gpu/drm/nouveau/nouveau_connector.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+> Ingo,
+> 
+> I actually did these fixes back in July for RHEL, but forgot about
+> them for mainline :-(
+> 
+> Jeremy hit the same bug and set me a fix. It was only part of what
+> I did in July, so I pulled in his fix and added the second part.
+> 
+> Please pull the latest tip/perf/urgent tree, which can be found at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+> tip/perf/urgent
+> 
+> 
+> Jeremy Fitzhardinge (1):
+>       tracing/x86: Don't use mcount in pvclock.c
+> 
+> Steven Rostedt (1):
+>       tracing/x86: Don't use mcount in kvmclock.c
+> 
+> ----
+>  arch/x86/kernel/Makefile |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_connector.c b/drivers/gpu/drm/nouveau/nouveau_connector.c
-index 98c214c..4b286a8 100644
---- a/drivers/gpu/drm/nouveau/nouveau_connector.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_connector.c
-@@ -594,8 +594,10 @@ nouveau_connector_get_modes(struct drm_connector *connector)
- 	if (nv_encoder->dcb->type == OUTPUT_LVDS &&
- 	    (nv_encoder->dcb->lvdsconf.use_straps_for_mode ||
- 	     dev_priv->vbios.fp_no_ddc) && nouveau_bios_fp_mode(dev, NULL)) {
--		nv_connector->native_mode = drm_mode_create(dev);
--		nouveau_bios_fp_mode(dev, nv_connector->native_mode);
-+		struct drm_display_mode mode;
-+
-+		nouveau_bios_fp_mode(dev, &mode);
-+		nv_connector->native_mode = drm_mode_duplicate(dev, &mode);
- 	}
- 
- 	/* Find the native mode if this is a digital panel, if we didn't
--- 
-1.7.2.2
+Pulled, thanks Steve!
 
+	Ingo
