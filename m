@@ -1,37 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755635Ab0IWUho (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 16:37:44 -0400
-Received: from fanny.its.uu.se ([130.238.4.241]:49166 "EHLO fanny.its.uu.se"
+	id S1755692Ab0IWUlL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 16:41:11 -0400
+Received: from mail.perches.com ([173.55.12.10]:2303 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753502Ab0IWUhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 16:37:43 -0400
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754034Ab0IWUlK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 16:41:10 -0400
+Subject: Re: [PATCH 1/1] Rename camel case variables in channel.c
+From: Joe Perches <joe@perches.com>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
+        "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
+        "'gregkh@suse.de'" <gregkh@suse.de>,
+        Hank Janssen <hjanssen@microsoft.com>
+In-Reply-To: <1FB5E1D5CA062146B38059374562DF7289EBB57C@TK5EX14MBXC128.redmond.corp.microsoft.com>
+References: <1FB5E1D5CA062146B38059374562DF7289EBB57C@TK5EX14MBXC128.redmond.corp.microsoft.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 23 Sep 2010 13:41:08 -0700
+Message-ID: <1285274468.25928.15.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-ID: <19611.47764.491500.541850@pilspetsen.it.uu.se>
-Date: Thu, 23 Sep 2010 22:37:40 +0200
-From: Mikael Pettersson <mikpe@it.uu.se>
-To: linux-kernel@vger.kernel.org
-Subject: HPET broken again/still in 2.6.36-rc5?
-X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I just had a weird partial hang with 2.6.36-rc5 on x86.
-I was trying to start a new xterm but it just wouldn't
-appear on the screen.  I then noticed that a gcc build
-in one xterm had frozen.  Running dmesg in yet another
-xterm hanged.
+On Thu, 2010-09-23 at 20:24 +0000, Haiyang Zhang wrote:
+>  drivers/staging/hv/channel.c |  729 +++++++++++++++++++++---------------------
+[]
+> -	struct hv_monitor_page *monitorPage;
+> +	struct hv_monitor_page *monitorpage;
 
-Meanwhile I had no problems shifting focus between windows,
-or typing commands in ssh connections to other machines.
+Some of these renames would be better with a "_" for
+the CamelCase conversions (ie: CamelCase -> camel_case).
 
-After about two minutes the hanging operations suddenly
-resumed without errors, and the following was at the end
-of the kernel log:
+perl regex: 's/\b([A-Z])([a-z]+)([A-Z])([a-z]+)\b/\L$1$2_\L$3$4/g'
 
-CE: hpet increased min_delta_ns to 7500 nsec
+For instance, I think this should be monitor_page;
 
-The machine is a Core i7 with X58 chipset.
+> -void VmbusChannelGetDebugInfo(struct vmbus_channel *Channel,
+> -			      struct vmbus_channel_debug_info *DebugInfo)
+> +void VmbusChannelGetDebugInfo(struct vmbus_channel *channel,
+> +			      struct vmbus_channel_debug_info *debuginfo)
+
+perhaps debug_info
+
+>  {
+> -	struct hv_monitor_page *monitorPage;
+> -	u8 monitorGroup = (u8)Channel->OfferMsg.MonitorId / 32;
+> -	u8 monitorOffset = (u8)Channel->OfferMsg.MonitorId % 32;
+> +	struct hv_monitor_page *monitorpage;
+> +	u8 monitorGroup = (u8)channel->OfferMsg.MonitorId / 32;
+> +	u8 monitorOffset = (u8)channel->OfferMsg.MonitorId % 32;
+
+Why not convert these to monitor_(group|offset)?
+
+etc...
+
