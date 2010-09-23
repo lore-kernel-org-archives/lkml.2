@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982Ab0IWK5d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 06:57:33 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:47545 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753905Ab0IWK5c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 06:57:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=KQ6WMyu+8edWuMQZ0gu3o33oKejATW5/flbqsa3OwYzN729aFuG4pk0Xlkq/ERZB+Z
-         R2/5Hd+g/5aBGJLvZ3DASWbUhy1g6C22pFn57RBgLyUEX1u3WS0iFQemNrYOth9v3GTR
-         LsT06SaiHYXjtWWkgzQAGwHHdmXvXv+9n2PxU=
-Date: Thu, 23 Sep 2010 14:57:27 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ds2760_battery: add HAS_IOMEM dependency
-Message-ID: <20100923105727.GA22890@oksana.dev.rtsoft.ru>
-References: <20100923124445.5309c100@mschwide.boeblingen.de.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20100923124445.5309c100@mschwide.boeblingen.de.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754446Ab0IWLAs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 07:00:48 -0400
+Received: from mga14.intel.com ([143.182.124.37]:21891 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751633Ab0IWLAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 07:00:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,222,1283756400"; 
+   d="scan'208";a="327839660"
+Date: Thu, 23 Sep 2010 11:13:47 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] x86/mrst: add SFI platform device parsing code
+Message-ID: <20100923111347.0cf93bb3@linux.intel.com>
+In-Reply-To: <20100923105208.GD25663@rakim.wolfsonmicro.main>
+References: <20100920150431.GD31167@sirena.org.uk>
+	<20100920152726.68ac2d84@linux.intel.com>
+	<20100920152705.GJ3414@rakim.wolfsonmicro.main>
+	<AANLkTi=1dkVOWc2WHhYgqKh_awUhp1-uKN8W7Xx3AB_X@mail.gmail.com>
+	<20100922231514.5e9967c7@linux.intel.com>
+	<20100923060703.GB11198@angua.secretlab.ca>
+	<20100923095411.GA25663@rakim.wolfsonmicro.main>
+	<20100923112703.543b0b86@lxorguk.ukuu.org.uk>
+	<20100923102708.GC25663@rakim.wolfsonmicro.main>
+	<20100923115818.0cac8d06@lxorguk.ukuu.org.uk>
+	<20100923105208.GD25663@rakim.wolfsonmicro.main>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 23, 2010 at 12:44:45PM +0200, Martin Schwidefsky wrote:
-> From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> 
-> Fix this Kconfig warning on allmodconfig for s390:
-> 
-> warning: (BATTERY_DS2760 && POWER_SUPPLY) selects W1 which has unmet direct dependencies (HAS_IOMEM)
-> 
-> Cc: Anton Vorontsov <cbou@mail.ru>
-> Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> ---
-> 
->  drivers/power/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff -urpN linux-2.6/drivers/power/Kconfig linux-2.6-patched/drivers/power/Kconfig
-> --- linux-2.6/drivers/power/Kconfig	2010-09-23 08:47:36.000000000 +0200
-> +++ linux-2.6-patched/drivers/power/Kconfig	2010-09-23 08:47:39.000000000 +0200
-> @@ -64,6 +64,7 @@ config TEST_POWER
->  
->  config BATTERY_DS2760
->  	tristate "DS2760 battery driver (HP iPAQ & others)"
-> +	depends on HAS_IOMEM
->  	select W1
->  	select W1_SLAVE_DS2760
+> So the expectation is that the platform data parser functions in the
+> SFI device list will be querying the DMI data and selecting the actual
+> parsing based on that?  Perhaps adding DMI keys to the match tables so
+> the infrastructure is there for doing the device specific things would
+> cover it; minor differences could be worked out in the default match
+> function and we can drop back to board specific functions when it gets
+> too messy.
 
-I think the better fix would be to turn this into 'depends on W1',
-and remove these selects.
+That will just encourage people not to be careful.
 
-Thanks,
+> My main issue here is that the code is working on the assumption that
+> we have one standard idea of what the SFI data means and provides no
+> guidance to users about handling the inevitable variations.
 
--- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
+There should be no variations and the nature of the platform means that
+might even work out. I don't really want to add it to the table unless
+we have lots needing DMI data. Right now we don't and there are
+multiple platform implementations in existence.
+
+Alan
