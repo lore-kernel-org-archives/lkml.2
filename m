@@ -1,105 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106Ab0IWSyA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 14:54:00 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:53113 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754339Ab0IWSx7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 14:53:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:message-id:x-mailer;
-        b=ZDmNlSp6581jJJSbZj+q+P8wcoQtTpqo2XoxjrjQdxnIFMxQIWWbCpqg1fZzqRIo+H
-         Af9O1+/KaeDIVlXKC1k3xtd8J1Q24ZMT0AIN9NkbgETnpjZFgQJF8nCQiK80JOr3fVkb
-         qU8Fi59UhrpuWMrYVteA1yN/AKWNR+CQI8xbQ=
-From: Maurice Dawson <mauricedawson2699@gmail.com>
-To: gregkh@suse.de, arun.thomas@gmail.com, stewart_r@aliencamel.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 12/12] Staging: comedi: fix space coding style issue in ni_labpc.c
-Date: Thu, 23 Sep 2010 19:53:41 +0100
-Message-Id: <1285268021-2020-1-git-send-email-mauricedawson2699@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1756135Ab0IWSyM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 14:54:12 -0400
+Received: from borg.medozas.de ([188.40.89.202]:54623 "EHLO borg.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756117Ab0IWSyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 14:54:11 -0400
+Date: Thu, 23 Sep 2010 20:54:10 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: "Glove box" BIOS patch causes boot flicker
+In-Reply-To: <4C994F0B.6030004@linux.intel.com>
+Message-ID: <alpine.LNX.2.01.1009232052230.16976@obet.zrqbmnf.qr>
+References: <alpine.LNX.2.01.1009220135380.25692@obet.zrqbmnf.qr> <4C994F0B.6030004@linux.intel.com>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the ni_labpc.c file that fixes up multiple please,
-no space for starting a line warnings, found by the checkpatch.pl tool
+On Wednesday 2010-09-22 02:34, H. Peter Anvin wrote:
 
-Signed-off-by: Maurice Dawson <mauricedawson2699@gmail.com>
----
- drivers/staging/comedi/drivers/ni_labpc.c |   40 ++++++++++++++--------------
- 1 files changed, 20 insertions(+), 20 deletions(-)
+>There were some minor bugs (typos) in the conversion to the glove box 
+>coding style. The ones we have found have been fixed, so the first 
+>thing is to try the current mainline or the current tip tree.  
+>Otherwise I would look for issues where either the wrong register is 
+>changed, or something like a variable is changed instead of a field.
 
-diff --git a/drivers/staging/comedi/drivers/ni_labpc.c b/drivers/staging/comedi/drivers/ni_labpc.c
-index 3acf7e6..bfce5c8 100644
---- a/drivers/staging/comedi/drivers/ni_labpc.c
-+++ b/drivers/staging/comedi/drivers/ni_labpc.c
-@@ -1,21 +1,21 @@
- /*
--    comedi/drivers/ni_labpc.c
--    Driver for National Instruments Lab-PC series boards and compatibles
--    Copyright (C) 2001, 2002, 2003 Frank Mori Hess <fmhess@users.sourceforge.net>
-+comedi/drivers/ni_labpc.c
-+Driver for National Instruments Lab-PC series boards and compatibles
-+Copyright (C) 2001, 2002, 2003 Frank Mori Hess <fmhess@users.sourceforge.net>
- 
--    This program is free software; you can redistribute it and/or modify
--    it under the terms of the GNU General Public License as published by
--    the Free Software Foundation; either version 2 of the License, or
--    (at your option) any later version.
-+This program is free software; you can redistribute it and/or modify
-+it under the terms of the GNU General Public License as published by
-+the Free Software Foundation; either version 2 of the License, or
-+(at your option) any later version.
- 
--    This program is distributed in the hope that it will be useful,
--    but WITHOUT ANY WARRANTY; without even the implied warranty of
--    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
--    GNU General Public License for more details.
-+This program is distributed in the hope that it will be useful,
-+but WITHOUT ANY WARRANTY; without even the implied warranty of
-+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+GNU General Public License for more details.
- 
--    You should have received a copy of the GNU General Public License
--    along with this program; if not, write to the Free Software
--    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+You should have received a copy of the GNU General Public License
-+along with this program; if not, write to the Free Software
-+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- 
- ************************************************************************
- */
-@@ -24,7 +24,7 @@ Driver: ni_labpc
- Description: National Instruments Lab-PC (& compatibles)
- Author: Frank Mori Hess <fmhess@users.sourceforge.net>
- Devices: [National Instruments] Lab-PC-1200 (labpc-1200),
--  Lab-PC-1200AI (labpc-1200ai), Lab-PC+ (lab-pc+), PCI-1200 (ni_labpc)
-+Lab-PC-1200AI (labpc-1200ai), Lab-PC+ (lab-pc+), PCI-1200 (ni_labpc)
- Status: works
- 
- Tested with lab-pc-1200.  For the older Lab-PC+, not all input ranges
-@@ -47,13 +47,13 @@ from the eeprom and store them into a file that can be then be used by
- comedilib, use the comedi_calibrate program.
- 
- Configuration options - ISA boards:
--  [0] - I/O port base address
--  [1] - IRQ (optional, required for timed or externally triggered conversions)
--  [2] - DMA channel (optional)
-+[0] - I/O port base address
-+[1] - IRQ (optional, required for timed or externally triggered conversions)
-+[2] - DMA channel (optional)
- 
- Configuration options - PCI boards:
--  [0] - bus (optional)
--  [1] - slot (optional)
-+[0] - bus (optional)
-+[1] - slot (optional)
- 
- The Lab-pc+ has quirky chanlist requirements
- when scanning multiple channels.  Multiple channel scan
--- 
-1.7.0.4
-
+I tried v2.6.36-rc5 now, and it looks better. The cursor position is 
+retained as desired. The mode switch is still there, albeit much 
+shorter than it used to be.
