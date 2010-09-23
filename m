@@ -1,60 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755692Ab0IWUlL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 16:41:11 -0400
-Received: from mail.perches.com ([173.55.12.10]:2303 "EHLO mail.perches.com"
+	id S1755752Ab0IWUrC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 16:47:02 -0400
+Received: from borg.medozas.de ([188.40.89.202]:55604 "EHLO borg.medozas.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754034Ab0IWUlK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 16:41:10 -0400
-Subject: Re: [PATCH 1/1] Rename camel case variables in channel.c
-From: Joe Perches <joe@perches.com>
-To: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
-        "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
-        "'gregkh@suse.de'" <gregkh@suse.de>,
-        Hank Janssen <hjanssen@microsoft.com>
-In-Reply-To: <1FB5E1D5CA062146B38059374562DF7289EBB57C@TK5EX14MBXC128.redmond.corp.microsoft.com>
-References: <1FB5E1D5CA062146B38059374562DF7289EBB57C@TK5EX14MBXC128.redmond.corp.microsoft.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 23 Sep 2010 13:41:08 -0700
-Message-ID: <1285274468.25928.15.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754503Ab0IWUrB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 16:47:01 -0400
+Date: Thu, 23 Sep 2010 22:46:59 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: "Glove box" BIOS patch causes boot flicker
+In-Reply-To: <4C9BB1C5.80808@zytor.com>
+Message-ID: <alpine.LNX.2.01.1009232243110.21529@obet.zrqbmnf.qr>
+References: <alpine.LNX.2.01.1009220135380.25692@obet.zrqbmnf.qr> <4C994F0B.6030004@linux.intel.com> <alpine.LNX.2.01.1009232052230.16976@obet.zrqbmnf.qr> <4C9BB1C5.80808@zytor.com>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-23 at 20:24 +0000, Haiyang Zhang wrote:
->  drivers/staging/hv/channel.c |  729 +++++++++++++++++++++---------------------
-[]
-> -	struct hv_monitor_page *monitorPage;
-> +	struct hv_monitor_page *monitorpage;
 
-Some of these renames would be better with a "_" for
-the CamelCase conversions (ie: CamelCase -> camel_case).
+On Thursday 2010-09-23 22:00, H. Peter Anvin wrote:
+>On 09/23/2010 11:54 AM, Jan Engelhardt wrote:
+>> On Wednesday 2010-09-22 02:34, H. Peter Anvin wrote:
+>> 
+>>> There were some minor bugs (typos) in the conversion to the glove box 
+>>> coding style. The ones we have found have been fixed, so the first 
+>>> thing is to try the current mainline or the current tip tree.  
+>>> Otherwise I would look for issues where either the wrong register is 
+>>> changed, or something like a variable is changed instead of a field.
+>> 
+>> I tried v2.6.36-rc5 now, and it looks better. The cursor position is 
+>> retained as desired. The mode switch is still there, albeit much 
+>> shorter than it used to be.
+>
+>The mode switch was there in the original code.
 
-perl regex: 's/\b([A-Z])([a-z]+)([A-Z])([a-z]+)\b/\L$1$2_\L$3$4/g'
-
-For instance, I think this should be monitor_page;
-
-> -void VmbusChannelGetDebugInfo(struct vmbus_channel *Channel,
-> -			      struct vmbus_channel_debug_info *DebugInfo)
-> +void VmbusChannelGetDebugInfo(struct vmbus_channel *channel,
-> +			      struct vmbus_channel_debug_info *debuginfo)
-
-perhaps debug_info
-
->  {
-> -	struct hv_monitor_page *monitorPage;
-> -	u8 monitorGroup = (u8)Channel->OfferMsg.MonitorId / 32;
-> -	u8 monitorOffset = (u8)Channel->OfferMsg.MonitorId % 32;
-> +	struct hv_monitor_page *monitorpage;
-> +	u8 monitorGroup = (u8)channel->OfferMsg.MonitorId / 32;
-> +	u8 monitorOffset = (u8)channel->OfferMsg.MonitorId % 32;
-
-Why not convert these to monitor_(group|offset)?
-
-etc...
-
+That may very well be so, but there clearly is distinguished behavior 
+w.r.t. that in 2.6.36 compared to .30.
