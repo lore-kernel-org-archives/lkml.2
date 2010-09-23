@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180Ab0IWGwa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 02:52:30 -0400
-Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:53902 "EHLO
-	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754014Ab0IWGw2 (ORCPT
+	id S1754206Ab0IWGwg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 02:52:36 -0400
+Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:59753 "EHLO
+	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754183Ab0IWGwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 02:52:28 -0400
+	Thu, 23 Sep 2010 02:52:33 -0400
 From: matt mooney <mfm@muteddisk.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 17/20] x86: change to new flag variables
-Date: Wed, 22 Sep 2010 23:51:38 -0700
-Message-Id: <1285224698-30035-1-git-send-email-mfm@muteddisk.com>
+To: Chris Zankel <chris@zankel.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH 18/20] xtensa: change to new flag variable
+Date: Wed, 22 Sep 2010 23:51:42 -0700
+Message-Id: <1285224702-30069-1-git-send-email-mfm@muteddisk.com>
 X-Mailer: git-send-email 1.6.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace EXTRA_CFLAGS with ccflags-y and EXTRA_AFLAGS with asflags-y.
+Replace EXTRA_CFLAGS with ccflags-y.
 
 Signed-off-by: matt mooney <mfm@muteddisk.com>
 ---
- arch/x86/kvm/Makefile      |    2 +-
- arch/x86/math-emu/Makefile |    4 ++--
- arch/x86/pci/Makefile      |    4 +---
- 3 files changed, 4 insertions(+), 6 deletions(-)
+ arch/xtensa/boot/Makefile     |    2 +-
+ arch/xtensa/boot/lib/Makefile |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kvm/Makefile b/arch/x86/kvm/Makefile
-index 31a7035..0feb536 100644
---- a/arch/x86/kvm/Makefile
-+++ b/arch/x86/kvm/Makefile
-@@ -1,5 +1,5 @@
+diff --git a/arch/xtensa/boot/Makefile b/arch/xtensa/boot/Makefile
+index 40aa55b4..70fd145 100644
+--- a/arch/xtensa/boot/Makefile
++++ b/arch/xtensa/boot/Makefile
+@@ -14,7 +14,7 @@ HOSTFLAGS	+= -Iarch/$(ARCH)/boot/include
  
--EXTRA_CFLAGS += -Ivirt/kvm -Iarch/x86/kvm
-+ccflags-y := -Ivirt/kvm -Iarch/x86/kvm
+ BIG_ENDIAN	:= $(shell echo -e __XTENSA_EB__ | $(CC) -E - | grep -v "\#")
  
- CFLAGS_x86.o := -I.
- CFLAGS_svm.o := -I.
-diff --git a/arch/x86/math-emu/Makefile b/arch/x86/math-emu/Makefile
-index 9b0c63b..a88eac2 100644
---- a/arch/x86/math-emu/Makefile
-+++ b/arch/x86/math-emu/Makefile
-@@ -5,8 +5,8 @@
- #DEBUG	= -DDEBUGGING
- DEBUG	=
- PARANOID = -DPARANOID
--EXTRA_CFLAGS	:= $(PARANOID) $(DEBUG) -fno-builtin $(MATH_EMULATION)
--EXTRA_AFLAGS	:= $(PARANOID)
-+ccflags-y := $(PARANOID) $(DEBUG) -fno-builtin $(MATH_EMULATION)
-+asflags-y := $(PARANOID)
+-export EXTRA_CFLAGS
++export ccflags-y
+ export BIG_ENDIAN
  
- # From 'C' language sources:
- C_OBJS =fpu_entry.o errors.o \
-diff --git a/arch/x86/pci/Makefile b/arch/x86/pci/Makefile
-index a0207a7..8e60497 100644
---- a/arch/x86/pci/Makefile
-+++ b/arch/x86/pci/Makefile
-@@ -20,6 +20,4 @@ obj-y				+= amd_bus.o bus_numa.o
+ subdir-y	:= lib
+diff --git a/arch/xtensa/boot/lib/Makefile b/arch/xtensa/boot/lib/Makefile
+index d3d2aa2..ad8952e 100644
+--- a/arch/xtensa/boot/lib/Makefile
++++ b/arch/xtensa/boot/lib/Makefile
+@@ -6,7 +6,7 @@ zlib	:= inffast.c inflate.c inftrees.c
  
- obj-$(CONFIG_PCI_CNB20LE_QUIRK)	+= broadcom_bus.o
+ lib-y	+= $(zlib:.c=.o) zmem.o
  
--ifeq ($(CONFIG_PCI_DEBUG),y)
--EXTRA_CFLAGS += -DDEBUG
--endif
-+ccflags-$(CONFIG_PCI_DEBUG) := -DDEBUG
+-EXTRA_CFLAGS	+= -Ilib/zlib_inflate
++ccflags-y	:= -Ilib/zlib_inflate
+ 
+ quiet_cmd_copy_zlib = COPY    $@
+       cmd_copy_zlib = cat $< > $@
 -- 
 1.7.2.1
 
