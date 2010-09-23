@@ -1,34 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754606Ab0IWVnq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 17:43:46 -0400
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:47915 "HELO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752555Ab0IWVnp (ORCPT
+	id S1754791Ab0IWVov (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 17:44:51 -0400
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:34735 "HELO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753954Ab0IWVou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 17:43:45 -0400
-X-Greylist: delayed 310 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Sep 2010 17:43:45 EDT
+	Thu, 23 Sep 2010 17:44:50 -0400
 From: Shawn Bohrer <sbohrer@rgmadvisors.com>
 To: arjan@linux.intel.com, nhorman@tuxdriver.com
 Cc: tomk@rgmadvisors.com, danb@rgmadvisors.com, linux-kernel@vger.kernel.org,
         Shawn Bohrer <sbohrer@rgmadvisors.com>
-Subject: [PATCH 0/2] irqbalance: Fixes for CPU count
-Date: Thu, 23 Sep 2010 16:38:05 -0500
-Message-Id: <1285277887-14190-1-git-send-email-sbohrer@rgmadvisors.com>
+Subject: [PATCH 2/2] Special interrupt counts line NMI may start with a space
+Date: Thu, 23 Sep 2010 16:38:07 -0500
+Message-Id: <1285277887-14190-3-git-send-email-sbohrer@rgmadvisors.com>
 X-Mailer: git-send-email 1.6.5.2
+In-Reply-To: <1285277887-14190-1-git-send-email-sbohrer@rgmadvisors.com>
+References: <1285277887-14190-1-git-send-email-sbohrer@rgmadvisors.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On my 2.6.32 machines I noticed irqbalance was always rescanning the CPU
-topology, and never entered power_mode because the CPU counts did not
-match.  The following two patches fix the CPU detection in irqbalance.
+The kernel determines the maximum number of possible IRQs and pads the
+first field of /proc/interrupts appropriately.  With four or more digits
+of precession the special interrupt counts all start with a space
+instead of a letter.  This caused the special interrupt counts to be
+counted on my system and that caused the cpunr count to be off when it
+reached the ERR and MIS lines forcing a CPU rescan.
 
-Shawn Bohrer (2):
-  Fix detection of CPUs in sysfs
-  Special interrupt counts line NMI may start with a space
-
- cputree.c        |    3 ++-
+Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
+---
  procinterrupts.c |   24 +++++++++++-------------
- 2 files changed, 13 insertions(+), 14 deletions(-)
+ 1 files changed, 11 insertions(+), 13 deletions(-)
+
+diff --git a/procinterrupts.c b/procinterrupts.c
+index e336efe..322f4de 100644
+--- a/procinterrupts.c
++++ b/procinterrupts.c
+@@ -55,20 +55,18 @@ void parse_proc_interrupts(void)
+ 		if (getline(&line, &size, file)==0)
+ 			break;
+ 
+-
++		number = strtoul(line, &c, 10);
+ 		/* lines with letters in front are special, like NMI count. Ignore */
+-		if (!(line[0]==' ' || (line[0]>='0' && line[0]<='9')))
+-			break;
+-		c = strchr(line, ':');
+-		if (!c)
++		if (line == c)
++			continue;
++
++		if (c[0] == ':')
++			++c;
++		else
+ 			continue;
+-		*c = 0;
+-		c++;
+-		number = strtoul(line, NULL, 10);
++
+ 		count = 0;
+ 		cpunr = 0;
+-
+-		c2=NULL;
+ 		while (1) {
+ 			uint64_t C;
+ 			C = strtoull(c, &c2, 10);
+@@ -78,11 +76,11 @@ void parse_proc_interrupts(void)
+ 			c=c2;
+ 			cpunr++;
+ 		}
+-		if (cpunr != core_count) 
++		if (cpunr != core_count)
+ 			need_cpu_rescan = 1;
+-		
++
+ 		set_interrupt_count(number, count);
+-	}		
++	}
+ 	fclose(file);
+ 	free(line);
+ }
+-- 
+1.6.5.2
 
