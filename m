@@ -1,61 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754576Ab0IWLZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 07:25:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54011 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754494Ab0IWLZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 07:25:56 -0400
-Date: Thu, 23 Sep 2010 13:25:55 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: tj@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ida: document IDA_BITMAP_LONGS calculation
-In-Reply-To: <1283506698-21369-1-git-send-email-namhyung@gmail.com>
-Message-ID: <alpine.LNX.2.00.1009231325370.26813@pobox.suse.cz>
-References: <1283506698-21369-1-git-send-email-namhyung@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754551Ab0IWL1p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 07:27:45 -0400
+Received: from bohort.kerlabs.com ([90.80.97.101]:50737 "EHLO
+	bohort.kerlabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752884Ab0IWL1o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 07:27:44 -0400
+Date: Thu, 23 Sep 2010 13:27:39 +0200
+From: Louis Rilling <Louis.Rilling@kerlabs.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org, Linux Containers <containers@lists.osdl.org>,
+        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, jamal <hadi@cyberus.ca>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Ulrich Drepper <drepper@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+        David Miller <davem@davemloft.net>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Ben Greear <greearb@candelatech.com>,
+        Matt Helsley <matthltc@us.ibm.com>, Jonathan Corbet <corbet@lwn.net>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>
+Subject: Re: [PATCH 3/8] ns proc: Add support for the network namespace.
+Message-ID: <20100923112739.GD2211@hawkmoon.kerlabs.com>
+Mail-Followup-To: "Eric W. Biederman" <ebiederm@xmission.com>,
+	linux-kernel@vger.kernel.org,
+	Linux Containers <containers@lists.osdl.org>,
+	netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org, jamal <hadi@cyberus.ca>,
+	Daniel Lezcano <daniel.lezcano@free.fr>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Michael Kerrisk <mtk.manpages@gmail.com>,
+	Ulrich Drepper <drepper@gmail.com>,
+	Al Viro <viro@ZenIV.linux.org.uk>,
+	David Miller <davem@davemloft.net>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	Pavel Emelyanov <xemul@openvz.org>,
+	Pavel Emelyanov <xemul@parallels.com>,
+	Ben Greear <greearb@candelatech.com>,
+	Matt Helsley <matthltc@us.ibm.com>,
+	Jonathan Corbet <corbet@lwn.net>,
+	Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+	Jan Engelhardt <jengelh@medozas.de>,
+	Patrick McHardy <kaber@trash.net>
+References: <m1ocborgq7.fsf@fess.ebiederm.org> <m17hicrglt.fsf@fess.ebiederm.org>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=_bohort-26084-1285241231-0001-2"
+Content-Disposition: inline
+In-Reply-To: <m17hicrglt.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Sep 2010, Namhyung Kim wrote:
+This is a MIME-formatted message.  If you see this text it means that your
+E-mail software does not support MIME-formatted messages.
 
-> IDA_BITMAP_LONGS value is calculated take into account struct ida_bitmap
-> not to waste memory space. Comment it.
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> Acked-by: Tejun Heo <tj@kernel.org>
-> ---
->  include/linux/idr.h |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/idr.h b/include/linux/idr.h
-> index e968db7..3f4b718 100644
-> --- a/include/linux/idr.h
-> +++ b/include/linux/idr.h
-> @@ -117,10 +117,13 @@ void idr_init(struct idr *idp);
->  /*
->   * IDA - IDR based id allocator, use when translation from id to
->   * pointer isn't necessary.
-> + *
-> + * IDA_BITMAP_LONGS is calculated to be one less to accommodate
-> + * ida_bitmap->nr_busy so that the whole struct fits in 128 bytes.
->   */
->  #define IDA_CHUNK_SIZE		128	/* 128 bytes per chunk */
->  #define IDA_BITMAP_LONGS	(128 / sizeof(long) - 1)
-> -#define IDA_BITMAP_BITS		(IDA_BITMAP_LONGS * sizeof(long) * 8)
-> +#define IDA_BITMAP_BITS 	(IDA_BITMAP_LONGS * sizeof(long) * 8)
->  
->  struct ida_bitmap {
->  	long			nr_busy;
+--=_bohort-26084-1285241231-0001-2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Tejun, any word on this patch? Doesn't seem to be present in linux-next.
+On 23/09/10  1:47 -0700, Eric W. Biederman wrote:
+>=20
+> Implementing file descriptors for the network namespace is simple and
+> straight forward.
+>=20
+> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+
+[...]
+
+> diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
+> index c988e68..581a088 100644
+> --- a/net/core/net_namespace.c
+> +++ b/net/core/net_namespace.c
+> @@ -571,3 +571,33 @@ void unregister_pernet_device(struct pernet_operatio=
+ns *ops)
+>  	mutex_unlock(&net_mutex);
+>  }
+>  EXPORT_SYMBOL_GPL(unregister_pernet_device);
+> +
+> +#ifdef CONFIG_NET_NS
+> +static void *netns_get(struct task_struct *task)
+> +{
+> +	struct net *net;
+> +	rcu_read_lock();
+> +	net =3D get_net(task->nsproxy->net_ns);
+
+task could be exiting, so task->nsproxy could be NULL, right?
+Maybe make proc_ns_instantiate() rcu_dereference task->nsproxy, check for it
+being not NULL, and pass task->nsproxy to ns_ops->get()?
+
+That could be an issue for the user namespace since it is not in nsproxy, b=
+ut
+maybe no reasonable usage of ns_ops with user namespaces is envisioned.
+Otherwise, checking that task is alive with RCU locked in proc_ns_instantia=
+te() should be enough to be
+rely on task->cred when calling ns_ops->get().
 
 Thanks,
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Louis
+
+> +	rcu_read_unlock();
+> +	return net;
+> +}
+> +
+> +static void netns_put(void *ns)
+> +{
+> +	put_net(ns);
+> +}
+> +
+> +static int netns_install(struct nsproxy *nsproxy, void *ns)
+> +{
+> +	put_net(nsproxy->net_ns);
+> +	nsproxy->net_ns =3D get_net(ns);
+> +	return 0;
+> +}
+> +
+> +const struct proc_ns_operations netns_operations =3D {
+> +	.name		=3D PROC_NSNAME("net"),
+> +	.get		=3D netns_get,
+> +	.put		=3D netns_put,
+> +	.install	=3D netns_install,
+> +};
+> +#endif
+> --=20
+> 1.6.5.2.143.g8cc62
+>=20
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+--=20
+Dr Louis Rilling			Kerlabs
+Skype: louis.rilling			Batiment Germanium
+Phone: (+33|0) 6 80 89 08 23		80 avenue des Buttes de Coesmes
+http://www.kerlabs.com/			35700 Rennes
+
+--=_bohort-26084-1285241231-0001-2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Transfer-Encoding: 7bit
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkybOasACgkQVKcRuvQ9Q1SeLQCeNJvD+892JCE+tRrk9KJXbkL0
+CLUAn2HD5GwEA38yUyN2PlyF0yrwQc9j
+=NeV1
+-----END PGP SIGNATURE-----
+
+--=_bohort-26084-1285241231-0001-2--
