@@ -1,124 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752731Ab0IWAyh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 20:54:37 -0400
-Received: from smtp-03.mandic.com.br ([200.225.81.143]:54710 "EHLO
-	smtp-03.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752540Ab0IWAyg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 20:54:36 -0400
-Message-ID: <4C9AA546.6050201@cesarb.net>
-Date: Wed, 22 Sep 2010 21:54:30 -0300
-From: Cesar Eduardo Barros <cesarb@cesarb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Jan Kara <jack@suse.cz>, Jens Axboe <jaxboe@fusionio.com>,
-        Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: Dirtiable inode bdi default != sb bdi btrfs
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1752864Ab0IWA4H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 20:56:07 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:58701 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752600Ab0IWA4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 20:56:05 -0400
+Date: Thu, 23 Sep 2010 10:56:02 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Sage Weil <sage@newdream.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Farnum <gregf@hq.newdream.net>
+Subject: linux-next: manual merge of the ceph tree with Linus' tree
+Message-Id: <20100923105602.d5425e32.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This started appearing for me on v2.6.36-rc5-49-gc79bd89; it did not 
-happen on v2.6.36-rc5-33-g1ce1e41, probably because it does not have 
-commit 692ebd17c2905313fff3c504c249c6a0faad16ec which introduces the 
-warning.
+Hi Sage,
 
-[...]
-device fsid 44d595920ddedfa-3ece6b56e80f689e devid 1 transid 22342 
-/dev/mapper/vg_cesarbinspiro-lv_home
-SELinux: initialized (dev dm-3, type btrfs), uses xattr
-------------[ cut here ]------------
-WARNING: at fs/fs-writeback.c:87 inode_to_bdi+0x62/0x6d()
-Hardware name: Inspiron N4010
-Dirtiable inode bdi default != sb bdi btrfs
-Modules linked in: ipv6 kvm_intel kvm uinput arc4 ecb 
-snd_hda_codec_intelhdmi snd_hda_codec_realtek iwlagn snd_hda_intel 
-iwlcore snd_hda_codec uvcvideo snd_hwdep mac80211 videodev snd_seq 
-snd_seq_device v4l1_compat snd_pcm atl1c v4l2_compat_ioctl32 btusb 
-cfg80211 snd_timer i2c_i801 bluetooth iTCO_wdt dell_wmi dell_laptop snd 
-pcspkr wmi dcdbas shpchp iTCO_vendor_support soundcore snd_page_alloc 
-rfkill joydev microcode btrfs zlib_deflate libcrc32c cryptd aes_x86_64 
-aes_generic xts gf128mul dm_crypt usb_storage i915 drm_kms_helper drm 
-i2c_algo_bit i2c_core video output [last unloaded: scsi_wait_scan]
-Pid: 1073, comm: find Not tainted 2.6.36-rc5+ #8
-Call Trace:
-  [<ffffffff8104d0e4>] warn_slowpath_common+0x85/0x9d
-  [<ffffffff8104d19f>] warn_slowpath_fmt+0x46/0x48
-  [<ffffffff811308b7>] inode_to_bdi+0x62/0x6d
-  [<ffffffff81131b48>] __mark_inode_dirty+0xd0/0x177
-  [<ffffffff81127168>] touch_atime+0x107/0x12a
-  [<ffffffff81122384>] ? filldir+0x0/0xd0
-  [<ffffffff8112259b>] vfs_readdir+0x8d/0xb4
-  [<ffffffff8112270b>] sys_getdents+0x81/0xd1
-  [<ffffffff81009c72>] system_call_fastpath+0x16/0x1b
----[ end trace 8907b335812c497b ]---
-------------[ cut here ]------------
-WARNING: at fs/fs-writeback.c:87 inode_to_bdi+0x62/0x6d()
-Hardware name: Inspiron N4010
-Dirtiable inode bdi default != sb bdi btrfs
-Modules linked in: ipv6 kvm_intel kvm uinput arc4 ecb 
-snd_hda_codec_intelhdmi snd_hda_codec_realtek iwlagn snd_hda_intel 
-iwlcore snd_hda_codec uvcvideo snd_hwdep mac80211 videodev snd_seq 
-snd_seq_device v4l1_compat snd_pcm atl1c v4l2_compat_ioctl32 btusb 
-cfg80211 snd_timer i2c_i801 bluetooth iTCO_wdt dell_wmi dell_laptop snd 
-pcspkr wmi dcdbas shpchp iTCO_vendor_support soundcore snd_page_alloc 
-rfkill joydev microcode btrfs zlib_deflate libcrc32c cryptd aes_x86_64 
-aes_generic xts gf128mul dm_crypt usb_storage i915 drm_kms_helper drm 
-i2c_algo_bit i2c_core video output [last unloaded: scsi_wait_scan]
-Pid: 1073, comm: find Tainted: G        W   2.6.36-rc5+ #8
-Call Trace:
-  [<ffffffff8104d0e4>] warn_slowpath_common+0x85/0x9d
-  [<ffffffff8104d19f>] warn_slowpath_fmt+0x46/0x48
-  [<ffffffff811308b7>] inode_to_bdi+0x62/0x6d
-  [<ffffffff81131b48>] __mark_inode_dirty+0xd0/0x177
-  [<ffffffff81127168>] touch_atime+0x107/0x12a
-  [<ffffffff81122384>] ? filldir+0x0/0xd0
-  [<ffffffff8112259b>] vfs_readdir+0x8d/0xb4
-  [<ffffffff8112270b>] sys_getdents+0x81/0xd1
-  [<ffffffff81009c72>] system_call_fastpath+0x16/0x1b
----[ end trace 8907b335812c497c ]---
-[...]
+Today's linux-next merge of the ceph tree got a conflict in
+fs/ceph/mds_client.c between commit
+3612abbd5df6baa9ca3e0777c6c8646e202d3f66 ("ceph: fix reconnect encoding
+for old servers") from Linus' tree and commit
+20d5970378f075f8f567b92bd2c16373fbe09b72 ("ceph: preallocate flock state
+without locks held") from the ceph tree.
 
-These are only the first two; they keep happening, with several 
-different processes (it is not only find), but always btrfs (I have / 
-and /home on btrfs and /boot on ext4). In case it makes any difference, 
-/dev seems to be on devtmpfs, and everything uses relatime.
-
-There is also the following one which is not on vfs_readdir:
-
-------------[ cut here ]------------
-WARNING: at fs/fs-writeback.c:87 inode_to_bdi+0x62/0x6d()
-Hardware name: Inspiron N4010
-Dirtiable inode bdi default != sb bdi btrfs
-Modules linked in: ipv6 kvm_intel kvm uinput arc4 ecb 
-snd_hda_codec_intelhdmi snd_hda_codec_realtek iwlagn snd_hda_intel 
-iwlcore snd_hda_codec uvcvideo snd_hwdep mac80211 videodev snd_seq 
-snd_seq_device v4l1_compat snd_pcm atl1c v4l2_compat_ioctl32 btusb 
-cfg80211 snd_timer i2c_i801 bluetooth iTCO_wdt dell_wmi dell_laptop snd 
-pcspkr wmi dcdbas shpchp iTCO_vendor_support soundcore snd_page_alloc 
-rfkill joydev microcode btrfs zlib_deflate libcrc32c cryptd aes_x86_64 
-aes_generic xts gf128mul dm_crypt usb_storage i915 drm_kms_helper drm 
-i2c_algo_bit i2c_core video output [last unloaded: scsi_wait_scan]
-Pid: 1104, comm: mkdir Tainted: G        W   2.6.36-rc5+ #8
-Call Trace:
-  [<ffffffff8104d0e4>] warn_slowpath_common+0x85/0x9d
-  [<ffffffff8104d19f>] warn_slowpath_fmt+0x46/0x48
-  [<ffffffff811308b7>] inode_to_bdi+0x62/0x6d
-  [<ffffffff81131b48>] __mark_inode_dirty+0xd0/0x177
-  [<ffffffffa01408c6>] btrfs_setattr+0x210/0x23a [btrfs]
-  [<ffffffff8112865e>] notify_change+0x1a2/0x29d
-  [<ffffffff81113794>] sys_fchmod+0xac/0xfd
-  [<ffffffff811188e2>] ? sys_newfstat+0x2e/0x39
-  [<ffffffff81009c72>] system_call_fastpath+0x16/0x1b
----[ end trace 8907b335812c498d ]---
-
+I fixed it up (I think - see below) and can carry the fix for a while.
 -- 
-Cesar Eduardo Barros
-cesarb@cesarb.net
-cesar.barros@gmail.com
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc fs/ceph/mds_client.c
+index fad95f8,9c648ed..0000000
+--- a/fs/ceph/mds_client.c
++++ b/fs/ceph/mds_client.c
+@@@ -2361,21 -2365,35 +2365,37 @@@ static int encode_caps_cb(struct inode 
+  
+  	if (recon_state->flock) {
+  		int num_fcntl_locks, num_flock_locks;
+- 
+- 		lock_kernel();
+- 		ceph_count_locks(inode, &num_fcntl_locks, &num_flock_locks);
+- 		rec.v2.flock_len = (2*sizeof(u32) +
+- 				    (num_fcntl_locks+num_flock_locks) *
+- 				    sizeof(struct ceph_filelock));
+- 
+- 		err = ceph_pagelist_append(pagelist, &rec, reclen);
+- 		if (!err)
+- 			err = ceph_encode_locks(inode, pagelist,
+- 						num_fcntl_locks,
+- 						num_flock_locks);
+- 		unlock_kernel();
++ 		struct ceph_pagelist_cursor trunc_point;
++ 
++ 		ceph_pagelist_set_cursor(pagelist, &trunc_point);
++ 		do {
++ 			lock_kernel();
++ 			ceph_count_locks(inode, &num_fcntl_locks,
++ 					 &num_flock_locks);
++ 			rec.v2.flock_len = (2*sizeof(u32) +
++ 					    (num_fcntl_locks+num_flock_locks) *
++ 					    sizeof(struct ceph_filelock));
++ 			unlock_kernel();
++ 
++ 			/* pre-alloc pagelist */
++ 			ceph_pagelist_truncate(pagelist, &trunc_point);
++ 			err = ceph_pagelist_append(pagelist, &rec, reclen);
++ 			if (!err)
++ 				err = ceph_pagelist_reserve(pagelist,
++ 							    rec.v2.flock_len);
++ 
++ 			/* encode locks */
++ 			if (!err) {
++ 				lock_kernel();
++ 				err = ceph_encode_locks(inode,
++ 							pagelist,
++ 							num_fcntl_locks,
++ 							num_flock_locks);
++ 				unlock_kernel();
++ 			}
++ 		} while (err == -ENOSPC);
+ +	} else {
+ +		err = ceph_pagelist_append(pagelist, &rec, reclen);
+  	}
+  
+  out_free:
