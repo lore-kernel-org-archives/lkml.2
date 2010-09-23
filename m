@@ -1,119 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274Ab0IWTSv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 15:18:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42732 "EHLO mx2.suse.de"
+	id S1756251Ab0IWTSq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 15:18:46 -0400
+Received: from kroah.org ([198.145.64.141]:51326 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756160Ab0IWTSt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 15:18:49 -0400
-Date: Thu, 23 Sep 2010 12:10:34 -0700
-From: Greg KH <gregkh@suse.de>
-To: Maurice Dawson <mauricedawson2699@gmail.com>
-Cc: arun.thomas@gmail.com, stewart_r@aliencamel.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 12/12] Staging: comedi: fix space coding style issue in
- ni_labpc.c
-Message-ID: <20100923191034.GA21887@suse.de>
-References: <1285268021-2020-1-git-send-email-mauricedawson2699@gmail.com>
+	id S1756219Ab0IWTSe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 15:18:34 -0400
+Date: Thu, 23 Sep 2010 11:49:42 -0700
+From: Greg KH <greg@kroah.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Rik van Riel <riel@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>, stable@kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [stable] [PATCH 0/3] Reduce watermark-related problems with
+ the per-cpu allocator V4
+Message-ID: <20100923184942.GW23040@kroah.com>
+References: <1283504926-2120-1-git-send-email-mel@csn.ul.ie>
+ <20100903160551.05db4a92.akpm@linux-foundation.org>
+ <20100921111741.GB11439@csn.ul.ie>
+ <20100921125814.GF1205@kroah.com>
+ <20100921142309.GA31813@csn.ul.ie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1285268021-2020-1-git-send-email-mauricedawson2699@gmail.com>
+In-Reply-To: <20100921142309.GA31813@csn.ul.ie>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 23, 2010 at 07:53:41PM +0100, Maurice Dawson wrote:
-> This is a patch to the ni_labpc.c file that fixes up multiple please,
-> no space for starting a line warnings, found by the checkpatch.pl tool
+On Tue, Sep 21, 2010 at 03:23:09PM +0100, Mel Gorman wrote:
+> On Tue, Sep 21, 2010 at 05:58:14AM -0700, Greg KH wrote:
+> > On Tue, Sep 21, 2010 at 12:17:41PM +0100, Mel Gorman wrote:
+> > > On Fri, Sep 03, 2010 at 04:05:51PM -0700, Andrew Morton wrote:
+> > > > On Fri,  3 Sep 2010 10:08:43 +0100
+> > > > Mel Gorman <mel@csn.ul.ie> wrote:
+> > > > 
+> > > > > The noteworthy change is to patch 2 which now uses the generic
+> > > > > zone_page_state_snapshot() in zone_nr_free_pages(). Similar logic still
+> > > > > applies for *when* zone_page_state_snapshot() to avoid ovedhead.
+> > > > > 
+> > > > > Changelog since V3
+> > > > >   o Use generic helper for NR_FREE_PAGES estimate when necessary
+> > > > > 
+> > > > > Changelog since V2
+> > > > >   o Minor clarifications
+> > > > >   o Rebase to 2.6.36-rc3
+> > > > > 
+> > > > > Changelog since V1
+> > > > >   o Fix for !CONFIG_SMP
+> > > > >   o Correct spelling mistakes
+> > > > >   o Clarify a ChangeLog
+> > > > >   o Only check for counter drift on machines large enough for the counter
+> > > > >     drift to breach the min watermark when NR_FREE_PAGES report the low
+> > > > >     watermark is fine
+> > > > > 
+> > > > > Internal IBM test teams beta testing distribution kernels have reported
+> > > > > problems on machines with a large number of CPUs whereby page allocator
+> > > > > failure messages show huge differences between the nr_free_pages vmstat
+> > > > > counter and what is available on the buddy lists. In an extreme example,
+> > > > > nr_free_pages was above the min watermark but zero pages were on the buddy
+> > > > > lists allowing the system to potentially livelock unable to make forward
+> > > > > progress unless an allocation succeeds. There is no reason why the problems
+> > > > > would not affect mainline so the following series mitigates the problems
+> > > > > in the page allocator related to to per-cpu counter drift and lists.
+> > > > > 
+> > > > > The first patch ensures that counters are updated after pages are added to
+> > > > > free lists.
+> > > > > 
+> > > > > The second patch notes that the counter drift between nr_free_pages and what
+> > > > > is on the per-cpu lists can be very high. When memory is low and kswapd
+> > > > > is awake, the per-cpu counters are checked as well as reading the value
+> > > > > of NR_FREE_PAGES. This will slow the page allocator when memory is low and
+> > > > > kswapd is awake but it will be much harder to breach the min watermark and
+> > > > > potentially livelock the system.
+> > > > > 
+> > > > > The third patch notes that after direct-reclaim an allocation can
+> > > > > fail because the necessary pages are on the per-cpu lists. After a
+> > > > > direct-reclaim-and-allocation-failure, the per-cpu lists are drained and
+> > > > > a second attempt is made.
+> > > > > 
+> > > > > Performance tests against 2.6.36-rc3 did not show up anything interesting. A
+> > > > > version of this series that continually called vmstat_update() when
+> > > > > memory was low was tested internally and found to help the counter drift
+> > > > > problem. I described this during LSF/MM Summit and the potential for IPI
+> > > > > storms was frowned upon. An alternative fix is in patch two which uses
+> > > > > for_each_online_cpu() to read the vmstat deltas while memory is low and
+> > > > > kswapd is awake. This should be functionally similar.
+> > > > > 
+> > > > > This patch should be merged after the patch "vmstat : update
+> > > > > zone stat threshold at onlining a cpu" which is in mmotm as
+> > > > > vmstat-update-zone-stat-threshold-when-onlining-a-cpu.patch .
+> > > > > 
+> > > > > If we can agree on it, this series is a stable candidate.
+> > > > 
+> > > > (cc stable@kernel.org)
+> > > > 
+> > > > >  include/linux/mmzone.h |   13 +++++++++++++
+> > > > >  include/linux/vmstat.h |   22 ++++++++++++++++++++++
+> > > > >  mm/mmzone.c            |   21 +++++++++++++++++++++
+> > > > >  mm/page_alloc.c        |   29 +++++++++++++++++++++--------
+> > > > >  mm/vmstat.c            |   15 ++++++++++++++-
+> > > > >  5 files changed, 91 insertions(+), 9 deletions(-)
+> > > > 
+> > > > For the entire patch series I get
+> > > > 
+> > > >  include/linux/mmzone.h |   13 +++++++++++++
+> > > >  include/linux/vmstat.h |   22 ++++++++++++++++++++++
+> > > >  mm/mmzone.c            |   21 +++++++++++++++++++++
+> > > >  mm/page_alloc.c        |   33 +++++++++++++++++++++++----------
+> > > >  mm/vmstat.c            |   16 +++++++++++++++-
+> > > >  5 files changed, 94 insertions(+), 11 deletions(-)
+> > > > 
+> > > > The patches do apply OK to 2.6.35.
+> > > > 
+> > > > Give the extent and the coreness of it all, it's a bit more than I'd
+> > > > usually push at the -stable guys.  But I guess that if the patches fix
+> > > > all the issues you've noted, as well as David's "minute-long livelocks
+> > > > in memory reclaim" then yup, it's worth backporting it all.
+> > > > 
+> > > 
+> > > These patches have made it to mainline as the following commits.
+> > > 
+> > > 9ee493c mm: page allocator: drain per-cpu lists after direct reclaim allocation fails
+> > > aa45484 mm: page allocator: calculate a better estimate of NR_FREE_PAGES when memory is low and kswapd is awake
+> > > 72853e2 mm: page allocator: update free page counters after pages are placed on the free list
+> > > 
+> > > I have not heard from the -stable guys, is there a reasonable
+> > > expectation that they'll be picked up?
+> > 
+> > If you ask me, then I'll know to give a response :)
+> > 
 > 
-> Signed-off-by: Maurice Dawson <mauricedawson2699@gmail.com>
-> ---
->  drivers/staging/comedi/drivers/ni_labpc.c |   40 ++++++++++++++--------------
->  1 files changed, 20 insertions(+), 20 deletions(-)
+> Hi Greg,
 > 
-> diff --git a/drivers/staging/comedi/drivers/ni_labpc.c b/drivers/staging/comedi/drivers/ni_labpc.c
-> index 3acf7e6..bfce5c8 100644
-> --- a/drivers/staging/comedi/drivers/ni_labpc.c
-> +++ b/drivers/staging/comedi/drivers/ni_labpc.c
-> @@ -1,21 +1,21 @@
->  /*
-> -    comedi/drivers/ni_labpc.c
-> -    Driver for National Instruments Lab-PC series boards and compatibles
-> -    Copyright (C) 2001, 2002, 2003 Frank Mori Hess <fmhess@users.sourceforge.net>
-> +comedi/drivers/ni_labpc.c
-> +Driver for National Instruments Lab-PC series boards and compatibles
-> +Copyright (C) 2001, 2002, 2003 Frank Mori Hess <fmhess@users.sourceforge.net>
->  
-> -    This program is free software; you can redistribute it and/or modify
-> -    it under the terms of the GNU General Public License as published by
-> -    the Free Software Foundation; either version 2 of the License, or
-> -    (at your option) any later version.
-> +This program is free software; you can redistribute it and/or modify
-> +it under the terms of the GNU General Public License as published by
-> +the Free Software Foundation; either version 2 of the License, or
-> +(at your option) any later version.
->  
-> -    This program is distributed in the hope that it will be useful,
-> -    but WITHOUT ANY WARRANTY; without even the implied warranty of
-> -    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> -    GNU General Public License for more details.
-> +This program is distributed in the hope that it will be useful,
-> +but WITHOUT ANY WARRANTY; without even the implied warranty of
-> +MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> +GNU General Public License for more details.
->  
-> -    You should have received a copy of the GNU General Public License
-> -    along with this program; if not, write to the Free Software
-> -    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-> +You should have received a copy of the GNU General Public License
-> +along with this program; if not, write to the Free Software
-> +Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
->  
->  ************************************************************************
->  */
+> I would ask you directly but I didn't want anyone else on stable@ to
+> feel left out :)
+> 
+> > None of these were tagged as going to the stable tree, should I include
+> > them? 
+> 
+> Yes please unless there is a late objection. The patches were first developed
+> as a result of a distro bug whose kernel was based on 2.6.32.  There was
+> every indication this affected mainline as well. The details of the testing
+> are above.
+> 
+> Dave Chinner had also reported problems with livelocks in reclaim that
+> looked like IPI storms. There were two major factors at play and these
+> patches addressed one of them. It works out as both a bug and a
+> performance fix.
+> 
+> > If so, for which -stable tree?  .27, .32, and .35 are all
+> > currently active.
+> > 
+> 
+> 2.6.35 for certain.
+> 
+> I would have a strong preference for 2.6.32 as well as it's a baseline for
+> a number of distros. The second commit will conflict with per-cpu changes
+> but the resolution is straight-forward.
 
-There's nothing wrong with this comment that needs to be changed.
-
-Someone need to fixup the checkpatch.pl too.
-
-> @@ -24,7 +24,7 @@ Driver: ni_labpc
->  Description: National Instruments Lab-PC (& compatibles)
->  Author: Frank Mori Hess <fmhess@users.sourceforge.net>
->  Devices: [National Instruments] Lab-PC-1200 (labpc-1200),
-> -  Lab-PC-1200AI (labpc-1200ai), Lab-PC+ (lab-pc+), PCI-1200 (ni_labpc)
-> +Lab-PC-1200AI (labpc-1200ai), Lab-PC+ (lab-pc+), PCI-1200 (ni_labpc)
->  Status: works
-
-Same here, why change this?  The indent is correct.
-
->  
->  Tested with lab-pc-1200.  For the older Lab-PC+, not all input ranges
-> @@ -47,13 +47,13 @@ from the eeprom and store them into a file that can be then be used by
->  comedilib, use the comedi_calibrate program.
->  
->  Configuration options - ISA boards:
-> -  [0] - I/O port base address
-> -  [1] - IRQ (optional, required for timed or externally triggered conversions)
-> -  [2] - DMA channel (optional)
-> +[0] - I/O port base address
-> +[1] - IRQ (optional, required for timed or externally triggered conversions)
-> +[2] - DMA channel (optional)
-
-And here, the original is fine.
-
->  
->  Configuration options - PCI boards:
-> -  [0] - bus (optional)
-> -  [1] - slot (optional)
-> +[0] - bus (optional)
-> +[1] - slot (optional)
-
-Same here, original is fine.
-
-Sorry, but there's nothing here to change.
-
-thanks,
+Thanks for the backport, I've queued these up for .32 and .35 now.
 
 greg k-h
