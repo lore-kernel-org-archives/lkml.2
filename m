@@ -1,68 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752160Ab0IWDJf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 23:09:35 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:63243 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab0IWDJe (ORCPT
+	id S1752476Ab0IWDLw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 23:11:52 -0400
+Received: from mail-pz0-f66.google.com ([209.85.210.66]:62230 "EHLO
+	mail-pz0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751378Ab0IWDLu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 23:09:34 -0400
-X-Authority-Analysis: v=1.1 cv=GglhOq9PVtWDmzXFaQc2b9ix+3dKCE90LyQFAZ1FxMQ= c=1 sm=0 a=efo-eZkTzUcA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=DvZ6fPvO_vt9VCVM6CwA:9 a=toBqhmsop9gI6CMuY28_OtsQYAMA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 09/10] jump label 11: add sparc64 support
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Miller <davem@davemloft.net>
-Cc: jbaron@redhat.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        mathieu.desnoyers@polymtl.ca, hpa@zytor.com, tglx@linutronix.de,
-        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-        mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
-        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com
-In-Reply-To: <20100921.092718.246552385.davem@davemloft.net>
-References: <cover.1284733808.git.jbaron@redhat.com>
-	 <3b5b071fcdb2afb7f67cacecfa78b14c740278a7.1284733808.git.jbaron@redhat.com>
-	 <1285083453.23122.1959.camel@gandalf.stny.rr.com>
-	 <20100921.092718.246552385.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 22 Sep 2010 23:09:30 -0400
-Message-ID: <1285211370.26872.581.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 22 Sep 2010 23:11:50 -0400
+X-Greylist: delayed 1286 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Sep 2010 23:11:50 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=F8oPFlByjHR8skpHN1DSk0tLptvG5r8cNUUP0qFtMVQONGd72gesnVIJiT207Rd3zy
+         w2Epe36x8xLwb5SsKJMRvo4gI+Ehi66zPauurbmlRBh+ObzgglrUcu6KhZjsK7etc8S0
+         iYRhcP481EL43FCUPZTubS9bOGBHRodS3t3mI=
+MIME-Version: 1.0
+Date: Wed, 22 Sep 2010 23:11:50 -0400
+Message-ID: <AANLkTi=praySm1B3dhU+LxhWK2yUccZkzWpd6-6UERYa@mail.gmail.com>
+Subject: [PATCH 5/5] scsi: megaraid_sas - Version and documentation update
+From: bo yang <boyang1288@gmail.com>
+To: linux-scsi@vger.kernel.org, akpm@osdl.org, linux-kernel@vger.kernel.org,
+        James.Bottomley@suse.de, bo.yang@lsi.com
+Content-Type: multipart/mixed; boundary=000e0cd32e4285a4fa0490e49f2e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-09-21 at 09:27 -0700, David Miller wrote:
-> From: Steven Rostedt <rostedt@goodmis.org>
-> Date: Tue, 21 Sep 2010 11:37:33 -0400
-> 
-> > On Fri, 2010-09-17 at 11:09 -0400, Jason Baron wrote:
-> > 
-> >> diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-> >> index 491e9d6..a81b04e 100644
-> >> --- a/arch/sparc/Kconfig
-> >> +++ b/arch/sparc/Kconfig
-> >> @@ -30,6 +30,7 @@ config SPARC
-> >>  	select PERF_USE_VMALLOC
-> >>  	select HAVE_DMA_ATTRS
-> >>  	select HAVE_DMA_API_DEBUG
-> >> +	select HAVE_ARCH_JUMP_LABEL if !CC_OPTIMIZE_FOR_SIZE
-> >>  
-> > 
-> > David,
-> > 
-> > If you look at the thread for patch #8, do you still want that
-> >  " if !CC_OPTIMIZE_FOR_SIZE"?
-> 
-> No :-)
+--000e0cd32e4285a4fa0490e49f2e
+Content-Type: text/plain; charset=ISO-8859-1
 
-I'll be sending a pull request to Ingo soon. I'll add this change with
-your Acked-by.
+Update the version and documentation.
 
-Thanks,
+Signed-off-by Bo Yang<bo.yang@lsi.com>
 
--- Steve
+---
+ Documentation/scsi/ChangeLog.megaraid_sas |   47 ++++++++++++++++++++++++++++++
+ drivers/scsi/megaraid/megaraid_sas.c      |    2 -
+ drivers/scsi/megaraid/megaraid_sas.h      |    6 +--
+ 3 files changed, 51 insertions(+), 4 deletions(-)
 
+--000e0cd32e4285a4fa0490e49f2e
+Content-Type: application/octet-stream; name="megasas-version.patch"
+Content-Disposition: attachment; filename="megasas-version.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gef1pyje0
 
-
+ZGlmZiAtcnVwTiBvbGQvRG9jdW1lbnRhdGlvbi9zY3NpL0NoYW5nZUxvZy5tZWdhcmFpZF9zYXMg
+bmV3L0RvY3VtZW50YXRpb24vc2NzaS9DaGFuZ2VMb2cubWVnYXJhaWRfc2FzCi0tLSBvbGQvRG9j
+dW1lbnRhdGlvbi9zY3NpL0NoYW5nZUxvZy5tZWdhcmFpZF9zYXMJMjAxMC0wOS0xNyAwMjoxOTo0
+Ni4wMDAwMDAwMDAgLTA0MDAKKysrIG5ldy9Eb2N1bWVudGF0aW9uL3Njc2kvQ2hhbmdlTG9nLm1l
+Z2FyYWlkX3NhcwkyMDEwLTA5LTE3IDAyOjE5OjQ2LjAwMDAwMDAwMCAtMDQwMApAQCAtMSwzICsx
+LDUwIEBACisxIFJlbGVhc2UgRGF0ZSAgICA6IFRodXIuICBNYXkgMDMsIDIwMTAgMDk6MTI6NDUg
+UFNUIDIwMDkgLQorCQkJKGVtYWlsZC1pZDptZWdhcmFpZGxpbnV4QGxzaS5jb20pCisJCQlCbyBZ
+YW5nCisKKzIgQ3VycmVudCBWZXJzaW9uIDogMDAuMDAuMDQuMzEtcmMxCiszIE9sZGVyIFZlcnNp
+b24gICA6IDAwLjAwLjA0LjE3LjEtcmMxCisKKzEuCUFkZCB0aGUgT25saW5lIENvbnRyb2xsZXIg
+UmVzZXQgKE9DUikgdG8gdGhlIERyaXZlci4KKwlPQ1IgaXMgdGhlIG5ldyBmZWF0dXJlIGZvciBt
+ZWdhcmFpZF9zYXMgZHJpdmVyIHdoaWNoCisJd2lsbCBhbGxvdyB0aGUgZncgdG8gZG8gdGhlIGNo
+aXAgcmVzZXQgd2hpY2ggd2lsbCBub3QKKwlhZmZhY3QgdGhlIE9TIGJlaGF2aW91cy4KKworCVRv
+IGFkZCB0aGUgT0NSIHN1cHBvcnQsIGRyaXZlciBuZWVkIHRvIGRvOiAKKwkJYSkuIHJlc2V0IHRo
+ZSBjb250cm9sbGVyIGNoaXBzIC0tIFhzY2FsZSBhbmQgR2VuMiB3aGljaAorCQl3aWxsIGNoYW5n
+ZSB0aGUgZnVuY3Rpb24gY2FsbHMgYW5kIGFkZCB0aGUgcmVzZXQgZnVuY3Rpb24KKwkJcmVsYXRl
+ZCB0byB0aGlzIHR3byBjaGlwcy4KKwkJCisJCWIpLiBkdXJpbmcgdGhlIHJlc2V0LCBkcml2ZXIg
+d2lsbCBzdG9yZSB0aGUgcGVuZGluZyBjbWRzCisJCXdoaWNoIG5vdCByZXR1cm5lZCBieSBGVyB0
+byBkcml2ZXIncyBwZW5kaW5nIHF1ZXVlLiAgRHJpdmVyCisJCXdpbGwgcmUtaXNzdWUgdGhvc2Ug
+cGVuZGluZyBjbWRzIGFnYWluIHRvIEZXIGFmdGVyIHRoZSBPQ1IKKwkJZmluaXNoZWQuCisJCQor
+CQljKS4gSW4gZHJpdmVyJ3MgdGltZW91dCByb3V0aW5lLCBkcml2ZXIgd2lsbCByZXBvcnQgdG8K
+KwkJT1MgYXMgcmVzZXQuIEFsc28gZHJpdmVyJ3MgcXVldWUgcm91dGluZSB3aWxsIGJsb2NrIHRo
+ZQorCQljbWRzIHVudGlsIHRoZSBPQ1IgZmluaXNoZWQuCisJCQorCQlkKS4gaW4gRHJpdmVyJ3Mg
+SVNSIHJvdXRpbmUsIGlmIGRyaXZlciBnZXQgdGhlIEZXIHN0YXRlIGFzCisJCXN0YXRlIGNoYW5n
+ZSwgRlcgaW4gRmFpbHVyZSBzdGF0dXMgYW5kIEZXIHN1cHBvcnQgb25saW5lIGNvbnRyb2xsZXIK
+KwkJcmVzZXQgKE9DUiksIGRyaXZlciB3aWxsIHN0YXJ0IHRvIGRvIHRoZSBjb250cm9sbGVyIHJl
+c2V0LgorCQkKKwkJZSkuIEluIGRyaXZlcidzIElPQ1RMIHJvdXRpbmUsIHRoZSBhcHBsaWNhdGlv
+biBjbWRzIHdpbGwgd2FpdCBmb3IgdGhlCisJCU9DUiB0byBmaW5pc2gsIHRoZW4gaXNzdWUgdGhl
+IGNtZHMgdG8gRlcuCisJCSAKKwkJZikuIEJlZm9yZSBkcml2ZXIga2lsbCBhZGFwdGVyLCBkcml2
+ZXIgd2lsbCBkbyBsYXN0IGNoYW5jZSBvZgorCQlPQ1IgdG8gc2VlIGlmIGRyaXZlciBjYW4gYnJp
+bmcgYmFjayB0aGUgRlcuICAgICAgCisKKzIuCUFkZCB0aGUgc3VwcG9ydCB1cGRhdGUgZmxhZyB0
+byB0aGUgZHJpdmVyIHRvIHRlbGwgTFNJIG1lZ2FyYWlkX3NhcworCWFwcGxpY2F0aW9uIHdoaWNo
+IGRyaXZlciB3aWxsIHN1cHBvcnQgdGhlIGRldmljZSB1cGRhdGUuICBTbyBhcHBsaWNhdGlvbgor
+CXdpbGwgbm90IG5lZWQgdG8gZG8gdGhlIGRldmljZSB1cGRhdGUgYWZ0ZXIgYXBwbGljYXRpb24g
+YWRkL2RlbCB0aGUgZGV2aWNlCisJZnJvbSB0aGUgc3lzdGVtLgorMy4JSW4gZHJpdmVyJ3MgdGlt
+ZW91dCByb3V0aW5lLCBkcml2ZXIgd2lsbCBkbyB0aHJlZSB0aW1lIHJlc2V0IGlmIGZ3IGlzIGlu
+IAorCWZhaWxlZCBzdGF0ZS4gIERyaXZlciB3aWxsIGtpbGwgYWRhcHRlciBpZiBjYW4ndCBicmlu
+ZyBiYWNrIEZXIGFmdGVyIHRoZQorCXRoaXMgdGhyZWUgdGltZXMgcmVzZXQuCis0LglBZGQgdGhl
+IGlucHV0IHBhcmFtZXRlciBtYXhfc2VjdG9ycyB0byAxTUIgc3VwcG9ydCB0byBvdXIgR0VOMiBj
+b250cm9sbGVyLgorCWN1c3RvbWVyIGNhbiB1c2UgdGhlIGlucHV0IHBhcmFtZW50ZXIgbWF4X3Nl
+Y3RvcnMgdG8gYWRkIDFNQiBzdXBwb3J0IHRvIEdFTjIKKwljb250cm9sbGVyLgorCiAxIFJlbGVh
+c2UgRGF0ZSAgICA6IFRodXIuICBPY3QgMjksIDIwMDkgMDk6MTI6NDUgUFNUIDIwMDkgLQogCQkJ
+KGVtYWlsZC1pZDptZWdhcmFpZGxpbnV4QGxzaS5jb20pCiAJCQlCbyBZYW5nCmRpZmYgLXJ1cE4g
+b2xkL2RyaXZlcnMvc2NzaS9tZWdhcmFpZC9tZWdhcmFpZF9zYXMuYyBuZXcvZHJpdmVycy9zY3Np
+L21lZ2FyYWlkL21lZ2FyYWlkX3Nhcy5jCi0tLSBvbGQvZHJpdmVycy9zY3NpL21lZ2FyYWlkL21l
+Z2FyYWlkX3Nhcy5jCTIwMTAtMDktMTcgMDM6Mjk6MjkuMDAwMDAwMDAwIC0wNDAwCisrKyBuZXcv
+ZHJpdmVycy9zY3NpL21lZ2FyYWlkL21lZ2FyYWlkX3Nhcy5jCTIwMTAtMDktMTggMDg6Mjc6MDIu
+MDAwMDAwMDAwIC0wNDAwCkBAIC0xMCw3ICsxMCw3IEBACiAgKgkgICAyIG9mIHRoZSBMaWNlbnNl
+LCBvciAoYXQgeW91ciBvcHRpb24pIGFueSBsYXRlciB2ZXJzaW9uLgogICoKICAqIEZJTEUJCTog
+bWVnYXJhaWRfc2FzLmMKLSAqIFZlcnNpb24gICAgIDogdjAwLjAwLjA0LjE3LjEtcmMxCisgKiBW
+ZXJzaW9uICAgICA6IHYwMC4wMC4wNC4zMS1yYzEKICAqCiAgKiBBdXRob3JzOgogICoJKGVtYWls
+LWlkIDogbWVnYXJhaWRsaW51eEBsc2kuY29tKQpkaWZmIC1ydXBOIG9sZC9kcml2ZXJzL3Njc2kv
+bWVnYXJhaWQvbWVnYXJhaWRfc2FzLmggbmV3L2RyaXZlcnMvc2NzaS9tZWdhcmFpZC9tZWdhcmFp
+ZF9zYXMuaAotLS0gb2xkL2RyaXZlcnMvc2NzaS9tZWdhcmFpZC9tZWdhcmFpZF9zYXMuaAkyMDEw
+LTA5LTE3IDAyOjE5OjQ2LjAwMDAwMDAwMCAtMDQwMAorKysgbmV3L2RyaXZlcnMvc2NzaS9tZWdh
+cmFpZC9tZWdhcmFpZF9zYXMuaAkyMDEwLTA5LTE3IDAyOjE5OjQ2LjAwMDAwMDAwMCAtMDQwMApA
+QCAtMTgsOSArMTgsOSBAQAogLyoKICAqIE1lZ2FSQUlEIFNBUyBEcml2ZXIgbWV0YSBkYXRhCiAg
+Ki8KLSNkZWZpbmUgTUVHQVNBU19WRVJTSU9OCQkJIjAwLjAwLjA0LjE3LjEtcmMxIgotI2RlZmlu
+ZSBNRUdBU0FTX1JFTERBVEUJCQkiT2N0LiAyOSwgMjAwOSIKLSNkZWZpbmUgTUVHQVNBU19FWFRf
+VkVSU0lPTgkJIlRodS4gT2N0LiAyOSwgMTE6NDE6NTEgUFNUIDIwMDkiCisjZGVmaW5lIE1FR0FT
+QVNfVkVSU0lPTgkJCSIwMC4wMC4wNC4zMS1yYzEiCisjZGVmaW5lIE1FR0FTQVNfUkVMREFURQkJ
+CSJNYXkgMywgMjAxMCIKKyNkZWZpbmUgTUVHQVNBU19FWFRfVkVSU0lPTgkJIk1vbi4gTWF5IDMs
+IDExOjQxOjUxIFBTVCAyMDEwIgogCiAvKgogICogRGV2aWNlIElEcwo=
+--000e0cd32e4285a4fa0490e49f2e--
