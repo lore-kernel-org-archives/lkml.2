@@ -1,69 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917Ab0IWSvZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 14:51:25 -0400
-Received: from xenotime.net ([72.52.115.56]:59422 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754339Ab0IWSvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 14:51:25 -0400
-Date: Thu, 23 Sep 2010 11:51:23 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Anders Wallin <Anders.Wallin@windriver.com>
-Cc: linux-kernel@vger.kernel.org, qi.wang@intel.com
-Subject: Re: [PATCH 0/1] Adding support for STA2x11/ConneXt PCIexpress
- function 0xCC0C.
-Message-Id: <20100923115123.7a2e1ade.rdunlap@xenotime.net>
-In-Reply-To: <cover.1285266234.git.anders.wallin@windriver.com>
-References: <cover.1285266234.git.anders.wallin@windriver.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756106Ab0IWSyA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 14:54:00 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:53113 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754339Ab0IWSx7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 14:53:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:message-id:x-mailer;
+        b=ZDmNlSp6581jJJSbZj+q+P8wcoQtTpqo2XoxjrjQdxnIFMxQIWWbCpqg1fZzqRIo+H
+         Af9O1+/KaeDIVlXKC1k3xtd8J1Q24ZMT0AIN9NkbgETnpjZFgQJF8nCQiK80JOr3fVkb
+         qU8Fi59UhrpuWMrYVteA1yN/AKWNR+CQI8xbQ=
+From: Maurice Dawson <mauricedawson2699@gmail.com>
+To: gregkh@suse.de, arun.thomas@gmail.com, stewart_r@aliencamel.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 12/12] Staging: comedi: fix space coding style issue in ni_labpc.c
+Date: Thu, 23 Sep 2010 19:53:41 +0100
+Message-Id: <1285268021-2020-1-git-send-email-mauricedawson2699@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Sep 2010 20:25:31 +0200 Anders Wallin wrote:
+This is a patch to the ni_labpc.c file that fixes up multiple please,
+no space for starting a line warnings, found by the checkpatch.pl tool
 
-> From: Anders Wallin <anders.wallin@windriver.com>
-> 
-> This function enable access to multiple IP-blocks including 4 GPIO blocks,
-> one System Control block and one Timer block. Access to the PCIe device is managed by a MUX driver. 
-> The pl061_pci gpio driver is based on the ARM pl061 IP block, but the functionality is not a one to one map. The gpio driver needs the generic "gpio_to_irq" support.
-
-This patch description should be in patch 1/1.  The diffstat can go there also.
-No need to patch 0/1 email at all.
-
-Thanks.
-
-
-> Anders Wallin (1):
->   Adding support for STA2x11/Connext PCIexpress function 0xCC0C.
-> 
->  arch/x86/include/asm/gpio.h   |    2 +-
->  drivers/gpio/Kconfig          |   14 +
->  drivers/gpio/Makefile         |    1 +
->  drivers/gpio/pl061_pci.c      |  860 +++++++++++++++++++++++++++++++++++++++++
->  drivers/gpio/pl061_pci.h      |   29 ++
->  drivers/misc/Kconfig          |   23 ++
->  drivers/misc/Makefile         |    3 +
->  drivers/misc/sta2x11_apbreg.c |  177 +++++++++
->  drivers/misc/sta2x11_apbreg.h |   39 ++
->  drivers/misc/sta2x11_mux.c    |  265 +++++++++++++
->  drivers/misc/sta2x11_mux.h    |   50 +++
->  drivers/misc/sta2x11_sctl.c   |  189 +++++++++
->  drivers/misc/sta2x11_sctl.h   |  143 +++++++
->  13 files changed, 1794 insertions(+), 1 deletions(-)
->  create mode 100644 drivers/gpio/pl061_pci.c
->  create mode 100644 drivers/gpio/pl061_pci.h
->  create mode 100644 drivers/misc/sta2x11_apbreg.c
->  create mode 100644 drivers/misc/sta2x11_apbreg.h
->  create mode 100644 drivers/misc/sta2x11_mux.c
->  create mode 100644 drivers/misc/sta2x11_mux.h
->  create mode 100644 drivers/misc/sta2x11_sctl.c
->  create mode 100644 drivers/misc/sta2x11_sctl.h
-
+Signed-off-by: Maurice Dawson <mauricedawson2699@gmail.com>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ drivers/staging/comedi/drivers/ni_labpc.c |   40 ++++++++++++++--------------
+ 1 files changed, 20 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/ni_labpc.c b/drivers/staging/comedi/drivers/ni_labpc.c
+index 3acf7e6..bfce5c8 100644
+--- a/drivers/staging/comedi/drivers/ni_labpc.c
++++ b/drivers/staging/comedi/drivers/ni_labpc.c
+@@ -1,21 +1,21 @@
+ /*
+-    comedi/drivers/ni_labpc.c
+-    Driver for National Instruments Lab-PC series boards and compatibles
+-    Copyright (C) 2001, 2002, 2003 Frank Mori Hess <fmhess@users.sourceforge.net>
++comedi/drivers/ni_labpc.c
++Driver for National Instruments Lab-PC series boards and compatibles
++Copyright (C) 2001, 2002, 2003 Frank Mori Hess <fmhess@users.sourceforge.net>
+ 
+-    This program is free software; you can redistribute it and/or modify
+-    it under the terms of the GNU General Public License as published by
+-    the Free Software Foundation; either version 2 of the License, or
+-    (at your option) any later version.
++This program is free software; you can redistribute it and/or modify
++it under the terms of the GNU General Public License as published by
++the Free Software Foundation; either version 2 of the License, or
++(at your option) any later version.
+ 
+-    This program is distributed in the hope that it will be useful,
+-    but WITHOUT ANY WARRANTY; without even the implied warranty of
+-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-    GNU General Public License for more details.
++This program is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
+ 
+-    You should have received a copy of the GNU General Public License
+-    along with this program; if not, write to the Free Software
+-    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++You should have received a copy of the GNU General Public License
++along with this program; if not, write to the Free Software
++Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ 
+ ************************************************************************
+ */
+@@ -24,7 +24,7 @@ Driver: ni_labpc
+ Description: National Instruments Lab-PC (& compatibles)
+ Author: Frank Mori Hess <fmhess@users.sourceforge.net>
+ Devices: [National Instruments] Lab-PC-1200 (labpc-1200),
+-  Lab-PC-1200AI (labpc-1200ai), Lab-PC+ (lab-pc+), PCI-1200 (ni_labpc)
++Lab-PC-1200AI (labpc-1200ai), Lab-PC+ (lab-pc+), PCI-1200 (ni_labpc)
+ Status: works
+ 
+ Tested with lab-pc-1200.  For the older Lab-PC+, not all input ranges
+@@ -47,13 +47,13 @@ from the eeprom and store them into a file that can be then be used by
+ comedilib, use the comedi_calibrate program.
+ 
+ Configuration options - ISA boards:
+-  [0] - I/O port base address
+-  [1] - IRQ (optional, required for timed or externally triggered conversions)
+-  [2] - DMA channel (optional)
++[0] - I/O port base address
++[1] - IRQ (optional, required for timed or externally triggered conversions)
++[2] - DMA channel (optional)
+ 
+ Configuration options - PCI boards:
+-  [0] - bus (optional)
+-  [1] - slot (optional)
++[0] - bus (optional)
++[1] - slot (optional)
+ 
+ The Lab-pc+ has quirky chanlist requirements
+ when scanning multiple channels.  Multiple channel scan
+-- 
+1.7.0.4
+
