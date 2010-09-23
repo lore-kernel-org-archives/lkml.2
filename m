@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404Ab0IWJvZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 05:51:25 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:62924 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752481Ab0IWJvY convert rfc822-to-8bit (ORCPT
+	id S1754461Ab0IWJvc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 05:51:32 -0400
+Received: from lnx503.hrz.tu-darmstadt.de ([130.83.156.232]:40667 "EHLO
+	lnx503.hrz.tu-darmstadt.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754432Ab0IWJva (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 05:51:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=bRu6aJwE1KrCFuS6IdUu11QGqtX0tUDGLwCOTZxNQAVdPcPxNDuJJI7lvr2rMrITCh
-         BWUj5riXMImAWLI1xhT8j1vuaA0VBPnt2zw8+UuSh/u4pMNQ1MA6Yh4+8WRpZ8ILeqF0
-         DFaKra3g3iziupwSAgUXs3rOlB+BLoeCoBw6c=
+	Thu, 23 Sep 2010 05:51:30 -0400
+From: Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
 MIME-Version: 1.0
-In-Reply-To: <20100921214847.GF26290@redhat.com>
-References: <1284087065-32722-1-git-send-email-ying.huang@intel.com>
-	<20100921214847.GF26290@redhat.com>
-Date: Thu, 23 Sep 2010 17:51:23 +0800
-Message-ID: <AANLkTimQkiOdYetK8RSgACPukJvuYN2vyPziox0nvXVB@mail.gmail.com>
-Subject: Re: [RFC 1/6] x86, NMI, Add symbol definition for NMI magic constants
-From: huang ying <huang.ying.caritas@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <19611.8986.142128.168878@elektron.ikp.physik.tu-darmstadt.de>
+Date: Thu, 23 Sep 2010 11:51:22 +0200
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Any SYSRQ key to force mode switch to console mode when using
+ KMS?
+In-Reply-To: <4C9A1FB7.9050902@oracle.com>
+References: <19601.1301.803816.92851@elektron.ikp.physik.tu-darmstadt.de>
+	<20100921151033.80e61747.randy.dunlap@oracle.com>
+	<19609.53242.674915.369484@elektron.ikp.physik.tu-darmstadt.de>
+	<4C9A1FB7.9050902@oracle.com>
+X-Mailer: VM 7.19 under Emacs 21.3.1
+X-PMX-TU: seen v0.99a by 5.5.9.395186, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.9.23.94216
+X-PMX-RELAY: mailout
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Don,
+>>>>> "Randy" == Randy Dunlap <randy.dunlap@oracle.com> writes:
 
-On Wed, Sep 22, 2010 at 5:48 AM, Don Zickus <dzickus@redhat.com> wrote:
-> On Fri, Sep 10, 2010 at 10:51:00AM +0800, Huang Ying wrote:
->> Replace the NMI related magic numbers with symbol constants.
->
-> Hi Huang,
->
-> Sorry for disappearing for a week..
->
-> Ingo asked me to shepherd these patches.  I finally got around to do some
-> testing on them.  I'll do some more tomorrow.
+    Randy> On 09/22/10 02:44, Uwe Bonnes wrote:
+    >> >> is there any SYSRQ key that forces the video system to console
+    >> mode, >> especially when using KMS and allows to work on.
+    >> 
+    Randy> sysrq-v help message says:
+    >>
+    Randy> force-fb(V) = "Restore framebuffer console"
+    >>  How is that documented outside the sysrq itself?
+    >> 
+    >> /usr/src/linux-2.6.36-rc4-19/Documentation/sysrq.txt:
+    >> 
+    >> 'v' - Dumps Voyager SMP processor info to your console
 
-Thanks. I will post a new version in next week according to comments
-collected so far.
+    Randy> Yes, I noticed that and I posted a patch for it yesterday.
 
-> Anyway, I don't have a problem with patches 1-3 and 6 (I guess the rename
-> and rename again doesn't really bother me and it kinda makes some logical
-> sense).
->
-> I am ok with most of patch 4 but I was wondering if you could split out
-> the part of using other cpus to access the reason register.  To me it seem
-> like the nmi handler rewrite and allowing !bsp cpus to access the reason
-> registers were two different ideas.  For bisecting reasons it would be
-> easier to seperate them in case we have problems with lost NMIs later.  It
-> would be easier to determine if the lost NMIs were from the rewrite or the
-> migration of the reason register to other cpus.
+Thanks for caring!
 
-Yes. It's reasonable, I will do it.
+However 2.6.36-rc4 also fixed my hibernate problem:
 
-Best Regards,
-Huang Ying
+commit 84e1d836ef0759a152578a961894824bde89596f
+Merge: 20f4cad 6715045
+Author: Linus Torvalds <torvalds@linux-foundation.org>
+Date:   Sat Sep 11 15:50:53 2010 -0700
+
+    Merge branch 'pm-fixes' of
+    git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6
+    
+    * 'pm-fixes' of
+      ...
+      PM / Hibernate: Avoid hitting OOM during preallocation of memory
+      ...
+
+so I no longer hit the problem with the dark screen...
+
+Bye
+-- 
+Uwe Bonnes                bon@elektron.ikp.physik.tu-darmstadt.de
+
+Institut fuer Kernphysik  Schlossgartenstrasse 9  64289 Darmstadt
+--------- Tel. 06151 162516 -------- Fax. 06151 164321 ----------
