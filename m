@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628Ab0IWLcL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 07:32:11 -0400
-Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:40608 "EHLO
-	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754601Ab0IWLcJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 07:32:09 -0400
-Message-ID: <4C9B3A3A.8040908@stericsson.com>
-Date: Thu, 23 Sep 2010 13:30:02 +0200
-From: Linus Walleij <linus.walleij@stericsson.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1754639Ab0IWLeg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 07:34:36 -0400
+Received: from cantor.suse.de ([195.135.220.2]:53756 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754615Ab0IWLef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 07:34:35 -0400
+Date: Thu, 23 Sep 2010 13:34:34 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/13] kernel/pm_qos_params.c: Remove unnecessary casts
+ of private_data
+In-Reply-To: <abede69b0f7651219da90ecb0e621466c545f15c.1283650107.git.joe@perches.com>
+Message-ID: <alpine.LNX.2.00.1009231334280.26813@pobox.suse.cz>
+References: <cover.1283650107.git.joe@perches.com> <abede69b0f7651219da90ecb0e621466c545f15c.1283650107.git.joe@perches.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@lists.linux-foundation.org>,
-        l-o <linux-omap@vger.kernel.org>,
-        l-a <linux-arm-kernel@lists.infradead.org>,
-        linux-doc <linux-doc@vger.kernel.org>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kevin Hilman <khilman@deeprootsystems.com>
-Subject: Re: [PATCH v3] power: introduce library for device-specific OPPs
-References: <[PATCH] opp: introduce library for device-specific OPPs> <1285192054-454-1-git-send-email-nm@ti.com>
-In-Reply-To: <1285192054-454-1-git-send-email-nm@ti.com>
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nishanth Menon wrote:
+On Sat, 4 Sep 2010, Joe Perches wrote:
 
-> To implement an OPP, some sort of power management support is necessary
-> hence this library depends on CONFIG_PM.
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  kernel/pm_qos_params.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
+> index b7e4c36..8414e51 100644
+> --- a/kernel/pm_qos_params.c
+> +++ b/kernel/pm_qos_params.c
+> @@ -396,7 +396,7 @@ static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
+>  	} else
+>  		return -EINVAL;
+>  
+> -	pm_qos_req = (struct pm_qos_request_list *)filp->private_data;
+> +	pm_qos_req = filp->private_data;
+>  	pm_qos_update_request(pm_qos_req, value);
+>  
+>  	return count;
 
-Suits my needs, so FWIW
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+Applied.
 
-Yours,
-Linus Walleij
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
