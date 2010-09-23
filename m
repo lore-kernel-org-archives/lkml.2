@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab0IWLnK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 07:43:10 -0400
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:36434 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753156Ab0IWLnH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 07:43:07 -0400
-Date: Thu, 23 Sep 2010 20:42:55 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Tejun Heo <htejun@gmail.com>
-Cc: Roland Dreier <rdreier@cisco.com>, Ohad Ben-Cohen <ohad@wizery.com>,
-        linux-kernel@vger.kernel.org,
-        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Roland Dreier <rolandd@cisco.com>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Steve Wise <swise@chelsio.com>, Neil Brown <neilb@suse.de>,
-        Paul Mackerras <paulus@samba.org>, linux-i2c@vger.kernel.org,
-        linux-rdma@vger.kernel.org, dm-devel@redhat.com,
-        linux-raid@vger.kernel.org, linux-ppp@vger.kernel.org,
-        netdev@vger.kernel.org, akpm@linux-foundation.org
-Subject: Re: idr_get_new_exact ?
-Message-ID: <20100923114255.GB27960@linux-sh.org>
-References: <AANLkTi=ZLupVyFR0e2v-TLpeNWdw1bVMZUAhgyxLJ7OV@mail.gmail.com> <adaiq20f90h.fsf@cisco.com> <4C97D197.9070703@gmail.com>
+	id S1754854Ab0IWLot (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 07:44:49 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:35638 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753156Ab0IWLos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 07:44:48 -0400
+Date: Thu, 23 Sep 2010 17:14:42 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: robm@fastmail.fm, linux-kernel@vger.kernel.org,
+        Bron Gondwana <brong@fastmail.fm>, linux-mm <linux-mm@kvack.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: Default zone_reclaim_mode = 1 on NUMA kernel is bad for
+ file/email/web servers
+Message-ID: <20100923114442.GK3952@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <1284349152.15254.1394658481@webmail.messagingengine.com>
+ <20100916184240.3BC9.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4C97D197.9070703@gmail.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <20100916184240.3BC9.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 20, 2010 at 11:26:47PM +0200, Tejun Heo wrote:
-> Hello,
-> 
-> On 09/20/2010 10:35 PM, Roland Dreier wrote:
-> > Looks fine to me as an improvement over the status quo, but I wonder how
-> > many of these places could use the radix_tree stuff instead?  If you're
-> > not using the ability of the idr code to assign an id for you, then it
-> > seems the radix_tree API is a better fit.
-> 
-> I agree.  Wouldn't those users better off simply using radix tree?
-> 
-It could go either way. I was about to write the same function when
-playing with it for IRQ mapping, the idea being to propagate the initial
-tree with sparse static vectors and then switch over to dynamic IDs for
-virtual IRQ creation. I ended up going with a radix tree for other
-reasons, though.
+* KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> [2010-09-16 19:01:32]:
+
+> +			if (!(zone_reclaim_mode & RECLAIM_CACHE) &&
+> +			    (gfp_mask & GFP_MOVABLE_MASK) == GFP_MOVABLE_MASK) {
+> +				inc_zone_state(zone, NR_ZONE_CACHE_AVOID);
+> +				goto try_next_zone;
+> +			}
+> +
+
+Interesting approach, so for page cache related applications we expect
+RECLAIM_CACHE to be set and hence zone_reclaim to occur. I have
+another variation, a new gfp flag called __GFP_FREE_CACHE. You can
+find the patches at
+
+http://lwn.net/Articles/391293/
+http://article.gmane.org/gmane.linux.kernel.mm/49155
+
+-- 
+	Three Cheers,
+	Balbir
