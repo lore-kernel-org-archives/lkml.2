@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756164Ab0IWTN6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 15:13:58 -0400
-Received: from tomts40.bellnexxia.net ([209.226.175.97]:60124 "EHLO
-	tomts40-srv.bellnexxia.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752066Ab0IWTN5 (ORCPT
+	id S1756175Ab0IWTPl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 15:15:41 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:49215 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752066Ab0IWTPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 15:13:57 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAJ8/m0xGGN6i/2dsb2JhbACiM3LHe4VCBA
-Date: Thu, 23 Sep 2010 15:08:54 -0400
-From: Mathieu Desnoyers <compudj@krystal.dyndns.org>
-To: Jason Baron <jbaron@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, David Miller <davem@davemloft.net>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: [PATCH 03/11] jump label: Base patch for jump label
-Message-ID: <20100923190854.GA32400@Krystal>
-References: <20100923034910.867858597@goodmis.org> <20100923035608.228041459@goodmis.org> <20100923143758.GA4022@Krystal> <20100923153902.GD2825@redhat.com> <20100923154852.GA12648@Krystal> <20100923184006.GE2825@redhat.com> <20100923185540.GA30262@Krystal>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 23 Sep 2010 15:15:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:to:from:cc:date:message-id:user-agent:mime-version
+         :content-type:content-transfer-encoding;
+        b=rNBdWtt095yB4l/X4LZCCTLNgr3uCvWORvYYWzkmyBdvOdSqmh3d2sKqnwDd5OK7iQ
+         s6hJwcLc6BfR7AUYR/2xIgvYbaKcShFgG9H0S2CM9Yjyquulcw2+X56hxI/ZZWmIn681
+         0Lcy9C03VE6Frx+Vy2DxCO/PcY2pACD3MuMnQ=
+Subject: [RESEND PATCH] serial: samsung: fix device name
+To: linux-arm-kernel@lists.infradead.org
+From: Darius Augulis <augulis.darius@gmail.com>
+Cc: kgene.kim@samsung.com, paulius.zaleckas@gmail.com,
+        linux-kernel@vger.kernel.org, ben-linux@fluff.org,
+        linux-serial@vger.kernel.org
+Date: Thu, 23 Sep 2010 22:15:31 +0300
+Message-ID: <20100923190212.18863.25678.stgit@darius-desktop>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <20100923185540.GA30262@Krystal>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 15:05:37 up 169 days,  4:56,  3 users,  load average: 0.32, 0.17,
-	0.16
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mathieu Desnoyers (compudj@krystal.dyndns.org) wrote:
-> * Jason Baron (jbaron@redhat.com) wrote:
-[...]
-> > jump label: fix __init module section race
-> > 
-> > Jump label uses is_module_text_address() to ensure that the module
-> > __init sections are valid before updating them. However, between the
-> > check for a valid module __init section and the subsequent jump
-> > label update, the module's __init section could be free out from under
-> > us.
-> > 
-> > We fix this potential race putting the address check *and* the jump
-> > label update under a rcu_read_lock(), and making sure a grace period
-> > has completed before we free the __init section.
-> > 
-> > Thanks to Mathieu Desnoyers for pointing out this race condition.
+Swap device and driver names in serial/samsung.c
 
-Actually, there might be another way to deal with this that would not
-require holding rcu read lock at all in this path, nor adding
-synchronize_rcu in the module code.
+Signed-off-by: Darius Augulis <augulis.darius@gmail.com>
+---
 
-This involves adding a notifier right before the init code is freed, so
-the static jump code can disable all static jumps pointing to init code
-area for the given module.
+This patch was submitted about 3 months ago, but still not merged.
+There was another similar patch from Joonyoung Shim
+<jy0922.shim@samsung.com> and was discussed here:
+http://marc.info/?l=linux-serial&m=127416101222281&w=2.
+Joonyoung Shim acked my patch and other people on ARM mailing list
+acked it. The maintainer, Ben Dooks, still not responding for
+a long time. Another maintainer, Kukjin Kim, refused to merge
+it without Ben's review.
+I would like to ask somebody pick up this bugfix.
 
-On the plus side, this means text_poke would be free to still use
-synchronize_rcu() if it ever needs to. Also, calling a notifier chain
-before freeing the module init region will hurt module load time much
-less than waiting for a grace period.
+ drivers/serial/samsung.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Thoughts ?
+diff --git a/drivers/serial/samsung.c b/drivers/serial/samsung.c
+index b1156ba..25c0d0f 100644
+--- a/drivers/serial/samsung.c
++++ b/drivers/serial/samsung.c
+@@ -883,10 +883,10 @@ static struct uart_ops s3c24xx_serial_ops = {
+ 
+ static struct uart_driver s3c24xx_uart_drv = {
+ 	.owner		= THIS_MODULE,
+-	.dev_name	= "s3c2410_serial",
++	.driver_name    = "s3c2410_serial",
+ 	.nr		= CONFIG_SERIAL_SAMSUNG_UARTS,
+ 	.cons		= S3C24XX_SERIAL_CONSOLE,
+-	.driver_name	= S3C24XX_SERIAL_NAME,
++	.dev_name       = S3C24XX_SERIAL_NAME,
+ 	.major		= S3C24XX_SERIAL_MAJOR,
+ 	.minor		= S3C24XX_SERIAL_MINOR,
+ };
 
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
