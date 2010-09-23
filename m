@@ -1,63 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056Ab0IWOqK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 10:46:10 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34140 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753740Ab0IWOqJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 10:46:09 -0400
-Date: Thu, 23 Sep 2010 15:46:07 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Alan Cox <alan@linux.intel.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86/mrst: add SFI platform device parsing code
-Message-ID: <20100923144606.GH25663@rakim.wolfsonmicro.main>
-References: <20100922231514.5e9967c7@linux.intel.com>
- <20100923060703.GB11198@angua.secretlab.ca>
- <20100923095411.GA25663@rakim.wolfsonmicro.main>
- <20100923112703.543b0b86@lxorguk.ukuu.org.uk>
- <20100923102708.GC25663@rakim.wolfsonmicro.main>
- <20100923115818.0cac8d06@lxorguk.ukuu.org.uk>
- <20100923105208.GD25663@rakim.wolfsonmicro.main>
- <20100923111347.0cf93bb3@linux.intel.com>
- <20100923141133.GG25663@rakim.wolfsonmicro.main>
- <20100923142720.13bf9d69@linux.intel.com>
+	id S1754270Ab0IWOvT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 10:51:19 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:42321 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753274Ab0IWOvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 10:51:18 -0400
+Date: Thu, 23 Sep 2010 07:49:31 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Takashi Iwai <tiwai@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Samu Onkalo <samu.p.onkalo@nokia.com>,
+        =?iso-8859-1?Q?=C9ric?= Piel <Eric.Piel@tremplin-utc.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [PATCH v2] lis3: Add support for new LIS3DC / HP3DC chip
+Message-ID: <20100923144931.GB12769@ericsson.com>
+References: <s5hd3s5nglg.wl%tiwai@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20100923142720.13bf9d69@linux.intel.com>
-X-Cookie: BOFH excuse
+In-Reply-To: <s5hd3s5nglg.wl%tiwai@suse.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 23, 2010 at 02:27:20PM +0100, Alan Cox wrote:
+On Thu, Sep 23, 2010 at 02:01:31AM -0400, Takashi Iwai wrote:
+> A new version of LIS3 chip has slight incompatibilities from former
+> versions.  This patch adds the minimal support for it.
+> 
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
 
-> > What is it about this platform that is going to restrict the problem?
+Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
 
-> The sort of people who will be using it and how,
+> ---
+> v1->v2
+>   Rebased to patch "lis3: Fix Oops with NULL platform data (v2)"
+> 
+>  drivers/hwmon/lis3lv02d.c |   35 +++++++++++++++++++++++++++--------
+>  drivers/hwmon/lis3lv02d.h |   17 +++++++++++++++++
+>  2 files changed, 44 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/hwmon/lis3lv02d.c b/drivers/hwmon/lis3lv02d.c
+> index 0a24177..2e0b034 100644
+> --- a/drivers/hwmon/lis3lv02d.c
+> +++ b/drivers/hwmon/lis3lv02d.c
+> @@ -162,6 +162,7 @@ static void lis3lv02d_get_xyz(struct lis3lv02d *lis3, int *x, int *y, int *z)
+>  /* conversion btw sampling rate and the register values */
+>  static int lis3_12_rates[4] = {40, 160, 640, 2560};
+>  static int lis3_8_rates[2] = {100, 400};
+> +static int lis3_3dc_rates[16] = {0, 1, 10, 25, 50, 100, 200, 400, 1600, 5000};
+>  
+>  /* ODR is Output Data Rate */
+>  static int lis3lv02d_get_odr(void)
+> @@ -180,6 +181,9 @@ static int lis3lv02d_set_odr(int rate)
+>  	u8 ctrl;
+>  	int i, len, shift;
+>  
+> +	if (!rate)
+> +		return -EINVAL;
+> +
+>  	lis3_dev.read(&lis3_dev, CTRL_REG1, &ctrl);
+>  	ctrl &= ~lis3_dev.odr_mask;
+>  	len = 1 << hweight_long(lis3_dev.odr_mask); /* # of possible values */
+> @@ -196,19 +200,25 @@ static int lis3lv02d_set_odr(int rate)
+>  
+>  static int lis3lv02d_selftest(struct lis3lv02d *lis3, s16 results[3])
+>  {
+> -	u8 reg;
+> +	u8 ctlreg, reg;
+>  	s16 x, y, z;
+>  	u8 selftest;
+>  	int ret;
+>  
+>  	mutex_lock(&lis3->mutex);
+> -	if (lis3_dev.whoami == WAI_12B)
+> -		selftest = CTRL1_ST;
+> -	else
+> -		selftest = CTRL1_STP;
+> +	if (lis3_dev.whoami == WAI_3DC) {
+> +		ctlreg = CTRL_REG4;
+> +		selftest = CTRL4_ST0;
+> +	} else {
+> +		ctlreg = CTRL_REG1;
+> +		if (lis3_dev.whoami == WAI_12B)
+> +			selftest = CTRL1_ST;
+> +		else
+> +			selftest = CTRL1_STP;
+> +	}
+>  
+> -	lis3->read(lis3, CTRL_REG1, &reg);
+> -	lis3->write(lis3, CTRL_REG1, (reg | selftest));
+> +	lis3->read(lis3, ctlreg, &reg);
+> +	lis3->write(lis3, ctlreg, (reg | selftest));
+>  	msleep(lis3->pwron_delay / lis3lv02d_get_odr());
+>  
+>  	/* Read directly to avoid axis remap */
+> @@ -217,7 +227,7 @@ static int lis3lv02d_selftest(struct lis3lv02d *lis3, s16 results[3])
+>  	z = lis3->read_data(lis3, OUTZ);
+>  
+>  	/* back to normal settings */
+> -	lis3->write(lis3, CTRL_REG1, reg);
+> +	lis3->write(lis3, ctlreg, reg);
+>  	msleep(lis3->pwron_delay / lis3lv02d_get_odr());
+>  
+>  	results[0] = x - lis3->read_data(lis3, OUTX);
+> @@ -698,6 +708,15 @@ int lis3lv02d_init_device(struct lis3lv02d *dev)
+>  		dev->odr_mask = CTRL1_DR;
+>  		dev->scale = LIS3_SENSITIVITY_8B;
+>  		break;
+> +	case WAI_3DC:
+> +		printk(KERN_INFO DRIVER_NAME ": 8 bits 3DC sensor found\n");
+> +		dev->read_data = lis3lv02d_read_8;
+> +		dev->mdps_max_val = 128;
+> +		dev->pwron_delay = LIS3_PWRON_DELAY_WAI_8B;
+> +		dev->odrs = lis3_3dc_rates;
+> +		dev->odr_mask = CTRL1_ODR0|CTRL1_ODR1|CTRL1_ODR2|CTRL1_ODR3;
+> +		dev->scale = LIS3_SENSITIVITY_8B;
+> +		break;
+>  	default:
+>  		printk(KERN_ERR DRIVER_NAME
+>  			": unknown sensor type 0x%X\n", dev->whoami);
+> diff --git a/drivers/hwmon/lis3lv02d.h b/drivers/hwmon/lis3lv02d.h
+> index 51b9ba4..94b0c4f 100644
+> --- a/drivers/hwmon/lis3lv02d.h
+> +++ b/drivers/hwmon/lis3lv02d.h
+> @@ -45,6 +45,7 @@ enum lis3_reg {
+>  	CTRL_REG1	= 0x20,
+>  	CTRL_REG2	= 0x21,
+>  	CTRL_REG3	= 0x22,
+> +	CTRL_REG4	= 0x23,
+>  	HP_FILTER_RESET	= 0x23,
+>  	STATUS_REG	= 0x27,
+>  	OUTX_L		= 0x28,
+> @@ -93,6 +94,7 @@ enum lis3lv02d_reg {
+>  };
+>  
+>  enum lis3_who_am_i {
+> +	WAI_3DC		= 0x33,	/* 8 bits: LIS3DC, HP3DC */
+>  	WAI_12B		= 0x3A, /* 12 bits: LIS3LV02D[LQ]... */
+>  	WAI_8B		= 0x3B, /* 8 bits: LIS[23]02D[LQ]... */
+>  	WAI_6B		= 0x52, /* 6 bits: LIS331DLF - not supported */
+> @@ -118,6 +120,13 @@ enum lis3lv02d_ctrl1_8b {
+>  	CTRL1_DR	= 0x80,
+>  };
+>  
+> +enum lis3lv02d_ctrl1_3dc {
+> +	CTRL1_ODR0	= 0x10,
+> +	CTRL1_ODR1	= 0x20,
+> +	CTRL1_ODR2	= 0x40,
+> +	CTRL1_ODR3	= 0x80,
+> +};
+> +
+>  enum lis3lv02d_ctrl2 {
+>  	CTRL2_DAS	= 0x01,
+>  	CTRL2_SIM	= 0x02,
+> @@ -129,6 +138,14 @@ enum lis3lv02d_ctrl2 {
+>  	CTRL2_FS	= 0x80, /* Full Scale selection */
+>  };
+>  
+> +enum lis3lv02d_ctrl4_3dc {
+> +	CTRL4_SIM	= 0x01,
+> +	CTRL4_ST0	= 0x02,
+> +	CTRL4_ST1	= 0x04,
+> +	CTRL4_FS0	= 0x10,
+> +	CTRL4_FS1	= 0x20,
+> +};
+> +
+>  enum lis302d_ctrl2 {
+>  	HP_FF_WU2	= 0x08,
+>  	HP_FF_WU1	= 0x04,
+> -- 
+> 1.7.2.2
+> 
 
-Can you be more specific?  This is the same sort of thing people
-normally say but the experience is that it rarely survives a successful
-product.
-
-> > Code which makes this sort of assumption about knowing the platforms
-> > that the device will be deployed on well is relatively common but the
-> > usual result is that OEMs want to change the reference platforms and
-> > the assumptions that the code has been making about the systems and
-> > about how people will work with the code break down.
-
-> There are non reference platforms in existence without the problem you
-> envisage having occurred. So I think we'll worry about it if it happens
-> but knowing that with DMI we have the tools to deal with this.
-
-It doesn't break down immediately; a combination of volume and the next
-generation product coming along and grabbing attention is usually what
-causes things to break down.  However, if you're totally confident that
-all the BIOS authors at the OEMs are going to work well together here
-then I guess it's only Moorestown that's affected.
+-- 
+Guenter Roeck
+Distinguished Engineer
+PDU IP Systems
