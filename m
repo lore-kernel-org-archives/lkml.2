@@ -1,80 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754792Ab0IWMKl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 08:10:41 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:40695 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752394Ab0IWMKj (ORCPT
+	id S1755081Ab0IWML2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 08:11:28 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:43150 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754524Ab0IWML0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 08:10:39 -0400
+	Thu, 23 Sep 2010 08:11:26 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=s92NbzMA77t/v0Z2FQqMSXOJ87Ilo0jQV3cnBZq87liQUF5tZqwTnBpwuTnsPNtpm1
-         r5AREuipCe5RSkZ7o0q4Bhd1hlJwGezcERO1X09i2Vc5iG0Ws21/8MOfUstjerI0kABN
-         lht1IopPW6wYxctMA9Kc64jU+ZOS2C6lwl9F0=
-Date: Thu, 23 Sep 2010 16:10:24 +0400
-From: Vasiliy Kulikov <segooon@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: Kay Sievers <kay.sievers@vrfy.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kernel-janitors@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Jiri Slaby <jirislaby@gmail.com>, linux-kernel@vger.kernel.org,
-        James Bottomley <James.Bottomley@suse.de>,
-        Dan Carpenter <error27@gmail.com>, Boaz Harrosh <bharrosh@panasas.com>
-Subject: Re: [PATCH 04/14] memstick: core: fix device_register() error
- handling
-Message-ID: <20100923121024.GA26888@albatros>
-References: <1284900889-24369-1-git-send-email-segooon@gmail.com>
- <20100921152031.30365b3f.akpm@linux-foundation.org>
- <20100921224947.GA20183@kroah.com>
- <AANLkTimQWtQTBe3RBSbYd7vM4Y+SckkoBDbO8E+SwtJj@mail.gmail.com>
- <20100922155004.GC26178@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100922155004.GC26178@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        h=sender:subject:from:reply-to:to:cc:in-reply-to:references
+         :content-type:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=PCgaVgK8TdlfJ8MyCxKmzYEQNrLVfQYB9BPiGX9fi0sVAGZtu6hMTaIu/HD/6HJ/QA
+         Wixfgj+A4y5YFybYSAeZWBQsngx5dxxEB33JVMp3o5CGdosdgymmiPb8EZw5wiGluumB
+         7Rp3ORkfA/VEbGgb8GkZXO3MRWEk3M5JUU4DQ=
+Subject: Re: [PATCH 8/8] net: Implement socketat.
+From: jamal <hadi@cyberus.ca>
+Reply-To: hadi@cyberus.ca
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
+        Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Ulrich Drepper <drepper@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+        David Miller <davem@davemloft.net>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        Ben Greear <greearb@candelatech.com>,
+        Matt Helsley <matthltc@us.ibm.com>, Jonathan Corbet <corbet@lwn.net>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>
+In-Reply-To: <4C9B3F9C.8080506@parallels.com>
+References: <m1ocborgq7.fsf@fess.ebiederm.org>
+	 <m1bp7oq1u8.fsf@fess.ebiederm.org>  <4C9B162E.7040201@parallels.com>
+	 <1285240797.5036.5.camel@bigi>  <4C9B3B06.900@parallels.com>
+	 <1285242055.5036.9.camel@bigi>  <4C9B3F9C.8080506@parallels.com>
+Content-Type: text/plain
+Date: Thu, 23 Sep 2010 08:11:21 -0400
+Message-Id: <1285243881.5036.22.camel@bigi>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 22, 2010 at 08:50 -0700, Greg KH wrote:
-> On Wed, Sep 22, 2010 at 10:53:21AM +0200, Kay Sievers wrote:
-> > On Wed, Sep 22, 2010 at 00:49, Greg KH <greg@kroah.com> wrote:
-> > 
-> > >  int device_register(struct device *dev)
-> > >  {
-> > > +       int retval;
-> > > +
-> > >        device_initialize(dev);
-> > > -       return device_add(dev);
-> > > +       retval = device_add(dev);
-> > > +       if (retval)
-> > > +               put_device(dev);
-> > > +       return retval;
-> > >  }
-> > 
-> > > Kay, what am I missing here, why can't we just do this?  Hm, the
-> > > side-affect might be that if device_register() fails, NO ONE had better
-> > > touch that device again, as it might have just been freed from the
-> > > system.  I wonder if that will cause problems...
-> > 
-> > That looks right, besides that there might be callers already doing
-> > this. Which needs to be checked.
+On Thu, 2010-09-23 at 15:53 +0400, Pavel Emelyanov wrote:
+
+> Why does it matter? You told, that the usage scenario was to
+> add routes to container. If I do 2 syscalls instead of 1, is
+> it THAT worse?
 > 
-> Yes, it would be.  I'll go through the tree.
 
-As I see with this in-device_register patch we should check for 2 things:
+Anything to do with socket IO that requires namespace awareness
+applies for usage; it could be tcp/udp/etc socket. If it doesnt
+make any difference performance wise using one scheme vs other
+to write/read heavy messages then i dont see an issue and socketat
+is redundant.
 
-1) nobody should call put_device() because of failed device_register().
+If i was to pick blindly - I would say whatever approach with
+less syscalls is better even if just a "slow" path one time
+thing. I could create a scenario which would make it bad
+to have more syscalls.
 
-2) dev has to be already got, other words its ref counter should not be zero.
+But theres also the simplicity aspect in doing:
+fdx = socketat namespace foo
+use fdx for read/write/poll into foo without any wrapper code.
+Vs
+enter foo
+fdx = socket ..
+read/write fdx
+leave foo.
 
-Correct?
+> Just like it used to before the enter.
+> 
 
--- 
-Vasiliy
+So if i enter foo, get a fdx, leave foo i can use it in
+ns0 as if it was in ns0?
+
+cheers,
+jamal
+
