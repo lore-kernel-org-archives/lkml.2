@@ -1,50 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755611Ab0IWWjn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 18:39:43 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:5475 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753361Ab0IWWia (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 18:38:30 -0400
-From: David Daney <ddaney@caviumnetworks.com>
-To: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Cc: David Daney <ddaney@caviumnetworks.com>
-Subject: [PATCH 2/9] MIPS: Allow MAX_DMA32_PFN to be overridden.
-Date: Thu, 23 Sep 2010 15:38:09 -0700
-Message-Id: <1285281496-24696-3-git-send-email-ddaney@caviumnetworks.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <1285281496-24696-1-git-send-email-ddaney@caviumnetworks.com>
-References: <1285281496-24696-1-git-send-email-ddaney@caviumnetworks.com>
-X-OriginalArrivalTime: 23 Sep 2010 22:38:30.0409 (UTC) FILETIME=[0BE31F90:01CB5B70]
+	id S1754870Ab0IWWkN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 18:40:13 -0400
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:35181 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753498Ab0IWWkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 18:40:11 -0400
+Date: Thu, 23 Sep 2010 16:39:04 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: Daniel Drake <dsd@laptop.org>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] OLPC: Only enable PCI configuration type override
+ on XO-1
+Message-ID: <20100923163904.7fd9a790@debxo>
+In-Reply-To: <20100923162805.0F6549D401B@zog.reactivated.net>
+References: <20100923162805.0F6549D401B@zog.reactivated.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DMA mapping may reduce the usable physical address range usable for
-32-bit DMA.
+Looks good to me!
 
-Signed-off-by: David Daney <ddaney@caviumnetworks.com>
----
- arch/mips/include/asm/dma.h |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+Acked-by: Andres Salomon <dilinger@queued.net>
 
-diff --git a/arch/mips/include/asm/dma.h b/arch/mips/include/asm/dma.h
-index 1353c81..2d47da6 100644
---- a/arch/mips/include/asm/dma.h
-+++ b/arch/mips/include/asm/dma.h
-@@ -91,7 +91,10 @@
- #define MAX_DMA_ADDRESS		(PAGE_OFFSET + 0x01000000)
- #endif
- #define MAX_DMA_PFN		PFN_DOWN(virt_to_phys((void *)MAX_DMA_ADDRESS))
-+
-+#ifndef MAX_DMA32_PFN
- #define MAX_DMA32_PFN		(1UL << (32 - PAGE_SHIFT))
-+#endif
- 
- /* 8237 DMA controllers */
- #define IO_DMA1_BASE	0x00	/* 8 bit slave DMA, channels 0..3 */
--- 
-1.7.2.2
+
+On Thu, 23 Sep 2010
+17:28:04 +0100 (BST) Daniel Drake <dsd@laptop.org> wrote:
+
+> This configuration type override is for XO-1 only and must not happen
+> on XO-1.5.
+> 
+> Signed-off-by: Daniel Drake <dsd@laptop.org>
+> ---
+> 
+> Replaces earlier patches:
+> [PATCH 1/3] OLPC: extended board revision detection
+> [PATCH 2/3] PCI: OLPC configuration cleanup
+> 
+> Due to the fact that CONFIG_OLPC is associated with multiple laptop
+> models (not only the XO-1), it makes sense to keep this as a separate
+> configuration option.
+> 
+> We decided against adding functions to distinguish between
+> XO-1/XO-1.5 as we don't want to encourage laptop checking in this
+> way. There should only be one or two cases where this actually
+> matters (here is one of them).
+> 
+>  arch/x86/Kconfig       |    2 +-
+>  arch/x86/kernel/olpc.c |    6 ++++--
+>  arch/x86/pci/olpc.c    |    2 +-
+>  3 files changed, 6 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index cea0cd9..0ed4c9b 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -1900,7 +1900,7 @@ config PCI_GODIRECT
+>  	bool "Direct"
+>  
+>  config PCI_GOOLPC
+> -	bool "OLPC"
+> +	bool "OLPC XO-1"
+>  	depends on OLPC
+>  
+>  config PCI_GOANY
+> diff --git a/arch/x86/kernel/olpc.c b/arch/x86/kernel/olpc.c
+> index 0e0cdde..635888c 100644
+> --- a/arch/x86/kernel/olpc.c
+> +++ b/arch/x86/kernel/olpc.c
+> @@ -242,8 +242,10 @@ static int __init olpc_init(void)
+>  			(unsigned char *) &olpc_platform_info.ecver,
+> 1); 
+>  #ifdef CONFIG_PCI_OLPC
+> -	/* If the VSA exists let it emulate PCI, if not emulate in
+> kernel */
+> -	if (!cs5535_has_vsa2())
+> +	/* If the VSA exists let it emulate PCI, if not emulate in
+> kernel.
+> +	 * XO-1 only. */
+> +	if (olpc_platform_info.boardrev < olpc_board_pre(0xd0) &&
+> +			!cs5535_has_vsa2())
+>  		x86_init.pci.arch_init = pci_olpc_init;
+>  #endif
+>  
+> diff --git a/arch/x86/pci/olpc.c b/arch/x86/pci/olpc.c
+> index b348154..13700ec 100644
+> --- a/arch/x86/pci/olpc.c
+> +++ b/arch/x86/pci/olpc.c
+> @@ -304,7 +304,7 @@ static struct pci_raw_ops pci_olpc_conf = {
+>  
+>  int __init pci_olpc_init(void)
+>  {
+> -	printk(KERN_INFO "PCI: Using configuration type OLPC\n");
+> +	printk(KERN_INFO "PCI: Using configuration type OLPC
+> XO-1\n"); raw_pci_ops = &pci_olpc_conf;
+>  	is_lx = is_geode_lx();
+>  	return 0;
 
