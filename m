@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756664Ab0IWXiw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 19:38:52 -0400
-Received: from smtp126.sbc.mail.sp1.yahoo.com ([69.147.65.185]:34795 "HELO
-	smtp126.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756629Ab0IWXit (ORCPT
+	id S1756690Ab0IWXi7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 19:38:59 -0400
+Received: from smtp125.sbc.mail.sp1.yahoo.com ([69.147.65.184]:28813 "HELO
+	smtp125.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756561Ab0IWXi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 19:38:49 -0400
+	Thu, 23 Sep 2010 19:38:57 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: TpS9jBkVM1nOqAA_J7i0Wt1i1WTZKxXYEgViTHax.rypPYn
- ZdPh9qRew3ROejTvOQyX3xj3o96oL3u9IMOt7vhBXN8uAnLf2NXlipw69aj4
- 7BgjlBuSLp.pJzOGkf.VbrihL7996WgNBV8prlSyXE95aGH1gRoB0alJNPbq
- paFU_kmJn_czSRmULrFpito55FtnGu641c9MQtUPz3N5tmSK2LxhDq_W8k.B
- yNfQHR16p02fErXciBiVYw4CmGE8SENr0YlPW2ItUwYL62PlZ870K2E4WDpA
- 9KGwzk_S9eijzoGy5J_1Zad4lPdPd0kdQF2yDeYr51O1ObEk4XGJbvXi1ViI
- .LFqWcNt1pz1wkHGa_w--
+X-YMail-OSG: Y6JWXrMVM1k4AF4hnWJPi6GKbeY7mmy1RQoT3nKMgtZ74zq
+ RNwWNQr.CdwnAksDQZ7k0wquohgV8TIHQz5qdAEw2erwOQm2gRA7ARI6QkUU
+ DXQpNWJ4BTkbXNeUBKvOsWYtVvSXuk8GfOCoj1Vhq_YF9cPpgI1PPB4jL.u2
+ yNsgcxN10eCa3sqYMUrmgNy3SykfVNDVKKdTv5UP_UT4jkcO8KN5Ge6.umce
+ cYxFuh42i30G_3Oqg24rVgP7E1ZyTSs45ppQZBDgrNBptS_NzO49DddCjr.V
+ IK7mHZRGRpSPN9IDhCaCYoGc9wVKYp7f07xknuS2VdbZdSp4Y35Wx6X76Tvx
+ rVOAiAM_71Ch2DGCJZg--
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -32,9 +32,9 @@ Cc: James Smart <james.smart@emulex.com>,
         MPTFusionLinux <DL-MPTFusionLinux@lsi.com>,
         "eata.c maintainer" <dario.ballabio@inwind.it>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [RFC v3 09/15] fnic: Remove host_lock unlock() + lock() from fnic_queuecommand()
-Date: Thu, 23 Sep 2010 16:38:47 -0700
-Message-Id: <1285285127-16511-1-git-send-email-nab@linux-iscsi.org>
+Subject: [RFC v3 10/15] buslogic: Remove host_lock unlock() + lock() from BusLogic_QueueCommand()
+Date: Thu, 23 Sep 2010 16:38:54 -0700
+Message-Id: <1285285134-16531-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -43,40 +43,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
 This patch removes the now legacy host_lock unlock() + lock() optimization
-fnic_scsi.c:fnic_queuecommand()
+from buslogic.c:BusLogic_QueueCommand()
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/scsi/fnic/fnic_scsi.c |    9 ---------
- 1 files changed, 0 insertions(+), 9 deletions(-)
+ drivers/scsi/BusLogic.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/scsi/fnic/fnic_scsi.c b/drivers/scsi/fnic/fnic_scsi.c
-index 198cbab..7cf3372 100644
---- a/drivers/scsi/fnic/fnic_scsi.c
-+++ b/drivers/scsi/fnic/fnic_scsi.c
-@@ -373,13 +373,6 @@ int fnic_queuecommand(struct scsi_cmnd *sc, void (*done)(struct scsi_cmnd *))
- 	if (lp->state != LPORT_ST_READY || !(lp->link_up))
- 		return SCSI_MLQUEUE_HOST_BUSY;
- 
--	/*
--	 * Release host lock, use driver resource specific locks from here.
--	 * Don't re-enable interrupts in case they were disabled prior to the
--	 * caller disabling them.
--	 */
--	spin_unlock(lp->host->host_lock);
--
- 	/* Get a new io_req for this SCSI IO */
- 	fnic = lport_priv(lp);
- 
-@@ -452,8 +445,6 @@ int fnic_queuecommand(struct scsi_cmnd *sc, void (*done)(struct scsi_cmnd *))
- 		}
- 	}
- out:
--	/* acquire host lock before returning to SCSI */
--	spin_lock(lp->host->host_lock);
- 	return ret;
- }
- 
+diff --git a/drivers/scsi/BusLogic.c b/drivers/scsi/BusLogic.c
+index fc0b4b8..f39b4fc 100644
+--- a/drivers/scsi/BusLogic.c
++++ b/drivers/scsi/BusLogic.c
+@@ -2837,9 +2837,7 @@ static int BusLogic_QueueCommand(struct scsi_cmnd *Command, void (*CompletionRou
+ 	 */
+ 	CCB = BusLogic_AllocateCCB(HostAdapter);
+ 	if (CCB == NULL) {
+-		spin_unlock_irq(HostAdapter->SCSI_Host->host_lock);
+ 		BusLogic_Delay(1);
+-		spin_lock_irq(HostAdapter->SCSI_Host->host_lock);
+ 		CCB = BusLogic_AllocateCCB(HostAdapter);
+ 		if (CCB == NULL) {
+ 			Command->result = DID_ERROR << 16;
+@@ -2965,10 +2963,8 @@ static int BusLogic_QueueCommand(struct scsi_cmnd *Command, void (*CompletionRou
+ 		   error as a Host Adapter Hard Reset should be initiated soon.
+ 		 */
+ 		if (!BusLogic_WriteOutgoingMailbox(HostAdapter, BusLogic_MailboxStartCommand, CCB)) {
+-			spin_unlock_irq(HostAdapter->SCSI_Host->host_lock);
+ 			BusLogic_Warning("Unable to write Outgoing Mailbox - " "Pausing for 1 second\n", HostAdapter);
+ 			BusLogic_Delay(1);
+-			spin_lock_irq(HostAdapter->SCSI_Host->host_lock);
+ 			if (!BusLogic_WriteOutgoingMailbox(HostAdapter, BusLogic_MailboxStartCommand, CCB)) {
+ 				BusLogic_Warning("Still unable to write Outgoing Mailbox - " "Host Adapter Dead?\n", HostAdapter);
+ 				BusLogic_DeallocateCCB(CCB);
 -- 
 1.7.3
 
