@@ -1,159 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756398Ab0IWU2T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 16:28:19 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:42586 "EHLO e5.ny.us.ibm.com"
+	id S1756227Ab0IWUbE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 16:31:04 -0400
+Received: from mail.perches.com ([173.55.12.10]:2298 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753671Ab0IWU2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 16:28:18 -0400
-Subject: Re: [PATCH v6 0/8] ptp: IEEE 1588 hardware clock support
-From: john stultz <johnstul@us.ibm.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Richard Cochran <richardcochran@gmail.com>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-api@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        David Miller <davem@davemloft.net>, Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <alpine.DEB.2.00.1009231402420.2962@router.home>
-References: <cover.1285261533.git.richard.cochran@omicron.at>
-	 <alpine.DEB.2.00.1009231238170.2962@router.home>
-	 <1285268380.2587.11.camel@localhost.localdomain>
-	 <alpine.DEB.2.00.1009231402420.2962@router.home>
+	id S1753814Ab0IWUbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 16:31:03 -0400
+Subject: Re: checkpatch problem
+From: Joe Perches <joe@perches.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <25057.1285268069@redhat.com>
+References: <1285266454.31572.29.camel@Joe-Laptop>
+	 <4013.1285177436@redhat.com> <25759.1285169592@redhat.com>
+	 <1283888517.23280.241.camel@Joe-Laptop> <23323.1283864982@redhat.com>
+	 <20100907180025.GD2662@shadowen.org> <22516.1285265739@redhat.com>
+	 <25057.1285268069@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 23 Sep 2010 13:28:04 -0700
-Message-ID: <1285273684.2587.92.camel@localhost.localdomain>
+Date: Thu, 23 Sep 2010 13:31:01 -0700
+Message-ID: <1285273861.25928.6.camel@Joe-Laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-23 at 14:15 -0500, Christoph Lameter wrote:
-> On Thu, 23 Sep 2010, john stultz wrote:
+On Thu, 2010-09-23 at 19:54 +0100, David Howells wrote:
+> Joe Perches <joe@perches.com> wrote:
+> > Exactly right.  Andy has a version in his testing directory
+> > that fixes this #define run-on block and speeds up checkpatch
+> > runtime rather a lot for certain files like .h files that have
+> > nothing but #defines.
+> > Try applying my patch to this newer version:
+> > http://www.kernel.org/pub/linux/kernel/people/apw/checkpatch/checkpatch.pl-testing
 > 
-> > This was my initial gut reaction as well, but in the end, I agree with
-> > Richard that in the case of one or multiple PTP hardware clocks, we
-> > really can't abstract over the different time domains.
+> It still doesn't work.  In fact, I'm seeing more "Logging function has
+> unnecessary whitespace before a newline" warnings, such as on this:
 > 
-> My (arguably still superficial) review of the source does not show
-> anything that would make me reach that conclusion.
-> 
-> > I really don't think the PTP clock can be used as a clocksource sanely.
-> >
-> > First, the hardware access is much to slow for system timekeeping.
-> 
-> The HPET or pit timesource are also quite slow these days. You only need
-> access periodically to essentially tune the TSC ratio.
+> 		printk(KERN_ERR
+> 		       "BUG: CPU#%d started up but did not get a callout!\n",
+> 		       cpu);
 
-If we're using the TSC, then we're not using the PTP clock as you
-suggest. Further the HPET and PIT aren't used to steer the system time
-when we are using the TSC as a clocksource. Its only used to calibrate
-the initial constant freq used by the timekeeping code (and if its
-non-constant, we throw it out).
+Yes, it's completely borked.
 
-> > Second, there is the problem that the system time is a software clock,
-> > and adjustments made (like freq) are made in the layer that interprets
-> > the underlying hardware cycle counter. Adjustments made in PTP (in order
-> > to sync the network timestamps) are made at the hardware level.
-> 
-> From what I can see the PTP clocks are periodic hardware cycle counters
-> like any other clock that we currently support. If its configurable enough
-> then setup a hardware cycle counter that mimics nanoseconds since the
-> epoch as closely as possible and use that to sync the TSC rate to. Makes
-> it very easy.
+ctx_statement_block returns code beyond the current
+statement terminating ";".
 
-I guess I'm confused by what you're suggesting.
-If we're using the TSC, then that's the clocksource timekeeping uses.
-The original issue seemed to be around the suggestion of using the PTP
-clock as a clocksource, which I don't think is really feasible.
+Andy may be able to do something about it or know
+about some appropriate knob to twist.
 
-Again, that's because
-1) The PTP access latency is slow (so is the PIT, true enough, but no
-one should be using the PIT as a clocksource unless they really have no
-better hardware - its really only useful for 486s and old freq scaling
-laptops that have no other stable clocksource).
-
-2) The way PTP clocks are steered to sync with network time causes their
-hardware freq to actually change. Since these adjustments are done on
-the hardware clock level, and not on the system time level, the
-adjustments to sync the system time/freq would then be made incorrect by
-PTP hardware adjustments. 
-
-3) Further, the PTP hardware counter can be simply set to a new offset
-to put it in line with the network time. This could cause trouble with
-timekeeping much like unsynced TSCs do.
-
-
-Now, what you seem to be suggesting is to use the TSC (or whatever
-clocksource the system time is using) but to steer the system time using
-the PTP clock. This is actually what is being proposed, however, the
-steering is done in userland. This is due to the fact that there are two
-components to the steering, 1) adjusting the PTP clock hardware to
-network time and 2) adjusting the system time to the PTP hardware. By
-exposing the PTP clock to userland via the posix clocks interface, we
-allow this to easily be done.
-
-
-> > This would cause a disconnect between the hardware freq understood by
-> > the system time management code and the actual hardware freq.
-> 
-> We can switch underlying clocks for system time already. We can adapt to a
-> different hw frequency.
-
-Actually no. The timekeeping code requires a fixed freq counter. Dealing
-with hardware freq changes is difficult, because error is introduced by
-the latency between when the freq changes and when the timekeeping code
-is notified of it. So the system treats the hardware counters as fixed
-freq. Now, hardware does vary freq ever so slightly as thermal
-conditions change, but this is addressed in userland and corrected via
-adjtimex.
-
->  But then I do not know why adjust the freq? I
-> thought the point was that the periodic clock was network synchronized and
-> can be used as "the" master clock for multiple machines?
-
-Not parsing that. What do you mean by periodic clock?
-
-> > Richard, I'd actually strike this paragraph from the rational, as I feel
-> > it has the tendency to confuse as it suggests having the PHC as a
-> > clocksource is feasible when really it isn't. Or alternatively, maybe
-> > express more clearly why its not feasible, so it doesn't just seem like
-> > a minor design choice.
-> 
-> Sorry but I still feel that this is pretty much a misguided approach that
-> creates unnecessary layers in the kernel.
-
-Unnecessary layers? Where? This approach has less in-kernel layers, as
-it exposes the PTP clock to userland, instead of trying to layer things
-on top of it and stretching the system time abstraction to cover it.
-
->  The trivial easy approach was
-> not done (copy a driver from drivers/clocksource, modify so that it
-> programs access to a centralized periodic ptp signal and uses it for
-> system sync).
-
-I disagree.
-
-I've argued through the approach trying to keep it all internal to the
-kernel, but to do so would be anything but trivial. Further, there's the
-case of master-clocks, where the PTP hardware must be synced to system
-time, instead of the other way around. And then there's the case of
-boundary-clocks, which may have multiple PTP hardware clocks that have
-to be synced.
-
-I think exposing this through the posix clock interface is really the
-best approach. Its not a static clockid, so its not something most apps
-will ever have to deal with, but it allows the few apps that really need
-to have access to the PTP clock hardware can do so in a clean way.
-
-
-And credits to Richard for having to slowly explain this to me (and
-others) many times over, before I got it.
-
-thanks
--john
+I don't really want to learn too much about
+checkpatch internals.  Sorry.
 
