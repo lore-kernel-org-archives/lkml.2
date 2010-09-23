@@ -1,229 +1,391 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755692Ab0IWXF2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 19:05:28 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:59993 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753581Ab0IWXF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 19:05:26 -0400
+	id S1754957Ab0IWXF1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 19:05:27 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:59703 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753407Ab0IWXFZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 19:05:25 -0400
 From: John Stultz <johnstul@us.ibm.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
         Richard Cochran <richardcochran@gmail.com>
-Subject: [PATCH 1/3] [RFC] Introduce timerlist infrastructure.
-Date: Thu, 23 Sep 2010 16:05:17 -0700
-Message-Id: <1285283118-2319-1-git-send-email-johnstul@us.ibm.com>
+Subject: [PATCH 2/3] [RFC] Convert hrtimers to use timerlist infrastructure
+Date: Thu, 23 Sep 2010 16:05:18 -0700
+Message-Id: <1285283118-2319-2-git-send-email-johnstul@us.ibm.com>
 X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1285283118-2319-1-git-send-email-johnstul@us.ibm.com>
+References: <1285283118-2319-1-git-send-email-johnstul@us.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just wanted to send this out for comments. I'm working to split
-up my posix CLOCK_RTC proof of concept and this is one of the
-stepping stones to be merged sometime later.
+Converts the hrtimer code to use the timerlist infrastructure
 
-Richard's recent patch queue looks like it could use this
-functionality, so I wanted to get some comments on it before
-trying to build much further upon it.
-
-The timerlist infrastructure is a thin layer over the rbtree
-code that implements a simple list of timers sorted by an
-expires value, and a getnext function that provides a pointer
-to the earliest timer.
-
-This infrastructure allows drivers and other kernel infrastructure
-to easily implement timers without duplicating code.
-
-Suggestions or feedback would be appreciated.
+Survived some light testing, but there may still be bugs.
 
 Signed-off-by: John Stultz <johnstul@us.ibm.com>
 CC: Thomas Gleixner <tglx@linutronix.de>
 CC: Richard Cochran <richardcochran@gmail.com>
 ---
- include/linux/timerlist.h |   37 ++++++++++++++
- lib/Makefile              |    2 +-
- lib/timerlist.c           |  115 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 153 insertions(+), 1 deletions(-)
- create mode 100644 include/linux/timerlist.h
- create mode 100644 lib/timerlist.c
+ include/linux/hrtimer.h  |   32 ++++++++---------
+ kernel/hrtimer.c         |   86 ++++++++++++++++------------------------------
+ kernel/time/timer_list.c |    8 ++--
+ 3 files changed, 49 insertions(+), 77 deletions(-)
 
-diff --git a/include/linux/timerlist.h b/include/linux/timerlist.h
-new file mode 100644
-index 0000000..c46b28a
---- /dev/null
-+++ b/include/linux/timerlist.h
-@@ -0,0 +1,37 @@
-+#ifndef _LINUX_TIMERLIST_H
-+#define _LINUX_TIMERLIST_H
-+
-+#include <linux/rbtree.h>
-+#include <linux/ktime.h>
-+
-+
-+struct timerlist_node {
-+	struct rb_node node;
-+	ktime_t expires;
-+};
-+
-+struct timerlist_head {
-+	struct rb_root head;
-+	struct timerlist_node *next;
-+};
-+
-+
-+extern void timerlist_add(struct timerlist_head *head,
-+				struct timerlist_node *node);
-+extern void timerlist_del(struct timerlist_head *head,
-+				struct timerlist_node *node);
-+extern struct timerlist_node *timerlist_getnext(struct timerlist_head *head);
-+extern struct timerlist_node *timerlist_iterate_next(
-+						struct timerlist_node *node);
-+
-+static inline void timerlist_init(struct timerlist_node *node)
-+{
-+	RB_CLEAR_NODE(&node->node);
-+}
-+
-+static inline void timerlist_init_head(struct timerlist_head *head)
-+{
-+	head->head = RB_ROOT;
-+	head->next = NULL;
-+}
-+#endif /* _LINUX_TIMERLIST_H */
-diff --git a/lib/Makefile b/lib/Makefile
-index e6a3763..8b475cf 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -8,7 +8,7 @@ KBUILD_CFLAGS = $(subst -pg,,$(ORIG_CFLAGS))
- endif
- 
- lib-y := ctype.o string.o vsprintf.o cmdline.o \
--	 rbtree.o radix-tree.o dump_stack.o \
-+	 rbtree.o radix-tree.o dump_stack.o timerlist.o\
- 	 idr.o int_sqrt.o extable.o prio_tree.o \
- 	 sha1.o irq_regs.o reciprocal_div.o argv_split.o \
- 	 proportions.o prio_heap.o ratelimit.o show_mem.o \
-diff --git a/lib/timerlist.c b/lib/timerlist.c
-new file mode 100644
-index 0000000..3301b45
---- /dev/null
-+++ b/lib/timerlist.c
-@@ -0,0 +1,115 @@
-+/*
-+ *  Generic Timer-list
-+ *
-+ *  Manages a simple list of timers, ordered by expiration time.
-+ *  Uses rbtrees for quick list adds and expiration.
-+ *
-+ *  NOTE: All of the following functions need to be serialized
-+ *  to avoid races. No locking is done by this libary code.
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *  (at your option) any later version.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License
-+ *  along with this program; if not, write to the Free Software
-+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index fd0c1b8..019ac70 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -22,7 +22,7 @@
+ #include <linux/wait.h>
+ #include <linux/percpu.h>
+ #include <linux/timer.h>
+-
 +#include <linux/timerlist.h>
-+#include <linux/rbtree.h>
+ 
+ struct hrtimer_clock_base;
+ struct hrtimer_cpu_base;
+@@ -79,8 +79,8 @@ enum hrtimer_restart {
+ 
+ /**
+  * struct hrtimer - the basic hrtimer structure
+- * @node:	red black tree node for time ordered insertion
+- * @_expires:	the absolute expiry time in the hrtimers internal
++ * @node:	timerlist node, which also manages node.expires,
++ *		the absolute expiry time in the hrtimers internal
+  *		representation. The time is related to the clock on
+  *		which the timer is based. Is setup by adding
+  *		slack to the _softexpires value. For non range timers
+@@ -101,8 +101,7 @@ enum hrtimer_restart {
+  * The hrtimer structure must be initialized by hrtimer_init()
+  */
+ struct hrtimer {
+-	struct rb_node			node;
+-	ktime_t				_expires;
++	struct timerlist_node		node;
+ 	ktime_t				_softexpires;
+ 	enum hrtimer_restart		(*function)(struct hrtimer *);
+ 	struct hrtimer_clock_base	*base;
+@@ -141,8 +140,7 @@ struct hrtimer_sleeper {
+ struct hrtimer_clock_base {
+ 	struct hrtimer_cpu_base	*cpu_base;
+ 	clockid_t		index;
+-	struct rb_root		active;
+-	struct rb_node		*first;
++	struct timerlist_head	active;
+ 	ktime_t			resolution;
+ 	ktime_t			(*get_time)(void);
+ 	ktime_t			softirq_time;
+@@ -184,43 +182,43 @@ struct hrtimer_cpu_base {
+ 
+ static inline void hrtimer_set_expires(struct hrtimer *timer, ktime_t time)
+ {
+-	timer->_expires = time;
++	timer->node.expires = time;
+ 	timer->_softexpires = time;
+ }
+ 
+ static inline void hrtimer_set_expires_range(struct hrtimer *timer, ktime_t time, ktime_t delta)
+ {
+ 	timer->_softexpires = time;
+-	timer->_expires = ktime_add_safe(time, delta);
++	timer->node.expires = ktime_add_safe(time, delta);
+ }
+ 
+ static inline void hrtimer_set_expires_range_ns(struct hrtimer *timer, ktime_t time, unsigned long delta)
+ {
+ 	timer->_softexpires = time;
+-	timer->_expires = ktime_add_safe(time, ns_to_ktime(delta));
++	timer->node.expires = ktime_add_safe(time, ns_to_ktime(delta));
+ }
+ 
+ static inline void hrtimer_set_expires_tv64(struct hrtimer *timer, s64 tv64)
+ {
+-	timer->_expires.tv64 = tv64;
++	timer->node.expires.tv64 = tv64;
+ 	timer->_softexpires.tv64 = tv64;
+ }
+ 
+ static inline void hrtimer_add_expires(struct hrtimer *timer, ktime_t time)
+ {
+-	timer->_expires = ktime_add_safe(timer->_expires, time);
++	timer->node.expires = ktime_add_safe(timer->node.expires, time);
+ 	timer->_softexpires = ktime_add_safe(timer->_softexpires, time);
+ }
+ 
+ static inline void hrtimer_add_expires_ns(struct hrtimer *timer, u64 ns)
+ {
+-	timer->_expires = ktime_add_ns(timer->_expires, ns);
++	timer->node.expires = ktime_add_ns(timer->node.expires, ns);
+ 	timer->_softexpires = ktime_add_ns(timer->_softexpires, ns);
+ }
+ 
+ static inline ktime_t hrtimer_get_expires(const struct hrtimer *timer)
+ {
+-	return timer->_expires;
++	return timer->node.expires;
+ }
+ 
+ static inline ktime_t hrtimer_get_softexpires(const struct hrtimer *timer)
+@@ -230,7 +228,7 @@ static inline ktime_t hrtimer_get_softexpires(const struct hrtimer *timer)
+ 
+ static inline s64 hrtimer_get_expires_tv64(const struct hrtimer *timer)
+ {
+-	return timer->_expires.tv64;
++	return timer->node.expires.tv64;
+ }
+ static inline s64 hrtimer_get_softexpires_tv64(const struct hrtimer *timer)
+ {
+@@ -239,12 +237,12 @@ static inline s64 hrtimer_get_softexpires_tv64(const struct hrtimer *timer)
+ 
+ static inline s64 hrtimer_get_expires_ns(const struct hrtimer *timer)
+ {
+-	return ktime_to_ns(timer->_expires);
++	return ktime_to_ns(timer->node.expires);
+ }
+ 
+ static inline ktime_t hrtimer_expires_remaining(const struct hrtimer *timer)
+ {
+-    return ktime_sub(timer->_expires, timer->base->get_time());
++	return ktime_sub(timer->node.expires, timer->base->get_time());
+ }
+ 
+ #ifdef CONFIG_HIGH_RES_TIMERS
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 1decafb..15d23dc 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -516,10 +516,13 @@ hrtimer_force_reprogram(struct hrtimer_cpu_base *cpu_base, int skip_equal)
+ 
+ 	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++, base++) {
+ 		struct hrtimer *timer;
++		struct timerlist_node *next;
+ 
+-		if (!base->first)
++		next = timerlist_getnext(&base->active);
++		if (!next)
+ 			continue;
+-		timer = rb_entry(base->first, struct hrtimer, node);
++		timer = container_of(next, struct hrtimer, node);
 +
-+/**
-+ * timerlist_add - Adds timer to timerlist.
-+ *
-+ * @head: head of timerlist
-+ * @node: timer node to be added
-+ *
-+ * Adds the timer node to the timerlist, sorted by the
-+ * node's expires value.
-+ */
-+void timerlist_add(struct timerlist_head *head, struct timerlist_node *node)
-+{
-+	struct rb_node **p = &head->head.rb_node;
-+	struct rb_node *parent = NULL;
-+	struct timerlist_node  *ptr;
-+
-+	/* Make sure we don't add nodes that are already added */
-+	WARN_ON_ONCE(!RB_EMPTY_NODE(&node->node));
-+
-+	while (*p) {
-+		parent = *p;
-+		ptr = rb_entry(parent, struct timerlist_node, node);
-+		if (node->expires.tv64 < ptr->expires.tv64)
-+			p = &(*p)->rb_left;
-+		else
-+			p = &(*p)->rb_right;
+ 		expires = ktime_sub(hrtimer_get_expires(timer), base->offset);
+ 		/*
+ 		 * clock_was_set() has changed base->offset so the
+@@ -840,48 +843,17 @@ EXPORT_SYMBOL_GPL(hrtimer_forward);
+ static int enqueue_hrtimer(struct hrtimer *timer,
+ 			   struct hrtimer_clock_base *base)
+ {
+-	struct rb_node **link = &base->active.rb_node;
+-	struct rb_node *parent = NULL;
+-	struct hrtimer *entry;
+-	int leftmost = 1;
+-
+ 	debug_activate(timer);
+ 
+-	/*
+-	 * Find the right place in the rbtree:
+-	 */
+-	while (*link) {
+-		parent = *link;
+-		entry = rb_entry(parent, struct hrtimer, node);
+-		/*
+-		 * We dont care about collisions. Nodes with
+-		 * the same expiry time stay together.
+-		 */
+-		if (hrtimer_get_expires_tv64(timer) <
+-				hrtimer_get_expires_tv64(entry)) {
+-			link = &(*link)->rb_left;
+-		} else {
+-			link = &(*link)->rb_right;
+-			leftmost = 0;
+-		}
+-	}
++	timerlist_add(&base->active, &timer->node);
+ 
+ 	/*
+-	 * Insert the timer to the rbtree and check whether it
+-	 * replaces the first pending timer
+-	 */
+-	if (leftmost)
+-		base->first = &timer->node;
+-
+-	rb_link_node(&timer->node, parent, link);
+-	rb_insert_color(&timer->node, &base->active);
+-	/*
+ 	 * HRTIMER_STATE_ENQUEUED is or'ed to the current state to preserve the
+ 	 * state of a possibly running callback.
+ 	 */
+ 	timer->state |= HRTIMER_STATE_ENQUEUED;
+ 
+-	return leftmost;
++	return (&timer->node == base->active.next);
+ }
+ 
+ /*
+@@ -901,12 +873,7 @@ static void __remove_hrtimer(struct hrtimer *timer,
+ 	if (!(timer->state & HRTIMER_STATE_ENQUEUED))
+ 		goto out;
+ 
+-	/*
+-	 * Remove the timer from the rbtree and replace the first
+-	 * entry pointer if necessary.
+-	 */
+-	if (base->first == &timer->node) {
+-		base->first = rb_next(&timer->node);
++	if (&timer->node == timerlist_getnext(&base->active)) {
+ #ifdef CONFIG_HIGH_RES_TIMERS
+ 		/* Reprogram the clock event device. if enabled */
+ 		if (reprogram && hrtimer_hres_active()) {
+@@ -919,7 +886,7 @@ static void __remove_hrtimer(struct hrtimer *timer,
+ 		}
+ #endif
+ 	}
+-	rb_erase(&timer->node, &base->active);
++	timerlist_del(&base->active, &timer->node);
+ out:
+ 	timer->state = newstate;
+ }
+@@ -1122,11 +1089,13 @@ ktime_t hrtimer_get_next_event(void)
+ 	if (!hrtimer_hres_active()) {
+ 		for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++, base++) {
+ 			struct hrtimer *timer;
++			struct timerlist_node *next;
+ 
+-			if (!base->first)
++			next = timerlist_getnext(&base->active);
++			if (!next)
+ 				continue;
+ 
+-			timer = rb_entry(base->first, struct hrtimer, node);
++			timer = container_of(next, struct hrtimer, node);
+ 			delta.tv64 = hrtimer_get_expires_tv64(timer);
+ 			delta = ktime_sub(delta, base->get_time());
+ 			if (delta.tv64 < mindelta.tv64)
+@@ -1156,6 +1125,7 @@ static void __hrtimer_init(struct hrtimer *timer, clockid_t clock_id,
+ 
+ 	timer->base = &cpu_base->clock_base[clock_id];
+ 	hrtimer_init_timer_hres(timer);
++	timerlist_init(&timer->node);
+ 
+ #ifdef CONFIG_TIMER_STATS
+ 	timer->start_site = NULL;
+@@ -1269,14 +1239,14 @@ retry:
+ 
+ 	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
+ 		ktime_t basenow;
+-		struct rb_node *node;
++		struct timerlist_node *node;
+ 
+ 		basenow = ktime_add(now, base->offset);
+ 
+-		while ((node = base->first)) {
++		while ((node = timerlist_getnext(&base->active))) {
+ 			struct hrtimer *timer;
+ 
+-			timer = rb_entry(node, struct hrtimer, node);
++			timer = container_of(node, struct hrtimer, node);
+ 
+ 			/*
+ 			 * The immediate goal for using the softexpires is
+@@ -1432,7 +1402,7 @@ void hrtimer_run_pending(void)
+  */
+ void hrtimer_run_queues(void)
+ {
+-	struct rb_node *node;
++	struct timerlist_node *node;
+ 	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
+ 	struct hrtimer_clock_base *base;
+ 	int index, gettime = 1;
+@@ -1441,9 +1411,11 @@ void hrtimer_run_queues(void)
+ 		return;
+ 
+ 	for (index = 0; index < HRTIMER_MAX_CLOCK_BASES; index++) {
+-		base = &cpu_base->clock_base[index];
++		struct timerlist_node *next;
+ 
+-		if (!base->first)
++		base = &cpu_base->clock_base[index];
++		next = timerlist_getnext(&base->active);
++		if (!next)
+ 			continue;
+ 
+ 		if (gettime) {
+@@ -1453,10 +1425,10 @@ void hrtimer_run_queues(void)
+ 
+ 		raw_spin_lock(&cpu_base->lock);
+ 
+-		while ((node = base->first)) {
++		while ((node = next)) {
+ 			struct hrtimer *timer;
+ 
+-			timer = rb_entry(node, struct hrtimer, node);
++			timer = container_of(node, struct hrtimer, node);
+ 			if (base->softirq_time.tv64 <=
+ 					hrtimer_get_expires_tv64(timer))
+ 				break;
+@@ -1621,8 +1593,10 @@ static void __cpuinit init_hrtimers_cpu(int cpu)
+ 
+ 	raw_spin_lock_init(&cpu_base->lock);
+ 
+-	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++)
++	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
+ 		cpu_base->clock_base[i].cpu_base = cpu_base;
++		timerlist_init_head(&cpu_base->clock_base[i].active);
 +	}
-+	rb_link_node(&node->node, parent, p);
-+	rb_insert_color(&node->node, &head->head);
-+
-+	if (!head->next || node->expires.tv64 < head->next->expires.tv64)
-+		head->next = node;
-+}
-+
-+/**
-+ * timerlist_del - Removes a timer from the timerlist.
-+ *
-+ * @head: head of timerlist
-+ * @node: timer node to be removed
-+ *
-+ * Removes the timer node from the timerlist.
-+ */
-+void timerlist_del(struct timerlist_head *head, struct timerlist_node *node)
-+{
-+	WARN_ON_ONCE(RB_EMPTY_NODE(&node->node));
-+
-+	/* update next pointer */
-+	if (head->next == node)
-+		head->next = rb_entry(rb_next(&node->node),
-+					struct timerlist_node, node);
-+	rb_erase(&node->node, &head->head);
-+	RB_CLEAR_NODE(&node->node);
-+}
-+
-+
-+/**
-+ * timerlist_getnext - Returns the timer with the earlies expiration time
-+ *
-+ * @head: head of timerlist
-+ *
-+ * Returns a pointer to the timer node that has the
-+ * earliest expiration time.
-+ */
-+struct timerlist_node *timerlist_getnext(struct timerlist_head *head)
-+{
-+	return head->next;
-+}
-+
-+
-+/**
-+ * timerlist_iterate_next - Returns the timer after the provided timer
-+ *
-+ * @node: Pointer to a timer.
-+ *
-+ * Provides the timer that is after the given node. This is used, when
-+ * necessary, to iterate through the list of timers in a timer list
-+ * without modifying the list.
-+ */
-+struct timerlist_node *timerlist_iterate_next(struct timerlist_node *node)
-+{
-+	struct rb_node *next;
-+
-+	if (!node)
-+		return NULL;
-+	next = rb_next(&node->node);
-+	if (!next)
-+		return NULL;
-+	return container_of(next, struct timerlist_node, node);
-+}
+ 
+ 	hrtimer_init_hres(cpu_base);
+ }
+@@ -1633,10 +1607,10 @@ static void migrate_hrtimer_list(struct hrtimer_clock_base *old_base,
+ 				struct hrtimer_clock_base *new_base)
+ {
+ 	struct hrtimer *timer;
+-	struct rb_node *node;
++	struct timerlist_node *node;
+ 
+-	while ((node = rb_first(&old_base->active))) {
+-		timer = rb_entry(node, struct hrtimer, node);
++	while ((node = timerlist_getnext(&old_base->active))) {
++		timer = container_of(node, struct hrtimer, node);
+ 		BUG_ON(hrtimer_callback_running(timer));
+ 		debug_deactivate(timer);
+ 
+diff --git a/kernel/time/timer_list.c b/kernel/time/timer_list.c
+index ab8f5e3..7583b8d 100644
+--- a/kernel/time/timer_list.c
++++ b/kernel/time/timer_list.c
+@@ -79,26 +79,26 @@ print_active_timers(struct seq_file *m, struct hrtimer_clock_base *base,
+ {
+ 	struct hrtimer *timer, tmp;
+ 	unsigned long next = 0, i;
+-	struct rb_node *curr;
++	struct timerlist_node *curr;
+ 	unsigned long flags;
+ 
+ next_one:
+ 	i = 0;
+ 	raw_spin_lock_irqsave(&base->cpu_base->lock, flags);
+ 
+-	curr = base->first;
++	curr = timerlist_getnext(&base->active);
+ 	/*
+ 	 * Crude but we have to do this O(N*N) thing, because
+ 	 * we have to unlock the base when printing:
+ 	 */
+ 	while (curr && i < next) {
+-		curr = rb_next(curr);
++		curr = timerlist_iterate_next(curr);
+ 		i++;
+ 	}
+ 
+ 	if (curr) {
+ 
+-		timer = rb_entry(curr, struct hrtimer, node);
++		timer = container_of(curr, struct hrtimer, node);
+ 		tmp = *timer;
+ 		raw_spin_unlock_irqrestore(&base->cpu_base->lock, flags);
+ 
 -- 
 1.6.0.4
 
