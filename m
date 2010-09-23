@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752345Ab0IWAen (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 20:34:43 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:62457 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751572Ab0IWAem (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 20:34:42 -0400
-X-Authority-Analysis: v=1.1 cv=GglhOq9PVtWDmzXFaQc2b9ix+3dKCE90LyQFAZ1FxMQ= c=1 sm=0 a=0cKYrd99z0gA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=tHz9FfFoAAAA:8 a=r6-SKtqzC2bJfbI9CGQA:9 a=TQpnoB7An9eLTNgw6FTIMbKG2SYA:4 a=PUjeQqilurYA:10 a=6O0IECtVFhoA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] x86: don't use mcount in pvclock.c
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>
-In-Reply-To: <4C9A9A3F.4040201@goop.org>
-References: <4C9A9A3F.4040201@goop.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 22 Sep 2010 20:34:39 -0400
-Message-ID: <1285202079.26872.424.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1752535Ab0IWAuh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 20:50:37 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:56997 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752113Ab0IWAuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 20:50:37 -0400
+Date: Wed, 22 Sep 2010 17:50:33 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com
+Subject: [PATCH tip/core/rcu 0/8] random RCU fixes and updates
+Message-ID: <20100923005033.GA22006@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Crap!
+Hello!
 
-I fixed this back on 7/1/2010 from a RHEL bugzilla report, and forgot to
-push it mainline. This also requires kvmclock.o to have the -pg as well.
+This patchset contains fixes for problems identified in -next testing
+and some statistics and documentation updates.  The patches are as follows:
 
-I'll add your patch and add the kvmclock.o too.
+1.	Update stallwarn.txt to include stall warnings caused by
+	real-time processes (yes, even in mainline kernels).
+2.	Fix some performance bugs in TINY_PREEMPT_RCU.
+3.	Fix an overactive rcu_bootup_announce_oddness() warning.
+4.	Eliminate a redundant #ifdef (from Christian Dietrich).
+5.	Fix the new sparse-aware primitives to correctly handle
+	macro arguments with side effects.
+6.	Fix some issues sparse found in rcutorture.c.
+7.	Add some tracing data to help compute estimates of how long
+	RCU callbacks are queued.
+8.	Fix up the Kconfig message for PROVE_RCU_REPEATEDLY.
 
-Thanks,
+For a testing-only version of this patchset from git, please see:
 
--- Steve
+git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/testing
 
+							Thanx, Paul
 
-On Wed, 2010-09-22 at 17:07 -0700, Jeremy Fitzhardinge wrote:
-> 
-> When using a paravirt clock, pvclock.c can be used by sched_clock(),
-> which in turn is used by the tracing mechanism for timestamps,
-> which leads to infinite recursion.
-> 
-> Disable mcount/tracing for pvclock.o.
-> 
-> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> 
-> diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-> index f3477bb..35b447c 100644
-> --- a/arch/x86/kernel/Makefile
-> +++ b/arch/x86/kernel/Makefile
-> @@ -11,6 +11,7 @@ ifdef CONFIG_FUNCTION_TRACER
->  CFLAGS_REMOVE_tsc.o = -pg
->  CFLAGS_REMOVE_rtc.o = -pg
->  CFLAGS_REMOVE_paravirt-spinlocks.o = -pg
-> +CFLAGS_REMOVE_pvclock.o = -pg
->  CFLAGS_REMOVE_ftrace.o = -pg
->  CFLAGS_REMOVE_early_printk.o = -pg
->  endif
-> 
-
-
+ Documentation/RCU/stallwarn.txt |   18 ++++++++++++++++++
+ Documentation/RCU/trace.txt     |   13 ++++++++++++-
+ include/linux/rcupdate.h        |   14 +++++++++++---
+ kernel/rcutiny_plugin.h         |   12 ++++++++----
+ kernel/rcutorture.c             |    8 +++++---
+ kernel/rcutree.c                |    3 +++
+ kernel/rcutree.h                |    3 +++
+ kernel/rcutree_plugin.h         |    2 +-
+ kernel/rcutree_trace.c          |   10 +++++++---
+ kernel/srcu.c                   |    2 --
+ lib/Kconfig.debug               |    4 ++++
+ 11 files changed, 72 insertions(+), 17 deletions(-)
