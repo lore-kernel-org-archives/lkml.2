@@ -1,184 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753125Ab0IWFfU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 01:35:20 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:50779 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752942Ab0IWFfT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 01:35:19 -0400
-Date: Wed, 22 Sep 2010 22:33:48 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: "samu.p.onkalo@nokia.com" <samu.p.onkalo@nokia.com>
-CC: "tiwai@suse.de" <tiwai@suse.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "Eric.Piel@tremplin-utc.net" <Eric.Piel@tremplin-utc.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [lm-sensors] [PATCH resent] lis3: Fix Oops with NULL platform
- data
-Message-ID: <20100923053348.GA11775@ericsson.com>
-References: <s5htyli811o.wl%tiwai@suse.de>
- <62697B07E9803846BC582181BD6FB6B831300D2218@NOK-EUMSG-02.mgdnok.nokia.com>
- <s5h8w2t99gk.wl%tiwai@suse.de>
- <62697B07E9803846BC582181BD6FB6B835EF20D9D1@NOK-EUMSG-02.mgdnok.nokia.com>
+	id S1753224Ab0IWFht (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 01:37:49 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35877 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753119Ab0IWFhs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 01:37:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=gq+mSBi70ujtX2e3KV+QG6WF7A3M/XtNT7Hj726h/GA6csT0i/W1bjBY9oXkVdUY0z
+         a1ZvGiZ69fh19FfrDPpGBZ7AOdnrZjE5YwxqCOF/DawxnUKjp7fooYfCbPT6D4ZandEn
+         jO0dJSyVZ4fQkqw21Jgt9dIxYB6uATgWx1Ev0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <62697B07E9803846BC582181BD6FB6B835EF20D9D1@NOK-EUMSG-02.mgdnok.nokia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LFD.2.00.1009212333280.6717@eddie.linux-mips.org>
+References: <1284087065-32722-1-git-send-email-ying.huang@intel.com>
+	<1284087065-32722-3-git-send-email-ying.huang@intel.com>
+	<alpine.LFD.2.00.1009212333280.6717@eddie.linux-mips.org>
+Date: Thu, 23 Sep 2010 13:37:47 +0800
+Message-ID: <AANLkTineDMoGdtZUnnDKxCo_Xreud2MUWWn0GR7iDgAa@mail.gmail.com>
+Subject: Re: [RFC 3/6] x86, NMI, Rename memory parity error to PCI SERR error
+From: huang ying <huang.ying.caritas@gmail.com>
+To: "Maciej W. Rozycki" <macro@linux-mips.org>
+Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 23, 2010 at 01:06:22AM -0400, samu.p.onkalo@nokia.com wrote:
-> Added lm-sensors list...
-> 
-> >-----Original Message-----
-> >From: ext Takashi Iwai [mailto:tiwai@suse.de]
-> >Sent: 22 September, 2010 16:47
-> >To: Onkalo Samu.P (Nokia-MS/Tampere)
-> >Cc: akpm@linux-foundation.org; Eric.Piel@tremplin-utc.net; linux-
-> >kernel@vger.kernel.org
-> >Subject: Re: [PATCH resent] lis3: Fix Oops with NULL platform data
-> >
-> >At Wed, 22 Sep 2010 13:56:15 +0200,
-> ><samu.p.onkalo@nokia.com> wrote:
-> >>
-> >>
-> >> Hi
-> >>
-> >> >-----Original Message-----
-> >> >From: ext Takashi Iwai [mailto:tiwai@suse.de]
-> >> >Sent: 22 September, 2010 14:34
-> >> >To: Andrew Morton
-> >> >Cc: Onkalo Samu.P (Nokia-MS/Tampere); �ric Piel; linux-
-> >> >kernel@vger.kernel.org
-> >> >Subject: [PATCH resent] lis3: Fix Oops with NULL platform data
-> >> >
-> >> >The recent addition of threaded irq handler causes a NULL dereference
-> >> >when used with hp_accel driver, which has NULL pdata.
-> >> >
-> >> >Cc: <stable@kernel.org>
-> >> >Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> >> >---
-> >> >
-> >> >This should go to 2.6.36 and 2.6.35-stable tree.
-> >> >
-> >> > drivers/hwmon/lis3lv02d.c |    6 ++++--
-> >> > 1 files changed, 4 insertions(+), 2 deletions(-)
-> >> >
-> >> >diff --git a/drivers/hwmon/lis3lv02d.c b/drivers/hwmon/lis3lv02d.c
-> >> >index 5e15967..1c266ec 100644
-> >> >--- a/drivers/hwmon/lis3lv02d.c
-> >> >+++ b/drivers/hwmon/lis3lv02d.c
-> >> >@@ -354,7 +354,8 @@ static irqreturn_t
-> >lis302dl_interrupt_thread1_8b(int
-> >> >irq, void *data)
-> >> >
-> >> > 	struct lis3lv02d *lis3 = data;
-> >> >
-> >> >-	if ((lis3->pdata->irq_cfg & LIS3_IRQ1_MASK) == LIS3_IRQ1_CLICK)
-> >> >+	if (lis3->pdata &&
-> >> >+	    (lis3->pdata->irq_cfg & LIS3_IRQ1_MASK) == LIS3_IRQ1_CLICK)
-> >> > 		lis302dl_interrupt_handle_click(lis3);
-> >> > 	else
-> >> > 		lis302dl_interrupt_handle_ff_wu(lis3);
-> >> >@@ -367,7 +368,8 @@ static irqreturn_t
-> >lis302dl_interrupt_thread2_8b(int
-> >> >irq, void *data)
-> >> >
-> >> > 	struct lis3lv02d *lis3 = data;
-> >> >
-> >> >-	if ((lis3->pdata->irq_cfg & LIS3_IRQ2_MASK) == LIS3_IRQ2_CLICK)
-> >> >+	if (lis3->pdata &&
-> >> >+	    (lis3->pdata->irq_cfg & LIS3_IRQ2_MASK) == LIS3_IRQ2_CLICK)
-> >> > 		lis302dl_interrupt_handle_click(lis3);
-> >> > 	else
-> >> > 		lis302dl_interrupt_handle_ff_wu(lis3);
-> >>
-> >> Yes, that will remove the kernel oops definitely, but I'm wondering if
-> >> this thread should be executed at all if there is no pdata available.
-> >
-> >We may control the caller of request_threaded_irq(), instead.
-> >The revised patch is below.  (With this patch, the patch for the new
-> >LIS3CD chip must be revised, too.)
-> >
-> >> Eric, is it so that in laptops interrupts are used for free fall
-> >detection
-> >> and polled input device is for joystick?
-> >
-> >Yes, it's so for HP laptops.
-> >
-> >> Interrupts can (and are used) also for other purposes but in that case
-> >> some additional configurations are done based on platform data.
-> >>
-> >> With this patch, there are just some additional input event refreshes
-> >in
-> >> top of polled device updates. It should really not matter. So,
-> >>
-> >> Acked-by: Samu Onkalo <samu.p.onkalo@nokia.com>
-> >>
-> >> -Samu
-> >
-> >
-> >thanks,
-> >
-> >Takashi
-> >
-> >===
-> >From 0e5bdc7516915e92fe471a77da36ecb75d995c0f Mon Sep 17 00:00:00 2001
-> >From: Takashi Iwai <tiwai@suse.de>
-> >Date: Wed, 22 Sep 2010 12:16:04 +0200
-> >Subject: [PATCH] lis3: Fix Oops with NULL platform data
-> >
-> >The recent addition of threaded irq handler causes a NULL dereference
-> >when used with hp_accel driver, which has NULL pdata.
-> >
-> >Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> >---
-> >this version avoids the unnecessary thread_irq call instead of checking
-> >pdata in the irq handler.
-> >
-> > drivers/hwmon/lis3lv02d.c |    4 ++--
-> > 1 files changed, 2 insertions(+), 2 deletions(-)
-> >
-> >diff --git a/drivers/hwmon/lis3lv02d.c b/drivers/hwmon/lis3lv02d.c
-> >index 5e15967..0a24177 100644
-> >--- a/drivers/hwmon/lis3lv02d.c
-> >+++ b/drivers/hwmon/lis3lv02d.c
-> >@@ -301,7 +301,7 @@ static irqreturn_t lis302dl_interrupt(int irq, void
-> >*dummy)
-> > 	wake_up_interruptible(&lis3_dev.misc_wait);
-> > 	kill_fasync(&lis3_dev.async_queue, SIGIO, POLL_IN);
-> > out:
-> >-	if (lis3_dev.whoami == WAI_8B && lis3_dev.idev &&
-> >+	if (lis3_dev.pdata && lis3_dev.whoami == WAI_8B && lis3_dev.idev
-> >&&
-> > 	    lis3_dev.idev->input->users)
-> > 		return IRQ_WAKE_THREAD;
-> > 	return IRQ_HANDLED;
-> >@@ -742,7 +742,7 @@ int lis3lv02d_init_device(struct lis3lv02d *dev)
-> > 	 * io-apic is not configurable (and generates a warning) but I
-> >keep it
-> > 	 * in case of support for other hardware.
-> > 	 */
-> >-	if (dev->whoami == WAI_8B)
-> >+	if (dev->pdata && dev->whoami == WAI_8B)
-> > 		thread_fn = lis302dl_interrupt_thread1_8b;
-> > 	else
-> > 		thread_fn = NULL;
-> >--
-> 
-> 
-> With hp_accel.c irq-thread is not needed so this is ok from that point of view.
-> On the other hand, wakeup / click flags are not configured without platformdata
-> so there is no need to run irq-thread. If the pdata is not prodived at all
-> there is no need to IRQ thread.
-> 
-> Acked-by: Samu Onkalo <samu.p.onkalo@nokia.com>
-> 
-Looks ok to me.
+Hi, Maciej,
 
-Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
+On Wed, Sep 22, 2010 at 7:04 AM, Maciej W. Rozycki <macro@linux-mips.org> wrote:
+> On Fri, 10 Sep 2010, Huang Ying wrote:
+>
+>> memory parity error is only valid for IBM PC-AT, newer machine use 7
+>> bit (0x80) of 0x61 port for PCI SERR. While memory error is usually
+>> reported via MCE. So corresponding function name and kernel log string
+>> is changed.
+>
+>  Things perhaps changed over the last few years while I have not been
+> watching, but for many years the bit #7 of the NMI status port
+> (implemented by the southbridge at 0x61 in the port I/O space) was still
+> used for memory parity or ECC errors even after the original IBM PC/AT.
+> The usual arrangement was in the event of a memory error the memory
+> controller in the northbridge would assert the chip's PCI SERR output
+> line, which in turn would be trapped by the southbridge and converted to
+> an NMI event while setting the said bit in the NMI status port.  See e.g.
+> the 82349HX System Controller datasheet (Intel document number 290551).
 
+Thanks for your information. So EDAC function call in NMI handler
+should be kept? But as you pointed out, the function name of
+corresponding handler should be PCI SERR instead of memory parity. It
+just can be used to report memory error on some system. I think we can
+rename the function and string to PCI SERR and add some comments for
+EDAC function call that checks memory errors.
+
+>  So the name of the error reported is not that unjustified except, of
+> course, to be precise the handler would have to scan the state of the SERR
+> output reported by all the PCI devices in the PCI configuration space to
+> find the originator and then interpret the event accordingly.  Which
+> obviously means the only piece of code that could exactly know what the
+> reason was is the respective device driver as causes of SERR are
+> device-specific and may require processing of device-specific registers to
+> determine the cause and/or recover (a device reset may be required in some
+> cases).
+
+In addition to PCI SERR, I think modern system rely more on PCIE AER,
+which can report more information about error. There are recovery
+support for PCIE AER in kernel already. Do we need some similar
+mechanism for PCI SERR? Because PCIE AER becomes more and more common
+on server platform, I think some minimal check such as scaning devices
+SERR/PERR bit should be sufficient.
+
+>  Of course using the MCE seems natural and better, especially if the
+> exception can be raised synchronously and stop the failing memory load CPU
+> instruction from completion -- this is important for parity and MBE ECC
+> errors, where in some cases the handler may be able to retry the failing
+> operation having refreshed RAM from the backing store or otherwise the
+> affected process must be killed (unless a kernel memory location is
+> involved that is, where the whole system has to be brought down).
+>
+>  OTOH, for CPU stores and DMA transactions the event will always be
+> asynchronous and an NMI might be a better option, as in the case of parity
+> and MBE ECC errors the whole system will probably have to be brought down,
+> and with SBE ECC errors scrubbing can be done at any time and otherwise
+> (except from logging and/or marking the physical page bad, as required) no
+> action is needed.
+
+In fact, MCE is a special exception, it can be used for asynchronous
+events too. Such as memory error detected by patrol scrubbing, please
+take a look at latest Intel 64 and IA32 architectures software
+developer's manual Vol 3A section 15.9.3: Architecturally Defined UCR
+Errors.
+
+Best Regards,
+Huang Ying
