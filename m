@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755191Ab0IWVQe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 17:16:34 -0400
-Received: from peacock.arvixe.com ([174.122.104.66]:43642 "EHLO
-	peacock.arvixe.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752066Ab0IWVQc (ORCPT
+	id S1756287Ab0IWVSY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 17:18:24 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:40075 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753841Ab0IWVSW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 17:16:32 -0400
-X-Greylist: delayed 3560 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Sep 2010 17:16:32 EDT
-Subject: Re: [PATCH v4 0/2] Get and Set Feature Reports on HIDRAW (USB and
- Bluetooth)
-From: Przemo Firszt <przemo@firszt.eu>
-To: Ping Cheng <pinglinux@gmail.com>
-Cc: Ville Tervo <ville.tervo@nokia.com>, ext Alan Ott <alan@signal11.us>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Stefan Achatz <erazor_de@users.sourceforge.net>,
-        Antonio Ospite <ospite@studenti.unina.it>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Stephane Chatty <chatty@enac.fr>, Michael Poole <mdpoole@troilus.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Bastien Nocera <hadess@hadess.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-In-Reply-To: <AANLkTinJXYbZh_MvG81iJMu84LKBOKL3s-Gbfe77Vq7q@mail.gmail.com>
-References: <1281442367.12579.206.camel@localhost.localdomain>
-	 <1281990059-3562-1-git-send-email-alan@signal11.us>
-	 <20100923162521.GA15641@null>
-	 <AANLkTinJXYbZh_MvG81iJMu84LKBOKL3s-Gbfe77Vq7q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 23 Sep 2010 21:16:19 +0100
-Message-ID: <1285272979.2869.14.camel@pldmachine>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 PLD Linux 
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - peacock.arvixe.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - firszt.eu
+	Thu, 23 Sep 2010 17:18:22 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Jeff Garzik <jgarzik@pobox.com>
+Subject: Re: [PATCH] de2104x: disable autonegotiation on broken hardware
+Date: Thu, 23 Sep 2010 23:18:08 +0200
+User-Agent: KMail/1.9.10
+Cc: netdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+References: <201009232259.20261.linux@rainbow-software.org> <AANLkTikwXyr4pH5rqkoXpiYvkvpLc7s8tq-EwmM1+r7m@mail.gmail.com>
+In-Reply-To: <AANLkTikwXyr4pH5rqkoXpiYvkvpLc7s8tq-EwmM1+r7m@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+Message-Id: <201009232318.11541.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dnia 2010-09-23, czw o godzinie 10:07 -0700, Ping Cheng pisze:
-> On Thu, Sep 23, 2010 at 9:25 AM, Ville Tervo <ville.tervo@nokia.com> wrote:
-> > Hi Alan,
+On Thursday 23 September 2010 23:03:13 Jeff Garzik wrote:
+> On Thu, Sep 23, 2010 at 4:59 PM, Ondrej Zary <linux@rainbow-software.org> 
+wrote:
+> > At least on older 21041-AA chips (mine is rev. 11), TP duplex
+> > autonegotiation causes the card not to work at all (link is up but no
+> > packets are transmitted).
 > >
-> > On Mon, Aug 16, 2010 at 10:20:57PM +0200, ext Alan Ott wrote:
-> >> This is version 4. Built against 2.6.35+ revision 320b2b8de12698 .
+> > de4x5 disables autonegotiation completely. But it seems to work on newer
+> > (21041-PA rev. 21) so disable it only on rev<20 chips.
 > >
-> > I gave a try to to this patch using your test tool [1] and very old BT
-> > keyboard. I don't have anything else ATM to test with. Is there some BT hid
-> > devices which support setting and getting features?
-> 
-> As far as I know Wacom BT devices (Graphire and Intuos4) need to get
-> and set features.
-> 
-> Przemo,
-> 
-> Do you have time to test the patchset with your Graphire BT and
-> provide your result here?
-Hi Ping,
-Speed switching works as expected.
+> > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> >
+> > --- linux-2.6.36-rc3-orig/drivers/net/tulip/de2104x.c   2010-08-29
+> > 17:36:04.000000000 +0200 +++ linux-2.6.36-rc3/drivers/net/tulip/de2104x.c
+> >        2010-09-24 00:27:41.000000000 +0200 @@ -364,6 +364,8 @@ static u16
+> > t21040_csr15[] = { 0, 0, 0x00
+> >  /* 21041 transceiver register settings: TP AUTO, BNC, AUI, TP, TP FD*/
+> >  static u16 t21041_csr13[] = { 0xEF01, 0xEF09, 0xEF09, 0xEF01, 0xEF09, };
+> >  static u16 t21041_csr14[] = { 0xFFFF, 0xF7FD, 0xF7FD, 0x6F3F, 0x6F3D, };
+> > +/* If on-chip autonegotiation is broken, use half-duplex (FF3F) instead
+> > */ +static u16 t21041_csr14_brk[] = { 0xFF3F, 0xF7FD, 0xF7FD, 0x6F3F,
+> > 0x6F3D, }; static u16 t21041_csr15[] = { 0x0008, 0x0006, 0x000E, 0x0008,
+> > 0x0008, };
+> >
+> >
+> > @@ -1911,8 +1913,14 @@ fill_defaults:
+> >        for (i = 0; i < DE_MAX_MEDIA; i++) {
+> >                if (de->media[i].csr13 == 0xffff)
+> >                        de->media[i].csr13 = t21041_csr13[i];
+> > -               if (de->media[i].csr14 == 0xffff)
+> > -                       de->media[i].csr14 = t21041_csr14[i];
+> > +               if (de->media[i].csr14 == 0xffff) {
+> > +                       /* autonegotiation is broken at least on some
+> > chip +                          revisions - rev. 0x21 works, 0x11 does
+> > not */ +                       if (de->pdev->revision < 0x20)
+> > +                               de->media[i].csr14 = t21041_csr14_brk[i];
+> > +                       else
+> > +                               de->media[i].csr14 = t21041_csr14[i];
+> > +               }
+>
+> Interesting...  I never knew about that quirk.
 
-Tested on HP NC4200 with internal and external bluetooth modules:
+This errata document says that autonegotiation is somehow broken but it does 
+not specify it further:
+http://ftp.nluug.nl/ftp/ftp/pub/os/NetBSD/misc/dec-docs/ec-qd2ma-te.ps.gz
 
-Linux pldmachine 2.6.35-07788-g320b2b8-dirty #15 Thu Sep 23 19:55:03 IST
-2010 i686 Intel(R)_Pentium(R)_M_processor_1.86GHz PLD Linux
-
-ID 03f0:011d Hewlett-Packard Integrated Bluetooth Module
-ID 0a12:0001 Cambridge Silicon Radio, Ltd Bluetooth Dongle (HCI mode)
-
-and Wacom Pen Tablet CTE-630BT
-
-Tested-by: Przemo Firszt <przemo@firszt.eu>
 -- 
-Regards,
-Przemo Firszt <przemo@firszt.eu>
-
+Ondrej Zary
