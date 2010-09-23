@@ -1,34 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756045Ab0IWRf2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 13:35:28 -0400
-Received: from vms173009pub.verizon.net ([206.46.173.9]:60535 "EHLO
-	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755957Ab0IWRf1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 13:35:27 -0400
-Date: Thu, 23 Sep 2010 13:35:03 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: Tejun Heo <tj@kernel.org>
-Cc: Namhyung Kim <namhyung@gmail.com>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI: add missing __percpu markup in
- arch/x86/kernel/acpi/cstate.c
-In-reply-to: <4C5DB519.6090804@kernel.org>
-Message-id: <alpine.LFD.2.00.1009231334590.30002@localhost.localdomain>
-References: <1281201449-31158-1-git-send-email-namhyung@gmail.com>
- <4C5DB519.6090804@kernel.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	id S1755875Ab0IWRhu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 13:37:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3542 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754310Ab0IWRhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 13:37:48 -0400
+Date: Thu, 23 Sep 2010 19:33:14 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 03/10] taskstats: Split fill_pid function
+Message-ID: <20100923173314.GB26623@redhat.com>
+References: <1285249681.1837.28.camel@holzheu-laptop> <1285250467.1837.80.camel@holzheu-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285250467.1837.80.camel@holzheu-laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-applied
+On 09/23, Michael Holzheu wrote:
+>
+> Subject: [PATCH] taskstats: Split fill_pid function
+>
+> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+>
+> Separate the finding of a task_struct by pid or tgid from filling the taskstats
+> data. This makes the code more readable.
 
-thanks,
-Len Brown, Intel Open Source Technology Center
+I think this is nice cleanup.
+
+Oleg.
 
