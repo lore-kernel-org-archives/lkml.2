@@ -1,53 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754270Ab0IWKyl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 06:54:41 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44317 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752651Ab0IWKyk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 06:54:40 -0400
-Date: Thu, 23 Sep 2010 11:54:39 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Alan Cox <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        David Woodhouse <dwmw2@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86/mrst: add SFI platform device parsing code
-Message-ID: <20100923105438.GE25663@rakim.wolfsonmicro.main>
-References: <20100920140049.31408.67527.stgit@localhost.localdomain>
- <20100920150431.GD31167@sirena.org.uk>
- <20100920152726.68ac2d84@linux.intel.com>
- <20100920152705.GJ3414@rakim.wolfsonmicro.main>
- <AANLkTi=1dkVOWc2WHhYgqKh_awUhp1-uKN8W7Xx3AB_X@mail.gmail.com>
- <20100922231514.5e9967c7@linux.intel.com>
- <20100923060703.GB11198@angua.secretlab.ca>
- <20100923114845.1938d9dc@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100923114845.1938d9dc@lxorguk.ukuu.org.uk>
-X-Cookie: BOFH excuse
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754461Ab0IWKzQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 06:55:16 -0400
+Received: from mga03.intel.com ([143.182.124.21]:42162 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754429Ab0IWKzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 06:55:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,222,1283756400"; 
+   d="scan'208";a="327837987"
+Date: Thu, 23 Sep 2010 11:08:05 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Feng Tang <feng.tang@intel.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, greg@kroah.com, x86 maintainers <x86@kernel.org>
+Subject: Re: [PATCH v3 4/4] x86, earlyprintk: add hsu early console for
+ Intel Medfield platform
+Message-ID: <20100923110805.2fe5b2a9@linux.intel.com>
+In-Reply-To: <20100921162627.GA21459@dumpdata.com>
+References: <1284361736-23011-1-git-send-email-feng.tang@intel.com>
+	<1284361736-23011-5-git-send-email-feng.tang@intel.com>
+	<20100921162627.GA21459@dumpdata.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 23, 2010 at 11:48:45AM +0100, Alan Cox wrote:
-> > any of this code could ever be made generic.  The spec seems to only
-> > cover the data structure, and relationships between devices seem to be
-> > left to whatever convention the firmware writer feels like using, or
-> > am I missing something?
+> Is there a link to a PDF of the device in question?
 
-> Not really no. It's basically little more than a component and IRQ list.
-> The GPIO table in 0.8 exposes the GPIO lines a bit more sanely.
+Not that I know of at least so far.
 
-> In fact all that SFI provides generically pretty much fits into
-> platform_foo() already because there is so little - or into the I²C or
-> SPI bus data.
+> > + */
+> > +#define HSU_PORT2_PADDR		0xffa28180
+> 
+> Is it _always_ that address?
 
-I believe the issue here is the handling of things where the
-functionality Linux needs is implemented over multiple chips so we need
-a way for the chips to find each other.
+Yes.
+
+> > +
+> > +static void __iomem *phsu;
+> > +
+> > +void hsu_early_console_init(void)
+> > +{
+> > +	u8 lcr;
+> > +
+> > +	phsu = (void
+> > *)set_fixmap_offset_nocache(FIX_EARLYCON_MEM_BASE,
+> > +
+> > HSU_PORT2_PADDR); +
+> > +	/* Disable FIFO */
+> > +	writeb(0x0, phsu + UART_FCR);
+> 
+> No detection? What happens if you don't have the device (say in
+> production it gets removed) and we try to use earlyprintk=hsu? Won't
+> we have some trouble?
+
+Same as if you try and use the other serial console drivers that way.
+It's a bit tricky to do much about because to be sure you've got this
+stuff you need to have done a whole ton of work which then makes the
+early console pointless.
+
+> 
+> > +
+> > +	/* Set to default 115200 bps, 8n1 */
+> 
+> Is that OK? Should there be some parsing of the baudrate data?
+
+For a serial console yes - for an early console robustness is
+everything, and its an embedded development environment so fixed
+configuration really isn't a problem.
