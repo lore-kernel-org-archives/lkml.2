@@ -1,308 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755845Ab0IWQwc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 12:52:32 -0400
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:45124 "HELO
-	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755831Ab0IWQwb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 12:52:31 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: aVjfQkwVM1mdnE58JOcowkTYAGiUGmYyMBqX_uS6i1pUCLH
- mpS8nblME8_nlASrbfAs4M7ooB2rX9oYJ5uzMk5fiyra1LarD2HnfXC8_8Qu
- 2GKvfPRR2Q9.5Y5mz3B6leG7.HrK.jhQ_Sqqla1jKfoSNrN2uoFElnHshmLJ
- tBHiGYSaa52xkaiYeVPd_RbBCS1SYTVFO2WzQbwBNscQ2M_NfyZ7amR1hL8f
- M
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 23 Sep 2010 11:52:26 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-cc: Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/10] hugetlb: hugepage migration core
-In-Reply-To: <1283908781-13810-5-git-send-email-n-horiguchi@ah.jp.nec.com>
-Message-ID: <alpine.DEB.2.00.1009231131040.32567@router.home>
-References: <1283908781-13810-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1283908781-13810-5-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755775Ab0IWQzP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 12:55:15 -0400
+Received: from mail.wdtv.com ([66.118.69.84]:46867 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754149Ab0IWQzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 12:55:14 -0400
+From: Gene Heskett <gene.heskett@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] Add mkcis - a program that can create .cis from text description
+Date: Thu, 23 Sep 2010 12:55:09 -0400
+User-Agent: KMail/1.13.5 (Linux/2.6.35.4; KDE/4.5.1; i686; ; )
+References: <1285255197-9262-1-git-send-email-dbaryshkov@gmail.com> <1285255197-9262-2-git-send-email-dbaryshkov@gmail.com> <1285255752.10687.20.camel@i7.infradead.org>
+In-Reply-To: <1285255752.10687.20.camel@i7.infradead.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009231255.09443.gene.heskett@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Sep 2010, Naoya Horiguchi wrote:
-
-
-> +static int hugetlbfs_migrate_page(struct address_space *mapping,
-> +				struct page *newpage, struct page *page)
-> +{
-> +	int rc;
-> +
-> +	rc = migrate_huge_page_move_mapping(mapping, newpage, page);
-> +	if (rc)
-> +		return rc;
-> +	migrate_page_copy(newpage, page);
-> +
-> +	return 0;
-> +}
-> +
->  static int hugetlbfs_statfs(struct dentry *dentry, struct kstatfs *buf)
->  {
->  	struct hugetlbfs_sb_info *sbinfo = HUGETLBFS_SB(dentry->d_sb);
-> @@ -659,6 +673,7 @@ static const struct address_space_operations hugetlbfs_aops = {
->  	.write_begin	= hugetlbfs_write_begin,
->  	.write_end	= hugetlbfs_write_end,
->  	.set_page_dirty	= hugetlbfs_set_page_dirty,
-> +	.migratepage    = hugetlbfs_migrate_page,
->  };
-
-Very straightforward conversion of innermost piece to huge pages. Good.
-
-If migrate_page_move_mapping would do huge pages like it seems
-migrate_page_copy() does (a bit surprising) then we could save ourselves
-the function?
-
-> index 351f8d1..55f3e2d 100644
-> --- v2.6.36-rc2/mm/hugetlb.c
-> +++ v2.6.36-rc2/mm/hugetlb.c
-> @@ -2217,6 +2217,19 @@ nomem:
->  	return -ENOMEM;
->  }
+On Thursday, September 23, 2010, David Woodhouse wrote:
+>On Thu, 2010-09-23 at 19:19 +0400, Dmitry Eremin-Solenikov wrote:
+>> For CIS files (describing hardware on PCMCIA and some other busses)
+>> binary file isn't the 'preferred for for modification' in most cases.
+>> pcmcia-cs project have developed pack_cis program which can be used
+>> (and was used most probably) to generate .cis files from simple text
+>> descriptions. Import this code to the kernel under the name of mkcis.
 >
-> +static int is_hugetlb_entry_migration(pte_t pte)
-> +{
-> +	swp_entry_t swp;
-> +
-> +	if (huge_pte_none(pte) || pte_present(pte))
-> +		return 0;
-> +	swp = pte_to_swp_entry(pte);
-> +	if (non_swap_entry(swp) && is_migration_entry(swp)) {
-> +		return 1;
-> +	} else
-> +		return 0;
-> +}
-
-Ok that implies that to some extend swap must be supported for this case
-in the core vm?
-
-> @@ -2651,7 +2664,10 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
->  	ptep = huge_pte_offset(mm, address);
->  	if (ptep) {
->  		entry = huge_ptep_get(ptep);
-> -		if (unlikely(is_hugetlb_entry_hwpoisoned(entry)))
-> +		if (unlikely(is_hugetlb_entry_migration(entry))) {
-> +			migration_entry_wait(mm, (pmd_t *)ptep, address);
-> +			return 0;
-> +		} else if (unlikely(is_hugetlb_entry_hwpoisoned(entry)))
->  			return VM_FAULT_HWPOISON;
-
-No we have here in hugetlb_fault() a copy of  the migration wait logic
-from do_swap_page(). Hope the rest of the VM cannot inadvertantly
-encounter such a migration entry elsewhere?
-
-
-> diff --git v2.6.36-rc2/mm/migrate.c v2.6.36-rc2/mm/migrate.c
-
-> @@ -130,10 +139,17 @@ static int remove_migration_pte(struct page *new, struct vm_area_struct *vma,
->  	pte = pte_mkold(mk_pte(new, vma->vm_page_prot));
->  	if (is_write_migration_entry(entry))
->  		pte = pte_mkwrite(pte);
-> +	if (PageHuge(new))
-> +		pte = pte_mkhuge(pte);
->  	flush_cache_page(vma, addr, pte_pfn(pte));
->  	set_pte_at(mm, addr, ptep, pte);
+>This is useful, thanks -- but NACK. The firmware/ directory of the
+>kernel will hopefully die soon, and is no longer what's actually shipped
+>by many distributions.
 >
-> -	if (PageAnon(new))
-> +	if (PageHuge(new)) {
-> +		if (PageAnon(new))
-> +			hugepage_add_anon_rmap(new, vma, addr);
-> +		else
-> +			page_dup_rmap(new);
+>We should be concentrating on the linux-firmware.git repository instead.
 
-dup_rmap? What are non anon huge pages use for? That is not a file backed
-huge page right?
+Unfortunately, a perusal of that git repo fails to find the amd-microcode 
+tree, which contains a .bin file that brings my early 4 core phenom up to 
+revision 65.
 
+I picked that up and have been carrying it forward from a message's link 
+from this list about 2 years ago, and have been carrying it locally since.  
+However, I have not seen it mentioned as being used in a dmesg parse since 
+2.6.35-early-rc.
 
-> @@ -276,11 +292,59 @@ static int migrate_page_move_mapping(struct address_space *mapping,
->  }
->
->  /*
-> + * The expected number of remaining references is the same as that
-> + * of migrate_page_move_mapping().
-> + */
-> +int migrate_huge_page_move_mapping(struct address_space *mapping,
-> +				   struct page *newpage, struct page *page)
-> +{
-> +	int expected_count;
-> +	void **pslot;
-> +
-> +	if (!mapping) {
-> +		if (page_count(page) != 1)
-> +			return -EAGAIN;
-> +		return 0;
-> +	}
-> +
-> +	spin_lock_irq(&mapping->tree_lock);
-> +
-> +	pslot = radix_tree_lookup_slot(&mapping->page_tree,
-> +					page_index(page));
-> +
-> +	expected_count = 2 + page_has_private(page);
-> +	if (page_count(page) != expected_count ||
-> +	    (struct page *)radix_tree_deref_slot(pslot) != page) {
-> +		spin_unlock_irq(&mapping->tree_lock);
-> +		return -EAGAIN;
-> +	}
-> +
-> +	if (!page_freeze_refs(page, expected_count)) {
-> +		spin_unlock_irq(&mapping->tree_lock);
-> +		return -EAGAIN;
-> +	}
-> +
-> +	get_page(newpage);
-> +
-> +	radix_tree_replace_slot(pslot, newpage);
-> +
-> +	page_unfreeze_refs(page, expected_count);
-> +
-> +	__put_page(page);
-> +
-> +	spin_unlock_irq(&mapping->tree_lock);
-> +	return 0;
-> +}
+Is there a good reason for this late apparent lack of using this resource?
 
-Thats a pretty accurate copy of move_mapping(). Why are the counter
-updates missing at the end? This also suggests that the two functions
-could be merged into one.
+Thanks.
 
-
-> @@ -724,6 +788,92 @@ move_newpage:
->  }
->
->  /*
-> + * Counterpart of unmap_and_move_page() for hugepage migration.
-> + *
-> + * This function doesn't wait the completion of hugepage I/O
-> + * because there is no race between I/O and migration for hugepage.
-> + * Note that currently hugepage I/O occurs only in direct I/O
-> + * where no lock is held and PG_writeback is irrelevant,
-> + * and writeback status of all subpages are counted in the reference
-> + * count of the head page (i.e. if all subpages of a 2MB hugepage are
-> + * under direct I/O, the reference of the head page is 512 and a bit more.)
-> + * This means that when we try to migrate hugepage whose subpages are
-> + * doing direct I/O, some references remain after try_to_unmap() and
-> + * hugepage migration fails without data corruption.
-> + *
-> + * There is also no race when direct I/O is issued on the page under migration,
-> + * because then pte is replaced with migration swap entry and direct I/O code
-> + * will wait in the page fault for migration to complete.
-> + */
-> +static int unmap_and_move_huge_page(new_page_t get_new_page,
-> +				unsigned long private, struct page *hpage,
-> +				int force, int offlining)
-> +{
-> +	int rc = 0;
-> +	int *result = NULL;
-> +	struct page *new_hpage = get_new_page(hpage, private, &result);
-> +	int rcu_locked = 0;
-> +	struct anon_vma *anon_vma = NULL;
-> +
-> +	if (!new_hpage)
-> +		return -ENOMEM;
-> +
-> +	rc = -EAGAIN;
-> +
-> +	if (!trylock_page(hpage)) {
-> +		if (!force)
-> +			goto out;
-> +		lock_page(hpage);
-> +	}
-> +
-> +	if (PageAnon(hpage)) {
-> +		rcu_read_lock();
-> +		rcu_locked = 1;
-> +
-> +		if (page_mapped(hpage)) {
-> +			anon_vma = page_anon_vma(hpage);
-> +			atomic_inc(&anon_vma->external_refcount);
-> +		}
-> +	}
-> +
-> +	try_to_unmap(hpage, TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
-> +
-> +	if (!page_mapped(hpage))
-> +		rc = move_to_new_page(new_hpage, hpage, 1);
-> +
-> +	if (rc)
-> +		remove_migration_ptes(hpage, hpage);
-> +
-> +	if (anon_vma && atomic_dec_and_lock(&anon_vma->external_refcount,
-> +					    &anon_vma->lock)) {
-> +		int empty = list_empty(&anon_vma->head);
-> +		spin_unlock(&anon_vma->lock);
-> +		if (empty)
-> +			anon_vma_free(anon_vma);
-
-Hmmm.. The anon_vma dropping looks different? Why cant we use
-drop_anon_mva like in unmap_and_move? Also we do not take the root lock
-like drop_anon_vma does.
-
-> @@ -788,6 +938,52 @@ out:
->  	return nr_failed + retry;
->  }
->
-> +int migrate_huge_pages(struct list_head *from,
-> +		new_page_t get_new_page, unsigned long private, int offlining)
-> +{
-> +	int retry = 1;
-> +	int nr_failed = 0;
-> +	int pass = 0;
-> +	struct page *page;
-> +	struct page *page2;
-> +	int rc;
-> +
-> +	for (pass = 0; pass < 10 && retry; pass++) {
-> +		retry = 0;
-> +
-> +		list_for_each_entry_safe(page, page2, from, lru) {
-> +			cond_resched();
-> +
-> +			rc = unmap_and_move_huge_page(get_new_page,
-> +					private, page, pass > 2, offlining);
-> +
-> +			switch(rc) {
-> +			case -ENOMEM:
-> +				goto out;
-> +			case -EAGAIN:
-> +				retry++;
-> +				break;
-> +			case 0:
-> +				break;
-> +			default:
-> +				/* Permanent failure */
-> +				nr_failed++;
-> +				break;
-> +			}
-> +		}
-> +	}
-> +	rc = 0;
-> +out:
-> +
-> +	list_for_each_entry_safe(page, page2, from, lru)
-> +		put_page(page);
-> +
-> +	if (rc)
-> +		return rc;
-> +
-> +	return nr_failed + retry;
-> +}
-
-Copy of migrate_pages(). putback_lru_pages() omitted as also proposed for
-upstream in a recent discussion.
-
-
-
+-- 
+Cheers, Gene
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+If Microsoft built cars, If you were involved in a crash, you would have
+no idea what happened.
