@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393Ab0IWD54 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 23:57:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:50745 "EHLO
+	id S1753418Ab0IWD5J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 23:57:09 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:47905 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752851Ab0IWD4K (ORCPT
+	with ESMTP id S1752893Ab0IWD4K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 22 Sep 2010 23:56:10 -0400
-X-Authority-Analysis: v=1.1 cv=GglhOq9PVtWDmzXFaQc2b9ix+3dKCE90LyQFAZ1FxMQ= c=1 sm=0 a=RT1Ond5k7CYA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=jfibPk1e4TlHBlPs_IYA:9 a=-D2nLn1dimuvsQGQgeMA:7 a=cN4sMq5QiixVUPqpTlbGOx5ow3cA:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Authority-Analysis: v=1.1 cv=xllhIT3+0iZermAJQK9ulaVoiSOvD1gApk/LON5m1IU= c=1 sm=0 a=jhCf7N13Gl8A:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=MN8fNxWYoAEoExPYqEIA:9 a=LW2v90mm_pJNUUJj5vMA:7 a=uk3tHYtJnFKs_HHTIsIQCzYm9N8A:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20100923035609.372540311@goodmis.org>
+Message-Id: <20100923035607.740674188@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Wed, 22 Sep 2010 23:49:18 -0400
+Date: Wed, 22 Sep 2010 23:49:11 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
@@ -20,183 +20,232 @@ Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Mathieu Desnoyers <compudj@krystal.dyndns.org>,
         Andi Kleen <andi@firstfloor.org>, Jason Baron <jbaron@redhat.com>,
         David Miller <davem@davemloft.net>
-Subject: [PATCH 08/11] jump label: x86 support
+Subject: [PATCH 01/11] jump label: Make dynamic no-op selection available outside of ftrace
 References: <20100923034910.867858597@goodmis.org>
-Content-Disposition: inline; filename=0008-jump-label-x86-support.patch
+Content-Disposition: inline; filename=0001-jump-label-Make-dynamic-no-op-selection-available-ou.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jason Baron <jbaron@redhat.com>
 
-add x86 support for jump label. I'm keeping this patch separate so its clear
-to arch maintainers what was required for x86 support this new feature.
-Hopefully, it wouldn't be too painful for other archs.
+Move Steve's code for finding the best 5-byte no-op from ftrace.c to
+alternative.c. The idea is that other consumers (in this case jump label)
+want to make use of that code.
 
 Signed-off-by: Jason Baron <jbaron@redhat.com>
-LKML-Reference: <f838f49f40fbea0254036194be66dc48b598dcea.1284733808.git.jbaron@redhat.com>
-
-[ cleaned up some formatting ]
-
+LKML-Reference: <96259ae74172dcac99c0020c249743c523a92e18.1284733808.git.jbaron@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/Kconfig                  |    1 +
- arch/x86/include/asm/jump_label.h |   47 ++++++++++++++++++++++++++++++++++
- arch/x86/kernel/Makefile          |    2 +-
- arch/x86/kernel/jump_label.c      |   50 +++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/module.c          |    3 ++
- 5 files changed, 102 insertions(+), 1 deletions(-)
- create mode 100644 arch/x86/include/asm/jump_label.h
- create mode 100644 arch/x86/kernel/jump_label.c
+ arch/x86/include/asm/alternative.h |    8 ++++
+ arch/x86/kernel/alternative.c      |   64 ++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/ftrace.c           |   63 +----------------------------------
+ arch/x86/kernel/setup.c            |    6 +++
+ 4 files changed, 79 insertions(+), 62 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index cea0cd9..afcd663 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -59,6 +59,7 @@ config X86
- 	select ANON_INODES
- 	select HAVE_ARCH_KMEMCHECK
- 	select HAVE_USER_RETURN_NOTIFIER
-+	select HAVE_ARCH_JUMP_LABEL if !CC_OPTIMIZE_FOR_SIZE
+diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
+index bc6abb7..27a35b6 100644
+--- a/arch/x86/include/asm/alternative.h
++++ b/arch/x86/include/asm/alternative.h
+@@ -180,4 +180,12 @@ static inline void apply_paravirt(struct paravirt_patch_site *start,
+ extern void *text_poke(void *addr, const void *opcode, size_t len);
+ extern void *text_poke_smp(void *addr, const void *opcode, size_t len);
  
- config INSTRUCTION_DECODER
- 	def_bool (KPROBES || PERF_EVENTS)
-diff --git a/arch/x86/include/asm/jump_label.h b/arch/x86/include/asm/jump_label.h
-new file mode 100644
-index 0000000..b4a2cb4
---- /dev/null
-+++ b/arch/x86/include/asm/jump_label.h
-@@ -0,0 +1,47 @@
-+#ifndef _ASM_X86_JUMP_LABEL_H
-+#define _ASM_X86_JUMP_LABEL_H
-+
-+#ifdef __KERNEL__
-+
-+#include <linux/types.h>
-+#include <asm/nops.h>
-+
-+#define JUMP_LABEL_NOP_SIZE 5
-+
-+# define JUMP_LABEL_INITIAL_NOP ".byte 0xe9 \n\t .long 0\n\t"
-+
-+# define JUMP_LABEL(key, label)					\
-+	do {							\
-+		asm goto("1:"					\
-+			JUMP_LABEL_INITIAL_NOP			\
-+			".pushsection __jump_table,  \"a\" \n\t"\
-+			_ASM_PTR "1b, %l[" #label "], %c0 \n\t" \
-+			".popsection \n\t"			\
-+			: :  "i" (key) :  : label);		\
-+	} while (0)
-+
-+#endif /* __KERNEL__ */
-+
-+#ifdef CONFIG_X86_64
-+
-+typedef u64 jump_label_t;
-+
-+struct jump_entry {
-+	jump_label_t code;
-+	jump_label_t target;
-+	jump_label_t key;
-+};
-+
++#if defined(CONFIG_DYNAMIC_FTRACE)
++#define IDEAL_NOP_SIZE_5 5
++extern unsigned char ideal_nop5[IDEAL_NOP_SIZE_5];
++extern void arch_init_ideal_nop5(void);
 +#else
-+
-+typedef u32 jump_label_t;
-+
-+struct jump_entry {
-+	jump_label_t code;
-+	jump_label_t target;
-+	jump_label_t key;
-+};
-+
++static inline void arch_init_ideal_nop5(void) {}
 +#endif
 +
-+#endif
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 0925676..24fa171 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -32,7 +32,7 @@ GCOV_PROFILE_paravirt.o		:= n
- obj-y			:= process_$(BITS).o signal.o entry_$(BITS).o
- obj-y			+= traps.o irq.o irq_$(BITS).o dumpstack_$(BITS).o
- obj-y			+= time.o ioport.o ldt.o dumpstack.o
--obj-y			+= setup.o x86_init.o i8259.o irqinit.o
-+obj-y			+= setup.o x86_init.o i8259.o irqinit.o jump_label.o
- obj-$(CONFIG_X86_VISWS)	+= visws_quirks.o
- obj-$(CONFIG_X86_32)	+= probe_roms_32.o
- obj-$(CONFIG_X86_32)	+= sys_i386_32.o i386_ksyms_32.o
-diff --git a/arch/x86/kernel/jump_label.c b/arch/x86/kernel/jump_label.c
-new file mode 100644
-index 0000000..961b6b3
---- /dev/null
-+++ b/arch/x86/kernel/jump_label.c
-@@ -0,0 +1,50 @@
-+/*
-+ * jump label x86 support
-+ *
-+ * Copyright (C) 2009 Jason Baron <jbaron@redhat.com>
-+ *
-+ */
-+#include <linux/jump_label.h>
-+#include <linux/memory.h>
-+#include <linux/uaccess.h>
-+#include <linux/module.h>
-+#include <linux/list.h>
-+#include <linux/jhash.h>
-+#include <linux/cpu.h>
-+#include <asm/kprobes.h>
-+#include <asm/alternative.h>
-+
-+#ifdef HAVE_JUMP_LABEL
-+
-+union jump_code_union {
-+	char code[JUMP_LABEL_NOP_SIZE];
-+	struct {
-+		char jump;
-+		int offset;
-+	} __attribute__((packed));
-+};
-+
-+void arch_jump_label_transform(struct jump_entry *entry,
-+			       enum jump_label_type type)
-+{
-+	union jump_code_union code;
-+
-+	if (type == JUMP_LABEL_ENABLE) {
-+		code.jump = 0xe9;
-+		code.offset = entry->target -
-+				(entry->code + JUMP_LABEL_NOP_SIZE);
-+	} else
-+		memcpy(&code, ideal_nop5, JUMP_LABEL_NOP_SIZE);
-+	get_online_cpus();
-+	mutex_lock(&text_mutex);
-+	text_poke_smp((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE);
-+	mutex_unlock(&text_mutex);
-+	put_online_cpus();
-+}
-+
-+void arch_jump_label_text_poke_early(jump_label_t addr)
-+{
-+	text_poke_early((void *)addr, ideal_nop5, JUMP_LABEL_NOP_SIZE);
-+}
-+
-+#endif
-diff --git a/arch/x86/kernel/module.c b/arch/x86/kernel/module.c
-index e0bc186..5399f58 100644
---- a/arch/x86/kernel/module.c
-+++ b/arch/x86/kernel/module.c
-@@ -239,6 +239,9 @@ int module_finalize(const Elf_Ehdr *hdr,
- 		apply_paravirt(pseg, pseg + para->sh_size);
- 	}
- 
-+	/* make jump label nops */
-+	jump_label_apply_nops(me);
-+
- 	return module_bug_finalize(hdr, sechdrs, me);
+ #endif /* _ASM_X86_ALTERNATIVE_H */
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index f65ab8b..1849d80 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -641,3 +641,67 @@ void *__kprobes text_poke_smp(void *addr, const void *opcode, size_t len)
+ 	return addr;
  }
  
++#if defined(CONFIG_DYNAMIC_FTRACE)
++
++unsigned char ideal_nop5[IDEAL_NOP_SIZE_5];
++
++void __init arch_init_ideal_nop5(void)
++{
++	extern const unsigned char ftrace_test_p6nop[];
++	extern const unsigned char ftrace_test_nop5[];
++	extern const unsigned char ftrace_test_jmp[];
++	int faulted = 0;
++
++	/*
++	 * There is no good nop for all x86 archs.
++	 * We will default to using the P6_NOP5, but first we
++	 * will test to make sure that the nop will actually
++	 * work on this CPU. If it faults, we will then
++	 * go to a lesser efficient 5 byte nop. If that fails
++	 * we then just use a jmp as our nop. This isn't the most
++	 * efficient nop, but we can not use a multi part nop
++	 * since we would then risk being preempted in the middle
++	 * of that nop, and if we enabled tracing then, it might
++	 * cause a system crash.
++	 *
++	 * TODO: check the cpuid to determine the best nop.
++	 */
++	asm volatile (
++		"ftrace_test_jmp:"
++		"jmp ftrace_test_p6nop\n"
++		"nop\n"
++		"nop\n"
++		"nop\n"  /* 2 byte jmp + 3 bytes */
++		"ftrace_test_p6nop:"
++		P6_NOP5
++		"jmp 1f\n"
++		"ftrace_test_nop5:"
++		".byte 0x66,0x66,0x66,0x66,0x90\n"
++		"1:"
++		".section .fixup, \"ax\"\n"
++		"2:	movl $1, %0\n"
++		"	jmp ftrace_test_nop5\n"
++		"3:	movl $2, %0\n"
++		"	jmp 1b\n"
++		".previous\n"
++		_ASM_EXTABLE(ftrace_test_p6nop, 2b)
++		_ASM_EXTABLE(ftrace_test_nop5, 3b)
++		: "=r"(faulted) : "0" (faulted));
++
++	switch (faulted) {
++	case 0:
++		pr_info("converting mcount calls to 0f 1f 44 00 00\n");
++		memcpy(ideal_nop5, ftrace_test_p6nop, IDEAL_NOP_SIZE_5);
++		break;
++	case 1:
++		pr_info("converting mcount calls to 66 66 66 66 90\n");
++		memcpy(ideal_nop5, ftrace_test_nop5, IDEAL_NOP_SIZE_5);
++		break;
++	case 2:
++		pr_info("converting mcount calls to jmp . + 5\n");
++		memcpy(ideal_nop5, ftrace_test_jmp, IDEAL_NOP_SIZE_5);
++		break;
++	}
++
++}
++#endif
+diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+index cd37469..3afb33f 100644
+--- a/arch/x86/kernel/ftrace.c
++++ b/arch/x86/kernel/ftrace.c
+@@ -257,14 +257,9 @@ do_ftrace_mod_code(unsigned long ip, void *new_code)
+ 	return mod_code_status;
+ }
+ 
+-
+-
+-
+-static unsigned char ftrace_nop[MCOUNT_INSN_SIZE];
+-
+ static unsigned char *ftrace_nop_replace(void)
+ {
+-	return ftrace_nop;
++	return ideal_nop5;
+ }
+ 
+ static int
+@@ -338,62 +333,6 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
+ 
+ int __init ftrace_dyn_arch_init(void *data)
+ {
+-	extern const unsigned char ftrace_test_p6nop[];
+-	extern const unsigned char ftrace_test_nop5[];
+-	extern const unsigned char ftrace_test_jmp[];
+-	int faulted = 0;
+-
+-	/*
+-	 * There is no good nop for all x86 archs.
+-	 * We will default to using the P6_NOP5, but first we
+-	 * will test to make sure that the nop will actually
+-	 * work on this CPU. If it faults, we will then
+-	 * go to a lesser efficient 5 byte nop. If that fails
+-	 * we then just use a jmp as our nop. This isn't the most
+-	 * efficient nop, but we can not use a multi part nop
+-	 * since we would then risk being preempted in the middle
+-	 * of that nop, and if we enabled tracing then, it might
+-	 * cause a system crash.
+-	 *
+-	 * TODO: check the cpuid to determine the best nop.
+-	 */
+-	asm volatile (
+-		"ftrace_test_jmp:"
+-		"jmp ftrace_test_p6nop\n"
+-		"nop\n"
+-		"nop\n"
+-		"nop\n"  /* 2 byte jmp + 3 bytes */
+-		"ftrace_test_p6nop:"
+-		P6_NOP5
+-		"jmp 1f\n"
+-		"ftrace_test_nop5:"
+-		".byte 0x66,0x66,0x66,0x66,0x90\n"
+-		"1:"
+-		".section .fixup, \"ax\"\n"
+-		"2:	movl $1, %0\n"
+-		"	jmp ftrace_test_nop5\n"
+-		"3:	movl $2, %0\n"
+-		"	jmp 1b\n"
+-		".previous\n"
+-		_ASM_EXTABLE(ftrace_test_p6nop, 2b)
+-		_ASM_EXTABLE(ftrace_test_nop5, 3b)
+-		: "=r"(faulted) : "0" (faulted));
+-
+-	switch (faulted) {
+-	case 0:
+-		pr_info("converting mcount calls to 0f 1f 44 00 00\n");
+-		memcpy(ftrace_nop, ftrace_test_p6nop, MCOUNT_INSN_SIZE);
+-		break;
+-	case 1:
+-		pr_info("converting mcount calls to 66 66 66 66 90\n");
+-		memcpy(ftrace_nop, ftrace_test_nop5, MCOUNT_INSN_SIZE);
+-		break;
+-	case 2:
+-		pr_info("converting mcount calls to jmp . + 5\n");
+-		memcpy(ftrace_nop, ftrace_test_jmp, MCOUNT_INSN_SIZE);
+-		break;
+-	}
+-
+ 	/* The return code is retured via data */
+ 	*(unsigned long *)data = 0;
+ 
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index c3a4fbb..00e1678 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -112,6 +112,7 @@
+ #include <asm/numa_64.h>
+ #endif
+ #include <asm/mce.h>
++#include <asm/alternative.h>
+ 
+ /*
+  * end_pfn only includes RAM, while max_pfn_mapped includes all e820 entries.
+@@ -726,6 +727,7 @@ void __init setup_arch(char **cmdline_p)
+ {
+ 	int acpi = 0;
+ 	int k8 = 0;
++	unsigned long flags;
+ 
+ #ifdef CONFIG_X86_32
+ 	memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
+@@ -1071,6 +1073,10 @@ void __init setup_arch(char **cmdline_p)
+ 	x86_init.oem.banner();
+ 
+ 	mcheck_init();
++
++	local_irq_save(flags);
++	arch_init_ideal_nop5();
++	local_irq_restore(flags);
+ }
+ 
+ #ifdef CONFIG_X86_32
 -- 
 1.7.1
 
