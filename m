@@ -1,70 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752160Ab0IWCyw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 22:54:52 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:60530 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751217Ab0IWCyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 22:54:50 -0400
-Message-ID: <4C9AC283.3000307@cn.fujitsu.com>
-Date: Thu, 23 Sep 2010 10:59:15 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S1752066Ab0IWC6D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 22:58:03 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:43254 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217Ab0IWC6B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 22:58:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=DUPjPbUCZTCuYjobC494uGhMDgtusyu7LapjX3iu+868FewQtjloldfHrV5D5CZbrt
+         FGE+e8dfu90wPvk/YuXgLF+m8rHQGrRM7zi/j43XubihHBf7u1p4v95krnZQmoc1/uDR
+         w+h+BID7QIiN7JSfmYUgLtyXfBXh8Xhagnmjo=
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 4/4] KVM: MMU: Don't touch unsync sp in kvm_mmu_pte_write()
-References: <4C976D48.6020400@cn.fujitsu.com> <4C976DF6.1020905@cn.fujitsu.com> <4C977CBF.6030702@redhat.com>
-In-Reply-To: <4C977CBF.6030702@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Date: Wed, 22 Sep 2010 22:58:00 -0400
+Message-ID: <AANLkTimpuAfRw85ECVQ+FJxFpNaPC=zHCL1i0Y6AjiAf@mail.gmail.com>
+Subject: [PATCH 3/5] scsi: megaraid_sas - Add input parameter for max_sectors
+From: bo yang <boyang1288@gmail.com>
+To: bo.yang@lsi.com, linux-scsi@vger.kernel.org, akpm@osdl.org,
+        linux-kernel@vger.kernel.org, James.Bottomley@suse.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Driver add the input parameters support for max_sectors for megaraid
+sas gen2 chip.  Customer can set the max_sectors support to 1MB for
+gen2 chip during the driver load.
 
-On 09/20/2010 11:24 PM, Avi Kivity wrote:
->  On 09/20/2010 04:21 PM, Xiao Guangrong wrote:
->> Gfn may have many shadow pages, when one sp need be synced, we write
->> protected sp->gfn and sync this sp but we keep other shadow pages
->> asynchronous
->>
->> So, while gfn happen page fault, let it not touches unsync page, the
->> unsync
->> page only updated at invlpg/flush TLB time
->>
->> @@ -3157,6 +3164,9 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu,
->> gpa_t gpa,
->>
->>       mask.cr0_wp = mask.cr4_pae = mask.nxe = 1;
->>       for_each_gfn_indirect_valid_sp(vcpu->kvm, sp, gfn, node) {
->> +        if (sp->unsync)
->> +            continue;
->> +
->>
-> 
-> Not sure this is a win.  If a gpte is updated from having p=0 to p=1 (or
-> permissions upgraded), we may not have an invlpg to sync the spte, since
-> the hardware doesn't require it.  With this change, we may get an extra
-> #PF.
-> 
+Signed-off-by Bo Yang<bo.yang@lsi.com>
 
-Avi,
+---
+ drivers/scsi/megaraid/megaraid_sas.c |   30 ++++++++++++++++++++++++++++++
+ drivers/scsi/megaraid/megaraid_sas.h |    1 +
+ 2 files changed, 31 insertions(+)
 
-Thanks for your review, i think this case is not too bad since:
+diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c
+new/drivers/scsi/megaraid/megaraid_sas.c
+--- old/drivers/scsi/megaraid/megaraid_sas.c	2010-09-17 03:19:31.000000000 -0400
++++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-09-17 03:20:49.000000000 -0400
+@@ -57,6 +57,15 @@ module_param_named(poll_mode_io, poll_mo
+ MODULE_PARM_DESC(poll_mode_io,
+ 	"Complete cmds from IO path, (default=0)");
 
-1: This case only impacts local vcpu since if permissions is increased, it's 
-   no need send IPT to flush remote vcpu's tlb, so even if we update unsync
-   spte in kvm_mmu_pte_write() path, the #PF still occur on other vcpus. 
++/*
++ * Number of sectors per IO command
++ * Will be set in megasas_init_mfi if user does not provide
++ */
++static unsigned int max_sectors;
++module_param_named(max_sectors, max_sectors, int, 0);
++MODULE_PARM_DESC(max_sectors,
++	"Maximum number of sectors per IO command");
++
+ MODULE_LICENSE("GPL");
+ MODULE_VERSION(MEGASAS_VERSION);
+ MODULE_AUTHOR("megaraidlinux@lsi.com");
+@@ -3587,6 +3596,27 @@ static int megasas_io_attach(struct mega
+ 			instance->max_fw_cmds - MEGASAS_INT_CMDS;
+ 	host->this_id = instance->init_id;
+ 	host->sg_tablesize = instance->max_num_sge;
++	/*
++	 * Check if the module parameter value for max_sectors can be used
++	 */
++	if (max_sectors && max_sectors < instance->max_sectors_per_req)
++		instance->max_sectors_per_req = max_sectors;
++	else {
++		if (max_sectors) {
++			if (((instance->pdev->device ==
++				PCI_DEVICE_ID_LSI_SAS1078GEN2) ||
++				(instance->pdev->device ==
++				PCI_DEVICE_ID_LSI_SAS0079GEN2)) &&
++				(max_sectors <= MEGASAS_MAX_SECTORS)) {
++				instance->max_sectors_per_req = max_sectors;
++			} else {
++			printk(KERN_INFO "megasas: max_sectors should be > 0"
++				"and <= %d (or < 1MB for GEN2 controller)\n",
++				instance->max_sectors_per_req);
++			}
++		}
++	}
++
+ 	host->max_sectors = instance->max_sectors_per_req;
+ 	host->cmd_per_lun = 128;
+ 	host->max_channel = MEGASAS_MAX_CHANNELS - 1;
+diff -rupN old/drivers/scsi/megaraid/megaraid_sas.h
+new/drivers/scsi/megaraid/megaraid_sas.h
+--- old/drivers/scsi/megaraid/megaraid_sas.h	2010-09-17 02:19:46.000000000 -0400
++++ new/drivers/scsi/megaraid/megaraid_sas.h	2010-09-17 02:19:46.000000000 -0400
+@@ -706,6 +706,7 @@ struct megasas_ctrl_info {
+ #define MEGASAS_MAX_LD_IDS			(MEGASAS_MAX_LD_CHANNELS * \
+ 						MEGASAS_MAX_DEV_PER_CHANNEL)
 
-2: If the unsync sp which is updated in kvm_mmu_pte_write() is not using by the
-   vcpu, it will sync automatically after it's loaded.
++#define MEGASAS_MAX_SECTORS                    (2*1024)
+ #define MEGASAS_DBG_LVL				1
 
-3: If the sp is using, update this sp in kvm_mmu_pte_write() will avoid extra #PF,
-   in this case, two(or more) sps have the same gfn, there are mapped in the same
-   page table and with different kinds(unsync/sync), i thinks this case is infrequency.
-   And even we updated it, we can not sure it can be accessed latter, 
-
-So, i think it's better lazily update unsync sp until it's used or the flush time,
-your opinion? :-)
+ #define MEGASAS_FW_BUSY				1
