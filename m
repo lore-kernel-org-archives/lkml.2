@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752160Ab0IWBbI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 21:31:08 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:53544 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751312Ab0IWBbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 21:31:07 -0400
-Message-ID: <4C9AAEA3.2020209@cn.fujitsu.com>
-Date: Thu, 23 Sep 2010 09:34:27 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1752246Ab0IWBcp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 21:32:45 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52491 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751312Ab0IWBcn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 21:32:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=gmpspNTViIkkwQh3MPVMFoWdXe22MzsFirLsiBLZd6t8RTnhb5ANKPAvfzKLXMfElZ
+         gl4VoZ2IFzY0DFs8G4Xj11gCc5bHcMgIz5XFJNTo+0U39lsWOloX3UWRLpZrwp5AV2y7
+         NUGgrHain0NeSWl2GFn9a4Za3i5OU405cm/rE=
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com
-Subject: Re: [PATCH tip/core/urgent] rcu: rcu_read_lock_bh_held(): disabling
- irqs also disables bh
-References: <20100923003220.GA21822@linux.vnet.ibm.com>
-In-Reply-To: <20100923003220.GA21822@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100923112004.b47923b7.sfr@canb.auug.org.au>
+References: <20100923112004.b47923b7.sfr@canb.auug.org.au>
+Date: Wed, 22 Sep 2010 20:32:41 -0500
+Message-ID: <AANLkTimXtigjQwpL6i46JTiuREdLnr7Yh+2ZCuPfy06G@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the cifs tree
+From: Steve French <smfrench@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-cifs@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jeff Layton <jlayton@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2010 08:32 AM, Paul E. McKenney wrote:
-> rcu_dereference_bh() doesnt know yet about hard irq being disabled, so
-> lockdep can trigger in netpoll_rx() after commit f0f9deae9e7c4 (netpoll:
-> Disable IRQ around RCU dereference in netpoll_rx)
-> 
-> Reported-by: Miles Lane <miles.lane@gmail.com>
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> Tested-by: Miles Lane <miles.lane@gmail.com>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> ---
->  include/linux/rcupdate.h |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> index 9fbc54a..0dcc00e 100644
-> --- a/include/linux/rcupdate.h
-> +++ b/include/linux/rcupdate.h
-> @@ -454,7 +454,8 @@ static inline notrace void rcu_read_unlock_sched_notrace(void)
->   * Makes rcu_dereference_check() do the dirty work.
->   */
->  #define rcu_dereference_bh(p) \
-> -		rcu_dereference_check(p, rcu_read_lock_bh_held())
-> +		rcu_dereference_check(p, rcu_read_lock_bh_held() || \
-> +					 irqs_disabled())
->  
->  /**
->   * rcu_dereference_sched - fetch RCU-protected pointer, checking for RCU-sched
+Sorry about that - we merged one of Jeff's patches (in a series) out
+of order by three hours due to review comments.  Should be ok now -
+verifying.
 
-In -rt, rcu_read_lock_bh() is preemptible, but all RCU Implementation,
-PREEMPT_RCU, TREE_PREEMPT_RCU, TINY_PREEMPT_RCU, do not guarantee
-hard-irq/irq-disabled contexts are preeemptible-rcu-read-site critical regions,
-so it(disabling irqs also disables bh) is not true in -rt I think,
-To make the codes be still safe in the future(-rt), I strongly recommend to
-use rcu_read_lock_bh() as needed even irq disabled.
+On Wed, Sep 22, 2010 at 8:20 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> After merging the cifs tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+>
+> fs/cifs/file.c: In function 'cifs_writepages':
+> fs/cifs/file.c:1365: error: 'struct cifs_sb_info' has no member named 'tcon'
+> fs/cifs/file.c:1365: error: 'struct cifs_sb_info' has no member named 'tcon'
+> fs/cifs/file.c:1366: error: 'struct cifs_sb_info' has no member named 'tcon'
+>
+> Caused by commit 2eff6be391f00d606b43e60d9727b70c44917b7e ("cifs:
+> temporarily rename cifs_sb->tcon to ptcon to catch stragglers").
+>
+> Really, such testing code should not be in linux-next ...
+>
+> I have used the cifs tree fomr next-20100921 for today.
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> http://www.canb.auug.org.au/~sfr/
+>
 
-Current, preempt_disable()/rcu_read_lock_sched() do not guarantee that
-they implies rcu_read_lock() either.
 
-But in future, the rcu may give these guarantees, it's a plan of mine.
 
-Lai
+-- 
+Thanks,
+
+Steve
