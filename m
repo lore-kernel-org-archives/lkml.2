@@ -1,223 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753860Ab0IWGvh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 02:51:37 -0400
-Received: from qmta10.emeryville.ca.mail.comcast.net ([76.96.30.17]:44286 "EHLO
-	qmta10.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753844Ab0IWGvf (ORCPT
+	id S1753935Ab0IWGvz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 02:51:55 -0400
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:53902 "EHLO
+	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753591Ab0IWGvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 02:51:35 -0400
+	Thu, 23 Sep 2010 02:51:52 -0400
 From: matt mooney <mfm@muteddisk.com>
-To: Greg Ungerer <gerg@uclinux.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Tim Abbott <tabbott@ksplice.com>,
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: Wu Zhangjin <wuzhangjin@gmail.com>, linux-mips@linux-mips.org,
         linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 08/20] m68knommu: change to new flag variables
-Date: Wed, 22 Sep 2010 23:50:45 -0700
-Message-Id: <1285224645-29728-1-git-send-email-mfm@muteddisk.com>
+Subject: [PATCH 10/20] mips: change to new flag variable
+Date: Wed, 22 Sep 2010 23:51:01 -0700
+Message-Id: <1285224661-29797-1-git-send-email-mfm@muteddisk.com>
 X-Mailer: git-send-email 1.6.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace EXTRA_CFLAGS with ccflags-y and EXTRA_AFLAGS with asflags-y.
+Replace EXTRA_CFLAGS with ccflags-y.
 
 Signed-off-by: matt mooney <mfm@muteddisk.com>
 ---
- arch/m68knommu/platform/5206/Makefile     |    4 ++--
- arch/m68knommu/platform/5206e/Makefile    |    4 ++--
- arch/m68knommu/platform/520x/Makefile     |    4 ++--
- arch/m68knommu/platform/523x/Makefile     |    4 ++--
- arch/m68knommu/platform/5249/Makefile     |    4 ++--
- arch/m68knommu/platform/5272/Makefile     |    4 ++--
- arch/m68knommu/platform/527x/Makefile     |    4 ++--
- arch/m68knommu/platform/528x/Makefile     |    4 ++--
- arch/m68knommu/platform/5307/Makefile     |    4 ++--
- arch/m68knommu/platform/532x/Makefile     |    4 ++--
- arch/m68knommu/platform/5407/Makefile     |    4 ++--
- arch/m68knommu/platform/coldfire/Makefile |    4 ++--
- 12 files changed, 24 insertions(+), 24 deletions(-)
+ arch/mips/Makefile                     |    4 ++--
+ arch/mips/bcm63xx/boards/Makefile      |    2 +-
+ arch/mips/fw/arc/Makefile              |    2 +-
+ arch/mips/jz4740/Makefile              |    2 +-
+ arch/mips/oprofile/Makefile            |    2 +-
+ arch/mips/pmc-sierra/yosemite/Makefile |    2 +-
+ arch/mips/powertv/Makefile             |    2 +-
+ arch/mips/powertv/asic/Makefile        |    2 +-
+ arch/mips/powertv/pci/Makefile         |    2 +-
+ 9 files changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/arch/m68knommu/platform/5206/Makefile b/arch/m68knommu/platform/5206/Makefile
-index 113c333..b5db056 100644
---- a/arch/m68knommu/platform/5206/Makefile
-+++ b/arch/m68knommu/platform/5206/Makefile
-@@ -8,8 +8,8 @@
- # on the console port whenever a DBG interrupt occurs.  You have to
- # set up you HW breakpoints to trigger a DBG interrupt:
- #
--# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
--# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
-+# ccflags-y := -DTRAP_DBG_INTERRUPT
-+# asflags-y := -DTRAP_DBG_INTERRUPT
- #
+diff --git a/arch/mips/Makefile b/arch/mips/Makefile
+index f4a4b66..c14c392 100644
+--- a/arch/mips/Makefile
++++ b/arch/mips/Makefile
+@@ -288,11 +288,11 @@ CLEAN_FILES += vmlinux.32 vmlinux.64
+ archprepare:
+ ifdef CONFIG_MIPS32_N32
+ 	@echo '  Checking missing-syscalls for N32'
+-	$(Q)$(MAKE) $(build)=. missing-syscalls EXTRA_CFLAGS="-mabi=n32"
++	$(Q)$(MAKE) $(build)=. missing-syscalls ccflags-y="-mabi=n32"
+ endif
+ ifdef CONFIG_MIPS32_O32
+ 	@echo '  Checking missing-syscalls for O32'
+-	$(Q)$(MAKE) $(build)=. missing-syscalls EXTRA_CFLAGS="-mabi=32"
++	$(Q)$(MAKE) $(build)=. missing-syscalls ccflags-y="-mabi=32"
+ endif
  
- asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
-diff --git a/arch/m68knommu/platform/5206e/Makefile b/arch/m68knommu/platform/5206e/Makefile
-index 113c333..b5db056 100644
---- a/arch/m68knommu/platform/5206e/Makefile
-+++ b/arch/m68knommu/platform/5206e/Makefile
-@@ -8,8 +8,8 @@
- # on the console port whenever a DBG interrupt occurs.  You have to
- # set up you HW breakpoints to trigger a DBG interrupt:
- #
--# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
--# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
-+# ccflags-y := -DTRAP_DBG_INTERRUPT
-+# asflags-y := -DTRAP_DBG_INTERRUPT
- #
+ install:
+diff --git a/arch/mips/bcm63xx/boards/Makefile b/arch/mips/bcm63xx/boards/Makefile
+index e5cc86d..9f64fb4 100644
+--- a/arch/mips/bcm63xx/boards/Makefile
++++ b/arch/mips/bcm63xx/boards/Makefile
+@@ -1,3 +1,3 @@
+ obj-$(CONFIG_BOARD_BCM963XX)		+= board_bcm963xx.o
  
- asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
-diff --git a/arch/m68knommu/platform/520x/Makefile b/arch/m68knommu/platform/520x/Makefile
-index 435ab34..ad3f4e5 100644
---- a/arch/m68knommu/platform/520x/Makefile
-+++ b/arch/m68knommu/platform/520x/Makefile
-@@ -8,8 +8,8 @@
- # on the console port whenever a DBG interrupt occurs.  You have to
- # set up you HW breakpoints to trigger a DBG interrupt:
- #
--# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
--# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
-+# ccflags-y := -DTRAP_DBG_INTERRUPT
-+# asflags-y := -DTRAP_DBG_INTERRUPT
- #
+-EXTRA_CFLAGS += -Werror
++ccflags-y := -Werror
+diff --git a/arch/mips/fw/arc/Makefile b/arch/mips/fw/arc/Makefile
+index e0aaad4..5314b37 100644
+--- a/arch/mips/fw/arc/Makefile
++++ b/arch/mips/fw/arc/Makefile
+@@ -9,4 +9,4 @@ lib-$(CONFIG_ARC_MEMORY)	+= memory.o
+ lib-$(CONFIG_ARC_CONSOLE)	+= arc_con.o
+ lib-$(CONFIG_ARC_PROMLIB)	+= promlib.o
  
- asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
-diff --git a/arch/m68knommu/platform/523x/Makefile b/arch/m68knommu/platform/523x/Makefile
-index b8f9b45..c04b8f7 100644
---- a/arch/m68knommu/platform/523x/Makefile
-+++ b/arch/m68knommu/platform/523x/Makefile
-@@ -8,8 +8,8 @@
- # on the console port whenever a DBG interrupt occurs.  You have to
- # set up you HW breakpoints to trigger a DBG interrupt:
- #
--# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
--# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
-+# ccflags-y := -DTRAP_DBG_INTERRUPT
-+# asflags-y := -DTRAP_DBG_INTERRUPT
- #
+-EXTRA_CFLAGS			+= -Werror
++ccflags-y			:= -Werror
+diff --git a/arch/mips/jz4740/Makefile b/arch/mips/jz4740/Makefile
+index a604eae..a9dff33 100644
+--- a/arch/mips/jz4740/Makefile
++++ b/arch/mips/jz4740/Makefile
+@@ -17,4 +17,4 @@ obj-$(CONFIG_JZ4740_QI_LB60)	+= board-qi_lb60.o
  
- asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
-diff --git a/arch/m68knommu/platform/5249/Makefile b/arch/m68knommu/platform/5249/Makefile
-index f56225d..4bed30f 100644
---- a/arch/m68knommu/platform/5249/Makefile
-+++ b/arch/m68knommu/platform/5249/Makefile
-@@ -8,8 +8,8 @@
- # on the console port whenever a DBG interrupt occurs.  You have to
- # set up you HW breakpoints to trigger a DBG interrupt:
- #
--# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
--# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
-+# ccflags-y := -DTRAP_DBG_INTERRUPT
-+# asflags-y := -DTRAP_DBG_INTERRUPT
- #
+ obj-$(CONFIG_PM) += pm.o
  
- asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
-diff --git a/arch/m68knommu/platform/5272/Makefile b/arch/m68knommu/platform/5272/Makefile
-index 93673ef..34110fc 100644
---- a/arch/m68knommu/platform/5272/Makefile
-+++ b/arch/m68knommu/platform/5272/Makefile
-@@ -8,8 +8,8 @@
- # on the console port whenever a DBG interrupt occurs.  You have to
- # set up you HW breakpoints to trigger a DBG interrupt:
- #
--# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
--# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
-+# ccflags-y := -DTRAP_DBG_INTERRUPT
-+# asflags-y := -DTRAP_DBG_INTERRUPT
- #
+-EXTRA_CFLAGS += -Werror -Wall
++ccflags-y := -Werror -Wall
+diff --git a/arch/mips/oprofile/Makefile b/arch/mips/oprofile/Makefile
+index 02cc65e..4b9d704 100644
+--- a/arch/mips/oprofile/Makefile
++++ b/arch/mips/oprofile/Makefile
+@@ -1,4 +1,4 @@
+-EXTRA_CFLAGS := -Werror
++ccflags-y := -Werror
  
- asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
-diff --git a/arch/m68knommu/platform/527x/Makefile b/arch/m68knommu/platform/527x/Makefile
-index 3d90e6d..6ac4b57 100644
---- a/arch/m68knommu/platform/527x/Makefile
-+++ b/arch/m68knommu/platform/527x/Makefile
-@@ -8,8 +8,8 @@
- # on the console port whenever a DBG interrupt occurs.  You have to
- # set up you HW breakpoints to trigger a DBG interrupt:
- #
--# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
--# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
-+# ccflags-y := -DTRAP_DBG_INTERRUPT
-+# asflags-y := -DTRAP_DBG_INTERRUPT
- #
+ obj-$(CONFIG_OPROFILE) += oprofile.o
  
- asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
-diff --git a/arch/m68knommu/platform/528x/Makefile b/arch/m68knommu/platform/528x/Makefile
-index 3d90e6d..6ac4b57 100644
---- a/arch/m68knommu/platform/528x/Makefile
-+++ b/arch/m68knommu/platform/528x/Makefile
-@@ -8,8 +8,8 @@
- # on the console port whenever a DBG interrupt occurs.  You have to
- # set up you HW breakpoints to trigger a DBG interrupt:
- #
--# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
--# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
-+# ccflags-y := -DTRAP_DBG_INTERRUPT
-+# asflags-y := -DTRAP_DBG_INTERRUPT
- #
+diff --git a/arch/mips/pmc-sierra/yosemite/Makefile b/arch/mips/pmc-sierra/yosemite/Makefile
+index b16f95c..02f5fb9 100644
+--- a/arch/mips/pmc-sierra/yosemite/Makefile
++++ b/arch/mips/pmc-sierra/yosemite/Makefile
+@@ -6,4 +6,4 @@ obj-y    += irq.o prom.o py-console.o setup.o
  
- asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
-diff --git a/arch/m68knommu/platform/5307/Makefile b/arch/m68knommu/platform/5307/Makefile
-index 6de5269..d4293b7 100644
---- a/arch/m68knommu/platform/5307/Makefile
-+++ b/arch/m68knommu/platform/5307/Makefile
-@@ -8,8 +8,8 @@
- # on the console port whenever a DBG interrupt occurs. You have to
- # set up you HW breakpoints to trigger a DBG interrupt:
- #
--# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
--# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
-+# ccflags-y := -DTRAP_DBG_INTERRUPT
-+# asflags-y := -DTRAP_DBG_INTERRUPT
- #
+ obj-$(CONFIG_SMP)		+= smp.o
  
- asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
-diff --git a/arch/m68knommu/platform/532x/Makefile b/arch/m68knommu/platform/532x/Makefile
-index 4cc2324..ce01669 100644
---- a/arch/m68knommu/platform/532x/Makefile
-+++ b/arch/m68knommu/platform/532x/Makefile
-@@ -8,8 +8,8 @@
- # on the console port whenever a DBG interrupt occurs. You have to
- # set up you HW breakpoints to trigger a DBG interrupt:
- #
--# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
--# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
-+# ccflags-y := -DTRAP_DBG_INTERRUPT
-+# asflags-y := -DTRAP_DBG_INTERRUPT
- #
+-EXTRA_CFLAGS += -Werror
++ccflags-y := -Werror
+diff --git a/arch/mips/powertv/Makefile b/arch/mips/powertv/Makefile
+index baf6e90..348d2e8 100644
+--- a/arch/mips/powertv/Makefile
++++ b/arch/mips/powertv/Makefile
+@@ -28,4 +28,4 @@ obj-y += init.o ioremap.o memory.o powertv_setup.o reset.o time.o \
  
- asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
-diff --git a/arch/m68knommu/platform/5407/Makefile b/arch/m68knommu/platform/5407/Makefile
-index dee62c5..e83fe14 100644
---- a/arch/m68knommu/platform/5407/Makefile
-+++ b/arch/m68knommu/platform/5407/Makefile
-@@ -8,8 +8,8 @@
- # on the console port whenever a DBG interrupt occurs. You have to
- # set up you HW breakpoints to trigger a DBG interrupt:
- #
--# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
--# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
-+# ccflags-y := -DTRAP_DBG_INTERRUPT
-+# asflags-y := -DTRAP_DBG_INTERRUPT
- #
+ obj-$(CONFIG_USB) += powertv-usb.o
  
- asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
-diff --git a/arch/m68knommu/platform/coldfire/Makefile b/arch/m68knommu/platform/coldfire/Makefile
-index f72a0e5..788c13f 100644
---- a/arch/m68knommu/platform/coldfire/Makefile
-+++ b/arch/m68knommu/platform/coldfire/Makefile
-@@ -8,8 +8,8 @@
- # on the console port whenever a DBG interrupt occurs. You have to
- # set up you HW breakpoints to trigger a DBG interrupt:
- #
--# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
--# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
-+# ccflags-y := -DTRAP_DBG_INTERRUPT
-+# asflags-y := -DTRAP_DBG_INTERRUPT
- #
+-EXTRA_CFLAGS += -Wall
++ccflags-y := -Wall
+diff --git a/arch/mips/powertv/asic/Makefile b/arch/mips/powertv/asic/Makefile
+index f0e95dc..d810a33 100644
+--- a/arch/mips/powertv/asic/Makefile
++++ b/arch/mips/powertv/asic/Makefile
+@@ -20,4 +20,4 @@ obj-y += asic-calliope.o asic-cronus.o asic-gaia.o asic-zeus.o \
+ 	asic_devices.o asic_int.o irq_asic.o prealloc-calliope.o \
+ 	prealloc-cronus.o prealloc-cronuslite.o prealloc-gaia.o prealloc-zeus.o
  
- asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
+-EXTRA_CFLAGS += -Wall -Werror
++ccflags-y := -Wall -Werror
+diff --git a/arch/mips/powertv/pci/Makefile b/arch/mips/powertv/pci/Makefile
+index f5c6246..5783201 100644
+--- a/arch/mips/powertv/pci/Makefile
++++ b/arch/mips/powertv/pci/Makefile
+@@ -18,4 +18,4 @@
+ 
+ obj-$(CONFIG_PCI)	+= fixup-powertv.o
+ 
+-EXTRA_CFLAGS += -Wall -Werror
++ccflags-y := -Wall -Werror
 -- 
 1.7.2.1
 
