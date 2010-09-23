@@ -1,73 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057Ab0IWSbO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 14:31:14 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:35545 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754791Ab0IWSbN convert rfc822-to-8bit (ORCPT
+	id S1756089Ab0IWSgu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 14:36:50 -0400
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:42798 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755643Ab0IWSgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 14:31:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=kpXO1v8bU+0aHMZz+8b/huCnMAWysy90zodC1vHkwkRjIHiRumj2CH6Veg13qj93CD
-         tki6ZvmwzsMOUHu+4rpKtSFsVhoJgijzmecK+ISWLlQnjXTwEitVnKev6r/b902lfkBj
-         TYHEaQ6QbhkR+nZkf0tiRydnRtfjp5coa/3WM=
+	Thu, 23 Sep 2010 14:36:48 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: a76TvgwVM1lFU.AIKAAudQApETbC043799fx4EikMqnMjVC
+ 6dgBU13ACEJHvBlGl5TpWXVvrFCch.OEtlltCjXY_HWFma7lV6yOQcvm8ga6
+ nbH.IMUjmV58atKlcOL.lCXAzS1ytb7r7O1Ss1S7LASGlETEpmvygYRWaBA1
+ aHU_AxVhZA6ag7TXGRR38pDzxglOb0n.eS4SftXfgpA4MiJ76FH21AqXzg3p
+ f
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 23 Sep 2010 13:36:41 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Jacob Keller <jacob.keller@gmail.com>
+cc: Richard Cochran <richardcochran@gmail.com>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-api@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        netdev@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        David Miller <davem@davemloft.net>, John Stultz <johnstul@us.ibm.com>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v6 0/8] ptp: IEEE 1588 hardware clock support
+In-Reply-To: <AANLkTim0JqVTyvrvjLRp1Cg423MdrwmyZG2uN6uSyeLb@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1009231327000.2962@router.home>
+References: <cover.1285261533.git.richard.cochran@omicron.at> <alpine.DEB.2.00.1009231238170.2962@router.home> <AANLkTim0JqVTyvrvjLRp1Cg423MdrwmyZG2uN6uSyeLb@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20100907204510.GA27909@ovro.caltech.edu>
-References: <20100907204510.GA27909@ovro.caltech.edu>
-Date: Thu, 23 Sep 2010 11:31:11 -0700
-X-Google-Sender-Auth: 9Yhx2sIwv-iLzbhqp1j9CWhEX4I
-Message-ID: <AANLkTikxy=fQo-rNj39Uv553C+wRzxhPWcGn9pX0jnfo@mail.gmail.com>
-Subject: Re: [PATCH] fsldma: move DMA_SLAVE support functions to the driver
-From: Dan Williams <dan.j.williams@intel.com>
-To: "Ira W. Snyder" <iws@ovro.caltech.edu>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 7, 2010 at 1:45 PM, Ira W. Snyder <iws@ovro.caltech.edu> wrote:
-> The DMA_SLAVE support functions all existed as static inlines in the
-> driver specific header arch/powerpc/include/asm/fsldma.h. Move the body
-> of the functions to the driver itself, and EXPORT_SYMBOL_GPL() them.
->
-> At the same time, add the missing linux/list.h header.
->
-> Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
-> ---
->
-> Hello AKPM, Dan,
+On Thu, 23 Sep 2010, Jacob Keller wrote:
 
-Hi, I'm back from paternity leave.
+> > There is a reason for not being able to shift posix clocks: The system has
+> > one time base. The various clocks are contributing to maintaining that
+> > sytem wide time.
+> >
+> > Adjusting clocks is absolutely essential for proper functioning of the PTP
+> protocol. The slave obtains and calculates the offset from master and uses
+> that in order to adjust the clock properly, The problem is that the
+> timestamps are done via the hardware. We need a method to expose that
+> hardware so that the ptp software can properly adjust those clocks.
 
->
-> At AKPM's request, I moved these static inline'd functions into the driver
-> code itself, and then EXPORT_SYMBOL_GPL()'d them. I also added a gfp
-> parameter to the fsl_dma_slave_alloc() function. And included the
-> linux/list.h header.
->
-> If you'd like three separate patches, I can do that. The changes were so
-> trivial that I lumped all of them into a single patch.
->
-> Thanks,
-> Ira
->
->  arch/powerpc/include/asm/fsldma.h |   70 +++------------------------------
->  drivers/dma/fsldma.c              |   77 +++++++++++++++++++++++++++++++++++++
+There is no way to use that clock directly to avoid all the user space
+tuning etc? There are already tuning mechanisms in the kernel that do this
+with system time based on periodic clocks. If you calculate the
+nanoseconds since the epoch then you should be able to use that to tune
+system time.
 
-Remind me why we need this header file and these routines again?  git
-grep says nothing in-tree is using these?
+> > I do not understand why you want to maintain different clocks running at
+> > different speeds. Certainly interesting for some uses I guess that I
+> > do not have the energy to imagine right now. But can we get the PTP killer
+> > feature of synchronized accurate system time first?
+> >
+>
+> The problem is maintaining a hardware clock at the correct speed/frequency
+> and time. The timestamping is done via hardware, and that hardware clock
+> needs to be accurate. We need to be able to modify that clock. Yes, having
+> the system time be the same value would be nice, but the problem comes
+> because we don't want to jump through hoops to keep that hardware clock
+> accurate to the ptp protocol running on the network.
 
-I also do not want to proliferate driver specific interfaces.  It
-defeats the purpose of having a common dmaengine structure.  Along
-these lines Linus W. added the new device_control() method (first
-added in commit c3635c78, later tweaked in 05827630).  Could that be
-massaged for your needs?
+Then allow system time == hardware clock?
 
---
-Dan
+> All of the necessary features for microsecond or better accuracy are done
+> via the hardware. You can get accuracy to within <10 mircoseconds while only
+> sending sync packets and such once per second. The reason is because the
+> hardware timestamps are very accurate. But if we can't properly adjust the
+> clocks time and frequency, we cannot maintain the accuracy of the
+> timestamps.
+
+You can already adjust the system time with the existing APIs. Tuning
+hardware clocks is currently done using device specific controls. But I
+would think that you do not need to expose this to user space if you can
+do it all in kernel.
