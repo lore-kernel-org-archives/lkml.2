@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838Ab0IWPXD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 11:23:03 -0400
-Received: from spaceboyz.net ([87.106.131.203]:51706 "EHLO spaceboyz.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754023Ab0IWPXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 11:23:00 -0400
-Date: Thu, 23 Sep 2010 16:58:56 +0200
-From: David Lamparter <equinox@diac24.net>
-To: jamal <hadi@cyberus.ca>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Ulrich Drepper <drepper@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        David Miller <davem@davemloft.net>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Ben Greear <greearb@candelatech.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Jonathan Corbet <corbet@lwn.net>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>
-Subject: Re: [PATCH 7/8] net: Allow setting the network namespace by fd
-Message-ID: <20100923145856.GB1160234@jupiter.n2.diac24.net>
-References: <m1ocborgq7.fsf@fess.ebiederm.org>
- <m1hbhgq1v1.fsf@fess.ebiederm.org>
- <1285240926.5036.7.camel@bigi>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1285240926.5036.7.camel@bigi>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755179Ab0IWPYH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 11:24:07 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60128 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752438Ab0IWPYF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 11:24:05 -0400
+Date: Thu, 23 Sep 2010 16:46:44 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Alan Cox <alan@linux.intel.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the tty tree
+Message-ID: <20100923164644.2b82746f@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100923081350.e028c4ac.rdunlap@xenotime.net>
+References: <20100923142018.55019d59.sfr@canb.auug.org.au>
+	<20100923141433.GC31738@kroah.com>
+	<20100923081350.e028c4ac.rdunlap@xenotime.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 23, 2010 at 07:22:06AM -0400, jamal wrote:
-> On Thu, 2010-09-23 at 01:51 -0700, Eric W. Biederman wrote:
-> > Take advantage of the new abstraction and allow network devices
-> > to be placed in any network namespace that we have a fd to talk
-> > about.
+On Thu, 23 Sep 2010 08:13:50 -0700
+Randy Dunlap <rdunlap@xenotime.net> wrote:
+
+> On Thu, 23 Sep 2010 07:14:33 -0700 Greg KH wrote:
 > 
-> So ... why just netdevice? could you allow migration of other
-> net "items" eg a route table since they are all tagged by
-> netns?
+> > On Thu, Sep 23, 2010 at 02:20:18PM +1000, Stephen Rothwell wrote:
+> > > Hi Greg,
+> > > 
+> > > After merging the tty tree, today's linux-next build (x86_64
+> > > allmodconfig) failed like this:
+> > > 
+> > > drivers/char/ip2/ip2main.c:459: error: 'ip2_get_icount' undeclared here (not in a function)
+> > > 
+> > > Caused by commit 157be28e51ed476aa357c8718aaef4832f4da66b ("tty: icount
+> > > changeover for other main devices").
+> > > 
+> > > Please build test (especially the trivial "cut and paste" changes) ...
+> > > 
+> > > I have reverted that commit for today.
+> > 
+> > Ick, sorry about that.  Alan, care to send a fixup patch for this?
+> 
+> 
+> So developers and maintainers are not doing allmodconfig builds?
 
-migrating route table entries makes no sense because
-a) they refer to devices and configuration that does not exist in the
-   target namespace; they only make sense within their netns context
-b) they are purely virtual and you get the same result from deleting and
-   recreating them.
+I try to make sure I build all the drivers I touch - I screwed that one
+up. Lots of -next trees build for allmodconfig and not other configs so
+all doing the same build isn't neccessarily good.
 
-Network devices are special because they may have something attached to
-them, be it hardware or some daemon.
-
-
--David
-
+Alan
