@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755198Ab0IWPYI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 11:24:08 -0400
-Received: from isomail2.amdocs.com ([193.43.244.89]:49578 "EHLO
-	isomail2.amdocs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754136Ab0IWPYF convert rfc822-to-8bit (ORCPT
+	id S1755112Ab0IWP0W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 11:26:22 -0400
+Received: from mtagate2.de.ibm.com ([195.212.17.162]:57492 "EHLO
+	mtagate2.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998Ab0IWP0U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 11:24:05 -0400
-From: James Dingwall <james.dingwall@amdocs.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Date: Thu, 23 Sep 2010 16:23:55 +0100
-Subject: RE: Re: PROBLEM: [BISECTED] 2.6.35.5 xen domU panics just after the
- boot
-Thread-Topic: Re: PROBLEM: [BISECTED] 2.6.35.5 xen domU panics just after
- the boot
-Thread-Index: ActbBrFQRLxRr7otT6CQVQeRBMawqgAKvpTA
-Message-ID: <3B7AEC3C7FCC864282DFAC9A56A7BA363D81475787@UKLNDMAIL1.corp.amdocs.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-x-tm-as-product-ver: SMEX-8.0.0.4125-6.500.1024-17660.007
-x-tm-as-result: No--45.251400-8.000000-31
-x-tm-as-user-approved-sender: No
-x-tm-as-user-blocked-sender: No
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 23 Sep 2010 11:26:20 -0400
+In-Reply-To: <1285187417-10928-1-git-send-email-nab@linux-iscsi.org>
+Subject: Re: [PATCH 1/2] siw: Fix ib_register_device() for > v2.6.34 kernels
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Andi Keen <ak@linux.intel.com>, David Miller <davem@davemloft.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-rdma <linux-rdma@vger.kernel.org>,
+        linux-rdma-owner@vger.kernel.org,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        netdev <netdev@vger.kernel.org>, Roland Dreier <rdreier@cisco.com>,
+        Matthew Wilcox <willy@linux.intel.com>
+X-Mailer: Lotus Notes Release 7.0.1 January 17, 2006
+Message-ID: <OF5AB6498C.AF25B239-ONC12577A7.0054B7CD-C12577A7.0054CDCD@ch.ibm.com>
+From: Bernard Metzler <BMT@zurich.ibm.com>
+Date: Thu, 23 Sep 2010 17:26:16 +0200
+X-MIMETrack: Serialize by Router on D12MC302/12/M/IBM(Release 8.5|December 05, 2008) at
+ 23/09/2010 17:26:16
 MIME-Version: 1.0
+Content-type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I was experiencing the same immediate crash with a null pointer
-> dereference (log below) on boot with 2.6.35.5.  Reverting
-> fb412a178502dc498430723b082a932f797e4763 also resolved the problem for
-> me.
+Thanks, Nicholas. Just applied your patch.
 
-Checking the diff from this commit it looks like there is a typo in the patch.  With the following (probably mangled by my client) I get 2.6.35.5 to boot.  Suggest it should be a candidate for .32 and .35 stable trees.
+Bernard.
 
---- drivers/xen/events.c.orig   2010-09-23 16:10:34.257124313 +0100
-+++ drivers/xen/events.c        2010-09-23 16:10:44.326194462 +0100
-@@ -935,7 +935,7 @@
- 	.retrigger		= retrigger_dynirq,
- };
+linux-rdma-owner@vger.kernel.org wrote on 09/22/2010 10:30:17 PM:
 
--static struct irq_chip en_percpu_chip __read_mostly = {
-+static struct irq_chip xen_percpu_chip __read_mostly = {
- 	.name			= "xen-percpu",
-
- 	.disable		= disable_dynirq,
-
-James
-This message and the information contained herein is proprietary and confidential and subject to the Amdocs policy statement,
-you may review at http://www.amdocs.com/email_disclaimer.asp
+> From: Nicholas Bellinger <nab@linux-iscsi.org>
+>
+> This patch adds a LINUX_VERSION_CODE > v2.6.34 check inside of
+> siw_main.c:siw_register_device()
+> around the use of ib_register_device().  In post v2.6.34 kernels
+> this function accepts a second
+> parameter used a sysfs port callback described here:
+>
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;
+> a=commitdiff;h=9a6edb60ec10d86b1025a0cdad68fd89f1ddaf02
+>
+> This patch currently sets this second parameter to NULL.
+>
+> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> ---
+>  softiwarp/siw_main.c |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
+>
+> diff --git a/softiwarp/siw_main.c b/softiwarp/siw_main.c
+> index cacedea..c97adee 100644
+> --- a/softiwarp/siw_main.c
+> +++ b/softiwarp/siw_main.c
+> @@ -233,8 +233,11 @@ int siw_register_device(struct siw_dev *dev)
+>     ibdev->iwcm->add_ref = siw_qp_get_ref;
+>     ibdev->iwcm->rem_ref = siw_qp_put_ref;
+>     ibdev->iwcm->get_qp = siw_get_ofaqp;
+> -
+> +#if LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 34)
+> +   rv = ib_register_device(ibdev, NULL);
+> +#else
+>     rv = ib_register_device(ibdev);
+> +#endif
+>     if (rv) {
+>        dprint(DBG_DM|DBG_ON, "(dev=%s): "
+>           "ib_register_device failed: rv=%d\n", ibdev->name, rv);
+> --
+> 1.5.6.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-rdma" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
