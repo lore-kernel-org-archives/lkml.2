@@ -1,118 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750863Ab0IWEBL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 00:01:11 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:49102 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709Ab0IWEBJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 00:01:09 -0400
-Date: Wed, 22 Sep 2010 20:59:17 -0700
-From: Joel Becker <Joel.Becker@oracle.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
-        Linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [RFC 02/22] configfs: Add struct
- configfs_item_operations->check_link() in configfs_unlink()
-Message-ID: <20100923035916.GA11202@mail.oracle.com>
-Mail-Followup-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-	Konrad Rzeszutek Wilk <konrad@darnok.org>,
-	linux-scsi <linux-scsi@vger.kernel.org>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-	Mike Christie <michaelc@cs.wisc.edu>,
-	Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-	James Bottomley <James.Bottomley@suse.de>,
-	Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
-	Linux-fsdevel <linux-fsdevel@vger.kernel.org>
-References: <20100907224413.GC21935@mail.oracle.com>
- <1283911739.556.420.camel@haakon2.linux-iscsi.org>
- <20100908192639.GD29545@mail.oracle.com>
- <1283979207.556.510.camel@haakon2.linux-iscsi.org>
- <20100910152802.GG885@mail.oracle.com>
- <1284145606.19890.68.camel@haakon2.linux-iscsi.org>
- <20100910194404.GJ885@mail.oracle.com>
- <1284148323.19890.94.camel@haakon2.linux-iscsi.org>
- <20100920220633.GC8405@mail.oracle.com>
- <1285139802.1849.13.camel@haakon2.linux-iscsi.org>
+	id S1750855Ab0IWEF3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 00:05:29 -0400
+Received: from fieldses.org ([174.143.236.118]:40061 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750702Ab0IWEF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 00:05:28 -0400
+Date: Thu, 23 Sep 2010 00:03:55 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Neil Brown <neilb@suse.de>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the nfsd tree
+Message-ID: <20100923040354.GC13554@fieldses.org>
+References: <20100923113429.88f865d2.sfr@canb.auug.org.au>
+ <20100923023315.GA10764@fieldses.org>
+ <20100923125146.01755207@notabene>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1285139802.1849.13.camel@haakon2.linux-iscsi.org>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
+In-Reply-To: <20100923125146.01755207@notabene>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 22, 2010 at 12:16:42AM -0700, Nicholas A. Bellinger wrote:
-> On Mon, 2010-09-20 at 15:06 -0700, Joel Becker wrote:
-> > [Sorry on the delay, I was out of town]
-> > 
+On Thu, Sep 23, 2010 at 12:51:46PM +1000, Neil Brown wrote:
+> On Wed, 22 Sep 2010 22:33:15 -0400
+> "J. Bruce Fields" <bfields@fieldses.org> wrote:
+> sched.h says:
 > 
-> Many, thanks for your followup on this item, my comments are below.
-
-	No problem.  I'm sorry I was so busy that we couldn't iron this
-out a few months ago.  I'm glad we're getting somewhere.
-
-> > On Fri, Sep 10, 2010 at 12:52:03PM -0700, Nicholas A. Bellinger wrote:
-> > > On Fri, 2010-09-10 at 12:44 -0700, Joel Becker wrote:
+> 	char comm[TASK_COMM_LEN]; /* executable name excluding path
+> 				     - access with [gs]et_task_comm (which lock
+> 				       it with task_lock())
+> 				     - initialized normally by setup_new_exec */
 > 
-> Actually leaving the sub_child/group2/dst_0/dst_link in the example here
-> would be acceptable for the TCM MappedLUN case, because really we never
-> expect this case to this unless someone is poking at configfs directly,
-> and our userspace code will never do this intentionally.
-
-	Right.  If someone pokes around and makes it stop working,
-that's their fault.  What we (configfs and TCM) must guarantee is that
-user poking doesn't cause a crash or put things in an unrecoverable
-state.  "Remove all TCM mappins" is a valid recovery state, though
-"Recreate the symlink and it works again" is a better one.
-
-> > 	I'm saying that $object should count how many people are
-> > pointing to it, so that when you remove src_link, ACL is *not* freed.
-> > It will only be freed when both src_link and dst_link are removed.  This
-> > way you do not crash.  Perhaps I'm not understanding the ACL object.
-> > Perhaps I'm missing the mechanism entirely.  But I don't see why the ACL
-> > object must necessarily be freed when one symlink is removed but not the
-> > other.
-> > 
+> So we should lock...
 > 
-> No, I think your points here make perfect sense.  I will look into a
-> patch that leaves the TCM fabric MappedLUNs symlinks in place when the
-> underlying TPG fabric LUN symlink is removed without breaking anything,
-> but still does the necessary accounting to ensure that shutdown with
-> active I/Os still works as expected.  I will plan to drop the
-> ->check_link() patch from the forthcoming RFC v2 series.
+> But then fs/exec.c says:
+> void set_task_comm(struct task_struct *tsk, char *buf)
+> {
+> 	task_lock(tsk);
+> 
+> 	/*
+> 	 * Threads may access current->comm without holding
+> 	 * the task lock, so write the string carefully.
+> 	 * Readers without a lock may see incomplete new
+> 	 * names but are safe from non-terminating string reads.
+> 	 */
+>      .....
+> 
+> So I guess we are safe to use it unlocked for informational purposes.
+> That first comment could do with an update, and where-ever it was that I
+> copied that code from can probably be simplified too.....
 
-	This sounds like a good plan for initial inclusion.
+Sounds good.
 
-> In the end I think his is the best approach for .37, eg: no configfs
-> change required.  I am still open to the discussion for resolving this
-> within fs/configfs proper, but at this point I don't have a strong
-> preference and will follow your direction here.
+I've added a quick modular build to my test scripts too, so hopefully
+that sort of problem won't slip past me next time....
 
-	I think we can revisit this as necessary.
-
-Joel
-
--- 
-
-Life's Little Instruction Book #313
-
-	"Never underestimate the power of love."
-
-Joel Becker
-Consulting Software Developer
-Oracle
-E-mail: joel.becker@oracle.com
-Phone: (650) 506-8127
+--b.
