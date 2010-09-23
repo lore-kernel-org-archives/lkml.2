@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128Ab0IWV1H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 17:27:07 -0400
-Received: from smtprelay02.ispgateway.de ([80.67.31.29]:45672 "EHLO
-	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223Ab0IWV1F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 17:27:05 -0400
-Message-ID: <4C9BC620.3@riesch.at>
-Date: Thu, 23 Sep 2010 23:26:56 +0200
-From: Christian Riesch <christian@riesch.at>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Christoph Lameter <cl@linux.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-api@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, David Miller <davem@davemloft.net>,
-        John Stultz <johnstul@us.ibm.com>, Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 6/8] ptp: Added a clock that uses the eTSEC found on the
- MPC85xx.
-References: <cover.1285261533.git.richard.cochran@omicron.at>	<57b64051c816dc9cb856bbb9f38fc901c9d3d651.1285261535.git.richard.cochran@omicron.at>	<alpine.DEB.2.00.1009231348150.2962@router.home> <20100923214359.3f287b11@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100923214359.3f287b11@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753312Ab0IWV30 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 17:29:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752540Ab0IWV3Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 17:29:24 -0400
+Date: Thu, 23 Sep 2010 17:27:24 -0400
+From: Chuck Ebbert <cebbert@redhat.com>
+To: linux-ide@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: pata_it821x driver reports many FLUSH CACHE command failures
+Message-ID: <20100923172724.0da07fb1@katamari>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Df-Sender: christian@riesch.at
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Cox wrote:
->> Please do not introduce useless additional layers for clock sync. Load
->> these ptp clocks like the other regular clock modules and make them sync
->> system time like any other clock.
-> 
-> I don't think you understand PTP. PTP has masters, a system can need to
-> be honouring multiple conflicting masters at once.
+It looks like pata_it821x has never supported FLUSH_CACHE, but now
+we're seeing repeated failures. They happen over and over again and
+prevent installation. I stuck a dump_stack() in the failure path and
+got this:
 
-AFAIK the master's should not be conflicting. The Best Master Clock 
-algorithm (BMC) defined in IEEE1588 selects the best master clock. This 
-clock distributes its notion of time on the network while the other 
-masters, that is the other clocks/nodes that are configured to 
-potentially become a master, keep quiet. So usually we will only have 
-one source of time (the master clock selected by the BMC) and we will 
-steer our single PHC (PTP hardware clock) to follow this master (Of 
-course there may be use-cases that require more than one PTP clock, 
-e.g., for research purposes).
-
-However, if the clock selected by the BMC is switched off, loses its 
-network connection..., the second best clock is selected by the BMC and 
-becomes master. This clock may be less accurate and thus our slave clock 
-has to switch from one notion of time to another. Is that the conflict 
-you mentioned?
-
-Christian
+it821x: can't process command 0xE7
+Pid: 863, comm: fsck.ext3 Not tainted 2.6.35.5-30.fc14.x86_64 #1
+Call Trace:
+ [<ffffffffa001c491>] it821x_smart_qc_issue+0x9d/0xac [pata_it821x]
+ [<ffffffff8132f60d>] ata_qc_issue+0x246/0x284
+ [<ffffffff8107c3a0>] ? lock_acquired+0x1fd/0x20c
+ [<ffffffff81311e29>] ? scsi_done+0x0/0x51
+ [<ffffffff81333492>] ? ata_scsi_flush_xlat+0x0/0x35
+ [<ffffffff81336a92>] __ata_scsi_queuecmd+0x192/0x1ee
+ [<ffffffff81311e29>] ? scsi_done+0x0/0x51
+ [<ffffffff81311e29>] ? scsi_done+0x0/0x51
+ [<ffffffff81336ba5>] ata_scsi_queuecmd+0x5e/0x9d
+ [<ffffffff8149db5f>] ? _raw_spin_lock_irqsave+0x71/0x7f
+ [<ffffffff81312dd4>] ? scsi_dispatch_cmd+0x14b/0x29b
+ [<ffffffff81312e69>] scsi_dispatch_cmd+0x1e0/0x29b
+ [<ffffffff813194e4>] scsi_request_fn+0x47d/0x4a9
+ [<ffffffff8122064e>] __blk_run_queue+0x45/0x75
+ [<ffffffff8121c951>] elv_insert+0xb6/0x1bd
+ [<ffffffff8121caf0>] __elv_add_request+0x98/0x9f
+ [<ffffffff812227b5>] __make_request+0x381/0x3f0
+ [<ffffffff8121fb6d>] generic_make_request+0x285/0x301
+ [<ffffffff8121fcc3>] submit_bio+0xda/0xf7
+ [<ffffffff81223a05>] blkdev_issue_flush+0xcd/0x13e
+ [<ffffffff8107acb3>] ? trace_hardirqs_off+0xd/0xf
+ [<ffffffff811515a2>] blkdev_fsync+0x43/0x65
+ [<ffffffff8149c823>] ? mutex_lock_nested+0x3e/0x43
+ [<ffffffff81149c95>] vfs_fsync_range+0x5d/0x80
+ [<ffffffff81149d20>] vfs_fsync+0x1c/0x1e
+ [<ffffffff81149d50>] do_fsync+0x2e/0x43
+ [<ffffffff8114a01a>] sys_fsync+0x10/0x14
+ [<ffffffff81009c72>] system_call_fastpath+0x16/0x1b
+ata7.01: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x0
+ata7.01: failed command: FLUSH CACHE
+ata7.01: cmd e7/00:00:00:00:00/00:00:00:00:00/b0 tag 0
+         res 50/00:00:00:00:00/00:00:00:00:00/e0 Emask 0x1 (device error)
+ata7.01: status: { DRDY }
+ata7.00: configured for DMA
+ata7.01: configured for DMA
+ata7.01: device reported invalid CHS sector 0
+ata7: EH complete
