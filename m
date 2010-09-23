@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756404Ab0IWTTe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 15:19:34 -0400
-Received: from kroah.org ([198.145.64.141]:51309 "EHLO coco.kroah.org"
+	id S1756208Ab0IWTXA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 15:23:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52461 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756208Ab0IWTSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 15:18:32 -0400
-Date: Thu, 23 Sep 2010 11:40:06 -0700
-From: Greg KH <greg@kroah.com>
-To: David Miller <davem@davemloft.net>
-Cc: mchan@broadcom.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        shawn.bohrer@gmail.com, stable@kernel.org
-Subject: Re: [stable] [BUG] 2.6.32.21 bnx2_napi->hw_tx_cons_ptr NULL
- pointer dereference
-Message-ID: <20100923184006.GU23040@kroah.com>
-References: <20100909013437.GA6400@lintop>
- <C27F8246C663564A84BB7AB3439772421B9134BA2E@IRVEXCHCCR01.corp.ad.broadcom.com>
- <20100908.215809.232892441.davem@davemloft.net>
-MIME-Version: 1.0
+	id S1754939Ab0IWTW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 15:22:59 -0400
+Date: Thu, 23 Sep 2010 15:22:26 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Jan Engelhardt <jengelh@medozas.de>
+Cc: Neil Brown <neilb@suse.de>, Miklos Szeredi <miklos@szeredi.hu>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org
+Subject: Re: [PATCH 0/5] hybrid union filesystem prototype
+Message-ID: <20100923192226.GA3536@shell>
+References: <20100827170551.19616048@notabene> <E1Ooub5-0007Wh-SQ@pomaz-ex.szeredi.hu> <20100827213502.31af4a4c@notabene> <E1Op2BV-0008Ut-BR@pomaz-ex.szeredi.hu> <20100829144207.4fbf2713@notabene> <E1Oq1RL-0003zF-Tw@pomaz-ex.szeredi.hu> <alpine.LNX.2.01.1009021513040.10859@obet.zrqbmnf.qr> <20100902233200.586fcb31@notabene> <alpine.LNX.2.01.1009021625050.14798@obet.zrqbmnf.qr> <alpine.LNX.2.01.1009231515580.31650@obet.zrqbmnf.qr>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100908.215809.232892441.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LNX.2.01.1009231515580.31650@obet.zrqbmnf.qr>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 08, 2010 at 09:58:09PM -0700, David Miller wrote:
-> From: "Michael Chan" <mchan@broadcom.com>
-> Date: Wed, 8 Sep 2010 21:55:29 -0700
+On Thu, Sep 23, 2010 at 03:18:57PM +0200, Jan Engelhardt wrote:
 > 
-> > Shawn Bohrer wrote:
-> > 
-> >> Is there any reason these can't/shouldn't be applied to the 2.6.32.y
-> >> stable series?  It looks like they apply cleanly.
+> On ??, Miklos Szeredi wrote:
+> On Thursday 2010-09-02 16:25, Jan Engelhardt wrote:
 > >>
-> > 
-> > No reason.  I just didn't know how far back to apply these patches.
-> > The crash was triggered by changes in netpoll some time ago and
-> > the problem has been present for some time.
+> >>There ought to be a reason that other implementations offer
+> >>doing multiple branches with a single vfsmount.
+> >
+> >overdesign
 > 
-> Michael, please submit these to -stable then, thanks!
+> However, those implementations offer changing the branch configuration
+> on the fly, e.g. pulling "out" a branch in the middle. With
 
-Now queued up.
+Seriously.  What is the use case that justifies the complexity of
+implementing this feature (correctly)?  We can all think of
+theoretical use cases, but which ones are worth the cost?
 
-thanks,
+> "two-branches only" overlayfs, a multi-branch layout would be
+> multiple vfsmounts describable by something like "(((a b) c) d)".
+> Say you want to remove branch B. (Supposedly) works today in
 
-greg k-h
+There's a difference between "works" and "is correct."  Maybe it is
+correct; if so, let's see the code review from VFS experts and some
+good stress testing.
+
+-VAL
+
+> aufs/unionfs. How do you pull it off with overlayfs? You can't
+> umount the (a b) vfsmount because it is used by c.
