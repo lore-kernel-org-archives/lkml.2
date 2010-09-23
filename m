@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756618Ab0IWU4i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 16:56:38 -0400
-Received: from caiajhbdccah.dreamhost.com ([208.97.132.207]:52250 "EHLO
-	homiemail-a10.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752017Ab0IWU4g (ORCPT
+	id S1755949Ab0IWU7c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 16:59:32 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:55181 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754037Ab0IWU7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 16:56:36 -0400
-X-Greylist: delayed 24142 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Sep 2010 16:56:36 EDT
-Subject: Re: [PATCH] input: for best practices, return -ENOMEM instead of
- -1 when returning on mem allocation errors
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-input@vger.kernel.org
-In-Reply-To: <20100923154407.GA17807@core.coreip.homeip.net>
-References: <1285251245.2127.4.camel@cowboy>
-	 <20100923154407.GA17807@core.coreip.homeip.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 23 Sep 2010 16:56:30 -0400
-Message-ID: <1285275390.1999.0.camel@cowboy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 23 Sep 2010 16:59:31 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: jgarzik@pobox.com
+Subject: [PATCH] de2104x: disable autonegotiation on broken hardware
+Date: Thu, 23 Sep 2010 22:59:18 +0200
+User-Agent: KMail/1.9.10
+Cc: netdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201009232259.20261.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-23 at 08:44 -0700, Dmitry Torokhov wrote:
-> On Thu, Sep 23, 2010 at 10:14:05AM -0400, Davidlohr Bueso wrote:
-> > input: for best practices, return -ENOMEM instead of -1 when returning on mem allocation errors.
-> > 
-> > Signed-off-by: Davidlohr Bueso <dave@gnu.org>
-> 
-> Applied, thank you Davidlohr.
-> 
-> FWIW there are more code in drivers/input/serio and drivers/input/mouse/
-> that return -1 instead of a proper error codes.
-> 
-Yes, I'll be preparing a patch shortly for those.
+At least on older 21041-AA chips (mine is rev. 11), TP duplex autonegotiation
+causes the card not to work at all (link is up but no packets are transmitted).
 
-Thanks,
-Davidlohr
+de4x5 disables autonegotiation completely. But it seems to work on newer
+(21041-PA rev. 21) so disable it only on rev<20 chips.
 
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+
+--- linux-2.6.36-rc3-orig/drivers/net/tulip/de2104x.c	2010-08-29 17:36:04.000000000 +0200
++++ linux-2.6.36-rc3/drivers/net/tulip/de2104x.c	2010-09-24 00:27:41.000000000 +0200
+@@ -364,6 +364,8 @@ static u16 t21040_csr15[] = { 0, 0, 0x00
+ /* 21041 transceiver register settings: TP AUTO, BNC, AUI, TP, TP FD*/
+ static u16 t21041_csr13[] = { 0xEF01, 0xEF09, 0xEF09, 0xEF01, 0xEF09, };
+ static u16 t21041_csr14[] = { 0xFFFF, 0xF7FD, 0xF7FD, 0x6F3F, 0x6F3D, };
++/* If on-chip autonegotiation is broken, use half-duplex (FF3F) instead */
++static u16 t21041_csr14_brk[] = { 0xFF3F, 0xF7FD, 0xF7FD, 0x6F3F, 0x6F3D, };
+ static u16 t21041_csr15[] = { 0x0008, 0x0006, 0x000E, 0x0008, 0x0008, };
+ 
+ 
+@@ -1911,8 +1913,14 @@ fill_defaults:
+ 	for (i = 0; i < DE_MAX_MEDIA; i++) {
+ 		if (de->media[i].csr13 == 0xffff)
+ 			de->media[i].csr13 = t21041_csr13[i];
+-		if (de->media[i].csr14 == 0xffff)
+-			de->media[i].csr14 = t21041_csr14[i];
++		if (de->media[i].csr14 == 0xffff) {
++			/* autonegotiation is broken at least on some chip
++			   revisions - rev. 0x21 works, 0x11 does not */
++			if (de->pdev->revision < 0x20)
++				de->media[i].csr14 = t21041_csr14_brk[i];
++			else
++				de->media[i].csr14 = t21041_csr14[i];
++		}
+ 		if (de->media[i].csr15 == 0xffff)
+ 			de->media[i].csr15 = t21041_csr15[i];
+ 	}
+
+
+-- 
+Ondrej Zary
