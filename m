@@ -1,78 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550Ab0IWJ0H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 05:26:07 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:57748 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390Ab0IWJ0F (ORCPT
+	id S1753880Ab0IWJaA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 05:30:00 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:57023 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752489Ab0IWJ36 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 05:26:05 -0400
-Message-ID: <4C9B1D22.20504@canonical.com>
-Date: Thu, 23 Sep 2010 11:25:54 +0200
-From: Stefan Bader <stefan.bader@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Lightning/1.0b1 Thunderbird/3.0.8
+	Thu, 23 Sep 2010 05:29:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=hKmr0v5dix3/4oq2mIzkgmYngCq8100gVbxslzOqDncgp9/Y8+N5Q5SA6A1CBJrCI4
+         lQHf65vS9WYRxzHTnncBn6HRHzXsWVPwby7XPhGEIpV+j2ejJx5GckKGOtu2rzvrkp2E
+         n1YXzSjL1zB4+AK/GGl5YMLfX8/Tsnt6CtGKQ=
 MIME-Version: 1.0
-To: Thomas Renninger <trenn@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Josh Hill <joshua.hill@gmail.com>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, alan@redhat.com, stable@kernel.org,
-        Matthew Garrett <mjg@redhat.com>, "Zhang, Rui" <rui.zhang@intel.com>,
-        linux-acpi@vger.kernel.org
-Subject: Re: [2.6.35-rc5] hp-wmi patch missed .35 merge window, requesting
- addition to next rc
-References: <AANLkTimOVY+iOOMKhwFfX5Wcw1y_PcvoCCfEcjoPmj3J@mail.gmail.com> <20100921190816.e6ca6a72.akpm@linux-foundation.org> <201009231037.09097.trenn@suse.de>
-In-Reply-To: <201009231037.09097.trenn@suse.de>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100922160705.GK26290@redhat.com>
+References: <1284087065-32722-1-git-send-email-ying.huang@intel.com>
+	<20100921214847.GF26290@redhat.com>
+	<b151e9f1ec3a162781b380e026f90711.squirrel@www.firstfloor.org>
+	<20100922160705.GK26290@redhat.com>
+Date: Thu, 23 Sep 2010 17:29:57 +0800
+Message-ID: <AANLkTi=gYa5aEhrQAgpgfopoyW_1v0TJsnQ7bSbTV52i@mail.gmail.com>
+Subject: Re: [RFC 1/6] x86, NMI, Add symbol definition for NMI magic constants
+From: huang ying <huang.ying.caritas@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Huang Ying <ying.huang@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2010 10:37 AM, Thomas Renninger wrote:
-> Hi,
-> 
-> I didn't know about this one.
-> Can people please add me to CC list on hp-wmi specific bug
-> reports (for existing and new ones), thanks.
-> 
-> On Wednesday 22 September 2010 04:08:16 Andrew Morton wrote:
->> (cc's added)
->> The suggestion is that mainline's
->> 751ae808f6b29803228609f51aa1ae057f5c576e ("x86 platform drivers: hp-wmi
->> Reorder event id processing") be backported into 2.6.35.x to fix the
->> post-2.6.32 regression described in
->> https://bugzilla.kernel.org/show_bug.cgi?id=15344
-> Hmm, the bug is still in "open" state, there is no statement that anything
-> is found yet fixing the issue.
-> 
-> Could you please update the bug report if you verified and are sure
-> the patch helps.
-> 
-> The patch is a cleanup, has some functional change, but should
-> do things correctly now. As long as no special case was handled
-> by always calling:
-> hp_wmi_get_entry_by_scancode(eventcode);
-> even it was not a hotkey event, this is a straight forward fix and
-> if no one else complains, you have my vote for adding this to
-> stable kernel(s).
-> 
-> about:
->> if this patch doesn't make it into .35 my laptop
->> will be doing this for its (10.10) entire lifetime.
-> Isn't Ubuntu following stable 2.6.35.X kernels and you would get this with
-> an update if it's pushed into stable kernels?
-> I expect they do follow and there is no need to hurry?
-> 
-Yes, we do follow 2.6.35.y updates at least for a few months after release. So
-there should be no particular need to hurry. At least if it gets to Greg before
-he stops caring about .35.
+Hi, Don,
 
--Stefan
+On Thu, Sep 23, 2010 at 12:07 AM, Don Zickus <dzickus@redhat.com> wrote:
+> On Wed, Sep 22, 2010 at 12:19:16AM +0200, Andi Kleen wrote:
+>>
+>> >
+>> > I guess adding either another knob to override the hardware error option
+>> > or tying it in with the panic_on_unknown_error option might make me more
+>> > comfortable.  That way enterprise customers can always just enable it by
+>> > default and desktop users (for now) could have it off.
+>>
+>> Anything that needs explicit enabling is a bad idea, that
+>> would lead to a lot of users running in "corrupt my data" mode.
+>
+> I know.  But as I said earlier in my emails, I am trying to figure out how
+> to deal with the fallout from unknown nmis turning into panics.  Today
+> people see unknown nmis.  They may or may not be corrupting data.  They
+> usually file a bug.  Currently it is hard for me to diagnosis the problem.
+> Usually the old 'upgrade your bios/firmware' does the trick.  Sometimes it
+> doesn't and people feel like their machines still run fine.  So they
+> ignore it (for good or for bad).
+>
+> Turning unknown nmis into panics would break their current setup without
+> much gain.  So I was trying to propose something temporarily until we
+> could get a better infrastructure to isolate the source and provide better
+> info on what to do.
+>
+> I agree with you that long term unknown nmis should be panics.  I just get
+> nervous about doing that now from a support perspective.
 
->      Thomas
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+In fact, we use white list policy here. Only systems with HEST or
+identified by chipset host bridge PCI ID will panic for unknown NMI.
+So I think systems you worried about will not have this enabled.
 
+>> The code currently uses the presence of a HEST error table
+>> to detect a server. HEST should be only available on servers.
+>>
+>> On servers at least panic should be default.
+>
+> Ok.  That's fine. But then what.  What does a developer do with that
+> panic?  There's no useful info.  That is sorta my problem.  Then again I
+> do not know much about HEST.
+
+On some system, there is some hardware error log in BMC/BIOS. The
+hardware error log can be gotten via IPMI or BIOS menu. Otherwise, can
+we get some useful info for unknown NMI? If we can, can we collect the
+info, then print it on console and save it into flash via ERST (part
+of APEI too) before panic?
+
+HEST is defined in ACPI spec 4.0 and later version in section named
+APEI (ACPI Platform Error Interface). It is used to describe the error
+sources of system. It should be available only on server platform.
+
+Best Regards,
+Huang Ying
