@@ -1,90 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755910Ab0IWROb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 13:14:31 -0400
-Received: from tomts5-srv.bellnexxia.net ([209.226.175.25]:55357 "EHLO
-	tomts5-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755822Ab0IWROa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 13:14:30 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAD4nm0xGGN6i/2dsb2JhbACiMXLHG4VBBA
-Date: Thu, 23 Sep 2010 13:09:28 -0400
-From: Mathieu Desnoyers <compudj@krystal.dyndns.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jason Baron <jbaron@redhat.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, David Miller <davem@davemloft.net>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH 03/11] jump label: Base patch for jump label
-Message-ID: <20100923170928.GB20365@Krystal>
-References: <20100923034910.867858597@goodmis.org> <20100923035608.228041459@goodmis.org> <20100923143758.GA4022@Krystal> <20100923153902.GD2825@redhat.com> <1285260731.26872.1436.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
+	id S1755921Ab0IWRO5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 13:14:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32824 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755822Ab0IWRO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 13:14:56 -0400
+Date: Thu, 23 Sep 2010 19:10:25 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 09/10] taskstats: Fix exit CPU time accounting
+Message-ID: <20100923171025.GA26623@redhat.com>
+References: <1285249681.1837.28.camel@holzheu-laptop> <1285250541.1837.95.camel@holzheu-laptop>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <1285260731.26872.1436.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 13:08:17 up 169 days,  2:59,  3 users,  load average: 0.49, 0.27,
-	0.17
+In-Reply-To: <1285250541.1837.95.camel@holzheu-laptop>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Thu, 2010-09-23 at 11:39 -0400, Jason Baron wrote:
-> > On Thu, Sep 23, 2010 at 10:37:58AM -0400, Mathieu Desnoyers wrote:
-> 
-> > I was thinking about the rcu_read_lock/synchronize_rcu() for this race.
-> > We can hold the rcu_read_lock() across the is_module_text_address()
-> > check in the jump label code, and then we can do in module.c:
-> > 
-> > mod->module_init = NULL;
-> > synchronize_rcu();
-> > module_free(mod, mod->module_init);
-> 
-> Um, isn't that last call the same as:
-> 
-> 	module_free(mod, NULL); ?
+Sorry, I didn't look at other patches, but this one looks strange
+to me...
 
-Yes, this is incorrect (as I pointed out in my reply). We should do,
-instead:
+On 09/23, Michael Holzheu wrote:
+>
+> Currently there are code pathes (e.g. for kthreads) where the consumed
+> CPU time is not accounted to the parents cumulative counters.
 
-module_init = mod->module_init;
-mod->module_init = NULL;
-synchronize_rcu();
-module_free(mod, module_init);
+Could you explain more?
 
-Thanks,
+> +static void account_to_parent(struct task_struct *p)
+> +{
+> +	struct signal_struct *psig, *sig;
+> +	struct task_struct *tsk_parent;
+> +
+> +	read_lock(&tasklist_lock);
 
-Mathieu
+No need to take tasklist, you can use rcu_read_lock() if you need
+get_task_struct(). But this can't help, please see below.
 
-> 
-> I'll spend some time looking at this too.
-> 
-> -- Steve
-> 
-> > .
-> > .
-> > .
-> > 
-> > or we could push the rcu_read_lock() further down into
-> > is_module_address()?
-> > 
-> > thanks,
-> > 
-> > -Jason
-> > 
-> 
-> 
+> +	tsk_parent = p->real_parent;
+> +	if (!tsk_parent) {
+> +		read_unlock(&tasklist_lock);
+> +		return;
+> +	}
+> +	get_task_struct(tsk_parent);
+> +	read_unlock(&tasklist_lock);
+> +
+> +	// printk("XXX Fix accounting: pid=%d ppid=%d\n", p->pid, tsk_parent->pid);
+> +	spin_lock_irq(&tsk_parent->sighand->siglock);
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+This is racy. ->real_parent can exit after we drop tasklist_lock,
+->sighand can be NULL.
+
+>  void release_task(struct task_struct * p)
+>  {
+>  	struct task_struct *leader;
+>  	int zap_leader;
+> +
+> +	if (!p->exit_accounting_done)
+> +		account_to_parent(p);
+>  repeat:
+>  	tracehook_prepare_release_task(p);
+>  	/* don't need to get the RCU readlock here - the process is dead and
+> @@ -1279,6 +1313,7 @@
+>  			psig->cmaxrss = maxrss;
+>  		task_io_accounting_add(&psig->ioac, &p->ioac);
+>  		task_io_accounting_add(&psig->ioac, &sig->ioac);
+> +		p->exit_accounting_done = 1;
+
+Can't understand.
+
+Suppose that a thread T exits and reaps itself (calls release_task).
+Now we call account_to_parent() which accounts T->signal->XXX + T->XXX.
+After that T calls __exit_signal and does T->signal->XXX += T->XXX.
+
+If another thread exits it does the same and we account the already
+exited thread T again?
+
+When the last thread exits, wait_task_zombie() accounts T->signal
+once again.
+
+IOW, this looks like the over-accounting to me, no?
+
+Oleg.
+
