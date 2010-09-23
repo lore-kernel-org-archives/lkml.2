@@ -1,72 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907Ab0IWLqj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 07:46:39 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50482 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752747Ab0IWLqh (ORCPT
+	id S1754896Ab0IWLtA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 07:49:00 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:47864 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754508Ab0IWLs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 07:46:37 -0400
+	Thu, 23 Sep 2010 07:48:58 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=pY/j7WpaSNZdKTMyuY0/Ypd1rJFDmjayVZiV44oXD47wxmdaz7Po+WFEsrESiUzAK6
-         gasXZk/RTv2UsOPEt0/fN3fRrrzPhvuhPlUJ4nTzg5ntl/2UkJJLh4Frry/O7l3mxMGN
-         WHrZtBgWR8vz4cXt42w0MqcQ+gqcYegz1q7Hc=
-Message-ID: <4C9B3E15.5080002@gmail.com>
-Date: Thu, 23 Sep 2010 13:46:29 +0200
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=mhLCfb7Fp1G/1PFA9koJuEUGeNAEANS1SjyV+GruupYchj85l98FbdXA4X4DA1g0cK
+         wX5/6FKO5QZ7fUUYBIPFGeaRQZdA+5t0AHl8AIQfw5r3xrWL8/+qI2ooMfwoTgDiwXU2
+         AlE0RemwhlhHoSpLhcqEs4pANn6S1VePeBgBw=
 MIME-Version: 1.0
-To: Paul Mundt <lethal@linux-sh.org>
-CC: Roland Dreier <rdreier@cisco.com>, Ohad Ben-Cohen <ohad@wizery.com>,
-        linux-kernel@vger.kernel.org,
-        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Roland Dreier <rolandd@cisco.com>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Steve Wise <swise@chelsio.com>, Neil Brown <neilb@suse.de>,
-        Paul Mackerras <paulus@samba.org>, linux-i2c@vger.kernel.org,
-        linux-rdma@vger.kernel.org, dm-devel@redhat.com,
-        linux-raid@vger.kernel.org, linux-ppp@vger.kernel.org,
-        netdev@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: Re: idr_get_new_exact ?
-References: <AANLkTi=ZLupVyFR0e2v-TLpeNWdw1bVMZUAhgyxLJ7OV@mail.gmail.com> <adaiq20f90h.fsf@cisco.com> <4C97D197.9070703@gmail.com> <20100923114255.GB27960@linux-sh.org>
-In-Reply-To: <20100923114255.GB27960@linux-sh.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1285224715-30137-1-git-send-email-mfm@muteddisk.com>
+References: <1285224715-30137-1-git-send-email-mfm@muteddisk.com>
+Date: Thu, 23 Sep 2010 13:48:57 +0200
+Message-ID: <AANLkTinzTKdjAqWB-US-Nh2CM+MzL+iuedWScCCaH+mX@mail.gmail.com>
+Subject: Re: [PATCH 20/20] net: change to new flag variable
+From: =?UTF-8?Q?Sjur_Br=C3=A6ndeland?= <sjurbren@gmail.com>
+To: matt mooney <mfm@muteddisk.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        "John W. Linville" <linville@tuxdriver.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+matt mooney wrote:
+> Replace EXTRA_CFLAGS with ccflags-y.
+Thank you,
+CAIF parts looks good to me.
 
-On 09/23/2010 01:42 PM, Paul Mundt wrote:
-> On Mon, Sep 20, 2010 at 11:26:47PM +0200, Tejun Heo wrote:
->> Hello,
->>
->> On 09/20/2010 10:35 PM, Roland Dreier wrote:
->>> Looks fine to me as an improvement over the status quo, but I wonder how
->>> many of these places could use the radix_tree stuff instead?  If you're
->>> not using the ability of the idr code to assign an id for you, then it
->>> seems the radix_tree API is a better fit.
->>
->> I agree.  Wouldn't those users better off simply using radix tree?
->>
-> It could go either way. I was about to write the same function when
-> playing with it for IRQ mapping, the idea being to propagate the initial
-> tree with sparse static vectors and then switch over to dynamic IDs for
-> virtual IRQ creation. I ended up going with a radix tree for other
-> reasons, though.
-
-I see.  If there are use cases where fixed and dynamic IDs need to be
-mixed, no objection from me.
-
-Thanks.
-
--- 
-tejun
+Acked-by: Sjur Braendeland <sjur.brandeland@stericsson.com>
