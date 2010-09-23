@@ -1,85 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756399Ab0IWToB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 15:44:01 -0400
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:25027 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755511Ab0IWToA (ORCPT
+	id S1756531Ab0IWToH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 15:44:07 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34230 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756280Ab0IWToF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 15:44:00 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: oNFmzX4VM1mWdGOhd.juhHz8OaB7043ghRt8ETx6_YgSBsQ
- 3w6KO777PBWcf3f15emq27KcE9U193n12tjZ9qAg3b_QIK7CQlJFyapnv8yH
- Tay_J0VU5ez1Peij1UBpVczv3b6qbstWYj0P795ofZ0fP3_QWuTv0f2DvqrX
- sGMZWZgjIquXeOINf4JsSVnkzy38EXpoIkFhlJDYJsxBKlkhnQdlC5b66Tlh
- bVy6gX1cRPtKs.2BwlXcRkh.zSLdF
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 23 Sep 2010 14:15:09 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: john stultz <johnstul@us.ibm.com>
-cc: Richard Cochran <richardcochran@gmail.com>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-api@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        David Miller <davem@davemloft.net>, Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v6 0/8] ptp: IEEE 1588 hardware clock support
-In-Reply-To: <1285268380.2587.11.camel@localhost.localdomain>
-Message-ID: <alpine.DEB.2.00.1009231402420.2962@router.home>
-References: <cover.1285261533.git.richard.cochran@omicron.at>  <alpine.DEB.2.00.1009231238170.2962@router.home> <1285268380.2587.11.camel@localhost.localdomain>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 23 Sep 2010 15:44:05 -0400
+Date: Thu, 23 Sep 2010 12:43:13 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Samu Onkalo <samu.p.onkalo@nokia.com>,
+        =?ISO-8859-1?Q?=C9ric?= Piel <Eric.Piel@tremplin-utc.net>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: Re: [PATCH v2] lis3: Add support for new LIS3DC / HP3DC chip
+Message-Id: <20100923124313.7794e8f6.akpm@linux-foundation.org>
+In-Reply-To: <s5hd3s5nglg.wl%tiwai@suse.de>
+References: <s5hd3s5nglg.wl%tiwai@suse.de>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Sep 2010, john stultz wrote:
+On Thu, 23 Sep 2010 08:01:31 +0200
+Takashi Iwai <tiwai@suse.de> wrote:
 
-> This was my initial gut reaction as well, but in the end, I agree with
-> Richard that in the case of one or multiple PTP hardware clocks, we
-> really can't abstract over the different time domains.
+> A new version of LIS3 chip has slight incompatibilities from former
+> versions.  This patch adds the minimal support for it.
+> 
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> ---
+> v1->v2
+>   Rebased to patch "lis3: Fix Oops with NULL platform data (v2)"
+> 
 
-My (arguably still superficial) review of the source does not show
-anything that would make me reach that conclusion.
+Wait.  I did my own rebasing and came up with a different patch, with
+two extra hunks:
 
-> I really don't think the PTP clock can be used as a clocksource sanely.
->
-> First, the hardware access is much to slow for system timekeeping.
+@@ -301,8 +311,9 @@ static irqreturn_t lis302dl_interrupt(in
+ 	wake_up_interruptible(&lis3_dev.misc_wait);
+ 	kill_fasync(&lis3_dev.async_queue, SIGIO, POLL_IN);
+ out:
+-	if (lis3_dev.pdata && lis3_dev.whoami == WAI_8B && lis3_dev.idev &&
+-	    lis3_dev.idev->input->users)
++	if (lis3_dev.pdata &&
++		(lis3_dev.whoami == WAI_8B || lis3_dev.whoami == WAI_3DC) &&
++		lis3_dev.idev && lis3_dev.idev->input->users)
+ 		return IRQ_WAKE_THREAD;
+ 	return IRQ_HANDLED;
+ }
 
-The HPET or pit timesource are also quite slow these days. You only need
-access periodically to essentially tune the TSC ratio.
+and
 
-> Second, there is the problem that the system time is a software clock,
-> and adjustments made (like freq) are made in the layer that interprets
-> the underlying hardware cycle counter. Adjustments made in PTP (in order
-> to sync the network timestamps) are made at the hardware level.
+@@ -742,7 +762,7 @@ int lis3lv02d_init_device(struct lis3lv0
+ 	 * io-apic is not configurable (and generates a warning) but I keep it
+ 	 * in case of support for other hardware.
+ 	 */
+-	if (dev->pdata && dev->whoami == WAI_8B)
++	if (dev->pdata && (dev->whoami == WAI_8B || dev->whoami == WAI_3DC))
+ 		thread_fn = lis302dl_interrupt_thread1_8b;
+ 	else
+ 		thread_fn = NULL;
 
->From what I can see the PTP clocks are periodic hardware cycle counters
-like any other clock that we currently support. If its configurable enough
-then setup a hardware cycle counter that mimics nanoseconds since the
-epoch as closely as possible and use that to sync the TSC rate to. Makes
-it very easy.
 
-> This would cause a disconnect between the hardware freq understood by
-> the system time management code and the actual hardware freq.
+Did you drop those changes deliberately?
 
-We can switch underlying clocks for system time already. We can adapt to a
-different hw frequency. But then I do not know why adjust the freq? I
-thought the point was that the periodic clock was network synchronized and
-can be used as "the" master clock for multiple machines?
-
-> Richard, I'd actually strike this paragraph from the rational, as I feel
-> it has the tendency to confuse as it suggests having the PHC as a
-> clocksource is feasible when really it isn't. Or alternatively, maybe
-> express more clearly why its not feasible, so it doesn't just seem like
-> a minor design choice.
-
-Sorry but I still feel that this is pretty much a misguided approach that
-creates unnecessary layers in the kernel. The trivial easy approach was
-not done (copy a driver from drivers/clocksource, modify so that it
-programs access to a centralized periodic ptp signal and uses it for
-system sync).
