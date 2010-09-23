@@ -1,150 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148Ab0IWNsI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 09:48:08 -0400
-Received: from mtagate7.uk.ibm.com ([194.196.100.167]:58693 "EHLO
-	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752473Ab0IWNsF (ORCPT
+	id S1753681Ab0IWNv0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 09:51:26 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:60131 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177Ab0IWNvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 09:48:05 -0400
-Subject: [RFC][PATCH 00/10] taskstats: Enhancements for precise accounting
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Reply-To: holzheu@linux.vnet.ibm.com
-To: Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Oleg Nesterov <oleg@redhat.com>, John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-Content-Type: text/plain; charset="us-ascii"
-Organization: IBM
-Date: Thu, 23 Sep 2010 15:48:01 +0200
-Message-ID: <1285249681.1837.28.camel@holzheu-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Sep 2010 09:51:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:x-x-sender:to:cc:subject:message-id:user-agent
+         :mime-version:content-type;
+        b=bG5VpVd9sHrS/cTS1+US7lJzaBOVXldsO/JkOFqJtOMwruN1ZaKQJUQ4HEuRF4AXpG
+         kOC7op+lRKhTIq70NYF0hVcgkkmVxswxxmexEZgYW0WeT/Yyx45F0cMFrqoFipePlNBd
+         HsmcPUc3VUHA/7ROAAAFHbx/Eok4CkMuVyXDU=
+Date: Thu, 23 Sep 2010 09:51:21 -0400 (EDT)
+From: Bart Oldeman <bartoldeman@users.sourceforge.net>
+X-X-Sender: bart@localhost.localdomain
+To: linux-kernel@vger.kernel.org
+cc: heukelum@fastmail.fm, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org
+Subject: [PATCH] x86, vm86: fix preemption bug for int1 debug and int3
+ breakpoint handlers.
+Message-ID: <alpine.DEB.2.00.1009230949480.8587@localhost.localdomain>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently tools like "top" gather the task information by reading procfs
-files. This has several disadvantages:
+Impact: fix kernel bug such as:
+BUG: scheduling while atomic: dosemu.bin/19680/0x00000004
+See also Ubuntu bug 455067 at 
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/455067
 
-* It is very CPU intensive, because a lot of system calls (readdir, open,
-  read, close) are necessary.
-* No real task snapshot can be provided, because while the procfs files are
-  read the system continues running.
-* The procfs times granularity is restricted to jiffies.
+Commits 4915a35e35a037254550a2ba9f367a812bc37d40
+("Use preempt_conditional_sti/cli in do_int3, like on x86_64.")
+and 3d2a71a596bd9c761c8487a2178e95f8a61da083
+("x86, traps: converge do_debug handlers")
+started disabling preemption in int1 and int3 handlers on i386.
+The problem with vm86 is that the call to handle_vm86_trap() may jump
+straight to entry_32.S and never returns so preempt is never enabled
+again, and there is an imbalance in the preempt count.
 
-In parallel to procfs there exists the taskstats binary interface that uses
-netlink sockets as transport mechanism to deliver task information to
-user space. There exists a taskstats command "TASKSTATS_CMD_ATTR_PID"
-to get task information for a given PID. This command can already be used for
-tools like top, but has also several disadvantages:
+Commit be716615fe596ee117292dc615e95f707fb67fd1 ("x86, vm86:
+fix preemption bug"), which was later (accidentally?) reverted by commit
+08d68323d1f0c34452e614263b212ca556dae47f ("hw-breakpoints: modifying
+generic debug exception to use thread-specific debug registers")
+fixed the problem for debug exceptions but not for breakpoints.
 
-* You first have to find out which PIDs are available in the system. Currently
-  we have to use procfs again to do this.
-* For each task two system calls have to be issued (First send the command and
-  then receive the reply).
-* No snapshot mechanism is available.
+There are three solutions to this problem.
 
-GOALS OF THIS PATCH SET
------------------------
-The intention of this patch set is to provide better support for tools like
-top. The goal is to:
+1. Reenable preemption before calling handle_vm86_trap(). This
+was the approach that was later reverted.
 
-* provide a task snapshot mechanism where we can get a consistent view of
-  all running tasks.
-* provide a transport mechanism that does not require a lot of system calls
-  and that allows implementing low CPU overhead task monitoring.
-* provide microsecond CPU time granularity.
+2. Do not disable preemption for i386 in breakpoint and debug handlers.
+This was the situation before October 2008. As far as I understand
+preemption only needs to be disabled on x86_64 because a seperate 
+stack is used, but it's nice to have things work the same way on
+i386 and x86_64.
 
-FIRST RESULTS
--------------
-Together with this kernel patch set also user space code for a new top
-utility (ptop) is provided that exploits the new kernel infrastructure. See
-patch 10 for more details.
+3. Let handle_vm86_trap() return instead of jumping to assembly code.
+By setting a flag in _TIF_WORK_MASK, either TIF_IRET or TIF_NOTIFY_RESUME,
+the code in entry_32.S is instructed to return to 32 bit mode from
+V86 mode. The logic in entry_32.S was already present to handle signals.
+(I chose TIF_IRET because it's slightly more efficient in
+do_notify_resume() in signal.c, but in fact TIF_IRET can probably be
+replaced by TIF_NOTIFY_RESUME everywhere.)
 
-TEST1: System with many sleeping tasks
+I'm submitting approach 3, because I believe it is the most elegant
+and prevents future confusion. Still, an obvious 
+preempt_conditional_cli(regs);
+is necessary in traps.c to correct the bug.
 
-  for ((i=0; i < 1000; i++))
-  do
-         sleep 1000000 &
-  done
+Signed-off-by: Bart Oldeman <bartoldeman@users.sourceforge.net>
+---
+  arch/x86/kernel/traps.c   |    1 +
+  arch/x86/kernel/vm86_32.c |   14 +++++---------
+  2 files changed, 6 insertions(+), 9 deletions(-)
 
-  # ptop_new_proc
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 725ef4d..4d0f3ed 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -568,6 +568,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+  	if (regs->flags & X86_VM_MASK) {
+  		handle_vm86_trap((struct kernel_vm86_regs *) regs,
+  				error_code, 1);
++		preempt_conditional_cli(regs);
+  		return;
+  	}
 
-             VVVV
-  pid   user  sys  ste  total  Name
-  (#)    (%)  (%)  (%)    (%)  (str)
-  541   0.37 2.39 0.10   2.87  top
-  3743  0.03 0.05 0.00   0.07  ptop_new_proc
-             ^^^^
+diff --git a/arch/x86/kernel/vm86_32.c b/arch/x86/kernel/vm86_32.c
+index 5ffb562..ad0830d 100644
+--- a/arch/x86/kernel/vm86_32.c
++++ b/arch/x86/kernel/vm86_32.c
+@@ -350,16 +350,12 @@ static void do_sys_vm86(struct kernel_vm86_struct *info, struct task_struct *tsk
+  	/* we never return here */
+  }
 
-Compared to the old top command that has to scan more than 1000 proc
-directories the new ptop consumes much less CPU time (0.05% system time
-on my s390 system).
+-static inline void return_to_32bit(struct kernel_vm86_regs *regs16, int retval)
++static inline void return_to_32bit(struct kernel_vm86_regs *regs, int retval)
+  {
+-	struct pt_regs *regs32;
+-
+-	regs32 = save_v86_state(regs16);
+-	regs32->ax = retval;
+-	__asm__ __volatile__("movl %0,%%esp\n\t"
+-		"movl %1,%%ebp\n\t"
+-		"jmp resume_userspace"
+-		: : "r" (regs32), "r" (current_thread_info()));
++	KVM86->regs32->ax = retval;
++	/* setting this flag forces the code in entry_32.S to call
++	   save_v86_state() and change the stack pointer to KVM86->regs32 */
++	set_thread_flag(TIF_IRET);
+  }
 
-TEST2: Show snapshot consistency with system that is 100% busy
-
-  System with 3 CPUs:
-
-  for ((i=0; i < $(cat /proc/cpuinfo  | grep "^processor" | wc -l); i++))
-  do
-       ./loop &
-  done
-
-  # ptop_snap_proc
-
-          VVVV  VVV  VVV                        VVVVV
-  pid     user  sys  ste cuser csys cste delay  total Elap+ Name
-  (#)      (%)  (%)  (%)   (%)  (%)  (%)   (%)    (%)  (hm) (str)
-  23891  99.84 0.06 0.09  0.00 0.00 0.00  0.01  99.99  0:00 loop
-  23881  99.66 0.06 0.09  0.00 0.00 0.00  0.20  99.81  0:00 loop
-  23886  99.65 0.06 0.09  0.00 0.00 0.00  0.20  99.80  0:00 loop
-  2413    0.00 0.00 0.00  0.00 0.00 0.00  0.00   0.01  4:17 sshd
-  ...
-  V:V:S 299.36 0.36 0.27  0.00 0.00 0.00  0.40 300.00  4:22
-                                               ^^^^^^
-
-  With the snapshot mechanism the sum of all tasks CPU times (user + system +
-  steal) will be exactly 300.00% CPU time with this testcase. Using
-  ptop_snap_proc (see patch 10) this works fine on s390.
-
-PATCHSET OVERVIEW
------------------
-The code is not final and still has a few TODOs. But it is good enough for a
-first round of review. The following kernel patches are provided:
-
-[01] Prepare-0: Use real microsecond granularity for taskstats CPU times.
-[02] Prepare-1: Restructure taskstats.c in order to be able to add new commands
-     more easily.
-[03] Prepare-2: Separate the finding of a task_struct by PID or TGID from
-     filling the taskstats.
-[04] Add new command "TASKSTATS_CMD_ATTR_PIDS" to get a snapshot of multiple
-     tasks.
-[05] Add procfs interface for taskstats commands. This allows to get a complete
-     and consistent snapshot with all tasks using two system calls (ioctl and
-     read). Transferring a snapshot of all running tasks is not possible using
-     the existing netlink interface, because there we have the socket buffer
-     size as restricting factor.
-[06] Add TGID to taskstats.
-[07] Add steal time per task accounting.
-[08] Add cumulative CPU time (user, system and steal) to taskstats.
-[09] Fix exit CPU time accounting.
-
-[10] Besides of the kernel patches also user space code is provided that
-     exploits the new kernel infrastructure. The user space code provides the
-     following:
-     1. A proposal for a taskstats user space library:
-        1.1 Based on netlink (requires libnl-devel-1.1-5)
-        2.1 Based on the new /proc/taskstats interface (see [05])
-     2. A proposal for a task snapshot library based on taskstats library (1.1)
-     3. A new tool "ptop" (precise top) that uses the libraries
-
-
+  static inline void set_IF(struct kernel_vm86_regs *regs)
