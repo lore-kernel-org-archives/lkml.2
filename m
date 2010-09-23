@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753377Ab0IWDSU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 23:18:20 -0400
-Received: from mail.perches.com ([173.55.12.10]:2265 "EHLO mail.perches.com"
+	id S1753360Ab0IWDSS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 23:18:18 -0400
+Received: from mail.perches.com ([173.55.12.10]:2264 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752798Ab0IWDRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752797Ab0IWDRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 22 Sep 2010 23:17:15 -0400
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 6/8] scripts/get_maintainer.pl: Correct indentation in a few places
-Date: Wed, 22 Sep 2010 20:17:12 -0700
-Message-Id: <252e897216c16a7d531c5907948349f188df2ca4.1285209493.git.joe@perches.com>
+Subject: [PATCH 5/8] scripts/get_maintainer.pl: fix mailmap handling
+Date: Wed, 22 Sep 2010 20:17:11 -0700
+Message-Id: <432055ff579ec701735c2cd1e0793b78000c90c6.1285209493.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <cover.1285209493.git.joe@perches.com>
 References: <cover.1285209493.git.joe@perches.com>
@@ -18,230 +18,201 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And a miscellaneous conversion of You to you in a help message
+From: florian@mickler.org <florian@mickler.org>
 
+Implement it, like it is described in git-shortlog.
+
+Signed-off-by: Florian Mickler <florian@mickler.org>
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- scripts/get_maintainer.pl |  156 ++++++++++++++++++++++----------------------
- 1 files changed, 78 insertions(+), 78 deletions(-)
+ scripts/get_maintainer.pl |  147 +++++++++++++++++++++++++++++++++------------
+ 1 files changed, 109 insertions(+), 38 deletions(-)
 
 diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
-index faeace4..0abfdbc 100755
+index 61d3bb5..faeace4 100755
 --- a/scripts/get_maintainer.pl
 +++ b/scripts/get_maintainer.pl
-@@ -306,7 +306,7 @@ sub read_mailmap {
-     my $mailmap = {
- 	names => {},
- 	addresses => {}
--   };
-+    };
- 
-     if (!$email_remove_duplicates) {
- 	return $mailmap;
-@@ -327,39 +327,39 @@ sub read_mailmap {
- 	# name1 <mail1> name2 <mail2>
- 	# (see man git-shortlog)
- 	if (/^(.+)<(.+)>$/) {
--		my $real_name = $1;
--		my $address = $2;
-+	    my $real_name = $1;
-+	    my $address = $2;
- 
--		$real_name =~ s/\s+$//;
--		$mailmap->{names}->{$address} = $real_name;
-+	    $real_name =~ s/\s+$//;
-+	    $mailmap->{names}->{$address} = $real_name;
- 
- 	} elsif (/^<([^\s]+)>\s*<([^\s]+)>$/) {
--		my $real_address = $1;
--		my $wrong_address = $2;
-+	    my $real_address = $1;
-+	    my $wrong_address = $2;
- 
--		$mailmap->{addresses}->{$wrong_address} = $real_address;
-+	    $mailmap->{addresses}->{$wrong_address} = $real_address;
- 
- 	} elsif (/^(.+)<([^\s]+)>\s*<([^\s]+)>$/) {
--		my $real_name= $1;
--		my $real_address = $2;
--		my $wrong_address = $3;
-+	    my $real_name= $1;
-+	    my $real_address = $2;
-+	    my $wrong_address = $3;
- 
--		$real_name =~ s/\s+$//;
-+	    $real_name =~ s/\s+$//;
- 
--		$mailmap->{names}->{$wrong_address} = $real_name;
--		$mailmap->{addresses}->{$wrong_address} = $real_address;
-+	    $mailmap->{names}->{$wrong_address} = $real_name;
-+	    $mailmap->{addresses}->{$wrong_address} = $real_address;
- 
- 	} elsif (/^(.+)<([^\s]+)>\s*([^\s].*)<([^\s]+)>$/) {
--		my $real_name = $1;
--		my $real_address = $2;
--		my $wrong_name = $3;
--		my $wrong_address = $4;
-+	    my $real_name = $1;
-+	    my $real_address = $2;
-+	    my $wrong_name = $3;
-+	    my $wrong_address = $4;
- 
--		$real_name =~ s/\s+$//;
--		$wrong_name =~ s/\s+$//;
-+	    $real_name =~ s/\s+$//;
-+	    $wrong_name =~ s/\s+$//;
- 
--		$mailmap->{names}->{format_email($wrong_name,$wrong_address,1)} = $real_name;
--		$mailmap->{addresses}->{format_email($wrong_name,$wrong_address,1)} = $real_address;
-+	    $mailmap->{names}->{format_email($wrong_name,$wrong_address,1)} = $real_name;
-+	    $mailmap->{addresses}->{format_email($wrong_name,$wrong_address,1)} = $real_address;
- 	}
-     }
-     close($mailmap_file);
-@@ -743,30 +743,30 @@ EOT
+@@ -295,31 +295,76 @@ while (<$maint>) {
  }
+ close($maint);
  
- sub top_of_kernel_tree {
--	my ($lk_path) = @_;
-+    my ($lk_path) = @_;
+-my %mailmap;
  
--	if ($lk_path ne "" && substr($lk_path,length($lk_path)-1,1) ne "/") {
--	    $lk_path .= "/";
--	}
--	if (   (-f "${lk_path}COPYING")
--	    && (-f "${lk_path}CREDITS")
--	    && (-f "${lk_path}Kbuild")
--	    && (-f "${lk_path}MAINTAINERS")
--	    && (-f "${lk_path}Makefile")
--	    && (-f "${lk_path}README")
--	    && (-d "${lk_path}Documentation")
--	    && (-d "${lk_path}arch")
--	    && (-d "${lk_path}include")
--	    && (-d "${lk_path}drivers")
--	    && (-d "${lk_path}fs")
--	    && (-d "${lk_path}init")
--	    && (-d "${lk_path}ipc")
--	    && (-d "${lk_path}kernel")
--	    && (-d "${lk_path}lib")
--	    && (-d "${lk_path}scripts")) {
--		return 1;
--	}
--	return 0;
-+    if ($lk_path ne "" && substr($lk_path,length($lk_path)-1,1) ne "/") {
-+	$lk_path .= "/";
+-if ($email_remove_duplicates) {
+-    open(my $mailmap, '<', "${lk_path}.mailmap")
++#
++# Read mail address map
++#
++
++my $mailmap = read_mailmap();
++
++sub read_mailmap {
++    my $mailmap = {
++	names => {},
++	addresses => {}
++   };
++
++    if (!$email_remove_duplicates) {
++	return $mailmap;
 +    }
-+    if (   (-f "${lk_path}COPYING")
-+	&& (-f "${lk_path}CREDITS")
-+	&& (-f "${lk_path}Kbuild")
-+	&& (-f "${lk_path}MAINTAINERS")
-+	&& (-f "${lk_path}Makefile")
-+	&& (-f "${lk_path}README")
-+	&& (-d "${lk_path}Documentation")
-+	&& (-d "${lk_path}arch")
-+	&& (-d "${lk_path}include")
-+	&& (-d "${lk_path}drivers")
-+	&& (-d "${lk_path}fs")
-+	&& (-d "${lk_path}init")
-+	&& (-d "${lk_path}ipc")
-+	&& (-d "${lk_path}kernel")
-+	&& (-d "${lk_path}lib")
-+	&& (-d "${lk_path}scripts")) {
-+	return 1;
-+    }
-+    return 0;
- }
++
++    open(my $mailmap_file, '<', "${lk_path}.mailmap")
+ 	or warn "$P: Can't open .mailmap: $!\n";
+-    while (<$mailmap>) {
+-	my $line = $_;
  
- sub parse_email {
-@@ -1107,29 +1107,30 @@ sub which_conf {
- }
- 
- sub mailmap_email {
--	my $line = shift;
-+    my $line = shift;
+-	next if ($line =~ m/^\s*#/);
+-	next if ($line =~ m/^\s*$/);
++    while (<$mailmap_file>) {
++	s/#.*$//; #strip comments
++	s/^\s+|\s+$//g; #trim
  
 -	my ($name, $address) = parse_email($line);
--	my $email = format_email($name, $address, 1);
--	my $real_name = $name;
--	my $real_address = $address;
--
--	if (exists $mailmap->{names}->{$email} || exists $mailmap->{addresses}->{$email}) {
--		if (exists $mailmap->{names}->{$email}) {
--			$real_name = $mailmap->{names}->{$email};
--		}
--		if (exists $mailmap->{addresses}->{$email}) {
--			$real_address = $mailmap->{addresses}->{$email};
--		}
+-	$line = format_email($name, $address, $email_usename);
++	next if (/^\s*$/); #skip empty lines
++	#entries have one of the following formats:
++	# name1 <mail1>
++	# <mail1> <mail2>
++	# name1 <mail1> <mail2>
++	# name1 <mail1> name2 <mail2>
++	# (see man git-shortlog)
++	if (/^(.+)<(.+)>$/) {
++		my $real_name = $1;
++		my $address = $2;
+ 
+-	next if ($line =~ m/^\s*$/);
++		$real_name =~ s/\s+$//;
++		$mailmap->{names}->{$address} = $real_name;
+ 
+-	if (exists($mailmap{$name})) {
+-	    my $obj = $mailmap{$name};
+-	    push(@$obj, $address);
 -	} else {
--		if (exists $mailmap->{names}->{$address}) {
--			$real_name = $mailmap->{names}->{$address};
--		}
--		if (exists $mailmap->{addresses}->{$address}) {
--			$real_address = $mailmap->{addresses}->{$address};
--		}
-+    my ($name, $address) = parse_email($line);
-+    my $email = format_email($name, $address, 1);
-+    my $real_name = $name;
-+    my $real_address = $address;
+-	    my @arr = ($address);
+-	    $mailmap{$name} = \@arr;
++	} elsif (/^<([^\s]+)>\s*<([^\s]+)>$/) {
++		my $real_address = $1;
++		my $wrong_address = $2;
 +
-+    if (exists $mailmap->{names}->{$email} ||
-+	exists $mailmap->{addresses}->{$email}) {
-+	if (exists $mailmap->{names}->{$email}) {
-+	    $real_name = $mailmap->{names}->{$email};
-+	}
-+	if (exists $mailmap->{addresses}->{$email}) {
-+	    $real_address = $mailmap->{addresses}->{$email};
-+	}
-+    } else {
-+	if (exists $mailmap->{names}->{$address}) {
-+	    $real_name = $mailmap->{names}->{$address};
-+	}
-+	if (exists $mailmap->{addresses}->{$address}) {
-+	    $real_address = $mailmap->{addresses}->{$address};
++		$mailmap->{addresses}->{$wrong_address} = $real_address;
++
++	} elsif (/^(.+)<([^\s]+)>\s*<([^\s]+)>$/) {
++		my $real_name= $1;
++		my $real_address = $2;
++		my $wrong_address = $3;
++
++		$real_name =~ s/\s+$//;
++
++		$mailmap->{names}->{$wrong_address} = $real_name;
++		$mailmap->{addresses}->{$wrong_address} = $real_address;
++
++	} elsif (/^(.+)<([^\s]+)>\s*([^\s].*)<([^\s]+)>$/) {
++		my $real_name = $1;
++		my $real_address = $2;
++		my $wrong_name = $3;
++		my $wrong_address = $4;
++
++		$real_name =~ s/\s+$//;
++		$wrong_name =~ s/\s+$//;
++
++		$mailmap->{names}->{format_email($wrong_name,$wrong_address,1)} = $real_name;
++		$mailmap->{addresses}->{format_email($wrong_name,$wrong_address,1)} = $real_address;
  	}
--	return format_email($real_name, $real_address, 1);
-+    }
-+    return format_email($real_name, $real_address, 1);
+     }
+-    close($mailmap);
++    close($mailmap_file);
++
++    return $mailmap;
  }
  
- sub mailmap {
-@@ -1146,18 +1147,17 @@ sub mailmap {
+ ## use the filenames on the command line or find the filenames in the patchfiles
+@@ -1061,30 +1106,58 @@ sub which_conf {
+     return "";
  }
  
- sub merge_by_realname {
--	my %address_map;
--	my (@emails) = @_;
--	foreach my $email (@emails) {
--		my ($name, $address) = parse_email($email);
--		if (!exists $address_map{$name}) {
--			$address_map{$name} = $address;
--		} else {
--			$address = $address_map{$name};
--			$email = format_email($name,$address,1);
--		}
-+    my %address_map;
-+    my (@emails) = @_;
-+    foreach my $email (@emails) {
-+	my ($name, $address) = parse_email($email);
-+	if (!exists $address_map{$name}) {
-+	    $address_map{$name} = $address;
+-sub mailmap {
+-    my (@lines) = @_;
+-    my %hash;
++sub mailmap_email {
++	my $line = shift;
+ 
+-    foreach my $line (@lines) {
+ 	my ($name, $address) = parse_email($line);
+-	if (!exists($hash{$name})) {
+-	    $hash{$name} = $address;
+-	} elsif ($address ne $hash{$name}) {
+-	    $address = $hash{$name};
+-	    $line = format_email($name, $address, $email_usename);
+-	}
+-	if (exists($mailmap{$name})) {
+-	    my $obj = $mailmap{$name};
+-	    foreach my $map_address (@$obj) {
+-		if (($map_address eq $address) &&
+-		    ($map_address ne $hash{$name})) {
+-		    $line = format_email($name, $hash{$name}, $email_usename);
++	my $email = format_email($name, $address, 1);
++	my $real_name = $name;
++	my $real_address = $address;
++
++	if (exists $mailmap->{names}->{$email} || exists $mailmap->{addresses}->{$email}) {
++		if (exists $mailmap->{names}->{$email}) {
++			$real_name = $mailmap->{names}->{$email};
++		}
++		if (exists $mailmap->{addresses}->{$email}) {
++			$real_address = $mailmap->{addresses}->{$email};
++		}
 +	} else {
-+	    $address = $address_map{$name};
-+	    $email = format_email($name,$address,1);
++		if (exists $mailmap->{names}->{$address}) {
++			$real_name = $mailmap->{names}->{$address};
++		}
++		if (exists $mailmap->{addresses}->{$address}) {
++			$real_address = $mailmap->{addresses}->{$address};
+ 		}
+-	    }
  	}
--
-+    }
++	return format_email($real_name, $real_address, 1);
++}
++
++sub mailmap {
++    my (@addresses) = @_;
++
++    my @ret = ();
++    foreach my $line (@addresses) {
++	push(@ret, mailmap_email($line), 1);
+     }
+ 
+-    return @lines;
++    merge_by_realname(@ret) if $email_remove_duplicates;
++
++    return @ret;
++}
++
++sub merge_by_realname {
++	my %address_map;
++	my (@emails) = @_;
++	foreach my $email (@emails) {
++		my ($name, $address) = parse_email($email);
++		if (!exists $address_map{$name}) {
++			$address_map{$name} = $address;
++		} else {
++			$address = $address_map{$name};
++			$email = format_email($name,$address,1);
++		}
++	}
++
  }
  
  sub git_execute_cmd {
-@@ -1555,7 +1555,7 @@ commit signers and mailing lists that could be CC'd on a patch.
+@@ -1636,9 +1709,7 @@ sub vcs_assign {
+ 	$divisor = 1;
+     }
  
- Any *'d entry is selected.
+-    if ($email_remove_duplicates) {
+-	@lines = mailmap(@lines);
+-    }
++    @lines = mailmap(@lines);
  
--If you have git or hg installed, You can choose to summarize the commit
-+If you have git or hg installed, you can choose to summarize the commit
- history of files in the patch.  Also, each line of the current file can
- be matched to its commit author and that commits signers with blame.
+     return if (@lines <= 0);
  
 -- 
 1.7.3
