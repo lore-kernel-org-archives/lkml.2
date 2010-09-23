@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755944Ab0IWRvc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 13:51:32 -0400
-Received: from xenotime.net ([72.52.115.56]:47781 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755771Ab0IWRvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 13:51:31 -0400
-Date: Thu, 23 Sep 2010 10:51:27 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: linux-kernel@vger.kernel.org, Gao Yunpeng <yunpeng.gao@intel.com>
-Cc: akpm@linux-foundation.org, gregkh@suse.de,
-        driverdevel <devel@driverdev.osuosl.org>
-Subject: Re: mmotm 2010-09-22-16-11 uploaded (staging/spectra)
-Message-Id: <20100923105127.75cf060d.rdunlap@xenotime.net>
-In-Reply-To: <201009222343.o8MNh9Mp023931@imap1.linux-foundation.org>
-References: <201009222343.o8MNh9Mp023931@imap1.linux-foundation.org>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755989Ab0IWRwo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 13:52:44 -0400
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:61971 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755775Ab0IWRwn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 13:52:43 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 67.188.36.105
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19Xd+PHw732gttU1yIOmmon
+Date: Thu, 23 Sep 2010 10:52:28 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: "Cousson, Benoit" <b-cousson@ti.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>, Paul Walmsley <paul@pwsan.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 7/7] omap3: make coresight register save across OFF
+ modes a sysfs option
+Message-ID: <20100923175227.GO4211@atomide.com>
+References: <13B9B4C6EF24D648824FF11BE896716203BADA0745@dlee02.ent.ti.com>
+ <1280077520-7538-8-git-send-email-virtuoso@slind.org>
+ <20100806123711.GI28519@shisha.kicks-ass.net>
+ <20100806124726.GN23778@atomide.com>
+ <4C8209E2.3080803@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C8209E2.3080803@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Sep 2010 16:12:09 -0700 akpm@linux-foundation.org wrote:
-
-> The mm-of-the-moment snapshot 2010-09-22-16-11 has been uploaded to
+* Cousson, Benoit <b-cousson@ti.com> [100904 01:49]:
 > 
->    http://userweb.kernel.org/~akpm/mmotm/
-> 
-> and will soon be available at
-> 
->    git://zen-kernel.org/kernel/mmotm.git
-> 
-> It contains the following patches against 2.6.36-rc5:
+> These patches are still using static virtual to physical mapping in
+> io.h,  shouldn't we take the opportunity of this series to fix that
+> and use ioremap instead?
 
+Hmm, well the amba device should ioremap, but we need the virt address
+for sleep34xx.S also. So to me it seems like we're missing the static
+ioremap entries for plat-omap/io.c for the virtual addresses.
 
-drivers/staging/spectra/ffsport.c:659: error: implicit declaration of function 'blk_queue_ordered'
-drivers/staging/spectra/ffsport.c:659: error: 'QUEUE_ORDERED_DRAIN_FLUSH' undeclared (first use in this function)
+Alexander, can you please check that and repost the remaining
+three patches one more time?
 
+Thanks,
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Tony
