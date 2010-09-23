@@ -1,99 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756443Ab0IWUPP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 16:15:15 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:57688 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755091Ab0IWUPN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 16:15:13 -0400
-Date: Thu, 23 Sep 2010 21:36:54 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-api@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
-        David Miller <davem@davemloft.net>, John Stultz <johnstul@us.ibm.com>,
-        Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v6 0/8] ptp: IEEE 1588 hardware clock support
-Message-ID: <20100923213654.0c64b047@lxorguk.ukuu.org.uk>
-In-Reply-To: <cover.1285261533.git.richard.cochran@omicron.at>
-References: <cover.1285261533.git.richard.cochran@omicron.at>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756539Ab0IWUP6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 16:15:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52382 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751891Ab0IWUP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 16:15:57 -0400
+Date: Thu, 23 Sep 2010 16:15:48 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux-kernel@vger.kernel.org, axboe@kernel.dk
+Cc: hch@lst.de
+Subject: Re: [PATCH 2/2] atari floppy: Stop sharing request queue across
+ multiple gendisks
+Message-ID: <20100923201548.GJ20338@redhat.com>
+References: <1285271646-2768-1-git-send-email-vgoyal@redhat.com>
+ <1285271646-2768-3-git-send-email-vgoyal@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285271646-2768-3-git-send-email-vgoyal@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->    So as far as the POSIX standard is concerned, offering a clock id
->    to represent the PHC would be acceptable.
-
-But completely useless as you may have more than one entirely different
-time managed by PTP and in which you are not master but must work with
-the timebases provided.
-
-
->     /sys/class/timesource/<name>/id
->     /sys/class/ptp/ptp_clock_X/id
+On Thu, Sep 23, 2010 at 03:54:06PM -0400, Vivek Goyal wrote:
+> o Use one request queue per gendisk instead of sharing the queue.
 > 
->     Note: I am not too sure that this is exactly what people imagined,
->           but it is my best understanding so far. I gleaned two
->           different ideas about where to offer the clock id. In order
->           to keep just one way, I will be happy to remove the less
->           popular one.
+> o Don't have hardware. No compile testing or run time testing done. Completely
+>   untested.
+> 
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> ---
+>  drivers/block/ataflop.c |   50 ++++++++++++++++++++++++++++++++++++----------
+>  1 files changed, 39 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/block/ataflop.c b/drivers/block/ataflop.c
+> index aceb964..bad514cb 100644
+> --- a/drivers/block/ataflop.c
+> +++ b/drivers/block/ataflop.c
+> @@ -79,8 +79,8 @@
+>  
+>  #undef DEBUG
+>  
+> -static struct request_queue *floppy_queue;
+>  static struct request *fd_request;
+> +static int fdc_queue;
+>  
+>  /* Disk types: DD, HD, ED */
+>  static struct atari_disk_type {
+> @@ -1391,6 +1391,29 @@ static void setup_req_params( int drive )
+>  			ReqTrack, ReqSector, (unsigned long)ReqData ));
+>  }
+>  
+> +/*
+> + * Round-robin between our available drives, doing one request from each
+> + */
+> +static int set_next_request(void)
 
-I see no fix proposed for the race condition I pointed out. This doesn't
-work.
-
-
->    If the Linux system time is synchronized to the PHC via the PPS
-
-To which PHC we can have several
-
->    + Intel IXP465
->      - Auxiliary Slave/Master Mode Snapshot (optional interrupt)
->      - Target Time (optional interrupt)
-
-And about 40 already supported by char driver interface clocks and rtcs
-in the kernel...
-
-
-I'd say the inability to have multiple clocks and the race condition
-because of the clockid stuff leaves the proposal dead in the water.
-
-It also ignores the existing APIs we have floating around attached to
-devices.
-
-You need to make one small important change. You need to take the POSIX
-crap about enumerating things out and shoot it, bury it at a crossroads
-and sprinkle holy water on it.
-
-Drop the clockid_t and swap it for a file handle like a proper Unix or
-Linux interface. The rest is much the same
-
-	fd = open /sys/class/timesource/[whatever]
-
-	various queries you may want to do to check the name etc
-
-	fclock_adjtime(fd, ...)
-	
-
-The posix interface is fundamentally flawed. It only works for staticly
-enumerable objects. Unix avoided that forty years ago by making the
-identifier a handle which immediately cures all your object lifetime
-problems in one swoop.
-
-Namespace -> file handle translations are dynamic, but once you have it
-open you hold on to the same object, which means you can check what you
-have.
+While scanning the patch found one bug. set_next_request() should be 
+returning "struct request *". Second version of patch is attached.
 
 
+o Use one request queue per gendisk instead of sharing the queue.
 
-Alan
+o Don't have hardware. No compile testing or run time testing done. Completely
+  untested.
+
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ drivers/block/ataflop.c |   50 +++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 39 insertions(+), 11 deletions(-)
+
+Index: linux-2.6-block/drivers/block/ataflop.c
+===================================================================
+--- linux-2.6-block.orig/drivers/block/ataflop.c	2010-09-21 15:56:35.000000000 -0400
++++ linux-2.6-block/drivers/block/ataflop.c	2010-09-23 16:12:35.826001335 -0400
+@@ -79,8 +79,8 @@
+ 
+ #undef DEBUG
+ 
+-static struct request_queue *floppy_queue;
+ static struct request *fd_request;
++static int fdc_queue;
+ 
+ /* Disk types: DD, HD, ED */
+ static struct atari_disk_type {
+@@ -1391,6 +1391,29 @@ static void setup_req_params( int drive 
+ 			ReqTrack, ReqSector, (unsigned long)ReqData ));
+ }
+ 
++/*
++ * Round-robin between our available drives, doing one request from each
++ */
++static struct request *set_next_request(void)
++{
++	struct request_queue *q;
++	int old_pos = fdc_queue;
++	struct request *rq;
++
++	do {
++		q = unit[fdc_queue].disk->queue;
++		if (++fdc_queue == FD_MAX_UNITS)
++			fdc_queue = 0;
++		if (q) {
++			rq = blk_fetch_request(q);
++			if (rq)
++				break;
++		}
++	} while (fdc_queue != old_pos);
++
++	return rq;
++}
++
+ 
+ static void redo_fd_request(void)
+ {
+@@ -1405,7 +1428,7 @@ static void redo_fd_request(void)
+ 
+ repeat:
+ 	if (!fd_request) {
+-		fd_request = blk_fetch_request(floppy_queue);
++		fd_request = set_next_request();
+ 		if (!fd_request)
+ 			goto the_end;
+ 	}
+@@ -1932,10 +1955,6 @@ static int __init atari_floppy_init (voi
+ 	PhysTrackBuffer = virt_to_phys(TrackBuffer);
+ 	BufferDrive = BufferSide = BufferTrack = -1;
+ 
+-	floppy_queue = blk_init_queue(do_fd_request, &ataflop_lock);
+-	if (!floppy_queue)
+-		goto Enomem;
+-
+ 	for (i = 0; i < FD_MAX_UNITS; i++) {
+ 		unit[i].track = -1;
+ 		unit[i].flags = 0;
+@@ -1944,7 +1963,10 @@ static int __init atari_floppy_init (voi
+ 		sprintf(unit[i].disk->disk_name, "fd%d", i);
+ 		unit[i].disk->fops = &floppy_fops;
+ 		unit[i].disk->private_data = &unit[i];
+-		unit[i].disk->queue = floppy_queue;
++		unit[i].disk->queue = blk_init_queue(do_fd_request,
++					&ataflop_lock);
++		if (!unit[i].disk->queue)
++			goto Enomem;
+ 		set_capacity(unit[i].disk, MAX_DISK_SIZE * 2);
+ 		add_disk(unit[i].disk);
+ 	}
+@@ -1959,10 +1981,14 @@ static int __init atari_floppy_init (voi
+ 
+ 	return 0;
+ Enomem:
+-	while (i--)
++	while (i--) {
++		struct request_queue *q = unit[i].disk->queue;
++
+ 		put_disk(unit[i].disk);
+-	if (floppy_queue)
+-		blk_cleanup_queue(floppy_queue);
++		if (q)
++			blk_cleanup_queue(q);
++	}
++
+ 	unregister_blkdev(FLOPPY_MAJOR, "fd");
+ 	return -ENOMEM;
+ }
+@@ -2011,12 +2037,14 @@ static void __exit atari_floppy_exit(voi
+ 	int i;
+ 	blk_unregister_region(MKDEV(FLOPPY_MAJOR, 0), 256);
+ 	for (i = 0; i < FD_MAX_UNITS; i++) {
++		struct request_queue *q = unit[i].disk->queue;
++
+ 		del_gendisk(unit[i].disk);
+ 		put_disk(unit[i].disk);
++		blk_cleanup_queue(q);
+ 	}
+ 	unregister_blkdev(FLOPPY_MAJOR, "fd");
+ 
+-	blk_cleanup_queue(floppy_queue);
+ 	del_timer_sync(&fd_timer);
+ 	atari_stram_free( DMABuffer );
+ }
