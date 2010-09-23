@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753671Ab0IWPPJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 11:15:09 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42845 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752568Ab0IWPPE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 11:15:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=bNgX+Wr4PcvZrZV7pOkYlar4bMR+OXFNPiCeM0gv3Upgjwl09+iY/OO5Y9aGSbW9Fl
-         87W/jdZ7zWuAlfPVVPhZ4Os5RM0ucXzzcjFltf2P2tHvQ//SriiC53Eg8eaWIeYJPP6o
-         wop1OoU8CU3zOcLveFfo9Ve5M/pGJNO4IOATU=
-Subject: Re: ahci rmmodable and shouldn't
-From: Pedro Francisco <pedrogfrancisco@gmail.com>
-To: Tejun Heo <htejun@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-In-Reply-To: <4C97DBE2.8070707@gmail.com>
-References: <201009162256.04765.pedrogfrancisco@gmail.com>
-	 <47010.148.87.67.141.1284674336.squirrel@www.xenotime.net>
-	 <4C933A8F.2080305@gmail.com> <1284892106.2650.4.camel@sundae-v2>
-	 <4C9602E4.4090007@gmail.com> <1284974726.11757.9.camel@sundae-v2>
-	 <4C9729D7.70500@gmail.com>  <4C972C60.8010506@gmail.com>
-	 <1285015465.26023.10.camel@sundae-v2> <4C97DB80.4060403@gmail.com>
-	 <4C97DBE2.8070707@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 23 Sep 2010 16:14:35 +0100
-Message-ID: <1285254875.2858.15.camel@sundae-v2>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753270Ab0IWPTE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 11:19:04 -0400
+Received: from spaceboyz.net ([87.106.131.203]:44962 "EHLO spaceboyz.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750998Ab0IWPTD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 11:19:03 -0400
+X-Greylist: delayed 1360 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Sep 2010 11:19:03 EDT
+Date: Thu, 23 Sep 2010 17:18:53 +0200
+From: David Lamparter <equinox@diac24.net>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org, Linux Containers <containers@lists.osdl.org>,
+        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, jamal <hadi@cyberus.ca>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Ulrich Drepper <drepper@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+        David Miller <davem@davemloft.net>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Ben Greear <greearb@candelatech.com>,
+        Matt Helsley <matthltc@us.ibm.com>, Jonathan Corbet <corbet@lwn.net>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>
+Subject: Re: [ABI REVIEW][PATCH 0/8] Namespace file descriptors
+Message-ID: <20100923151853.GC1160234@jupiter.n2.diac24.net>
+References: <m1ocborgq7.fsf@fess.ebiederm.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1ocborgq7.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Ter, 2010-09-21 at 00:10 +0200, Tejun Heo wrote:
-> On 09/21/2010 12:09 AM, Tejun Heo wrote:
-> > Hello,
-> > 
-> > On 09/20/2010 10:44 PM, Pedro Francisco wrote:
-> >> To which tree shall I apply it? It currently fails both on Linus'
-> >> linux-2.6 and
-> >> git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata-dev.git .
-> > 
-> > Hmm... weird.  It's against Linus' tree.  Checking, yeap, it applies
-> > cleanly to 2.6.36-rc4, commit 2422084a (Merge branch 'for-linus' of
-> > git://git.kernel.org/pub/scm/linux/kernel/git/mattst88/alpha-2.6).
-> 
-> Attaching the patch just in case.
+On Thu, Sep 23, 2010 at 01:45:04AM -0700, Eric W. Biederman wrote:
+> Introduce file for manipulating namespaces and related syscalls.
+> files:
+> /proc/self/ns/<nstype>
 
-I must have forgotten "-p1" since it now worked fine.
+As feedback from using network namespaces extensively in more or less
+production setups, I would like to make a request/suggestion: there
+needs to be a way to enumerate network namespaces independent from
+by-pid access.
 
-Anyway, the patch works on 2.6.36-rc4 :)
+At several occasions, I was left with either some runaway daemon which
+kept the namespace alive. To describe this a little more graphically:
+I found no other way than doing a
+	md5sum /proc/*/net/if_inet6 | sort | uniq -c -w 32
+to find out which runaway to kill to terminate the namespace.
 
-Sorry for the late reply but compiling and running it took a bit longer
-than expected.
--- 
-Pedro
+This makes network namespaces particularly cumbersome to use without PID
+namespaces. While I agree that a large part of the users - namely lxc -
+will use them together, network namespaces without pidns are very
+interesting for routing applications implementing VRFs.
+
+Is it possible to add some kind of "all namespaces" list, optimally
+giving an opportunity to open() exactly this file descriptor that you
+get from /proc/<pid>/ns/net?
+
+Also, is it possible to extend that file descriptor to have an
+"get all pids" ioctl,
+...or, wait, maybe have /proc/...ns/proc/<pid> symlink?
+
+(This obviously isn't fully thought to the end, please pick up...)
+
+
+-David
 
