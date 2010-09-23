@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754791Ab0IWVov (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 17:44:51 -0400
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:34735 "HELO
+	id S1754838Ab0IWVpt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 17:45:49 -0400
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:35420 "HELO
 	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753954Ab0IWVou (ORCPT
+	by vger.kernel.org with SMTP id S1753954Ab0IWVps (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 17:44:50 -0400
+	Thu, 23 Sep 2010 17:45:48 -0400
 From: Shawn Bohrer <sbohrer@rgmadvisors.com>
 To: arjan@linux.intel.com, nhorman@tuxdriver.com
 Cc: tomk@rgmadvisors.com, danb@rgmadvisors.com, linux-kernel@vger.kernel.org,
         Shawn Bohrer <sbohrer@rgmadvisors.com>
-Subject: [PATCH 2/2] Special interrupt counts line NMI may start with a space
-Date: Thu, 23 Sep 2010 16:38:07 -0500
-Message-Id: <1285277887-14190-3-git-send-email-sbohrer@rgmadvisors.com>
+Subject: [PATCH 1/2] Fix detection of CPUs in sysfs
+Date: Thu, 23 Sep 2010 16:38:06 -0500
+Message-Id: <1285277887-14190-2-git-send-email-sbohrer@rgmadvisors.com>
 X-Mailer: git-send-email 1.6.5.2
 In-Reply-To: <1285277887-14190-1-git-send-email-sbohrer@rgmadvisors.com>
 References: <1285277887-14190-1-git-send-email-sbohrer@rgmadvisors.com>
@@ -21,66 +21,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel determines the maximum number of possible IRQs and pads the
-first field of /proc/interrupts appropriately.  With four or more digits
-of precession the special interrupt counts all start with a space
-instead of a letter.  This caused the special interrupt counts to be
-counted on my system and that caused the cpunr count to be off when it
-reached the ERR and MIS lines forcing a CPU rescan.
+Only count directories that match /sys/devices/system/cpu/cpu[0-9]+ as
+CPUs.  Previously any directory that started with cpu was counted which
+caused cpufreq and cpuidle to be counted as CPUs.
 
 Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
 ---
- procinterrupts.c |   24 +++++++++++-------------
- 1 files changed, 11 insertions(+), 13 deletions(-)
+ cputree.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/procinterrupts.c b/procinterrupts.c
-index e336efe..322f4de 100644
---- a/procinterrupts.c
-+++ b/procinterrupts.c
-@@ -55,20 +55,18 @@ void parse_proc_interrupts(void)
- 		if (getline(&line, &size, file)==0)
- 			break;
+diff --git a/cputree.c b/cputree.c
+index 3b0c982..b879785 100644
+--- a/cputree.c
++++ b/cputree.c
+@@ -25,6 +25,7 @@
+  */
  
--
-+		number = strtoul(line, &c, 10);
- 		/* lines with letters in front are special, like NMI count. Ignore */
--		if (!(line[0]==' ' || (line[0]>='0' && line[0]<='9')))
--			break;
--		c = strchr(line, ':');
--		if (!c)
-+		if (line == c)
-+			continue;
-+
-+		if (c[0] == ':')
-+			++c;
-+		else
- 			continue;
--		*c = 0;
--		c++;
--		number = strtoul(line, NULL, 10);
-+
- 		count = 0;
- 		cpunr = 0;
--
--		c2=NULL;
- 		while (1) {
- 			uint64_t C;
- 			C = strtoull(c, &c2, 10);
-@@ -78,11 +76,11 @@ void parse_proc_interrupts(void)
- 			c=c2;
- 			cpunr++;
- 		}
--		if (cpunr != core_count) 
-+		if (cpunr != core_count)
- 			need_cpu_rescan = 1;
--		
-+
- 		set_interrupt_count(number, count);
--	}		
-+	}
- 	fclose(file);
- 	free(line);
- }
+ #include "config.h"
++#include <ctype.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <unistd.h>
+@@ -321,7 +322,7 @@ void parse_cpu_tree(void)
+ 		return;
+ 	do {
+ 		entry = readdir(dir);
+-                if (entry && strlen(entry->d_name)>3 && strstr(entry->d_name,"cpu")) {
++                if (entry && !strncmp(entry->d_name,"cpu", 3) && isdigit(entry->d_name[3])) {
+ 			char new_path[PATH_MAX];
+ 			sprintf(new_path, "/sys/devices/system/cpu/%s", entry->d_name);
+ 			do_one_cpu(new_path);
 -- 
 1.6.5.2
 
