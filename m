@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016Ab0IWIuw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 04:50:52 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:53772 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752262Ab0IWIuu (ORCPT
+	id S1754127Ab0IWIvi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 04:51:38 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:57542 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751964Ab0IWIvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 04:50:50 -0400
+	Thu, 23 Sep 2010 04:51:35 -0400
 From: ebiederm@xmission.com (Eric W. Biederman)
 To: <linux-kernel@vger.kernel.org>
 Cc: Linux Containers <containers@lists.osdl.org>, <netdev@vger.kernel.org>,
@@ -24,10 +24,10 @@ Cc: Linux Containers <containers@lists.osdl.org>, <netdev@vger.kernel.org>,
         Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
         Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>
 References: <m1ocborgq7.fsf@fess.ebiederm.org>
-Date: Thu, 23 Sep 2010 01:50:45 -0700
+Date: Thu, 23 Sep 2010 01:51:30 -0700
 In-Reply-To: <m1ocborgq7.fsf@fess.ebiederm.org> (Eric W. Biederman's message
 	of "Thu, 23 Sep 2010 01:45:04 -0700")
-Message-ID: <m1mxr8q1wa.fsf@fess.ebiederm.org>
+Message-ID: <m1hbhgq1v1.fsf@fess.ebiederm.org>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -39,12 +39,12 @@ X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
 	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
 	*      [score: 0.0000]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
 	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
 X-Spam-Combo: ;<linux-kernel@vger.kernel.org>
 X-Spam-Relay-Country: 
-Subject: [PATCH 6/8] ns proc: Add support for the mount namespace
+Subject: [PATCH 7/8] net: Allow setting the network namespace by fd
 X-Spam-Flag: No
 X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
 X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
@@ -53,120 +53,108 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-The mount namespace is a little tricky as an arbitrary
-decision must be made about what to set fs->root and
-fs->pwd to, as there is no expectation of a relationship
-between the two mount namespaces.
-
-Therefor I arbitrary find the root mount point, and follow
-every mount on top of it to find the top of the mount stack.
-Then I set fs->root and fs->pwd to that location.
-
-The topmost root of the mount stack seems like a reasonable place to be.
+Take advantage of the new abstraction and allow network devices
+to be placed in any network namespace that we have a fd to talk
+about.
 
 Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- fs/namespace.c          |   57 +++++++++++++++++++++++++++++++++++++++++++++++
- fs/proc/namespaces.c    |    1 +
- include/linux/proc_fs.h |    1 +
- 3 files changed, 59 insertions(+), 0 deletions(-)
+ include/linux/if_link.h     |    1 +
+ include/net/net_namespace.h |    1 +
+ net/core/net_namespace.c    |   26 ++++++++++++++++++++++++++
+ net/core/rtnetlink.c        |    4 +++-
+ 4 files changed, 31 insertions(+), 1 deletions(-)
 
-diff --git a/fs/namespace.c b/fs/namespace.c
-index a72eaab..ed11bac 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -32,6 +32,7 @@
- #include <linux/idr.h>
- #include <linux/fs_struct.h>
- #include <linux/fsnotify.h>
-+#include <linux/proc_fs.h>
- #include <asm/uaccess.h>
- #include <asm/unistd.h>
- #include "pnode.h"
-@@ -2418,3 +2419,59 @@ void put_mnt_ns(struct mnt_namespace *ns)
- 	kfree(ns);
- }
- EXPORT_SYMBOL(put_mnt_ns);
-+
-+
-+static void *mntns_get(struct task_struct *task)
-+{
-+	struct mnt_namespace *ns;
-+	rcu_read_lock();
-+	ns = task->nsproxy->mnt_ns;
-+	get_mnt_ns(ns);
-+	rcu_read_unlock();
-+	return ns;
-+}
-+
-+static void mntns_put(void *ns)
-+{
-+	put_mnt_ns(ns);
-+}
-+
-+static int mntns_install(struct nsproxy *nsproxy, void *ns)
-+{
-+	struct fs_struct *fs = current->fs;
-+	struct mnt_namespace *mnt_ns = ns;
-+	struct path root;
-+
-+	if (fs->users != 1)
-+		return -EINVAL;
-+
-+	get_mnt_ns(mnt_ns);
-+	put_mnt_ns(nsproxy->mnt_ns);
-+	nsproxy->mnt_ns = mnt_ns;
-+
-+	/* Find the root */
-+	root.mnt    = mnt_ns->root;
-+	root.dentry = mnt_ns->root->mnt_root;
-+	path_get(&root);
-+	while(d_mountpoint(root.dentry) && follow_down(&root))
-+		;
-+
-+	/* Update the pwd and root */
-+	path_get(&root);
-+	path_get(&root);
-+	path_put(&fs->root);
-+	path_put(&fs->pwd);
-+	fs->root = root;
-+	fs->pwd  = root;
-+	path_put(&root);
-+
-+	return 0;
-+}
-+
-+const struct proc_ns_operations mntns_operations = {
-+	.name		= PROC_NSNAME("mnt"),
-+	.get		= mntns_get,
-+	.put		= mntns_put,
-+	.install	= mntns_install,
-+};
-+
-diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
-index 2f503b5..c5956ad 100644
---- a/fs/proc/namespaces.c
-+++ b/fs/proc/namespaces.c
-@@ -25,6 +25,7 @@ static const struct proc_ns_operations *ns_entries[] = {
- #ifdef CONFIG_IPC_NS
- 	&ipcns_operations,
- #endif
-+	&mntns_operations,
+diff --git a/include/linux/if_link.h b/include/linux/if_link.h
+index 2fc66dd..ae73d5e 100644
+--- a/include/linux/if_link.h
++++ b/include/linux/if_link.h
+@@ -116,6 +116,7 @@ enum {
+ 	IFLA_STATS64,
+ 	IFLA_VF_PORTS,
+ 	IFLA_PORT_SELF,
++	IFLA_NET_NS_FD,
+ 	__IFLA_MAX
  };
  
- static const struct file_operations ns_file_operations = {
-diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
-index 9a9ef31..8a260b0 100644
---- a/include/linux/proc_fs.h
-+++ b/include/linux/proc_fs.h
-@@ -265,6 +265,7 @@ struct proc_ns_operations {
- extern const struct proc_ns_operations netns_operations;
- extern const struct proc_ns_operations utsns_operations;
- extern const struct proc_ns_operations ipcns_operations;
-+extern const struct proc_ns_operations mntns_operations;
- extern struct file *proc_ns_fget(int fd);
+diff --git a/include/net/net_namespace.h b/include/net/net_namespace.h
+index bd10a79..68672ce 100644
+--- a/include/net/net_namespace.h
++++ b/include/net/net_namespace.h
+@@ -114,6 +114,7 @@ static inline struct net *copy_net_ns(unsigned long flags, struct net *net_ns)
+ extern struct list_head net_namespace_list;
  
- union proc_op {
+ extern struct net *get_net_ns_by_pid(pid_t pid);
++extern struct net *get_net_ns_by_fd(int pid);
+ 
+ #ifdef CONFIG_NET_NS
+ extern void __put_net(struct net *net);
+diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
+index 581a088..a9b54a7 100644
+--- a/net/core/net_namespace.c
++++ b/net/core/net_namespace.c
+@@ -8,6 +8,8 @@
+ #include <linux/idr.h>
+ #include <linux/rculist.h>
+ #include <linux/nsproxy.h>
++#include <linux/proc_fs.h>
++#include <linux/file.h>
+ #include <net/net_namespace.h>
+ #include <net/netns/generic.h>
+ 
+@@ -341,6 +343,30 @@ struct net *get_net_ns_by_pid(pid_t pid)
+ }
+ EXPORT_SYMBOL_GPL(get_net_ns_by_pid);
+ 
++struct net *get_net_ns_by_fd(int fd)
++{
++	struct proc_inode *ei;
++	struct file *file;
++	struct net *net;
++
++	file = NULL;
++	net = ERR_PTR(-EINVAL);
++	file = proc_ns_fget(fd);
++	if (!fd)
++		goto out;
++		return ERR_PTR(-EINVAL);
++
++	ei = PROC_I(file->f_dentry->d_inode);
++	if (ei->ns_ops != &netns_operations)
++		goto out;
++
++	net = get_net(ei->ns);
++out:
++	if (file)
++		fput(file);
++	return net;
++}
++
+ static int __init net_ns_init(void)
+ {
+ 	struct net_generic *ng;
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index f78d821..771d8be 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1003,6 +1003,8 @@ struct net *rtnl_link_get_net(struct net *src_net, struct nlattr *tb[])
+ 	 */
+ 	if (tb[IFLA_NET_NS_PID])
+ 		net = get_net_ns_by_pid(nla_get_u32(tb[IFLA_NET_NS_PID]));
++	else if (tb[IFLA_NET_NS_FD])
++		net = get_net_ns_by_fd(nla_get_u32(tb[IFLA_NET_NS_FD]));
+ 	else
+ 		net = get_net(src_net);
+ 	return net;
+@@ -1077,7 +1079,7 @@ static int do_setlink(struct net_device *dev, struct ifinfomsg *ifm,
+ 	int send_addr_notify = 0;
+ 	int err;
+ 
+-	if (tb[IFLA_NET_NS_PID]) {
++	if (tb[IFLA_NET_NS_PID] || tb[IFLA_NET_NS_FD]) {
+ 		struct net *net = rtnl_link_get_net(dev_net(dev), tb);
+ 		if (IS_ERR(net)) {
+ 			err = PTR_ERR(net);
 -- 
 1.6.5.2.143.g8cc62
 
