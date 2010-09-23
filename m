@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491Ab0IWDoS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 23:44:18 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:39908 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751783Ab0IWDoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 23:44:16 -0400
-Date: Thu, 23 Sep 2010 13:44:14 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: linux-next: manual merge of the tip tree with the slab tree
-Message-Id: <20100923134414.7aa7f696.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752805Ab0IWDxQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 23:53:16 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:45285 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752476Ab0IWDxP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 23:53:15 -0400
+From: Dima Zavin <dima@android.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, Dima Zavin <dima@android.com>
+Subject: [PATCH] mm: add a might_sleep_if in dma_pool_alloc
+Date: Wed, 22 Sep 2010 20:52:47 -0700
+Message-Id: <1285213967-14052-1-git-send-email-dima@android.com>
+X-Mailer: git-send-email 1.6.6
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Buggy drivers (e.g. fsl_udc) could call dma_pool_alloc from atomic
+context with GFP_KERNEL. In most instances, the first pool_alloc_page
+call would succeed and the sleeping functions would never be called.
+This allowed the buggy drivers to slip through the cracks.
 
-Today's linux-next merge of the tip tree got a conflict in
-include/linux/percpu.h between commit
-6fc80ef491b981f59233beaf6aeaccc0c947031d ("percpu: use percpu allocator
-on UP too") from the slab tree and commit
-8b8e2ec1eeca7f6941bc81cefc9663018d6ceb57 ("percpu: Add {get,put}
-_cpu_ptr") from the tip tree.
+Add a might_sleep_if checking for __GFP_WAIT in flags.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
+Signed-off-by: Dima Zavin <dima@android.com>
+---
+ mm/dmapool.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/mm/dmapool.c b/mm/dmapool.c
+index 3df0637..4df2de7 100644
+--- a/mm/dmapool.c
++++ b/mm/dmapool.c
+@@ -311,6 +311,8 @@ void *dma_pool_alloc(struct dma_pool *pool, gfp_t mem_flags,
+ 	size_t offset;
+ 	void *retval;
+ 
++	might_sleep_if(mem_flags & __GFP_WAIT);
++
+ 	spin_lock_irqsave(&pool->lock, flags);
+  restart:
+ 	list_for_each_entry(page, &pool->page_list, page_list) {
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+1.6.6
 
-diff --cc include/linux/percpu.h
-index aeeeef1,0eb5083..0000000
---- a/include/linux/percpu.h
-+++ b/include/linux/percpu.h
-@@@ -39,8 -39,19 +39,17 @@@
-  	preempt_enable();				\
-  } while (0)
-  
-+ #define get_cpu_ptr(var) ({				\
-+ 	preempt_disable();				\
-+ 	this_cpu_ptr(var); })
-+ 
-+ #define put_cpu_ptr(var) do {				\
-+ 	(void)(var);					\
-+ 	preempt_enable();				\
-+ } while (0)
-+ 
- -#ifdef CONFIG_SMP
- -
-  /* minimum unit size, also is the maximum supported allocation size */
- -#define PCPU_MIN_UNIT_SIZE		PFN_ALIGN(64 << 10)
- +#define PCPU_MIN_UNIT_SIZE		PFN_ALIGN(32 << 10)
-  
-  /*
-   * Percpu allocator can serve percpu allocations before slab is
