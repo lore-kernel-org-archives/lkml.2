@@ -1,171 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251Ab0IWTSq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 15:18:46 -0400
-Received: from kroah.org ([198.145.64.141]:51326 "EHLO coco.kroah.org"
+	id S1756323Ab0IWTTD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 15:19:03 -0400
+Received: from kroah.org ([198.145.64.141]:51392 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756219Ab0IWTSe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 15:18:34 -0400
-Date: Thu, 23 Sep 2010 11:49:42 -0700
+	id S1756307Ab0IWTTA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 15:19:00 -0400
+Date: Thu, 23 Sep 2010 12:16:29 -0700
 From: Greg KH <greg@kroah.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Rik van Riel <riel@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>, stable@kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [stable] [PATCH 0/3] Reduce watermark-related problems with
- the per-cpu allocator V4
-Message-ID: <20100923184942.GW23040@kroah.com>
-References: <1283504926-2120-1-git-send-email-mel@csn.ul.ie>
- <20100903160551.05db4a92.akpm@linux-foundation.org>
- <20100921111741.GB11439@csn.ul.ie>
- <20100921125814.GF1205@kroah.com>
- <20100921142309.GA31813@csn.ul.ie>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Kay Sievers <kay.sievers@vrfy.org>, gregkh@suse.de,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -next] driver core: fix build for CONFIG_BLOCK=n
+Message-ID: <20100923191629.GB18736@kroah.com>
+References: <20100920161239.f204a507.sfr@canb.auug.org.au>
+ <20100920092034.0b3f5898.randy.dunlap@oracle.com>
+ <20100921223115.GB21202@kroah.com>
+ <20100923111541.97abcd05.rdunlap@xenotime.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100921142309.GA31813@csn.ul.ie>
+In-Reply-To: <20100923111541.97abcd05.rdunlap@xenotime.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 21, 2010 at 03:23:09PM +0100, Mel Gorman wrote:
-> On Tue, Sep 21, 2010 at 05:58:14AM -0700, Greg KH wrote:
-> > On Tue, Sep 21, 2010 at 12:17:41PM +0100, Mel Gorman wrote:
-> > > On Fri, Sep 03, 2010 at 04:05:51PM -0700, Andrew Morton wrote:
-> > > > On Fri,  3 Sep 2010 10:08:43 +0100
-> > > > Mel Gorman <mel@csn.ul.ie> wrote:
-> > > > 
-> > > > > The noteworthy change is to patch 2 which now uses the generic
-> > > > > zone_page_state_snapshot() in zone_nr_free_pages(). Similar logic still
-> > > > > applies for *when* zone_page_state_snapshot() to avoid ovedhead.
-> > > > > 
-> > > > > Changelog since V3
-> > > > >   o Use generic helper for NR_FREE_PAGES estimate when necessary
-> > > > > 
-> > > > > Changelog since V2
-> > > > >   o Minor clarifications
-> > > > >   o Rebase to 2.6.36-rc3
-> > > > > 
-> > > > > Changelog since V1
-> > > > >   o Fix for !CONFIG_SMP
-> > > > >   o Correct spelling mistakes
-> > > > >   o Clarify a ChangeLog
-> > > > >   o Only check for counter drift on machines large enough for the counter
-> > > > >     drift to breach the min watermark when NR_FREE_PAGES report the low
-> > > > >     watermark is fine
-> > > > > 
-> > > > > Internal IBM test teams beta testing distribution kernels have reported
-> > > > > problems on machines with a large number of CPUs whereby page allocator
-> > > > > failure messages show huge differences between the nr_free_pages vmstat
-> > > > > counter and what is available on the buddy lists. In an extreme example,
-> > > > > nr_free_pages was above the min watermark but zero pages were on the buddy
-> > > > > lists allowing the system to potentially livelock unable to make forward
-> > > > > progress unless an allocation succeeds. There is no reason why the problems
-> > > > > would not affect mainline so the following series mitigates the problems
-> > > > > in the page allocator related to to per-cpu counter drift and lists.
-> > > > > 
-> > > > > The first patch ensures that counters are updated after pages are added to
-> > > > > free lists.
-> > > > > 
-> > > > > The second patch notes that the counter drift between nr_free_pages and what
-> > > > > is on the per-cpu lists can be very high. When memory is low and kswapd
-> > > > > is awake, the per-cpu counters are checked as well as reading the value
-> > > > > of NR_FREE_PAGES. This will slow the page allocator when memory is low and
-> > > > > kswapd is awake but it will be much harder to breach the min watermark and
-> > > > > potentially livelock the system.
-> > > > > 
-> > > > > The third patch notes that after direct-reclaim an allocation can
-> > > > > fail because the necessary pages are on the per-cpu lists. After a
-> > > > > direct-reclaim-and-allocation-failure, the per-cpu lists are drained and
-> > > > > a second attempt is made.
-> > > > > 
-> > > > > Performance tests against 2.6.36-rc3 did not show up anything interesting. A
-> > > > > version of this series that continually called vmstat_update() when
-> > > > > memory was low was tested internally and found to help the counter drift
-> > > > > problem. I described this during LSF/MM Summit and the potential for IPI
-> > > > > storms was frowned upon. An alternative fix is in patch two which uses
-> > > > > for_each_online_cpu() to read the vmstat deltas while memory is low and
-> > > > > kswapd is awake. This should be functionally similar.
-> > > > > 
-> > > > > This patch should be merged after the patch "vmstat : update
-> > > > > zone stat threshold at onlining a cpu" which is in mmotm as
-> > > > > vmstat-update-zone-stat-threshold-when-onlining-a-cpu.patch .
-> > > > > 
-> > > > > If we can agree on it, this series is a stable candidate.
-> > > > 
-> > > > (cc stable@kernel.org)
-> > > > 
-> > > > >  include/linux/mmzone.h |   13 +++++++++++++
-> > > > >  include/linux/vmstat.h |   22 ++++++++++++++++++++++
-> > > > >  mm/mmzone.c            |   21 +++++++++++++++++++++
-> > > > >  mm/page_alloc.c        |   29 +++++++++++++++++++++--------
-> > > > >  mm/vmstat.c            |   15 ++++++++++++++-
-> > > > >  5 files changed, 91 insertions(+), 9 deletions(-)
-> > > > 
-> > > > For the entire patch series I get
-> > > > 
-> > > >  include/linux/mmzone.h |   13 +++++++++++++
-> > > >  include/linux/vmstat.h |   22 ++++++++++++++++++++++
-> > > >  mm/mmzone.c            |   21 +++++++++++++++++++++
-> > > >  mm/page_alloc.c        |   33 +++++++++++++++++++++++----------
-> > > >  mm/vmstat.c            |   16 +++++++++++++++-
-> > > >  5 files changed, 94 insertions(+), 11 deletions(-)
-> > > > 
-> > > > The patches do apply OK to 2.6.35.
-> > > > 
-> > > > Give the extent and the coreness of it all, it's a bit more than I'd
-> > > > usually push at the -stable guys.  But I guess that if the patches fix
-> > > > all the issues you've noted, as well as David's "minute-long livelocks
-> > > > in memory reclaim" then yup, it's worth backporting it all.
-> > > > 
+On Thu, Sep 23, 2010 at 11:15:41AM -0700, Randy Dunlap wrote:
+> On Tue, 21 Sep 2010 15:31:15 -0700 Greg KH wrote:
+> 
+> > On Mon, Sep 20, 2010 at 09:20:34AM -0700, Randy Dunlap wrote:
+> > > From: Randy Dunlap <randy.dunlap@oracle.com>
 > > > 
-> > > These patches have made it to mainline as the following commits.
+> > > Fix build when CONFIG_BLOCK is not enabled (since SEP-06).
+> > > Fixes these build errors:
 > > > 
-> > > 9ee493c mm: page allocator: drain per-cpu lists after direct reclaim allocation fails
-> > > aa45484 mm: page allocator: calculate a better estimate of NR_FREE_PAGES when memory is low and kswapd is awake
-> > > 72853e2 mm: page allocator: update free page counters after pages are placed on the free list
+> > > drivers/base/core.c: In function 'get_device_parent':
+> > > drivers/base/core.c:622: error: 'block_class' undeclared (first use in this function)
+> > > drivers/base/core.c: In function 'device_add_class_symlinks':
+> > > drivers/base/core.c:712: error: 'block_class' undeclared (first use in this function)
+> > > drivers/base/core.c: In function 'device_remove_class_symlinks':
+> > > drivers/base/core.c:742: error: 'block_class' undeclared (first use in this function)
 > > > 
-> > > I have not heard from the -stable guys, is there a reasonable
-> > > expectation that they'll be picked up?
+> > > Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 > > 
-> > If you ask me, then I'll know to give a response :)
-> > 
+> > This should no longer be needed with the next linux-next tree as the
+> > logic in this area has changed thanks to Andi's patch.
 > 
-> Hi Greg,
+> {sorry about resend, email problems}
 > 
-> I would ask you directly but I didn't want anyone else on stable@ to
-> feel left out :)
 > 
-> > None of these were tagged as going to the stable tree, should I include
-> > them? 
-> 
-> Yes please unless there is a late objection. The patches were first developed
-> as a result of a distro bug whose kernel was based on 2.6.32.  There was
-> every indication this affected mainline as well. The details of the testing
-> are above.
-> 
-> Dave Chinner had also reported problems with livelocks in reclaim that
-> looked like IPI storms. There were two major factors at play and these
-> patches addressed one of them. It works out as both a bug and a
-> performance fix.
-> 
-> > If so, for which -stable tree?  .27, .32, and .35 are all
-> > currently active.
-> > 
-> 
-> 2.6.35 for certain.
-> 
-> I would have a strong preference for 2.6.32 as well as it's a baseline for
-> a number of distros. The second commit will conflict with per-cpu changes
-> but the resolution is straight-forward.
+> Still seeing this build error. (linux-next 2010-0923)
+> Will you be merging some patch soon?
 
-Thanks for the backport, I've queued these up for .32 and .35 now.
+Not unless someone provides it.  I know of no valid user of the kernel
+that does not enable CONFIG_BLOCK, so I really doubt this will ever hit
+anyone in "real life" so it's _way_ down the list of things I have to do
+at the moment, sorry.
+
+thanks,
 
 greg k-h
