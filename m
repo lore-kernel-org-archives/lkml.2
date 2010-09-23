@@ -1,111 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138Ab0IWW5h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 18:57:37 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:36339 "EHLO ogre.sisk.pl"
+	id S1755692Ab0IWXF2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 19:05:28 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:59993 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752731Ab0IWW5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 18:57:36 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
-Subject: [RFC][PATCH] PM / Hibernate: Make some boot messages look less scary
-Date: Fri, 24 Sep 2010 00:56:41 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc5-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009240056.41308.rjw@sisk.pl>
+	id S1753581Ab0IWXF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 19:05:26 -0400
+From: John Stultz <johnstul@us.ibm.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Richard Cochran <richardcochran@gmail.com>
+Subject: [PATCH 1/3] [RFC] Introduce timerlist infrastructure.
+Date: Thu, 23 Sep 2010 16:05:17 -0700
+Message-Id: <1285283118-2319-1-git-send-email-johnstul@us.ibm.com>
+X-Mailer: git-send-email 1.6.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
-Subject: PM / Hibernate: Make some boot messages look less scary
+Just wanted to send this out for comments. I'm working to split
+up my posix CLOCK_RTC proof of concept and this is one of the
+stepping stones to be merged sometime later.
 
-The hibernate resume code checks if there is an image to resume from
-on every boot and, if the kernel is built with CONFIG_PM_DEBUG set
-and the image is not present, it prints some scary messages
-suggesting there was a boot error of some sort.  Apparently, some
-users are confused by them, so make them look less scary and adjust
-the other hibernate resume debug messages to match them.
+Richard's recent patch queue looks like it could use this
+functionality, so I wanted to get some comments on it before
+trying to build much further upon it.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+The timerlist infrastructure is a thin layer over the rbtree
+code that implements a simple list of timers sorted by an
+expires value, and a getnext function that provides a pointer
+to the earliest timer.
+
+This infrastructure allows drivers and other kernel infrastructure
+to easily implement timers without duplicating code.
+
+Suggestions or feedback would be appreciated.
+
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Richard Cochran <richardcochran@gmail.com>
 ---
- kernel/power/hibernate.c |   12 ++++++------
- kernel/power/swap.c      |    4 ++--
- 2 files changed, 8 insertions(+), 8 deletions(-)
+ include/linux/timerlist.h |   37 ++++++++++++++
+ lib/Makefile              |    2 +-
+ lib/timerlist.c           |  115 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 153 insertions(+), 1 deletions(-)
+ create mode 100644 include/linux/timerlist.h
+ create mode 100644 lib/timerlist.c
 
-Index: linux-2.6/kernel/power/swap.c
-===================================================================
---- linux-2.6.orig/kernel/power/swap.c
-+++ linux-2.6/kernel/power/swap.c
-@@ -929,13 +929,13 @@ put:
- 		if (error)
- 			blkdev_put(hib_resume_bdev, FMODE_READ);
- 		else
--			pr_debug("PM: Signature found, resuming\n");
-+			pr_debug("PM: Image signature found, resuming\n");
- 	} else {
- 		error = PTR_ERR(hib_resume_bdev);
- 	}
+diff --git a/include/linux/timerlist.h b/include/linux/timerlist.h
+new file mode 100644
+index 0000000..c46b28a
+--- /dev/null
++++ b/include/linux/timerlist.h
+@@ -0,0 +1,37 @@
++#ifndef _LINUX_TIMERLIST_H
++#define _LINUX_TIMERLIST_H
++
++#include <linux/rbtree.h>
++#include <linux/ktime.h>
++
++
++struct timerlist_node {
++	struct rb_node node;
++	ktime_t expires;
++};
++
++struct timerlist_head {
++	struct rb_root head;
++	struct timerlist_node *next;
++};
++
++
++extern void timerlist_add(struct timerlist_head *head,
++				struct timerlist_node *node);
++extern void timerlist_del(struct timerlist_head *head,
++				struct timerlist_node *node);
++extern struct timerlist_node *timerlist_getnext(struct timerlist_head *head);
++extern struct timerlist_node *timerlist_iterate_next(
++						struct timerlist_node *node);
++
++static inline void timerlist_init(struct timerlist_node *node)
++{
++	RB_CLEAR_NODE(&node->node);
++}
++
++static inline void timerlist_init_head(struct timerlist_head *head)
++{
++	head->head = RB_ROOT;
++	head->next = NULL;
++}
++#endif /* _LINUX_TIMERLIST_H */
+diff --git a/lib/Makefile b/lib/Makefile
+index e6a3763..8b475cf 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -8,7 +8,7 @@ KBUILD_CFLAGS = $(subst -pg,,$(ORIG_CFLAGS))
+ endif
  
- 	if (error)
--		pr_debug("PM: Error %d checking image file\n", error);
-+		pr_debug("PM: Image not found (code %d)\n", error);
- 
- 	return error;
- }
-Index: linux-2.6/kernel/power/hibernate.c
-===================================================================
---- linux-2.6.orig/kernel/power/hibernate.c
-+++ linux-2.6/kernel/power/hibernate.c
-@@ -708,7 +708,7 @@ static int software_resume(void)
- 		goto Unlock;
- 	}
- 
--	pr_debug("PM: Checking image partition %s\n", resume_file);
-+	pr_debug("PM: Checking hibernation image partition %s\n", resume_file);
- 
- 	/* Check if the device is there */
- 	swsusp_resume_device = name_to_dev_t(resume_file);
-@@ -733,10 +733,10 @@ static int software_resume(void)
- 	}
- 
-  Check_image:
--	pr_debug("PM: Resume from partition %d:%d\n",
-+	pr_debug("PM: Hibernation image partition %d:%d present\n",
- 		MAJOR(swsusp_resume_device), MINOR(swsusp_resume_device));
- 
--	pr_debug("PM: Checking hibernation image.\n");
-+	pr_debug("PM: Looking for hibernation image.\n");
- 	error = swsusp_check();
- 	if (error)
- 		goto Unlock;
-@@ -768,14 +768,14 @@ static int software_resume(void)
- 		goto Done;
- 	}
- 
--	pr_debug("PM: Reading hibernation image.\n");
-+	pr_debug("PM: Loading hibernation image.\n");
- 
- 	error = swsusp_read(&flags);
- 	swsusp_close(FMODE_READ);
- 	if (!error)
- 		hibernation_restore(flags & SF_PLATFORM_MODE);
- 
--	printk(KERN_ERR "PM: Restore failed, recovering.\n");
-+	printk(KERN_ERR "PM: Failed to load hibernation image, recovering.\n");
- 	swsusp_free();
- 	thaw_processes();
-  Done:
-@@ -788,7 +788,7 @@ static int software_resume(void)
- 	/* For success case, the suspend path will release the lock */
-  Unlock:
- 	mutex_unlock(&pm_mutex);
--	pr_debug("PM: Resume from disk failed.\n");
-+	pr_debug("PM: Hibernation image not present or could not be loaded.\n");
- 	return error;
- close_finish:
- 	swsusp_close(FMODE_READ);
+ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+-	 rbtree.o radix-tree.o dump_stack.o \
++	 rbtree.o radix-tree.o dump_stack.o timerlist.o\
+ 	 idr.o int_sqrt.o extable.o prio_tree.o \
+ 	 sha1.o irq_regs.o reciprocal_div.o argv_split.o \
+ 	 proportions.o prio_heap.o ratelimit.o show_mem.o \
+diff --git a/lib/timerlist.c b/lib/timerlist.c
+new file mode 100644
+index 0000000..3301b45
+--- /dev/null
++++ b/lib/timerlist.c
+@@ -0,0 +1,115 @@
++/*
++ *  Generic Timer-list
++ *
++ *  Manages a simple list of timers, ordered by expiration time.
++ *  Uses rbtrees for quick list adds and expiration.
++ *
++ *  NOTE: All of the following functions need to be serialized
++ *  to avoid races. No locking is done by this libary code.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++#include <linux/timerlist.h>
++#include <linux/rbtree.h>
++
++/**
++ * timerlist_add - Adds timer to timerlist.
++ *
++ * @head: head of timerlist
++ * @node: timer node to be added
++ *
++ * Adds the timer node to the timerlist, sorted by the
++ * node's expires value.
++ */
++void timerlist_add(struct timerlist_head *head, struct timerlist_node *node)
++{
++	struct rb_node **p = &head->head.rb_node;
++	struct rb_node *parent = NULL;
++	struct timerlist_node  *ptr;
++
++	/* Make sure we don't add nodes that are already added */
++	WARN_ON_ONCE(!RB_EMPTY_NODE(&node->node));
++
++	while (*p) {
++		parent = *p;
++		ptr = rb_entry(parent, struct timerlist_node, node);
++		if (node->expires.tv64 < ptr->expires.tv64)
++			p = &(*p)->rb_left;
++		else
++			p = &(*p)->rb_right;
++	}
++	rb_link_node(&node->node, parent, p);
++	rb_insert_color(&node->node, &head->head);
++
++	if (!head->next || node->expires.tv64 < head->next->expires.tv64)
++		head->next = node;
++}
++
++/**
++ * timerlist_del - Removes a timer from the timerlist.
++ *
++ * @head: head of timerlist
++ * @node: timer node to be removed
++ *
++ * Removes the timer node from the timerlist.
++ */
++void timerlist_del(struct timerlist_head *head, struct timerlist_node *node)
++{
++	WARN_ON_ONCE(RB_EMPTY_NODE(&node->node));
++
++	/* update next pointer */
++	if (head->next == node)
++		head->next = rb_entry(rb_next(&node->node),
++					struct timerlist_node, node);
++	rb_erase(&node->node, &head->head);
++	RB_CLEAR_NODE(&node->node);
++}
++
++
++/**
++ * timerlist_getnext - Returns the timer with the earlies expiration time
++ *
++ * @head: head of timerlist
++ *
++ * Returns a pointer to the timer node that has the
++ * earliest expiration time.
++ */
++struct timerlist_node *timerlist_getnext(struct timerlist_head *head)
++{
++	return head->next;
++}
++
++
++/**
++ * timerlist_iterate_next - Returns the timer after the provided timer
++ *
++ * @node: Pointer to a timer.
++ *
++ * Provides the timer that is after the given node. This is used, when
++ * necessary, to iterate through the list of timers in a timer list
++ * without modifying the list.
++ */
++struct timerlist_node *timerlist_iterate_next(struct timerlist_node *node)
++{
++	struct rb_node *next;
++
++	if (!node)
++		return NULL;
++	next = rb_next(&node->node);
++	if (!next)
++		return NULL;
++	return container_of(next, struct timerlist_node, node);
++}
+-- 
+1.6.0.4
+
