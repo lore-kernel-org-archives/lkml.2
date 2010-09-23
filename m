@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab0IWRhu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 13:37:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3542 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754310Ab0IWRhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 13:37:48 -0400
-Date: Thu, 23 Sep 2010 19:33:14 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 03/10] taskstats: Split fill_pid function
-Message-ID: <20100923173314.GB26623@redhat.com>
-References: <1285249681.1837.28.camel@holzheu-laptop> <1285250467.1837.80.camel@holzheu-laptop>
+	id S1755955Ab0IWRuN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 13:50:13 -0400
+Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:46729 "EHLO
+	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755896Ab0IWRuL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 13:50:11 -0400
+Date: Thu, 23 Sep 2010 10:49:18 -0700
+From: matt mooney <mfm@muteddisk.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        kernel-janitors@vger.kernel.org, Alexander Graf <agraf@suse.de>,
+        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Avi Kivity <avi@redhat.com>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 12/20] powerpc: change to new flag variables
+Message-ID: <20100923174918.GA3035@haskell.muteddisk.com>
+Mail-Followup-To: Stephen Rothwell <sfr@canb.auug.org.au>,
+	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	kernel-janitors@vger.kernel.org, Alexander Graf <agraf@suse.de>,
+	linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+	Avi Kivity <avi@redhat.com>, linuxppc-dev@lists.ozlabs.org
+References: <1285224669-29865-1-git-send-email-mfm@muteddisk.com>
+ <20100923201923.366779a1.sfr@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1285250467.1837.80.camel@holzheu-laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100923201923.366779a1.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23, Michael Holzheu wrote:
->
-> Subject: [PATCH] taskstats: Split fill_pid function
->
-> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
->
-> Separate the finding of a task_struct by pid or tgid from filling the taskstats
-> data. This makes the code more readable.
+On 20:19 Thu 23 Sep     , Stephen Rothwell wrote:
+> Hi Matt,
+> 
+> On Wed, 22 Sep 2010 23:51:09 -0700 matt mooney <mfm@muteddisk.com> wrote:
+> >
+> > Replace EXTRA_CFLAGS with ccflags-y and EXTRA_AFLAGS with asflags-y.
+> 
+> This looks good.  One comment below ...
+> 
+> > --- a/arch/powerpc/platforms/pseries/Makefile
+> > +++ b/arch/powerpc/platforms/pseries/Makefile
+> > @@ -1,10 +1,5 @@
+> > -ifeq ($(CONFIG_PPC64),y)
+> > -EXTRA_CFLAGS		+= -mno-minimal-toc
+> > -endif
+> > -
+> > -ifeq ($(CONFIG_PPC_PSERIES_DEBUG),y)
+> > -EXTRA_CFLAGS		+= -DDEBUG
+> > -endif
+> > +ccflags-$(CONFIG_PPC64)			:= -mno-minimal-toc
+> > +ccflags-$(CONFIG_PPC_PSERIES_DEBUG)	+= -DDEBUG
+> >  
+> >  obj-y			:= lpar.o hvCall.o nvram.o reconfig.o \
+> >  			   setup.o iommu.o event_sources.o ras.o \
+> > @@ -23,7 +18,7 @@ obj-$(CONFIG_MEMORY_HOTPLUG)	+= hotplug-memory.o
+> >  obj-$(CONFIG_HVC_CONSOLE)	+= hvconsole.o
+> >  obj-$(CONFIG_HVCS)		+= hvcserver.o
+> >  obj-$(CONFIG_HCALL_STATS)	+= hvCall_inst.o
+> > -obj-$(CONFIG_PHYP_DUMP)	+= phyp_dump.o
+> > +obj-$(CONFIG_PHYP_DUMP)		+= phyp_dump.o
+> >  obj-$(CONFIG_CMM)		+= cmm.o
+> >  obj-$(CONFIG_DTL)		+= dtl.o
+> 
+> This looks like a spurious extra hunk.
 
-I think this is nice cleanup.
+Hi Stephen,
 
-Oleg.
+Yeah your right, logically it doesn't follow from my changeset. I should
+have left it alone, but it was the only line in the file that didn't align
+properly with its surrounding area.
+
+-mfm
 
