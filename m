@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753138Ab0IWDRS (ORCPT <rfc822;w@1wt.eu>);
+	id S1753045Ab0IWDRS (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 22 Sep 2010 23:17:18 -0400
-Received: from mail.perches.com ([173.55.12.10]:2261 "EHLO mail.perches.com"
+Received: from mail.perches.com ([173.55.12.10]:2262 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752758Ab0IWDRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752760Ab0IWDRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 22 Sep 2010 23:17:15 -0400
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 2/8] scripts/get_maintainer.pl: Improve --interactive UI
-Date: Wed, 22 Sep 2010 20:17:08 -0700
-Message-Id: <6a77a158aac45f7dafd80199d455b9b74648a977.1285209493.git.joe@perches.com>
+Subject: [PATCH 3/8] scripts/get_maintainer.pl: Update --interactive UI, improve hg runtime
+Date: Wed, 22 Sep 2010 20:17:09 -0700
+Message-Id: <356f4ee64f7608ac81e1c3061ee13cf3c82c218e.1285209493.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <cover.1285209493.git.joe@perches.com>
 References: <cover.1285209493.git.joe@perches.com>
@@ -18,872 +18,598 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-o Added searching by git-blame as well as git-history
-o Added different selection toggles
-o Added ability to list commits by author or by sign-off-type
-o Use custom git and hg formats to make searching for subject/author
-  a bit easier.
-o Move inlined section matching and searching git/hg history to
-  new get_maintainer subroutine
-o Added subroutines save_commits_by_author and save_commits_by_signer
-o Removed subroutines vcs_get_shortlog and vcs_email_shortlog
-o Rename camelcase signaturePattern to signature_pattern
+o Add option --git-blame-signatures default:on to search each
+  commit used by the current file for signatures
+o Use consistent style in VCS_cmds_(git|hg)
+o Add more options to be controlled at the --interactive prompt
+o Speed up hg commit searching runtime by issuing a single
+  hg command to search all modified commits instead of running
+  multiple hg commands with a single commit each.
 
-Update version to 0.26-beta.
+Update to 0.26 beta3
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- scripts/get_maintainer.pl |  640 +++++++++++++++++++++++++++------------------
- 1 files changed, 388 insertions(+), 252 deletions(-)
+ scripts/get_maintainer.pl |  347 ++++++++++++++++++++++++++++++++++-----------
+ 1 files changed, 266 insertions(+), 81 deletions(-)
 
 diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
-index 1ae8c50..3fa639e 100755
+index 3fa639e..f511760 100755
 --- a/scripts/get_maintainer.pl
 +++ b/scripts/get_maintainer.pl
 @@ -13,7 +13,7 @@
  use strict;
  
  my $P = $0;
--my $V = '0.25';
-+my $V = '0.26-beta';
+-my $V = '0.26-beta';
++my $V = '0.26-beta3';
  
  use Getopt::Long qw(:config no_auto_abbrev);
  
-@@ -53,7 +53,8 @@ my $help = 0;
+@@ -27,6 +27,7 @@ my $email_git_penguin_chiefs = 0;
+ my $email_git = 0;
+ my $email_git_all_signature_types = 0;
+ my $email_git_blame = 0;
++my $email_git_blame_signatures = 1;
+ my $email_git_fallback = 1;
+ my $email_git_min_signatures = 1;
+ my $email_git_max_maintainers = 5;
+@@ -51,6 +52,8 @@ my $pattern_depth = 0;
+ my $version = 0;
+ my $help = 0;
  
++my $vcs_used = 0;
++
  my $exit = 0;
  
--my %shortlog_buffer;
-+my %commit_author_hash;
-+my %commit_signer_hash;
- 
- my @penguin_chief = ();
- push(@penguin_chief, "Linus Torvalds:torvalds\@linux-foundation.org");
-@@ -77,7 +78,7 @@ my @signature_tags = ();
+ my %commit_author_hash;
+@@ -78,7 +81,6 @@ my @signature_tags = ();
  push(@signature_tags, "Signed-off-by:");
  push(@signature_tags, "Reviewed-by:");
  push(@signature_tags, "Acked-by:");
--my $signaturePattern = "\(" . join("|", @signature_tags) . "\)";
-+my $signature_pattern = "\(" . join("|", @signature_tags) . "\)";
+-my $signature_pattern = "\(" . join("|", @signature_tags) . "\)";
  
  # rfc822 email address - preloaded methods go here.
  my $rfc822_lwsp = "(?:(?:\\r\\n)?[ \\t])";
-@@ -90,29 +91,52 @@ my %VCS_cmds;
- my %VCS_cmds_git = (
-     "execute_cmd" => \&git_execute_cmd,
-     "available" => '(which("git") ne "") && (-d ".git")',
--    "find_signers_cmd" => "git log --no-color --since=\$email_git_since -- \$file",
--    "find_commit_signers_cmd" => "git log --no-color -1 \$commit",
--    "find_commit_author_cmd" => "git log -1 --format=\"%an <%ae>\" \$commit",
-+    "find_signers_cmd" =>
-+	"git log --no-color --since=\$email_git_since " .
-+	    '--format="GitCommit: %H%n' .
-+		      'GitAuthor: %an <%ae>%n' .
-+		      'GitDate: %aD%n' .
-+		      'GitSubject: %s%n' .
-+		      '%b%n"' .
-+	    " -- \$file",
-+    "find_commit_signers_cmd" =>
-+	"git log --no-color -1 " .
-+	    '--format="GitCommit: %H%n' .
-+		      'GitAuthor: %an <%ae>%n' .
-+		      'GitDate: %aD%n' .
-+		      'GitSubject: %s%n' .
-+		      '%b%n"' .
-+	    " \$commit",
-+    "find_commit_author_cmd" =>
+@@ -100,16 +102,19 @@ my %VCS_cmds_git = (
+ 		      '%b%n"' .
+ 	    " -- \$file",
+     "find_commit_signers_cmd" =>
+-	"git log --no-color -1 " .
 +	"git log --no-color " .
-+	    '--format="GitAuthor: %an <%ae>"' .
+ 	    '--format="GitCommit: %H%n' .
+ 		      'GitAuthor: %an <%ae>%n' .
+ 		      'GitDate: %aD%n' .
+ 		      'GitSubject: %s%n' .
+ 		      '%b%n"' .
+-	    " \$commit",
 +	    " -1 \$commit",
+     "find_commit_author_cmd" =>
+ 	"git log --no-color " .
+-	    '--format="GitAuthor: %an <%ae>"' .
++	    '--format="GitCommit: %H%n' .
++		      'GitAuthor: %an <%ae>%n' .
++		      'GitDate: %aD%n' .
++		      'GitSubject: %s%n"' .
+ 	    " -1 \$commit",
      "blame_range_cmd" => "git blame -l -L \$diff_start,+\$diff_length \$file",
      "blame_file_cmd" => "git blame -l \$file",
--    "commit_pattern" => "^commit [0-9a-f]{40,40}",
-+    "commit_pattern" => "^GitCommit: ([0-9a-f]{40,40})",
-     "blame_commit_pattern" => "^([0-9a-f]+) ",
--    "shortlog_cmd" => "git log --no-color --oneline --since=\$email_git_since --author=\"\$email\" -- \$file"
-+    "author_pattern" => "^GitAuthor: (.*)",
-+    "subject_pattern" => "^GitSubject: (.*)",
- );
- 
- my %VCS_cmds_hg = (
-     "execute_cmd" => \&hg_execute_cmd,
+@@ -124,17 +129,24 @@ my %VCS_cmds_hg = (
      "available" => '(which("hg") ne "") && (-d ".hg")',
      "find_signers_cmd" =>
--	"hg log --date=\$email_hg_since" .
--		" --template='commit {node}\\n{desc}\\n' -- \$file",
-+	"hg log --date=\$email_hg_since " .
-+	    "--template='HgCommit: {node}\\nHgAuthor: {author}\\nHgSubject: {desc}\\n'" .
-+	    " -- \$file",
-     "find_commit_signers_cmd" => "hg log --template='{desc}\\n' -r \$commit",
--    "find_commit_author_cmd" => "hg log -l 1 --template='{author}\\n' -r \$commit",
-+    "find_commit_author_cmd" =>
-+	"hg log -l 1 " .
-+	    "--template='HgAuthor: {author}\\n'" .
-+	    "-r \$commit",
+ 	"hg log --date=\$email_hg_since " .
+-	    "--template='HgCommit: {node}\\nHgAuthor: {author}\\nHgSubject: {desc}\\n'" .
++	    "--template='HgCommit: {node}\\n" .
++	                "HgAuthor: {author}\\n" .
++			"HgSubject: {desc}\\n'" .
+ 	    " -- \$file",
+-    "find_commit_signers_cmd" => "hg log --template='{desc}\\n' -r \$commit",
++    "find_commit_signers_cmd" =>
++	"hg log " .
++	    "--template='HgSubject: {desc}\\n'" .
++	    " -r \$commit",
+     "find_commit_author_cmd" =>
+-	"hg log -l 1 " .
+-	    "--template='HgAuthor: {author}\\n'" .
+-	    "-r \$commit",
++	"hg log " .
++	    "--template='HgCommit: {node}\\n" .
++		        "HgAuthor: {author}\\n" .
++			"HgSubject: {desc|firstline}\\n'" .
++	    " -r \$commit",
      "blame_range_cmd" => "",		# not supported
-     "blame_file_cmd" => "hg blame -c \$file",
--    "commit_pattern" => "^commit [0-9a-f]{40,40}",
-+    "commit_pattern" => "^HgCommit: ([0-9a-f]{40,40})",
-     "blame_commit_pattern" => "^([0-9a-f]+):",
--    "shortlog_cmd" => "ht log --date=\$email_hg_since"
-+    "author_pattern" => "^HgAuthor: (.*)",
-+    "subject_pattern" => "^HgSubject: (.*)",
+-    "blame_file_cmd" => "hg blame -c \$file",
++    "blame_file_cmd" => "hg blame -n \$file",
+     "commit_pattern" => "^HgCommit: ([0-9a-f]{40,40})",
+-    "blame_commit_pattern" => "^([0-9a-f]+):",
++    "blame_commit_pattern" => "^([ 0-9a-f]+):",
+     "author_pattern" => "^HgAuthor: (.*)",
+     "subject_pattern" => "^HgSubject: (.*)",
  );
- 
- my $conf = which_conf(".get_maintainer.conf");
-@@ -193,13 +217,9 @@ if (-t STDIN && !@ARGV) {
-     die "$P: missing patchfile or -f file - use --help if necessary\n";
+@@ -170,6 +182,7 @@ if (!GetOptions(
+ 		'git!' => \$email_git,
+ 		'git-all-signature-types!' => \$email_git_all_signature_types,
+ 		'git-blame!' => \$email_git_blame,
++		'git-blame-signatures!' => \$email_git_blame_signatures,
+ 		'git-fallback!' => \$email_git_fallback,
+ 		'git-chief-penguins!' => \$email_git_penguin_chiefs,
+ 		'git-min-signatures=i' => \$email_git_min_signatures,
+@@ -247,10 +260,6 @@ if (!top_of_kernel_tree($lk_path)) {
+ 	. "a linux kernel source tree.\n";
  }
  
--if ($output_separator ne ", ") {
--    $output_multiline = 0;
+-if ($email_git_all_signature_types) {
+-    $signature_pattern = "(.+?)[Bb][Yy]:";
 -}
--
--if ($output_rolestats) {
--    $output_roles = 1;
--}
-+$output_multiline = 0 if ($output_separator ne ", ");
-+$output_rolestats = 1 if ($interactive);
-+$output_roles = 1 if ($output_rolestats);
- 
- if ($sections) {
-     $email = 0;
-@@ -228,11 +248,9 @@ if (!top_of_kernel_tree($lk_path)) {
- }
- 
- if ($email_git_all_signature_types) {
--    $signaturePattern = "(.+?)[Bb][Yy]:";
-+    $signature_pattern = "(.+?)[Bb][Yy]:";
- }
- 
--
 -
  ## Read MAINTAINERS for type/value pairs
  
  my @typevalue = ();
-@@ -371,168 +389,186 @@ foreach my $file (@ARGV) {
- 
- @file_emails = uniq(@file_emails);
- 
-+my %email_hash_name;
-+my %email_hash_address;
- my @email_to = ();
-+my %hash_list_to;
- my @list_to = ();
- my @scm = ();
+@@ -398,6 +407,7 @@ my @scm = ();
  my @web = ();
  my @subsystem = ();
  my @status = ();
++my $signature_pattern;
  
--# Find responsible parties
-+my @to = get_maintainer();
+ my @to = get_maintainer();
  
--foreach my $file (@files) {
-+@to = merge_email(@to);
+@@ -440,6 +450,12 @@ sub get_maintainer {
+     @subsystem = ();
+     @status = ();
  
--    my %hash;
--    my $exact_pattern_match = 0;
--    my $tvi = find_first_section();
--    while ($tvi < @typevalue) {
--	my $start = find_starting_index($tvi);
--	my $end = find_ending_index($tvi);
--	my $exclude = 0;
--	my $i;
--
--	#Do not match excluded file patterns
--
--	for ($i = $start; $i < $end; $i++) {
--	    my $line = $typevalue[$i];
--	    if ($line =~ m/^(\C):\s*(.*)/) {
--		my $type = $1;
--		my $value = $2;
--		if ($type eq 'X') {
--		    if (file_match_pattern($file, $value)) {
--			$exclude = 1;
--			last;
--		    }
--		}
--	    }
--	}
-+output(@to) if (@to);
-+
-+if ($scm) {
-+    @scm = uniq(@scm);
-+    output(@scm);
-+}
-+
-+if ($status) {
-+    @status = uniq(@status);
-+    output(@status);
-+}
-+
-+if ($subsystem) {
-+    @subsystem = uniq(@subsystem);
-+    output(@subsystem);
-+}
-+
-+if ($web) {
-+    @web = uniq(@web);
-+    output(@web);
-+}
-+
-+exit($exit);
-+
-+sub get_maintainer {
-+    %email_hash_name = ();
-+    %email_hash_address = ();
-+    %commit_author_hash = ();
-+    %commit_signer_hash = ();
-+    @email_to = ();
-+    %hash_list_to = ();
-+    @list_to = ();
-+    @scm = ();
-+    @web = ();
-+    @subsystem = ();
-+    @status = ();
-+
-+    # Find responsible parties
-+
-+    foreach my $file (@files) {
-+
-+	my %hash;
-+	my $exact_pattern_match = 0;
-+	my $tvi = find_first_section();
-+	while ($tvi < @typevalue) {
-+	    my $start = find_starting_index($tvi);
-+	    my $end = find_ending_index($tvi);
-+	    my $exclude = 0;
-+	    my $i;
-+
-+	    #Do not match excluded file patterns
- 
--	if (!$exclude) {
- 	    for ($i = $start; $i < $end; $i++) {
- 		my $line = $typevalue[$i];
- 		if ($line =~ m/^(\C):\s*(.*)/) {
- 		    my $type = $1;
- 		    my $value = $2;
--		    if ($type eq 'F') {
-+		    if ($type eq 'X') {
- 			if (file_match_pattern($file, $value)) {
--			    my $value_pd = ($value =~ tr@/@@);
--			    my $file_pd = ($file  =~ tr@/@@);
--			    $value_pd++ if (substr($value,-1,1) ne "/");
--			    $value_pd = -1 if ($value =~ /^\.\*/);
--			    $exact_pattern_match = 1 if ($value_pd >= $file_pd);
--			    if ($pattern_depth == 0 ||
--				(($file_pd - $value_pd) < $pattern_depth)) {
--				$hash{$tvi} = $value_pd;
-+			    $exclude = 1;
-+			    last;
-+			}
-+		    }
-+		}
-+	    }
-+
-+	    if (!$exclude) {
-+		for ($i = $start; $i < $end; $i++) {
-+		    my $line = $typevalue[$i];
-+		    if ($line =~ m/^(\C):\s*(.*)/) {
-+			my $type = $1;
-+			my $value = $2;
-+			if ($type eq 'F') {
-+			    if (file_match_pattern($file, $value)) {
-+				my $value_pd = ($value =~ tr@/@@);
-+				my $file_pd = ($file  =~ tr@/@@);
-+				$value_pd++ if (substr($value,-1,1) ne "/");
-+				$value_pd = -1 if ($value =~ /^\.\*/);
-+				$exact_pattern_match = 1 if ($value_pd >= $file_pd);
-+				if ($pattern_depth == 0 ||
-+				    (($file_pd - $value_pd) < $pattern_depth)) {
-+				    $hash{$tvi} = $value_pd;
-+				}
- 			    }
- 			}
- 		    }
- 		}
- 	    }
-+	    $tvi = $end + 1;
- 	}
- 
--	$tvi = $end + 1;
--    }
--
--    foreach my $line (sort {$hash{$b} <=> $hash{$a}} keys %hash) {
--	add_categories($line);
--	if ($sections) {
--	    my $i;
--	    my $start = find_starting_index($line);
--	    my $end = find_ending_index($line);
--	    for ($i = $start; $i < $end; $i++) {
--		my $line = $typevalue[$i];
--		if ($line =~ /^[FX]:/) {		##Restore file patterns
--		    $line =~ s/([^\\])\.([^\*])/$1\?$2/g;
--		    $line =~ s/([^\\])\.$/$1\?/g;	##Convert . back to ?
--		    $line =~ s/\\\./\./g;       	##Convert \. to .
--		    $line =~ s/\.\*/\*/g;       	##Convert .* to *
-+	foreach my $line (sort {$hash{$b} <=> $hash{$a}} keys %hash) {
-+	    add_categories($line);
-+	    if ($sections) {
-+		my $i;
-+		my $start = find_starting_index($line);
-+		my $end = find_ending_index($line);
-+		for ($i = $start; $i < $end; $i++) {
-+		    my $line = $typevalue[$i];
-+		    if ($line =~ /^[FX]:/) {		##Restore file patterns
-+			$line =~ s/([^\\])\.([^\*])/$1\?$2/g;
-+			$line =~ s/([^\\])\.$/$1\?/g;	##Convert . back to ?
-+			$line =~ s/\\\./\./g;       	##Convert \. to .
-+			$line =~ s/\.\*/\*/g;       	##Convert .* to *
-+		    }
-+		    $line =~ s/^([A-Z]):/$1:\t/g;
-+		    print("$line\n");
- 		}
--		$line =~ s/^([A-Z]):/$1:\t/g;
--		print("$line\n");
-+		print("\n");
- 	    }
--	    print("\n");
- 	}
--    }
--
--    if ($email &&
--	($email_git || ($email_git_fallback && !$exact_pattern_match))) {
--	vcs_file_signoffs($file);
--    }
--    if ($email && $email_git_blame) {
--	vcs_file_blame($file);
--    }
--    if ($email && $interactive){
--	vcs_file_shortlogs($file);
- 
-+	if ($email && ($email_git ||
-+		       ($email_git_fallback && !$exact_pattern_match))) {
-+	    vcs_file_signoffs($file);
-+	}
-+	if ($email && $email_git_blame) {
-+	    vcs_file_blame($file);
-+	}
-     }
--}
- 
--if ($keywords) {
--    @keyword_tvi = sort_and_uniq(@keyword_tvi);
--    foreach my $line (@keyword_tvi) {
--	add_categories($line);
-+    if ($keywords) {
-+	@keyword_tvi = sort_and_uniq(@keyword_tvi);
-+	foreach my $line (@keyword_tvi) {
-+	    add_categories($line);
-+	}
-     }
--}
- 
--if ($email) {
--    foreach my $chief (@penguin_chief) {
--	if ($chief =~ m/^(.*):(.*)/) {
--	    my $email_address;
-+    if ($email) {
-+	foreach my $chief (@penguin_chief) {
-+	    if ($chief =~ m/^(.*):(.*)/) {
-+		my $email_address;
- 
--	    $email_address = format_email($1, $2, $email_usename);
--	    if ($email_git_penguin_chiefs) {
--		push(@email_to, [$email_address, 'chief penguin']);
--	    } else {
--		@email_to = grep($_->[0] !~ /${email_address}/, @email_to);
-+		$email_address = format_email($1, $2, $email_usename);
-+		if ($email_git_penguin_chiefs) {
-+		    push(@email_to, [$email_address, 'chief penguin']);
-+		} else {
-+		    @email_to = grep($_->[0] !~ /${email_address}/, @email_to);
-+		}
- 	    }
- 	}
--    }
- 
--    foreach my $email (@file_emails) {
--	my ($name, $address) = parse_email($email);
-+	foreach my $email (@file_emails) {
-+	    my ($name, $address) = parse_email($email);
- 
--	my $tmp_email = format_email($name, $address, $email_usename);
--	push_email_address($tmp_email, '');
--	add_role($tmp_email, 'in file');
-+	    my $tmp_email = format_email($name, $address, $email_usename);
-+	    push_email_address($tmp_email, '');
-+	    add_role($tmp_email, 'in file');
-+	}
-     }
--}
--
- 
--if ($email || $email_list) {
-     my @to = ();
--    if ($email) {
--	if ($interactive) {
--	    @email_to = @{vcs_interactive_menu(\@email_to)};
-+    if ($email || $email_list) {
-+	if ($email) {
-+	    @to = (@to, @email_to);
-+	}
-+	if ($email_list) {
-+	    @to = (@to, @list_to);
- 	}
--	@to = (@to, @email_to);
--    }
--    if ($email_list) {
--	@to = (@to, @list_to);
-     }
--    output(merge_email(@to));
--}
--
--if ($scm) {
--    @scm = uniq(@scm);
--    output(@scm);
--}
--if ($status) {
--    @status = uniq(@status);
--    output(@status);
--}
- 
--if ($subsystem) {
--    @subsystem = uniq(@subsystem);
--    output(@subsystem);
--}
-+    @to = interactive_get_maintainer(\@to) if ($interactive);
- 
--if ($web) {
--    @web = uniq(@web);
--    output(@web);
-+    return @to;
- }
- 
--exit($exit);
--
- sub file_match_pattern {
-     my ($file, $pattern) = @_;
-     if (substr($pattern, -1) eq "/") {
-@@ -561,7 +597,7 @@ MAINTAINER field selection options:
-   --email => print email address(es) if any
-     --git => include recent git \*-by: signers
-     --git-all-signature-types => include signers regardless of signature type
--        or use only ${signaturePattern} signers (default: $email_git_all_signature_types)
-+        or use only ${signature_pattern} signers (default: $email_git_all_signature_types)
-     --git-fallback => use git when no exact MAINTAINERS pattern (default: $email_git_fallback)
-     --git-chief-penguins => include ${penguin_chiefs}
-     --git-min-signatures => number of signatures required (default: $email_git_min_signatures)
-@@ -847,11 +883,19 @@ sub add_categories {
- 		}
- 		if ($list_additional =~ m/subscribers-only/) {
- 		    if ($email_subscriber_list) {
--			push(@list_to, [$list_address, "subscriber list${list_role}"]);
-+			if (!$hash_list_to{$list_address}) {
-+			    $hash_list_to{$list_address} = 1;
-+			    push(@list_to, [$list_address,
-+					    "subscriber list${list_role}"]);
-+			}
- 		    }
- 		} else {
- 		    if ($email_list) {
--			push(@list_to, [$list_address, "open list${list_role}"]);
-+			if (!$hash_list_to{$list_address}) {
-+			    $hash_list_to{$list_address} = 1;
-+			    push(@list_to, [$list_address,
-+					    "open list${list_role}"]);
-+			}
- 		    }
- 		}
- 	    } elsif ($ptype eq "M") {
-@@ -882,9 +926,6 @@ sub add_categories {
-     }
- }
- 
--my %email_hash_name;
--my %email_hash_address;
--
- sub email_inuse {
-     my ($name, $address) = @_;
- 
-@@ -1037,10 +1078,31 @@ sub hg_execute_cmd {
-     return @lines;
- }
- 
-+sub extract_formatted_signatures {
-+    my (@signature_lines) = @_;
-+
-+    my @type = @signature_lines;
-+
-+    s/\s*(.*):.*/$1/ for (@type);
-+
-+    # cut -f2- -d":"
-+    s/\s*.*:\s*(.+)\s*/$1/ for (@signature_lines);
-+
-+## Reformat email addresses (with names) to avoid badly written signatures
-+
-+    foreach my $signer (@signature_lines) {
-+	my ($name, $address) = parse_email($signer);
-+	$signer = format_email($name, $address, 1);
++    if ($email_git_all_signature_types) {
++	$signature_pattern = "(.+?)[Bb][Yy]:";
++    } else {
++	$signature_pattern = "\(" . join("|", @signature_tags) . "\)";
 +    }
 +
-+    return (\@type, \@signature_lines);
-+}
-+
- sub vcs_find_signers {
-     my ($cmd) = @_;
--    my @lines = ();
-     my $commits;
-+    my @lines = ();
-+    my @signatures = ();
+     # Find responsible parties
  
-     @lines = &{$VCS_cmds{"execute_cmd"}}($cmd);
+     foreach my $file (@files) {
+@@ -1140,15 +1156,16 @@ sub vcs_find_author {
  
-@@ -1048,24 +1110,20 @@ sub vcs_find_signers {
- 
-     $commits = grep(/$pattern/, @lines);	# of commits
- 
--    @lines = grep(/^[ \t]*${signaturePattern}.*\@.*$/, @lines);
--    if (!$email_git_penguin_chiefs) {
--	@lines = grep(!/${penguin_chiefs}/i, @lines);
--    }
--
--    return (0, @lines) if !@lines;
-+    @signatures = grep(/^[ \t]*${signature_pattern}.*\@.*$/, @lines);
- 
--    # cut -f2- -d":"
--    s/.*:\s*(.+)\s*/$1/ for (@lines);
-+    return (0, @signatures) if !@signatures;
+     my @authors = ();
+     foreach my $line (@lines) {
+-	push(@authors, $1) if ($line =~ m/$VCS_cmds{"author_pattern"}/);
++	if ($line =~ m/$VCS_cmds{"author_pattern"}/) {
++	    my $author = $1;
++	    my ($name, $address) = parse_email($author);
++	    $author = format_email($name, $address, 1);
++	    push(@authors, $author);
++	}
+     }
  
 -## Reformat email addresses (with names) to avoid badly written signatures
+-
+-    foreach my $author (@authors) {
+-	my ($name, $address) = parse_email($author);
+-	$author = format_email($name, $address, 1);
+-    }
 +    save_commits_by_author(@lines) if ($interactive);
 +    save_commits_by_signer(@lines) if ($interactive);
  
--    foreach my $line (@lines) {
--	my ($name, $address) = parse_email($line);
--	$line = format_email($name, $address, 1);
-+    if (!$email_git_penguin_chiefs) {
-+	@signatures = grep(!/${penguin_chiefs}/i, @signatures);
-     }
- 
--    return ($commits, @lines);
-+    my ($types_ref, $signers_ref) = extract_formatted_signatures(@signatures);
-+
-+    return ($commits, @$signers_ref);
+     return @authors;
  }
- 
- sub vcs_find_author {
-@@ -1080,14 +1138,19 @@ sub vcs_find_author {
- 
-     return @lines if !@lines;
- 
-+    my @authors = ();
-+    foreach my $line (@lines) {
-+	push(@authors, $1) if ($line =~ m/$VCS_cmds{"author_pattern"}/);
-+    }
-+
- ## Reformat email addresses (with names) to avoid badly written signatures
- 
--    foreach my $line (@lines) {
--	my ($name, $address) = parse_email($line);
--	$line = format_email($name, $address, 1);
-+    foreach my $author (@authors) {
-+	my ($name, $address) = parse_email($author);
-+	$author = format_email($name, $address, 1);
-     }
- 
--    return @lines;
-+    return @authors;
- }
- 
- sub vcs_save_commits {
-@@ -1171,125 +1234,198 @@ sub vcs_exists {
+@@ -1222,7 +1239,7 @@ sub vcs_exists {
+     %VCS_cmds = %VCS_cmds_git;
+     return 1 if eval $VCS_cmds{"available"};
+     %VCS_cmds = %VCS_cmds_hg;
+-    return 1 if eval $VCS_cmds{"available"};
++    return 2 if eval $VCS_cmds{"available"};
+     %VCS_cmds = ();
+     if (!$printed_novcs) {
+ 	warn("$P: No supported VCS found.  Add --nogit to options?\n");
+@@ -1234,10 +1251,20 @@ sub vcs_exists {
      return 0;
  }
  
--sub vcs_interactive_menu {
--    my $list_ref = shift;
-+sub interactive_get_maintainer {
-+    my ($list_ref) = @_;
++sub vcs_is_git {
++    return $vcs_used == 1;
++}
++
++sub vcs_is_hg {
++    return $vcs_used == 2;
++}
++
+ sub interactive_get_maintainer {
+     my ($list_ref) = @_;
      my @list = @$list_ref;
  
--    return if (!vcs_exists());
--
++    vcs_exists();
++
      my %selected;
--    my %shortlog;
--    my $input;
-+    my %authored;
-+    my %signed;
-     my $count = 0;
- 
-     #select maintainers by default
-     foreach my $entry (@list){
--	    my $role = $entry->[1];
--	    $selected{$count} = ($role =~ /maintainer:|supporter:/);
--	    $count++;
-+	my $role = $entry->[1];
-+	$selected{$count} = ($role =~ /^(maintainer|supporter|open list)/);
-+	$authored{$count} = 0;
-+	$signed{$count} = 0;
-+	$count++;
-     }
+     my %authored;
+     my %signed;
+@@ -1254,10 +1281,13 @@ sub interactive_get_maintainer {
  
      #menu loop
--    do {
--	my $count = 0;
--	foreach my $entry (@list){
--	    my $email = $entry->[0];
--	    my $role = $entry->[1];
--	    if ($selected{$count}){
--		print STDERR "* ";
--	    } else {
--		print STDERR "  ";
--	    }
--	    print STDERR "$count: $email,\t\t $role";
--	    print STDERR "\n";
--	    if ($shortlog{$count}){
--		my $entries_ref = vcs_get_shortlog($email);
--		foreach my $entry_ref (@{$entries_ref}){
--		    my $filename = @{$entry_ref}[0];
--		    my @shortlog = @{@{$entry_ref}[1]};
--		    print STDERR "\tshortlog for $filename (authored commits: " . @shortlog . ").\n";
--		    foreach my $commit (@shortlog){
--			print STDERR "\t  $commit\n";
-+    my $done = 0;
-+    my $redraw = 1;
-+    while (!$done) {
-+	$count = 0;
-+	if ($redraw) {
-+	    foreach my $entry (@list) {
-+		my $email = $entry->[0];
-+		my $role = $entry->[1];
-+		my $sel = "";
-+		$sel = "*" if ($selected{$count});
-+		my $commit_author = $commit_author_hash{$email};
-+		my $commit_signer = $commit_signer_hash{$email};
-+		my $authored = 0;
-+		my $signed = 0;
-+		$authored++ for (@{$commit_author});
-+		$signed++ for (@{$commit_signer});
-+		printf STDERR "%1s %2d %-52s",
-+			      $sel, $count + 1, $email;
-+		printf STDERR " Author:%3d Signer:%3d",
-+			      $authored, $signed
-+			      if ($authored > 0 || $signed > 0);
-+		printf STDERR "\n     %s\n", $role;
-+		if ($authored{$count}) {
-+		    my $commit_author = $commit_author_hash{$email};
-+		    foreach my $ref (@{$commit_author}) {
-+			print STDERR "     Author: @{$ref}[1]\n";
- 		    }
--		    print STDERR "\n";
- 		}
-+		if ($signed{$count}) {
-+		    my $commit_signer = $commit_signer_hash{$email};
-+		    foreach my $ref (@{$commit_signer}) {
-+			print STDERR "     @{$ref}[2]: @{$ref}[1]\n";
-+		    }
-+		}
-+
-+		$count++;
+     my $done = 0;
++    my $print_options = 0;
+     my $redraw = 1;
+     while (!$done) {
+ 	$count = 0;
+ 	if ($redraw) {
++	    printf STDERR "\n%1s %2s %-65sauth sign\n",
++		"*", "#", "email/list and role:stats";
+ 	    foreach my $entry (@list) {
+ 		my $email = $entry->[0];
+ 		my $role = $entry->[1];
+@@ -1269,11 +1299,9 @@ sub interactive_get_maintainer {
+ 		my $signed = 0;
+ 		$authored++ for (@{$commit_author});
+ 		$signed++ for (@{$commit_signer});
+-		printf STDERR "%1s %2d %-52s",
+-			      $sel, $count + 1, $email;
+-		printf STDERR " Author:%3d Signer:%3d",
+-			      $authored, $signed
+-			      if ($authored > 0 || $signed > 0);
++		printf STDERR "%1s %2d %-65s", $sel, $count + 1, $email;
++		printf STDERR "%4d %4d", $authored, $signed
++		    if ($authored > 0 || $signed > 0);
+ 		printf STDERR "\n     %s\n", $role;
+ 		if ($authored{$count}) {
+ 		    my $commit_author = $commit_author_hash{$email};
+@@ -1291,15 +1319,42 @@ sub interactive_get_maintainer {
+ 		$count++;
  	    }
--	    $count++;
  	}
--	print STDERR "\n";
--	print STDERR "Choose whom to cc by entering a commaseperated list of numbers and hitting enter.\n";
--	print STDERR "To show a short list of commits, precede the number by a '?',\n";
--	print STDERR "A blank line indicates that you are satisfied with your choice.\n";
--	$input = <STDIN>;
-+	print STDERR
-+"\n#(toggle), A#(author), S#(signed) *(all), ^(none), O(options), Y(approve): ";
-+	my $input = <STDIN>;
++	my $date_ref = \$email_git_since;
++	$date_ref = \$email_hg_since if (vcs_is_hg());
++	if ($print_options) {
++	    $print_options = 0;
++	    if (vcs_exists()) {
++		print STDERR
++"\nVersion Control options:\n" .
++"g  use git history      [$email_git]\n" .
++"gf use git-fallback     [$email_git_fallback]\n" .
++"b  use git blame        [$email_git_blame]\n" .
++"bs use blame signatures [$email_git_blame_signatures]\n" .
++"c# minimum commits      [$email_git_min_signatures]\n" .
++"%# min percent          [$email_git_min_percent]\n" .
++"d# history to use       [$$date_ref]\n" .
++"x# max maintainers      [$email_git_max_maintainers]\n" .
++"t  all signature types  [$email_git_all_signature_types]\n";
++	    }
++	    print STDERR "\nAdditional options:\n" .
++"0  toggle all\n" .
++"f  emails in file       [$file_emails]\n" .
++"k  keywords in file     [$keywords]\n" .
++"r  remove duplicates    [$email_remove_duplicates]\n" .
++"p# pattern match depth  [$pattern_depth]\n";
++	}
+ 	print STDERR
+ "\n#(toggle), A#(author), S#(signed) *(all), ^(none), O(options), Y(approve): ";
++
+ 	my $input = <STDIN>;
  	chomp($input);
  
--	my @wish = split(/[, ]+/,$input);
--	foreach my $nr (@wish){
--		my $logtoggle = 0;
--		if ($nr =~ /\?/){
--			$nr =~ s/\?//;
--			$logtoggle = 1;
+-	my @wish = split(/[, ]+/, $input);
+ 	$redraw = 1;
++	my $rerun = 0;
 +	my @wish = split(/[, ]+/, $input);
-+	$redraw = 1;
-+	foreach my $nr (@wish) {
-+	    my $sel = lc(substr($nr, 0, 1));
-+	    my $str = substr($nr, 1);
-+	    my $val = 0;
-+	    $val = $1 if $str =~ /^(\d+)$/;
-+
-+	    if ($sel eq "y") {
-+		$interactive = 0;
-+		$done = 1;
-+		$output_rolestats = 0;
-+		$output_roles = 0;
-+		last;
-+	    } elsif ($sel eq "*" || $sel eq '^') {
-+		my $toggle = 0;
-+		$toggle = 1 if ($sel eq '*');
-+		for (my $i = 0; $i < $count; $i++) {
-+		    $selected{$i} = $toggle;
- 		}
--
--		#skip out of bounds numbers
--		next unless ($nr <= $count && $nr >= 0);
--
--		if ($logtoggle){
--			$shortlog{$nr} = !$shortlog{$nr};
--		} else {
--			$selected{$nr} = !$selected{$nr};
--
--			#switch shortlog on if an entry get's selected
--			if ($selected{$nr}){
--				$shortlog{$nr}=1;
--			}
-+	    } elsif ($sel eq "0") {
-+		for (my $i = 0; $i < $count; $i++) {
-+		    $selected{$i} = !$selected{$i};
-+		}
-+	    } elsif ($sel eq "a") {
-+		if ($val > 0 && $val <= $count) {
-+		    $authored{$val - 1} = !$authored{$val - 1};
-+		} elsif ($str eq '*' || $str eq '^') {
-+		    my $toggle = 0;
-+		    $toggle = 1 if ($str eq '*');
-+		    for (my $i = 0; $i < $count; $i++) {
-+			$authored{$i} = $toggle;
-+		    }
-+		}
-+	    } elsif ($sel eq "s") {
-+		if ($val > 0 && $val <= $count) {
-+		    $signed{$val - 1} = !$signed{$val - 1};
-+		} elsif ($str eq '*' || $str eq '^') {
-+		    print("yes\n");
-+		    my $toggle = 0;
-+		    $toggle = 1 if ($str eq '*');
-+		    for (my $i = 0; $i < $count; $i++) {
-+			$signed{$i} = $toggle;
-+		    }
-+		}
-+	    } elsif ($sel eq "o") {
-+		print STDERR
-+"0(toggle all) g(use git history([$email_git]) b(Use git blame[$email_git_blame])\n" .
-+"c#(minimum commits[$email_git_min_signatures]) x#(max maintainers[$email_git_max_maintainers] d#(history to use[$email_git_since])\n";
-+		$redraw = 0;
-+	    } elsif ($sel eq "b") {
-+		$email_git_blame = !$email_git_blame;
-+		goto &get_maintainer;
-+	    } elsif ($sel eq "g") {
-+		$email_git = !$email_git;
-+		goto &get_maintainer;
-+	    } elsif ($sel eq "x") {
-+		if ($val > 0) {
-+		    $email_git_max_maintainers = $val;
- 		}
--	};
--    } while(length($input) > 0);
-+		goto &get_maintainer;
-+	    } elsif ($sel eq "%") {
-+		if ($val >= 0) {
-+		    $email_git_min_percent = $val;
-+		}
-+		goto &get_maintainer;
-+	    } elsif ($sel eq "c") {
-+		if ($val >= 0) {
-+		    $email_git_min_signatures = $val;
-+		}
-+		goto &get_maintainer;
-+	    } elsif ($sel eq "d") {
-+		$email_git_since = $str;
-+		goto &get_maintainer;
-+	    } elsif ($sel =~ /^\d+$/ && $sel > 0 && $nr <= $count) {
+ 	foreach my $nr (@wish) {
+-	    my $sel = lc(substr($nr, 0, 1));
++	    $nr = lc($nr);
++	    my $sel = substr($nr, 0, 1);
+ 	    my $str = substr($nr, 1);
+ 	    my $val = 0;
+ 	    $val = $1 if $str =~ /^(\d+)$/;
+@@ -1310,6 +1365,8 @@ sub interactive_get_maintainer {
+ 		$output_rolestats = 0;
+ 		$output_roles = 0;
+ 		last;
++	    } elsif ($nr =~ /^\d+$/ && $nr > 0 && $nr <= $count) {
 +		$selected{$nr - 1} = !$selected{$nr - 1};
-+	    }
+ 	    } elsif ($sel eq "*" || $sel eq '^') {
+ 		my $toggle = 0;
+ 		$toggle = 1 if ($sel eq '*');
+@@ -1334,7 +1391,6 @@ sub interactive_get_maintainer {
+ 		if ($val > 0 && $val <= $count) {
+ 		    $signed{$val - 1} = !$signed{$val - 1};
+ 		} elsif ($str eq '*' || $str eq '^') {
+-		    print("yes\n");
+ 		    my $toggle = 0;
+ 		    $toggle = 1 if ($str eq '*');
+ 		    for (my $i = 0; $i < $count; $i++) {
+@@ -1342,38 +1398,71 @@ sub interactive_get_maintainer {
+ 		    }
+ 		}
+ 	    } elsif ($sel eq "o") {
+-		print STDERR
+-"0(toggle all) g(use git history([$email_git]) b(Use git blame[$email_git_blame])\n" .
+-"c#(minimum commits[$email_git_min_signatures]) x#(max maintainers[$email_git_max_maintainers] d#(history to use[$email_git_since])\n";
+-		$redraw = 0;
+-	    } elsif ($sel eq "b") {
+-		$email_git_blame = !$email_git_blame;
+-		goto &get_maintainer;
++		$print_options = 1;
++		$redraw = 1;
+ 	    } elsif ($sel eq "g") {
+-		$email_git = !$email_git;
+-		goto &get_maintainer;
++		if ($str eq "f") {
++		    bool_invert(\$email_git_fallback);
++		} else {
++		    bool_invert(\$email_git);
++		}
++		$rerun = 1;
++	    } elsif ($sel eq "b") {
++		if ($str eq "s") {
++		    bool_invert(\$email_git_blame_signatures);
++		} else {
++		    bool_invert(\$email_git_blame);
++		}
++		$rerun = 1;
++	    } elsif ($sel eq "c") {
++		if ($val > 0) {
++		    $email_git_min_signatures = $val;
++		    $rerun = 1;
++		}
+ 	    } elsif ($sel eq "x") {
+ 		if ($val > 0) {
+ 		    $email_git_max_maintainers = $val;
++		    $rerun = 1;
+ 		}
+-		goto &get_maintainer;
+ 	    } elsif ($sel eq "%") {
+-		if ($val >= 0) {
++		if ($str ne "" && $val >= 0) {
+ 		    $email_git_min_percent = $val;
++		    $rerun = 1;
+ 		}
+-		goto &get_maintainer;
+-	    } elsif ($sel eq "c") {
+-		if ($val >= 0) {
+-		    $email_git_min_signatures = $val;
+-		}
+-		goto &get_maintainer;
+ 	    } elsif ($sel eq "d") {
+-		$email_git_since = $str;
+-		goto &get_maintainer;
+-	    } elsif ($sel =~ /^\d+$/ && $sel > 0 && $nr <= $count) {
+-		$selected{$nr - 1} = !$selected{$nr - 1};
++		if (vcs_is_git()) {
++		    $email_git_since = $str;
++		} elsif (vcs_is_hg()) {
++		    $email_hg_since = $str;
++		}
++		$rerun = 1;
++	    } elsif ($sel eq "t") {
++		bool_invert(\$email_git_all_signature_types);
++		$rerun = 1;
++	    } elsif ($sel eq "f") {
++		bool_invert(\$file_emails);
++		$rerun = 1;
++	    } elsif ($sel eq "r") {
++		bool_invert(\$email_remove_duplicates);
++		$rerun = 1;
++	    } elsif ($sel eq "k") {
++		bool_invert(\$keywords);
++		$rerun = 1;
++	    } elsif ($sel eq "p") {
++		if ($str ne "" && $val >= 0) {
++		    $pattern_depth = $val;
++		    $rerun = 1;
++		}
++	    } else {
++		print STDERR "invalid option: '$nr'\n";
++		$redraw = 0;
+ 	    }
+ 	}
++	if ($rerun) {
++	    print STDERR "git-blame can be very slow, please have patience..."
++		if ($email_git_blame);
++	    goto &get_maintainer;
 +	}
-+    }
+     }
  
      #drop not selected entries
-     $count = 0;
--    my @new_emailto;
--    foreach my $entry (@list){
--	if ($selected{$count}){
--		push(@new_emailto,$list[$count]);
--		print STDERR "$count: ";
--		print STDERR $email_to[$count]->[0];
--		print STDERR ",\t\t ";
--		print STDERR $email_to[$count]->[1];
--		print STDERR "\n";
-+    my @new_emailto = ();
-+    foreach my $entry (@list) {
-+	if ($selected{$count}) {
-+	    push(@new_emailto, $list[$count]);
- 	}
- 	$count++;
-     }
--    return \@new_emailto;
-+    return @new_emailto;
+@@ -1388,6 +1477,16 @@ sub interactive_get_maintainer {
+     return @new_emailto;
  }
  
--sub vcs_get_shortlog {
--    my $arg = shift;
--    my ($name, $address) = parse_email($arg);
--    return $shortlog_buffer{$address};
--}
-+sub save_commits_by_author {
-+    my (@lines) = @_;
- 
--sub vcs_file_shortlogs {
--    my ($file) = @_;
--    print STDERR "shortlog processing $file:";
--    foreach my $entry (@email_to){
--	my ($name, $address) = parse_email($entry->[0]);
--	print STDERR ".";
--	my $commits_ref = vcs_email_shortlog($address, $file);
--	push(@{$shortlog_buffer{$address}}, [ $file, $commits_ref ]);
-+    my @authors = ();
-+    my @commits = ();
-+    my @subjects = ();
++sub bool_invert {
++    my ($bool_ref) = @_;
 +
-+    foreach my $line (@lines) {
-+	push(@authors, $1) if ($line =~ m/$VCS_cmds{"author_pattern"}/);
-+	push(@commits, $1) if ($line =~ m/$VCS_cmds{"commit_pattern"}/);
-+	push(@subjects, $1) if ($line =~ m/$VCS_cmds{"subject_pattern"}/);
++    if ($$bool_ref) {
++	$$bool_ref = 0;
++    } else {
++	$$bool_ref = 1;
 +    }
++}
 +
-+    for (my $i = 0; $i < @authors; $i++) {
-+	push(@{$commit_author_hash{$authors[$i]}},
-+	     [ ($commits[$i], $subjects[$i]) ]);
-     }
--    print STDERR "\n";
- }
+ sub save_commits_by_author {
+     my (@lines) = @_;
  
--sub vcs_email_shortlog {
--    my $email = shift;
--    my ($file) = @_;
-+sub save_commits_by_signer {
-+    my (@lines) = @_;
-+
-+    my $commit = "";
-+    my $subject = "";
+@@ -1396,14 +1495,29 @@ sub save_commits_by_author {
+     my @subjects = ();
  
--    my $cmd = $VCS_cmds{"shortlog_cmd"};
--    $cmd =~ s/(\$\w+)/$1/eeg;		#substitute variables
--    my @lines = &{$VCS_cmds{"execute_cmd"}}($cmd);
--    return \@lines;
-+    foreach my $line (@lines) {
-+	$commit = $1 if ($line =~ m/$VCS_cmds{"commit_pattern"}/);
-+	$subject = $1 if ($line =~ m/$VCS_cmds{"subject_pattern"}/);
-+	if ($line =~ /^[ \t]*${signature_pattern}.*\@.*$/) {
-+	    my @signature = ($line);
-+	    my ($types_ref, $signers_ref) = extract_formatted_signatures(@signature);
-+	    my @type = @$types_ref;
-+	    my @signer = @$signers_ref;
-+
-+	    push(@{$commit_signer_hash{$signer[0]}},
-+		 [ ($commit, $subject, $type[0]) ]);
+     foreach my $line (@lines) {
+-	push(@authors, $1) if ($line =~ m/$VCS_cmds{"author_pattern"}/);
++	if ($line =~ m/$VCS_cmds{"author_pattern"}/) {
++	    my $author = $1;
++	    my ($name, $address) = parse_email($author);
++	    $author = format_email($name, $address, 1);
++	    push(@authors, $author);
 +	}
-+    }
+ 	push(@commits, $1) if ($line =~ m/$VCS_cmds{"commit_pattern"}/);
+ 	push(@subjects, $1) if ($line =~ m/$VCS_cmds{"subject_pattern"}/);
+     }
+ 
+     for (my $i = 0; $i < @authors; $i++) {
+-	push(@{$commit_author_hash{$authors[$i]}},
+-	     [ ($commits[$i], $subjects[$i]) ]);
++	my $exists = 0;
++	foreach my $ref(@{$commit_author_hash{$authors[$i]}}) {
++	    if (@{$ref}[0] eq $commits[$i] &&
++		@{$ref}[1] eq $subjects[$i]) {
++		$exists = 1;
++		last;
++	    }
++	}
++	if (!$exists) {
++	    push(@{$commit_author_hash{$authors[$i]}},
++		 [ ($commits[$i], $subjects[$i]) ]);
++	}
+     }
  }
  
- sub vcs_assign {
+@@ -1417,13 +1531,27 @@ sub save_commits_by_signer {
+ 	$commit = $1 if ($line =~ m/$VCS_cmds{"commit_pattern"}/);
+ 	$subject = $1 if ($line =~ m/$VCS_cmds{"subject_pattern"}/);
+ 	if ($line =~ /^[ \t]*${signature_pattern}.*\@.*$/) {
+-	    my @signature = ($line);
+-	    my ($types_ref, $signers_ref) = extract_formatted_signatures(@signature);
+-	    my @type = @$types_ref;
+-	    my @signer = @$signers_ref;
+-
+-	    push(@{$commit_signer_hash{$signer[0]}},
+-		 [ ($commit, $subject, $type[0]) ]);
++	    my @signatures = ($line);
++	    my ($types_ref, $signers_ref) = extract_formatted_signatures(@signatures);
++	    my @types = @$types_ref;
++	    my @signers = @$signers_ref;
++
++	    my $type = $types[0];
++	    my $signer = $signers[0];
++
++	    my $exists = 0;
++	    foreach my $ref(@{$commit_signer_hash{$signer}}) {
++		if (@{$ref}[0] eq $commit &&
++		    @{$ref}[1] eq $subject &&
++		    @{$ref}[2] eq $type) {
++		    $exists = 1;
++		    last;
++		}
++	    }
++	    if (!$exists) {
++		push(@{$commit_signer_hash{$signer}},
++		     [ ($commit, $subject, $type) ]);
++	    }
+ 	}
+     }
+ }
+@@ -1478,7 +1606,8 @@ sub vcs_file_signoffs {
+     my @signers = ();
+     my $commits;
+ 
+-    return if (!vcs_exists());
++    $vcs_used = vcs_exists();
++    return if (!$vcs_used);
+ 
+     my $cmd = $VCS_cmds{"find_signers_cmd"};
+     $cmd =~ s/(\$\w+)/$1/eeg;		# interpolate $cmd
+@@ -1496,37 +1625,93 @@ sub vcs_file_blame {
+     my $total_commits;
+     my $total_lines;
+ 
+-    return if (!vcs_exists());
++    $vcs_used = vcs_exists();
++    return if (!$vcs_used);
+ 
+     @all_commits = vcs_blame($file);
+     @commits = uniq(@all_commits);
+     $total_commits = @commits;
+     $total_lines = @all_commits;
+ 
+-    foreach my $commit (@commits) {
+-	my $commit_count;
+-	my @commit_signers = ();
++    if ($email_git_blame_signatures) {
++	if (vcs_is_hg()) {
++	    my $commit_count;
++	    my @commit_signers = ();
++	    my $commit = join(" -r ", @commits);
++	    my $cmd;
++
++	    $cmd = $VCS_cmds{"find_commit_signers_cmd"};
++	    $cmd =~ s/(\$\w+)/$1/eeg;	#substitute variables in $cmd
++
++	    ($commit_count, @commit_signers) = vcs_find_signers($cmd);
++
++	    push(@signers, @commit_signers);
++	} else {
++	    foreach my $commit (@commits) {
++		my $commit_count;
++		my @commit_signers = ();
++		my $cmd;
+ 
+-	my $cmd = $VCS_cmds{"find_commit_signers_cmd"};
+-	$cmd =~ s/(\$\w+)/$1/eeg;	#substitute variables in $cmd
++		$cmd = $VCS_cmds{"find_commit_signers_cmd"};
++		$cmd =~ s/(\$\w+)/$1/eeg;	#substitute variables in $cmd
+ 
+-	($commit_count, @commit_signers) = vcs_find_signers($cmd);
++		($commit_count, @commit_signers) = vcs_find_signers($cmd);
+ 
+-	push(@signers, @commit_signers);
++		push(@signers, @commit_signers);
++	    }
++	}
+     }
+ 
+     if ($from_filename) {
+ 	if ($output_rolestats) {
+ 	    my @blame_signers;
+-	    foreach my $commit (@commits) {
+-		my $i;
+-		my $cmd = $VCS_cmds{"find_commit_author_cmd"};
+-		$cmd =~ s/(\$\w+)/$1/eeg;	#interpolate $cmd
+-		my @author = vcs_find_author($cmd);
+-		next if !@author;
+-		my $count = grep(/$commit/, @all_commits);
+-		for ($i = 0; $i < $count ; $i++) {
+-		    push(@blame_signers, $author[0]);
++	    if (vcs_is_hg()) {{		# Double brace for last exit
++		my $commit_count;
++		my @commit_signers = ();
++		@commits = uniq(@commits);
++		@commits = sort(@commits);
++		my $commit = join(" -r ", @commits);
++		my $cmd;
++
++		$cmd = $VCS_cmds{"find_commit_author_cmd"};
++		$cmd =~ s/(\$\w+)/$1/eeg;	#substitute variables in $cmd
++
++		my @lines = ();
++
++		@lines = &{$VCS_cmds{"execute_cmd"}}($cmd);
++
++		if (!$email_git_penguin_chiefs) {
++		    @lines = grep(!/${penguin_chiefs}/i, @lines);
++		}
++
++		last if !@lines;
++
++		my @authors = ();
++		foreach my $line (@lines) {
++		    if ($line =~ m/$VCS_cmds{"author_pattern"}/) {
++			my $author = $1;
++			my ($name, $address) = parse_email($author);
++			$author = format_email($name, $address, 1);
++			push(@authors, $1);
++		    }
++		}
++
++		save_commits_by_author(@lines) if ($interactive);
++		save_commits_by_signer(@lines) if ($interactive);
++
++		push(@signers, @authors);
++	    }}
++	    else {
++		foreach my $commit (@commits) {
++		    my $i;
++		    my $cmd = $VCS_cmds{"find_commit_author_cmd"};
++		    $cmd =~ s/(\$\w+)/$1/eeg;	#interpolate $cmd
++		    my @author = vcs_find_author($cmd);
++		    next if !@author;
++		    my $count = grep(/$commit/, @all_commits);
++		    for ($i = 0; $i < $count ; $i++) {
++			push(@blame_signers, $author[0]);
++		    }
+ 		}
+ 	    }
+ 	    if (@blame_signers) {
 -- 
 1.7.3
 
