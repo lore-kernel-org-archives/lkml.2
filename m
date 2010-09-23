@@ -1,63 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755752Ab0IWQtX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 12:49:23 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:53397 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755428Ab0IWQtW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 12:49:22 -0400
-Date: Thu, 23 Sep 2010 18:12:12 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Alan Cox <alan@linux.intel.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the tty tree
-Message-ID: <20100923181212.422e76c1@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100923081350.e028c4ac.rdunlap@xenotime.net>
-References: <20100923142018.55019d59.sfr@canb.auug.org.au>
-	<20100923141433.GC31738@kroah.com>
-	<20100923081350.e028c4ac.rdunlap@xenotime.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755798Ab0IWQu0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 12:50:26 -0400
+Received: from spaceboyz.net ([87.106.131.203]:45079 "EHLO spaceboyz.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755692Ab0IWQuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 12:50:24 -0400
+Date: Thu, 23 Sep 2010 18:49:44 +0200
+From: David Lamparter <equinox@diac24.net>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: David Lamparter <equinox@diac24.net>, linux-kernel@vger.kernel.org,
+        Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        jamal <hadi@cyberus.ca>, Daniel Lezcano <daniel.lezcano@free.fr>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Ulrich Drepper <drepper@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+        David Miller <davem@davemloft.net>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Ben Greear <greearb@candelatech.com>,
+        Matt Helsley <matthltc@us.ibm.com>, Jonathan Corbet <corbet@lwn.net>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>
+Subject: Re: [ABI REVIEW][PATCH 0/8] Namespace file descriptors
+Message-ID: <20100923164944.GA1202237@jupiter.n2.diac24.net>
+References: <m1ocborgq7.fsf@fess.ebiederm.org>
+ <20100923151853.GC1160234@jupiter.n2.diac24.net>
+ <m11v8kh142.fsf@fess.ebiederm.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m11v8kh142.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Sep 2010 08:13:50 -0700
-Randy Dunlap <rdunlap@xenotime.net> wrote:
-
-> On Thu, 23 Sep 2010 07:14:33 -0700 Greg KH wrote:
+On Thu, Sep 23, 2010 at 09:32:29AM -0700, Eric W. Biederman wrote:
+> > At several occasions, I was left with either some runaway daemon which
+> > kept the namespace alive. To describe this a little more graphically:
+> > I found no other way than doing a
+> > 	md5sum /proc/*/net/if_inet6 | sort | uniq -c -w 32
+> > to find out which runaway to kill to terminate the namespace.
+> >
+> > This makes network namespaces particularly cumbersome to use without PID
+> > namespaces. While I agree that a large part of the users - namely lxc -
+> > will use them together, network namespaces without pidns are very
+> > interesting for routing applications implementing VRFs.
+> >
+> > Is it possible to add some kind of "all namespaces" list, optimally
+> > giving an opportunity to open() exactly this file descriptor that you
+> > get from /proc/<pid>/ns/net?
+> >
+> > Also, is it possible to extend that file descriptor to have an
+> > "get all pids" ioctl,
+> > ...or, wait, maybe have /proc/...ns/proc/<pid> symlink?
+> >
+> > (This obviously isn't fully thought to the end, please pick up...)
 > 
-> > On Thu, Sep 23, 2010 at 02:20:18PM +1000, Stephen Rothwell wrote:
-> > > Hi Greg,
-> > > 
-> > > After merging the tty tree, today's linux-next build (x86_64
-> > > allmodconfig) failed like this:
-> > > 
-> > > drivers/char/ip2/ip2main.c:459: error: 'ip2_get_icount' undeclared here (not in a function)
-> > > 
-> > > Caused by commit 157be28e51ed476aa357c8718aaef4832f4da66b ("tty: icount
-> > > changeover for other main devices").
-> > > 
-> > > Please build test (especially the trivial "cut and paste" changes) ...
-> > > 
-> > > I have reverted that commit for today.
-> > 
-> > Ick, sorry about that.  Alan, care to send a fixup patch for this?
+> Maybe.  I can understand the pain.
 > 
-> 
-> So developers and maintainers are not doing allmodconfig builds?
-> I can understand not doing randconfig builds.
+> Is the problem you are facing you are shutting down a vrf and you want
+> to make certain nothing is using it any longer?
 
-drivers/staging/ti-st/st_kim.c:34:20: error: st_kim.h: No such file or
-directory
+Hrm. There are 2 and a half problems i can describe:
 
-So there isn't actually much point trying allmodconfig builds (thats not
-the only fail either).
+1) identifying namespaces. You can walk over /proc just fine and look at
+   all processes namespaces, but you don't know which are actually the
+   same aside from looking at some entry like if_inet6. There is no
+   identifier and no easy equality match. (As far as i can tell.)
 
+   Bonus difficulty: your patch will allow namespaces that have no
+   process attached to them anymore since they only exist as files.
+   Those will be invisible to someone running through /proc. Which leads
+   to:
+2) enumerating namespaces. Sure you can walk through /proc, but that's
+   racy and won't even work with fd-only namespaces. It might even be a
+   security risk if some trojan creates, say, a VLAN on your eth0, or a
+   macvlan, hides it in a network namespace and communicates through it.
+
+2 1/2) is terminating a namespace. It's not really a problem to add a
+   PID namespace when you have "uncontrollable" daemons; however you
+   can't be sure whether someone else took a reference on the network
+   namespace from the outside.
+
+These all are mainly administration/management issues, not that much
+regular operation. Writing routing software with VRF support works just
+fine, but the sysadmin can be at somewhat of an odd end here.
+
+
+-David
 
