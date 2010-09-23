@@ -1,201 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755272Ab0IWMxL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 08:53:11 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55914 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753646Ab0IWMxJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 08:53:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=h6f28JEL7gYCsXR9E1uW+Ws3K5rj1MIRGbXcAEGhupUUSViiIV7nPujcp4I7tBU8ND
-         eXaA/dOI0XQyUiz+o5R9jSul7L5pxD1zee9XGv6vVLQCC0DN6/8M9xx6q3i3fSbzdHmi
-         N3fdCgwI56R7vOvwJry8CC5CK+wf8VfIYoNiE=
-Subject: Re: When booting a 16TB system, unix_create1 fails due to integer
- overflow.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Robin Holt <holt@sgi.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Benjamin LaHaise <bcrl@kvack.org>,
-        "Denis V. Lunev" <den@openvz.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Miklos Szeredi <mszeredi@suse.cz>, Mingming Cao <cmm@us.ibm.com>,
-        Nick Piggin <npiggin@kernel.dk>, Pavel Emelyanov <xemul@openvz.org>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20100923121704.GR14064@sgi.com>
-References: <20100923121704.GR14064@sgi.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 23 Sep 2010 14:53:04 +0200
-Message-ID: <1285246384.362.3.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1755292Ab0IWMxf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 08:53:35 -0400
+Received: from vgersoft.com ([24.97.191.94]:55659 "EHLO vgersoft.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753646Ab0IWMxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 08:53:34 -0400
+X-Greylist: delayed 414 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Sep 2010 08:53:34 EDT
+Date: Thu, 23 Sep 2010 08:46:30 -0400 (EDT)
+From: Steve Thompson <smt@vgersoft.com>
+To: Alex Adriaanse <alex@innovacomputing.com>
+cc: linux-kernel@vger.kernel.org, drbd-user@lists.linbit.com
+Subject: Re: [DRBD-user] Hanging kernel
+In-Reply-To: <4C9AA4EB.70407@innovacomputing.com>
+Message-ID: <alpine.LRH.0.9999.1009230842330.5001@helios.vgersoft.com>
+References: <4C9AA4EB.70407@innovacomputing.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 23 septembre 2010 à 07:17 -0500, Robin Holt a écrit : 
-> I do not know which direction to take, but here is the summary of the
-> problem.
-> 
-> We recently started trying to boot a customer's two new machines which
-> are configured with 384GB short of 16TB of memory.
-> 
-> We were seeing a failure which prevented boot.  The kernel was incapable
-> of creating either a named pipe or unix domain socket.  This comes down
-> to a common kernel function called unix_create1() which does:
-> 
-> 	atomic_inc(&unix_nr_socks);
-> 	if (atomic_read(&unix_nr_socks) > 2 * get_max_files())
-> 		goto out;
-> 
-> The function get_max_files() is a simple return of files_stat.max_files.
-> files_stat.max_files is a signed integer and is computed in
-> fs/file_table.c's files_init().
-> 
-> 	n = (mempages * (PAGE_SIZE / 1024)) / 10;
-> 	files_stat.max_files = n;
-> 
-> In our case, mempages (total_ram_pages) is approx 3,758,096,384
-> (0xe0000000).  That leaves max_files at approximately 1,503,238,553.
-> This causes 2 * get_max_files() to integer overflow.
-> 
-> We came up with a few possible solutions:
-> 
-> Our first response was to limit max_files to (INT_MAX / 2)  This at
-> least got us past the problem and seemed reasonable.
-> 
-> We could also have changed the 2 * get_max_files() to 2UL *
-> get_max_files() and gotten past this point in boot.  That was not tested.
-> 
-> We could also have changed the definition of max_files to at least an
-> unsigned int instead of an int and gotten past the problem, but again,
-> not tested.
-> 
-> 
-> Any suggestions for a direction would be appreciated.
+On Wed, 22 Sep 2010, Alex Adriaanse wrote:
 
-Hi Robin
+> I'm administering a server that has frozen three times over the past two 
+> days.  During these times, it seemed that most processes would all of a 
+> sudden start hanging, and I couldn't SSH into the server or even log into the 
+> console.  I would start seeing messages like "INFO: task kswapd0:28 blocked 
+> for more than 120 seconds" on the console shortly after the processes hung. 
+> The only way I could get the server to respond again was by resetting it.
 
-I would say : We can use atomic_long_t instead of atomic_t
+This may not apply in your situation, but the only times I have ever seen 
+this (and I've seen it several times), it was due to VM parameters that 
+were inappropriate for the work load. Usually, if you wait long enough 
+(sometimes as much as 20 minutes), the system will recover and continue. 
+What are your values of:
 
-And make get_max_files(void) return a long ?
+ 	sysctl vm.dirty_ratio
+ 	sysctl vm.dirty_background_ratio
 
-Something like :
+I have had success in these situations by setting the former to 50, and 
+the latter to 5, but the optimum values are sensitive to your peak load.
+I don't believe that it has any direct connection with drbd.
 
-
- fs/file_table.c    |   10 +++++-----
- include/linux/fs.h |    2 +-
- net/unix/af_unix.c |   14 +++++++-------
- 3 files changed, 13 insertions(+), 13 deletions(-)
-
-diff --git a/fs/file_table.c b/fs/file_table.c
-index a04bdd8..a2d2189 100644
---- a/fs/file_table.c
-+++ b/fs/file_table.c
-@@ -68,9 +68,9 @@ static int get_nr_files(void)
- /*
-  * Return the maximum number of open files in the system
-  */
--int get_max_files(void)
-+unsigned long get_max_files(void)
- {
--	return files_stat.max_files;
-+	return (unsigned long)(unsigned int)files_stat.max_files;
- }
- EXPORT_SYMBOL_GPL(get_max_files);
- 
-@@ -140,7 +140,7 @@ struct file *get_empty_filp(void)
- over:
- 	/* Ran out of filps - report that */
- 	if (get_nr_files() > old_max) {
--		printk(KERN_INFO "VFS: file-max limit %d reached\n",
-+		printk(KERN_INFO "VFS: file-max limit %lu reached\n",
- 					get_max_files());
- 		old_max = get_nr_files();
- 	}
-@@ -487,7 +487,7 @@ retry:
- 
- void __init files_init(unsigned long mempages)
- { 
--	int n; 
-+	unsigned long n;
- 
- 	filp_cachep = kmem_cache_create("filp", sizeof(struct file), 0,
- 			SLAB_HWCACHE_ALIGN | SLAB_PANIC, NULL);
-@@ -498,7 +498,7 @@ void __init files_init(unsigned long mempages)
- 	 */ 
- 
- 	n = (mempages * (PAGE_SIZE / 1024)) / 10;
--	files_stat.max_files = n; 
-+	files_stat.max_files = min(n, 0x7FFFFFFFUL);
- 	if (files_stat.max_files < NR_FILE)
- 		files_stat.max_files = NR_FILE;
- 	files_defer_init();
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 63d069b..0de4989 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -404,7 +404,7 @@ extern void __init inode_init_early(void);
- extern void __init files_init(unsigned long);
- 
- extern struct files_stat_struct files_stat;
--extern int get_max_files(void);
-+extern unsigned long get_max_files(void);
- extern int sysctl_nr_open;
- extern struct inodes_stat_t inodes_stat;
- extern int leases_enable, lease_break_time;
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index 0b39b24..b3c70ac 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -117,7 +117,7 @@
- 
- static struct hlist_head unix_socket_table[UNIX_HASH_SIZE + 1];
- static DEFINE_SPINLOCK(unix_table_lock);
--static atomic_t unix_nr_socks = ATOMIC_INIT(0);
-+static atomic_long_t unix_nr_socks = ATOMIC_INIT(0);
- 
- #define unix_sockets_unbound	(&unix_socket_table[UNIX_HASH_SIZE])
- 
-@@ -360,13 +360,13 @@ static void unix_sock_destructor(struct sock *sk)
- 	if (u->addr)
- 		unix_release_addr(u->addr);
- 
--	atomic_dec(&unix_nr_socks);
-+	atomic_long_dec(&unix_nr_socks);
- 	local_bh_disable();
- 	sock_prot_inuse_add(sock_net(sk), sk->sk_prot, -1);
- 	local_bh_enable();
- #ifdef UNIX_REFCNT_DEBUG
--	printk(KERN_DEBUG "UNIX %p is destroyed, %d are still alive.\n", sk,
--		atomic_read(&unix_nr_socks));
-+	printk(KERN_DEBUG "UNIX %p is destroyed, %ld are still alive.\n", sk,
-+		atomic_long_read(&unix_nr_socks));
- #endif
- }
- 
-@@ -606,8 +606,8 @@ static struct sock *unix_create1(struct net *net, struct socket *sock)
- 	struct sock *sk = NULL;
- 	struct unix_sock *u;
- 
--	atomic_inc(&unix_nr_socks);
--	if (atomic_read(&unix_nr_socks) > 2 * get_max_files())
-+	atomic_long_inc(&unix_nr_socks);
-+	if (atomic_long_read(&unix_nr_socks) > 2 * get_max_files())
- 		goto out;
- 
- 	sk = sk_alloc(net, PF_UNIX, GFP_KERNEL, &unix_proto);
-@@ -632,7 +632,7 @@ static struct sock *unix_create1(struct net *net, struct socket *sock)
- 	unix_insert_socket(unix_sockets_unbound, sk);
- out:
- 	if (sk == NULL)
--		atomic_dec(&unix_nr_socks);
-+		atomic_long_dec(&unix_nr_socks);
- 	else {
- 		local_bh_disable();
- 		sock_prot_inuse_add(sock_net(sk), sk->sk_prot, 1);
-
-
+Steve
+----------------------------------------------------------------------------
+Steve Thompson                 E-mail:      smt AT vgersoft DOT com
+Voyager Software LLC           Web:         http://www DOT vgersoft DOT com
+39 Smugglers Path              VSW Support: support AT vgersoft DOT com
+Ithaca, NY 14850
+   "186,300 miles per second: it's not just a good idea, it's the law"
+----------------------------------------------------------------------------
