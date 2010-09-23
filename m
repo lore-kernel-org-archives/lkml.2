@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123Ab0IWCOS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 22:14:18 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:60254 "EHLO smtps.tip.net.au"
+	id S1752208Ab0IWCWr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 22:22:47 -0400
+Received: from kroah.org ([198.145.64.141]:41857 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751015Ab0IWCOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 22:14:17 -0400
-Date: Thu, 23 Sep 2010 12:14:13 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: linux-next: manual merge of the net tree with the net-current tree
-Message-Id: <20100923121413.d48e2b1b.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751596Ab0IWCWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 22:22:46 -0400
+Date: Wed, 22 Sep 2010 19:22:56 -0700
+From: Greg KH <greg@kroah.com>
+To: Tracey Dent <tdent48227@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] Staging: rtl8187se: r8180.h: fixed alot of
+	checkpatch.pl issues
+Message-ID: <20100923022256.GB27057@kroah.com>
+References: <1285031982-3870-1-git-send-email-tdent48227@gmail.com> <20100922232458.GB18432@haskell.muteddisk.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100922232458.GB18432@haskell.muteddisk.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Wed, Sep 22, 2010 at 04:24:58PM -0700, matt mooney wrote:
+> On 21:19 Mon 20 Sep     , Tracey Dent wrote:
+> > Fixed numerous coding style issues
+> > 
+> The subject should be more specific as to what the patch does, such as
+> "Staging: rtl8187se: r8180.h: whitespace cleanup."
+> 
+> And the explanation in the commit should also be more specific. There are
+> plenty of examples if you look through the log. Greg might except them as is,
+> but any future patches should follow the advice mentioned. Next time for a
+> patch of this nature remember to CC kernel-janitors too. 
 
-Today's linux-next merge of the net tree got a conflict in
-net/ipv4/ip_output.c between commit
-3d13008e7345fa7a79d8f6438150dc15d6ba6e9d ("ip: fix truesize mismatch in
-ip fragmentation") from the net-current tree and commit
-21dc330157454046dd7c494961277d76e1c957fe ("net: Rename skb_has_frags to
-skb_has_frag_list") from the net tree.
+Why the janitor list?  Do you really want that to be copied on every
+cleanup patch I get like this?  That would be a _lot_...
 
-Just context changes.  I fixed it up (see below) and can carry the fix
-for a while.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+thanks,
 
-diff --cc net/ipv4/ip_output.c
-index 7649d77,e427620..0000000
---- a/net/ipv4/ip_output.c
-+++ b/net/ipv4/ip_output.c
-@@@ -487,9 -487,10 +487,9 @@@ int ip_fragment(struct sk_buff *skb, in
-  	 * LATER: this step can be merged to real generation of fragments,
-  	 * we can switch to copy when see the first bad fragment.
-  	 */
-- 	if (skb_has_frags(skb)) {
-+ 	if (skb_has_frag_list(skb)) {
- -		struct sk_buff *frag;
- +		struct sk_buff *frag, *frag2;
-  		int first_len = skb_pagelen(skb);
- -		int truesizes = 0;
-  
-  		if (first_len - hlen > mtu ||
-  		    ((first_len - hlen) & 7) ||
+greg k-h
