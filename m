@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617Ab0IWGk2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 02:40:28 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:56055 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976Ab0IWGk0 (ORCPT
+	id S1753166Ab0IWGok (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 02:44:40 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64616 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976Ab0IWGoj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 02:40:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sage Weil <sage@newdream.net>
-Subject: Re: [PATCH] fs/locks.c: prepare for BKL removal
-Date: Thu, 23 Sep 2010 08:40:11 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4+; KDE/4.5.1; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        Matthew Wilcox <willy@linux.intel.com>, Christoph Hellwig <hch@lst.de>,
-        Trond Myklebust <trond.myklebust@fys.uio.no>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, John Kacur <jkacur@redhat.com>,
-        linux-fsdevel@vger.kernel.org, gregf@hq.newdream.net
-References: <1284815371-5843-1-git-send-email-arnd@arndb.de> <201009212209.51956.arnd@arndb.de> <Pine.LNX.4.64.1009222037500.14029@cobra.newdream.net>
-In-Reply-To: <Pine.LNX.4.64.1009222037500.14029@cobra.newdream.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009230840.11724.arnd@arndb.de>
-X-Provags-ID: V02:K0:NEm5tbY6M9zQJFZ22KnVVMU+wNp8oXhH0KKsG+1B8Pt
- JciuKSlOM1QzcLjc8BQJwwUmjaz+RS6rCRUjE+F+xDhPaxyu3m
- 4kB/y/AndzL6NMcKHKWUQezJEAyICr/E6DfiMiGV1VmU/PtLZs
- 9MjUVnbQJ40VJBe+1tn9Wzm1P1A0IVLnURwWi3W8TWViuh4PHm
- +ml3JCL/bIFhS8QvuNUvQ==
+	Thu, 23 Sep 2010 02:44:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=ftEO+afmxBG2d38bDHylL0qf5MPZEZjct14TTfZbQFOfmYkSZ3E+2GMxFqd2wGNDNi
+         1kjxiWQr+BlwDprpI1l1nZJjdL8GqOvzjmaIuI9gfgTo8+p84ekWp9FC7Kn8qCS2jf+D
+         lrTDnoh9Q0DOVScZBQ9/Th35PIfCLW14lWamU=
+From: Ben Skeggs <skeggsb@gmail.com>
+To: dri-devel@lists.freedesktop.org
+Cc: airlied@redhat.com, linux-kernel@vger.kernel.org,
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [PATCH] drm/nouveau: fix panels using straps-based mode detection
+Date: Thu, 23 Sep 2010 16:44:01 +1000
+Message-Id: <1285224241-32683-1-git-send-email-skeggsb@gmail.com>
+X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <20100922225612.826b0553.akpm@linux-foundation.org>
+References: <20100922225612.826b0553.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 23 September 2010 05:42:49 Sage Weil wrote:
-> Okay, the lock/unlock_flocks() stubs on in Linus' tree now, and the Ceph 
-> for-next branch is rebased and updated to fix the memory allocations and 
-> switch to the new interface.
+From: Ben Skeggs <bskeggs@redhat.com>
 
-Ok. I'll put the patches for the other stuff (everything but ceph and lockd)
-in my bkl/vfs branch then.
+nouveau_bios_fp_mode() zeroes the mode struct before filling in relevant
+entries.  This nukes the mode id initialised by drm_mode_create(), and
+causes warnings from idr when we try to remove the mode.
 
-> Unfortunately you still need to #include smp_lock.h for now since the 
-> stubs are just #defines, so we'll need to remember to clean that up later.
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+---
+ drivers/gpu/drm/nouveau/nouveau_connector.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-Don't worry about that. We have a few of those leftover ones, so we can
-do a single patch removing them all before one day removing the header
-file itself.
+diff --git a/drivers/gpu/drm/nouveau/nouveau_connector.c b/drivers/gpu/drm/nouveau/nouveau_connector.c
+index 98c214c..4b286a8 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_connector.c
++++ b/drivers/gpu/drm/nouveau/nouveau_connector.c
+@@ -594,8 +594,10 @@ nouveau_connector_get_modes(struct drm_connector *connector)
+ 	if (nv_encoder->dcb->type == OUTPUT_LVDS &&
+ 	    (nv_encoder->dcb->lvdsconf.use_straps_for_mode ||
+ 	     dev_priv->vbios.fp_no_ddc) && nouveau_bios_fp_mode(dev, NULL)) {
+-		nv_connector->native_mode = drm_mode_create(dev);
+-		nouveau_bios_fp_mode(dev, nv_connector->native_mode);
++		struct drm_display_mode mode;
++
++		nouveau_bios_fp_mode(dev, &mode);
++		nv_connector->native_mode = drm_mode_duplicate(dev, &mode);
+ 	}
+ 
+ 	/* Find the native mode if this is a digital panel, if we didn't
+-- 
+1.7.2.2
 
-	Arnd
