@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755008Ab0IWLyZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 07:54:25 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:31378 "EHLO relay.sw.ru"
+	id S1754806Ab0IWMBB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 08:01:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18819 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754528Ab0IWLyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 07:54:23 -0400
-Message-ID: <4C9B3F9C.8080506@parallels.com>
-Date: Thu, 23 Sep 2010 15:53:00 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: hadi@cyberus.ca
-CC: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Ulrich Drepper <drepper@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        David Miller <davem@davemloft.net>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Ben Greear <greearb@candelatech.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Jonathan Corbet <corbet@lwn.net>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>
-Subject: Re: [PATCH 8/8] net: Implement socketat.
-References: <m1ocborgq7.fsf@fess.ebiederm.org>	 <m1bp7oq1u8.fsf@fess.ebiederm.org>  <4C9B162E.7040201@parallels.com>	 <1285240797.5036.5.camel@bigi>  <4C9B3B06.900@parallels.com> <1285242055.5036.9.camel@bigi>
-In-Reply-To: <1285242055.5036.9.camel@bigi>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752561Ab0IWMBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 08:01:00 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org, fweisbec@gmail.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCHv2 0/3] tracing: function graph output for wakeup tracer
+Date: Thu, 23 Sep 2010 14:00:50 +0200
+Message-Id: <1285243253-7372-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2010 03:40 PM, jamal wrote:
-> On Thu, 2010-09-23 at 15:33 +0400, Pavel Emelyanov wrote:
-> 
->> This particular usecase is unneeded once you have the "enter" ability.
-> 
-> Is that cheaper from a syscall count/cost?
+hi,
 
-Why does it matter? You told, that the usage scenario was to
-add routes to container. If I do 2 syscalls instead of 1, is
-it THAT worse?
+adding function graph output to irqsoff tracer.
+The graph output is enabled by setting new 'display-graph'
+trace option.
 
-> i.e do I have to enter every time i want to write/read this fd?
+The v2 updates are based on comments by Frederic Weisbecker
+and Steven Rostedt, also rebased to latest master.
 
-No - you enter once, create a socket and do whatever you need
-withing the enterned namespace.
 
-> How does poll/select work in that enter scenario?
+v2:
+- librarized common functions from irqs/preemptoff tracers
+- using local_save_flags instead disabling irqs to get the flags
+  in wakeup_graph_return/wakeup_graph_entry
 
-Just like it used to before the enter.
 
-> cheers,
-> jamal
-> 
-> 
+attached patches:
+- 1/3 proper check for irq_depth routines
+- 2/3 librarize graph related irqs/preempts off calls
+- 3/3 graph support for wakeup tracer
 
+
+plz let me know what you think
+
+wbr,
+jirka
+---
+ kernel/trace/trace.h                 |    4 +
+ kernel/trace/trace_functions_graph.c |   87 ++++++++++++-
+ kernel/trace/trace_irqsoff.c         |   56 +-------
+ kernel/trace/trace_sched_wakeup.c    |  231 ++++++++++++++++++++++++++++++++--
+ 4 files changed, 312 insertions(+), 66 deletions(-)
