@@ -1,117 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab0IWIwI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 04:52:08 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:57582 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753798Ab0IWIwE (ORCPT
+	id S1754225Ab0IWIxP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 04:53:15 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:45845 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752848Ab0IWIxN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 04:52:04 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: <linux-kernel@vger.kernel.org>
-Cc: Linux Containers <containers@lists.osdl.org>, <netdev@vger.kernel.org>,
-        netfilter-devel@vger.kernel.org, <linux-fsdevel@vger.kernel.org>,
-        jamal <hadi@cyberus.ca>, Daniel Lezcano <daniel.lezcano@free.fr>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Ulrich Drepper <drepper@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        David Miller <davem@davemloft.net>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Ben Greear <greearb@candelatech.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Jonathan Corbet <corbet@lwn.net>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>
-References: <m1ocborgq7.fsf@fess.ebiederm.org>
-Date: Thu, 23 Sep 2010 01:51:59 -0700
-In-Reply-To: <m1ocborgq7.fsf@fess.ebiederm.org> (Eric W. Biederman's message
-	of "Thu, 23 Sep 2010 01:45:04 -0700")
-Message-ID: <m1bp7oq1u8.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Thu, 23 Sep 2010 04:53:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=DAGatPJe2cLaQepDs7hW9NZ5V2SW4JN1g+HSWldHRutQVBVtl8nzMpIky6JB0tb3rH
+         EUXxVr39zAD6/aPx1UquWBLoNHg8QDJvSxboNK414bC4faRlHYjMYxD6BwqyPITH6IZ4
+         Mrk/dBLGaJ3DxosAv8/5fqVufTP3H0GoiZ0l8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 98.207.157.188
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;<linux-kernel@vger.kernel.org>
-X-Spam-Relay-Country: 
-Subject: [PATCH 8/8] net: Implement socketat.
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+In-Reply-To: <20100921124552.GD18991@one.firstfloor.org>
+References: <1284865235-29920-1-git-send-email-ying.huang@intel.com>
+	<1284865235-29920-5-git-send-email-ying.huang@intel.com>
+	<20100921124552.GD18991@one.firstfloor.org>
+Date: Thu, 23 Sep 2010 16:53:11 +0800
+Message-ID: <AANLkTinkmCJpyj2j2yi3Lj9h2q0mFcWbS4y=AKxerYkz@mail.gmail.com>
+Subject: Re: [PATCH 4/5] ACPI, APEI, Fix error path for memory allocation
+From: huang ying <huang.ying.caritas@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi, Andi,
 
-Add a system call for creating sockets in a specified network namespace.
+On Tue, Sep 21, 2010 at 8:45 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> On Sun, Sep 19, 2010 at 11:00:34AM +0800, Huang Ying wrote:
+>> @@ -475,7 +479,13 @@ int apei_resources_request(struct apei_resources *resources,
+>>               }
+>>       }
+>>
+>> -     apei_resources_merge(&apei_resources_all, resources);
+>> +     rc = apei_resources_merge(&apei_resources_all, resources);
+>> +     if (rc) {
+>> +             pr_err(APEI_PFX
+>> +"Error in APEI internal resource management, there may be inconsistent "
+>> +"between APEI internal and system resource management.");
+>
+> Please fix the English. This will wrap in the syslog without \ns no?
+> Kernel messges should be not wider than 80 characters.
+>
+>> +     rc = apei_resources_sub(&apei_resources_all, resources);
+>> +     if (rc)
+>> +             pr_err(APEI_PFX
+>> +"Error in APEI internal resource management, there may be inconsistent "
+>> +"between APEI internal and system resource management.");
+>
+> Same.
+>
+> Also instead of Error it would be better just say what is wrong and don't
+> try to analyze the problem.
 
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
----
- net/socket.c |   26 ++++++++++++++++++++++++--
- 1 files changed, 24 insertions(+), 2 deletions(-)
+OK, I will do it.
 
-diff --git a/net/socket.c b/net/socket.c
-index 2270b94..1116f3c 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -1269,7 +1269,7 @@ int sock_create_kern(int family, int type, int protocol, struct socket **res)
- }
- EXPORT_SYMBOL(sock_create_kern);
- 
--SYSCALL_DEFINE3(socket, int, family, int, type, int, protocol)
-+static int do_socket(struct net *net, int family, int type, int protocol)
- {
- 	int retval;
- 	struct socket *sock;
-@@ -1289,7 +1289,7 @@ SYSCALL_DEFINE3(socket, int, family, int, type, int, protocol)
- 	if (SOCK_NONBLOCK != O_NONBLOCK && (flags & SOCK_NONBLOCK))
- 		flags = (flags & ~SOCK_NONBLOCK) | O_NONBLOCK;
- 
--	retval = sock_create(family, type, protocol, &sock);
-+	retval = __sock_create(net, family, type, protocol, &sock, 0);
- 	if (retval < 0)
- 		goto out;
- 
-@@ -1306,6 +1306,28 @@ out_release:
- 	return retval;
- }
- 
-+SYSCALL_DEFINE3(socket, int, family, int, type, int, protocol)
-+{
-+	return do_socket(current->nsproxy->net_ns, family, type, protocol);
-+}
-+
-+SYSCALL_DEFINE4(socketat, int, fd, int, family, int, type, int, protocol)
-+{
-+	struct net *net;
-+	int retval;
-+
-+	if (fd == -1) {
-+		net = get_net(current->nsproxy->net_ns);
-+	} else {
-+		net = get_net_ns_by_fd(fd);
-+		if (IS_ERR(net))
-+			return  PTR_ERR(net);
-+	}
-+	retval = do_socket(net, family, type, protocol);
-+	put_net(net);
-+	return retval;
-+}
-+
- /*
-  *	Create a pair of connected sockets.
-  */
--- 
-1.6.5.2.143.g8cc62
-
+Best Regards,
+Huang Ying
