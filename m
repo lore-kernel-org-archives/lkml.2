@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754543Ab0IWLWN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 07:22:13 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:53586 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754435Ab0IWLWL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 07:22:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:subject:from:reply-to:to:cc:in-reply-to:references
-         :content-type:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=dy/huysQ4g3YLT97DUbofMagWs/b9cW9XceSVxzc8iZcya8p9KvdsN1iVVyLcHhbqF
-         AWGmZEkR0lBldNLmufj9La865KdWVmWIonfcBgeieCFvb7Wr36pwE4WfUgePOHUTqq67
-         CUk6YKnviH/+l9NDxkdhdGL9mcv4RnkkT9nYY=
-Subject: Re: [PATCH 7/8] net: Allow setting the network namespace by fd
-From: jamal <hadi@cyberus.ca>
-Reply-To: hadi@cyberus.ca
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org, Linux Containers <containers@lists.osdl.org>,
-        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Daniel Lezcano <daniel.lezcano@free.fr>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Ulrich Drepper <drepper@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        David Miller <davem@davemloft.net>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Ben Greear <greearb@candelatech.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Jonathan Corbet <corbet@lwn.net>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>
-In-Reply-To: <m1hbhgq1v1.fsf@fess.ebiederm.org>
-References: <m1ocborgq7.fsf@fess.ebiederm.org>
-	 <m1hbhgq1v1.fsf@fess.ebiederm.org>
-Content-Type: text/plain
-Date: Thu, 23 Sep 2010 07:22:06 -0400
-Message-Id: <1285240926.5036.7.camel@bigi>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.1
-Content-Transfer-Encoding: 7bit
+	id S1754565Ab0IWLYC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 07:24:02 -0400
+Received: from cantor.suse.de ([195.135.220.2]:53445 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752745Ab0IWLX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 07:23:58 -0400
+Date: Thu, 23 Sep 2010 13:23:56 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Bernd Petrovitsch <bernd@sysprog.at>
+Cc: linux-kbuild@vger.kernel.org, Namhyung Kim <namhyung@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dhowells@redhat.com, MXns RullgXrd <mans@mansr.com>
+Subject: Re: [PATCH] trivial: disable sparse' warning for "potentially
+ expensive pointer subtraction".
+In-Reply-To: <1282321333.25235.0.camel@thorin>
+Message-ID: <alpine.LNX.2.00.1009231323340.26813@pobox.suse.cz>
+References: <1282321333.25235.0.camel@thorin>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-23 at 01:51 -0700, Eric W. Biederman wrote:
-> Take advantage of the new abstraction and allow network devices
-> to be placed in any network namespace that we have a fd to talk
-> about.
+On Fri, 20 Aug 2010, Bernd Petrovitsch wrote:
+
+> Rationale: With a somewhat current gcc (or a somewhat sane peephole
+> optimizer), the (expensive) "div" is converted to a "shift" or
+> "mul" with the inverse.
+> This warning is disabled per default in sparse but the "-Wall" in
+> the kernels CFLAGS enables it.
 > 
+> Signed-off-by: Bernd Petrovitsch <bernd@sysprog.at>
+> ---
+> This patch is trivial and affects only calls to sparse (read: make C=1) and
+> removes false warnings. So it should be considered for inclusion immediately.
+> 
+> Sorry for the long Cc: - I included everyone in the thread and added
+> linux-kbuild@ (as it IMHO belongs there) and trivial@ (because of the
+> complexity of the patch).
+> 
+>  Makefile |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/Makefile b/Makefile
+> index f3bdff8..851c0fa 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -330,7 +330,7 @@ PERL		= perl
+>  CHECK		= sparse
+>  
+>  CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
+> -		  -Wbitwise -Wno-return-void $(CF)
+> +		  -Wbitwise -Wno-return-void -Wno-ptr-subtraction-blows $(CF)
+>  CFLAGS_MODULE   =
+>  AFLAGS_MODULE   =
+>  LDFLAGS_MODULE  =
 
-So ... why just netdevice? could you allow migration of other
-net "items" eg a route table since they are all tagged by
-netns?
+What is the status of this patch? I don't see it Nacked, but it's not in 
+linux-next either.
 
-cheers,
-jamal
+Thanks,
 
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
