@@ -1,91 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab0IWJaA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 05:30:00 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:57023 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752489Ab0IWJ36 convert rfc822-to-8bit (ORCPT
+	id S1753509Ab0IWJdR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 05:33:17 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:52272 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752124Ab0IWJdP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 05:29:58 -0400
+	Thu, 23 Sep 2010 05:33:15 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=hKmr0v5dix3/4oq2mIzkgmYngCq8100gVbxslzOqDncgp9/Y8+N5Q5SA6A1CBJrCI4
-         lQHf65vS9WYRxzHTnncBn6HRHzXsWVPwby7XPhGEIpV+j2ejJx5GckKGOtu2rzvrkp2E
-         n1YXzSjL1zB4+AK/GGl5YMLfX8/Tsnt6CtGKQ=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=I7yZDbDYi3ZFzIZ1kGc8tlRDF7/pQovrWWgJthexxOxsPh8uFSEgcI9dXvGpGaAe9E
+         abcThZ1y6LJJZz3Sv/rWfMj90NoYGCr+4ne00Ke7EYY/DSNe29Zig4Bvugtz1X9zOs0x
+         ctihq205EXcwPQioyvaRJr146pYemzpqriXr0=
 MIME-Version: 1.0
-In-Reply-To: <20100922160705.GK26290@redhat.com>
-References: <1284087065-32722-1-git-send-email-ying.huang@intel.com>
-	<20100921214847.GF26290@redhat.com>
-	<b151e9f1ec3a162781b380e026f90711.squirrel@www.firstfloor.org>
-	<20100922160705.GK26290@redhat.com>
-Date: Thu, 23 Sep 2010 17:29:57 +0800
-Message-ID: <AANLkTi=gYa5aEhrQAgpgfopoyW_1v0TJsnQ7bSbTV52i@mail.gmail.com>
-Subject: Re: [RFC 1/6] x86, NMI, Add symbol definition for NMI magic constants
-From: huang ying <huang.ying.caritas@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Huang Ying <ying.huang@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20100923134414.7aa7f696.sfr@canb.auug.org.au>
+References: <20100923134414.7aa7f696.sfr@canb.auug.org.au>
+Date: Thu, 23 Sep 2010 12:33:14 +0300
+X-Google-Sender-Auth: Sk0ZeiRd3GI2CkQPYOcWmP6UrEs
+Message-ID: <AANLkTim=uZuC1gt6qL7+KMdgnnx4e4Hh2Zs=SdjJXv5W@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the tip tree with the slab tree
+From: Pekka Enberg <penberg@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Christoph Lameter <cl@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Don,
-
-On Thu, Sep 23, 2010 at 12:07 AM, Don Zickus <dzickus@redhat.com> wrote:
-> On Wed, Sep 22, 2010 at 12:19:16AM +0200, Andi Kleen wrote:
->>
->> >
->> > I guess adding either another knob to override the hardware error option
->> > or tying it in with the panic_on_unknown_error option might make me more
->> > comfortable. Â That way enterprise customers can always just enable it by
->> > default and desktop users (for now) could have it off.
->>
->> Anything that needs explicit enabling is a bad idea, that
->> would lead to a lot of users running in "corrupt my data" mode.
+On Thu, Sep 23, 2010 at 6:44 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Today's linux-next merge of the tip tree got a conflict in
+> include/linux/percpu.h between commit
+> 6fc80ef491b981f59233beaf6aeaccc0c947031d ("percpu: use percpu allocator
+> on UP too") from the slab tree and commit
+> 8b8e2ec1eeca7f6941bc81cefc9663018d6ceb57 ("percpu: Add {get,put}
+> _cpu_ptr") from the tip tree.
 >
-> I know. Â But as I said earlier in my emails, I am trying to figure out how
-> to deal with the fallout from unknown nmis turning into panics. Â Today
-> people see unknown nmis. Â They may or may not be corrupting data. Â They
-> usually file a bug. Â Currently it is hard for me to diagnosis the problem.
-> Usually the old 'upgrade your bios/firmware' does the trick. Â Sometimes it
-> doesn't and people feel like their machines still run fine. Â So they
-> ignore it (for good or for bad).
+> Just context changes.  I fixed it up (see below) and can carry the fix as
+> necessary.
+
+Why are we seeing a merge conflict here? I cherry-picked patches from
+Tejun's for-next branch but didn't modify them.
+
+> diff --cc include/linux/percpu.h
+> index aeeeef1,0eb5083..0000000
+> --- a/include/linux/percpu.h
+> +++ b/include/linux/percpu.h
+> @@@ -39,8 -39,19 +39,17 @@@
+>        preempt_enable();                               \
+>  } while (0)
 >
-> Turning unknown nmis into panics would break their current setup without
-> much gain. Â So I was trying to propose something temporarily until we
-> could get a better infrastructure to isolate the source and provide better
-> info on what to do.
+> + #define get_cpu_ptr(var) ({                           \
+> +       preempt_disable();                              \
+> +       this_cpu_ptr(var); })
+> +
+> + #define put_cpu_ptr(var) do {                         \
+> +       (void)(var);                                    \
+> +       preempt_enable();                               \
+> + } while (0)
+> +
+>  -#ifdef CONFIG_SMP
+>  -
+>  /* minimum unit size, also is the maximum supported allocation size */
+>  -#define PCPU_MIN_UNIT_SIZE            PFN_ALIGN(64 << 10)
+>  +#define PCPU_MIN_UNIT_SIZE            PFN_ALIGN(32 << 10)
 >
-> I agree with you that long term unknown nmis should be panics. Â I just get
-> nervous about doing that now from a support perspective.
-
-In fact, we use white list policy here. Only systems with HEST or
-identified by chipset host bridge PCI ID will panic for unknown NMI.
-So I think systems you worried about will not have this enabled.
-
->> The code currently uses the presence of a HEST error table
->> to detect a server. HEST should be only available on servers.
->>
->> On servers at least panic should be default.
+>  /*
+>   * Percpu allocator can serve percpu allocations before slab is
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 >
-> Ok. Â That's fine. But then what. Â What does a developer do with that
-> panic? Â There's no useful info. Â That is sorta my problem. Â Then again I
-> do not know much about HEST.
-
-On some system, there is some hardware error log in BMC/BIOS. The
-hardware error log can be gotten via IPMI or BIOS menu. Otherwise, can
-we get some useful info for unknown NMI? If we can, can we collect the
-info, then print it on console and save it into flash via ERST (part
-of APEI too) before panic?
-
-HEST is defined in ACPI spec 4.0 and later version in section named
-APEI (ACPI Platform Error Interface). It is used to describe the error
-sources of system. It should be available only on server platform.
-
-Best Regards,
-Huang Ying
