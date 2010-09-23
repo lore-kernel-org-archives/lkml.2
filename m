@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756632Ab0IWUsW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 16:48:22 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:54624 "HELO
-	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755358Ab0IWUsU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 16:48:20 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=hg5ckP2oayjeqt9F19P4tsUGvldhqBaJFfKMWXzt+F3HhsMCBYJHvjzcBYsB/kUPBLqQ2uYRo6+DAmwJTTebb5LttoX5wFjwtYvOy+U7X6mmm2K1oH0NkjekQ9T3Gdpi;
-Date: Thu, 23 Sep 2010 13:48:16 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: tim.gardner@canonical.com
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: MCP limit log messages, 2.6.36-rc4
-Message-ID: <20100923134816.57e932fc@jbarnes-desktop>
-In-Reply-To: <4C9106C1.4080505@canonical.com>
-References: <4C9106C1.4080505@canonical.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756620Ab0IWUsQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 16:48:16 -0400
+Received: from mx2.compro.net ([12.186.155.4]:57420 "EHLO mx2.compro.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755358Ab0IWUsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 16:48:15 -0400
+X-IronPort-AV: E=Sophos;i="4.57,225,1283745600"; 
+   d="scan'208";a="5849777"
+Message-ID: <4C9BBD0E.4010804@compro.net>
+Date: Thu, 23 Sep 2010 16:48:14 -0400
+From: Mark Hounschell <markh@compro.net>
+Reply-To: markh@compro.net
+Organization: Compro Computer Svcs.
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: line BRK detection on ttyS0
+References: <4C9A5AD0.5070804@compro.net> <20100923010329.0a66546c@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100923010329.0a66546c@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Sep 2010 11:47:45 -0600
-Tim Gardner <tim.gardner@canonical.com> wrote:
-
-> I've been getting regular MCP limit log messages on a Dell Studio 1458 
-> (i5 CPU) with an A02 BIOS. With the attached debug hack it prints the 
-> following values:
+On 09/22/2010 08:03 PM, Alan Cox wrote:
+> On Wed, 22 Sep 2010 15:36:48 -0400
+> Mark Hounschell <markh@compro.net> wrote:
 > 
-> [   33.605098] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power 
-> 30123, limit 1023
-> [   38.597998] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power 
-> 21697, limit 1023
-> [   43.590917] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power 
-> 15390, limit 1023
-> [   48.583821] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power 
-> 43370, limit 1023
-> [   53.576740] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power 
-> 64728, limit 1023
+>> Does the kernel support sending a SIGINT from a line BRK on ttyS0 to a thread of a process
+>> where the process has a controlling terminal that is NOT ttyS0 and the thread is using ttyS0
+>> in a cfmakeraw mode? I see doc that implies that ttyS0 must be the controlling terminal but
+>> can my thread have a controlling terminal while my main process has it's own ?
 > 
-> This is an idle machine which starts printing these messages about 30 
-> seconds after boot. Any thoughts?
+> If they have two different ttys open then yes at least as far as Linux is
+> concerned. I don't know how glibc handles it as it can do signal groups
+> and the like and delivery of signals to process not threads etc.
+> 
+> You can see parity anyway. In PARMRK mode you get \377 \0 [whatever] for
+> parity/break etc but \377 is also doubled for a real one - ie \377 \377
+> 
 
-Actually, it looks like you have some non-upstream patches to the IPS
-driver, maybe one of Joe's patches to add more debug output when limits
-are exceeded?
+\377 \0  or  [whatever] just looks like valid data to my thread though.
+So you're saying it's gonna be a glibc thing and not a kernel thing that
+prevents my thread from getting a signal?
 
-At any rate, I think we're setting the MCP power limit incorrectly.
-The BIOS must be giving us a limit in 0.1W units (though even then it
-looks bogus); we need to clamp it to one of the available defaults.
+Thanks
+Mark
 
-Joe has some code for that as well, I've just asked him to update his
-patch, which we should get into 2.6.35.x.
 
-Thanks,
--- 
-Jesse Barnes, Intel Open Source Technology Center
+
+
