@@ -1,87 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256Ab0IWM5y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 08:57:54 -0400
-Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:62469 "EHLO
-	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753564Ab0IWM5x (ORCPT
+	id S1755018Ab0IWNBt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 09:01:49 -0400
+Received: from lnx500.hrz.tu-darmstadt.de ([130.83.156.225]:45795 "EHLO
+	lnx500.hrz.tu-darmstadt.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753080Ab0IWNBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 08:57:53 -0400
-Subject: Re: [PATCH 3/3] VFIO V4: VFIO driver: Non-privileged user level
- PCI drivers
-From: Andy Walls <awalls@md.metrocast.net>
-To: Tom Lyon <pugs@cisco.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 23 Sep 2010 08:58:01 -0400
-Message-ID: <1285246681.6715.11.camel@morgan.silverblock.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	Thu, 23 Sep 2010 09:01:47 -0400
+From: Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.0.10011,1.0.148,0.0.0000
- definitions=2010-09-23_09:2010-09-23,2010-09-23,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 phishscore=0
- bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- engine=5.0.0-1005130000 definitions=main-1009230066
+Message-ID: <19611.20403.865248.695829@elektron.ikp.physik.tu-darmstadt.de>
+Date: Thu, 23 Sep 2010 15:01:39 +0200
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Any SYSRQ key to force mode switch to console mode when using
+ KMS?
+In-Reply-To: <19611.8986.142128.168878@elektron.ikp.physik.tu-darmstadt.de>
+References: <19601.1301.803816.92851@elektron.ikp.physik.tu-darmstadt.de>
+	<20100921151033.80e61747.randy.dunlap@oracle.com>
+	<19609.53242.674915.369484@elektron.ikp.physik.tu-darmstadt.de>
+	<4C9A1FB7.9050902@oracle.com>
+	<19611.8986.142128.168878@elektron.ikp.physik.tu-darmstadt.de>
+X-Mailer: VM 7.19 under Emacs 21.3.1
+X-PMX-TU: seen v0.99a by 5.5.9.395186, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.9.23.124818
+X-PMX-RELAY: mailout
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>>>> "Uwe" == Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de> writes:
 
-> +ssize_t vfio_io_readwrite(
-> +		int write,
-> +		struct vfio_dev *vdev,
-> +		char __user *buf,
-> +		size_t count,
-> +		loff_t *ppos)
-> +{
-> +	struct pci_dev *pdev = vdev->pdev;
-> +	size_t done = 0;
-> +	resource_size_t end;
-> +	void __iomem *io;
-> +	loff_t pos;
-> +	int pci_space;
-> +	int unit;
-> +
-> +	pci_space = vfio_offset_to_pci_space(*ppos);
-> +	pos = vfio_offset_to_pci_offset(*ppos);
-> +
-> +	if (!pci_resource_start(pdev, pci_space))
-> +		return -EINVAL;
-> +	end = pci_resource_len(pdev, pci_space);
-> +	if (pos + count > end)
-> +		return -EINVAL;
-> +	if (vdev->barmap[pci_space] == NULL)
-> +		vdev->barmap[pci_space] = pci_iomap(pdev, pci_space, 0);
+>>>>> "Randy" == Randy Dunlap <randy.dunlap@oracle.com> writes:
+...
+    Uwe> However 2.6.36-rc4 also fixed my hibernate problem:
 
-Hi Tom,
+    Uwe> commit 84e1d836ef0759a152578a961894824bde89596f Merge: 20f4cad
+    Uwe> 6715045 Author: Linus Torvalds <torvalds@linux-foundation.org>
+    Uwe> Date: Sat Sep 11 15:50:53 2010 -0700
 
-pci_iomap() can possibly return NULL here and also in
-vfio_mem_readwrite().  Even if there are no security implications
-(unintended access to low I/O ports?), I think you still have potential
-for an Oops in the code below.
+    Uwe>     Merge branch 'pm-fixes' of
+    Uwe> git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6
+    
+    Uwe>     * 'pm-fixes' of ...  PM / Hibernate: Avoid hitting OOM during
+    Uwe> preallocation of memory ...
 
-... unless there's a reason why pci_iomap() can't possibly return NULL
-in these instances.  Maybe I'm missing something.
+    Uwe> so I no longer hit the problem with the dark screen...
 
-Regards,
-Andy
+I burried the problem too early. 
 
-> +	io = vdev->barmap[pci_space];
-> +
-> +	while (count > 0) {
-> +		if ((pos % 4) == 0 && count >= 4) {
-> +			u32 val;
-> +
-> +			if (write) {
-> +				if (copy_from_user(&val, buf, 4))
-> +					return -EFAULT;
-> +				iowrite32(val, io + pos);
-> +			} else {
-> +				val = ioread32(io + pos);
-> +				if (copy_to_user(buf, &val, 4))
-> +					return -EFAULT;
-> +			}
-> +			unit = 4;
-> +		} else if ((pos % 2) == 0 && count >= 2) {
+On another hibernate attempt on 2.6.36-rc4, now the image again was not
+written to disk, the screen turn black and no ALT-CTL-SYSRQ combination
+helped. Especially I tried  ALT-CTL-SYSRQ ad 'v','V', ALT-CTL 'v' and
+ALT-CTL 'V'...
+ 
+-- 
+Uwe Bonnes                bon@elektron.ikp.physik.tu-darmstadt.de
 
+Institut fuer Kernphysik  Schlossgartenstrasse 9  64289 Darmstadt
+--------- Tel. 06151 162516 -------- Fax. 06151 164321 ----------
