@@ -1,43 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755752Ab0IWUrC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 16:47:02 -0400
-Received: from borg.medozas.de ([188.40.89.202]:55604 "EHLO borg.medozas.de"
+	id S1756604Ab0IWUrK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 16:47:10 -0400
+Received: from mail.perches.com ([173.55.12.10]:2306 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754503Ab0IWUrB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 16:47:01 -0400
-Date: Thu, 23 Sep 2010 22:46:59 +0200 (CEST)
-From: Jan Engelhardt <jengelh@medozas.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: "Glove box" BIOS patch causes boot flicker
-In-Reply-To: <4C9BB1C5.80808@zytor.com>
-Message-ID: <alpine.LNX.2.01.1009232243110.21529@obet.zrqbmnf.qr>
-References: <alpine.LNX.2.01.1009220135380.25692@obet.zrqbmnf.qr> <4C994F0B.6030004@linux.intel.com> <alpine.LNX.2.01.1009232052230.16976@obet.zrqbmnf.qr> <4C9BB1C5.80808@zytor.com>
-User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756561Ab0IWUrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 16:47:07 -0400
+Subject: Re: [PATCH] intel_ips: quieten "power or thermal limit exceeded"
+ messages
+From: Joe Perches <joe@perches.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Cesar Eduardo Barros <cesarb@cesarb.net>, Matthew Garrett <mjg@redhat.com>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20100923133132.3faae5b3@jbarnes-desktop>
+References: <Pine.LNX.4.30.1008261631410.13713-100000@mail.perches.com>
+	 <4C770299.6000708@cesarb.net> <1282869660.1836.5.camel@Joe-Laptop>
+	 <4C77171E.6060008@cesarb.net> <1282894751.1836.41.camel@Joe-Laptop>
+	 <4C784650.2030200@cesarb.net> <1282962104.1946.179.camel@Joe-Laptop>
+	 <20100923133132.3faae5b3@jbarnes-desktop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 23 Sep 2010 13:47:05 -0700
+Message-ID: <1285274825.25928.19.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2010-09-23 at 13:31 -0700, Jesse Barnes wrote:
+> I think the programmed limits are valid if they're nonzero and less
+> than one of the available default limits.  If they're not valid, we
+> should just use the default values.  I was thinking something like the
+> below for MCP, but Joe you may want to just update your patch instead
+> since it's more complete.
 
-On Thursday 2010-09-23 22:00, H. Peter Anvin wrote:
->On 09/23/2010 11:54 AM, Jan Engelhardt wrote:
->> On Wednesday 2010-09-22 02:34, H. Peter Anvin wrote:
->> 
->>> There were some minor bugs (typos) in the conversion to the glove box 
->>> coding style. The ones we have found have been fixed, so the first 
->>> thing is to try the current mainline or the current tip tree.  
->>> Otherwise I would look for issues where either the wrong register is 
->>> changed, or something like a variable is changed instead of a field.
->> 
->> I tried v2.6.36-rc5 now, and it looks better. The cursor position is 
->> retained as desired. The mode switch is still there, albeit much 
->> shorter than it used to be.
->
->The mode switch was there in the original code.
+You have my patch yes?
 
-That may very well be so, but there clearly is distinguished behavior 
-w.r.t. that in 2.6.36 compared to .30.
+You can probably integrate and validate it
+better than I can with your proposed change.
+
+I don't have any of the hardware to test.
+If I can otherwise help somehow, let me know.
+
+cheers, Joe
+
