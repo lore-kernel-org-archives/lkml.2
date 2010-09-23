@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391Ab0IWGsU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 02:48:20 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:58102 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753224Ab0IWGsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 02:48:19 -0400
-Date: Thu, 23 Sep 2010 08:48:08 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 0/2] [GIT PULL][v2.6.36] tracing: fixes for tracing virt
- guests
-Message-ID: <20100923064808.GC17733@elte.hu>
-References: <20100923030359.649647055@goodmis.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100923030359.649647055@goodmis.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.1
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.1 required=5.9 tests=BAYES_05 autolearn=no SpamAssassin version=3.2.5
-	-1.1 BAYES_05               BODY: Bayesian spam probability is 1 to 5%
-	[score: 0.0286]
+	id S1753459Ab0IWGuy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 02:50:54 -0400
+Received: from qmta12.emeryville.ca.mail.comcast.net ([76.96.27.227]:37554
+	"EHLO qmta12.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752855Ab0IWGux (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 02:50:53 -0400
+From: matt mooney <mfm@muteddisk.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Peter Oberparleiter <oberpar@linux.vnet.ibm.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH 01/20] kernel: change to new flag variable
+Date: Wed, 22 Sep 2010 23:49:45 -0700
+Message-Id: <1285224585-29457-1-git-send-email-mfm@muteddisk.com>
+X-Mailer: git-send-email 1.6.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Replace EXTRA_CFLAGS with ccflags-y.
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+Signed-off-by: matt mooney <mfm@muteddisk.com>
+---
+ kernel/gcov/Makefile  |    2 +-
+ kernel/power/Makefile |    4 +---
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
-> Ingo,
-> 
-> I actually did these fixes back in July for RHEL, but forgot about
-> them for mainline :-(
-> 
-> Jeremy hit the same bug and set me a fix. It was only part of what
-> I did in July, so I pulled in his fix and added the second part.
-> 
-> Please pull the latest tip/perf/urgent tree, which can be found at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-> tip/perf/urgent
-> 
-> 
-> Jeremy Fitzhardinge (1):
->       tracing/x86: Don't use mcount in pvclock.c
-> 
-> Steven Rostedt (1):
->       tracing/x86: Don't use mcount in kvmclock.c
-> 
-> ----
->  arch/x86/kernel/Makefile |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+diff --git a/kernel/gcov/Makefile b/kernel/gcov/Makefile
+index 3f76100..e97ca59 100644
+--- a/kernel/gcov/Makefile
++++ b/kernel/gcov/Makefile
+@@ -1,3 +1,3 @@
+-EXTRA_CFLAGS := -DSRCTREE='"$(srctree)"' -DOBJTREE='"$(objtree)"'
++ccflags-y := -DSRCTREE='"$(srctree)"' -DOBJTREE='"$(objtree)"'
+ 
+ obj-$(CONFIG_GCOV_KERNEL) := base.o fs.o gcc_3_4.o
+diff --git a/kernel/power/Makefile b/kernel/power/Makefile
+index f9063c6..0f98685 100644
+--- a/kernel/power/Makefile
++++ b/kernel/power/Makefile
+@@ -1,7 +1,5 @@
+ 
+-ifeq ($(CONFIG_PM_DEBUG),y)
+-EXTRA_CFLAGS	+=	-DDEBUG
+-endif
++ccflags-$(CONFIG_PM_DEBUG)	:= -DDEBUG
+ 
+ obj-$(CONFIG_PM)		+= main.o
+ obj-$(CONFIG_PM_SLEEP)		+= console.o
+-- 
+1.7.2.1
 
-Pulled, thanks Steve!
-
-	Ingo
