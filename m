@@ -1,292 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445Ab0IWXvZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 19:51:25 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54037 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753858Ab0IWXvY (ORCPT
+	id S1755684Ab0IWXxK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 19:53:10 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:40067 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753408Ab0IWXxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 19:51:24 -0400
-Date: Thu, 23 Sep 2010 16:50:22 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: shigorin@gmail.com
-Cc: Michael Shigorin <mike@osdn.org.ua>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Volodymyr G. Lukiianyk" <volodymyrgl@gmail.com>,
-        Alexander Chumachenko <ledest@gmail.com>,
-        Glauber de Oliveira Costa <gcosta@redhat.com>
-Subject: Re: fs hang in 2.6.27.y | Fwd: [Bug 15658] New: [PATCH] x86
- constant_test_bit() prone to misoptimization with gcc-4.4
-Message-Id: <20100923165022.6982ffc1.akpm@linux-foundation.org>
-In-Reply-To: <20100827213629.GA11342@osdn.org.ua>
-References: <20100827213629.GA11342@osdn.org.ua>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Sep 2010 19:53:08 -0400
+Date: Fri, 24 Sep 2010 08:50:45 +0900
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH 3/4] hugetlb, rmap: fix confusing page locking in
+ hugetlb_cow()
+Message-ID: <20100923235044.GA13811@spritzera.linux.bs1.fc.nec.co.jp>
+References: <1284092586-1179-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1284092586-1179-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <alpine.LFD.2.00.1009101011140.9670@i5.linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-2022-jp
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1009101011140.9670@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(huge quote)
+Very sorry for late reply.
+(Thank you for letting me know, Andi-san.)
 
-On Sat, 28 Aug 2010 00:36:29 +0300
-Michael Shigorin <mike@osdn.org.ua> wrote:
+On Fri, Sep 10, 2010 at 10:15:46AM -0700, Linus Torvalds wrote:
+> 
+> 
+> On Fri, 10 Sep 2010, Naoya Horiguchi wrote:
+> >  
+> > -	if (!pagecache_page) {
+> > -		page = pte_page(entry);
+> > +	/*
+> > +	 * hugetlb_cow() requires page locks of pte_page(entry) and
+> > +	 * pagecache_page, so here we need take the former one
+> > +	 * when page != pagecache_page or !pagecache_page.
+> > +	 */
+> > +	page = pte_page(entry);
+> > +	if (page != pagecache_page)
+> >  		lock_page(page);
+> 
+> Why isn't this a potential deadlock? You have two pages, and lock them 
+> both. Is there some ordering guarantee that says that 'pagecache_page' and 
+> 'page' will always be in a certain relationship so that you cannot get 
+> A->B and B->A lock ordering?
 
-> 	Hello,
-> I was told that lkml is still highly preferred over bugzilla,
-> so reposting the bugreport here.
-> 
-> The problem first manifested as "ext3 hang" in 2.6.27 based
-> kernel; the cause appeared to be somewhat more involved,
-> see the analysis below.  hpa@ confirmed he's seen similar
-> problems elsewhere.
-> 
-> This has been worked around in mainline since but our folks
-> consider the fix potentially broken and propose the real one
-> (this seems to have not been fixed for -stable, not sure;
-> the patch is for 2.6.27.y).
-> 
-> PS: please CC me, not on the list [yet] -- and rather a proxy
-> than a developer.  Thanks in advance.
-> 
-> ----- Forwarded message from bugzilla-daemon/bugzilla.kernel.org -----
-> 
-> Date: Tue, 6 Jul 2010 11:38:15 GMT
-> From: bugzilla-daemon/bugzilla.kernel.org
-> To: shigorin/gmail.com
-> Subject: [Bug 15658] New: [PATCH] x86 constant_test_bit() prone to misoptimization with gcc-4.4
-> 
-> https://bugzilla.kernel.org/show_bug.cgi?id=15658
-> 
->         AssignedTo: platform_x86_64/kernel-bugs.osdl.org
->                 CC: greg/kroah.com, vsu/altlinux.org, mingo/elte.hu
-> 
-> 
-> Created an attachment (id=25776)
->  --> (https://bugzilla.kernel.org/attachment.cgi?id=25776)
-> bluntly drop overcasting instead of fiddling with gcc's sense of humour
-> 
-> While debugging bit_spin_lock() hang, it was tracked down to gcc-4.4
-> misoptimization of constant_test_bit() when 'const volatile unsigned long
-> *addr' cast to 'unsigned long *' with subsequent unconditional jump to pause
-> (and not to the test) leading to hang.
-> 
-> Compiling with gcc-4.3 or disabling CONFIG_OPTIMIZE_INLINING yields inlined
-> constant_test_bit() and correct jump.
-> 
-> Other arches than asm-x86 (it's include/asm-x86/bitops.h) may implement this
-> slightly differently; 2.6.29 mitigates the misoptimization by changing the
-> function prototype (commit c4295fbb6048d85f0b41c5ced5cbf63f6811c46c) but
-> probably fixing the issue itself would be better.
-> 
-> Here's my translation of original analysis which led to the above conclusion
-> (Russian text in internal bugzilla; I'm no kernel hacker so take it with grain
-> of salt and blame me, not them):
-> 
-> ---
-> Gory details
-> ============
-> 
-> Slightly simplified bit_spin_lock() main part:
-> -------------------include/linux/bit_spinlock.h-----------------------
-> 
-> static inline void bit_spin_lock(int bitnum, unsigned long *addr)
-> {
->         <...>
->         while (test_and_set_bit_lock(bitnum, addr)) {
->                 while (test_bit(bitnum, addr)) {
->                         <...>
->                         cpu_relax();
->                         <...>
->                 }
->         }
->         <...>
-> }
-> ----------------------------------------------------------------------
-> 
-> Outer loop is an attempt to set the needed bit in atomic manner.
-> If the bit was already set, inner loop waits to reset it and so forth.
-> 
-> Assembly code generated by gcc-4.4 for the internal loop:
-> ----------------------------------------------------------------------
-> $ rpm2cpio kernel-image-tmc-srv-2.6.27-tmc24.x86_64.rpm | cpio -idmv *jbd.ko
-> <...>
-> $ cd ./lib/modules/2.6.27-tmc-srv-tmc24/kernel/fs/jbd/
-> $ objdump -d --no-show-raw-insn jbd.ko | grep -A92 "<journal_get_undo_access>:"
-> | tail -7
->     240a:       mov    %rbx,%rsi
->     240d:       mov    $0x16,%edi
->     2412:       callq  30 <constant_test_bit>
->     2417:       test   %eax,%eax
->     2419:       je     2328 <journal_get_undo_access+0x48>
->     241f:       pause
->     2421:       jmp    241f <journal_get_undo_access+0x13f>
-> ----------------------------------------------------------------------
-> 
-> Offsets:
->   240a, 240d - preparing arguments (bit no. 32, bitmap address in rsi)
->   2412 - call to constant_test_bit()
->   2417 - returned value test
->   2419 - break if 0
->   241f - otherwise pause and then
->   2421 - unconditional jump *but* not to the test but to the pause
-> 
-> Thus endless loop.  That is, in C equivalent:
-> ----------------------------------------------------------------------
-> static inline void bit_spin_lock(int bitnum, unsigned long *addr)
-> {
->         <...>
->         while (test_and_set_bit_lock(bitnum, addr)) {
->                 if (test_bit(bitnum, addr))
->                         while (1)
->                                 cpu_relax();
->         }
->         <...>
-> }
-> ----------------------------------------------------------------------
-> 
-> When using gcc-4.3 or disabling CONFIG_OPTIMIZE_INLINING kernel configuration
-> parameter constant_test_bit() function gets inlined and the unconditional jump
-> in the inner loop goes before condition test as it should.
-> 
-> It is worth mentioning that bit_spin_lock() is used in several places and
-> not all of them result in wrong code being generated.  For example,
-> end_buffer_async_read() has no problem with the inner loop:
-> ----------------------------------------------------------------------
-> $ rpm2cpio kernel-modules-oprofile-tmc-srv-2.6.27-tmc24.x86_64.rpm | cpio -idmv
-> *vmlinux
-> <...>
-> $ cd ./lib/modules/2.6.27-tmc-srv-tmc24/
-> $ objdump -d --no-show-raw-insn vmlinux | grep -A106 "<end_buffer_async_read>:"
-> | tail -7
-> ffffffff802f55e2:       mov    %r13,%rsi
-> ffffffff802f55e5:       mov    $0x4,%edi
-> ffffffff802f55ea:       callq  ffffffff802f4360 <constant_test_bit>
-> ffffffff802f55ef:       test   %eax,%eax
-> ffffffff802f55f1:       je     ffffffff802f54f9 <end_buffer_async_read+0x49>
-> ffffffff802f55f7:       pause
-> ffffffff802f55f9:       jmp    ffffffff802f55e2 <end_buffer_async_read+0x132>
-> ----------------------------------------------------------------------
-> 
-> 
-> Hang scenario
-> =============
-> The below is my take at what leads from the above problem to the "hung"
-> system state observed.
-> 
-> 1. At some moment the process changing the filesystem tries to "lock"
->    struct buffer_head by means of bit_spin_lock() but fails at first
->    and then goes to internal loop to wait for the buffer being freed.
-> 
-> 2. Due to the problem described above the wait comes a bit long.
-> 
-> 3. kjournald kernel thread wakes (because current transaction times out
->    or gets oversized) to commit the transaction into on-disk journal.
->    But upon changing it to T_LOCKED state kjournald notices that not all
->    atomic operations on the transactions are complete.  Thus it cannot
->    continue and goes to sleep (in journal_commit_transaction()). Of course,
->    it waits for the process looping indefinitely as described in (1).
-> 
-> 4. Subsequent filesystem change requests result in a new active (T_RUNNING)
->    transaction.  As free space in that transaction ends up, all the processes
->    trying to change the filesystem march to sleep until kjournald would commit
->    that transaction.  But it's not done with the previous one yet as in (3).
-> 
-> And so it all "hangs".
-> 
-> 
-> Solutions
-> =========
-> IMHO it looks very much like a bug in gcc-4.4.  Adding 'volatile' qualifier
-> to the datatype of the data addressed by the second parameter to
-> bit_spin_lock() doesn't help.  Maybe there's an upstream fix.  Maybe it
-> gets fixed by some flags.  Disabling CONFIG_OPTIMIZE_INLINING does help.
-> gcc-4.3 does compile things right, at least for JBD.  Maybe there are other
-> possibilities... not me to judge.
-> ---
-> 
-> I wasn't able to find anything similar upon a /quick/ google search, so posting
-> a new bug.
-> 
-> These folks from Massive Computing worked on this one:
-> * Volodymyr G. Lukiianyk (volodymyrgl/gmail.com) -- analysis
-> * Alexander Chumachenko (ledest/gmail.com) -- pin-up and fix
-> 
-> --- Comment #1 from Michael Shigorin <shigorin/gmail.com>  2010-07-06 11:38:07 ---
-> ping
-> 
-> --- Comment #2 from H. Peter Anvin <hpa@zytor.com>  2010-07-06 23:01:48 ---
-> I have seen in other contexts that gcc 4.4 seems to mishandle "const volatile".
-> 
+Locking order is always pagecache -> page, so we are free from deadlock.
 
-Working around a gcc-4.4 bug is a good thing, and the patch cleans the
-code up anyway - is there a reason for casting away the `volatile const'?
+> Please document that ordering rule if so.
 
-AFAICT, that typecast was added by 26996dd22b3cbc9db ("x86: change
-bitwise operations to get a void parameter") which changed the x86
-bitops to take a void* address.  But we later changed them all to take
-a long* but forgot to revert that typecast.
+Yes. I comment it.
 
+Please replace this patch by the following one.
 
-I changed the patch cosmetics a bit, see below.
+Thanks,
+Naoya Horiguchi
 
-
-We don't have a Signed-off-by: for this patch - it would be good to
-have one, please.  We should at least have yours, as you sent the
-patch.
-
-Also, we prefer to have real names in kernel commits.  Does "Led" refer
-to Alexander Chumachenko?
-
-Thanks.
-
-
-
-
-From: Led <led@altlinux.ru>
-
-While debugging bit_spin_lock() hang, it was tracked down to gcc-4.4
-misoptimization of constant_test_bit() when 'const volatile unsigned long *addr'
-cast to 'unsigned long *' with subsequent unconditional jump to pause
-(and not to the test) leading to hang.
-
-Compiling with gcc-4.3 or disabling CONFIG_OPTIMIZE_INLINING yields inlined
-constant_test_bit() and correct jump.
-
-Other arches than asm-x86 may implement this slightly differently; 2.6.29
-mitigates the misoptimization by changing the function prototype in commit
-c4295fbb6048 ("x86: make 'constant_test_bit()' take an unsigned bit
-number") but probably fixing the issue itself is better.
-
-Cc: Michael Shigorin <mike@osdn.org.ua>
-Cc: Volodymyr G. Lukiianyk <volodymyrgl@gmail.com>
-Cc: Alexander Chumachenko <ledest@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Date: Thu, 9 Sep 2010 16:39:33 +0900
+Subject: [PATCH 3/4] hugetlb, rmap: fix confusing page locking in hugetlb_cow()
 
- arch/x86/include/asm/bitops.h |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+if(!trylock_page) block in avoidcopy path of hugetlb_cow() looks confusing
+and is buggy.  Originally this trylock_page() is intended to make sure
+that old_page is locked even when old_page != pagecache_page, because then
+only pagecache_page is locked.
+This patch fixes it by moving page locking into hugetlb_fault().
 
-diff -puN arch/x86/include/asm/bitops.h~x86-avoid-constant_test_bit-misoptimization-due-to-cast-to-non-volatile arch/x86/include/asm/bitops.h
---- a/arch/x86/include/asm/bitops.h~x86-avoid-constant_test_bit-misoptimization-due-to-cast-to-non-volatile
-+++ a/arch/x86/include/asm/bitops.h
-@@ -308,8 +308,7 @@ static inline int test_and_change_bit(in
+ChangeLog:
+- add comment about deadlock.
+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+---
+ mm/hugetlb.c |   22 ++++++++++++----------
+ 1 files changed, 12 insertions(+), 10 deletions(-)
+
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 9519f3f..c032738 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2324,11 +2324,8 @@ retry_avoidcopy:
+ 	 * and just make the page writable */
+ 	avoidcopy = (page_mapcount(old_page) == 1);
+ 	if (avoidcopy) {
+-		if (!trylock_page(old_page)) {
+-			if (PageAnon(old_page))
+-				page_move_anon_rmap(old_page, vma, address);
+-		} else
+-			unlock_page(old_page);
++		if (PageAnon(old_page))
++			page_move_anon_rmap(old_page, vma, address);
+ 		set_huge_ptep_writable(vma, address, ptep);
+ 		return 0;
+ 	}
+@@ -2631,10 +2628,16 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 								vma, address);
+ 	}
  
- static __always_inline int constant_test_bit(unsigned int nr, const volatile unsigned long *addr)
- {
--	return ((1UL << (nr % BITS_PER_LONG)) &
--		(((unsigned long *)addr)[nr / BITS_PER_LONG])) != 0;
-+	return ((1UL << (nr % BITS_PER_LONG)) & addr[nr / BITS_PER_LONG]) != 0;
- }
+-	if (!pagecache_page) {
+-		page = pte_page(entry);
++	/*
++	 * hugetlb_cow() requires page locks of pte_page(entry) and
++	 * pagecache_page, so here we need take the former one
++	 * when page != pagecache_page or !pagecache_page.
++	 * Note that locking order is always pagecache_page -> page,
++	 * so no worry about deadlock.
++	 */
++	page = pte_page(entry);
++	if (page != pagecache_page)
+ 		lock_page(page);
+-	}
  
- static inline int variable_test_bit(int nr, volatile const unsigned long *addr)
-_
-
-
+ 	spin_lock(&mm->page_table_lock);
+ 	/* Check for a racing update before calling hugetlb_cow */
+@@ -2661,9 +2664,8 @@ out_page_table_lock:
+ 	if (pagecache_page) {
+ 		unlock_page(pagecache_page);
+ 		put_page(pagecache_page);
+-	} else {
+-		unlock_page(page);
+ 	}
++	unlock_page(page);
+ 
+ out_mutex:
+ 	mutex_unlock(&hugetlb_instantiation_mutex);
+-- 
+1.7.2.3
