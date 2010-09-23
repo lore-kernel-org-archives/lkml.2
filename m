@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003Ab0IWSP6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 14:15:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14433 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753341Ab0IWSP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 14:15:56 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <4013.1285177436@redhat.com>
-References: <4013.1285177436@redhat.com> <25759.1285169592@redhat.com> <1283888517.23280.241.camel@Joe-Laptop> <23323.1283864982@redhat.com> <20100907180025.GD2662@shadowen.org>
-To: Joe Perches <joe@perches.com>
-Cc: dhowells@redhat.com, Andy Whitcroft <apw@canonical.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: checkpatch problem
-Date: Thu, 23 Sep 2010 19:15:39 +0100
-Message-ID: <22516.1285265739@redhat.com>
+	id S1756027Ab0IWSRG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 14:17:06 -0400
+Received: from szamchat.xatka.net ([195.137.246.111]:51085 "EHLO
+	szamchat.xatka.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753342Ab0IWSRE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 14:17:04 -0400
+X-Greylist: delayed 1243 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Sep 2010 14:17:04 EDT
+Date: Thu, 23 Sep 2010 19:53:50 +0200
+From: =?iso-8859-2?Q?Pawe=B3?= Zuzelski <pawelz@pld-linux.org>
+To: James Dingwall <james.dingwall@amdocs.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: PROBLEM: [BISECTED] 2.6.35.5 xen domU panics just after the
+ boot
+Message-ID: <20100923175350.GA4737@davabel.xatka.net>
+References: <3B7AEC3C7FCC864282DFAC9A56A7BA363D81475787@UKLNDMAIL1.corp.amdocs.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-2
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <3B7AEC3C7FCC864282DFAC9A56A7BA363D81475787@UKLNDMAIL1.corp.amdocs.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 23 Sep 2010, James Dingwall wrote:
 
-The problem is that the second matcher (looking for " to \\n) matches on more
-than just the logfunction line.  Instrumenting the code supplied by your patch
-thusly:
+> > I was experiencing the same immediate crash with a null pointer
+> > dereference (log below) on boot with 2.6.35.5.  Reverting
+> > fb412a178502dc498430723b082a932f797e4763 also resolved the problem for
+> > me.
+>
+> Checking the diff from this commit it looks like there is a typo in the patch.  With the following (probably mangled by my client) I get 2.6.35.5 to boot.  Suggest it should be a candidate for .32 and .35 stable trees.
 
-		if ($line =~ /^.*($logFunctions)/) {
-		    print "QQQQ $1 QQQQ\n";
-			my $ln = $linenr;
-			my $cnt = $realcnt;
-			my ($off, $dstat, $dcond, $rest);
-			($dstat, $dcond, $ln, $cnt, $off) =
-				ctx_statement_block($linenr, $realcnt, 0);
-			for (my $n = 0; $n < $cnt; $n++) {
-			    my $l = $rawlines[$ln-1+$n];
-			    if ($l =~ /(\".*[ \t]\\n)/) {
-				print "&&&$line&&&\n";
-				print "^^^^^ Matched '$1' ^^^^^\n";
-				WARN("Logging function has unnecessary whitespace before a newline\n" . $herecurr);
-			    }
-			}
-		    }
+I confirm. This patch works for me. Thanks.
 
-I see:
-
-QQQQ printk QQQQ
-QQQQ printk QQQQ
-QQQQ printk QQQQ
-QQQQ printk QQQQ
-QQQQ printk QQQQ
-&&&+#define Dprintk(fmt, ...) printk(KERN_DEBUG fmt, ##__VA_ARGS__)&&&
-^^^^^ Matched '"mov	%0,sp	\n' ^^^^^
-&&&+#define Dprintk(fmt, ...) printk(KERN_DEBUG fmt, ##__VA_ARGS__)&&&
-^^^^^ Matched '"jmp	(%1)	\n' ^^^^^
-&&&+#define Dprintk(fmt, ...) printk(KERN_DEBUG fmt, ##__VA_ARGS__)&&&
-^^^^^ Matched '"	movhu	(%1),%0	\n' ^^^^^
-
-
-It seems that it doesn't like a #define dealing with a logging function
-followed by an inline asm statement that has whitespace before '\\n'.
-
-I suspect checkpatch doesn't handle #defines correctly, and goes beyond their
-end looking for a semicolon.
-
-David
+-- 
+Regards,
+Pawe³ Zuzelski
