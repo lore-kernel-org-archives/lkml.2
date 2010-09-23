@@ -1,103 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756297Ab0IWTsR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 15:48:17 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:63477 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756140Ab0IWTsP (ORCPT
+	id S1756366Ab0IWTsy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 15:48:54 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:55365 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753968Ab0IWTsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 15:48:15 -0400
-X-Authority-Analysis: v=1.1 cv=Yii9LXZpONf3Dl4H+sCjsa4WyoNNo7yi1hAau1xJxWE= c=1 sm=0 a=j3BmvocXj5oA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=TGN09ExEHsm_9JlE2ccA:9 a=3FdH9tCXoxJFtJqBDqMppi3dhdYA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCHv2 1/3] tracing: proper check for irq_depth routines
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: fweisbec@gmail.com, linux-kernel@vger.kernel.org
-In-Reply-To: <1285243253-7372-2-git-send-email-jolsa@redhat.com>
-References: <1285243253-7372-1-git-send-email-jolsa@redhat.com>
-	 <1285243253-7372-2-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 23 Sep 2010 15:48:13 -0400
-Message-ID: <1285271293.26872.1613.camel@gandalf.stny.rr.com>
+	Thu, 23 Sep 2010 15:48:53 -0400
+Date: Thu, 23 Sep 2010 10:57:07 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Greg KH <greg@kroah.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Kay Sievers <kay.sievers@vrfy.org>, gregkh@suse.de,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -next] driver core: fix build for CONFIG_BLOCK=n
+Message-Id: <20100923105707.4803ee76.randy.dunlap@oracle.com>
+In-Reply-To: <20100921223115.GB21202@kroah.com>
+References: <20100920161239.f204a507.sfr@canb.auug.org.au>
+	<20100920092034.0b3f5898.randy.dunlap@oracle.com>
+	<20100921223115.GB21202@kroah.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-23 at 14:00 +0200, Jiri Olsa wrote:
-> The check_irq_entry and check_irq_return could be called
-> from graph event context. In such case there's no graph
-> private data allocated. Adding checks to handle this case.
+On Tue, 21 Sep 2010 15:31:15 -0700 Greg KH wrote:
+
+> On Mon, Sep 20, 2010 at 09:20:34AM -0700, Randy Dunlap wrote:
+> > From: Randy Dunlap <randy.dunlap@oracle.com>
+> > 
+> > Fix build when CONFIG_BLOCK is not enabled (since SEP-06).
+> > Fixes these build errors:
+> > 
+> > drivers/base/core.c: In function 'get_device_parent':
+> > drivers/base/core.c:622: error: 'block_class' undeclared (first use in this function)
+> > drivers/base/core.c: In function 'device_add_class_symlinks':
+> > drivers/base/core.c:712: error: 'block_class' undeclared (first use in this function)
+> > drivers/base/core.c: In function 'device_remove_class_symlinks':
+> > drivers/base/core.c:742: error: 'block_class' undeclared (first use in this function)
+> > 
+> > Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 > 
-> wbr,
-> jirka
-> 
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> ---
->  kernel/trace/trace_functions_graph.c |   24 ++++++++++++++++++++----
->  1 files changed, 20 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-> index 02c708a..1390159 100644
-> --- a/kernel/trace/trace_functions_graph.c
-> +++ b/kernel/trace/trace_functions_graph.c
-> @@ -887,12 +887,20 @@ check_irq_entry(struct trace_iterator *iter, u32 flags,
->  		unsigned long addr, int depth)
->  {
->  	int cpu = iter->cpu;
-> +	int *depth_irq;
->  	struct fgraph_data *data = iter->private;
-> -	int *depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
->  
-> -	if (flags & TRACE_GRAPH_PRINT_IRQS)
-> +	/*
-> +	 * We either display irqs, or we got called as
-> +	 * graph event, and out private data do no exist.
+> This should no longer be needed with the next linux-next tree as the
+> logic in this area has changed thanks to Andi's patch.
 
-"out private data do no exist" makes no sense.
+Still seeing this build error.
+Will you be merging some patch soon?
 
-> +	 * In both cases we bypass the irq check.
-> +	 */
-> +	if ((flags & TRACE_GRAPH_PRINT_IRQS) ||
-> +	    (!data))
->  		return 0;
->  
-> +	depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
-> +
->  	/*
->  	 * We are inside the irq code
->  	 */
-> @@ -925,12 +933,20 @@ static int
->  check_irq_return(struct trace_iterator *iter, u32 flags, int depth)
->  {
->  	int cpu = iter->cpu;
-> +	int *depth_irq;
->  	struct fgraph_data *data = iter->private;
-> -	int *depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
->  
-> -	if (flags & TRACE_GRAPH_PRINT_IRQS)
-> +	/*
-> +	 * We either display irqs, or we got called as
-> +	 * graph event, and out private data do no exist.
-
-ditto.
-
--- Steve
-
-> +	 * In both cases we bypass the irq check.
-> +	 */
-> +	if ((flags & TRACE_GRAPH_PRINT_IRQS) ||
-> +	    (!data))
->  		return 0;
->  
-> +	depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
-> +
->  	/*
->  	 * We are not inside the irq code.
->  	 */
-
-
+thnx,
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
