@@ -1,84 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756089Ab0IWSgu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 14:36:50 -0400
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:42798 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755643Ab0IWSgs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756048Ab0IWSgs (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 23 Sep 2010 14:36:48 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: a76TvgwVM1lFU.AIKAAudQApETbC043799fx4EikMqnMjVC
- 6dgBU13ACEJHvBlGl5TpWXVvrFCch.OEtlltCjXY_HWFma7lV6yOQcvm8ga6
- nbH.IMUjmV58atKlcOL.lCXAzS1ytb7r7O1Ss1S7LASGlETEpmvygYRWaBA1
- aHU_AxVhZA6ag7TXGRR38pDzxglOb0n.eS4SftXfgpA4MiJ76FH21AqXzg3p
- f
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 23 Sep 2010 13:36:41 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Jacob Keller <jacob.keller@gmail.com>
-cc: Richard Cochran <richardcochran@gmail.com>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-api@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        David Miller <davem@davemloft.net>, John Stultz <johnstul@us.ibm.com>,
-        Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v6 0/8] ptp: IEEE 1588 hardware clock support
-In-Reply-To: <AANLkTim0JqVTyvrvjLRp1Cg423MdrwmyZG2uN6uSyeLb@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1009231327000.2962@router.home>
-References: <cover.1285261533.git.richard.cochran@omicron.at> <alpine.DEB.2.00.1009231238170.2962@router.home> <AANLkTim0JqVTyvrvjLRp1Cg423MdrwmyZG2uN6uSyeLb@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+Received: from www.tglx.de ([62.245.132.106]:60908 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750855Ab0IWSgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 14:36:47 -0400
+Date: Thu, 23 Sep 2010 20:36:35 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Arthur Kepner <akepner@sgi.com>
+cc: linux-kernel@vger.kernel.org, Ben Hutchings <bhutchings@solarflare.com>
+Subject: Re: [RFC/PATCHv2] kernel/irq: allow more precise irq affinity
+ policies
+In-Reply-To: <alpine.LFD.2.00.1009230908080.2416@localhost6.localdomain6>
+Message-ID: <alpine.LFD.2.00.1009232015180.2416@localhost6.localdomain6>
+References: <20100922235208.GC19058@sgi.com> <alpine.LFD.2.00.1009230908080.2416@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Sep 2010, Jacob Keller wrote:
+On Thu, 23 Sep 2010, Thomas Gleixner wrote:
 
-> > There is a reason for not being able to shift posix clocks: The system has
-> > one time base. The various clocks are contributing to maintaining that
-> > sytem wide time.
-> >
-> > Adjusting clocks is absolutely essential for proper functioning of the PTP
-> protocol. The slave obtains and calculates the offset from master and uses
-> that in order to adjust the clock properly, The problem is that the
-> timestamps are done via the hardware. We need a method to expose that
-> hardware so that the ptp software can properly adjust those clocks.
+> On Wed, 22 Sep 2010, Arthur Kepner wrote:
+> 
+> > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> > index cea0cd9..8fa7f52 100644
+> > --- a/arch/x86/Kconfig
+> > +++ b/arch/x86/Kconfig
+> > @@ -313,6 +313,17 @@ config NUMA_IRQ_DESC
+> >  	def_bool y
+> >  	depends on SPARSE_IRQ && NUMA
+> >  
+> > +config IRQ_POLICY_NUMA
+> > +	bool "Assign default interrupt affinities in a NUMA-friendly way"
+> > +	def_bool y
+> > +	depends on SPARSE_IRQ && NUMA
+> > +	---help---
+> > +	   When a device requests an interrupt, the default CPU used to
+> > +	   service the interrupt will be selected from a node 'near by'
+> > +	   the device. Also, interrupt affinities will be spread around
+> > +	   the node so as to prevent any single CPU from running out of
+> > +	   interrupt vectors.
+> > +
 
-There is no way to use that clock directly to avoid all the user space
-tuning etc? There are already tuning mechanisms in the kernel that do this
-with system time based on periodic clocks. If you calculate the
-nanoseconds since the epoch then you should be able to use that to tune
-system time.
+I thought more about this and came to the conclusion that this
+facility is completely overengineered and mostly useless except for a
+little detail.
 
-> > I do not understand why you want to maintain different clocks running at
-> > different speeds. Certainly interesting for some uses I guess that I
-> > do not have the energy to imagine right now. But can we get the PTP killer
-> > feature of synchronized accurate system time first?
-> >
->
-> The problem is maintaining a hardware clock at the correct speed/frequency
-> and time. The timestamping is done via hardware, and that hardware clock
-> needs to be accurate. We need to be able to modify that clock. Yes, having
-> the system time be the same value would be nice, but the problem comes
-> because we don't want to jump through hoops to keep that hardware clock
-> accurate to the ptp protocol running on the network.
+The only problem which it solves is to prevent that we run out of
+vectors on the low numbered cpus when that NIC which insists to create
+one irq per cpu starts up.
 
-Then allow system time == hardware clock?
+Fine, I can see that this is a problem, but we do not need this
+complete nightmare to solve it. We can do that way simpler.
 
-> All of the necessary features for microsecond or better accuracy are done
-> via the hardware. You can get accuracy to within <10 mircoseconds while only
-> sending sync packets and such once per second. The reason is because the
-> hardware timestamps are very accurate. But if we can't properly adjust the
-> clocks time and frequency, we cannot maintain the accuracy of the
-> timestamps.
+ 1) There is a patch from your coworker to work around that in the low
+    level x86 code, which is probably working, but suboptimal and not
+    generic
 
-You can already adjust the system time with the existing APIs. Tuning
-hardware clocks is currently done using device specific controls. But I
-would think that you do not need to expose this to user space if you can
-do it all in kernel.
+ 2) We already know that the NIC requested the irq on node N. So when
+    we set it up, we just honour the wish of the driver as long as it
+    fits in the default (or modified) affinity mask and restrict the
+    affinity to the cpus on that very node.
+
+    That makes a whole lot of sense: The driver already knows on which
+    cpus it wants to see the irq, because it allocated queues and
+    stuff there.
+
+    So that's probably a 10 lines or less patch do fix that.
+
+So now to the whole other policy horror. That belongs to user space
+and can be done in user space today. We do _NOT_ implement policies in
+the kernel.
+
+User space knows exactly how many irqs are affine to which cpu, knows
+the topology and can do the balancing on its own.
+
+So please go wild and put your nr_irqs * nr_irqs loop into some user
+space program.
+
+Thanks,
+
+	tglx
