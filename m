@@ -1,121 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753681Ab0IWNv0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 09:51:26 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:60131 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751177Ab0IWNvZ (ORCPT
+	id S1754471Ab0IWNxI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 09:53:08 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55668 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751576Ab0IWNxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 09:51:25 -0400
+	Thu, 23 Sep 2010 09:53:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:x-x-sender:to:cc:subject:message-id:user-agent
-         :mime-version:content-type;
-        b=bG5VpVd9sHrS/cTS1+US7lJzaBOVXldsO/JkOFqJtOMwruN1ZaKQJUQ4HEuRF4AXpG
-         kOC7op+lRKhTIq70NYF0hVcgkkmVxswxxmexEZgYW0WeT/Yyx45F0cMFrqoFipePlNBd
-         HsmcPUc3VUHA/7ROAAAFHbx/Eok4CkMuVyXDU=
-Date: Thu, 23 Sep 2010 09:51:21 -0400 (EDT)
-From: Bart Oldeman <bartoldeman@users.sourceforge.net>
-X-X-Sender: bart@localhost.localdomain
-To: linux-kernel@vger.kernel.org
-cc: heukelum@fastmail.fm, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org
-Subject: [PATCH] x86, vm86: fix preemption bug for int1 debug and int3
- breakpoint handlers.
-Message-ID: <alpine.DEB.2.00.1009230949480.8587@localhost.localdomain>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=G7N3mik3QJxFB3kpFwpT4hPqcfYA3QlphbKNXIpyTDewjUF1STRLsW92Dkrdxl6jL2
+         wI7G7Sqe7Hjn79aHs93wYv8bcpo9FLCFoR2K+re9VZfrLTD2loEq9RRx19OZKo1b5wMf
+         onAQLJkwWjd7MD7r3vc0LbkLAt5KE3OOqhGEY=
+Subject: Re: When booting a 16TB system, unix_create1 fails due to integer
+ overflow.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Robin Holt <holt@sgi.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Benjamin LaHaise <bcrl@kvack.org>,
+        "Denis V. Lunev" <den@openvz.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Miklos Szeredi <mszeredi@suse.cz>, Mingming Cao <cmm@us.ibm.com>,
+        Nick Piggin <npiggin@kernel.dk>, Pavel Emelyanov <xemul@openvz.org>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1285246384.362.3.camel@edumazet-laptop>
+References: <20100923121704.GR14064@sgi.com>
+	 <1285246384.362.3.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 23 Sep 2010 15:53:00 +0200
+Message-ID: <1285249980.2509.25.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Impact: fix kernel bug such as:
-BUG: scheduling while atomic: dosemu.bin/19680/0x00000004
-See also Ubuntu bug 455067 at 
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/455067
+Le jeudi 23 septembre 2010 à 14:53 +0200, Eric Dumazet a écrit :
 
-Commits 4915a35e35a037254550a2ba9f367a812bc37d40
-("Use preempt_conditional_sti/cli in do_int3, like on x86_64.")
-and 3d2a71a596bd9c761c8487a2178e95f8a61da083
-("x86, traps: converge do_debug handlers")
-started disabling preemption in int1 and int3 handlers on i386.
-The problem with vm86 is that the call to handle_vm86_trap() may jump
-straight to entry_32.S and never returns so preempt is never enabled
-again, and there is an imbalance in the preempt count.
+> Hi Robin
+> 
+> I would say : We can use atomic_long_t instead of atomic_t
+> 
+> And make get_max_files(void) return a long ?
+> 
 
-Commit be716615fe596ee117292dc615e95f707fb67fd1 ("x86, vm86:
-fix preemption bug"), which was later (accidentally?) reverted by commit
-08d68323d1f0c34452e614263b212ca556dae47f ("hw-breakpoints: modifying
-generic debug exception to use thread-specific debug registers")
-fixed the problem for debug exceptions but not for breakpoints.
+AFAIK we can move to long everywhere 
+(/proc/sys/fs/file-nr & /proc/sys/fs/file-max) ...
 
-There are three solutions to this problem.
+So you can open more than 2^31 files ;)
 
-1. Reenable preemption before calling handle_vm86_trap(). This
-was the approach that was later reverted.
+Here is the patch I tested (unfortunately not on a 16TB machine )
 
-2. Do not disable preemption for i386 in breakpoint and debug handlers.
-This was the situation before October 2008. As far as I understand
-preemption only needs to be disabled on x86_64 because a seperate 
-stack is used, but it's nice to have things work the same way on
-i386 and x86_64.
 
-3. Let handle_vm86_trap() return instead of jumping to assembly code.
-By setting a flag in _TIF_WORK_MASK, either TIF_IRET or TIF_NOTIFY_RESUME,
-the code in entry_32.S is instructed to return to 32 bit mode from
-V86 mode. The logic in entry_32.S was already present to handle signals.
-(I chose TIF_IRET because it's slightly more efficient in
-do_notify_resume() in signal.c, but in fact TIF_IRET can probably be
-replaced by TIF_NOTIFY_RESUME everywhere.)
+[PATCH] fs: allow for more than 2^31 files
 
-I'm submitting approach 3, because I believe it is the most elegant
-and prevents future confusion. Still, an obvious 
-preempt_conditional_cli(regs);
-is necessary in traps.c to correct the bug.
+Robin Holt tried to boot a 16TB system and found af_unix was overflowing
+a 32bit value :
 
-Signed-off-by: Bart Oldeman <bartoldeman@users.sourceforge.net>
+<quote>
+
+We were seeing a failure which prevented boot.  The kernel was incapable
+of creating either a named pipe or unix domain socket.  This comes down
+to a common kernel function called unix_create1() which does:
+
+        atomic_inc(&unix_nr_socks);
+        if (atomic_read(&unix_nr_socks) > 2 * get_max_files())
+                goto out;
+
+The function get_max_files() is a simple return of files_stat.max_files.
+files_stat.max_files is a signed integer and is computed in
+fs/file_table.c's files_init().
+
+        n = (mempages * (PAGE_SIZE / 1024)) / 10;
+        files_stat.max_files = n;
+
+In our case, mempages (total_ram_pages) is approx 3,758,096,384
+(0xe0000000).  That leaves max_files at approximately 1,503,238,553.
+This causes 2 * get_max_files() to integer overflow.
+
+</quote>
+
+Fix is to let /proc/sys/fs/file-nr & /proc/sys/fs/file-max use long
+integers, and change af_unix to use an atomic_long_t instead of
+atomic_t.
+
+get_max_files() is changed to return an unsigned long.
+
+before patch :
+# echo 2147483648 >/proc/sys/fs/file-max
+# cat /proc/sys/fs/file-max
+-18446744071562067968
+
+after patch:
+# echo 2147483648 >/proc/sys/fs/file-max
+# cat /proc/sys/fs/file-max
+2147483648
+
+
+Reported-by: Robin Holt <holt@sgi.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 ---
-  arch/x86/kernel/traps.c   |    1 +
-  arch/x86/kernel/vm86_32.c |   14 +++++---------
-  2 files changed, 6 insertions(+), 9 deletions(-)
+ fs/file_table.c    |   15 ++++++---------
+ include/linux/fs.h |    8 ++++----
+ kernel/sysctl.c    |    8 ++++----
+ net/unix/af_unix.c |   14 +++++++-------
+ 4 files changed, 21 insertions(+), 24 deletions(-)
 
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 725ef4d..4d0f3ed 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -568,6 +568,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
-  	if (regs->flags & X86_VM_MASK) {
-  		handle_vm86_trap((struct kernel_vm86_regs *) regs,
-  				error_code, 1);
-+		preempt_conditional_cli(regs);
-  		return;
-  	}
+diff --git a/fs/file_table.c b/fs/file_table.c
+index a04bdd8..46457ba 100644
+--- a/fs/file_table.c
++++ b/fs/file_table.c
+@@ -60,7 +60,7 @@ static inline void file_free(struct file *f)
+ /*
+  * Return the total number of open files in the system
+  */
+-static int get_nr_files(void)
++static long get_nr_files(void)
+ {
+ 	return percpu_counter_read_positive(&nr_files);
+ }
+@@ -68,7 +68,7 @@ static int get_nr_files(void)
+ /*
+  * Return the maximum number of open files in the system
+  */
+-int get_max_files(void)
++unsigned long get_max_files(void)
+ {
+ 	return files_stat.max_files;
+ }
+@@ -105,7 +105,7 @@ int proc_nr_files(ctl_table *table, int write,
+ struct file *get_empty_filp(void)
+ {
+ 	const struct cred *cred = current_cred();
+-	static int old_max;
++	static long old_max;
+ 	struct file * f;
+ 
+ 	/*
+@@ -140,8 +140,7 @@ struct file *get_empty_filp(void)
+ over:
+ 	/* Ran out of filps - report that */
+ 	if (get_nr_files() > old_max) {
+-		printk(KERN_INFO "VFS: file-max limit %d reached\n",
+-					get_max_files());
++		pr_info("VFS: file-max limit %lu reached\n", get_max_files());
+ 		old_max = get_nr_files();
+ 	}
+ 	goto fail;
+@@ -487,7 +486,7 @@ retry:
+ 
+ void __init files_init(unsigned long mempages)
+ { 
+-	int n; 
++	unsigned long n;
+ 
+ 	filp_cachep = kmem_cache_create("filp", sizeof(struct file), 0,
+ 			SLAB_HWCACHE_ALIGN | SLAB_PANIC, NULL);
+@@ -498,9 +497,7 @@ void __init files_init(unsigned long mempages)
+ 	 */ 
+ 
+ 	n = (mempages * (PAGE_SIZE / 1024)) / 10;
+-	files_stat.max_files = n; 
+-	if (files_stat.max_files < NR_FILE)
+-		files_stat.max_files = NR_FILE;
++	files_stat.max_files = max_t(unsigned long, n, NR_FILE);
+ 	files_defer_init();
+ 	lg_lock_init(files_lglock);
+ 	percpu_counter_init(&nr_files, 0);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 63d069b..8c06590 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -34,9 +34,9 @@
+ 
+ /* And dynamically-tunable limits and defaults: */
+ struct files_stat_struct {
+-	int nr_files;		/* read only */
+-	int nr_free_files;	/* read only */
+-	int max_files;		/* tunable */
++	unsigned long nr_files;		/* read only */
++	unsigned long nr_free_files;	/* read only */
++	unsigned long max_files;		/* tunable */
+ };
+ 
+ struct inodes_stat_t {
+@@ -404,7 +404,7 @@ extern void __init inode_init_early(void);
+ extern void __init files_init(unsigned long);
+ 
+ extern struct files_stat_struct files_stat;
+-extern int get_max_files(void);
++extern unsigned long get_max_files(void);
+ extern int sysctl_nr_open;
+ extern struct inodes_stat_t inodes_stat;
+ extern int leases_enable, lease_break_time;
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index f88552c..fc667bf 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1352,16 +1352,16 @@ static struct ctl_table fs_table[] = {
+ 	{
+ 		.procname	= "file-nr",
+ 		.data		= &files_stat,
+-		.maxlen		= 3*sizeof(int),
++		.maxlen		= sizeof(files_stat),
+ 		.mode		= 0444,
+-		.proc_handler	= proc_nr_files,
++		.proc_handler	= proc_doulongvec_minmax,
+ 	},
+ 	{
+ 		.procname	= "file-max",
+ 		.data		= &files_stat.max_files,
+-		.maxlen		= sizeof(int),
++		.maxlen		= sizeof(files_stat.max_files),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec,
++		.proc_handler	= proc_doulongvec_minmax,
+ 	},
+ 	{
+ 		.procname	= "nr_open",
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index 0b39b24..b3c70ac 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -117,7 +117,7 @@
+ 
+ static struct hlist_head unix_socket_table[UNIX_HASH_SIZE + 1];
+ static DEFINE_SPINLOCK(unix_table_lock);
+-static atomic_t unix_nr_socks = ATOMIC_INIT(0);
++static atomic_long_t unix_nr_socks = ATOMIC_INIT(0);
+ 
+ #define unix_sockets_unbound	(&unix_socket_table[UNIX_HASH_SIZE])
+ 
+@@ -360,13 +360,13 @@ static void unix_sock_destructor(struct sock *sk)
+ 	if (u->addr)
+ 		unix_release_addr(u->addr);
+ 
+-	atomic_dec(&unix_nr_socks);
++	atomic_long_dec(&unix_nr_socks);
+ 	local_bh_disable();
+ 	sock_prot_inuse_add(sock_net(sk), sk->sk_prot, -1);
+ 	local_bh_enable();
+ #ifdef UNIX_REFCNT_DEBUG
+-	printk(KERN_DEBUG "UNIX %p is destroyed, %d are still alive.\n", sk,
+-		atomic_read(&unix_nr_socks));
++	printk(KERN_DEBUG "UNIX %p is destroyed, %ld are still alive.\n", sk,
++		atomic_long_read(&unix_nr_socks));
+ #endif
+ }
+ 
+@@ -606,8 +606,8 @@ static struct sock *unix_create1(struct net *net, struct socket *sock)
+ 	struct sock *sk = NULL;
+ 	struct unix_sock *u;
+ 
+-	atomic_inc(&unix_nr_socks);
+-	if (atomic_read(&unix_nr_socks) > 2 * get_max_files())
++	atomic_long_inc(&unix_nr_socks);
++	if (atomic_long_read(&unix_nr_socks) > 2 * get_max_files())
+ 		goto out;
+ 
+ 	sk = sk_alloc(net, PF_UNIX, GFP_KERNEL, &unix_proto);
+@@ -632,7 +632,7 @@ static struct sock *unix_create1(struct net *net, struct socket *sock)
+ 	unix_insert_socket(unix_sockets_unbound, sk);
+ out:
+ 	if (sk == NULL)
+-		atomic_dec(&unix_nr_socks);
++		atomic_long_dec(&unix_nr_socks);
+ 	else {
+ 		local_bh_disable();
+ 		sock_prot_inuse_add(sock_net(sk), sk->sk_prot, 1);
 
-diff --git a/arch/x86/kernel/vm86_32.c b/arch/x86/kernel/vm86_32.c
-index 5ffb562..ad0830d 100644
---- a/arch/x86/kernel/vm86_32.c
-+++ b/arch/x86/kernel/vm86_32.c
-@@ -350,16 +350,12 @@ static void do_sys_vm86(struct kernel_vm86_struct *info, struct task_struct *tsk
-  	/* we never return here */
-  }
 
--static inline void return_to_32bit(struct kernel_vm86_regs *regs16, int retval)
-+static inline void return_to_32bit(struct kernel_vm86_regs *regs, int retval)
-  {
--	struct pt_regs *regs32;
--
--	regs32 = save_v86_state(regs16);
--	regs32->ax = retval;
--	__asm__ __volatile__("movl %0,%%esp\n\t"
--		"movl %1,%%ebp\n\t"
--		"jmp resume_userspace"
--		: : "r" (regs32), "r" (current_thread_info()));
-+	KVM86->regs32->ax = retval;
-+	/* setting this flag forces the code in entry_32.S to call
-+	   save_v86_state() and change the stack pointer to KVM86->regs32 */
-+	set_thread_flag(TIF_IRET);
-  }
-
-  static inline void set_IF(struct kernel_vm86_regs *regs)
