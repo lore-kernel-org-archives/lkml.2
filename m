@@ -1,74 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776Ab0IWXpk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 19:45:40 -0400
-Received: from nm9.bullet.mail.ne1.yahoo.com ([98.138.90.72]:37080 "HELO
-	nm9.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755039Ab0IWXpj (ORCPT
+	id S1755445Ab0IWXvZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 19:51:25 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54037 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753858Ab0IWXvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 19:45:39 -0400
-X-Greylist: delayed 382 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Sep 2010 19:45:39 EDT
-X-Yahoo-Newman-Id: 551609.52989.bm@omp1028.mail.ne1.yahoo.com
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: Ybx6GMIVM1loxYUeHfB9mfCDcMyN138gPB5.Fuk_d154OiN
- hk_WW5zBj4wC_IIt3_SDLquwDKeTazCy76BiLHss99nYFBo8U2OOVaudSgt5
- dNnR1uT4K.3xnIIPTe_f.bcWxb9QQ2BgOe3dq2ypUBbSqUMEdMy6r9q9AtOP
- rgv0z2FQvHHBpQ0A4mL9QYBWiMyGeOd5BvZdI7vqXo7fWfnhKUNBeovRyYch
- U9JxmmPVO9MLbtjJ1cyPqwSfA9jE7T5x1TyIS3L8LWeFgDzoAsEflRkBUCRw
- xd8zwQUN0jxgUSUlZBH9nhmcJbZOGaHDwuhgD3.niXZaGc9frT5GAj2ht4e9
- t5qjbwvUvTNWjv.I26g--
-X-Yahoo-Newman-Property: ymail-3
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Mike Christie <michaelc@cs.wisc.edu>
-Cc: James Smart <james.smart@emulex.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
-        Christoph Hellwig <hch@lst.de>,
-        MPTFusionLinux <DL-MPTFusionLinux@lsi.com>,
-        "eata.c maintainer" <dario.ballabio@inwind.it>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [RFC v3 12/15] mpt/fusion: Add scsi_cmd_get_serial() call
-Date: Thu, 23 Sep 2010 16:39:12 -0700
-Message-Id: <1285285152-16586-1-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.5.6.5
+	Thu, 23 Sep 2010 19:51:24 -0400
+Date: Thu, 23 Sep 2010 16:50:22 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: shigorin@gmail.com
+Cc: Michael Shigorin <mike@osdn.org.ua>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Volodymyr G. Lukiianyk" <volodymyrgl@gmail.com>,
+        Alexander Chumachenko <ledest@gmail.com>,
+        Glauber de Oliveira Costa <gcosta@redhat.com>
+Subject: Re: fs hang in 2.6.27.y | Fwd: [Bug 15658] New: [PATCH] x86
+ constant_test_bit() prone to misoptimization with gcc-4.4
+Message-Id: <20100923165022.6982ffc1.akpm@linux-foundation.org>
+In-Reply-To: <20100827213629.GA11342@osdn.org.ua>
+References: <20100827213629.GA11342@osdn.org.ua>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+(huge quote)
 
-This patch adds a scsi_cmd_get_serial() call in mptscsih_qcmd() to setup a
-valid struct scsi_cmnd->serial_number because mptscsih_abort() still depends
-upon this being set.
+On Sat, 28 Aug 2010 00:36:29 +0300
+Michael Shigorin <mike@osdn.org.ua> wrote:
 
-Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> 	Hello,
+> I was told that lkml is still highly preferred over bugzilla,
+> so reposting the bugreport here.
+> 
+> The problem first manifested as "ext3 hang" in 2.6.27 based
+> kernel; the cause appeared to be somewhat more involved,
+> see the analysis below.  hpa@ confirmed he's seen similar
+> problems elsewhere.
+> 
+> This has been worked around in mainline since but our folks
+> consider the fix potentially broken and propose the real one
+> (this seems to have not been fixed for -stable, not sure;
+> the patch is for 2.6.27.y).
+> 
+> PS: please CC me, not on the list [yet] -- and rather a proxy
+> than a developer.  Thanks in advance.
+> 
+> ----- Forwarded message from bugzilla-daemon/bugzilla.kernel.org -----
+> 
+> Date: Tue, 6 Jul 2010 11:38:15 GMT
+> From: bugzilla-daemon/bugzilla.kernel.org
+> To: shigorin/gmail.com
+> Subject: [Bug 15658] New: [PATCH] x86 constant_test_bit() prone to misoptimization with gcc-4.4
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=15658
+> 
+>         AssignedTo: platform_x86_64/kernel-bugs.osdl.org
+>                 CC: greg/kroah.com, vsu/altlinux.org, mingo/elte.hu
+> 
+> 
+> Created an attachment (id=25776)
+>  --> (https://bugzilla.kernel.org/attachment.cgi?id=25776)
+> bluntly drop overcasting instead of fiddling with gcc's sense of humour
+> 
+> While debugging bit_spin_lock() hang, it was tracked down to gcc-4.4
+> misoptimization of constant_test_bit() when 'const volatile unsigned long
+> *addr' cast to 'unsigned long *' with subsequent unconditional jump to pause
+> (and not to the test) leading to hang.
+> 
+> Compiling with gcc-4.3 or disabling CONFIG_OPTIMIZE_INLINING yields inlined
+> constant_test_bit() and correct jump.
+> 
+> Other arches than asm-x86 (it's include/asm-x86/bitops.h) may implement this
+> slightly differently; 2.6.29 mitigates the misoptimization by changing the
+> function prototype (commit c4295fbb6048d85f0b41c5ced5cbf63f6811c46c) but
+> probably fixing the issue itself would be better.
+> 
+> Here's my translation of original analysis which led to the above conclusion
+> (Russian text in internal bugzilla; I'm no kernel hacker so take it with grain
+> of salt and blame me, not them):
+> 
+> ---
+> Gory details
+> ============
+> 
+> Slightly simplified bit_spin_lock() main part:
+> -------------------include/linux/bit_spinlock.h-----------------------
+> 
+> static inline void bit_spin_lock(int bitnum, unsigned long *addr)
+> {
+>         <...>
+>         while (test_and_set_bit_lock(bitnum, addr)) {
+>                 while (test_bit(bitnum, addr)) {
+>                         <...>
+>                         cpu_relax();
+>                         <...>
+>                 }
+>         }
+>         <...>
+> }
+> ----------------------------------------------------------------------
+> 
+> Outer loop is an attempt to set the needed bit in atomic manner.
+> If the bit was already set, inner loop waits to reset it and so forth.
+> 
+> Assembly code generated by gcc-4.4 for the internal loop:
+> ----------------------------------------------------------------------
+> $ rpm2cpio kernel-image-tmc-srv-2.6.27-tmc24.x86_64.rpm | cpio -idmv *jbd.ko
+> <...>
+> $ cd ./lib/modules/2.6.27-tmc-srv-tmc24/kernel/fs/jbd/
+> $ objdump -d --no-show-raw-insn jbd.ko | grep -A92 "<journal_get_undo_access>:"
+> | tail -7
+>     240a:       mov    %rbx,%rsi
+>     240d:       mov    $0x16,%edi
+>     2412:       callq  30 <constant_test_bit>
+>     2417:       test   %eax,%eax
+>     2419:       je     2328 <journal_get_undo_access+0x48>
+>     241f:       pause
+>     2421:       jmp    241f <journal_get_undo_access+0x13f>
+> ----------------------------------------------------------------------
+> 
+> Offsets:
+>   240a, 240d - preparing arguments (bit no. 32, bitmap address in rsi)
+>   2412 - call to constant_test_bit()
+>   2417 - returned value test
+>   2419 - break if 0
+>   241f - otherwise pause and then
+>   2421 - unconditional jump *but* not to the test but to the pause
+> 
+> Thus endless loop.  That is, in C equivalent:
+> ----------------------------------------------------------------------
+> static inline void bit_spin_lock(int bitnum, unsigned long *addr)
+> {
+>         <...>
+>         while (test_and_set_bit_lock(bitnum, addr)) {
+>                 if (test_bit(bitnum, addr))
+>                         while (1)
+>                                 cpu_relax();
+>         }
+>         <...>
+> }
+> ----------------------------------------------------------------------
+> 
+> When using gcc-4.3 or disabling CONFIG_OPTIMIZE_INLINING kernel configuration
+> parameter constant_test_bit() function gets inlined and the unconditional jump
+> in the inner loop goes before condition test as it should.
+> 
+> It is worth mentioning that bit_spin_lock() is used in several places and
+> not all of them result in wrong code being generated.  For example,
+> end_buffer_async_read() has no problem with the inner loop:
+> ----------------------------------------------------------------------
+> $ rpm2cpio kernel-modules-oprofile-tmc-srv-2.6.27-tmc24.x86_64.rpm | cpio -idmv
+> *vmlinux
+> <...>
+> $ cd ./lib/modules/2.6.27-tmc-srv-tmc24/
+> $ objdump -d --no-show-raw-insn vmlinux | grep -A106 "<end_buffer_async_read>:"
+> | tail -7
+> ffffffff802f55e2:       mov    %r13,%rsi
+> ffffffff802f55e5:       mov    $0x4,%edi
+> ffffffff802f55ea:       callq  ffffffff802f4360 <constant_test_bit>
+> ffffffff802f55ef:       test   %eax,%eax
+> ffffffff802f55f1:       je     ffffffff802f54f9 <end_buffer_async_read+0x49>
+> ffffffff802f55f7:       pause
+> ffffffff802f55f9:       jmp    ffffffff802f55e2 <end_buffer_async_read+0x132>
+> ----------------------------------------------------------------------
+> 
+> 
+> Hang scenario
+> =============
+> The below is my take at what leads from the above problem to the "hung"
+> system state observed.
+> 
+> 1. At some moment the process changing the filesystem tries to "lock"
+>    struct buffer_head by means of bit_spin_lock() but fails at first
+>    and then goes to internal loop to wait for the buffer being freed.
+> 
+> 2. Due to the problem described above the wait comes a bit long.
+> 
+> 3. kjournald kernel thread wakes (because current transaction times out
+>    or gets oversized) to commit the transaction into on-disk journal.
+>    But upon changing it to T_LOCKED state kjournald notices that not all
+>    atomic operations on the transactions are complete.  Thus it cannot
+>    continue and goes to sleep (in journal_commit_transaction()). Of course,
+>    it waits for the process looping indefinitely as described in (1).
+> 
+> 4. Subsequent filesystem change requests result in a new active (T_RUNNING)
+>    transaction.  As free space in that transaction ends up, all the processes
+>    trying to change the filesystem march to sleep until kjournald would commit
+>    that transaction.  But it's not done with the previous one yet as in (3).
+> 
+> And so it all "hangs".
+> 
+> 
+> Solutions
+> =========
+> IMHO it looks very much like a bug in gcc-4.4.  Adding 'volatile' qualifier
+> to the datatype of the data addressed by the second parameter to
+> bit_spin_lock() doesn't help.  Maybe there's an upstream fix.  Maybe it
+> gets fixed by some flags.  Disabling CONFIG_OPTIMIZE_INLINING does help.
+> gcc-4.3 does compile things right, at least for JBD.  Maybe there are other
+> possibilities... not me to judge.
+> ---
+> 
+> I wasn't able to find anything similar upon a /quick/ google search, so posting
+> a new bug.
+> 
+> These folks from Massive Computing worked on this one:
+> * Volodymyr G. Lukiianyk (volodymyrgl/gmail.com) -- analysis
+> * Alexander Chumachenko (ledest/gmail.com) -- pin-up and fix
+> 
+> --- Comment #1 from Michael Shigorin <shigorin/gmail.com>  2010-07-06 11:38:07 ---
+> ping
+> 
+> --- Comment #2 from H. Peter Anvin <hpa@zytor.com>  2010-07-06 23:01:48 ---
+> I have seen in other contexts that gcc 4.4 seems to mishandle "const volatile".
+> 
+
+Working around a gcc-4.4 bug is a good thing, and the patch cleans the
+code up anyway - is there a reason for casting away the `volatile const'?
+
+AFAICT, that typecast was added by 26996dd22b3cbc9db ("x86: change
+bitwise operations to get a void parameter") which changed the x86
+bitops to take a void* address.  But we later changed them all to take
+a long* but forgot to revert that typecast.
+
+
+I changed the patch cosmetics a bit, see below.
+
+
+We don't have a Signed-off-by: for this patch - it would be good to
+have one, please.  We should at least have yours, as you sent the
+patch.
+
+Also, we prefer to have real names in kernel commits.  Does "Led" refer
+to Alexander Chumachenko?
+
+Thanks.
+
+
+
+
+From: Led <led@altlinux.ru>
+
+While debugging bit_spin_lock() hang, it was tracked down to gcc-4.4
+misoptimization of constant_test_bit() when 'const volatile unsigned long *addr'
+cast to 'unsigned long *' with subsequent unconditional jump to pause
+(and not to the test) leading to hang.
+
+Compiling with gcc-4.3 or disabling CONFIG_OPTIMIZE_INLINING yields inlined
+constant_test_bit() and correct jump.
+
+Other arches than asm-x86 may implement this slightly differently; 2.6.29
+mitigates the misoptimization by changing the function prototype in commit
+c4295fbb6048 ("x86: make 'constant_test_bit()' take an unsigned bit
+number") but probably fixing the issue itself is better.
+
+Cc: Michael Shigorin <mike@osdn.org.ua>
+Cc: Volodymyr G. Lukiianyk <volodymyrgl@gmail.com>
+Cc: Alexander Chumachenko <ledest@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- drivers/message/fusion/mptscsih.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/message/fusion/mptscsih.c b/drivers/message/fusion/mptscsih.c
-index 59b8f53..6aaa553 100644
---- a/drivers/message/fusion/mptscsih.c
-+++ b/drivers/message/fusion/mptscsih.c
-@@ -1411,6 +1411,11 @@ mptscsih_qcmd(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_cmnd *))
- 	hd = shost_priv(SCpnt->device->host);
- 	ioc = hd->ioc;
- 	SCpnt->scsi_done = done;
-+	/*
-+	 * Call scsi_cmd_get_serial() because we need a valid serial number
-+	 * in mptscsih_abort()
-+	 */
-+	scsi_cmd_get_serial(SCpnt);
+ arch/x86/include/asm/bitops.h |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff -puN arch/x86/include/asm/bitops.h~x86-avoid-constant_test_bit-misoptimization-due-to-cast-to-non-volatile arch/x86/include/asm/bitops.h
+--- a/arch/x86/include/asm/bitops.h~x86-avoid-constant_test_bit-misoptimization-due-to-cast-to-non-volatile
++++ a/arch/x86/include/asm/bitops.h
+@@ -308,8 +308,7 @@ static inline int test_and_change_bit(in
  
- 	dmfprintk(ioc, printk(MYIOC_s_DEBUG_FMT "qcmd: SCpnt=%p, done()=%p\n",
- 		ioc->name, SCpnt, done));
--- 
-1.7.3
+ static __always_inline int constant_test_bit(unsigned int nr, const volatile unsigned long *addr)
+ {
+-	return ((1UL << (nr % BITS_PER_LONG)) &
+-		(((unsigned long *)addr)[nr / BITS_PER_LONG])) != 0;
++	return ((1UL << (nr % BITS_PER_LONG)) & addr[nr / BITS_PER_LONG]) != 0;
+ }
+ 
+ static inline int variable_test_bit(int nr, volatile const unsigned long *addr)
+_
+
 
