@@ -1,118 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756493Ab0IWUMw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 16:12:52 -0400
-Received: from ovro.ovro.caltech.edu ([192.100.16.2]:35584 "EHLO
-	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753600Ab0IWUMv (ORCPT
+	id S1756544Ab0IWUNF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 16:13:05 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43825 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756516Ab0IWUND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 16:12:51 -0400
-Date: Thu, 23 Sep 2010 13:12:39 -0700
-From: "Ira W. Snyder" <iws@ovro.caltech.edu>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] fsldma: move DMA_SLAVE support functions to the driver
-Message-ID: <20100923201239.GA24391@ovro.caltech.edu>
-References: <20100907204510.GA27909@ovro.caltech.edu>
- <AANLkTikxy=fQo-rNj39Uv553C+wRzxhPWcGn9pX0jnfo@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikxy=fQo-rNj39Uv553C+wRzxhPWcGn9pX0jnfo@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.0 (ovro.ovro.caltech.edu); Thu, 23 Sep 2010 13:12:50 -0700 (PDT)
+	Thu, 23 Sep 2010 16:13:03 -0400
+Date: Thu, 23 Sep 2010 13:11:36 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: holzheu@linux.vnet.ibm.com
+Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Oleg Nesterov <oleg@redhat.com>, John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: Re: [RFC][PATCH 00/10] taskstats: Enhancements for precise
+ accounting
+Message-Id: <20100923131136.356075f4.akpm@linux-foundation.org>
+In-Reply-To: <1285249681.1837.28.camel@holzheu-laptop>
+References: <1285249681.1837.28.camel@holzheu-laptop>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 23, 2010 at 11:31:11AM -0700, Dan Williams wrote:
-> On Tue, Sep 7, 2010 at 1:45 PM, Ira W. Snyder <iws@ovro.caltech.edu> wrote:
-> > The DMA_SLAVE support functions all existed as static inlines in the
-> > driver specific header arch/powerpc/include/asm/fsldma.h. Move the body
-> > of the functions to the driver itself, and EXPORT_SYMBOL_GPL() them.
-> >
-> > At the same time, add the missing linux/list.h header.
-> >
-> > Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
-> > ---
-> >
-> > Hello AKPM, Dan,
+On Thu, 23 Sep 2010 15:48:01 +0200
+Michael Holzheu <holzheu@linux.vnet.ibm.com> wrote:
+
+> Currently tools like "top" gather the task information by reading procfs
+> files. This has several disadvantages:
 > 
-> Hi, I'm back from paternity leave.
+> * It is very CPU intensive, because a lot of system calls (readdir, open,
+>   read, close) are necessary.
+> * No real task snapshot can be provided, because while the procfs files are
+>   read the system continues running.
+> * The procfs times granularity is restricted to jiffies.
 > 
-> >
-> > At AKPM's request, I moved these static inline'd functions into the driver
-> > code itself, and then EXPORT_SYMBOL_GPL()'d them. I also added a gfp
-> > parameter to the fsl_dma_slave_alloc() function. And included the
-> > linux/list.h header.
-> >
-> > If you'd like three separate patches, I can do that. The changes were so
-> > trivial that I lumped all of them into a single patch.
-> >
-> > Thanks,
-> > Ira
-> >
-> >  arch/powerpc/include/asm/fsldma.h |   70 +++------------------------------
-> >  drivers/dma/fsldma.c              |   77 +++++++++++++++++++++++++++++++++++++
+> In parallel to procfs there exists the taskstats binary interface that uses
+> netlink sockets as transport mechanism to deliver task information to
+> user space. There exists a taskstats command "TASKSTATS_CMD_ATTR_PID"
+> to get task information for a given PID. This command can already be used for
+> tools like top, but has also several disadvantages:
 > 
-> Remind me why we need this header file and these routines again?  git
-> grep says nothing in-tree is using these?
+> * You first have to find out which PIDs are available in the system. Currently
+>   we have to use procfs again to do this.
+> * For each task two system calls have to be issued (First send the command and
+>   then receive the reply).
+> * No snapshot mechanism is available.
 > 
-> I also do not want to proliferate driver specific interfaces.  It
-> defeats the purpose of having a common dmaengine structure.  Along
-> these lines Linus W. added the new device_control() method (first
-> added in commit c3635c78, later tweaked in 05827630).  Could that be
-> massaged for your needs?
+> GOALS OF THIS PATCH SET
+> -----------------------
+> The intention of this patch set is to provide better support for tools like
+> top. The goal is to:
 > 
+> * provide a task snapshot mechanism where we can get a consistent view of
+>   all running tasks.
+> * provide a transport mechanism that does not require a lot of system calls
+>   and that allows implementing low CPU overhead task monitoring.
+> * provide microsecond CPU time granularity.
 
-These routines are used by a (currently out of tree) driver that I
-maintain. Please see the LKML and linuxppc-dev ML post titled:
-[PATCH RFCv2 0/5] CARMA Board Support
+This is a big change!  If this is done right then we're heading in the
+direction of deprecating the longstanding way in which userspace
+observes the state of Linux processes and we're recommending that the
+whole world migrate to taskstats.  I think?
 
-The FPGA programming driver uses these interfaces. Past a few initial
-comments (which I promptly fixed!), it seems that nobody wants to look
-at this driver. I don't know how to move it towards mainline other than
-spam people, which I would prefer to avoid doing.
+If so, much chin-scratching will be needed, coordination with
+util-linux people, etc.
 
-The new device_control() method doesn't have enough information for this
-purpose. I also don't know of any other DMA controllers that have the
-feature I'm using (described below).
+We'd need to think about the implications of taskstats versioning.  It
+_is_ a versioned interface, so people can't just go and toss random new
+stuff in there at will - it's not like adding a new procfs file, or
+adding a new line to an existing one.  I don't know if that's likely to
+be a significant problem.
 
-The fsldma controller has the option of being controlled by an external
-device, via some pins. This is leveraged by our system controller to
-properly program some big data processing FPGAs.
+I worry that there's a dependency on CONFIG_NET?  If so then that's a
+big problem because in N years time, 99% of the world will be using
+taskstats, but a few embedded losers will be stuck using (and having to
+support) the old tools.
 
-Basically, the fsldma controller must be told:
-1) descriptors (src, dst, len tuples)
-2) use the external-start feature (external control)
-3) go
 
-Now #3's "go" doesn't actually start the transfer. It just starts
-listening on the external pins for the correct sequence for each
-transaction.
+> FIRST RESULTS
+> -------------
+> Together with this kernel patch set also user space code for a new top
+> utility (ptop) is provided that exploits the new kernel infrastructure. See
+> patch 10 for more details.
+> 
+> TEST1: System with many sleeping tasks
+> 
+>   for ((i=0; i < 1000; i++))
+>   do
+>          sleep 1000000 &
+>   done
+> 
+>   # ptop_new_proc
+> 
+>              VVVV
+>   pid   user  sys  ste  total  Name
+>   (#)    (%)  (%)  (%)    (%)  (str)
+>   541   0.37 2.39 0.10   2.87  top
+>   3743  0.03 0.05 0.00   0.07  ptop_new_proc
+>              ^^^^
+> 
+> Compared to the old top command that has to scan more than 1000 proc
+> directories the new ptop consumes much less CPU time (0.05% system time
+> on my s390 system).
 
-Also, the descriptors must be set up such that they form a single chain,
-without interruptions between segments. Back at the beginning of the
-year, I did a lot of work on the fsldma driver. It *should* be able to
-chain DMA transfers appropriately for this mode using the existing
-device_prep_dma_memcpy() routine.
+How many CPUs does that system have?
 
-This means that it would be possible to move some of the functionality
-of fsldma's device_prep_slave_sg() into core DMAEngine code, and
-implement something like dma_memcpy_sg_to_sg(). This would take two
-scatterlists and call device_prep_slave_sg() enough times to setup a DMA
-operation that will move all data appropriately.
+What's the `top' update period?  One second?
 
-This is exactly what fsldma's device_prep_slave_sg() actually does. It
-was non-trivial to get the triply nested loops correct.
+So we're saying that a `top -d 1' consumes 2.4% of this
+mystery-number-of-CPUs machine?  That's quite a lot.
 
-As an example from my driver, I have this scenario:
-1) a scatterlist of kernel memory pages (this is my data payload)
-2) a fixed set of non-incrementing physical addresses I need to send that data to
+> PATCHSET OVERVIEW
+> -----------------
+> The code is not final and still has a few TODOs. But it is good enough for a
+> first round of review. The following kernel patches are provided:
+> 
+> [01] Prepare-0: Use real microsecond granularity for taskstats CPU times.
+> [02] Prepare-1: Restructure taskstats.c in order to be able to add new commands
+>      more easily.
+> [03] Prepare-2: Separate the finding of a task_struct by PID or TGID from
+>      filling the taskstats.
+> [04] Add new command "TASKSTATS_CMD_ATTR_PIDS" to get a snapshot of multiple
+>      tasks.
+> [05] Add procfs interface for taskstats commands. This allows to get a complete
+>      and consistent snapshot with all tasks using two system calls (ioctl and
+>      read). Transferring a snapshot of all running tasks is not possible using
+>      the existing netlink interface, because there we have the socket buffer
+>      size as restricting factor.
 
-Other than the fsldma device_prep_slave_sg(), this is difficult to do.
+So this is a binary interface which uses an ioctl.  People don't like
+ioctls.  Could we have triggered it with a write() instead?
 
-I hope that helps to explain the problem.
+Does this have the potential to save us from the CONFIG_NET=n problem?
 
-Ira
+> [06] Add TGID to taskstats.
+> [07] Add steal time per task accounting.
+> [08] Add cumulative CPU time (user, system and steal) to taskstats.
+
+These didn't update the taskstats version number.  Should they have?
+
+> [09] Fix exit CPU time accounting.
+> 
+> [10] Besides of the kernel patches also user space code is provided that
+>      exploits the new kernel infrastructure. The user space code provides the
+>      following:
+>      1. A proposal for a taskstats user space library:
+>         1.1 Based on netlink (requires libnl-devel-1.1-5)
+>         2.1 Based on the new /proc/taskstats interface (see [05])
+>      2. A proposal for a task snapshot library based on taskstats library (1.1)
+
+ooh, excellent.  A standardised userspace access library.
+
+>      3. A new tool "ptop" (precise top) that uses the libraries
+
+Talk to me about namespaces, please.  A lot of the new code involves
+PIDs, but PIDs are not system-wide unique.  A PID is relative to a PID
+namespace.  Does everything Just Work?  When userspace sends a PID to
+the kernel, that PID is assumed to be within the sending process's PID
+namespace?  If so, then please spell it all out in the changelogs.  If
+not then that is a problem!
+
+If I can only observe processes in my PID namespace then is that a
+problem?  Should I be allowed to observe another PID namespace's
+processes?  I assume so, because I might be root.  If so, how is that
+to be done?
+
