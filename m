@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753778Ab0IWGvW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 02:51:22 -0400
-Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:59733 "EHLO
-	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753673Ab0IWGvT (ORCPT
+	id S1753828Ab0IWGvb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 02:51:31 -0400
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:53902 "EHLO
+	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753791Ab0IWGv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 02:51:19 -0400
+	Thu, 23 Sep 2010 02:51:29 -0400
 From: matt mooney <mfm@muteddisk.com>
-To: Xiantao Zhang <xiantao.zhang@intel.com>
-Cc: Tony Luck <tony.luck@intel.com>, Avi Kivity <avi@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-ia64@vger.kernel.org,
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Roman Zippel <zippel@linux-m68k.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-m68k@vger.kernel.org,
         linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 06/20] ia64: change to new flag variables
-Date: Wed, 22 Sep 2010 23:50:29 -0700
-Message-Id: <1285224629-29640-1-git-send-email-mfm@muteddisk.com>
+Subject: [PATCH 07/20] m68k: change to new flag variables
+Date: Wed, 22 Sep 2010 23:50:38 -0700
+Message-Id: <1285224638-29684-1-git-send-email-mfm@muteddisk.com>
 X-Mailer: git-send-email 1.6.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,93 +24,24 @@ Replace EXTRA_CFLAGS with ccflags-y and EXTRA_AFLAGS with asflags-y.
 
 Signed-off-by: matt mooney <mfm@muteddisk.com>
 ---
- arch/ia64/kvm/Makefile           |    4 ++--
- arch/ia64/sn/kernel/Makefile     |    2 +-
- arch/ia64/sn/kernel/sn2/Makefile |    2 +-
- arch/ia64/sn/pci/Makefile        |    2 +-
- arch/ia64/sn/pci/pcibr/Makefile  |    2 +-
- arch/ia64/uv/kernel/Makefile     |    2 +-
- 6 files changed, 7 insertions(+), 7 deletions(-)
+ arch/m68k/math-emu/Makefile |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/ia64/kvm/Makefile b/arch/ia64/kvm/Makefile
-index 1089b3e..db3d7c5 100644
---- a/arch/ia64/kvm/Makefile
-+++ b/arch/ia64/kvm/Makefile
-@@ -45,8 +45,8 @@ FORCE : $(obj)/$(offsets-file)
- # Makefile for Kernel-based Virtual Machine module
+diff --git a/arch/m68k/math-emu/Makefile b/arch/m68k/math-emu/Makefile
+index a0935bf..547c23c 100644
+--- a/arch/m68k/math-emu/Makefile
++++ b/arch/m68k/math-emu/Makefile
+@@ -2,8 +2,8 @@
+ # Makefile for the linux kernel.
  #
  
--EXTRA_CFLAGS += -Ivirt/kvm -Iarch/ia64/kvm/
--EXTRA_AFLAGS += -Ivirt/kvm -Iarch/ia64/kvm/
-+ccflags-y := -Ivirt/kvm -Iarch/ia64/kvm/
-+asflags-y := -Ivirt/kvm -Iarch/ia64/kvm/
+-#EXTRA_AFLAGS += -DFPU_EMU_DEBUG
+-#EXTRA_CFLAGS += -DFPU_EMU_DEBUG
++#asflags-y := -DFPU_EMU_DEBUG
++#ccflags-y := -DFPU_EMU_DEBUG
  
- common-objs = $(addprefix ../../../virt/kvm/, kvm_main.o ioapic.o \
- 		coalesced_mmio.o irq_comm.o assigned-dev.o)
-diff --git a/arch/ia64/sn/kernel/Makefile b/arch/ia64/sn/kernel/Makefile
-index 0591038..d27df1d 100644
---- a/arch/ia64/sn/kernel/Makefile
-+++ b/arch/ia64/sn/kernel/Makefile
-@@ -7,7 +7,7 @@
- # Copyright (C) 1999,2001-2006,2008 Silicon Graphics, Inc.  All Rights Reserved.
- #
- 
--EXTRA_CFLAGS += -Iarch/ia64/sn/include
-+ccflags-y := -Iarch/ia64/sn/include
- 
- obj-y				+= setup.o bte.o bte_error.o irq.o mca.o idle.o \
- 				   huberror.o io_acpi_init.o io_common.o \
-diff --git a/arch/ia64/sn/kernel/sn2/Makefile b/arch/ia64/sn/kernel/sn2/Makefile
-index 08e6565..3d09108 100644
---- a/arch/ia64/sn/kernel/sn2/Makefile
-+++ b/arch/ia64/sn/kernel/sn2/Makefile
-@@ -9,7 +9,7 @@
- # sn2 specific kernel files
- #
- 
--EXTRA_CFLAGS += -Iarch/ia64/sn/include
-+ccflags-y := -Iarch/ia64/sn/include
- 
- obj-y += cache.o io.o ptc_deadlock.o sn2_smp.o sn_proc_fs.o \
- 	 prominfo_proc.o timer.o timer_interrupt.o sn_hwperf.o
-diff --git a/arch/ia64/sn/pci/Makefile b/arch/ia64/sn/pci/Makefile
-index ad4ef34..df2a901 100644
---- a/arch/ia64/sn/pci/Makefile
-+++ b/arch/ia64/sn/pci/Makefile
-@@ -7,6 +7,6 @@
- #
- # Makefile for the sn pci general routines.
- 
--EXTRA_CFLAGS += -Iarch/ia64/sn/include
-+ccflags-y := -Iarch/ia64/sn/include
- 
- obj-y := pci_dma.o tioca_provider.o tioce_provider.o pcibr/
-diff --git a/arch/ia64/sn/pci/pcibr/Makefile b/arch/ia64/sn/pci/pcibr/Makefile
-index 01192d3..396bcae 100644
---- a/arch/ia64/sn/pci/pcibr/Makefile
-+++ b/arch/ia64/sn/pci/pcibr/Makefile
-@@ -7,7 +7,7 @@
- #
- # Makefile for the sn2 io routines.
- 
--EXTRA_CFLAGS += -Iarch/ia64/sn/include
-+ccflags-y := -Iarch/ia64/sn/include
- 
- obj-y				+=  pcibr_dma.o pcibr_reg.o \
- 				    pcibr_ate.o pcibr_provider.o
-diff --git a/arch/ia64/uv/kernel/Makefile b/arch/ia64/uv/kernel/Makefile
-index 8d92b46..124e441 100644
---- a/arch/ia64/uv/kernel/Makefile
-+++ b/arch/ia64/uv/kernel/Makefile
-@@ -7,7 +7,7 @@
- # Copyright (C) 2008 Silicon Graphics, Inc.  All Rights Reserved.
- #
- 
--EXTRA_CFLAGS += -Iarch/ia64/sn/include
-+ccflags-y := -Iarch/ia64/sn/include
- 
- obj-y				+= setup.o
- obj-$(CONFIG_IA64_GENERIC)      += machvec.o
+ obj-y		:= fp_entry.o fp_scan.o fp_util.o fp_move.o fp_movem.o \
+ 			fp_cond.o fp_arith.o fp_log.o fp_trig.o
 -- 
 1.7.2.1
 
