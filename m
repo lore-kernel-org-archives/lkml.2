@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756227Ab0IWUbE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 16:31:04 -0400
-Received: from mail.perches.com ([173.55.12.10]:2298 "EHLO mail.perches.com"
+	id S1756593Ab0IWUbO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 16:31:14 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43313 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753814Ab0IWUbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 16:31:03 -0400
-Subject: Re: checkpatch problem
-From: Joe Perches <joe@perches.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <25057.1285268069@redhat.com>
-References: <1285266454.31572.29.camel@Joe-Laptop>
-	 <4013.1285177436@redhat.com> <25759.1285169592@redhat.com>
-	 <1283888517.23280.241.camel@Joe-Laptop> <23323.1283864982@redhat.com>
-	 <20100907180025.GD2662@shadowen.org> <22516.1285265739@redhat.com>
-	 <25057.1285268069@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 23 Sep 2010 13:31:01 -0700
-Message-ID: <1285273861.25928.6.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756493Ab0IWUbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 16:31:11 -0400
+Date: Thu, 23 Sep 2010 13:30:06 -0700
+From: Greg KH <gregkh@suse.de>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -next] driver core: fix build for CONFIG_BLOCK=n
+Message-ID: <20100923203006.GB10687@suse.de>
+References: <20100920161239.f204a507.sfr@canb.auug.org.au>
+ <20100920092034.0b3f5898.randy.dunlap@oracle.com>
+ <20100921223115.GB21202@kroah.com>
+ <20100923111541.97abcd05.rdunlap@xenotime.net>
+ <20100923191629.GB18736@kroah.com>
+ <20100923124751.cc59a349.rdunlap@xenotime.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100923124751.cc59a349.rdunlap@xenotime.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-23 at 19:54 +0100, David Howells wrote:
-> Joe Perches <joe@perches.com> wrote:
-> > Exactly right.  Andy has a version in his testing directory
-> > that fixes this #define run-on block and speeds up checkpatch
-> > runtime rather a lot for certain files like .h files that have
-> > nothing but #defines.
-> > Try applying my patch to this newer version:
-> > http://www.kernel.org/pub/linux/kernel/people/apw/checkpatch/checkpatch.pl-testing
+On Thu, Sep 23, 2010 at 12:47:51PM -0700, Randy Dunlap wrote:
+> On Thu, 23 Sep 2010 12:16:29 -0700 Greg KH wrote:
 > 
-> It still doesn't work.  In fact, I'm seeing more "Logging function has
-> unnecessary whitespace before a newline" warnings, such as on this:
+> > On Thu, Sep 23, 2010 at 11:15:41AM -0700, Randy Dunlap wrote:
+> > > On Tue, 21 Sep 2010 15:31:15 -0700 Greg KH wrote:
+> > > 
+> > > > On Mon, Sep 20, 2010 at 09:20:34AM -0700, Randy Dunlap wrote:
+> > > > > From: Randy Dunlap <randy.dunlap@oracle.com>
+> > > > > 
+> > > > > Fix build when CONFIG_BLOCK is not enabled (since SEP-06).
+> > > > > Fixes these build errors:
+> > > > > 
+> > > > > drivers/base/core.c: In function 'get_device_parent':
+> > > > > drivers/base/core.c:622: error: 'block_class' undeclared (first use in this function)
+> > > > > drivers/base/core.c: In function 'device_add_class_symlinks':
+> > > > > drivers/base/core.c:712: error: 'block_class' undeclared (first use in this function)
+> > > > > drivers/base/core.c: In function 'device_remove_class_symlinks':
+> > > > > drivers/base/core.c:742: error: 'block_class' undeclared (first use in this function)
+> > > > > 
+> > > > > Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> > > > 
+> > > > This should no longer be needed with the next linux-next tree as the
+> > > > logic in this area has changed thanks to Andi's patch.
+>                                      ~~~~~~~~~~~~~~~~~~~~~~~
 > 
-> 		printk(KERN_ERR
-> 		       "BUG: CPU#%d started up but did not get a callout!\n",
-> 		       cpu);
+> > > 
+> > > {sorry about resend, email problems}
+> > > 
+> > > 
+> > > Still seeing this build error. (linux-next 2010-0923)
+> > > Will you be merging some patch soon?
+> > 
+> > Not unless someone provides it.  I know of no valid user of the kernel
+> > that does not enable CONFIG_BLOCK, so I really doubt this will ever hit
+> > anyone in "real life" so it's _way_ down the list of things I have to do
+> > at the moment, sorry.
+> 
+> so what was your comment about Andi's patch (above)?
 
-Yes, it's completely borked.
+It's merged already, and because of it, your patch failed to apply.
 
-ctx_statement_block returns code beyond the current
-statement terminating ";".
+thanks,
 
-Andy may be able to do something about it or know
-about some appropriate knob to twist.
-
-I don't really want to learn too much about
-checkpatch internals.  Sorry.
-
+greg k-h
