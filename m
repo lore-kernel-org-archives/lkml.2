@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905Ab0IWPfS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 11:35:18 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62647 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998Ab0IWPfQ (ORCPT
+	id S1754772Ab0IWPgM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 11:36:12 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:55930 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752165Ab0IWPgL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 11:35:16 -0400
+	Thu, 23 Sep 2010 11:36:11 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=YwHos8FEB/408JGrVo5Q0PvLyAcsCVvc+SiZoaeHviI/tAf+yHR5zeKscISYeX7eJR
-         nbDh9JtSfeyPXOl9lT6DFBY8HdxxrThj528qiopmi+lR7okhyzSVD/WBw0ZAafMkR5bW
-         sKuBCnUXAqVoD3VAEBQP00gMaJMAoUUE0HK90=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=VdJZFEWlsKRzd0vb67+/376FNLKiKk5V/Rr0X39RiUobKv3YXOkG9auXCNLm+sdYhX
+         dCCNe50l1tnO4cDRaltn8ZShKIQblrxnA/AcwO5QOgSmoQEQRjQY2FnV8mnVfAcaIBdH
+         LVPWSJb+eGjHaShhgUynGopS1uSPUVtYY0+Rg=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=7gsXT2P-7a=DCTsaUBK=B131VFFCBzNVzpYFv@mail.gmail.com>
-References: <1283256734-3408-1-git-send-email-linus.walleij@stericsson.com>
-	<1283256734-3408-2-git-send-email-linus.walleij@stericsson.com>
-	<1283256734-3408-3-git-send-email-linus.walleij@stericsson.com>
-	<1283256734-3408-4-git-send-email-linus.walleij@stericsson.com>
-	<1283256734-3408-5-git-send-email-linus.walleij@stericsson.com>
-	<1283256734-3408-6-git-send-email-linus.walleij@stericsson.com>
-	<1283256734-3408-7-git-send-email-linus.walleij@stericsson.com>
-	<1283256734-3408-8-git-send-email-linus.walleij@stericsson.com>
-	<1283256734-3408-9-git-send-email-linus.walleij@stericsson.com>
-	<1283256734-3408-10-git-send-email-linus.walleij@stericsson.com>
-	<1283256734-3408-11-git-send-email-linus.walleij@stericsson.com>
-	<1283256734-3408-12-git-send-email-linus.walleij@stericsson.com>
-	<AANLkTimGu1R0vqpLK9X30CxkibO6N964D1Y-fQvAdA9D@mail.gmail.com>
-	<AANLkTi=7gsXT2P-7a=DCTsaUBK=B131VFFCBzNVzpYFv@mail.gmail.com>
-Date: Thu, 23 Sep 2010 08:35:13 -0700
-X-Google-Sender-Auth: -OjWoszvvuSbIhxiHu4xMXI2zWs
-Message-ID: <AANLkTik0Qy9nbWcreL3oOYg-KKhZ793i6tvfCmwiLgc=@mail.gmail.com>
-Subject: Re: [PATCH 11/12] DMAENGINE: let PL08X memcpy TXDs wait
-From: Dan Williams <dan.j.williams@intel.com>
-To: Linus Walleij <linus.ml.walleij@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, yuanyabin1978@sina.com,
-        linux-kernel@vger.kernel.org,
-        =?ISO-8859-1?Q?Per_Frid=E9n?= <per.friden@stericsson.com>,
-        Rabin VINCENT <rabin.vincent@stericsson.com>
+In-Reply-To: <1285255752.10687.20.camel@i7.infradead.org>
+References: <1285255197-9262-1-git-send-email-dbaryshkov@gmail.com>
+	<1285255197-9262-2-git-send-email-dbaryshkov@gmail.com>
+	<1285255752.10687.20.camel@i7.infradead.org>
+Date: Thu, 23 Sep 2010 19:36:09 +0400
+Message-ID: <AANLkTi=eZEAt4EW6TjHE+YBYNtXcX3uPbUbdL2uNjS6=@mail.gmail.com>
+Subject: Re: [PATCH 2/5] Add mkcis - a program that can create .cis from text description
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: linux-kernel@vger.kernel.org, linux-pcmcia@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 23, 2010 at 12:46 AM, Linus Walleij
-<linus.ml.walleij@gmail.com> wrote:
-> 2010/9/23 Dan Williams <dan.j.williams@intel.com>:
+On Thu, Sep 23, 2010 at 7:29 PM, David Woodhouse <dwmw2@infradead.org> wrote:
+> On Thu, 2010-09-23 at 19:19 +0400, Dmitry Eremin-Solenikov wrote:
+>> For CIS files (describing hardware on PCMCIA and some other busses)
+>> binary file isn't the 'preferred for for modification' in most cases.
+>> pcmcia-cs project have developed pack_cis program which can be used
+>> (and was used most probably) to generate .cis files from simple text
+>> descriptions. Import this code to the kernel under the name of mkcis.
 >
->> The prep routine is meant to guarantee that all the resources for a
->> transaction have been acquired.
+> This is useful, thanks -- but NACK. The firmware/ directory of the
+> kernel will hopefully die soon, and is no longer what's actually shipped
+> by many distributions.
 >
-> A practicality here:
+> We should be concentrating on the linux-firmware.git repository instead.
+
+Should I redo this patch serie against linux-firmware.git (probably with
+just putting .ct files near .cis)?
+
 >
-> The assumption to fail for physical channel allocation at .tx_submit()
-> is already in the first patch adding the driver.
+> --
+> David Woodhouse                            Open Source Technology Centre
+> David.Woodhouse@intel.com                              Intel Corporation
 >
-> Should I squash all the icremental improvements into the original
-> driver, convert to fail at .prep() and resubmit to make all of this
-> easier, or do you want me to refactor the patch stack, or refactor
-> from patch 11/12 or...?
 >
 
-At this point I am already rebasing my next branch to catch up with
-the backlog, so a new v5 of the driver with all the roll-ups works for
-me.
 
-Also not sure if you caught this comment from earlier:
-> sidenote: this driver needs to be converted to a dma descriptor pool
-> (allocated at device_alloc_chan_resources time), or at a minimum use
-> GFP_NOWAIT in device_prep_dma_memcpy because that routine may be
-> called from atomic contexts.
 
-Thanks,
-Dan
+-- 
+With best wishes
+Dmitry
