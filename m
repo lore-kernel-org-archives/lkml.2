@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756232Ab0IWXhx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 19:37:53 -0400
-Received: from nm25-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.228]:26203 "HELO
-	nm25-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756186Ab0IWXhs (ORCPT
+	id S1756275Ab0IWXh6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 19:37:58 -0400
+Received: from smtp126.sbc.mail.sp1.yahoo.com ([69.147.65.185]:34035 "HELO
+	smtp126.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756069Ab0IWXh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 19:37:48 -0400
-X-Yahoo-Newman-Id: 394026.96325.bm@omp1047.mail.ne1.yahoo.com
+	Thu, 23 Sep 2010 19:37:56 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: jUHjQ0kVM1mrJNssyfJslOAbrzQ4MGQ6JGKTzCnkLSIaGaO
- xIXAatH3pHAUQKLkVqSY3sQSKWEbT74pV38KU6aXMx2B8jSXJBJbR.7b45sf
- um3zx0PnPihoCpwqqNKqAnCuMZUV2DZCjY5Zsuf1iIBrv0AdjiUZonSGvEr3
- 8N1AV72f0znuuBlsTdE8C3sADIaD3XZBWkcTaFks6IIZI6_vFpelHj879WIZ
- l2rsMdj03IKBxi.P88nKSXhTbSoBING6Zi4RqgDdqR2DPRSxu3_H8A9HCZwW
- u3ydP36dQXS64zp2d7K2xnz40huGIrXRWjxvhwqh.IgYDefBLX_2eyKhqQqz
- 7Zn.ZtQM9OYK82gEUs7E-
+X-YMail-OSG: 48yQlMoVM1lhq.txOZtxaMf4Ur_vH.q6muIJ8I44qhqGIxw
+ 8CTQjcYDF0aBcOafyubgaPiSRX_B5MCGAha.EnlCIpj4nJIwxt6sUHS3G38v
+ iVV2kVHG8urVUgv5TIew5.IN90vZ6gnvAB3b4BpWod4Yw6dkn4LEuddFiPQo
+ tbUp9wtVSVuJsg.UVM7l_uhBRg6WnBPg0Ws66K1ROAmbb4i51eI50Kl0ktsT
+ gXTBZIApHwhXLQquJVt4CjUdOTSJjJ1c3V5o3iQLAamg0BsGc4UDaieCNHQs
+ b6Ss4g2d4d7JTYm.gUSjt.nRHn_Sn20eBbxE6bQS7mGoVC4_M6Yw.of1x5va
+ vQyx..QbPY74oxI9f4g--
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -33,9 +32,9 @@ Cc: James Smart <james.smart@emulex.com>,
         MPTFusionLinux <DL-MPTFusionLinux@lsi.com>,
         "eata.c maintainer" <dario.ballabio@inwind.it>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [RFC v3 02/15] libiscsi: Remove host_lock unlock() + lock() from iscsi_queuecommand()
-Date: Thu, 23 Sep 2010 16:37:42 -0700
-Message-Id: <1285285062-16371-1-git-send-email-nab@linux-iscsi.org>
+Subject: [RFC v3 03/15] libsas: Remove host_lock unlock() + lock() from sas_queuecommand()
+Date: Thu, 23 Sep 2010 16:37:53 -0700
+Message-Id: <1285285073-16391-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -44,49 +43,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
 This patch removes the now legacy host_lock unlock() + lock() optimization
-from libiscsi.c:iscsi_queuecommand()
+from sas_scsi_host.c:sas_queuecommand()
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/scsi/libiscsi.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+ drivers/scsi/libsas/sas_scsi_host.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
-index 633e090..7e4134e 100644
---- a/drivers/scsi/libiscsi.c
-+++ b/drivers/scsi/libiscsi.c
-@@ -1615,7 +1615,6 @@ int iscsi_queuecommand(struct scsi_cmnd *sc, void (*done)(struct scsi_cmnd *))
+diff --git a/drivers/scsi/libsas/sas_scsi_host.c b/drivers/scsi/libsas/sas_scsi_host.c
+index f0cfba9..bc1c97c 100644
+--- a/drivers/scsi/libsas/sas_scsi_host.c
++++ b/drivers/scsi/libsas/sas_scsi_host.c
+@@ -202,18 +202,14 @@ int sas_queue_up(struct sas_task *task)
+  */
+ int sas_queuecommand(struct scsi_cmnd *cmd,
+ 		     void (*scsi_done)(struct scsi_cmnd *))
+-	__releases(host->host_lock)
+ 	__acquires(dev->sata_dev.ap->lock)
+ 	__releases(dev->sata_dev.ap->lock)
+-	__acquires(host->host_lock)
+ {
+ 	int res = 0;
+ 	struct domain_device *dev = cmd_to_domain_dev(cmd);
+ 	struct Scsi_Host *host = cmd->device->host;
+ 	struct sas_internal *i = to_sas_internal(host->transportt);
  
- 	host = sc->device->host;
- 	ihost = shost_priv(host);
--	spin_unlock(host->host_lock);
- 
- 	cls_session = starget_to_session(scsi_target(sc->device));
- 	session = cls_session->dd_data;
-@@ -1706,7 +1705,6 @@ int iscsi_queuecommand(struct scsi_cmnd *sc, void (*done)(struct scsi_cmnd *))
- 
- 	session->queued_cmdsn++;
- 	spin_unlock(&session->lock);
--	spin_lock(host->host_lock);
- 	return 0;
- 
- prepd_reject:
-@@ -1716,7 +1714,6 @@ reject:
- 	spin_unlock(&session->lock);
- 	ISCSI_DBG_SESSION(session, "cmd 0x%x rejected (%d)\n",
- 			  sc->cmnd[0], reason);
--	spin_lock(host->host_lock);
- 	return SCSI_MLQUEUE_TARGET_BUSY;
- 
- prepd_fault:
-@@ -1733,7 +1730,6 @@ fault:
- 		scsi_in(sc)->resid = scsi_in(sc)->length;
+-	spin_unlock_irq(host->host_lock);
+-
+ 	{
+ 		struct sas_ha_struct *sas_ha = dev->port->ha;
+ 		struct sas_task *task;
+@@ -254,7 +250,6 @@ int sas_queuecommand(struct scsi_cmnd *cmd,
+ 		}
  	}
- 	done(sc);
--	spin_lock(host->host_lock);
- 	return 0;
+ out:
+-	spin_lock_irq(host->host_lock);
+ 	return res;
  }
- EXPORT_SYMBOL_GPL(iscsi_queuecommand);
+ 
 -- 
 1.7.3
 
