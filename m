@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114Ab0IWSij (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 14:38:39 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51801 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756095Ab0IWSii (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 14:38:38 -0400
-Date: Thu, 23 Sep 2010 19:38:35 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Peter Hsiang <Peter.Hsiang@maxim-ic.com>
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Peter Ujfalusi <peter.ujfalusi@nokia.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jesse Marroquin <Jesse.Marroquin@maxim-ic.com>
-Subject: Re: [PATCH] ASoC: Add max98088 CODEC driver
-Message-ID: <20100923183835.GC32112@rakim.wolfsonmicro.main>
-References: <B2150E1E4418E1438554A300EA5040E40D469C1248@ITSVLEX06.it.maxim-ic.internal>
- <20100923120443.GF25663@rakim.wolfsonmicro.main>
- <B2150E1E4418E1438554A300EA5040E40D46E1BE7C@ITSVLEX06.it.maxim-ic.internal>
+	id S1756080Ab0IWSkQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 14:40:16 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:58510 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750855Ab0IWSkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 14:40:14 -0400
+Date: Fri, 24 Sep 2010 00:10:02 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Nathan Fontenot <nfont@austin.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
+        Greg KH <greg@kroah.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH 0/8] De-couple sysfs memory directories from memory
+ sections
+Message-ID: <20100923184002.GM3952@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <4C9A0F8F.2030409@austin.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <B2150E1E4418E1438554A300EA5040E40D46E1BE7C@ITSVLEX06.it.maxim-ic.internal>
-X-Cookie: My NOSE is NUMB!
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4C9A0F8F.2030409@austin.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 23, 2010 at 10:56:38AM -0700, Peter Hsiang wrote:
-> On Thu, Sep 23, 2010, Mark Brown wrote:
+* Nathan Fontenot <nfont@austin.ibm.com> [2010-09-22 09:15:43]:
 
-> > |   git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound-2.6.git
+> This set of patches decouples the concept that a single memory
+> section corresponds to a single directory in 
+> /sys/devices/system/memory/.  On systems
+> with large amounts of memory (1+ TB) there are performance issues
+> related to creating the large number of sysfs directories.  For
+> a powerpc machine with 1 TB of memory we are creating 63,000+
+> directories.  This is resulting in boot times of around 45-50
+> minutes for systems with 1 TB of memory and 8 hours for systems
+> with 2 TB of memory.  With this patch set applied I am now seeing
+> boot times of 5 minutes or less.
+> 
+> The root of this issue is in sysfs directory creation. Every time
+> a directory is created a string compare is done against all sibling
+> directories to ensure we do not create duplicates.  The list of
+> directory nodes in sysfs is kept as an unsorted list which results
+> in this being an exponentially longer operation as the number of
+> directories are created.
+> 
+> The solution solved by this patch set is to allow a single
+> directory in sysfs to span multiple memory sections.  This is
+> controlled by an optional architecturally defined function
+> memory_block_size_bytes().  The default definition of this
+> routine returns a memory block size equal to the memory section
+> size. This maintains the current layout of sysfs memory
+> directories as it appears to userspace to remain the same as it
+> is today.
+> 
+> For architectures that define their own version of this routine,
+> as is done for powerpc in this patchset, the view in userspace
+> would change such that each memoryXXX directory would span
+> multiple memory sections.  The number of sections spanned would
+> depend on the value reported by memory_block_size_bytes.
+> 
+> In both cases a new file 'end_phys_index' is created in each
+> memoryXXX directory.  This file will contain the physical id
+> of the last memory section covered by the sysfs directory.  For
+> the default case, the value in 'end_phys_index' will be the same
+> as in the existing 'phys_index' file.
+>
 
-> > Currently you should be looking at for-next or for-2.6.37, though the
-> > branch names will change as kernel development moves forward.
+What does this mean for memory hotplug or hotunplug? 
 
-> What is the git command line path/parameter for for-next or for-2.6.37?
-> Something equivalent to...
-> ....pub/scm/linux/kernel/git/next/linux-next.git 
-
-That is the git path to the repository.  for-next and for-2.6.37 are
-branches in that repository.
-
-> Why do the files in git/broonie/sound-2.6.git look older than -next?
-> For example, it's missing soc-cache.c, and the codec drivers there
-> use the old I/O method.  Same drivers in -next are newer and use the soc-cache.
-
-You're looking at the wrong branch, you need to look at one of the
-branches mentioned above.  git branch -r to list remote branches.  I
-can't remember what the default branch is but since it changes with
-every release it's not always up to date.
-
-Developing against -next is also OK, it contains everything in the above
-tree (and then some).
+-- 
+	Three Cheers,
+	Balbir
