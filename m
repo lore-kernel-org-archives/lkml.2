@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438Ab0IWGeM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 02:34:12 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:51086 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab0IWGeL (ORCPT
+	id S1752617Ab0IWGk2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 02:40:28 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:56055 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976Ab0IWGk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 02:34:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=QSFmpBl0xdVGzAqjo0CiW85yior0OU2lqjH8Vu6Fr2P6B/DNCKyYRZhHaM4Op0klDa
-         z/rDwsCF6EM/izscDB599aXpNGM8MrgeHBjyBfr7q4KxDtylMYFcpBssR7s+wL3D1LE/
-         SLSgNsUtXOGdKanZsikNmVFMuJEXZNvNdAi1M=
-Subject: Re: idr_remove called for id=0 which is not allocated
-From: Ben Skeggs <skeggsb@gmail.com>
-Reply-To: skeggsb@gmail.com
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alessandro Guido <ag@alessandroguido.name>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-In-Reply-To: <20100922225612.826b0553.akpm@linux-foundation.org>
-References: <4C9A70B2.3090101@alessandroguido.name>
-	 <20100922225612.826b0553.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 23 Sep 2010 16:33:41 +1000
-Message-ID: <1285223621.27598.1.camel@nisroch>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.31.5 (2.31.5-2.fc14) 
+	Thu, 23 Sep 2010 02:40:26 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sage Weil <sage@newdream.net>
+Subject: Re: [PATCH] fs/locks.c: prepare for BKL removal
+Date: Thu, 23 Sep 2010 08:40:11 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4+; KDE/4.5.1; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+        Matthew Wilcox <willy@linux.intel.com>, Christoph Hellwig <hch@lst.de>,
+        Trond Myklebust <trond.myklebust@fys.uio.no>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, John Kacur <jkacur@redhat.com>,
+        linux-fsdevel@vger.kernel.org, gregf@hq.newdream.net
+References: <1284815371-5843-1-git-send-email-arnd@arndb.de> <201009212209.51956.arnd@arndb.de> <Pine.LNX.4.64.1009222037500.14029@cobra.newdream.net>
+In-Reply-To: <Pine.LNX.4.64.1009222037500.14029@cobra.newdream.net>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201009230840.11724.arnd@arndb.de>
+X-Provags-ID: V02:K0:NEm5tbY6M9zQJFZ22KnVVMU+wNp8oXhH0KKsG+1B8Pt
+ JciuKSlOM1QzcLjc8BQJwwUmjaz+RS6rCRUjE+F+xDhPaxyu3m
+ 4kB/y/AndzL6NMcKHKWUQezJEAyICr/E6DfiMiGV1VmU/PtLZs
+ 9MjUVnbQJ40VJBe+1tn9Wzm1P1A0IVLnURwWi3W8TWViuh4PHm
+ +ml3JCL/bIFhS8QvuNUvQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-09-22 at 22:56 -0700, Andrew Morton wrote:
-> On Wed, 22 Sep 2010 23:10:10 +0200 Alessandro Guido <ag@alessandroguido.name> wrote:
-> 
-> > I have this traces in my logs (full dmesg attached).
-> > 
-> > idr_remove called for id=0 which is not allocated.
-> > Pid: 1136, comm: Xorg Not tainted 2.6.36-rc5-49-gc79bd89 #1
-> > Call Trace:
-> >   [<c1379e16>] ? printk+0x18/0x1a
-> >   [<c113b8f3>] idr_remove+0x73/0x1c0
-> >   [<c11b8d6f>] drm_mode_object_put+0x2f/0x50
-> >   [<c11b8f6e>] drm_mode_destroy+0xe/0x20
-> >   [<c11eb24b>] nouveau_connector_get_modes+0x2b/0x390
-> >   [<c1185b6f>] ? acpi_lid_open+0x22/0x3c
-> >   [<c103800b>] ? queue_delayed_work+0x1b/0x30
-> >   [<c11abf34>] drm_helper_probe_single_connector_modes+0xc4/0x360
-> >   [<c11bb6a7>] drm_mode_getconnector+0x2a7/0x350
-> >   [<c11b00d2>] drm_ioctl+0x1c2/0x4b0
-> >   [<c1068071>] ? filemap_fault+0x81/0x3c0
-> >   [<c11bb400>] ? drm_mode_getconnector+0x0/0x350
-> >   [<c107bedf>] ? handle_mm_fault+0x13f/0x670
-> >   [<c11aff10>] ? drm_ioctl+0x0/0x4b0
-> >   [<c109c90d>] do_vfs_ioctl+0x7d/0x5f0
-> >   [<c101a14c>] ? do_page_fault+0x17c/0x3c0
-> >   [<c108fc6d>] ? vfs_write+0xfd/0x140
-> >   [<c108f1c0>] ? do_sync_write+0x0/0xe0
-> >   [<c109ceb9>] sys_ioctl+0x39/0x60
-> >   [<c1002b90>] sysenter_do_call+0x12/0x26
-> 
-> I assume this is a regression.  2.6.35 didn't do this?
-Yes, I suspect 6e86e0419471d11ed3d4d46039ee90e8cb85806c is the culprit.
+On Thursday 23 September 2010 05:42:49 Sage Weil wrote:
+> Okay, the lock/unlock_flocks() stubs on in Linus' tree now, and the Ceph 
+> for-next branch is rebased and updated to fix the memory allocations and 
+> switch to the new interface.
 
-I'll send a patch to Dave, but I can't test it personally, I don't have
-any hardware the manufacturer has configured in the way it'd need to be
-to trigger this.
+Ok. I'll put the patches for the other stuff (everything but ceph and lockd)
+in my bkl/vfs branch then.
 
-Ben.
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+> Unfortunately you still need to #include smp_lock.h for now since the 
+> stubs are just #defines, so we'll need to remember to clean that up later.
 
+Don't worry about that. We have a few of those leftover ones, so we can
+do a single patch removing them all before one day removing the header
+file itself.
 
+	Arnd
