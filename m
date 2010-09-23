@@ -1,219 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360Ab0IWDSS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 23:18:18 -0400
-Received: from mail.perches.com ([173.55.12.10]:2264 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752797Ab0IWDRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 23:17:15 -0400
-From: Joe Perches <joe@perches.com>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH 5/8] scripts/get_maintainer.pl: fix mailmap handling
-Date: Wed, 22 Sep 2010 20:17:11 -0700
-Message-Id: <432055ff579ec701735c2cd1e0793b78000c90c6.1285209493.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <cover.1285209493.git.joe@perches.com>
-References: <cover.1285209493.git.joe@perches.com>
+	id S1752683Ab0IWD1F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 23:27:05 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:46853 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783Ab0IWD1E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 23:27:04 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@samba.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: mmotm 2010-09-22 - build error in drivers/staging/zram
+In-Reply-To: Your message of "Wed, 22 Sep 2010 16:12:09 PDT."
+             <201009222343.o8MNh9Mp023931@imap1.linux-foundation.org>
+From: Valdis.Kletnieks@vt.edu
+References: <201009222343.o8MNh9Mp023931@imap1.linux-foundation.org>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1285212366_4396P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Wed, 22 Sep 2010 23:26:06 -0400
+Message-ID: <56264.1285212366@localhost>
+X-Mirapoint-Received-SPF: 128.173.34.103 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020208.4C9AC8CF.011D,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: florian@mickler.org <florian@mickler.org>
+--==_Exmh_1285212366_4396P
+Content-Type: text/plain; charset=us-ascii
 
-Implement it, like it is described in git-shortlog.
+On Wed, 22 Sep 2010 16:12:09 PDT, akpm@linux-foundation.org said:
+> The mm-of-the-moment snapshot 2010-09-22-16-11 has been uploaded to
+> 
+>    http://userweb.kernel.org/~akpm/mmotm/
 
-Signed-off-by: Florian Mickler <florian@mickler.org>
-Signed-off-by: Joe Perches <joe@perches.com>
----
- scripts/get_maintainer.pl |  147 +++++++++++++++++++++++++++++++++------------
- 1 files changed, 109 insertions(+), 38 deletions(-)
+Looks like zram-free-percpu-data-on-module-exit.patch has issues:
 
-diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
-index 61d3bb5..faeace4 100755
---- a/scripts/get_maintainer.pl
-+++ b/scripts/get_maintainer.pl
-@@ -295,31 +295,76 @@ while (<$maint>) {
- }
- close($maint);
- 
--my %mailmap;
- 
--if ($email_remove_duplicates) {
--    open(my $mailmap, '<', "${lk_path}.mailmap")
-+#
-+# Read mail address map
-+#
-+
-+my $mailmap = read_mailmap();
-+
-+sub read_mailmap {
-+    my $mailmap = {
-+	names => {},
-+	addresses => {}
-+   };
-+
-+    if (!$email_remove_duplicates) {
-+	return $mailmap;
-+    }
-+
-+    open(my $mailmap_file, '<', "${lk_path}.mailmap")
- 	or warn "$P: Can't open .mailmap: $!\n";
--    while (<$mailmap>) {
--	my $line = $_;
- 
--	next if ($line =~ m/^\s*#/);
--	next if ($line =~ m/^\s*$/);
-+    while (<$mailmap_file>) {
-+	s/#.*$//; #strip comments
-+	s/^\s+|\s+$//g; #trim
- 
--	my ($name, $address) = parse_email($line);
--	$line = format_email($name, $address, $email_usename);
-+	next if (/^\s*$/); #skip empty lines
-+	#entries have one of the following formats:
-+	# name1 <mail1>
-+	# <mail1> <mail2>
-+	# name1 <mail1> <mail2>
-+	# name1 <mail1> name2 <mail2>
-+	# (see man git-shortlog)
-+	if (/^(.+)<(.+)>$/) {
-+		my $real_name = $1;
-+		my $address = $2;
- 
--	next if ($line =~ m/^\s*$/);
-+		$real_name =~ s/\s+$//;
-+		$mailmap->{names}->{$address} = $real_name;
- 
--	if (exists($mailmap{$name})) {
--	    my $obj = $mailmap{$name};
--	    push(@$obj, $address);
--	} else {
--	    my @arr = ($address);
--	    $mailmap{$name} = \@arr;
-+	} elsif (/^<([^\s]+)>\s*<([^\s]+)>$/) {
-+		my $real_address = $1;
-+		my $wrong_address = $2;
-+
-+		$mailmap->{addresses}->{$wrong_address} = $real_address;
-+
-+	} elsif (/^(.+)<([^\s]+)>\s*<([^\s]+)>$/) {
-+		my $real_name= $1;
-+		my $real_address = $2;
-+		my $wrong_address = $3;
-+
-+		$real_name =~ s/\s+$//;
-+
-+		$mailmap->{names}->{$wrong_address} = $real_name;
-+		$mailmap->{addresses}->{$wrong_address} = $real_address;
-+
-+	} elsif (/^(.+)<([^\s]+)>\s*([^\s].*)<([^\s]+)>$/) {
-+		my $real_name = $1;
-+		my $real_address = $2;
-+		my $wrong_name = $3;
-+		my $wrong_address = $4;
-+
-+		$real_name =~ s/\s+$//;
-+		$wrong_name =~ s/\s+$//;
-+
-+		$mailmap->{names}->{format_email($wrong_name,$wrong_address,1)} = $real_name;
-+		$mailmap->{addresses}->{format_email($wrong_name,$wrong_address,1)} = $real_address;
- 	}
-     }
--    close($mailmap);
-+    close($mailmap_file);
-+
-+    return $mailmap;
- }
- 
- ## use the filenames on the command line or find the filenames in the patchfiles
-@@ -1061,30 +1106,58 @@ sub which_conf {
-     return "";
- }
- 
--sub mailmap {
--    my (@lines) = @_;
--    my %hash;
-+sub mailmap_email {
-+	my $line = shift;
- 
--    foreach my $line (@lines) {
- 	my ($name, $address) = parse_email($line);
--	if (!exists($hash{$name})) {
--	    $hash{$name} = $address;
--	} elsif ($address ne $hash{$name}) {
--	    $address = $hash{$name};
--	    $line = format_email($name, $address, $email_usename);
--	}
--	if (exists($mailmap{$name})) {
--	    my $obj = $mailmap{$name};
--	    foreach my $map_address (@$obj) {
--		if (($map_address eq $address) &&
--		    ($map_address ne $hash{$name})) {
--		    $line = format_email($name, $hash{$name}, $email_usename);
-+	my $email = format_email($name, $address, 1);
-+	my $real_name = $name;
-+	my $real_address = $address;
-+
-+	if (exists $mailmap->{names}->{$email} || exists $mailmap->{addresses}->{$email}) {
-+		if (exists $mailmap->{names}->{$email}) {
-+			$real_name = $mailmap->{names}->{$email};
-+		}
-+		if (exists $mailmap->{addresses}->{$email}) {
-+			$real_address = $mailmap->{addresses}->{$email};
-+		}
-+	} else {
-+		if (exists $mailmap->{names}->{$address}) {
-+			$real_name = $mailmap->{names}->{$address};
-+		}
-+		if (exists $mailmap->{addresses}->{$address}) {
-+			$real_address = $mailmap->{addresses}->{$address};
- 		}
--	    }
- 	}
-+	return format_email($real_name, $real_address, 1);
-+}
-+
-+sub mailmap {
-+    my (@addresses) = @_;
-+
-+    my @ret = ();
-+    foreach my $line (@addresses) {
-+	push(@ret, mailmap_email($line), 1);
-     }
- 
--    return @lines;
-+    merge_by_realname(@ret) if $email_remove_duplicates;
-+
-+    return @ret;
-+}
-+
-+sub merge_by_realname {
-+	my %address_map;
-+	my (@emails) = @_;
-+	foreach my $email (@emails) {
-+		my ($name, $address) = parse_email($email);
-+		if (!exists $address_map{$name}) {
-+			$address_map{$name} = $address;
-+		} else {
-+			$address = $address_map{$name};
-+			$email = format_email($name,$address,1);
-+		}
-+	}
-+
- }
- 
- sub git_execute_cmd {
-@@ -1636,9 +1709,7 @@ sub vcs_assign {
- 	$divisor = 1;
-     }
- 
--    if ($email_remove_duplicates) {
--	@lines = mailmap(@lines);
--    }
-+    @lines = mailmap(@lines);
- 
-     return if (@lines <= 0);
- 
--- 
-1.7.3
+  CC [M]  drivers/staging/zram/zram_drv.o
+drivers/staging/zram/zram_drv.c: In function 'zram_reset_device':
+drivers/staging/zram/zram_drv.c:500:2: error: incompatible type for argument 1 of 'free_percpu'
+include/linux/percpu.h:153:13: note: expected 'void *' but argument is of type 'struct zram_stats'
+make[3]: *** [drivers/staging/zram/zram_drv.o] Error 1
+
+
+--==_Exmh_1285212366_4396P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFMmsjOcC3lWbTT17ARAv75AKCj3kcRM/vnrqNEdVp0yxrerHv8BgCgp5GO
+p8nQX4NcEbMRyxr6++52VOk=
+=NUDr
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1285212366_4396P--
 
