@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab0IWTSd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 15:18:33 -0400
-Received: from kroah.org ([198.145.64.141]:51300 "EHLO coco.kroah.org"
+	id S1756234Ab0IWTSg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 15:18:36 -0400
+Received: from kroah.org ([198.145.64.141]:51321 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756197Ab0IWTSb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 15:18:31 -0400
-Date: Thu, 23 Sep 2010 11:37:24 -0700
+	id S1756197Ab0IWTSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 15:18:33 -0400
+Date: Thu, 23 Sep 2010 11:43:29 -0700
 From: Greg KH <greg@kroah.com>
-To: =?utf-8?B?VG9tw6HFoSBKYW5vdcWhZWs=?= <tomi@nomi.cz>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        mingo@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, glommer@redhat.com,
-        alan@lxorguk.ukuu.org.uk, zamsden@redhat.com, stable@kernel.org,
-        mtosatti@redhat.com, gregkh@suse.de, peter@palfrader.org,
-        tglx@linutronix.de, avi@redhat.com, linux-tip-commits@vger.kernel.org
-Subject: Re: [stable] [tip:x86/urgent] x86: Add memory modify constraints
- to xchg() and cmpxchg()
-Message-ID: <20100923183724.GS23040@kroah.com>
-References: <4C4F7277.8050306@zytor.com>
- <tip-113fc5a6e8c2288619ff7e8187a6f556b7e0d372@git.kernel.org>
- <4C5759FF.1000807@goop.org>
- <20100802235950.GA662@kroah.com>
- <20100909195301.GA18291@nomi.cz>
- <4C894E64.3050800@zytor.com>
- <20100910131035.GA16636@nomi.cz>
+To: Kyle McMartin <kyle@mcmartin.ca>
+Cc: Islam Amer <pharon@gmail.com>, stable@kernel.org,
+        akpm@linux-foundation.org, Matthew Garrett <mjg@redhat.com>,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
+Subject: Re: [stable] Dell Studio 1555 eject key does not work ( small
+ patch to fix included )
+Message-ID: <20100923184329.GV23040@kroah.com>
+References: <AANLkTinG3jv6o8T00mDTEP5uxf4tKqOwSPEDIUcv4kVG@mail.gmail.com>
+ <20100906191204.GL2684@bombadil.infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100910131035.GA16636@nomi.cz>
+In-Reply-To: <20100906191204.GL2684@bombadil.infradead.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 10, 2010 at 03:10:35PM +0200, Tomáš Janoušek wrote:
-> Hello,
-> 
-> On Thu, Sep 09, 2010 at 02:15:16PM -0700, H. Peter Anvin wrote:
-> > > The system boots and works just fine with 2.6.32.21 with the patch reverted.
-> > > v2.6.36-rc3-185-gd56557a works fine as well, perhaps there were other fixes
-> > > that didn't get to stable (e.g. 4532b30).
+On Mon, Sep 06, 2010 at 03:12:04PM -0400, Kyle McMartin wrote:
+> On Thu, Jun 03, 2010 at 01:14:09AM +0400, Islam Amer wrote:
+> > I had submitted this as
+> > https://bugzilla.kernel.org/show_bug.cgi?id=16075 but repeating the
+> > information and patch
+> > here as per Andrew Morton's suggestion.
 > > 
-> > I believe this needs 69309a05907546fb686b251d4ab041c26afe1e1d, which I
-> > think is being queued up for stable.
-> > 
-> > Could you try applying 69309a05907546fb686b251d4ab041c26afe1e1d and see
-> > if it solves your problem.
 > 
-> It does indeed. Thanks.
+> Thanks for sending this fix in, Islam. Adding stable@ to the Cc.
+> 
+> Greg, could you apply this to the stable tree as well? Should apply a
+> few releases back. We applied it to .34 and .35 in Fedora, at least.
+> 
+> The upstream commit id was d5164dbf1f651d1e955b158fb70a9c844cc91cd1.
 
-Hm, that patch doesn't apply to the latest .32-stable tree.  Can someone
-provide me with a backported version so I make sure I get it correct?
+Now queued up in the .35-stable tree.
 
 thanks,
 
