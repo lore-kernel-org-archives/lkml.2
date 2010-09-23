@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab0IWLpU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 07:45:20 -0400
-Received: from cantor.suse.de ([195.135.220.2]:54119 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752497Ab0IWLpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 07:45:18 -0400
-Date: Thu, 23 Sep 2010 13:45:13 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Joe Perches <joe@perches.com>
-Cc: Adaptec OEM Raid Solutions <aacraid@adaptec.com>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Doug Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/13] drivers/scsi: Remove unnecessary casts of
- private_data
-In-Reply-To: <ce0592fde56f01f9027bf5d1cfa83536b2aca8e4.1283650107.git.joe@perches.com>
-Message-ID: <alpine.LNX.2.00.1009231344150.26813@pobox.suse.cz>
-References: <cover.1283650107.git.joe@perches.com> <ce0592fde56f01f9027bf5d1cfa83536b2aca8e4.1283650107.git.joe@perches.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754907Ab0IWLqj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 07:46:39 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50482 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752747Ab0IWLqh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 07:46:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=pY/j7WpaSNZdKTMyuY0/Ypd1rJFDmjayVZiV44oXD47wxmdaz7Po+WFEsrESiUzAK6
+         gasXZk/RTv2UsOPEt0/fN3fRrrzPhvuhPlUJ4nTzg5ntl/2UkJJLh4Frry/O7l3mxMGN
+         WHrZtBgWR8vz4cXt42w0MqcQ+gqcYegz1q7Hc=
+Message-ID: <4C9B3E15.5080002@gmail.com>
+Date: Thu, 23 Sep 2010 13:46:29 +0200
+From: Tejun Heo <htejun@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Paul Mundt <lethal@linux-sh.org>
+CC: Roland Dreier <rdreier@cisco.com>, Ohad Ben-Cohen <ohad@wizery.com>,
+        linux-kernel@vger.kernel.org,
+        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Roland Dreier <rolandd@cisco.com>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Steve Wise <swise@chelsio.com>, Neil Brown <neilb@suse.de>,
+        Paul Mackerras <paulus@samba.org>, linux-i2c@vger.kernel.org,
+        linux-rdma@vger.kernel.org, dm-devel@redhat.com,
+        linux-raid@vger.kernel.org, linux-ppp@vger.kernel.org,
+        netdev@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: Re: idr_get_new_exact ?
+References: <AANLkTi=ZLupVyFR0e2v-TLpeNWdw1bVMZUAhgyxLJ7OV@mail.gmail.com> <adaiq20f90h.fsf@cisco.com> <4C97D197.9070703@gmail.com> <20100923114255.GB27960@linux-sh.org>
+In-Reply-To: <20100923114255.GB27960@linux-sh.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 4 Sep 2010, Joe Perches wrote:
+Hello,
 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  drivers/scsi/aacraid/linit.c |    2 +-
->  drivers/scsi/sg.c            |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/scsi/aacraid/linit.c b/drivers/scsi/aacraid/linit.c
-> index cad6f9a..aa40036 100644
-> --- a/drivers/scsi/aacraid/linit.c
-> +++ b/drivers/scsi/aacraid/linit.c
-> @@ -770,7 +770,7 @@ static long aac_compat_cfg_ioctl(struct file *file, unsigned cmd, unsigned long
->  {
->  	if (!capable(CAP_SYS_RAWIO))
->  		return -EPERM;
-> -	return aac_compat_do_ioctl((struct aac_dev *)file->private_data, cmd, arg);
-> +	return aac_compat_do_ioctl(file->private_data, cmd, arg);
->  }
->  #endif
->  
-> diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
-> index 78d6163..6efa8dd 100644
-> --- a/drivers/scsi/sg.c
-> +++ b/drivers/scsi/sg.c
-> @@ -210,7 +210,7 @@ static void sg_put_dev(Sg_device *sdp);
->  
->  static int sg_allow_access(struct file *filp, unsigned char *cmd)
->  {
-> -	struct sg_fd *sfp = (struct sg_fd *)filp->private_data;
-> +	struct sg_fd *sfp = filp->private_data;
->  
->  	if (sfp->parentdp->device->type == TYPE_SCANNER)
->  		return 0;
+On 09/23/2010 01:42 PM, Paul Mundt wrote:
+> On Mon, Sep 20, 2010 at 11:26:47PM +0200, Tejun Heo wrote:
+>> Hello,
+>>
+>> On 09/20/2010 10:35 PM, Roland Dreier wrote:
+>>> Looks fine to me as an improvement over the status quo, but I wonder how
+>>> many of these places could use the radix_tree stuff instead?  If you're
+>>> not using the ability of the idr code to assign an id for you, then it
+>>> seems the radix_tree API is a better fit.
+>>
+>> I agree.  Wouldn't those users better off simply using radix tree?
+>>
+> It could go either way. I was about to write the same function when
+> playing with it for IRQ mapping, the idea being to propagate the initial
+> tree with sparse static vectors and then switch over to dynamic IDs for
+> virtual IRQ creation. I ended up going with a radix tree for other
+> reasons, though.
 
-This patch isn't present in linux-next as of today. Applying to my tree 
-now.
+I see.  If there are use cases where fixed and dynamic IDs need to be
+mixed, no objection from me.
+
+Thanks.
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+tejun
