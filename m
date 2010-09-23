@@ -1,86 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755081Ab0IWML2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 08:11:28 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:43150 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754524Ab0IWML0 (ORCPT
+	id S1755145Ab0IWMMr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 08:12:47 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:51948 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753244Ab0IWMMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 08:11:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:subject:from:reply-to:to:cc:in-reply-to:references
-         :content-type:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=PCgaVgK8TdlfJ8MyCxKmzYEQNrLVfQYB9BPiGX9fi0sVAGZtu6hMTaIu/HD/6HJ/QA
-         Wixfgj+A4y5YFybYSAeZWBQsngx5dxxEB33JVMp3o5CGdosdgymmiPb8EZw5wiGluumB
-         7Rp3ORkfA/VEbGgb8GkZXO3MRWEk3M5JUU4DQ=
-Subject: Re: [PATCH 8/8] net: Implement socketat.
-From: jamal <hadi@cyberus.ca>
-Reply-To: hadi@cyberus.ca
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Ulrich Drepper <drepper@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        David Miller <davem@davemloft.net>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Ben Greear <greearb@candelatech.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Jonathan Corbet <corbet@lwn.net>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>
-In-Reply-To: <4C9B3F9C.8080506@parallels.com>
-References: <m1ocborgq7.fsf@fess.ebiederm.org>
-	 <m1bp7oq1u8.fsf@fess.ebiederm.org>  <4C9B162E.7040201@parallels.com>
-	 <1285240797.5036.5.camel@bigi>  <4C9B3B06.900@parallels.com>
-	 <1285242055.5036.9.camel@bigi>  <4C9B3F9C.8080506@parallels.com>
-Content-Type: text/plain
-Date: Thu, 23 Sep 2010 08:11:21 -0400
-Message-Id: <1285243881.5036.22.camel@bigi>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.1
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Sep 2010 08:12:45 -0400
+Date: Thu, 23 Sep 2010 14:51:08 +0300
+From: Ville Tervo <ville.tervo@nokia.com>
+To: ext Alan Ott <alan@signal11.us>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        Stefan Achatz <erazor_de@users.sourceforge.net>,
+        Antonio Ospite <ospite@studenti.unina.it>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Stephane Chatty <chatty@enac.fr>, Michael Poole <mdpoole@troilus.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Bastien Nocera <hadess@hadess.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH v4 2/2] Bluetooth: hidp: Add support for hidraw
+ HIDIOCGFEATURE  and HIDIOCSFEATURE
+Message-ID: <20100923115108.GC2379@null>
+References: <1281442367.12579.206.camel@localhost.localdomain>
+ <1281990059-3562-3-git-send-email-alan@signal11.us>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1281990059-3562-3-git-send-email-alan@signal11.us>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 23 Sep 2010 11:51:33.0823 (UTC) FILETIME=[AB6624F0:01CB5B15]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-23 at 15:53 +0400, Pavel Emelyanov wrote:
+Hi Alan,
 
-> Why does it matter? You told, that the usage scenario was to
-> add routes to container. If I do 2 syscalls instead of 1, is
-> it THAT worse?
+One comment.
+
+On Mon, Aug 16, 2010 at 10:20:59PM +0200, ext Alan Ott wrote:
+> This patch adds support or getting and setting feature reports for bluetooth
+> HID devices from HIDRAW.
 > 
-
-Anything to do with socket IO that requires namespace awareness
-applies for usage; it could be tcp/udp/etc socket. If it doesnt
-make any difference performance wise using one scheme vs other
-to write/read heavy messages then i dont see an issue and socketat
-is redundant.
-
-If i was to pick blindly - I would say whatever approach with
-less syscalls is better even if just a "slow" path one time
-thing. I could create a scenario which would make it bad
-to have more syscalls.
-
-But theres also the simplicity aspect in doing:
-fdx = socketat namespace foo
-use fdx for read/write/poll into foo without any wrapper code.
-Vs
-enter foo
-fdx = socket ..
-read/write fdx
-leave foo.
-
-> Just like it used to before the enter.
+> Signed-off-by: Alan Ott <alan@signal11.us>
+> ---
+>  net/bluetooth/hidp/core.c |  114 +++++++++++++++++++++++++++++++++++++++++++--
+>  net/bluetooth/hidp/hidp.h |    8 +++
+>  2 files changed, 118 insertions(+), 4 deletions(-)
 > 
+> diff --git a/net/bluetooth/hidp/core.c b/net/bluetooth/hidp/core.c
+> index bfe641b..0e4880e 100644
+> --- a/net/bluetooth/hidp/core.c
+> +++ b/net/bluetooth/hidp/core.c
+> @@ -36,6 +36,7 @@
+>  #include <linux/file.h>
+>  #include <linux/init.h>
+>  #include <linux/wait.h>
+> +#include <linux/mutex.h>
+>  #include <net/sock.h>
+>  
+>  #include <linux/input.h>
+> @@ -313,6 +314,86 @@ static int hidp_send_report(struct hidp_session *session, struct hid_report *rep
+>  	return hidp_queue_report(session, buf, rsize);
+>  }
+>  
+> +static int hidp_get_raw_report(struct hid_device *hid,
+> +		unsigned char report_number,
+> +		unsigned char *data, size_t count,
+> +		unsigned char report_type)
+> +{
+> +	struct hidp_session *session = hid->driver_data;
+> +	struct sk_buff *skb;
+> +	size_t len;
+> +	int numbered_reports = hid->report_enum[report_type].numbered;
+> +
+> +	switch (report_type) {
+> +	case HID_FEATURE_REPORT:
+> +		report_type = HIDP_TRANS_GET_REPORT | HIDP_DATA_RTYPE_FEATURE;
+> +		break;
+> +	case HID_INPUT_REPORT:
+> +		report_type = HIDP_TRANS_GET_REPORT | HIDP_DATA_RTYPE_INPUT;
+> +		break;
+> +	case HID_OUTPUT_REPORT:
+> +		report_type = HIDP_TRANS_GET_REPORT | HIDP_DATA_RTYPE_OUPUT;
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +
+> +	if (mutex_lock_interruptible(&session->report_mutex))
+> +		return -ERESTARTSYS;
+> +
+> +	/* Set up our wait, and send the report request to the device. */
+> +	session->waiting_report_type = report_type & HIDP_DATA_RTYPE_MASK;
+> +	session->waiting_report_number = numbered_reports ? report_number : -1;
+> +	set_bit(HIDP_WAITING_FOR_RETURN, &session->flags);
+> +	data[0] = report_number;
+> +	if (hidp_send_ctrl_message(hid->driver_data, report_type, data, 1))
+> +		goto err_eio;
+> +
+> +	/* Wait for the return of the report. The returned report
+> +	   gets put in session->report_return.  */
+> +	while (test_bit(HIDP_WAITING_FOR_RETURN, &session->flags)) {
+> +		int res;
+> +
+> +		res = wait_event_interruptible_timeout(session->report_queue,
+> +			!test_bit(HIDP_WAITING_FOR_RETURN, &session->flags),
+> +			5*HZ);
+> +		if (res == 0) {
+> +			/* timeout */
+> +			goto err_eio;
+> +		}
+> +		if (res < 0) {
+> +			/* signal */
+> +			goto err_restartsys;
+> +		}
+> +	}
+> +
+> +	skb = session->report_return;
+> +	if (skb) {
+> +		len = skb->len < count ? skb->len : count;
+> +		memcpy(data, skb->data, len);
+> +
+> +		kfree_skb(skb);
+> +		session->report_return = NULL;
+> +	} else {
+> +		/* Device returned a HANDSHAKE, indicating  protocol error. */
+> +		len = -EIO;
+> +	}
+> +
+> +	clear_bit(HIDP_WAITING_FOR_RETURN, &session->flags);
+> +	mutex_unlock(&session->report_mutex);
+> +
+> +	return len;
+> +
+> +err_restartsys:
+> +	clear_bit(HIDP_WAITING_FOR_RETURN, &session->flags);
+> +	mutex_unlock(&session->report_mutex);
+> +	return -ERESTARTSYS;
+> +err_eio:
+> +	clear_bit(HIDP_WAITING_FOR_RETURN, &session->flags);
+> +	mutex_unlock(&session->report_mutex);
+> +	return -EIO;
+> +}
 
-So if i enter foo, get a fdx, leave foo i can use it in
-ns0 as if it was in ns0?
+How about a variable called ret and using that to return len or errno? It
+would eliminate code dublication.
 
-cheers,
-jamal
-
+-- 
+Ville
