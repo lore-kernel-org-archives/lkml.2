@@ -1,71 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756531Ab0IWToH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 15:44:07 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34230 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756280Ab0IWToF (ORCPT
+	id S1756314Ab0IWTp4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 15:45:56 -0400
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:25724 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755448Ab0IWTpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 15:44:05 -0400
-Date: Thu, 23 Sep 2010 12:43:13 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Samu Onkalo <samu.p.onkalo@nokia.com>,
-        =?ISO-8859-1?Q?=C9ric?= Piel <Eric.Piel@tremplin-utc.net>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: Re: [PATCH v2] lis3: Add support for new LIS3DC / HP3DC chip
-Message-Id: <20100923124313.7794e8f6.akpm@linux-foundation.org>
-In-Reply-To: <s5hd3s5nglg.wl%tiwai@suse.de>
-References: <s5hd3s5nglg.wl%tiwai@suse.de>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Sep 2010 15:45:54 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: _pr6rXkVM1n2GVKsJ9mbohHHpfGohvbSzLjSFLVBnZFXUfM
+ elPmXj8hVKdPinKjmVPiNMsuIFhJFLCDIFjtaMXNFiBv5bcbOJBkOOmmGfNN
+ tv0vinOCESmMmwPumTr8tBg622HhnW8.ma1TWvAt40Pdmae_vsaWTn__ExHk
+ wWPjqElityQCgByjwkfSQ2o7p5cckAcDr7vnWljlmLMaqjjKHxWq5eZfZsps
+ xhAk4zMTVfHh1PwU1wNcr1KUEPXd_m9ZdLopFSe8-
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 23 Sep 2010 14:17:36 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Richard Cochran <richardcochran@gmail.com>
+cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-api@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, David Miller <davem@davemloft.net>,
+        John Stultz <johnstul@us.ibm.com>, Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 6/8] ptp: Added a clock that uses the eTSEC found on the
+ MPC85xx.
+In-Reply-To: <57b64051c816dc9cb856bbb9f38fc901c9d3d651.1285261535.git.richard.cochran@omicron.at>
+Message-ID: <alpine.DEB.2.00.1009231348150.2962@router.home>
+References: <cover.1285261533.git.richard.cochran@omicron.at> <57b64051c816dc9cb856bbb9f38fc901c9d3d651.1285261535.git.richard.cochran@omicron.at>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Sep 2010 08:01:31 +0200
-Takashi Iwai <tiwai@suse.de> wrote:
+On Thu, 23 Sep 2010, Richard Cochran wrote:
 
-> A new version of LIS3 chip has slight incompatibilities from former
-> versions.  This patch adds the minimal support for it.
-> 
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> ---
-> v1->v2
->   Rebased to patch "lis3: Fix Oops with NULL platform data (v2)"
-> 
+> +* Gianfar PTP clock nodes
+> +
+> +General Properties:
+> +
+> +  - compatible   Should be "fsl,etsec-ptp"
+> +  - reg          Offset and length of the register set for the device
+> +  - interrupts   There should be at least two interrupts. Some devices
+> +                 have as many as four PTP related interrupts.
+> +
+> +Clock Properties:
+> +
+> +  - tclk-period  Timer reference clock period in nanoseconds.
+> +  - tmr-prsc     Prescaler, divides the output clock.
+> +  - tmr-add      Frequency compensation value.
+> +  - cksel        0= external clock, 1= eTSEC system clock, 3= RTC clock input.
+> +                 Currently the driver only supports choice "1".
+> +  - tmr-fiper1   Fixed interval period pulse generator.
+> +  - tmr-fiper2   Fixed interval period pulse generator.
+> +  - max-adj      Maximum frequency adjustment in parts per billion.
+> +
+> +  These properties set the operational parameters for the PTP
+> +  clock. You must choose these carefully for the clock to work right.
+> +  Here is how to figure good values:
+> +
+> +  TimerOsc     = system clock               MHz
+> +  tclk_period  = desired clock period       nanoseconds
+> +  NominalFreq  = 1000 / tclk_period         MHz
+> +  FreqDivRatio = TimerOsc / NominalFreq     (must be greater that 1.0)
+> +  tmr_add      = ceil(2^32 / FreqDivRatio)
+> +  OutputClock  = NominalFreq / tmr_prsc     MHz
+> +  PulseWidth   = 1 / OutputClock            microseconds
+> +  FiperFreq1   = desired frequency in Hz
+> +  FiperDiv1    = 1000000 * OutputClock / FiperFreq1
+> +  tmr_fiper1   = tmr_prsc * tclk_period * FiperDiv1 - tclk_period
+> +  max_adj      = 1000000000 * (FreqDivRatio - 1.0) - 1
 
-Wait.  I did my own rebasing and came up with a different patch, with
-two extra hunks:
+Great stuff for clock synchronization...
 
-@@ -301,8 +311,9 @@ static irqreturn_t lis302dl_interrupt(in
- 	wake_up_interruptible(&lis3_dev.misc_wait);
- 	kill_fasync(&lis3_dev.async_queue, SIGIO, POLL_IN);
- out:
--	if (lis3_dev.pdata && lis3_dev.whoami == WAI_8B && lis3_dev.idev &&
--	    lis3_dev.idev->input->users)
-+	if (lis3_dev.pdata &&
-+		(lis3_dev.whoami == WAI_8B || lis3_dev.whoami == WAI_3DC) &&
-+		lis3_dev.idev && lis3_dev.idev->input->users)
- 		return IRQ_WAKE_THREAD;
- 	return IRQ_HANDLED;
- }
+> +  The calculation for tmr_fiper2 is the same as for tmr_fiper1. The
+> +  driver expects that tmr_fiper1 will be correctly set to produce a 1
+> +  Pulse Per Second (PPS) signal, since this will be offered to the PPS
+> +  subsystem to synchronize the Linux clock.
 
-and
+Argh. And conceptually completely screwed up. Why go through the PPS
+subsystem if you can directly tune the system clock based on a number of
+the cool periodic clock features that you have above? See how the other
+clocks do that easily? Look into drivers/clocksource. Add it there.
 
-@@ -742,7 +762,7 @@ int lis3lv02d_init_device(struct lis3lv0
- 	 * io-apic is not configurable (and generates a warning) but I keep it
- 	 * in case of support for other hardware.
- 	 */
--	if (dev->pdata && dev->whoami == WAI_8B)
-+	if (dev->pdata && (dev->whoami == WAI_8B || dev->whoami == WAI_3DC))
- 		thread_fn = lis302dl_interrupt_thread1_8b;
- 	else
- 		thread_fn = NULL;
+Please do not introduce useless additional layers for clock sync. Load
+these ptp clocks like the other regular clock modules and make them sync
+system time like any other clock.
 
-
-Did you drop those changes deliberately?
-
+Really guys: I want a PTP solution! Now! And not some idiotic additional
+kernel layers that just pass bits around because its so much fun and
+screws up clock accurary in due to the latency noise introduced while
+having so much fun with the bits.
