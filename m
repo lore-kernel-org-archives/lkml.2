@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756421Ab0IWXiR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 19:38:17 -0400
-Received: from smtp104.sbc.mail.ac4.yahoo.com ([76.13.13.243]:26315 "HELO
-	smtp104.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756390Ab0IWXiO (ORCPT
+	id S1756539Ab0IWXie (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 19:38:34 -0400
+Received: from smtp128.sbc.mail.sp1.yahoo.com ([69.147.65.187]:48935 "HELO
+	smtp128.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756296Ab0IWXic (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 19:38:14 -0400
+	Thu, 23 Sep 2010 19:38:32 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: oTDOy8YVM1mQxtiGeG2t9IqfsfbOn2h0sFKBWpJ_NUhBIze
- 2wBfBirgz9vn4kFF1DxHtehywBc2_kComCDHNFRVPVf3ud_FyTTbuhKqs2rb
- 6Y9XMeWuc.RFsIL..LmcQaAzFxydtSI_rT7t.HWK_Nl8T1i1XbpGgjq5XJ4n
- VJQYYwx.zP.ke1OiyQIDNUPnOCLKq1iFHlHXL7h09V59V5N6IcOX4U2carMZ
- VBj3_OEaRKNKPZcRjDrrzY4j98T2gv6rMRVa6xF76wLKvU.A2DYlh0Gm_dMs
- ZqpTtZRE9lfQ9YvCHAam6uIH1pKn5SF3NofTiqcQt7iQJqOkIBWqB16d3YP1
- 5Yt8WQlyO9Ki.8ugdxQ--
+X-YMail-OSG: W3qErI0VM1lt39THbmXYfzWIdt4ksE6QJLhl24vm1wlayyj
+ m84CegiNXDWELm55zgylIEu1qQweuKoOKq2XtmlEQyNSpmFKunaILGix48Vt
+ QS77rGsXKWuB16XIXMVp5bmzZ2N6xJYmZkoIzvsShQQX0qvzGNRpy8zkvx2X
+ 6XFSRIAUaghb5XiuaW6aGTWahVtu4aD5Yb5Kne_uX1VgvGpV7c66nN2r6TqU
+ HyNNyn8EsQX_HvmdwiQJbMV0RmRQOzJgnXG3UEtHGKWb.SaSi5sIcPvs2mEH
+ N2RtQVOZuK_l3tFdmSPTGjVzC68IoLzWuQViOWrslwdQ9hO6mcYU2DCoeFlQ
+ eN6wyhhI6rN_cwIWdHA--
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -32,9 +32,9 @@ Cc: James Smart <james.smart@emulex.com>,
         MPTFusionLinux <DL-MPTFusionLinux@lsi.com>,
         "eata.c maintainer" <dario.ballabio@inwind.it>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [RFC v3 05/15] libata: Remove host_lock unlock() + lock() from ata_scsi_queuecmd()
-Date: Thu, 23 Sep 2010 16:38:09 -0700
-Message-Id: <1285285089-16431-1-git-send-email-nab@linux-iscsi.org>
+Subject: [RFC v3 07/15] qla4xxx: Remove host_lock unlock() + lock() from qla4xxx_queuecommand()
+Date: Thu, 23 Sep 2010 16:38:29 -0700
+Message-Id: <1285285109-16471-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -43,32 +43,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
 This patch removes the now legacy host_lock unlock() + lock() optimization
-from libata-scsi.c:ata_scsi_queuecmd()
+from ql4_os.c:qla4xxx_queuecommand()
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/ata/libata-scsi.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ drivers/scsi/qla4xxx/ql4_os.c |    8 +-------
+ 1 files changed, 1 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-index a89172c..33ead2a 100644
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -3177,7 +3177,6 @@ int ata_scsi_queuecmd(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *))
+diff --git a/drivers/scsi/qla4xxx/ql4_os.c b/drivers/scsi/qla4xxx/ql4_os.c
+index 370d40f..cfbe8b5 100644
+--- a/drivers/scsi/qla4xxx/ql4_os.c
++++ b/drivers/scsi/qla4xxx/ql4_os.c
+@@ -511,26 +511,20 @@ static int qla4xxx_queuecommand(struct scsi_cmnd *cmd,
+ 	    test_bit(DPC_RESET_HA_FW_CONTEXT, &ha->dpc_flags))
+ 		goto qc_host_busy;
  
- 	ap = ata_shost_to_port(shost);
+-	spin_unlock_irq(ha->host->host_lock);
+-
+ 	srb = qla4xxx_get_new_srb(ha, ddb_entry, cmd, done);
+ 	if (!srb)
+-		goto qc_host_busy_lock;
++		goto qc_host_busy;
  
--	spin_unlock(shost->host_lock);
- 	spin_lock(ap->lock);
+ 	rval = qla4xxx_send_command_to_isp(ha, srb);
+ 	if (rval != QLA_SUCCESS)
+ 		goto qc_host_busy_free_sp;
  
- 	ata_scsi_dump_cdb(ap, cmd);
-@@ -3191,7 +3190,6 @@ int ata_scsi_queuecmd(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *))
- 	}
+-	spin_lock_irq(ha->host->host_lock);
+ 	return 0;
  
- 	spin_unlock(ap->lock);
--	spin_lock(shost->host_lock);
- 	return rc;
- }
+ qc_host_busy_free_sp:
+ 	qla4xxx_srb_free_dma(ha, srb);
+ 	mempool_free(srb, ha->srb_mempool);
+ 
+-qc_host_busy_lock:
+-	spin_lock_irq(ha->host->host_lock);
+-
+ qc_host_busy:
+ 	return SCSI_MLQUEUE_HOST_BUSY;
  
 -- 
 1.7.3
