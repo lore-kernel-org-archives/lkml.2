@@ -1,98 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755759Ab0IWQcn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 12:32:43 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:48118 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755676Ab0IWQcl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 12:32:41 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: David Lamparter <equinox@diac24.net>
-Cc: linux-kernel@vger.kernel.org, Linux Containers <containers@lists.osdl.org>,
-        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, jamal <hadi@cyberus.ca>,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Ulrich Drepper <drepper@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        David Miller <davem@davemloft.net>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Ben Greear <greearb@candelatech.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Jonathan Corbet <corbet@lwn.net>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>
-References: <m1ocborgq7.fsf@fess.ebiederm.org>
-	<20100923151853.GC1160234@jupiter.n2.diac24.net>
-Date: Thu, 23 Sep 2010 09:32:29 -0700
-In-Reply-To: <20100923151853.GC1160234@jupiter.n2.diac24.net> (David
-	Lamparter's message of "Thu, 23 Sep 2010 17:18:53 +0200")
-Message-ID: <m11v8kh142.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 98.207.157.188
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.5 XM_Body_Dirty_Words Contains a dirty word
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;David Lamparter <equinox@diac24.net>
-X-Spam-Relay-Country: 
-Subject: Re: [ABI REVIEW][PATCH 0/8] Namespace file descriptors
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	id S1755600Ab0IWQm7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 12:42:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:64430 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754278Ab0IWQm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 12:42:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,224,1283756400"; 
+   d="scan'208";a="660428046"
+Date: Thu, 23 Sep 2010 16:55:55 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] x86/mrst: add SFI platform device parsing code
+Message-ID: <20100923165555.7f26127d@linux.intel.com>
+In-Reply-To: <20100923144606.GH25663@rakim.wolfsonmicro.main>
+References: <20100922231514.5e9967c7@linux.intel.com>
+	<20100923060703.GB11198@angua.secretlab.ca>
+	<20100923095411.GA25663@rakim.wolfsonmicro.main>
+	<20100923112703.543b0b86@lxorguk.ukuu.org.uk>
+	<20100923102708.GC25663@rakim.wolfsonmicro.main>
+	<20100923115818.0cac8d06@lxorguk.ukuu.org.uk>
+	<20100923105208.GD25663@rakim.wolfsonmicro.main>
+	<20100923111347.0cf93bb3@linux.intel.com>
+	<20100923141133.GG25663@rakim.wolfsonmicro.main>
+	<20100923142720.13bf9d69@linux.intel.com>
+	<20100923144606.GH25663@rakim.wolfsonmicro.main>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Lamparter <equinox@diac24.net> writes:
+> usually what causes things to break down.  However, if you're totally
+> confident that all the BIOS authors at the OEMs are going to work
+> well together here then I guess it's only Moorestown that's affected.
 
-> On Thu, Sep 23, 2010 at 01:45:04AM -0700, Eric W. Biederman wrote:
->> Introduce file for manipulating namespaces and related syscalls.
->> files:
->> /proc/self/ns/<nstype>
->
-> As feedback from using network namespaces extensively in more or less
-> production setups, I would like to make a request/suggestion: there
-> needs to be a way to enumerate network namespaces independent from
-> by-pid access.
->
-> At several occasions, I was left with either some runaway daemon which
-> kept the namespace alive. To describe this a little more graphically:
-> I found no other way than doing a
-> 	md5sum /proc/*/net/if_inet6 | sort | uniq -c -w 32
-> to find out which runaway to kill to terminate the namespace.
->
-> This makes network namespaces particularly cumbersome to use without PID
-> namespaces. While I agree that a large part of the users - namely lxc -
-> will use them together, network namespaces without pidns are very
-> interesting for routing applications implementing VRFs.
->
-> Is it possible to add some kind of "all namespaces" list, optimally
-> giving an opportunity to open() exactly this file descriptor that you
-> get from /proc/<pid>/ns/net?
->
-> Also, is it possible to extend that file descriptor to have an
-> "get all pids" ioctl,
-> ...or, wait, maybe have /proc/...ns/proc/<pid> symlink?
->
-> (This obviously isn't fully thought to the end, please pick up...)
+I'm not 100% confident which is why we lobbied hard to get DMI into the
+firmware, but I think there is a good chance the SFI stuff will be
+fine. My bigger worry to be honest is going to be people adding stuff
+which isn't even in firmware enumerations.
 
-Maybe.  I can understand the pain.
-
-Is the problem you are facing you are shutting down a vrf and you want
-to make certain nothing is using it any longer?
-
-Eric
