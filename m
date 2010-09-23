@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208Ab0IWTXA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 15:23:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52461 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754939Ab0IWTW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 15:22:59 -0400
-Date: Thu, 23 Sep 2010 15:22:26 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Jan Engelhardt <jengelh@medozas.de>
-Cc: Neil Brown <neilb@suse.de>, Miklos Szeredi <miklos@szeredi.hu>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org
-Subject: Re: [PATCH 0/5] hybrid union filesystem prototype
-Message-ID: <20100923192226.GA3536@shell>
-References: <20100827170551.19616048@notabene> <E1Ooub5-0007Wh-SQ@pomaz-ex.szeredi.hu> <20100827213502.31af4a4c@notabene> <E1Op2BV-0008Ut-BR@pomaz-ex.szeredi.hu> <20100829144207.4fbf2713@notabene> <E1Oq1RL-0003zF-Tw@pomaz-ex.szeredi.hu> <alpine.LNX.2.01.1009021513040.10859@obet.zrqbmnf.qr> <20100902233200.586fcb31@notabene> <alpine.LNX.2.01.1009021625050.14798@obet.zrqbmnf.qr> <alpine.LNX.2.01.1009231515580.31650@obet.zrqbmnf.qr>
+	id S1756246Ab0IWTXQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 15:23:16 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51836 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756222Ab0IWTXP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 15:23:15 -0400
+Date: Thu, 23 Sep 2010 12:23:08 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: =?ISO-8859-1?Q?=C9ric?= Piel <Eric.Piel@tremplin-utc.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH resent] lis3: Add axes module parameter for custom
+ axis-mapping
+Message-Id: <20100923122308.49c64e37.akpm@linux-foundation.org>
+In-Reply-To: <s5hwrqe816g.wl%tiwai@suse.de>
+References: <s5hwrqe816g.wl%tiwai@suse.de>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.01.1009231515580.31650@obet.zrqbmnf.qr>
-User-Agent: Mutt/1.4.2.2i
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 23, 2010 at 03:18:57PM +0200, Jan Engelhardt wrote:
+On Wed, 22 Sep 2010 13:31:19 +0200
+Takashi Iwai <tiwai@suse.de> wrote:
+
+> The axis-mapping of lis3dev device on many (rather most) HP machines
+> doesn't follow the standard.  When each new model appears, users need
+> to adjust again.  Testing this requires the rebuild of kernel, thus
+> it's not trivial for end-users.
 > 
-> On ??, Miklos Szeredi wrote:
-> On Thursday 2010-09-02 16:25, Jan Engelhardt wrote:
-> >>
-> >>There ought to be a reason that other implementations offer
-> >>doing multiple branches with a single vfsmount.
-> >
-> >overdesign
-> 
-> However, those implementations offer changing the branch configuration
-> on the fly, e.g. pulling "out" a branch in the middle. With
+> This patch adds a module parameter "axes" to allow a custom
+> axis-mapping without patching and recompiling the kernel driver.
+> User can pass the parameter such as axes=3,2,1.  Also it can be
+> changed via sysfs.
 
-Seriously.  What is the use case that justifies the complexity of
-implementing this feature (correctly)?  We can all think of
-theoretical use cases, but which ones are worth the cost?
+Is the sysfs interface documented anywhere?
 
-> "two-branches only" overlayfs, a multi-branch layout would be
-> multiple vfsmounts describable by something like "(((a b) c) d)".
-> Say you want to remove branch B. (Supposedly) works today in
+> --- a/drivers/hwmon/hp_accel.c
+> +++ b/drivers/hwmon/hp_accel.c
+> @@ -146,7 +146,8 @@ int lis3lv02d_acpi_write(struct lis3lv02d *lis3, int reg, u8 val)
+>  
+>  static int lis3lv02d_dmi_matched(const struct dmi_system_id *dmi)
+>  {
+> -	lis3_dev.ac = *((struct axis_conversion *)dmi->driver_data);
+> +	memcpy(lis3_dev.axis_map, (int *)dmi->driver_data,
+> +	       sizeof(lis3_dev.axis_map));
 
-There's a difference between "works" and "is correct."  Maybe it is
-correct; if so, let's see the code review from VFS experts and some
-good stress testing.
+It's unobvious why the (nice) three-member struct was converted to a
+(nasty) three-element array?  All those typesafe struct assignments
+were turned into non-typesafe memcpys?
 
--VAL
+> +module_param_array_named(axes, lis3_dev.axis_map, axis, NULL, 0644);
 
-> aufs/unionfs. How do you pull it off with overlayfs? You can't
-> umount the (a b) vfsmount because it is used by c.
+Just to support module_param_array_named()?  If so, could have used a
+union?
+
+union axis_conversion {	/* should be called lis3_axis_conversion! */
+	struct {
+		int x;
+		int y;
+		int z;
+	};
+	int as_array[3];
+};
+
+or use a tyecast in the module_param_array_named() statement, perhaps?
