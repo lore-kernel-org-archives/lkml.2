@@ -1,88 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229Ab0IWMmP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 08:42:15 -0400
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:4185 "EHLO
-	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753529Ab0IWMmL (ORCPT
+	id S1755266Ab0IWMms (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 08:42:48 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:60111 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752394Ab0IWMmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 08:42:11 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host o8NCfiZl005505
-Subject: Re: [PATCH] trivial: disable sparse' warning for "potentially
- expensive pointer subtraction".
-From: Bernd Petrovitsch <bernd@sysprog.at>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, Namhyung Kim <namhyung@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dhowells@redhat.com, MXns RullgXrd <mans@mansr.com>,
-        linux-sparse@vger.kernel.org
-In-Reply-To: <alpine.LNX.2.00.1009231323340.26813@pobox.suse.cz>
-References: <1282321333.25235.0.camel@thorin>
-	 <alpine.LNX.2.00.1009231323340.26813@pobox.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 23 Sep 2010 14:41:43 +0200
-Message-ID: <1285245703.32001.19.camel@thorin>
+	Thu, 23 Sep 2010 08:42:46 -0400
+X-Authority-Analysis: v=1.1 cv=Yii9LXZpONf3Dl4H+sCjsa4WyoNNo7yi1hAau1xJxWE= c=1 sm=0 a=B18Bxh7V_foA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=CuqcJgowh1kHfjdQLEgA:9 a=vR9_7nFc3JC8mu6mD0F7zYuySKwA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [GIT PULL] jump label: add jump label code
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mathieu Desnoyers <compudj@krystal.dyndns.org>,
+        Andi Kleen <andi@firstfloor.org>, Jason Baron <jbaron@redhat.com>,
+        David Miller <davem@davemloft.net>
+In-Reply-To: <20100923034910.867858597@goodmis.org>
+References: <20100923034910.867858597@goodmis.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 23 Sep 2010 08:42:41 -0400
+Message-ID: <1285245761.26872.1169.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
-X-DCC-URT-Metrics: esgaroth.petrovitsch.priv.at; whitelist
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also Cc:ed linux-sparse@vger.kernel.org
+On Wed, 2010-09-22 at 23:49 -0400, Steven Rostedt wrote:
 
-On Don, 2010-09-23 at 13:23 +0200, Jiri Kosina wrote:
-> On Fri, 20 Aug 2010, Bernd Petrovitsch wrote:
-> 
-> > Rationale: With a somewhat current gcc (or a somewhat sane peephole
-> > optimizer), the (expensive) "div" is converted to a "shift" or
-> > "mul" with the inverse.
-> > This warning is disabled per default in sparse but the "-Wall" in
-> > the kernels CFLAGS enables it.
-> > 
-> > Signed-off-by: Bernd Petrovitsch <bernd@sysprog.at>
-> > ---
-> > This patch is trivial and affects only calls to sparse (read: make C=1) and
-> > removes false warnings. So it should be considered for inclusion immediately.
-> > 
-> > Sorry for the long Cc: - I included everyone in the thread and added
-> > linux-kbuild@ (as it IMHO belongs there) and trivial@ (because of the
-> > complexity of the patch).
-> > 
-> >  Makefile |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/Makefile b/Makefile
-> > index f3bdff8..851c0fa 100644
-> > --- a/Makefile
-> > +++ b/Makefile
-> > @@ -330,7 +330,7 @@ PERL		= perl
-> >  CHECK		= sparse
-> >  
-> >  CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
-> > -		  -Wbitwise -Wno-return-void $(CF)
-> > +		  -Wbitwise -Wno-return-void -Wno-ptr-subtraction-blows $(CF)
-> >  CFLAGS_MODULE   =
-> >  AFLAGS_MODULE   =
-> >  LDFLAGS_MODULE  =
-> 
-> What is the status of this patch? I don't see it Nacked, but it's not in 
-> linux-next either.
+> Jason Baron (8):
+>       jump label: Make dynamic no-op selection available outside of ftrace
+>       jump label: Make text_poke_early() globally visible
+>       jump label: Base patch for jump label
+>       jump label: Initialize workqueue tracepoints *before* they are registered
+>       jump label: Add jump_label_text_reserved() to reserve jump points
+>       jump label: Tracepoint support for jump labels
+>       jump label: Convert dynamic debug to use jump labels
+>       jump label: x86 support
 
-More details:
+Jason,
 
-The head (as in
-git://git.kernel.org/pub/scm/devel/sparse/chrisl/sparse.git) has "-Wall"
-renamed to "-Wsparse-all". So the above patch is pretty pointless.
+If you noticed, I left out your last patch: the documentation one. I did
+this because there was enough comments to require a resubmit. Could you
+just send that one patch, with the corrections, by itself?
 
-But sparse-0.4.2 - the latest release according to
-https://sparse.wiki.kernel.org/index.php/Main_Page - hasn't that
-renamed.
+Thanks,
 
-	Bernd
--- 
-mobile: +43 664 4416156              http://www.sysprog.at/
-    Linux Software Development, Consulting and Services
+-- Steve
 
