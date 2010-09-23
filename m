@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755179Ab0IWPYH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 11:24:07 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60128 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752438Ab0IWPYF (ORCPT
+	id S1755198Ab0IWPYI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 11:24:08 -0400
+Received: from isomail2.amdocs.com ([193.43.244.89]:49578 "EHLO
+	isomail2.amdocs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754136Ab0IWPYF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 23 Sep 2010 11:24:05 -0400
-Date: Thu, 23 Sep 2010 16:46:44 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Alan Cox <alan@linux.intel.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the tty tree
-Message-ID: <20100923164644.2b82746f@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100923081350.e028c4ac.rdunlap@xenotime.net>
-References: <20100923142018.55019d59.sfr@canb.auug.org.au>
-	<20100923141433.GC31738@kroah.com>
-	<20100923081350.e028c4ac.rdunlap@xenotime.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+From: James Dingwall <james.dingwall@amdocs.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Date: Thu, 23 Sep 2010 16:23:55 +0100
+Subject: RE: Re: PROBLEM: [BISECTED] 2.6.35.5 xen domU panics just after the
+ boot
+Thread-Topic: Re: PROBLEM: [BISECTED] 2.6.35.5 xen domU panics just after
+ the boot
+Thread-Index: ActbBrFQRLxRr7otT6CQVQeRBMawqgAKvpTA
+Message-ID: <3B7AEC3C7FCC864282DFAC9A56A7BA363D81475787@UKLNDMAIL1.corp.amdocs.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+x-tm-as-product-ver: SMEX-8.0.0.4125-6.500.1024-17660.007
+x-tm-as-result: No--45.251400-8.000000-31
+x-tm-as-user-approved-sender: No
+x-tm-as-user-blocked-sender: No
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Sep 2010 08:13:50 -0700
-Randy Dunlap <rdunlap@xenotime.net> wrote:
+> I was experiencing the same immediate crash with a null pointer
+> dereference (log below) on boot with 2.6.35.5.  Reverting
+> fb412a178502dc498430723b082a932f797e4763 also resolved the problem for
+> me.
 
-> On Thu, 23 Sep 2010 07:14:33 -0700 Greg KH wrote:
-> 
-> > On Thu, Sep 23, 2010 at 02:20:18PM +1000, Stephen Rothwell wrote:
-> > > Hi Greg,
-> > > 
-> > > After merging the tty tree, today's linux-next build (x86_64
-> > > allmodconfig) failed like this:
-> > > 
-> > > drivers/char/ip2/ip2main.c:459: error: 'ip2_get_icount' undeclared here (not in a function)
-> > > 
-> > > Caused by commit 157be28e51ed476aa357c8718aaef4832f4da66b ("tty: icount
-> > > changeover for other main devices").
-> > > 
-> > > Please build test (especially the trivial "cut and paste" changes) ...
-> > > 
-> > > I have reverted that commit for today.
-> > 
-> > Ick, sorry about that.  Alan, care to send a fixup patch for this?
-> 
-> 
-> So developers and maintainers are not doing allmodconfig builds?
+Checking the diff from this commit it looks like there is a typo in the patch.  With the following (probably mangled by my client) I get 2.6.35.5 to boot.  Suggest it should be a candidate for .32 and .35 stable trees.
 
-I try to make sure I build all the drivers I touch - I screwed that one
-up. Lots of -next trees build for allmodconfig and not other configs so
-all doing the same build isn't neccessarily good.
+--- drivers/xen/events.c.orig   2010-09-23 16:10:34.257124313 +0100
++++ drivers/xen/events.c        2010-09-23 16:10:44.326194462 +0100
+@@ -935,7 +935,7 @@
+ 	.retrigger		= retrigger_dynirq,
+ };
 
-Alan
+-static struct irq_chip en_percpu_chip __read_mostly = {
++static struct irq_chip xen_percpu_chip __read_mostly = {
+ 	.name			= "xen-percpu",
+
+ 	.disable		= disable_dynirq,
+
+James
+This message and the information contained herein is proprietary and confidential and subject to the Amdocs policy statement,
+you may review at http://www.amdocs.com/email_disclaimer.asp
+
