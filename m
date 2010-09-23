@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486Ab0IWDfD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 23:35:03 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:39333 "EHLO
+	id S1752760Ab0IWDk7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 23:40:59 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:57402 "EHLO
 	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783Ab0IWDfC (ORCPT
+	with ESMTP id S1752491Ab0IWDk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 23:35:02 -0400
-Date: Wed, 22 Sep 2010 20:36:52 -0700 (PDT)
+	Wed, 22 Sep 2010 23:40:58 -0400
+Date: Wed, 22 Sep 2010 20:42:49 -0700 (PDT)
 From: Sage Weil <sage@newdream.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the ceph tree with Linus' tree
-In-Reply-To: <20100923102924.25db6970.sfr@canb.auug.org.au>
-Message-ID: <Pine.LNX.4.64.1009222036210.14012@cobra.newdream.net>
-References: <20100923102924.25db6970.sfr@canb.auug.org.au>
+To: Arnd Bergmann <arnd@arndb.de>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+        Matthew Wilcox <willy@linux.intel.com>, Christoph Hellwig <hch@lst.de>,
+        Trond Myklebust <trond.myklebust@fys.uio.no>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, John Kacur <jkacur@redhat.com>,
+        linux-fsdevel@vger.kernel.org, gregf@hq.newdream.net
+Subject: Re: [PATCH] fs/locks.c: prepare for BKL removal
+In-Reply-To: <201009212209.51956.arnd@arndb.de>
+Message-ID: <Pine.LNX.4.64.1009222037500.14029@cobra.newdream.net>
+References: <1284815371-5843-1-git-send-email-arnd@arndb.de>
+ <20100920160729.96872d12.sfr@canb.auug.org.au> <Pine.LNX.4.64.1009210910410.13310@cobra.newdream.net>
+ <201009212209.51956.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, Stephen.
+On Tue, 21 Sep 2010, Arnd Bergmann wrote:
 
-I've rebased my for-next on the latest upstream (now that lock_flocks() is 
-in place), so these should all go away the next time around.
+> On Tuesday 21 September 2010 18:12:07 Sage Weil wrote:
+> > On Mon, 20 Sep 2010, Stephen Rothwell wrote:
+> > 
+> > > On Sun, 19 Sep 2010 20:59:01 -0700 (PDT) Sage Weil <sage@newdream.net> wrote:
+> > > >
+> > > > I suspect the easiest thing is to leave Ceph out of this stage of your 
+> > > > series, I'll switch lock_kernel() to lock_flocks() once that exists 
+> > > > upstream.  Unless there is a better way? 
+> > > 
+> > > Maybe someone could write a trivial implementation of lock_flocks() (i.e.
+> > > one that does not make any changes to behaviour) and ask Linus to take it
+> > > now in preparation for the next merge window (he has done that before).
+> > > That way, more of this could be put into individual other trees and avoid
+> > > more conflicts ...
+> > 
+> > This sounds like the easiest solution to me.  Something as simple as
+> > 
+> > #define lock_flocks lock_kernel
+> > #define unlock_flocks unlock_kernel
+> > 
+> > in fs.h?
+> 
+> Sounds fine to me. I don't think it's necessary but if you prefer to do
+> it, you can have my Ack.
+
+Okay, the lock/unlock_flocks() stubs on in Linus' tree now, and the Ceph 
+for-next branch is rebased and updated to fix the memory allocations and 
+switch to the new interface.
+
+Unfortunately you still need to #include smp_lock.h for now since the 
+stubs are just #defines, so we'll need to remember to clean that up later.
 
 sage
-
-
-On Thu, 23 Sep 2010, Stephen Rothwell wrote:
-
-> Hi Sage,
-> 
-> Today's linux-next merge of the ceph tree got a conflict in
-> fs/ceph/Kconfig between commit be4f104dfd3b5e3ae262bff607965cfc38027dec
-> ("ceph: select CRYPTO") from Linus' tree and commit
-> 49dde0c8bee346a349862c4a3eddcd58e0d0ae90 ("ceph: factor out libceph from
-> Ceph file system") from the ceph tree.
-> 
-> Just overlapping additions.  I fixed it up (see below) and can carry the
-> fix for a while.  (though the adding of "default n" is, I think,
-> redundant as that is the default anyway).
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc fs/ceph/Kconfig
-> index 0fcd264,73a7b31..0000000
-> --- a/fs/ceph/Kconfig
-> +++ b/fs/ceph/Kconfig
-> @@@ -1,9 -1,10 +1,11 @@@
->   config CEPH_FS
->           tristate "Ceph distributed file system (EXPERIMENTAL)"
->   	depends on INET && EXPERIMENTAL
-> + 	select CEPH_LIB
->   	select LIBCRC32C
->   	select CRYPTO_AES
->  +	select CRYPTO
-> + 	default n
->   	help
->   	  Choose Y or M here to include support for mounting the
->   	  experimental Ceph distributed file system.  Ceph is an extremely
-> 
-> 
