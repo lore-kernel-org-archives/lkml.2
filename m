@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753211Ab0IWDRT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Sep 2010 23:17:19 -0400
-Received: from mail.perches.com ([173.55.12.10]:2263 "EHLO mail.perches.com"
+	id S1753335Ab0IWDSQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Sep 2010 23:18:16 -0400
+Received: from mail.perches.com ([173.55.12.10]:2266 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752771Ab0IWDRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Sep 2010 23:17:15 -0400
+	id S1752802Ab0IWDRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Sep 2010 23:17:16 -0400
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 4/8] scripts/get_maintainer.pl: Use case insensitive name de-duplication
-Date: Wed, 22 Sep 2010 20:17:10 -0700
-Message-Id: <87f7f8f900e7011bacebb7547a81ce3a34bf5890.1285209493.git.joe@perches.com>
+Subject: [PATCH 7/8] scripts/get_maintainer.pl: Use mailmap in name deduplication and other updates
+Date: Wed, 22 Sep 2010 20:17:13 -0700
+Message-Id: <ced29540c116655253b2d58408f1afd904396506.1285209493.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <cover.1285209493.git.joe@perches.com>
 References: <cover.1285209493.git.joe@perches.com>
@@ -18,319 +18,490 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Case insensitive name and email address matching can help reduce
-duplication when authors don't always use the exact same signature.
+Use Florian Mickler's mailmap routine to reduce name duplication.
 
-o Add a --interactive per-file exact_match hash so git history
-  can be checked on per-file only when there is no direct maintainer
-o Make @interactive_to list global so save_commits_by_<foo> can check
-  email names & addresses against this list for duplication
-o Don't allow --interactive and --sections
-o rename subroutine get_maintainer to get_maintainers
-o Added help text option to --interactive menu prompt
+o Add subroutine deduplicate_email to centralize code
+o Add hashes for deduplicate_(name|address)_hash
+o Remove now unused @interactive_to
+o Whitespace neatening
+o Add command line --help text
+o Add --mailmap command line option control
+o Interactive changes:
+   - Add toggles for maintainer, git and list selections
+   - Default selection is all
+   - Add mailmap control
 
-Update version to 0.26-beta4
+Update to 0.26-beta5
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- scripts/get_maintainer.pl |  135 +++++++++++++++++++++++++++++++++-----------
- 1 files changed, 101 insertions(+), 34 deletions(-)
+ scripts/get_maintainer.pl |  232 +++++++++++++++++++++++++++++----------------
+ 1 files changed, 148 insertions(+), 84 deletions(-)
 
 diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
-index f511760..61d3bb5 100755
+index 0abfdbc..e822518 100755
 --- a/scripts/get_maintainer.pl
 +++ b/scripts/get_maintainer.pl
 @@ -13,7 +13,7 @@
  use strict;
  
  my $P = $0;
--my $V = '0.26-beta3';
-+my $V = '0.26-beta4';
+-my $V = '0.26-beta4';
++my $V = '0.26-beta5';
  
  use Getopt::Long qw(:config no_auto_abbrev);
  
-@@ -242,6 +242,7 @@ if ($sections) {
-     $subsystem = 0;
-     $web = 0;
-     $keywords = 0;
-+    $interactive = 0;
- } else {
-     my $selections = $email + $scm + $status + $subsystem + $web;
-     if ($selections == 0) {
-@@ -407,13 +408,15 @@ my @scm = ();
+@@ -36,6 +36,7 @@ my $email_git_since = "1-year-ago";
+ my $email_hg_since = "-365";
+ my $interactive = 0;
+ my $email_remove_duplicates = 1;
++my $email_use_mailmap = 1;
+ my $output_multiline = 1;
+ my $output_separator = ", ";
+ my $output_roles = 0;
+@@ -192,6 +193,7 @@ if (!GetOptions(
+ 		'hg-since=s' => \$email_hg_since,
+ 		'i|interactive!' => \$interactive,
+ 		'remove-duplicates!' => \$email_remove_duplicates,
++		'mailmap!' => \$email_use_mailmap,
+ 		'm!' => \$email_maintainer,
+ 		'n!' => \$email_usename,
+ 		'l!' => \$email_list,
+@@ -300,17 +302,17 @@ close($maint);
+ # Read mail address map
+ #
+ 
+-my $mailmap = read_mailmap();
++my $mailmap;
++
++read_mailmap();
+ 
+ sub read_mailmap {
+-    my $mailmap = {
++    $mailmap = {
+ 	names => {},
+ 	addresses => {}
+     };
+ 
+-    if (!$email_remove_duplicates) {
+-	return $mailmap;
+-    }
++    return if (!$email_use_mailmap || !(-f "${lk_path}.mailmap"));
+ 
+     open(my $mailmap_file, '<', "${lk_path}.mailmap")
+ 	or warn "$P: Can't open .mailmap: $!\n";
+@@ -331,6 +333,7 @@ sub read_mailmap {
+ 	    my $address = $2;
+ 
+ 	    $real_name =~ s/\s+$//;
++	    ($real_name, $address) = parse_email("$real_name <$address>");
+ 	    $mailmap->{names}->{$address} = $real_name;
+ 
+ 	} elsif (/^<([^\s]+)>\s*<([^\s]+)>$/) {
+@@ -340,12 +343,13 @@ sub read_mailmap {
+ 	    $mailmap->{addresses}->{$wrong_address} = $real_address;
+ 
+ 	} elsif (/^(.+)<([^\s]+)>\s*<([^\s]+)>$/) {
+-	    my $real_name= $1;
++	    my $real_name = $1;
+ 	    my $real_address = $2;
+ 	    my $wrong_address = $3;
+ 
+ 	    $real_name =~ s/\s+$//;
+-
++	    ($real_name, $real_address) =
++		parse_email("$real_name <$real_address>");
+ 	    $mailmap->{names}->{$wrong_address} = $real_name;
+ 	    $mailmap->{addresses}->{$wrong_address} = $real_address;
+ 
+@@ -356,15 +360,19 @@ sub read_mailmap {
+ 	    my $wrong_address = $4;
+ 
+ 	    $real_name =~ s/\s+$//;
++	    ($real_name, $real_address) =
++		parse_email("$real_name <$real_address>");
++
+ 	    $wrong_name =~ s/\s+$//;
++	    ($wrong_name, $wrong_address) =
++		parse_email("$wrong_name <$wrong_address>");
+ 
+-	    $mailmap->{names}->{format_email($wrong_name,$wrong_address,1)} = $real_name;
+-	    $mailmap->{addresses}->{format_email($wrong_name,$wrong_address,1)} = $real_address;
++	    my $wrong_email = format_email($wrong_name, $wrong_address, 1);
++	    $mailmap->{names}->{$wrong_email} = $real_name;
++	    $mailmap->{addresses}->{$wrong_email} = $real_address;
+ 	}
+     }
+     close($mailmap_file);
+-
+-    return $mailmap;
+ }
+ 
+ ## use the filenames on the command line or find the filenames in the patchfiles
+@@ -453,7 +461,8 @@ my @scm = ();
  my @web = ();
  my @subsystem = ();
  my @status = ();
-+my @interactive_to = ();
+-my @interactive_to = ();
++my %deduplicate_name_hash = ();
++my %deduplicate_address_hash = ();
  my $signature_pattern;
  
--my @to = get_maintainer();
-+my @maintainers = get_maintainers();
- 
--@to = merge_email(@to);
--
--output(@to) if (@to);
-+if (@maintainers) {
-+    @maintainers = merge_email(@maintainers);
-+    output(@maintainers);
-+}
- 
- if ($scm) {
-     @scm = uniq(@scm);
-@@ -437,7 +440,7 @@ if ($web) {
- 
- exit($exit);
- 
--sub get_maintainer {
-+sub get_maintainers {
-     %email_hash_name = ();
-     %email_hash_address = ();
-     %commit_author_hash = ();
-@@ -449,7 +452,7 @@ sub get_maintainer {
+ my @maintainers = get_maintainers();
+@@ -497,7 +506,8 @@ sub get_maintainers {
      @web = ();
      @subsystem = ();
      @status = ();
--
-+    @interactive_to = ();
+-    @interactive_to = ();
++    %deduplicate_name_hash = ();
++    %deduplicate_address_hash = ();
      if ($email_git_all_signature_types) {
  	$signature_pattern = "(.+?)[Bb][Yy]:";
      } else {
-@@ -458,10 +461,11 @@ sub get_maintainer {
+@@ -506,7 +516,7 @@ sub get_maintainers {
  
      # Find responsible parties
  
-+    my %exact_pattern_match_hash;
-+
+-    my %exact_pattern_match_hash;
++    my %exact_pattern_match_hash = ();
+ 
      foreach my $file (@files) {
  
- 	my %hash;
--	my $exact_pattern_match = 0;
- 	my $tvi = find_first_section();
- 	while ($tvi < @typevalue) {
- 	    my $start = find_starting_index($tvi);
-@@ -497,7 +501,9 @@ sub get_maintainer {
- 				my $file_pd = ($file  =~ tr@/@@);
- 				$value_pd++ if (substr($value,-1,1) ne "/");
- 				$value_pd = -1 if ($value =~ /^\.\*/);
--				$exact_pattern_match = 1 if ($value_pd >= $file_pd);
-+				if ($value_pd >= $file_pd) {
-+				    $exact_pattern_match_hash{$file} = 1;
-+				}
- 				if ($pattern_depth == 0 ||
- 				    (($file_pd - $value_pd) < $pattern_depth)) {
- 				    $hash{$tvi} = $value_pd;
-@@ -530,14 +536,6 @@ sub get_maintainer {
- 		print("\n");
- 	    }
- 	}
--
--	if ($email && ($email_git ||
--		       ($email_git_fallback && !$exact_pattern_match))) {
--	    vcs_file_signoffs($file);
--	}
--	if ($email && $email_git_blame) {
--	    vcs_file_blame($file);
--	}
-     }
- 
-     if ($keywords) {
-@@ -547,6 +545,19 @@ sub get_maintainer {
+@@ -590,7 +600,9 @@ sub get_maintainers {
  	}
      }
  
-+    @interactive_to = (@email_to, @list_to);
-+
-+    foreach my $file (@files) {
-+	if ($email &&
-+	    ($email_git || ($email_git_fallback &&
-+			    !$exact_pattern_match_hash{$file}))) {
-+	    vcs_file_signoffs($file);
-+	}
-+	if ($email && $email_git_blame) {
-+	    vcs_file_blame($file);
-+	}
+-    @interactive_to = (@email_to, @list_to);
++    foreach my $email (@email_to, @list_to) {
++	$email->[0] = deduplicate_email($email->[0]);
 +    }
-+
-     if ($email) {
- 	foreach my $chief (@penguin_chief) {
- 	    if ($chief =~ m/^(.*):(.*)/) {
-@@ -580,7 +591,10 @@ sub get_maintainer {
- 	}
+ 
+     foreach my $file (@files) {
+ 	if ($email &&
+@@ -637,8 +649,7 @@ sub get_maintainers {
      }
  
--    @to = interactive_get_maintainer(\@to) if ($interactive);
-+    if ($interactive) {
-+	@interactive_to = @to;
-+	@to = interactive_get_maintainers(\@interactive_to);
-+    }
+     if ($interactive) {
+-	@interactive_to = @to;
+-	@to = interactive_get_maintainers(\@interactive_to);
++	@to = interactive_get_maintainers(\@to);
+     }
  
      return @to;
- }
-@@ -899,16 +913,16 @@ sub add_categories {
- 		}
- 		if ($list_additional =~ m/subscribers-only/) {
- 		    if ($email_subscriber_list) {
--			if (!$hash_list_to{$list_address}) {
--			    $hash_list_to{$list_address} = 1;
-+			if (!$hash_list_to{lc($list_address)}) {
-+			    $hash_list_to{lc($list_address)} = 1;
- 			    push(@list_to, [$list_address,
- 					    "subscriber list${list_role}"]);
- 			}
- 		    }
- 		} else {
- 		    if ($email_list) {
--			if (!$hash_list_to{$list_address}) {
--			    $hash_list_to{$list_address} = 1;
-+			if (!$hash_list_to{lc($list_address)}) {
-+			    $hash_list_to{lc($list_address)} = 1;
- 			    push(@list_to, [$list_address,
- 					    "open list${list_role}"]);
- 			}
-@@ -946,8 +960,8 @@ sub email_inuse {
-     my ($name, $address) = @_;
+@@ -702,8 +713,9 @@ Output type options:
  
-     return 1 if (($name eq "") && ($address eq ""));
--    return 1 if (($name ne "") && exists($email_hash_name{$name}));
--    return 1 if (($address ne "") && exists($email_hash_address{$address}));
-+    return 1 if (($name ne "") && exists($email_hash_name{lc($name)}));
-+    return 1 if (($address ne "") && exists($email_hash_address{lc($address)}));
+ Other options:
+   --pattern-depth => Number of pattern directory traversals (default: 0 (all))
+-  --keywords => scan patch for keywords (default: 1 (on))
+-  --sections => print the entire subsystem sections with pattern matches
++  --keywords => scan patch for keywords (default: $keywords)
++  --sections => print all of the subsystem sections with pattern matches
++  --mailmap => use .mailmap file (default: $email_use_mailmap)
+   --version => show version
+   --help => show this help information
  
-     return 0;
+@@ -1107,7 +1119,7 @@ sub which_conf {
  }
-@@ -965,8 +979,8 @@ sub push_email_address {
- 	push(@email_to, [format_email($name, $address, $email_usename), $role]);
-     } elsif (!email_inuse($name, $address)) {
- 	push(@email_to, [format_email($name, $address, $email_usename), $role]);
--	$email_hash_name{$name}++;
--	$email_hash_address{$address}++;
-+	$email_hash_name{lc($name)}++;
-+	$email_hash_address{lc($address)}++;
+ 
+ sub mailmap_email {
+-    my $line = shift;
++    my ($line) = @_;
+ 
+     my ($name, $address) = parse_email($line);
+     my $email = format_email($name, $address, 1);
+@@ -1136,26 +1148,25 @@ sub mailmap_email {
+ sub mailmap {
+     my (@addresses) = @_;
+ 
+-    my @ret = ();
++    my @mapped_emails = ();
+     foreach my $line (@addresses) {
+-	push(@ret, mailmap_email($line), 1);
++	push(@mapped_emails, mailmap_email($line));
+     }
+-
+-    merge_by_realname(@ret) if $email_remove_duplicates;
+-
+-    return @ret;
++    merge_by_realname(@mapped_emails) if ($email_use_mailmap);
++    return @mapped_emails;
+ }
+ 
+ sub merge_by_realname {
+     my %address_map;
+     my (@emails) = @_;
++
+     foreach my $email (@emails) {
+ 	my ($name, $address) = parse_email($email);
+-	if (!exists $address_map{$name}) {
+-	    $address_map{$name} = $address;
+-	} else {
++	if (exists $address_map{$name}) {
+ 	    $address = $address_map{$name};
+-	    $email = format_email($name,$address,1);
++	    $email = format_email($name, $address, 1);
++	} else {
++	    $address_map{$name} = $address;
+ 	}
+     }
+ }
+@@ -1194,8 +1205,7 @@ sub extract_formatted_signatures {
+ ## Reformat email addresses (with names) to avoid badly written signatures
+ 
+     foreach my $signer (@signature_lines) {
+-	my ($name, $address) = parse_email($signer);
+-	$signer = format_email($name, $address, 1);
++	$signer = deduplicate_email($signer);
      }
  
-     return 1;
-@@ -1259,7 +1273,7 @@ sub vcs_is_hg {
-     return $vcs_used == 2;
+     return (\@type, \@signature_lines);
+@@ -1339,6 +1349,7 @@ sub vcs_exists {
  }
  
--sub interactive_get_maintainer {
-+sub interactive_get_maintainers {
-     my ($list_ref) = @_;
-     my @list = @$list_ref;
+ sub vcs_is_git {
++    vcs_exists();
+     return $vcs_used == 1;
+ }
  
-@@ -1269,11 +1283,12 @@ sub interactive_get_maintainer {
-     my %authored;
+@@ -1357,11 +1368,9 @@ sub interactive_get_maintainers {
      my %signed;
      my $count = 0;
--
-+    my $maintained = 0;
-     #select maintainers by default
--    foreach my $entry (@list){
-+    foreach my $entry (@list) {
- 	my $role = $entry->[1];
--	$selected{$count} = ($role =~ /^(maintainer|supporter|open list)/);
-+	$selected{$count} = ($role =~ /^(maintainer|supporter|open list)/i);
-+	$maintained = 1 if ($role =~ /^(maintainer|supporter)/i);
+     my $maintained = 0;
+-    #select maintainers by default
+     foreach my $entry (@list) {
+-	my $role = $entry->[1];
+-	$selected{$count} = ($role =~ /^(maintainer|supporter|open list)/i);
+-	$maintained = 1 if ($role =~ /^(maintainer|supporter)/i);
++	$maintained = 1 if ($entry->[1] =~ /^(maintainer|supporter)/i);
++	$selected{$count} = 1;
  	$authored{$count} = 0;
  	$signed{$count} = 0;
  	$count++;
-@@ -1286,8 +1301,14 @@ sub interactive_get_maintainer {
-     while (!$done) {
- 	$count = 0;
- 	if ($redraw) {
--	    printf STDERR "\n%1s %2s %-65sauth sign\n",
--		"*", "#", "email/list and role:stats";
-+	    printf STDERR "\n%1s %2s %-65s",
-+			  "*", "#", "email/list and role:stats";
-+	    if ($email_git ||
-+		($email_git_fallback && !$maintained) ||
-+		$email_git_blame) {
-+		print STDERR "auth sign";
-+	    }
-+	    print STDERR "\n";
- 	    foreach my $entry (@list) {
- 		my $email = $entry->[0];
- 		my $role = $entry->[1];
-@@ -1453,6 +1474,27 @@ sub interactive_get_maintainer {
- 		    $pattern_depth = $val;
- 		    $rerun = 1;
- 		}
-+	    } elsif ($sel eq "h" || $sel eq "?") {
+@@ -1418,24 +1427,34 @@ sub interactive_get_maintainers {
+ 	if ($print_options) {
+ 	    $print_options = 0;
+ 	    if (vcs_exists()) {
+-		print STDERR
+-"\nVersion Control options:\n" .
+-"g  use git history      [$email_git]\n" .
+-"gf use git-fallback     [$email_git_fallback]\n" .
+-"b  use git blame        [$email_git_blame]\n" .
+-"bs use blame signatures [$email_git_blame_signatures]\n" .
+-"c# minimum commits      [$email_git_min_signatures]\n" .
+-"%# min percent          [$email_git_min_percent]\n" .
+-"d# history to use       [$$date_ref]\n" .
+-"x# max maintainers      [$email_git_max_maintainers]\n" .
+-"t  all signature types  [$email_git_all_signature_types]\n";
 +		print STDERR <<EOT
 +
-+Interactive mode allows you to select the various maintainers, submitters,
-+commit signers and mailing lists that could be CC'd on a patch.
-+
-+Any *'d entry is selected.
-+
-+If you have git or hg installed, You can choose to summarize the commit
-+history of files in the patch.  Also, each line of the current file can
-+be matched to its commit author and that commits signers with blame.
-+
-+Various knobs exist to control the length of time for active commit
-+tracking, the maximum number of commit authors and signers to add,
-+and such.
-+
-+Enter selections at the prompt until you are satisfied that the selected
-+maintainers are appropriate.  You may enter multiple selections separated
-+by either commas or spaces.
-+
++Version Control options:
++g  use git history      [$email_git]
++gf use git-fallback     [$email_git_fallback]
++b  use git blame        [$email_git_blame]
++bs use blame signatures [$email_git_blame_signatures]
++c# minimum commits      [$email_git_min_signatures]
++%# min percent          [$email_git_min_percent]
++d# history to use       [$$date_ref]
++x# max maintainers      [$email_git_max_maintainers]
++t  all signature types  [$email_git_all_signature_types]
++m  use .mailmap         [$email_use_mailmap]
 +EOT
- 	    } else {
- 		print STDERR "invalid option: '$nr'\n";
- 		$redraw = 0;
-@@ -1461,7 +1503,7 @@ sub interactive_get_maintainer {
- 	if ($rerun) {
- 	    print STDERR "git-blame can be very slow, please have patience..."
- 		if ($email_git_blame);
--	    goto &get_maintainer;
-+	    goto &get_maintainers;
+ 	    }
+-	    print STDERR "\nAdditional options:\n" .
+-"0  toggle all\n" .
+-"f  emails in file       [$file_emails]\n" .
+-"k  keywords in file     [$keywords]\n" .
+-"r  remove duplicates    [$email_remove_duplicates]\n" .
+-"p# pattern match depth  [$pattern_depth]\n";
++	    print STDERR <<EOT
++
++Additional options:
++0  toggle all
++tm toggle maintainers
++tg toggle git entries
++tl toggle open list entries
++ts toggle subscriber list entries
++f  emails in file       [$file_emails]
++k  keywords in file     [$keywords]
++r  remove duplicates    [$email_remove_duplicates]
++p# pattern match depth  [$pattern_depth]
++EOT
  	}
+ 	print STDERR
+ "\n#(toggle), A#(author), S#(signed) *(all), ^(none), O(options), Y(approve): ";
+@@ -1471,6 +1490,28 @@ sub interactive_get_maintainers {
+ 		for (my $i = 0; $i < $count; $i++) {
+ 		    $selected{$i} = !$selected{$i};
+ 		}
++	    } elsif ($sel eq "t") {
++		if (lc($str) eq "m") {
++		    for (my $i = 0; $i < $count; $i++) {
++			$selected{$i} = !$selected{$i}
++			    if ($list[$i]->[1] =~ /^(maintainer|supporter)/i);
++		    }
++		} elsif (lc($str) eq "g") {
++		    for (my $i = 0; $i < $count; $i++) {
++			$selected{$i} = !$selected{$i}
++			    if ($list[$i]->[1] =~ /^(author|commit|signer)/i);
++		    }
++		} elsif (lc($str) eq "l") {
++		    for (my $i = 0; $i < $count; $i++) {
++			$selected{$i} = !$selected{$i}
++			    if ($list[$i]->[1] =~ /^(open list)/i);
++		    }
++		} elsif (lc($str) eq "s") {
++		    for (my $i = 0; $i < $count; $i++) {
++			$selected{$i} = !$selected{$i}
++			    if ($list[$i]->[1] =~ /^(subscriber list)/i);
++		    }
++		}
+ 	    } elsif ($sel eq "a") {
+ 		if ($val > 0 && $val <= $count) {
+ 		    $authored{$val - 1} = !$authored{$val - 1};
+@@ -1539,6 +1580,10 @@ sub interactive_get_maintainers {
+ 	    } elsif ($sel eq "r") {
+ 		bool_invert(\$email_remove_duplicates);
+ 		$rerun = 1;
++	    } elsif ($sel eq "m") {
++		bool_invert(\$email_use_mailmap);
++		read_mailmap();
++		$rerun = 1;
+ 	    } elsif ($sel eq "k") {
+ 		bool_invert(\$keywords);
+ 		$rerun = 1;
+@@ -1602,6 +1647,36 @@ sub bool_invert {
      }
+ }
  
-@@ -1496,9 +1538,20 @@ sub save_commits_by_author {
++sub deduplicate_email {
++    my ($email) = @_;
++
++    my $matched = 0;
++    my ($name, $address) = parse_email($email);
++    $email = format_email($name, $address, 1);
++    $email = mailmap_email($email);
++
++    return $email if (!$email_remove_duplicates);
++
++    ($name, $address) = parse_email($email);
++
++    if ($deduplicate_name_hash{lc($name)}) {
++	$name = $deduplicate_name_hash{lc($name)}->[0];
++	$address = $deduplicate_name_hash{lc($name)}->[1];
++	$matched = 1;
++    } elsif ($deduplicate_address_hash{lc($address)}) {
++	$name = $deduplicate_address_hash{lc($address)}->[0];
++	$address = $deduplicate_address_hash{lc($address)}->[1];
++	$matched = 1;
++    }
++    if (!$matched) {
++	$deduplicate_name_hash{lc($name)} = [ $name, $address ];
++	$deduplicate_address_hash{lc($address)} = [ $name, $address ];
++    }
++    $email = format_email($name, $address, 1);
++    $email = mailmap_email($email);
++    return $email;
++}
++
+ sub save_commits_by_author {
+     my (@lines) = @_;
+ 
+@@ -1611,20 +1686,8 @@ sub save_commits_by_author {
  
      foreach my $line (@lines) {
  	if ($line =~ m/$VCS_cmds{"author_pattern"}/) {
-+	    my $matched = 0;
+-	    my $matched = 0;
  	    my $author = $1;
- 	    my ($name, $address) = parse_email($author);
--	    $author = format_email($name, $address, 1);
-+	    foreach my $to (@interactive_to) {
-+		my ($to_name, $to_address) = parse_email($to->[0]);
-+		if ($email_remove_duplicates &&
-+		    ((lc($name) eq lc($to_name)) ||
-+		     (lc($address) eq lc($to_address)))) {
-+		    $author = $to->[0];
-+		    $matched = 1;
-+		    last;
-+		}
-+	    }
-+	    $author = format_email($name, $address, 1) if (!$matched);
+-	    my ($name, $address) = parse_email($author);
+-	    foreach my $to (@interactive_to) {
+-		my ($to_name, $to_address) = parse_email($to->[0]);
+-		if ($email_remove_duplicates &&
+-		    ((lc($name) eq lc($to_name)) ||
+-		     (lc($address) eq lc($to_address)))) {
+-		    $author = $to->[0];
+-		    $matched = 1;
+-		    last;
+-		}
+-	    }
+-	    $author = format_email($name, $address, 1) if (!$matched);
++	    $author = deduplicate_email($author);
  	    push(@authors, $author);
  	}
  	push(@commits, $1) if ($line =~ m/$VCS_cmds{"commit_pattern"}/);
-@@ -1539,6 +1592,20 @@ sub save_commits_by_signer {
+@@ -1665,19 +1728,7 @@ sub save_commits_by_signer {
  	    my $type = $types[0];
  	    my $signer = $signers[0];
  
-+	    my $matched = 0;
-+	    my ($name, $address) = parse_email($signer);
-+	    foreach my $to (@interactive_to) {
-+		my ($to_name, $to_address) = parse_email($to->[0]);
-+		if ($email_remove_duplicates &&
-+		    ((lc($name) eq lc($to_name)) ||
-+		     (lc($address) eq lc($to_address)))) {
-+		    $signer = $to->[0];
-+		    $matched = 1;
-+		    last;
-+		}
-+		$signer = format_email($name, $address, 1) if (!$matched);
-+	    }
-+
+-	    my $matched = 0;
+-	    my ($name, $address) = parse_email($signer);
+-	    foreach my $to (@interactive_to) {
+-		my ($to_name, $to_address) = parse_email($to->[0]);
+-		if ($email_remove_duplicates &&
+-		    ((lc($name) eq lc($to_name)) ||
+-		     (lc($address) eq lc($to_address)))) {
+-		    $signer = $to->[0];
+-		    $matched = 1;
+-		    last;
+-		}
+-		$signer = format_email($name, $address, 1) if (!$matched);
+-	    }
++	    $signer = deduplicate_email($signer);
+ 
  	    my $exists = 0;
  	    foreach my $ref(@{$commit_signer_hash{$signer}}) {
- 		if (@{$ref}[0] eq $commit &&
+@@ -1751,6 +1802,11 @@ sub vcs_file_signoffs {
+     $cmd =~ s/(\$\w+)/$1/eeg;		# interpolate $cmd
+ 
+     ($commits, @signers) = vcs_find_signers($cmd);
++
++    foreach my $signer (@signers) {
++	$signer = deduplicate_email($signer);
++    }
++
+     vcs_assign("commit_signer", $commits, @signers);
+ }
+ 
+@@ -1828,9 +1884,8 @@ sub vcs_file_blame {
+ 		foreach my $line (@lines) {
+ 		    if ($line =~ m/$VCS_cmds{"author_pattern"}/) {
+ 			my $author = $1;
+-			my ($name, $address) = parse_email($author);
+-			$author = format_email($name, $address, 1);
+-			push(@authors, $1);
++			$author = deduplicate_email($author);
++			push(@authors, $author);
+ 		    }
+ 		}
+ 
+@@ -1846,9 +1901,12 @@ sub vcs_file_blame {
+ 		    $cmd =~ s/(\$\w+)/$1/eeg;	#interpolate $cmd
+ 		    my @author = vcs_find_author($cmd);
+ 		    next if !@author;
++
++		    my $formatted_author = deduplicate_email($author[0]);
++
+ 		    my $count = grep(/$commit/, @all_commits);
+ 		    for ($i = 0; $i < $count ; $i++) {
+-			push(@blame_signers, $author[0]);
++			push(@blame_signers, $formatted_author);
+ 		    }
+ 		}
+ 	    }
+@@ -1856,8 +1914,14 @@ sub vcs_file_blame {
+ 		vcs_assign("authored lines", $total_lines, @blame_signers);
+ 	    }
+ 	}
++	foreach my $signer (@signers) {
++	    $signer = deduplicate_email($signer);
++	}
+ 	vcs_assign("commits", $total_commits, @signers);
+     } else {
++	foreach my $signer (@signers) {
++	    $signer = deduplicate_email($signer);
++	}
+ 	vcs_assign("modified commits", $total_commits, @signers);
+     }
+ }
 -- 
 1.7.3
 
