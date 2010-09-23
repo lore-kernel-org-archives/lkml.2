@@ -1,68 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117Ab0IWWGG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 18:06:06 -0400
-Received: from xenotime.net ([72.52.115.56]:60126 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752254Ab0IWWGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 18:06:04 -0400
-Date: Thu, 23 Sep 2010 15:05:59 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Mikael Pettersson <mikpe@it.uu.se>
-Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [BUG 2.6.36-rc5] of_i2c.ko <-> i2c-core.ko dependency loop
-Message-Id: <20100923150559.9c67da11.rdunlap@xenotime.net>
-In-Reply-To: <19611.46496.782340.466509@pilspetsen.it.uu.se>
-References: <19611.16302.262307.129176@pilspetsen.it.uu.se>
-	<20100923113807.4643fbbb.rdunlap@xenotime.net>
-	<19611.46496.782340.466509@pilspetsen.it.uu.se>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754202Ab0IWWLp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 18:11:45 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54114 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925Ab0IWWLm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 18:11:42 -0400
+Date: Thu, 23 Sep 2010 23:11:42 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: linux-arch@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: situation with signals
+Message-ID: <20100923221141.GK19804@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Sep 2010 22:16:32 +0200 Mikael Pettersson wrote:
+	There are several interesting issues in arch/*/*/*signal* (besides
+shoggoths starting to show up when one reads that code) and I'd been crawling
+through that area for the last few weeks.  Here are more or less common
+issues; there are really arch-specific bugs (e.g. roothole on frv that
+used to allow reading kernel memory by setting the right sa_handler), but
+that's a separate story.
 
-> Randy Dunlap writes:
->  > On Thu, 23 Sep 2010 13:53:18 +0200 Mikael Pettersson wrote:
->  > 
->  > > Running modules_install from a newly built 2.6.36-rc5 kernel
->  > > on my 32-bit PowerMac results in:
->  > > 
->  > > WARNING: Module /lib/modules/2.6.36-rc5/kernel/drivers/i2c/busses/i2c-powermac.ko ignored, due to loop
->  > > WARNING: Loop detected: /lib/modules/2.6.36-rc5/kernel/drivers/i2c/i2c-core.ko needs of_i2c.ko which needs i2c-core.ko again!
->  > > WARNING: Module /lib/modules/2.6.36-rc5/kernel/drivers/i2c/i2c-core.ko ignored, due to loop
->  > > WARNING: Module /lib/modules/2.6.36-rc5/kernel/drivers/i2c/i2c-dev.ko ignored, due to loop
->  > > WARNING: Module /lib/modules/2.6.36-rc5/kernel/drivers/of/of_i2c.ko ignored, due to loop
->  > > WARNING: Module /lib/modules/2.6.36-rc5/kernel/sound/ppc/snd-powermac.ko ignored, due to loop
->  > > 
->  > > > grep '.*I2C.*=' .config
->  > > CONFIG_OF_I2C=m
->  > > CONFIG_I2C=m
->  > > CONFIG_I2C_BOARDINFO=y
->  > > CONFIG_I2C_CHARDEV=m
->  > > CONFIG_I2C_POWERMAC=m
->  > > 
->  > > I can't say exactly when this started, haven't built kernels on this
->  > > box in a while.
->  > 
->  > 
->  > No kconfig warnings?
-> 
-> Not that I recall.  I can check tomorrow if necessary.
+	1) a bunch of architectures happily block signals even when
+setting sigframe up fails.  Obviously bad, since we lose the information
+about original mask forever.  Some fixes are in mainline, some are
+pending (mips one sent to Ralf, the rest is still in my local queue).
 
-No kconfig warnings.  I checked with your .config file.
+	2) avr32 and microblaze have retained the old bug fixed by sfr in
+"[PATCH] convert signal handling of NODEFER to act like other Unix boxes"
+back in 2005.  Fixes in local queue, will send shortly.
 
->  > Please post your full .config file.
+	3) sigreturn and its ilk should reset ->restart_block.fn to
+do_no_restart_syscall(); alpha and parisc had been doing that in the
+wrong place (missed race fixes ~5 years ago), frv, microblaze, mn10300,
+score and xtensa don't do that at all.  alpha and frv fixes are in mainline,
+the rest - in local queue.
 
-Just a matter of module i2c-core calls of_ functions and module of_i2c calls
-i2c_ functions.  Hmph.  Something for Grant, Jean, and Ben to work out.
+	4) SIGSEGV on failure to create a sigframe should be delivered by
+force_sigsegv(), not force_sig().  The difference between these two is that
+the latter will lead to infinite spin if we have a handler for SIGSEGV.
+force_sigsegv() will revert to default handler if the signal we'd failed
+to deliver had been SIGSEGV itself.  Vulnerable: frv and mn10300; frv fix
+in mainlined, mn10300 in local queue.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+	5) minor QOI issue - if we are sending SIGSEGV after failure to set
+sigframe up, it's better to avoid mangling registers, so that if we do
+handler SIGSEGV (e.g. on altstack) we would have a sane userland state to
+return to.  Minor, probably not worth bothering until the merge window;
+most of the architectures are very easy to tweak so that the problem would
+disappear.
+
+	6) sigsuspend()/rt_sigsuspend() really ought to switch to use
+of ->saved_sigmask; it's easy to do and fairly few architectures are
+still not using that.  I'll probably leave that until the merge window;
+it's not breakage per se.  Exception: m32r fix I'll send today; the damn
+thing has switched to sigsuspend()/rt_sigsuspend() using ERESTARTNOHAND
+(and setting ->saved_sigmask), but do_signal() doesn't even look at the
+->saved_sigmask.  With obvious results.  Breakage has been there for
+three years...
+
+	7) sigreturn() should make sure we won't step into signal restart.
+arm, frv and ppc fixed (fixes merged).  avr32, cris and score are b0rken the
+same way arm is, fixes in local queue.  microblaze seems to be fscked the
+same way, unless I'm missing something subtle in their sigreturn wrapper.
+
+	8) no double syscall restarts if we get multiple signals, even if
+we handle some or all of them in the kernel.  alpha, ppc, frv and sparc fixes
+are in mainline, arm one sits in arm tree.  More is in the local queue and
+I'm afraid that there's more to follow.
+
+	9) there's a difference between architectures in the way we handle
+multiple signals pending at the same time.  Some deal with all signals that
+are there; some usually handle one, but may do more if the stars are right;
+some handle only one and that's it.
+	The last variant actually used to be common until 5-8 years ago.
+There are several problems with it, starting with the obvious "WTF is that
+SIGSEGV generated when I failed to set a sigframe up gets delivered only
+on the next IRQ or syscall?".  I've looked through the history and apparently
+there had been several independent reinventions of the fix (== handle all
+pending signals, build all sigframes and let it go).
+	I must apologize to davem - sparc is not the only remaining one with
+that behaviour; several m68nommu derivatives are also that way.  IMO the right
+thing to do is to switch all of them to "call do_signal until there's no
+pending signal left" kind of behaviour; sparc patch doing that is pending
+review, and I can do the rest (embedded ones) without too much PITA.
+	There's one case where the problem has been papered over by kludges
+inside do_signal() - itanic.  It's easier to do repeats in asm glue, actually,
+(replace p6 = 0 with p6 = 1 in one place) and that'll kill a bunch of stuff
+in the ia64/signal.c; similar junk is in place for parisc, with no
+justification whatsoever - there we _do_ repeats in entry.S.
