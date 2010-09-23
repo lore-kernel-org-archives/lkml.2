@@ -1,92 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755352Ab0IWOOP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 10:14:15 -0400
-Received: from caiajhbdcbhh.dreamhost.com ([208.97.132.177]:55328 "EHLO
-	homiemail-a2.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751592Ab0IWOOO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 10:14:14 -0400
-Subject: [PATCH] input: for best practices, return -ENOMEM instead of -1
- when returning on mem allocation errors
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: dmitry.torokhov@gmail.com, dtor@mail.ru
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-input@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 23 Sep 2010 10:14:05 -0400
-Message-ID: <1285251245.2127.4.camel@cowboy>
+	id S1755496Ab0IWOO0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 10:14:26 -0400
+Received: from mga14.intel.com ([143.182.124.37]:48139 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755407Ab0IWOOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 10:14:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,223,1283756400"; 
+   d="scan'208";a="327899717"
+Date: Thu, 23 Sep 2010 14:27:20 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] x86/mrst: add SFI platform device parsing code
+Message-ID: <20100923142720.13bf9d69@linux.intel.com>
+In-Reply-To: <20100923141133.GG25663@rakim.wolfsonmicro.main>
+References: <20100920152705.GJ3414@rakim.wolfsonmicro.main>
+	<AANLkTi=1dkVOWc2WHhYgqKh_awUhp1-uKN8W7Xx3AB_X@mail.gmail.com>
+	<20100922231514.5e9967c7@linux.intel.com>
+	<20100923060703.GB11198@angua.secretlab.ca>
+	<20100923095411.GA25663@rakim.wolfsonmicro.main>
+	<20100923112703.543b0b86@lxorguk.ukuu.org.uk>
+	<20100923102708.GC25663@rakim.wolfsonmicro.main>
+	<20100923115818.0cac8d06@lxorguk.ukuu.org.uk>
+	<20100923105208.GD25663@rakim.wolfsonmicro.main>
+	<20100923111347.0cf93bb3@linux.intel.com>
+	<20100923141133.GG25663@rakim.wolfsonmicro.main>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-input: for best practices, return -ENOMEM instead of -1 when returning on mem allocation errors.
+> > There should be no variations and the nature of the platform means
+> > that might even work out. I don't really want to add it to the
+> > table unless we have lots needing DMI data. Right now we don't and
+> > there are multiple platform implementations in existence.
+> 
+> What is it about this platform that is going to restrict the problem?
 
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
----
- drivers/input/misc/powermate.c   |    2 +-
- drivers/input/mouse/elantech.c   |    2 +-
- drivers/input/mouse/synaptics.c  |    2 +-
- drivers/input/mouse/trackpoint.c |    2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
+The sort of people who will be using it and how,
 
-diff --git a/drivers/input/misc/powermate.c b/drivers/input/misc/powermate.c
-index bf170f6..f459471 100644
---- a/drivers/input/misc/powermate.c
-+++ b/drivers/input/misc/powermate.c
-@@ -280,7 +280,7 @@ static int powermate_alloc_buffers(struct usb_device *udev, struct powermate_dev
- 
- 	pm->configcr = kmalloc(sizeof(*(pm->configcr)), GFP_KERNEL);
- 	if (!pm->configcr)
--		return -1;
-+		return -ENOMEM;
- 
- 	return 0;
- }
-diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
-index 4831120..04d9bf3 100644
---- a/drivers/input/mouse/elantech.c
-+++ b/drivers/input/mouse/elantech.c
-@@ -699,7 +699,7 @@ int elantech_init(struct psmouse *psmouse)
- 
- 	psmouse->private = etd = kzalloc(sizeof(struct elantech_data), GFP_KERNEL);
- 	if (!etd)
--		return -1;
-+		return -ENOMEM;
- 
- 	etd->parity[0] = 1;
- 	for (i = 1; i < 256; i++)
-diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index 96b70a4..a79bc36 100644
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -731,7 +731,7 @@ int synaptics_init(struct psmouse *psmouse)
- 
- 	psmouse->private = priv = kzalloc(sizeof(struct synaptics_data), GFP_KERNEL);
- 	if (!priv)
--		return -1;
-+		return -ENOMEM;
- 
- 	psmouse_reset(psmouse);
- 
-diff --git a/drivers/input/mouse/trackpoint.c b/drivers/input/mouse/trackpoint.c
-index 0643e49..54b2fa8 100644
---- a/drivers/input/mouse/trackpoint.c
-+++ b/drivers/input/mouse/trackpoint.c
-@@ -303,7 +303,7 @@ int trackpoint_detect(struct psmouse *psmouse, bool set_properties)
- 
- 	psmouse->private = kzalloc(sizeof(struct trackpoint_data), GFP_KERNEL);
- 	if (!psmouse->private)
--		return -1;
-+		return -ENOMEM;
- 
- 	psmouse->vendor = "IBM";
- 	psmouse->name = "TrackPoint";
--- 
-1.7.0.4
+> Code which makes this sort of assumption about knowing the platforms
+> that the device will be deployed on well is relatively common but the
+> usual result is that OEMs want to change the reference platforms and
+> the assumptions that the code has been making about the systems and
+> about how people will work with the code break down.
 
+There are non reference platforms in existence without the problem you
+envisage having occurred. So I think we'll worry about it if it happens
+but knowing that with DMI we have the tools to deal with this.
 
-
+Alan
