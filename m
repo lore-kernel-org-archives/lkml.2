@@ -1,32 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756544Ab0IWUNF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 16:13:05 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43825 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756516Ab0IWUND (ORCPT
+	id S1756443Ab0IWUPP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 16:15:15 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:57688 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755091Ab0IWUPN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 16:13:03 -0400
-Date: Thu, 23 Sep 2010 13:11:36 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: holzheu@linux.vnet.ibm.com
-Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Oleg Nesterov <oleg@redhat.com>, John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: [RFC][PATCH 00/10] taskstats: Enhancements for precise
- accounting
-Message-Id: <20100923131136.356075f4.akpm@linux-foundation.org>
-In-Reply-To: <1285249681.1837.28.camel@holzheu-laptop>
-References: <1285249681.1837.28.camel@holzheu-laptop>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Thu, 23 Sep 2010 16:15:13 -0400
+Date: Thu, 23 Sep 2010 21:36:54 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-api@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
+        David Miller <davem@davemloft.net>, John Stultz <johnstul@us.ibm.com>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v6 0/8] ptp: IEEE 1588 hardware clock support
+Message-ID: <20100923213654.0c64b047@lxorguk.ukuu.org.uk>
+In-Reply-To: <cover.1285261533.git.richard.cochran@omicron.at>
+References: <cover.1285261533.git.richard.cochran@omicron.at>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -34,146 +32,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Sep 2010 15:48:01 +0200
-Michael Holzheu <holzheu@linux.vnet.ibm.com> wrote:
+>    So as far as the POSIX standard is concerned, offering a clock id
+>    to represent the PHC would be acceptable.
 
-> Currently tools like "top" gather the task information by reading procfs
-> files. This has several disadvantages:
+But completely useless as you may have more than one entirely different
+time managed by PTP and in which you are not master but must work with
+the timebases provided.
+
+
+>     /sys/class/timesource/<name>/id
+>     /sys/class/ptp/ptp_clock_X/id
 > 
-> * It is very CPU intensive, because a lot of system calls (readdir, open,
->   read, close) are necessary.
-> * No real task snapshot can be provided, because while the procfs files are
->   read the system continues running.
-> * The procfs times granularity is restricted to jiffies.
-> 
-> In parallel to procfs there exists the taskstats binary interface that uses
-> netlink sockets as transport mechanism to deliver task information to
-> user space. There exists a taskstats command "TASKSTATS_CMD_ATTR_PID"
-> to get task information for a given PID. This command can already be used for
-> tools like top, but has also several disadvantages:
-> 
-> * You first have to find out which PIDs are available in the system. Currently
->   we have to use procfs again to do this.
-> * For each task two system calls have to be issued (First send the command and
->   then receive the reply).
-> * No snapshot mechanism is available.
-> 
-> GOALS OF THIS PATCH SET
-> -----------------------
-> The intention of this patch set is to provide better support for tools like
-> top. The goal is to:
-> 
-> * provide a task snapshot mechanism where we can get a consistent view of
->   all running tasks.
-> * provide a transport mechanism that does not require a lot of system calls
->   and that allows implementing low CPU overhead task monitoring.
-> * provide microsecond CPU time granularity.
+>     Note: I am not too sure that this is exactly what people imagined,
+>           but it is my best understanding so far. I gleaned two
+>           different ideas about where to offer the clock id. In order
+>           to keep just one way, I will be happy to remove the less
+>           popular one.
 
-This is a big change!  If this is done right then we're heading in the
-direction of deprecating the longstanding way in which userspace
-observes the state of Linux processes and we're recommending that the
-whole world migrate to taskstats.  I think?
-
-If so, much chin-scratching will be needed, coordination with
-util-linux people, etc.
-
-We'd need to think about the implications of taskstats versioning.  It
-_is_ a versioned interface, so people can't just go and toss random new
-stuff in there at will - it's not like adding a new procfs file, or
-adding a new line to an existing one.  I don't know if that's likely to
-be a significant problem.
-
-I worry that there's a dependency on CONFIG_NET?  If so then that's a
-big problem because in N years time, 99% of the world will be using
-taskstats, but a few embedded losers will be stuck using (and having to
-support) the old tools.
+I see no fix proposed for the race condition I pointed out. This doesn't
+work.
 
 
-> FIRST RESULTS
-> -------------
-> Together with this kernel patch set also user space code for a new top
-> utility (ptop) is provided that exploits the new kernel infrastructure. See
-> patch 10 for more details.
-> 
-> TEST1: System with many sleeping tasks
-> 
->   for ((i=0; i < 1000; i++))
->   do
->          sleep 1000000 &
->   done
-> 
->   # ptop_new_proc
-> 
->              VVVV
->   pid   user  sys  ste  total  Name
->   (#)    (%)  (%)  (%)    (%)  (str)
->   541   0.37 2.39 0.10   2.87  top
->   3743  0.03 0.05 0.00   0.07  ptop_new_proc
->              ^^^^
-> 
-> Compared to the old top command that has to scan more than 1000 proc
-> directories the new ptop consumes much less CPU time (0.05% system time
-> on my s390 system).
+>    If the Linux system time is synchronized to the PHC via the PPS
 
-How many CPUs does that system have?
+To which PHC we can have several
 
-What's the `top' update period?  One second?
+>    + Intel IXP465
+>      - Auxiliary Slave/Master Mode Snapshot (optional interrupt)
+>      - Target Time (optional interrupt)
 
-So we're saying that a `top -d 1' consumes 2.4% of this
-mystery-number-of-CPUs machine?  That's quite a lot.
+And about 40 already supported by char driver interface clocks and rtcs
+in the kernel...
 
-> PATCHSET OVERVIEW
-> -----------------
-> The code is not final and still has a few TODOs. But it is good enough for a
-> first round of review. The following kernel patches are provided:
-> 
-> [01] Prepare-0: Use real microsecond granularity for taskstats CPU times.
-> [02] Prepare-1: Restructure taskstats.c in order to be able to add new commands
->      more easily.
-> [03] Prepare-2: Separate the finding of a task_struct by PID or TGID from
->      filling the taskstats.
-> [04] Add new command "TASKSTATS_CMD_ATTR_PIDS" to get a snapshot of multiple
->      tasks.
-> [05] Add procfs interface for taskstats commands. This allows to get a complete
->      and consistent snapshot with all tasks using two system calls (ioctl and
->      read). Transferring a snapshot of all running tasks is not possible using
->      the existing netlink interface, because there we have the socket buffer
->      size as restricting factor.
 
-So this is a binary interface which uses an ioctl.  People don't like
-ioctls.  Could we have triggered it with a write() instead?
+I'd say the inability to have multiple clocks and the race condition
+because of the clockid stuff leaves the proposal dead in the water.
 
-Does this have the potential to save us from the CONFIG_NET=n problem?
+It also ignores the existing APIs we have floating around attached to
+devices.
 
-> [06] Add TGID to taskstats.
-> [07] Add steal time per task accounting.
-> [08] Add cumulative CPU time (user, system and steal) to taskstats.
+You need to make one small important change. You need to take the POSIX
+crap about enumerating things out and shoot it, bury it at a crossroads
+and sprinkle holy water on it.
 
-These didn't update the taskstats version number.  Should they have?
+Drop the clockid_t and swap it for a file handle like a proper Unix or
+Linux interface. The rest is much the same
 
-> [09] Fix exit CPU time accounting.
-> 
-> [10] Besides of the kernel patches also user space code is provided that
->      exploits the new kernel infrastructure. The user space code provides the
->      following:
->      1. A proposal for a taskstats user space library:
->         1.1 Based on netlink (requires libnl-devel-1.1-5)
->         2.1 Based on the new /proc/taskstats interface (see [05])
->      2. A proposal for a task snapshot library based on taskstats library (1.1)
+	fd = open /sys/class/timesource/[whatever]
 
-ooh, excellent.  A standardised userspace access library.
+	various queries you may want to do to check the name etc
 
->      3. A new tool "ptop" (precise top) that uses the libraries
+	fclock_adjtime(fd, ...)
+	
 
-Talk to me about namespaces, please.  A lot of the new code involves
-PIDs, but PIDs are not system-wide unique.  A PID is relative to a PID
-namespace.  Does everything Just Work?  When userspace sends a PID to
-the kernel, that PID is assumed to be within the sending process's PID
-namespace?  If so, then please spell it all out in the changelogs.  If
-not then that is a problem!
+The posix interface is fundamentally flawed. It only works for staticly
+enumerable objects. Unix avoided that forty years ago by making the
+identifier a handle which immediately cures all your object lifetime
+problems in one swoop.
 
-If I can only observe processes in my PID namespace then is that a
-problem?  Should I be allowed to observe another PID namespace's
-processes?  I assume so, because I might be root.  If so, how is that
-to be done?
+Namespace -> file handle translations are dynamic, but once you have it
+open you hold on to the same object, which means you can check what you
+have.
 
+
+
+Alan
