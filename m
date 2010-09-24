@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750794Ab0IXED6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 00:03:58 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:51872 "EHLO smtps.tip.net.au"
+	id S1750822Ab0IXEJH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 00:09:07 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:52261 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750715Ab0IXED4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 00:03:56 -0400
-Date: Fri, 24 Sep 2010 14:03:51 +1000
+	id S1750734Ab0IXEJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 00:09:05 -0400
+Date: Fri, 24 Sep 2010 14:08:59 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
+To: Arnd Bergmann <arnd@arndb.de>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>
-Subject: linux-next: build warning after merge of the tty tree
-Message-Id: <20100924140351.b137a3b7.sfr@canb.auug.org.au>
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: linux-next: build warning from Linus' tree
+Message-Id: <20100924140859.038ccf89.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA1";
- boundary="Signature=_Fri__24_Sep_2010_14_03_51_+1000_lzP1KSf=rqrBT17P"
+ boundary="Signature=_Fri__24_Sep_2010_14_08_59_+1000_bwTfImwWnPG=IMnk"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__24_Sep_2010_14_03_51_+1000_lzP1KSf=rqrBT17P
+--Signature=_Fri__24_Sep_2010_14_08_59_+1000_bwTfImwWnPG=IMnk
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Greg,
+Hi Arnd,
 
-After merging the tty tree, today's linux-next build (powerpc
-allyesconfig) produced this warning:
+Today's (and lots before) linux-next build (i386 defconfig) produced this
+warning:
 
-drivers/usb/serial/ssu100.c: In function 'ssu100_ioctl':
-drivers/usb/serial/ssu100.c:448: warning: unused variable 'user_arg'
-drivers/usb/serial/ssu100.c:447: warning: unused variable 'priv'
+fs/autofs4/root.c:31: warning: 'autofs4_root_compat_ioctl' declared 'static=
+' but never defined
 
-Introduced by commit 20e2e6fa50180468e4240a91f811dca3a1c30304 ("tty:
-Convert the USB drivers to the new icount interface").
+Introduced by commit c9243f5bdd6637b2bb7dc254b54d9edf957ef17e
+("autofs/autofs4: Move compat_ioctl handling into fs").
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 http://www.canb.auug.org.au/~sfr/
 
---Signature=_Fri__24_Sep_2010_14_03_51_+1000_lzP1KSf=rqrBT17P
+--Signature=_Fri__24_Sep_2010_14_08_59_+1000_bwTfImwWnPG=IMnk
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQEcBAEBAgAGBQJMnCMnAAoJEDMEi1NhKgbsrg8H/idC90ArdvX/4qpuZ8UJescY
-WzZVyeBf6AS47tWoYm5IUxZ1RA5Bl3Cd7/sUxptxsKUgfu0DIP/p8FEm+Fz3wFSS
-C6kaoinm5oqrChl9aiDv8MA715/GuLtM8KHrHOcZq1sCuoq31Q9v4Tjk/4ebCLdN
-uxmyj1E/XTmB9qPkF+/zuUn6OwoULJ/T3AS0lX+wMN1rlElwHoIZhVOOdtSawYO7
-ENbMsXct7NUxpesCT63DJNzaMW7OLWpu1PanwZhgGiuyBAF4UZnUJWP+Z/8ho6Pw
-C8Lrp0HRh6rdoebhRz/SN+YzPjkE5LBfd0W/aAwCfEUNJS22cQwrPvcpo5NXv9M=
-=Fgt7
+iQEcBAEBAgAGBQJMnCRbAAoJEDMEi1NhKgbssd4H/3PcOClw/XQvuRc51q6wo46P
+wJ+wMmubmJo8wkWcnXGajI/5JEFEewQoTOyTD2ITzlSCBriHCf6Mo8Sn4j9F68Wp
+cnAmRx91qTuYQDmKUz8WyRmXSjOYwJ4SIfQHeLuZpCTxQlQFTOpELetpXo7zpg+w
+HOKuu5qqMVC6eNuz3PfBSBXlGUeYyBRvNiIwvyLgg7+EovSR5/+0hcey/80hfjcv
+ja0fxmDnvDQsv+Ryl/+CJIrO+GoHsXqBZDAORBEeJBRkSvbhYzAywYlvECyL4Sdf
+I6QnrIfRl3CK0OO0aklnErOiiPkjP5FyMhZFUZE1+WRlb4X3+bt5jPqn8TUI4S4=
+=tSA+
 -----END PGP SIGNATURE-----
 
---Signature=_Fri__24_Sep_2010_14_03_51_+1000_lzP1KSf=rqrBT17P--
+--Signature=_Fri__24_Sep_2010_14_08_59_+1000_bwTfImwWnPG=IMnk--
