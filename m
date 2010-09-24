@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932349Ab0IXPtg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 11:49:36 -0400
-Received: from kroah.org ([198.145.64.141]:47023 "EHLO coco.kroah.org"
+	id S932360Ab0IXPvJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 11:51:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23108 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753014Ab0IXPtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 11:49:35 -0400
-Date: Fri, 24 Sep 2010 08:49:27 -0700
-From: Greg KH <greg@kroah.com>
-To: Tracey Dent <tdent48227@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] Staging: rtl8187se: r8180.h: fixed alot of
- checkpatch.pl issues
-Message-ID: <20100924154927.GA20767@kroah.com>
-References: <1285031982-3870-1-git-send-email-tdent48227@gmail.com>
- <20100922232458.GB18432@haskell.muteddisk.com>
- <20100923022256.GB27057@kroah.com>
- <20100924063616.GD18432@haskell.muteddisk.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100924063616.GD18432@haskell.muteddisk.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932172Ab0IXPvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 11:51:08 -0400
+Date: Fri, 24 Sep 2010 11:50:49 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
+        sandeen@redhat.com, tytso@mit.edu, bfields@citi.umich.edu,
+        linux-fsdevel@vger.kernel.org, nfsv4@linux-nfs.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V4 07/11] vfs: Make acl_permission_check() work for
+ richacls
+Message-ID: <20100924115049.47b1217b@tlielax.poochiereds.net>
+In-Reply-To: <1285332494-12756-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1285332494-12756-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<1285332494-12756-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 23, 2010 at 11:36:16PM -0700, matt mooney wrote:
-> While I have your attention, I am changing all makefiles to use the newer kbuild
-> flag variables, such as ccflags-y, asflags-y, and ldflags-y. I have already
-> completed this for all directories in the kernel except drivers which is
-> next. The patches are trivial but there are a lot in drivers, so should I break
-> it down by driver or is subdirectory okay? media/video has 85 instances in
-> something like 12 different subdirectories, so I am not sure what is
-> best. Please let me know what is best.
+On Fri, 24 Sep 2010 18:18:10 +0530
+"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
 
-It all depends on the subsystem maintainer, I suggest asking them for
-what they wish to have you send them.
+> From: Andreas Gruenbacher <agruen@suse.de>
+> 
+> Signed-off-by: Andreas Gruenbacher <agruen@suse.de>
+> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> ---
+>  fs/namei.c |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/namei.c b/fs/namei.c
+> index 855b360..b0b8a71 100644
+> --- a/fs/namei.c
+> +++ b/fs/namei.c
+> @@ -174,6 +174,12 @@ static int acl_permission_check(struct inode *inode, int mask,
+>  {
+>  	umode_t			mode = inode->i_mode;
+>  
+> +	if (IS_RICHACL(inode)) {
+> +		int error = check_acl(inode, mask);
+> +		if (error != -EAGAIN)
+> +			return error;
+> +	}
+> +
+>  	if (current_fsuid() == inode->i_uid)
+>  		mode >>= 6;
+>  	else {
 
-good luck,
+This may just be my own ignorance of ACL semantics and unfamiliarity
+with the ACL code in general. It seems a bit unusual though...
 
-greg k-h
+Just to be clear...this patch implies that with richacls you can deny
+or grant access to the owner of the file even if the mode bits say
+otherwise. With POSIX acls, this seems to be the other way around.
+
+Hmm....guess I should read the spec...
+
+-- 
+Jeff Layton <jlayton@redhat.com>
