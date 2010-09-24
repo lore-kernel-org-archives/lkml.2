@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933124Ab0IXQfs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:35:48 -0400
-Received: from kroah.org ([198.145.64.141]:37398 "EHLO coco.kroah.org"
+	id S933168Ab0IXQiy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:38:54 -0400
+Received: from kroah.org ([198.145.64.141]:37421 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933089Ab0IXQfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:35:45 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:48 2010
-Message-Id: <20100924163348.660398151@clark.site>
+	id S932784Ab0IXQfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:35:51 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:49 2010
+Message-Id: <20100924163349.001540531@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:32:16 -0700
+Date: Fri, 24 Sep 2010 09:32:20 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <ben@decadent.org.uk>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [52/68] 3c503: Fix IRQ probing
+Subject: [56/68] gro: Fix bogus gso_size on the first fraglist entry
 In-Reply-To: <20100924163357.GA15741@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,104 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Herbert Xu <herbert@gondor.apana.org.au>
 
-commit b0cf4dfb7cd21556efd9a6a67edcba0840b4d98d upstream.
+commit 622e0ca1cd4d459f5af4f2c65f4dc0dd823cb4c3 upstream.
 
-The driver attempts to select an IRQ for the NIC automatically by
-testing which of the supported IRQs are available and then probing
-each available IRQ with probe_irq_{on,off}().  There are obvious race
-conditions here, besides which:
-1. The test for availability is done by passing a NULL handler, which
-   now always returns -EINVAL, thus the device cannot be opened:
-   <http://bugs.debian.org/566522>
-2. probe_irq_off() will report only the first ISA IRQ handled,
-   potentially leading to a false negative.
+When GRO produces fraglist entries, and the resulting skb hits
+an interface that is incapable of TSO but capable of FRAGLIST,
+we end up producing a bogus packet with gso_size non-zero.
 
-There was another bug that meant it ignored all error codes from
-request_irq() except -EBUSY, so it would 'succeed' despite this
-(possibly causing conflicts with other ISA devices).  This was fixed
-by ab08999d6029bb2c79c16be5405d63d2bedbdfea 'WARNING: some
-request_irq() failures ignored in el2_open()', which exposed bug 1.
+This was reported in the field with older versions of KVM that
+did not set the TSO bits on tuntap.
 
-This patch:
-1. Replaces the use of probe_irq_{on,off}() with a real interrupt handler
-2. Adds a delay before checking the interrupt-seen flag
-3. Disables interrupts on all failure paths
-4. Distinguishes error codes from the second request_irq() call,
-   consistently with the first
+This patch fixes that.
 
-Compile-tested only.
-
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Reported-by: Igor Zhang <yugzhang@redhat.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/3c503.c |   41 ++++++++++++++++++++++++++++++-----------
- 1 file changed, 30 insertions(+), 11 deletions(-)
+ net/core/skbuff.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/3c503.c
-+++ b/drivers/net/3c503.c
-@@ -380,6 +380,12 @@ out:
-     return retval;
- }
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -2730,6 +2730,7 @@ int skb_gro_receive(struct sk_buff **hea
+ 	*NAPI_GRO_CB(nskb) = *NAPI_GRO_CB(p);
+ 	skb_shinfo(nskb)->frag_list = p;
+ 	skb_shinfo(nskb)->gso_size = pinfo->gso_size;
++	pinfo->gso_size = 0;
+ 	skb_header_release(p);
+ 	nskb->prev = p;
  
-+static irqreturn_t el2_probe_interrupt(int irq, void *seen)
-+{
-+	*(bool *)seen = true;
-+	return IRQ_HANDLED;
-+}
-+
- static int
- el2_open(struct net_device *dev)
- {
-@@ -391,22 +397,35 @@ el2_open(struct net_device *dev)
- 
- 	outb(EGACFR_NORM, E33G_GACFR);	/* Enable RAM and interrupts. */
- 	do {
--	    retval = request_irq(*irqp, NULL, 0, "bogus", dev);
--	    if (retval >= 0) {
-+		bool seen;
-+
-+		retval = request_irq(*irqp, el2_probe_interrupt, 0,
-+				     dev->name, &seen);
-+		if (retval == -EBUSY)
-+			continue;
-+		if (retval < 0)
-+			goto err_disable;
-+
- 		/* Twinkle the interrupt, and check if it's seen. */
--		unsigned long cookie = probe_irq_on();
-+		seen = false;
-+		smp_wmb();
- 		outb_p(0x04 << ((*irqp == 9) ? 2 : *irqp), E33G_IDCFR);
- 		outb_p(0x00, E33G_IDCFR);
--		if (*irqp == probe_irq_off(cookie)	/* It's a good IRQ line! */
--		    && ((retval = request_irq(dev->irq = *irqp,
--		    eip_interrupt, 0, dev->name, dev)) == 0))
--		    break;
--	    } else {
--		    if (retval != -EBUSY)
--			    return retval;
--	    }
-+		msleep(1);
-+		free_irq(*irqp, el2_probe_interrupt);
-+		if (!seen)
-+			continue;
-+
-+		retval = request_irq(dev->irq = *irqp, eip_interrupt, 0,
-+				     dev->name, dev);
-+		if (retval == -EBUSY)
-+			continue;
-+		if (retval < 0)
-+			goto err_disable;
- 	} while (*++irqp);
-+
- 	if (*irqp == 0) {
-+	err_disable:
- 	    outb(EGACFR_IRQOFF, E33G_GACFR);	/* disable interrupts. */
- 	    return -EAGAIN;
- 	}
 
 
