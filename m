@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757052Ab0IXQ71 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:59:27 -0400
-Received: from kroah.org ([198.145.64.141]:46065 "EHLO coco.kroah.org"
+	id S1757089Ab0IXQ7i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:59:38 -0400
+Received: from kroah.org ([198.145.64.141]:46060 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932544Ab0IXQ2C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:28:02 -0400
+	id S932537Ab0IXQ2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:28:01 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:16 2010
-Message-Id: <20100924162616.028002259@clark.site>
+Message-Id: <20100924162615.939091281@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:24:01 -0700
+Date: Fri, 24 Sep 2010 09:24:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [13/80] udp: add rehash on connect()
+Subject: [12/80] tcp: Prevent overzealous packetization by SWS logic.
 In-Reply-To: <20100924162706.GA7381@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,200 +25,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+[ Upstream commit 01f83d69844d307be2aa6fea88b0e8fe5cbdb2f4 ]
 
-commit 719f835853a92f6090258114a72ffe41f09155cd upstream
+If peer uses tiny MSS (say, 75 bytes) and similarly tiny advertised
+window, the SWS logic will packetize to half the MSS unnecessarily.
 
-commit 30fff923 introduced in linux-2.6.33 (udp: bind() optimisation)
-added a secondary hash on UDP, hashed on (local addr, local port).
+This causes problems with some embedded devices.
 
-Problem is that following sequence :
+However for large MSS devices we do want to half-MSS packetize
+otherwise we never get enough packets into the pipe for things
+like fast retransmit and recovery to work.
 
-fd = socket(...)
-connect(fd, &remote, ...)
+Be careful also to handle the case where MSS > window, otherwise
+we'll never send until the probe timer.
 
-not only selects remote end point (address and port), but also sets
-local address, while UDP stack stored in secondary hash table the socket
-while its local address was INADDR_ANY (or ipv6 equivalent)
-
-Sequence is :
- - autobind() : choose a random local port, insert socket in hash tables
-              [while local address is INADDR_ANY]
- - connect() : set remote address and port, change local address to IP
-              given by a route lookup.
-
-When an incoming UDP frame comes, if more than 10 sockets are found in
-primary hash table, we switch to secondary table, and fail to find
-socket because its local address changed.
-
-One solution to this problem is to rehash datagram socket if needed.
-
-We add a new rehash(struct socket *) method in "struct proto", and
-implement this method for UDP v4 & v6, using a common helper.
-
-This rehashing only takes care of secondary hash table, since primary
-hash (based on local port only) is not changed.
-
-Reported-by: Krzysztof Piotr Oledzki <ole@ans.pl>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Tested-by: Krzysztof Piotr Oledzki <ole@ans.pl>
+Reported-by: ツ Leandro Melo de Sales <leandroal@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- include/net/sock.h  |    1 +
- include/net/udp.h   |    1 +
- net/ipv4/datagram.c |    5 ++++-
- net/ipv4/udp.c      |   44 ++++++++++++++++++++++++++++++++++++++++++++
- net/ipv6/datagram.c |    7 ++++++-
- net/ipv6/udp.c      |   10 ++++++++++
- 6 files changed, 66 insertions(+), 2 deletions(-)
+ include/net/tcp.h |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -749,6 +749,7 @@ struct proto {
- 	/* Keeping track of sk's, looking them up, and port selection methods. */
- 	void			(*hash)(struct sock *sk);
- 	void			(*unhash)(struct sock *sk);
-+	void			(*rehash)(struct sock *sk);
- 	int			(*get_port)(struct sock *sk, unsigned short snum);
- 
- 	/* Keeping track of sockets in use */
---- a/include/net/udp.h
-+++ b/include/net/udp.h
-@@ -151,6 +151,7 @@ static inline void udp_lib_hash(struct s
- }
- 
- extern void udp_lib_unhash(struct sock *sk);
-+extern void udp_lib_rehash(struct sock *sk, u16 new_hash);
- 
- static inline void udp_lib_close(struct sock *sk, long timeout)
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -519,8 +519,22 @@ extern unsigned int tcp_current_mss(stru
+ /* Bound MSS / TSO packet size with the half of the window */
+ static inline int tcp_bound_to_half_wnd(struct tcp_sock *tp, int pktsize)
  {
---- a/net/ipv4/datagram.c
-+++ b/net/ipv4/datagram.c
-@@ -62,8 +62,11 @@ int ip4_datagram_connect(struct sock *sk
- 	}
- 	if (!inet->inet_saddr)
- 		inet->inet_saddr = rt->rt_src;	/* Update source address */
--	if (!inet->inet_rcv_saddr)
-+	if (!inet->inet_rcv_saddr) {
- 		inet->inet_rcv_saddr = rt->rt_src;
-+		if (sk->sk_prot->rehash)
-+			sk->sk_prot->rehash(sk);
-+	}
- 	inet->inet_daddr = rt->rt_dst;
- 	inet->inet_dport = usin->sin_port;
- 	sk->sk_state = TCP_ESTABLISHED;
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -1260,6 +1260,49 @@ void udp_lib_unhash(struct sock *sk)
+-	if (tp->max_window && pktsize > (tp->max_window >> 1))
+-		return max(tp->max_window >> 1, 68U - tp->tcp_header_len);
++	int cutoff;
++
++	/* When peer uses tiny windows, there is no use in packetizing
++	 * to sub-MSS pieces for the sake of SWS or making sure there
++	 * are enough packets in the pipe for fast recovery.
++	 *
++	 * On the other hand, for extremely large MSS devices, handling
++	 * smaller than MSS windows in this way does make sense.
++	 */
++	if (tp->max_window >= 512)
++		cutoff = (tp->max_window >> 1);
++	else
++		cutoff = tp->max_window;
++
++	if (cutoff && pktsize > cutoff)
++		return max_t(int, cutoff, 68U - tp->tcp_header_len);
+ 	else
+ 		return pktsize;
  }
- EXPORT_SYMBOL(udp_lib_unhash);
- 
-+/*
-+ * inet_rcv_saddr was changed, we must rehash secondary hash
-+ */
-+void udp_lib_rehash(struct sock *sk, u16 newhash)
-+{
-+	if (sk_hashed(sk)) {
-+		struct udp_table *udptable = sk->sk_prot->h.udp_table;
-+		struct udp_hslot *hslot, *hslot2, *nhslot2;
-+
-+		hslot2 = udp_hashslot2(udptable, udp_sk(sk)->udp_portaddr_hash);
-+		nhslot2 = udp_hashslot2(udptable, newhash);
-+		udp_sk(sk)->udp_portaddr_hash = newhash;
-+		if (hslot2 != nhslot2) {
-+			hslot = udp_hashslot(udptable, sock_net(sk),
-+					     udp_sk(sk)->udp_port_hash);
-+			/* we must lock primary chain too */
-+			spin_lock_bh(&hslot->lock);
-+
-+			spin_lock(&hslot2->lock);
-+			hlist_nulls_del_init_rcu(&udp_sk(sk)->udp_portaddr_node);
-+			hslot2->count--;
-+			spin_unlock(&hslot2->lock);
-+
-+			spin_lock(&nhslot2->lock);
-+			hlist_nulls_add_head_rcu(&udp_sk(sk)->udp_portaddr_node,
-+						 &nhslot2->head);
-+			nhslot2->count++;
-+			spin_unlock(&nhslot2->lock);
-+
-+			spin_unlock_bh(&hslot->lock);
-+		}
-+	}
-+}
-+EXPORT_SYMBOL(udp_lib_rehash);
-+
-+static void udp_v4_rehash(struct sock *sk)
-+{
-+	u16 new_hash = udp4_portaddr_hash(sock_net(sk),
-+					  inet_sk(sk)->inet_rcv_saddr,
-+					  inet_sk(sk)->inet_num);
-+	udp_lib_rehash(sk, new_hash);
-+}
-+
- static int __udp_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
- {
- 	int rc;
-@@ -1843,6 +1886,7 @@ struct proto udp_prot = {
- 	.backlog_rcv	   = __udp_queue_rcv_skb,
- 	.hash		   = udp_lib_hash,
- 	.unhash		   = udp_lib_unhash,
-+	.rehash		   = udp_v4_rehash,
- 	.get_port	   = udp_v4_get_port,
- 	.memory_allocated  = &udp_memory_allocated,
- 	.sysctl_mem	   = sysctl_udp_mem,
---- a/net/ipv6/datagram.c
-+++ b/net/ipv6/datagram.c
-@@ -104,9 +104,12 @@ ipv4_connected:
- 		if (ipv6_addr_any(&np->saddr))
- 			ipv6_addr_set_v4mapped(inet->inet_saddr, &np->saddr);
- 
--		if (ipv6_addr_any(&np->rcv_saddr))
-+		if (ipv6_addr_any(&np->rcv_saddr)) {
- 			ipv6_addr_set_v4mapped(inet->inet_rcv_saddr,
- 					       &np->rcv_saddr);
-+			if (sk->sk_prot->rehash)
-+				sk->sk_prot->rehash(sk);
-+		}
- 
- 		goto out;
- 	}
-@@ -191,6 +194,8 @@ ipv4_connected:
- 	if (ipv6_addr_any(&np->rcv_saddr)) {
- 		ipv6_addr_copy(&np->rcv_saddr, &fl.fl6_src);
- 		inet->inet_rcv_saddr = LOOPBACK4_IPV6;
-+		if (sk->sk_prot->rehash)
-+			sk->sk_prot->rehash(sk);
- 	}
- 
- 	ip6_dst_store(sk, dst,
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -111,6 +111,15 @@ int udp_v6_get_port(struct sock *sk, uns
- 	return udp_lib_get_port(sk, snum, ipv6_rcv_saddr_equal, hash2_nulladdr);
- }
- 
-+static void udp_v6_rehash(struct sock *sk)
-+{
-+	u16 new_hash = udp6_portaddr_hash(sock_net(sk),
-+					  &inet6_sk(sk)->rcv_saddr,
-+					  inet_sk(sk)->inet_num);
-+
-+	udp_lib_rehash(sk, new_hash);
-+}
-+
- static inline int compute_score(struct sock *sk, struct net *net,
- 				unsigned short hnum,
- 				struct in6_addr *saddr, __be16 sport,
-@@ -1452,6 +1461,7 @@ struct proto udpv6_prot = {
- 	.backlog_rcv	   = udpv6_queue_rcv_skb,
- 	.hash		   = udp_lib_hash,
- 	.unhash		   = udp_lib_unhash,
-+	.rehash		   = udp_v6_rehash,
- 	.get_port	   = udp_v6_get_port,
- 	.memory_allocated  = &udp_memory_allocated,
- 	.sysctl_mem	   = sysctl_udp_mem,
 
 
