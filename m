@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933179Ab0IXQh5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:37:57 -0400
-Received: from kroah.org ([198.145.64.141]:37441 "EHLO coco.kroah.org"
+	id S933132Ab0IXQfx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:35:53 -0400
+Received: from kroah.org ([198.145.64.141]:37413 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932941Ab0IXQfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:35:55 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:49 2010
-Message-Id: <20100924163349.260486844@clark.site>
+	id S932827Ab0IXQfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:35:50 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:48 2010
+Message-Id: <20100924163348.921002016@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:32:23 -0700
+Date: Fri, 24 Sep 2010 09:32:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dmitry Torokhov <dtor@mail.ru>
-Subject: [59/68] Input: add compat support for sysfs and /proc capabilities output
+        Aurelien Jarno <aurelien@aurel32.net>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: [55/68] [PATCH] clocksource: sh_tmu: compute mult and shift before registration
 In-Reply-To: <20100924163357.GA15741@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,156 +26,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+From: Aurelien Jarno <aurelien@aurel32.net>
 
-commit 15e184afa83a45cf8bafdb9dc906b97a8fbc974f upstream.
+commit 66f49121ffa41a19c59965b31b046d8368fec3c7 upstream.
 
-Input core displays capabilities bitmasks in form of one or more longs printed
-in hex form and separated by spaces. Unfortunately it does not work well
-for 32-bit applications running on 64-bit kernels since applications expect
-that number is "worth" only 32 bits when kernel advances by 64 bits.
+Since commit 98962465ed9e6ea99c38e0af63fe1dcb5a79dc25 ("nohz: Prevent
+clocksource wrapping during idle"), the CPU of an R2D board never goes
+to idle. This commit assumes that mult and shift are assigned before
+the clocksource is registered. As a consequence the safe maximum sleep
+time is negative and the CPU never goes into idle.
 
-Fix that by ensuring that output produced for compat tasks uses 32-bit units.
+This patch fixes the problem by moving mult and shift initialization
+from sh_tmu_clocksource_enable() to sh_tmu_register_clocksource().
 
-Reported-and-tested-by: Michael Tokarev <mjt@tls.msk.ru>
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+Signed-off-by: Aurelien Jarno <aurelien@aurel32.net>
+Signed-off-by: Paul Mundt <lethal@linux-sh.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/input/input.c |   84 +++++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 70 insertions(+), 14 deletions(-)
+ drivers/clocksource/sh_tmu.c |   20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
 
---- a/drivers/input/input.c
-+++ b/drivers/input/input.c
-@@ -24,6 +24,7 @@
- #include <linux/mutex.h>
- #include <linux/rcupdate.h>
- #include <linux/smp_lock.h>
-+#include "input-compat.h"
- 
- MODULE_AUTHOR("Vojtech Pavlik <vojtech@suse.cz>");
- MODULE_DESCRIPTION("Input core");
-@@ -758,6 +759,40 @@ static int input_attach_handler(struct i
- 	return error;
- }
- 
-+#ifdef CONFIG_COMPAT
-+
-+static int input_bits_to_string(char *buf, int buf_size,
-+				unsigned long bits, bool skip_empty)
-+{
-+	int len = 0;
-+
-+	if (INPUT_COMPAT_TEST) {
-+		u32 dword = bits >> 32;
-+		if (dword || !skip_empty)
-+			len += snprintf(buf, buf_size, "%x ", dword);
-+
-+		dword = bits & 0xffffffffUL;
-+		if (dword || !skip_empty || len)
-+			len += snprintf(buf + len, max(buf_size - len, 0),
-+					"%x", dword);
-+	} else {
-+		if (bits || !skip_empty)
-+			len += snprintf(buf, buf_size, "%lx", bits);
-+	}
-+
-+	return len;
-+}
-+
-+#else /* !CONFIG_COMPAT */
-+
-+static int input_bits_to_string(char *buf, int buf_size,
-+				unsigned long bits, bool skip_empty)
-+{
-+	return bits || !skip_empty ?
-+		snprintf(buf, buf_size, "%lx", bits) : 0;
-+}
-+
-+#endif
- 
- #ifdef CONFIG_PROC_FS
- 
-@@ -826,14 +861,25 @@ static void input_seq_print_bitmap(struc
- 				   unsigned long *bitmap, int max)
+--- a/drivers/clocksource/sh_tmu.c
++++ b/drivers/clocksource/sh_tmu.c
+@@ -199,16 +199,8 @@ static cycle_t sh_tmu_clocksource_read(s
+ static int sh_tmu_clocksource_enable(struct clocksource *cs)
  {
- 	int i;
+ 	struct sh_tmu_priv *p = cs_to_sh_tmu(cs);
+-	int ret;
+ 
+-	ret = sh_tmu_enable(p);
+-	if (ret)
+-		return ret;
 -
--	for (i = BITS_TO_LONGS(max) - 1; i > 0; i--)
--		if (bitmap[i])
--			break;
-+	bool skip_empty = true;
-+	char buf[18];
- 
- 	seq_printf(seq, "B: %s=", name);
--	for (; i >= 0; i--)
--		seq_printf(seq, "%lx%s", bitmap[i], i > 0 ? " " : "");
-+
-+	for (i = BITS_TO_LONGS(max) - 1; i >= 0; i--) {
-+		if (input_bits_to_string(buf, sizeof(buf),
-+					 bitmap[i], skip_empty)) {
-+			skip_empty = false;
-+			seq_printf(seq, "%s%s", buf, i > 0 ? " " : "");
-+		}
-+	}
-+
-+	/*
-+	 * If no output was produced print a single 0.
-+	 */
-+	if (skip_empty)
-+		seq_puts(seq, "0");
-+
- 	seq_putc(seq, '\n');
+-	/* TODO: calculate good shift from rate and counter bit width */
+-	cs->shift = 10;
+-	cs->mult = clocksource_hz2mult(p->rate, cs->shift);
+-	return 0;
++	return sh_tmu_enable(p);
  }
  
-@@ -1122,14 +1168,23 @@ static int input_print_bitmap(char *buf,
- {
- 	int i;
- 	int len = 0;
-+	bool skip_empty = true;
- 
--	for (i = BITS_TO_LONGS(max) - 1; i > 0; i--)
--		if (bitmap[i])
--			break;
-+	for (i = BITS_TO_LONGS(max) - 1; i >= 0; i--) {
-+		len += input_bits_to_string(buf + len, max(buf_size - len, 0),
-+					    bitmap[i], skip_empty);
-+		if (len) {
-+			skip_empty = false;
-+			if (i > 0)
-+				len += snprintf(buf + len, max(buf_size - len, 0), " ");
-+		}
-+	}
- 
--	for (; i >= 0; i--)
--		len += snprintf(buf + len, max(buf_size - len, 0),
--				"%lx%s", bitmap[i], i > 0 ? " " : "");
-+	/*
-+	 * If no output was produced print a single 0.
-+	 */
-+	if (len == 0)
-+		len = snprintf(buf, buf_size, "%d", 0);
- 
- 	if (add_cr)
- 		len += snprintf(buf + len, max(buf_size - len, 0), "\n");
-@@ -1144,7 +1199,8 @@ static ssize_t input_dev_show_cap_##bm(s
- {									\
- 	struct input_dev *input_dev = to_input_dev(dev);		\
- 	int len = input_print_bitmap(buf, PAGE_SIZE,			\
--				     input_dev->bm##bit, ev##_MAX, 1);	\
-+				     input_dev->bm##bit, ev##_MAX,	\
-+				     true);				\
- 	return min_t(int, len, PAGE_SIZE);				\
- }									\
- static DEVICE_ATTR(bm, S_IRUGO, input_dev_show_cap_##bm, NULL)
-@@ -1208,7 +1264,7 @@ static int input_add_uevent_bm_var(struc
- 
- 	len = input_print_bitmap(&env->buf[env->buflen - 1],
- 				 sizeof(env->buf) - env->buflen,
--				 bitmap, max, 0);
-+				 bitmap, max, false);
- 	if (len >= (sizeof(env->buf) - env->buflen))
- 		return -ENOMEM;
- 
+ static void sh_tmu_clocksource_disable(struct clocksource *cs)
+@@ -228,6 +220,16 @@ static int sh_tmu_register_clocksource(s
+ 	cs->disable = sh_tmu_clocksource_disable;
+ 	cs->mask = CLOCKSOURCE_MASK(32);
+ 	cs->flags = CLOCK_SOURCE_IS_CONTINUOUS;
++
++	/* clk_get_rate() needs an enabled clock */
++	clk_enable(p->clk);
++	/* channel will be configured at parent clock / 4 */
++	p->rate = clk_get_rate(p->clk) / 4;
++	clk_disable(p->clk);
++	/* TODO: calculate good shift from rate and counter bit width */
++	cs->shift = 10;
++	cs->mult = clocksource_hz2mult(p->rate, cs->shift);
++
+ 	pr_info("sh_tmu: %s used as clock source\n", cs->name);
+ 	clocksource_register(cs);
+ 	return 0;
 
 
