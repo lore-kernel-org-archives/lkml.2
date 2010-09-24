@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932882Ab0IXQ33 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:29:29 -0400
-Received: from kroah.org ([198.145.64.141]:38630 "EHLO coco.kroah.org"
+	id S932617Ab0IXQ3n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:29:43 -0400
+Received: from kroah.org ([198.145.64.141]:38624 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932859Ab0IXQ3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:29:04 -0400
+	id S932505Ab0IXQ3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:29:03 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:21 2010
-Message-Id: <20100924162621.802877431@clark.site>
+Message-Id: <20100924162621.720273595@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:25:07 -0700
+Date: Fri, 24 Sep 2010 09:25:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [79/80] drm/i915: Ensure that the crtcinfo is populated during mode_fixup()
+        Vlad Yasevich <vladislav.yasevich@hp.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [78/80] sctp: Do not reset the packet during sctp_packet_config().
 In-Reply-To: <20100924162706.GA7381@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Vlad Yasevich <vladislav.yasevich@hp.com>
 
-commit 897493504addc5609f04a2c4f73c37ab972c29b2 upstream.
+commit 4bdab43323b459900578b200a4b8cf9713ac8fab upstream.
 
-This should fix the mysterious mode setting failures reported during
-boot up and after resume, generally for i8xx class machines.
+sctp_packet_config() is called when getting the packet ready
+for appending of chunks.  The function should not touch the
+current state, since it's possible to ping-pong between two
+transports when sending, and that can result packet corruption
+followed by skb overlfow crash.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=16478
-Reported-and-tested-by: Xavier Chantry <chantry.xavier@gmail.com>
-Buzilla: https://bugs.freedesktop.org/show_bug.cgi?id=29413
-Tested-by: Daniel Vetter <daniel@ffwll.ch>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Reported-by: Thomas Dreibholz <dreibh@iem.uni-due.de>
+Signed-off-by: Vlad Yasevich <vladislav.yasevich@hp.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ net/sctp/output.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -2376,11 +2376,19 @@ static bool intel_crtc_mode_fixup(struct
- 				  struct drm_display_mode *adjusted_mode)
- {
- 	struct drm_device *dev = crtc->dev;
-+
- 	if (HAS_PCH_SPLIT(dev)) {
- 		/* FDI link clock is fixed at 2.7G */
- 		if (mode->clock * 3 > 27000 * 4)
- 			return MODE_CLOCK_HIGH;
- 	}
-+
-+	/* XXX some encoders set the crtcinfo, others don't.
-+	 * Obviously we need some form of conflict resolution here...
-+	 */
-+	if (adjusted_mode->crtc_htotal == 0)
-+		drm_mode_set_crtcinfo(adjusted_mode, 0);
-+
- 	return true;
- }
+--- a/net/sctp/output.c
++++ b/net/sctp/output.c
+@@ -92,7 +92,6 @@ struct sctp_packet *sctp_packet_config(s
+ 	SCTP_DEBUG_PRINTK("%s: packet:%p vtag:0x%x\n", __func__,
+ 			  packet, vtag);
  
+-	sctp_packet_reset(packet);
+ 	packet->vtag = vtag;
+ 
+ 	if (ecn_capable && sctp_packet_empty(packet)) {
 
 
