@@ -1,28 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932649Ab0IXQ2W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:28:22 -0400
-Received: from kroah.org ([198.145.64.141]:38294 "EHLO coco.kroah.org"
+	id S1756700Ab0IXQyo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:54:44 -0400
+Received: from kroah.org ([198.145.64.141]:38347 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932612Ab0IXQ2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:28:19 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:17 2010
-Message-Id: <20100924162617.600326431@clark.site>
+	id S932547Ab0IXQ20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:28:26 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:18 2010
+Message-Id: <20100924162618.188627921@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:24:19 -0700
+Date: Fri, 24 Sep 2010 09:24:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prasad <prasad@linux.vnet.ibm.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [31/80] hw breakpoints: Fix pid namespace bug
+        Jan Kara <jack@suse.cz>, Jens Axboe <jaxboe@fusionio.com>
+Subject: [38/80] char: Mark /dev/zero and /dev/kmem as not capable of writeback
 In-Reply-To: <20100924162706.GA7381@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,52 +25,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Helsley <matthltc@us.ibm.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 068e35eee9ef98eb4cab55181977e24995d273be upstream.
+commit 371d217ee1ff8b418b8f73fb2a34990f951ec2d4 upstream.
 
-Hardware breakpoints can't be registered within pid namespaces
-because tsk->pid is passed rather than the pid in the current
-namespace.
+These devices don't do any writeback but their device inodes still can get
+dirty so mark bdi appropriately so that bdi code does the right thing and files
+inodes to lists of bdi carrying the device inodes.
 
-(See https://bugzilla.kernel.org/show_bug.cgi?id=17281 )
-
-This is a quick fix demonstrating the problem but is not the
-best method of solving the problem since passing pids internally
-is not the best way to avoid pid namespace bugs. Subsequent patches
-will show a better solution.
-
-Much thanks to Frederic Weisbecker <fweisbec@gmail.com> for doing
-the bulk of the work finding this bug.
-
-Reported-by: Robin Green <greenrd@greenrd.org>
-Signed-off-by: Matt Helsley <matthltc@us.ibm.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Prasad <prasad@linux.vnet.ibm.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
-LKML-Reference: <f63454af09fb1915717251570423eb9ddd338340.1284407762.git.matthltc@us.ibm.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/hw_breakpoint.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/char/mem.c |    3 ++-
+ fs/char_dev.c      |    4 +++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
---- a/kernel/hw_breakpoint.c
-+++ b/kernel/hw_breakpoint.c
-@@ -417,7 +417,8 @@ register_user_hw_breakpoint(struct perf_
- 			    perf_overflow_handler_t triggered,
- 			    struct task_struct *tsk)
- {
--	return perf_event_create_kernel_counter(attr, -1, tsk->pid, triggered);
-+	return perf_event_create_kernel_counter(attr, -1, task_pid_vnr(tsk),
-+						triggered);
- }
- EXPORT_SYMBOL_GPL(register_user_hw_breakpoint);
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -788,10 +788,11 @@ static const struct file_operations zero
+ /*
+  * capabilities for /dev/zero
+  * - permits private mappings, "copies" are taken of the source of zeros
++ * - no writeback happens
+  */
+ static struct backing_dev_info zero_bdi = {
+ 	.name		= "char/mem",
+-	.capabilities	= BDI_CAP_MAP_COPY,
++	.capabilities	= BDI_CAP_MAP_COPY | BDI_CAP_NO_ACCT_AND_WRITEBACK,
+ };
  
+ static const struct file_operations full_fops = {
+--- a/fs/char_dev.c
++++ b/fs/char_dev.c
+@@ -40,7 +40,9 @@ struct backing_dev_info directly_mappabl
+ #endif
+ 		/* permit direct mmap, for read, write or exec */
+ 		BDI_CAP_MAP_DIRECT |
+-		BDI_CAP_READ_MAP | BDI_CAP_WRITE_MAP | BDI_CAP_EXEC_MAP),
++		BDI_CAP_READ_MAP | BDI_CAP_WRITE_MAP | BDI_CAP_EXEC_MAP |
++		/* no writeback happens */
++		BDI_CAP_NO_ACCT_AND_WRITEBACK),
+ };
+ 
+ static struct kobj_map *cdev_map;
 
 
