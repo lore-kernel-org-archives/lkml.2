@@ -1,244 +1,386 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757250Ab0IXVUM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 17:20:12 -0400
-Received: from xenotime.net ([72.52.115.56]:35852 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754778Ab0IXVUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 17:20:10 -0400
-Date: Fri, 24 Sep 2010 14:20:06 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Vernon Mauery <vernux@us.ibm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>
-Subject: Re: [RFC][Patch] IBM Real-Time "SMI Free" mode driver -v5
-Message-Id: <20100924142006.a79833ab.rdunlap@xenotime.net>
-In-Reply-To: <20100924210642.GE10777@lucy>
-References: <20100921224610.GO13162@lucy>
-	<20100923221253.GA4960@lucy>
-	<20100923225346.GB4960@lucy>
-	<201009241512.39311.arnd@arndb.de>
-	<AANLkTimMWAk22gSn2cXA25VNJ1o3OX-mazJfFFd_+MH2@mail.gmail.com>
-	<20100924095625.5beedf5a.rdunlap@xenotime.net>
-	<20100924210642.GE10777@lucy>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757205Ab0IXVYr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 17:24:47 -0400
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:33392 "EHLO
+	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752833Ab0IXVYq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 17:24:46 -0400
+Date: Fri, 24 Sep 2010 14:24:43 -0700
+From: "Ira W. Snyder" <iws@ovro.caltech.edu>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH RFCv1 1/2] dmaengine: add support for scatterlist to
+ scatterlist transfers
+Message-ID: <20100924212443.GA24654@ovro.caltech.edu>
+References: <1285357571-23377-1-git-send-email-iws@ovro.caltech.edu>
+ <1285357571-23377-2-git-send-email-iws@ovro.caltech.edu>
+ <AANLkTimfZa+N51Tww_pWFqtqMmcYYkH_V0V_P1Qizt5b@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimfZa+N51Tww_pWFqtqMmcYYkH_V0V_P1Qizt5b@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.0 (ovro.ovro.caltech.edu); Fri, 24 Sep 2010 14:24:44 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Sep 2010 14:06:42 -0700 Vernon Mauery wrote:
+On Fri, Sep 24, 2010 at 01:40:56PM -0700, Dan Williams wrote:
+> On Fri, Sep 24, 2010 at 12:46 PM, Ira W. Snyder <iws@ovro.caltech.edu> wrote:
+> > This adds support for scatterlist to scatterlist DMA transfers. As
+> > requested by Dan, this is hidden behind an ifdef so that it can be
+> > selected by the drivers that need it.
+> >
+> > Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
+> > ---
+> >  drivers/dma/Kconfig       |    4 ++
+> >  drivers/dma/dmaengine.c   |  119 +++++++++++++++++++++++++++++++++++++++++++++
+> >  include/linux/dmaengine.h |   10 ++++
+> >  3 files changed, 133 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+> > index 9520cf0..f688669 100644
+> > --- a/drivers/dma/Kconfig
+> > +++ b/drivers/dma/Kconfig
+> > @@ -89,10 +89,14 @@ config AT_HDMAC
+> >          Support the Atmel AHB DMA controller.  This can be integrated in
+> >          chips such as the Atmel AT91SAM9RL.
+> >
+> > +config DMAENGINE_SG_TO_SG
+> > +       bool
+> > +
+> >  config FSL_DMA
+> >        tristate "Freescale Elo and Elo Plus DMA support"
+> >        depends on FSL_SOC
+> >        select DMA_ENGINE
+> > +       select DMAENGINE_SG_TO_SG
+> >        ---help---
+> >          Enable support for the Freescale Elo and Elo Plus DMA controllers.
+> >          The Elo is the DMA controller on some 82xx and 83xx parts, and the
+> > diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
+> > index 9d31d5e..57ec1e5 100644
+> > --- a/drivers/dma/dmaengine.c
+> > +++ b/drivers/dma/dmaengine.c
+> > @@ -972,10 +972,129 @@ dma_async_memcpy_pg_to_pg(struct dma_chan *chan, struct page *dest_pg,
+> >  }
+> >  EXPORT_SYMBOL(dma_async_memcpy_pg_to_pg);
+> >
+> > +#ifdef CONFIG_DMAENGINE_SG_TO_SG
+> > +dma_cookie_t
+> > +dma_async_memcpy_sg_to_sg(struct dma_chan *chan,
+> > +                         struct scatterlist *dst_sg, unsigned int dst_nents,
+> > +                         struct scatterlist *src_sg, unsigned int src_nents,
+> > +                         dma_async_tx_callback cb, void *cb_param)
+> > +{
+> > +       struct dma_device *dev = chan->device;
+> > +       struct dma_async_tx_descriptor *tx;
+> > +       dma_cookie_t cookie = -ENOMEM;
+> > +       size_t dst_avail, src_avail;
+> > +       struct list_head tx_list;
+> > +       size_t transferred = 0;
+> > +       dma_addr_t dst, src;
+> > +       size_t len;
+> > +
+> > +       if (dst_nents == 0 || src_nents == 0)
+> > +               return -EINVAL;
+> > +
+> > +       if (dst_sg == NULL || src_sg == NULL)
+> > +               return -EINVAL;
+> > +
+> > +       /* get prepared for the loop */
+> > +       dst_avail = sg_dma_len(dst_sg);
+> > +       src_avail = sg_dma_len(src_sg);
+> > +
+> > +       INIT_LIST_HEAD(&tx_list);
+> > +
+> > +       /* run until we are out of descriptors */
+> > +       while (true) {
+> > +
+> > +               /* create the largest transaction possible */
+> > +               len = min_t(size_t, src_avail, dst_avail);
+> > +               if (len == 0)
+> > +                       goto fetch;
+> > +
+> > +               dst = sg_dma_address(dst_sg) + sg_dma_len(dst_sg) - dst_avail;
+> > +               src = sg_dma_address(src_sg) + sg_dma_len(src_sg) - src_avail;
+> > +
+> > +               /* setup the transaction */
+> > +               tx = dev->device_prep_dma_memcpy(chan, dst, src, len, 0);
+> > +               if (!tx) {
+> > +                       dev_err(dev->dev, "failed to alloc desc for memcpy\n");
+> > +                       return -ENOMEM;
+> 
+> I don't think any dma channels gracefully handle descriptors that were
+> prepped but not submitted.  You would probably need to submit the
+> backlog, poll for completion, and then return the error.
+> Alternatively, the expectation is that descriptor allocations are
+> transient, i.e. once previously submitted transactions are completed
+> the descriptors will return to the available pool.  So you could do
+> what async_tx routines do and just poll for a descriptor.
+> 
 
-> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-> index cff7cc2..5fba368 100644
-> --- a/drivers/platform/x86/Kconfig
-> +++ b/drivers/platform/x86/Kconfig
-> @@ -590,4 +590,20 @@ config INTEL_IPS
->  	  functionality.  If in doubt, say Y here; it will only load on
->  	  supported platforms.
->  
-> +config IBM_RTL
-> +	tristate "Device driver to enable PRTL support"
-> +	depends on X86 && PCI
-> +	---help---
-> +	  Enable support for IBM Premium Real Time Mode (PRTM).
-> +	  This module will allow you the enter and exit PRTM in the BIOS via
-> +	  sysfs on platforms that support this feature.  System in PRTM will
-> +	  not recive CPU-generated SMIs for recoverable errors.  Use of this
+Can you give me an example? Even some pseudocode would help.
 
-	      receive (again/still)
+The other DMAEngine functions (dma_async_memcpy_*()) don't do anything
+with the descriptor if submit fails. Take for example
+dma_async_memcpy_buf_to_buf(). If tx->tx_submit(tx); fails, any code
+using it has no way to return the descriptor to the free pool.
 
-> +	  feature without proper support may void your hardware warranty.
-> +
-> +	  If the proper BIOS support is found the driver will load and create
-> +	  /sys/devices/system/ibm_rtl/.  The "state" variable will indicate
-> +	  whether or not the BIOS is in PRTM.
-> +	  state = 0 (BIOS SMIs on)
-> +	  state = 1 (BIOS SMIs off)
-> +
->  endif # X86_PLATFORM_DEVICES
+Does tx_submit() implicitly return descriptors to the free pool if it
+fails?
 
-> diff --git a/drivers/platform/x86/ibm_rtl.c b/drivers/platform/x86/ibm_rtl.c
-> new file mode 100644
-> index 0000000..2a0a390
-> --- /dev/null
-> +++ b/drivers/platform/x86/ibm_rtl.c
-> @@ -0,0 +1,339 @@
-> +/*
-> + * IBM Real-Time Linux driver
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-> + *
-> + * Copyright (C) IBM Corporation, 2010
-> + *
-> + * Author: Keith Mannthey <kmannth@us.ibm.com>
-> + *         Vernon Mauery <vernux@us.ibm.com>
-> + *
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/delay.h>
-> +#include <linux/module.h>
-> +#include <linux/io.h>
-> +#include <linux/sysdev.h>
-> +#include <linux/dmi.h>
-> +#include <linux/mutex.h>
-> +#include <asm/bios_ebda.h>
-> +
-> +static int force;
+> > +               }
+> > +
+> > +               /* keep track of the tx for later */
+> > +               list_add_tail(&tx->entry, &tx_list);
+> > +
+> > +               /* update metadata */
+> > +               transferred += len;
+> > +               dst_avail -= len;
+> > +               src_avail -= len;
+> > +
+> > +fetch:
+> > +               /* fetch the next dst scatterlist entry */
+> > +               if (dst_avail == 0) {
+> > +
+> > +                       /* no more entries: we're done */
+> > +                       if (dst_nents == 0)
+> > +                               break;
+> > +
+> > +                       /* fetch the next entry: if there are no more: done */
+> > +                       dst_sg = sg_next(dst_sg);
+> > +                       if (dst_sg == NULL)
+> > +                               break;
+> > +
+> > +                       dst_nents--;
+> > +                       dst_avail = sg_dma_len(dst_sg);
+> > +               }
+> > +
+> > +               /* fetch the next src scatterlist entry */
+> > +               if (src_avail == 0) {
+> > +
+> > +                       /* no more entries: we're done */
+> > +                       if (src_nents == 0)
+> > +                               break;
+> > +
+> > +                       /* fetch the next entry: if there are no more: done */
+> > +                       src_sg = sg_next(src_sg);
+> > +                       if (src_sg == NULL)
+> > +                               break;
+> > +
+> > +                       src_nents--;
+> > +                       src_avail = sg_dma_len(src_sg);
+> > +               }
+> > +       }
+> > +
+> > +       /* loop through the list of descriptors and submit them */
+> > +       list_for_each_entry(tx, &tx_list, entry) {
+> > +
+> > +               /* this is the last descriptor: add the callback */
+> > +               if (list_is_last(&tx->entry, &tx_list)) {
+> > +                       tx->callback = cb;
+> > +                       tx->callback_param = cb_param;
+> > +               }
+> > +
+> > +               /* submit the transaction */
+> > +               cookie = tx->tx_submit(tx);
+> 
+> Some dma drivers cannot tolerate prep being reordered with respect to
+> submit (ioatdma enforces this ordering by locking in prep and
+> unlocking in submit).  In general those channels can be identified by
+> ones that select CONFIG_ASYNC_TX_DISABLE_CHANNEL_SWITCH.  However this
+> opt-out arrangement is awkward so I'll put together a patch to make it
+> opt-in (CONFIG_ASYNC_TX_CHANNEL_SWITCH).
+> 
+> The end implication for this patch is that CONFIG_DMAENGINE_SG_TO_SG
+> can only be supported by those channels that are also prepared to
+> handle channel switching i.e. can tolerate intervening calls to prep()
+> before the eventual submit().
+> 
+> [snip]
+> 
 
-s/int/bool/
+I found it difficult to detect when we were at the last descriptor
+unless I did this in two steps. This is why I have two loops: one for
+prep and another for submit.
 
-> +module_param(force, bool, 0);
-> +MODULE_PARM_DESC(force, "Force driver load, ignore DMI data");
-> +
-> +static int debug;
+How about the change inlined at the end of the email. Following your
+description, I think it should work on the ioatdma driver, since it
+handles prep and submit right next to each other.
 
-s/int/bool/
+> > diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+> > index c61d4ca..5507f4c 100644
+> > --- a/include/linux/dmaengine.h
+> > +++ b/include/linux/dmaengine.h
+> > @@ -24,6 +24,7 @@
+> >  #include <linux/device.h>
+> >  #include <linux/uio.h>
+> >  #include <linux/dma-mapping.h>
+> > +#include <linux/list.h>
+> >
+> >  /**
+> >  * typedef dma_cookie_t - an opaque DMA cookie
+> > @@ -316,6 +317,9 @@ struct dma_async_tx_descriptor {
+> >        dma_cookie_t (*tx_submit)(struct dma_async_tx_descriptor *tx);
+> >        dma_async_tx_callback callback;
+> >        void *callback_param;
+> > +#ifdef CONFIG_DMAENGINE_SG_TO_SG
+> > +       struct list_head entry;
+> > +#endif
+> >  #ifndef CONFIG_ASYNC_TX_DISABLE_CHANNEL_SWITCH
+> >        struct dma_async_tx_descriptor *next;
+> >        struct dma_async_tx_descriptor *parent;
+> 
+> Per the above comment if we are already depending on channel switch
+> being enabled for sg-to-sg operation, then you can just use the 'next'
+> pointer to have a singly linked list of descriptors.  Rather than
+> increase the size of the base descriptor.
+> 
 
-> +module_param(debug, bool, 0644);
-> +MODULE_PARM_DESC(debug, "Show debug output");
-> +
-> +MODULE_LICENSE("GPL");
-> +MODULE_AUTHOR("Keith Mannthey <kmmanth@us.ibm.com>");
-> +MODULE_AUTHOR("Vernon Mauery <vernux@us.ibm.com>");
-> +
-> +#define RTL_ADDR_TYPE_IO    1
-> +#define RTL_ADDR_TYPE_MMIO  2
-> +
-> +#define RTL_CMD_ENTER_PRTM  1
-> +#define RTL_CMD_EXIT_PRTM   2
-> +
-> +/* The RTL table as presented by the EBDA: */
-> +struct ibm_rtl_table {
-> +	char signature[5];
+Ok, I thought the list was clearer, but this is equally easy. How about
+the following change that does away with the list completely. Then
+things should work on ioatdma as well.
 
-Question:  are all 5 bytes of signature[] used?  It looks like the search code
-only checks for 32 bits of signature (and the last byte can be garbage?).
+>From d59569ff48a89ef5411af3cf2995af7b742c5cd3 Mon Sep 17 00:00:00 2001
+From: Ira W. Snyder <iws@ovro.caltech.edu>
+Date: Fri, 24 Sep 2010 14:18:09 -0700
+Subject: [PATCH] dma: improve scatterlist to scatterlist transfer
 
-> +	u8 version;
-> +	u8 rt_status;
-> +	u8 command;
-> +	u8 command_status;
-> +	u8 cmd_address_type;
-> +	u8 cmd_granularity;
-> +	u8 cmd_offset;
-> +	u16 reserve1;
-> +	u32 cmd_port_address; /* platform dependent address */
-> +	u32 cmd_port_value;   /* platform dependent value */
-> +} __attribute__((packed));
-> +
-> +#define RTL_SIGNATURE (('L'<<24)|('T'<<16)|('R'<<8)|'_')
-> +
-> +#define RTL_DEBUG(A, ...) do { \
-> +	if (debug) \
-> +		pr_info("ibm-rtl: " A, ##__VA_ARGS__ ); \
-> +} while (0)
-> +
-> +static DEFINE_MUTEX(rtl_lock);
-> +static struct ibm_rtl_table __iomem *rtl_table;
-> +static void __iomem *ebda_map;
-> +static void __iomem *rtl_cmd_addr;
-> +static u8 rtl_cmd_type;
-> +static u8 rtl_cmd_width;
+This is an improved algorithm to improve support on the Intel I/OAT
+driver.
 
-...
-
-> +static int __init ibm_rtl_init(void) {
-> +	unsigned long ebda_addr, ebda_size;
-> +	unsigned int ebda_kb;
-> +	int ret = -ENODEV, i;
-> +
-> +	if (force)
-> +		pr_warning("ibm-rtl: module loaded by force!\n");
-
-Please drop the '!'.
-
-> +	/* first ensure that we are running on IBM HW */
-> +	else if (!dmi_check_system(ibm_rtl_dmi_table))
-> +		return -ENODEV;
-> +
-> +	/* Get the address for the Extended BIOS Data Area */
-> +	ebda_addr = get_bios_ebda();
-> +	if (!ebda_addr) {
-> +		RTL_DEBUG("no BIOS EBDA found\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	ebda_map = ioremap(ebda_addr, 4);
-> +	if (!ebda_map)
-> +		return -ENOMEM;
-> +
-> +	/* First word in the EDBA is the Size in KB */
-> +	ebda_kb = ioread16(ebda_map);
-> +	RTL_DEBUG("EBDA is %d kB\n", ebda_kb);
-> +
-> +	if (ebda_kb == 0)
-> +		goto out;
-> +
-> +	iounmap(ebda_map);
-> +	ebda_size = ebda_kb*1024;
-> +
-> +	/* Remap the whole table */
-> +	ebda_map = ioremap(ebda_addr, ebda_size);
-> +	if (!ebda_map)
-> +		return -ENOMEM;
-> +
-> +	/* search for the _RTL_ signature at the start of the table */
-> +	for (i = 0 ; i < ebda_size/sizeof(unsigned int); i++) {
-> +		struct ibm_rtl_table __iomem * tmp;
-> +		tmp = (struct ibm_rtl_table __iomem *) (ebda_map+i);
-> +		if (ioread32(&tmp->signature) == RTL_SIGNATURE) {
-> +			phys_addr_t addr;
-> +			unsigned int plen;
-> +			RTL_DEBUG("found RTL_SIGNATURE at %#llx\n", (u64)tmp);
-> +			rtl_table = tmp;
-> +			/* The address, value, width and offset are platform
-> +			 * dependent and found in the ibm_rtl_table */
-> +			rtl_cmd_width = ioread8(&rtl_table->cmd_granularity);
-> +			rtl_cmd_type = ioread8(&rtl_table->cmd_address_type);
-> +			RTL_DEBUG("rtl_cmd_width = %u, rtl_cmd_type = %u\n",
-> +			      rtl_cmd_width, rtl_cmd_type);
-> +			addr = ioread32(&rtl_table->cmd_port_address);
-> +			RTL_DEBUG("addr = %#llx\n", addr);
-> +			plen = rtl_cmd_width/sizeof(char);
-> +			rtl_cmd_addr = rtl_port_map(addr, plen);
-> +			RTL_DEBUG("rtl_cmd_addr = %#llx\n", (u64)rtl_cmd_addr);
-> +			if (!rtl_cmd_addr) {
-> +				ret = -ENOMEM;
-> +				break;
-> +			}
-> +			ret = rtl_setup_sysfs();
-> +			break;
-> +		}
-> +	}
-> +
-> +out:
-> +	if (ret) {
-> +		iounmap(ebda_map);
-> +		rtl_port_unmap(rtl_cmd_addr);
-> +	}
-> +
-> +	return ret;
-> +}
-
-
+Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ drivers/dma/dmaengine.c   |   52 +++++++++++++++++++++-----------------------
+ include/linux/dmaengine.h |    3 --
+ 2 files changed, 25 insertions(+), 30 deletions(-)
+
+diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
+index 57ec1e5..cde775c 100644
+--- a/drivers/dma/dmaengine.c
++++ b/drivers/dma/dmaengine.c
+@@ -983,10 +983,13 @@ dma_async_memcpy_sg_to_sg(struct dma_chan *chan,
+ 	struct dma_async_tx_descriptor *tx;
+ 	dma_cookie_t cookie = -ENOMEM;
+ 	size_t dst_avail, src_avail;
+-	struct list_head tx_list;
++	struct scatterlist *sg;
+ 	size_t transferred = 0;
++	size_t dst_total = 0;
++	size_t src_total = 0;
+ 	dma_addr_t dst, src;
+ 	size_t len;
++	int i;
+ 
+ 	if (dst_nents == 0 || src_nents == 0)
+ 		return -EINVAL;
+@@ -994,12 +997,17 @@ dma_async_memcpy_sg_to_sg(struct dma_chan *chan,
+ 	if (dst_sg == NULL || src_sg == NULL)
+ 		return -EINVAL;
+ 
++	/* get the total count of bytes in each scatterlist */
++	for_each_sg(dst_sg, sg, dst_nents, i)
++		dst_total += sg_dma_len(sg);
++
++	for_each_sg(src_sg, sg, src_nents, i)
++		src_total += sg_dma_len(sg);
++
+ 	/* get prepared for the loop */
+ 	dst_avail = sg_dma_len(dst_sg);
+ 	src_avail = sg_dma_len(src_sg);
+ 
+-	INIT_LIST_HEAD(&tx_list);
+-
+ 	/* run until we are out of descriptors */
+ 	while (true) {
+ 
+@@ -1018,14 +1026,24 @@ dma_async_memcpy_sg_to_sg(struct dma_chan *chan,
+ 			return -ENOMEM;
+ 		}
+ 
+-		/* keep track of the tx for later */
+-		list_add_tail(&tx->entry, &tx_list);
+-
+ 		/* update metadata */
+ 		transferred += len;
+ 		dst_avail -= len;
+ 		src_avail -= len;
+ 
++		/* if this is the last transfer, setup the callback */
++		if (dst_total == transferred || src_total == transferred) {
++			tx->callback = cb;
++			tx->callback_param = cb_param;
++		}
++
++		/* submit the transaction */
++		cookie = tx->tx_submit(tx);
++		if (dma_submit_error(cookie)) {
++			dev_err(dev->dev, "failed to submit desc\n");
++			return cookie;
++		}
++
+ fetch:
+ 		/* fetch the next dst scatterlist entry */
+ 		if (dst_avail == 0) {
+@@ -1060,30 +1078,13 @@ fetch:
+ 		}
+ 	}
+ 
+-	/* loop through the list of descriptors and submit them */
+-	list_for_each_entry(tx, &tx_list, entry) {
+-
+-		/* this is the last descriptor: add the callback */
+-		if (list_is_last(&tx->entry, &tx_list)) {
+-			tx->callback = cb;
+-			tx->callback_param = cb_param;
+-		}
+-
+-		/* submit the transaction */
+-		cookie = tx->tx_submit(tx);
+-		if (dma_submit_error(cookie)) {
+-			dev_err(dev->dev, "failed to submit desc\n");
+-			return cookie;
+-		}
+-	}
+-
+ 	/* update counters */
+ 	preempt_disable();
+ 	__this_cpu_add(chan->local->bytes_transferred, transferred);
+ 	__this_cpu_inc(chan->local->memcpy_count);
+ 	preempt_enable();
+ 
+-	return cookie;
++	return 0;
+ }
+ EXPORT_SYMBOL(dma_async_memcpy_sg_to_sg);
+ #endif
+@@ -1092,9 +1093,6 @@ void dma_async_tx_descriptor_init(struct dma_async_tx_descriptor *tx,
+ 	struct dma_chan *chan)
+ {
+ 	tx->chan = chan;
+-	#ifdef CONFIG_DMAENGINE_SG_TO_SG
+-	INIT_LIST_HEAD(&tx->entry);
+-	#endif
+ 	#ifndef CONFIG_ASYNC_TX_DISABLE_CHANNEL_SWITCH
+ 	spin_lock_init(&tx->lock);
+ 	#endif
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 5507f4c..26f2712 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -317,9 +317,6 @@ struct dma_async_tx_descriptor {
+ 	dma_cookie_t (*tx_submit)(struct dma_async_tx_descriptor *tx);
+ 	dma_async_tx_callback callback;
+ 	void *callback_param;
+-#ifdef CONFIG_DMAENGINE_SG_TO_SG
+-	struct list_head entry;
+-#endif
+ #ifndef CONFIG_ASYNC_TX_DISABLE_CHANNEL_SWITCH
+ 	struct dma_async_tx_descriptor *next;
+ 	struct dma_async_tx_descriptor *parent;
+-- 
+1.7.1
+
