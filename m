@@ -1,126 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945Ab0IXADA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 20:03:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53250 "EHLO mx1.redhat.com"
+	id S1755776Ab0IXAFk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 20:05:40 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:60191 "EHLO smtp.infotech.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754171Ab0IXAC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 20:02:59 -0400
-Date: Thu, 23 Sep 2010 20:02:34 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        "gorcunov@gmail.com" <gorcunov@gmail.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "eranian@google.com" <eranian@google.com>
-Subject: Re: [PATCH] perf, x86: catch spurious interrupts after disabling
- counters
-Message-ID: <20100924000234.GO26290@redhat.com>
-References: <20100910132741.GB4879@redhat.com>
- <20100910144634.GA1060@elte.hu>
- <20100910155659.GD13563@erda.amd.com>
- <20100911094157.GA11521@elte.hu>
- <20100911114404.GE13563@erda.amd.com>
- <20100911124537.GA22850@elte.hu>
- <20100912095202.GF13563@erda.amd.com>
- <20100913143713.GK13563@erda.amd.com>
- <20100914174132.GN13563@erda.amd.com>
- <20100915162034.GO13563@erda.amd.com>
+	id S1753579Ab0IXAFi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 20:05:38 -0400
+Message-ID: <4C9BEB49.2060208@interlog.com>
+Date: Thu, 23 Sep 2010 20:05:29 -0400
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100915162034.GO13563@erda.amd.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Mark Lord <kernel@teksavvy.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        IDE/ATA development list <linux-ide@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: "blocked for more than 120 secs" --> a valid situation, how to
+ prevent?
+References: <4C9BE5A8.1090002@teksavvy.com>
+In-Reply-To: <4C9BE5A8.1090002@teksavvy.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 15, 2010 at 06:20:34PM +0200, Robert Richter wrote:
-> On 14.09.10 19:41:32, Robert Richter wrote:
-> > I found the reason why we get the unknown nmi. For some reason
-> > cpuc->active_mask in x86_pmu_handle_irq() is zero. Thus, no counters
-> > are handled when we get an nmi. It seems there is somewhere a race
-> > accessing the active_mask. So far I don't have a fix available.
-> > Changing x86_pmu_stop() did not help:
-> 
-> The patch below for tip/perf/urgent fixes this.
-> 
-> -Robert
+Mark,
+If you issued the SG_IO ioctl with a timeout of at
+least 66 minutes (expressed in milliseconds) then
+it looks like ata_scsi_queuecmd() has a problem.
 
-I was able to duplicate the problem and can confirm this patch fixes the
-issue for me.  I tried poking around (similar to things Robert probably
-did) and had no luck.  Something just doesn't make sense, but I guess for
-now this patch is good enough for me. :-)
+The SCSI FORMAT UNIT command can take a long time.
+It has an IMMED bit which when set will return
+after the command and its parameters have been
+received. The progress of the format can then be
+polled by other commands. With the IMMED bit clear
+the FORMAT UNIT returns when the format completes
+(i.e. after an hour or so). Either way, setting the
+timeout on the SG_IO ioctl works as expected.
 
-Cheers,
-Don
+Doug Gilbert
 
-> 
-> From 4206a086f5b37efc1b4d94f1d90b55802b299ca0 Mon Sep 17 00:00:00 2001
-> From: Robert Richter <robert.richter@amd.com>
-> Date: Wed, 15 Sep 2010 16:12:59 +0200
-> Subject: [PATCH] perf, x86: catch spurious interrupts after disabling counters
-> 
-> Some cpus still deliver spurious interrupts after disabling a counter.
-> This caused 'undelivered NMI' messages. This patch fixes this.
-> 
-> Signed-off-by: Robert Richter <robert.richter@amd.com>
-> ---
->  arch/x86/kernel/cpu/perf_event.c |   13 ++++++++++++-
->  1 files changed, 12 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-> index 3efdf28..df7aabd 100644
-> --- a/arch/x86/kernel/cpu/perf_event.c
-> +++ b/arch/x86/kernel/cpu/perf_event.c
-> @@ -102,6 +102,7 @@ struct cpu_hw_events {
->  	 */
->  	struct perf_event	*events[X86_PMC_IDX_MAX]; /* in counter order */
->  	unsigned long		active_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
-> +	unsigned long		running[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
->  	int			enabled;
->  
->  	int			n_events;
-> @@ -1010,6 +1011,7 @@ static int x86_pmu_start(struct perf_event *event)
->  	x86_perf_event_set_period(event);
->  	cpuc->events[idx] = event;
->  	__set_bit(idx, cpuc->active_mask);
-> +	__set_bit(idx, cpuc->running);
->  	x86_pmu.enable(event);
->  	perf_event_update_userpage(event);
->  
-> @@ -1141,8 +1143,17 @@ static int x86_pmu_handle_irq(struct pt_regs *regs)
->  	cpuc = &__get_cpu_var(cpu_hw_events);
->  
->  	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
-> -		if (!test_bit(idx, cpuc->active_mask))
-> +		if (!test_bit(idx, cpuc->active_mask)) {
-> +			if (__test_and_clear_bit(idx, cpuc->running))
-> +				/*
-> +				 * Though we deactivated the counter
-> +				 * some cpus might still deliver
-> +				 * spurious interrupts. Catching them
-> +				 * here.
-> +				 */
-> +				handled++;
->  			continue;
-> +		}
->  
->  		event = cpuc->events[idx];
->  		hwc = &event->hw;
-> -- 
-> 1.7.2.2
-> 
-> 
-> 
-> 
-> 
-> -- 
-> Advanced Micro Devices, Inc.
-> Operating System Research Center
-> 
+
+On 10-09-23 07:41 PM, Mark Lord wrote:
+> What's the purpose of this stack dump,
+> and how can it be prevented in this NORMAL situation??
+>
+> The command was "hdparm --security-erase NULL /dev/sdb",
+> which takes about 66 minutes to complete on this particular drive.
+>
+> I don't see any obvious way for the task to mark itself
+> as needing longer than 120 secs to complete the operation.
+>
+> Thanks.
+>
+> [ 1800.373281] INFO: task hdparm:1979 blocked for more than 120 seconds.
+> [ 1800.373288] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+> disables this message.
+> [ 1800.373294] hdparm D f64a4c00 0 1979 1718 0x00000000
+> [ 1800.373303] f3065c38 00200086 c11be0e3 f64a4c00 c1439ac0 c1439ac0
+> c1439ac0 c1439ac0
+> [ 1800.373317] f571bdb8 c1439ac0 c1439ac0 dbdc5ec7 00000163 dbdb0cfb
+> 00000163 f571bb60
+> [ 1800.373329] 00000001 f3065d18 7fffffff f571bb60 f3065c64 c1270527
+> f684ca50 f684ca50
+> [ 1800.373341] Call Trace:
+> [ 1800.373355] [<c11be0e3>] ? ata_scsi_queuecmd+0x6a/0x73
+> [ 1800.373366] [<c1270527>] schedule_timeout+0x16/0xa5
+> [ 1800.373376] [<c111a4a2>] ? __blk_run_queue+0x3d/0x5e
+> [ 1800.373383] [<c1118626>] ? elv_insert+0x67/0x18f
+> [ 1800.373389] [<c126fd6a>] wait_for_common+0x8a/0xd9
+> [ 1800.373399] [<c1028b75>] ? default_wake_function+0x0/0xd
+> [ 1800.373406] [<c126fe3a>] wait_for_completion+0x12/0x14
+> [ 1800.373413] [<c111d02f>] blk_execute_rq+0x76/0x8f
+> [ 1800.373420] [<c111cf1c>] ? blk_end_sync_rq+0x0/0x28
+> [ 1800.373428] [<c111cc3f>] ? blk_rq_append_bio+0x14/0x3b
+> [ 1800.373434] [<c111ce95>] ? blk_rq_map_user+0x12e/0x1b5
+> [ 1800.373442] [<c11201f8>] sg_io+0x269/0x343
+> [ 1800.373450] [<c11204be>] scsi_cmd_ioctl+0x1ec/0x396
+> [ 1800.373457] [<c11993cf>] ? get_device+0x13/0x18
+> [ 1800.373464] [<c11aeabd>] ? sd_open+0x45/0x104
+> [ 1800.373472] [<c11aea0e>] sd_ioctl+0x6b/0x8c
+> [ 1800.373479] [<c111e2fe>] __blkdev_driver_ioctl+0x66/0x87
+> [ 1800.373486] [<c111ebb2>] blkdev_ioctl+0x5fe/0x62c
+> [ 1800.373495] [<c1061e3f>] ? filemap_fault+0xb5/0x2fc
+> [ 1800.373503] [<c10a7bde>] block_ioctl+0x2a/0x32
+> [ 1800.373509] [<c10a7bde>] ? block_ioctl+0x2a/0x32
+> [ 1800.373518] [<c109345a>] vfs_ioctl+0x27/0x91
+> [ 1800.373524] [<c10a7bb4>] ? block_ioctl+0x0/0x32
+> [ 1800.373531] [<c109398d>] do_vfs_ioctl+0x42a/0x45b
+> [ 1800.373538] [<c10727b7>] ? handle_mm_fault+0x3d8/0x7c2
+> [ 1800.373547] [<c1088e98>] ? fsnotify_modify+0x4f/0x5a
+> [ 1800.373555] [<c101b8f9>] ? do_page_fault+0x1e4/0x243
+> [ 1800.373562] [<c10939ec>] sys_ioctl+0x2e/0x48
+> [ 1800.373570] [<c1002750>] sysenter_do_call+0x12/0x26
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>
+
