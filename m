@@ -1,146 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab0IXKtB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 06:49:01 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:35659 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754106Ab0IXKs7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 06:48:59 -0400
-From: Keng-Yu Lin <keng-yu.lin@canonical.com>
-To: mjg59@srcf.ucam.org, len.brown@intel.com, alan-jenkins@tuffmail.co.uk,
-        superm1@ubuntu.com, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Keng-Yu Lin <keng-yu.lin@canonical.com>
-Subject: [PATCH v4] dell-laptop: Add debugfs support
-Date: Fri, 24 Sep 2010 18:48:43 +0800
-Message-Id: <1285325323-4528-1-git-send-email-keng-yu.lin@canonical.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1284702459-31646-1-git-send-email-keng-yu.lin@canonical.com>
-References: <1284702459-31646-1-git-send-email-keng-yu.lin@canonical.com>
+	id S1755416Ab0IXKuI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 06:50:08 -0400
+Received: from fanny.its.uu.se ([130.238.4.241]:4976 "EHLO fanny.its.uu.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754106Ab0IXKuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 06:50:06 -0400
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <19612.33369.175358.879889@pilspetsen.it.uu.se>
+Date: Fri, 24 Sep 2010 12:50:01 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mikael Pettersson <mikpe@it.uu.se>, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [BUG 2.6.36-rc5] of_i2c.ko <-> i2c-core.ko dependency loop
+In-Reply-To: <20100924111209.3c071da3@endymion.delvare>
+References: <19611.16302.262307.129176@pilspetsen.it.uu.se>
+	<20100923113807.4643fbbb.rdunlap@xenotime.net>
+	<19611.46496.782340.466509@pilspetsen.it.uu.se>
+	<20100923150559.9c67da11.rdunlap@xenotime.net>
+	<20100924111209.3c071da3@endymion.delvare>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Export the status of RF killswitch through debugfs.
+Jean Delvare writes:
+ > On Thu, 23 Sep 2010 15:05:59 -0700, Randy Dunlap wrote:
+ > > On Thu, 23 Sep 2010 22:16:32 +0200 Mikael Pettersson wrote:
+ > > > Randy Dunlap writes:
+ > > >  > No kconfig warnings?
+ > > > 
+ > > > Not that I recall.  I can check tomorrow if necessary.
+ > > 
+ > > No kconfig warnings.  I checked with your .config file.
+ > > 
+ > > >  > Please post your full .config file.
+ > > 
+ > > Just a matter of module i2c-core calls of_ functions and module of_i2c calls
+ > > i2c_ functions.  Hmph.  Something for Grant, Jean, and Ben to work out.
+ > 
+ > As far as I can see this is caused by this commit from Grant:
+ > 
+ > http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=959e85f7751c33d1a2dabc5cc3fe2ed0db7052e5
+ > 
+ > Mikael, can you please try reverting this patch and see if it solves
+ > your problem?
 
-The killswitch status is obtained by the SMI to BIOS. Exporting this status
-through debugfs can help identify the issue with the misbehaving firmware.
+Yes, reverting the above commit from 2.6.36-rc5 eliminated the warnings,
+and I was able to insmod the i2c-{core,dev,powermac}.ko modules.
 
-Signed-off-by: Keng-Yu Lin <keng-yu.lin@canonical.com>
----
- drivers/platform/x86/dell-laptop.c |   77 ++++++++++++++++++++++++++++++++++++
- 1 files changed, 77 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/platform/x86/dell-laptop.c b/drivers/platform/x86/dell-laptop.c
-index 4413975..a943da5 100644
---- a/drivers/platform/x86/dell-laptop.c
-+++ b/drivers/platform/x86/dell-laptop.c
-@@ -25,6 +25,8 @@
- #include <linux/mm.h>
- #include <linux/i8042.h>
- #include <linux/slab.h>
-+#include <linux/debugfs.h>
-+#include <linux/seq_file.h>
- #include "../../firmware/dcdbas.h"
- 
- #define BRIGHTNESS_TOKEN 0x7d
-@@ -325,6 +327,75 @@ static const struct rfkill_ops dell_rfkill_ops = {
- 	.query = dell_rfkill_query,
- };
- 
-+static struct dentry *dell_laptop_dir;
-+
-+static int dell_debugfs_show(struct seq_file *s, void *data)
-+{
-+	int status;
-+
-+	get_buffer();
-+	dell_send_request(buffer, 17, 11);
-+	status = buffer->output[1];
-+	release_buffer();
-+
-+	seq_printf(s, "status:\t0x%X\n", status);
-+	seq_printf(s, "Hardware switch supported:   %lu\n",
-+		   status & BIT(0));
-+	seq_printf(s, "Wifi locator supported:      %lu\n",
-+		  (status & BIT(1)) >> 1);
-+	seq_printf(s, "Wifi is supported:           %lu\n",
-+		  (status & BIT(2)) >> 2);
-+	seq_printf(s, "Bluetooth is supported:      %lu\n",
-+		  (status & BIT(3)) >> 3);
-+	seq_printf(s, "WWAN is supported:           %lu\n",
-+		  (status & BIT(4)) >> 4);
-+	seq_printf(s, "Wireless keyboard supported: %lu\n",
-+		  (status & BIT(5)) >> 5);
-+	seq_printf(s, "Wifi is installed:           %lu\n",
-+		  (status & BIT(8)) >> 8);
-+	seq_printf(s, "Bluetooth is installed:      %lu\n",
-+		  (status & BIT(9)) >> 9);
-+	seq_printf(s, "WWAN is installed:           %lu\n",
-+		  (status & BIT(10)) >> 10);
-+	seq_printf(s, "Hardware switch is on:       %lu\n",
-+		  (status & BIT(16)) >> 16);
-+	seq_printf(s, "Wifi is blocked:             %lu\n",
-+		  (status & BIT(17)) >> 17);
-+	seq_printf(s, "Bluetooth is blocked:        %lu\n",
-+		  (status & BIT(18)) >> 18);
-+	seq_printf(s, "WWAN is blocked:             %lu\n",
-+		  (status & BIT(19)) >> 19);
-+
-+	seq_printf(s, "\nhwswitch_state:\t0x%X\n", hwswitch_state);
-+	seq_printf(s, "Wifi controlled by switch:      %lu\n",
-+		   hwswitch_state & BIT(0));
-+	seq_printf(s, "Bluetooth controlled by switch: %lu\n",
-+		   hwswitch_state & BIT(1) >> 1);
-+	seq_printf(s, "WWAN controlled by switch:      %lu\n",
-+		   hwswitch_state & BIT(2) >> 2);
-+	seq_printf(s, "Wireless switch config locked:  %lu\n",
-+		   hwswitch_state & BIT(7) >> 7);
-+	seq_printf(s, "Wifi locator enabled:           %lu\n",
-+		   hwswitch_state & BIT(8) >> 8);
-+	seq_printf(s, "Wifi locator setting locked:    %lu\n",
-+		   hwswitch_state & BIT(15) >> 15);
-+
-+	return 0;
-+}
-+
-+static int dell_debugfs_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, dell_debugfs_show, inode->i_private);
-+}
-+
-+static const struct file_operations dell_debugfs_fops = {
-+	.owner = THIS_MODULE,
-+	.open = dell_debugfs_open,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = single_release,
-+};
-+
- static void dell_update_rfkill(struct work_struct *ignored)
- {
- 	if (wifi_rfkill)
-@@ -556,6 +627,11 @@ static int __init dell_init(void)
- 		goto fail_filter;
- 	}
- 
-+	dell_laptop_dir = debugfs_create_dir("dell_laptop", NULL);
-+	if (dell_laptop_dir != NULL)
-+		debugfs_create_file("rfkill", 0444, dell_laptop_dir, NULL,
-+				    &dell_debugfs_fops);
-+
- #ifdef CONFIG_ACPI
- 	/* In the event of an ACPI backlight being available, don't
- 	 * register the platform controller.
-@@ -615,6 +691,7 @@ fail_platform_driver:
- 
- static void __exit dell_exit(void)
- {
-+	debugfs_remove_recursive(dell_laptop_dir);
- 	i8042_remove_filter(dell_laptop_i8042_filter);
- 	cancel_delayed_work_sync(&dell_rfkill_work);
- 	backlight_device_unregister(dell_backlight_device);
--- 
-1.7.1
-
+/Mikael
