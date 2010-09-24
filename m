@@ -1,58 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758124Ab0IXU2s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 16:28:48 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:37358 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758001Ab0IXU2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 16:28:48 -0400
-Date: Fri, 24 Sep 2010 13:27:31 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Yuri Ershov <ext-yuri.ershov@nokia.com>
-CC: eric.piel@tremplin-utc.net, samu.p.onkalo@nokia.com,
-        akpm@linux-foundation.org, daniel@caiaq.de, ext-yuri.kululin@nokia.com,
-        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: Re: [2/2] lis3: Set device owner
-Message-ID: <20100924202731.GA20908@ericsson.com>
-References: <f7f75208147a0655eda1ac402f07e98d745fc178.1282647258.git.ext-yuri.kululin@nokia.com>
+	id S1758135Ab0IXU3Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 16:29:25 -0400
+Received: from qmta15.emeryville.ca.mail.comcast.net ([76.96.27.228]:33328
+	"EHLO qmta15.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755009Ab0IXU3X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 16:29:23 -0400
+Date: Fri, 24 Sep 2010 13:28:23 -0700
+From: matt mooney <mfm@muteddisk.com>
+To: Matthew Dharm <mdharm-kernel@one-eyed-alien.net>
+Cc: kernel-janitors@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        usb-storage@lists.one-eyed-alien.net,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, Felipe Balbi <felipe.balbi@nokia.com>,
+        David Vrabel <david.vrabel@csr.com>, Michal Marek <mmarek@suse.cz>
+Subject: Re: [usb-storage] [PATCH 23/24] usb: change to new flag variable
+Message-ID: <20100924202823.GB4598@haskell.muteddisk.com>
+Mail-Followup-To: Matthew Dharm <mdharm-kernel@one-eyed-alien.net>,
+	kernel-janitors@vger.kernel.org,
+	David Brownell <dbrownell@users.sourceforge.net>,
+	usb-storage@lists.one-eyed-alien.net,
+	Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+	linux-usb@vger.kernel.org, Felipe Balbi <felipe.balbi@nokia.com>,
+	David Vrabel <david.vrabel@csr.com>, Michal Marek <mmarek@suse.cz>
+References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
+ <1dd0f4a1709a9b139fe87f2b311cc0d129900b3f.1285355033.git.mfm@muteddisk.com>
+ <20100924200218.GC25677@one-eyed-alien.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <f7f75208147a0655eda1ac402f07e98d745fc178.1282647258.git.ext-yuri.kululin@nokia.com>
+In-Reply-To: <20100924200218.GC25677@one-eyed-alien.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 27, 2010 at 02:33:21PM -0000, Yuri Ershov wrote:
-> Set device owner for i2c part.
+On 13:02 Fri 24 Sep     , Matthew Dharm wrote:
+> On Fri, Sep 24, 2010 at 12:17:33PM -0700, matt mooney wrote:
+> > Replace EXTRA_CFLAGS with ccflags-y.
 > 
-> Signed-off-by: Yuri Kululin <ext-yuri.kululin@nokia.com>
+> > diff --git a/drivers/usb/storage/Makefile b/drivers/usb/storage/Makefile
+> > index ef7e5a8..786f086 100644
+> > --- a/drivers/usb/storage/Makefile
+> >
++++ b/drivers/usb/storage/Makefile
+> > @@ -5,7 +5,7 @@
+> >  # Rewritten to use lists instead of if-statements.
+> >  #
+> >  
+> > -EXTRA_CFLAGS	:= -Idrivers/scsi
+> > +ccflags-y	:= -Idrivers/scsi
+> >  
+> >  obj-$(CONFIG_USB_STORAGE)	+= usb-storage.o
 > 
-> ---
-> drivers/hwmon/lis3lv02d_i2c.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/hwmon/lis3lv02d_i2c.c b/drivers/hwmon/lis3lv02d_i2c.c
-> index b2f8bae..1a55bb3 100644
-> --- a/drivers/hwmon/lis3lv02d_i2c.c
-> +++ b/drivers/hwmon/lis3lv02d_i2c.c
-> @@ -129,6 +129,7 @@ static int __devinit lis3lv02d_i2c_probe(struct i2c_client *client,
->  	lis3_dev.reg_ctrl = lis3_reg_ctrl;
->  	lis3_dev.irq	  = client->irq;
->  	lis3_dev.ac	  = lis3lv02d_axis_map;
-> +	lis3_dev.owner	  = THIS_MODULE;
->  
->  	i2c_set_clientdata(client, &lis3_dev);
->  
-> @@ -149,6 +150,7 @@ static int __devexit lis3lv02d_i2c_remove(struct i2c_client *client)
->  
->  	lis3lv02d_joystick_disable();
->  	lis3lv02d_remove_fs(&lis3_dev);
-> +	lis3_dev.owner = NULL;
->  
-Should not be necessary, since you are about to unload the driver.
-Unless I am missing something, of course.
+> I don't really know anything about the new 'ccflags' stuff.. but my
+> instincts tell me that perhaps that should be
+> 'ccflags-$(CONFIG_USB_STORAGE)' rather than 'ccflags-y'?
 
-Guenter
+The flag has the same effect as EXTRA_CFLAGS in that it will be used to build
+all  sources at the same hierarchical level (i.e., per directory not including
+subdirectories). I didn't want to change the semantics of the way the variable
+was being used, but after looking at the Kconfig it seems that would be a
+reasonable change. If only usb-storage needs the flag then it makes sense,
+though it seems that everything else in the directory relies on usb-storage
+anyway, but it gives it greater meaning knowing that only usb-storage relies on
+the flag, IMHO.
+
+> 
+> Does it make a difference that usb-storage can be built-in or a loadable
+> module?
+
+That would make a difference because ccflags-m is not used, so the change is not
+possible.
+
+-mfm
 
