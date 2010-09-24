@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933086Ab0IXQlq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:41:46 -0400
-Received: from kroah.org ([198.145.64.141]:37246 "EHLO coco.kroah.org"
+	id S1756926Ab0IXQmP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:42:15 -0400
+Received: from kroah.org ([198.145.64.141]:37229 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933057Ab0IXQf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:35:29 -0400
+	id S933044Ab0IXQfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:35:25 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:47 2010
-Message-Id: <20100924163347.568982799@clark.site>
+Message-Id: <20100924163347.308607476@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:32:04 -0700
+Date: Fri, 24 Sep 2010 09:32:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [40/68] drivers/video/via/ioctl.c: prevent reading uninitialized stack memory
+        David Howells <dhowells@redhat.com>, dann frazier <dannf@debian.org>
+Subject: [37/68] KEYS: Fix RCU no-lock warning in keyctl_session_to_parent()
 In-Reply-To: <20100924163357.GA15741@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +25,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: David Howells <dhowells@redhat.com>
 
-commit b4aaa78f4c2f9cde2f335b14f4ca30b01f9651ca upstream.
+commit 9d1ac65a9698513d00e5608d93fca0c53f536c14 upstream.
 
-The VIAFB_GET_INFO device ioctl allows unprivileged users to read 246
-bytes of uninitialized stack memory, because the "reserved" member of
-the viafb_ioctl_info struct declared on the stack is not altered or
-zeroed before being copied back to the user.  This patch takes care of
-it.
+There's an protected access to the parent process's credentials in the middle
+of keyctl_session_to_parent().  This results in the following RCU warning:
 
-Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+  ===================================================
+  [ INFO: suspicious rcu_dereference_check() usage. ]
+  ---------------------------------------------------
+  security/keys/keyctl.c:1291 invoked rcu_dereference_check() without protection!
+
+  other info that might help us debug this:
+
+  rcu_scheduler_active = 1, debug_locks = 0
+  1 lock held by keyctl-session-/2137:
+   #0:  (tasklist_lock){.+.+..}, at: [<ffffffff811ae2ec>] keyctl_session_to_parent+0x60/0x236
+
+  stack backtrace:
+  Pid: 2137, comm: keyctl-session- Not tainted 2.6.36-rc2-cachefs+ #1
+  Call Trace:
+   [<ffffffff8105606a>] lockdep_rcu_dereference+0xaa/0xb3
+   [<ffffffff811ae379>] keyctl_session_to_parent+0xed/0x236
+   [<ffffffff811af77e>] sys_keyctl+0xb4/0xb6
+   [<ffffffff81001eab>] system_call_fastpath+0x16/0x1b
+
+The code should take the RCU read lock to make sure the parents credentials
+don't go away, even though it's holding a spinlock and has IRQ disabled.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dann frazier <dannf@debian.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/video/via/ioctl.c |    2 ++
- 1 file changed, 2 insertions(+)
+ security/keys/keyctl.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/video/via/ioctl.c
-+++ b/drivers/video/via/ioctl.c
-@@ -25,6 +25,8 @@ int viafb_ioctl_get_viafb_info(u_long ar
- {
- 	struct viafb_ioctl_info viainfo;
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -1259,6 +1259,7 @@ long keyctl_session_to_parent(void)
+ 	keyring_r = NULL;
  
-+	memset(&viainfo, 0, sizeof(struct viafb_ioctl_info));
-+
- 	viainfo.viafb_id = VIAID;
- 	viainfo.vendor_id = PCI_VIA_VENDOR_ID;
+ 	me = current;
++	rcu_read_lock();
+ 	write_lock_irq(&tasklist_lock);
+ 
+ 	parent = me->real_parent;
+@@ -1313,6 +1314,7 @@ long keyctl_session_to_parent(void)
+ 	set_ti_thread_flag(task_thread_info(parent), TIF_NOTIFY_RESUME);
+ 
+ 	write_unlock_irq(&tasklist_lock);
++	rcu_read_unlock();
+ 	if (oldcred)
+ 		put_cred(oldcred);
+ 	return 0;
+@@ -1321,6 +1323,7 @@ already_same:
+ 	ret = 0;
+ not_permitted:
+ 	write_unlock_irq(&tasklist_lock);
++	rcu_read_unlock();
+ 	put_cred(cred);
+ 	return ret;
  
 
 
