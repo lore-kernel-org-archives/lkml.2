@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932360Ab0IXPvJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 11:51:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23108 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932172Ab0IXPvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 11:51:08 -0400
-Date: Fri, 24 Sep 2010 11:50:49 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
-        sandeen@redhat.com, tytso@mit.edu, bfields@citi.umich.edu,
-        linux-fsdevel@vger.kernel.org, nfsv4@linux-nfs.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V4 07/11] vfs: Make acl_permission_check() work for
- richacls
-Message-ID: <20100924115049.47b1217b@tlielax.poochiereds.net>
-In-Reply-To: <1285332494-12756-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1285332494-12756-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	<1285332494-12756-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756826Ab0IXPwj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 11:52:39 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:38842 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752993Ab0IXPwi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 11:52:38 -0400
+Date: Fri, 24 Sep 2010 16:52:31 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: tglx@linutronix.de, mingo@redhat.com, linux-kernel@vger.kernel.org
+Subject: what's papered over by set_fs(USER_DS) in amd64 signal delivery?
+Message-ID: <20100924155231.GQ19804@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Sep 2010 18:18:10 +0530
-"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+	What the hell is going on in amd64 handle_signal()?  We do
 
-> From: Andreas Gruenbacher <agruen@suse.de>
-> 
-> Signed-off-by: Andreas Gruenbacher <agruen@suse.de>
-> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> ---
->  fs/namei.c |    6 ++++++
->  1 files changed, 6 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/namei.c b/fs/namei.c
-> index 855b360..b0b8a71 100644
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -174,6 +174,12 @@ static int acl_permission_check(struct inode *inode, int mask,
->  {
->  	umode_t			mode = inode->i_mode;
->  
-> +	if (IS_RICHACL(inode)) {
-> +		int error = check_acl(inode, mask);
-> +		if (error != -EAGAIN)
-> +			return error;
-> +	}
-> +
->  	if (current_fsuid() == inode->i_uid)
->  		mode >>= 6;
->  	else {
+#ifdef CONFIG_X86_64
+        /*
+         * This has nothing to do with segment registers,
+         * despite the name.  This magic affects uaccess.h
+         * macros' behavior.  Reset it to the normal setting.
+         */
+        set_fs(USER_DS);
+#endif
 
-This may just be my own ignorance of ACL semantics and unfamiliarity
-with the ACL code in general. It seems a bit unusual though...
+in the end of sigframe creation; first of all, we'd just done a bunch of
+copying to user-controlled addresses, protected only by access_ok(), so
+if we *did* have something different we are already fucked badly.  Moreover,
+if we had been on our way to userland (and we wouldn't have reached that
+code otherwise) with wrong ->addr_limit and would *not* get a signal, we'd
+be left with the same ->addr_limit for the next syscall to be done.  Fucked
+again?
 
-Just to be clear...this patch implies that with richacls you can deny
-or grant access to the owner of the file even if the mode bits say
-otherwise. With POSIX acls, this seems to be the other way around.
-
-Hmm....guess I should read the spec...
-
--- 
-Jeff Layton <jlayton@redhat.com>
+I've tried to find amd64-specific magic that would require that, but so far
+I've found nothing of that kind.  It looks like until the i386/amd64 merge
+*both* used to have that thing and during the merge it has suddenly grown
+that ifdef, so another way to put it is "why the reasons allowing to kill
+it on i386 do not apply to amd64?"
