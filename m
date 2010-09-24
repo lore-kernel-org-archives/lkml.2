@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932489Ab0IXROR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 13:14:17 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:40455 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754147Ab0IXROQ (ORCPT
+	id S1751401Ab0IXRQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 13:16:27 -0400
+Received: from caiajhbdcaib.dreamhost.com ([208.97.132.81]:43943 "EHLO
+	homiemail-a2.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750711Ab0IXRQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 13:14:16 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Hans J. Koch" <hjk@linutronix.de>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-References: <m1y6b48973.fsf@fess.ebiederm.org> <20100917205946.GF2522@local>
-	<m139t451b4.fsf_-_@fess.ebiederm.org>
-	<20100924104555.GC1819@silverbox.local>
-Date: Fri, 24 Sep 2010 10:14:11 -0700
-In-Reply-To: <20100924104555.GC1819@silverbox.local> (Hans J. Koch's message
-	of "Fri, 24 Sep 2010 12:45:55 +0200")
-Message-ID: <m1hbhfcbdo.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 98.207.157.188
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"Hans J. Koch" <hjk@linutronix.de>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 0/5] uio hotplug support
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Fri, 24 Sep 2010 13:16:26 -0400
+Subject: [PATCH] cpufreq: unnecesary double free in pcc_cpufreq_do_osc
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: davej@redhat.com, cpufreq@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 24 Sep 2010 13:16:21 -0400
+Message-ID: <1285348581.3031.2.camel@cowboy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Hans J. Koch" <hjk@linutronix.de> writes:
+x86, cpufreq: avoid an unnecessary double free when finished in pcc_cpufreq_do_osc()
 
-> On Mon, Sep 20, 2010 at 12:19:59AM -0700, Eric W. Biederman wrote:
->> 
->> Implement the ability to hotunplug a uio device while file handles
->> are still open without crashing.
->
-> Could you please create patches that apply on top of your already
-> accepted UIO changes?
+There is no need to fall through the out_free label thus saving a kfree call.
 
-That is what the patches I sent should be.  My apologies if I had not
-made that clear.  Certainly these patches were built against my previous
-changes, on top of 2.6.36-rc4.  Are you having problems?
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+---
+ arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-If necessary I can grab Greg's tree can rebase my patches onto it.
+diff --git a/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c b/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c
+index 994230d..db7dc35 100644
+--- a/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c
++++ b/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c
+@@ -379,6 +379,8 @@ static int __init pcc_cpufreq_do_osc(acpi_handle *handle)
+ 	if (!(supported & 0x1))
+ 		return -ENODEV;
+ 
++	return ret;
++
+ out_free:
+ 	kfree(output.pointer);
+ 	return ret;
+-- 
+1.7.0.4
 
-Eric
+
+
