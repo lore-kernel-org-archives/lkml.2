@@ -1,89 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757000Ab0IXQ4d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:56:33 -0400
-Received: from xenotime.net ([72.52.115.56]:39670 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756987Ab0IXQ4b convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:56:31 -0400
-Date: Fri, 24 Sep 2010 09:56:25 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Vernon Mauery <vernux@us.ibm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>
-Subject: Re: [RFC][Patch] IBM Real-Time "SMI Free" mode driver -v4
-Message-Id: <20100924095625.5beedf5a.rdunlap@xenotime.net>
-In-Reply-To: <AANLkTimMWAk22gSn2cXA25VNJ1o3OX-mazJfFFd_+MH2@mail.gmail.com>
-References: <20100921224610.GO13162@lucy>
-	<20100923221253.GA4960@lucy>
-	<20100923225346.GB4960@lucy>
-	<201009241512.39311.arnd@arndb.de>
-	<AANLkTimMWAk22gSn2cXA25VNJ1o3OX-mazJfFFd_+MH2@mail.gmail.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753822Ab0IXQ5D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:57:03 -0400
+Received: from kroah.org ([198.145.64.141]:46131 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932602Ab0IXQ2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:28:13 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:17 2010
+Message-Id: <20100924162616.992399475@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 24 Sep 2010 09:24:12 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: [24/80] mm: fix swapin race condition
+In-Reply-To: <20100924162706.GA7381@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Sep 2010 07:14:27 -0700 Vernon Mauery wrote:
+2.6.35-stable review patch.  If anyone has any objections, please let us know.
 
-> On Fri, Sep 24, 2010 at 6:12 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Friday 24 September 2010, Vernon Mauery wrote:
-> >> +enum rtl_addr_type {
-> >> +     RTL_ADDR_TYPE_IO = 1,
-> >> +     RTL_ADDR_TYPE_MMIO,
-> >> +} __attribute__((packed));
-> >> +
-> >> +enum rtl_cmd_type {
-> >> +     RTL_CMD_NOP = 0,
-> >> +     RTL_CMD_ENTER_PRTM,
-> >> +     RTL_CMD_EXIT_PRTM,
-> >> +} __attribute__((packed));
-> >
-> > You didn't reply to Randy's comment about the packed attribute.
-> > I think it's rather confusing here.
+------------------
 
-thanks.
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-> Sorry.  I missed that comment.  The packed attribute on an enum forces
-> it into the smallest int type it can be.  enums are normally the size
-> of an int, but this enum in the RTL table must fit in an 8-bit int.
+commit 4969c1192d15afa3389e7ae3302096ff684ba655 upstream.
 
-I think you would be better off making 'command' below be a u8 then.
-Otherwise someone else might add an enum value that is > 255 and the
-struct size will change.  I.e., the current way is error-prone.
-Just using u8 for command's type is safer.
+The pte_same check is reliable only if the swap entry remains pinned (by
+the page lock on swapcache).  We've also to ensure the swapcache isn't
+removed before we take the lock as try_to_free_swap won't care about the
+page pin.
 
+One of the possible impacts of this patch is that a KSM-shared page can
+point to the anon_vma of another process, which could exit before the page
+is freed.
 
-> >> +/* The RTL table as presented by the EBDA: */
-> >> +struct ibm_rtl_table {
-> >> +     char signature[5];
-> >> +     u8 version;
-> >> +     u8 rt_status;
-> >> +     enum rtl_cmd_type command;
-> >> +     u8 command_status;
-> >> +     enum rtl_addr_type cmd_address_type;
-> >> +     u8 cmd_granularity;
-> >> +     u8 cmd_offset;
-> >> +     u16 reserve1;
-> >> +     u8 cmd_port_address[4]; /* platform dependent address */
-> >> +     u8 cmd_port_value[4];   /* platform dependent value */
-> >> +};
-> >
-> > I would recommend marking the member in this structure as packed instead,
-> > not the enum.
-> 
-> It does not have the same effect.  Without the packed attribute on the
-> enums, they end up to be the wrong size and then we would be reading
-> from the wrong location in memory.
+This can leave a page with a pointer to a recycled anon_vma object, or
+worse, a pointer to something that is no longer an anon_vma.
 
-Thanks for the explanation.
+[Backport to 2.6.35.5 (anon_vma instead of anon_vma->root in ksm.h) by Hugh]
+
+[riel@redhat.com: changelog help]
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: <stable@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ include/linux/ksm.h |   20 +++++++++-----------
+ mm/ksm.c            |    3 ---
+ mm/memory.c         |   39 ++++++++++++++++++++++++++++++++++-----
+ 3 files changed, 43 insertions(+), 19 deletions(-)
+
+--- a/include/linux/ksm.h
++++ b/include/linux/ksm.h
+@@ -16,6 +16,9 @@
+ struct stable_node;
+ struct mem_cgroup;
+ 
++struct page *ksm_does_need_to_copy(struct page *page,
++			struct vm_area_struct *vma, unsigned long address);
++
+ #ifdef CONFIG_KSM
+ int ksm_madvise(struct vm_area_struct *vma, unsigned long start,
+ 		unsigned long end, int advice, unsigned long *vm_flags);
+@@ -70,19 +73,14 @@ static inline void set_page_stable_node(
+  * We'd like to make this conditional on vma->vm_flags & VM_MERGEABLE,
+  * but what if the vma was unmerged while the page was swapped out?
+  */
+-struct page *ksm_does_need_to_copy(struct page *page,
+-			struct vm_area_struct *vma, unsigned long address);
+-static inline struct page *ksm_might_need_to_copy(struct page *page,
++static inline int ksm_might_need_to_copy(struct page *page,
+ 			struct vm_area_struct *vma, unsigned long address)
+ {
+ 	struct anon_vma *anon_vma = page_anon_vma(page);
+ 
+-	if (!anon_vma ||
+-	    (anon_vma == vma->anon_vma &&
+-	     page->index == linear_page_index(vma, address)))
+-		return page;
+-
+-	return ksm_does_need_to_copy(page, vma, address);
++	return anon_vma &&
++		(anon_vma != vma->anon_vma ||
++		 page->index != linear_page_index(vma, address));
+ }
+ 
+ int page_referenced_ksm(struct page *page,
+@@ -115,10 +113,10 @@ static inline int ksm_madvise(struct vm_
+ 	return 0;
+ }
+ 
+-static inline struct page *ksm_might_need_to_copy(struct page *page,
++static inline int ksm_might_need_to_copy(struct page *page,
+ 			struct vm_area_struct *vma, unsigned long address)
+ {
+-	return page;
++	return 0;
+ }
+ 
+ static inline int page_referenced_ksm(struct page *page,
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -1523,8 +1523,6 @@ struct page *ksm_does_need_to_copy(struc
+ {
+ 	struct page *new_page;
+ 
+-	unlock_page(page);	/* any racers will COW it, not modify it */
+-
+ 	new_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, address);
+ 	if (new_page) {
+ 		copy_user_highpage(new_page, page, address, vma);
+@@ -1540,7 +1538,6 @@ struct page *ksm_does_need_to_copy(struc
+ 			add_page_to_unevictable_list(new_page);
+ 	}
+ 
+-	page_cache_release(page);
+ 	return new_page;
+ }
+ 
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2626,7 +2626,7 @@ static int do_swap_page(struct mm_struct
+ 		unsigned int flags, pte_t orig_pte)
+ {
+ 	spinlock_t *ptl;
+-	struct page *page;
++	struct page *page, *swapcache = NULL;
+ 	swp_entry_t entry;
+ 	pte_t pte;
+ 	struct mem_cgroup *ptr = NULL;
+@@ -2681,10 +2681,23 @@ static int do_swap_page(struct mm_struct
+ 	lock_page(page);
+ 	delayacct_clear_flag(DELAYACCT_PF_SWAPIN);
+ 
+-	page = ksm_might_need_to_copy(page, vma, address);
+-	if (!page) {
+-		ret = VM_FAULT_OOM;
+-		goto out;
++	/*
++	 * Make sure try_to_free_swap didn't release the swapcache
++	 * from under us. The page pin isn't enough to prevent that.
++	 */
++	if (unlikely(!PageSwapCache(page)))
++		goto out_page;
++
++	if (ksm_might_need_to_copy(page, vma, address)) {
++		swapcache = page;
++		page = ksm_does_need_to_copy(page, vma, address);
++
++		if (unlikely(!page)) {
++			ret = VM_FAULT_OOM;
++			page = swapcache;
++			swapcache = NULL;
++			goto out_page;
++		}
+ 	}
+ 
+ 	if (mem_cgroup_try_charge_swapin(mm, page, GFP_KERNEL, &ptr)) {
+@@ -2735,6 +2748,18 @@ static int do_swap_page(struct mm_struct
+ 	if (vm_swap_full() || (vma->vm_flags & VM_LOCKED) || PageMlocked(page))
+ 		try_to_free_swap(page);
+ 	unlock_page(page);
++	if (swapcache) {
++		/*
++		 * Hold the lock to avoid the swap entry to be reused
++		 * until we take the PT lock for the pte_same() check
++		 * (to avoid false positives from pte_same). For
++		 * further safety release the lock after the swap_free
++		 * so that the swap count won't change under a
++		 * parallel locked swapcache.
++		 */
++		unlock_page(swapcache);
++		page_cache_release(swapcache);
++	}
+ 
+ 	if (flags & FAULT_FLAG_WRITE) {
+ 		ret |= do_wp_page(mm, vma, address, page_table, pmd, ptl, pte);
+@@ -2756,6 +2781,10 @@ out_page:
+ 	unlock_page(page);
+ out_release:
+ 	page_cache_release(page);
++	if (swapcache) {
++		unlock_page(swapcache);
++		page_cache_release(swapcache);
++	}
+ 	return ret;
+ }
+ 
+
+
