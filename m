@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932247Ab0IXX3R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 19:29:17 -0400
+	id S1758644Ab0IXX3l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 19:29:41 -0400
 Received: from mail-iw0-f174.google.com ([209.85.214.174]:58363 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758624Ab0IXX3J (ORCPT
+	with ESMTP id S1758607Ab0IXX3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 19:29:09 -0400
+	Fri, 24 Sep 2010 19:29:12 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=IalpxBecHVohQ+zk8/GNSdxK+GmJMsUnOFqmRXxQ1gAyZUpwri5LxJclrSI13fKXA/
-         915Ej/uZgn9kNmP+yUZvVAuwAHvnd5AJpr1ATUZvyxEG6YwqGYbcxge9Xw7dxnpUjtAE
-         +qz0cwxSES6AIeGtld4L1rAVkON2ylEb6OGYE=
+        b=nHo3/0qQEHquPseuE/mPOzAqO/HO97DBBwRqt4MMOJJZfLwMYivuSxOHR0MFaiCRpw
+         XqK62ycMaMyX58X1QUnwm3n9OwC5oKK2JAFuzglZt/u99xjvKckxugM9Zl5U8dw50gbD
+         5/1nIgrxxO8Z7qp6asZUwGyA0aMd2KlOMyM2M=
 From: Tracey Dent <tdent48227@gmail.com>
 To: greg@kroah.com
 Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
         Tracey Dent <tdent48227@gmail.com>
-Subject: [PATCH v2 20/22] Staging: vt6656: Makefile: cleaned up makefile cflag lines
-Date: Fri, 24 Sep 2010 19:28:08 -0400
-Message-Id: <1285370890-8984-20-git-send-email-tdent48227@gmail.com>
+Subject: [PATCH v2 22/22] Staging: wlags49_h25: Makefile: cleaned up makefile cflag lines
+Date: Fri, 24 Sep 2010 19:28:10 -0400
+Message-Id: <1285370890-8984-22-git-send-email-tdent48227@gmail.com>
 X-Mailer: git-send-email 1.7.3
 In-Reply-To: <1285370890-8984-1-git-send-email-tdent48227@gmail.com>
 References: <1285370890-8984-1-git-send-email-tdent48227@gmail.com>
@@ -31,22 +31,44 @@ Changed to use proper ccflags-y option
 
 Signed-off-by: Tracey Dent <tdent48227@gmail.com>
 ---
- drivers/staging/vt6656/Makefile |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/wlags49_h25/Makefile |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/staging/vt6656/Makefile b/drivers/staging/vt6656/Makefile
-index 582a35197..6a85a0e 100644
---- a/drivers/staging/vt6656/Makefile
-+++ b/drivers/staging/vt6656/Makefile
-@@ -1,6 +1,6 @@
- # TODO: all of these should be removed
--EXTRA_CFLAGS += -DLINUX -D__KERNEL__ -DEXPORT_SYMTAB -D__NO_VERSION__
--EXTRA_CFLAGS += -DHOSTAP
-+ccflags-y := -DLINUX -D__KERNEL__ -DEXPORT_SYMTAB -D__NO_VERSION__
-+ccflags-y := -DHOSTAP
+diff --git a/drivers/staging/wlags49_h25/Makefile b/drivers/staging/wlags49_h25/Makefile
+index d0b23d4..f04976f 100644
+--- a/drivers/staging/wlags49_h25/Makefile
++++ b/drivers/staging/wlags49_h25/Makefile
+@@ -12,8 +12,8 @@
+ #  If you want to build AP support (untested), comment out -DSTA_ONLY
  
- vt6656_stage-y +=	main_usb.o \
- 			card.o  \
+ INSTALLDIR := /lib/modules/$(shell uname -r)/kernel/drivers/net/wireless
+-EXTRA_CFLAGS += -I$(KERNELDIR)/include
+-EXTRA_CFLAGS += -I$(src) \
++ccflags-y := -I$(KERNELDIR)/include
++ccflags-y := -I$(src) \
+ 		-DBUS_PCMCIA \
+ 		-DUSE_WPA \
+ 		-DUSE_WEXT \
+@@ -25,16 +25,16 @@ EXTRA_CFLAGS += -I$(src) \
+ #		-DUSE_UIL \
+ #		-DUSE_PROFILE \
+ 
+-ifeq ($(findstring HERMES25,$(EXTRA_CFLAGS)),)
++ifeq ($(findstring HERMES25,$(ccflags-y)),)
+ WLNAME := wlags49_h2_cs
+ $(WLNAME)-y := sta_h2.o
+-ifeq ($(findstring STA_ONLY,$(EXTRA_CFLAGS)),)
++ifeq ($(findstring STA_ONLY,$(ccflags-y)),)
+ $(WLNAME)-y += ap_h2.o
+ endif
+ else
+ WLNAME=wlags49_h25_cs
+ $(WLNAME)-y := sta_h25.o
+-ifeq ($(findstring STA_ONLY,$(EXTRA_CFLAGS)),)
++ifeq ($(findstring STA_ONLY,$(ccflags-y)),)
+ $(WLNAME)-y += ap_h25.o
+ endif
+ endif
 -- 
 1.7.3
 
