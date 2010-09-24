@@ -1,255 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753498Ab0IXI6v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 04:58:51 -0400
-Received: from hera.kernel.org ([140.211.167.34]:35383 "EHLO hera.kernel.org"
+	id S1753554Ab0IXI7J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 04:59:09 -0400
+Received: from hera.kernel.org ([140.211.167.34]:35401 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751758Ab0IXI6t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 04:58:49 -0400
-Date: Fri, 24 Sep 2010 08:58:27 GMT
+	id S1752593Ab0IXI7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 04:59:07 -0400
+Date: Fri, 24 Sep 2010 08:58:49 GMT
 From: tip-bot for Jason Baron <jbaron@redhat.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         rostedt@goodmis.org, jbaron@redhat.com, tglx@linutronix.de
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         rostedt@goodmis.org, tglx@linutronix.de, jbaron@redhat.com
-In-Reply-To: <96259ae74172dcac99c0020c249743c523a92e18.1284733808.git.jbaron@redhat.com>
-References: <96259ae74172dcac99c0020c249743c523a92e18.1284733808.git.jbaron@redhat.com>
+In-Reply-To: <04cfddf2ba77bcabfc3e524f1849d871d6a1cf9d.1284733808.git.jbaron@redhat.com>
+References: <04cfddf2ba77bcabfc3e524f1849d871d6a1cf9d.1284733808.git.jbaron@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] jump label: Make dynamic no-op selection available outside of ftrace
-Message-ID: <tip-f49aa448561fe9215f43405cac6f31eb86317792@git.kernel.org>
-Git-Commit-ID: f49aa448561fe9215f43405cac6f31eb86317792
+Subject: [tip:perf/core] jump label: Make text_poke_early() globally visible
+Message-ID: <tip-fa6f2cc77081792e4edca9168420a3422299ef15@git.kernel.org>
+Git-Commit-ID: fa6f2cc77081792e4edca9168420a3422299ef15
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 24 Sep 2010 08:58:28 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 24 Sep 2010 08:58:49 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f49aa448561fe9215f43405cac6f31eb86317792
-Gitweb:     http://git.kernel.org/tip/f49aa448561fe9215f43405cac6f31eb86317792
+Commit-ID:  fa6f2cc77081792e4edca9168420a3422299ef15
+Gitweb:     http://git.kernel.org/tip/fa6f2cc77081792e4edca9168420a3422299ef15
 Author:     Jason Baron <jbaron@redhat.com>
-AuthorDate: Fri, 17 Sep 2010 11:08:51 -0400
+AuthorDate: Fri, 17 Sep 2010 11:08:56 -0400
 Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Mon, 20 Sep 2010 18:19:39 -0400
+CommitDate: Mon, 20 Sep 2010 18:19:51 -0400
 
-jump label: Make dynamic no-op selection available outside of ftrace
+jump label: Make text_poke_early() globally visible
 
-Move Steve's code for finding the best 5-byte no-op from ftrace.c to
-alternative.c. The idea is that other consumers (in this case jump label)
-want to make use of that code.
+Make text_poke_early available outside of alternative.c. The jump label
+patchset wants to make use of it in order to set up the optimal no-op
+sequences at run-time.
 
 Signed-off-by: Jason Baron <jbaron@redhat.com>
-LKML-Reference: <96259ae74172dcac99c0020c249743c523a92e18.1284733808.git.jbaron@redhat.com>
+LKML-Reference: <04cfddf2ba77bcabfc3e524f1849d871d6a1cf9d.1284733808.git.jbaron@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/include/asm/alternative.h |    8 ++++
- arch/x86/kernel/alternative.c      |   64 ++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/ftrace.c           |   63 +----------------------------------
- arch/x86/kernel/setup.c            |    6 +++
- 4 files changed, 79 insertions(+), 62 deletions(-)
+ arch/x86/include/asm/alternative.h |    2 ++
+ arch/x86/kernel/alternative.c      |    4 ++--
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
-index bc6abb7..27a35b6 100644
+index 27a35b6..634bf78 100644
 --- a/arch/x86/include/asm/alternative.h
 +++ b/arch/x86/include/asm/alternative.h
-@@ -180,4 +180,12 @@ static inline void apply_paravirt(struct paravirt_patch_site *start,
- extern void *text_poke(void *addr, const void *opcode, size_t len);
- extern void *text_poke_smp(void *addr, const void *opcode, size_t len);
+@@ -160,6 +160,8 @@ static inline void apply_paravirt(struct paravirt_patch_site *start,
+ #define __parainstructions_end	NULL
+ #endif
  
-+#if defined(CONFIG_DYNAMIC_FTRACE)
-+#define IDEAL_NOP_SIZE_5 5
-+extern unsigned char ideal_nop5[IDEAL_NOP_SIZE_5];
-+extern void arch_init_ideal_nop5(void);
-+#else
-+static inline void arch_init_ideal_nop5(void) {}
-+#endif
++extern void *text_poke_early(void *addr, const void *opcode, size_t len);
 +
- #endif /* _ASM_X86_ALTERNATIVE_H */
+ /*
+  * Clear and restore the kernel write-protection flag on the local CPU.
+  * Allows the kernel to edit read-only pages.
 diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-index f65ab8b..1849d80 100644
+index 1849d80..083bd01 100644
 --- a/arch/x86/kernel/alternative.c
 +++ b/arch/x86/kernel/alternative.c
-@@ -641,3 +641,67 @@ void *__kprobes text_poke_smp(void *addr, const void *opcode, size_t len)
- 	return addr;
- }
+@@ -195,7 +195,7 @@ static void __init_or_module add_nops(void *insns, unsigned int len)
  
-+#if defined(CONFIG_DYNAMIC_FTRACE)
-+
-+unsigned char ideal_nop5[IDEAL_NOP_SIZE_5];
-+
-+void __init arch_init_ideal_nop5(void)
-+{
-+	extern const unsigned char ftrace_test_p6nop[];
-+	extern const unsigned char ftrace_test_nop5[];
-+	extern const unsigned char ftrace_test_jmp[];
-+	int faulted = 0;
-+
-+	/*
-+	 * There is no good nop for all x86 archs.
-+	 * We will default to using the P6_NOP5, but first we
-+	 * will test to make sure that the nop will actually
-+	 * work on this CPU. If it faults, we will then
-+	 * go to a lesser efficient 5 byte nop. If that fails
-+	 * we then just use a jmp as our nop. This isn't the most
-+	 * efficient nop, but we can not use a multi part nop
-+	 * since we would then risk being preempted in the middle
-+	 * of that nop, and if we enabled tracing then, it might
-+	 * cause a system crash.
-+	 *
-+	 * TODO: check the cpuid to determine the best nop.
-+	 */
-+	asm volatile (
-+		"ftrace_test_jmp:"
-+		"jmp ftrace_test_p6nop\n"
-+		"nop\n"
-+		"nop\n"
-+		"nop\n"  /* 2 byte jmp + 3 bytes */
-+		"ftrace_test_p6nop:"
-+		P6_NOP5
-+		"jmp 1f\n"
-+		"ftrace_test_nop5:"
-+		".byte 0x66,0x66,0x66,0x66,0x90\n"
-+		"1:"
-+		".section .fixup, \"ax\"\n"
-+		"2:	movl $1, %0\n"
-+		"	jmp ftrace_test_nop5\n"
-+		"3:	movl $2, %0\n"
-+		"	jmp 1b\n"
-+		".previous\n"
-+		_ASM_EXTABLE(ftrace_test_p6nop, 2b)
-+		_ASM_EXTABLE(ftrace_test_nop5, 3b)
-+		: "=r"(faulted) : "0" (faulted));
-+
-+	switch (faulted) {
-+	case 0:
-+		pr_info("converting mcount calls to 0f 1f 44 00 00\n");
-+		memcpy(ideal_nop5, ftrace_test_p6nop, IDEAL_NOP_SIZE_5);
-+		break;
-+	case 1:
-+		pr_info("converting mcount calls to 66 66 66 66 90\n");
-+		memcpy(ideal_nop5, ftrace_test_nop5, IDEAL_NOP_SIZE_5);
-+		break;
-+	case 2:
-+		pr_info("converting mcount calls to jmp . + 5\n");
-+		memcpy(ideal_nop5, ftrace_test_jmp, IDEAL_NOP_SIZE_5);
-+		break;
-+	}
-+
-+}
-+#endif
-diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-index cd37469..3afb33f 100644
---- a/arch/x86/kernel/ftrace.c
-+++ b/arch/x86/kernel/ftrace.c
-@@ -257,14 +257,9 @@ do_ftrace_mod_code(unsigned long ip, void *new_code)
- 	return mod_code_status;
- }
+ extern struct alt_instr __alt_instructions[], __alt_instructions_end[];
+ extern s32 __smp_locks[], __smp_locks_end[];
+-static void *text_poke_early(void *addr, const void *opcode, size_t len);
++void *text_poke_early(void *addr, const void *opcode, size_t len);
  
--
--
--
--static unsigned char ftrace_nop[MCOUNT_INSN_SIZE];
--
- static unsigned char *ftrace_nop_replace(void)
+ /* Replace instructions with better alternatives for this CPU type.
+    This runs before SMP is initialized to avoid SMP problems with
+@@ -522,7 +522,7 @@ void __init alternative_instructions(void)
+  * instructions. And on the local CPU you need to be protected again NMI or MCE
+  * handlers seeing an inconsistent instruction while you patch.
+  */
+-static void *__init_or_module text_poke_early(void *addr, const void *opcode,
++void *__init_or_module text_poke_early(void *addr, const void *opcode,
+ 					      size_t len)
  {
--	return ftrace_nop;
-+	return ideal_nop5;
- }
- 
- static int
-@@ -338,62 +333,6 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
- 
- int __init ftrace_dyn_arch_init(void *data)
- {
--	extern const unsigned char ftrace_test_p6nop[];
--	extern const unsigned char ftrace_test_nop5[];
--	extern const unsigned char ftrace_test_jmp[];
--	int faulted = 0;
--
--	/*
--	 * There is no good nop for all x86 archs.
--	 * We will default to using the P6_NOP5, but first we
--	 * will test to make sure that the nop will actually
--	 * work on this CPU. If it faults, we will then
--	 * go to a lesser efficient 5 byte nop. If that fails
--	 * we then just use a jmp as our nop. This isn't the most
--	 * efficient nop, but we can not use a multi part nop
--	 * since we would then risk being preempted in the middle
--	 * of that nop, and if we enabled tracing then, it might
--	 * cause a system crash.
--	 *
--	 * TODO: check the cpuid to determine the best nop.
--	 */
--	asm volatile (
--		"ftrace_test_jmp:"
--		"jmp ftrace_test_p6nop\n"
--		"nop\n"
--		"nop\n"
--		"nop\n"  /* 2 byte jmp + 3 bytes */
--		"ftrace_test_p6nop:"
--		P6_NOP5
--		"jmp 1f\n"
--		"ftrace_test_nop5:"
--		".byte 0x66,0x66,0x66,0x66,0x90\n"
--		"1:"
--		".section .fixup, \"ax\"\n"
--		"2:	movl $1, %0\n"
--		"	jmp ftrace_test_nop5\n"
--		"3:	movl $2, %0\n"
--		"	jmp 1b\n"
--		".previous\n"
--		_ASM_EXTABLE(ftrace_test_p6nop, 2b)
--		_ASM_EXTABLE(ftrace_test_nop5, 3b)
--		: "=r"(faulted) : "0" (faulted));
--
--	switch (faulted) {
--	case 0:
--		pr_info("converting mcount calls to 0f 1f 44 00 00\n");
--		memcpy(ftrace_nop, ftrace_test_p6nop, MCOUNT_INSN_SIZE);
--		break;
--	case 1:
--		pr_info("converting mcount calls to 66 66 66 66 90\n");
--		memcpy(ftrace_nop, ftrace_test_nop5, MCOUNT_INSN_SIZE);
--		break;
--	case 2:
--		pr_info("converting mcount calls to jmp . + 5\n");
--		memcpy(ftrace_nop, ftrace_test_jmp, MCOUNT_INSN_SIZE);
--		break;
--	}
--
- 	/* The return code is retured via data */
- 	*(unsigned long *)data = 0;
- 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index c3a4fbb..00e1678 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -112,6 +112,7 @@
- #include <asm/numa_64.h>
- #endif
- #include <asm/mce.h>
-+#include <asm/alternative.h>
- 
- /*
-  * end_pfn only includes RAM, while max_pfn_mapped includes all e820 entries.
-@@ -726,6 +727,7 @@ void __init setup_arch(char **cmdline_p)
- {
- 	int acpi = 0;
- 	int k8 = 0;
-+	unsigned long flags;
- 
- #ifdef CONFIG_X86_32
- 	memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
-@@ -1071,6 +1073,10 @@ void __init setup_arch(char **cmdline_p)
- 	x86_init.oem.banner();
- 
- 	mcheck_init();
-+
-+	local_irq_save(flags);
-+	arch_init_ideal_nop5();
-+	local_irq_restore(flags);
- }
- 
- #ifdef CONFIG_X86_32
+ 	unsigned long flags;
