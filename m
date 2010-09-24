@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932541Ab0IXQ2B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:28:01 -0400
-Received: from kroah.org ([198.145.64.141]:46049 "EHLO coco.kroah.org"
+	id S1757052Ab0IXQ71 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:59:27 -0400
+Received: from kroah.org ([198.145.64.141]:46065 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932528Ab0IXQ17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:27:59 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:15 2010
-Message-Id: <20100924162615.762214602@clark.site>
+	id S932544Ab0IXQ2C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:28:02 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:16 2010
+Message-Id: <20100924162616.028002259@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:23:58 -0700
+Date: Fri, 24 Sep 2010 09:24:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Eric Dumazet <eric.dumazet@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [10/80] tcp: fix three tcp sysctls tuning
+Subject: [13/80] udp: add rehash on connect()
 In-Reply-To: <20100924162706.GA7381@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,73 +29,197 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit c5ed63d66f24fd4f7089b5a6e087b0ce7202aa8e ]
+commit 719f835853a92f6090258114a72ffe41f09155cd upstream
 
-As discovered by Anton Blanchard, current code to autotune
-tcp_death_row.sysctl_max_tw_buckets, sysctl_tcp_max_orphans and
-sysctl_max_syn_backlog makes little sense.
+commit 30fff923 introduced in linux-2.6.33 (udp: bind() optimisation)
+added a secondary hash on UDP, hashed on (local addr, local port).
 
-The bigger a page is, the less tcp_max_orphans is : 4096 on a 512GB
-machine in Anton's case.
+Problem is that following sequence :
 
-(tcp_hashinfo.bhash_size * sizeof(struct inet_bind_hashbucket))
-is much bigger if spinlock debugging is on. Its wrong to select bigger
-limits in this case (where kernel structures are also bigger)
+fd = socket(...)
+connect(fd, &remote, ...)
 
-bhash_size max is 65536, and we get this value even for small machines.
+not only selects remote end point (address and port), but also sets
+local address, while UDP stack stored in secondary hash table the socket
+while its local address was INADDR_ANY (or ipv6 equivalent)
 
-A better ground is to use size of ehash table, this also makes code
-shorter and more obvious.
+Sequence is :
+ - autobind() : choose a random local port, insert socket in hash tables
+              [while local address is INADDR_ANY]
+ - connect() : set remote address and port, change local address to IP
+              given by a route lookup.
 
-Based on a patch from Anton, and another from David.
+When an incoming UDP frame comes, if more than 10 sockets are found in
+primary hash table, we switch to secondary table, and fail to find
+socket because its local address changed.
 
-Reported-and-tested-by: Anton Blanchard <anton@samba.org>
+One solution to this problem is to rehash datagram socket if needed.
+
+We add a new rehash(struct socket *) method in "struct proto", and
+implement this method for UDP v4 & v6, using a common helper.
+
+This rehashing only takes care of secondary hash table, since primary
+hash (based on local port only) is not changed.
+
+Reported-by: Krzysztof Piotr Oledzki <ole@ans.pl>
 Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Tested-by: Krzysztof Piotr Oledzki <ole@ans.pl>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/ipv4/tcp.c |   24 +++++++-----------------
- 1 file changed, 7 insertions(+), 17 deletions(-)
+ include/net/sock.h  |    1 +
+ include/net/udp.h   |    1 +
+ net/ipv4/datagram.c |    5 ++++-
+ net/ipv4/udp.c      |   44 ++++++++++++++++++++++++++++++++++++++++++++
+ net/ipv6/datagram.c |    7 ++++++-
+ net/ipv6/udp.c      |   10 ++++++++++
+ 6 files changed, 66 insertions(+), 2 deletions(-)
 
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -3193,7 +3193,7 @@ void __init tcp_init(void)
- {
- 	struct sk_buff *skb = NULL;
- 	unsigned long nr_pages, limit;
--	int order, i, max_share;
-+	int i, max_share, cnt;
- 	unsigned long jiffy = jiffies;
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -749,6 +749,7 @@ struct proto {
+ 	/* Keeping track of sk's, looking them up, and port selection methods. */
+ 	void			(*hash)(struct sock *sk);
+ 	void			(*unhash)(struct sock *sk);
++	void			(*rehash)(struct sock *sk);
+ 	int			(*get_port)(struct sock *sk, unsigned short snum);
  
- 	BUILD_BUG_ON(sizeof(struct tcp_skb_cb) > sizeof(skb->cb));
-@@ -3242,22 +3242,12 @@ void __init tcp_init(void)
- 		INIT_HLIST_HEAD(&tcp_hashinfo.bhash[i].chain);
+ 	/* Keeping track of sockets in use */
+--- a/include/net/udp.h
++++ b/include/net/udp.h
+@@ -151,6 +151,7 @@ static inline void udp_lib_hash(struct s
+ }
+ 
+ extern void udp_lib_unhash(struct sock *sk);
++extern void udp_lib_rehash(struct sock *sk, u16 new_hash);
+ 
+ static inline void udp_lib_close(struct sock *sk, long timeout)
+ {
+--- a/net/ipv4/datagram.c
++++ b/net/ipv4/datagram.c
+@@ -62,8 +62,11 @@ int ip4_datagram_connect(struct sock *sk
+ 	}
+ 	if (!inet->inet_saddr)
+ 		inet->inet_saddr = rt->rt_src;	/* Update source address */
+-	if (!inet->inet_rcv_saddr)
++	if (!inet->inet_rcv_saddr) {
+ 		inet->inet_rcv_saddr = rt->rt_src;
++		if (sk->sk_prot->rehash)
++			sk->sk_prot->rehash(sk);
++	}
+ 	inet->inet_daddr = rt->rt_dst;
+ 	inet->inet_dport = usin->sin_port;
+ 	sk->sk_state = TCP_ESTABLISHED;
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -1260,6 +1260,49 @@ void udp_lib_unhash(struct sock *sk)
+ }
+ EXPORT_SYMBOL(udp_lib_unhash);
+ 
++/*
++ * inet_rcv_saddr was changed, we must rehash secondary hash
++ */
++void udp_lib_rehash(struct sock *sk, u16 newhash)
++{
++	if (sk_hashed(sk)) {
++		struct udp_table *udptable = sk->sk_prot->h.udp_table;
++		struct udp_hslot *hslot, *hslot2, *nhslot2;
++
++		hslot2 = udp_hashslot2(udptable, udp_sk(sk)->udp_portaddr_hash);
++		nhslot2 = udp_hashslot2(udptable, newhash);
++		udp_sk(sk)->udp_portaddr_hash = newhash;
++		if (hslot2 != nhslot2) {
++			hslot = udp_hashslot(udptable, sock_net(sk),
++					     udp_sk(sk)->udp_port_hash);
++			/* we must lock primary chain too */
++			spin_lock_bh(&hslot->lock);
++
++			spin_lock(&hslot2->lock);
++			hlist_nulls_del_init_rcu(&udp_sk(sk)->udp_portaddr_node);
++			hslot2->count--;
++			spin_unlock(&hslot2->lock);
++
++			spin_lock(&nhslot2->lock);
++			hlist_nulls_add_head_rcu(&udp_sk(sk)->udp_portaddr_node,
++						 &nhslot2->head);
++			nhslot2->count++;
++			spin_unlock(&nhslot2->lock);
++
++			spin_unlock_bh(&hslot->lock);
++		}
++	}
++}
++EXPORT_SYMBOL(udp_lib_rehash);
++
++static void udp_v4_rehash(struct sock *sk)
++{
++	u16 new_hash = udp4_portaddr_hash(sock_net(sk),
++					  inet_sk(sk)->inet_rcv_saddr,
++					  inet_sk(sk)->inet_num);
++	udp_lib_rehash(sk, new_hash);
++}
++
+ static int __udp_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
+ {
+ 	int rc;
+@@ -1843,6 +1886,7 @@ struct proto udp_prot = {
+ 	.backlog_rcv	   = __udp_queue_rcv_skb,
+ 	.hash		   = udp_lib_hash,
+ 	.unhash		   = udp_lib_unhash,
++	.rehash		   = udp_v4_rehash,
+ 	.get_port	   = udp_v4_get_port,
+ 	.memory_allocated  = &udp_memory_allocated,
+ 	.sysctl_mem	   = sysctl_udp_mem,
+--- a/net/ipv6/datagram.c
++++ b/net/ipv6/datagram.c
+@@ -104,9 +104,12 @@ ipv4_connected:
+ 		if (ipv6_addr_any(&np->saddr))
+ 			ipv6_addr_set_v4mapped(inet->inet_saddr, &np->saddr);
+ 
+-		if (ipv6_addr_any(&np->rcv_saddr))
++		if (ipv6_addr_any(&np->rcv_saddr)) {
+ 			ipv6_addr_set_v4mapped(inet->inet_rcv_saddr,
+ 					       &np->rcv_saddr);
++			if (sk->sk_prot->rehash)
++				sk->sk_prot->rehash(sk);
++		}
+ 
+ 		goto out;
+ 	}
+@@ -191,6 +194,8 @@ ipv4_connected:
+ 	if (ipv6_addr_any(&np->rcv_saddr)) {
+ 		ipv6_addr_copy(&np->rcv_saddr, &fl.fl6_src);
+ 		inet->inet_rcv_saddr = LOOPBACK4_IPV6;
++		if (sk->sk_prot->rehash)
++			sk->sk_prot->rehash(sk);
  	}
  
--	/* Try to be a bit smarter and adjust defaults depending
--	 * on available memory.
--	 */
--	for (order = 0; ((1 << order) << PAGE_SHIFT) <
--			(tcp_hashinfo.bhash_size * sizeof(struct inet_bind_hashbucket));
--			order++)
--		;
--	if (order >= 4) {
--		tcp_death_row.sysctl_max_tw_buckets = 180000;
--		sysctl_tcp_max_orphans = 4096 << (order - 4);
--		sysctl_max_syn_backlog = 1024;
--	} else if (order < 3) {
--		tcp_death_row.sysctl_max_tw_buckets >>= (3 - order);
--		sysctl_tcp_max_orphans >>= (3 - order);
--		sysctl_max_syn_backlog = 128;
--	}
-+
-+	cnt = tcp_hashinfo.ehash_mask + 1;
-+
-+	tcp_death_row.sysctl_max_tw_buckets = cnt / 2;
-+	sysctl_tcp_max_orphans = cnt / 2;
-+	sysctl_max_syn_backlog = max(128, cnt / 256);
+ 	ip6_dst_store(sk, dst,
+--- a/net/ipv6/udp.c
++++ b/net/ipv6/udp.c
+@@ -111,6 +111,15 @@ int udp_v6_get_port(struct sock *sk, uns
+ 	return udp_lib_get_port(sk, snum, ipv6_rcv_saddr_equal, hash2_nulladdr);
+ }
  
- 	/* Set the pressure threshold to be a fraction of global memory that
- 	 * is up to 1/2 at 256 MB, decreasing toward zero with the amount of
++static void udp_v6_rehash(struct sock *sk)
++{
++	u16 new_hash = udp6_portaddr_hash(sock_net(sk),
++					  &inet6_sk(sk)->rcv_saddr,
++					  inet_sk(sk)->inet_num);
++
++	udp_lib_rehash(sk, new_hash);
++}
++
+ static inline int compute_score(struct sock *sk, struct net *net,
+ 				unsigned short hnum,
+ 				struct in6_addr *saddr, __be16 sport,
+@@ -1452,6 +1461,7 @@ struct proto udpv6_prot = {
+ 	.backlog_rcv	   = udpv6_queue_rcv_skb,
+ 	.hash		   = udp_lib_hash,
+ 	.unhash		   = udp_lib_unhash,
++	.rehash		   = udp_v6_rehash,
+ 	.get_port	   = udp_v6_get_port,
+ 	.memory_allocated  = &udp_memory_allocated,
+ 	.sysctl_mem	   = sysctl_udp_mem,
 
 
