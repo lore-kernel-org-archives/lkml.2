@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932105Ab0IXMsz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 08:48:55 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:42548 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932087Ab0IXMsw (ORCPT
+	id S932121Ab0IXMs6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 08:48:58 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:35750 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932100Ab0IXMsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 08:48:52 -0400
+	Fri, 24 Sep 2010 08:48:55 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
         sandeen@redhat.com, tytso@mit.edu, bfields@citi.umich.edu,
@@ -14,9 +14,9 @@ To: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
         nfsv4@linux-nfs.org, linux-ext4@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH -V4 06/11] vfs: Optimize out IS_RICHACL() if CONFIG_FS_RICHACL is not defined
-Date: Fri, 24 Sep 2010 18:18:09 +0530
-Message-Id: <1285332494-12756-7-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V4 07/11] vfs: Make acl_permission_check() work for richacls
+Date: Fri, 24 Sep 2010 18:18:10 +0530
+Message-Id: <1285332494-12756-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1285332494-12756-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1285332494-12756-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -26,48 +26,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andreas Gruenbacher <agruen@suse.de>
 
-if CONFIG_FS_RICHACL is not defined optimize out
-the ACL check function.
-
 Signed-off-by: Andreas Gruenbacher <agruen@suse.de>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/Kconfig         |    4 ++++
- include/linux/fs.h |    5 +++++
- 2 files changed, 9 insertions(+), 0 deletions(-)
+ fs/namei.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/fs/Kconfig b/fs/Kconfig
-index 3d18530..cd283dc 100644
---- a/fs/Kconfig
-+++ b/fs/Kconfig
-@@ -39,6 +39,10 @@ config FS_POSIX_ACL
- 	bool
- 	default n
+diff --git a/fs/namei.c b/fs/namei.c
+index 855b360..b0b8a71 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -174,6 +174,12 @@ static int acl_permission_check(struct inode *inode, int mask,
+ {
+ 	umode_t			mode = inode->i_mode;
  
-+config FS_RICHACL
-+	bool
-+	default n
++	if (IS_RICHACL(inode)) {
++		int error = check_acl(inode, mask);
++		if (error != -EAGAIN)
++			return error;
++	}
 +
- source "fs/xfs/Kconfig"
- source "fs/gfs2/Kconfig"
- source "fs/ocfs2/Kconfig"
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index d86e77c..26fc8ae 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -265,7 +265,12 @@ struct inodes_stat_t {
- #define IS_APPEND(inode)	((inode)->i_flags & S_APPEND)
- #define IS_IMMUTABLE(inode)	((inode)->i_flags & S_IMMUTABLE)
- #define IS_POSIXACL(inode)	__IS_FLG(inode, MS_POSIXACL)
-+
-+#ifdef CONFIG_FS_RICHACL
- #define IS_RICHACL(inode)	__IS_FLG(inode, MS_RICHACL)
-+#else
-+#define IS_RICHACL(inode)	0
-+#endif
- 
- #define IS_DEADDIR(inode)	((inode)->i_flags & S_DEAD)
- #define IS_NOCMTIME(inode)	((inode)->i_flags & S_NOCMTIME)
+ 	if (current_fsuid() == inode->i_uid)
+ 		mode >>= 6;
+ 	else {
 -- 
 1.7.0.4
 
