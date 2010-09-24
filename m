@@ -1,185 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440Ab0IXQwj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:52:39 -0400
-Received: from kroah.org ([198.145.64.141]:38389 "EHLO coco.kroah.org"
+	id S933049Ab0IXQvH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:51:07 -0400
+Received: from kroah.org ([198.145.64.141]:52223 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932556Ab0IXQ2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:28:32 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:18 2010
-Message-Id: <20100924162618.799321556@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:24:33 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Rik van Riel <riel@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <balbir@in.ibm.com>
-Subject: [45/80] vmscan: check all_unreclaimable in direct reclaim path
-In-Reply-To: <20100924162706.GA7381@kroah.com>
+	id S1754595Ab0IXQvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:51:00 -0400
+Date: Fri, 24 Sep 2010 09:46:09 -0700
+From: Greg KH <greg@kroah.com>
+To: Mat <jackdachef@gmail.com>
+Cc: Gabriel C <nix.or.die@googlemail.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Jiri Kosina <jkosina@suse.cz>,
+        Guillaume Chazarain <guichaz@gmail.com>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>, Oliver Neukum <oliver@neukum.org>,
+        Alan Ott <alan@signal11.us>, linux-usb@vger.kernel.org,
+        linux-input@vger.kernel.org, Andreas Bombe <aeb@debian.org>,
+        Alex Riesen <raa.lkml@gmail.com>
+Subject: Re: [BUG, Regression, bisected] USB mouse causes bug on 1st
+ insert, ignored on 2nd insert, lsusb stuck at usbdev_open
+Message-ID: <20100924164609.GB16655@kroah.com>
+References: <Pine.LNX.4.44L0.1009211013460.1644-100000@iolanthe.rowland.org>
+ <4C98C70B.3080407@turmel.org>
+ <4C98D892.7030605@googlemail.com>
+ <AANLkTinQVNy4yOSW=aEbuYh6b_F8nKBLxsjxBDk8zq8O@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinQVNy4yOSW=aEbuYh6b_F8nKBLxsjxBDk8zq8O@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-stable review patch.  If anyone has any objections, please let us know.
+On Wed, Sep 22, 2010 at 11:47:09AM +0200, Mat wrote:
+> On Tue, Sep 21, 2010 at 6:08 PM, Gabriel C <nix.or.die@googlemail.com> wrote:
+> > On 21.09.2010 16:54, Phil Turmel wrote:
+> >
+> >> On 09/21/2010 10:30 AM, Alan Stern wrote:
+> >>> On Tue, 21 Sep 2010, Jiri Kosina wrote:
+> >>>
+> >>>> I have just found out that it's actually CONFIG_USB_DYNAMIC_MINORS which
+> >>>> makes the difference. When unset, the problem doesn't trigger, and
+> >>>> usb_find_interface() always returns the proper interface. When
+> >>>> CONFIG_USB_DYNAMIC_MINORS is being used, the oops happen.
+> >>>>
+> >>>> I'll look into that.
+> >>>
+> >>> Apparently the problem is that intf->minors doesn't get initialized
+> >>> properly.  This patch should fix it.  Everybody, please try it out.
+> >>
+> >> Yes, this works for me.  (as did Jiri's version.)
+> >
+> >
+> > Both versions of the patch are working fine for me too also.
+> >
+> >>
+> >> Thank you both for the support.
+> >>
+> >> Feel free to add my:
+> >>
+> >> Tested-by: Philip J. Turmel <philip@turmel.org>
+> >
+> >
+> > And mine if you wish.
+> > Tested-by: Gabriel Craciunescu  <nix.or.die@googlemail.com>
+> >
+> >
+> 
+> confirmed !
+> 
+> I also tested both and it works fine so far :)
+> 
+> I don't know if it's too late already:
+> Tested-by: Matthias Bayer <jackdachef@gmail.com>
 
-------------------
+Nope, not to late, I've added this to the patch as well, thanks for
+letting us know.
 
-From: Minchan Kim <minchan.kim@gmail.com>
-
-commit d1908362ae0b97374eb8328fbb471576332f9fb1 upstream.
-
-M.  Vefa Bicakci reported 2.6.35 kernel hang up when hibernation on his
-32bit 3GB mem machine.
-(https://bugzilla.kernel.org/show_bug.cgi?id=16771). Also he bisected
-the regression to
-
-  commit bb21c7ce18eff8e6e7877ca1d06c6db719376e3c
-  Author: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-  Date:   Fri Jun 4 14:15:05 2010 -0700
-
-     vmscan: fix do_try_to_free_pages() return value when priority==0 reclaim failure
-
-At first impression, this seemed very strange because the above commit
-only chenged function return value and hibernate_preallocate_memory()
-ignore return value of shrink_all_memory().  But it's related.
-
-Now, page allocation from hibernation code may enter infinite loop if the
-system has highmem.  The reasons are that vmscan don't care enough OOM
-case when oom_killer_disabled.
-
-The problem sequence is following as.
-
-1. hibernation
-2. oom_disable
-3. alloc_pages
-4. do_try_to_free_pages
-       if (scanning_global_lru(sc) && !all_unreclaimable)
-               return 1;
-
-If kswapd is not freozen, it would set zone->all_unreclaimable to 1 and
-then shrink_zones maybe return true(ie, all_unreclaimable is true).  So at
-last, alloc_pages could go to _nopage_.  If it is, it should have no
-problem.
-
-This patch adds all_unreclaimable check to protect in direct reclaim path,
-too.  It can care of hibernation OOM case and help bailout
-all_unreclaimable case slightly.
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-Reported-by: M. Vefa Bicakci <bicave@superonline.com>
-Reported-by: <caiqian@redhat.com>
-Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
-Tested-by: <caiqian@redhat.com>
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-Acked-by: Rik van Riel <riel@redhat.com>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Balbir Singh <balbir@in.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- mm/vmscan.c |   43 +++++++++++++++++++++++++++++++++++--------
- 1 file changed, 35 insertions(+), 8 deletions(-)
-
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1726,13 +1726,12 @@ static void shrink_zone(int priority, st
-  * If a zone is deemed to be full of pinned pages then just give it a light
-  * scan then give up on it.
-  */
--static bool shrink_zones(int priority, struct zonelist *zonelist,
-+static void shrink_zones(int priority, struct zonelist *zonelist,
- 					struct scan_control *sc)
- {
- 	enum zone_type high_zoneidx = gfp_zone(sc->gfp_mask);
- 	struct zoneref *z;
- 	struct zone *zone;
--	bool all_unreclaimable = true;
- 
- 	for_each_zone_zonelist_nodemask(zone, z, zonelist, high_zoneidx,
- 					sc->nodemask) {
-@@ -1759,8 +1758,38 @@ static bool shrink_zones(int priority, s
- 		}
- 
- 		shrink_zone(priority, zone, sc);
--		all_unreclaimable = false;
- 	}
-+}
-+
-+static bool zone_reclaimable(struct zone *zone)
-+{
-+	return zone->pages_scanned < zone_reclaimable_pages(zone) * 6;
-+}
-+
-+/*
-+ * As hibernation is going on, kswapd is freezed so that it can't mark
-+ * the zone into all_unreclaimable. It can't handle OOM during hibernation.
-+ * So let's check zone's unreclaimable in direct reclaim as well as kswapd.
-+ */
-+static bool all_unreclaimable(struct zonelist *zonelist,
-+		struct scan_control *sc)
-+{
-+	struct zoneref *z;
-+	struct zone *zone;
-+	bool all_unreclaimable = true;
-+
-+	for_each_zone_zonelist_nodemask(zone, z, zonelist,
-+			gfp_zone(sc->gfp_mask), sc->nodemask) {
-+		if (!populated_zone(zone))
-+			continue;
-+		if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
-+			continue;
-+		if (zone_reclaimable(zone)) {
-+			all_unreclaimable = false;
-+			break;
-+		}
-+	}
-+
- 	return all_unreclaimable;
- }
- 
-@@ -1784,7 +1813,6 @@ static unsigned long do_try_to_free_page
- 					struct scan_control *sc)
- {
- 	int priority;
--	bool all_unreclaimable;
- 	unsigned long total_scanned = 0;
- 	struct reclaim_state *reclaim_state = current->reclaim_state;
- 	unsigned long lru_pages = 0;
-@@ -1815,7 +1843,7 @@ static unsigned long do_try_to_free_page
- 		sc->nr_scanned = 0;
- 		if (!priority)
- 			disable_swap_token();
--		all_unreclaimable = shrink_zones(priority, zonelist, sc);
-+		shrink_zones(priority, zonelist, sc);
- 		/*
- 		 * Don't shrink slabs when reclaiming memory from
- 		 * over limit cgroups
-@@ -1879,7 +1907,7 @@ out:
- 		return sc->nr_reclaimed;
- 
- 	/* top priority shrink_zones still had more to do? don't OOM, then */
--	if (scanning_global_lru(sc) && !all_unreclaimable)
-+	if (scanning_global_lru(sc) && !all_unreclaimable(zonelist, sc))
- 		return 1;
- 
- 	return 0;
-@@ -2137,8 +2165,7 @@ loop_again:
- 			total_scanned += sc.nr_scanned;
- 			if (zone->all_unreclaimable)
- 				continue;
--			if (nr_slab == 0 &&
--			    zone->pages_scanned >= (zone_reclaimable_pages(zone) * 6))
-+			if (nr_slab == 0 && !zone_reclaimable(zone))
- 				zone->all_unreclaimable = 1;
- 			/*
- 			 * If we've done a decent amount of scanning and
-
-
+greg k-h
