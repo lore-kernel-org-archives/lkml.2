@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851Ab0IXUzq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 16:55:46 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:51520 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750816Ab0IXUzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 16:55:45 -0400
-From: Ernesto Ramos <ernesto@ti.com>
-To: gregkh@suse.com, linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: ameya.palande@nokia.com, felipe.contreras@gmail.com,
-        andy.shevchenko@gmail.com, Ernesto Ramos <ernesto@ti.com>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>
-Subject: [PATCH] staging: tidspbridge: disable all peripherals at bridge_brd_stop
-Date: Fri, 24 Sep 2010 16:02:03 -0500
-Message-Id: <1285362123-31323-1-git-send-email-ernesto@ti.com>
-X-Mailer: git-send-email 1.5.4.5
+	id S1755136Ab0IXU7j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 16:59:39 -0400
+Received: from tomts20-srv.bellnexxia.net ([209.226.175.74]:40158 "EHLO
+	tomts20-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751881Ab0IXU7i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 16:59:38 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEABeonExGGN6i/2dsb2JhbACiRXLHO4VDBA
+Date: Fri, 24 Sep 2010 16:54:35 -0400
+From: Mathieu Desnoyers <compudj@krystal.dyndns.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jason Baron <jbaron@redhat.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, David Miller <davem@davemloft.net>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH 03/11] jump label: Base patch for jump label
+Message-ID: <20100924205435.GB8304@Krystal>
+References: <20100923034910.867858597@goodmis.org> <20100923035608.228041459@goodmis.org> <20100923143758.GA4022@Krystal> <20100923153902.GD2825@redhat.com> <20100923154852.GA12648@Krystal> <20100923184006.GE2825@redhat.com> <1285336460.31083.10.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <1285336460.31083.10.camel@gandalf.stny.rr.com>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 16:53:00 up 170 days,  6:43,  2 users,  load average: 0.08, 0.19,
+	0.15
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DSP Bridge needs to disable the peripheral clocks when switches to
-BRD_STOPPED since that would prevent the domain to enter in OFF state.
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> On Thu, 2010-09-23 at 14:40 -0400, Jason Baron wrote:
+> 
+> > I agree that we this synchronization for the module __init section.
+> > 
+> > However, I believe we are ok for module removal case. free_module() is
+> > called *after* blocking_notifier_call_chain() call. The
+> > blocking_notifier_call_chain() is going to call back into the jump label
+> > code, grab the jump_label_mutex and remove the reference to the module that
+> > is about to freed. Thus, the jump label code can no longer reference it.
+> > 
+> > So I think the following patch is all that is required here (lightly
+> > tested).
+> > 
+> > Steve, I'll re-post as a separate patch, if we agree on this fix.
+> 
+> Ug, I'm struggling to get ready for my Tokyo trip. I'll try to look at
+> it on the flight. But I still need to write my presentation :-)
+> 
+> I may have a response back till Monday or Tuesday.
 
-Signed-off-by: Ernesto Ramos <ernesto@ti.com>
-Signed-off-by: Omar Ramirez Luna <omar.ramirez@ti.com>
----
- drivers/staging/tidspbridge/core/tiomap3430.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+As a note for when you review this patch, I have a strong preference for
+adding a "pre-init-free notifier callback" rather than taking the rcu
+read lock + adding a synchronize_rcu() in module.c. This will make our
+life much easier when we end up doing modifications down in text_poke.
 
-diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
-index 0e3558a..8b73ac9 100644
---- a/drivers/staging/tidspbridge/core/tiomap3430.c
-+++ b/drivers/staging/tidspbridge/core/tiomap3430.c
-@@ -552,7 +552,7 @@ static int bridge_brd_stop(struct bridge_dev_context *dev_ctxt)
- 	int status = 0;
- 	struct bridge_dev_context *dev_context = dev_ctxt;
- 	u32 dsp_pwr_state;
--	int clk_status, i;
-+	int i;
- 	struct bridge_ioctl_extproc *tlb = dev_context->atlb_entry;
- 	struct dspbridge_platform_data *pdata =
- 				omap_dspbridge_dev->dev.platform_data;
-@@ -621,7 +621,8 @@ static int bridge_brd_stop(struct bridge_dev_context *dev_ctxt)
- 	(*pdata->dsp_prm_rmw_bits)(OMAP3430_RST2_IVA2_MASK,
- 		OMAP3430_RST2_IVA2_MASK, OMAP3430_IVA2_MOD, OMAP2_RM_RSTCTRL);
- 
--	clk_status = dsp_clk_disable(DSP_CLK_IVA2);
-+	dsp_clock_disable_all(dev_context->dsp_per_clks);
-+	dsp_clk_disable(DSP_CLK_IVA2);
- 
- 	return status;
- }
+Thanks,
+
+Mathieu
+
+> 
+> -- Steve
+> 
+> 
+
 -- 
-1.5.4.5
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
