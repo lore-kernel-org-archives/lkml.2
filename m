@@ -1,94 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757492Ab0IXSvU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 14:51:20 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44428 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757481Ab0IXSvR (ORCPT
+	id S1757498Ab0IXS4H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 14:56:07 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:55969 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757471Ab0IXS4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 14:51:17 -0400
-Date: Fri, 24 Sep 2010 11:50:02 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: holzheu@linux.vnet.ibm.com
-Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Oleg Nesterov <oleg@redhat.com>, John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: [RFC][PATCH 00/10] taskstats: Enhancements for precise
- accounting
-Message-Id: <20100924115002.fcb4385a.akpm@linux-foundation.org>
-In-Reply-To: <1285319415.2179.116.camel@holzheu-laptop>
-References: <1285249681.1837.28.camel@holzheu-laptop>
-	<20100923131136.356075f4.akpm@linux-foundation.org>
-	<1285319415.2179.116.camel@holzheu-laptop>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 24 Sep 2010 14:56:05 -0400
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
+        sandeen@redhat.com, tytso@mit.edu, bfields@citi.umich.edu,
+        linux-fsdevel@vger.kernel.org, nfsv4@linux-nfs.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V4 07/11] vfs: Make acl_permission_check() work for richacls
+In-Reply-To: <20100924115049.47b1217b@tlielax.poochiereds.net>
+References: <1285332494-12756-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1285332494-12756-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20100924115049.47b1217b@tlielax.poochiereds.net>
+User-Agent: Notmuch/0.3.1-58-g6607fd6 (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
+Date: Sat, 25 Sep 2010 00:25:51 +0530
+Message-ID: <m3y6ar9djc.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Sep 2010 11:10:15 +0200
-Michael Holzheu <holzheu@linux.vnet.ibm.com> wrote:
-
-> Hello Andrew,
+On Fri, 24 Sep 2010 11:50:49 -0400, Jeff Layton <jlayton@redhat.com> wrote:
+> On Fri, 24 Sep 2010 18:18:10 +0530
+> "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
 > 
-> On Thu, 2010-09-23 at 13:11 -0700, Andrew Morton wrote:
-> > > GOALS OF THIS PATCH SET
-> > > -----------------------
-> > > The intention of this patch set is to provide better support for tools like
-> > > top. The goal is to:
-> > > 
-> > > * provide a task snapshot mechanism where we can get a consistent view of
-> > >   all running tasks.
-> > > * provide a transport mechanism that does not require a lot of system calls
-> > >   and that allows implementing low CPU overhead task monitoring.
-> > > * provide microsecond CPU time granularity.
+> > From: Andreas Gruenbacher <agruen@suse.de>
 > > 
-> > This is a big change!  If this is done right then we're heading in the
-> > direction of deprecating the longstanding way in which userspace
-> > observes the state of Linux processes and we're recommending that the
-> > whole world migrate to taskstats.  I think?
+> > Signed-off-by: Andreas Gruenbacher <agruen@suse.de>
+> > Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> > ---
+> >  fs/namei.c |    6 ++++++
+> >  1 files changed, 6 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/fs/namei.c b/fs/namei.c
+> > index 855b360..b0b8a71 100644
+> > --- a/fs/namei.c
+> > +++ b/fs/namei.c
+> > @@ -174,6 +174,12 @@ static int acl_permission_check(struct inode *inode, int mask,
+> >  {
+> >  	umode_t			mode = inode->i_mode;
+> >  
+> > +	if (IS_RICHACL(inode)) {
+> > +		int error = check_acl(inode, mask);
+> > +		if (error != -EAGAIN)
+> > +			return error;
+> > +	}
+> > +
+> >  	if (current_fsuid() == inode->i_uid)
+> >  		mode >>= 6;
+> >  	else {
 > 
-> Or it can be used as alternative. Since procfs has its drawbacks (e.g.
-> performance) an alternative could be helpful. 
-
-And it can be harmful.  More kernel code to maintain and test, more
-userspace code to develop, maintain, etc.  Less user testing than if
-there was a single interface.
-
+> This may just be my own ignorance of ACL semantics and unfamiliarity
+> with the ACL code in general. It seems a bit unusual though...
 > 
-> > I worry that there's a dependency on CONFIG_NET?  If so then that's a
-> > big problem because in N years time, 99% of the world will be using
-> > taskstats, but a few embedded losers will be stuck using (and having to
-> > support) the old tools.
+> Just to be clear...this patch implies that with richacls you can deny
+> or grant access to the owner of the file even if the mode bits say
+> otherwise. With POSIX acls, this seems to be the other way around.
 > 
-> Sure, but if we could add the /proc/taskstats approach, this dependency
-> would not be there.
-
-So why do we need to present the same info over netlink?
-
-If the info is available via procfs then userspace code should use that
-and not netlink, because that userspace code would also be applicable
-to CONFIG_NET=n systems.
-
+> Hmm....guess I should read the spec...
 > 
-> > Does this have the potential to save us from the CONFIG_NET=n problem?
-> 
-> Yes
 
-Let's say that when it's all tested ;)
+To be POSIX compatible we need to ensure that additional file access
+control mechanisms may only further restrict the access permissions defined
+by the file permission bits. So with rich acl, similar to POSIX ACL,
+we use file mask as an upper bound of the acess permission
+allowed. Unlike POSIX ACL where the 'owner' and 'other' ACL entry access
+mask is kept in sync with mode bits, rich acl include a file mask even
+for 'owner' and 'everyone' entries. 
 
-> Are PIDs over all namespaces unique?
+The patch that gives more details about the permission check algo can be
+found at 
 
-Nope.  The same pid can be present in different namespaces at the same
-time.
+http://git.kernel.org/?p=linux/kernel/git/agruen/linux-2.6-richacl.git;a=commitdiff;h=442c675aeac85cfc893a2ec600f7fb3da3951177;hp=02456437cf280838a50ef00d7b4df2e7179fe6b2
 
+-aneesh
