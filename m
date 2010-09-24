@@ -1,104 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758112Ab0IXUPQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 16:15:16 -0400
-Received: from mail.logicpd.com ([66.162.60.3]:11017 "EHLO smtp.logicpd.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757165Ab0IXUOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 16:14:10 -0400
-X-Greylist: delayed 911 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Sep 2010 16:14:09 EDT
-From: Tim Nordell <tim.nordell@logicpd.com>
-To: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Tim Nordell <tim.nordell@logicpd.com>
-Subject: [PATCH v3 2/5] ARM: OMAP3LOGIC: Adding SDMMC support
-Date: Fri, 24 Sep 2010 14:58:55 -0500
-Message-Id: <1285358338-3403-3-git-send-email-tim.nordell@logicpd.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1285358338-3403-1-git-send-email-tim.nordell@logicpd.com>
-References: <1285358338-3403-1-git-send-email-tim.nordell@logicpd.com>
-X-OriginalArrivalTime: 24 Sep 2010 19:58:57.0354 (UTC) FILETIME=[EC509AA0:01CB5C22]
+	id S1758080Ab0IXUSJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 16:18:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26646 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754932Ab0IXUSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 16:18:08 -0400
+Date: Fri, 24 Sep 2010 16:17:56 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, hch@lst.de
+Subject: Re: [RFT PATCH] amiga, atari floppy: Use one request queue per disk
+Message-ID: <20100924201756.GB7145@redhat.com>
+References: <1285271646-2768-1-git-send-email-vgoyal@redhat.com>
+ <4C9CEFD6.3000106@kernel.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C9CEFD6.3000106@kernel.dk>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add low-level initialization for hsmmc controller for
-LogicPD's OMAP 3530 LV SOM and OMAP 35x Torpedo board.
+On Fri, Sep 24, 2010 at 08:37:10PM +0200, Jens Axboe wrote:
+> On 2010-09-23 21:54, Vivek Goyal wrote:
+> > Hi,
+> > 
+> > We seem to have deprecated the notion of sharing request queue across gendisks. Now we need to instanciate one request queue per disk.
+> > 
+> > There see to be still some drivers sharing request queue across disks. Arch
+> > specific floppy drivers like amiga and atari are doing so.
+> > 
+> > These are two patches which should fix the issue. But these patches are
+> > completely untested. Not even compilte tested. Don't have hardware to test
+> > them. 
+> > 
+> > Would be great if somebody who has the hardware can lend a hand here to
+> > see if these patches work.
+> 
+> I have (tentatively) added both patches to for-2.6.37/drivers. I used the
+> latter version of 2/2.
 
-Signed-off-by: Tim Nordell <tim.nordell@logicpd.com>
+Thanks Jens.
+
+Finally I could setup and do cross compile for m68k. amiga floppy driver
+fails to compile. Please find attached the fix.
+
+Thanks
+Vivek
+
+o Compile fixes for amiga floppy driver.
+
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- arch/arm/mach-omap2/board-omap3logic.c |   38 +++++++++++++++++++++++++++++++-
- 1 files changed, 37 insertions(+), 1 deletions(-)
+ drivers/block/amiflop.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/board-omap3logic.c b/arch/arm/mach-omap2/board-omap3logic.c
-index 72769f7..ec6d6f1 100644
---- a/arch/arm/mach-omap2/board-omap3logic.c
-+++ b/arch/arm/mach-omap2/board-omap3logic.c
-@@ -33,6 +33,7 @@
- #include <asm/mach/map.h>
+Index: linux-2.6-block/drivers/block/amiflop.c
+===================================================================
+--- linux-2.6-block.orig/drivers/block/amiflop.c	2010-09-24 16:12:19.000000000 -0400
++++ linux-2.6-block/drivers/block/amiflop.c	2010-09-24 16:13:38.000000000 -0400
+@@ -1347,12 +1347,12 @@ static struct request *set_next_request(
+ 	if (fdc_queue == FD_MAX_UNITS)
+ 		fdc_queue = 0;
  
- #include "mux.h"
-+#include "hsmmc.h"
+-	for(cnt = FD_MAX_UNITS; cnt > 0, cnt--) {
++	for(cnt = FD_MAX_UNITS; cnt > 0; cnt--) {
  
- #include <plat/mux.h>
- #include <plat/board.h>
-@@ -87,6 +88,7 @@ static struct twl4030_platform_data omap3logic_twldata = {
+ 		if (unit[fdc_queue].type->code == FD_NODRIVE) {
+ 			if (++fdc_queue == FD_MAX_UNITS)
+ 				fdc_queue = 0;
+-			cotinue;
++			continue;
+ 		}
  
- 	/* platform_data for children goes here */
- 	.gpio		= &omap3logic_gpio_data,
-+	.vmmc1		= &omap3logic_vmmc1,
- };
- 
- static struct i2c_board_info __initdata omap3logic_i2c_boardinfo[] = {
-@@ -105,6 +107,40 @@ static int __init omap3logic_i2c_init(void)
+ 		q = unit[fdc_queue].gendisk->queue;
+@@ -1827,7 +1827,6 @@ static int __init amiga_floppy_probe(str
  	return 0;
- }
  
-+static struct omap2_hsmmc_info __initdata board_mmc_info[] = {
-+	{
-+		.name		= "external",
-+		.mmc		= 1,
-+		.wires		= 4,
-+		.gpio_cd	= -EINVAL,
-+		.gpio_wp	= -EINVAL,
-+	},
-+	{}      /* Terminator */
-+};
-+
-+static void __init board_mmc_init(void)
-+{
-+	if (machine_is_omap3530_lv_som()) {
-+		/* OMAP3530 LV SOM board */
-+		board_mmc_info[0].gpio_cd = OMAP3530_LV_SOM_MMC_GPIO_CD;
-+		board_mmc_info[0].gpio_wp = OMAP3530_LV_SOM_MMC_GPIO_WP;
-+		omap_mux_init_signal("gpio_110", OMAP_PIN_OUTPUT);
-+		omap_mux_init_signal("gpio_126", OMAP_PIN_OUTPUT);
-+	} else if (machine_is_omap3_torpedo()) {
-+		/* OMAP3 Torpedo board */
-+		board_mmc_info[0].gpio_cd = OMAP3_TORPEDO_MMC_GPIO_CD;
-+		omap_mux_init_signal("gpio_127", OMAP_PIN_OUTPUT);
-+	} else {
-+		/* unsupported board */
-+		printk(KERN_ERR "%s(): unknown machine type\n", __func__);
-+		return;
-+	}
-+
-+	omap2_hsmmc_init(board_mmc_info);
-+	/* link regulators to MMC adapters */
-+	omap3logic_vmmc1_supply.dev = board_mmc_info[0].dev;
-+}
-+
- static void __init omap3logic_init_irq(void)
- {
- 	omap2_init_common_hw(NULL, NULL);
-@@ -116,7 +152,7 @@ static void __init omap3logic_init(void)
- {
- 	omap3logic_i2c_init();
- 	omap_serial_init();
--
-+	board_mmc_init();
- 	/* Ensure SDRC pins are mux'd for self-refresh */
- 	omap_mux_init_signal("sdrc_cke0", OMAP_PIN_OUTPUT);
- 	omap_mux_init_signal("sdrc_cke1", OMAP_PIN_OUTPUT);
--- 
-1.7.1
-
+ out_probe:
+-out_queue:
+ 	free_irq(IRQ_AMIGA_CIAA_TB, NULL);
+ out_irq2:
+ 	free_irq(IRQ_AMIGA_DSKBLK, NULL);
