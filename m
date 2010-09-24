@@ -1,88 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757131Ab0IXRz1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 13:55:27 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:35642 "EHLO e3.ny.us.ibm.com"
+	id S1754615Ab0IXR5M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 13:57:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3946 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752082Ab0IXRzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 13:55:25 -0400
-Subject: Re: [PATCH 1/8] posix clocks: introduce a syscall for clock tuning.
-From: john stultz <johnstul@us.ibm.com>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-api@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
-        David Miller <davem@davemloft.net>, Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <20100924072946.GA5043@riccoc20.at.omicron.at>
-References: <cover.1285261533.git.richard.cochran@omicron.at>
-	 <b94ef1cd9c04ef3ad5964408bd0af7251add78de.1285261534.git.richard.cochran@omicron.at>
-	 <1285271331.2587.56.camel@localhost.localdomain>
-	 <20100924072946.GA5043@riccoc20.at.omicron.at>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 24 Sep 2010 10:55:14 -0700
-Message-ID: <1285350914.3514.3.camel@localhost.localdomain>
+	id S1752318Ab0IXR5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 13:57:10 -0400
+Date: Fri, 24 Sep 2010 13:56:54 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Miklos Szeredi <miklos@szeredi.hu>, Andreas Gruenbacher <agruen@suse.de>,
+        alias ram Ram Pai <linuxram@us.ibm.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, neilb@suse.de,
+        viro@zeniv.linux.org.uk
+Subject: Re: [PATCH 6/7 v3] overlay: hybrid overlay filesystem prototype
+Message-ID: <20100924175653.GB25129@shell>
+References: <20100920180404.939991832@szeredi.hu> <20100920180447.854260354@szeredi.hu>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100920180447.854260354@szeredi.hu>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-09-24 at 09:29 +0200, Richard Cochran wrote:
-> On Thu, Sep 23, 2010 at 12:48:51PM -0700, john stultz wrote:
-> > So I'd still split this patch up a little bit more.
-> > 
-> > 1) Patch that implements the ADJ_SETOFFSET  (*and its implementation*)
-> > in do_adjtimex.
-> > 
-> > 2) Patch that adds the new syscall and clock_id multiplexing.
-> > 
-> > 3) Patches that wire it up to the rest of the architectures (there's
-> > still a bunch missing here).
+On Mon, Sep 20, 2010 at 08:04:10PM +0200, Miklos Szeredi wrote:
+> From: Miklos Szeredi <mszeredi@suse.cz>
 > 
-> I was not sure what the policy is about adding syscalls. Is it the
-> syscall author's responsibility to add it into every arch?
-> 
-> The last time (see a2e2725541fad7) the commit only added half of some
-> archs, and ignored others. In my patch, the syscall *really* works on
-> the archs that are present in the patch.
-> 
-> (Actually, I did not test blackfin, since I don't have one, but I
-> included it since I know they have a PTP hardware clock.)
+> This overlay filesystem is a hybrid of entirely filesystem based
+> (unionfs, aufs) and entierly VFS based (union mounts) solutions.
 
-I'm not sure about policy, but I think for completeness sake you should
-make sure every arch supports a new syscall. You're not expected to be
-able to test every one, but getting the basic support patch sent to
-maintainers should be done.
+[...]
 
-> > > +static inline int common_clock_adj(const clockid_t which_clock, struct timex *t)
-> > > +{
-> > > +	if (CLOCK_REALTIME == which_clock)
-> > > +		return do_adjtimex(t);
-> > > +	else
-> > > +		return -EOPNOTSUPP;
-> > > +}
-> > 
-> > 
-> > Would it make sense to point to the do_adjtimex() in the k_clock
-> > definition for CLOCK_REALTIME rather then conditionalizing it here?
-> 
-> But what about CLOCK_MONOTONIC_RAW, for example?
+> +static int ovl_create_object(struct dentry *dentry, int mode, dev_t rdev,
+> +			     const char *link)
+> +{
+> +	int err;
+> +	struct dentry *newdentry;
+> +	struct dentry *upperdir;
+> +	struct inode *inode;
+> +	struct kstat stat = {
+> +		.mode = mode,
+> +		.rdev = rdev,
+> +	};
+> +
+> +	err = -ENOMEM;
+> +	inode = ovl_new_inode(dentry->d_sb, mode);
+> +	if (!inode)
+> +		goto out;
+> +
+> +	err = ovl_copy_up(dentry->d_parent);
+> +	if (err)
+> +		goto out_iput;
+> +
+> +	upperdir = ovl_dentry_upper(dentry->d_parent);
+> +	mutex_lock_nested(&upperdir->d_inode->i_mutex, I_MUTEX_PARENT);
+> +
+> +	newdentry = ovl_upper_create(upperdir, dentry, &stat, link);
+> +	err = PTR_ERR(newdentry);
+> +	if (IS_ERR(newdentry))
+> +		goto out_unlock;
+> +
+> +	if (ovl_dentry_is_opaque(dentry) && S_ISDIR(mode)) {
+> +		err = ovl_set_opaque(newdentry);
+> +		if (err)
+> +			goto out_dput;
+> +	}
 
--EOPNOTSUPP
+Andreas Gruenbacher just convinced me that every single new directory
+created in the unioned file system should be marked opaque.  "New"
+means either it replaces a whiteout or has no matching directory on
+the lower layer.  The theory is that the topmost file system changes
+should take precedence and override any changes (off-line) in the
+lower file system.
 
-> Does it make sense to allow it to be adjusted?
+What do you think?
 
-No. I think only CLOCK_REALTIME would make sense of the existing clocks.
-
-I'm just suggesting you conditionalize it from the function pointer,
-rather then in the common function.
-
-thanks
--john
-
-
+-VAL
