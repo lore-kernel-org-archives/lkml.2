@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755277Ab0IXDmJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 23:42:09 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:43193 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753491Ab0IXDmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 23:42:08 -0400
-Date: Fri, 24 Sep 2010 13:42:01 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        John Kacur <jkacur@redhat.com>, Takashi Iwai <tiwai@suse.de>
-Subject: linux-next: manual merge of the bkl-llseek tree with the sound tree
-Message-Id: <20100924134201.e6385b98.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__24_Sep_2010_13_42_01_+1000_wbzUg34DnVoI8EI7"
+	id S1755380Ab0IXDsj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 23:48:39 -0400
+Received: from mo-65-41-216-221.sta.embarqhsd.net ([65.41.216.221]:33721 "EHLO
+	greer.hardwarefreak.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753491Ab0IXDsi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 23:48:38 -0400
+Message-ID: <4C9C1F95.5000509@hardwarefreak.com>
+Date: Thu, 23 Sep 2010 22:48:37 -0500
+From: Stan Hoeppner <stan@hardwarefreak.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Kyle McMartin <kyle@mcmartin.ca>
+CC: Mark Lord <kernel@teksavvy.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        IDE/ATA development list <linux-ide@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: "blocked for more than 120 secs" --> a valid situation, how to
+ prevent?
+References: <4C9BE5A8.1090002@teksavvy.com> <4C9BF624.7090906@hardwarefreak.com> <20100924013748.GH13116@bombadil.infradead.org>
+In-Reply-To: <20100924013748.GH13116@bombadil.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__24_Sep_2010_13_42_01_+1000_wbzUg34DnVoI8EI7
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Kyle McMartin put forth on 9/23/2010 8:37 PM:
+> On Thu, Sep 23, 2010 at 07:51:48PM -0500, Stan Hoeppner wrote:
+>> ~$ man hdparm
+>>
+> 
+> kyle@dreadnought ~ $ hdparm
+> hdparm - get/set hard disk parameters - version v9.27, by Mark Lord.
+>                                                        ^^^^^^^^^^^^
+> [...]
 
-Hi Arnd,
+Please pardon me while I wipe this egg off my face. :)
 
-Today's linux-next merge of the bkl-llseek tree got a conflict in
-sound/oss/sh_dac_audio.c between commit
-095a0f6df246bdc57b57d616c4698e41fbd3bf43 ("SOUND-OSS: Remove
-sh_dac_audio") from the sound tree and commit
-5295184fb318693b4ef2cd8056bf1a7cb43586d7 ("llseek: automatically
-add .llseek fop") from the bkl-llseek tree.
+My apologies Mark.  Please feel free to publicly flog me if you wish.
 
-The former just removes the file updated by the latter.  I just removed
-the file.
-
-Arnd, (assuming that you will do a rebase anyway) you may as well just
-drop the hunk that affects this file.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__24_Sep_2010_13_42_01_+1000_wbzUg34DnVoI8EI7
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMnB4JAAoJEDMEi1NhKgbsocIH/RhSx7yV12CPb2B+b6UrV+3d
-4GuM8ayygOf1Szs2dD3xCk3bMlHzZXjqtoQ4yGPyeaK4JS69MBk03stO1F7zeVoD
-Hxj/Ni0mR5I/XXyzNkRr8jBJxQobh6fpjQNiFadKhwzARZXyziZvPBt+xNlBRUxy
-99HXdMeAqkzwJoWuE+M33yC4mOWOEHvN1uGtoZALOEVmM70+WpXo8G+F9o4M3tiD
-XhNjBm5YEhVI3huGXEiLg4TMpzn5bsaloF2JfZsFd4hfWsYUFKrViES/pJUfrjuE
-Xn5KsoOmh+lVfx/RLm5ZXtAVTqr0Ba61mzVJtQy7i6KiS+JMNWAlBevkKycawmk=
-=fQYn
------END PGP SIGNATURE-----
-
---Signature=_Fri__24_Sep_2010_13_42_01_+1000_wbzUg34DnVoI8EI7--
+-- 
+Stan
