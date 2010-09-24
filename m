@@ -1,38 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932214Ab0IXNtK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 09:49:10 -0400
-Received: from kroah.org ([198.145.64.141]:48904 "EHLO coco.kroah.org"
+	id S932227Ab0IXNtL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 09:49:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45863 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756415Ab0IXNtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756408Ab0IXNtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 24 Sep 2010 09:49:07 -0400
-Date: Fri, 24 Sep 2010 06:48:20 -0700
-From: Greg KH <greg@kroah.com>
-To: Geoffrey Said <geoffrey@2x.com>
-Cc: stable@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Long maintenance kernel versions.
-Message-ID: <20100924134820.GA3209@kroah.com>
-References: <AANLkTinGJmAzdd=HOKZYSh69F6T9HMznOKW5BS90=Q-4@mail.gmail.com> <20100924131914.GA1965@kroah.com> <AANLkTimnUrWQ6qrUi_91mrZ3BF8e91997ScKY6OMSBSk@mail.gmail.com>
+Date: Fri, 24 Sep 2010 06:47:09 -0700
+From: Greg KH <gregkh@suse.de>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@amd64.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Erratum 383 fix for 32 bit x86 kernels
+Message-ID: <20100924134709.GA3132@suse.de>
+References: <20100924115239.GA9817@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTimnUrWQ6qrUi_91mrZ3BF8e91997ScKY6OMSBSk@mail.gmail.com>
+In-Reply-To: <20100924115239.GA9817@amd.com>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 24, 2010 at 03:30:52PM +0200, Geoffrey Said wrote:
-> Thanks for the info.  Unfortunately I missed the .32 announcement as I
-> am not always working on kernel integration.
+On Fri, Sep 24, 2010 at 01:52:40PM +0200, Joerg Roedel wrote:
+> Hi Greg,
 > 
-> Are there any future planned versions for long term maintenance, like
-> say the .36?
+> here is a patch which I want to ask you to include into the current
+> -stable kernels.
 
-Nope, I am planning on sticking with .32 for a while now.  Of course,
-all of the kernel releases will get the normal 3-6 months of stable
-support like always.
+For any stable-related stuff, please send it to stable@kernel.org so it
+doesn't get lost in my crazy inbox.
 
-Hope this helps,
+I'll take this this time, but in the future, please do this to ensure it
+gets in.
+
+thanks,
 
 greg k-h
