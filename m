@@ -1,99 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755794Ab0IXM3D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 08:29:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42937 "EHLO mx2.suse.de"
+	id S1755733Ab0IXM3B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 08:29:01 -0400
+Received: from cantor.suse.de ([195.135.220.2]:41537 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752158Ab0IXM2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752639Ab0IXM2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 24 Sep 2010 08:28:34 -0400
 From: Thomas Renninger <trenn@suse.de>
 To: gregkh@suse.de
 Cc: linux-kernel@vger.kernel.org, bjorn.helgaas@hp.com, jbaron@redhat.com,
         Thomas Renninger <trenn@suse.de>
-Subject: [PATCH 3/4] PNP: Use dev_dbg instead of dev_printk(KERN_DEBUG.. if DYNAMIC_DEBUG is compiled in
-Date: Fri, 24 Sep 2010 14:28:30 +0200
-Message-Id: <1285331311-21753-4-git-send-email-trenn@suse.de>
+Subject: [PATCH 4/4] kernel/module.c: Fix compiler warnings if debug is compiled in
+Date: Fri, 24 Sep 2010 14:28:31 +0200
+Message-Id: <1285331311-21753-5-git-send-email-trenn@suse.de>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <20100920184441.GA2915@redhat.com>
 References: <20100920184441.GA2915@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows usage of generic pnp.ddebug debug parameter instead of pnp.debug
-PNP specific parameter.
+Fixes these warnings:
+kernel/module.c: In function ‘layout_sections’:
+kernel/module.c:1776: error: ‘name’ undeclared (first use in this function)
+kernel/module.c:1776: error: (Each undeclared identifier is reported only once
+kernel/module.c:1776: error: for each function it appears in.)
+kernel/module.c: In function ‘move_module’:
+kernel/module.c:2394: warning: format ‘%lx’ expects type ‘long unsigned int’,
+but argument 2 has type ‘Elf64_Addr’
 
-I wonder whether CONFIG_PNP_DEBUG_MESSAGES can vanish totally with this or
-at some time. Only advantage having it is:
-If you are restricted and your kernel must not exceed X bytes, you cannot compile
-in PNP debug messages only, but you have to compile in all debug messages.
+if DEBUGP is defined in kernel/module.c
 
 Signed-off-by: Thomas Renninger <trenn@suse.de>
-CC: Bjorn Helgaas <bjorn.helgaas@hp.com>
-CC: Jason Baron <jbaron@redhat.com>
 CC: Greg KH <gregkh@suse.de>
+CC: jbaron@redhat.com
 CC: lkml <linux-kernel@vger.kernel.org>
 ---
- drivers/pnp/base.h |    8 ++++++--
- drivers/pnp/core.c |   16 +++++++++++++++-
- 2 files changed, 21 insertions(+), 3 deletions(-)
+ kernel/module.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/pnp/base.h b/drivers/pnp/base.h
-index 0bab84e..1f7f9bd 100644
---- a/drivers/pnp/base.h
-+++ b/drivers/pnp/base.h
-@@ -170,12 +170,16 @@ struct pnp_resource *pnp_add_bus_resource(struct pnp_dev *dev,
- 					  resource_size_t start,
- 					  resource_size_t end);
+diff --git a/kernel/module.c b/kernel/module.c
+index 3912e12..66e4361 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -1773,7 +1773,6 @@ static void layout_sections(struct module *mod, struct load_info *info)
+ 			    || strstarts(sname, ".init"))
+ 				continue;
+ 			s->sh_entsize = get_offset(mod, &mod->core_size, s, i);
+-			DEBUGP("\t%s\n", name);
+ 		}
+ 		if (m == 0)
+ 			mod->core_text_size = mod->core_size;
+@@ -2390,8 +2389,8 @@ static int move_module(struct module *mod, struct load_info *info)
+ 			memcpy(dest, (void *)shdr->sh_addr, shdr->sh_size);
+ 		/* Update sh_addr to point to copy in image. */
+ 		shdr->sh_addr = (unsigned long)dest;
+-		DEBUGP("\t0x%lx %s\n",
+-		       shdr->sh_addr, info->secstrings + shdr->sh_name);
++		DEBUGP("\t0x%p %s\n",
++		       (void *)shdr->sh_addr, info->secstrings + shdr->sh_name);
+ 	}
  
--extern int pnp_debug;
--
-+#if defined(CONFIG_DYNAMIC_DEBUG)
-+#define pnp_dbg(dev, format, arg...)					\
-+	({ dev_dbg(dev, format, ## arg); 0; })
-+#else
- #if defined(CONFIG_PNP_DEBUG_MESSAGES)
-+extern int pnp_debug;
- #define pnp_dbg(dev, format, arg...)					\
- 	({ if (pnp_debug) dev_printk(KERN_DEBUG, dev, format, ## arg); 0; })
- #else
- #define pnp_dbg(dev, format, arg...)					\
- 	({ if (0) dev_printk(KERN_DEBUG, dev, format, ## arg); 0; })
- #endif
-+#endif
-diff --git a/drivers/pnp/core.c b/drivers/pnp/core.c
-index 88b3cde..fe834ac 100644
---- a/drivers/pnp/core.c
-+++ b/drivers/pnp/core.c
-@@ -215,9 +215,21 @@ static int __init pnp_init(void)
- 
- subsys_initcall(pnp_init);
- 
--int pnp_debug;
-+#if defined(CONFIG_DYNAMIC_DEBUG)
-+static int __init pnp_debug_setup(char *__unused)
-+{
-+	printk(KERN_INFO "DYNAMIC_DEBUG enabled use pnp.ddebug instead of "
-+	       "pnp.debug boot param\n");
-+	return 1;
-+}
-+__setup("pnp.debug", pnp_debug_setup);
-+
-+#else
- 
- #if defined(CONFIG_PNP_DEBUG_MESSAGES)
-+
-+int pnp_debug;
-+
- static int __init pnp_debug_setup(char *__unused)
- {
- 	pnp_debug = 1;
-@@ -225,3 +237,5 @@ static int __init pnp_debug_setup(char *__unused)
- }
- __setup("pnp.debug", pnp_debug_setup);
- #endif
-+
-+#endif
+ 	return 0;
 -- 
 1.6.4.2
 
