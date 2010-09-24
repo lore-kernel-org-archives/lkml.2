@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756667Ab0IXO3l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 10:29:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64212 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752642Ab0IXO3k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 10:29:40 -0400
-Date: Fri, 24 Sep 2010 10:29:27 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: huang ying <huang.ying.caritas@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Huang Ying <ying.huang@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 1/6] x86, NMI, Add symbol definition for NMI magic constants
-Message-ID: <20100924142927.GA18363@redhat.com>
-References: <1284087065-32722-1-git-send-email-ying.huang@intel.com>
- <20100921214847.GF26290@redhat.com>
- <b151e9f1ec3a162781b380e026f90711.squirrel@www.firstfloor.org>
- <20100922160705.GK26290@redhat.com>
- <AANLkTi=gYa5aEhrQAgpgfopoyW_1v0TJsnQ7bSbTV52i@mail.gmail.com>
- <20100923141651.GL26290@redhat.com>
- <AANLkTi=7kG+PGrQFkWETBSu37SPYxXeXNihB2eBFc6sG@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=7kG+PGrQFkWETBSu37SPYxXeXNihB2eBFc6sG@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1756697Ab0IXOa1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 10:30:27 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:34851 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752642Ab0IXOa0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 10:30:26 -0400
+Date: Fri, 24 Sep 2010 16:30:05 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        =?ISO-8859-1?B?yXJpYw==?= Piel <Eric.Piel@tremplin-utc.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [lm-sensors] [PATCH v2] lis3: Fix Oops with NULL platform data
+Message-ID: <20100924163005.7704f63e@endymion.delvare>
+In-Reply-To: <s5hlj6r1b5p.wl%tiwai@suse.de>
+References: <s5heiclngqe.wl%tiwai@suse.de>
+	<20100924135802.GA18109@ericsson.com>
+	<s5hlj6r1b5p.wl%tiwai@suse.de>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 24, 2010 at 07:50:16PM +0800, huang ying wrote:
-> On Thu, Sep 23, 2010 at 10:16 PM, Don Zickus <dzickus@redhat.com> wrote:
-> >> On some system, there is some hardware error log in BMC/BIOS. The
-> >> hardware error log can be gotten via IPMI or BIOS menu. Otherwise, can
-> >> we get some useful info for unknown NMI? If we can, can we collect the
-> >> info, then print it on console and save it into flash via ERST (part
-> >> of APEI too) before panic?
-> >
-> > Ok.  Does the BIOS/BMC automatically do this?  Can we just print a message
-> > on panic saying checking your BIOS/BMC logs for more info?
+On Fri, 24 Sep 2010 16:14:26 +0200, Takashi Iwai wrote:
+> At Fri, 24 Sep 2010 06:58:02 -0700,
+> Guenter Roeck wrote:
+> > 
+> > On Thu, Sep 23, 2010 at 01:58:33AM -0400, Takashi Iwai wrote:
+> > > The recent addition of threaded irq handler causes a NULL dereference
+> > > when used with hp_accel driver, which has NULL pdata.
+> > > 
+> > > Acked-by: Samu Onkalo <samu.p.onkalo@nokia.com>
+> > > Acked-by: Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> > > Cc: <stable@kernel.org>
+> > > Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> > 
+> > Applied.
 > 
-> Yes. BIOS/BMC automatically do that. And I will add it to panic message.
-> 
-> > I would love to add code to gather more useful info for unknown NMIs, but
-> > is it expected that HEST does some of this?  I guess what I am trying to
-> > figure out, if we are going to put intelligence to detect a HEST enabled
-> > machine and panic when unknown NMI comes along (presumably from HEST??),
-> > then can we leverage HEST at all to understand why the NMI happened or
-> > point the user to the BIOS/BMC to get more info.  In other words, what
-> > value do we get HEST other than we detect its there, lets panic.
-> 
-> Yes. HEST can be used to report some hardware error information. I am
-> working on that now.
-> 
-> >> HEST is defined in ACPI spec 4.0 and later version in section named
-> >> APEI (ACPI Platform Error Interface). It is used to describe the error
-> >> sources of system. It should be available only on server platform.
-> >
-> > Ok.  Does the kernel have intelligence to use it or the BIOS yet?
-> 
-> HEST works in kernel BIOS cooperative way. I am working on a HEST
-> driver which will get notified for NMI and collect the error
-> information reported by BIOS. But It is possible that some systems
-> have only BMC/BIOS log and do not report that to OS except unknown
-> NMI. The unknown NMI panic logic is for these systems.
+> Oh, does this driver belong to hwmon tree?
+> Jean told me that this isn't managed in hwmon, so I had an impression
+> that it's an orphan driver.
 
-Ah ok, thanks for the info.  I think adding the info to the panic message
-would be valuable.  I have no more objections to your patch now. :-)
+Well, as long as the driver lives in drivers/hwmon and the hwmon
+subsystem is maintained, it seems fair to consider the driver
+maintained.
 
-I appreciate your patience for clue-ing me in on how HEST works!
+That being said, I indeed would like all non-hwmon drivers to go away
+from drivers/hwmon. Originally we were waiting for iio to settle first,
+but apparently this is taking forever. The 4 drivers I would like to
+kick are: ams, hdaps, lis3lv02d and applesmc. They are primarily
+accelerometer device drivers. Not sure where to put them,
+drivers/accel(erometer), drivers/misc, drivers/misc/accel(erometer),
+drivers/input/accel(erometer)... Opinions welcome.
 
-Cheers,
-Don
+-- 
+Jean Delvare
