@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932908Ab0IXQbE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:31:04 -0400
-Received: from kroah.org ([198.145.64.141]:38575 "EHLO coco.kroah.org"
+	id S1756876Ab0IXQbd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:31:33 -0400
+Received: from kroah.org ([198.145.64.141]:38557 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932561Ab0IXQ25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:28:57 -0400
+	id S932814Ab0IXQ2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:28:55 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:21 2010
-Message-Id: <20100924162621.121568776@clark.site>
+Message-Id: <20100924162620.930407725@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:24:59 -0700
+Date: Fri, 24 Sep 2010 09:24:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Morten H. Larsen" <m-larsen@post6.tele.dk>,
-        Matt Turner <mattst88@gmail.com>
-Subject: [71/80] Fix call to replaced SuperIO functions
+        Luca Barbieri <luca@luca-barbieri.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [69/80] x86, asm: Use a lower case name for the end macro in atomic64_386_32.S
 In-Reply-To: <20100924162706.GA7381@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,107 +26,169 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Morten H. Larsen <m-larsen@post6.tele.dk>
+From: Luca Barbieri <luca@luca-barbieri.com>
 
-commit 59b25ed91400ace98d6cf0d59b1cb6928ad5cd37 upstream.
+commit 417484d47e115774745ef025bce712a102b6f86f upstream.
 
-This patch fixes the failure to compile Alpha Generic because of
-previously overlooked calls to ns87312_enable_ide(). The function has
-been replaced by newer SuperIO code.
+Use a lowercase name for the end macro, which somehow fixes a binutils 2.16
+problem.
 
-Tested-by: Michael Cree <mcree@orcon.net.nz>
-Signed-off-by: Morten H. Larsen <m-larsen@post6.tele.dk>
-Signed-off-by: Matt Turner <mattst88@gmail.com>
+Signed-off-by: Luca Barbieri <luca@luca-barbieri.com>
+LKML-Reference: <tip-30246557a06bb20618bed906a06d1e1e0faa8bb4@git.kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/alpha/kernel/proto.h         |    3 ---
- arch/alpha/kernel/sys_cabriolet.c |   19 ++++++++++++++++---
- arch/alpha/kernel/sys_takara.c    |   11 +++++++++--
- 3 files changed, 25 insertions(+), 8 deletions(-)
+ arch/x86/lib/atomic64_386_32.S |   38 ++++++++++++++++++++------------------
+ 1 file changed, 20 insertions(+), 18 deletions(-)
 
---- a/arch/alpha/kernel/proto.h
-+++ b/arch/alpha/kernel/proto.h
-@@ -156,9 +156,6 @@ extern void SMC669_Init(int);
- /* es1888.c */
- extern void es1888_init(void);
+--- a/arch/x86/lib/atomic64_386_32.S
++++ b/arch/x86/lib/atomic64_386_32.S
+@@ -26,35 +26,37 @@
+ .endm
  
--/* ns87312.c */
--extern void ns87312_enable_ide(long ide_base);
--
- /* ../lib/fpreg.c */
- extern void alpha_write_fp_reg (unsigned long reg, unsigned long val);
- extern unsigned long alpha_read_fp_reg (unsigned long reg);
---- a/arch/alpha/kernel/sys_cabriolet.c
-+++ b/arch/alpha/kernel/sys_cabriolet.c
-@@ -33,7 +33,7 @@
- #include "irq_impl.h"
- #include "pci_impl.h"
- #include "machvec_impl.h"
--
-+#include "pc873xx.h"
+ #define BEGIN(op) \
+-.macro END; \
++.macro endp; \
+ 	CFI_ENDPROC; \
+ ENDPROC(atomic64_##op##_386); \
+-.purgem END; \
++.purgem endp; \
+ .endm; \
+ ENTRY(atomic64_##op##_386); \
+ 	CFI_STARTPROC; \
+ 	LOCK v;
  
- /* Note mask bit is true for DISABLED irqs.  */
- static unsigned long cached_irq_mask = ~0UL;
-@@ -236,17 +236,30 @@ cabriolet_map_irq(struct pci_dev *dev, u
- }
- 
- static inline void __init
-+cabriolet_enable_ide(void)
-+{
-+	if (pc873xx_probe() == -1) {
-+		printk(KERN_ERR "Probing for PC873xx Super IO chip failed.\n");
-+	 } else {
-+		printk(KERN_INFO "Found %s Super IO chip at 0x%x\n",
-+			pc873xx_get_model(), pc873xx_get_base());
++#define ENDP endp
 +
-+		pc873xx_enable_ide();
-+	}
-+}
-+
-+static inline void __init
- cabriolet_init_pci(void)
- {
- 	common_init_pci();
--	ns87312_enable_ide(0x398);
-+	cabriolet_enable_ide();
- }
+ #define RET \
+ 	UNLOCK v; \
+ 	ret
  
- static inline void __init
- cia_cab_init_pci(void)
- {
- 	cia_init_pci();
--	ns87312_enable_ide(0x398);
-+	cabriolet_enable_ide();
- }
+-#define RET_END \
++#define RET_ENDP \
+ 	RET; \
+-	END
++	ENDP
  
- /*
---- a/arch/alpha/kernel/sys_takara.c
-+++ b/arch/alpha/kernel/sys_takara.c
-@@ -29,7 +29,7 @@
- #include "irq_impl.h"
- #include "pci_impl.h"
- #include "machvec_impl.h"
--
-+#include "pc873xx.h"
+ #define v %ecx
+ BEGIN(read)
+ 	movl  (v), %eax
+ 	movl 4(v), %edx
+-RET_END
++RET_ENDP
+ #undef v
  
- /* Note mask bit is true for DISABLED irqs.  */
- static unsigned long cached_irq_mask[2] = { -1, -1 };
-@@ -264,7 +264,14 @@ takara_init_pci(void)
- 		alpha_mv.pci_map_irq = takara_map_irq_srm;
+ #define v %esi
+ BEGIN(set)
+ 	movl %ebx,  (v)
+ 	movl %ecx, 4(v)
+-RET_END
++RET_ENDP
+ #undef v
  
- 	cia_init_pci();
--	ns87312_enable_ide(0x26e);
-+
-+	if (pc873xx_probe() == -1) {
-+		printk(KERN_ERR "Probing for PC873xx Super IO chip failed.\n");
-+	} else {
-+		printk(KERN_INFO "Found %s Super IO chip at 0x%x\n",
-+			pc873xx_get_model(), pc873xx_get_base());
-+		pc873xx_enable_ide();
-+	}
- }
+ #define v  %esi
+@@ -63,14 +65,14 @@ BEGIN(xchg)
+ 	movl 4(v), %edx
+ 	movl %ebx,  (v)
+ 	movl %ecx, 4(v)
+-RET_END
++RET_ENDP
+ #undef v
  
+ #define v %ecx
+ BEGIN(add)
+ 	addl %eax,  (v)
+ 	adcl %edx, 4(v)
+-RET_END
++RET_ENDP
+ #undef v
  
+ #define v %ecx
+@@ -79,14 +81,14 @@ BEGIN(add_return)
+ 	adcl 4(v), %edx
+ 	movl %eax,  (v)
+ 	movl %edx, 4(v)
+-RET_END
++RET_ENDP
+ #undef v
+ 
+ #define v %ecx
+ BEGIN(sub)
+ 	subl %eax,  (v)
+ 	sbbl %edx, 4(v)
+-RET_END
++RET_ENDP
+ #undef v
+ 
+ #define v %ecx
+@@ -98,14 +100,14 @@ BEGIN(sub_return)
+ 	adcl 4(v), %edx
+ 	movl %eax,  (v)
+ 	movl %edx, 4(v)
+-RET_END
++RET_ENDP
+ #undef v
+ 
+ #define v %esi
+ BEGIN(inc)
+ 	addl $1,  (v)
+ 	adcl $0, 4(v)
+-RET_END
++RET_ENDP
+ #undef v
+ 
+ #define v %esi
+@@ -116,14 +118,14 @@ BEGIN(inc_return)
+ 	adcl $0, %edx
+ 	movl %eax,  (v)
+ 	movl %edx, 4(v)
+-RET_END
++RET_ENDP
+ #undef v
+ 
+ #define v %esi
+ BEGIN(dec)
+ 	subl $1,  (v)
+ 	sbbl $0, 4(v)
+-RET_END
++RET_ENDP
+ #undef v
+ 
+ #define v %esi
+@@ -134,7 +136,7 @@ BEGIN(dec_return)
+ 	sbbl $0, %edx
+ 	movl %eax,  (v)
+ 	movl %edx, 4(v)
+-RET_END
++RET_ENDP
+ #undef v
+ 
+ #define v %ecx
+@@ -156,7 +158,7 @@ BEGIN(add_unless)
+ 	jne 1b
+ 	xorl %eax, %eax
+ 	jmp 2b
+-END
++ENDP
+ #undef v
+ 
+ #define v %esi
+@@ -177,7 +179,7 @@ BEGIN(inc_not_zero)
+ 	testl %edx, %edx
+ 	jne 1b
+ 	jmp 2b
+-END
++ENDP
+ #undef v
+ 
+ #define v %esi
+@@ -190,5 +192,5 @@ BEGIN(dec_if_positive)
+ 	movl %eax,  (v)
+ 	movl %edx, 4(v)
+ 1:
+-RET_END
++RET_ENDP
+ #undef v
 
 
