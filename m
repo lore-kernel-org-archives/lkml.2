@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757176Ab0IXSCO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 14:02:14 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37340 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752647Ab0IXSCM (ORCPT
+	id S1757196Ab0IXSDd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 14:03:33 -0400
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:38749 "HELO
+	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753926Ab0IXSDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 14:02:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=o5Nt43jNYB++6Oe+FqJWjZH9rZAcVlW/p7+kkTb0N1LGh/NgKRXdXiXPyiB0yVRu8L
-         4AV0yZ505redu9L7mv/yWkj+yf3YazrAf//ibFX6WL1ASOWUyD96ktY+lc9AkcZSwbuS
-         lvNwZwYFetGATNbXfysNPu7JMl5qfyR8RKxPc=
-Subject: Re: [PATCH 2/5] AF_UNIX: enable/disable multicast with
- getsockopt/setsockopt
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Alban Crequy <alban.crequy@collabora.co.uk>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Ian Molton <ian.molton@collabora.co.uk>, netdev@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1285350388.2478.0.camel@edumazet-laptop>
-References: <20100924182257.11abd9a6@chocolatine.cbg.collabora.co.uk>
-	 <1285349116-17529-2-git-send-email-alban.crequy@collabora.co.uk>
-	 <1285350388.2478.0.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 24 Sep 2010 20:02:06 +0200
-Message-ID: <1285351326.2478.9.camel@edumazet-laptop>
+	Fri, 24 Sep 2010 14:03:31 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=k5g+IQfMg+ME/baDlU+VFUUv9GffrrbaScqrmYi7tN1g6c8paIBe/lCdzbEyFYbtrBGFCsRdvA04wBW9uvyyIlUOCCnycHfr4OS7fFckifbnmnmbRQFxUUbkE8PAZklN;
+Date: Fri, 24 Sep 2010 11:03:28 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Seth Heasley <seth.heasley@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        khali@linux-fr.org
+Subject: Re: [PATCH 2.6.35.4] irq: irq and pci_ids patch for Intel Patsburg
+ DeviceIDs
+Message-ID: <20100924110328.122d0e22@jbarnes-desktop>
+In-Reply-To: <201009101636.39962.seth.heasley@intel.com>
+References: <201003251611.37706.seth.heasley@intel.com>
+	<201009101636.39962.seth.heasley@intel.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 24 septembre 2010 à 19:46 +0200, Eric Dumazet a écrit :
+On Fri, 10 Sep 2010 16:36:39 -0700
+Seth Heasley <seth.heasley@intel.com> wrote:
 
-Hmm
+> This patch adds the LPC Controller DeviceIDs for the Intel Patsburg PCH.
+> 
+> Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+> 
+> --- linux-2.6.35.4/include/linux/pci_ids.h.orig	2010-08-26 16:47:12.000000000 -0700
+> +++ linux-2.6.35.4/include/linux/pci_ids.h	2010-09-10 16:34:06.000000000 -0700
+> @@ -2423,6 +2423,7 @@
+>  #define PCI_DEVICE_ID_INTEL_CPT_SMBUS	0x1c22
+>  #define PCI_DEVICE_ID_INTEL_CPT_LPC_MIN	0x1c41
+>  #define PCI_DEVICE_ID_INTEL_CPT_LPC_MAX	0x1c5f
+> +#define PCI_DEVICE_ID_INTEL_PBG_LPC	0x1d40
+>  #define PCI_DEVICE_ID_INTEL_82801AA_0	0x2410
+>  #define PCI_DEVICE_ID_INTEL_82801AA_1	0x2411
+>  #define PCI_DEVICE_ID_INTEL_82801AA_3	0x2413
+> --- linux-2.6.35.4/arch/x86/pci/irq.c.orig	2010-08-26 16:47:12.000000000 -0700
+> +++ linux-2.6.35.4//arch/x86/pci/irq.c	2010-09-10 16:30:39.000000000 -0700
+> @@ -589,6 +589,7 @@
+>  	case PCI_DEVICE_ID_INTEL_ICH10_1:
+>  	case PCI_DEVICE_ID_INTEL_ICH10_2:
+>  	case PCI_DEVICE_ID_INTEL_ICH10_3:
+> +	case PCI_DEVICE_ID_INTEL_PBG_LPC:
+>  		r->name = "PIIX/ICH";
+>  		r->get = pirq_piix_get;
+>  		r->set = pirq_piix_set;
+> 
 
-dbus-owner@lists.freedesktop.org is a subscriber only list ....
+Applied to linux-next, thanks.
 
-Please dont use it
-
-
-
+-- 
+Jesse Barnes, Intel Open Source Technology Center
