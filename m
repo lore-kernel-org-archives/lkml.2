@@ -1,97 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758056Ab0IXUOL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 16:14:11 -0400
+	id S1758084Ab0IXUOO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 16:14:14 -0400
 Received: from mail.logicpd.com ([66.162.60.3]:11017 "EHLO smtp.logicpd.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754936Ab0IXUOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 16:14:09 -0400
+	id S1758001Ab0IXUOL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 16:14:11 -0400
 X-Greylist: delayed 911 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Sep 2010 16:14:09 EDT
 From: Tim Nordell <tim.nordell@logicpd.com>
 To: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Tim Nordell <tim.nordell@logicpd.com>
-Subject: [PATCH v3 1/5] Adding LogicPD OMAP3 board support
-Date: Fri, 24 Sep 2010 14:58:54 -0500
-Message-Id: <1285358338-3403-2-git-send-email-tim.nordell@logicpd.com>
+Subject: [PATCH v3 3/5] ARM: OMAP3: Add generic smsc911x support when connected to GPMC
+Date: Fri, 24 Sep 2010 14:58:56 -0500
+Message-Id: <1285358338-3403-4-git-send-email-tim.nordell@logicpd.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1285358338-3403-1-git-send-email-tim.nordell@logicpd.com>
 References: <1285358338-3403-1-git-send-email-tim.nordell@logicpd.com>
-X-OriginalArrivalTime: 24 Sep 2010 19:58:57.0135 (UTC) FILETIME=[EC2F2FF0:01CB5C22]
+X-OriginalArrivalTime: 24 Sep 2010 19:58:57.0370 (UTC) FILETIME=[EC530BA0:01CB5C22]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding support for LogicPD's OMAP 3530 LV SOM and
-OMAP 35x Torpedo board.
+Introduce of a generic way to setup smsc911x based Ethernet
+controller connected to GPMC similar to gpmc-smc91x but without
+timing setup.
 
 Signed-off-by: Tim Nordell <tim.nordell@logicpd.com>
 ---
- arch/arm/mach-omap2/Kconfig            |   18 ++++
- arch/arm/mach-omap2/Makefile           |    4 +
- arch/arm/mach-omap2/board-omap3logic.c |  143 ++++++++++++++++++++++++++++++++
- 3 files changed, 165 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-omap2/board-omap3logic.c
+ arch/arm/mach-omap2/Makefile                    |    3 +
+ arch/arm/mach-omap2/gpmc-smsc911x.c             |  113 +++++++++++++++++++++++
+ arch/arm/plat-omap/include/plat/gpmc-smsc911x.h |   35 +++++++
+ 3 files changed, 151 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-omap2/gpmc-smsc911x.c
+ create mode 100644 arch/arm/plat-omap/include/plat/gpmc-smsc911x.h
 
-diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
-index b48bacf..2cc61fa 100644
---- a/arch/arm/mach-omap2/Kconfig
-+++ b/arch/arm/mach-omap2/Kconfig
-@@ -135,6 +135,24 @@ config MACH_OMAP_LDP
- 	default y
- 	select OMAP_PACKAGE_CBB
- 
-+config MACH_OMAP3530_LV_SOM
-+	bool "OMAP3 Logic 3530 LV SOM board"
-+	depends on ARCH_OMAP3
-+	default y
-+	help
-+	 Support for the LogicPD OMAP3530 SOM Development kit
-+	 for full description please see the products webpage at
-+	 http://www.logicpd.com/products/development-kits/texas-instruments-zoom%E2%84%A2-omap35x-development-kit
-+
-+config MACH_OMAP3_TORPEDO
-+	bool "OMAP3 Logic 35x Torpedo board"
-+	depends on ARCH_OMAP3
-+	default y
-+	help
-+	 Support for the LogicPD OMAP35x Torpedo Development kit
-+	 for full description please see the products webpage at
-+	 http://www.logicpd.com/products/development-kits/zoom-omap35x-torpedo-development-kit
-+
- config MACH_OVERO
- 	bool "Gumstix Overo board"
- 	depends on ARCH_OMAP3
 diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
-index 88d3a1e..9feadd8 100644
+index 9feadd8..f7ec388 100644
 --- a/arch/arm/mach-omap2/Makefile
 +++ b/arch/arm/mach-omap2/Makefile
-@@ -115,6 +115,10 @@ obj-$(CONFIG_MACH_DEVKIT8000)     	+= board-devkit8000.o \
- obj-$(CONFIG_MACH_OMAP_LDP)		+= board-ldp.o \
- 					   board-flash.o \
- 					   hsmmc.o
-+obj-$(CONFIG_MACH_OMAP3530_LV_SOM)      += board-omap3logic.o \
-+					   hsmmc.o
-+obj-$(CONFIG_MACH_OMAP3_TORPEDO)        += board-omap3logic.o \
-+					   hsmmc.o
- obj-$(CONFIG_MACH_OVERO)		+= board-overo.o \
- 					   hsmmc.o
- obj-$(CONFIG_MACH_OMAP3EVM)		+= board-omap3evm.o \
-diff --git a/arch/arm/mach-omap2/board-omap3logic.c b/arch/arm/mach-omap2/board-omap3logic.c
+@@ -178,3 +178,6 @@ obj-y					+= $(nand-m) $(nand-y)
+ 
+ smc91x-$(CONFIG_SMC91X)			:= gpmc-smc91x.o
+ obj-y					+= $(smc91x-m) $(smc91x-y)
++
++smsc911x-$(CONFIG_SMSC911X)		:= gpmc-smsc911x.o
++obj-y					+= $(smsc911x-m) $(smsc911x-y)
+diff --git a/arch/arm/mach-omap2/gpmc-smsc911x.c b/arch/arm/mach-omap2/gpmc-smsc911x.c
 new file mode 100644
-index 0000000..72769f7
+index 0000000..703f150
 --- /dev/null
-+++ b/arch/arm/mach-omap2/board-omap3logic.c
-@@ -0,0 +1,143 @@
++++ b/arch/arm/mach-omap2/gpmc-smsc911x.c
+@@ -0,0 +1,113 @@
 +/*
-+ * linux/arch/arm/mach-omap2/board-omap3logic.c
++ * linux/arch/arm/mach-omap2/gpmc-smsc911x.c
 + *
-+ * Copyright (C) 2010 Li-Pro.Net
++ * Copyright (C) 2009 Li-Pro.Net
 + * Stephan Linz <linz@li-pro.net>
 + *
-+ * Copyright (C) 2010 Logic Product Development, Inc.
-+ * Peter Barada <peter.barada@logicpd.com>
-+ *
-+ * Modified from Beagle, EVM, and RX51
++ * Modified from linux/arch/arm/mach-omap2/gpmc-smc91x.c
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
@@ -99,132 +65,146 @@ index 0000000..72769f7
 + */
 +
 +#include <linux/kernel.h>
-+#include <linux/init.h>
 +#include <linux/platform_device.h>
-+#include <linux/delay.h>
-+#include <linux/err.h>
-+#include <linux/clk.h>
-+#include <linux/io.h>
 +#include <linux/gpio.h>
++#include <linux/delay.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/smsc911x.h>
 +
-+#include <linux/regulator/machine.h>
-+
-+#include <linux/i2c/twl.h>
-+
-+#include <mach/hardware.h>
-+#include <asm/mach-types.h>
-+#include <asm/mach/arch.h>
-+#include <asm/mach/map.h>
-+
-+#include "mux.h"
-+
-+#include <plat/mux.h>
 +#include <plat/board.h>
-+#include <plat/common.h>
 +#include <plat/gpmc.h>
-+#include <plat/timer-gp.h>
-+#include <plat/sdrc.h>
-+#include <plat/control.h>
++#include <plat/gpmc-smsc911x.h>
 +
-+#define OMAP3LOGIC_SMSC911X_CS			1
++static struct omap_smsc911x_platform_data *gpmc_cfg;
 +
-+#define OMAP3530_LV_SOM_MMC_GPIO_CD             110
-+#define OMAP3530_LV_SOM_MMC_GPIO_WP             126
-+#define	OMAP3530_LV_SOM_SMSC911X_GPIO_IRQ	152
-+
-+#define OMAP3_TORPEDO_MMC_GPIO_CD               127
-+#define OMAP3_TORPEDO_SMSC911X_GPIO_IRQ		129
-+
-+static struct regulator_consumer_supply omap3logic_vmmc1_supply = {
-+	.supply			= "vmmc",
-+};
-+
-+/* VMMC1 for MMC1 pins CMD, CLK, DAT0..DAT3 (20 mA, plus card == max 220 mA) */
-+static struct regulator_init_data omap3logic_vmmc1 = {
-+	.constraints = {
-+		.name			= "VMMC1",
-+		.min_uV			= 1850000,
-+		.max_uV			= 3150000,
-+		.valid_modes_mask	= REGULATOR_MODE_NORMAL
-+					| REGULATOR_MODE_STANDBY,
-+		.valid_ops_mask		= REGULATOR_CHANGE_VOLTAGE
-+					| REGULATOR_CHANGE_MODE
-+					| REGULATOR_CHANGE_STATUS,
++static struct resource gpmc_smsc911x_resources[] = {
++	[0] = {
++		.flags		= IORESOURCE_MEM,
 +	},
-+	.num_consumer_supplies  = 1,
-+	.consumer_supplies      = &omap3logic_vmmc1_supply,
-+};
-+
-+static struct twl4030_gpio_platform_data omap3logic_gpio_data = {
-+	.gpio_base	= OMAP_MAX_GPIO_LINES,
-+	.irq_base	= TWL4030_GPIO_IRQ_BASE,
-+	.irq_end	= TWL4030_GPIO_IRQ_END,
-+	.use_leds	= true,
-+	.pullups	= BIT(1),
-+	.pulldowns	= BIT(2)  | BIT(6)  | BIT(7)  | BIT(8)
-+			| BIT(13) | BIT(15) | BIT(16) | BIT(17),
-+};
-+
-+static struct twl4030_platform_data omap3logic_twldata = {
-+	.irq_base	= TWL4030_IRQ_BASE,
-+	.irq_end	= TWL4030_IRQ_END,
-+
-+	/* platform_data for children goes here */
-+	.gpio		= &omap3logic_gpio_data,
-+};
-+
-+static struct i2c_board_info __initdata omap3logic_i2c_boardinfo[] = {
-+	{
-+		I2C_BOARD_INFO("twl4030", 0x48),
-+		.flags = I2C_CLIENT_WAKE,
-+		.irq = INT_34XX_SYS_NIRQ,
-+		.platform_data = &omap3logic_twldata,
++	[1] = {
++		.flags		= IORESOURCE_IRQ,
 +	},
 +};
 +
-+static int __init omap3logic_i2c_init(void)
++static struct smsc911x_platform_config gpmc_smsc911x_config = {
++	.phy_interface	= PHY_INTERFACE_MODE_MII,
++	.irq_polarity	= SMSC911X_IRQ_POLARITY_ACTIVE_LOW,
++	.irq_type	= SMSC911X_IRQ_TYPE_OPEN_DRAIN,
++	.flags		= SMSC911X_USE_16BIT,
++};
++
++static struct platform_device gpmc_smsc911x_device = {
++	.name		= "smsc911x",
++	.id		= -1,
++	.num_resources	= ARRAY_SIZE(gpmc_smsc911x_resources),
++	.resource	= gpmc_smsc911x_resources,
++	.dev		= {
++		.platform_data = &gpmc_smsc911x_config,
++	},
++};
++
++/*
++ * Initialize smsc911x device connected to the GPMC. Note that we
++ * assume that pin multiplexing is done in the board-*.c file,
++ * or in the bootloader.
++ */
++void __init gpmc_smsc911x_init(struct omap_smsc911x_platform_data *board_data)
 +{
-+	omap_register_i2c_bus(1, 2600, omap3logic_i2c_boardinfo,
-+				ARRAY_SIZE(omap3logic_i2c_boardinfo));
-+	return 0;
++	unsigned long cs_mem_base;
++	int ret;
++
++	gpmc_cfg = board_data;
++
++	if (gpmc_cs_request(gpmc_cfg->cs, SZ_16M, &cs_mem_base) < 0) {
++		printk(KERN_ERR "Failed to request GPMC mem for smsc911x\n");
++		return;
++	}
++
++	gpmc_smsc911x_resources[0].start = cs_mem_base + 0x0;
++	gpmc_smsc911x_resources[0].end = cs_mem_base + 0xff;
++
++	if (gpio_request(gpmc_cfg->gpio_irq, "smsc911x irq") < 0) {
++		printk(KERN_ERR "Failed to request GPIO%d for smsc911x IRQ\n",
++				gpmc_cfg->gpio_irq);
++		goto free1;
++	}
++
++	gpio_direction_input(gpmc_cfg->gpio_irq);
++	gpmc_smsc911x_resources[1].start = gpio_to_irq(gpmc_cfg->gpio_irq);
++	gpmc_smsc911x_resources[1].flags |=
++					(gpmc_cfg->flags & IRQF_TRIGGER_MASK);
++
++	if (gpio_is_valid(gpmc_cfg->gpio_reset)) {
++		ret = gpio_request(gpmc_cfg->gpio_reset, "smsc911x reset");
++		if (ret) {
++			printk(KERN_ERR "Failed to request GPIO%d for smsc911x reset\n",
++					gpmc_cfg->gpio_reset);
++			goto free2;
++		}
++
++		gpio_direction_output(gpmc_cfg->gpio_reset, 1);
++		gpio_set_value(gpmc_cfg->gpio_reset, 0);
++		msleep(100);
++		gpio_set_value(gpmc_cfg->gpio_reset, 1);
++	}
++
++	if (platform_device_register(&gpmc_smsc911x_device) < 0) {
++		printk(KERN_ERR "Unable to register smsc911x device\n");
++		gpio_free(gpmc_cfg->gpio_reset);
++		goto free2;
++	}
++
++	return;
++
++free2:
++	gpio_free(gpmc_cfg->gpio_irq);
++free1:
++	gpmc_cs_free(gpmc_cfg->cs);
++
++	printk(KERN_ERR "Could not initialize smsc911x\n");
++}
+diff --git a/arch/arm/plat-omap/include/plat/gpmc-smsc911x.h b/arch/arm/plat-omap/include/plat/gpmc-smsc911x.h
+new file mode 100644
+index 0000000..e5f3a48
+--- /dev/null
++++ b/arch/arm/plat-omap/include/plat/gpmc-smsc911x.h
+@@ -0,0 +1,35 @@
++/*
++ * arch/arm/plat-omap/include/mach/gpmc-smsc911x.h
++ *
++ * Copyright (C) 2009 Li-Pro.Net
++ * Stephan Linz <linz@li-pro.net>
++ *
++ * Modified from arch/arm/plat-omap/include/mach/gpmc-smc91x.h
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef __ASM_ARCH_OMAP_GPMC_SMSC911X_H__
++
++struct omap_smsc911x_platform_data {
++	int	cs;
++	int	gpio_irq;
++	int	gpio_reset;
++	u32	flags;
++};
++
++#if defined(CONFIG_SMSC911X) || \
++	defined(CONFIG_SMSC911X_MODULE)
++
++extern void gpmc_smsc911x_init(struct omap_smsc911x_platform_data *d);
++
++#else
++
++static inline void gpmc_smsc911x_init(struct omap_smsc911x_platform_data *d)
++{
 +}
 +
-+static void __init omap3logic_init_irq(void)
-+{
-+	omap2_init_common_hw(NULL, NULL);
-+	omap_init_irq();
-+	omap_gpio_init();
-+}
-+
-+static void __init omap3logic_init(void)
-+{
-+	omap3logic_i2c_init();
-+	omap_serial_init();
-+
-+	/* Ensure SDRC pins are mux'd for self-refresh */
-+	omap_mux_init_signal("sdrc_cke0", OMAP_PIN_OUTPUT);
-+	omap_mux_init_signal("sdrc_cke1", OMAP_PIN_OUTPUT);
-+}
-+
-+MACHINE_START(OMAP3_TORPEDO, "Logic OMAP3 Torpedo board")
-+	.phys_io	= 0x48000000,
-+	.io_pg_offst	= ((0xd8000000) >> 18) & 0xfffc,
-+	.boot_params	= 0x80000100,
-+	.map_io		= omap3_map_io,
-+	.init_irq	= omap3logic_init_irq,
-+	.init_machine	= omap3logic_init,
-+	.timer		= &omap_timer,
-+MACHINE_END
-+
-+MACHINE_START(OMAP3530_LV_SOM, "OMAP Logic 3530 LV SOM board")
-+	.phys_io	= 0x48000000,
-+	.io_pg_offst	= ((0xd8000000) >> 18) & 0xfffc,
-+	.boot_params	= 0x80000100,
-+	.map_io		= omap3_map_io,
-+	.init_irq	= omap3logic_init_irq,
-+	.init_machine	= omap3logic_init,
-+	.timer		= &omap_timer,
-+MACHINE_END
++#endif
++#endif
 -- 
 1.7.1
 
