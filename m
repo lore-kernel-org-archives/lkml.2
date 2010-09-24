@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754481Ab0IXUwK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 16:52:10 -0400
-Received: from qmta08.emeryville.ca.mail.comcast.net ([76.96.30.80]:58892 "EHLO
-	qmta08.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752237Ab0IXUwI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 16:52:08 -0400
-Date: Fri, 24 Sep 2010 13:51:08 -0700
-From: matt mooney <mfm@muteddisk.com>
-To: T Dent <tdent48227@gmail.com>
-Cc: matt mooney <mfmooney@gmail.com>, greg@kroah.com,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 00/21] Staging: cleaned up makefiles cflag lines
-Message-ID: <20100924205108.GA8191@haskell.muteddisk.com>
-Mail-Followup-To: T Dent <tdent48227@gmail.com>,
-	matt mooney <mfmooney@gmail.com>, greg@kroah.com,
-	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-References: <AANLkTikqf4rn6BP2gyQAuQrvt7EdFY8yfa+o8nfR9xWE@mail.gmail.com>
- <AANLkTikvGGz+33ni=Kov1qM1DpSj2WVuk89u=TwE9iL_@mail.gmail.com>
- <AANLkTin1YfwwVcDNUBsi34iYC6HA5Y6+uOFZN=+Q2hqs@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTin1YfwwVcDNUBsi34iYC6HA5Y6+uOFZN=+Q2hqs@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754851Ab0IXUzq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 16:55:46 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:51520 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750816Ab0IXUzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 16:55:45 -0400
+From: Ernesto Ramos <ernesto@ti.com>
+To: gregkh@suse.com, linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: ameya.palande@nokia.com, felipe.contreras@gmail.com,
+        andy.shevchenko@gmail.com, Ernesto Ramos <ernesto@ti.com>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>
+Subject: [PATCH] staging: tidspbridge: disable all peripherals at bridge_brd_stop
+Date: Fri, 24 Sep 2010 16:02:03 -0500
+Message-Id: <1285362123-31323-1-git-send-email-ernesto@ti.com>
+X-Mailer: git-send-email 1.5.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16:39 Fri 24 Sep     , T Dent wrote:
-> On 9/24/10, matt mooney <mfmooney@gmail.com> wrote:
-> > On Fri, Sep 24, 2010 at 11:25 AM, T Dent <tdent48227@gmail.com> wrote:
-> >> I changed every makefile in the staging directory to use the proper
-> >> ccflags-y option instead of EXTRA_CFLAGS. It builds also :) .
-> >
-> > Um, you didn't do a lot of these right. Maybe you should look into why
-> > the change was made in the first place. For semantic reasons, I was
-> > also changing the first assignment to ":=" from "+=".
-> 
-> I can resend them with the a small modification to the patch files if you want.
+DSP Bridge needs to disable the peripheral clocks when switches to
+BRD_STOPPED since that would prevent the domain to enter in OFF state.
 
-After looking at more of them, my "a lot" was a little bit of an
-overstatement. The first few I randomly looked at happen to use the incorrect
-pattern, but most are simple without relying on a variable. Yeah, I think you
-should resubmit with a "[PATCH v2]." The pattern is:
+Signed-off-by: Ernesto Ramos <ernesto@ti.com>
+Signed-off-by: Omar Ramirez Luna <omar.ramirez@ti.com>
+---
+ drivers/staging/tidspbridge/core/tiomap3430.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-ifeq ($(FOO),y)
-     EXTRA_CFLAGS := <flags>
-endif
-
-changes to:
-
-ccflags-$(FOO) := <flags>
-
-Also, the rest of the kernel tree has been done except drivers/media; however, I
-am going to email them in a little bit asking if some consolidation is possible
-due to every driver there relying on a few flags. So thanks for the help (though
-is was a good thing I was saving staging for last)!
-
--mfm
+diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
+index 0e3558a..8b73ac9 100644
+--- a/drivers/staging/tidspbridge/core/tiomap3430.c
++++ b/drivers/staging/tidspbridge/core/tiomap3430.c
+@@ -552,7 +552,7 @@ static int bridge_brd_stop(struct bridge_dev_context *dev_ctxt)
+ 	int status = 0;
+ 	struct bridge_dev_context *dev_context = dev_ctxt;
+ 	u32 dsp_pwr_state;
+-	int clk_status, i;
++	int i;
+ 	struct bridge_ioctl_extproc *tlb = dev_context->atlb_entry;
+ 	struct dspbridge_platform_data *pdata =
+ 				omap_dspbridge_dev->dev.platform_data;
+@@ -621,7 +621,8 @@ static int bridge_brd_stop(struct bridge_dev_context *dev_ctxt)
+ 	(*pdata->dsp_prm_rmw_bits)(OMAP3430_RST2_IVA2_MASK,
+ 		OMAP3430_RST2_IVA2_MASK, OMAP3430_IVA2_MOD, OMAP2_RM_RSTCTRL);
+ 
+-	clk_status = dsp_clk_disable(DSP_CLK_IVA2);
++	dsp_clock_disable_all(dev_context->dsp_per_clks);
++	dsp_clk_disable(DSP_CLK_IVA2);
+ 
+ 	return status;
+ }
+-- 
+1.5.4.5
 
