@@ -1,100 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab0IXRfX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 13:35:23 -0400
-Received: from bhuna.collabora.co.uk ([93.93.128.226]:39588 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752318Ab0IXRfV (ORCPT
+	id S1754623Ab0IXRkZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 13:40:25 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:64376 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752647Ab0IXRkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 13:35:21 -0400
-X-Greylist: delayed 599 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Sep 2010 13:35:21 EDT
-From: Alban Crequy <alban.crequy@collabora.co.uk>
-To: Alban Crequy <alban.crequy@collabora.co.uk>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Ian Molton <ian.molton@collabora.co.uk>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dbus@freedesktop.org,
-        Alban Crequy <alban.crequy@collabora.co.uk>
-Subject: [PATCH 3/5] AF_UNIX: implement connect() on multicast Unix stream socket
-Date: Fri, 24 Sep 2010 18:25:14 +0100
-Message-Id: <1285349116-17529-3-git-send-email-alban.crequy@collabora.co.uk>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20100924182257.11abd9a6@chocolatine.cbg.collabora.co.uk>
-References: <20100924182257.11abd9a6@chocolatine.cbg.collabora.co.uk>
+	Fri, 24 Sep 2010 13:40:24 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Vernon Mauery <vernux@us.ibm.com>
+Subject: Re: [RFC][Patch] IBM Real-Time "SMI Free" mode driver -v4
+Date: Fri, 24 Sep 2010 19:40:18 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4+; KDE/4.5.1; x86_64; ; )
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Keith Mannthey <kmannth@us.ibm.com>
+References: <20100921224610.GO13162@lucy> <AANLkTimMWAk22gSn2cXA25VNJ1o3OX-mazJfFFd_+MH2@mail.gmail.com> <20100924170943.GB10777@lucy>
+In-Reply-To: <20100924170943.GB10777@lucy>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009241940.18931.arnd@arndb.de>
+X-Provags-ID: V02:K0:Zt3e/9u8x9phWdjecW7vSYFh2cVh9qf7KQ9KQq2xV3d
+ DPWvTU96fzjLjZdo9DoP1iPgffe4SZu2ylcvNtQRpwvy2eoVVw
+ jwKHTJUGrmAoXFxmqd3Ny4xD6tKUWqbbaxIpo6wu5mQYENPHYw
+ V+Dw/DrUvXjFZyKXI9VGxq3t9v9wIjuCwSl/e8MLLk8103WDS5
+ 9O/sABrSqYGDGGUYZ/Xnw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All multicast peers use connect() without any bound socket.
+On Friday 24 September 2010 19:09:43 Vernon Mauery wrote:
+> I looked into this and tested it on some hardware, but it doesn't work.  
+> After more digging and poking, it looks like the reason is that the port 
+> IO address is not within the x86 standard port IO range.
+> 
+> I tried something like this:
+> 
+>                         addr = ioread32(&rtl_table->cmd_port_address);
+>                         plen = rtl_cmd_width/8;
+>                         if (rtl_cmd_type == RTL_ADDR_TYPE_MMIO)
+>                                 rtl_cmd_addr = ioremap(addr, plen);
+>                         else
+>                                 rtl_cmd_addr = ioport_map(addr, plen);
+>                         RTL_DEBUG("rtl_cmd_addr = %#llx\n", (u64)rtl_cmd_addr);
+> 
+> It printed out that rtl_cmd_addr was 0, meaning the ioport_map failed.  
+> After more digging, it turns out that on at least one of the machines 
+> this code is targeted for, the port IO address (from the first line 
+> above) is 0x40000.  Even if this did get mapped, the IO_COND macro would 
+> target it for MMIO access instead of PIO access.  So I don't think I can 
+> use this method (even though it did make my code a lot nicer to read).
+> 
+> Any suggestions?
 
-Multicast Unix socket addresses and non-multicast Unix socket addresses live in
-the same namespace. An userspace application cannot connect() a non-multicast
-socket if the address is already used for multicast sockets.
+That seems really strange. I thought the inb/outb instructions could not
+actually operate on addresses above 0x10000 at all, since they take a 16
+bit address operand (DX register). Passing 0x40000 into inb should have the
+same effect as zero AFAICT, which means that your existing code should not
+work either.
 
-Signed-off-by: Alban Crequy <alban.crequy@collabora.co.uk>
----
- net/unix/af_unix.c |   22 ++++++++++++++++++++--
- 1 files changed, 20 insertions(+), 2 deletions(-)
+For non-x86 architectures, I would recommend defining HAVE_ARCH_PIO_SIZE
+and setting PIO_RESERVED to a higher value.
 
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index c766e88..a8d9de7 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -1064,9 +1064,20 @@ static int unix_stream_connect(struct socket *sock, struct sockaddr *uaddr,
- restart:
- 	/*  Find listening sock. */
- 	other = unix_find_other(net, sunaddr, addr_len, sk->sk_type, hash, &err);
--	if (!other)
-+	if (!other && !u->multicast)
- 		goto out;
- 
-+	if (other && u->multicast) {
-+		err = -ECONNREFUSED;
-+		goto out;
-+	}
-+
-+	if (u->multicast) {
-+		sock->state = SS_CONNECTED;
-+		sk->sk_state  = TCP_ESTABLISHED;
-+		return 0;
-+	}
-+
- 	/* Latch state of peer */
- 	unix_state_lock(other);
- 
-@@ -1567,6 +1578,7 @@ int unix_stream_getsockopt(struct socket *sock, int level, int optname,
- static int unix_stream_sendmsg(struct kiocb *kiocb, struct socket *sock,
- 			       struct msghdr *msg, size_t len)
- {
-+	struct unix_sock *u = unix_sk(sock->sk);
- 	struct sock_iocb *siocb = kiocb_to_siocb(kiocb);
- 	struct sock *sk = sock->sk;
- 	struct sock *other = NULL;
-@@ -1591,12 +1603,18 @@ static int unix_stream_sendmsg(struct kiocb *kiocb, struct socket *sock,
- 	if (msg->msg_namelen) {
- 		err = sk->sk_state == TCP_ESTABLISHED ? -EISCONN : -EOPNOTSUPP;
- 		goto out_err;
--	} else {
-+	} else if (!u->multicast) {
- 		sunaddr = NULL;
- 		err = -ENOTCONN;
- 		other = unix_peer(sk);
- 		if (!other)
- 			goto out_err;
-+	} else {
-+		sunaddr = NULL;
-+		err = -ENOTCONN;
-+		other = NULL; /* FIXME: get the list of other connection */
-+		if (!other)
-+			goto out_err;
- 	}
- 
- 	if (sk->sk_shutdown & SEND_SHUTDOWN)
--- 
-1.7.1
-
+	Arnd
