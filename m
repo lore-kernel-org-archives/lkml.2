@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758654Ab0IXX3n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 19:29:43 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:55484 "EHLO
+	id S1758660Ab0IXXaO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 19:30:14 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:58363 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758617Ab0IXX3I (ORCPT
+	with ESMTP id S1758588Ab0IXX3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 19:29:08 -0400
+	Fri, 24 Sep 2010 19:29:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=NpzvD6AzRoLEhqCipI5wJpIRuF5nC4Iyq9t1qeDuMJesS5YxRBuLdOG4DAIvscgTc0
-         Hfisj9sLoM16d6DzvJ77osVTVS5ttDWxTcWImZy/FcQDrAJCHqCieTboXmV/eCPyRgj0
-         XFYoPX+vekBkae/4xVP7YwizV4ZMiTVc6yzNk=
+        b=UuKwMuMGz/+bqWH3Gkl1EPYwkYepQ1uQxbE8F5mNIRJykmmmBbBc2pJvy4nRRm28P6
+         NFQflDttQzynbwd2hOtvIFzakK2xtVtFyVACJnGqrYT93++cPBCGpe+yRnGqTZkGKBOK
+         c73v678Xt0geszzugLv95fHyYFIAvy1vH/cy4=
 From: Tracey Dent <tdent48227@gmail.com>
 To: greg@kroah.com
 Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
         Tracey Dent <tdent48227@gmail.com>
-Subject: [PATCH v2 19/22] Staging:  vt6655: Makefile: cleaned up makefile cflag lines
-Date: Fri, 24 Sep 2010 19:28:07 -0400
-Message-Id: <1285370890-8984-19-git-send-email-tdent48227@gmail.com>
+Subject: [PATCH v2 18/22] Staging: usbip: Makefile: cleaned up makefile cflag lines
+Date: Fri, 24 Sep 2010 19:28:06 -0400
+Message-Id: <1285370890-8984-18-git-send-email-tdent48227@gmail.com>
 X-Mailer: git-send-email 1.7.3
 In-Reply-To: <1285370890-8984-1-git-send-email-tdent48227@gmail.com>
 References: <1285370890-8984-1-git-send-email-tdent48227@gmail.com>
@@ -31,22 +31,22 @@ Changed to use proper ccflags-y option
 
 Signed-off-by: Tracey Dent <tdent48227@gmail.com>
 ---
- drivers/staging/vt6655/Makefile |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/usbip/Makefile |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/vt6655/Makefile b/drivers/staging/vt6655/Makefile
-index 824c971..b7cb1d5 100644
---- a/drivers/staging/vt6655/Makefile
-+++ b/drivers/staging/vt6655/Makefile
-@@ -1,6 +1,6 @@
- # TODO: all of these should be removed
--EXTRA_CFLAGS += -DLINUX -D__KERNEL__ -D__NO_VERSION__
--EXTRA_CFLAGS += -DHOSTAP
-+ccflags-y := -DLINUX -D__KERNEL__ -D__NO_VERSION__
-+ccflags-y := -DHOSTAP
+diff --git a/drivers/staging/usbip/Makefile b/drivers/staging/usbip/Makefile
+index 6f2916b..10307f8 100644
+--- a/drivers/staging/usbip/Makefile
++++ b/drivers/staging/usbip/Makefile
+@@ -7,6 +7,5 @@ vhci-hcd-objs := vhci_sysfs.o vhci_tx.o vhci_rx.o vhci_hcd.o
+ obj-$(CONFIG_USB_IP_HOST) += usbip.o
+ usbip-objs := stub_dev.o stub_main.o stub_rx.o stub_tx.o
  
- vt6655_stage-y +=	device_main.o \
- 	card.o \
+-ifeq ($(CONFIG_USB_IP_DEBUG_ENABLE),y)
+-	EXTRA_CFLAGS += -DDEBUG
+-endif
++ccflags-$(CONFIG_USB_IP_DEBUG_ENABLE) := -DDEBUG
++
 -- 
 1.7.3
 
