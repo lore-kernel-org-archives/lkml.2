@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756779Ab0IXPHr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 11:07:47 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:19603
-	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755029Ab0IXPHq (ORCPT
+	id S1756777Ab0IXPKK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 11:10:10 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64622 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754496Ab0IXPKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 11:07:46 -0400
-X-SpamScore: -13
-X-BigFish: VS-13(zz1411I1432N98dNzz1202hzzz2dh2a8h2a8h61h)
-X-Spam-TCS-SCL: 0:0
-Date: Fri, 24 Sep 2010 10:07:35 -0500
-From: Scott Wood <scottwood@freescale.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: christophe leroy <christophe.leroy@c-s.fr>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
-        Anton Vorontsov <avorontsov@ru.mvista.com>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] spi_mpc8xxx: issue with using definition of pram in
- Device Tree
-Message-ID: <20100924100735.47b49580@udp111988uds.am.freescale.net>
-In-Reply-To: <20100924071006.GA21318@angua.secretlab.ca>
-References: <20100916070503.10046C7391@messagerie.si.c-s.fr>
-	<20100924071006.GA21318@angua.secretlab.ca>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Fri, 24 Sep 2010 11:10:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=VfLK8SzNw5J81qpPXtnvFwpnCXsE4QbuQ4mxiRBS61lr/gApwItkPA7usmJvTKpox6
+         0SYglqQs2pnlGA1J2mI8ZucyytBCo9NnvdSq7sa8f5PGJUyGJ+rr/uV30zj0ZTzzYF6k
+         Uh4rwq39fluILM/p5jjX4YbDqsrvWleO40m2g=
+Message-ID: <4C9CBF4A.9060302@gmail.com>
+Date: Fri, 24 Sep 2010 18:10:02 +0300
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.9) Gecko/20100914 SUSE/3.1.4 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Don Zickus <dzickus@redhat.com>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        linux-ide@vger.kernel.org
+Subject: Re: hibernation hangs with ATA errors (lockup_detector bug)
+References: <4C03C608.1040600@gmail.com> <20100601135004.GP15159@redhat.com> <4C051D44.7040203@gmail.com> <20100602184459.GA15159@redhat.com> <4C0B3E94.6020506@gmail.com> <4C80B338.6020701@gmail.com> <20100903135613.GV4879@redhat.com>
+In-Reply-To: <20100903135613.GV4879@redhat.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 Sep 2010 15:07:36.0768 (UTC) FILETIME=[3912DC00:01CB5BFA]
-X-Reverse-DNS: de01egw02.freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Sep 2010 01:10:06 -0600
-Grant Likely <grant.likely@secretlab.ca> wrote:
-
-> On Thu, Sep 16, 2010 at 09:05:03AM +0200, christophe leroy wrote:
-> > This patch applies to 2.6.34.7 and 2.6.35.4
-> > It fixes an issue during the probe for CPM1 with definition of parameter ram from DTS
-> > 
-> > Signed-off-by: christophe leroy <christophe.leroy@c-s.fr>
+On 09/03/2010 04:56 PM, Don Zickus wrote:
+> On Fri, Sep 03, 2010 at 10:35:04AM +0200, Jiri Slaby wrote:
+>> On 06/06/2010 08:22 AM, Jiri Slaby wrote:
+>>> On 06/02/2010 08:44 PM, Don Zickus wrote:
+>>>> --- a/kernel/watchdog.c
+>>>> +++ b/kernel/watchdog.c
+>>>> @@ -550,8 +550,7 @@ cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+>>>>  		break;
+>>>>  	case CPU_ONLINE:
+>>>>  	case CPU_ONLINE_FROZEN:
+>>>> -		if (watchdog_enable(hotcpu))
+>>>> -			return NOTIFY_BAD;
+>>>> +		watchdog_enable(hotcpu)
+>>>
+>>> This fixes the problem indeed.
+>>
+>> Hi, was this fixed somehow? I still use this hunk and don't know if it
+>> is needed:
 > 
-> I'm sorry, I don't understand the fix from the given description.
-> What is the problem, and why is cpm_muram_alloc_fixed() the wrong
-> thing to call on CPM1?  Does CPM2 still need it?
+> I have to go re-review the problem again.  I might have forgot to bring it
+> in.  Thanks for reminding me!
 
-I don't see how cpm_muram_alloc_fixed() can be used safely at all.  If
-you need a fixed address, it shouldn't be part of the general
-allocation pool, or something else might get it first.
+Reminder #2 :). Any updates?
 
--Scott
-
+thanks,
+-- 
+js
