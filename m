@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933003Ab0IXQfN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:35:13 -0400
-Received: from kroah.org ([198.145.64.141]:37101 "EHLO coco.kroah.org"
+	id S1756947Ab0IXQoV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:44:21 -0400
+Received: from kroah.org ([198.145.64.141]:37173 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932954Ab0IXQfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:35:03 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:45 2010
-Message-Id: <20100924163345.449175297@clark.site>
+	id S933002Ab0IXQfN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:35:13 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:46 2010
+Message-Id: <20100924163346.447354449@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:31:40 -0700
+Date: Fri, 24 Sep 2010 09:31:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        =?ISO-8859-15?q?Timo=20Ter=C3=A4s?= <timo.teras@iki.fi>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [16/68] r8169: fix mdio_read and update mdio_write according to hw specs
+        Jan Kara <jack@suse.cz>, Jens Axboe <jaxboe@fusionio.com>
+Subject: [27/68] char: Mark /dev/zero and /dev/kmem as not capable of writeback
 In-Reply-To: <20100924163357.GA15741@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,51 +25,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Jan Kara <jack@suse.cz>
 
-From: Timo Teräs <timo.teras@iki.fi>
+commit 371d217ee1ff8b418b8f73fb2a34990f951ec2d4 upstream.
 
-[ Upstream commit 81a95f049962ec20a9aed888e676208b206f0f2e ]
+These devices don't do any writeback but their device inodes still can get
+dirty so mark bdi appropriately so that bdi code does the right thing and files
+inodes to lists of bdi carrying the device inodes.
 
-Realtek confirmed that a 20us delay is needed after mdio_read and
-mdio_write operations. Reduce the delay in mdio_write, and add it
-to mdio_read too. Also add a comment that the 20us is from hw specs.
-
-Signed-off-by: Timo Teräs <timo.teras@iki.fi>
-Acked-by: Francois Romieu <romieu@fr.zoreil.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/net/r8169.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
 
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -558,10 +558,10 @@ static void mdio_write(void __iomem *ioa
- 		udelay(25);
- 	}
- 	/*
--	 * Some configurations require a small delay even after the write
--	 * completed indication or the next write might fail.
-+	 * According to hardware specs a 20us delay is required after write
-+	 * complete indication, but before sending next command.
- 	 */
--	udelay(25);
-+	udelay(20);
- }
+---
+ drivers/char/mem.c |    3 ++-
+ fs/char_dev.c      |    4 +++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
+
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -822,10 +822,11 @@ static const struct file_operations zero
+ /*
+  * capabilities for /dev/zero
+  * - permits private mappings, "copies" are taken of the source of zeros
++ * - no writeback happens
+  */
+ static struct backing_dev_info zero_bdi = {
+ 	.name		= "char/mem",
+-	.capabilities	= BDI_CAP_MAP_COPY,
++	.capabilities	= BDI_CAP_MAP_COPY | BDI_CAP_NO_ACCT_AND_WRITEBACK,
+ };
  
- static int mdio_read(void __iomem *ioaddr, int reg_addr)
-@@ -581,6 +581,12 @@ static int mdio_read(void __iomem *ioadd
- 		}
- 		udelay(25);
- 	}
-+	/*
-+	 * According to hardware specs a 20us delay is required after read
-+	 * complete indication, but before sending next command.
-+	 */
-+	udelay(20);
-+
- 	return value;
- }
+ static const struct file_operations full_fops = {
+--- a/fs/char_dev.c
++++ b/fs/char_dev.c
+@@ -39,7 +39,9 @@ struct backing_dev_info directly_mappabl
+ #endif
+ 		/* permit direct mmap, for read, write or exec */
+ 		BDI_CAP_MAP_DIRECT |
+-		BDI_CAP_READ_MAP | BDI_CAP_WRITE_MAP | BDI_CAP_EXEC_MAP),
++		BDI_CAP_READ_MAP | BDI_CAP_WRITE_MAP | BDI_CAP_EXEC_MAP |
++		/* no writeback happens */
++		BDI_CAP_NO_ACCT_AND_WRITEBACK),
+ };
  
+ static struct kobj_map *cdev_map;
 
 
