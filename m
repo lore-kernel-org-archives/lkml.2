@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932525Ab0IXQ16 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:27:58 -0400
-Received: from kroah.org ([198.145.64.141]:46031 "EHLO coco.kroah.org"
+	id S932714Ab0IXQ2e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:28:34 -0400
+Received: from kroah.org ([198.145.64.141]:38384 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932503Ab0IXQ14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:27:56 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:15 2010
-Message-Id: <20100924162615.509221898@clark.site>
+	id S932703Ab0IXQ2b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:28:31 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:18 2010
+Message-Id: <20100924162618.707924389@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:23:55 -0700
+Date: Fri, 24 Sep 2010 09:24:32 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Andy Grover <andy.grover@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [07/80] rds: fix a leak of kernel memory
+        Arnd Bergmann <arnd@arndb.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [44/80] /proc/vmcore: fix seeking
 In-Reply-To: <20100924162706.GA7381@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,32 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Arnd Bergmann <arnd@arndb.de>
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+commit c227e69028473c7c7994a9b0a2cc0034f3f7e0fe upstream.
 
-[ Upstream commit f037590fff3005ce8a1513858d7d44f50053cc8f ]
+Commit 73296bc611 ("procfs: Use generic_file_llseek in /proc/vmcore")
+broke seeking on /proc/vmcore.  This changes it back to use default_llseek
+in order to restore the original behaviour.
 
-struct rds_rdma_notify contains a 32 bits hole on 64bit arches,
-make sure it is zeroed before copying it to user.
+The problem with generic_file_llseek is that it only allows seeks up to
+inode->i_sb->s_maxbytes, which is zero on procfs and some other virtual
+file systems.  We should merge generic_file_llseek and default_llseek some
+day and clean this up in a proper way, but for 2.6.35/36, reverting vmcore
+is the safer solution.
 
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Andy Grover <andy.grover@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Reported-by: CAI Qian <caiqian@redhat.com>
+Tested-by: CAI Qian <caiqian@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- net/rds/recv.c |    2 +-
+ fs/proc/vmcore.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/rds/recv.c
-+++ b/net/rds/recv.c
-@@ -297,7 +297,7 @@ static int rds_still_queued(struct rds_s
- int rds_notify_queue_get(struct rds_sock *rs, struct msghdr *msghdr)
- {
- 	struct rds_notifier *notifier;
--	struct rds_rdma_notify cmsg;
-+	struct rds_rdma_notify cmsg = { 0 }; /* fill holes with zero */
- 	unsigned int count = 0, max_messages = ~0U;
- 	unsigned long flags;
- 	LIST_HEAD(copy);
+--- a/fs/proc/vmcore.c
++++ b/fs/proc/vmcore.c
+@@ -163,7 +163,7 @@ static ssize_t read_vmcore(struct file *
+ 
+ static const struct file_operations proc_vmcore_operations = {
+ 	.read		= read_vmcore,
+-	.llseek		= generic_file_llseek,
++	.llseek		= default_llseek,
+ };
+ 
+ static struct vmcore* __init get_new_element(void)
 
 
