@@ -1,118 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359Ab0IXNCS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 09:02:18 -0400
-Received: from 207-172-69-77.c3-0.smr-ubr3.sbo-smr.ma.static.cable.rcn.com ([207.172.69.77]:42031
-	"EHLO thaum.luto.us" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752164Ab0IXNCR (ORCPT
+	id S1755864Ab0IXNE6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 09:04:58 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:57398 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752164Ab0IXNE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 09:02:17 -0400
-Message-ID: <4C9CA16F.3000505@mit.edu>
-Date: Fri, 24 Sep 2010 09:02:39 -0400
-From: Andrew Lutomirski <luto@mit.edu>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Fri, 24 Sep 2010 09:04:57 -0400
+Date: Fri, 24 Sep 2010 15:02:17 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        lnxninja@linux.vnet.ibm.comc, Andrew Morton <akpm@osdl.org>
+Subject: Re: [RFC][PATCH] update /proc/sys/vm/drop_caches documentation
+Message-ID: <20100924130216.GA1810@ucw.cz>
+References: <20100914234714.8AF506EA@kernel.beaverton.ibm.com>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: linux-kernel@vger.kernel.org, Linux Containers <containers@lists.osdl.org>,
-        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, jamal <hadi@cyberus.ca>,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Ulrich Drepper <drepper@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        David Miller <davem@davemloft.net>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Ben Greear <greearb@candelatech.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Jonathan Corbet <corbet@lwn.net>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>
-Subject: Re: [ABI REVIEW][PATCH 0/8] Namespace file descriptors
-References: <m1ocborgq7.fsf@fess.ebiederm.org>
-In-Reply-To: <m1ocborgq7.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100914234714.8AF506EA@kernel.beaverton.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric W. Biederman wrote:
-> Introduce file for manipulating namespaces and related syscalls.
-> files:
-> /proc/self/ns/<nstype>
-> 
-> syscalls:
-> int setns(unsigned long nstype, int fd);
-> socketat(int nsfd, int family, int type, int protocol);
-> 
+Hi!
 
-How does security work?  Are there different kinds of fd that give (say) pin-the-namespace permission, socketat permission, and setns permission?
+> There seems to be an epidemic spreading around.  People get the idea
+> in their heads that the kernel caches are evil.  They eat too much
+> memory, and there's no way to set a size limit on them!  Stupid
+> kernel!
 
---Andy
+Its worse. IIRC android actually uses it in production. And, IIRC akpm
+told me that drop_caches does not include enough locking to be
+safe. If that's still the case, it should be documented.
 
-> Netlink attribute:
-> IFLA_NS_FD int fd.
-> 
-> Name space file descriptors address three specific problems that
-> can make namespaces hard to work with.
-> - Namespaces require a dedicated process to pin them in memory.
-> - It is not possible to use a namespace unless you are the child of the
->   original creator.
-> - Namespaces don't have names that userspace can use to talk about them.
-> 
-> Opening of the /proc/self/ns/<nstype> files return a file descriptor
-> that can be used to talk about a specific namespace, and to keep the
-> specified namespace alive.
-> 
-> /proc/self/ns/<nstype> can be bind mounted as:
-> mount --bind /proc/self/ns/net /some/filesystem/path
-> to keep the namespace alive as long as the mount exists.
-> 
-> setns() as a companion to unshare allows changing the namespace
-> of the current process, being able to unshare the namespace is
-> a requirement.
-> 
-> There are two primary envisioned uses for this functionality.
-> o ``Entering'' an existing container.
-> o Allowing multiple network namespaces to be in use at once on
->   the same machine, without requiring elaborate infrastructure.
-> 
-> Overall this received positive reviews on the containers list but this
-> needs a wider review of the ABI as this is pretty fundamental kernel
-> functionality.
-> 
-> 
-> I have left out the pid namespaces bits for the moment because the pid
-> namespace still needs work before it is safe to unshare, and my concern
-> at the moment is ensuring the system calls seem reasonable.
-> 
-> Eric W. Biederman (8):
->       ns: proc files for namespace naming policy.
->       ns: Introduce the setns syscall
->       ns proc: Add support for the network namespace.
->       ns proc: Add support for the uts namespace
->       ns proc: Add support for the ipc namespace
->       ns proc: Add support for the mount namespace
->       net: Allow setting the network namespace by fd
->       net: Implement socketat.
-> 
-> ---
->  fs/namespace.c              |   57 +++++++++++++
->  fs/proc/Makefile            |    1 +
->  fs/proc/base.c              |   22 +++---
->  fs/proc/inode.c             |    7 ++
->  fs/proc/internal.h          |   18 ++++
->  fs/proc/namespaces.c        |  193 +++++++++++++++++++++++++++++++++++++++++++
->  include/linux/if_link.h     |    1 +
->  include/linux/proc_fs.h     |   20 +++++
->  include/net/net_namespace.h |    1 +
->  ipc/namespace.c             |   31 +++++++
->  kernel/nsproxy.c            |   39 +++++++++
->  kernel/utsname.c            |   32 +++++++
->  net/core/net_namespace.c    |   56 +++++++++++++
->  net/core/rtnetlink.c        |    4 +-
->  net/socket.c                |   26 ++++++-
->  15 files changed, 494 insertions(+), 14 deletions(-)
-> 
+> -As this is a non-destructive operation and dirty objects are not freeable, the
+> -user should run `sync' first.
+> +This is a non-destructive operation and will not free any dirty objects.
+> +To increase the number of objects freed by this operation, the user may run
+> +`sync' prior to writing to /proc/sys/vm/drop_caches.  This will minimize the
+> +number of dirty objects on the system and create more candidates to be
+> +dropped.
+> +
+> +This file is not a means to control the growth of the various kernel caches
+> +(inodes, dentries, pagecache, etc...)  These objects are automatically
+> +reclaimed by the kernel when memory is needed elsewhere on the system.
+> +
+> +Outside of a testing or debugging environment, use of
+> +/proc/sys/vm/drop_caches is not recommended.
 
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
