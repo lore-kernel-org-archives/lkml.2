@@ -1,82 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751820Ab0IXIdj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 04:33:39 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54764 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835Ab0IXIdh (ORCPT
+	id S1752398Ab0IXIhV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 04:37:21 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37742 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898Ab0IXIhT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 04:33:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=SrRJXcIQfoHQAd0yFKzIxPe6dnLPLeePzQiGldGtj2QS3V2lZ9CFdBcIKDKcrO9MKs
-         iUMbV7e6tj7B2X/fQrzZSveZUQAgvRami62sLMRRZ0O3HydTKOWu0Aa4IC9CrPTGXr17
-         2yZd/TLAUadP+edByNWnabtI4fAIEMwHigjyo=
-Date: Fri, 24 Sep 2010 10:33:35 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-api@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, David Miller <davem@davemloft.net>,
-        John Stultz <johnstul@us.ibm.com>, Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v6 0/8] ptp: IEEE 1588 hardware clock support
-Message-ID: <20100924083335.GA13272@riccoc20.at.omicron.at>
-References: <cover.1285261533.git.richard.cochran@omicron.at>
- <alpine.DEB.2.00.1009231238170.2962@router.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1009231238170.2962@router.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 24 Sep 2010 04:37:19 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 24 Sep 2010 17:31:51 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, balbir@in.ibm.com,
+        nishimura@mxp.nes.nec.co.jp
+Subject: Re: + memcg-use-for_each_mem_cgroup.patch added to -mm tree
+Message-Id: <20100924173151.bc97b9f1.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100924094006.a4c63cf8.kamezawa.hiroyu@jp.fujitsu.com>
+References: <201009211936.o8LJaaRO030096@imap1.linux-foundation.org>
+	<20100924094006.a4c63cf8.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 23, 2010 at 12:53:20PM -0500, Christoph Lameter wrote:
-> On Thu, 23 Sep 2010, Richard Cochran wrote:
-> > 3.3 Synchronizing the Linux System Time
-> > ========================================
-> >
-> >    One could offer a PHC as a combined clock source and clock event
-> >    device. The advantage of this approach would be that it obviates
-> >    the need for synchronization when the PHC is selected as the system
-> >    timer. However, some PHCs, namely the PHY based clocks, cannot be
-> >    used in this way.
+On Fri, 24 Sep 2010 09:40:06 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+
+> On Tue, 21 Sep 2010 12:36:35 -0700
+> akpm@linux-foundation.org wrote:
 > 
-> Why not? Do PHY based clock not at least provide a counter that increments
-> in synchronized intervals throughout the network?
-
-The counter in the PHY is accessed via the MDIO bus. One 16 bit read
-takes anywhere from 25 to 40 microseconds. Reading the 64 bit time
-value requires four reads, so we're talking about 100 to 160
-microseconds, just for a single time reading.
-
-In addition to that, reading MDIO bus can sleep.  So, we can't (in
-general) to offer PHCs as clock sources.
-
-> >    Instead, the patch set provides a way to offer a Pulse Per Second
-> >    (PPS) event from the PHC to the Linux PPS subsystem. A user space
-> >    application can read the PPS events and tune the system clock, just
-> >    like when using other external time sources like radio clocks or
-> >    GPS.
+> > 
+> > The patch titled
+> >      memcg: use for_each_mem_cgroup
+> > has been added to the -mm tree.  Its filename is
+> >      memcg-use-for_each_mem_cgroup.patch
+> > 
 > 
-> User space is subject to various latencies created by the OS etc. I would
-> that in order to have fine grained (read microsecond) accurary we would
-> have to run the portions that are relevant to obtaining the desired
-> accuracy in the kernel.
+> This is a bug fix for this patch. Wrote onto mmotm-0922.
+> I'm sorry that test was not enough.
+> 
 
-The time-critical operations are all performed in hardware (packet
-timestamp), or in kernel space (input PPS timestamp). User space only
-runs the servo (using hardware or kernel timestamps as input) and
-performs the clock correction. With a sample rate of 1 PPS, the small
-user space induced delay (a few dozen microseconds) between sample
-time and clock correction is not an issue.
+And...this is a replacement..for the patch sent as fix.
 
-Thanks,
-Richard
+==
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+memcg-use-for_each_mem_cgroup.patch's function mem_cgroup_start_loop() is
+wrong because it always scan IDs larger than ROOT of sub-tree.
+(This works well in small test..)
+
+css_get_next() scans IDs larger than given number. Then...
+
+Assume a tree like this.
+
+	Root(id=1)--A(id=2)
+		  |
+		  --B(id=3)--C(id=4)
+			   |
+			   --D(id=5)
+
+In above case, searching all cgroup under "B" works well because
+all IDs larger than B will be visited. (3->4->5)
+
+Here, rmdir "A" and mkdir "E" under "B".
+
+       Root(id=1)--B(id=3)--C(id=4)
+			  |
+			  --D(id=5)
+			  |
+			  --E(id=2) /* reuse freed ID */
+
+E's ID is smaller than B's. So, all scan should be started from 1.
+The routine will visit (2->3->4->5).
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c |   26 +++++++++++++++++++++-----
+ 1 file changed, 21 insertions(+), 5 deletions(-)
+
+Index: mmotm-0922/mm/memcontrol.c
+===================================================================
+--- mmotm-0922.orig/mm/memcontrol.c
++++ mmotm-0922/mm/memcontrol.c
+@@ -697,12 +697,28 @@ static struct mem_cgroup *try_get_mem_cg
+ /* The caller has to guarantee "mem" exists before calling this */
+ static struct mem_cgroup *mem_cgroup_start_loop(struct mem_cgroup *mem)
+ {
+-	if (mem && css_tryget(&mem->css))
+-		return mem;
+-	if (!mem)
+-		return root_mem_cgroup; /*css_put/get against root is ignored*/
++	struct cgroup_subsys_state *css;
++	int found;
+ 
+-	return NULL;
++	if (!mem) /* ROOT cgroup has the smallest ID */
++		return root_mem_cgroup; /*css_put/get against root is ignored*/
++	if (!mem->use_hierarchy) {
++		if (css_tryget(&mem->css))
++			return mem;
++		return NULL;
++	}
++	rcu_read_lock();
++	/*
++	 * searching a memory cgroup which has the smallest ID under given
++	 * ROOT cgroup. (ID >= 1)
++	 */
++	css = css_get_next(&mem_cgroup_subsys, 1, &mem->css, &found);
++	if (css && css_tryget(css))
++		mem = container_of(css, struct mem_cgroup, css);
++	else
++		mem = NULL;
++	rcu_read_unlock();
++	return mem;
+ }
+ 
+ static struct mem_cgroup *mem_cgroup_get_next(struct mem_cgroup *iter,
+
