@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757338Ab0IXSXc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 14:23:32 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:40747 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932538Ab0IXSXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 14:23:30 -0400
-Date: Fri, 24 Sep 2010 11:23:27 -0700
-From: Vernon Mauery <vernux@us.ibm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>
-Subject: Re: [RFC][Patch] IBM Real-Time "SMI Free" mode driver -v4
-Message-ID: <20100924182327.GC10777@lucy>
-References: <20100921224610.GO13162@lucy>
- <AANLkTimMWAk22gSn2cXA25VNJ1o3OX-mazJfFFd_+MH2@mail.gmail.com>
- <20100924170943.GB10777@lucy>
- <201009241940.18931.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <201009241940.18931.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757276Ab0IXSSs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 14:18:48 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:40226 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753828Ab0IXSSr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 14:18:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=srxze49wBYypb2nXD+6LXMSm4bF5BItXqcja72VGF9bx7FTpzXUNPstzAs5qJgnkrf
+         lNnAM3E4JOeHa8ZZVjg6ezzMp3NlMoOWEKGzZzcVpOUEQOF1dLyqO7saZAMBs/8kRUjR
+         ji8CNmzEet4F8J1cclXwXvNstLI6A+2cLP5ZE=
+From: Tracey Dent <tdent48227@gmail.com>
+To: greg@kroah.com
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Tracey Dent <tdent48227@gmail.com>, Tracey Dent <tdent48227@gamil.com>
+Subject: [PATCH 01/21] Staging: cx25821: Makefile: cleaned up makefile cflag lines
+Date: Fri, 24 Sep 2010 14:18:14 -0400
+Message-Id: <1285352314-5939-1-git-send-email-tdent48227@gmail.com>
+X-Mailer: git-send-email 1.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24-Sep-2010 07:40 PM, Arnd Bergmann wrote:
->On Friday 24 September 2010 19:09:43 Vernon Mauery wrote:
->> I looked into this and tested it on some hardware, but it doesn't work.
->> After more digging and poking, it looks like the reason is that the port
->> IO address is not within the x86 standard port IO range.
->>
->> I tried something like this:
->>
->>                         addr = ioread32(&rtl_table->cmd_port_address);
->>                         plen = rtl_cmd_width/8;
->>                         if (rtl_cmd_type == RTL_ADDR_TYPE_MMIO)
->>                                 rtl_cmd_addr = ioremap(addr, plen);
->>                         else
->>                                 rtl_cmd_addr = ioport_map(addr, plen);
->>                         RTL_DEBUG("rtl_cmd_addr = %#llx\n", (u64)rtl_cmd_addr);
->>
->> It printed out that rtl_cmd_addr was 0, meaning the ioport_map failed.
->> After more digging, it turns out that on at least one of the machines
->> this code is targeted for, the port IO address (from the first line
->> above) is 0x40000.  Even if this did get mapped, the IO_COND macro would
->> target it for MMIO access instead of PIO access.  So I don't think I can
->> use this method (even though it did make my code a lot nicer to read).
->>
->> Any suggestions?
->
->That seems really strange. I thought the inb/outb instructions could not
->actually operate on addresses above 0x10000 at all, since they take a 16
->bit address operand (DX register). Passing 0x40000 into inb should have the
->same effect as zero AFAICT, which means that your existing code should not
->work either.
+Changed to use proper ccflags-y option.
 
-No, inb/outb have address as as unsigned long, which would explain why 
-0x40000 works with PIO.  When doing inb/outb via the ioread/iowrite 
-macros, the port value is the address (minus the offset) masked off to 
-PIO_MASK, which is 16 bits on x86.
+Signed-off-by: Tracey Dent <tdent48227@gamil.com>
+---
+ drivers/staging/cx25821/Makefile |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-So it looks like this really not going to work and I will have to go 
-back to how it was before.  Would it be tacky to write my own little 
-macro?
+diff --git a/drivers/staging/cx25821/Makefile b/drivers/staging/cx25821/Makefile
+index d0eb16e..77cbb83 100644
+--- a/drivers/staging/cx25821/Makefile
++++ b/drivers/staging/cx25821/Makefile
+@@ -7,7 +7,7 @@ cx25821-objs   := cx25821-core.o cx25821-cards.o cx25821-i2c.o \
+ obj-$(CONFIG_VIDEO_CX25821) += cx25821.o
+ obj-$(CONFIG_VIDEO_CX25821_ALSA) += cx25821-alsa.o
+ 
+-EXTRA_CFLAGS += -Idrivers/media/video
+-EXTRA_CFLAGS += -Idrivers/media/common/tuners
+-EXTRA_CFLAGS += -Idrivers/media/dvb/dvb-core
+-EXTRA_CFLAGS += -Idrivers/media/dvb/frontends
++ccflags-y += -Idrivers/media/video
++ccflags-y += -Idrivers/media/common/tuners
++ccflags-y += -Idrivers/media/dvb/dvb-core
++ccflags-y += -Idrivers/media/dvb/frontends
+-- 
+1.7.3
 
->For non-x86 architectures, I would recommend defining HAVE_ARCH_PIO_SIZE
->and setting PIO_RESERVED to a higher value.
-
-Unfortunately, this is targeted only for x86 platforms.
-
---Vernon
