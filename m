@@ -1,63 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584Ab0IXEuO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 00:50:14 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:60248 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1750963Ab0IXEuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 00:50:12 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX180cgNBSSc0+gs+esRTqmEG0ERej8B3bF/WSHytZS
-	FIL+KcflIw2VFG
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-To: linux-fbdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: [PATCH 0/4] initial suspend and resume support
-Date: Fri, 24 Sep 2010 05:01:22 +0000
-Message-Id: <cover.1285303222.git.FlorianSchandinat@gmx.de>
-X-Mailer: git-send-email 1.6.3.2
-X-Y-GMX-Trusted: 0
+	id S1752510Ab0IXExD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 00:53:03 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58342
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750877Ab0IXExB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 00:53:01 -0400
+Date: Thu, 23 Sep 2010 21:53:21 -0700 (PDT)
+Message-Id: <20100923.215321.90804782.davem@davemloft.net>
+To: viro@ZenIV.linux.org.uk
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Sparc
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100923002757.GI19804@ZenIV.linux.org.uk>
+References: <20100922204323.GG19804@ZenIV.linux.org.uk>
+	<20100922.141514.232744402.davem@davemloft.net>
+	<20100923002757.GI19804@ZenIV.linux.org.uk>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Al Viro <viro@ZenIV.linux.org.uk>
+Date: Thu, 23 Sep 2010 01:27:57 +0100
 
-this little patch series finally adds basic suspend and resume support.
-The good thing is, that it nearly works. Well in fact it should work
-fine if the only connected device is a CRT. For other devices it might
-happen that suspend and resume works but the screen stays black. This
-is probably caused by auxiliary devices that are connect via I2C lines
-and not yet reinitialized properly.
-This should be a huge improvent above the current behaviour, especially
-the hardware acceleration including a visible cursor works.
+> Dave, are you OK with the following patch?  That should cover both sparc32
+> and sparc64...
+> 
+> Subject: [PATCH] sparc: keep calling do_signal() as long as pending signals remain
 
-As usual tests were performed on CLE266, VX800 and VX855.
-These patches are also available on
-	git://github.com/schandinat/linux-2.6.git viafb-s4v1
+Looks great, I'll apply this and give it some of my own testing.
 
-Happy testing :)
+I'll also take care of that unaligned stack pointer issue on sparc32.
 
-
-Thanks,
-
-Florian Tobias Schandinat
-
-
-Deepak Saxena (1):
-  Minimal support for viafb suspend/resume
-
-Florian Tobias Schandinat (3):
-  viafb: restore display on resume
-  viafb: make suspend and resume work (on all machines?)
-  viafb: fix hardware acceleration for suspend & resume
-
- drivers/video/via/accel.c    |   43 +++++++++++++++++++++++++----------------
- drivers/video/via/accel.h    |    3 +-
- drivers/video/via/via-core.c |    4 +++
- drivers/video/via/viafbdev.c |   43 +++++++++++++++++++++++++++++++++++++++++-
- drivers/video/via/viafbdev.h |    2 +
- 5 files changed, 76 insertions(+), 19 deletions(-)
-
+Thanks!
