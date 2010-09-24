@@ -1,33 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755412Ab0IXGou (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 02:44:50 -0400
-Received: from nic.NetDirect.CA ([216.16.235.2]:50780 "EHLO
-	rubicon.netdirect.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752386Ab0IXGot (ORCPT
+	id S1754292Ab0IXGtt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 02:49:49 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:48961 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750880Ab0IXGts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 02:44:49 -0400
-X-Originating-Ip: 216.16.235.2
-Date: Fri, 24 Sep 2010 02:44:46 -0400
-From: Chris Frey <cdfrey@foursquare.net>
-To: linux-kernel@vger.kernel.org
-Subject: Re: ext3 filesystem corruption in user mode linux
-Message-ID: <20100924064446.GA22588@foursquare.net>
-References: <20100924041410.GA18040@foursquare.net> <20100924060557.GA21238@foursquare.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Fri, 24 Sep 2010 02:49:48 -0400
+Date: Fri, 24 Sep 2010 15:47:14 +0900
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 06/10] hugetlb: move refcounting in hugepage allocation
+ inside hugetlb_lock
+Message-ID: <20100924064714.GB26639@spritzera.linux.bs1.fc.nec.co.jp>
+References: <1283908781-13810-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1283908781-13810-7-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <alpine.DEB.2.00.1009231209450.32567@router.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-2022-jp
 Content-Disposition: inline
-In-Reply-To: <20100924060557.GA21238@foursquare.net>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <alpine.DEB.2.00.1009231209450.32567@router.home>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 24, 2010 at 02:05:57AM -0400, Chris Frey wrote:
-> So far I have been unable to make 2.6.32.21 corrupt its filesystem
-> when running as the UML kernel (Host 2.6.35.4, UML 2.6.32.21)
+On Thu, Sep 23, 2010 at 12:12:55PM -0500, Christoph Lameter wrote:
+> On Wed, 8 Sep 2010, Naoya Horiguchi wrote:
+> 
+> > Currently alloc_huge_page() raises page refcount outside hugetlb_lock.
+> > but it causes race when dequeue_hwpoison_huge_page() runs concurrently
+> > with alloc_huge_page().
+> > To avoid it, this patch moves set_page_refcounted() in hugetlb_lock.
+> 
+> Reviewed-by: Christoph Lameter <cl@linux.com>
+> 
+> One wonders though how many other of these huge races are still there
+> though.
+> 
+> "Normal" page migration is based on LRU isolation and therefore does not
+> suffer from these problems on allocation since the page is not yet on the
+> LRU. Also the LRU isolation is a known issue due to memory reclaim doing
+> this.
 
-Spoke too soon... 2.6.32.21 has errors too, if pushed hard enough.
+Yes.
+For normal page, allocation and reclaiming and migration are protected from
+each other by LRU isolation.
+For huge page, however, allocation and migration (reclaiming is not available)
+are protected by reference count, and race between allocation and hwpoison
+are avoided by hugetlb_lock.
+I see that this seems complex and can cause unpredicted races.
 
-- Chris
+> This protection is going away of one goes directly to a page
+> without going through the LRU. That should create more races...
 
+To unify these protection mechanism, we need that LRU list become available
+for hugepage, but we must wait for the appearance of hugepage swapping
+for this. Or implementing dummy LRU list until then? (Maybe it's more messy...)
+
+Thanks,
+Naoya Horiguchi
