@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab0IXRf1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 13:35:27 -0400
-Received: from bhuna.collabora.co.uk ([93.93.128.226]:39591 "EHLO
+	id S1754671Ab0IXRfY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 13:35:24 -0400
+Received: from bhuna.collabora.co.uk ([93.93.128.226]:39586 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753393Ab0IXRfV (ORCPT
+	with ESMTP id S1752613Ab0IXRfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 24 Sep 2010 13:35:21 -0400
 From: Alban Crequy <alban.crequy@collabora.co.uk>
@@ -19,9 +19,9 @@ Cc: "David S. Miller" <davem@davemloft.net>,
         Ian Molton <ian.molton@collabora.co.uk>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, dbus@freedesktop.org,
         Alban Crequy <alban.crequy@collabora.co.uk>
-Subject: [PATCH 2/5] AF_UNIX: enable/disable multicast with getsockopt/setsockopt
-Date: Fri, 24 Sep 2010 18:25:13 +0100
-Message-Id: <1285349116-17529-2-git-send-email-alban.crequy@collabora.co.uk>
+Subject: [PATCH 1/5] AF_UNIX: add getsockopt and setsockopt on stream sockets
+Date: Fri, 24 Sep 2010 18:25:12 +0100
+Message-Id: <1285349116-17529-1-git-send-email-alban.crequy@collabora.co.uk>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20100924182257.11abd9a6@chocolatine.cbg.collabora.co.uk>
 References: <20100924182257.11abd9a6@chocolatine.cbg.collabora.co.uk>
@@ -29,117 +29,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Multicast can be enabled or disabled after a socket is allocated but this
-cannot be changed once the socket is bound or connected.
-
-Userspace applications can enable multicast on an Unix stream socket:
-  sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
-  #define UNIX_MULTICAST 1
-  val = 1;
-  len = sizeof(val);
-  ret = setsockopt(sockfd, 0, UNIX_MULTICAST, &val, len);
-
 Signed-off-by: Alban Crequy <alban.crequy@collabora.co.uk>
 ---
- include/net/af_unix.h |    4 +++
- net/unix/af_unix.c    |   57 +++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 59 insertions(+), 2 deletions(-)
+ net/unix/af_unix.c |   21 +++++++++++++++++++--
+ 1 files changed, 19 insertions(+), 2 deletions(-)
 
-diff --git a/include/net/af_unix.h b/include/net/af_unix.h
-index 20725e2..4c77c69 100644
---- a/include/net/af_unix.h
-+++ b/include/net/af_unix.h
-@@ -40,6 +40,9 @@ struct unix_skb_parms {
- 				spin_lock_nested(&unix_sk(s)->lock, \
- 				SINGLE_DEPTH_NESTING)
- 
-+/* UNIX socket options */
-+#define UNIX_MULTICAST	1	/* Enable multicast Unix sockets */
-+
- #ifdef __KERNEL__
- /* The AF_UNIX socket */
- struct unix_sock {
-@@ -56,6 +59,7 @@ struct unix_sock {
- 	spinlock_t		lock;
- 	unsigned int		gc_candidate : 1;
- 	unsigned int		gc_maybe_cycle : 1;
-+	unsigned int		multicast : 1;
- 	struct socket_wq	peer_wq;
- };
- #define unix_sk(__sk) ((struct unix_sock *)__sk)
 diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index 47d9f77..c766e88 100644
+index fef2cc5..47d9f77 100644
 --- a/net/unix/af_unix.c
 +++ b/net/unix/af_unix.c
-@@ -1501,13 +1501,66 @@ out:
- static int unix_stream_setsockopt(struct socket *sock, int level, int optname,
- 				  char __user *optval, unsigned int optlen)
- {
--	return -EOPNOTSUPP;
-+	struct unix_sock *u = unix_sk(sock->sk);
-+	int val;
-+	int err = 0;
-+
-+	if (optlen < sizeof(int))
-+		return -EINVAL;
-+
-+	if (get_user(val, (int __user *)optval))
-+		return -EFAULT;
-+
-+	switch (optname) {
-+	case UNIX_MULTICAST:
-+		/* Multicast feature can only be changed when the socket is
-+		 * not used yet */
-+		if (u->addr || sock->sk->sk_state != TCP_CLOSE)
-+			return -EINVAL;
-+
-+		if (val != 0) {
-+			u->multicast = 1;
-+		} else {
-+			u->multicast = 0;
-+		}
-+		break;
-+
-+	default:
-+		err = -ENOPROTOOPT;
-+		break;
-+	}
-+
-+	return err;
- }
- 
- int unix_stream_getsockopt(struct socket *sock, int level, int optname,
- 			   char __user *optval, int __user *optlen)
- {
--	return -EOPNOTSUPP;
-+	struct unix_sock *u = unix_sk(sock->sk);
-+	int val, len;
-+
-+	if (get_user(len, optlen))
-+		return -EFAULT;
-+
-+	len = min_t(unsigned int, len, sizeof(int));
-+
-+	if (len < 0)
-+		return -EINVAL;
-+
-+	switch (optname) {
-+	case UNIX_MULTICAST:
-+		val = u->multicast;
-+		break;
-+
-+	default:
-+		return -ENOPROTOOPT;
-+	}
-+
-+	if (put_user(len, optlen))
-+		return -EFAULT;
-+	if (copy_to_user(optval, &val, len))
-+		return -EFAULT;
-+	return 0;
+@@ -492,6 +492,10 @@ static unsigned int unix_dgram_poll(struct file *, struct socket *,
+ 				    poll_table *);
+ static int unix_ioctl(struct socket *, unsigned int, unsigned long);
+ static int unix_shutdown(struct socket *, int);
++static int unix_stream_setsockopt(struct socket *, int, int,
++				  char __user *, unsigned int);
++static int unix_stream_getsockopt(struct socket *, int, int,
++				  char __user *, int __user *);
+ static int unix_stream_sendmsg(struct kiocb *, struct socket *,
+ 			       struct msghdr *, size_t);
+ static int unix_stream_recvmsg(struct kiocb *, struct socket *,
+@@ -518,8 +522,8 @@ static const struct proto_ops unix_stream_ops = {
+ 	.ioctl =	unix_ioctl,
+ 	.listen =	unix_listen,
+ 	.shutdown =	unix_shutdown,
+-	.setsockopt =	sock_no_setsockopt,
+-	.getsockopt =	sock_no_getsockopt,
++	.setsockopt =	unix_stream_setsockopt,
++	.getsockopt =	unix_stream_getsockopt,
+ 	.sendmsg =	unix_stream_sendmsg,
+ 	.recvmsg =	unix_stream_recvmsg,
+ 	.mmap =		sock_no_mmap,
+@@ -1494,6 +1498,19 @@ out:
  }
  
  
++static int unix_stream_setsockopt(struct socket *sock, int level, int optname,
++				  char __user *optval, unsigned int optlen)
++{
++	return -EOPNOTSUPP;
++}
++
++int unix_stream_getsockopt(struct socket *sock, int level, int optname,
++			   char __user *optval, int __user *optlen)
++{
++	return -EOPNOTSUPP;
++}
++
++
+ static int unix_stream_sendmsg(struct kiocb *kiocb, struct socket *sock,
+ 			       struct msghdr *msg, size_t len)
+ {
 -- 
 1.7.1
 
