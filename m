@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757715Ab0IXTVc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 15:21:32 -0400
-Received: from qmta05.emeryville.ca.mail.comcast.net ([76.96.30.48]:41643 "EHLO
-	qmta05.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757676Ab0IXTV1 (ORCPT
+	id S1757770Ab0IXTVx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 15:21:53 -0400
+Received: from qmta15.emeryville.ca.mail.comcast.net ([76.96.27.228]:36585
+	"EHLO qmta15.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757757Ab0IXTVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 15:21:27 -0400
+	Fri, 24 Sep 2010 15:21:51 -0400
 From: matt mooney <mfm@muteddisk.com>
 To: kernel-janitors@vger.kernel.org
-Cc: Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 10/24] isdn: change to new flag variable
-Date: Fri, 24 Sep 2010 12:17:20 -0700
-Message-Id: <ec9520aca140f253d8bad33cf35b8e668e7e9c9c.1285355033.git.mfm@muteddisk.com>
+Cc: =?UTF-8?q?Micha=C5=82=20Miros=C5=82aw?= <mirq-linux@rere.qmqm.pl>,
+        Jack Steiner <steiner@sgi.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 13/24] misc: change to new flag variable
+Date: Fri, 24 Sep 2010 12:17:23 -0700
+Message-Id: <c2f1ef5590660ae574e9bdaf7136213741081404.1285355033.git.mfm@muteddisk.com>
 X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <2c0fbcaafb18007c5c83823cb33e35120fe15091.1285355033.git.mfm@muteddisk.com>
+In-Reply-To: <e93a3f1af26d2b0fc798b4c15401b3422ae6e2bd.1285355033.git.mfm@muteddisk.com>
 References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
  <9968d4260be8850200cc9c7dfe08addf611468b4.1285355033.git.mfm@muteddisk.com>
  <036514b5dd23c5af14303519d79d60d79adccbee.1285355033.git.mfm@muteddisk.com>
@@ -25,6 +25,9 @@ References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddi
  <40a2d76d013ad025d08a411992af10f6bbef0a13.1285355033.git.mfm@muteddisk.com>
  <b484ccf548e1700e09ac7f731289503bf3e7b3bf.1285355033.git.mfm@muteddisk.com>
  <2c0fbcaafb18007c5c83823cb33e35120fe15091.1285355033.git.mfm@muteddisk.com>
+ <ec9520aca140f253d8bad33cf35b8e668e7e9c9c.1285355033.git.mfm@muteddisk.com>
+ <8cea68a58c5ddba79fc96e93fa0b23681e6a7ffe.1285355033.git.mfm@muteddisk.com>
+ <e93a3f1af26d2b0fc798b4c15401b3422ae6e2bd.1285355033.git.mfm@muteddisk.com>
 In-Reply-To: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
 References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -35,22 +38,34 @@ Replace EXTRA_CFLAGS with ccflags-y.
 
 Signed-off-by: matt mooney <mfm@muteddisk.com>
 ---
- drivers/isdn/hisax/Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/misc/cb710/Makefile   |    4 +---
+ drivers/misc/sgi-gru/Makefile |    4 +---
+ 2 files changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/isdn/hisax/Makefile b/drivers/isdn/hisax/Makefile
-index ab638b08..646368f 100644
---- a/drivers/isdn/hisax/Makefile
-+++ b/drivers/isdn/hisax/Makefile
-@@ -4,7 +4,7 @@
+diff --git a/drivers/misc/cb710/Makefile b/drivers/misc/cb710/Makefile
+index 7b80cbf..467c8e9 100644
+--- a/drivers/misc/cb710/Makefile
++++ b/drivers/misc/cb710/Makefile
+@@ -1,6 +1,4 @@
+-ifeq ($(CONFIG_CB710_DEBUG),y)
+-	EXTRA_CFLAGS		+= -DDEBUG
+-endif
++ccflags-$(CONFIG_CB710_DEBUG)	:= -DDEBUG
  
- # Define maximum number of cards
+ obj-$(CONFIG_CB710_CORE)	+= cb710.o
  
--EXTRA_CFLAGS      += -DHISAX_MAX_CARDS=$(CONFIG_HISAX_MAX_CARDS)
-+ccflags-y      := -DHISAX_MAX_CARDS=$(CONFIG_HISAX_MAX_CARDS)
+diff --git a/drivers/misc/sgi-gru/Makefile b/drivers/misc/sgi-gru/Makefile
+index 7c4c306..0003a1d 100644
+--- a/drivers/misc/sgi-gru/Makefile
++++ b/drivers/misc/sgi-gru/Makefile
+@@ -1,6 +1,4 @@
+-ifdef CONFIG_SGI_GRU_DEBUG
+-  EXTRA_CFLAGS	+= -DDEBUG
+-endif
++ccflags-$(CONFIG_SGI_GRU_DEBUG)	:= -DDEBUG
  
- obj-$(CONFIG_ISDN_DRV_HISAX)		+= hisax.o
- obj-$(CONFIG_HISAX_SEDLBAUER_CS)	+= sedlbauer_cs.o
+ obj-$(CONFIG_SGI_GRU) := gru.o
+ gru-y := grufile.o grumain.o grufault.o grutlbpurge.o gruprocfs.o grukservices.o gruhandles.o grukdump.o
 -- 
 1.7.2.1
 
