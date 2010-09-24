@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758188Ab0IXVq3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 17:46:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56736 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755284Ab0IXVq2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 17:46:28 -0400
-Date: Fri, 24 Sep 2010 17:45:29 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Mathieu Desnoyers <compudj@krystal.dyndns.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, David Miller <davem@davemloft.net>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH 03/11] jump label: Base patch for jump label
-Message-ID: <20100924214529.GG2887@redhat.com>
-References: <20100923034910.867858597@goodmis.org> <20100923035608.228041459@goodmis.org> <20100923143758.GA4022@Krystal> <20100923153902.GD2825@redhat.com> <20100923154852.GA12648@Krystal> <20100923184006.GE2825@redhat.com> <1285336460.31083.10.camel@gandalf.stny.rr.com> <20100924205435.GB8304@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100924205435.GB8304@Krystal>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1758181Ab0IXVsQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 17:48:16 -0400
+Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:49965 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753198Ab0IXVsO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 17:48:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=subject:from:to
+	:cc:in-reply-to:references:content-type:date:message-id
+	:mime-version:content-transfer-encoding; q=dns; s=sasl; b=tsILRf
+	zAMzyd8q5VNAK//1PNZslWCHqtL6m1mCKsh3B3DKSNtah8+eOvg2VvE/Gx8ioDit
+	nNDh0sK5+BwQl541FgpYmKfzk69TIZi64TRhnk4xFCcHeOmEJyGOke27QacRusou
+	67BtoJjHMdKrdmCtCXGV++Rv2EE7S6m8Qe+FI=
+Subject: [PATCH] fix blk-exec.c compile error: always define
+ 'sysctl_hung_task_timeout_secs' (resend)
+From: Mark Lord <mlord@pobox.com>
+To: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, hch@lst.de,
+        IDE/ATA development list <linux-ide@vger.kernel.org>
+In-Reply-To: <20100924202106.GC7145@redhat.com>
+References: <1285271646-2768-1-git-send-email-vgoyal@redhat.com>
+ <4C9CEFD6.3000106@kernel.dk>  <20100924202106.GC7145@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Real-Time Remedies Inc.
+Date: Fri, 24 Sep 2010 17:46:37 -0400
+Message-ID: <1285364797.12723.1.camel@corey>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-Pobox-Relay-ID: 6C74DC14-C825-11DF-A0EB-030CEE7EF46B-82205200!a-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 24, 2010 at 04:54:35PM -0400, Mathieu Desnoyers wrote:
-> * Steven Rostedt (rostedt@goodmis.org) wrote:
-> > On Thu, 2010-09-23 at 14:40 -0400, Jason Baron wrote:
-> > 
-> > > I agree that we this synchronization for the module __init section.
-> > > 
-> > > However, I believe we are ok for module removal case. free_module() is
-> > > called *after* blocking_notifier_call_chain() call. The
-> > > blocking_notifier_call_chain() is going to call back into the jump label
-> > > code, grab the jump_label_mutex and remove the reference to the module that
-> > > is about to freed. Thus, the jump label code can no longer reference it.
-> > > 
-> > > So I think the following patch is all that is required here (lightly
-> > > tested).
-> > > 
-> > > Steve, I'll re-post as a separate patch, if we agree on this fix.
-> > 
-> > Ug, I'm struggling to get ready for my Tokyo trip. I'll try to look at
-> > it on the flight. But I still need to write my presentation :-)
-> > 
-> > I may have a response back till Monday or Tuesday.
-> 
-> As a note for when you review this patch, I have a strong preference for
-> adding a "pre-init-free notifier callback" rather than taking the rcu
-> read lock + adding a synchronize_rcu() in module.c. This will make our
-> life much easier when we end up doing modifications down in text_poke.
-> 
-> Thanks,
-> 
-> Mathieu
-> 
+Ensure that 'sysctl_hung_task_timeout_secs' is defined
+even when CONFIG_DETECT_HUNG_TASK is not set.
+This way we can safely reference it without need for
+ifdefs in the code elsewhere.  eg. in block/blk-exec.c
 
-Yes, I think we can make this work with a "pre-init-free notifier
-callback". In fact, we can use MODULE_STATE_LIVE state that is already
-in module.c. I'm in the process of testing a patch using this
-alternative method.
+Signed-off-by: Mark Lord <mlord@pobox.com>
 
-thanks,
+(Resending from a repaired email client.)
+Jens: my apologies for not catching this this earlier.
 
--Jason
+--- a/include/linux/sched.h	2010-09-20 19:56:53.000000000 -0400
++++ b/include/linux/sched.h	2010-09-24 17:22:01.707291995 -0400
+@@ -336,6 +336,9 @@
+ extern int proc_dohung_task_timeout_secs(struct ctl_table *table, int write,
+ 					 void __user *buffer,
+ 					 size_t *lenp, loff_t *ppos);
++#else
++/* Avoid need for ifdefs elsewhere in the code */
++enum { sysctl_hung_task_timeout_secs = 0 };
+ #endif
+ 
+ /* Attach to any functions which should be ignored in wchan output. */
+
+
+
