@@ -1,127 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758397Ab0IXXHG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 19:07:06 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:41744 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755527Ab0IXXHE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 19:07:04 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Venkatesh Pallipadi <venki@google.com>
-Subject: Re: [PATCH] x86, HPET: mark HPET PCI BARs as IORESOURCE_PCI_FIXED
-Date: Fri, 24 Sep 2010 17:06:10 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
-Cc: Prarit Bhargava <prarit@redhat.com>, fredlwm@gmail.com,
-        Simon Arlott <simon@fire.lp0.eu>, x86@kernel.org,
-        Clemens Ladisch <clemens@ladisch.de>, linux-kernel@vger.kernel.org,
-        Marc Jones <marcj303@gmail.com>,
-        Jordan Crouse <jcrouse@codeaurora.org>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Yinghai Lu <yinghai@kernel.org>
-References: <20100923233047.12463.61480.stgit@bob.kio>
-In-Reply-To: <20100923233047.12463.61480.stgit@bob.kio>
+	id S1758434Ab0IXXHg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 19:07:36 -0400
+Received: from mail.atheros.com ([12.19.149.2]:40545 "EHLO mail.atheros.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757490Ab0IXXHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 19:07:34 -0400
+Date: Fri, 24 Sep 2010 16:07:31 -0700
+From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+To: Marcel Holtmann <holtmann@linux.intel.com>
+CC: linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
+        Deepak Dhamdhere <Deepak.Dhamdhere@atheros.com>,
+        Sree Durbha <Sree.Durbha@atheros.com>
+Subject: RFC: btusb firmware load help
+Message-ID: <20100924230730.GB6566@tux>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009241706.11742.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry Yinghai, I forgot to copy you on the initial post.  Any
-comments on this?  If not, we should try to get it into linux-next
-soon.
+Marcel, I was just poked about this thread:
 
-On Thursday, September 23, 2010 05:30:47 pm Bjorn Helgaas wrote:
-> 
-> We often discover the HPET early, via the static ACPI HPET table, before
-> enumerating PCI devices.  If the HPET is implemented as a PCI function,
-> we will discover it again during PCI device enumeration.  We must make
-> sure we never move the PCI function out from under the driver.
-> 
-> Doing this for *any* PCI BAR that matches a previously discovered HPET
-> should be more generic than the previous ATI-specific quirk.
-> 
-> This is for a regression from 2.6.34, but the reporter has been unable
-> to test it yet.
-> 
-> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=18482
-> Reported-by: Simon Arlott <simon@fire.lp0.eu>
-> Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
-> ---
-> 
->  arch/x86/kernel/quirks.c |   19 +++++++++++++++++++
->  arch/x86/pci/fixup.c     |   28 ----------------------------
->  2 files changed, 19 insertions(+), 28 deletions(-)
-> 
-> 
-> diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
-> index 939b9e9..8acd667 100644
-> --- a/arch/x86/kernel/quirks.c
-> +++ b/arch/x86/kernel/quirks.c
-> @@ -507,6 +507,25 @@ static void force_disable_hpet_msi(struct pci_dev *unused)
->  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_SBX00_SMBUS,
->  			 force_disable_hpet_msi);
->  
-> +static void mark_pci_hpet_fixed(struct pci_dev *dev)
-> +{
-> +	int i;
-> +
-> +	if (!hpet_address)
-> +		return;
-> +
-> +	for (i = 0; i < 6; i++) {
-> +		struct resource *res = &dev->resource[i];
-> +
-> +		if (resource_type(res) == IORESOURCE_MEM &&
-> +		    res->start == hpet_address) {
-> +			dev_info(&dev->dev, "BAR %d: %pR is an HPET we found earlier; making it immovable\n",
-> +				 i, res);
-> +			res->flags |= IORESOURCE_PCI_FIXED;
-> +		}
-> +	}
-> +}
-> +DECLARE_PCI_FIXUP_HEADER(PCI_ANY_ID, PCI_ANY_ID, mark_pci_hpet_fixed);
->  #endif
->  
->  #if defined(CONFIG_PCI) && defined(CONFIG_NUMA)
-> diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
-> index 6dd8955..08eba69 100644
-> --- a/arch/x86/pci/fixup.c
-> +++ b/arch/x86/pci/fixup.c
-> @@ -493,31 +493,3 @@ static void __devinit pci_siemens_interrupt_controller(struct pci_dev *dev)
->  }
->  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_SIEMENS, 0x0015,
->  			  pci_siemens_interrupt_controller);
-> -
-> -/*
-> - * SB600: Disable BAR1 on device 14.0 to avoid HPET resources from
-> - * confusing the PCI engine:
-> - */
-> -static void sb600_disable_hpet_bar(struct pci_dev *dev)
-> -{
-> -	u8 val;
-> -
-> -	/*
-> -	 * The SB600 and SB700 both share the same device
-> -	 * ID, but the PM register 0x55 does something different
-> -	 * for the SB700, so make sure we are dealing with the
-> -	 * SB600 before touching the bit:
-> -	 */
-> -
-> -	pci_read_config_byte(dev, 0x08, &val);
-> -
-> -	if (val < 0x2F) {
-> -		outb(0x55, 0xCD6);
-> -		val = inb(0xCD7);
-> -
-> -		/* Set bit 7 in PM register 0x55 */
-> -		outb(0x55, 0xCD6);
-> -		outb(val | 0x80, 0xCD7);
-> -	}
-> -}
-> -DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_ATI, 0x4385, sb600_disable_hpet_bar);
-> 
-> 
+http://www.spinics.net/lists/linux-bluetooth/msg06087.html
+
+The hack is required because our BT hardware does not accept HCI commands
+when the device is plugged in. If I understood your position you did not
+want to accept the patch because our BT USB devices are violating the
+specification by not acceping HCI commands and yet claiming to be BT
+devices, is that right?
+
+This position seems perfectly reasonable, and if it is violating the
+specification this needs to be fixed in hardware for future devices. But
+what is done is done, an dwe need to support existing customers with
+current hardware, can you provide some recommendation as to an alternative
+approach to resolve this upstream?
+
+Without a patch like the one suggested Atheros' Bluetooth USB devices are
+essentially not functional at all. I am in hopes we can come to some agreement
+how to deal with a hardware quirk for now while we nag at our hardware team
+to consider changing the way our devices work.
+
+Someone from the Atheros BT team: can you send me the same patch to be
+applied into compat-wireless under the linux-next-pending/ directory ?
+That is, send me a patch which will apply onto compat-wireless.
+This way we can actually get our hardware functional to customers while
+we try to look for a better alternative directly upstream. You will
+also need to document this issue on the wiki. I recommend you document
+this here:
+
+http://wireless.kernel.org/en/users/Drivers/ath3k
+
+That is, create a new wiki page there for the driver and the things
+needed for it. Once I get the patch into compat-wireless we can
+refer users/customers to the compat-wireless stable releases with
+the linux-next-pending/ patch you give to me applied.
+
+Someone from the Atheros BT team: does the patch currently handle
+suspend/resume?
+
+  Luis
