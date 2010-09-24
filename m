@@ -1,68 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756325Ab0IXNkz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 09:40:55 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:36308 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753106Ab0IXNkx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 09:40:53 -0400
-Date: Fri, 24 Sep 2010 15:02:46 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-api@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
-        David Miller <davem@davemloft.net>, John Stultz <johnstul@us.ibm.com>,
-        Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v6 0/8] ptp: IEEE 1588 hardware clock support
-Message-ID: <20100924150246.0e6064b6@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100924131407.GA3113@riccoc20.at.omicron.at>
-References: <cover.1285261533.git.richard.cochran@omicron.at>
-	<20100923213654.0c64b047@lxorguk.ukuu.org.uk>
-	<20100924131407.GA3113@riccoc20.at.omicron.at>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S932129Ab0IXNlV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 09:41:21 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:34958 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932075Ab0IXNlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 09:41:19 -0400
+Message-ID: <4C9CAA80.1030702@linux.vnet.ibm.com>
+Date: Fri, 24 Sep 2010 08:41:20 -0500
+From: Brian King <brking@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
+        Christoph Hellwig <hch@lst.de>,
+        MPTFusionLinux <DL-MPTFusionLinux@lsi.com>,
+        "eata.c maintainer" <dario.ballabio@inwind.it>
+Subject: Re: [RFC v3 01/15] scsi: Drop struct Scsi_Host->host_lock usage in
+ scsi_dispatch_cmd()
+References: <1285285052-16351-1-git-send-email-nab@linux-iscsi.org>
+In-Reply-To: <1285285052-16351-1-git-send-email-nab@linux-iscsi.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Sep 2010 15:14:07 +0200
-Richard Cochran <richardcochran@gmail.com> wrote:
+On 09/23/2010 06:37 PM, Nicholas A. Bellinger wrote:
+> @@ -651,7 +655,6 @@ static inline void scsi_cmd_get_serial(struct Scsi_Host *host, struct scsi_cmnd
+>  int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+>  {
+>  	struct Scsi_Host *host = cmd->device->host;
+> -	unsigned long flags = 0;
+>  	unsigned long timeout;
+>  	int rtn = 0;
+> 
+> @@ -736,15 +739,11 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+>  		scsi_done(cmd);
+>  		goto out;
+>  	}
+> -
+> -	spin_lock_irqsave(host->host_lock, flags);
+>  	/*
+> -	 * AK: unlikely race here: for some reason the timer could
+> -	 * expire before the serial number is set up below.
+> -	 *
+> -	 * TODO: kill serial or move to blk layer
+> +	 * Note that scsi_cmd_get_serial() used to be called here, but
+> +	 * now we expect the legacy SCSI LLDs that actually need this
+> +	 * to call it directly within their SHT->queuecommand() caller.
+>  	 */
+> -	scsi_cmd_get_serial(host, cmd); 
+> 
+>  	if (unlikely(host->shost_state == SHOST_DEL)) {
+>  		cmd->result = (DID_NO_CONNECT << 16);
+> @@ -753,7 +752,7 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+>  		trace_scsi_dispatch_cmd_start(cmd);
+>  		rtn = host->hostt->queuecommand(cmd, scsi_done);
+>  	}
+> -	spin_unlock_irqrestore(host->host_lock, flags);
+> +
+>  	if (rtn) {
+>  		trace_scsi_dispatch_cmd_error(cmd, rtn);
+>  		if (rtn != SCSI_MLQUEUE_DEVICE_BUSY &&
 
-> On Thu, Sep 23, 2010 at 09:36:54PM +0100, Alan Cox wrote:
-> > Drop the clockid_t and swap it for a file handle like a proper Unix or
-> > Linux interface. The rest is much the same
-> > 
-> > 	fd = open /sys/class/timesource/[whatever]
-> > 
-> > 	various queries you may want to do to check the name etc
-> > 
-> > 	fclock_adjtime(fd, ...)
-> 
-> Okay, but lets extend the story:
-> 
-> 	clock_getttime(fd, ...);
-> 
-> 	clock_settime(fd, ...);
-> 
-> 	timer_create(fd, ...);
-> 
-> Can you agree to that as well?
-> 
-> (We would need to ensure that 'fd' avoids the range 0 to MAX_CLOCKS).
+Are you planning a future revision that moves the acquiring of the host lock
+into the LLDD's queuecommand for all the other drivers you don't currently
+touch in this patch set?
 
-You can't do that avoiding as you might like because the behaviour of
-file handle numbering is defined by the standards. Hence the "f*"
-versions of the calls (and of lots of other stuff)
+-- 
+Brian King
+Linux on Power Virtualization
+IBM Linux Technology Center
 
-Whether you add new syscalls or do the fd passing using flags and hide
-the ugly bits in glibc is another question.
 
