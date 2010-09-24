@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932959Ab0IXQtQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:49:16 -0400
-Received: from kroah.org ([198.145.64.141]:37025 "EHLO coco.kroah.org"
+	id S933322Ab0IXQtf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:49:35 -0400
+Received: from kroah.org ([198.145.64.141]:37021 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932894Ab0IXQex (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:34:53 -0400
+	id S932874Ab0IXQew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:34:52 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:44 2010
-Message-Id: <20100924163344.539370048@clark.site>
+Message-Id: <20100924163344.449978921@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:31:30 -0700
+Date: Fri, 24 Sep 2010 09:31:29 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [06/68] tcp: select(writefds) dont hang up when a peer close connection
+Subject: [05/68] irda: Correctly clean up self->ias_obj on irda_bind() failure.
 In-Reply-To: <20100924163357.GA15741@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,71 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+From: David S. Miller <davem@davemloft.net>
 
-[ Upstream commit d84ba638e4ba3c40023ff997aa5e8d3ed002af36 ]
+[ Upstream commit 628e300cccaa628d8fb92aa28cb7530a3d5f2257 ]
 
-This issue come from ruby language community. Below test program
-hang up when only run on Linux.
+If irda_open_tsap() fails, the irda_bind() code tries to destroy
+the ->ias_obj object by hand, but does so wrongly.
 
-	% uname -mrsv
-	Linux 2.6.26-2-486 #1 Sat Dec 26 08:37:39 UTC 2009 i686
-	% ruby -rsocket -ve '
-	BasicSocket.do_not_reverse_lookup = true
-	serv = TCPServer.open("127.0.0.1", 0)
-	s1 = TCPSocket.open("127.0.0.1", serv.addr[1])
-	s2 = serv.accept
-	s2.close
-	s1.write("a") rescue p $!
-	s1.write("a") rescue p $!
-	Thread.new {
-	  s1.write("a")
-	}.join'
-	ruby 1.9.3dev (2010-07-06 trunk 28554) [i686-linux]
-	#<Errno::EPIPE: Broken pipe>
-	[Hang Here]
+In particular, it fails to a) release the hashbin attached to the
+object and b) reset the self->ias_obj pointer to NULL.
 
-FreeBSD, Solaris, Mac doesn't. because Ruby's write() method call
-select() internally. and tcp_poll has a bug.
+Fix both problems by using irias_delete_object() and explicitly
+setting self->ias_obj to NULL, just as irda_release() does.
 
-SUS defined 'ready for writing' of select() as following.
-
-|  A descriptor shall be considered ready for writing when a call to an output
-|  function with O_NONBLOCK clear would not block, whether or not the function
-|  would transfer data successfully.
-
-That said, EPIPE situation is clearly one of 'ready for writing'.
-
-We don't have read-side issue because tcp_poll() already has read side
-shutdown care.
-
-|        if (sk->sk_shutdown & RCV_SHUTDOWN)
-|                mask |= POLLIN | POLLRDNORM | POLLRDHUP;
-
-So, Let's insert same logic in write side.
-
-- reference url
-  http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-core/31065
-  http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-core/31068
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reported-by: Tavis Ormandy <taviso@cmpxchg8b.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/ipv4/tcp.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/irda/af_irda.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -451,7 +451,8 @@ unsigned int tcp_poll(struct file *file,
- 				if (sk_stream_wspace(sk) >= sk_stream_min_wspace(sk))
- 					mask |= POLLOUT | POLLWRNORM;
- 			}
--		}
-+		} else
-+			mask |= POLLOUT | POLLWRNORM;
+--- a/net/irda/af_irda.c
++++ b/net/irda/af_irda.c
+@@ -810,8 +810,8 @@ static int irda_bind(struct socket *sock
  
- 		if (tp->urg_data & TCP_URG_VALID)
- 			mask |= POLLPRI;
+ 	err = irda_open_tsap(self, addr->sir_lsap_sel, addr->sir_name);
+ 	if (err < 0) {
+-		kfree(self->ias_obj->name);
+-		kfree(self->ias_obj);
++		irias_delete_object(self->ias_obj);
++		self->ias_obj = NULL;
+ 		return err;
+ 	}
+ 
 
 
