@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777Ab0IXPKK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 11:10:10 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64622 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754496Ab0IXPKI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 11:10:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=VfLK8SzNw5J81qpPXtnvFwpnCXsE4QbuQ4mxiRBS61lr/gApwItkPA7usmJvTKpox6
-         0SYglqQs2pnlGA1J2mI8ZucyytBCo9NnvdSq7sa8f5PGJUyGJ+rr/uV30zj0ZTzzYF6k
-         Uh4rwq39fluILM/p5jjX4YbDqsrvWleO40m2g=
-Message-ID: <4C9CBF4A.9060302@gmail.com>
-Date: Fri, 24 Sep 2010 18:10:02 +0300
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.9) Gecko/20100914 SUSE/3.1.4 Thunderbird/3.1.4
+	id S1756798Ab0IXPRf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 11:17:35 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:43351 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754213Ab0IXPRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 11:17:35 -0400
+Date: Fri, 24 Sep 2010 08:16:34 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>
+CC: Takashi Iwai <tiwai@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        =?iso-8859-1?Q?=C9ric?= Piel <Eric.Piel@tremplin-utc.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [lm-sensors] [PATCH v2] lis3: Fix Oops with NULL platform data
+Message-ID: <20100924151634.GB18153@ericsson.com>
+References: <s5heiclngqe.wl%tiwai@suse.de>
+ <20100924135802.GA18109@ericsson.com>
+ <s5hlj6r1b5p.wl%tiwai@suse.de>
+ <20100924163005.7704f63e@endymion.delvare>
 MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        linux-ide@vger.kernel.org
-Subject: Re: hibernation hangs with ATA errors (lockup_detector bug)
-References: <4C03C608.1040600@gmail.com> <20100601135004.GP15159@redhat.com> <4C051D44.7040203@gmail.com> <20100602184459.GA15159@redhat.com> <4C0B3E94.6020506@gmail.com> <4C80B338.6020701@gmail.com> <20100903135613.GV4879@redhat.com>
-In-Reply-To: <20100903135613.GV4879@redhat.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100924163005.7704f63e@endymion.delvare>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2010 04:56 PM, Don Zickus wrote:
-> On Fri, Sep 03, 2010 at 10:35:04AM +0200, Jiri Slaby wrote:
->> On 06/06/2010 08:22 AM, Jiri Slaby wrote:
->>> On 06/02/2010 08:44 PM, Don Zickus wrote:
->>>> --- a/kernel/watchdog.c
->>>> +++ b/kernel/watchdog.c
->>>> @@ -550,8 +550,7 @@ cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
->>>>  		break;
->>>>  	case CPU_ONLINE:
->>>>  	case CPU_ONLINE_FROZEN:
->>>> -		if (watchdog_enable(hotcpu))
->>>> -			return NOTIFY_BAD;
->>>> +		watchdog_enable(hotcpu)
->>>
->>> This fixes the problem indeed.
->>
->> Hi, was this fixed somehow? I still use this hunk and don't know if it
->> is needed:
+On Fri, Sep 24, 2010 at 10:30:05AM -0400, Jean Delvare wrote:
+> On Fri, 24 Sep 2010 16:14:26 +0200, Takashi Iwai wrote:
+> > At Fri, 24 Sep 2010 06:58:02 -0700,
+> > Guenter Roeck wrote:
+> > > 
+> > > On Thu, Sep 23, 2010 at 01:58:33AM -0400, Takashi Iwai wrote:
+> > > > The recent addition of threaded irq handler causes a NULL dereference
+> > > > when used with hp_accel driver, which has NULL pdata.
+> > > > 
+> > > > Acked-by: Samu Onkalo <samu.p.onkalo@nokia.com>
+> > > > Acked-by: Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> > > > Cc: <stable@kernel.org>
+> > > > Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> > > 
+> > > Applied.
+> > 
+> > Oh, does this driver belong to hwmon tree?
+> > Jean told me that this isn't managed in hwmon, so I had an impression
+> > that it's an orphan driver.
 > 
-> I have to go re-review the problem again.  I might have forgot to bring it
-> in.  Thanks for reminding me!
+> Well, as long as the driver lives in drivers/hwmon and the hwmon
+> subsystem is maintained, it seems fair to consider the driver
+> maintained.
+> 
+I absolutely second that. Otherwise things would get too complicated.
 
-Reminder #2 :). Any updates?
-
-thanks,
--- 
-js
+Guenter
