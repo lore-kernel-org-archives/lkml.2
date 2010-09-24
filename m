@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756347Ab0IXDv0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 23:51:26 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:47426 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755560Ab0IXDvY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 23:51:24 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArsBAIq8m0xLd/sX/2dsb2JhbAAHgxSRJYcyvDmSL4Eigy1zBA
-X-IronPort-AV: E=Sophos;i="4.57,227,1283745600"; 
-   d="scan'208";a="76603096"
-Message-ID: <4C9C2039.8050903@teksavvy.com>
-Date: Thu, 23 Sep 2010 23:51:21 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: dgilbert@interlog.com
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        IDE/ATA development list <linux-ide@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Joel Becker <joel.becker@oracle.com>
-Subject: Re: "blocked for more than 120 secs" --> a valid situation, how to
- prevent?
-References: <4C9BE5A8.1090002@teksavvy.com> <4C9BEB49.2060208@interlog.com> <4C9C129E.5050504@teksavvy.com>
-In-Reply-To: <4C9C129E.5050504@teksavvy.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756076Ab0IXDzj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 23:55:39 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:34652 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753293Ab0IXDzi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 23:55:38 -0400
+Date: Fri, 24 Sep 2010 13:55:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Steve French <smfrench@gmail.com>, <linux-cifs@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+Subject: linux-next: build warning after merge of the cifs tree
+Message-Id: <20100924135531.96e5ac72.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__24_Sep_2010_13_55_31_+1000_d3jqRQNbsDsMnVps"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10-09-23 10:53 PM, Mark Lord wrote:
-> On 10-09-23 08:05 PM, Douglas Gilbert wrote:
->> Mark,
->> If you issued the SG_IO ioctl with a timeout of at
->> least 66 minutes (expressed in milliseconds) then
->> it looks like ata_scsi_queuecmd() has a problem.
-> ..
->
-> Mmm.. more like blk_execute_rq() perhaps.
-> That's where the wait_for_completion(&wait) call is at.
->
-> Perhaps I should change it to wait in smaller increments,
-> so that the lockup detection doesn't trigger on it..
-..
+--Signature=_Fri__24_Sep_2010_13_55_31_+1000_d3jqRQNbsDsMnVps
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch (below) seems to work.
+Hi all,
 
-Does this look kosher enough for me to roll it up
-as a proper patch submission?   Jens?  Joel?
+After merging the irqflags tree, today's linux-next build (powerpc
+ppc64_defconfig) produced this warning:
 
-The problem, again, is that the hangcheck timer fires
-inappropriately during very long SG_IO commands,
-such as --security-erase operations which take minutes/hours to complete.
+fs/cifs/sess.c: In function 'CIFS_SessSetup':
+fs/cifs/sess.c:595: warning: unused variable 'blob_len'
 
-Thanks
+Introduced by commit 15f6bdfb9914b0c41848f874719911ba053be931 ("cifs
+NTLMv2/NTLMSSP ntlmv2 within ntlmssp autentication code").
+CONFIG_CIFS_UPCALL is not set in this build.
 
---- old/block/blk-exec.c	2010-08-26 19:47:12.000000000 -0400
-+++ linux/block/blk-exec.c	2010-09-23 23:41:47.478826002 -0400
-@@ -95,7 +95,8 @@
-  
-  	rq->end_io_data = &wait;
-  	blk_execute_rq_nowait(q, bd_disk, rq, at_head, blk_end_sync_rq);
--	wait_for_completion(&wait);
-+	while (!wait_for_completion_timeout(&wait, (sysctl_hung_task_timeout_secs >> 1) * HZ))
-+		; /* periodic wakeup prevents "hung_task" warnings */
-  
-  	if (rq->errors)
-  		err = -EIO;
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__24_Sep_2010_13_55_31_+1000_d3jqRQNbsDsMnVps
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMnCEzAAoJEDMEi1NhKgbswIUH/32Piz4jPU/U+02C1zsmr1+Y
+qxR6qLiPlgs60MbbwpCoIASsDR+1rcby7n1dyVTphpHRIjAWwx6LsGvKLrITZ4Wy
+4vP4aPvL2fBxEtZPUZlkivyNgUdAU7+fzYa4pEQyIoraVmX6Xq7GvvwCQYsRJF7j
+ZYcu1Zar5DoR5IPkOG5uDbEGDa+dTFooAMisgYK9owybFIpye7QZmC12531Pm4Vu
+qmu8jzDa8FwTs4U9CQobdXveImJR1gRuCuypEQRiqOx/zvqmlAPbgJJvLpGUqrdU
+dgytTQssDyCJMfzLeYZmYcymnkkg2rqZ+DkQlZovpEwF483pzjz1SvA+uzBqWdI=
+=9jLj
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__24_Sep_2010_13_55_31_+1000_d3jqRQNbsDsMnVps--
