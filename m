@@ -1,188 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754291Ab0IXAYc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 20:24:32 -0400
-Received: from mailgw01.dd24.net ([193.46.215.41]:57533 "EHLO
-	mailgw01.dd24.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753032Ab0IXAYb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 20:24:31 -0400
-X-Greylist: delayed 548 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Sep 2010 20:24:30 EDT
+	id S1754175Ab0IXA2l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 20:28:41 -0400
+Received: from hera.kernel.org ([140.211.167.34]:58216 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752438Ab0IXA2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 20:28:40 -0400
+Date: Fri, 24 Sep 2010 00:28:01 GMT
+From: tip-bot for Bart Oldeman <bartoldeman@gmail.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        stern@rowland.harvard.edu, heukelum@fastmail.fm,
+        bartoldeman@users.sourceforge.net, bartoldeman@gmail.com,
+        fweisbec@gmail.com, stable@kernel.org, tglx@linutronix.de,
+        hpa@linux.intel.com, prasad@linux.vnet.ibm.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        stern@rowland.harvard.edu, heukelum@fastmail.fm,
+        bartoldeman@users.sourceforge.net, bartoldeman@gmail.com,
+        fweisbec@gmail.com, stable@kernel.org, tglx@linutronix.de,
+        hpa@linux.intel.com, prasad@linux.vnet.ibm.com
+In-Reply-To: <alpine.DEB.2.00.1009231312330.4732@localhost.localdomain>
+References: <alpine.DEB.2.00.1009231312330.4732@localhost.localdomain>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/vm86] x86, vm86: Fix preemption bug for int1 debug and int3 breakpoint handlers.
+Message-ID: <tip-6554287b1de0448f1e02e200d02b43914e997d15@git.kernel.org>
+Git-Commit-ID: 6554287b1de0448f1e02e200d02b43914e997d15
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Date: Fri, 24 Sep 2010 00:15:11 +0000
-From: Christoph Anton Mitterer <calestyo@scientia.net>
-To: <linux-kernel@vger.kernel.org>
-Subject: strange fs corruptions when doing:
- virtualbox-image->fuse->losetup->lvm->ext3/4 (on dm-crypted fs)
-Message-ID: <e49481bcdbe21ffbf2184574955f3a5c@imap.dd24.net>
-User-Agent: RoundCube Webmail/0.3.1
-Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 24 Sep 2010 00:28:02 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+Commit-ID:  6554287b1de0448f1e02e200d02b43914e997d15
+Gitweb:     http://git.kernel.org/tip/6554287b1de0448f1e02e200d02b43914e997d15
+Author:     Bart Oldeman <bartoldeman@gmail.com>
+AuthorDate: Thu, 23 Sep 2010 13:16:58 -0400
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 23 Sep 2010 11:07:49 -0700
 
-I seem to have found some very strange problem:
+x86, vm86: Fix preemption bug for int1 debug and int3 breakpoint handlers.
 
-Using the following system setup:
-- Debian sid, except the kernel which is version 2.6.35-1~experimental.3
-from experimental using a custom .config (can send in case you need).
-- The system itself is fully encrypted with dm-crypt/LUKS (booting from an
-USB stick), on top of it an ext4 filesystem with that Debian.
+Impact: fix kernel bug such as:
+BUG: scheduling while atomic: dosemu.bin/19680/0x00000004
+See also Ubuntu bug 455067 at
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/455067
 
-Under that Debian I've installed VirtualBox and created 4 Debian template
-images, I'm going to use for server installations in the faculty
-(amd64/i386 each with stable/unstable Debian).
-The images are on the (dm-crypted) ext4, using the dynamic vdi format.
-Each Image itself has a msdos parition table, with one partition (sda1)
-and bootlader in MBR (sda).
-sda1 (inside the images) are used as LVM PV with, belonging to some VG,
-providing a LV which contains the root-fs for the images.
-As filesystem I've used ext3 (on the stable Debians) and ext4 (on the
-unstables).
+Commits 4915a35e35a037254550a2ba9f367a812bc37d40
+("Use preempt_conditional_sti/cli in do_int3, like on x86_64.")
+and 3d2a71a596bd9c761c8487a2178e95f8a61da083
+("x86, traps: converge do_debug handlers")
+started disabling preemption in int1 and int3 handlers on i386.
+The problem with vm86 is that the call to handle_vm86_trap() may jump
+straight to entry_32.S and never returns so preempt is never enabled
+again, and there is an imbalance in the preempt count.
 
-Inside the VirtualBox, everything seems to be fine (especially the file
-user/group owner seem to be correct, see later).
+Commit be716615fe596ee117292dc615e95f707fb67fd1 ("x86, vm86:
+fix preemption bug"), which was later (accidentally?) reverted by commit
+08d68323d1f0c34452e614263b212ca556dae47f ("hw-breakpoints: modifying
+generic debug exception to use thread-specific debug registers")
+fixed the problem for debug exceptions but not for breakpoints.
 
+There are three solutions to this problem.
 
-I then wanted to actually deploy the image on one server and did the
-following:
-- stopped the VMs
-- extracted the contents of the image using virtualbox-ose-fuse):
-# vdfuse -r -f image.vdi tmp/
-# ls tmp/
-EntireDisk  Partition1
-# losetup -f tmp/Partition1
-# vgchange -ay
-# mount /dev/vg_system/root img/
-- looking around in the filesystem, e.g. creating a tarball of it or so
-# ls img/var/lib
+1. Reenable preemption before calling handle_vm86_trap(). This
+was the approach that was later reverted.
 
+2. Do not disable preemption for i386 in breakpoint and debug handlers.
+This was the situation before October 2008. As far as I understand
+preemption only needs to be disabled on x86_64 because a seperate stack is
+used, but it's nice to have things work the same way on
+i386 and x86_64.
 
-With ext3 I get the following kernel messages:
-[  510.357266] EXT3-fs: barriers not enabled
-[  510.370686] Buffer I/O error on device dm-1, logical block 0
-[  510.370960] lost page write due to I/O error on dm-1
-[  510.371214] EXT3-fs (dm-1): using internal journal
-[  510.371778] EXT3-fs (dm-1): mounted filesystem with ordered data mode
-[  510.372678] kjournald starting.  Commit interval 5 seconds
-[  530.720143] Buffer I/O error on device dm-1, logical block 1245698
-[  530.720537] lost page write due to I/O error on dm-1
-[  530.720881] Aborting journal on device dm-1.
-[  530.721159] ------------[ cut here ]------------
-[  530.721477] WARNING: at fs/buffer.c:1151 mark_buffer_dirty+0x74/0x90()
-[  530.721788] Hardware name: LIFEBOOK E8410
-[  530.722069] Modules linked in: ext3 jbd cpufreq_stats fuse nvidia(P)
-btusb bluetooth joydev pcmcia sdhci_pci sdhci yenta_socket serio_raw
-pcmcia_rsrc mmc_core pcmcia_core irda ata_generic crc_ccitt tpm_tis tpm
-ata_piix tpm_bios btrfs crc32c libcrc32c
-[  530.727494] Pid: 4951, comm: kjournald Tainted: P           
-2.6.35-heisenberg #1
-[  530.727865] Call Trace:
-[  530.728159]  [<ffffffff81047d8b>] ? warn_slowpath_common+0x7b/0xc0
-[  530.728478]  [<ffffffff8113fe34>] ? mark_buffer_dirty+0x74/0x90
-[  530.728767]  [<ffffffffa008f822>] ? journal_update_superblock+0x82/0xf0
-[jbd]
-[  530.729069]  [<ffffffffa008fa31>] ? __journal_abort_soft+0xb1/0xf0
-[jbd]
-[  530.729402]  [<ffffffffa0091318>] ? journal_put_journal_head+0xb8/0x110
-[jbd]
-[  530.729696]  [<ffffffffa008c67e>] ?
-journal_commit_transaction+0xa4e/0x12f0 [jbd]
-[  530.730094]  [<ffffffff81057183>] ? lock_timer_base+0x33/0x70
-[  530.730418]  [<ffffffff81057eb6>] ? try_to_del_timer_sync+0x76/0xf0
-[  530.730709]  [<ffffffffa0090681>] ? kjournald+0xe1/0x230 [jbd]
-[  530.730988]  [<ffffffff81066bd0>] ? autoremove_wake_function+0x0/0x30
-[  530.731291]  [<ffffffffa00905a0>] ? kjournald+0x0/0x230 [jbd]
-[  530.731606]  [<ffffffffa00905a0>] ? kjournald+0x0/0x230 [jbd]
-[  530.731902]  [<ffffffff8106663e>] ? kthread+0x8e/0xa0
-[  530.732200]  [<ffffffff81003d14>] ? kernel_thread_helper+0x4/0x10
-[  530.732519]  [<ffffffff810665b0>] ? kthread+0x0/0xa0
-[  530.732801]  [<ffffffff81003d10>] ? kernel_thread_helper+0x0/0x10
-[  530.733100] ---[ end trace 6bd8a0673ff77673 ]---
-[  530.733436] Buffer I/O error on device dm-1, logical block 1245698
-[  530.733719] lost page write due to I/O error on dm-1
-[  557.994085] EXT3-fs (dm-1): error: ext3_journal_start_sb: Detected
-aborted journal
-[  557.994856] EXT3-fs (dm-1): error: remounting filesystem read-only
-[  578.223552] EXT3-fs (dm-1): error: ext3_put_super: Couldn't clean up
-the journal
-(point where I unmounted img/)
+3. Let handle_vm86_trap() return instead of jumping to assembly code.
+By setting a flag in _TIF_WORK_MASK, either TIF_IRET or TIF_NOTIFY_RESUME,
+the code in entry_32.S is instructed to return to 32 bit mode from
+V86 mode. The logic in entry_32.S was already present to handle signals.
+(I chose TIF_IRET because it's slightly more efficient in
+do_notify_resume() in signal.c, but in fact TIF_IRET can probably be
+replaced by TIF_NOTIFY_RESUME everywhere.)
 
+I'm submitting approach 3, because I believe it is the most elegant
+and prevents future confusion. Still, an obvious
+preempt_conditional_cli(regs); is necessary in traps.c to correct the
+bug.
 
-With ext4:
-Sep 24 02:03:50 heisenberg kernel: [ 1869.089309] Buffer I/O error on
-device dm-1, logical block 0
-Sep 24 02:03:50 heisenberg kernel: [ 1869.089313] lost page write due to
-I/O error on dm-1
-Sep 24 02:03:50 heisenberg kernel: [ 1869.089684] EXT4-fs (dm-1): mounted
-filesystem with ordered data mode. Opts: (null)
-Sep 24 02:04:23 heisenberg kernel: [ 1902.720137] Buffer I/O error on
-device dm-1, logical block 1081344
-Sep 24 02:04:23 heisenberg kernel: [ 1902.720146] lost page write due to
-I/O error on dm-1
-Sep 24 02:04:23 heisenberg kernel: [ 1902.720152] JBD2: I/O error detected
-when updating journal superblock for dm-1-8.
-Sep 24 02:04:23 heisenberg kernel: [ 1902.720231] Aborting journal on
-device dm-1-8.
-Sep 24 02:04:23 heisenberg kernel: [ 1902.720240] Buffer I/O error on
-device dm-1, logical block 1081344
-Sep 24 02:04:23 heisenberg kernel: [ 1902.720245] lost page write due to
-I/O error on dm-1
-Sep 24 02:04:23 heisenberg kernel: [ 1902.720249] JBD2: I/O error detected
-when updating journal superblock for dm-1-8.
-Sep 24 02:04:50 heisenberg kernel: [ 1929.144344] EXT4-fs error (device
-dm-1): ext4_put_super: Couldn't clean up the journal
-Sep 24 02:04:50 heisenberg kernel: [ 1929.144357] EXT4-fs (dm-1):
-Remounting filesystem read-only
-(point where I unmounted img/)
+[ hpa: This is technically a regression, but because:
+  1. the regression is so old,
+  2. the patch seems relatively high risk, justifying more testing, and
+  3. we're late in the 2.6.36-rc cycle,
 
+  I'm queuing it up for the 2.6.37 merge window.  It might, however,
+  justify as a -stable backport at a latter time, hence Cc: stable. ]
 
-An interesting effect is, that the file-data seems to be correct (well at
-least an image made of a tarball created from img/ booted), but (at least)
-the user/group owners get corrupted:
-Take an excerpt from ls -al img/var/lib
-drwxrwsr-x  2 libuuid    crontab    4,1k Aug  8  2009 libuuid
-drwxr-xr-x  3 root       root       4,1k Aug 10  2009 libxml-sax-perl
-drwxrwx---  2 privoxy    Debian-gdm 4,1k Sep 22 16:44 logcheck
-drwxr-xr-x  2 root       root       4,1k Aug 10  2009 logrotate
-drwxr-xr-x  2 root       root       4,1k Sep 21 12:03 mdadm
-drwxr-xr-x  2 root       root       4,1k Feb  6  2010 misc
-drwxr-xr-x  2 root       root       4,1k Feb  9  2010 mlocate
-drwxr-xr-x  2 root       root       4,1k Sep 20 15:20 msttcorefonts
-drwxr-xr-x  5 ntp        root       4,1k Aug 10  2009 nfs
-drwxr-xr-x  2 clamav     ssh        4,1k Sep 22 16:16 ntp
-drwxr-xr-x  2 root       root       4,1k Jun 12  2009 ntpdate
-drwxr-xr-x  2 root       root       4,1k Sep 21 11:30 pam
-drwx------  3 root       root       4,1k Feb  6  2010 polkit-1
-drwxr-xr-x  2 messagebus ssl-cert   4,1k Aug 11  2009 postfix
+Signed-off-by: Bart Oldeman <bartoldeman@users.sourceforge.net>
+LKML-Reference: <alpine.DEB.2.00.1009231312330.4732@localhost.localdomain>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: K.Prasad <prasad@linux.vnet.ibm.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Alexander van Heukelum <heukelum@fastmail.fm>
+Cc: <stable@kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/traps.c   |    1 +
+ arch/x86/kernel/vm86_32.c |   10 ++++++++--
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
-This should read about like that (and the user/group are correct from
-inside the VirtualBox):
-drwxrwsr-x  2 libuuid    libuuid    4,1k Aug  8  2009 libuuid
-drwxr-xr-x  3 root       root       4,1k Aug 10  2009 libxml-sax-perl
-drwxrwx---  2 logcheck   logcheck   4,1k Sep 22 16:44 logcheck
-drwxr-xr-x  2 root       root       4,1k Aug 10  2009 logrotate
-drwxr-xr-x  2 root       root       4,1k Sep 21 12:03 mdadm
-drwxr-xr-x  2 root       root       4,1k Feb  6  2010 misc
-drwxr-xr-x  2 root       root       4,1k Feb  9  2010 mlocate
-drwxr-xr-x  2 root       root       4,1k Sep 20 15:20 msttcorefonts
-drwxr-xr-x  5 stadt      root       4,1k Aug 10  2009 nfs
-drwxr-xr-x  2 ntp        ntp        4,1k Sep 22 16:16 ntp
-drwxr-xr-x  2 root       root       4,1k Jun 12  2009 ntpdate
-drwxr-xr-x  2 root       root       4,1k Sep 21 11:30 pam
-drwx------  3 root       root       4,1k Feb  6  2010 polkit-1
-drwxr-xr-x  2 postfix    postfix    4,1k Aug 11  2009 postfix
-
-At a first glance it looked (when looking at UIDs/GIDs) that simply the
-UID was also used as GID (the same number) which don't however correspond
-to the same user/group pair.
-But that turned out to be different at a 2nd try.
-
-
-Any ideas? Please ask if you need additional info/etc.
-
-Cheers,
-Chris.
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 60788de..9f4edeb 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -575,6 +575,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+ 	if (regs->flags & X86_VM_MASK) {
+ 		handle_vm86_trap((struct kernel_vm86_regs *) regs,
+ 				error_code, 1);
++		preempt_conditional_cli(regs);
+ 		return;
+ 	}
+ 
+diff --git a/arch/x86/kernel/vm86_32.c b/arch/x86/kernel/vm86_32.c
+index 5ffb562..61fb985 100644
+--- a/arch/x86/kernel/vm86_32.c
++++ b/arch/x86/kernel/vm86_32.c
+@@ -551,8 +551,14 @@ cannot_handle:
+ int handle_vm86_trap(struct kernel_vm86_regs *regs, long error_code, int trapno)
+ {
+ 	if (VMPI.is_vm86pus) {
+-		if ((trapno == 3) || (trapno == 1))
+-			return_to_32bit(regs, VM86_TRAP + (trapno << 8));
++		if ((trapno == 3) || (trapno == 1)) {
++			KVM86->regs32->ax = VM86_TRAP + (trapno << 8);
++			/* setting this flag forces the code in entry_32.S to
++			   call save_v86_state() and change the stack pointer
++			   to KVM86->regs32 */
++			set_thread_flag(TIF_IRET);
++			return 0;
++		}
+ 		do_int(regs, trapno, (unsigned char __user *) (regs->pt.ss << 4), SP(regs));
+ 		return 0;
+ 	}
