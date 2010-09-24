@@ -1,183 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756159Ab0IXNKA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 09:10:00 -0400
-Received: from usindmx04.hds.com ([207.126.252.15]:33114 "EHLO
-	usindmx04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755756Ab0IXNJ6 convert rfc822-to-8bit (ORCPT
+	id S1756133Ab0IXNMw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 09:12:52 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:55692 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755428Ab0IXNMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 09:09:58 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "xiyou.wangcong@gmail.com" <xiyou.wangcong@gmail.com>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "simon.kagstrom@netinsight.net" <simon.kagstrom@netinsight.net>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        "David.Woodhouse@intel.com" <David.Woodhouse@intel.com>,
-        "anton@samba.org" <anton@samba.org>,
-        "ben@decadent.org.uk" <ben@decadent.org.uk>,
-        "randy.dunlap@oracle.com" <randy.dunlap@oracle.com>,
-        "jason.wessel@windriver.com" <jason.wessel@windriver.com>
-Date: Fri, 24 Sep 2010 09:08:14 -0400
-Subject: [RFC][PATCH] Fix kexec abort due to IPI from panic().
-Thread-Topic: [RFC][PATCH] Fix kexec abort due to IPI from panic().
-Thread-Index: ActV9NeRGIQilg9bRH6SmEJa3/stIgF89wvw
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C0DCFFB3E@USINDEVS01.corp.hds.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C0979C90E@USINDEVS01.corp.hds.com>
- <m1wrql2sf1.fsf@fess.ebiederm.org>
-In-Reply-To: <m1wrql2sf1.fsf@fess.ebiederm.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 24 Sep 2010 09:12:50 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Vernon Mauery <vernux@us.ibm.com>
+Subject: Re: [RFC][Patch] IBM Real-Time "SMI Free" mode driver -v4
+Date: Fri, 24 Sep 2010 15:12:39 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Keith Mannthey <kmannth@us.ibm.com>
+References: <20100921224610.GO13162@lucy> <20100923221253.GA4960@lucy> <20100923225346.GB4960@lucy>
+In-Reply-To: <20100923225346.GB4960@lucy>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009241512.39311.arnd@arndb.de>
+X-Provags-ID: V02:K0:vsMTu9Pzl6VbrvMTI3RFxUsDnlKcD/CdamUyci8Ofr/
+ zuoT3n1cNsH9oGMWUTLrfyT0gYxFxZZj/ObRWngHs4UQajoq/Q
+ I/DcFjeQMFNSps9jRXfvFRTJerHzPaZFvWTTxO03cH0rWMGEB4
+ bcsoJlbtu5gJQekoAgiq8AEj0Zey8DtxikuO4gVlfNZB9mPvSu
+ Wl8qvGHBi2pppmFRLgs2g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+On Friday 24 September 2010, Vernon Mauery wrote:
+> +enum rtl_addr_type {
+> +	RTL_ADDR_TYPE_IO = 1,
+> +	RTL_ADDR_TYPE_MMIO,
+> +} __attribute__((packed));
+> +
+> +enum rtl_cmd_type {
+> +	RTL_CMD_NOP = 0,
+> +	RTL_CMD_ENTER_PRTM,
+> +	RTL_CMD_EXIT_PRTM,
+> +} __attribute__((packed));
 
-This is a patch which makes kmsg_dump() non-blocking.
-Please give me your comments and suggestions.
+You didn't reply to Randy's comment about the packed attribute.
+I think it's rather confusing here.
 
-I improved it as follows.
+> +/* The RTL table as presented by the EBDA: */
+> +struct ibm_rtl_table {
+> +	char signature[5];
+> +	u8 version;
+> +	u8 rt_status;
+> +	enum rtl_cmd_type command;
+> +	u8 command_status;
+> +	enum rtl_addr_type cmd_address_type;
+> +	u8 cmd_granularity;
+> +	u8 cmd_offset;
+> +	u16 reserve1;
+> +	u8 cmd_port_address[4]; /* platform dependent address */
+> +	u8 cmd_port_value[4];   /* platform dependent value */
+> +};
 
-(1) Improvement of dump_list_lock
-    (1-1) I changed dump_list to RCU for deleting dump_list_lock in kmsg_dump().
-    (1-2) I moved kmsg_dump(KMSG_DUMP_KEXEC) behind machine_crash_shutdown() 
-          for avoiding concurrent execution of dump_list functions.
-    (1-3) I also moved kmsg_dump(KMSG_DUMP_PANIC) behind smp_send_stop() for the 
-          same reason.
- 
-(2) Improvement of logbuf_lock
-    I added spinlock_init(&logbuf_lock) when executing kmsg_dump() in kexec or panic path
-    for preventing dead lock.
+I would recommend marking the member in this structure as packed instead,
+not the enum.
 
-We can delete blocking kmsg_dump call in crash_kexec and panic path.
+> +#define RTL_SIGNATURE (('L'<<24)|('T'<<16)|('R'<<8)|'_')
+> +
+> +#define ERROR(A, B...) printk(KERN_ERR "ibm-rtl: " A, ##B )
+> +#define WARNING(A, B...) printk(KERN_WARNING "ibm-rtl: " A, ##B )
+> +#define DEBUG(A, B...) do { \
+> +	if (debug) \
+> +		printk(KERN_INFO "ibm-rtl: " A, ##B ); \
+> +} while (0)
 
- Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+We already have wrappers for these, no need to define your own.
+Please just use dev_{err,warn,dbg} or pr_{err,warning,debug}.
 
----
- kernel/kexec.c  |   10 ++++++++--
- kernel/panic.c  |    4 ++--
- kernel/printk.c |   19 ++++++++++---------
- 3 files changed, 20 insertions(+), 13 deletions(-)
+> +static DEFINE_MUTEX(rtl_lock);
+> +static struct ibm_rtl_table __iomem *rtl_table = NULL;
+> +static void __iomem *ebda_map;
+> +static void __iomem *rtl_cmd_iomem_addr = NULL;
+> +static u32 rtl_cmd_port_addr;
+> +static enum rtl_addr_type rtl_cmd_type;
+> +static u8 rtl_cmd_width;
 
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index c0613f7..fdc6bfc 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -1075,16 +1075,22 @@ void crash_kexec(struct pt_regs *regs)
- 	 * sufficient.  But since I reuse the memory...
- 	 */
- 	if (mutex_trylock(&kexec_mutex)) {
-+		unsigned long flags;
-+
-+		local_irq_save(flags);
-+
- 		if (kexec_crash_image) {
- 			struct pt_regs fixed_regs;
- 
--			kmsg_dump(KMSG_DUMP_KEXEC);
--
- 			crash_setup_regs(&fixed_regs, regs);
- 			crash_save_vmcoreinfo();
- 			machine_crash_shutdown(&fixed_regs);
-+			kmsg_dump(KMSG_DUMP_KEXEC);
- 			machine_kexec(kexec_crash_image);
- 		}
-+
-+		local_irq_restore(flags);
-+
- 		mutex_unlock(&kexec_mutex);
- 	}
- }
-diff --git a/kernel/panic.c b/kernel/panic.c
-index 4c13b1a..e14d1d6 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -87,8 +87,6 @@ NORET_TYPE void panic(const char * fmt, ...)
- 	 */
- 	crash_kexec(NULL);
- 
--	kmsg_dump(KMSG_DUMP_PANIC);
--
- 	/*
- 	 * Note smp_send_stop is the usual smp shutdown function, which
- 	 * unfortunately means it may not be hardened to work in a panic
-@@ -96,6 +94,8 @@ NORET_TYPE void panic(const char * fmt, ...)
- 	 */
- 	smp_send_stop();
- 
-+	kmsg_dump(KMSG_DUMP_PANIC);
-+
- 	atomic_notifier_call_chain(&panic_notifier_list, 0, buf);
- 
- 	bust_spinlocks(0);
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 8fe465a..6d6b09f 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -1478,7 +1478,7 @@ int kmsg_dump_register(struct kmsg_dumper *dumper)
- 	/* Don't allow registering multiple times */
- 	if (!dumper->registered) {
- 		dumper->registered = 1;
--		list_add_tail(&dumper->list, &dump_list);
-+		list_add_tail_rcu(&dumper->list, &dump_list);
- 		err = 0;
- 	}
- 	spin_unlock_irqrestore(&dump_list_lock, flags);
-@@ -1502,10 +1502,11 @@ int kmsg_dump_unregister(struct kmsg_dumper *dumper)
- 	spin_lock_irqsave(&dump_list_lock, flags);
- 	if (dumper->registered) {
- 		dumper->registered = 0;
--		list_del(&dumper->list);
-+		list_del_rcu(&dumper->list);
- 		err = 0;
- 	}
- 	spin_unlock_irqrestore(&dump_list_lock, flags);
-+	synchronize_rcu();
- 
- 	return err;
- }
-@@ -1541,6 +1542,10 @@ void kmsg_dump(enum kmsg_dump_reason reason)
- 	unsigned long l1, l2;
- 	unsigned long flags;
- 
-+
-+	if (reason == KMSG_DUMP_KEXEC || reason == KMSG_DUMP_PANIC)
-+		spin_lock_init(&logbuf_lock);
-+
- 	/* Theoretically, the log could move on after we do this, but
- 	   there's not a lot we can do about that. The new messages
- 	   will overwrite the start of what we dump. */
-@@ -1563,13 +1568,9 @@ void kmsg_dump(enum kmsg_dump_reason reason)
- 		l2 = chars;
- 	}
- 
--	if (!spin_trylock_irqsave(&dump_list_lock, flags)) {
--		printk(KERN_ERR "dump_kmsg: dump list lock is held during %s, skipping dump\n",
--				kmsg_to_str(reason));
--		return;
--	}
--	list_for_each_entry(dumper, &dump_list, list)
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(dumper, &dump_list, list)
- 		dumper->dump(dumper, reason, s1, l1, s2, l2);
--	spin_unlock_irqrestore(&dump_list_lock, flags);
-+	rcu_read_unlock();
- }
- #endif
--- 
-1.7.2.2
+This is somewhat inconsistent, some of these are implicitly initialized,
+others have an explicit "= NULL". I would recommend leaving out the
+initialization, which is the historic way to do this in the kernel.
 
+Some people find it cleaner to define a structure containing all the
+driver specific data. Since there can be only one of these devices
+in your case, it's probably not important.
 
-Seiji
+> +			if (rtl_cmd_type == RTL_ADDR_TYPE_MMIO)
+> +				iowrite8((u8)cmd_port_val, rtl_cmd_iomem_addr);
+> +			else
+> +				outb((u8)cmd_port_val, rtl_cmd_port_addr);
+
+ioread/iowrite already has the capability to use both mmio and pio
+addresses. You can use ioport_map() to create an __iomem token that
+corresponds to your rtl_cmd_port_addr and get rid of the rtl_cmd_type
+variable.
+
+	Arnd
