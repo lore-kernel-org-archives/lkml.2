@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933021Ab0IXQpf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:45:35 -0400
-Received: from kroah.org ([198.145.64.141]:37137 "EHLO coco.kroah.org"
+	id S933108Ab0IXQpv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:45:51 -0400
+Received: from kroah.org ([198.145.64.141]:37128 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932973Ab0IXQfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932970Ab0IXQfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 24 Sep 2010 12:35:08 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:46 2010
-Message-Id: <20100924163346.006505467@clark.site>
+X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:45 2010
+Message-Id: <20100924163345.922242704@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:31:46 -0700
+Date: Fri, 24 Sep 2010 09:31:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <error27@gmail.com>
-Subject: [22/68] Staging: vt6655: fix buffer overflow
+        Andy Gospodarek <andy@greyhouse.net>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Jay Vosburgh <fubar@us.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [21/68] bonding: correctly process non-linear skbs
 In-Reply-To: <20100924163357.GA15741@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,48 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <error27@gmail.com>
+From: Andy Gospodarek <andy@greyhouse.net>
 
-commit dd173abfead903c7df54e977535973f3312cd307 upstream.
+commit ab12811c89e88f2e66746790b1fe4469ccb7bdd9 upstream.
 
-"param->u.wpa_associate.wpa_ie_len" comes from the user.  We should
-check it so that the copy_from_user() doesn't overflow the buffer.
+It was recently brought to my attention that 802.3ad mode bonds would no
+longer form when using some network hardware after a driver update.
+After snooping around I realized that the particular hardware was using
+page-based skbs and found that skb->data did not contain a valid LACPDU
+as it was not stored there.  That explained the inability to form an
+802.3ad-based bond.  For balance-alb mode bonds this was also an issue
+as ARPs would not be properly processed.
 
-Also further down in the function, we assume that if
-"param->u.wpa_associate.wpa_ie_len" is set then "abyWPAIE[0]" is
-initialized.  To make that work, I changed the test here to say that if
-"wpa_ie_len" is set then "wpa_ie" has to be a valid pointer or we return
--EINVAL.
+This patch fixes the issue in my tests and should be applied to 2.6.36
+and as far back as anyone cares to add it to stable.
 
-Oddly, we only use the first element of the abyWPAIE[] array.  So I
-suspect there may be some other issues in this function.
+Thanks to Alexander Duyck <alexander.h.duyck@intel.com> and Jesse
+Brandeburg <jesse.brandeburg@intel.com> for the suggestions on this one.
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+Signed-off-by: Andy Gospodarek <andy@greyhouse.net>
+CC: Alexander Duyck <alexander.h.duyck@intel.com>
+CC: Jesse Brandeburg <jesse.brandeburg@intel.com>
+Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/vt6655/wpactl.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/net/bonding/bond_3ad.c |    3 +++
+ drivers/net/bonding/bond_alb.c |    3 +++
+ 2 files changed, 6 insertions(+)
 
---- a/drivers/staging/vt6655/wpactl.c
-+++ b/drivers/staging/vt6655/wpactl.c
-@@ -767,9 +767,14 @@ static int wpa_set_associate(PSDevice pD
-     DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "wpa_ie_len = %d\n", param->u.wpa_associate.wpa_ie_len);
+--- a/drivers/net/bonding/bond_3ad.c
++++ b/drivers/net/bonding/bond_3ad.c
+@@ -2451,6 +2451,9 @@ int bond_3ad_lacpdu_recv(struct sk_buff
+ 	if (!(dev->flags & IFF_MASTER))
+ 		goto out;
  
++	if (!pskb_may_pull(skb, sizeof(struct lacpdu)))
++		goto out;
++
+ 	read_lock(&bond->lock);
+ 	slave = bond_get_slave_by_dev((struct bonding *)netdev_priv(dev),
+ 					orig_dev);
+--- a/drivers/net/bonding/bond_alb.c
++++ b/drivers/net/bonding/bond_alb.c
+@@ -370,6 +370,9 @@ static int rlb_arp_recv(struct sk_buff *
+ 		goto out;
+ 	}
  
--	if (param->u.wpa_associate.wpa_ie &&
--	    copy_from_user(&abyWPAIE[0], param->u.wpa_associate.wpa_ie, param->u.wpa_associate.wpa_ie_len))
--	    return -EINVAL;
-+	if (param->u.wpa_associate.wpa_ie_len) {
-+		if (!param->u.wpa_associate.wpa_ie)
-+			return -EINVAL;
-+		if (param->u.wpa_associate.wpa_ie_len > sizeof(abyWPAIE))
-+			return -EINVAL;
-+		if (copy_from_user(&abyWPAIE[0], param->u.wpa_associate.wpa_ie, param->u.wpa_associate.wpa_ie_len))
-+			return -EFAULT;
-+	}
- 
- 	if (param->u.wpa_associate.mode == 1)
- 	    pMgmt->eConfigMode = WMAC_CONFIG_IBSS_STA;
++	if (!pskb_may_pull(skb, arp_hdr_len(bond_dev)))
++		goto out;
++
+ 	if (skb->len < sizeof(struct arp_pkt)) {
+ 		pr_debug("Packet is too small to be an ARP\n");
+ 		goto out;
 
 
