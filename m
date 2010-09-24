@@ -1,151 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754924Ab0IXGdE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 02:33:04 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:49745 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751849Ab0IXGdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 02:33:01 -0400
-Message-ID: <4C9C4604.1020804@kernel.dk>
-Date: Fri, 24 Sep 2010 08:32:36 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1755457Ab0IXGhN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 02:37:13 -0400
+Received: from qmta10.emeryville.ca.mail.comcast.net ([76.96.30.17]:37344 "EHLO
+	qmta10.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753564Ab0IXGhM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 02:37:12 -0400
+Date: Thu, 23 Sep 2010 23:36:16 -0700
+From: matt mooney <mfm@muteddisk.com>
+To: Greg KH <greg@kroah.com>
+Cc: Tracey Dent <tdent48227@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] Staging: rtl8187se: r8180.h: fixed alot of
+ checkpatch.pl issues
+Message-ID: <20100924063616.GD18432@haskell.muteddisk.com>
+Mail-Followup-To: Greg KH <greg@kroah.com>,
+	Tracey Dent <tdent48227@gmail.com>, linux-kernel@vger.kernel.org
+References: <1285031982-3870-1-git-send-email-tdent48227@gmail.com>
+ <20100922232458.GB18432@haskell.muteddisk.com>
+ <20100923022256.GB27057@kroah.com>
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: Mike Christie <michaelc@cs.wisc.edu>, Joe Eykholt <jeykholt@cisco.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        James Smart <james.smart@emulex.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Christoph Hellwig <hch@lst.de>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH v2 01/11] scsi: Convert struct  Scsi_Host->cmd_serial_number
- to atomic_t
-References: <1284747709-20862-1-git-send-email-nab@linux-iscsi.org>	 <4C93BB8E.2080501@cisco.com>  <4C9427B6.9050404@cs.wisc.edu>	 <1284839878.13344.300.camel@haakon2.linux-iscsi.org> <1285278389.1849.199.camel@haakon2.linux-iscsi.org>
-In-Reply-To: <1285278389.1849.199.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100923022256.GB27057@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-09-23 23:46, Nicholas A. Bellinger wrote:
-> On Sat, 2010-09-18 at 12:58 -0700, Nicholas A. Bellinger wrote:
->> On Fri, 2010-09-17 at 21:45 -0500, Mike Christie wrote:
->>> On 09/17/2010 02:03 PM, Joe Eykholt wrote:
->>>>
->>>> How about instead of adding use_serial_number, let's just have the
->>>> drivers that want a serial number call scsi_cmd_get_serial()
->>>
->>> I think this sounds better.
->>>
->>
->> In that case I will go ahead and add explict scsi_cmd_get_serial() calls
->> to the LLDs that use struct scsi_cmnd->serial_number in anything beyond
->> an obvious and simple informational purpose.
->>
->>> You could also convert drivers to the host tagging if you needed a 
->>> unique id for each command sent to a host.
->>
->> Hmmm, what does this entail again..?
->>
->>>
->>>> and stop calling it from scsi_dispatch_cmd()?   AFAICT, it's only
->>>> used in debug messages in some drivers.  I didn't find other usages
->>>> but didn't do an exhaustive search.
->>>
->>> The comments for serial_number say that it is only supposed to be used 
->>> for debugging printks and most drivers use it for that.
->>
->> So I would suppose it would be OK for those drivers to continue to
->> printk serial_number to show the internal serial_number allocation is
->> now disabled by default.
->>
->>> However, it looks like mpt and dpt_i2o are using it for error handling
->>> and/or lookup type of operations. I think the mpt* uses are not needed
->>> in the abort checks.
->>>
->>
->> In that case, then adding an explict scsi_cmd_get_serial() call in mpt*
->> and dpt_i20 ->queuecommand() callers would be a good first step.
->>
->>> And eata is using it for ordering and tracking or something. It could 
->>> probably be converted to the host tagging if or what you suggested if it 
->>> needs the uniqueue id.
->>
->> Adding an explict scsi_cmd_get_serial() for eata for now, and we can
->> consider LLD canidates for host tag conversion as a future step.
->>
->>>
->>> zfcp looks like it copies it. It does not look like the driver needs it.
->>>
->>
->> Ok, I will look at removing it's usage in zfcp or if necessary add an
->> the explict scsi_cmd_get_serial() call.
->>
->>> scsi_error.c uses it in scsi_try_to_abort_cmd to check if a command has 
->>> completed, but I think that can be done by checking if REQ_ATOM_COMPLETE 
->>> is set.
->>
->> Hmmm, good catch here.  Jejb and hch, does this item work for you..?
->>
->> If so then I will take another peek for any ML uses of a struct
->> scsi_cmnd->serial_number that need to be addressed, and include Joe's
->> and Mike's recommendations into a v3 series.
->>
+On 19:22 Wed 22 Sep     , Greg KH wrote:
+> On Wed, Sep 22, 2010 at 04:24:58PM -0700, matt mooney wrote:
+> > On 21:19 Mon 20 Sep     , Tracey Dent wrote:
+> > > Fixed numerous coding style issues
+> > > 
+> > The subject should be more specific as to what the patch does, such as
+> > "Staging: rtl8187se: r8180.h: whitespace cleanup."
+> > 
+> > And the explanation in the commit should also be more specific. There are
+> > plenty of examples if you look through the log. Greg might except them as is,
+> > but any future patches should follow the advice mentioned. Next time for a
+> > patch of this nature remember to CC kernel-janitors too. 
 > 
-> Greetings Mike and Co,
-> 
-> I was doing some followup on these items for a v3 series and started
-> with a patch following mnc's recommendations for dropping the
-> scsi_error.c codes depending upon struct scsi_cmnd->serial_number:
-> 
-> diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
-> index 1de30eb..f35c127 100644
-> --- a/drivers/scsi/scsi_error.c
-> +++ b/drivers/scsi/scsi_error.c
-> @@ -644,11 +644,7 @@ static int __scsi_try_to_abort_cmd(struct scsi_cmnd *scmd)
->   */
->  static int scsi_try_to_abort_cmd(struct scsi_cmnd *scmd)
->  {
-> -       /*
-> -        * scsi_done was called just after the command timed out and before
-> -        * we had a chance to process it. (db)
-> -        */
-> -       if (scmd->serial_number == 0)
-> +       if (test_bit(REQ_ATOM_COMPLETE, &scmd->request->atomic_flags))
->                 return SUCCESS;
->         return __scsi_try_to_abort_cmd(scmd);
->  }
-> 
-> and while building I noticed that the simple single enum
-> REQ_ATOM_COMPLETE=0 is
+> Why the janitor list?  Do you really want that to be copied on every
+> cleanup patch I get like this?  That would be a _lot_...
 
-> currently located in block/blk.h and along with blk_mark_rq_complete()
-> and blk_clear_rq_complete() for setting this bit within struct
-> request->atomic_flags.
-> 
-> jens, hch, tejun, and co, do you guys have a preference how this
-> should be handled so that scsi_try_to_abort_cmd() can use proper
-> atomic struct request bits here and we can get rid of this (racy..?)
-> method of using struct scsi_cmnd->serial_number for anything wrt to
-> per struct scsi_cmnd context timeout handling.
+Heh, well hopefully not all the patches you receive. But there would have been
+feedback sooner on this patch stating something along the lines of what I
+said. The list is much lower volume making it is easier for devs doing cleanup,
+like myself, to follow, so as to not duplicate our efforts. IMHO anyway.
 
-Just add a
+While I have your attention, I am changing all makefiles to use the newer kbuild
+flag variables, such as ccflags-y, asflags-y, and ldflags-y. I have already
+completed this for all directories in the kernel except drivers which is
+next. The patches are trivial but there are a lot in drivers, so should I break
+it down by driver or is subdirectory okay? media/video has 85 instances in
+something like 12 different subdirectories, so I am not sure what is
+best. Please let me know what is best.
 
-static inline int blk_test_rq_complete(struct request *rq)
-{
-        return test_bit(REQ_ATOM_COMPLETE, &rq->atomic_flags);
-}
-
-in block/blk.h
-
-I need this too for some lockless completion patches I am playing with.
-
--- 
-Jens Axboe
-
+Thanks,
+mfm
