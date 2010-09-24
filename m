@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757848Ab0IXTWN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 15:22:13 -0400
+	id S1757871Ab0IXTWV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 15:22:21 -0400
 Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:38701 "EHLO
 	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757804Ab0IXTWI (ORCPT
+	by vger.kernel.org with ESMTP id S1757853Ab0IXTWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 15:22:08 -0400
+	Fri, 24 Sep 2010 15:22:15 -0400
 From: matt mooney <mfm@muteddisk.com>
 To: kernel-janitors@vger.kernel.org
-Cc: Matt Porter <mporter@kernel.crashing.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 19/24] rapidio: change to new flag variable
-Date: Fri, 24 Sep 2010 12:17:29 -0700
-Message-Id: <30c1ad7f4200136e00723fd76da1e58200e6e5b0.1285355033.git.mfm@muteddisk.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Felipe Balbi <felipe.balbi@nokia.com>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        David Vrabel <david.vrabel@csr.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, usb-storage@lists.one-eyed-alien.net
+Subject: [PATCH 23/24] usb: change to new flag variable
+Date: Fri, 24 Sep 2010 12:17:33 -0700
+Message-Id: <1dd0f4a1709a9b139fe87f2b311cc0d129900b3f.1285355033.git.mfm@muteddisk.com>
 X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <75da5e0e0a547b4acbc7cfbdf35c29a24512ca37.1285355033.git.mfm@muteddisk.com>
+In-Reply-To: <58b418c2e7311bffb13606a6b94e33ddb7569346.1285355033.git.mfm@muteddisk.com>
 References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
  <9968d4260be8850200cc9c7dfe08addf611468b4.1285355033.git.mfm@muteddisk.com>
  <036514b5dd23c5af14303519d79d60d79adccbee.1285355033.git.mfm@muteddisk.com>
@@ -33,45 +38,133 @@ References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddi
  <f8ffc630c8a56ebd5da0aa2227d63fecc21d4ee7.1285355033.git.mfm@muteddisk.com>
  <0472f95473283ce75285e458b22b86ff791d7a42.1285355033.git.mfm@muteddisk.com>
  <75da5e0e0a547b4acbc7cfbdf35c29a24512ca37.1285355033.git.mfm@muteddisk.com>
+ <30c1ad7f4200136e00723fd76da1e58200e6e5b0.1285355033.git.mfm@muteddisk.com>
+ <06e70fe4f8a51f65f3582c353329939a8548d897.1285355033.git.mfm@muteddisk.com>
+ <a2fd5831df37b0a306ab4ca51d2e86ea7ee06425.1285355033.git.mfm@muteddisk.com>
+ <58b418c2e7311bffb13606a6b94e33ddb7569346.1285355033.git.mfm@muteddisk.com>
 In-Reply-To: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
 References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-switches/ depends on RAPIDIO_DEBUG so the subdir-ccflags-y variant
-seems to be appropriate here.
+Replace EXTRA_CFLAGS with ccflags-y.
 
 Signed-off-by: matt mooney <mfm@muteddisk.com>
 ---
- drivers/rapidio/Makefile          |    4 +---
- drivers/rapidio/switches/Makefile |    4 ----
- 2 files changed, 1 insertions(+), 7 deletions(-)
+ drivers/usb/atm/Makefile      |    4 +---
+ drivers/usb/core/Makefile     |    4 +---
+ drivers/usb/gadget/Makefile   |    4 +---
+ drivers/usb/host/Makefile     |    4 +---
+ drivers/usb/misc/Makefile     |    4 +---
+ drivers/usb/musb/Makefile     |    4 +---
+ drivers/usb/storage/Makefile  |    2 +-
+ drivers/usb/wusbcore/Makefile |    4 +---
+ 8 files changed, 8 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/rapidio/Makefile b/drivers/rapidio/Makefile
-index b6139fe..89b8eca 100644
---- a/drivers/rapidio/Makefile
-+++ b/drivers/rapidio/Makefile
-@@ -5,6 +5,4 @@ obj-y += rio.o rio-access.o rio-driver.o rio-scan.o rio-sysfs.o
+diff --git a/drivers/usb/atm/Makefile b/drivers/usb/atm/Makefile
+index 4c4a776..d40a126 100644
+--- a/drivers/usb/atm/Makefile
++++ b/drivers/usb/atm/Makefile
+@@ -8,6 +8,4 @@ obj-$(CONFIG_USB_UEAGLEATM)	+= ueagle-atm.o
+ obj-$(CONFIG_USB_ATM)		+= usbatm.o
+ obj-$(CONFIG_USB_XUSBATM)	+= xusbatm.o
  
- obj-$(CONFIG_RAPIDIO)		+= switches/
- 
--ifeq ($(CONFIG_RAPIDIO_DEBUG),y)
+-ifeq ($(CONFIG_USB_DEBUG),y)
 -EXTRA_CFLAGS += -DDEBUG
 -endif
-+subdir-ccflags-$(CONFIG_RAPIDIO_DEBUG) := -DDEBUG
-diff --git a/drivers/rapidio/switches/Makefile b/drivers/rapidio/switches/Makefile
-index fe4adc3..0fece0e 100644
---- a/drivers/rapidio/switches/Makefile
-+++ b/drivers/rapidio/switches/Makefile
-@@ -6,7 +6,3 @@ obj-$(CONFIG_RAPIDIO_TSI57X)	+= tsi57x.o
- obj-$(CONFIG_RAPIDIO_CPS_XX)	+= idtcps.o
- obj-$(CONFIG_RAPIDIO_TSI568)	+= tsi568.o
- obj-$(CONFIG_RAPIDIO_TSI500)	+= tsi500.o
--
--ifeq ($(CONFIG_RAPIDIO_DEBUG),y)
++ccflags-$(CONFIG_USB_DEBUG)	:= -DDEBUG
+diff --git a/drivers/usb/core/Makefile b/drivers/usb/core/Makefile
+index ec16e60..17c8e2d 100644
+--- a/drivers/usb/core/Makefile
++++ b/drivers/usb/core/Makefile
+@@ -16,6 +16,4 @@ endif
+ 
+ obj-$(CONFIG_USB)	+= usbcore.o
+ 
+-ifeq ($(CONFIG_USB_DEBUG),y)
 -EXTRA_CFLAGS += -DDEBUG
 -endif
++ccflags-$(CONFIG_USB_DEBUG) := -DDEBUG
+diff --git a/drivers/usb/gadget/Makefile b/drivers/usb/gadget/Makefile
+index 27283df..c682005 100644
+--- a/drivers/usb/gadget/Makefile
++++ b/drivers/usb/gadget/Makefile
+@@ -1,9 +1,7 @@
+ #
+ # USB peripheral controller drivers
+ #
+-ifeq ($(CONFIG_USB_GADGET_DEBUG),y)
+-	EXTRA_CFLAGS		+= -DDEBUG
+-endif
++ccflags-$(CONFIG_USB_GADGET_DEBUG)	:= -DDEBUG
+ 
+ obj-$(CONFIG_USB_DUMMY_HCD)	+= dummy_hcd.o
+ obj-$(CONFIG_USB_NET2280)	+= net2280.o
+diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
+index b6315aa..f041442 100644
+--- a/drivers/usb/host/Makefile
++++ b/drivers/usb/host/Makefile
+@@ -2,9 +2,7 @@
+ # Makefile for USB Host Controller Drivers
+ #
+ 
+-ifeq ($(CONFIG_USB_DEBUG),y)
+-	EXTRA_CFLAGS		+= -DDEBUG
+-endif
++ccflags-$(CONFIG_USB_DEBUG)	:= -DDEBUG
+ 
+ isp1760-objs := isp1760-hcd.o isp1760-if.o
+ fhci-objs := fhci-hcd.o fhci-hub.o fhci-q.o fhci-mem.o \
+diff --git a/drivers/usb/misc/Makefile b/drivers/usb/misc/Makefile
+index 717703e..92d1ce0 100644
+--- a/drivers/usb/misc/Makefile
++++ b/drivers/usb/misc/Makefile
+@@ -25,6 +25,4 @@ obj-$(CONFIG_USB_SEVSEG)	+= usbsevseg.o
+ 
+ obj-$(CONFIG_USB_SISUSBVGA)	+= sisusbvga/
+ 
+-ifeq ($(CONFIG_USB_DEBUG),y)
+-EXTRA_CFLAGS += -DDEBUG
+-endif
++ccflags-$(CONFIG_USB_DEBUG)	:= -DDEBUG
+diff --git a/drivers/usb/musb/Makefile b/drivers/usb/musb/Makefile
+index 9705f71..4fd29f8 100644
+--- a/drivers/usb/musb/Makefile
++++ b/drivers/usb/musb/Makefile
+@@ -74,6 +74,4 @@ endif
+ 
+ # Debugging
+ 
+-ifeq ($(CONFIG_USB_MUSB_DEBUG),y)
+-	EXTRA_CFLAGS += -DDEBUG
+-endif
++ccflags-$(CONFIG_USB_MUSB_DEBUG) := -DDEBUG
+diff --git a/drivers/usb/storage/Makefile b/drivers/usb/storage/Makefile
+index ef7e5a8..786f086 100644
+--- a/drivers/usb/storage/Makefile
++++ b/drivers/usb/storage/Makefile
+@@ -5,7 +5,7 @@
+ # Rewritten to use lists instead of if-statements.
+ #
+ 
+-EXTRA_CFLAGS	:= -Idrivers/scsi
++ccflags-y	:= -Idrivers/scsi
+ 
+ obj-$(CONFIG_USB_STORAGE)	+= usb-storage.o
+ 
+diff --git a/drivers/usb/wusbcore/Makefile b/drivers/usb/wusbcore/Makefile
+index 75f1ade..f0d8045 100644
+--- a/drivers/usb/wusbcore/Makefile
++++ b/drivers/usb/wusbcore/Makefile
+@@ -21,6 +21,4 @@ wusb-wa-objs :=	wa-hc.o		\
+ 		wa-rpipe.o	\
+ 		wa-xfer.o
+ 
+-ifeq ($(CONFIG_USB_WUSB_CBAF_DEBUG),y)
+-EXTRA_CFLAGS += -DDEBUG
+-endif
++ccflags-$(CONFIG_USB_WUSB_CBAF_DEBUG) := -DDEBUG
 -- 
 1.7.2.1
 
