@@ -1,79 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757678Ab0IXVMj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 17:12:39 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:55410 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756557Ab0IXVMi (ORCPT
+	id S1757520Ab0IXVRK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 17:17:10 -0400
+Received: from smtp103.sbc.mail.ac4.yahoo.com ([76.13.13.242]:21840 "HELO
+	smtp103.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752423Ab0IXVRI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 17:12:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type;
-        b=AurzlP7XnGmbytILMuBhpQbEJglnJDb5yqwR3KWfJBWlB+AW2QLOM2Y7PoF96zflP9
-         e/fMyC5ugYG/gxlpJN+PRueBqUwtjXfcvdhEkKmyHB535TrPEEytztPDFX8ee5L7rVEl
-         3onfE4ae71mNacjB/uTfR6SpyK4/wes8wxl8o=
-MIME-Version: 1.0
-In-Reply-To: <20100924205108.GA8191@haskell.muteddisk.com>
-References: <AANLkTikqf4rn6BP2gyQAuQrvt7EdFY8yfa+o8nfR9xWE@mail.gmail.com>
-	<AANLkTikvGGz+33ni=Kov1qM1DpSj2WVuk89u=TwE9iL_@mail.gmail.com>
-	<AANLkTin1YfwwVcDNUBsi34iYC6HA5Y6+uOFZN=+Q2hqs@mail.gmail.com>
-	<20100924205108.GA8191@haskell.muteddisk.com>
-Date: Fri, 24 Sep 2010 17:12:37 -0400
-Message-ID: <AANLkTimoQr4W8XQ0ATCP2BY7cJnvLfTafuqPDheqZA5w@mail.gmail.com>
-Subject: Re: [PATCH 00/21] Staging: cleaned up makefiles cflag lines
-From: T Dent <tdent48227@gmail.com>
-To: T Dent <tdent48227@gmail.com>, matt mooney <mfmooney@gmail.com>,
-        greg@kroah.com, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 24 Sep 2010 17:17:08 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: EMuZn7kVM1lKwYvFsqTF8VXteQFNPRLAGhS5U2JUEtwKiTX
+ gePO74YZMY2zdxblPGzC2z6BHqxzaRmpOlbjz_kbCEMyNesm1wZbqiU2MZuG
+ X82wg4Hc.Tg8hZTGzuPON_eTCI1egHW3eOeLZoT9fbmBvcC1Gp3_SpcXb1bs
+ fhZvHAln2nwiGDB0EM0lCNZ7JeUYxPngRqcL2f9S2lMD8aCaxizNNhKgZmWd
+ uGTfZmnD8JiLxovpT1AI-
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [RFC v3 01/15] scsi: Drop struct Scsi_Host->host_lock usage in
+	scsi_dispatch_cmd()
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Brian King <brking@linux.vnet.ibm.com>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
+        Christoph Hellwig <hch@lst.de>,
+        MPTFusionLinux <DL-MPTFusionLinux@lsi.com>,
+        "eata.c maintainer" <dario.ballabio@inwind.it>
+In-Reply-To: <4C9D13B6.5080404@linux.vnet.ibm.com>
+References: <1285285052-16351-1-git-send-email-nab@linux-iscsi.org>
+	 <4C9CAA80.1030702@linux.vnet.ibm.com>
+	 <1285361040.1849.235.camel@haakon2.linux-iscsi.org>
+	 <4C9D13B6.5080404@linux.vnet.ibm.com>
+Content-Type: text/plain
+Date: Fri, 24 Sep 2010 14:12:49 -0700
+Message-Id: <1285362769.1849.256.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/24/10, matt mooney <mfm@muteddisk.com> wrote:
-> On 16:39 Fri 24 Sep     , T Dent wrote:
->> On 9/24/10, matt mooney <mfmooney@gmail.com> wrote:
->> > On Fri, Sep 24, 2010 at 11:25 AM, T Dent <tdent48227@gmail.com> wrote:
->> >> I changed every makefile in the staging directory to use the proper
->> >> ccflags-y option instead of EXTRA_CFLAGS. It builds also :) .
->> >
->> > Um, you didn't do a lot of these right. Maybe you should look into why
->> > the change was made in the first place. For semantic reasons, I was
->> > also changing the first assignment to ":=" from "+=".
->>
->> I can resend them with the a small modification to the patch files if you
->> want.
->
-> After looking at more of them, my "a lot" was a little bit of an
-> overstatement. The first few I randomly looked at happen to use the
-> incorrect
-> pattern, but most are simple without relying on a variable. Yeah, I think
-> you
-> should resubmit with a "[PATCH v2]." The pattern is:
->
-> ifeq ($(FOO),y)
->      EXTRA_CFLAGS := <flags>
-> endif
->
-> changes to:
->
-> ccflags-$(FOO) := <flags>
->
-> Also, the rest of the kernel tree has been done except drivers/media;
-> however, I
-> am going to email them in a little bit asking if some consolidation is
-> possible
-> due to every driver there relying on a few flags. So thanks for the help
-> (though
-> is was a good thing I was saving staging for last)!
->
-> -mfm
->
->
+On Fri, 2010-09-24 at 16:10 -0500, Brian King wrote:
+> On 09/24/2010 03:44 PM, Nicholas A. Bellinger wrote:
+> > On Fri, 2010-09-24 at 08:41 -0500, Brian King wrote:
+> >> On 09/23/2010 06:37 PM, Nicholas A. Bellinger wrote:
+> >>> @@ -651,7 +655,6 @@ static inline void scsi_cmd_get_serial(struct Scsi_Host *host, struct scsi_cmnd
+> >>>  int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+> >>>  {
+> >>>  	struct Scsi_Host *host = cmd->device->host;
+> >>> -	unsigned long flags = 0;
+> >>>  	unsigned long timeout;
+> >>>  	int rtn = 0;
+> >>>
+> >>> @@ -736,15 +739,11 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+> >>>  		scsi_done(cmd);
+> >>>  		goto out;
+> >>>  	}
+> >>> -
+> >>> -	spin_lock_irqsave(host->host_lock, flags);
+> >>>  	/*
+> >>> -	 * AK: unlikely race here: for some reason the timer could
+> >>> -	 * expire before the serial number is set up below.
+> >>> -	 *
+> >>> -	 * TODO: kill serial or move to blk layer
+> >>> +	 * Note that scsi_cmd_get_serial() used to be called here, but
+> >>> +	 * now we expect the legacy SCSI LLDs that actually need this
+> >>> +	 * to call it directly within their SHT->queuecommand() caller.
+> >>>  	 */
+> >>> -	scsi_cmd_get_serial(host, cmd); 
+> >>>
+> >>>  	if (unlikely(host->shost_state == SHOST_DEL)) {
+> >>>  		cmd->result = (DID_NO_CONNECT << 16);
+> >>> @@ -753,7 +752,7 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+> >>>  		trace_scsi_dispatch_cmd_start(cmd);
+> >>>  		rtn = host->hostt->queuecommand(cmd, scsi_done);
+> >>>  	}
+> >>> -	spin_unlock_irqrestore(host->host_lock, flags);
+> >>> +
+> >>>  	if (rtn) {
+> >>>  		trace_scsi_dispatch_cmd_error(cmd, rtn);
+> >>>  		if (rtn != SCSI_MLQUEUE_DEVICE_BUSY &&
+> >>
+> >> Are you planning a future revision that moves the acquiring of the host lock
+> >> into the LLDD's queuecommand for all the other drivers you don't currently
+> >> touch in this patch set?
+> >>
+> > 
+> > Hi Brian,
+> > 
+> > I was under the impression that this would be unnecessary for the vast
+> > majority of existing LLD drivers, but if you are aware of specific LLDs
+> > that would still need the struct Scsi_Host->host_lock held in their
+> > SHT->queuecommand() for whaterver reason please let me know and I would
+> > be happy to include this into an RFCv4.
+> 
+> I would think that most drivers might have issues without some pretty careful
+> auditing. When Christoph did this for the EH handlers, the first step was to
+> simply move acquiring the host lock into the LLDs. That way we can optimize
+> drivers one at a time after ensuring they can run lockless in their queuecommand
+> handler.
+> 
+> A couple examples of possible issues with drivers I'm familiar with (ibmvfc, ipr):
+> 
+> * Some drivers will do list manipulation for resources needed to send commands. If
+>   done lockless, this could result in list corruption with multiple readers/writers.
+> 
+> * Some drivers check the state of the hardware before sending a command. Failing to
+>   do this when the hardware is being reset may result in nasty things like PCI bus
+>   errors or even sending a command to the wrong device.
+> 
 
-Okay i'll resubmit the patches when I edit it how you said.
+Indeed, I can very much see some older LLDs making these types of
+assumptions.
 
-Thanks,
-Tracey
+> These are all the sorts of errors that will be very difficult to hit but have
+> pretty bad consequence when they are hit.
+> 
+
+I think pretty bad would be an under-statement when running into either
+of the above two items in ancient LLD code.
+
+In that case, I will re-spin a v4 series that contains a legacy
+host_lock held w/ SHT->queuecomand() for all of the "historically high
+host_lock optimized in ->queuecommand()" LLDs that are in RFCv3, and
+include the other specific ones (namely mpt/fusion and mpt2sas) that we
+know are safe to drop host_lock.
+
+Many thanks for your invaluable input on some of the non-obvious items
+at play here.
+
+Best,
+
+--nab
+
+
