@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756004Ab0IXMua (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 08:50:30 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:49465 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756021Ab0IXMsr (ORCPT
+	id S1755954Ab0IXMsl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 08:48:41 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:35717 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755136Ab0IXMsk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 08:48:47 -0400
+	Fri, 24 Sep 2010 08:48:40 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
         sandeen@redhat.com, tytso@mit.edu, bfields@citi.umich.edu,
@@ -14,9 +14,9 @@ To: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
         nfsv4@linux-nfs.org, linux-ext4@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH -V4 05/11] vfs: Add IS_RICHACL() test for richacl support
-Date: Fri, 24 Sep 2010 18:18:08 +0530
-Message-Id: <1285332494-12756-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V4 02/11] vfs: Pass all mask flags down to iop->check_acl
+Date: Fri, 24 Sep 2010 18:18:05 +0530
+Message-Id: <1285332494-12756-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1285332494-12756-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1285332494-12756-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -26,45 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andreas Gruenbacher <agruen@suse.de>
 
-Introduce a new MS_RICHACL super-block flag and a new IS_RICHACL() test
-which file systems like nfs can use.  IS_ACL() is true if IS_POSIXACL()
-or IS_RICHACL() is true.
+Some file permission models differentiate between writing to a file
+(MAY_WRITE) and appending to it (MAY_WRITE | MAY_APPEND).  Pass all the
+mask flags down to iop->check_acl so that filesystems can distinguish
+between writing and appending.
+
+All users of iop->check_acl pass the mask value back into
+posix_acl_permission(); strip off the additional mask flags there.
 
 Signed-off-by: Andreas Gruenbacher <agruen@suse.de>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- include/linux/fs.h |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ fs/namei.c     |    4 +---
+ fs/posix_acl.c |    2 ++
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 485c697..d86e77c 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -208,6 +208,7 @@ struct inodes_stat_t {
- #define MS_KERNMOUNT	(1<<22) /* this is a kern_mount call */
- #define MS_I_VERSION	(1<<23) /* Update inode I_version field */
- #define MS_STRICTATIME	(1<<24) /* Always perform atime updates */
-+#define MS_RICHACL	(1<<25) /* Supports richacls */
- #define MS_BORN		(1<<29)
- #define MS_ACTIVE	(1<<30)
- #define MS_NOUSER	(1<<31)
-@@ -264,6 +265,7 @@ struct inodes_stat_t {
- #define IS_APPEND(inode)	((inode)->i_flags & S_APPEND)
- #define IS_IMMUTABLE(inode)	((inode)->i_flags & S_IMMUTABLE)
- #define IS_POSIXACL(inode)	__IS_FLG(inode, MS_POSIXACL)
-+#define IS_RICHACL(inode)	__IS_FLG(inode, MS_RICHACL)
+diff --git a/fs/namei.c b/fs/namei.c
+index c5920b5..7cadd07 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -174,8 +174,6 @@ static int acl_permission_check(struct inode *inode, int mask,
+ {
+ 	umode_t			mode = inode->i_mode;
  
- #define IS_DEADDIR(inode)	((inode)->i_flags & S_DEAD)
- #define IS_NOCMTIME(inode)	((inode)->i_flags & S_NOCMTIME)
-@@ -274,7 +276,7 @@ struct inodes_stat_t {
-  * IS_ACL() tells the VFS to not apply the umask
-  * and use iop->check_acl for acl permission checks when defined.
-  */
--#define IS_ACL(inode)		__IS_FLG(inode, MS_POSIXACL)
-+#define IS_ACL(inode)		__IS_FLG(inode, MS_POSIXACL | MS_RICHACL)
+-	mask &= MAY_READ | MAY_WRITE | MAY_EXEC;
+-
+ 	if (current_fsuid() == inode->i_uid)
+ 		mode >>= 6;
+ 	else {
+@@ -192,7 +190,7 @@ static int acl_permission_check(struct inode *inode, int mask,
+ 	/*
+ 	 * If the DACs are ok we don't need any capability check.
+ 	 */
+-	if ((mask & ~mode) == 0)
++	if ((mask & (MAY_READ | MAY_WRITE | MAY_EXEC) & ~mode) == 0)
+ 		return 0;
+ 	return -EACCES;
+ }
+diff --git a/fs/posix_acl.c b/fs/posix_acl.c
+index 39df95a..c60bddf 100644
+--- a/fs/posix_acl.c
++++ b/fs/posix_acl.c
+@@ -213,6 +213,8 @@ posix_acl_permission(struct inode *inode, const struct posix_acl *acl, int want)
+ 	const struct posix_acl_entry *pa, *pe, *mask_obj;
+ 	int found = 0;
  
- /* the read-only stuff doesn't really belong here, but any other place is
-    probably as bad and I don't want to create yet another include file. */
++	want &= MAY_READ | MAY_WRITE | MAY_EXEC;
++
+ 	FOREACH_ACL_ENTRY(pa, acl, pe) {
+                 switch(pa->e_tag) {
+                         case ACL_USER_OBJ:
 -- 
 1.7.0.4
 
