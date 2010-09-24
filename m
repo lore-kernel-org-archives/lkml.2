@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757794Ab0IXTWH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 15:22:07 -0400
-Received: from qmta05.emeryville.ca.mail.comcast.net ([76.96.30.48]:41643 "EHLO
-	qmta05.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757797Ab0IXTWC (ORCPT
+	id S1757894Ab0IXTXk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 15:23:40 -0400
+Received: from qmta12.emeryville.ca.mail.comcast.net ([76.96.27.227]:45182
+	"EHLO qmta12.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757815Ab0IXTWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 15:22:02 -0400
+	Fri, 24 Sep 2010 15:22:07 -0400
 From: matt mooney <mfm@muteddisk.com>
 To: kernel-janitors@vger.kernel.org
-Cc: Sjur Braendeland <sjur.brandeland@stericsson.com>, Jouni Malinen <j@w1.fi>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Daniel Drake <dsd@gentoo.org>, Ulrich Kunitz <kune@deine-taler.de>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org
-Subject: [PATCH 15/24] net: change to new flag variable
-Date: Fri, 24 Sep 2010 12:17:25 -0700
-Message-Id: <facbf79cadc81f9043e89160b7b3b8a90926aba1.1285355033.git.mfm@muteddisk.com>
+Cc: Rodolfo Giometti <giometti@enneenne.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 18/24] pps: change to new flag variable
+Date: Fri, 24 Sep 2010 12:17:28 -0700
+Message-Id: <75da5e0e0a547b4acbc7cfbdf35c29a24512ca37.1285355033.git.mfm@muteddisk.com>
 X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <efe88633e146de3e173afea14f777c41c37e5db2.1285355033.git.mfm@muteddisk.com>
+In-Reply-To: <0472f95473283ce75285e458b22b86ff791d7a42.1285355033.git.mfm@muteddisk.com>
 References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
  <9968d4260be8850200cc9c7dfe08addf611468b4.1285355033.git.mfm@muteddisk.com>
  <036514b5dd23c5af14303519d79d60d79adccbee.1285355033.git.mfm@muteddisk.com>
@@ -33,6 +29,9 @@ References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddi
  <e93a3f1af26d2b0fc798b4c15401b3422ae6e2bd.1285355033.git.mfm@muteddisk.com>
  <c2f1ef5590660ae574e9bdaf7136213741081404.1285355033.git.mfm@muteddisk.com>
  <efe88633e146de3e173afea14f777c41c37e5db2.1285355033.git.mfm@muteddisk.com>
+ <facbf79cadc81f9043e89160b7b3b8a90926aba1.1285355033.git.mfm@muteddisk.com>
+ <f8ffc630c8a56ebd5da0aa2227d63fecc21d4ee7.1285355033.git.mfm@muteddisk.com>
+ <0472f95473283ce75285e458b22b86ff791d7a42.1285355033.git.mfm@muteddisk.com>
 In-Reply-To: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
 References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -43,74 +42,21 @@ Replace EXTRA_CFLAGS with ccflags-y.
 
 Signed-off-by: matt mooney <mfm@muteddisk.com>
 ---
- drivers/net/caif/Makefile                   |    4 +---
- drivers/net/skfp/Makefile                   |    2 +-
- drivers/net/wan/lmc/Makefile                |    2 +-
- drivers/net/wireless/hostap/hostap_config.h |    4 ++--
- drivers/net/wireless/zd1211rw/Makefile      |    4 +---
- 5 files changed, 6 insertions(+), 10 deletions(-)
+ drivers/pps/clients/Makefile |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/caif/Makefile b/drivers/net/caif/Makefile
-index 3a11d61..b5dc44c 100644
---- a/drivers/net/caif/Makefile
-+++ b/drivers/net/caif/Makefile
-@@ -1,6 +1,4 @@
--ifeq ($(CONFIG_CAIF_DEBUG),y)
+diff --git a/drivers/pps/clients/Makefile b/drivers/pps/clients/Makefile
+index 812c9b1..b52dbb8 100644
+--- a/drivers/pps/clients/Makefile
++++ b/drivers/pps/clients/Makefile
+@@ -5,6 +5,4 @@
+ obj-$(CONFIG_PPS_CLIENT_KTIMER)	+= pps-ktimer.o
+ obj-$(CONFIG_PPS_CLIENT_LDISC)	+= pps-ldisc.o
+ 
+-ifeq ($(CONFIG_PPS_DEBUG),y)
 -EXTRA_CFLAGS += -DDEBUG
 -endif
-+ccflags-$(CONFIG_CAIF_DEBUG) := -DDEBUG
- 
- # Serial interface
- obj-$(CONFIG_CAIF_TTY) += caif_serial.o
-diff --git a/drivers/net/skfp/Makefile b/drivers/net/skfp/Makefile
-index cb23580..045d815 100644
---- a/drivers/net/skfp/Makefile
-+++ b/drivers/net/skfp/Makefile
-@@ -17,4 +17,4 @@ skfp-objs :=  skfddi.o    hwmtm.o    fplustm.o  smt.o      cfm.o     \
- #   projects. To keep the source common for all those drivers (and
- #   thus simplify fixes to it), please do not clean it up!
- 
--EXTRA_CFLAGS += -Idrivers/net/skfp -DPCI -DMEM_MAPPED_IO -Wno-strict-prototypes 
-+ccflags-y := -Idrivers/net/skfp -DPCI -DMEM_MAPPED_IO -Wno-strict-prototypes 
-diff --git a/drivers/net/wan/lmc/Makefile b/drivers/net/wan/lmc/Makefile
-index dabdcfe..609710d 100644
---- a/drivers/net/wan/lmc/Makefile
-+++ b/drivers/net/wan/lmc/Makefile
-@@ -14,4 +14,4 @@ lmc-objs := lmc_debug.o lmc_media.o lmc_main.o lmc_proto.o
- # -DDEBUG \
- # -DLMC_PACKET_LOG
- 
--EXTRA_CFLAGS += -I. $(DBGDEF)
-+ccflags-y := -I. $(DBGDEF)
-diff --git a/drivers/net/wireless/hostap/hostap_config.h b/drivers/net/wireless/hostap/hostap_config.h
-index 30acd39..2c8f71f 100644
---- a/drivers/net/wireless/hostap/hostap_config.h
-+++ b/drivers/net/wireless/hostap/hostap_config.h
-@@ -30,9 +30,9 @@
- 
- /* Following defines can be used to remove unneeded parts of the driver, e.g.,
-  * to limit the size of the kernel module. Definitions can be added here in
-- * hostap_config.h or they can be added to make command with EXTRA_CFLAGS,
-+ * hostap_config.h or they can be added to make command with ccflags-y,
-  * e.g.,
-- * 'make pccard EXTRA_CFLAGS="-DPRISM2_NO_DEBUG -DPRISM2_NO_PROCFS_DEBUG"'
-+ * 'make pccard ccflags-y="-DPRISM2_NO_DEBUG -DPRISM2_NO_PROCFS_DEBUG"'
-  */
- 
- /* Do not include debug messages into the driver */
-diff --git a/drivers/net/wireless/zd1211rw/Makefile b/drivers/net/wireless/zd1211rw/Makefile
-index 1907eaf..5728a91 100644
---- a/drivers/net/wireless/zd1211rw/Makefile
-+++ b/drivers/net/wireless/zd1211rw/Makefile
-@@ -5,7 +5,5 @@ zd1211rw-objs := zd_chip.o zd_mac.o \
- 		zd_rf_al7230b.o zd_rf_uw2453.o \
- 		zd_rf.o zd_usb.o
- 
--ifeq ($(CONFIG_ZD1211RW_DEBUG),y)
--EXTRA_CFLAGS += -DDEBUG
--endif
-+ccflags-$(CONFIG_ZD1211RW_DEBUG) := -DDEBUG
- 
++ccflags-$(CONFIG_PPS_DEBUG) := -DDEBUG
 -- 
 1.7.2.1
 
