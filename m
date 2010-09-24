@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932216Ab0IXQ6N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:58:13 -0400
-Received: from kroah.org ([198.145.64.141]:46104 "EHLO coco.kroah.org"
+	id S1757017Ab0IXQ5W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:57:22 -0400
+Received: from kroah.org ([198.145.64.141]:46123 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932570Ab0IXQ2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:28:09 -0400
+	id S932597Ab0IXQ2M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:28:12 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:16 2010
-Message-Id: <20100924162616.652266719@clark.site>
+Message-Id: <20100924162616.908237696@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:24:08 -0700
+Date: Fri, 24 Sep 2010 09:24:11 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        Dan Carpenter <error27@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [20/80] drivers/net/eql.c: prevent reading uninitialized stack memory
+Subject: [23/80] net/llc: make opt unsigned in llc_ui_setsockopt()
 In-Reply-To: <20100924162706.GA7381@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Dan Carpenter <error27@gmail.com>
 
-commit 44467187dc22fdd33a1a06ea0ba86ce20be3fe3c upstream.
+commit 339db11b219f36cf7da61b390992d95bb6b7ba2e upstream.
 
-Fixed formatting (tabs and line breaks).
+The members of struct llc_sock are unsigned so if we pass a negative
+value for "opt" it can cause a sign bug.  Also it can cause an integer
+overflow when we multiply "opt * HZ".
 
-The EQL_GETMASTRCFG device ioctl allows unprivileged users to read 16
-bytes of uninitialized stack memory, because the "master_name" member of
-the master_config_t struct declared on the stack in eql_g_master_cfg()
-is not altered or zeroed before being copied back to the user.  This
-patch takes care of it.
-
-Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/eql.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/llc/af_llc.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/eql.c
-+++ b/drivers/net/eql.c
-@@ -555,6 +555,8 @@ static int eql_g_master_cfg(struct net_d
- 	equalizer_t *eql;
- 	master_config_t mc;
+--- a/net/llc/af_llc.c
++++ b/net/llc/af_llc.c
+@@ -1024,7 +1024,8 @@ static int llc_ui_setsockopt(struct sock
+ {
+ 	struct sock *sk = sock->sk;
+ 	struct llc_sock *llc = llc_sk(sk);
+-	int rc = -EINVAL, opt;
++	unsigned int opt;
++	int rc = -EINVAL;
  
-+	memset(&mc, 0, sizeof(master_config_t));
-+
- 	if (eql_is_master(dev)) {
- 		eql = netdev_priv(dev);
- 		mc.max_slaves = eql->max_slaves;
+ 	lock_sock(sk);
+ 	if (unlikely(level != SOL_LLC || optlen != sizeof(int)))
 
 
