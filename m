@@ -1,135 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757534Ab0IXTQQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 15:16:16 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:34442 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756226Ab0IXTQO (ORCPT
+	id S1757552Ab0IXTSm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 15:18:42 -0400
+Received: from qmta08.emeryville.ca.mail.comcast.net ([76.96.30.80]:55849 "EHLO
+	qmta08.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757522Ab0IXTSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 15:16:14 -0400
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
-        sandeen@redhat.com, tytso@mit.edu, bfields@citi.umich.edu,
-        linux-fsdevel@vger.kernel.org, nfsv4@linux-nfs.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V4 08/11] vfs: Add new file and directory create permission flags
-In-Reply-To: <20100924115423.530813c3@tlielax.poochiereds.net>
-References: <1285332494-12756-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1285332494-12756-9-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20100924115423.530813c3@tlielax.poochiereds.net>
-User-Agent: Notmuch/0.3.1-58-g6607fd6 (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
-Date: Sat, 25 Sep 2010 00:46:03 +0530
-Message-ID: <m3vd5v9clo.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 24 Sep 2010 15:18:41 -0400
+From: matt mooney <mfm@muteddisk.com>
+To: kernel-janitors@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: [PATCH 01/24] base: change to new flag variable
+Date: Fri, 24 Sep 2010 12:17:11 -0700
+Message-Id: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
+X-Mailer: git-send-email 1.6.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Sep 2010 11:54:23 -0400, Jeff Layton <jlayton@redhat.com> wrote:
-> On Fri, 24 Sep 2010 18:18:11 +0530
-> "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
-> 
-> > From: Andreas Gruenbacher <agruen@suse.de>
-> > 
-> > Some permission models distinguish between the permission to create a
-> > non-directory and a directory.  Pass this information down to
-> > inode_permission() as mask flags
-> > 
-> > Signed-off-by: Andreas Gruenbacher <agruen@suse.de>
-> > Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> > ---
-> >  fs/namei.c         |   21 ++++++++++++---------
-> >  include/linux/fs.h |    2 ++
-> >  2 files changed, 14 insertions(+), 9 deletions(-)
-> > 
-> > diff --git a/fs/namei.c b/fs/namei.c
-> > index b0b8a71..ed786b2 100644
-> > --- a/fs/namei.c
-> > +++ b/fs/namei.c
-> > @@ -253,7 +253,8 @@ int generic_permission(struct inode *inode, int mask,
-> >   * for filesystem access without changing the "normal" uids which
-> >   * are used for other things.
-> >   *
-> > - * When checking for MAY_APPEND, MAY_WRITE must also be set in @mask.
-> > + * When checking for MAY_APPEND, MAY_CREATE_FILE, MAY_CREATE_DIR,
-> > + * MAY_WRITE must also be set in @mask.
-> >   */
-> >  int inode_permission(struct inode *inode, int mask)
-> >  {
-> > @@ -1337,13 +1338,15 @@ static int may_delete(struct inode *dir,struct dentry *victim,int isdir)
-> >   *  3. We should have write and exec permissions on dir
-> >   *  4. We can't do it if dir is immutable (done in permission())
-> >   */
-> > -static inline int may_create(struct inode *dir, struct dentry *child)
-> > +static inline int may_create(struct inode *dir, struct dentry *child, int isdir)
-> 									^^^^^
-> 								nit: maybe saner as a bool?
-> >  {
-> > +	int mask = isdir ? MAY_CREATE_DIR : MAY_CREATE_FILE;
-> > +
-> >  	if (child->d_inode)
-> >  		return -EEXIST;
-> >  	if (IS_DEADDIR(dir))
-> >  		return -ENOENT;
-> > -	return inode_permission(dir, MAY_WRITE | MAY_EXEC);
-> > +	return inode_permission(dir, MAY_WRITE | MAY_EXEC | mask);
-> >  }
-> >  
-> >  /*
-> > @@ -1391,7 +1394,7 @@ void unlock_rename(struct dentry *p1, struct dentry *p2)
-> >  int vfs_create(struct inode *dir, struct dentry *dentry, int mode,
-> >  		struct nameidata *nd)
-> >  {
-> > -	int error = may_create(dir, dentry);
-> > +	int error = may_create(dir, dentry, 0);
-> >  
-> >  	if (error)
-> >  		return error;
-> > @@ -1953,7 +1956,7 @@ EXPORT_SYMBOL_GPL(lookup_create);
-> >  
-> >  int vfs_mknod(struct inode *dir, struct dentry *dentry, int mode, dev_t dev)
-> >  {
-> > -	int error = may_create(dir, dentry);
-> > +	int error = may_create(dir, dentry, 0);
-> >  
-> >  	if (error)
-> >  		return error;
-> > @@ -2057,7 +2060,7 @@ SYSCALL_DEFINE3(mknod, const char __user *, filename, int, mode, unsigned, dev)
-> >  
-> >  int vfs_mkdir(struct inode *dir, struct dentry *dentry, int mode)
-> >  {
-> > -	int error = may_create(dir, dentry);
-> > +	int error = may_create(dir, dentry, 1);
-> >  
-> >  	if (error)
-> >  		return error;
-> > @@ -2342,7 +2345,7 @@ SYSCALL_DEFINE1(unlink, const char __user *, pathname)
-> >  
-> >  int vfs_symlink(struct inode *dir, struct dentry *dentry, const char *oldname)
-> >  {
-> > -	int error = may_create(dir, dentry);
-> > +	int error = may_create(dir, dentry, 0);
-> >  
-> >  	if (error)
-> >  		return error;
-> > @@ -2415,7 +2418,7 @@ int vfs_link(struct dentry *old_dentry, struct inode *dir, struct dentry *new_de
-> >  	if (!inode)
-> >  		return -ENOENT;
-> >  
-> > -	error = may_create(dir, new_dentry);
-> > +	error = may_create(dir, new_dentry, S_ISDIR(inode->i_mode));
-> 
-> 						^^^^ this is a little
-> 						scary, but even if it's
-> 						a directory, it'll get
-> 						kicked out in a later
-> 						check. Would it be
-> 						clearer to move up the
-> 						S_ISDIR() check in this
-> 						function and then pass
-> 						this in as false?
+Replace EXTRA_CFLAGS with ccflags-y.
 
-Can you elaborate on this ? 
+Signed-off-by: matt mooney <mfm@muteddisk.com>
+---
+ drivers/base/Makefile |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
--aneesh
+diff --git a/drivers/base/Makefile b/drivers/base/Makefile
+index c12c7f2..5f51c3b 100644
+--- a/drivers/base/Makefile
++++ b/drivers/base/Makefile
+@@ -19,7 +19,5 @@ obj-$(CONFIG_MODULES)	+= module.o
+ endif
+ obj-$(CONFIG_SYS_HYPERVISOR) += hypervisor.o
+ 
+-ifeq ($(CONFIG_DEBUG_DRIVER),y)
+-EXTRA_CFLAGS += -DDEBUG
+-endif
++ccflags-$(CONFIG_DEBUG_DRIVER) := -DDEBUG
+ 
+-- 
+1.7.2.1
 
