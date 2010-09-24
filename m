@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751401Ab0IXRQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 13:16:27 -0400
-Received: from caiajhbdcaib.dreamhost.com ([208.97.132.81]:43943 "EHLO
-	homiemail-a2.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750711Ab0IXRQ0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 13:16:26 -0400
-Subject: [PATCH] cpufreq: unnecesary double free in pcc_cpufreq_do_osc
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: davej@redhat.com, cpufreq@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 24 Sep 2010 13:16:21 -0400
-Message-ID: <1285348581.3031.2.camel@cowboy>
+	id S1752481Ab0IXRQt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 13:16:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18177 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750711Ab0IXRQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 13:16:48 -0400
+Date: Fri, 24 Sep 2010 13:16:24 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, neilb@suse.de, viro@zeniv.linux.org.uk
+Subject: Re: [PATCH 6/7 v3] overlay: hybrid overlay filesystem prototype
+Message-ID: <20100924171624.GA25129@shell>
+References: <20100920180404.939991832@szeredi.hu> <20100920180447.854260354@szeredi.hu> <20100922232110.GC26268@shell> <4C9CB6A1.9010904@kernel.dk>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C9CB6A1.9010904@kernel.dk>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x86, cpufreq: avoid an unnecessary double free when finished in pcc_cpufreq_do_osc()
+On Fri, Sep 24, 2010 at 04:33:05PM +0200, Jens Axboe wrote:
+> On 2010-09-23 01:21, Valerie Aurora wrote:
+> > On Mon, Sep 20, 2010 at 08:04:10PM +0200, Miklos Szeredi wrote:
+> >> From: Miklos Szeredi <mszeredi@suse.cz>
+> >>
+> >> This overlay filesystem is a hybrid of entirely filesystem based
+> >> (unionfs, aufs) and entierly VFS based (union mounts) solutions.
+> > 
+> > [...]
+> > 
+> >> +static int ovl_copy_up_data(struct path *old, struct path *new, loff_t len)
+> >> +{
+> >> +	struct file *old_file;
+> >> +	struct file *new_file;
+> >> +	int error = 0;
+> >> +
+> >> +	if (len == 0)
+> >> +		return 0;
+> >> +
+> >> +	old_file = path_open(old, O_RDONLY);
+> >> +	if (IS_ERR(old_file))
+> >> +		return PTR_ERR(old_file);
+> >> +
+> >> +	new_file = path_open(new, O_WRONLY);
+> >> +	if (IS_ERR(new_file)) {
+> >> +		error = PTR_ERR(new_file);
+> >> +		goto out_fput;
+> >> +	}
+> >> +
+> >> +	/* FIXME: copy up sparse files efficiently */
+> >> +	while (len) {
+> >> +		loff_t offset = new_file->f_pos;
+> >> +		size_t this_len = OVL_COPY_UP_CHUNK_SIZE;
+> >> +		long bytes;
+> >> +
+> >> +		if (len < this_len)
+> >> +			this_len = len;
+> >> +
+> >> +		if (signal_pending_state(TASK_KILLABLE, current))
+> >> +			return -EINTR;
+> >> +
+> >> +		bytes = do_splice_direct(old_file, &offset, new_file, this_len,
+> >> +				 SPLICE_F_MOVE);
+> > 
+> > Interruptible copyup is good.  But it looks like splice setup is kind
+> > of heavyweight and we should do it as seldom as possible.
+> > 
+> > What about implementing splice flag SPLICE_F_INTERRUPTIBLE instead?
+> 
+> The pipe alloc and such? That is lazily done and sticks around.
 
-There is no need to fall through the out_free label thus saving a kfree call.
+Thanks!  So this looks like a good way to implement interruptible
+in-kernel file copyup?
 
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
----
- arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c b/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c
-index 994230d..db7dc35 100644
---- a/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c
-+++ b/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c
-@@ -379,6 +379,8 @@ static int __init pcc_cpufreq_do_osc(acpi_handle *handle)
- 	if (!(supported & 0x1))
- 		return -ENODEV;
- 
-+	return ret;
-+
- out_free:
- 	kfree(output.pointer);
- 	return ret;
--- 
-1.7.0.4
-
-
-
+-VAL
