@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757597Ab0IXTTW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 15:19:22 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:36395 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757580Ab0IXTTU (ORCPT
+	id S1757610Ab0IXTT2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 15:19:28 -0400
+Received: from qmta08.emeryville.ca.mail.comcast.net ([76.96.30.80]:55849 "EHLO
+	qmta08.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757548Ab0IXTTZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 15:19:20 -0400
-MIME-Version: 1.0
-X-Originating-IP: [192.94.94.105]
-In-Reply-To: <AANLkTinbEH0Z61z69ThcM9-GoHW4s5nRZig8b6v8uC8r@mail.gmail.com>
-References: <AANLkTinbEH0Z61z69ThcM9-GoHW4s5nRZig8b6v8uC8r@mail.gmail.com>
-Date: Fri, 24 Sep 2010 14:19:18 -0500
-Message-ID: <AANLkTin0UA_=yNbnTSHovZxByBaJUESH0a=8-=5b5HkS@mail.gmail.com>
-Subject: Re: drivers:staging:ti-st: merge issues.
-From: Pavan Savoy <pavan_savoy@sify.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, anca.emanuel@gmail.com
-Cc: pavan_savoy@sify.com
-Content-Type: text/plain; charset=UTF-8
+	Fri, 24 Sep 2010 15:19:25 -0400
+From: matt mooney <mfm@muteddisk.com>
+To: kernel-janitors@vger.kernel.org
+Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 04/24] hwmon: change to new flag variable
+Date: Fri, 24 Sep 2010 12:17:14 -0700
+Message-Id: <ffbd189ef2d414ea7c87ffe2b40fce87877dc014.1285355033.git.mfm@muteddisk.com>
+X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <036514b5dd23c5af14303519d79d60d79adccbee.1285355033.git.mfm@muteddisk.com>
+References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
+ <9968d4260be8850200cc9c7dfe08addf611468b4.1285355033.git.mfm@muteddisk.com>
+ <036514b5dd23c5af14303519d79d60d79adccbee.1285355033.git.mfm@muteddisk.com>
+In-Reply-To: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
+References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ emanuel,
+Replace EXTRA_CFLAGS with ccflags-y.
 
-On Fri, Sep 24, 2010 at 2:11 PM, Pavan Savoy <pavan_savoy@ti.com> wrote:
-> Stephen,
->
-> The merges bbf96b3cb54a237f1a66883390637e30bb4407ba and the merge on
-> 759b9f0fe0c5be0d9fa1b92e14e093961312f6ac has caused the
-> drivers/staging/ti-st to get corrupted, I had submitted few patches
-> and it was all merged.
->
-> basically the merge for bbf96b3cb54a237f1a66883390637e30bb4407ba for
-> drivers/staging/ti-st/ shouldn't have happened.
-> The head for the drivers/staging/ti-st/ should have been @
-> 83ef41f0858b48cce4f8ca23f674ec55d50bf47d
+Signed-off-by: matt mooney <mfm@muteddisk.com>
+---
+ drivers/hwmon/Makefile |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-Upon emanuel's request the patch was brought in again to staging-next,
-whose merge into linux-next has caused all the problems.
-Now what needs to be done?
+diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+index e3c2484..764b4db 100644
+--- a/drivers/hwmon/Makefile
++++ b/drivers/hwmon/Makefile
+@@ -109,7 +109,5 @@ obj-$(CONFIG_SENSORS_W83L786NG)	+= w83l786ng.o
+ obj-$(CONFIG_SENSORS_WM831X)	+= wm831x-hwmon.o
+ obj-$(CONFIG_SENSORS_WM8350)	+= wm8350-hwmon.o
+ 
+-ifeq ($(CONFIG_HWMON_DEBUG_CHIP),y)
+-EXTRA_CFLAGS += -DDEBUG
+-endif
++ccflags-$(CONFIG_HWMON_DEBUG_CHIP) := -DDEBUG
+ 
+-- 
+1.7.2.1
 
-> This is causing build failure.
->
