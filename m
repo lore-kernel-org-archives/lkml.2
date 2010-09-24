@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933035Ab0IXQfX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:35:23 -0400
-Received: from kroah.org ([198.145.64.141]:37178 "EHLO coco.kroah.org"
+	id S1756961Ab0IXQmd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:42:33 -0400
+Received: from kroah.org ([198.145.64.141]:37222 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932954Ab0IXQfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:35:14 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:46 2010
-Message-Id: <20100924163346.533522427@clark.site>
+	id S933040Ab0IXQfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:35:24 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:47 2010
+Message-Id: <20100924163347.219871923@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:31:52 -0700
+Date: Fri, 24 Sep 2010 09:32:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [28/68] drivers/pci/intel-iommu.c: fix build with older gccs
+        Petr Tesarik <ptesarik@suse.cz>, Tony Luck <tony.luck@intel.com>
+Subject: [36/68] IA64: Optimize ticket spinlocks in fsys_rt_sigprocmask
 In-Reply-To: <20100924163357.GA15741@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,142 +25,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Morton <akpm@linux-foundation.org>
+From: Petr Tesarik <ptesarik@suse.cz>
 
-commit df08cdc7ef606509debe7677c439be0ca48790e4 upstream.
+commit 2d2b6901649a62977452be85df53eda2412def24 upstream.
 
-drivers/pci/intel-iommu.c: In function `__iommu_calculate_agaw':
-drivers/pci/intel-iommu.c:437: sorry, unimplemented: inlining failed in call to 'width_to_agaw': function body not available
-drivers/pci/intel-iommu.c:445: sorry, unimplemented: called from here
+Tony's fix (f574c843191728d9407b766a027f779dcd27b272) has a small bug,
+it incorrectly uses "r3" as a scratch register in the first of the two
+unlock paths ... it is also inefficient.  Optimize the fast path again.
 
-Move the offending function (and its siblings) to top-of-file, remove the
-forward declaration.
-
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=17441
-
-Reported-by: Martin Mokrejs <mmokrejs@ribosome.natur.cuni.cz>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/intel-iommu.c |   90 +++++++++++++++++++++-------------------------
- 1 file changed, 43 insertions(+), 47 deletions(-)
+ arch/ia64/kernel/fsys.S |   42 +++++++++++-------------------------------
+ 1 file changed, 11 insertions(+), 31 deletions(-)
 
---- a/drivers/pci/intel-iommu.c
-+++ b/drivers/pci/intel-iommu.c
-@@ -71,6 +71,49 @@
- #define DMA_32BIT_PFN		IOVA_PFN(DMA_BIT_MASK(32))
- #define DMA_64BIT_PFN		IOVA_PFN(DMA_BIT_MASK(64))
+--- a/arch/ia64/kernel/fsys.S
++++ b/arch/ia64/kernel/fsys.S
+@@ -420,34 +420,31 @@ EX(.fail_efault, ld8 r14=[r33])			// r14
+ 	;;
  
-+/* page table handling */
-+#define LEVEL_STRIDE		(9)
-+#define LEVEL_MASK		(((u64)1 << LEVEL_STRIDE) - 1)
-+
-+static inline int agaw_to_level(int agaw)
-+{
-+	return agaw + 2;
-+}
-+
-+static inline int agaw_to_width(int agaw)
-+{
-+	return 30 + agaw * LEVEL_STRIDE;
-+}
-+
-+static inline int width_to_agaw(int width)
-+{
-+	return (width - 30) / LEVEL_STRIDE;
-+}
-+
-+static inline unsigned int level_to_offset_bits(int level)
-+{
-+	return (level - 1) * LEVEL_STRIDE;
-+}
-+
-+static inline int pfn_level_offset(unsigned long pfn, int level)
-+{
-+	return (pfn >> level_to_offset_bits(level)) & LEVEL_MASK;
-+}
-+
-+static inline unsigned long level_mask(int level)
-+{
-+	return -1UL << level_to_offset_bits(level);
-+}
-+
-+static inline unsigned long level_size(int level)
-+{
-+	return 1UL << level_to_offset_bits(level);
-+}
-+
-+static inline unsigned long align_to_level(unsigned long pfn, int level)
-+{
-+	return (pfn + level_size(level) - 1) & level_mask(level);
-+}
+ 	RSM_PSR_I(p0, r18, r19)			// mask interrupt delivery
+-	mov ar.ccv=0
+ 	andcm r14=r14,r17			// filter out SIGKILL & SIGSTOP
++	mov r8=EINVAL			// default to EINVAL
  
- /* VT-d pages must always be _smaller_ than MM pages. Otherwise things
-    are never going to work. */
-@@ -449,8 +492,6 @@ void free_iova_mem(struct iova *iova)
- }
+ #ifdef CONFIG_SMP
+ 	// __ticket_spin_trylock(r31)
+ 	ld4 r17=[r31]
+-	mov r8=EINVAL			// default to EINVAL
+-	;;
+-	extr r9=r17,17,15
+ 	;;
+-	xor r18=r17,r9
++	mov.m ar.ccv=r17
++	extr.u r9=r17,17,15
+ 	adds r19=1,r17
++	extr.u r18=r17,0,15
+ 	;;
+-	extr.u r18=r18,0,15
++	cmp.eq p6,p7=r9,r18
+ 	;;
+-	cmp.eq p0,p7=0,r18
++(p6)	cmpxchg4.acq r9=[r31],r19,ar.ccv
++(p6)	dep.z r20=r19,1,15		// next serving ticket for unlock
+ (p7)	br.cond.spnt.many .lock_contention
+-	mov.m ar.ccv=r17
+-	;;
+-	cmpxchg4.acq r9=[r31],r19,ar.ccv
+ 	;;
+ 	cmp4.eq p0,p7=r9,r17
++	adds r31=2,r31
+ (p7)	br.cond.spnt.many .lock_contention
+ 	ld8 r3=[r2]			// re-read current->blocked now that we hold the lock
+ 	;;
+ #else
+ 	ld8 r3=[r2]			// re-read current->blocked now that we hold the lock
+-	mov r8=EINVAL			// default to EINVAL
+ #endif
+ 	add r18=IA64_TASK_PENDING_OFFSET+IA64_SIGPENDING_SIGNAL_OFFSET,r16
+ 	add r19=IA64_TASK_SIGNAL_OFFSET,r16
+@@ -503,16 +500,8 @@ EX(.fail_efault, ld8 r14=[r33])			// r14
  
- 
--static inline int width_to_agaw(int width);
--
- static int __iommu_calculate_agaw(struct intel_iommu *iommu, int max_gaw)
- {
- 	unsigned long sagaw;
-@@ -664,51 +705,6 @@ out:
- 	spin_unlock_irqrestore(&iommu->lock, flags);
- }
- 
--/* page table handling */
--#define LEVEL_STRIDE		(9)
--#define LEVEL_MASK		(((u64)1 << LEVEL_STRIDE) - 1)
--
--static inline int agaw_to_level(int agaw)
--{
--	return agaw + 2;
--}
--
--static inline int agaw_to_width(int agaw)
--{
--	return 30 + agaw * LEVEL_STRIDE;
--
--}
--
--static inline int width_to_agaw(int width)
--{
--	return (width - 30) / LEVEL_STRIDE;
--}
--
--static inline unsigned int level_to_offset_bits(int level)
--{
--	return (level - 1) * LEVEL_STRIDE;
--}
--
--static inline int pfn_level_offset(unsigned long pfn, int level)
--{
--	return (pfn >> level_to_offset_bits(level)) & LEVEL_MASK;
--}
--
--static inline unsigned long level_mask(int level)
--{
--	return -1UL << level_to_offset_bits(level);
--}
--
--static inline unsigned long level_size(int level)
--{
--	return 1UL << level_to_offset_bits(level);
--}
--
--static inline unsigned long align_to_level(unsigned long pfn, int level)
--{
--	return (pfn + level_size(level) - 1) & level_mask(level);
--}
--
- static struct dma_pte *pfn_to_dma_pte(struct dmar_domain *domain,
- 				      unsigned long pfn)
- {
+ #ifdef CONFIG_SMP
+ 	// __ticket_spin_unlock(r31)
+-	adds r31=2,r31
+-	;;
+-	ld2.bias r2=[r31]
+-	mov r3=65534
+-	;;
+-	adds r2=2,r2
+-	;;
+-	and r3=r3,r2
+-	;;
+-	st2.rel [r31]=r3
++	st2.rel [r31]=r20
++	mov r20=0					// i must not leak kernel bits...
+ #endif
+ 	SSM_PSR_I(p0, p9, r31)
+ 	;;
+@@ -535,16 +524,7 @@ EX(.fail_efault, (p15) st8 [r34]=r3)
+ .sig_pending:
+ #ifdef CONFIG_SMP
+ 	// __ticket_spin_unlock(r31)
+-	adds r31=2,r31
+-	;;
+-	ld2.bias r2=[r31]
+-	mov r3=65534
+-	;;
+-	adds r2=2,r2
+-	;;
+-	and r3=r3,r2
+-	;;
+-	st2.rel [r31]=r3
++	st2.rel [r31]=r20			// release the lock
+ #endif
+ 	SSM_PSR_I(p0, p9, r17)
+ 	;;
 
 
