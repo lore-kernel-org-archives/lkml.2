@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757434Ab0IXUpc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 16:45:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11309 "EHLO mx1.redhat.com"
+	id S932381Ab0IXUpk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 16:45:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2849 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932308Ab0IXUpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 16:45:30 -0400
+	id S1753587Ab0IXUph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 16:45:37 -0400
 From: Eric Paris <eparis@redhat.com>
-Subject: [PATCH 4/6] security: secid_to_secctx returns len when data is NULL
+Subject: [PATCH 5/6] conntrack: export lsm context rather than internal secid
+	via netlink
 To: linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov,
         netfilter-devel@vger.kernel.org
 Cc: jmorris@namei.org, sds@tycho.nsa.gov, jengelh@medozas.de,
         paul.moore@hp.com, casey@schaufler-ca.com,
         linux-security-module@vger.kernel.org, netfilter@vger.kernel.org,
         mr.dash.four@googlemail.com
-Date: Fri, 24 Sep 2010 16:45:38 -0400
-Message-ID: <20100924204538.28355.32426.stgit@paris.rdu.redhat.com>
+Date: Fri, 24 Sep 2010 16:45:45 -0400
+Message-ID: <20100924204545.28355.92767.stgit@paris.rdu.redhat.com>
 In-Reply-To: <20100924204517.28355.42822.stgit@paris.rdu.redhat.com>
 References: <20100924204517.28355.42822.stgit@paris.rdu.redhat.com>
 User-Agent: StGIT/0.14.3
@@ -26,78 +27,141 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the (long ago) interface change to have the secid_to_secctx functions
-do the string allocation instead of having the caller do the allocation we
-lost the ability to query the security server for the length of the
-upcoming string.  The SECMARK code would like to allocate a netlink skb
-with enough length to hold the string but it is just too unclean to do the
-string allocation twice or to do the allocation the first time and hold
-onto the string and slen.  This patch adds the ability to call
-security_secid_to_secctx() with a NULL data pointer and it will just set
-the slen pointer.
+The conntrack code can export the internal secid to userspace.  These are
+dynamic, can change on lsm changes, and have no meaning in userspace.  We
+should instead be sending lsm contexts to userspace instead.  This patch sends
+the secctx (rather than secid) to userspace over the netlink socket.  We use a
+new field CTA_SECCTX and stop using the the old CTA_SECMARK field since it did
+not send particularly useful information.
 
 Signed-off-by: Eric Paris <eparis@redhat.com>
 ---
 
- security/selinux/ss/services.c |   11 +++++++++--
- security/smack/smack_lsm.c     |    3 ++-
- 2 files changed, 11 insertions(+), 3 deletions(-)
+ include/linux/netfilter/nfnetlink_conntrack.h |    8 ++++
+ net/netfilter/nf_conntrack_netlink.c          |   46 ++++++++++++++++++++-----
+ 2 files changed, 44 insertions(+), 10 deletions(-)
 
-diff --git a/security/selinux/ss/services.c b/security/selinux/ss/services.c
-index 73508af..1d4955a 100644
---- a/security/selinux/ss/services.c
-+++ b/security/selinux/ss/services.c
-@@ -998,7 +998,8 @@ static int context_struct_to_string(struct context *context, char **scontext, u3
- {
- 	char *scontextp;
+diff --git a/include/linux/netfilter/nfnetlink_conntrack.h b/include/linux/netfilter/nfnetlink_conntrack.h
+index 9ed534c..ba03544 100644
+--- a/include/linux/netfilter/nfnetlink_conntrack.h
++++ b/include/linux/netfilter/nfnetlink_conntrack.h
+@@ -41,6 +41,7 @@ enum ctattr_type {
+ 	CTA_NAT_SEQ_ADJ_REPLY,
+ 	CTA_SECMARK,
+ 	CTA_ZONE,
++	CTA_SECCTX,
+ 	__CTA_MAX
+ };
+ #define CTA_MAX (__CTA_MAX - 1)
+@@ -172,4 +173,11 @@ enum ctattr_help {
+ };
+ #define CTA_HELP_MAX (__CTA_HELP_MAX - 1)
  
--	*scontext = NULL;
-+	if (scontext)
-+		*scontext = NULL;
- 	*scontext_len = 0;
- 
- 	if (context->len) {
-@@ -1015,6 +1016,9 @@ static int context_struct_to_string(struct context *context, char **scontext, u3
- 	*scontext_len += strlen(sym_name(&policydb, SYM_TYPES, context->type - 1)) + 1;
- 	*scontext_len += mls_compute_context_len(context);
- 
-+	if (!scontext)
-+		return 0;
++enum ctattr_secctx {
++	CTA_SECCTX_UNSPEC,
++	CTA_SECCTX_NAME,
++	__CTA_SECCTX_MAX
++};
++#define CTA_SECCTX_MAX (__CTA_SECCTX_MAX - 1)
 +
- 	/* Allocate space for the context; caller must free this space. */
- 	scontextp = kmalloc(*scontext_len, GFP_ATOMIC);
- 	if (!scontextp)
-@@ -1054,7 +1058,8 @@ static int security_sid_to_context_core(u32 sid, char **scontext,
- 	struct context *context;
- 	int rc = 0;
+ #endif /* _IPCONNTRACK_NETLINK_H */
+diff --git a/net/netfilter/nf_conntrack_netlink.c b/net/netfilter/nf_conntrack_netlink.c
+index 3a50699..b3c6285 100644
+--- a/net/netfilter/nf_conntrack_netlink.c
++++ b/net/netfilter/nf_conntrack_netlink.c
+@@ -22,6 +22,7 @@
+ #include <linux/rculist_nulls.h>
+ #include <linux/types.h>
+ #include <linux/timer.h>
++#include <linux/security.h>
+ #include <linux/skbuff.h>
+ #include <linux/errno.h>
+ #include <linux/netlink.h>
+@@ -245,16 +246,31 @@ nla_put_failure:
  
--	*scontext = NULL;
-+	if (scontext)
-+		*scontext = NULL;
- 	*scontext_len  = 0;
- 
- 	if (!ss_initialized) {
-@@ -1062,6 +1067,8 @@ static int security_sid_to_context_core(u32 sid, char **scontext,
- 			char *scontextp;
- 
- 			*scontext_len = strlen(initial_sid_to_string[sid]) + 1;
-+			if (!scontext)
-+				goto out;
- 			scontextp = kmalloc(*scontext_len, GFP_ATOMIC);
- 			if (!scontextp) {
- 				rc = -ENOMEM;
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index c448d57..b95d7b1 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -3005,7 +3005,8 @@ static int smack_secid_to_secctx(u32 secid, char **secdata, u32 *seclen)
+ #ifdef CONFIG_NF_CONNTRACK_SECMARK
+ static inline int
+-ctnetlink_dump_secmark(struct sk_buff *skb, const struct nf_conn *ct)
++ctnetlink_dump_secctx(struct sk_buff *skb, const struct nf_conn *ct)
  {
- 	char *sp = smack_from_secid(secid);
+-	NLA_PUT_BE32(skb, CTA_SECMARK, htonl(ct->secmark ? 1 : 0));
+-	return 0;
++	struct nlattr *nest_secctx;
++	int len, ret;
++	char *secctx;
++
++	ret = security_secid_to_secctx(ct->secmark, &secctx, &len);
++	if (ret)
++		return ret;
++
++	ret = -1;
++	nest_secctx = nla_nest_start(skb, CTA_SECCTX | NLA_F_NESTED);
++	if (!nest_secctx)
++		goto nla_put_failure;
  
--	*secdata = sp;
-+	if (secdata)
-+		*secdata = sp;
- 	*seclen = strlen(sp);
- 	return 0;
++	NLA_PUT_STRING(skb, CTA_SECCTX_NAME, secctx);
++	nla_nest_end(skb, nest_secctx);
++
++	ret = 0;
+ nla_put_failure:
+-	return -1;
++	security_release_secctx(secctx, len);
++	return ret;
  }
+ #else
+-#define ctnetlink_dump_secmark(a, b) (0)
++#define ctnetlink_dump_secctx(a, b) (0)
+ #endif
+ 
+ #define master_tuple(ct) &(ct->master->tuplehash[IP_CT_DIR_ORIGINAL].tuple)
+@@ -391,7 +407,7 @@ ctnetlink_fill_info(struct sk_buff *skb, u32 pid, u32 seq,
+ 	    ctnetlink_dump_protoinfo(skb, ct) < 0 ||
+ 	    ctnetlink_dump_helpinfo(skb, ct) < 0 ||
+ 	    ctnetlink_dump_mark(skb, ct) < 0 ||
+-	    ctnetlink_dump_secmark(skb, ct) < 0 ||
++	    ctnetlink_dump_secctx(skb, ct) < 0 ||
+ 	    ctnetlink_dump_id(skb, ct) < 0 ||
+ 	    ctnetlink_dump_use(skb, ct) < 0 ||
+ 	    ctnetlink_dump_master(skb, ct) < 0 ||
+@@ -437,6 +453,17 @@ ctnetlink_counters_size(const struct nf_conn *ct)
+ 	       ;
+ }
+ 
++#ifdef CONFIG_NF_CONNTRACK_SECMARK
++static int ctnetlink_nlmsg_secctx_size(const struct nf_conn *ct)
++{
++	int len;
++
++	security_secid_to_secctx(ct->secmark, NULL, &len);
++
++	return sizeof(char) * len;
++}
++#endif
++
+ static inline size_t
+ ctnetlink_nlmsg_size(const struct nf_conn *ct)
+ {
+@@ -453,7 +480,8 @@ ctnetlink_nlmsg_size(const struct nf_conn *ct)
+ 	       + nla_total_size(0) /* CTA_HELP */
+ 	       + nla_total_size(NF_CT_HELPER_NAME_LEN) /* CTA_HELP_NAME */
+ #ifdef CONFIG_NF_CONNTRACK_SECMARK
+-	       + nla_total_size(sizeof(u_int32_t)) /* CTA_SECMARK */
++	       + nla_total_size(0) /* CTA_SECCTX */
++	       + nla_total_size(ctnetlink_nlmsg_secctx_size(ct)) /* CTA_SECCTX_NAME */
+ #endif
+ #ifdef CONFIG_NF_NAT_NEEDED
+ 	       + 2 * nla_total_size(0) /* CTA_NAT_SEQ_ADJ_ORIG|REPL */
+@@ -554,11 +582,9 @@ ctnetlink_conntrack_event(unsigned int events, struct nf_ct_event *item)
+ 		    && ctnetlink_dump_helpinfo(skb, ct) < 0)
+ 			goto nla_put_failure;
+ 
+-#ifdef CONFIG_NF_CONNTRACK_SECMARK
+ 		if ((events & (1 << IPCT_SECMARK) || ct->secmark)
+-		    && ctnetlink_dump_secmark(skb, ct) < 0)
++		    && ctnetlink_dump_secctx(skb, ct) < 0)
+ 			goto nla_put_failure;
+-#endif
+ 
+ 		if (events & (1 << IPCT_RELATED) &&
+ 		    ctnetlink_dump_master(skb, ct) < 0)
 
