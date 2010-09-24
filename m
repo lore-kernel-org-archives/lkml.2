@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908Ab0IXK4s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 06:56:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57700 "EHLO mx1.redhat.com"
+	id S1755513Ab0IXLNq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 07:13:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8513 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751978Ab0IXK4r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 06:56:47 -0400
-Date: Fri, 24 Sep 2010 12:55:47 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: nhorman@tuxdriver.com, eugene@redhat.com, linux-kernel@vger.kernel.org,
-        oleg@tv-sign.ru
-Subject: Re: [RFC PATCH] proc: making "limits" world readable
-Message-ID: <20100924105547.GA1818@jolsa.brq.redhat.com>
-References: <1285060255-15784-1-git-send-email-jolsa@redhat.com>
- <20100923145642.49f17b20.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100923145642.49f17b20.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1753079Ab0IXLNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 07:13:44 -0400
+Date: Fri, 24 Sep 2010 07:13:36 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Steve French <smfrench@gmail.com>, <linux-cifs@vger.kernel.org>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the cifs tree
+Message-ID: <20100924071336.6def0437@corrin.poochiereds.net>
+In-Reply-To: <20100924134841.161d18d3.sfr@canb.auug.org.au>
+References: <20100924134841.161d18d3.sfr@canb.auug.org.au>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/G9yeT8oKoqHFfj.1zLjnskP"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 23, 2010 at 02:56:42PM -0700, Andrew Morton wrote:
-> On Tue, 21 Sep 2010 11:10:55 +0200
-> Jiri Olsa <jolsa@redhat.com> wrote:
-> 
-> > hi,
-> > 
-> > I'd like to have the /proc/<pid>/limits file world readable,
-> 
-> Why?
-> 
+--Sig_/G9yeT8oKoqHFfj.1zLjnskP
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-having this will ease the task of system management for large install
-bases and where root privileges might be restricted
+On Fri, 24 Sep 2010 13:48:41 +1000
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-jirka
+> Hi all,
+>=20
+> After merging the cifs tree, today's linux-next build (powerpc
+> ppc64_defconfig) produced this warning:
+>=20
+> fs/cifs/dir.c: In function 'cifs_new_fileinfo':
+> fs/cifs/dir.c:140: warning: unused variable 'cifs_sb'
+>=20
+> Introduced by commit 9a6124e7e18fa30d8693055e6a4526afb4c3fabc ("cifs:
+> have cifs_new_fileinfo take a tcon arg").
+>=20
 
-> > but I'm not sure this could cause some security issue.. thoughts?
-> > 
-> > The "limit" file was as a debug feature by following commit:
-> > - proc: export a processes resource limits via /proc/pid
-> >   commit d85f50d5e1aa99ab082035f94265847521819e58
-> >   Author: Neil Horman <nhorman@tuxdriver.com>
-> > 
-> > 
-> > thanks for any ideas,
-> > jirka
-> > ---
-> >  fs/proc/base.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/fs/proc/base.c b/fs/proc/base.c
-> > index a1c43e7..8e4adda 100644
-> > --- a/fs/proc/base.c
-> > +++ b/fs/proc/base.c
-> > @@ -2675,7 +2675,7 @@ static const struct pid_entry tgid_base_stuff[] = {
-> >  	INF("auxv",       S_IRUSR, proc_pid_auxv),
-> >  	ONE("status",     S_IRUGO, proc_pid_status),
-> >  	ONE("personality", S_IRUSR, proc_pid_personality),
-> > -	INF("limits",	  S_IRUSR, proc_pid_limits),
-> > +	INF("limits",	  S_IRUGO, proc_pid_limits),
-> >  #ifdef CONFIG_SCHED_DEBUG
-> >  	REG("sched",      S_IRUGO|S_IWUSR, proc_pid_sched_operations),
-> >  #endif
-> > @@ -3011,7 +3011,7 @@ static const struct pid_entry tid_base_stuff[] = {
-> >  	INF("auxv",      S_IRUSR, proc_pid_auxv),
-> >  	ONE("status",    S_IRUGO, proc_pid_status),
-> >  	ONE("personality", S_IRUSR, proc_pid_personality),
-> > -	INF("limits",	 S_IRUSR, proc_pid_limits),
-> > +	INF("limits",	 S_IRUGO, proc_pid_limits),
-> >  #ifdef CONFIG_SCHED_DEBUG
-> >  	REG("sched",     S_IRUGO|S_IWUSR, proc_pid_sched_operations),
-> >  #endif
-> 
+That's fixed in the next patch in the multiuser mount series. It
+probably should have been part of the patch above.
+
+--=20
+Jeff Layton <jlayton@redhat.com>
+
+--Sig_/G9yeT8oKoqHFfj.1zLjnskP
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
+
+iEYEARECAAYFAkych+kACgkQojH4PzJJfGXreQCfZ3sUwYbi/6Td8aLJivU8gn9a
+VlIAoMJEYVKnGgjVpQC+Tq+AL6pFIiZR
+=RXtu
+-----END PGP SIGNATURE-----
+
+--Sig_/G9yeT8oKoqHFfj.1zLjnskP--
