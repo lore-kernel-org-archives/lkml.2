@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933219Ab0IXQka (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:40:30 -0400
-Received: from kroah.org ([198.145.64.141]:37353 "EHLO coco.kroah.org"
+	id S933187Ab0IXQkv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:40:51 -0400
+Received: from kroah.org ([198.145.64.141]:37350 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933086Ab0IXQfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:35:37 -0400
+	id S933015Ab0IXQfg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:35:36 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:48 2010
-Message-Id: <20100924163348.103433951@clark.site>
+Message-Id: <20100924163348.018890137@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:32:10 -0700
+Date: Fri, 24 Sep 2010 09:32:09 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mel Gorman <mel@csn.ul.ie>, Dave Chinner <david@fromorbit.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        David Rientjes <rientjes@google.com>
-Subject: [46/68] mm: page allocator: drain per-cpu lists after direct reclaim allocation fails
+        Divy Le Ray <divy@chelsio.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Brandon Philips <bphilips@suse.de>
+Subject: [45/68] cxgb3: fix hot plug removal crash
 In-Reply-To: <20100924163357.GA15741@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,78 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mel@csn.ul.ie>
+From: Divy Le Ray <divy@chelsio.com>
 
-commit 9ee493ce0a60bf42c0f8fd0b0fe91df5704a1cbf upstream.
+commit a6f018e324ba91d0464cca6895447c2b89e6d578 upstream.
 
-When under significant memory pressure, a process enters direct reclaim
-and immediately afterwards tries to allocate a page.  If it fails and no
-further progress is made, it's possible the system will go OOM.  However,
-on systems with large amounts of memory, it's possible that a significant
-number of pages are on per-cpu lists and inaccessible to the calling
-process.  This leads to a process entering direct reclaim more often than
-it should increasing the pressure on the system and compounding the
-problem.
+queue restart tasklets need to be stopped after napi handlers are stopped
+since the latter can restart them.  So stop them after stopping napi.
 
-This patch notes that if direct reclaim is making progress but allocations
-are still failing that the system is already under heavy pressure.  In
-this case, it drains the per-cpu lists and tries the allocation a second
-time before continuing.
-
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Christoph Lameter <cl@linux.com>
-Cc: Dave Chinner <david@fromorbit.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Divy Le Ray <divy@chelsio.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Brandon Philips <bphilips@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/page_alloc.c |   20 ++++++++++++++++----
- 1 file changed, 16 insertions(+), 4 deletions(-)
+ drivers/net/cxgb3/cxgb3_main.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1681,6 +1681,7 @@ __alloc_pages_direct_reclaim(gfp_t gfp_m
- 	struct page *page = NULL;
- 	struct reclaim_state reclaim_state;
- 	struct task_struct *p = current;
-+	bool drained = false;
+--- a/drivers/net/cxgb3/cxgb3_main.c
++++ b/drivers/net/cxgb3/cxgb3_main.c
+@@ -1274,6 +1274,7 @@ static void cxgb_down(struct adapter *ad
  
- 	cond_resched();
- 
-@@ -1699,14 +1700,25 @@ __alloc_pages_direct_reclaim(gfp_t gfp_m
- 
- 	cond_resched();
- 
--	if (order != 0)
--		drain_all_pages();
-+	if (unlikely(!(*did_some_progress)))
-+		return NULL;
- 
--	if (likely(*did_some_progress))
--		page = get_page_from_freelist(gfp_mask, nodemask, order,
-+retry:
-+	page = get_page_from_freelist(gfp_mask, nodemask, order,
- 					zonelist, high_zoneidx,
- 					alloc_flags, preferred_zone,
- 					migratetype);
-+
-+	/*
-+	 * If an allocation failed after direct reclaim, it could be because
-+	 * pages are pinned on the per-cpu lists. Drain them and try again
-+	 */
-+	if (!page && !drained) {
-+		drain_all_pages();
-+		drained = true;
-+		goto retry;
-+	}
-+
- 	return page;
+ 	free_irq_resources(adapter);
+ 	quiesce_rx(adapter);
++	t3_sge_stop(adapter);
+ 	flush_workqueue(cxgb3_wq);	/* wait for external IRQ handler */
  }
  
 
