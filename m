@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932832Ab0IXQdy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:33:54 -0400
-Received: from kroah.org ([198.145.64.141]:38465 "EHLO coco.kroah.org"
+	id S932734Ab0IXQ2i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:28:38 -0400
+Received: from kroah.org ([198.145.64.141]:38410 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932762Ab0IXQ2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:28:43 -0400
+	id S932703Ab0IXQ2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:28:35 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:19 2010
-Message-Id: <20100924162619.748639015@clark.site>
+Message-Id: <20100924162619.052259227@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:24:44 -0700
+Date: Fri, 24 Sep 2010 09:24:36 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, greg@kroah.com
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, avi@redhat.com,
-        mtosatti@redhat.com, Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Subject: [56/80] KVM: MMU: fix direct sps access corrupted
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jeff Moyer <jmoyer@redhat.com>
+Subject: [48/80] aio: check for multiplication overflow in do_io_submit
 In-Reply-To: <20100924162706.GA7381@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,63 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Jeff Moyer <jmoyer@redhat.com>
 
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+commit 75e1c70fc31490ef8a373ea2a4bea2524099b478 upstream.
 
-commit 9e7b0e7fba45ca3c6357aeb7091ebc281f1de365 upstream.
+Tavis Ormandy pointed out that do_io_submit does not do proper bounds
+checking on the passed-in iocb array:
 
-If the mapping is writable but the dirty flag is not set, we will find
-the read-only direct sp and setup the mapping, then if the write #PF
-occur, we will mark this mapping writable in the read-only direct sp,
-now, other real read-only mapping will happily write it without #PF.
+       if (unlikely(nr < 0))
+               return -EINVAL;
 
-It may hurt guest's COW
+       if (unlikely(!access_ok(VERIFY_READ, iocbpp, (nr*sizeof(iocbpp)))))
+               return -EFAULT;                      ^^^^^^^^^^^^^^^^^^
 
-Fixed by re-install the mapping when write #PF occur.
+The attached patch checks for overflow, and if it is detected, the
+number of iocbs submitted is scaled down to a number that will fit in
+the long.  This is an ok thing to do, as sys_io_submit is documented as
+returning the number of iocbs submitted, so callers should handle a
+return value of less than the 'nr' argument passed in.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Reported-by: Tavis Ormandy <taviso@cmpxchg8b.com>
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- arch/x86/kvm/paging_tmpl.h |   28 ++++++++++++++++++++++++++--
- 1 file changed, 26 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -324,8 +324,32 @@ static u64 *FNAME(fetch)(struct kvm_vcpu
- 			break;
- 		}
+---
+ fs/aio.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -1667,6 +1667,9 @@ long do_io_submit(aio_context_t ctx_id,
+ 	if (unlikely(nr < 0))
+ 		return -EINVAL;
  
--		if (is_shadow_present_pte(*sptep) && !is_large_pte(*sptep))
--			continue;
-+		if (is_shadow_present_pte(*sptep) && !is_large_pte(*sptep)) {
-+			struct kvm_mmu_page *child;
-+			unsigned direct_access;
++	if (unlikely(nr > LONG_MAX/sizeof(*iocbpp)))
++		nr = LONG_MAX/sizeof(*iocbpp);
 +
-+			if (level != gw->level)
-+				continue;
-+
-+			/*
-+			 * For the direct sp, if the guest pte's dirty bit
-+			 * changed form clean to dirty, it will corrupt the
-+			 * sp's access: allow writable in the read-only sp,
-+			 * so we should update the spte at this point to get
-+			 * a new sp with the correct access.
-+			 */
-+			direct_access = gw->pt_access & gw->pte_access;
-+			if (!is_dirty_gpte(gw->ptes[gw->level - 1]))
-+				direct_access &= ~ACC_WRITE_MASK;
-+
-+			child = page_header(*sptep & PT64_BASE_ADDR_MASK);
-+			if (child->role.access == direct_access)
-+				continue;
-+
-+			mmu_page_remove_parent_pte(child, sptep);
-+			__set_spte(sptep, shadow_trap_nonpresent_pte);
-+			kvm_flush_remote_tlbs(vcpu->kvm);
-+		}
+ 	if (unlikely(!access_ok(VERIFY_READ, iocbpp, (nr*sizeof(*iocbpp)))))
+ 		return -EFAULT;
  
- 		if (is_large_pte(*sptep)) {
- 			rmap_remove(vcpu->kvm, sptep);
 
 
