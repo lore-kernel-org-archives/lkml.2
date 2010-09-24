@@ -1,79 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758135Ab0IXU3Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 16:29:25 -0400
-Received: from qmta15.emeryville.ca.mail.comcast.net ([76.96.27.228]:33328
-	"EHLO qmta15.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755009Ab0IXU3X (ORCPT
+	id S1758131Ab0IXUb2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 16:31:28 -0400
+Received: from mail.windriver.com ([147.11.1.11]:53965 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754970Ab0IXUb1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 16:29:23 -0400
-Date: Fri, 24 Sep 2010 13:28:23 -0700
-From: matt mooney <mfm@muteddisk.com>
-To: Matthew Dharm <mdharm-kernel@one-eyed-alien.net>
-Cc: kernel-janitors@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        usb-storage@lists.one-eyed-alien.net,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, Felipe Balbi <felipe.balbi@nokia.com>,
-        David Vrabel <david.vrabel@csr.com>, Michal Marek <mmarek@suse.cz>
-Subject: Re: [usb-storage] [PATCH 23/24] usb: change to new flag variable
-Message-ID: <20100924202823.GB4598@haskell.muteddisk.com>
-Mail-Followup-To: Matthew Dharm <mdharm-kernel@one-eyed-alien.net>,
-	kernel-janitors@vger.kernel.org,
-	David Brownell <dbrownell@users.sourceforge.net>,
-	usb-storage@lists.one-eyed-alien.net,
-	Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-	linux-usb@vger.kernel.org, Felipe Balbi <felipe.balbi@nokia.com>,
-	David Vrabel <david.vrabel@csr.com>, Michal Marek <mmarek@suse.cz>
-References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
- <1dd0f4a1709a9b139fe87f2b311cc0d129900b3f.1285355033.git.mfm@muteddisk.com>
- <20100924200218.GC25677@one-eyed-alien.net>
+	Fri, 24 Sep 2010 16:31:27 -0400
+Message-ID: <4C9D0A82.5020406@windriver.com>
+Date: Fri, 24 Sep 2010 15:30:58 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100924200218.GC25677@one-eyed-alien.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jiri Olsa <jolsa@redhat.com>
+CC: a.p.zijlstra@chello.nl, kgdb-bugreport@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: kgdb segv in the latest tip due to perf ctx changes
+References: <20100924180417.GC1818@jolsa.brq.redhat.com>
+In-Reply-To: <20100924180417.GC1818@jolsa.brq.redhat.com>
+Content-Type: multipart/mixed;
+ boundary="------------080701090502060403010908"
+X-OriginalArrivalTime: 24 Sep 2010 20:31:00.0155 (UTC) FILETIME=[6664C0B0:01CB5C27]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13:02 Fri 24 Sep     , Matthew Dharm wrote:
-> On Fri, Sep 24, 2010 at 12:17:33PM -0700, matt mooney wrote:
-> > Replace EXTRA_CFLAGS with ccflags-y.
-> 
-> > diff --git a/drivers/usb/storage/Makefile b/drivers/usb/storage/Makefile
-> > index ef7e5a8..786f086 100644
-> > --- a/drivers/usb/storage/Makefile
-> >
-+++ b/drivers/usb/storage/Makefile
-> > @@ -5,7 +5,7 @@
-> >  # Rewritten to use lists instead of if-statements.
-> >  #
-> >  
-> > -EXTRA_CFLAGS	:= -Idrivers/scsi
-> > +ccflags-y	:= -Idrivers/scsi
-> >  
-> >  obj-$(CONFIG_USB_STORAGE)	+= usb-storage.o
-> 
-> I don't really know anything about the new 'ccflags' stuff.. but my
-> instincts tell me that perhaps that should be
-> 'ccflags-$(CONFIG_USB_STORAGE)' rather than 'ccflags-y'?
+This is a multi-part message in MIME format.
+--------------080701090502060403010908
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-The flag has the same effect as EXTRA_CFLAGS in that it will be used to build
-all  sources at the same hierarchical level (i.e., per directory not including
-subdirectories). I didn't want to change the semantics of the way the variable
-was being used, but after looking at the Kconfig it seems that would be a
-reasonable change. If only usb-storage needs the flag then it makes sense,
-though it seems that everything else in the directory relies on usb-storage
-anyway, but it gives it greater meaning knowing that only usb-storage relies on
-the flag, IMHO.
+Jiri,
 
-> 
-> Does it make a difference that usb-storage can be built-in or a loadable
-> module?
+Can you try this simple patch which is attached?
 
-That would make a difference because ccflags-m is not used, so the change is not
-possible.
 
--mfm
 
+On 09/24/2010 01:04 PM, Jiri Olsa wrote:
+> while starting kgdb early debug on latest tip tree,
+> I got SIGSEGV inside kernel in following location:
+>
+>   
+[clip]
+> I found out it's due to foolowing commit, that's causing the init code
+> to be called without the ctx field being defined...
+>
+> commit c3f00c70276d8ae82578c8b773e2db657f69a478
+> Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Date:   Wed Aug 18 14:37:15 2010 +0200
+>
+>
+>   
+
+I took a look at the tip core, and the ctx parameter is no longer passed
+into the perf_event_alloc() from perf_event_create_kernel_counter() kgdb
+no longer gets it filled in for free.
+
+The reality is that kgdb never had a true context or a way to mark the
+hw breakpoint as a kernel only context for the hw breakpoint
+reservations.  The patch is only a short term fix perhaps until on of
+the perf guys explains the right way to use it. :-)
+
+Thanks,
+Jason.
+
+
+--------------080701090502060403010908
+Content-Type: text/x-diff;
+ name="0001-Fix-null-dereference-when-using-early-kgdb.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline;
+ filename*0="0001-Fix-null-dereference-when-using-early-kgdb.patch"
+
+>From 17f3febd001a26aee9a75c61152b60b7e0ae1ea9 Mon Sep 17 00:00:00 2001
+From: Jason Wessel <jason.wessel@windriver.com>
+Date: Fri, 24 Sep 2010 15:21:11 -0500
+Subject: [PATCH] Fix null dereference when using early kgdb
+
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+---
+ kernel/hw_breakpoint.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/hw_breakpoint.c b/kernel/hw_breakpoint.c
+index 3b714e8..3c7ccdf 100644
+--- a/kernel/hw_breakpoint.c
++++ b/kernel/hw_breakpoint.c
+@@ -213,7 +213,7 @@ toggle_bp_slot(struct perf_event *bp, bool enable, enum bp_type_idx type,
+ 	       int weight)
+ {
+ 	int cpu = bp->cpu;
+-	struct task_struct *tsk = bp->ctx->task;
++	struct task_struct *tsk = bp->ctx ? bp->ctx->task : NULL;
+ 
+ 	/* Pinned counter cpu profiling */
+ 	if (!tsk) {
+-- 
+1.6.3.3
+
+
+--------------080701090502060403010908--
