@@ -1,175 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756832Ab0IXPlK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 11:41:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50288 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753689Ab0IXPlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 11:41:09 -0400
-Date: Fri, 24 Sep 2010 17:41:02 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: fweisbec@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 1/3] tracing: proper check for irq_depth routines
-Message-ID: <20100924154102.GB1818@jolsa.brq.redhat.com>
-References: <1285243253-7372-1-git-send-email-jolsa@redhat.com>
- <1285243253-7372-2-git-send-email-jolsa@redhat.com>
- <1285271293.26872.1613.camel@gandalf.stny.rr.com>
+	id S1756835Ab0IXPpr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 11:45:47 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52005 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753014Ab0IXPpr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 11:45:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=x244z6bmn1e9lmoVQr8e9qfbN8DiZcdgGMsYWn74tgadB/6MJGSgM9jwt5c8llfZSb
+         YsitMvw+5KHLW6ikpHiuV0oHt6kBwLLxgjKbxwrQZVhpOUEjGB84sqay7BHrFv3OHyuA
+         S+X3bcUeICWQIzZHbNVR37A2oUw5xneUhtTZ4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1285271293.26872.1613.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20100924072523.GM23406@pengutronix.de>
+References: <1281956870-12463-1-git-send-email-s.hauer@pengutronix.de>
+	<1281956870-12463-3-git-send-email-s.hauer@pengutronix.de>
+	<AANLkTin8v_29HESnmhE5==3OLmb29bmoOY1iona4C+eD@mail.gmail.com>
+	<20100924072523.GM23406@pengutronix.de>
+Date: Fri, 24 Sep 2010 08:45:45 -0700
+X-Google-Sender-Auth: 8JxRhcNheHCilR8LGEo-jVSHRNA
+Message-ID: <AANLkTi=tY=W05K5N77Xv6kz5CX9U2=Gvm2vDavMN5DSu@mail.gmail.com>
+Subject: Re: [PATCH 2/3] dmaengine: add wrapper functions for dmaengine
+From: Dan Williams <dan.j.williams@intel.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.ml.walleij@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 23, 2010 at 03:48:13PM -0400, Steven Rostedt wrote:
-> On Thu, 2010-09-23 at 14:00 +0200, Jiri Olsa wrote:
-> > The check_irq_entry and check_irq_return could be called
-> > from graph event context. In such case there's no graph
-> > private data allocated. Adding checks to handle this case.
-> > 
-> > wbr,
-> > jirka
-> > 
-> > 
-> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> > ---
-> >  kernel/trace/trace_functions_graph.c |   24 ++++++++++++++++++++----
-> >  1 files changed, 20 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-> > index 02c708a..1390159 100644
-> > --- a/kernel/trace/trace_functions_graph.c
-> > +++ b/kernel/trace/trace_functions_graph.c
-> > @@ -887,12 +887,20 @@ check_irq_entry(struct trace_iterator *iter, u32 flags,
-> >  		unsigned long addr, int depth)
-> >  {
-> >  	int cpu = iter->cpu;
-> > +	int *depth_irq;
-> >  	struct fgraph_data *data = iter->private;
-> > -	int *depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
-> >  
-> > -	if (flags & TRACE_GRAPH_PRINT_IRQS)
-> > +	/*
-> > +	 * We either display irqs, or we got called as
-> > +	 * graph event, and out private data do no exist.
-> 
-> "out private data do no exist" makes no sense.
-> 
-> > +	 * In both cases we bypass the irq check.
-> > +	 */
-> > +	if ((flags & TRACE_GRAPH_PRINT_IRQS) ||
-> > +	    (!data))
-> >  		return 0;
-> >  
-> > +	depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
-> > +
-> >  	/*
-> >  	 * We are inside the irq code
-> >  	 */
-> > @@ -925,12 +933,20 @@ static int
-> >  check_irq_return(struct trace_iterator *iter, u32 flags, int depth)
-> >  {
-> >  	int cpu = iter->cpu;
-> > +	int *depth_irq;
-> >  	struct fgraph_data *data = iter->private;
-> > -	int *depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
-> >  
-> > -	if (flags & TRACE_GRAPH_PRINT_IRQS)
-> > +	/*
-> > +	 * We either display irqs, or we got called as
-> > +	 * graph event, and out private data do no exist.
-> 
-> ditto.
-> 
-> -- Steve
-> 
-> > +	 * In both cases we bypass the irq check.
-> > +	 */
-> > +	if ((flags & TRACE_GRAPH_PRINT_IRQS) ||
-> > +	    (!data))
-> >  		return 0;
-> >  
-> > +	depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
-> > +
-> >  	/*
-> >  	 * We are not inside the irq code.
-> >  	 */
-> 
-> 
+On Fri, Sep 24, 2010 at 12:25 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> Hi Dan,
+>
+> On Thu, Sep 23, 2010 at 12:53:58PM -0700, Dan Williams wrote:
+>> > diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+>> > index 0df7864..635c60b 100644
+>> > --- a/include/linux/dmaengine.h
+>> > +++ b/include/linux/dmaengine.h
+>> > @@ -491,6 +491,47 @@ struct dma_device {
+>> >        void (*device_issue_pending)(struct dma_chan *chan);
+>> >  };
+>> >
+>> > +static inline int dmaengine_device_control(struct dma_chan *chan,
+>> > +                                          enum dma_ctrl_cmd cmd,
+>> > +                                          unsigned long arg)
+>> > +{
+>> > +       return chan->device->device_control(chan, cmd, arg);
+>> > +}
+>> > +
+>> > +static inline int dmaengine_slave_config(struct dma_chan *chan,
+>> > +                                         struct dma_slave_config *config)
+>> > +{
+>> > +       return dmaengine_device_control(chan, DMA_SLAVE_CONFIG,
+>> > +                       (unsigned long)config);
+>> > +}
+>> > +
+>> > +static inline int dmaengine_terminate_all(struct dma_chan *chan)
+>> > +{
+>> > +       return dmaengine_device_control(chan, DMA_TERMINATE_ALL, 0);
+>> > +}
+>> > +
+>> > +static inline struct dma_async_tx_descriptor *dmaengine_prep_slave_sg(
+>> > +               struct dma_chan *chan, struct scatterlist *sgl,
+>> > +               unsigned int sg_len, enum dma_data_direction direction,
+>> > +               unsigned long flags)
+>> > +{
+>> > +       return chan->device->device_prep_slave_sg(chan, sgl, sg_len, direction,
+>> > +                       flags);
+>> > +}
+>> > +
+>> > +static inline struct dma_async_tx_descriptor *dmaengine_prep_cyclic(
+>> > +               struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+>> > +               size_t period_len, enum dma_data_direction direction)
+>> > +{
+>> > +       return chan->device->device_prep_dma_cyclic(chan, buf_addr, buf_len,
+>> > +                       period_len, direction);
+>> > +}
+>> > +
+>>
+>> No strong disagreements on the above, the type safety of
+>> dmaengine_slave_config() is nice.
+>
+> So you have only small disagreements? ;) I can drop the dmaengine_prep_*
+> functions and only keep the device_control functions if like it better.
+>
 
-hi,
-attaching changed patch
+The prep versions may just be code churn, unless there is another
+advantage for having a helper... debug/tracing perhaps?
 
-thanks,
-jirka
+>>
+>> > +static inline int dmaengine_tx_submit(struct dma_async_tx_descriptor *desc)
+>> > +{
+>> > +       return desc->tx_submit(desc);
+>> > +}
+>>
+>> This one can drop the tx.
+>
+> You mean the function should be named dmaengine_submit?
 
----
-The check_irq_entry and check_irq_return could be called
-from graph event context. In such case there's no graph
-private data allocated. Adding checks to handle this case.
+Yes, the "tx" is often mistaken, understandably, for "transmit".
+Linus proposed renaming ->tx_submit() to just ->submit().  This helper
+would be a softer way to introduce that rename.
 
-wbr,
-jirka
-
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- kernel/trace/trace_functions_graph.c |   24 ++++++++++++++++++++----
- 1 files changed, 20 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index 02c708a..1390159 100644
---- a/kernel/trace/trace_functions_graph.c
-+++ b/kernel/trace/trace_functions_graph.c
-@@ -887,12 +887,20 @@ check_irq_entry(struct trace_iterator *iter, u32 flags,
- 		unsigned long addr, int depth)
- {
- 	int cpu = iter->cpu;
-+	int *depth_irq;
- 	struct fgraph_data *data = iter->private;
--	int *depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
- 
--	if (flags & TRACE_GRAPH_PRINT_IRQS)
-+	/*
-+	 * We either display irqs, or we got called as
-+	 * graph event, and private data do no exist.
-+	 * In both cases we bypass the irq check.
-+	 */
-+	if ((flags & TRACE_GRAPH_PRINT_IRQS) ||
-+	    (!data))
- 		return 0;
- 
-+	depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
-+
- 	/*
- 	 * We are inside the irq code
- 	 */
-@@ -925,12 +933,20 @@ static int
- check_irq_return(struct trace_iterator *iter, u32 flags, int depth)
- {
- 	int cpu = iter->cpu;
-+	int *depth_irq;
- 	struct fgraph_data *data = iter->private;
--	int *depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
- 
--	if (flags & TRACE_GRAPH_PRINT_IRQS)
-+	/*
-+	 * We either display irqs, or we got called as
-+	 * graph event, and private data do no exist.
-+	 * In both cases we bypass the irq check.
-+	 */
-+	if ((flags & TRACE_GRAPH_PRINT_IRQS) ||
-+	    (!data))
- 		return 0;
- 
-+	depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
-+
- 	/*
- 	 * We are not inside the irq code.
- 	 */
--- 
-1.7.1
-
+--
+Dan
