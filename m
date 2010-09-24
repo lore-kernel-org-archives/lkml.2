@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932789Ab0IXQru (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:47:50 -0400
-Received: from kroah.org ([198.145.64.141]:37076 "EHLO coco.kroah.org"
+	id S932994Ab0IXQsH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:48:07 -0400
+Received: from kroah.org ([198.145.64.141]:37064 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932932Ab0IXQe7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:34:59 -0400
+	id S932927Ab0IXQe6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:34:58 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:45 2010
-Message-Id: <20100924163345.068328091@clark.site>
+Message-Id: <20100924163344.968320360@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:31:36 -0700
+Date: Fri, 24 Sep 2010 09:31:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Andy Grover <andy.grover@oracle.com>,
+        "Steven J. Magnani" <steve@digidescorp.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [12/68] rds: fix a leak of kernel memory
+Subject: [11/68] net: Fix oops from tcp_collapse() when using splice()
 In-Reply-To: <20100924163357.GA15741@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,31 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Steven J. Magnani <steve@digidescorp.com>
 
-[ Upstream commit f037590fff3005ce8a1513858d7d44f50053cc8f ]
+[ Upstream commit baff42ab1494528907bf4d5870359e31711746ae ]
 
-struct rds_rdma_notify contains a 32 bits hole on 64bit arches,
-make sure it is zeroed before copying it to user.
+tcp_read_sock() can have a eat skbs without immediately advancing copied_seq.
+This can cause a panic in tcp_collapse() if it is called as a result
+of the recv_actor dropping the socket lock.
 
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Andy Grover <andy.grover@oracle.com>
+A userspace program that splices data from a socket to either another
+socket or to a file can trigger this bug.
+
+Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/rds/recv.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/tcp.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/rds/recv.c
-+++ b/net/rds/recv.c
-@@ -296,7 +296,7 @@ static int rds_still_queued(struct rds_s
- int rds_notify_queue_get(struct rds_sock *rs, struct msghdr *msghdr)
- {
- 	struct rds_notifier *notifier;
--	struct rds_rdma_notify cmsg;
-+	struct rds_rdma_notify cmsg = { 0 }; /* fill holes with zero */
- 	unsigned int count = 0, max_messages = ~0U;
- 	unsigned long flags;
- 	LIST_HEAD(copy);
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -1335,6 +1335,7 @@ int tcp_read_sock(struct sock *sk, read_
+ 		sk_eat_skb(sk, skb, 0);
+ 		if (!desc->count)
+ 			break;
++		tp->copied_seq = seq;
+ 	}
+ 	tp->copied_seq = seq;
+ 
 
 
