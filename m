@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757089Ab0IXQ7i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:59:38 -0400
-Received: from kroah.org ([198.145.64.141]:46060 "EHLO coco.kroah.org"
+	id S1757113Ab0IXQ7y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:59:54 -0400
+Received: from kroah.org ([198.145.64.141]:46054 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932537Ab0IXQ2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:28:01 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:16 2010
-Message-Id: <20100924162615.939091281@clark.site>
+	id S932530Ab0IXQ2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:28:00 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:15 2010
+Message-Id: <20100924162615.849369119@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:24:00 -0700
+Date: Fri, 24 Sep 2010 09:23:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [12/80] tcp: Prevent overzealous packetization by SWS logic.
+Subject: [11/80] tcp: select(writefds) dont hang up when a peer close connection
 In-Reply-To: <20100924162706.GA7381@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,55 +26,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
 
-[ Upstream commit 01f83d69844d307be2aa6fea88b0e8fe5cbdb2f4 ]
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-If peer uses tiny MSS (say, 75 bytes) and similarly tiny advertised
-window, the SWS logic will packetize to half the MSS unnecessarily.
+[ Upstream commit d84ba638e4ba3c40023ff997aa5e8d3ed002af36 ]
 
-This causes problems with some embedded devices.
+This issue come from ruby language community. Below test program
+hang up when only run on Linux.
 
-However for large MSS devices we do want to half-MSS packetize
-otherwise we never get enough packets into the pipe for things
-like fast retransmit and recovery to work.
+	% uname -mrsv
+	Linux 2.6.26-2-486 #1 Sat Dec 26 08:37:39 UTC 2009 i686
+	% ruby -rsocket -ve '
+	BasicSocket.do_not_reverse_lookup = true
+	serv = TCPServer.open("127.0.0.1", 0)
+	s1 = TCPSocket.open("127.0.0.1", serv.addr[1])
+	s2 = serv.accept
+	s2.close
+	s1.write("a") rescue p $!
+	s1.write("a") rescue p $!
+	Thread.new {
+	  s1.write("a")
+	}.join'
+	ruby 1.9.3dev (2010-07-06 trunk 28554) [i686-linux]
+	#<Errno::EPIPE: Broken pipe>
+	[Hang Here]
 
-Be careful also to handle the case where MSS > window, otherwise
-we'll never send until the probe timer.
+FreeBSD, Solaris, Mac doesn't. because Ruby's write() method call
+select() internally. and tcp_poll has a bug.
 
-Reported-by: ツ Leandro Melo de Sales <leandroal@gmail.com>
+SUS defined 'ready for writing' of select() as following.
+
+|  A descriptor shall be considered ready for writing when a call to an output
+|  function with O_NONBLOCK clear would not block, whether or not the function
+|  would transfer data successfully.
+
+That said, EPIPE situation is clearly one of 'ready for writing'.
+
+We don't have read-side issue because tcp_poll() already has read side
+shutdown care.
+
+|        if (sk->sk_shutdown & RCV_SHUTDOWN)
+|                mask |= POLLIN | POLLRDNORM | POLLRDHUP;
+
+So, Let's insert same logic in write side.
+
+- reference url
+  http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-core/31065
+  http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-core/31068
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- include/net/tcp.h |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ net/ipv4/tcp.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -519,8 +519,22 @@ extern unsigned int tcp_current_mss(stru
- /* Bound MSS / TSO packet size with the half of the window */
- static inline int tcp_bound_to_half_wnd(struct tcp_sock *tp, int pktsize)
- {
--	if (tp->max_window && pktsize > (tp->max_window >> 1))
--		return max(tp->max_window >> 1, 68U - tp->tcp_header_len);
-+	int cutoff;
-+
-+	/* When peer uses tiny windows, there is no use in packetizing
-+	 * to sub-MSS pieces for the sake of SWS or making sure there
-+	 * are enough packets in the pipe for fast recovery.
-+	 *
-+	 * On the other hand, for extremely large MSS devices, handling
-+	 * smaller than MSS windows in this way does make sense.
-+	 */
-+	if (tp->max_window >= 512)
-+		cutoff = (tp->max_window >> 1);
-+	else
-+		cutoff = tp->max_window;
-+
-+	if (cutoff && pktsize > cutoff)
-+		return max_t(int, cutoff, 68U - tp->tcp_header_len);
- 	else
- 		return pktsize;
- }
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -453,7 +453,8 @@ unsigned int tcp_poll(struct file *file,
+ 				if (sk_stream_wspace(sk) >= sk_stream_min_wspace(sk))
+ 					mask |= POLLOUT | POLLWRNORM;
+ 			}
+-		}
++		} else
++			mask |= POLLOUT | POLLWRNORM;
+ 
+ 		if (tp->urg_data & TCP_URG_VALID)
+ 			mask |= POLLPRI;
 
 
