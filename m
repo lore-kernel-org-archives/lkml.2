@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756921Ab0IXQcR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:32:17 -0400
-Received: from kroah.org ([198.145.64.141]:38520 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932800Ab0IXQ2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:28:50 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:20 2010
-Message-Id: <20100924162620.497230599@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:24:52 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>, Alex Elder <aelder@sgi.com>,
-        dann frazier <dannf@debian.org>
-Subject: [64/80] xfs: prevent reading uninitialized stack memory
-In-Reply-To: <20100924162706.GA7381@kroah.com>
+	id S1756931Ab0IXQc0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:32:26 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:46594 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756912Ab0IXQcQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:32:16 -0400
+Date: Fri, 24 Sep 2010 17:32:14 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: Sergei Shtylyov <sshtylyov@mvista.com>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 8/9] MIPS: Add a platform hook for swiotlb setup.
+Message-ID: <20100924163214.GA29252@linux-mips.org>
+References: <1285281496-24696-1-git-send-email-ddaney@caviumnetworks.com>
+ <1285281496-24696-9-git-send-email-ddaney@caviumnetworks.com>
+ <4C9CCD1B.506@mvista.com>
+ <4C9CCE42.3030309@caviumnetworks.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C9CCE42.3030309@caviumnetworks.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-stable review patch.  If anyone has any objections, please let us know.
+On Fri, Sep 24, 2010 at 09:13:54AM -0700, David Daney wrote:
 
-------------------
+> >>+#ifdef CONFIG_SWIOTLB
+> >>+ plat_swiotlb_setup();
+> >>+#endif
+> >
+> >We should avoid #ifdef's in function bodies. Why not defile an empty
+> >'inline' in the header above if CONFIG_SWIOTLB is not defined?
+> >
+> 
+> Good idea.  I will wait several days and collect any more feedback
+> and generate a new patch set.
 
-From: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+I'd also wait for a few more days so interested parties outside of the MIPS
+world will have a chance to comment.
 
-commit a122eb2fdfd78b58c6dd992d6f4b1aaef667eef9 upstream.
-
-The XFS_IOC_FSGETXATTR ioctl allows unprivileged users to read 12
-bytes of uninitialized stack memory, because the fsxattr struct
-declared on the stack in xfs_ioc_fsgetxattr() does not alter (or zero)
-the 12-byte fsx_pad member before copying it back to the user.  This
-patch takes care of it.
-
-Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-Reviewed-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: Alex Elder <aelder@sgi.com>
-Cc: dann frazier <dannf@debian.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- fs/xfs/linux-2.6/xfs_ioctl.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/fs/xfs/linux-2.6/xfs_ioctl.c
-+++ b/fs/xfs/linux-2.6/xfs_ioctl.c
-@@ -794,6 +794,8 @@ xfs_ioc_fsgetxattr(
- {
- 	struct fsxattr		fa;
- 
-+	memset(&fa, 0, sizeof(struct fsxattr));
-+
- 	xfs_ilock(ip, XFS_ILOCK_SHARED);
- 	fa.fsx_xflags = xfs_ip2xflags(ip);
- 	fa.fsx_extsize = ip->i_d.di_extsize << ip->i_mount->m_sb.sb_blocklog;
-
-
+  Ralf
