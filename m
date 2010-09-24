@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932398Ab0IXRJa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 13:09:30 -0400
-Received: from ppsw-32.csi.cam.ac.uk ([131.111.8.132]:51219 "EHLO
-	ppsw-32.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754496Ab0IXRJ2 (ORCPT
+	id S932506Ab0IXRJr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 13:09:47 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:33136 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932480Ab0IXRJp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 13:09:28 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4C9CDC70.5020508@cam.ac.uk>
-Date: Fri, 24 Sep 2010 18:14:24 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100909 Lightning/1.0b3pre Thunderbird/3.1.3
+	Fri, 24 Sep 2010 13:09:45 -0400
+Date: Fri, 24 Sep 2010 10:09:43 -0700
+From: Vernon Mauery <vernux@us.ibm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Keith Mannthey <kmannth@us.ibm.com>
+Subject: Re: [RFC][Patch] IBM Real-Time "SMI Free" mode driver -v4
+Message-ID: <20100924170943.GB10777@lucy>
+References: <20100921224610.GO13162@lucy>
+ <20100923221253.GA4960@lucy>
+ <20100923225346.GB4960@lucy>
+ <201009241512.39311.arnd@arndb.de>
+ <AANLkTimMWAk22gSn2cXA25VNJ1o3OX-mazJfFFd_+MH2@mail.gmail.com>
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?=C9ric_Piel?= <Eric.Piel@tremplin-utc.net>
-CC: Jean Delvare <khali@linux-fr.org>, Takashi Iwai <tiwai@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Torokhov <dtor@mail.ru>
-Subject: Re: [lm-sensors] [PATCH v2] lis3: Fix Oops with NULL platform data
-References: <s5heiclngqe.wl%tiwai@suse.de>	<20100924135802.GA18109@ericsson.com>	<s5hlj6r1b5p.wl%tiwai@suse.de>	<20100924163005.7704f63e@endymion.delvare> <4C9CC219.4090304@tremplin-utc.net>
-In-Reply-To: <4C9CC219.4090304@tremplin-utc.net>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=iso-8859-1; format=flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <AANLkTimMWAk22gSn2cXA25VNJ1o3OX-mazJfFFd_+MH2@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/10 16:22, Éric Piel wrote:
-> Op 24-09-10 16:30, Jean Delvare schreef:
->> Well, as long as the driver lives in drivers/hwmon and the hwmon
->> subsystem is maintained, it seems fair to consider the driver
->> maintained.
+On 24-Sep-2010 07:14 AM, Vernon Mauery wrote:
+>On Fri, Sep 24, 2010 at 6:12 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> On Friday 24 September 2010, Vernon Mauery wrote:
+[snip]
+>>> +                     if (rtl_cmd_type == RTL_ADDR_TYPE_MMIO)
+>>> +                             iowrite8((u8)cmd_port_val, rtl_cmd_iomem_addr);
+>>> +                     else
+>>> +                             outb((u8)cmd_port_val, rtl_cmd_port_addr);
 >>
->> That being said, I indeed would like all non-hwmon drivers to go away
->> from drivers/hwmon. Originally we were waiting for iio to settle first,
->> but apparently this is taking forever. The 4 drivers I would like to
->> kick are: ams, hdaps, lis3lv02d and applesmc. They are primarily
->> accelerometer device drivers. Not sure where to put them,
->> drivers/accel(erometer), drivers/misc, drivers/misc/accel(erometer),
->> drivers/input/accel(erometer)... Opinions welcome.
-> As maintainer of the lis3lv02d driver, I'd completely support the move too.
-> 
-> IMHO, an accelerometer is just another input device (usually with 2 or 3
-> axes),
-That is not actually all that true in general. There are an awful lot of parts
-that aren't even vaguely designed for 'human' input.
-In some restricted cases I'm happy to agree though and that definitely includes
-3 axis sensors with input specific features like those your driver covers.
+>> ioread/iowrite already has the capability to use both mmio and pio
+>> addresses. You can use ioport_map() to create an __iomem token that
+>> corresponds to your rtl_cmd_port_addr and get rid of the rtl_cmd_type
+>> variable.
+>
+>Thank you for that tip.  I will look into it and roll out another version.
 
-> so moving them to drivers/input/accel would make sense.
-Propose a move on linux-input and see what the response is.  Currently
-they are going in drivers/input/misc, but that is probably just because there
-aren't enough of them yet to justify their own directory.
+I looked into this and tested it on some hardware, but it doesn't work.  
+After more digging and poking, it looks like the reason is that the port 
+IO address is not within the x86 standard port IO range.
 
-Dmitry is taking them slowly (mainly I think because he wants the interfaces to
-be more pinned down).   The adxl34x driver is already there, Hemanth's
-cma3000 is close (either dropping some knobs in sysfs or working out
-naming that everyone interested can agree on).  I would imagine the awkward
-bits will be things like freefall detectors that no one can reasonably argue
-are a conventional form of 'human' input.
+I tried something like this:
 
-As an aside, we are trying to work out a unified interface between IIO and
-input for some elements and a userspace bridge where that doesn't make sense.
-There are ongoing (if rather quiet) discussions on this on linux-input / lkml.
-http://lkml.org/lkml/2010/9/21/167 I would certainly welcome any comments / 
-suggestions anyone would like to make.  The intent here is to pin down the
-naming conventions as independently as possible of the actual subsystem handling
-the device, but to keep them general enough as to be able to cover a wide range
-of different sensors.
- 
-Cheers,
+			addr = ioread32(&rtl_table->cmd_port_address);
+			plen = rtl_cmd_width/8;
+			if (rtl_cmd_type == RTL_ADDR_TYPE_MMIO)
+				rtl_cmd_addr = ioremap(addr, plen);
+			else
+				rtl_cmd_addr = ioport_map(addr, plen);
+			RTL_DEBUG("rtl_cmd_addr = %#llx\n", (u64)rtl_cmd_addr);
 
-Jonathan
+It printed out that rtl_cmd_addr was 0, meaning the ioport_map failed.  
+After more digging, it turns out that on at least one of the machines 
+this code is targeted for, the port IO address (from the first line 
+above) is 0x40000.  Even if this did get mapped, the IO_COND macro would 
+target it for MMIO access instead of PIO access.  So I don't think I can 
+use this method (even though it did make my code *a lot* nicer to read).
+
+Any suggestions?
+
+--Vernon
