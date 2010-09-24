@@ -1,88 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932977Ab0IXQfI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:35:08 -0400
-Received: from kroah.org ([198.145.64.141]:37035 "EHLO coco.kroah.org"
+	id S933021Ab0IXQpf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:45:35 -0400
+Received: from kroah.org ([198.145.64.141]:37137 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932742Ab0IXQez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:34:55 -0400
-Date: Fri, 24 Sep 2010 09:29:26 -0700
-From: Greg KH <greg@kroah.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "Roedel, Joerg" <Joerg.Roedel@amd.com>, Greg KH <gregkh@suse.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Erratum 383 fix for 32 bit x86 kernels
-Message-ID: <20100924162926.GA7627@kroah.com>
-References: <20100924115239.GA9817@amd.com>
- <20100924160205.GB21235@kroah.com>
- <20100924162433.GB7627@aftab>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100924162433.GB7627@aftab>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932973Ab0IXQfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:35:08 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:46 2010
+Message-Id: <20100924163346.006505467@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 24 Sep 2010 09:31:46 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Dan Carpenter <error27@gmail.com>
+Subject: [22/68] Staging: vt6655: fix buffer overflow
+In-Reply-To: <20100924163357.GA15741@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 24, 2010 at 06:24:34PM +0200, Borislav Petkov wrote:
-> From: Greg KH <greg@kroah.com>
-> Date: Fri, Sep 24, 2010 at 12:02:06PM -0400
-> 
-> > >  extern unsigned long setup_trampoline(void);
-> > > +extern void __init setup_trampoline_page_table(void);
-> > >  extern void __init reserve_trampoline_memory(void);
-> > >  #else
-> > >  static inline void reserve_trampoline_memory(void) {};
-> > > +extern void __init setup_trampoline_page_table(void) {};
-> > >  #endif /* CONFIG_X86_TRAMPOLINE */
-> > 
-> > I don't think that last setup_trampoline_page_table() line is correct
-> > here.
-> > 
-> > Shouldn't it be:
-> > 	static inline void setup_trampoline_page_table(void) {};
-> > instead?
-> > 
-> > Otherwise I get the following error building the .32 code with this
-> > patch:
-> > 	  CC      arch/x86/kernel/setup.o
-> > 	  arch/x86/kernel/setup.c: In function ‘setup_arch’:
-> > 	  arch/x86/kernel/setup.c:1001:2: error: implicit declaration of function ‘setup_trampoline_page_table’
-> > 
-> > Is this really how the code looks upstream?
-> > 
-> > Hm, even with changing the function prototype, I still get an error
-> > building on the .32-stable tree on x86-64, so I'm dropping this patch
-> > from there.
-> 
-> Yeah, Joerg forgot 8848a91068c018bc91f597038a0f41462a0f88a4.
-> 
-> > Also, it didn't apply cleanly to .32-stable, I had to apply this chunk
-> > by hand, no big deal.
-> > 
-> > So, why not I just take the original git commits that are in Linus's
-> > tree?  That should work, right?  If so, do I just need to use those two
-> > above-mentioned commits?  Or something else?  I prefer taking the
-> > original commits as it makes spelunking over time much easier.
-> 
-> Sure, you need
-> 
-> 1. fd89a137924e0710078c3ae855e7cec1c43cb845	<-- erratum fix
-> 2. 8848a91068c018bc91f597038a0f41462a0f88a4	<-- build fix
-> 3. b7d460897739e02f186425b7276e3fdb1595cea7	<-- VMSPLIT_* fix
-> 
-> in that order and they should cherry-pick fine.
-> 
-> Let me know if you need something tested on our end.
-> 
-> Thanks and sorry for the confusion.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-Ok, I'll do this for the next round of -stable kernel updates, this
-arrived too late for the one that just went out for review right now.
+------------------
 
-thanks,
+From: Dan Carpenter <error27@gmail.com>
 
-greg k-h
+commit dd173abfead903c7df54e977535973f3312cd307 upstream.
+
+"param->u.wpa_associate.wpa_ie_len" comes from the user.  We should
+check it so that the copy_from_user() doesn't overflow the buffer.
+
+Also further down in the function, we assume that if
+"param->u.wpa_associate.wpa_ie_len" is set then "abyWPAIE[0]" is
+initialized.  To make that work, I changed the test here to say that if
+"wpa_ie_len" is set then "wpa_ie" has to be a valid pointer or we return
+-EINVAL.
+
+Oddly, we only use the first element of the abyWPAIE[] array.  So I
+suspect there may be some other issues in this function.
+
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/staging/vt6655/wpactl.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
+
+--- a/drivers/staging/vt6655/wpactl.c
++++ b/drivers/staging/vt6655/wpactl.c
+@@ -767,9 +767,14 @@ static int wpa_set_associate(PSDevice pD
+     DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "wpa_ie_len = %d\n", param->u.wpa_associate.wpa_ie_len);
+ 
+ 
+-	if (param->u.wpa_associate.wpa_ie &&
+-	    copy_from_user(&abyWPAIE[0], param->u.wpa_associate.wpa_ie, param->u.wpa_associate.wpa_ie_len))
+-	    return -EINVAL;
++	if (param->u.wpa_associate.wpa_ie_len) {
++		if (!param->u.wpa_associate.wpa_ie)
++			return -EINVAL;
++		if (param->u.wpa_associate.wpa_ie_len > sizeof(abyWPAIE))
++			return -EINVAL;
++		if (copy_from_user(&abyWPAIE[0], param->u.wpa_associate.wpa_ie, param->u.wpa_associate.wpa_ie_len))
++			return -EFAULT;
++	}
+ 
+ 	if (param->u.wpa_associate.mode == 1)
+ 	    pMgmt->eConfigMode = WMAC_CONFIG_IBSS_STA;
+
+
