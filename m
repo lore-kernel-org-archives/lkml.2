@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932303Ab0IXUpX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 16:45:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48869 "EHLO mx1.redhat.com"
+	id S1757434Ab0IXUpc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 16:45:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11309 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932161Ab0IXUpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 16:45:19 -0400
+	id S932308Ab0IXUpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 16:45:30 -0400
 From: Eric Paris <eparis@redhat.com>
-Subject: [PATCH 3/6] secmark: export binary yes/no rather than kernel internal
-	secid
+Subject: [PATCH 4/6] security: secid_to_secctx returns len when data is NULL
 To: linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov,
         netfilter-devel@vger.kernel.org
 Cc: jmorris@namei.org, sds@tycho.nsa.gov, jengelh@medozas.de,
         paul.moore@hp.com, casey@schaufler-ca.com,
         linux-security-module@vger.kernel.org, netfilter@vger.kernel.org,
         mr.dash.four@googlemail.com
-Date: Fri, 24 Sep 2010 16:45:31 -0400
-Message-ID: <20100924204531.28355.20320.stgit@paris.rdu.redhat.com>
+Date: Fri, 24 Sep 2010 16:45:38 -0400
+Message-ID: <20100924204538.28355.32426.stgit@paris.rdu.redhat.com>
 In-Reply-To: <20100924204517.28355.42822.stgit@paris.rdu.redhat.com>
 References: <20100924204517.28355.42822.stgit@paris.rdu.redhat.com>
 User-Agent: StGIT/0.14.3
@@ -27,57 +26,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the nfconntrack export code sends the kernel internal secid to
-userspace in a couple of proc files and over netlink as an integer.  This
-is wrong.  This number is a kernel internal.  This patch changes the export
-code to output either 0 or 1 for this value.  A future patch will implement
-sending the name rather than the number in a new field.
+With the (long ago) interface change to have the secid_to_secctx functions
+do the string allocation instead of having the caller do the allocation we
+lost the ability to query the security server for the length of the
+upcoming string.  The SECMARK code would like to allocate a netlink skb
+with enough length to hold the string but it is just too unclean to do the
+string allocation twice or to do the allocation the first time and hold
+onto the string and slen.  This patch adds the ability to call
+security_secid_to_secctx() with a NULL data pointer and it will just set
+the slen pointer.
 
 Signed-off-by: Eric Paris <eparis@redhat.com>
 ---
 
- .../netfilter/nf_conntrack_l3proto_ipv4_compat.c   |    2 +-
- net/netfilter/nf_conntrack_netlink.c               |    2 +-
- net/netfilter/nf_conntrack_standalone.c            |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ security/selinux/ss/services.c |   11 +++++++++--
+ security/smack/smack_lsm.c     |    3 ++-
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
-diff --git a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
-index 244f7cb..053d7d3 100644
---- a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
-+++ b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
-@@ -149,7 +149,7 @@ static int ct_seq_show(struct seq_file *s, void *v)
- #endif
- 
- #ifdef CONFIG_NF_CONNTRACK_SECMARK
--	if (seq_printf(s, "secmark=%u ", ct->secmark))
-+	if (seq_printf(s, "secmark=%u ", ct->secmark ? 1 : 0))
- 		goto release;
- #endif
- 
-diff --git a/net/netfilter/nf_conntrack_netlink.c b/net/netfilter/nf_conntrack_netlink.c
-index 5bae1cd..3a50699 100644
---- a/net/netfilter/nf_conntrack_netlink.c
-+++ b/net/netfilter/nf_conntrack_netlink.c
-@@ -247,7 +247,7 @@ nla_put_failure:
- static inline int
- ctnetlink_dump_secmark(struct sk_buff *skb, const struct nf_conn *ct)
+diff --git a/security/selinux/ss/services.c b/security/selinux/ss/services.c
+index 73508af..1d4955a 100644
+--- a/security/selinux/ss/services.c
++++ b/security/selinux/ss/services.c
+@@ -998,7 +998,8 @@ static int context_struct_to_string(struct context *context, char **scontext, u3
  {
--	NLA_PUT_BE32(skb, CTA_SECMARK, htonl(ct->secmark));
-+	NLA_PUT_BE32(skb, CTA_SECMARK, htonl(ct->secmark ? 1 : 0));
+ 	char *scontextp;
+ 
+-	*scontext = NULL;
++	if (scontext)
++		*scontext = NULL;
+ 	*scontext_len = 0;
+ 
+ 	if (context->len) {
+@@ -1015,6 +1016,9 @@ static int context_struct_to_string(struct context *context, char **scontext, u3
+ 	*scontext_len += strlen(sym_name(&policydb, SYM_TYPES, context->type - 1)) + 1;
+ 	*scontext_len += mls_compute_context_len(context);
+ 
++	if (!scontext)
++		return 0;
++
+ 	/* Allocate space for the context; caller must free this space. */
+ 	scontextp = kmalloc(*scontext_len, GFP_ATOMIC);
+ 	if (!scontextp)
+@@ -1054,7 +1058,8 @@ static int security_sid_to_context_core(u32 sid, char **scontext,
+ 	struct context *context;
+ 	int rc = 0;
+ 
+-	*scontext = NULL;
++	if (scontext)
++		*scontext = NULL;
+ 	*scontext_len  = 0;
+ 
+ 	if (!ss_initialized) {
+@@ -1062,6 +1067,8 @@ static int security_sid_to_context_core(u32 sid, char **scontext,
+ 			char *scontextp;
+ 
+ 			*scontext_len = strlen(initial_sid_to_string[sid]) + 1;
++			if (!scontext)
++				goto out;
+ 			scontextp = kmalloc(*scontext_len, GFP_ATOMIC);
+ 			if (!scontextp) {
+ 				rc = -ENOMEM;
+diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+index c448d57..b95d7b1 100644
+--- a/security/smack/smack_lsm.c
++++ b/security/smack/smack_lsm.c
+@@ -3005,7 +3005,8 @@ static int smack_secid_to_secctx(u32 secid, char **secdata, u32 *seclen)
+ {
+ 	char *sp = smack_from_secid(secid);
+ 
+-	*secdata = sp;
++	if (secdata)
++		*secdata = sp;
+ 	*seclen = strlen(sp);
  	return 0;
- 
- nla_put_failure:
-diff --git a/net/netfilter/nf_conntrack_standalone.c b/net/netfilter/nf_conntrack_standalone.c
-index eb973fc..a5761d3 100644
---- a/net/netfilter/nf_conntrack_standalone.c
-+++ b/net/netfilter/nf_conntrack_standalone.c
-@@ -169,7 +169,7 @@ static int ct_seq_show(struct seq_file *s, void *v)
- #endif
- 
- #ifdef CONFIG_NF_CONNTRACK_SECMARK
--	if (seq_printf(s, "secmark=%u ", ct->secmark))
-+	if (seq_printf(s, "secmark=%u ", ct->secmark ? 1 : 0))
- 		goto release;
- #endif
- 
+ }
 
