@@ -1,49 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757564Ab0IXVHF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 17:07:05 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:52111 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757481Ab0IXVHD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 17:07:03 -0400
-Date: Fri, 24 Sep 2010 17:06:59 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: ltt-dev@lists.casi.polymtl.ca, linux-kernel@vger.kernel.org,
-        Rp private <rp-private@svcs.cs.pdx.edu>
-Cc: "Paul E. McKenney" <paulmck@us.ibm.com>
-Subject: [RELEASE] Userspace RCU 0.4.8
-Message-ID: <20100924210659.GA14449@Krystal>
-References: <20100922201830.GB7669@Krystal>
+	id S1757652Ab0IXVIE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 17:08:04 -0400
+Received: from borg.medozas.de ([188.40.89.202]:56590 "EHLO borg.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753591Ab0IXVIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 17:08:01 -0400
+Date: Fri, 24 Sep 2010 23:08:00 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Eric Paris <eparis@redhat.com>
+cc: linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov,
+        netfilter-devel@vger.kernel.org, jmorris@namei.org, sds@tycho.nsa.gov,
+        paul.moore@hp.com, casey@schaufler-ca.com,
+        linux-security-module@vger.kernel.org, netfilter@vger.kernel.org,
+        mr.dash.four@googlemail.com
+Subject: Re: [PATCH 5/6] conntrack: export lsm context rather than internal
+ secid via netlink
+In-Reply-To: <20100924204545.28355.92767.stgit@paris.rdu.redhat.com>
+Message-ID: <alpine.LNX.2.01.1009242307310.3599@obet.zrqbmnf.qr>
+References: <20100924204517.28355.42822.stgit@paris.rdu.redhat.com> <20100924204545.28355.92767.stgit@paris.rdu.redhat.com>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100922201830.GB7669@Krystal>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 17:05:48 up 2 days,  1:07,  1 user,  load average: 0.14, 0.15,
-	0.10
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-liburcu is a LGPLv2.1 userspace RCU (read-copy-update) library. This data
-synchronization library provides read-side access which scales linearly with the
-number of cores. It does so by allowing multiples copies of a given data
-structure to live at the same time, and by monitoring the data structure
-accesses to detect grace periods after which memory reclamation is possible.
 
-Changelog for Userspace RCU 0.4.8:
+On Friday 2010-09-24 22:45, Eric Paris wrote:
+>+#ifdef CONFIG_NF_CONNTRACK_SECMARK
+>+static int ctnetlink_nlmsg_secctx_size(const struct nf_conn *ct)
+>+{
+>+	int len;
+>+
+>+	security_secid_to_secctx(ct->secmark, NULL, &len);
+>+
+>+	return sizeof(char) * len;
+>+}
+>+#endif
 
-- Add missing header to package, fix build error introduced in 0.4.7.
-
-Project website: http://lttng.org/urcu
-Download link: http://www.lttng.org/files/urcu/
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+sizeof(char) is defined to be 1, so it's a little redundant.
