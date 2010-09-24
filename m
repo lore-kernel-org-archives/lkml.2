@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756721Ab0IXOde (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 10:33:34 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:35242 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754955Ab0IXOdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 10:33:33 -0400
-Message-ID: <4C9CB6A1.9010904@kernel.dk>
-Date: Fri, 24 Sep 2010 16:33:05 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Valerie Aurora <vaurora@redhat.com>
-CC: Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, neilb@suse.de, viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 6/7 v3] overlay: hybrid overlay filesystem prototype
-References: <20100920180404.939991832@szeredi.hu> <20100920180447.854260354@szeredi.hu> <20100922232110.GC26268@shell>
-In-Reply-To: <20100922232110.GC26268@shell>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756749Ab0IXOed (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 10:34:33 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39948 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753616Ab0IXOeb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 10:34:31 -0400
+Date: Fri, 24 Sep 2010 15:57:13 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: john stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-api@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        netdev@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v6 0/8] ptp: IEEE 1588 hardware clock support
+Message-ID: <20100924155713.45be6513@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100924135001.GB3113@riccoc20.at.omicron.at>
+References: <cover.1285261533.git.richard.cochran@omicron.at>
+	<1285270733.2587.46.camel@localhost.localdomain>
+	<20100924135001.GB3113@riccoc20.at.omicron.at>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-09-23 01:21, Valerie Aurora wrote:
-> On Mon, Sep 20, 2010 at 08:04:10PM +0200, Miklos Szeredi wrote:
->> From: Miklos Szeredi <mszeredi@suse.cz>
->>
->> This overlay filesystem is a hybrid of entirely filesystem based
->> (unionfs, aufs) and entierly VFS based (union mounts) solutions.
+> > Instead, I think having the id hanging off the class driver is much
+> > better, as it allows mapping the actual hardware to the id more clearly.
+> > 
+> > So I'd drop the "timesource" listing. And maybe change "id" to
+> > "clock_id" so its a little more clear what the id is for.
 > 
-> [...]
-> 
->> +static int ovl_copy_up_data(struct path *old, struct path *new, loff_t len)
->> +{
->> +	struct file *old_file;
->> +	struct file *new_file;
->> +	int error = 0;
->> +
->> +	if (len == 0)
->> +		return 0;
->> +
->> +	old_file = path_open(old, O_RDONLY);
->> +	if (IS_ERR(old_file))
->> +		return PTR_ERR(old_file);
->> +
->> +	new_file = path_open(new, O_WRONLY);
->> +	if (IS_ERR(new_file)) {
->> +		error = PTR_ERR(new_file);
->> +		goto out_fput;
->> +	}
->> +
->> +	/* FIXME: copy up sparse files efficiently */
->> +	while (len) {
->> +		loff_t offset = new_file->f_pos;
->> +		size_t this_len = OVL_COPY_UP_CHUNK_SIZE;
->> +		long bytes;
->> +
->> +		if (len < this_len)
->> +			this_len = len;
->> +
->> +		if (signal_pending_state(TASK_KILLABLE, current))
->> +			return -EINTR;
->> +
->> +		bytes = do_splice_direct(old_file, &offset, new_file, this_len,
->> +				 SPLICE_F_MOVE);
-> 
-> Interruptible copyup is good.  But it looks like splice setup is kind
-> of heavyweight and we should do it as seldom as possible.
-> 
-> What about implementing splice flag SPLICE_F_INTERRUPTIBLE instead?
+> Okay, I will drop /sys/class/timesource (hope Alan Cox agrees :)
 
-The pipe alloc and such? That is lazily done and sticks around.
+It makes sense to hang anything off the physical id
 
--- 
-Jens Axboe
+> I threw it out there mostly for the sake of discussion. I imagined
+> that there could be other properties in that directory, like time
+> scale (TAI, UTC, etc). But it seems like we don't really need anything
+> in that direction.
 
+They can still hang off the physical device. Thats really a detail
+
+> > interrupts are awfully frequent, so systems concerned with power-saving
+> > and deep idles probably would like something that could be done at a
+> > more coarse interval.
+> 
+> We could always make the pulse rate programmable, for power-saving
+> applications.
+
+I would expect the kernel drivers to be responsible for
+- Turning off when they can
+- Picking rates that are power optimal for the requirement
+
+The latter is a bit interesting as I don't see anything in any of the
+timer APIs to express accuracy (a problem we have in kernel too).
+Historically it simply hasn't mattered.
