@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757857Ab0IXTWT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 15:22:19 -0400
-Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:47201 "EHLO
-	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757855Ab0IXTWP (ORCPT
+	id S1757836Ab0IXTWL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 15:22:11 -0400
+Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:56939 "EHLO
+	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757800Ab0IXTWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 15:22:15 -0400
+	Fri, 24 Sep 2010 15:22:02 -0400
 From: matt mooney <mfm@muteddisk.com>
 To: kernel-janitors@vger.kernel.org
-Cc: Maik Broemme <mbroemme@plusserver.de>, linux-fbdev@vger.kernel.org,
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 24/24] video: change to new flag variable
-Date: Fri, 24 Sep 2010 12:17:34 -0700
-Message-Id: <a46ccb29d75d29ec20a10c9a11acd5e12a693316.1285355033.git.mfm@muteddisk.com>
+Subject: [PATCH 16/24] pci: change to new flag variable
+Date: Fri, 24 Sep 2010 12:17:26 -0700
+Message-Id: <f8ffc630c8a56ebd5da0aa2227d63fecc21d4ee7.1285355033.git.mfm@muteddisk.com>
 X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1dd0f4a1709a9b139fe87f2b311cc0d129900b3f.1285355033.git.mfm@muteddisk.com>
+In-Reply-To: <facbf79cadc81f9043e89160b7b3b8a90926aba1.1285355033.git.mfm@muteddisk.com>
 References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
  <9968d4260be8850200cc9c7dfe08addf611468b4.1285355033.git.mfm@muteddisk.com>
  <036514b5dd23c5af14303519d79d60d79adccbee.1285355033.git.mfm@muteddisk.com>
@@ -31,14 +31,6 @@ References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddi
  <c2f1ef5590660ae574e9bdaf7136213741081404.1285355033.git.mfm@muteddisk.com>
  <efe88633e146de3e173afea14f777c41c37e5db2.1285355033.git.mfm@muteddisk.com>
  <facbf79cadc81f9043e89160b7b3b8a90926aba1.1285355033.git.mfm@muteddisk.com>
- <f8ffc630c8a56ebd5da0aa2227d63fecc21d4ee7.1285355033.git.mfm@muteddisk.com>
- <0472f95473283ce75285e458b22b86ff791d7a42.1285355033.git.mfm@muteddisk.com>
- <75da5e0e0a547b4acbc7cfbdf35c29a24512ca37.1285355033.git.mfm@muteddisk.com>
- <30c1ad7f4200136e00723fd76da1e58200e6e5b0.1285355033.git.mfm@muteddisk.com>
- <06e70fe4f8a51f65f3582c353329939a8548d897.1285355033.git.mfm@muteddisk.com>
- <a2fd5831df37b0a306ab4ca51d2e86ea7ee06425.1285355033.git.mfm@muteddisk.com>
- <58b418c2e7311bffb13606a6b94e33ddb7569346.1285355033.git.mfm@muteddisk.com>
- <1dd0f4a1709a9b139fe87f2b311cc0d129900b3f.1285355033.git.mfm@muteddisk.com>
 In-Reply-To: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
 References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -49,22 +41,21 @@ Replace EXTRA_CFLAGS with ccflags-y.
 
 Signed-off-by: matt mooney <mfm@muteddisk.com>
 ---
- drivers/video/intelfb/Makefile |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
+ drivers/pci/Makefile |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/video/intelfb/Makefile b/drivers/video/intelfb/Makefile
-index 6c782d3..f7d631e 100644
---- a/drivers/video/intelfb/Makefile
-+++ b/drivers/video/intelfb/Makefile
-@@ -4,7 +4,4 @@ intelfb-y := intelfbdrv.o intelfbhw.o
- intelfb-$(CONFIG_FB_INTEL_I2C) += intelfb_i2c.o
- intelfb-objs := $(intelfb-y)
+diff --git a/drivers/pci/Makefile b/drivers/pci/Makefile
+index dc1aa09..dcd7ace 100644
+--- a/drivers/pci/Makefile
++++ b/drivers/pci/Makefile
+@@ -65,6 +65,4 @@ obj-$(CONFIG_PCI_SYSCALL) += syscall.o
  
--ifdef CONFIG_FB_INTEL_DEBUG
--#EXTRA_CFLAGS += -DDEBUG -DVERBOSE -DREGDUMP
--EXTRA_CFLAGS += -DDEBUG -DREGDUMP
+ obj-$(CONFIG_PCI_STUB) += pci-stub.o
+ 
+-ifeq ($(CONFIG_PCI_DEBUG),y)
+-EXTRA_CFLAGS += -DDEBUG
 -endif
-+ccflags-$(CONFIG_FB_INTEL_DEBUG) := -DDEBUG -DREGDUMP
++ccflags-$(CONFIG_PCI_DEBUG) := -DDEBUG
 -- 
 1.7.2.1
 
