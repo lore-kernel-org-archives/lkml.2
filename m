@@ -1,63 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612Ab0IXFd7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 01:33:59 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:38446 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750971Ab0IXFd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 01:33:58 -0400
-Date: Fri, 24 Sep 2010 06:33:45 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm- fixes
-Message-ID: <alpine.DEB.2.00.1009240631250.3738@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752493Ab0IXFmw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 01:42:52 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:51337 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137Ab0IXFmv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 01:42:51 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20100924053648.GA5453@cr0.nay.redhat.com>
+References: <AANLkTinGJmAzdd=HOKZYSh69F6T9HMznOKW5BS90=Q-4@mail.gmail.com>
+	<20100924053648.GA5453@cr0.nay.redhat.com>
+Date: Fri, 24 Sep 2010 07:42:50 +0200
+Message-ID: <AANLkTimDtYF_ZNGvH-UxWrFyMsxjzKfsgyDTJnjt70Hs@mail.gmail.com>
+Subject: Re: Long maintenance kernel versions.
+From: Geoffrey Said <geoffrey@2x.com>
+To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
+Cc: stable@kernel.org, linux-kernel@vger.kernel.org, greg@kroah.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Thanks for the prompt reply,
 
-Hi Linus
+but this puts us at a disadvantage as we will not know which kernel
+will be long term supported when starting the development process.
 
-Pretty trivial, one idr log spam in nouveau, the radeon fix is only for 
-people with switchable, and a ttm fix.
+Take our case for the 34 kernel.  I knew that SuSE were going to use
+the 34 kernel in their 11.3 and since it was the latest we started
+work on the integration.  Now after the work is almost over, we hear
+that it will not be maintained anymore and we need to move to 35.  I
+do not think that this is a good system for people like us which have
+limited resources at their disposal.
 
-Dave.
+Can I suggest that their is a road map and long term maintenance
+kernels are ear marked before hand by the major Linux distributions?
+This will enable us to wait and integrate kernels fully confident that
+they will be long term supported.
 
-The following changes since commit 1ce1e41c1b61a992077bd1c45c6c3fd6a8b10c02:
+Thanks
+Geoffrey Said
 
-  Merge branch 'sched-fixes-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip (2010-09-21 13:22:10 -0700)
+On Fri, Sep 24, 2010 at 7:36 AM, Américo Wang <xiyou.wangcong@gmail.com> wrote:
+> On Fri, Sep 24, 2010 at 07:10:09AM +0200, Geoffrey Said wrote:
+>>To whom it may concern.
+>>
+>>I would like to put forward the following questions.  Hope that I am
+>>not making a fool of myself!
+>>
+>>How is the procedure by which a certain kernel version is declared as
+>>a long maintenance version?
+>
+>
+> This mainly depends on how many major Linux distributions rely on
+> that version of kernel, AFAIK.
+>
+>>Is the version decided before or after the release of the stable kernel?
+>
+> After.
+>
+>>And where can I check for planned long term maintenance versions?
+>>
+>
+> http://en.wikipedia.org/wiki/Linux_kernel
+>
+>
 
-are available in the git repository at:
 
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
 
-Ben Skeggs (1):
-      drm/nouveau: fix panels using straps-based mode detection
+-- 
+Geoffrey Said
+Software Developer
+2X Software - http://www.2x.com
+Developers of virtual computing software
+2X VirtualDesktopServer - 2X ApplicationServer - 2X LoadBalancer - 2X
+ThinClientServer
 
-Daniel J Blueman (4):
-      drm: ttm sparse fixes.
-      drm: fix trivial coding errors
-      drm: radeon cleanup fixes...
-      vgaarb: trivial fix
-
-Dave Airlie (1):
-      drm/radeon: don't allow device to be opened if powered down
-
-Francisco Jerez (1):
-      drm/ttm: Clear the ghost cpu_writers flag on ttm_buffer_object_transfer.
-
- drivers/gpu/drm/drm_buffer.c                |    6 +++---
- drivers/gpu/drm/nouveau/nouveau_connector.c |    6 ++++--
- drivers/gpu/drm/radeon/atombios.h           |    2 +-
- drivers/gpu/drm/radeon/r600.c               |    2 +-
- drivers/gpu/drm/radeon/radeon_kms.c         |    4 ++++
- drivers/gpu/drm/ttm/ttm_bo_util.c           |    1 +
- drivers/gpu/drm/ttm/ttm_page_alloc.c        |    8 ++++----
- drivers/gpu/vga/vgaarb.c                    |    2 +-
- 8 files changed, 19 insertions(+), 12 deletions(-)
+Tel: +356 2258 3800
+Fax:+356 2137 7078
