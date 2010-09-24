@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758158Ab0IXVlQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 17:41:16 -0400
-Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:45384 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753463Ab0IXVlO (ORCPT
+	id S1758173Ab0IXVls (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 17:41:48 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42914
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753463Ab0IXVlr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 17:41:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=message-id:date
-	:from:mime-version:to:cc:subject:references:in-reply-to
-	:content-type; q=dns; s=sasl; b=JO6UMO7lQaQ8jR3/TCLa7nKKVUBwibA1
-	2o/04jQw+osy/qJfN1QxXGqn3fEXvANFm5yn2fzfQVl/hTk8jGgqenh/NSiin6x7
-	R6g/EDfd95er3stOj0F9KYQ9blnBUzqy6lG6ktHhloFyfCSFK7K7IS7e2UxDE5f5
-	b9wCSJ+wKj8=
-Message-ID: <4C9D1AEF.6090307@pobox.com>
-Date: Fri, 24 Sep 2010 17:41:03 -0400
-From: Mark Lord <mlord@pobox.com>
-Organization: Real-Time Remedies Inc.
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9)
- Gecko/20100915 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org, hch@lst.de,
-        IDE/ATA development list <linux-ide@vger.kernel.org>
-Subject: Re: [RFT PATCH] amiga, atari floppy: Use one request queue per disk
-References: <1285271646-2768-1-git-send-email-vgoyal@redhat.com>
- <4C9CEFD6.3000106@kernel.dk> <20100924202106.GC7145@redhat.com>
-In-Reply-To: <20100924202106.GC7145@redhat.com>
-Content-Type: multipart/mixed; boundary="------------060005010505000109070903"
-X-Pobox-Relay-ID: 7141E274-C824-11DF-BBA1-030CEE7EF46B-82205200!a-pb-sasl-quonix.pobox.com
+	Fri, 24 Sep 2010 17:41:47 -0400
+Date: Fri, 24 Sep 2010 14:42:07 -0700 (PDT)
+Message-Id: <20100924.144207.245411336.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: nbowler@elliptictech.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] ip : take care of last fragment in ip_append_data
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1285049787.2323.797.camel@edumazet-laptop>
+References: <1285013853.2323.148.camel@edumazet-laptop>
+	<1285018272.2323.243.camel@edumazet-laptop>
+	<1285049787.2323.797.camel@edumazet-laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------060005010505000109070903
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Tue, 21 Sep 2010 08:16:27 +0200
 
-Ensure that 'sysctl_hung_task_timeout_secs' is defined
-even when CONFIG_DETECT_HUNG_TASK is not set.
-This way we can safely reference it without need for
-#ifdefs elsewhere in the code.  eg. in block/blk-exec.c
+> [PATCH] ip : take care of last fragment in ip_append_data
+> 
+> While investigating a bit, I found ip_fragment() slow path was taken
+> because ip_append_data() provides following layout for a send(MTU +
+> N*(MTU - 20)) syscall :
+> 
+> - one skb with 1500 (mtu) bytes
+> - N fragments of 1480 (mtu-20) bytes (before adding IP header)
+> last fragment gets 17 bytes of trail data because of following bit:
+> 
+> 	if (datalen == length + fraggap)
+> 		alloclen += rt->dst.trailer_len;
+> 
+> Then esp4 adds 16 bytes of data (while trailer_len is 17... hmm...
+> another bug ?)
+> 
+> In ip_fragment(), we notice last fragment is too big (1496 + 20) > mtu,
+> so we take slow path, building another skb chain.
+> 
+> In order to avoid taking slow path, we should correct ip_append_data()
+> to make sure last fragment has real trail space, under mtu...
+> 
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 
-Signed-off-by: Mark Lord <mlord@pobox.com>
-
-Jens: use the attachment.  My email client is having a fit today.
-
---- a/include/linux/sched.h	2010-09-20 19:56:53.000000000 -0400
-+++ b/include/linux/sched.h	2010-09-24 17:22:01.707291995 -0400
-@@ -336,6 +336,9 @@
-  extern int proc_dohung_task_timeout_secs(struct ctl_table *table, int write,
-  					 void __user *buffer,
-  					 size_t *lenp, loff_t *ppos);
-+#else
-+/* Avoid need for ifdefs elsewhere in the code */
-+enum { sysctl_hung_task_timeout_secs = 0 };
-  #endif
-  
-  /* Attach to any functions which should be ignored in wchan output. */
-
---------------060005010505000109070903
-Content-Type: text/x-patch;
- name="fix_blk_exec_compile_error.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="fix_blk_exec_compile_error.patch"
-
---- a/include/linux/sched.h	2010-09-20 19:56:53.000000000 -0400
-+++ b/include/linux/sched.h	2010-09-24 17:22:01.707291995 -0400
-@@ -336,6 +336,9 @@
- extern int proc_dohung_task_timeout_secs(struct ctl_table *table, int write,
- 					 void __user *buffer,
- 					 size_t *lenp, loff_t *ppos);
-+#else
-+/* Avoid need for ifdefs elsewhere in the code */
-+enum { sysctl_hung_task_timeout_secs = 0 };
- #endif
- 
- /* Attach to any functions which should be ignored in wchan output. */
-
---------------060005010505000109070903--
+Applied, thanks Eric.
