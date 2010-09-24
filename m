@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932212Ab0IXPHT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 11:07:19 -0400
-Received: from xenotime.net ([72.52.115.56]:52344 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751651Ab0IXPHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 11:07:18 -0400
-Date: Fri, 24 Sep 2010 08:07:07 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
-Cc: linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: Any SYSRQ key to force mode switch to console mode when using
- KMS?
-Message-Id: <20100924080707.ba98fa1e.rdunlap@xenotime.net>
-In-Reply-To: <19611.32996.817920.499437@elektron.ikp.physik.tu-darmstadt.de>
-References: <19601.1301.803816.92851@elektron.ikp.physik.tu-darmstadt.de>
-	<20100921151033.80e61747.randy.dunlap@oracle.com>
-	<19609.53242.674915.369484@elektron.ikp.physik.tu-darmstadt.de>
-	<4C9A1FB7.9050902@oracle.com>
-	<19611.8986.142128.168878@elektron.ikp.physik.tu-darmstadt.de>
-	<19611.20403.865248.695829@elektron.ikp.physik.tu-darmstadt.de>
-	<20100923080212.ca4be1f6.rdunlap@xenotime.net>
-	<19611.32996.817920.499437@elektron.ikp.physik.tu-darmstadt.de>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756779Ab0IXPHr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 11:07:47 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:19603
+	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755029Ab0IXPHq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 11:07:46 -0400
+X-SpamScore: -13
+X-BigFish: VS-13(zz1411I1432N98dNzz1202hzzz2dh2a8h2a8h61h)
+X-Spam-TCS-SCL: 0:0
+Date: Fri, 24 Sep 2010 10:07:35 -0500
+From: Scott Wood <scottwood@freescale.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: christophe leroy <christophe.leroy@c-s.fr>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+        Anton Vorontsov <avorontsov@ru.mvista.com>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH] spi_mpc8xxx: issue with using definition of pram in
+ Device Tree
+Message-ID: <20100924100735.47b49580@udp111988uds.am.freescale.net>
+In-Reply-To: <20100924071006.GA21318@angua.secretlab.ca>
+References: <20100916070503.10046C7391@messagerie.si.c-s.fr>
+	<20100924071006.GA21318@angua.secretlab.ca>
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 24 Sep 2010 15:07:36.0768 (UTC) FILETIME=[3912DC00:01CB5BFA]
+X-Reverse-DNS: de01egw02.freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Sep 2010 18:31:32 +0200 Uwe Bonnes wrote:
+On Fri, 24 Sep 2010 01:10:06 -0600
+Grant Likely <grant.likely@secretlab.ca> wrote:
 
-[just adding cc's]
+> On Thu, Sep 16, 2010 at 09:05:03AM +0200, christophe leroy wrote:
+> > This patch applies to 2.6.34.7 and 2.6.35.4
+> > It fixes an issue during the probe for CPM1 with definition of parameter ram from DTS
+> > 
+> > Signed-off-by: christophe leroy <christophe.leroy@c-s.fr>
+> 
+> I'm sorry, I don't understand the fix from the given description.
+> What is the problem, and why is cpm_muram_alloc_fixed() the wrong
+> thing to call on CPM1?  Does CPM2 still need it?
 
-> >>>>> "Randy" == Randy Dunlap <rdunlap@xenotime.net> writes:
-> 
-> 
->     Randy> Is CONFIG_DRM_KMS_HELPER enabled in your kernel .config file?  If
->     Randy> not, we need to find out how to enable it (there is no kconfig
->     Randy> prompt for it).
-> 
-> Yes, it is enabled
-> 
->     Randy> Can you check if Alt-Sysrq-H (help) lists V for "force-fb(V)"?
-> Yes, it is listed.
-> 
-> And yes, my last experiments where with ALT-CTL-sysreq, so doomed for non
-> function due to operator error.
-> 
-> However:
-> When running X, X.Org X Server 1.9.0 on Thinkpad R50 RV250, Alt-Sysrq-v
-> switches to an all-black display. By console switching with ALT-CLT-F1 I
-> get back to the booting console and ALT-CLT-F7 brings me back to X.  Running
-> on the console and calling Alt-Sysrq-v prints
->  SysRq : Restore framebuffer console
-> 
-> Is there some omission by the distribution or my setup that Alt-Sysrq-v when
-> running X results in an all-black screen?
-> 
-> And when I hit the hibernate problem, the screen stays black even with a
-> console switch after Alt-Sysrq-v
-> 
-> Bye
-> -- 
-> Uwe Bonnes                bon@elektron.ikp.physik.tu-darmstadt.de
-> 
-> Institut fuer Kernphysik  Schlossgartenstrasse 9  64289 Darmstadt
-> --------- Tel. 06151 162516 -------- Fax. 06151 164321 ----------
+I don't see how cpm_muram_alloc_fixed() can be used safely at all.  If
+you need a fixed address, it shouldn't be part of the general
+allocation pool, or something else might get it first.
 
+-Scott
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
