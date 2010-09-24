@@ -1,98 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758025Ab0IXTwC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 15:52:02 -0400
-Received: from mga11.intel.com ([192.55.52.93]:29639 "EHLO mga11.intel.com"
+	id S1757993Ab0IXT5L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 15:57:11 -0400
+Received: from cantor.suse.de ([195.135.220.2]:56174 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757793Ab0IXTv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 15:51:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,231,1283756400"; 
-   d="scan'208";a="840691315"
-Subject: Re: [PATCH] iwl3945: queue the right work if the scan needs to be
- aborted
-From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
-To: Florian Mickler <florian@mickler.org>
-Cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "Chatre, Reinette" <reinette.chatre@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "Berg, Johannes" <johannes.berg@intel.com>, Zhu Yi <yi.zhu@intel.com>,
-        "Cahill, Ben M" <ben.m.cahill@intel.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1285345323-4250-1-git-send-email-florian@mickler.org>
-References: <1285345323-4250-1-git-send-email-florian@mickler.org>
-Content-Type: text/plain
-Date: Fri, 24 Sep 2010 12:51:08 -0700
-Message-Id: <1285357868.12594.8.camel@wwguy-ubuntu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.1 
-Content-Transfer-Encoding: 7bit
+	id S1753168Ab0IXT5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 15:57:10 -0400
+Date: Fri, 24 Sep 2010 12:30:27 -0700
+From: Greg KH <gregkh@suse.de>
+To: Pavan Savoy <pavan_savoy@ti.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org
+Subject: Re: drivers:staging:ti-st: merge issues.
+Message-ID: <20100924193027.GA17728@suse.de>
+References: <AANLkTinbEH0Z61z69ThcM9-GoHW4s5nRZig8b6v8uC8r@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinbEH0Z61z69ThcM9-GoHW4s5nRZig8b6v8uC8r@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Florian,
+On Fri, Sep 24, 2010 at 02:11:50PM -0500, Pavan Savoy wrote:
+> Stephen,
+> 
+> The merges bbf96b3cb54a237f1a66883390637e30bb4407ba and the merge on
+> 759b9f0fe0c5be0d9fa1b92e14e093961312f6ac has caused the
+> drivers/staging/ti-st to get corrupted, I had submitted few patches
+> and it was all merged.
+> 
+> basically the merge for bbf96b3cb54a237f1a66883390637e30bb4407ba for
+> drivers/staging/ti-st/ shouldn't have happened.
+> The head for the drivers/staging/ti-st/ should have been @
+> 83ef41f0858b48cce4f8ca23f674ec55d50bf47d
 
-On Fri, 2010-09-24 at 09:22 -0700, Florian Mickler wrote:
-> iwl3945's scan_completed calls into the mac80211 stack which triggers a
-> warn on if there is no scan outstanding.
-> 
-> This can be avoided by not calling scan_completed but abort_scan in
-> iwl3945_request_scan  in the done: branch of the function which is used
-> as an error out.
-> 
-> The done: branch seems to be an error-out branch, as, for example, if
-> iwl_is_ready(priv) returns false  the done: branch is executed.
-> 
-> NOTE:
-> I'm not familiar with the driver at all.
-> I just quickly scanned as a reaction to
-> 
-> https://bugzilla.kernel.org/show_bug.cgi?id=17722
-> 
-> the users of scan_completed in the  iwl3945 driver and noted the odd
-> discrepancy between the comment above this instance and the comment in
-> mac80211 scan_completed function.
-> 
-> Signed-off-by: Florian Mickler <florian@mickler.org>
-> ---
->  drivers/net/wireless/iwlwifi/iwl-agn-lib.c  |    2 +-
->  drivers/net/wireless/iwlwifi/iwl3945-base.c |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
-> index 9dd9e64..8fd00a6 100644
-> --- a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
-> +++ b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
-> @@ -1411,7 +1411,7 @@ void iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
->  	clear_bit(STATUS_SCAN_HW, &priv->status);
->  	clear_bit(STATUS_SCANNING, &priv->status);
->  	/* inform mac80211 scan aborted */
-> -	queue_work(priv->workqueue, &priv->scan_completed);
-> +	queue_work(priv->workqueue, &priv->abort_scan);
->  }
->  
->  int iwlagn_manage_ibss_station(struct iwl_priv *priv,
-> diff --git a/drivers/net/wireless/iwlwifi/iwl3945-base.c b/drivers/net/wireless/iwlwifi/iwl3945-base.c
-> index 59a308b..d31661c 100644
-> --- a/drivers/net/wireless/iwlwifi/iwl3945-base.c
-> +++ b/drivers/net/wireless/iwlwifi/iwl3945-base.c
-> @@ -3018,7 +3018,7 @@ void iwl3945_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
->  	clear_bit(STATUS_SCANNING, &priv->status);
->  
->  	/* inform mac80211 scan aborted */
-> -	queue_work(priv->workqueue, &priv->scan_completed);
-> +	queue_work(priv->workqueue, &priv->abort_scan);
->  }
->  
->  static void iwl3945_bg_restart(struct work_struct *data)
+I have no idea what this all means, sorry.
 
-Thanks for sending the patch, the scan operation in iwlwifi just being
-modified and the changes you have no longer apply.please check the
-latest kernel.
+Are these linux-next merges?
 
-Thanks
-Wey
+If I need to apply a patch to the staging-next, or Linus's tree, please
+let me know.
 
+confused,
+
+greg k-h
