@@ -1,38 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231Ab0IXKom (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 06:44:42 -0400
-Received: from www.tglx.de ([62.245.132.106]:45199 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752672Ab0IXKol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 06:44:41 -0400
-Date: Fri, 24 Sep 2010 12:45:55 +0200
-From: "Hans J. Koch" <hjk@linutronix.de>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "Hans J. Koch" <hjk@linutronix.de>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/5] uio hotplug support
-Message-ID: <20100924104555.GC1819@silverbox.local>
-References: <m1y6b48973.fsf@fess.ebiederm.org>
- <20100917205946.GF2522@local>
- <m139t451b4.fsf_-_@fess.ebiederm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m139t451b4.fsf_-_@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755292Ab0IXKtB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 06:49:01 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:35659 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754106Ab0IXKs7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 06:48:59 -0400
+From: Keng-Yu Lin <keng-yu.lin@canonical.com>
+To: mjg59@srcf.ucam.org, len.brown@intel.com, alan-jenkins@tuffmail.co.uk,
+        superm1@ubuntu.com, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Keng-Yu Lin <keng-yu.lin@canonical.com>
+Subject: [PATCH v4] dell-laptop: Add debugfs support
+Date: Fri, 24 Sep 2010 18:48:43 +0800
+Message-Id: <1285325323-4528-1-git-send-email-keng-yu.lin@canonical.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1284702459-31646-1-git-send-email-keng-yu.lin@canonical.com>
+References: <1284702459-31646-1-git-send-email-keng-yu.lin@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 20, 2010 at 12:19:59AM -0700, Eric W. Biederman wrote:
-> 
-> Implement the ability to hotunplug a uio device while file handles
-> are still open without crashing.
+Export the status of RF killswitch through debugfs.
 
-Could you please create patches that apply on top of your already
-accepted UIO changes?
+The killswitch status is obtained by the SMI to BIOS. Exporting this status
+through debugfs can help identify the issue with the misbehaving firmware.
 
-Thanks,
-Hans
+Signed-off-by: Keng-Yu Lin <keng-yu.lin@canonical.com>
+---
+ drivers/platform/x86/dell-laptop.c |   77 ++++++++++++++++++++++++++++++++++++
+ 1 files changed, 77 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/platform/x86/dell-laptop.c b/drivers/platform/x86/dell-laptop.c
+index 4413975..a943da5 100644
+--- a/drivers/platform/x86/dell-laptop.c
++++ b/drivers/platform/x86/dell-laptop.c
+@@ -25,6 +25,8 @@
+ #include <linux/mm.h>
+ #include <linux/i8042.h>
+ #include <linux/slab.h>
++#include <linux/debugfs.h>
++#include <linux/seq_file.h>
+ #include "../../firmware/dcdbas.h"
+ 
+ #define BRIGHTNESS_TOKEN 0x7d
+@@ -325,6 +327,75 @@ static const struct rfkill_ops dell_rfkill_ops = {
+ 	.query = dell_rfkill_query,
+ };
+ 
++static struct dentry *dell_laptop_dir;
++
++static int dell_debugfs_show(struct seq_file *s, void *data)
++{
++	int status;
++
++	get_buffer();
++	dell_send_request(buffer, 17, 11);
++	status = buffer->output[1];
++	release_buffer();
++
++	seq_printf(s, "status:\t0x%X\n", status);
++	seq_printf(s, "Hardware switch supported:   %lu\n",
++		   status & BIT(0));
++	seq_printf(s, "Wifi locator supported:      %lu\n",
++		  (status & BIT(1)) >> 1);
++	seq_printf(s, "Wifi is supported:           %lu\n",
++		  (status & BIT(2)) >> 2);
++	seq_printf(s, "Bluetooth is supported:      %lu\n",
++		  (status & BIT(3)) >> 3);
++	seq_printf(s, "WWAN is supported:           %lu\n",
++		  (status & BIT(4)) >> 4);
++	seq_printf(s, "Wireless keyboard supported: %lu\n",
++		  (status & BIT(5)) >> 5);
++	seq_printf(s, "Wifi is installed:           %lu\n",
++		  (status & BIT(8)) >> 8);
++	seq_printf(s, "Bluetooth is installed:      %lu\n",
++		  (status & BIT(9)) >> 9);
++	seq_printf(s, "WWAN is installed:           %lu\n",
++		  (status & BIT(10)) >> 10);
++	seq_printf(s, "Hardware switch is on:       %lu\n",
++		  (status & BIT(16)) >> 16);
++	seq_printf(s, "Wifi is blocked:             %lu\n",
++		  (status & BIT(17)) >> 17);
++	seq_printf(s, "Bluetooth is blocked:        %lu\n",
++		  (status & BIT(18)) >> 18);
++	seq_printf(s, "WWAN is blocked:             %lu\n",
++		  (status & BIT(19)) >> 19);
++
++	seq_printf(s, "\nhwswitch_state:\t0x%X\n", hwswitch_state);
++	seq_printf(s, "Wifi controlled by switch:      %lu\n",
++		   hwswitch_state & BIT(0));
++	seq_printf(s, "Bluetooth controlled by switch: %lu\n",
++		   hwswitch_state & BIT(1) >> 1);
++	seq_printf(s, "WWAN controlled by switch:      %lu\n",
++		   hwswitch_state & BIT(2) >> 2);
++	seq_printf(s, "Wireless switch config locked:  %lu\n",
++		   hwswitch_state & BIT(7) >> 7);
++	seq_printf(s, "Wifi locator enabled:           %lu\n",
++		   hwswitch_state & BIT(8) >> 8);
++	seq_printf(s, "Wifi locator setting locked:    %lu\n",
++		   hwswitch_state & BIT(15) >> 15);
++
++	return 0;
++}
++
++static int dell_debugfs_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, dell_debugfs_show, inode->i_private);
++}
++
++static const struct file_operations dell_debugfs_fops = {
++	.owner = THIS_MODULE,
++	.open = dell_debugfs_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++
+ static void dell_update_rfkill(struct work_struct *ignored)
+ {
+ 	if (wifi_rfkill)
+@@ -556,6 +627,11 @@ static int __init dell_init(void)
+ 		goto fail_filter;
+ 	}
+ 
++	dell_laptop_dir = debugfs_create_dir("dell_laptop", NULL);
++	if (dell_laptop_dir != NULL)
++		debugfs_create_file("rfkill", 0444, dell_laptop_dir, NULL,
++				    &dell_debugfs_fops);
++
+ #ifdef CONFIG_ACPI
+ 	/* In the event of an ACPI backlight being available, don't
+ 	 * register the platform controller.
+@@ -615,6 +691,7 @@ fail_platform_driver:
+ 
+ static void __exit dell_exit(void)
+ {
++	debugfs_remove_recursive(dell_laptop_dir);
+ 	i8042_remove_filter(dell_laptop_i8042_filter);
+ 	cancel_delayed_work_sync(&dell_rfkill_work);
+ 	backlight_device_unregister(dell_backlight_device);
+-- 
+1.7.1
 
