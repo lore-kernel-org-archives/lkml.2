@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932338Ab0IXOYY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 10:24:24 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:52927 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752514Ab0IXOYX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 10:24:23 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vernon Mauery <vernux@us.ibm.com>
-Subject: Re: [RFC][Patch] IBM Real-Time "SMI Free" mode driver -v4
-Date: Fri, 24 Sep 2010 16:24:18 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>
-References: <20100921224610.GO13162@lucy> <201009241512.39311.arnd@arndb.de> <AANLkTimMWAk22gSn2cXA25VNJ1o3OX-mazJfFFd_+MH2@mail.gmail.com>
-In-Reply-To: <AANLkTimMWAk22gSn2cXA25VNJ1o3OX-mazJfFFd_+MH2@mail.gmail.com>
+	id S1756667Ab0IXO3l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 10:29:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64212 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752642Ab0IXO3k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 10:29:40 -0400
+Date: Fri, 24 Sep 2010 10:29:27 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: huang ying <huang.ying.caritas@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Huang Ying <ying.huang@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/6] x86, NMI, Add symbol definition for NMI magic constants
+Message-ID: <20100924142927.GA18363@redhat.com>
+References: <1284087065-32722-1-git-send-email-ying.huang@intel.com>
+ <20100921214847.GF26290@redhat.com>
+ <b151e9f1ec3a162781b380e026f90711.squirrel@www.firstfloor.org>
+ <20100922160705.GK26290@redhat.com>
+ <AANLkTi=gYa5aEhrQAgpgfopoyW_1v0TJsnQ7bSbTV52i@mail.gmail.com>
+ <20100923141651.GL26290@redhat.com>
+ <AANLkTi=7kG+PGrQFkWETBSu37SPYxXeXNihB2eBFc6sG@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009241624.19118.arnd@arndb.de>
-X-Provags-ID: V02:K0:UjTIav98t971M1AHYtPbJQZkqc1rKVuZ1U2QbT1+AXA
- wMVMzeK3mdfFpIWfr2QxutF6Xv9kEzbmY7wSigURUJqGEfszz/
- 4ugUM+IGLQjJOPdF+JI8neyaxaRStZ43spmi9WEMpM0fvjl9se
- tvnLOQtaKXDOqrHgWilMwMQ3A5XfgCwzg3kLQUh2Xfd91NRjfd
- 73CtEpWUcp/9vUE6KBLpw==
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=7kG+PGrQFkWETBSu37SPYxXeXNihB2eBFc6sG@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 24 September 2010, Vernon Mauery wrote:
-> >> +static DEFINE_MUTEX(rtl_lock);
-> >> +static struct ibm_rtl_table __iomem *rtl_table = NULL;
-> >> +static void __iomem *ebda_map;
-> >> +static void __iomem *rtl_cmd_iomem_addr = NULL;
-> >> +static u32 rtl_cmd_port_addr;
-> >> +static enum rtl_addr_type rtl_cmd_type;
-> >> +static u8 rtl_cmd_width;
+On Fri, Sep 24, 2010 at 07:50:16PM +0800, huang ying wrote:
+> On Thu, Sep 23, 2010 at 10:16 PM, Don Zickus <dzickus@redhat.com> wrote:
+> >> On some system, there is some hardware error log in BMC/BIOS. The
+> >> hardware error log can be gotten via IPMI or BIOS menu. Otherwise, can
+> >> we get some useful info for unknown NMI? If we can, can we collect the
+> >> info, then print it on console and save it into flash via ERST (part
+> >> of APEI too) before panic?
 > >
-> > This is somewhat inconsistent, some of these are implicitly initialized,
-> > others have an explicit "= NULL". I would recommend leaving out the
-> > initialization, which is the historic way to do this in the kernel.
+> > Ok.  Does the BIOS/BMC automatically do this?  Can we just print a message
+> > on panic saying checking your BIOS/BMC logs for more info?
 > 
-> The variables that have an explicit initialization are the variables
-> that I read before I write.  It just looks funny to me to read a
-> variable that hasn't been initialized.  But I can axe the
-> initializations for the sake of consistency.
+> Yes. BIOS/BMC automatically do that. And I will add it to panic message.
+> 
+> > I would love to add code to gather more useful info for unknown NMIs, but
+> > is it expected that HEST does some of this?  I guess what I am trying to
+> > figure out, if we are going to put intelligence to detect a HEST enabled
+> > machine and panic when unknown NMI comes along (presumably from HEST??),
+> > then can we leverage HEST at all to understand why the NMI happened or
+> > point the user to the BIOS/BMC to get more info.  In other words, what
+> > value do we get HEST other than we detect its there, lets panic.
+> 
+> Yes. HEST can be used to report some hardware error information. I am
+> working on that now.
+> 
+> >> HEST is defined in ACPI spec 4.0 and later version in section named
+> >> APEI (ACPI Platform Error Interface). It is used to describe the error
+> >> sources of system. It should be available only on server platform.
+> >
+> > Ok.  Does the kernel have intelligence to use it or the BIOS yet?
+> 
+> HEST works in kernel BIOS cooperative way. I am working on a HEST
+> driver which will get notified for NMI and collect the error
+> information reported by BIOS. But It is possible that some systems
+> have only BMC/BIOS log and do not report that to OS except unknown
+> NMI. The unknown NMI panic logic is for these systems.
 
-Ok. Global variables are by definition initialized to zero.
-Old gcc versions used to allocate space in the .data section
-if you had explicit = NULL statements while they would end
-up in .bss otherwise, resulting in a smaller binary image.
+Ah ok, thanks for the info.  I think adding the info to the panic message
+would be valuable.  I have no more objections to your patch now. :-)
 
-With newer gcc versions, it doesn't make a difference, but
-many people have the "don't initialize globals to zero" meme
-hardcoded to their brains now ;-)
+I appreciate your patience for clue-ing me in on how HEST works!
 
-	Arnd
+Cheers,
+Don
