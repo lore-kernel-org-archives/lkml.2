@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932792Ab0IXQ2s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:28:48 -0400
-Received: from kroah.org ([198.145.64.141]:38484 "EHLO coco.kroah.org"
+	id S932852Ab0IXQ3C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:29:02 -0400
+Received: from kroah.org ([198.145.64.141]:38588 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932744Ab0IXQ2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:28:45 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:20 2010
-Message-Id: <20100924162620.022536179@clark.site>
+	id S932838Ab0IXQ27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:28:59 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:21 2010
+Message-Id: <20100924162621.285713719@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:24:47 -0700
+Date: Fri, 24 Sep 2010 09:25:01 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, greg@kroah.com
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, avi@redhat.com,
-        mtosatti@redhat.com
-Subject: [59/80] KVM: VMX: Fix host GDT.LIMIT corruption
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Mel Gorman <mel@csn.ul.ie>, Dave Chinner <david@fromorbit.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        David Rientjes <rientjes@google.com>
+Subject: [73/80] mm: page allocator: drain per-cpu lists after direct reclaim allocation fails
 In-Reply-To: <20100924162706.GA7381@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,48 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Mel Gorman <mel@csn.ul.ie>
 
-From: Avi Kivity <avi@redhat.com>
+commit 9ee493ce0a60bf42c0f8fd0b0fe91df5704a1cbf upstream.
 
-commit 3444d7da1839b851eefedd372978d8a982316c36 upstream.
+When under significant memory pressure, a process enters direct reclaim
+and immediately afterwards tries to allocate a page.  If it fails and no
+further progress is made, it's possible the system will go OOM.  However,
+on systems with large amounts of memory, it's possible that a significant
+number of pages are on per-cpu lists and inaccessible to the calling
+process.  This leads to a process entering direct reclaim more often than
+it should increasing the pressure on the system and compounding the
+problem.
 
-vmx does not restore GDT.LIMIT to the host value, instead it sets it to 64KB.
-This means host userspace can learn a few bits of host memory.
+This patch notes that if direct reclaim is making progress but allocations
+are still failing that the system is already under heavy pressure.  In
+this case, it drains the per-cpu lists and tries the allocation a second
+time before continuing.
 
-Fix by reloading GDTR when we load other host state.
-
-Signed-off-by: Avi Kivity <avi@redhat.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reviewed-by: Christoph Lameter <cl@linux.com>
+Cc: Dave Chinner <david@fromorbit.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- arch/x86/kvm/vmx.c |    4 ++++
- 1 file changed, 4 insertions(+)
 
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -177,6 +177,7 @@ static u64 construct_eptp(unsigned long
- static DEFINE_PER_CPU(struct vmcs *, vmxarea);
- static DEFINE_PER_CPU(struct vmcs *, current_vmcs);
- static DEFINE_PER_CPU(struct list_head, vcpus_on_cpu);
-+static DEFINE_PER_CPU(struct desc_ptr, host_gdt);
+---
+ mm/page_alloc.c |   20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
+
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1843,6 +1843,7 @@ __alloc_pages_direct_reclaim(gfp_t gfp_m
+ 	struct page *page = NULL;
+ 	struct reclaim_state reclaim_state;
+ 	struct task_struct *p = current;
++	bool drained = false;
  
- static unsigned long *vmx_io_bitmap_a;
- static unsigned long *vmx_io_bitmap_b;
-@@ -812,6 +813,7 @@ static void __vmx_load_host_state(struct
- 		wrmsrl(MSR_KERNEL_GS_BASE, vmx->msr_host_kernel_gs_base);
- 	}
- #endif
-+	load_gdt(&__get_cpu_var(host_gdt));
- }
+ 	cond_resched();
  
- static void vmx_load_host_state(struct vcpu_vmx *vmx)
-@@ -1314,6 +1316,8 @@ static int hardware_enable(void *garbage
+@@ -1861,14 +1862,25 @@ __alloc_pages_direct_reclaim(gfp_t gfp_m
  
- 	ept_sync_global();
+ 	cond_resched();
  
-+	store_gdt(&__get_cpu_var(host_gdt));
+-	if (order != 0)
+-		drain_all_pages();
++	if (unlikely(!(*did_some_progress)))
++		return NULL;
+ 
+-	if (likely(*did_some_progress))
+-		page = get_page_from_freelist(gfp_mask, nodemask, order,
++retry:
++	page = get_page_from_freelist(gfp_mask, nodemask, order,
+ 					zonelist, high_zoneidx,
+ 					alloc_flags, preferred_zone,
+ 					migratetype);
 +
- 	return 0;
++	/*
++	 * If an allocation failed after direct reclaim, it could be because
++	 * pages are pinned on the per-cpu lists. Drain them and try again
++	 */
++	if (!page && !drained) {
++		drain_all_pages();
++		drained = true;
++		goto retry;
++	}
++
+ 	return page;
  }
  
 
