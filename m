@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757308Ab0IXSZF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 14:25:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50106 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757241Ab0IXSZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 14:25:02 -0400
-Date: Fri, 24 Sep 2010 14:24:37 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        linux-ide@vger.kernel.org
-Subject: Re: hibernation hangs with ATA errors (lockup_detector bug)
-Message-ID: <20100924182437.GR26290@redhat.com>
-References: <4C03C608.1040600@gmail.com>
- <20100601135004.GP15159@redhat.com>
- <4C051D44.7040203@gmail.com>
- <20100602184459.GA15159@redhat.com>
- <4C0B3E94.6020506@gmail.com>
- <4C80B338.6020701@gmail.com>
- <20100903135613.GV4879@redhat.com>
- <4C9CBF4A.9060302@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C9CBF4A.9060302@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1757310Ab0IXS1y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 14:27:54 -0400
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:32823 "HELO
+	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756389Ab0IXS1w convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 14:27:52 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=CCkdzHRHN/bWdd+hgzaV/8x1NZzPkOnFLGQihmOzk8rvCtUxVsdxUlcaU3rAmRsKJyfuuhStKp22tPacLXCNXYuGzE4GruqAfTfo0BedWdaz6GnXCoNYKxPAjHO5EXOi;
+Date: Fri, 24 Sep 2010 11:27:48 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>, Brian Bloniarz <phunge0@hotmail.com>,
+        Charles Butterfield <charles.butterfield@nextcentury.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stefan Becker <chemobejk@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH v2 1/4] resources: ensure alignment callback doesn't
+ allocate below available start
+Message-ID: <20100924112748.3b784624@jbarnes-desktop>
+In-Reply-To: <AANLkTikiEsqReicJxurQXf7GghKQjJ3agooefs59eULC@mail.gmail.com>
+References: <20100917223109.24687.17697.stgit@bob.kio>
+	<20100917223212.24687.3519.stgit@bob.kio>
+	<20100924100733.2e7fa2ac@jbarnes-desktop>
+	<AANLkTikiEsqReicJxurQXf7GghKQjJ3agooefs59eULC@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 24, 2010 at 06:10:02PM +0300, Jiri Slaby wrote:
-> On 09/03/2010 04:56 PM, Don Zickus wrote:
-> > On Fri, Sep 03, 2010 at 10:35:04AM +0200, Jiri Slaby wrote:
-> >> On 06/06/2010 08:22 AM, Jiri Slaby wrote:
-> >>> On 06/02/2010 08:44 PM, Don Zickus wrote:
-> >>>> --- a/kernel/watchdog.c
-> >>>> +++ b/kernel/watchdog.c
-> >>>> @@ -550,8 +550,7 @@ cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
-> >>>>  		break;
-> >>>>  	case CPU_ONLINE:
-> >>>>  	case CPU_ONLINE_FROZEN:
-> >>>> -		if (watchdog_enable(hotcpu))
-> >>>> -			return NOTIFY_BAD;
-> >>>> +		watchdog_enable(hotcpu)
-> >>>
-> >>> This fixes the problem indeed.
-> >>
-> >> Hi, was this fixed somehow? I still use this hunk and don't know if it
-> >> is needed:
-> > 
-> > I have to go re-review the problem again.  I might have forgot to bring it
-> > in.  Thanks for reminding me!
+On Fri, 24 Sep 2010 11:15:54 -0700
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> On Fri, Sep 24, 2010 at 10:07 AM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> >
+> > Applied this series.  It's way bigger than I'd like at this point, but
+> > it does fix some regressions, so I'll give Linus the option of pulling
+> > it in my next pull request.  If he declines, we'll put it into -next
+> > and tag it for inclusion into the stable series.
 > 
-> Reminder #2 :). Any updates?
+> I definitely am not going to pull this series for 2.6.36.
+> 
+> I could possibly take this first one that only prepares for the real
+> change and doesn't actually change anything in itself, but switching
+> around the order of allocations after -rc5 would be crazy. Yes, it may
+> help some people, but we have absolutely no idea who it could hurt. So
+> the whole thing is definitely something for the merge window (and
+> preferably pretty early there too)
 
-No. I suck.  I was sidetracked on other stuff.  Let me put that together
-today.
+Ok that's settled then (though I was secretly hoping you'd pull &
+then release 2.6.36 without even compile testing).
 
-Thanks again for reminding me.
+It's all ready and queued up, I'll send you a pull request early on so
+we can get some good test coverage.
 
-Cheers,
-Don
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
