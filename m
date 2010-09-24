@@ -1,623 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758345Ab0IXWsy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 18:48:54 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:38644 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753687Ab0IXWsw (ORCPT
+	id S1758361Ab0IXWx7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 18:53:59 -0400
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:52333 "EHLO
+	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756789Ab0IXWx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 18:48:52 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6116"; a="55523025"
-Message-ID: <4C9D2AD2.4030102@codeaurora.org>
-Date: Fri, 24 Sep 2010 16:48:50 -0600
-From: Kenneth Heitke <kheitke@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.11pre) Gecko/20100922 Shredder/3.1.5pre
+	Fri, 24 Sep 2010 18:53:58 -0400
+Date: Fri, 24 Sep 2010 15:53:53 -0700
+From: "Ira W. Snyder" <iws@ovro.caltech.edu>
+To: Dan Williams <dan.j.williams@intel.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFCv1 1/2] dmaengine: add support for scatterlist to
+ scatterlist transfers
+Message-ID: <20100924225352.GD24654@ovro.caltech.edu>
+References: <1285357571-23377-1-git-send-email-iws@ovro.caltech.edu>
+ <1285357571-23377-2-git-send-email-iws@ovro.caltech.edu>
+ <AANLkTimfZa+N51Tww_pWFqtqMmcYYkH_V0V_P1Qizt5b@mail.gmail.com>
+ <20100924212443.GA24654@ovro.caltech.edu>
+ <1285365194.21375.22.camel@dwillia2-linux>
+ <20100924220419.GC24654@ovro.caltech.edu>
 MIME-Version: 1.0
-To: Ben Dooks <ben-linux@fluff.org>, khali@linux-fr.org,
-        linux-i2c@vger.kernel.org
-CC: linux-arm-msm@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        srinidhi kasagar <srinidhi.kasagar@stericsson.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: Single-wire Serial Bus Interface for Qualcomm MSM
- chipsets
-References: <1279734768-8436-1-git-send-email-kheitke@codeaurora.org>
-In-Reply-To: <1279734768-8436-1-git-send-email-kheitke@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100924220419.GC24654@ovro.caltech.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.0 (ovro.ovro.caltech.edu); Fri, 24 Sep 2010 15:53:54 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben,
+On Fri, Sep 24, 2010 at 03:04:19PM -0700, Ira W. Snyder wrote:
+> On Fri, Sep 24, 2010 at 02:53:14PM -0700, Dan Williams wrote:
+> > On Fri, 2010-09-24 at 14:24 -0700, Ira W. Snyder wrote:
+> > > On Fri, Sep 24, 2010 at 01:40:56PM -0700, Dan Williams wrote:
+> > > > I don't think any dma channels gracefully handle descriptors that were
+> > > > prepped but not submitted.  You would probably need to submit the
+> > > > backlog, poll for completion, and then return the error.
+> > > > Alternatively, the expectation is that descriptor allocations are
+> > > > transient, i.e. once previously submitted transactions are completed
+> > > > the descriptors will return to the available pool.  So you could do
+> > > > what async_tx routines do and just poll for a descriptor.
+> > > >
+> > > 
+> > > Can you give me an example? Even some pseudocode would help.
+> > 
+> > Here is one from do_async_gen_syndrome() in crypto/async_tx/async_pq.c:
+> > 
+> >         /* Since we have clobbered the src_list we are committed
+> >          * to doing this asynchronously.  Drivers force forward
+> >          * progress in case they can not provide a descriptor
+> >          */
+> >         for (;;) {
+> >                 tx = dma->device_prep_dma_pq(chan, dma_dest,
+> >                                              &dma_src[src_off],
+> >                                              pq_src_cnt,
+> >                                              &coefs[src_off], len,
+> >                                              dma_flags);
+> >                 if (likely(tx))
+> >                         break;  
+> >                 async_tx_quiesce(&submit->depend_tx);
+> >                 dma_async_issue_pending(chan);
+> >         }       
+> > 
+> > > The other DMAEngine functions (dma_async_memcpy_*()) don't do anything
+> > > with the descriptor if submit fails. Take for example
+> > > dma_async_memcpy_buf_to_buf(). If tx->tx_submit(tx); fails, any code
+> > > using it has no way to return the descriptor to the free pool.
+> > > 
+> > > Does tx_submit() implicitly return descriptors to the free pool if it
+> > > fails?
+> > 
+> > No, submit() failures are a hold over from when the ioatdma driver used
+> > to perform additional descriptor allocation at ->submit() time.  After
+> > prep() the expectation is that the engine is just waiting to be told
+> > "go" and can't fail.  The only reason ->submit() retains a return code
+> > is to support the "cookie" based method for polling for operation
+> > completion.  A dma driver should handle all descriptor submission
+> > failure scenarios at prep time.
+> > 
+> 
+> Ok, that's more like what I expected. So we still need the try forever
+> code similar to the above. I can add that for the next version.
+> 
 
-Can you comment on whether or not you would be willing to accept this 
-driver as part of the I2C subsystem.  I have an updated patch that I'm 
-ready to submit if you are willing to consider this driver.
+When coding this change, I've noticed one problem that would break my
+driver. I cannot issue dma_async_issue_pending() on the channel while
+creating the descriptors, since this will start transferring the
+previously submitted DMA descriptors. This breaks the external hardware
+control requirement.
 
-thank you,
-Ken
+Imagine this scenario:
+1) device is not yet setup for external control (nothing is pulsing the pins)
+2) dma_async_memcpy_sg_to_sg()
 
-On 07/21/2010 11:52 AM, Kenneth Heitke wrote:
-> This bus driver supports the Single-wire Serial Bus Interface (SSBI)
-> controller in the Qualcomm MSM SOCs.  SSBI is not an I2C but is
-> functionally related enough such that it is able to leverage the I2C
-> framework.
->
-> Unlike I2C, SSBI is a point-to-point connection, and therefore there is no
-> need to specify a slave device address. The SSBI implementation
-> overrides the slave device address to be a device register address
-> instead.  This restricts the client drivers from using the SMBus
-> communication APIs unless they update the address field (addr) of the
-> i2c_client structure prior to every SMBus function call.  Instead it is
-> recommended to use the i2c_transfer function where the address is
-> specified as part of the i2c_msg structure.  The i2c_transfer function
-> also provides more flexibility for performing multiple transactions in a
-> single function call.
->
-> Signed-off-by: Kenneth Heitke<kheitke@codeaurora.org>
-> ---
->   drivers/i2c/busses/Kconfig    |   10 +
->   drivers/i2c/busses/Makefile   |    1 +
->   drivers/i2c/busses/i2c-ssbi.c |  472 +++++++++++++++++++++++++++++++++++++++++
->   include/linux/i2c-ssbi.h      |   33 +++
->   4 files changed, 516 insertions(+), 0 deletions(-)
->   create mode 100644 drivers/i2c/busses/i2c-ssbi.c
->   create mode 100755 include/linux/i2c-ssbi.h
->
-> diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-> index bceafbf..690d601 100644
-> --- a/drivers/i2c/busses/Kconfig
-> +++ b/drivers/i2c/busses/Kconfig
-> @@ -569,6 +569,16 @@ config I2C_SIMTEC
->   	  This driver can also be built as a module. If so, the module
->   	  will be called i2c-simtec.
->
-> +config I2C_SSBI
-> +	tristate "Qualcomm Single-wire Serial Bus Interface (SSBI)"
-> +	depends on I2C&&  (ARCH_MSM7X30 || ARCH_MSM8X60)
-> +	help
-> +	  If you say yes to this option, support will be included for the
-> +	  built-in SSBI interface on Qualcomm MSM family processors.
-> +
-> +          Note that SSBI is not an I2C bus, but is functionally related
-> +          enough such that it is able to leverages the I2C framework.
-> +
->   config I2C_STU300
->   	tristate "ST Microelectronics DDC I2C interface"
->   	depends on MACH_U300
-> diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
-> index 936880b..79a7ad9 100644
-> --- a/drivers/i2c/busses/Makefile
-> +++ b/drivers/i2c/busses/Makefile
-> @@ -55,6 +55,7 @@ obj-$(CONFIG_I2C_S6000)		+= i2c-s6000.o
->   obj-$(CONFIG_I2C_SH7760)	+= i2c-sh7760.o
->   obj-$(CONFIG_I2C_SH_MOBILE)	+= i2c-sh_mobile.o
->   obj-$(CONFIG_I2C_SIMTEC)	+= i2c-simtec.o
-> +obj-$(CONFIG_I2C_SSBI)          += i2c-ssbi.o
->   obj-$(CONFIG_I2C_STU300)	+= i2c-stu300.o
->   obj-$(CONFIG_I2C_VERSATILE)	+= i2c-versatile.o
->   obj-$(CONFIG_I2C_OCTEON)	+= i2c-octeon.o
-> diff --git a/drivers/i2c/busses/i2c-ssbi.c b/drivers/i2c/busses/i2c-ssbi.c
-> new file mode 100644
-> index 0000000..1763ea5
-> --- /dev/null
-> +++ b/drivers/i2c/busses/i2c-ssbi.c
-> @@ -0,0 +1,472 @@
-> +/* Copyright (c) 2009-2010, Code Aurora Forum. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-> + * 02110-1301, USA.
-> + *
-> + */
-> +/*
-> + * SSBI driver for Qualcomm MSM platforms
-> + *
-> + */
-> +#include<linux/kernel.h>
-> +#include<linux/platform_device.h>
-> +#include<linux/err.h>
-> +#include<linux/slab.h>
-> +#include<linux/delay.h>
-> +#include<linux/io.h>
-> +#include<linux/i2c.h>
-> +#include<linux/i2c-ssbi.h>
-> +
-> +/* SSBI 2.0 controller registers */
-> +#define SSBI2_CMD			0x0008
-> +#define SSBI2_RD			0x0010
-> +#define SSBI2_STATUS			0x0014
-> +#define SSBI2_MODE2			0x001C
-> +
-> +/* SSBI_CMD fields */
-> +#define SSBI_CMD_RDWRN			(0x01<<  24)
-> +#define SSBI_CMD_REG_ADDR_SHFT		(0x10)
-> +#define SSBI_CMD_REG_ADDR_MASK		(0xFF<<  SSBI_CMD_REG_ADDR_SHFT)
-> +#define SSBI_CMD_REG_DATA_SHFT		(0x00)
-> +#define SSBI_CMD_REG_DATA_MASK		(0xFF<<  SSBI_CMD_REG_DATA_SHFT)
-> +
-> +/* SSBI_STATUS fields */
-> +#define SSBI_STATUS_DATA_IN		0x10
-> +#define SSBI_STATUS_RD_CLOBBERED	0x08
-> +#define SSBI_STATUS_RD_READY		0x04
-> +#define SSBI_STATUS_READY		0x02
-> +#define SSBI_STATUS_MCHN_BUSY		0x01
-> +
-> +/* SSBI_RD fields */
-> +#define SSBI_RD_RDWRN			0x01000000
-> +#define SSBI_RD_REG_ADDR_SHFT		0x10
-> +#define SSBI_RD_REG_ADDR_MASK		(0xFF<<  SSBI_RD_REG_ADDR_SHFT)
-> +#define SSBI_RD_REG_DATA_SHFT		(0x00)
-> +#define SSBI_RD_REG_DATA_MASK		(0xFF<<  SSBI_RD_REG_DATA_SHFT)
-> +
-> +/* SSBI_MODE2 fields */
-> +#define SSBI_MODE2_REG_ADDR_15_8_SHFT	0x04
-> +#define SSBI_MODE2_REG_ADDR_15_8_MASK	(0x7F<<  SSBI_MODE2_REG_ADDR_15_8_SHFT)
-> +#define SSBI_MODE2_ADDR_WIDTH_SHFT	0x01
-> +#define SSBI_MODE2_ADDR_WIDTH_MASK	(0x07<<  SSBI_MODE2_ADDR_WIDTH_SHFT)
-> +#define SSBI_MODE2_SSBI2_MODE		0x00000001
-> +
-> +#define SSBI_MODE2_REG_ADDR_15_8(MD, AD) \
-> +	(((MD)&  0x0F) | ((((AD)>>  8)<<  SSBI_MODE2_REG_ADDR_15_8_SHFT)&  \
-> +	SSBI_MODE2_REG_ADDR_15_8_MASK))
-> +
-> +#define SSBI_MODE2_ADDR_WIDTH(N) \
-> +	((((N) - 8)<<  SSBI_MODE2_ADDR_WIDTH_SHFT)&  SSBI_MODE2_ADDR_WIDTH_MASK)
-> +
-> +#define SSBI_TIMEOUT_US			100
-> +
-> +#define SSBI_CMD_READ(AD) \
-> +	(SSBI_CMD_RDWRN | (((AD)&  0xFF)<<  SSBI_CMD_REG_ADDR_SHFT))
-> +
-> +#define SSBI_CMD_WRITE(AD, DT) \
-> +	((((AD)&  0xFF)<<  SSBI_CMD_REG_ADDR_SHFT) | \
-> +	 (((DT)&  0xFF)<<  SSBI_CMD_REG_DATA_SHFT))
-> +
-> +/* SSBI PMIC Arbiter command registers */
-> +#define SSBI_PA_CMD			0x0000
-> +#define SSBI_PA_RD_STATUS		0x0004
-> +
-> +/* SSBI_PA_CMD fields */
-> +#define SSBI_PA_CMD_RDWRN		(0x01<<  24)
-> +#define SSBI_PA_CMD_REG_ADDR_14_8_SHFT	(0x10)
-> +#define SSBI_PA_CMD_REG_ADDR_14_8_MASK	(0x7F<<  SSBI_PA_CMD_REG_ADDR_14_8_SHFT)
-> +#define SSBI_PA_CMD_REG_ADDR_7_0_SHFT	(0x08)
-> +#define SSBI_PA_CMD_REG_ADDR_7_0_MASK	(0xFF<<  SSBI_PA_CMD_REG_ADDR_7_0_SHFT)
-> +#define SSBI_PA_CMD_REG_DATA_SHFT	(0x00)
-> +#define SSBI_PA_CMD_REG_DATA_MASK	(0xFF<<  SSBI_PA_CMD_REG_DATA_SHFT)
-> +
-> +#define SSBI_PA_CMD_REG_DATA(DT) \
-> +	(((DT)<<  SSBI_PA_CMD_REG_DATA_SHFT)&  SSBI_PA_CMD_REG_DATA_MASK)
-> +
-> +#define SSBI_PA_CMD_REG_ADDR(AD) \
-> +	(((AD)<<  SSBI_PA_CMD_REG_ADDR_7_0_SHFT)&  \
-> +	(SSBI_PA_CMD_REG_ADDR_14_8_MASK|SSBI_PA_CMD_REG_ADDR_7_0_MASK))
-> +
-> +/* SSBI_PA_RD_STATUS fields */
-> +#define SSBI_PA_RD_STATUS_TRANS_DONE	(0x01<<  27)
-> +#define SSBI_PA_RD_STATUS_TRANS_DENIED	(0x01<<  26)
-> +#define SSBI_PA_RD_STATUS_REG_DATA_SHFT	(0x00)
-> +#define SSBI_PA_RD_STATUS_REG_DATA_MASK	(0xFF<<  SSBI_PA_CMD_REG_DATA_SHFT)
-> +#define SSBI_PA_RD_STATUS_TRANS_COMPLETE \
-> +	(SSBI_PA_RD_STATUS_TRANS_DONE|SSBI_PA_RD_STATUS_TRANS_DENIED)
-> +
-> +#define SSBI_MSM_NAME			"i2c_ssbi"
-> +
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_VERSION("2.0");
-> +MODULE_ALIAS("platform:i2c_ssbi");
-> +MODULE_AUTHOR("Kenneth Heitke<kheitke@codeaurora.org>");
-> +
-> +struct i2c_ssbi_dev {
-> +	void __iomem		*base;
-> +	struct device           *dev;
-> +	struct i2c_adapter	 adapter;
-> +	unsigned long		 mem_phys_addr;
-> +	size_t			 mem_size;
-> +	enum msm_ssbi_controller_type controller_type;
-> +	int (*read)(struct i2c_ssbi_dev *, struct i2c_msg *);
-> +	int (*write)(struct i2c_ssbi_dev *, struct i2c_msg *);
-> +};
-> +
-> +static inline int
-> +i2c_ssbi_poll_for_device_ready(struct i2c_ssbi_dev *ssbi)
-> +{
-> +	u32 timeout = SSBI_TIMEOUT_US;
-> +
-> +	while (!(readl(ssbi->base + SSBI2_STATUS)&  SSBI_STATUS_READY)) {
-> +		if (--timeout == 0) {
-> +			dev_err(ssbi->dev, "%s: timeout, status %x\n", __func__,
-> +				readl(ssbi->base + SSBI2_STATUS));
-> +			return -ETIMEDOUT;
-> +		}
-> +		udelay(1);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static inline int
-> +i2c_ssbi_poll_for_read_completed(struct i2c_ssbi_dev *ssbi)
-> +{
-> +	u32 timeout = SSBI_TIMEOUT_US;
-> +
-> +	while (!(readl(ssbi->base + SSBI2_STATUS)&  SSBI_STATUS_RD_READY)) {
-> +		if (--timeout == 0) {
-> +			dev_err(ssbi->dev, "%s: timeout, status %x\n", __func__,
-> +				readl(ssbi->base + SSBI2_STATUS));
-> +			return -ETIMEDOUT;
-> +		}
-> +		udelay(1);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static inline int
-> +i2c_ssbi_poll_for_transfer_completed(struct i2c_ssbi_dev *ssbi)
-> +{
-> +	u32 timeout = SSBI_TIMEOUT_US;
-> +
-> +	while ((readl(ssbi->base + SSBI2_STATUS)&  SSBI_STATUS_MCHN_BUSY)) {
-> +		if (--timeout == 0) {
-> +			dev_err(ssbi->dev, "%s: timeout, status %x\n", __func__,
-> +				readl(ssbi->base + SSBI2_STATUS));
-> +			return -ETIMEDOUT;
-> +		}
-> +		udelay(1);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int
-> +i2c_ssbi_read_bytes(struct i2c_ssbi_dev *ssbi, struct i2c_msg *msg)
-> +{
-> +	int ret = 0;
-> +	u8 *buf = msg->buf;
-> +	u16 len = msg->len;
-> +	u16 addr = msg->addr;
-> +	u32 read_cmd = SSBI_CMD_READ(addr);
-> +
-> +	if (ssbi->controller_type == MSM_SBI_CTRL_SSBI2) {
-> +		u32 mode2 = readl(ssbi->base + SSBI2_MODE2);
-> +		writel(SSBI_MODE2_REG_ADDR_15_8(mode2, addr),
-> +				ssbi->base + SSBI2_MODE2);
-> +	}
-> +
-> +	while (len) {
-> +		ret = i2c_ssbi_poll_for_device_ready(ssbi);
-> +		if (ret)
-> +			goto read_failed;
-> +
-> +		writel(read_cmd, ssbi->base + SSBI2_CMD);
-> +
-> +		ret = i2c_ssbi_poll_for_read_completed(ssbi);
-> +		if (ret)
-> +			goto read_failed;
-> +
-> +		*buf++ = readl(ssbi->base + SSBI2_RD)&  SSBI_RD_REG_DATA_MASK;
-> +		len--;
-> +	}
-> +
-> +read_failed:
-> +	return ret;
-> +}
-> +
-> +static int
-> +i2c_ssbi_write_bytes(struct i2c_ssbi_dev *ssbi, struct i2c_msg *msg)
-> +{
-> +	int ret = 0;
-> +	u8 *buf = msg->buf;
-> +	u16 len = msg->len;
-> +	u16 addr = msg->addr;
-> +
-> +	if (ssbi->controller_type == MSM_SBI_CTRL_SSBI2) {
-> +		u32 mode2 = readl(ssbi->base + SSBI2_MODE2);
-> +		writel(SSBI_MODE2_REG_ADDR_15_8(mode2, addr),
-> +				ssbi->base + SSBI2_MODE2);
-> +	}
-> +
-> +	while (len) {
-> +		ret = i2c_ssbi_poll_for_device_ready(ssbi);
-> +		if (ret)
-> +			goto write_failed;
-> +
-> +		writel(SSBI_CMD_WRITE(addr, *buf++), ssbi->base + SSBI2_CMD);
-> +
-> +		ret = i2c_ssbi_poll_for_transfer_completed(ssbi);
-> +		if (ret)
-> +			goto write_failed;
-> +
-> +		len--;
-> +	}
-> +
-> +write_failed:
-> +	return ret;
-> +}
-> +
-> +static inline int
-> +i2c_ssbi_pa_transfer(struct i2c_ssbi_dev *ssbi, u32 cmd, u8 *data)
-> +{
-> +	u32 rd_status;
-> +	u32 timeout = SSBI_TIMEOUT_US;
-> +
-> +	writel(cmd, ssbi->base + SSBI_PA_CMD);
-> +	rd_status = readl(ssbi->base + SSBI_PA_RD_STATUS);
-> +
-> +	while ((rd_status&  (SSBI_PA_RD_STATUS_TRANS_COMPLETE)) == 0) {
-> +
-> +		if (--timeout == 0) {
-> +			dev_err(ssbi->dev, "%s: timeout, status %x\n",
-> +					__func__, rd_status);
-> +			return -ETIMEDOUT;
-> +		}
-> +		udelay(1);
-> +		rd_status = readl(ssbi->base + SSBI_PA_RD_STATUS);
-> +	}
-> +
-> +	if (rd_status&  SSBI_PA_RD_STATUS_TRANS_DENIED) {
-> +		dev_err(ssbi->dev, "%s: transaction denied, status %x\n",
-> +				__func__, rd_status);
-> +		return -EPERM;
-> +	}
-> +
-> +	if (data)
-> +		*data = (rd_status&  SSBI_PA_RD_STATUS_REG_DATA_MASK)>>
-> +					SSBI_PA_CMD_REG_DATA_SHFT;
-> +	return 0;
-> +}
-> +
-> +static int
-> +i2c_ssbi_pa_read_bytes(struct i2c_ssbi_dev *ssbi, struct i2c_msg *msg)
-> +{
-> +	int ret = 0;
-> +	u8  data;
-> +	u8 *buf = msg->buf;
-> +	u16 len = msg->len;
-> +	u32 read_cmd = (SSBI_PA_CMD_RDWRN | SSBI_PA_CMD_REG_ADDR(msg->addr));
-> +
-> +	while (len) {
-> +
-> +		ret = i2c_ssbi_pa_transfer(ssbi, read_cmd,&data);
-> +		if (ret)
-> +			goto read_failed;
-> +
-> +		*buf++ = data;
-> +		len--;
-> +	}
-> +
-> +read_failed:
-> +	return ret;
-> +}
-> +
-> +static int
-> +i2c_ssbi_pa_write_bytes(struct i2c_ssbi_dev *ssbi, struct i2c_msg *msg)
-> +{
-> +	int ret = 0;
-> +	u8 *buf = msg->buf;
-> +	u16 len = msg->len;
-> +	u32 addr = SSBI_PA_CMD_REG_ADDR(msg->addr);
-> +
-> +	while (len) {
-> +
-> +		u32 write_cmd = addr | (*buf++&  SSBI_PA_CMD_REG_DATA_MASK);
-> +
-> +		ret = i2c_ssbi_pa_transfer(ssbi, write_cmd, NULL);
-> +		if (ret)
-> +			goto write_failed;
-> +		len--;
-> +	}
-> +
-> +write_failed:
-> +	return ret;
-> +}
-> +
-> +static int
-> +i2c_ssbi_transfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
-> +{
-> +	int ret = 0;
-> +	int rem = num;
-> +	struct i2c_ssbi_dev *ssbi = i2c_get_adapdata(adap);
-> +
-> +	while (rem) {
-> +		if (msgs->flags&  I2C_M_RD) {
-> +			ret = ssbi->read(ssbi, msgs);
-> +			if (ret)
-> +				goto transfer_failed;
-> +		} else {
-> +			ret = ssbi->write(ssbi, msgs);
-> +			if (ret)
-> +				goto transfer_failed;
-> +		}
-> +
-> +		msgs++;
-> +		rem--;
-> +	}
-> +
-> +	return num;
-> +
-> +transfer_failed:
-> +	return ret;
-> +}
-> +
-> +static u32 i2c_ssbi_i2c_func(struct i2c_adapter *adap)
-> +{
-> +	return I2C_FUNC_I2C;
-> +}
-> +
-> +static const struct i2c_algorithm msm_i2c_algo = {
-> +	.master_xfer	= i2c_ssbi_transfer,
-> +	.functionality	= i2c_ssbi_i2c_func,
-> +};
-> +
-> +static int __devinit i2c_ssbi_probe(struct platform_device *pdev)
-> +{
-> +	int			 ret = 0;
-> +	struct resource		*ssbi_res;
-> +	struct i2c_ssbi_dev	*ssbi;
-> +	struct msm_ssbi_platform_data *pdata;
-> +
-> +	pdata = pdev->dev.platform_data;
-> +	if (!pdata) {
-> +		ret = -ENXIO;
-> +		dev_err(&pdev->dev, "platform data not initialized\n");
-> +		goto err_probe_exit;
-> +	}
-> +
-> +	ssbi = kzalloc(sizeof(struct i2c_ssbi_dev), GFP_KERNEL);
-> +	if (!ssbi) {
-> +		ret = -ENOMEM;
-> +		dev_err(&pdev->dev, "allocation failed\n");
-> +		goto err_probe_exit;
-> +	}
-> +
-> +	ssbi_res = platform_get_resource_byname(pdev,
-> +						IORESOURCE_MEM, "ssbi_base");
-> +	if (!ssbi_res) {
-> +		ret = -ENXIO;
-> +		dev_err(&pdev->dev, "get_resource_byname failed\n");
-> +		goto err_probe_res;
-> +	}
-> +
-> +	ssbi->mem_phys_addr = ssbi_res->start;
-> +	ssbi->mem_size = resource_size(ssbi_res);
-> +	if (!request_mem_region(ssbi->mem_phys_addr, ssbi->mem_size,
-> +				SSBI_MSM_NAME)) {
-> +		ret = -ENXIO;
-> +		dev_err(&pdev->dev, "request_mem_region failed\n");
-> +		goto err_probe_reqmem;
-> +	}
-> +
-> +	ssbi->base = ioremap(ssbi->mem_phys_addr, ssbi->mem_size);
-> +	if (!ssbi->base) {
-> +		dev_err(&pdev->dev, "ioremap failed\n");
-> +		goto err_probe_ioremap;
-> +	}
-> +
-> +	ssbi->dev =&pdev->dev;
-> +	platform_set_drvdata(pdev, ssbi);
-> +
-> +	ssbi->controller_type = pdata->controller_type;
-> +	if (ssbi->controller_type == MSM_SBI_CTRL_PMIC_ARBITER) {
-> +		ssbi->read = i2c_ssbi_pa_read_bytes;
-> +		ssbi->write = i2c_ssbi_pa_write_bytes;
-> +	} else {
-> +		ssbi->read = i2c_ssbi_read_bytes;
-> +		ssbi->write = i2c_ssbi_write_bytes;
-> +	}
-> +
-> +	i2c_set_adapdata(&ssbi->adapter, ssbi);
-> +	ssbi->adapter.algo =&msm_i2c_algo;
-> +	strlcpy(ssbi->adapter.name,
-> +		"MSM SSBI adapter",
-> +		sizeof(ssbi->adapter.name));
-> +
-> +	ssbi->adapter.nr = pdev->id;
-> +	ret = i2c_add_numbered_adapter(&ssbi->adapter);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "i2c_add_numbered_adapter failed\n");
-> +		goto err_add_adapter_failed;
-> +	}
-> +	return 0;
-> +
-> +err_add_adapter_failed:
-> +	iounmap(ssbi->base);
-> +	platform_set_drvdata(pdev, NULL);
-> +err_probe_ioremap:
-> +	release_mem_region(ssbi->mem_phys_addr, ssbi->mem_size);
-> +err_probe_reqmem:
-> +err_probe_res:
-> +	kfree(ssbi);
-> +err_probe_exit:
-> +	return ret;
-> +}
-> +
-> +static int __devexit i2c_ssbi_remove(struct platform_device *pdev)
-> +{
-> +	struct i2c_ssbi_dev *ssbi = platform_get_drvdata(pdev);
-> +
-> +	platform_set_drvdata(pdev, NULL);
-> +	i2c_del_adapter(&ssbi->adapter);
-> +	iounmap(ssbi->base);
-> +	release_mem_region(ssbi->mem_phys_addr, ssbi->mem_size);
-> +	kfree(ssbi);
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver i2c_ssbi_driver = {
-> +	.probe          = i2c_ssbi_probe,
-> +	.driver		= {
-> +		.name	= "i2c_ssbi",
-> +		.owner	= THIS_MODULE,
-> +	},
-> +	.remove		= __devexit_p(i2c_ssbi_remove),
-> +};
-> +
-> +static int __init i2c_ssbi_init(void)
-> +{
-> +	return platform_driver_register(&i2c_ssbi_driver);
-> +}
-> +arch_initcall(i2c_ssbi_init);
-> +
-> +static void __exit i2c_ssbi_exit(void)
-> +{
-> +	platform_driver_unregister(&i2c_ssbi_driver);
-> +}
-> +module_exit(i2c_ssbi_exit);
-> diff --git a/include/linux/i2c-ssbi.h b/include/linux/i2c-ssbi.h
-> new file mode 100755
-> index 0000000..75386d5
-> --- /dev/null
-> +++ b/include/linux/i2c-ssbi.h
-> @@ -0,0 +1,33 @@
-> +/*
-> + * Qualcomm MSM i2c Controller Platform Data
-> + *
-> + * Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-> + * 02110-1301, USA.
-> + */
-> +#ifndef __LINUX_I2C_SSBI_H
-> +#define __LINUX_I2C_SSBI_H
-> +
-> +enum msm_ssbi_controller_type {
-> +	MSM_SBI_CTRL_SSBI = 0,
-> +	MSM_SBI_CTRL_SSBI2,
-> +	MSM_SBI_CTRL_PMIC_ARBITER,
-> +};
-> +
-> +struct msm_ssbi_platform_data {
-> +	enum msm_ssbi_controller_type controller_type;
-> +};
-> +
-> +#endif /* __LINUX_I2C_SSBI_H */
+- this hits an allocation failure, which calls dma_async_issue_pending()
+- this causes the DMA engine to start transferring to a device which is
+  not ready yet
+- memory pressure stops, and allocation succeeds again
+- some descriptors have been transferred, but not the ones since the
+  alloc failure
+- now the first half of the descriptors (pre alloc failure) have been
+  transferred
+- the second half of the descriptors (post alloc failure) are still
+  pending
+- the dma_async_memcpy_sg_to_sg() returns success: all tx_submit()
+  succeeded
 
+3) device_control() - setup external control mode
+4) dma_async_issue_pending() - start the externally controlled transfer
+5) tell the external agent to start controlling the DMA transaction
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+- now there isn't enough data left, and the external agent fails to
+  program the FPGAs
+
+I don't mind adding it to the code, since I have enough memory that I
+don't ever see allocation failures. It is an embedded system, and we've
+been careful not to overcommit memory. I think for all other users, it
+would be the appropriate thing to do. Most people don't care if the
+scatterlist is copied in two chunks with a time gap in the middle.
+
+An alternative implementation would be to implement
+device_prep_sg_to_sg() that returned a struct dma_async_tx_descriptor,
+which could then be used as normal by higher layers. This would allow
+the driver to allocate / cleanup all descriptors in one shot. This would
+be completely robust to this error situation.
+
+Is there one solution you'd prefer over the other? They're both similar
+in the amount of code, though duplication would probably be increased in
+the device_prep_sg_to_sg() case. If any other driver implements it.
+
+Thanks,
+Ira
