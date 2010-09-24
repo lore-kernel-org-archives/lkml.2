@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796Ab0IXUuL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 16:50:11 -0400
-Received: from mail.wdtv.com ([66.118.69.84]:50163 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750786Ab0IXUuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 16:50:09 -0400
-From: Gene Heskett <gene.heskett@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [00/80] 2.6.35.6 stable review
-Date: Fri, 24 Sep 2010 16:49:57 -0400
-User-Agent: KMail/1.13.5 (Linux/2.6.35.6-rc1; KDE/4.5.1; i686; ; )
-References: <20100924162706.GA7381@kroah.com>
-In-Reply-To: <20100924162706.GA7381@kroah.com>
+	id S1754481Ab0IXUwK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 16:52:10 -0400
+Received: from qmta08.emeryville.ca.mail.comcast.net ([76.96.30.80]:58892 "EHLO
+	qmta08.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752237Ab0IXUwI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 16:52:08 -0400
+Date: Fri, 24 Sep 2010 13:51:08 -0700
+From: matt mooney <mfm@muteddisk.com>
+To: T Dent <tdent48227@gmail.com>
+Cc: matt mooney <mfmooney@gmail.com>, greg@kroah.com,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 00/21] Staging: cleaned up makefiles cflag lines
+Message-ID: <20100924205108.GA8191@haskell.muteddisk.com>
+Mail-Followup-To: T Dent <tdent48227@gmail.com>,
+	matt mooney <mfmooney@gmail.com>, greg@kroah.com,
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+References: <AANLkTikqf4rn6BP2gyQAuQrvt7EdFY8yfa+o8nfR9xWE@mail.gmail.com>
+ <AANLkTikvGGz+33ni=Kov1qM1DpSj2WVuk89u=TwE9iL_@mail.gmail.com>
+ <AANLkTin1YfwwVcDNUBsi34iYC6HA5Y6+uOFZN=+Q2hqs@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009241649.57150.gene.heskett@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTin1YfwwVcDNUBsi34iYC6HA5Y6+uOFZN=+Q2hqs@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 24, 2010, Greg KH wrote:
->This is the start of the stable review cycle for the 2.6.35.6 release.
->There are 80 patches in this series, all will be posted as a response
->to this one.  If anyone has any issues with these being applied, please
->let us know.  If anyone is a maintainer of the proper subsystem, and
->wants to add a Signed-off-by: line to the patch, please respond with it.
->
->Responses should be made by Sunday September 26, 17:00:00 UTC
->Anything received after that time might be too late.
->
->The whole patch series can be found in one patch at:
->	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.35.6-rc1.gz
+On 16:39 Fri 24 Sep     , T Dent wrote:
+> On 9/24/10, matt mooney <mfmooney@gmail.com> wrote:
+> > On Fri, Sep 24, 2010 at 11:25 AM, T Dent <tdent48227@gmail.com> wrote:
+> >> I changed every makefile in the staging directory to use the proper
+> >> ccflags-y option instead of EXTRA_CFLAGS. It builds also :) .
+> >
+> > Um, you didn't do a lot of these right. Maybe you should look into why
+> > the change was made in the first place. For semantic reasons, I was
+> > also changing the first assignment to ":=" from "+=".
+> 
+> I can resend them with the a small modification to the patch files if you want.
 
-Hi Greg;  I just pulled this about an hour ago, built it from a make 
-oldconfig based on a flawlessly running 2.6.35.4.
+After looking at more of them, my "a lot" was a little bit of an
+overstatement. The first few I randomly looked at happen to use the incorrect
+pattern, but most are simple without relying on a variable. Yeah, I think you
+should resubmit with a "[PATCH v2]." The pattern is:
 
-3 things I call regressions.
+ifeq ($(FOO),y)
+     EXTRA_CFLAGS := <flags>
+endif
 
-1. On rebooting to it, and launching kmail, cpu went to 100% of whatever 
-core it skipped to on a 4 core amd phenom box with 4G of ram.  Normally, 
-kmail on a restart will check and rebuild its indices, taking maybe 4 or 5 
-minutes to do this up till now, during that time keyboard/mouse 
-interactivity lags a split second.  This time it was 44 minutes before I 
-got my machine back.  At times the keyboard went dead for minutes at a 
-time.  I even went to the kitchen and got fresh batteries for it, only to 
-have everything I had typed blind 2 minutes before, show up on screen while 
-there was no batteries in it.
+changes to:
 
-2. That I think is separate from the login screen, there I had no keyboard 
-or mouse for a minute, but something finally registered and I was able to 
-log in then.
+ccflags-$(FOO) := <flags>
 
-3. My usb tree is not fully populated, this has been a frequent problem for 
-the last year or so, udev often does not wait for responses long enough to 
-trace a several hubs tall tree to the last branch so I have to crawl under 
-and unplug the missing stuff later, which is then properly recognized when I 
-plug it back into the same socket on the same hub.  One of my often missing 
-printers is 4 hubs away in the basement.
+Also, the rest of the kernel tree has been done except drivers/media; however, I
+am going to email them in a little bit asking if some consolidation is possible
+due to every driver there relying on a few flags. So thanks for the help (though
+is was a good thing I was saving staging for last)!
 
-Thanks.
+-mfm
 
--- 
-Cheers, Gene
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-QOTD:
-	Silence is the only virtue he has left.
