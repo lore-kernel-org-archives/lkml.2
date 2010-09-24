@@ -1,43 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757928Ab0IXT3l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 15:29:41 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:55785 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757879Ab0IXT3j (ORCPT
+	id S1757940Ab0IXTbQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 15:31:16 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:51582 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757797Ab0IXTbP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 15:29:39 -0400
-Date: Fri, 24 Sep 2010 15:25:04 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: matt mooney <mfm@muteddisk.com>
-Cc: kernel-janitors@vger.kernel.org,
-        Sjur Braendeland <sjur.brandeland@stericsson.com>,
-        Jouni Malinen <j@w1.fi>, Daniel Drake <dsd@gentoo.org>,
-        Ulrich Kunitz <kune@deine-taler.de>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-Subject: Re: [PATCH 15/24] net: change to new flag variable
-Message-ID: <20100924192504.GG8077@tuxdriver.com>
-References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
- <facbf79cadc81f9043e89160b7b3b8a90926aba1.1285355033.git.mfm@muteddisk.com>
+	Fri, 24 Sep 2010 15:31:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=TghoOOGXG/V5uQMP1oPrsytWSTrLh69IMVnIUUdhMS+GblOfP3uf5ioXUqkvV74g6w
+         lGmOy/MROSkdIjac1tnZI4KhGOQCU1n/FOLwJsD8jj7okqWennB2qYYbLRZf1mRPK/ml
+         qZmH1iT46Jp6Aw5vX3S+AjVfqdx5knW81ZJf0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <facbf79cadc81f9043e89160b7b3b8a90926aba1.1285355033.git.mfm@muteddisk.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <AANLkTikqf4rn6BP2gyQAuQrvt7EdFY8yfa+o8nfR9xWE@mail.gmail.com>
+References: <AANLkTikqf4rn6BP2gyQAuQrvt7EdFY8yfa+o8nfR9xWE@mail.gmail.com>
+Date: Fri, 24 Sep 2010 12:31:13 -0700
+Message-ID: <AANLkTikvGGz+33ni=Kov1qM1DpSj2WVuk89u=TwE9iL_@mail.gmail.com>
+Subject: Re: [PATCH 00/21] Staging: cleaned up makefiles cflag lines
+From: matt mooney <mfmooney@gmail.com>
+To: T Dent <tdent48227@gmail.com>
+Cc: greg@kroah.com, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 24, 2010 at 12:17:25PM -0700, matt mooney wrote:
-> Replace EXTRA_CFLAGS with ccflags-y.
-> 
-> Signed-off-by: matt mooney <mfm@muteddisk.com>
-> ---
->  drivers/net/wireless/hostap/hostap_config.h |    4 ++--
->  drivers/net/wireless/zd1211rw/Makefile      |    4 +---
+On Fri, Sep 24, 2010 at 11:25 AM, T Dent <tdent48227@gmail.com> wrote:
+> I changed every makefile in the staging directory to use the proper
+> ccflags-y option instead of EXTRA_CFLAGS. It builds also :) .
 
-ACK for these bits...
+Um, you didn't do a lot of these right. Maybe you should look into why
+the change was made in the first place. For semantic reasons, I was
+also changing the first assignment to ":=" from "+=".
+
+Thanks,
+mfm
 
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+GPG-Key: 9AFE00EA
