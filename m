@@ -1,76 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758247Ab0IXWPJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 18:15:09 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:55922 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758222Ab0IXWPG convert rfc822-to-8bit (ORCPT
+	id S932189Ab0IXWPZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 18:15:25 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:59658 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754662Ab0IXWPV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 18:15:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <f1f37e21-f04a-4fef-868c-27c7d2ebe594@email.android.com>
-References: <19611.16302.262307.129176@pilspetsen.it.uu.se>
- <20100923113807.4643fbbb.rdunlap@xenotime.net> <19611.46496.782340.466509@pilspetsen.it.uu.se>
- <20100923150559.9c67da11.rdunlap@xenotime.net> <20100924111209.3c071da3@endymion.delvare>
- <19612.33369.175358.879889@pilspetsen.it.uu.se> <20100924133932.4320b993@endymion.delvare>
- <f1f37e21-f04a-4fef-868c-27c7d2ebe594@email.android.com>
+	Fri, 24 Sep 2010 18:15:21 -0400
+Subject: [PATCH (Option 2)] of/i2c: fix module load order issue caused by
+	of_i2c.c
+To: khali@linux-fr.org, mikpe@it.uu.se
 From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 24 Sep 2010 16:14:44 -0600
-X-Google-Sender-Auth: MM1Be5pQoYzVUM63lnrex65zmew
-Message-ID: <AANLkTikS8RSycQL4_Qn7EKuV=K0_Yx_VEojrx+oz5R4a@mail.gmail.com>
-Subject: Re: [BUG 2.6.36-rc5] of_i2c.ko <-> i2c-core.ko dependency loop
-To: Jean Delvare <khali@linux-fr.org>, Mikael Pettersson <mikpe@it.uu.se>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Cc: rdunlap@xenotime.net, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Date: Fri, 24 Sep 2010 16:15:18 -0600
+Message-ID: <20100924221458.28357.58921.stgit@angua>
+In-Reply-To: <20100924221313.28357.61419.stgit@angua>
+References: <20100924221313.28357.61419.stgit@angua>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 24, 2010 at 7:48 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
->
->
-> "Jean Delvare" <khali@linux-fr.org> wrote:
->
->>Hi Mikael,
->>
->>On Fri, 24 Sep 2010 12:50:01 +0200, Mikael Pettersson wrote:
->>> Jean Delvare writes:
->>>  > As far as I can see this is caused by this commit from Grant:
->>>  >
->>>  > http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=959e85f7751c33d1a2dabc5cc3fe2ed0db7052e5
->>>  >
->>>  > Mikael, can you please try reverting this patch and see if it solves
->>>  > your problem?
->>>
->>> Yes, reverting the above commit from 2.6.36-rc5 eliminated the warnings,
->>> and I was able to insmod the i2c-{core,dev,powermac}.ko modules.
->>
->>Thanks for testing and reporting. Grant, unless you come up with a fix
->>very quickly, I'll have to revert
->>959e85f7751c33d1a2dabc5cc3fe2ed0db7052e5 for 2.6.36.
->
-> I'll get a fix out today.
+Commit 959e85f7, "i2c: add OF-style registration and binding" caused a
+module dependency loop where of_i2c.c calls functions in i2c-core, and
+i2c-core calls of_i2c_register_devices() in of_i2c.  This means that
+when i2c support is built as a module when CONFIG_OF is set, then
+neither i2c_core nor of_i2c are able to be loaded.
 
-I've got two different fixes that I'm about to send you.  You can
-choose the fix that you prefer.  The first option moves the offending
-function into i2c-core.c.  The function parses the device tree data
-and creates i2c_device for each i2c device node that it finds.  This
-is analogous to i2c_scan_static_board_info().
+This patch fixes the problem by moving the of_i2c_register_devices()
+calls back into the device drivers.  Device drivers already
+specifically request the core code to parse the device tree for
+devices anyway by setting the of_node pointer, so it isn't a big
+deal to also call the registration function.  The drivers just become
+slightly more verbose.
 
-The second options reverts most of the 959e85f7 commit, but keeps the
-line that allows of-style matching is retained so that all i2c_devices
-on powerpc machines will still bind correctly.
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+---
+ drivers/i2c/busses/i2c-cpm.c     |    5 +++++
+ drivers/i2c/busses/i2c-ibm_iic.c |    3 +++
+ drivers/i2c/busses/i2c-mpc.c     |    1 +
+ drivers/i2c/i2c-core.c           |    4 ----
+ 4 files changed, 9 insertions(+), 4 deletions(-)
 
-My preferred solution is the first option because the tested code path
-does not changed.  The offending function is simply moved verbatim.
-The second option is a smaller patch, but I can only test one of the
-affected drivers.  However, I'll let you make the decision.
+diff --git a/drivers/i2c/busses/i2c-cpm.c b/drivers/i2c/busses/i2c-cpm.c
+index f7bd261..f2de3be 100644
+--- a/drivers/i2c/busses/i2c-cpm.c
++++ b/drivers/i2c/busses/i2c-cpm.c
+@@ -677,6 +677,11 @@ static int __devinit cpm_i2c_probe(struct platform_device *ofdev,
+ 	dev_dbg(&ofdev->dev, "hw routines for %s registered.\n",
+ 		cpm->adap.name);
+ 
++	/*
++	 * register OF I2C devices
++	 */
++	of_i2c_register_devices(&cpm->adap);
++
+ 	return 0;
+ out_shut:
+ 	cpm_i2c_shutdown(cpm);
+diff --git a/drivers/i2c/busses/i2c-ibm_iic.c b/drivers/i2c/busses/i2c-ibm_iic.c
+index 43ca32f..89eedf4 100644
+--- a/drivers/i2c/busses/i2c-ibm_iic.c
++++ b/drivers/i2c/busses/i2c-ibm_iic.c
+@@ -761,6 +761,9 @@ static int __devinit iic_probe(struct platform_device *ofdev,
+ 	dev_info(&ofdev->dev, "using %s mode\n",
+ 		 dev->fast_mode ? "fast (400 kHz)" : "standard (100 kHz)");
+ 
++	/* Now register all the child nodes */
++	of_i2c_register_devices(adap);
++
+ 	return 0;
+ 
+ error_cleanup:
+diff --git a/drivers/i2c/busses/i2c-mpc.c b/drivers/i2c/busses/i2c-mpc.c
+index a1c419a..b74e6dc 100644
+--- a/drivers/i2c/busses/i2c-mpc.c
++++ b/drivers/i2c/busses/i2c-mpc.c
+@@ -632,6 +632,7 @@ static int __devinit fsl_i2c_probe(struct platform_device *op,
+ 		dev_err(i2c->dev, "failed to add adapter\n");
+ 		goto fail_add;
+ 	}
++	of_i2c_register_devices(&i2c->adap);
+ 
+ 	return result;
+ 
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index 6649176..a9589f5 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -32,7 +32,6 @@
+ #include <linux/init.h>
+ #include <linux/idr.h>
+ #include <linux/mutex.h>
+-#include <linux/of_i2c.h>
+ #include <linux/of_device.h>
+ #include <linux/completion.h>
+ #include <linux/hardirq.h>
+@@ -876,9 +875,6 @@ static int i2c_register_adapter(struct i2c_adapter *adap)
+ 	if (adap->nr < __i2c_first_dynamic_bus_num)
+ 		i2c_scan_static_board_info(adap);
+ 
+-	/* Register devices from the device tree */
+-	of_i2c_register_devices(adap);
+-
+ 	/* Notify drivers */
+ 	mutex_lock(&core_lock);
+ 	bus_for_each_drv(&i2c_bus_type, NULL, adap, __process_new_adapter);
 
-Both have been build tested on PowerPC and ARM, and run tested on a
-PowerPC MPC5200 board.
-
-patches to follow in a few minutes..
-
-g.
