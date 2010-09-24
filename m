@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932963Ab0IXQfG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:35:06 -0400
-Received: from kroah.org ([198.145.64.141]:37041 "EHLO coco.kroah.org"
+	id S933275Ab0IXQqE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:46:04 -0400
+Received: from kroah.org ([198.145.64.141]:37124 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932914Ab0IXQez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:34:55 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:44 2010
-Message-Id: <20100924163344.711466331@clark.site>
+	id S932914Ab0IXQfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:35:07 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:45 2010
+Message-Id: <20100924163345.833403358@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:31:32 -0700
+Date: Fri, 24 Sep 2010 09:31:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [08/68] tcp: fix three tcp sysctls tuning
+Subject: [20/68] drivers/net/eql.c: prevent reading uninitialized stack memory
 In-Reply-To: <20100924163357.GA15741@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,76 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+commit 44467187dc22fdd33a1a06ea0ba86ce20be3fe3c upstream.
 
-[ Upstream commit c5ed63d66f24fd4f7089b5a6e087b0ce7202aa8e ]
+Fixed formatting (tabs and line breaks).
 
-As discovered by Anton Blanchard, current code to autotune
-tcp_death_row.sysctl_max_tw_buckets, sysctl_tcp_max_orphans and
-sysctl_max_syn_backlog makes little sense.
+The EQL_GETMASTRCFG device ioctl allows unprivileged users to read 16
+bytes of uninitialized stack memory, because the "master_name" member of
+the master_config_t struct declared on the stack in eql_g_master_cfg()
+is not altered or zeroed before being copied back to the user.  This
+patch takes care of it.
 
-The bigger a page is, the less tcp_max_orphans is : 4096 on a 512GB
-machine in Anton's case.
-
-(tcp_hashinfo.bhash_size * sizeof(struct inet_bind_hashbucket))
-is much bigger if spinlock debugging is on. Its wrong to select bigger
-limits in this case (where kernel structures are also bigger)
-
-bhash_size max is 65536, and we get this value even for small machines.
-
-A better ground is to use size of ehash table, this also makes code
-shorter and more obvious.
-
-Based on a patch from Anton, and another from David.
-
-Reported-and-tested-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- net/ipv4/tcp.c |   24 +++++++-----------------
- 1 file changed, 7 insertions(+), 17 deletions(-)
 
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -2878,7 +2878,7 @@ void __init tcp_init(void)
- {
- 	struct sk_buff *skb = NULL;
- 	unsigned long nr_pages, limit;
--	int order, i, max_share;
-+	int i, max_share, cnt;
+---
+ drivers/net/eql.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/drivers/net/eql.c
++++ b/drivers/net/eql.c
+@@ -554,6 +554,8 @@ static int eql_g_master_cfg(struct net_d
+ 	equalizer_t *eql;
+ 	master_config_t mc;
  
- 	BUILD_BUG_ON(sizeof(struct tcp_skb_cb) > sizeof(skb->cb));
- 
-@@ -2927,22 +2927,12 @@ void __init tcp_init(void)
- 		INIT_HLIST_HEAD(&tcp_hashinfo.bhash[i].chain);
- 	}
- 
--	/* Try to be a bit smarter and adjust defaults depending
--	 * on available memory.
--	 */
--	for (order = 0; ((1 << order) << PAGE_SHIFT) <
--			(tcp_hashinfo.bhash_size * sizeof(struct inet_bind_hashbucket));
--			order++)
--		;
--	if (order >= 4) {
--		tcp_death_row.sysctl_max_tw_buckets = 180000;
--		sysctl_tcp_max_orphans = 4096 << (order - 4);
--		sysctl_max_syn_backlog = 1024;
--	} else if (order < 3) {
--		tcp_death_row.sysctl_max_tw_buckets >>= (3 - order);
--		sysctl_tcp_max_orphans >>= (3 - order);
--		sysctl_max_syn_backlog = 128;
--	}
++	memset(&mc, 0, sizeof(master_config_t));
 +
-+	cnt = tcp_hashinfo.ehash_size;
-+
-+	tcp_death_row.sysctl_max_tw_buckets = cnt / 2;
-+	sysctl_tcp_max_orphans = cnt / 2;
-+	sysctl_max_syn_backlog = max(128, cnt / 256);
- 
- 	/* Set the pressure threshold to be a fraction of global memory that
- 	 * is up to 1/2 at 256 MB, decreasing toward zero with the amount of
+ 	if (eql_is_master(dev)) {
+ 		eql = netdev_priv(dev);
+ 		mc.max_slaves = eql->max_slaves;
 
 
