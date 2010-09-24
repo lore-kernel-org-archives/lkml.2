@@ -1,85 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758474Ab0IXXW7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 19:22:59 -0400
-Received: from qmta07.emeryville.ca.mail.comcast.net ([76.96.30.64]:57444 "EHLO
-	qmta07.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755424Ab0IXXW5 (ORCPT
+	id S1758505Ab0IXX2m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 19:28:42 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:58363 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755543Ab0IXX2k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 19:22:57 -0400
-Date: Fri, 24 Sep 2010 16:21:56 -0700
-From: matt mooney <mfm@muteddisk.com>
-To: Matthew Dharm <mdharm-kernel@one-eyed-alien.net>
-Cc: kernel-janitors@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        usb-storage@lists.one-eyed-alien.net,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, Felipe Balbi <felipe.balbi@nokia.com>,
-        David Vrabel <david.vrabel@csr.com>, Michal Marek <mmarek@suse.cz>
-Subject: Re: [usb-storage] [PATCH 23/24] usb: change to new flag variable
-Message-ID: <20100924232156.GB8191@haskell.muteddisk.com>
-Mail-Followup-To: Matthew Dharm <mdharm-kernel@one-eyed-alien.net>,
-	kernel-janitors@vger.kernel.org,
-	David Brownell <dbrownell@users.sourceforge.net>,
-	usb-storage@lists.one-eyed-alien.net,
-	Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-	linux-usb@vger.kernel.org, Felipe Balbi <felipe.balbi@nokia.com>,
-	David Vrabel <david.vrabel@csr.com>, Michal Marek <mmarek@suse.cz>
-References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
- <1dd0f4a1709a9b139fe87f2b311cc0d129900b3f.1285355033.git.mfm@muteddisk.com>
- <20100924200218.GC25677@one-eyed-alien.net>
- <20100924202823.GB4598@haskell.muteddisk.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100924202823.GB4598@haskell.muteddisk.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 24 Sep 2010 19:28:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=wnP3ZQBoUwzF4CQ7kbb64LRX7RgJdz71xzbKYgFmRx1jPkMQPRmuczA+LkZsbvmDGJ
+         jrYenfk4Tpxct6dWwFm/C2qlIAY21YqfVG0B/h3OUFdx28yrHF/RmHV9HRwq+t4wbl6u
+         xIL72BqSTss+fQw3EE9uB7G6wWHDAD9Ddx9Wo=
+From: Tracey Dent <tdent48227@gmail.com>
+To: greg@kroah.com
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tracey Dent <tdent48227@gmail.com>
+Subject: [PATCH v2 02/22] Staging: cxlel: Makefile: cleaned up makefile cflag lines
+Date: Fri, 24 Sep 2010 19:27:50 -0400
+Message-Id: <1285370890-8984-2-git-send-email-tdent48227@gmail.com>
+X-Mailer: git-send-email 1.7.3
+In-Reply-To: <1285370890-8984-1-git-send-email-tdent48227@gmail.com>
+References: <1285370890-8984-1-git-send-email-tdent48227@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13:28 Fri 24 Sep     , matt mooney wrote:
-> On 13:02 Fri 24 Sep     , Matthew Dharm wrote:
-> > On Fri, Sep 24, 2010 at 12:17:33PM -0700, matt mooney wrote:
-> > > Replace EXTRA_CFLAGS with ccflags-y.
-> > 
-> > > diff --git a/drivers/usb/storage/Makefile b/drivers/usb/storage/Makefile
-> > > index ef7e5a8..786f086 100644
-> > > --- a/drivers/usb/storage/Makefile
-> > >
-> +++ b/drivers/usb/storage/Makefile
-> > > @@ -5,7 +5,7 @@
-> > >  # Rewritten to use lists instead of if-statements.
-> > >  #
-> > >  
-> > > -EXTRA_CFLAGS	:= -Idrivers/scsi
-> > > +ccflags-y	:= -Idrivers/scsi
-> > >  
-> > >  obj-$(CONFIG_USB_STORAGE)	+= usb-storage.o
-> > 
-> > I don't really know anything about the new 'ccflags' stuff.. but my
-> > instincts tell me that perhaps that should be
-> > 'ccflags-$(CONFIG_USB_STORAGE)' rather than 'ccflags-y'?
-> 
-> The flag has the same effect as EXTRA_CFLAGS in that it will be used to build
-> all  sources at the same hierarchical level (i.e., per directory not including
-> subdirectories). I didn't want to change the semantics of the way the variable
-> was being used, but after looking at the Kconfig it seems that would be a
-> reasonable change. If only usb-storage needs the flag then it makes sense,
-> though it seems that everything else in the directory relies on usb-storage
-> anyway, but it gives it greater meaning knowing that only usb-storage relies on
-> the flag, IMHO.
-> 
-> > 
-> > Does it make a difference that usb-storage can be built-in or a loadable
-> > module?
-> 
-> That would make a difference because ccflags-m is not used, so the change is not
-> possible.
+Changed to use the proper ccflags-y option
+
+Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+---
+ drivers/staging/cxt1e1/Makefile |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/staging/cxt1e1/Makefile b/drivers/staging/cxt1e1/Makefile
+index 10020d7..451f59f 100644
+--- a/drivers/staging/cxt1e1/Makefile
++++ b/drivers/staging/cxt1e1/Makefile
+@@ -1,8 +1,8 @@
+ obj-$(CONFIG_CXT1E1)	+= cxt1e1.o
  
-I failed to mention earlier that there is a per file flag. If you really only
-want usb-storage.o built with the flag, you can do:
+-EXTRA_CFLAGS += -DSBE_PMCC4_ENABLE
+-EXTRA_CFLAGS += -DSBE_ISR_TASKLET
+-EXTRA_CFLAGS += -DSBE_INCLUDE_SYMBOLS
++ccflags-y := -DSBE_PMCC4_ENABLE
++ccflags-y := -DSBE_ISR_TASKLET
++ccflags-y := -DSBE_INCLUDE_SYMBOLS
+ 
+ cxt1e1-objs += 	\
+   ossiRelease.o 	\
+-- 
+1.7.3
 
-CFLAGS_usb-storage.o := -Idrivers/scsi
-
--mfm
