@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700Ab0IXQyo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:54:44 -0400
-Received: from kroah.org ([198.145.64.141]:38347 "EHLO coco.kroah.org"
+	id S932637Ab0IXQ2S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:28:18 -0400
+Received: from kroah.org ([198.145.64.141]:46137 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932547Ab0IXQ20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:28:26 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:18 2010
-Message-Id: <20100924162618.188627921@clark.site>
+	id S932612Ab0IXQ2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:28:14 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:17 2010
+Message-Id: <20100924162617.072199467@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:24:26 -0700
+Date: Fri, 24 Sep 2010 09:24:13 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jan Kara <jack@suse.cz>, Jens Axboe <jaxboe@fusionio.com>
-Subject: [38/80] char: Mark /dev/zero and /dev/kmem as not capable of writeback
+        Hugh Dickins <hughd@google.com>
+Subject: [25/80] mm: further fix swapin race condition
 In-Reply-To: <20100924162706.GA7381@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +25,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Hugh Dickins <hughd@google.com>
 
-commit 371d217ee1ff8b418b8f73fb2a34990f951ec2d4 upstream.
+commit 31c4a3d3a0f84a5847665f8aa0552d188389f791 upstream.
 
-These devices don't do any writeback but their device inodes still can get
-dirty so mark bdi appropriately so that bdi code does the right thing and files
-inodes to lists of bdi carrying the device inodes.
+Commit 4969c1192d15 ("mm: fix swapin race condition") is now agreed to
+be incomplete.  There's a race, not very much less likely than the
+original race envisaged, in which it is further necessary to check that
+the swapcache page's swap has not changed.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+Here's the reasoning: cast in terms of reuse_swap_page(), but probably
+could be reformulated to rely on try_to_free_swap() instead, or on
+swapoff+swapon.
+
+A, faults into do_swap_page(): does page1 = lookup_swap_cache(swap1) and
+comes through the lock_page(page1).
+
+B, a racing thread of the same process, faults on the same address: does
+page1 = lookup_swap_cache(swap1) and now waits in lock_page(page1), but
+for whatever reason is unlucky not to get the lock any time soon.
+
+A carries on through do_swap_page(), a write fault, but cannot reuse the
+swap page1 (another reference to swap1).  Unlocks the page1 (but B
+doesn't get it yet), does COW in do_wp_page(), page2 now in that pte.
+
+C, perhaps the parent of A+B, comes in and write faults the same swap
+page1 into its mm, reuse_swap_page() succeeds this time, swap1 is freed.
+
+kswapd comes in after some time (B still unlucky) and swaps out some
+pages from A+B and C: it allocates the original swap1 to page2 in A+B,
+and some other swap2 to the original page1 now in C.  But does not
+immediately free page1 (actually it couldn't: B holds a reference),
+leaving it in swap cache for now.
+
+B at last gets the lock on page1, hooray! Is PageSwapCache(page1)? Yes.
+Is pte_same(*page_table, orig_pte)? Yes, because page2 has now been
+given the swap1 which page1 used to have.  So B proceeds to insert page1
+into A+B's page_table, though its content now belongs to C, quite
+different from what A wrote there.
+
+B ought to have checked that page1's swap was still swap1.
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/mem.c |    3 ++-
- fs/char_dev.c      |    4 +++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ mm/memory.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/drivers/char/mem.c
-+++ b/drivers/char/mem.c
-@@ -788,10 +788,11 @@ static const struct file_operations zero
- /*
-  * capabilities for /dev/zero
-  * - permits private mappings, "copies" are taken of the source of zeros
-+ * - no writeback happens
-  */
- static struct backing_dev_info zero_bdi = {
- 	.name		= "char/mem",
--	.capabilities	= BDI_CAP_MAP_COPY,
-+	.capabilities	= BDI_CAP_MAP_COPY | BDI_CAP_NO_ACCT_AND_WRITEBACK,
- };
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2682,10 +2682,12 @@ static int do_swap_page(struct mm_struct
+ 	delayacct_clear_flag(DELAYACCT_PF_SWAPIN);
  
- static const struct file_operations full_fops = {
---- a/fs/char_dev.c
-+++ b/fs/char_dev.c
-@@ -40,7 +40,9 @@ struct backing_dev_info directly_mappabl
- #endif
- 		/* permit direct mmap, for read, write or exec */
- 		BDI_CAP_MAP_DIRECT |
--		BDI_CAP_READ_MAP | BDI_CAP_WRITE_MAP | BDI_CAP_EXEC_MAP),
-+		BDI_CAP_READ_MAP | BDI_CAP_WRITE_MAP | BDI_CAP_EXEC_MAP |
-+		/* no writeback happens */
-+		BDI_CAP_NO_ACCT_AND_WRITEBACK),
- };
+ 	/*
+-	 * Make sure try_to_free_swap didn't release the swapcache
+-	 * from under us. The page pin isn't enough to prevent that.
++	 * Make sure try_to_free_swap or reuse_swap_page or swapoff did not
++	 * release the swapcache from under us.  The page pin, and pte_same
++	 * test below, are not enough to exclude that.  Even if it is still
++	 * swapcache, we need to check that the page's swap has not changed.
+ 	 */
+-	if (unlikely(!PageSwapCache(page)))
++	if (unlikely(!PageSwapCache(page) || page_private(page) != entry.val))
+ 		goto out_page;
  
- static struct kobj_map *cdev_map;
+ 	if (ksm_might_need_to_copy(page, vma, address)) {
 
 
