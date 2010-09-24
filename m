@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757310Ab0IXS1y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 14:27:54 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:32823 "HELO
-	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756389Ab0IXS1w convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 14:27:52 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=CCkdzHRHN/bWdd+hgzaV/8x1NZzPkOnFLGQihmOzk8rvCtUxVsdxUlcaU3rAmRsKJyfuuhStKp22tPacLXCNXYuGzE4GruqAfTfo0BedWdaz6GnXCoNYKxPAjHO5EXOi;
-Date: Fri, 24 Sep 2010 11:27:48 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>, Brian Bloniarz <phunge0@hotmail.com>,
-        Charles Butterfield <charles.butterfield@nextcentury.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stefan Becker <chemobejk@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH v2 1/4] resources: ensure alignment callback doesn't
- allocate below available start
-Message-ID: <20100924112748.3b784624@jbarnes-desktop>
-In-Reply-To: <AANLkTikiEsqReicJxurQXf7GghKQjJ3agooefs59eULC@mail.gmail.com>
-References: <20100917223109.24687.17697.stgit@bob.kio>
-	<20100917223212.24687.3519.stgit@bob.kio>
-	<20100924100733.2e7fa2ac@jbarnes-desktop>
-	<AANLkTikiEsqReicJxurQXf7GghKQjJ3agooefs59eULC@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	id S1757408Ab0IXSdW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 14:33:22 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33432 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757302Ab0IXSdU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 14:33:20 -0400
+Date: Fri, 24 Sep 2010 11:32:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, eugene@redhat.com,
+        linux-kernel@vger.kernel.org, oleg@tv-sign.ru
+Subject: Re: [RFC PATCH] proc: making "limits" world readable
+Message-Id: <20100924113246.1221f435.akpm@linux-foundation.org>
+In-Reply-To: <20100924162007.GD30252@hmsreliant.think-freely.org>
+References: <1285060255-15784-1-git-send-email-jolsa@redhat.com>
+	<20100923145642.49f17b20.akpm@linux-foundation.org>
+	<20100924105547.GA1818@jolsa.brq.redhat.com>
+	<20100924162007.GD30252@hmsreliant.think-freely.org>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Sep 2010 11:15:54 -0700
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On Fri, 24 Sep 2010 12:20:07 -0400
+Neil Horman <nhorman@tuxdriver.com> wrote:
 
-> On Fri, Sep 24, 2010 at 10:07 AM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> >
-> > Applied this series.  It's way bigger than I'd like at this point, but
-> > it does fix some regressions, so I'll give Linus the option of pulling
-> > it in my next pull request.  If he declines, we'll put it into -next
-> > and tag it for inclusion into the stable series.
+> On Fri, Sep 24, 2010 at 12:55:47PM +0200, Jiri Olsa wrote:
+> > On Thu, Sep 23, 2010 at 02:56:42PM -0700, Andrew Morton wrote:
+> > > On Tue, 21 Sep 2010 11:10:55 +0200
+> > > Jiri Olsa <jolsa@redhat.com> wrote:
+> > > 
+> > > > hi,
+> > > > 
+> > > > I'd like to have the /proc/<pid>/limits file world readable,
+> > > 
+> > > Why?
+> > > 
+> > 
+> > having this will ease the task of system management for large install
+> > bases and where root privileges might be restricted
+> > 
+> > jirka
+> > 
+> I don't see a problem with making this file world readable.  Doing so would be
+> in keeping with most of the other stats bearing files in /proc/<pid>.  The only
+> reason I didn't make it world readable was because the getrlimit sematics
+> previously kept limit information private to the process, and I didn't want to
+> deviate from that.  But as long as we're not making it world writeable I think
+> we're ok.
 > 
-> I definitely am not going to pull this series for 2.6.36.
+> Acked-by: Neil Horman <nhorman@tuxdriver.com>
 > 
-> I could possibly take this first one that only prepares for the real
-> change and doesn't actually change anything in itself, but switching
-> around the order of allocations after -rc5 would be crazy. Yes, it may
-> help some people, but we have absolutely no idea who it could hurt. So
-> the whole thing is definitely something for the merge window (and
-> preferably pretty early there too)
 
-Ok that's settled then (though I was secretly hoping you'd pull &
-then release 2.6.36 without even compile testing).
+hm, OK, I can't really think of any realistic problem with exposing limits.
 
-It's all ready and queued up, I'll send you a pull request early on so
-we can get some good test coverage.
+The original patch had no signoff.  Please resend, with a changelog
+which includes a *good* rationale for making the change.  For example,
+a use case.
 
-Thanks,
--- 
-Jesse Barnes, Intel Open Source Technology Center
