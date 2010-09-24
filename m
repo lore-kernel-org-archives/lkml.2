@@ -1,62 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757894Ab0IXTXk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 15:23:40 -0400
-Received: from qmta12.emeryville.ca.mail.comcast.net ([76.96.27.227]:45182
-	"EHLO qmta12.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757815Ab0IXTWH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 15:22:07 -0400
-From: matt mooney <mfm@muteddisk.com>
-To: kernel-janitors@vger.kernel.org
-Cc: Rodolfo Giometti <giometti@enneenne.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 18/24] pps: change to new flag variable
-Date: Fri, 24 Sep 2010 12:17:28 -0700
-Message-Id: <75da5e0e0a547b4acbc7cfbdf35c29a24512ca37.1285355033.git.mfm@muteddisk.com>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <0472f95473283ce75285e458b22b86ff791d7a42.1285355033.git.mfm@muteddisk.com>
-References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
- <9968d4260be8850200cc9c7dfe08addf611468b4.1285355033.git.mfm@muteddisk.com>
- <036514b5dd23c5af14303519d79d60d79adccbee.1285355033.git.mfm@muteddisk.com>
- <ffbd189ef2d414ea7c87ffe2b40fce87877dc014.1285355033.git.mfm@muteddisk.com>
- <b3e2061e1e6703f7b84c0484030e07de6000546a.1285355033.git.mfm@muteddisk.com>
- <70fe6b462b3ee22922698a12d62d650cf029033a.1285355033.git.mfm@muteddisk.com>
- <40a2d76d013ad025d08a411992af10f6bbef0a13.1285355033.git.mfm@muteddisk.com>
- <b484ccf548e1700e09ac7f731289503bf3e7b3bf.1285355033.git.mfm@muteddisk.com>
- <2c0fbcaafb18007c5c83823cb33e35120fe15091.1285355033.git.mfm@muteddisk.com>
- <ec9520aca140f253d8bad33cf35b8e668e7e9c9c.1285355033.git.mfm@muteddisk.com>
- <8cea68a58c5ddba79fc96e93fa0b23681e6a7ffe.1285355033.git.mfm@muteddisk.com>
- <e93a3f1af26d2b0fc798b4c15401b3422ae6e2bd.1285355033.git.mfm@muteddisk.com>
- <c2f1ef5590660ae574e9bdaf7136213741081404.1285355033.git.mfm@muteddisk.com>
- <efe88633e146de3e173afea14f777c41c37e5db2.1285355033.git.mfm@muteddisk.com>
- <facbf79cadc81f9043e89160b7b3b8a90926aba1.1285355033.git.mfm@muteddisk.com>
- <f8ffc630c8a56ebd5da0aa2227d63fecc21d4ee7.1285355033.git.mfm@muteddisk.com>
- <0472f95473283ce75285e458b22b86ff791d7a42.1285355033.git.mfm@muteddisk.com>
-In-Reply-To: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
-References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
+	id S1757912Ab0IXTX6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 15:23:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38208 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757744Ab0IXTXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 15:23:54 -0400
+Date: Fri, 24 Sep 2010 15:23:42 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
+        sandeen@redhat.com, tytso@mit.edu, bfields@citi.umich.edu,
+        linux-fsdevel@vger.kernel.org, nfsv4@linux-nfs.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V4 08/11] vfs: Add new file and directory create
+ permission flags
+Message-ID: <20100924152342.502728c0@tlielax.poochiereds.net>
+In-Reply-To: <m3vd5v9clo.fsf@linux.vnet.ibm.com>
+References: <1285332494-12756-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<1285332494-12756-9-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<20100924115423.530813c3@tlielax.poochiereds.net>
+	<m3vd5v9clo.fsf@linux.vnet.ibm.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace EXTRA_CFLAGS with ccflags-y.
+On Sat, 25 Sep 2010 00:46:03 +0530
+"Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
 
-Signed-off-by: matt mooney <mfm@muteddisk.com>
----
- drivers/pps/clients/Makefile |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+> On Fri, 24 Sep 2010 11:54:23 -0400, Jeff Layton <jlayton@redhat.com> wrote:
+> > On Fri, 24 Sep 2010 18:18:11 +0530
+> > "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+> > 
+> > > From: Andreas Gruenbacher <agruen@suse.de>
+> > > 
+> > > Some permission models distinguish between the permission to create a
+> > > non-directory and a directory.  Pass this information down to
+> > > inode_permission() as mask flags
+> > > 
+> > > Signed-off-by: Andreas Gruenbacher <agruen@suse.de>
+> > > Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> > > ---
+> > >  fs/namei.c         |   21 ++++++++++++---------
+> > >  include/linux/fs.h |    2 ++
+> > >  2 files changed, 14 insertions(+), 9 deletions(-)
+> > > 
+> > > diff --git a/fs/namei.c b/fs/namei.c
+> > > index b0b8a71..ed786b2 100644
+> > > --- a/fs/namei.c
+> > > +++ b/fs/namei.c
+> > > @@ -253,7 +253,8 @@ int generic_permission(struct inode *inode, int mask,
+> > >   * for filesystem access without changing the "normal" uids which
+> > >   * are used for other things.
+> > >   *
+> > > - * When checking for MAY_APPEND, MAY_WRITE must also be set in @mask.
+> > > + * When checking for MAY_APPEND, MAY_CREATE_FILE, MAY_CREATE_DIR,
+> > > + * MAY_WRITE must also be set in @mask.
+> > >   */
+> > >  int inode_permission(struct inode *inode, int mask)
+> > >  {
+> > > @@ -1337,13 +1338,15 @@ static int may_delete(struct inode *dir,struct dentry *victim,int isdir)
+> > >   *  3. We should have write and exec permissions on dir
+> > >   *  4. We can't do it if dir is immutable (done in permission())
+> > >   */
+> > > -static inline int may_create(struct inode *dir, struct dentry *child)
+> > > +static inline int may_create(struct inode *dir, struct dentry *child, int isdir)
+> > 									^^^^^
+> > 								nit: maybe saner as a bool?
+> > >  {
+> > > +	int mask = isdir ? MAY_CREATE_DIR : MAY_CREATE_FILE;
+> > > +
+> > >  	if (child->d_inode)
+> > >  		return -EEXIST;
+> > >  	if (IS_DEADDIR(dir))
+> > >  		return -ENOENT;
+> > > -	return inode_permission(dir, MAY_WRITE | MAY_EXEC);
+> > > +	return inode_permission(dir, MAY_WRITE | MAY_EXEC | mask);
+> > >  }
+> > >  
+> > >  /*
+> > > @@ -1391,7 +1394,7 @@ void unlock_rename(struct dentry *p1, struct dentry *p2)
+> > >  int vfs_create(struct inode *dir, struct dentry *dentry, int mode,
+> > >  		struct nameidata *nd)
+> > >  {
+> > > -	int error = may_create(dir, dentry);
+> > > +	int error = may_create(dir, dentry, 0);
+> > >  
+> > >  	if (error)
+> > >  		return error;
+> > > @@ -1953,7 +1956,7 @@ EXPORT_SYMBOL_GPL(lookup_create);
+> > >  
+> > >  int vfs_mknod(struct inode *dir, struct dentry *dentry, int mode, dev_t dev)
+> > >  {
+> > > -	int error = may_create(dir, dentry);
+> > > +	int error = may_create(dir, dentry, 0);
+> > >  
+> > >  	if (error)
+> > >  		return error;
+> > > @@ -2057,7 +2060,7 @@ SYSCALL_DEFINE3(mknod, const char __user *, filename, int, mode, unsigned, dev)
+> > >  
+> > >  int vfs_mkdir(struct inode *dir, struct dentry *dentry, int mode)
+> > >  {
+> > > -	int error = may_create(dir, dentry);
+> > > +	int error = may_create(dir, dentry, 1);
+> > >  
+> > >  	if (error)
+> > >  		return error;
+> > > @@ -2342,7 +2345,7 @@ SYSCALL_DEFINE1(unlink, const char __user *, pathname)
+> > >  
+> > >  int vfs_symlink(struct inode *dir, struct dentry *dentry, const char *oldname)
+> > >  {
+> > > -	int error = may_create(dir, dentry);
+> > > +	int error = may_create(dir, dentry, 0);
+> > >  
+> > >  	if (error)
+> > >  		return error;
+> > > @@ -2415,7 +2418,7 @@ int vfs_link(struct dentry *old_dentry, struct inode *dir, struct dentry *new_de
+> > >  	if (!inode)
+> > >  		return -ENOENT;
+> > >  
+> > > -	error = may_create(dir, new_dentry);
+> > > +	error = may_create(dir, new_dentry, S_ISDIR(inode->i_mode));
+> > 
+> > 						^^^^ this is a little
+> > 						scary, but even if it's
+> > 						a directory, it'll get
+> > 						kicked out in a later
+> > 						check. Would it be
+> > 						clearer to move up the
+> > 						S_ISDIR() check in this
+> > 						function and then pass
+> > 						this in as false?
+> 
+> Can you elaborate on this ? 
+> 
+> -aneesh
+> 
 
-diff --git a/drivers/pps/clients/Makefile b/drivers/pps/clients/Makefile
-index 812c9b1..b52dbb8 100644
---- a/drivers/pps/clients/Makefile
-+++ b/drivers/pps/clients/Makefile
-@@ -5,6 +5,4 @@
- obj-$(CONFIG_PPS_CLIENT_KTIMER)	+= pps-ktimer.o
- obj-$(CONFIG_PPS_CLIENT_LDISC)	+= pps-ldisc.o
- 
--ifeq ($(CONFIG_PPS_DEBUG),y)
--EXTRA_CFLAGS += -DDEBUG
--endif
-+ccflags-$(CONFIG_PPS_DEBUG) := -DDEBUG
+Hardlinked directories are a no-no, of course. So when I first saw this
+patch, it gave me pause. There's a later check in vfs_link though that
+explicitly rejects hardlinking directories, so the above is harmless.
+It may be more efficient to go ahead and return error if the target
+is a directory however and bypass the permission check.
+
+OTOH, maybe there's good reason to do it this way or I'm just being
+excessively nitpicky.
+
 -- 
-1.7.2.1
-
+Jeff Layton <jlayton@redhat.com>
