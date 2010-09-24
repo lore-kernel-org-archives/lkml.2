@@ -1,66 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751123Ab0IXEl6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 00:41:58 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:42831 "EHLO smtp.infotech.no"
+	id S1751367Ab0IXEnU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 00:43:20 -0400
+Received: from kroah.org ([198.145.64.141]:47587 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750837Ab0IXElz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 00:41:55 -0400
-Message-ID: <4C9C2C0C.4070506@interlog.com>
-Date: Fri, 24 Sep 2010 00:41:48 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+	id S1750837Ab0IXEnS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 00:43:18 -0400
+Date: Thu, 23 Sep 2010 21:44:03 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Alan Cox <alan@linux.intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the tty tree
+Message-ID: <20100924044403.GB31185@kroah.com>
+References: <20100924140351.b137a3b7.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-To: Mark Lord <kernel@teksavvy.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        IDE/ATA development list <linux-ide@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: "blocked for more than 120 secs" --> a valid situation, how to
- prevent?
-References: <4C9BE5A8.1090002@teksavvy.com> <4C9BEB49.2060208@interlog.com> <4C9C129E.5050504@teksavvy.com>
-In-Reply-To: <4C9C129E.5050504@teksavvy.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100924140351.b137a3b7.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10-09-23 10:53 PM, Mark Lord wrote:
-> On 10-09-23 08:05 PM, Douglas Gilbert wrote:
->> Mark,
->> If you issued the SG_IO ioctl with a timeout of at
->> least 66 minutes (expressed in milliseconds) then
->> it looks like ata_scsi_queuecmd() has a problem.
-> ..
->
-> Mmm.. more like blk_execute_rq() perhaps.
-> That's where the wait_for_completion(&wait) call is at.
->
-> Perhaps I should change it to wait in smaller increments,
-> so that the lockup detection doesn't trigger on it..
->
-> Doing that seems rather wasteful, though.
->
-> Note that this is the ATA "SECURITY ERASE" command,
-> which doesn't have an "immed" bit to toggle.
-> So one must wait for it to complete.
+On Fri, Sep 24, 2010 at 02:03:51PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> After merging the tty tree, today's linux-next build (powerpc
+> allyesconfig) produced this warning:
+> 
+> drivers/usb/serial/ssu100.c: In function 'ssu100_ioctl':
+> drivers/usb/serial/ssu100.c:448: warning: unused variable 'user_arg'
+> drivers/usb/serial/ssu100.c:447: warning: unused variable 'priv'
+> 
+> Introduced by commit 20e2e6fa50180468e4240a91f811dca3a1c30304 ("tty:
+> Convert the USB drivers to the new icount interface").
 
-And I have seen another issue with long (SCSI) commands.
-During a FORMAT UNIT another pesky program might
-have nothing better to do than periodically send out
-things like TEST UNIT READY (check a disk is ready
-for IO) which will have a normal timeout on it (e.g.
-60 seconds). With a format underway, the HBA or the device
-may not accept the TEST UNIT READY so its timeout expires
-and the error handling code thinks the device is unwell
-and decides to reset it.
+Alan, care to fix this one up as well?
 
-There is a useful flag in the scsi_device structure called
-no_uld_attach which hides a device from the sd driver
-(assuming it is a disk). Then the disk can only be accessed
-via the bsg or sg driver. And those other pesky programs
-can't find the disk in question. I'm not aware of a way
-to control that flag from the user space.
+thanks,
 
-Doug Gilbert
+greg k-h
