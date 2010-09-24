@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757107Ab0IXRBQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 13:01:16 -0400
-Received: from kroah.org ([198.145.64.141]:46009 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753818Ab0IXQ1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:27:53 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:15 2010
-Message-Id: <20100924162615.162161821@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:23:51 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [03/80] bridge: Clear INET control block of SKBs passed into ip_fragment().
-In-Reply-To: <20100924162706.GA7381@kroah.com>
+	id S1757043Ab0IXRCR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 13:02:17 -0400
+Received: from ppsw-31.csi.cam.ac.uk ([131.111.8.131]:33413 "EHLO
+	ppsw-31.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753818Ab0IXRCP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 13:02:15 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4C9CDAD6.6080605@cam.ac.uk>
+Date: Fri, 24 Sep 2010 18:07:34 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100909 Lightning/1.0b3pre Thunderbird/3.1.3
+MIME-Version: 1.0
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+CC: Jean Delvare <khali@linux-fr.org>, Takashi Iwai <tiwai@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        =?ISO-8859-1?Q?=C9ric_Piel?= <Eric.Piel@tremplin-utc.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [lm-sensors] [PATCH v2] lis3: Fix Oops with NULL platform data
+References: <s5heiclngqe.wl%tiwai@suse.de> <20100924135802.GA18109@ericsson.com> <s5hlj6r1b5p.wl%tiwai@suse.de> <20100924163005.7704f63e@endymion.delvare> <4C9CBF4E.7080200@cam.ac.uk> <20100924151759.GC18153@ericsson.com>
+In-Reply-To: <20100924151759.GC18153@ericsson.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-stable review patch.  If anyone has any objections, please let us know.
+On 09/24/10 16:17, Guenter Roeck wrote:
+> On Fri, Sep 24, 2010 at 11:10:06AM -0400, Jonathan Cameron wrote:
+> [...]
+>> Technically hwmon is orphan (according to MAINTAINERS.) But that's not to
+> 
+> If you pull the latest tree, you'll notice that this is no longer correct.
+Excellent!  Glad you two have stepped up, sorry for the misinformation.
 
-------------------
-
-
-From: David S. Miller <davem@davemloft.net>
-
-[ Upstream commit 4ce6b9e1621c187a32a47a17bf6be93b1dc4a3df ]
-
-In a similar vain to commit 17762060c25590bfddd68cc1131f28ec720f405f
-("bridge: Clear IPCB before possible entry into IP stack")
-
-Any time we call into the IP stack we have to make sure the state
-there is as expected by the ipv4 code.
-
-With help from Eric Dumazet and Herbert Xu.
-
-Reported-by: Brandan Das <brandan.das@stratus.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- net/bridge/br_netfilter.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
---- a/net/bridge/br_netfilter.c
-+++ b/net/bridge/br_netfilter.c
-@@ -749,9 +749,11 @@ static int br_nf_dev_queue_xmit(struct s
- {
- 	if (skb->nfct != NULL && skb->protocol == htons(ETH_P_IP) &&
- 	    skb->len + nf_bridge_mtu_reduction(skb) > skb->dev->mtu &&
--	    !skb_is_gso(skb))
-+	    !skb_is_gso(skb)) {
-+		/* BUG: Should really parse the IP options here. */
-+		memset(IPCB(skb), 0, sizeof(struct inet_skb_parm));
- 		return ip_fragment(skb, br_dev_queue_push_xmit);
--	else
-+	} else
- 		return br_dev_queue_push_xmit(skb);
- }
- #else
-
-
+I may well have missed it, but if not perhaps a general announce email to the
+lm-sensors list to announce it may be worth while to alert anyone like me who
+is working on slightly aging branches? (staging-next :)
