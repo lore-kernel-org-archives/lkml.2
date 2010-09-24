@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380Ab0IXDsj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 23:48:39 -0400
-Received: from mo-65-41-216-221.sta.embarqhsd.net ([65.41.216.221]:33721 "EHLO
-	greer.hardwarefreak.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753491Ab0IXDsi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 23:48:38 -0400
-Message-ID: <4C9C1F95.5000509@hardwarefreak.com>
-Date: Thu, 23 Sep 2010 22:48:37 -0500
-From: Stan Hoeppner <stan@hardwarefreak.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Kyle McMartin <kyle@mcmartin.ca>
-CC: Mark Lord <kernel@teksavvy.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        IDE/ATA development list <linux-ide@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: "blocked for more than 120 secs" --> a valid situation, how to
- prevent?
-References: <4C9BE5A8.1090002@teksavvy.com> <4C9BF624.7090906@hardwarefreak.com> <20100924013748.GH13116@bombadil.infradead.org>
-In-Reply-To: <20100924013748.GH13116@bombadil.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755878Ab0IXDst (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 23:48:49 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:46796 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755457Ab0IXDsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 23:48:46 -0400
+Date: Fri, 24 Sep 2010 13:48:41 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Steve French <smfrench@gmail.com>, <linux-cifs@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeff Layton <jlayton@redhat.com>
+Subject: linux-next: build warning after merge of the cifs tree
+Message-Id: <20100924134841.161d18d3.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__24_Sep_2010_13_48_41_+1000_NI0zFPy8anBZZZZo"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kyle McMartin put forth on 9/23/2010 8:37 PM:
-> On Thu, Sep 23, 2010 at 07:51:48PM -0500, Stan Hoeppner wrote:
->> ~$ man hdparm
->>
-> 
-> kyle@dreadnought ~ $ hdparm
-> hdparm - get/set hard disk parameters - version v9.27, by Mark Lord.
->                                                        ^^^^^^^^^^^^
-> [...]
+--Signature=_Fri__24_Sep_2010_13_48_41_+1000_NI0zFPy8anBZZZZo
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Please pardon me while I wipe this egg off my face. :)
+Hi all,
 
-My apologies Mark.  Please feel free to publicly flog me if you wish.
+After merging the cifs tree, today's linux-next build (powerpc
+ppc64_defconfig) produced this warning:
 
--- 
-Stan
+fs/cifs/dir.c: In function 'cifs_new_fileinfo':
+fs/cifs/dir.c:140: warning: unused variable 'cifs_sb'
+
+Introduced by commit 9a6124e7e18fa30d8693055e6a4526afb4c3fabc ("cifs:
+have cifs_new_fileinfo take a tcon arg").
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__24_Sep_2010_13_48_41_+1000_NI0zFPy8anBZZZZo
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMnB+ZAAoJEDMEi1NhKgbszJoH/1R1TKoqSM+bGlQm4lsmtyuj
+G3oI09Npk03pXldQdrVJ0QwH0iKoiSPI98YEPV/sH4qIwJSzwHRjmeFmFcw+Wtwf
+RBdab/JEoqy+KQA6pOBSD/Be3SrZdE7R495BvmAORJQJCbY/zLyEF0921yvMKpVi
+B908Cz0lFeT+lzFy4QQcM9nRuBC0IppWvYqffi1lRxkbCVLFr0G1efx5YPR/wuD7
+g3OyziH1DUnCU/Dw12WjqiPe46uGH6B7tNI58jnu4cV1sFfIiekxdU0qxfr+6uaK
+SFbij9Go/ReXorx/5DhfnoI1dcAdzH8r269MGAzDo5J2rDhAfmkVK+RefwrICO8=
+=Wu6R
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__24_Sep_2010_13_48_41_+1000_NI0zFPy8anBZZZZo--
