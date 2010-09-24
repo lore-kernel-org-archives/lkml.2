@@ -1,48 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751428Ab0IXEnt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 00:43:49 -0400
-Received: from lo.gmane.org ([80.91.229.12]:38142 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750837Ab0IXEns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 00:43:48 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: Re: [PATCH] x86/hwmon: fix module init =?utf-8?b?Zm9yCQ==?= hotplug-but-no-device-found case
-Date: Fri, 24 Sep 2010 04:43:34 +0000 (UTC)
-Message-ID: <loom.20100924T063847-735@post.gmane.org>
-References: <4C8E139F0200007800015AA5@vpn.id2.novell.com>
+	id S1751221Ab0IXEsi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 00:48:38 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38081
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750751Ab0IXEsg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 00:48:36 -0400
+Date: Thu, 23 Sep 2010 21:48:56 -0700 (PDT)
+Message-Id: <20100923.214856.43029525.davem@davemloft.net>
+To: viro@ZenIV.linux.org.uk
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Sparc
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100922231219.GH19804@ZenIV.linux.org.uk>
+References: <20100922204323.GG19804@ZenIV.linux.org.uk>
+	<20100922.141514.232744402.davem@davemloft.net>
+	<20100922231219.GH19804@ZenIV.linux.org.uk>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 68.124.176.202 (Mozilla/5.0 (Windows NT 5.1; rv:2.0b6) Gecko/20100101 Firefox/4.0b6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Beulich <JBeulich <at> novell.com> writes:
+From: Al Viro <viro@ZenIV.linux.org.uk>
+Date: Thu, 23 Sep 2010 00:12:19 +0100
 
-> 
-> In commit 0dca94baeab4a1a514841b0a4c8e3a51dfb4d5ae the call to
-> platform_driver_unregister() was made conditional upon !HOTPLUG_CPU,
-> but the return value from coretemp_init() was left to indicate an
-> error. This isn't correct, as the negative return value indicates to
-> the module loader that initialization failed, which isn't intended
-> here and results in dangling pointers.
-> 
-> Signed-off-by: Jan Beulich <jbeulich <at> novell.com>
-> Cc: Chen Gong <gong.chen <at> linux.intel.com>
-> 
-I have not seen an Acked-by or Nacked-by for this patch or any other patch from
-this series from Jan. 
+> OK... sparc32 question: just what the !@#!@# happens if sun4c_rett_stackchk
+> find (%fp & 7) != 0?  We go to ret_trap_user_stack_is_bolixed, which
+> tries to page in the underlying page.  OK, suppose it's already there and
+> readable; we return without doing anything - and go to signal_p.  Which finds
+> itself with nothing to do, and %fp is *still* buggered.  Spin ad infinitum?
+> srmmu_rett_stackchk will do the same, BTW...
 
-Discussions indicate that the patches are ok. Unless I hear an explicit Nack,
-I'll review the patches and apply them if I think they make sense.
+That's a bug.
 
-Guenter
-
-
+Likely all of the window_*_fault() routines should force a SIGILL when
+the stack is mis-aligned.
