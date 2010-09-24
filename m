@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933040Ab0IXQoh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:44:37 -0400
-Received: from kroah.org ([198.145.64.141]:37164 "EHLO coco.kroah.org"
+	id S932990Ab0IXQfL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:35:11 -0400
+Received: from kroah.org ([198.145.64.141]:37083 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932995Ab0IXQfM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:35:12 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:46 2010
-Message-Id: <20100924163346.362688712@clark.site>
+	id S932768Ab0IXQfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:35:00 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:45 2010
+Message-Id: <20100924163345.161283548@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:31:50 -0700
+Date: Fri, 24 Sep 2010 09:31:37 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Patrick Simmons <linuxrocks123@netscape.net>,
-        Andi Kleen <ak@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [26/68] oprofile: Add Support for Intel CPU Family 6 / Model 22 (Intel Celeron 540)
+        "David S. Miller" <davem@davemloft.net>
+Subject: [13/68] tcp: Prevent overzealous packetization by SWS logic.
 In-Reply-To: <20100924163357.GA15741@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,43 +25,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Patrick Simmons <linuxrocks123@netscape.net>
 
-commit c33f543d320843e1732534c3931da4bbd18e6c14 upstream.
+From: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
 
-This patch adds CPU type detection for the Intel Celeron 540, which is
-part of the Core 2 family according to Wikipedia; the family and ID pair
-is absent from the Volume 3B table referenced in the source code
-comments.  I have tested this patch on an Intel Celeron 540 machine
-reporting itself as Family 6 Model 22, and OProfile runs on the machine
-without issue.
+[ Upstream commit 01f83d69844d307be2aa6fea88b0e8fe5cbdb2f4 ]
 
-Spec:
+If peer uses tiny MSS (say, 75 bytes) and similarly tiny advertised
+window, the SWS logic will packetize to half the MSS unnecessarily.
 
- http://download.intel.com/design/mobile/SPECUPDT/317667.pdf
+This causes problems with some embedded devices.
 
-Signed-off-by: Patrick Simmons <linuxrocks123@netscape.net>
-Acked-by: Andi Kleen <ak@linux.intel.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+However for large MSS devices we do want to half-MSS packetize
+otherwise we never get enough packets into the pipe for things
+like fast retransmit and recovery to work.
+
+Be careful also to handle the case where MSS > window, otherwise
+we'll never send until the probe timer.
+
+Reported-by: ツ Leandro Melo de Sales <leandroal@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- arch/x86/oprofile/nmi_int.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ include/net/tcp.h |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
---- a/arch/x86/oprofile/nmi_int.c
-+++ b/arch/x86/oprofile/nmi_int.c
-@@ -621,7 +621,9 @@ static int __init ppro_init(char **cpu_t
- 	case 14:
- 		*cpu_type = "i386/core";
- 		break;
--	case 15: case 23:
-+	case 0x0f:
-+	case 0x16:
-+	case 0x17:
- 		*cpu_type = "i386/core_2";
- 		break;
- 	case 0x1a:
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -511,8 +511,22 @@ extern unsigned int tcp_current_mss(stru
+ /* Bound MSS / TSO packet size with the half of the window */
+ static inline int tcp_bound_to_half_wnd(struct tcp_sock *tp, int pktsize)
+ {
+-	if (tp->max_window && pktsize > (tp->max_window >> 1))
+-		return max(tp->max_window >> 1, 68U - tp->tcp_header_len);
++	int cutoff;
++
++	/* When peer uses tiny windows, there is no use in packetizing
++	 * to sub-MSS pieces for the sake of SWS or making sure there
++	 * are enough packets in the pipe for fast recovery.
++	 *
++	 * On the other hand, for extremely large MSS devices, handling
++	 * smaller than MSS windows in this way does make sense.
++	 */
++	if (tp->max_window >= 512)
++		cutoff = (tp->max_window >> 1);
++	else
++		cutoff = tp->max_window;
++
++	if (cutoff && pktsize > cutoff)
++		return max_t(int, cutoff, 68U - tp->tcp_header_len);
+ 	else
+ 		return pktsize;
+ }
 
 
