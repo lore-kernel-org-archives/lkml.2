@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932877Ab0IXQ3J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:29:09 -0400
-Received: from kroah.org ([198.145.64.141]:38637 "EHLO coco.kroah.org"
+	id S932896Ab0IXQaI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:30:08 -0400
+Received: from kroah.org ([198.145.64.141]:38604 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932865Ab0IXQ3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:29:05 -0400
+	id S932844Ab0IXQ3B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:29:01 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:21 2010
-Message-Id: <20100924162621.890921297@clark.site>
+Message-Id: <20100924162621.460340492@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:25:08 -0700
+Date: Fri, 24 Sep 2010 09:25:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michael Cree <mcree@orcon.net.nz>, Matt Turner <mattst88@gmail.com>
-Subject: [80/80] alpha: Fix printk format errors
+        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>
+Subject: [75/80] mm: page allocator: update free page counters after pages are placed on the free list
 In-Reply-To: <20100924162706.GA7381@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,53 +25,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Cree <mcree@orcon.net.nz>
+From: Mel Gorman <mel@csn.ul.ie>
 
-commit 3e073367a57d41e506f20aebb98e308387ce3090 upstream.
+commit 72853e2991a2702ae93aaf889ac7db743a415dd3 upstream.
 
-When compiling alpha generic build get errors such as:
-arch/alpha/kernel/err_marvel.c: In function ‘marvel_print_err_cyc’:
-arch/alpha/kernel/err_marvel.c:119: error: format ‘%ld’ expects type ‘long int’, but argument 6 has type ‘u64’
+When allocating a page, the system uses NR_FREE_PAGES counters to
+determine if watermarks would remain intact after the allocation was made.
+This check is made without interrupts disabled or the zone lock held and
+so is race-prone by nature.  Unfortunately, when pages are being freed in
+batch, the counters are updated before the pages are added on the list.
+During this window, the counters are misleading as the pages do not exist
+yet.  When under significant pressure on systems with large numbers of
+CPUs, it's possible for processes to make progress even though they should
+have been stalled.  This is particularly problematic if a number of the
+processes are using GFP_ATOMIC as the min watermark can be accidentally
+breached and in extreme cases, the system can livelock.
 
-Replaced a number of %ld format specifiers with %lld since u64
-is unsigned long long.
+This patch updates the counters after the pages have been added to the
+list.  This makes the allocator more cautious with respect to preserving
+the watermarks and mitigates livelock possibilities.
 
-Signed-off-by: Michael Cree <mcree@orcon.net.nz>
-Signed-off-by: Matt Turner <mattst88@gmail.com>
+[akpm@linux-foundation.org: avoid modifying incoming args]
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: Christoph Lameter <cl@linux.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/alpha/kernel/err_marvel.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ mm/page_alloc.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/arch/alpha/kernel/err_marvel.c
-+++ b/arch/alpha/kernel/err_marvel.c
-@@ -109,7 +109,7 @@ marvel_print_err_cyc(u64 err_cyc)
- #define IO7__ERR_CYC__CYCLE__M	(0x7)
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -588,13 +588,13 @@ static void free_pcppages_bulk(struct zo
+ {
+ 	int migratetype = 0;
+ 	int batch_free = 0;
++	int to_free = count;
  
- 	printk("%s        Packet In Error: %s\n"
--	       "%s        Error in %s, cycle %ld%s%s\n",
-+	       "%s        Error in %s, cycle %lld%s%s\n",
- 	       err_print_prefix, 
- 	       packet_desc[EXTRACT(err_cyc, IO7__ERR_CYC__PACKET)],
- 	       err_print_prefix,
-@@ -313,7 +313,7 @@ marvel_print_po7_ugbge_sym(u64 ugbge_sym
+ 	spin_lock(&zone->lock);
+ 	zone->all_unreclaimable = 0;
+ 	zone->pages_scanned = 0;
+ 
+-	__mod_zone_page_state(zone, NR_FREE_PAGES, count);
+-	while (count) {
++	while (to_free) {
+ 		struct page *page;
+ 		struct list_head *list;
+ 
+@@ -619,8 +619,9 @@ static void free_pcppages_bulk(struct zo
+ 			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
+ 			__free_one_page(page, zone, 0, page_private(page));
+ 			trace_mm_page_pcpu_drain(page, 0, page_private(page));
+-		} while (--count && --batch_free && !list_empty(list));
++		} while (--to_free && --batch_free && !list_empty(list));
  	}
++	__mod_zone_page_state(zone, NR_FREE_PAGES, count);
+ 	spin_unlock(&zone->lock);
+ }
  
- 	printk("%s      Up Hose Garbage Symptom:\n"
--	       "%s        Source Port: %ld - Dest PID: %ld - OpCode: %s\n", 
-+	       "%s        Source Port: %lld - Dest PID: %lld - OpCode: %s\n",
- 	       err_print_prefix,
- 	       err_print_prefix, 
- 	       EXTRACT(ugbge_sym, IO7__PO7_UGBGE_SYM__UPH_SRC_PORT),
-@@ -552,7 +552,7 @@ marvel_print_pox_spl_cmplt(u64 spl_cmplt
- #define IO7__POX_SPLCMPLT__REM_BYTE_COUNT__M	(0xfff)
+@@ -631,8 +632,8 @@ static void free_one_page(struct zone *z
+ 	zone->all_unreclaimable = 0;
+ 	zone->pages_scanned = 0;
  
- 	printk("%s      Split Completion Error:\n"	
--	       "%s         Source (Bus:Dev:Func): %ld:%ld:%ld\n",
-+	       "%s         Source (Bus:Dev:Func): %lld:%lld:%lld\n",
- 	       err_print_prefix,
- 	       err_print_prefix,
- 	       EXTRACT(spl_cmplt, IO7__POX_SPLCMPLT__SOURCE_BUS),
+-	__mod_zone_page_state(zone, NR_FREE_PAGES, 1 << order);
+ 	__free_one_page(page, zone, order, migratetype);
++	__mod_zone_page_state(zone, NR_FREE_PAGES, 1 << order);
+ 	spin_unlock(&zone->lock);
+ }
+ 
 
 
