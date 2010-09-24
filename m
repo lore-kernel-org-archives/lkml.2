@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197Ab0IXFCZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 01:02:25 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:43801 "EHLO smtp.infotech.no"
+	id S1752773Ab0IXFCo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 01:02:44 -0400
+Received: from lo.gmane.org ([80.91.229.12]:45641 "EHLO lo.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750854Ab0IXFCY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 01:02:24 -0400
-Message-ID: <4C9C30D9.8090302@interlog.com>
-Date: Fri, 24 Sep 2010 01:02:17 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
-MIME-Version: 1.0
-To: Stan Hoeppner <stan@hardwarefreak.com>
-CC: Kyle McMartin <kyle@mcmartin.ca>, Mark Lord <kernel@teksavvy.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        IDE/ATA development list <linux-ide@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: "blocked for more than 120 secs" --> a valid situation, how to
- prevent?
-References: <4C9BE5A8.1090002@teksavvy.com> <4C9BF624.7090906@hardwarefreak.com> <20100924013748.GH13116@bombadil.infradead.org> <4C9C1F95.5000509@hardwarefreak.com>
-In-Reply-To: <4C9C1F95.5000509@hardwarefreak.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1751992Ab0IXFCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 01:02:43 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: Re: [PATCH] x86/hwmon: don't leak device attribute file =?utf-8?b?ZnJvbQk=?= =?utf-8?b?cGtndGVtcF9wcm9iZSgp?=
+Date: Fri, 24 Sep 2010 05:02:28 +0000 (UTC)
+Message-ID: <loom.20100924T065409-7@post.gmane.org>
+References: <4C8E15B30200007800015AC9@vpn.id2.novell.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 68.124.176.202 (Mozilla/5.0 (Windows NT 5.1; rv:2.0b6) Gecko/20100101 Firefox/4.0b6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10-09-23 11:48 PM, Stan Hoeppner wrote:
-> Kyle McMartin put forth on 9/23/2010 8:37 PM:
->> On Thu, Sep 23, 2010 at 07:51:48PM -0500, Stan Hoeppner wrote:
->>> ~$ man hdparm
->>>
->>
->> kyle@dreadnought ~ $ hdparm
->> hdparm - get/set hard disk parameters - version v9.27, by Mark Lord.
->>                                                         ^^^^^^^^^^^^
->> [...]
->
-> Please pardon me while I wipe this egg off my face. :)
->
-> My apologies Mark.  Please feel free to publicly flog me if you wish.
+Jan Beulich <JBeulich <at> novell.com> writes:
+> 
+> While apparently inherited from coretemp source, this particular error
+> handling cleanup path wasn't copied properly (or perhaps got discarded
+> intermediately and not re-added properly later).
+> 
+> Signed-off-by: Jan Beulich <jbeulich <at> novell.com>
+> Cc: Fenghua Yu <fenghua.yu <at> intel.com>
+> 
+> ---
+[...]
 
-I wonder if Mark every watched a program called
-Sledge Hammer! whose signature line was "Trust me.
-I know what I'm doing." Recently I needed to plead
-with hdparm to corrupt a sector as follows:
+>  exit_class:
+>  	sysfs_remove_group(&pdev->dev.kobj, &pkgtemp_group);
+> +exit_dev:
+> +	device_remove_file(&pdev->dev, &sensor_dev_attr_temp1_max.dev_attr);
+>  exit_free:
+>  	kfree(data);
+>  exit:
+> 
+The device file should also be deleted in pkgtemp_remove(). Looks like that got
+lost as well.
 
-# hdparm --make-bad-sector 976770000 --yes-i-know-what-i-am-doing /dev/sdb
+No need to resend; I'll add that myself.
 
-Doug Gilbert
+Guenter
+
+
