@@ -1,86 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545Ab0IXLaw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 07:30:52 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:45365 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334Ab0IXLav (ORCPT
+	id S1754383Ab0IXLjt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 07:39:49 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:18398 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752087Ab0IXLjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 07:30:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=FtgGhABTUCMTKnYDPWwoiMIlC+WaFFfdhjuwU0XSNckO54x7FJQtPaMy0gHtVhKlgv
-         bHnDRDKMDMzGqJTQe5rsa7CJscnH9mynM+y+2aTkf0yFHjMNCsHWySg5CEstPd8ey7re
-         y95P+e0rNVYgWUtZkPceEA9tbsxk5Er2xZJrU=
-From: Huang Shijie <shijie8@gmail.com>
-To: David.Woodhouse@intel.com
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Huang Shijie <shijie8@gmail.com>
-Subject: [PATCH] mtd : add init_size hook for NAND driver
-Date: Fri, 24 Sep 2010 19:34:23 +0800
-Message-Id: <1285328063-7982-1-git-send-email-shijie8@gmail.com>
-X-Mailer: git-send-email 1.7.2.2
+	Fri, 24 Sep 2010 07:39:48 -0400
+Date: Fri, 24 Sep 2010 13:39:32 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Mikael Pettersson <mikpe@it.uu.se>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [BUG 2.6.36-rc5] of_i2c.ko <-> i2c-core.ko dependency loop
+Message-ID: <20100924133932.4320b993@endymion.delvare>
+In-Reply-To: <19612.33369.175358.879889@pilspetsen.it.uu.se>
+References: <19611.16302.262307.129176@pilspetsen.it.uu.se>
+	<20100923113807.4643fbbb.rdunlap@xenotime.net>
+	<19611.46496.782340.466509@pilspetsen.it.uu.se>
+	<20100923150559.9c67da11.rdunlap@xenotime.net>
+	<20100924111209.3c071da3@endymion.delvare>
+	<19612.33369.175358.879889@pilspetsen.it.uu.se>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not all the NAND devices have all the information in additional
-id bytes.
+Hi Mikael,
 
-So add a hook in the nand_chip{} is a good method to calculate the
-right value of oobsize, erasesize and so on.
+On Fri, 24 Sep 2010 12:50:01 +0200, Mikael Pettersson wrote:
+> Jean Delvare writes:
+>  > As far as I can see this is caused by this commit from Grant:
+>  > 
+>  > http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=959e85f7751c33d1a2dabc5cc3fe2ed0db7052e5
+>  > 
+>  > Mikael, can you please try reverting this patch and see if it solves
+>  > your problem?
+> 
+> Yes, reverting the above commit from 2.6.36-rc5 eliminated the warnings,
+> and I was able to insmod the i2c-{core,dev,powermac}.ko modules.
 
-Without the hook,you will get the wrong value, and you have to hack
-in the ->scan_bbt() to change the wrong value which make the code
-mess.
+Thanks for testing and reporting. Grant, unless you come up with a fix
+very quickly, I'll have to revert
+959e85f7751c33d1a2dabc5cc3fe2ed0db7052e5 for 2.6.36.
 
-Signed-off-by: Huang Shijie <shijie8@gmail.com>
----
- drivers/mtd/nand/nand_base.c |    6 ++++--
- include/linux/mtd/nand.h     |    5 +++++
- 2 files changed, 9 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index d551ddd..0288f1f 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -2848,8 +2848,10 @@ static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
- 
- 	chip->chipsize = (uint64_t)type->chipsize << 20;
- 
--	/* Newer devices have all the information in additional id bytes */
--	if (!type->pagesize) {
-+	if (!type->pagesize && chip->init_size) {
-+		/* set the pagesize, oobsize, erasesize by the driver*/
-+		busw = chip->init_size(mtd, chip);
-+	} else if (!type->pagesize) {
- 		int extid;
- 		/* The 3rd id byte holds MLC / multichip data */
- 		chip->cellinfo = id_data[2];
-diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
-index 102e12c..2296a7a 100644
---- a/include/linux/mtd/nand.h
-+++ b/include/linux/mtd/nand.h
-@@ -332,6 +332,9 @@ struct nand_buffers {
-  * @block_markbad:	[REPLACEABLE] mark the block bad
-  * @cmd_ctrl:		[BOARDSPECIFIC] hardwarespecific funtion for controlling
-  *			ALE/CLE/nCE. Also used to write command and address
-+ * @init_size:		[BOARDSPECIFIC] hardwarespecific funtion for setting
-+ *			mtd->oobsize, mtd->writesize and so on.
-+ *			Return with the bus width.
-  * @dev_ready:		[BOARDSPECIFIC] hardwarespecific function for accesing device ready/busy line
-  *			If set to NULL no access to ready/busy is available and the ready/busy information
-  *			is read from the chip status register
-@@ -386,6 +389,8 @@ struct nand_chip {
- 	int		(*block_markbad)(struct mtd_info *mtd, loff_t ofs);
- 	void		(*cmd_ctrl)(struct mtd_info *mtd, int dat,
- 				    unsigned int ctrl);
-+	int		(*init_size)(struct mtd_info *mtd,
-+					struct nand_chip *this);
- 	int		(*dev_ready)(struct mtd_info *mtd);
- 	void		(*cmdfunc)(struct mtd_info *mtd, unsigned command, int column, int page_addr);
- 	int		(*waitfunc)(struct mtd_info *mtd, struct nand_chip *this);
 -- 
-1.7.2.2
-
+Jean Delvare
