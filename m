@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223Ab0IXEuT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 00:50:19 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:60349 "HELO mail.gmx.net"
+	id S1751584Ab0IXEuO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 00:50:14 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:60248 "HELO mail.gmx.net"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751154Ab0IXEuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 00:50:16 -0400
+	id S1750963Ab0IXEuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 00:50:12 -0400
 X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX18rmJ0yHRor/KP39A45JU4QSKiFh/tfRXcioT3Y8a
-	YhNJtWm/xX9QtY
+X-Provags-ID: V01U2FsdGVkX180cgNBSSc0+gs+esRTqmEG0ERej8B3bF/WSHytZS
+	FIL+KcflIw2VFG
 From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 To: linux-fbdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
         Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Joseph Chan <JosephChan@via.com.tw>, Jonathan Corbet <corbet@lwn.net>
-Subject: [PATCH 2/4] viafb: restore display on resume
-Date: Fri, 24 Sep 2010 05:01:24 +0000
-Message-Id: <e16aa3895c06ec782df51f030dda61bc2ba322cc.1285303223.git.FlorianSchandinat@gmx.de>
+        Jonathan Corbet <corbet@lwn.net>
+Subject: [PATCH 0/4] initial suspend and resume support
+Date: Fri, 24 Sep 2010 05:01:22 +0000
+Message-Id: <cover.1285303222.git.FlorianSchandinat@gmx.de>
 X-Mailer: git-send-email 1.6.3.2
-In-Reply-To: <cover.1285303222.git.FlorianSchandinat@gmx.de>
-References: <cover.1285303222.git.FlorianSchandinat@gmx.de>
-In-Reply-To: <cover.1285303222.git.FlorianSchandinat@gmx.de>
-References: <cover.1285303222.git.FlorianSchandinat@gmx.de>
 X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes viafb restore the display on resume by calling
-viafb_set_par. Resumeing has still its issues:
-- will probably freeze most machines (for me on VX800 reliable on the
-  second resume)
-- under some configurations the screen appears on the wrong output
-  device (reason unknown)
+Hi,
 
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: Joseph Chan <JosephChan@via.com.tw>
-Cc: Jonathan Corbet <corbet@lwn.net>
----
- drivers/video/via/viafbdev.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+this little patch series finally adds basic suspend and resume support.
+The good thing is, that it nearly works. Well in fact it should work
+fine if the only connected device is a CRT. For other devices it might
+happen that suspend and resume works but the screen stays black. This
+is probably caused by auxiliary devices that are connect via I2C lines
+and not yet reinitialized properly.
+This should be a huge improvent above the current behaviour, especially
+the hardware acceleration including a visible cursor works.
 
-diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
-index f2b68cc..5b23293 100644
---- a/drivers/video/via/viafbdev.c
-+++ b/drivers/video/via/viafbdev.c
-@@ -1522,6 +1522,9 @@ int viafb_resume(struct pci_dev *pdev)
- 		    viaparinfo->shared->saved_regs,
- 		    0x100 * sizeof(u32));
- 
-+	viafb_set_par(viafbinfo);
-+	if (viafb_dual_fb)
-+		viafb_set_par(viafbinfo1);
- 	fb_set_suspend(viafbinfo, 0);
- 
- fail:
--- 
-1.6.3.2
+As usual tests were performed on CLE266, VX800 and VX855.
+These patches are also available on
+	git://github.com/schandinat/linux-2.6.git viafb-s4v1
+
+Happy testing :)
+
+
+Thanks,
+
+Florian Tobias Schandinat
+
+
+Deepak Saxena (1):
+  Minimal support for viafb suspend/resume
+
+Florian Tobias Schandinat (3):
+  viafb: restore display on resume
+  viafb: make suspend and resume work (on all machines?)
+  viafb: fix hardware acceleration for suspend & resume
+
+ drivers/video/via/accel.c    |   43 +++++++++++++++++++++++++----------------
+ drivers/video/via/accel.h    |    3 +-
+ drivers/video/via/via-core.c |    4 +++
+ drivers/video/via/viafbdev.c |   43 +++++++++++++++++++++++++++++++++++++++++-
+ drivers/video/via/viafbdev.h |    2 +
+ 5 files changed, 76 insertions(+), 19 deletions(-)
 
