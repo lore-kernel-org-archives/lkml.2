@@ -1,136 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643Ab0IXQxW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:53:22 -0400
-Received: from kroah.org ([198.145.64.141]:38368 "EHLO coco.kroah.org"
+	id S1755521Ab0IXQxG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:53:06 -0400
+Received: from kroah.org ([198.145.64.141]:38372 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932684Ab0IXQ23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:28:29 -0400
-Date: Fri, 24 Sep 2010 09:27:06 -0700
+	id S932691Ab0IXQ2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:28:30 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:18 2010
+Message-Id: <20100924162618.536817208@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 24 Sep 2010 09:24:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [00/80] 2.6.35.6 stable review
-Message-ID: <20100924162706.GA7381@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Vladimir Zapolskiy <vzapolskiy@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>, Ben Dooks <ben@fluff.org.uk>,
+        Atul Dahiya <atul.dahiya@samsung.com>,
+        Taekgyun Ko <taeggyun.ko@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: [42/80] rtc: s3c: balance state changes of wakeup flag
+In-Reply-To: <20100924162706.GA7381@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 2.6.35.6 release.
-There are 80 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let us know.  If anyone is a maintainer of the proper subsystem, and
-wants to add a Signed-off-by: line to the patch, please respond with it.
+2.6.35-stable review patch.  If anyone has any objections, please let us know.
 
-Responses should be made by Sunday September 26, 17:00:00 UTC
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.35.6-rc1.gz
-and the diffstat can be found below.
+From: Vladimir Zapolskiy <vzapolskiy@gmail.com>
 
-thanks,
+commit f501ed524b26ba1b739b7f7feb0a0e1496878769 upstream.
 
-greg k-h
+This change resolves a problem about unbalanced calls of
+enable_irq_wakeup() and disable_irq_wakeup() for alarm interrupt.
 
- Makefile                                 |    2 +-
- arch/alpha/kernel/err_marvel.c           |    6 +-
- arch/alpha/kernel/proto.h                |    3 -
- arch/alpha/kernel/sys_cabriolet.c        |   19 ++-
- arch/alpha/kernel/sys_takara.c           |   11 +-
- arch/arm/mach-at91/at91sam9g45_devices.c |    2 +-
- arch/ia64/kernel/fsys.S                  |   30 ++-
- arch/sparc/include/asm/oplib_64.h        |   27 +---
- arch/sparc/prom/cif.S                    |   16 +-
- arch/sparc/prom/console_64.c             |   48 ++++-
- arch/sparc/prom/devops_64.c              |   36 +++-
- arch/sparc/prom/misc_64.c                |  314 +++++++++++++++++++++---------
- arch/sparc/prom/p1275.c                  |  102 +----------
- arch/sparc/prom/tree_64.c                |  210 +++++++++++++++------
- arch/x86/kvm/emulate.c                   |    4 +-
- arch/x86/kvm/mmu.c                       |    8 +-
- arch/x86/kvm/paging_tmpl.h               |   28 +++-
- arch/x86/kvm/vmx.c                       |    4 +
- arch/x86/kvm/x86.c                       |    7 +-
- arch/x86/lib/atomic64_386_32.S           |   38 ++--
- arch/x86/oprofile/nmi_int.c              |    4 +-
- drivers/base/power/main.c                |    1 +
- drivers/char/agp/intel-agp.c             |   44 +++--
- drivers/char/agp/intel-agp.h             |   19 ++-
- drivers/char/agp/intel-gtt.c             |   47 +++++-
- drivers/char/mem.c                       |    3 +-
- drivers/char/virtio_console.c            |    6 +-
- drivers/gpu/drm/i915/i915_drv.c          |    6 +
- drivers/gpu/drm/i915/intel_display.c     |    8 +
- drivers/gpu/drm/nouveau/nv50_instmem.c   |    2 +
- drivers/message/fusion/mptscsih.c        |    2 +
- drivers/net/bonding/bond_3ad.c           |    3 +
- drivers/net/bonding/bond_alb.c           |    3 +
- drivers/net/cxgb3/cxgb3_main.c           |    2 +
- drivers/net/eql.c                        |    2 +
- drivers/net/usb/hso.c                    |    2 +
- drivers/pci/intel-iommu.c                |   90 ++++-----
- drivers/platform/x86/dell-wmi.c          |    2 +-
- drivers/platform/x86/hp-wmi.c            |   51 +++--
- drivers/rtc/rtc-s3c.c                    |   13 +-
- drivers/staging/vt6655/wpactl.c          |   11 +-
- drivers/usb/musb/musb_debugfs.c          |    5 +-
- drivers/usb/serial/mos7720.c             |    3 +
- drivers/usb/serial/mos7840.c             |    3 +
- drivers/video/sis/sis_main.c             |    3 +
- drivers/video/via/ioctl.c                |    2 +
- fs/aio.c                                 |   13 ++-
- fs/char_dev.c                            |    4 +-
- fs/compat.c                              |    2 +-
- fs/fs-writeback.c                        |   23 ++-
- fs/gfs2/log.c                            |    2 +-
- fs/notify/inotify/inotify_user.c         |    7 +-
- fs/proc/vmcore.c                         |    2 +-
- fs/xfs/linux-2.6/xfs_ioctl.c             |    2 +
- include/linux/ksm.h                      |   20 +-
- include/linux/kvm_host.h                 |    1 +
- include/linux/mm.h                       |    8 +-
- include/linux/mmzone.h                   |   13 ++
- include/linux/vmstat.h                   |   22 ++
- include/net/sock.h                       |    1 +
- include/net/tcp.h                        |   36 +++-
- include/net/udp.h                        |    1 +
- kernel/exit.c                            |    5 +-
- kernel/hw_breakpoint.c                   |    3 +-
- kernel/power/snapshot.c                  |   85 ++++++--
- kernel/sched.c                           |    8 +-
- kernel/sys.c                             |    2 +
- mm/backing-dev.c                         |    2 +
- mm/ksm.c                                 |    3 -
- mm/memory.c                              |   56 +++++-
- mm/mmap.c                                |    4 +-
- mm/mmzone.c                              |   21 ++
- mm/page_alloc.c                          |   33 +++-
- mm/percpu.c                              |    2 +-
- mm/vmscan.c                              |   43 ++++-
- mm/vmstat.c                              |   15 ++-
- net/Kconfig                              |    2 +-
- net/bridge/br_netfilter.c                |    6 +-
- net/core/skbuff.c                        |    6 +-
- net/ipv4/datagram.c                      |    5 +-
- net/ipv4/route.c                         |    7 +-
- net/ipv4/tcp.c                           |   32 +--
- net/ipv4/tcp_timer.c                     |    8 +-
- net/ipv4/udp.c                           |   44 ++++
- net/ipv6/datagram.c                      |    7 +-
- net/ipv6/udp.c                           |   10 +
- net/irda/af_irda.c                       |    4 +-
- net/l2tp/l2tp_eth.c                      |    2 +-
- net/llc/af_llc.c                         |    3 +-
- net/rds/recv.c                           |    2 +-
- net/sctp/output.c                        |    1 -
- net/unix/af_unix.c                       |   15 ++-
- security/keys/keyctl.c                   |    6 +-
- sound/pci/hda/patch_sigmatel.c           |   12 +-
- virt/kvm/kvm_main.c                      |    1 +
- 95 files changed, 1285 insertions(+), 579 deletions(-)
+Bug reproduction:
+
+root@eb600:~# echo 0 > /sys/class/rtc/rtc0/wakealarm
+
+WARNING: at kernel/irq/manage.c:361 set_irq_wake+0x7c/0xe4()
+ Unbalanced IRQ 46 wake disable
+Modules linked in:
+[<c0025708>] (unwind_backtrace+0x0/0xd8) from [<c003358c>] (warn_slowpath_common+0x44/0x5c)
+[<c003358c>] (warn_slowpath_common+0x44/0x5c) from [<c00335dc>] (warn_slowpath_fmt+0x24/0x30)
+[<c00335dc>] (warn_slowpath_fmt+0x24/0x30) from [<c0058c20>] (set_irq_wake+0x7c/0xe4)
+[<c0058c20>] (set_irq_wake+0x7c/0xe4) from [<c01b5e80>] (s3c_rtc_setalarm+0xa8/0xb8)
+[<c01b5e80>] (s3c_rtc_setalarm+0xa8/0xb8) from [<c01b47a0>] (rtc_set_alarm+0x60/0x74)
+[<c01b47a0>] (rtc_set_alarm+0x60/0x74) from [<c01b5a98>] (rtc_sysfs_set_wakealarm+0xc8/0xd8)
+[<c01b5a98>] (rtc_sysfs_set_wakealarm+0xc8/0xd8) from [<c01891ec>] (dev_attr_store+0x20/0x24)
+[<c01891ec>] (dev_attr_store+0x20/0x24) from [<c00be934>] (sysfs_write_file+0x104/0x13c)
+[<c00be934>] (sysfs_write_file+0x104/0x13c) from [<c0080e7c>] (vfs_write+0xb0/0x158)
+[<c0080e7c>] (vfs_write+0xb0/0x158) from [<c0080fcc>] (sys_write+0x3c/0x68)
+[<c0080fcc>] (sys_write+0x3c/0x68) from [<c0020ec0>] (ret_fast_syscall+0x0/0x28)
+
+Signed-off-by: Vladimir Zapolskiy <vzapolskiy@gmail.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Ben Dooks <ben@fluff.org.uk>
+Cc: Atul Dahiya <atul.dahiya@samsung.com>
+Cc: Taekgyun Ko <taeggyun.ko@samsung.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: <stable@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/rtc/rtc-s3c.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
+
+--- a/drivers/rtc/rtc-s3c.c
++++ b/drivers/rtc/rtc-s3c.c
+@@ -298,11 +298,6 @@ static int s3c_rtc_setalarm(struct devic
+ 
+ 	s3c_rtc_setaie(alrm->enabled);
+ 
+-	if (alrm->enabled)
+-		enable_irq_wake(s3c_rtc_alarmno);
+-	else
+-		disable_irq_wake(s3c_rtc_alarmno);
+-
+ 	return 0;
+ }
+ 
+@@ -547,6 +542,10 @@ static int s3c_rtc_suspend(struct platfo
+ 		ticnt_en_save &= S3C64XX_RTCCON_TICEN;
+ 	}
+ 	s3c_rtc_enable(pdev, 0);
++
++	if (device_may_wakeup(&pdev->dev))
++		enable_irq_wake(s3c_rtc_alarmno);
++
+ 	return 0;
+ }
+ 
+@@ -560,6 +559,10 @@ static int s3c_rtc_resume(struct platfor
+ 		tmp = readb(s3c_rtc_base + S3C2410_RTCCON);
+ 		writeb(tmp | ticnt_en_save, s3c_rtc_base + S3C2410_RTCCON);
+ 	}
++
++	if (device_may_wakeup(&pdev->dev))
++		disable_irq_wake(s3c_rtc_alarmno);
++
+ 	return 0;
+ }
+ #else
+
+
