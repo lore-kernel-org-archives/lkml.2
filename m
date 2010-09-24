@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757024Ab0IXQ5v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:57:51 -0400
-Received: from kroah.org ([198.145.64.141]:46117 "EHLO coco.kroah.org"
+	id S932555Ab0IXQ2E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:28:04 -0400
+Received: from kroah.org ([198.145.64.141]:46043 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932587Ab0IXQ2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:28:11 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:16 2010
-Message-Id: <20100924162616.825130362@clark.site>
+	id S932503Ab0IXQ16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:27:58 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:15 2010
+Message-Id: <20100924162615.677193900@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:24:10 -0700
+Date: Fri, 24 Sep 2010 09:23:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <error27@gmail.com>
-Subject: [22/80] Staging: vt6655: fix buffer overflow
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: [09/80] tcp: Combat per-cpu skew in orphan tests.
 In-Reply-To: <20100924162706.GA7381@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,48 +26,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <error27@gmail.com>
 
-commit dd173abfead903c7df54e977535973f3312cd307 upstream.
+From: David S. Miller <davem@davemloft.net>
 
-"param->u.wpa_associate.wpa_ie_len" comes from the user.  We should
-check it so that the copy_from_user() doesn't overflow the buffer.
+[ Upstream commit ad1af0fedba14f82b240a03fe20eb9b2fdbd0357 ]
 
-Also further down in the function, we assume that if
-"param->u.wpa_associate.wpa_ie_len" is set then "abyWPAIE[0]" is
-initialized.  To make that work, I changed the test here to say that if
-"wpa_ie_len" is set then "wpa_ie" has to be a valid pointer or we return
--EINVAL.
+As reported by Anton Blanchard when we use
+percpu_counter_read_positive() to make our orphan socket limit checks,
+the check can be off by up to num_cpus_online() * batch (which is 32
+by default) which on a 128 cpu machine can be as large as the default
+orphan limit itself.
 
-Oddly, we only use the first element of the abyWPAIE[] array.  So I
-suspect there may be some other issues in this function.
+Fix this by doing the full expensive sum check if the optimized check
+triggers.
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+Reported-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/staging/vt6655/wpactl.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ include/net/tcp.h    |   18 ++++++++++++++----
+ net/ipv4/tcp.c       |    5 +----
+ net/ipv4/tcp_timer.c |    8 ++++----
+ 3 files changed, 19 insertions(+), 12 deletions(-)
 
---- a/drivers/staging/vt6655/wpactl.c
-+++ b/drivers/staging/vt6655/wpactl.c
-@@ -766,9 +766,14 @@ static int wpa_set_associate(PSDevice pD
-     DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "wpa_ie_len = %d\n", param->u.wpa_associate.wpa_ie_len);
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -268,11 +268,21 @@ static inline int between(__u32 seq1, __
+ 	return seq3 - seq2 >= seq1 - seq2;
+ }
  
- 
--	if (param->u.wpa_associate.wpa_ie &&
--	    copy_from_user(&abyWPAIE[0], param->u.wpa_associate.wpa_ie, param->u.wpa_associate.wpa_ie_len))
--	    return -EINVAL;
-+	if (param->u.wpa_associate.wpa_ie_len) {
-+		if (!param->u.wpa_associate.wpa_ie)
-+			return -EINVAL;
-+		if (param->u.wpa_associate.wpa_ie_len > sizeof(abyWPAIE))
-+			return -EINVAL;
-+		if (copy_from_user(&abyWPAIE[0], param->u.wpa_associate.wpa_ie, param->u.wpa_associate.wpa_ie_len))
-+			return -EFAULT;
+-static inline int tcp_too_many_orphans(struct sock *sk, int num)
++static inline bool tcp_too_many_orphans(struct sock *sk, int shift)
+ {
+-	return (num > sysctl_tcp_max_orphans) ||
+-		(sk->sk_wmem_queued > SOCK_MIN_SNDBUF &&
+-		 atomic_read(&tcp_memory_allocated) > sysctl_tcp_mem[2]);
++	struct percpu_counter *ocp = sk->sk_prot->orphan_count;
++	int orphans = percpu_counter_read_positive(ocp);
++
++	if (orphans << shift > sysctl_tcp_max_orphans) {
++		orphans = percpu_counter_sum_positive(ocp);
++		if (orphans << shift > sysctl_tcp_max_orphans)
++			return true;
 +	}
++
++	if (sk->sk_wmem_queued > SOCK_MIN_SNDBUF &&
++	    atomic_read(&tcp_memory_allocated) > sysctl_tcp_mem[2])
++		return true;
++	return false;
+ }
  
- 	if (param->u.wpa_associate.mode == 1)
- 	    pMgmt->eConfigMode = WMAC_CONFIG_IBSS_STA;
+ /* syncookies: remember time of last synqueue overflow */
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -2002,11 +2002,8 @@ adjudge_to_death:
+ 		}
+ 	}
+ 	if (sk->sk_state != TCP_CLOSE) {
+-		int orphan_count = percpu_counter_read_positive(
+-						sk->sk_prot->orphan_count);
+-
+ 		sk_mem_reclaim(sk);
+-		if (tcp_too_many_orphans(sk, orphan_count)) {
++		if (tcp_too_many_orphans(sk, 0)) {
+ 			if (net_ratelimit())
+ 				printk(KERN_INFO "TCP: too many of orphaned "
+ 				       "sockets\n");
+--- a/net/ipv4/tcp_timer.c
++++ b/net/ipv4/tcp_timer.c
+@@ -67,18 +67,18 @@ static void tcp_write_err(struct sock *s
+ static int tcp_out_of_resources(struct sock *sk, int do_reset)
+ {
+ 	struct tcp_sock *tp = tcp_sk(sk);
+-	int orphans = percpu_counter_read_positive(&tcp_orphan_count);
++	int shift = 0;
+ 
+ 	/* If peer does not open window for long time, or did not transmit
+ 	 * anything for long time, penalize it. */
+ 	if ((s32)(tcp_time_stamp - tp->lsndtime) > 2*TCP_RTO_MAX || !do_reset)
+-		orphans <<= 1;
++		shift++;
+ 
+ 	/* If some dubious ICMP arrived, penalize even more. */
+ 	if (sk->sk_err_soft)
+-		orphans <<= 1;
++		shift++;
+ 
+-	if (tcp_too_many_orphans(sk, orphans)) {
++	if (tcp_too_many_orphans(sk, shift)) {
+ 		if (net_ratelimit())
+ 			printk(KERN_INFO "Out of socket memory\n");
+ 
 
 
