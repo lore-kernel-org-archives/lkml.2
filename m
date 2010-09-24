@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521Ab0IXQxG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:53:06 -0400
-Received: from kroah.org ([198.145.64.141]:38372 "EHLO coco.kroah.org"
+	id S1756119Ab0IXQx4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:53:56 -0400
+Received: from kroah.org ([198.145.64.141]:38347 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932691Ab0IXQ2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:28:30 -0400
+	id S932672Ab0IXQ21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:28:27 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:18 2010
-Message-Id: <20100924162618.536817208@clark.site>
+Message-Id: <20100924162618.273518132@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:24:30 -0700
+Date: Fri, 24 Sep 2010 09:24:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vladimir Zapolskiy <vzapolskiy@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>, Ben Dooks <ben@fluff.org.uk>,
-        Atul Dahiya <atul.dahiya@samsung.com>,
-        Taekgyun Ko <taeggyun.ko@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [42/80] rtc: s3c: balance state changes of wakeup flag
+        David Woodhouse <dwmw2@infradead.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [39/80] drivers/pci/intel-iommu.c: fix build with older gccs
 In-Reply-To: <20100924162706.GA7381@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,82 +26,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vladimir Zapolskiy <vzapolskiy@gmail.com>
+From: Andrew Morton <akpm@linux-foundation.org>
 
-commit f501ed524b26ba1b739b7f7feb0a0e1496878769 upstream.
+commit df08cdc7ef606509debe7677c439be0ca48790e4 upstream.
 
-This change resolves a problem about unbalanced calls of
-enable_irq_wakeup() and disable_irq_wakeup() for alarm interrupt.
+drivers/pci/intel-iommu.c: In function `__iommu_calculate_agaw':
+drivers/pci/intel-iommu.c:437: sorry, unimplemented: inlining failed in call to 'width_to_agaw': function body not available
+drivers/pci/intel-iommu.c:445: sorry, unimplemented: called from here
 
-Bug reproduction:
+Move the offending function (and its siblings) to top-of-file, remove the
+forward declaration.
 
-root@eb600:~# echo 0 > /sys/class/rtc/rtc0/wakealarm
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=17441
 
-WARNING: at kernel/irq/manage.c:361 set_irq_wake+0x7c/0xe4()
- Unbalanced IRQ 46 wake disable
-Modules linked in:
-[<c0025708>] (unwind_backtrace+0x0/0xd8) from [<c003358c>] (warn_slowpath_common+0x44/0x5c)
-[<c003358c>] (warn_slowpath_common+0x44/0x5c) from [<c00335dc>] (warn_slowpath_fmt+0x24/0x30)
-[<c00335dc>] (warn_slowpath_fmt+0x24/0x30) from [<c0058c20>] (set_irq_wake+0x7c/0xe4)
-[<c0058c20>] (set_irq_wake+0x7c/0xe4) from [<c01b5e80>] (s3c_rtc_setalarm+0xa8/0xb8)
-[<c01b5e80>] (s3c_rtc_setalarm+0xa8/0xb8) from [<c01b47a0>] (rtc_set_alarm+0x60/0x74)
-[<c01b47a0>] (rtc_set_alarm+0x60/0x74) from [<c01b5a98>] (rtc_sysfs_set_wakealarm+0xc8/0xd8)
-[<c01b5a98>] (rtc_sysfs_set_wakealarm+0xc8/0xd8) from [<c01891ec>] (dev_attr_store+0x20/0x24)
-[<c01891ec>] (dev_attr_store+0x20/0x24) from [<c00be934>] (sysfs_write_file+0x104/0x13c)
-[<c00be934>] (sysfs_write_file+0x104/0x13c) from [<c0080e7c>] (vfs_write+0xb0/0x158)
-[<c0080e7c>] (vfs_write+0xb0/0x158) from [<c0080fcc>] (sys_write+0x3c/0x68)
-[<c0080fcc>] (sys_write+0x3c/0x68) from [<c0020ec0>] (ret_fast_syscall+0x0/0x28)
-
-Signed-off-by: Vladimir Zapolskiy <vzapolskiy@gmail.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Ben Dooks <ben@fluff.org.uk>
-Cc: Atul Dahiya <atul.dahiya@samsung.com>
-Cc: Taekgyun Ko <taeggyun.ko@samsung.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: <stable@kernel.org>
+Reported-by: Martin Mokrejs <mmokrejs@ribosome.natur.cuni.cz>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/rtc/rtc-s3c.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/pci/intel-iommu.c |   90 +++++++++++++++++++++-------------------------
+ 1 file changed, 43 insertions(+), 47 deletions(-)
 
---- a/drivers/rtc/rtc-s3c.c
-+++ b/drivers/rtc/rtc-s3c.c
-@@ -298,11 +298,6 @@ static int s3c_rtc_setalarm(struct devic
+--- a/drivers/pci/intel-iommu.c
++++ b/drivers/pci/intel-iommu.c
+@@ -71,6 +71,49 @@
+ #define DMA_32BIT_PFN		IOVA_PFN(DMA_BIT_MASK(32))
+ #define DMA_64BIT_PFN		IOVA_PFN(DMA_BIT_MASK(64))
  
- 	s3c_rtc_setaie(alrm->enabled);
++/* page table handling */
++#define LEVEL_STRIDE		(9)
++#define LEVEL_MASK		(((u64)1 << LEVEL_STRIDE) - 1)
++
++static inline int agaw_to_level(int agaw)
++{
++	return agaw + 2;
++}
++
++static inline int agaw_to_width(int agaw)
++{
++	return 30 + agaw * LEVEL_STRIDE;
++}
++
++static inline int width_to_agaw(int width)
++{
++	return (width - 30) / LEVEL_STRIDE;
++}
++
++static inline unsigned int level_to_offset_bits(int level)
++{
++	return (level - 1) * LEVEL_STRIDE;
++}
++
++static inline int pfn_level_offset(unsigned long pfn, int level)
++{
++	return (pfn >> level_to_offset_bits(level)) & LEVEL_MASK;
++}
++
++static inline unsigned long level_mask(int level)
++{
++	return -1UL << level_to_offset_bits(level);
++}
++
++static inline unsigned long level_size(int level)
++{
++	return 1UL << level_to_offset_bits(level);
++}
++
++static inline unsigned long align_to_level(unsigned long pfn, int level)
++{
++	return (pfn + level_size(level) - 1) & level_mask(level);
++}
  
--	if (alrm->enabled)
--		enable_irq_wake(s3c_rtc_alarmno);
--	else
--		disable_irq_wake(s3c_rtc_alarmno);
+ /* VT-d pages must always be _smaller_ than MM pages. Otherwise things
+    are never going to work. */
+@@ -434,8 +477,6 @@ void free_iova_mem(struct iova *iova)
+ }
+ 
+ 
+-static inline int width_to_agaw(int width);
 -
- 	return 0;
+ static int __iommu_calculate_agaw(struct intel_iommu *iommu, int max_gaw)
+ {
+ 	unsigned long sagaw;
+@@ -646,51 +687,6 @@ out:
+ 	spin_unlock_irqrestore(&iommu->lock, flags);
  }
  
-@@ -547,6 +542,10 @@ static int s3c_rtc_suspend(struct platfo
- 		ticnt_en_save &= S3C64XX_RTCCON_TICEN;
- 	}
- 	s3c_rtc_enable(pdev, 0);
-+
-+	if (device_may_wakeup(&pdev->dev))
-+		enable_irq_wake(s3c_rtc_alarmno);
-+
- 	return 0;
- }
- 
-@@ -560,6 +559,10 @@ static int s3c_rtc_resume(struct platfor
- 		tmp = readb(s3c_rtc_base + S3C2410_RTCCON);
- 		writeb(tmp | ticnt_en_save, s3c_rtc_base + S3C2410_RTCCON);
- 	}
-+
-+	if (device_may_wakeup(&pdev->dev))
-+		disable_irq_wake(s3c_rtc_alarmno);
-+
- 	return 0;
- }
- #else
+-/* page table handling */
+-#define LEVEL_STRIDE		(9)
+-#define LEVEL_MASK		(((u64)1 << LEVEL_STRIDE) - 1)
+-
+-static inline int agaw_to_level(int agaw)
+-{
+-	return agaw + 2;
+-}
+-
+-static inline int agaw_to_width(int agaw)
+-{
+-	return 30 + agaw * LEVEL_STRIDE;
+-
+-}
+-
+-static inline int width_to_agaw(int width)
+-{
+-	return (width - 30) / LEVEL_STRIDE;
+-}
+-
+-static inline unsigned int level_to_offset_bits(int level)
+-{
+-	return (level - 1) * LEVEL_STRIDE;
+-}
+-
+-static inline int pfn_level_offset(unsigned long pfn, int level)
+-{
+-	return (pfn >> level_to_offset_bits(level)) & LEVEL_MASK;
+-}
+-
+-static inline unsigned long level_mask(int level)
+-{
+-	return -1UL << level_to_offset_bits(level);
+-}
+-
+-static inline unsigned long level_size(int level)
+-{
+-	return 1UL << level_to_offset_bits(level);
+-}
+-
+-static inline unsigned long align_to_level(unsigned long pfn, int level)
+-{
+-	return (pfn + level_size(level) - 1) & level_mask(level);
+-}
+-
+ static struct dma_pte *pfn_to_dma_pte(struct dmar_domain *domain,
+ 				      unsigned long pfn)
+ {
 
 
