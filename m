@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756903Ab0IXQbr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:31:47 -0400
-Received: from kroah.org ([198.145.64.141]:38543 "EHLO coco.kroah.org"
+	id S1756890Ab0IXQbp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:31:45 -0400
+Received: from kroah.org ([198.145.64.141]:38554 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932794Ab0IXQ2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:28:53 -0400
+	id S932811Ab0IXQ2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:28:54 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:20 2010
-Message-Id: <20100924162620.762901868@clark.site>
+Message-Id: <20100924162620.847389891@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:24:55 -0700
+Date: Fri, 24 Sep 2010 09:24:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Colin Cross <ccross@android.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [67/80] PM: Prevent waiting forever on asynchronous resume after failing suspend
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [68/80] PM / Hibernate: Avoid hitting OOM during preallocation of memory
 In-Reply-To: <20100924162706.GA7381@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,57 +25,172 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Cross <ccross@android.com>
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-commit 152e1d592071c8b312bb898bc1118b64e4aea535 upstream.
+commit 6715045ddc7472a22be5e49d4047d2d89b391f45 upstream.
 
-During suspend, the power.completion is expected to be set when a
-device has not yet started suspending.  Set it on init to fix a
-corner case where a device is resumed when its parent has never
-suspended.
+There is a problem in hibernate_preallocate_memory() that it calls
+preallocate_image_memory() with an argument that may be greater than
+the total number of available non-highmem memory pages.  If that's
+the case, the OOM condition is guaranteed to trigger, which in turn
+can cause significant slowdown to occur during hibernation.
 
-Consider three drivers, A, B, and C.  The parent of A is C, and C
-has async_suspend set.  On boot, C->power.completion is initialized
-to 0.
+To avoid that, make preallocate_image_memory() adjust its argument
+before calling preallocate_image_pages(), so that the total number of
+saveable non-highem pages left is not less than the minimum size of
+a hibernation image.  Change hibernate_preallocate_memory() to try to
+allocate from highmem if the number of pages allocated by
+preallocate_image_memory() is too low.
 
-During the first suspend:
-suspend_devices_and_enter(...)
- dpm_resume(...)
-  device_suspend(A)
-  device_suspend(B) returns error, aborts suspend
- dpm_resume_end(...)
-   dpm_resume(...)
-    device_resume(A)
-     dpm_wait(A->parent == C)
-      wait_for_completion(C->power.completion)
+Modify free_unnecessary_pages() to take all possible memory
+allocation patterns into account.
 
-The wait_for_completion will never complete, because
-complete_all(C->power.completion) will only be called from
-device_suspend(C) or device_resume(C), neither of which is called
-if suspend is aborted before C.
-
-After a successful suspend->resume cycle, where B doesn't abort
-suspend, C->power.completion is left in the completed state by the
-call to device_resume(C), and the same call path will work if B
-aborts suspend.
-
-Signed-off-by: Colin Cross <ccross@android.com>
+Reported-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Tested-by: M. Vefa Bicakci <bicave@superonline.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/base/power/main.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/power/snapshot.c |   85 ++++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 65 insertions(+), 20 deletions(-)
 
---- a/drivers/base/power/main.c
-+++ b/drivers/base/power/main.c
-@@ -59,6 +59,7 @@ void device_pm_init(struct device *dev)
- {
- 	dev->power.status = DPM_ON;
- 	init_completion(&dev->power.completion);
-+	complete_all(&dev->power.completion);
- 	pm_runtime_init(dev);
+--- a/kernel/power/snapshot.c
++++ b/kernel/power/snapshot.c
+@@ -1121,9 +1121,19 @@ static unsigned long preallocate_image_p
+ 	return nr_alloc;
  }
  
+-static unsigned long preallocate_image_memory(unsigned long nr_pages)
++static unsigned long preallocate_image_memory(unsigned long nr_pages,
++					      unsigned long avail_normal)
+ {
+-	return preallocate_image_pages(nr_pages, GFP_IMAGE);
++	unsigned long alloc;
++
++	if (avail_normal <= alloc_normal)
++		return 0;
++
++	alloc = avail_normal - alloc_normal;
++	if (nr_pages < alloc)
++		alloc = nr_pages;
++
++	return preallocate_image_pages(alloc, GFP_IMAGE);
+ }
+ 
+ #ifdef CONFIG_HIGHMEM
+@@ -1169,15 +1179,22 @@ static inline unsigned long preallocate_
+  */
+ static void free_unnecessary_pages(void)
+ {
+-	unsigned long save_highmem, to_free_normal, to_free_highmem;
++	unsigned long save, to_free_normal, to_free_highmem;
+ 
+-	to_free_normal = alloc_normal - count_data_pages();
+-	save_highmem = count_highmem_pages();
+-	if (alloc_highmem > save_highmem) {
+-		to_free_highmem = alloc_highmem - save_highmem;
++	save = count_data_pages();
++	if (alloc_normal >= save) {
++		to_free_normal = alloc_normal - save;
++		save = 0;
++	} else {
++		to_free_normal = 0;
++		save -= alloc_normal;
++	}
++	save += count_highmem_pages();
++	if (alloc_highmem >= save) {
++		to_free_highmem = alloc_highmem - save;
+ 	} else {
+ 		to_free_highmem = 0;
+-		to_free_normal -= save_highmem - alloc_highmem;
++		to_free_normal -= save - alloc_highmem;
+ 	}
+ 
+ 	memory_bm_position_reset(&copy_bm);
+@@ -1258,7 +1275,7 @@ int hibernate_preallocate_memory(void)
+ {
+ 	struct zone *zone;
+ 	unsigned long saveable, size, max_size, count, highmem, pages = 0;
+-	unsigned long alloc, save_highmem, pages_highmem;
++	unsigned long alloc, save_highmem, pages_highmem, avail_normal;
+ 	struct timeval start, stop;
+ 	int error;
+ 
+@@ -1295,6 +1312,7 @@ int hibernate_preallocate_memory(void)
+ 		else
+ 			count += zone_page_state(zone, NR_FREE_PAGES);
+ 	}
++	avail_normal = count;
+ 	count += highmem;
+ 	count -= totalreserve_pages;
+ 
+@@ -1309,12 +1327,21 @@ int hibernate_preallocate_memory(void)
+ 	 */
+ 	if (size >= saveable) {
+ 		pages = preallocate_image_highmem(save_highmem);
+-		pages += preallocate_image_memory(saveable - pages);
++		pages += preallocate_image_memory(saveable - pages, avail_normal);
+ 		goto out;
+ 	}
+ 
+ 	/* Estimate the minimum size of the image. */
+ 	pages = minimum_image_size(saveable);
++	/*
++	 * To avoid excessive pressure on the normal zone, leave room in it to
++	 * accommodate an image of the minimum size (unless it's already too
++	 * small, in which case don't preallocate pages from it at all).
++	 */
++	if (avail_normal > pages)
++		avail_normal -= pages;
++	else
++		avail_normal = 0;
+ 	if (size < pages)
+ 		size = min_t(unsigned long, pages, max_size);
+ 
+@@ -1335,16 +1362,34 @@ int hibernate_preallocate_memory(void)
+ 	 */
+ 	pages_highmem = preallocate_image_highmem(highmem / 2);
+ 	alloc = (count - max_size) - pages_highmem;
+-	pages = preallocate_image_memory(alloc);
+-	if (pages < alloc)
+-		goto err_out;
+-	size = max_size - size;
+-	alloc = size;
+-	size = preallocate_highmem_fraction(size, highmem, count);
+-	pages_highmem += size;
+-	alloc -= size;
+-	pages += preallocate_image_memory(alloc);
+-	pages += pages_highmem;
++	pages = preallocate_image_memory(alloc, avail_normal);
++	if (pages < alloc) {
++		/* We have exhausted non-highmem pages, try highmem. */
++		alloc -= pages;
++		pages += pages_highmem;
++		pages_highmem = preallocate_image_highmem(alloc);
++		if (pages_highmem < alloc)
++			goto err_out;
++		pages += pages_highmem;
++		/*
++		 * size is the desired number of saveable pages to leave in
++		 * memory, so try to preallocate (all memory - size) pages.
++		 */
++		alloc = (count - pages) - size;
++		pages += preallocate_image_highmem(alloc);
++	} else {
++		/*
++		 * There are approximately max_size saveable pages at this point
++		 * and we want to reduce this number down to size.
++		 */
++		alloc = max_size - size;
++		size = preallocate_highmem_fraction(alloc, highmem, count);
++		pages_highmem += size;
++		alloc -= size;
++		size = preallocate_image_memory(alloc, avail_normal);
++		pages_highmem += preallocate_image_highmem(alloc - size);
++		pages += pages_highmem + size;
++	}
+ 
+ 	/*
+ 	 * We only need as many page frames for the image as there are saveable
 
 
