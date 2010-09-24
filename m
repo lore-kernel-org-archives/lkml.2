@@ -1,386 +1,525 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757205Ab0IXVYr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 17:24:47 -0400
-Received: from ovro.ovro.caltech.edu ([192.100.16.2]:33392 "EHLO
-	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752833Ab0IXVYq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 17:24:46 -0400
-Date: Fri, 24 Sep 2010 14:24:43 -0700
-From: "Ira W. Snyder" <iws@ovro.caltech.edu>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH RFCv1 1/2] dmaengine: add support for scatterlist to
- scatterlist transfers
-Message-ID: <20100924212443.GA24654@ovro.caltech.edu>
-References: <1285357571-23377-1-git-send-email-iws@ovro.caltech.edu>
- <1285357571-23377-2-git-send-email-iws@ovro.caltech.edu>
- <AANLkTimfZa+N51Tww_pWFqtqMmcYYkH_V0V_P1Qizt5b@mail.gmail.com>
+	id S1757742Ab0IXV1H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 17:27:07 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:50904 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757326Ab0IXV1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 17:27:05 -0400
+Message-ID: <4C9D177D.6090708@ti.com>
+Date: Fri, 24 Sep 2010 16:26:21 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimfZa+N51Tww_pWFqtqMmcYYkH_V0V_P1Qizt5b@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.0 (ovro.ovro.caltech.edu); Fri, 24 Sep 2010 14:24:44 -0700 (PDT)
+To: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
+CC: linux-pm <linux-pm@lists.linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        linux-omap <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH v4] power: introduce library for device-specific OPPs
+References: <1285332640-16736-1-git-send-email-nm@ti.com> <20100924193742.GJ2375@linux.vnet.ibm.com>
+In-Reply-To: <20100924193742.GJ2375@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 24, 2010 at 01:40:56PM -0700, Dan Williams wrote:
-> On Fri, Sep 24, 2010 at 12:46 PM, Ira W. Snyder <iws@ovro.caltech.edu> wrote:
-> > This adds support for scatterlist to scatterlist DMA transfers. As
-> > requested by Dan, this is hidden behind an ifdef so that it can be
-> > selected by the drivers that need it.
-> >
-> > Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
-> > ---
-> >  drivers/dma/Kconfig       |    4 ++
-> >  drivers/dma/dmaengine.c   |  119 +++++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/dmaengine.h |   10 ++++
-> >  3 files changed, 133 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-> > index 9520cf0..f688669 100644
-> > --- a/drivers/dma/Kconfig
-> > +++ b/drivers/dma/Kconfig
-> > @@ -89,10 +89,14 @@ config AT_HDMAC
-> >          Support the Atmel AHB DMA controller.  This can be integrated in
-> >          chips such as the Atmel AT91SAM9RL.
-> >
-> > +config DMAENGINE_SG_TO_SG
-> > +       bool
-> > +
-> >  config FSL_DMA
-> >        tristate "Freescale Elo and Elo Plus DMA support"
-> >        depends on FSL_SOC
-> >        select DMA_ENGINE
-> > +       select DMAENGINE_SG_TO_SG
-> >        ---help---
-> >          Enable support for the Freescale Elo and Elo Plus DMA controllers.
-> >          The Elo is the DMA controller on some 82xx and 83xx parts, and the
-> > diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
-> > index 9d31d5e..57ec1e5 100644
-> > --- a/drivers/dma/dmaengine.c
-> > +++ b/drivers/dma/dmaengine.c
-> > @@ -972,10 +972,129 @@ dma_async_memcpy_pg_to_pg(struct dma_chan *chan, struct page *dest_pg,
-> >  }
-> >  EXPORT_SYMBOL(dma_async_memcpy_pg_to_pg);
-> >
-> > +#ifdef CONFIG_DMAENGINE_SG_TO_SG
-> > +dma_cookie_t
-> > +dma_async_memcpy_sg_to_sg(struct dma_chan *chan,
-> > +                         struct scatterlist *dst_sg, unsigned int dst_nents,
-> > +                         struct scatterlist *src_sg, unsigned int src_nents,
-> > +                         dma_async_tx_callback cb, void *cb_param)
-> > +{
-> > +       struct dma_device *dev = chan->device;
-> > +       struct dma_async_tx_descriptor *tx;
-> > +       dma_cookie_t cookie = -ENOMEM;
-> > +       size_t dst_avail, src_avail;
-> > +       struct list_head tx_list;
-> > +       size_t transferred = 0;
-> > +       dma_addr_t dst, src;
-> > +       size_t len;
-> > +
-> > +       if (dst_nents == 0 || src_nents == 0)
-> > +               return -EINVAL;
-> > +
-> > +       if (dst_sg == NULL || src_sg == NULL)
-> > +               return -EINVAL;
-> > +
-> > +       /* get prepared for the loop */
-> > +       dst_avail = sg_dma_len(dst_sg);
-> > +       src_avail = sg_dma_len(src_sg);
-> > +
-> > +       INIT_LIST_HEAD(&tx_list);
-> > +
-> > +       /* run until we are out of descriptors */
-> > +       while (true) {
-> > +
-> > +               /* create the largest transaction possible */
-> > +               len = min_t(size_t, src_avail, dst_avail);
-> > +               if (len == 0)
-> > +                       goto fetch;
-> > +
-> > +               dst = sg_dma_address(dst_sg) + sg_dma_len(dst_sg) - dst_avail;
-> > +               src = sg_dma_address(src_sg) + sg_dma_len(src_sg) - src_avail;
-> > +
-> > +               /* setup the transaction */
-> > +               tx = dev->device_prep_dma_memcpy(chan, dst, src, len, 0);
-> > +               if (!tx) {
-> > +                       dev_err(dev->dev, "failed to alloc desc for memcpy\n");
-> > +                       return -ENOMEM;
+Paul E. McKenney had written, on 09/24/2010 02:37 PM, the following:
+[...]
 > 
-> I don't think any dma channels gracefully handle descriptors that were
-> prepped but not submitted.  You would probably need to submit the
-> backlog, poll for completion, and then return the error.
-> Alternatively, the expectation is that descriptor allocations are
-> transient, i.e. once previously submitted transactions are completed
-> the descriptors will return to the available pool.  So you could do
-> what async_tx routines do and just poll for a descriptor.
+> Looks like a good start!!!  Some questions and suggestions about RCU
+Thanks for the review.. few comments below..
+> usage interspersed below.
 > 
-
-Can you give me an example? Even some pseudocode would help.
-
-The other DMAEngine functions (dma_async_memcpy_*()) don't do anything
-with the descriptor if submit fails. Take for example
-dma_async_memcpy_buf_to_buf(). If tx->tx_submit(tx); fails, any code
-using it has no way to return the descriptor to the free pool.
-
-Does tx_submit() implicitly return descriptors to the free pool if it
-fails?
-
-> > +               }
-> > +
-> > +               /* keep track of the tx for later */
-> > +               list_add_tail(&tx->entry, &tx_list);
-> > +
-> > +               /* update metadata */
-> > +               transferred += len;
-> > +               dst_avail -= len;
-> > +               src_avail -= len;
-> > +
-> > +fetch:
-> > +               /* fetch the next dst scatterlist entry */
-> > +               if (dst_avail == 0) {
-> > +
-> > +                       /* no more entries: we're done */
-> > +                       if (dst_nents == 0)
-> > +                               break;
-> > +
-> > +                       /* fetch the next entry: if there are no more: done */
-> > +                       dst_sg = sg_next(dst_sg);
-> > +                       if (dst_sg == NULL)
-> > +                               break;
-> > +
-> > +                       dst_nents--;
-> > +                       dst_avail = sg_dma_len(dst_sg);
-> > +               }
-> > +
-> > +               /* fetch the next src scatterlist entry */
-> > +               if (src_avail == 0) {
-> > +
-> > +                       /* no more entries: we're done */
-> > +                       if (src_nents == 0)
-> > +                               break;
-> > +
-> > +                       /* fetch the next entry: if there are no more: done */
-> > +                       src_sg = sg_next(src_sg);
-> > +                       if (src_sg == NULL)
-> > +                               break;
-> > +
-> > +                       src_nents--;
-> > +                       src_avail = sg_dma_len(src_sg);
-> > +               }
-> > +       }
-> > +
-> > +       /* loop through the list of descriptors and submit them */
-> > +       list_for_each_entry(tx, &tx_list, entry) {
-> > +
-> > +               /* this is the last descriptor: add the callback */
-> > +               if (list_is_last(&tx->entry, &tx_list)) {
-> > +                       tx->callback = cb;
-> > +                       tx->callback_param = cb_param;
-> > +               }
-> > +
-> > +               /* submit the transaction */
-> > +               cookie = tx->tx_submit(tx);
+>                                                         Thanx, Paul
+[...]
+>> +
+>> +/**
+>> + * find_device_opp() - find device_opp struct using device pointer
+>> + * @dev:     device pointer used to lookup device OPPs
+>> + *
+>> + * Search list of device OPPs for one containing matching device. Does a RCU
+>> + * reader operation to grab the pointer needed.
+>> + *
+>> + * Returns pointer to 'struct device_opp' if found, otherwise -ENODEV or
+>> + * -EINVAL based on type of error.
+>> + */
+>> +static struct device_opp *find_device_opp(struct device *dev)
+>> +{
+>> +     struct device_opp *tmp_dev_opp, *dev_opp = ERR_PTR(-ENODEV);
+>> +
+>> +     if (unlikely(!dev || IS_ERR(dev))) {
+>> +             pr_err("%s: Invalid parameters being passed\n", __func__);
+>> +             return ERR_PTR(-EINVAL);
+>> +     }
+>> +
+>> +     rcu_read_lock();
+>> +     list_for_each_entry_rcu(tmp_dev_opp, &dev_opp_list, node) {
+>> +             if (tmp_dev_opp->dev == dev) {
+>> +                     dev_opp = tmp_dev_opp;
+>> +                     break;
+>> +             }
+>> +     }
+>> +     rcu_read_unlock();
 > 
-> Some dma drivers cannot tolerate prep being reordered with respect to
-> submit (ioatdma enforces this ordering by locking in prep and
-> unlocking in submit).  In general those channels can be identified by
-> ones that select CONFIG_ASYNC_TX_DISABLE_CHANNEL_SWITCH.  However this
-> opt-out arrangement is awkward so I'll put together a patch to make it
-> opt-in (CONFIG_ASYNC_TX_CHANNEL_SWITCH).
+> What prevents the structure pointed to by dev_opp from being freed
+> at this point?  We are no longer in an RCU read-side critical section,
+> so RCU grace periods starting during the above RCU read-side critical
+> section can now end.
+
+dev_opp is never freed in the implementation -> it represents domains, 
+only adds with list_add_rcu() is done -> wont the usage be safe then? or 
+I being blind?
+
+the reason why we dont free is coz of the following: dev_opp represents 
+voltage domains in opp library. SoC frameworks are required to register 
+only those voltage domain opp that are required. by allowing a free 
+logic, I knew it'd have complicated the implementation way beyond what 
+we needed it to be.
+
 > 
-> The end implication for this patch is that CONFIG_DMAENGINE_SG_TO_SG
-> can only be supported by those channels that are also prepared to
-> handle channel switching i.e. can tolerate intervening calls to prep()
-> before the eventual submit().
+> Here is an example sequence of events that I am worried about:
 > 
-> [snip]
+> o       CPU 1 enters find_device_opp(), and pick up a pointer to
+>         a given device opp.
 > 
-
-I found it difficult to detect when we were at the last descriptor
-unless I did this in two steps. This is why I have two loops: one for
-prep and another for submit.
-
-How about the change inlined at the end of the email. Following your
-description, I think it should work on the ioatdma driver, since it
-handles prep and submit right next to each other.
-
-> > diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-> > index c61d4ca..5507f4c 100644
-> > --- a/include/linux/dmaengine.h
-> > +++ b/include/linux/dmaengine.h
-> > @@ -24,6 +24,7 @@
-> >  #include <linux/device.h>
-> >  #include <linux/uio.h>
-> >  #include <linux/dma-mapping.h>
-> > +#include <linux/list.h>
-> >
-> >  /**
-> >  * typedef dma_cookie_t - an opaque DMA cookie
-> > @@ -316,6 +317,9 @@ struct dma_async_tx_descriptor {
-> >        dma_cookie_t (*tx_submit)(struct dma_async_tx_descriptor *tx);
-> >        dma_async_tx_callback callback;
-> >        void *callback_param;
-> > +#ifdef CONFIG_DMAENGINE_SG_TO_SG
-> > +       struct list_head entry;
-> > +#endif
-> >  #ifndef CONFIG_ASYNC_TX_DISABLE_CHANNEL_SWITCH
-> >        struct dma_async_tx_descriptor *next;
-> >        struct dma_async_tx_descriptor *parent;
+> o       CPU 2 executes opp_set_availability(), replacing that same
+>         device opp with a new one.  It then calls synchronize_rcu()
+>         which blocks waiting for CPU 1 to exit its RCU read-side
+>         critical section.
 > 
-> Per the above comment if we are already depending on channel switch
-> being enabled for sg-to-sg operation, then you can just use the 'next'
-> pointer to have a singly linked list of descriptors.  Rather than
-> increase the size of the base descriptor.
+> o       CPU 1 exits its RCU read-side critical section, arriving at
+>         this point in the code.
 > 
+> o       CPU 2's synchronize_rcu() is now permitted to return, executing
+>         the kfree(), which frees up the memory that CPU 1's dev_opp
+>         pointer references.
+> 
+> o       This newly freed memory is allocated for some other structure
+>         by CPU 3.  CPU 1 and CPU 3 are now trying to use the same
+>         memory for two different structures, and nothing good can
+>         possibly come of this.  The kernel dies a brutal and nasty
+>         death.
+> 
+> One way to fix this is to have the caller do rcu_read_lock() before
+> calling find_device_opp(), and to do rcu_read_unlock() only after the
+> caller has finished using the pointer that find_device_opp() returns.
+> This works well unless the caller needs to do some blocking operation
+> before it gets done using the pointer.
+> 
+> Another approach is for find_device_opp() to use a reference count on
+> the structure, and for opp_set_availability() to avoid freeing the
+> structure unless/until the reference counter drops to zero.
+> 
+> There are other approaches as well, please feel free to take a look
+> at Documentation/RCU/rcuref.txt for more info on using reference
+> counting and RCU.
+thx. I probably should read yet again if I got my understanding of usage 
+right..
 
-Ok, I thought the list was clearer, but this is equally easy. How about
-the following change that does away with the list completely. Then
-things should work on ioatdma as well.
+> 
+[...]
+>> +
+>> +/**
+>> + * opp_find_freq_exact() - search for an exact frequency
+>> + * @dev:             device for which we do this operation
+>> + * @freq:            frequency to search for
+>> + * @is_available:    true/false - match for available opp
+>> + *
+>> + * Searches for exact match in the opp list and returns pointer to the matching
+>> + * opp if found, else returns ERR_PTR in case of error and should be handled
+>> + * using IS_ERR.
+>> + *
+>> + * Note: available is a modifier for the search. if available=true, then the
+>> + * match is for exact matching frequency and is available in the stored OPP
+>> + * table. if false, the match is for exact frequency which is not available.
+>> + *
+>> + * This provides a mechanism to enable an opp which is not available currently
+>> + * or the opposite as well.
+>> + *
+>> + * Locking: RCU reader.
+>> + */
+>> +struct opp *opp_find_freq_exact(struct device *dev,
+>> +                                  unsigned long freq, bool available)
+>> +{
+>> +     struct device_opp *dev_opp;
+>> +     struct opp *temp_opp, *opp = ERR_PTR(-ENODEV);
+>> +
+>> +     dev_opp = find_device_opp(dev);
+>> +     if (IS_ERR(dev_opp))
+>> +             return opp;
+>> +
+>> +     rcu_read_lock();
+>> +     list_for_each_entry_rcu(temp_opp, &dev_opp->opp_list, node) {
+>> +             if (temp_opp->available == available &&
+>> +                             temp_opp->rate == freq) {
+>> +                     opp = temp_opp;
+>> +                     break;
+>> +             }
+>> +     }
+>> +     rcu_read_unlock();
+> 
+> But this one sadly has the same problem that find_device_opp() does.
+is the concern about opp OR about dev_opp here? I am guessing opp..
+> 
+>> +     return opp;
+>> +}
+>> +
+>> +/**
+>> + * opp_find_freq_ceil() - Search for an rounded ceil freq
+>> + * @dev:     device for which we do this operation
+>> + * @freq:    Start frequency
+>> + *
+>> + * Search for the matching ceil *available* OPP from a starting freq
+>> + * for a device.
+>> + *
+>> + * Returns matching *opp and refreshes *freq accordingly, else returns
+>> + * ERR_PTR in case of error and should be handled using IS_ERR.
+>> + *
+>> + * Locking: RCU reader.
+>> + */
+>> +struct opp *opp_find_freq_ceil(struct device *dev, unsigned long *freq)
+>> +{
+>> +     struct device_opp *dev_opp;
+>> +     struct opp *temp_opp, *opp = ERR_PTR(-ENODEV);
+>> +
+>> +     if (!dev || !freq) {
+>> +             pr_err("%s: invalid param dev=%p freq=%p\n", __func__,
+>> +                             dev, freq);
+>> +             return ERR_PTR(-EINVAL);
+>> +     }
+>> +
+>> +     dev_opp = find_device_opp(dev);
+>> +     if (IS_ERR(dev_opp))
+>> +             return opp;
+>> +
+>> +     rcu_read_lock();
+>> +     list_for_each_entry_rcu(temp_opp, &dev_opp->opp_list, node) {
+>> +             if (temp_opp->available && temp_opp->rate >= *freq) {
+>> +                     opp = temp_opp;
+>> +                     *freq = opp->rate;
+>> +                     break;
+>> +             }
+>> +     }
+>> +     rcu_read_unlock();
+> 
+> And this one also has the same problem that find_device_opp() does.
+guessing opp ptr here.. am I right? if it is about device_opp, it is not 
+going to be freed as I mentioned above - at least we dont give an 
+function to update(hence free) it.
 
->From d59569ff48a89ef5411af3cf2995af7b742c5cd3 Mon Sep 17 00:00:00 2001
-From: Ira W. Snyder <iws@ovro.caltech.edu>
-Date: Fri, 24 Sep 2010 14:18:09 -0700
-Subject: [PATCH] dma: improve scatterlist to scatterlist transfer
+> 
+>> +     return opp;
+>> +}
+>> +
+>> +/**
+>> + * opp_find_freq_floor() - Search for a rounded floor freq
+>> + * @dev:     device for which we do this operation
+>> + * @freq:    Start frequency
+>> + *
+>> + * Search for the matching floor *available* OPP from a starting freq
+>> + * for a device.
+>> + *
+>> + * Returns matching *opp and refreshes *freq accordingly, else returns
+>> + * ERR_PTR in case of error and should be handled using IS_ERR.
+>> + *
+>> + * Locking: RCU reader.
+>> + */
+>> +struct opp *opp_find_freq_floor(struct device *dev, unsigned long *freq)
+>> +{
+>> +     struct device_opp *dev_opp;
+>> +     struct opp *temp_opp, *opp = ERR_PTR(-ENODEV);
+>> +
+>> +     if (!dev || !freq) {
+>> +             pr_err("%s: invalid param dev=%p freq=%p\n", __func__,
+>> +                             dev, freq);
+>> +             return ERR_PTR(-EINVAL);
+>> +     }
+>> +
+>> +     dev_opp = find_device_opp(dev);
+>> +     if (IS_ERR(dev_opp))
+>> +             return opp;
+>> +
+>> +     rcu_read_lock();
+>> +     list_for_each_entry_rcu(temp_opp, &dev_opp->opp_list, node) {
+>> +             if (temp_opp->available) {
+>> +                     /* go to the next node, before choosing prev */
+>> +                     if (temp_opp->rate > *freq)
+>> +                             break;
+>> +                     else
+>> +                             opp = temp_opp;
+>> +             }
+>> +     }
+>> +     if (!IS_ERR(opp))
+>> +             *freq = opp->rate;
+>> +     rcu_read_unlock();
+> 
+> As does this one.
+guessing opp ptr here.. am I right?
 
-This is an improved algorithm to improve support on the Intel I/OAT
-driver.
+> 
+>> +     return opp;
+>> +}
+>> +
+>> +/**
+>> + * opp_add()  - Add an OPP table from a table definitions
+>> + * @dev:     device for which we do this operation
+>> + * @freq:    Frequency in Hz for this OPP
+>> + * @u_volt:  Voltage in uVolts for this OPP
+>> + *
+>> + * This function adds an opp definition to the opp list and returns status.
+>> + * The opp is made available by default and it can be controlled using
+>> + * opp_enable/disable functions.
+>> + *
+>> + * Locking: RCU, mutex
+>> + */
+>> +int opp_add(struct device *dev, unsigned long freq, unsigned long u_volt)
+>> +{
+>> +     struct device_opp *tmp_dev_opp, *dev_opp = NULL;
+>> +     struct opp *opp, *new_opp;
+>> +     struct list_head *head;
+>> +
+>> +     /* Check for existing list for 'dev' */
+>> +     rcu_read_lock();
+>> +     list_for_each_entry_rcu(tmp_dev_opp, &dev_opp_list, node) {
+>> +             if (dev == tmp_dev_opp->dev) {
+>> +                     dev_opp = tmp_dev_opp;
+>> +                     break;
+>> +             }
+>> +     }
+>> +     rcu_read_unlock();
+>> +
+>> +     /* allocate new OPP node */
+>> +     new_opp = kzalloc(sizeof(struct opp), GFP_KERNEL);
+>> +     if (!new_opp) {
+>> +             pr_warning("%s: unable to allocate new opp node\n",
+>> +                     __func__);
+>> +             return -ENOMEM;
+>> +     }
+>> +
+>> +     if (!dev_opp) {
+>> +             /* Allocate a new device OPP table */
+>> +             dev_opp = kzalloc(sizeof(struct device_opp), GFP_KERNEL);
+>> +             if (!dev_opp) {
+>> +                     kfree(new_opp);
+>> +                     pr_warning("%s: unable to allocate device structure\n",
+>> +                             __func__);
+>> +                     return -ENOMEM;
+>> +             }
+>> +
+>> +             dev_opp->dev = dev;
+>> +             INIT_LIST_HEAD(&dev_opp->opp_list);
+>> +             mutex_init(&dev_opp->lock);
+>> +
+>> +             /* Secure the device list modification */
+>> +             mutex_lock(&dev_opp_list_lock);
+>> +             list_add_rcu(&dev_opp->node, &dev_opp_list);
+>> +             mutex_unlock(&dev_opp_list_lock);
+>> +             synchronize_rcu();
+> 
+> You do not need to wait for an RCU grace period when adding objects, only
+> between removing them and freeing them.
+ouch.. my bad.. thx.. will fix
 
-Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
----
- drivers/dma/dmaengine.c   |   52 +++++++++++++++++++++-----------------------
- include/linux/dmaengine.h |    3 --
- 2 files changed, 25 insertions(+), 30 deletions(-)
+> 
+>> +     }
+>> +
+>> +     /* populate the opp table */
+>> +     new_opp->dev_opp = dev_opp;
+>> +     new_opp->rate = freq;
+>> +     new_opp->u_volt = u_volt;
+>> +     new_opp->available = true;
+>> +
+>> +     /* make the dev_opp modification safe */
+>> +     mutex_lock(&dev_opp->lock);
+>> +
+>> +     rcu_read_lock();
+>> +     /* Insert new OPP in order of increasing frequency */
+>> +     head = &dev_opp->opp_list;
+>> +     list_for_each_entry_rcu(opp, &dev_opp->opp_list, node) {
+>> +             if (new_opp->rate < opp->rate)
+>> +                     break;
+>> +             else
+>> +                     head = &opp->node;
+>> +     }
+>> +     rcu_read_unlock();
+>> +
+>> +     list_add_rcu(&new_opp->node, head);
+>> +     mutex_unlock(&dev_opp->lock);
+>> +     synchronize_rcu();
+> 
+> Ditto.
+thx.. will fix.
 
-diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
-index 57ec1e5..cde775c 100644
---- a/drivers/dma/dmaengine.c
-+++ b/drivers/dma/dmaengine.c
-@@ -983,10 +983,13 @@ dma_async_memcpy_sg_to_sg(struct dma_chan *chan,
- 	struct dma_async_tx_descriptor *tx;
- 	dma_cookie_t cookie = -ENOMEM;
- 	size_t dst_avail, src_avail;
--	struct list_head tx_list;
-+	struct scatterlist *sg;
- 	size_t transferred = 0;
-+	size_t dst_total = 0;
-+	size_t src_total = 0;
- 	dma_addr_t dst, src;
- 	size_t len;
-+	int i;
- 
- 	if (dst_nents == 0 || src_nents == 0)
- 		return -EINVAL;
-@@ -994,12 +997,17 @@ dma_async_memcpy_sg_to_sg(struct dma_chan *chan,
- 	if (dst_sg == NULL || src_sg == NULL)
- 		return -EINVAL;
- 
-+	/* get the total count of bytes in each scatterlist */
-+	for_each_sg(dst_sg, sg, dst_nents, i)
-+		dst_total += sg_dma_len(sg);
-+
-+	for_each_sg(src_sg, sg, src_nents, i)
-+		src_total += sg_dma_len(sg);
-+
- 	/* get prepared for the loop */
- 	dst_avail = sg_dma_len(dst_sg);
- 	src_avail = sg_dma_len(src_sg);
- 
--	INIT_LIST_HEAD(&tx_list);
--
- 	/* run until we are out of descriptors */
- 	while (true) {
- 
-@@ -1018,14 +1026,24 @@ dma_async_memcpy_sg_to_sg(struct dma_chan *chan,
- 			return -ENOMEM;
- 		}
- 
--		/* keep track of the tx for later */
--		list_add_tail(&tx->entry, &tx_list);
--
- 		/* update metadata */
- 		transferred += len;
- 		dst_avail -= len;
- 		src_avail -= len;
- 
-+		/* if this is the last transfer, setup the callback */
-+		if (dst_total == transferred || src_total == transferred) {
-+			tx->callback = cb;
-+			tx->callback_param = cb_param;
-+		}
-+
-+		/* submit the transaction */
-+		cookie = tx->tx_submit(tx);
-+		if (dma_submit_error(cookie)) {
-+			dev_err(dev->dev, "failed to submit desc\n");
-+			return cookie;
-+		}
-+
- fetch:
- 		/* fetch the next dst scatterlist entry */
- 		if (dst_avail == 0) {
-@@ -1060,30 +1078,13 @@ fetch:
- 		}
- 	}
- 
--	/* loop through the list of descriptors and submit them */
--	list_for_each_entry(tx, &tx_list, entry) {
--
--		/* this is the last descriptor: add the callback */
--		if (list_is_last(&tx->entry, &tx_list)) {
--			tx->callback = cb;
--			tx->callback_param = cb_param;
--		}
--
--		/* submit the transaction */
--		cookie = tx->tx_submit(tx);
--		if (dma_submit_error(cookie)) {
--			dev_err(dev->dev, "failed to submit desc\n");
--			return cookie;
--		}
--	}
--
- 	/* update counters */
- 	preempt_disable();
- 	__this_cpu_add(chan->local->bytes_transferred, transferred);
- 	__this_cpu_inc(chan->local->memcpy_count);
- 	preempt_enable();
- 
--	return cookie;
-+	return 0;
- }
- EXPORT_SYMBOL(dma_async_memcpy_sg_to_sg);
- #endif
-@@ -1092,9 +1093,6 @@ void dma_async_tx_descriptor_init(struct dma_async_tx_descriptor *tx,
- 	struct dma_chan *chan)
- {
- 	tx->chan = chan;
--	#ifdef CONFIG_DMAENGINE_SG_TO_SG
--	INIT_LIST_HEAD(&tx->entry);
--	#endif
- 	#ifndef CONFIG_ASYNC_TX_DISABLE_CHANNEL_SWITCH
- 	spin_lock_init(&tx->lock);
- 	#endif
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 5507f4c..26f2712 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -317,9 +317,6 @@ struct dma_async_tx_descriptor {
- 	dma_cookie_t (*tx_submit)(struct dma_async_tx_descriptor *tx);
- 	dma_async_tx_callback callback;
- 	void *callback_param;
--#ifdef CONFIG_DMAENGINE_SG_TO_SG
--	struct list_head entry;
--#endif
- #ifndef CONFIG_ASYNC_TX_DISABLE_CHANNEL_SWITCH
- 	struct dma_async_tx_descriptor *next;
- 	struct dma_async_tx_descriptor *parent;
+> 
+>> +     return 0;
+>> +}
+>> +
+>> +/**
+>> + * opp_set_availability() - helper to set the availability of an opp
+>> + * @opp:             Pointer to opp
+>> + * @availability_req:        availability status requested for this opp
+>> + *
+>> + * Set the availability of an OPP with an RCU operation, opp_{enable,disable}
+>> + * share a common logic which is isolated here.
+>> + *
+>> + * Returns -EINVAL for bad pointers, -ENOMEM if no memory available for the
+>> + * copy operation, returns 0 if no modifcation was done OR modification was
+>> + * successful.
+>> + */
+>> +static int opp_set_availability(struct opp *opp, bool availability_req)
+>> +{
+>> +     struct opp *new_opp, *tmp_opp;
+>> +     bool is_available;
+>> +
+>> +     if (unlikely(!opp || IS_ERR(opp))) {
+>> +             pr_err("%s: Invalid parameters being passed\n", __func__);
+>> +             return -EINVAL;
+>> +     }
+>> +
+>> +     new_opp = kmalloc(sizeof(struct opp), GFP_KERNEL);
+>> +     if (!new_opp) {
+>> +             pr_warning("%s: unable to allocate opp\n", __func__);
+>> +             return -ENOMEM;
+>> +     }
+>> +
+>> +     mutex_lock(&opp->dev_opp->lock);
+>> +
+>> +     rcu_read_lock();
+>> +     tmp_opp = rcu_dereference(opp);
+>> +     is_available = tmp_opp->available;
+>> +     rcu_read_unlock();
+>> +
+>> +     /* Is update really needed? */
+>> +     if (is_available == availability_req) {
+>> +             mutex_unlock(&opp->dev_opp->lock);
+>> +             kfree(tmp_opp);
+>> +             return 0;
+>> +     }
+>> +
+>> +     *new_opp = *opp;
+>> +     new_opp->available = availability_req;
+>> +     list_replace_rcu(&opp->node, &new_opp->node);
+>> +
+>> +     mutex_unlock(&opp->dev_opp->lock);
+>> +     synchronize_rcu();
+> 
+> If you decide to rely on reference counts to fix the problem in
+> find_device_opp(), you will need to check the reference counts here.
+> Again, please see Documentation/RCU/rcuref.txt.
+
+Does the original point about not needing to free dev_opp resolve this?
+
+> 
+>> +     kfree(opp);
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +/**
+>> + * opp_enable() - Enable a specific OPP
+>> + * @opp:     Pointer to opp
+>> + *
+>> + * Enables a provided opp. If the operation is valid, this returns 0, else the
+>> + * corresponding error value. It is meant to be used for users an OPP available
+>> + * after being temporarily made unavailable with opp_disable.
+>> + *
+>> + * Locking: RCU, mutex
+> 
+> By "Locking: RCU", you presumably don't mean that the caller must do
+> an rcu_read_lock() -- this would result in a synchronize_rcu() being
+> invoked in an RCU read-side critical section, which is illegal.
+aye..thx. I will make it more verbose. Does the following sound right?
+
+Locking used internally: RCU copy-update and read_lock used, mutex
+
+and for the readers:
+
+Locking used internally: RCU read_lock used
+
+or do we need to go all verbatim about the implementation here?
+
+I intended the user to know the context in which they can call it, for 
+example, since mutex is used, dont think of using this in interrupt 
+context. since read_locks are already used, dont need to double lock 
+it.. opp library takes care of it's own exclusivity.
+
+> 
+>> + */
+>> +int opp_enable(struct opp *opp)
+>> +{
+>> +     return opp_set_availability(opp, true);
+>> +}
+>> +
+>> +/**
+>> + * opp_disable() - Disable a specific OPP
+>> + * @opp:     Pointer to opp
+>> + *
+>> + * Disables a provided opp. If the operation is valid, this returns
+>> + * 0, else the corresponding error value. It is meant to be a temporary
+>> + * control by users to make this OPP not available until the circumstances are
+>> + * right to make it available again (with a call to opp_enable).
+>> + *
+>> + * Locking: RCU, mutex
+> 
+> Ditto.  (And similar feedback applies elsewhere.)
+> 
+>> + */
+>> +int opp_disable(struct opp *opp)
+>> +{
+>> +     return opp_set_availability(opp, false);
+>> +}
+>> +
+>> +#ifdef CONFIG_CPU_FREQ
+>> +/**
+>> + * opp_init_cpufreq_table() - create a cpufreq table for a device
+>> + * @dev:     device for which we do this operation
+>> + * @table:   Cpufreq table returned back to caller
+>> + *
+>> + * Generate a cpufreq table for a provided device- this assumes that the
+>> + * opp list is already initialized and ready for usage.
+>> + *
+>> + * This function allocates required memory for the cpufreq table. It is
+>> + * expected that the caller does the required maintenance such as freeing
+>> + * the table as required.
+>> + *
+>> + * WARNING: It is  important for the callers to ensure refreshing their copy of
+>> + * the table if any of the mentioned functions have been invoked in the interim.
+>> + *
+>> + * Locking: RCU reader
+>> + */
+>> +void opp_init_cpufreq_table(struct device *dev,
+>> +                         struct cpufreq_frequency_table **table)
+>> +{
+>> +     struct device_opp *dev_opp;
+>> +     struct opp *opp;
+>> +     struct cpufreq_frequency_table *freq_table;
+>> +     int i = 0;
+>> +
+>> +     dev_opp = find_device_opp(dev);
+>> +     if (IS_ERR(dev_opp)) {
+>> +             pr_warning("%s: unable to find device\n", __func__);
+>> +             return;
+>> +     }
+>> +
+>> +     freq_table = kzalloc(sizeof(struct cpufreq_frequency_table) *
+>> +                          (opp_get_opp_count(dev) + 1), GFP_ATOMIC);
+>> +     if (!freq_table) {
+>> +             pr_warning("%s: failed to allocate frequency table\n",
+>> +                        __func__);
+>> +             return;
+> 
+> How does the caller tell that the allocation failed?  Should the caller
+> set the pointer passed in through the "table" argument to NULL before
+> calling this function?  Or should this function set *table to NULL
+> before returning in this case?
+
+Good catch. Thanks. I would rather change the return to int and pass 
+proper errors to caller so that they can handle it appropriately.
+
+
+[...]
 -- 
-1.7.1
-
+Regards,
+Nishanth Menon
