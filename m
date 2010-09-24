@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932254Ab0IXSWU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 14:22:20 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:49879 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757321Ab0IXSSy (ORCPT
+	id S1757314Ab0IXSSx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 14:18:53 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:40226 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757297Ab0IXSSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 14:18:54 -0400
+	Fri, 24 Sep 2010 14:18:50 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=FvaXr3gVXqfpdr7VKpr+xW0XOcn80Ov2eKjIfK4f78eCWV2yw8qB/qo+Uzv3Z+sehU
-         nYK4HUnGNmrbA2K1u10cG9nK1n1bOj3LMQYeGdHioQ0zUXNHuaj449SjOgJ80NPBZ9MK
-         zxX/H6cE9JPkS7dB60kPSRSjf4iyhr1tjVzo0=
+        b=DhXIQqd7jBBM3hoJW1cZrQZCWbk90jl8vKfXB9EYc3+VbhxvmiWkrGRQoX2rsVzJrX
+         3+WooRMTis7Y3CoNcGuf23R0P9CAQYxKKGaFeowAk6njTuUUyw9IlX6JISORd6L6/GE7
+         9aZkyYeLxM0HIaJ55ReY9c2UNK2VcpaA9g7C0=
 From: Tracey Dent <tdent48227@gmail.com>
 To: greg@kroah.com
 Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
         Tracey Dent <tdent48227@gmail.com>
-Subject: [PATCH 08/21] Staging: otus: Makefile: cleaned up makefile cflag lines
-Date: Fri, 24 Sep 2010 14:18:21 -0400
-Message-Id: <1285352314-5939-8-git-send-email-tdent48227@gmail.com>
+Subject: [PATCH 04/21] Staging: dream: camera: Makefile: cleaned up makefile cflags lines
+Date: Fri, 24 Sep 2010 14:18:17 -0400
+Message-Id: <1285352314-5939-4-git-send-email-tdent48227@gmail.com>
 X-Mailer: git-send-email 1.7.3
 In-Reply-To: <1285352314-5939-1-git-send-email-tdent48227@gmail.com>
 References: <1285352314-5939-1-git-send-email-tdent48227@gmail.com>
@@ -31,56 +31,19 @@ Changed to use the proper ccflags-y option
 
 Signed-off-by: Tracey Dent <tdent48227@gmail.com>
 ---
- drivers/staging/otus/Makefile |   34 +++++++++++++++++-----------------
- 1 files changed, 17 insertions(+), 17 deletions(-)
+ drivers/staging/dream/camera/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/otus/Makefile b/drivers/staging/otus/Makefile
-index debcc5c..df825c6 100644
---- a/drivers/staging/otus/Makefile
-+++ b/drivers/staging/otus/Makefile
-@@ -1,25 +1,25 @@
- obj-$(CONFIG_OTUS)	+= arusb_lnx.o
- 
--EXTRA_CFLAGS += -DAMAC
--EXTRA_CFLAGS += -DGCCK
--EXTRA_CFLAGS += -DOFDM
--EXTRA_CFLAGS += -DTXQ_IN_ISR
--EXTRA_CFLAGS += -DWLAN_HOSTIF=0 #0:USB, 1:PCI
-+ccflags-y += -DAMAC
-+ccflags-y += -DGCCK
-+ccflags-y += -DOFDM
-+ccflags-y += -DTXQ_IN_ISR
-+ccflags-y += -DWLAN_HOSTIF=0 #0:USB, 1:PCI
- 
- #Test Mode
--EXTRA_CFLAGS += -DZM_USB_STREAM_MODE=1
--EXTRA_CFLAGS += -DZM_USB_TX_STREAM_MODE=0
--EXTRA_CFLAGS += -DZM_PCI_DMA_TEST=0
--EXTRA_CFLAGS += -DZM_LARGEPAYLOAD_TEST=0
--EXTRA_CFLAGS += -DZM_FW_LOOP_BACK=0
--EXTRA_CFLAGS += -DZM_LINUX_TPC=1
--#EXTRA_CFLAGS += -DZM_DONT_COPY_RX_BUFFER
-+ccflags-y += -DZM_USB_STREAM_MODE=1
-+ccflags-y += -DZM_USB_TX_STREAM_MODE=0
-+ccflags-y += -DZM_PCI_DMA_TEST=0
-+ccflags-y += -DZM_LARGEPAYLOAD_TEST=0
-+ccflags-y += -DZM_FW_LOOP_BACK=0
-+ccflags-y += -DZM_LINUX_TPC=1
-+#ccflags-y += -DZM_DONT_COPY_RX_BUFFER
- 
--EXTRA_CFLAGS += -DZM_HOSTAPD_SUPPORT
--#EXTRA_CFLAGS += -DfTX_GAIN_OFDM=0
--#EXTRA_CFLAGS += -DZM_CONFIG_BIG_ENDIAN -DBIG_ENDIAN
--EXTRA_CFLAGS += -DZM_HALPLUS_LOCK
--EXTRA_CFLAGS += -DZM_OTUS_LINUX_PHASE_2
-+ccflags-y += -DZM_HOSTAPD_SUPPORT
-+ccflags-y += -DfTX_GAIN_OFDM=0
-+ccflags-y += -DZM_CONFIG_BIG_ENDIAN -DBIG_ENDIAN
-+ccflags-y += -DZM_HALPLUS_LOCK
-+ccflags-y += -DZM_OTUS_LINUX_PHASE_2
- 
- arusb_lnx-objs := \
- 	usbdrv.o \
+diff --git a/drivers/staging/dream/camera/Makefile b/drivers/staging/dream/camera/Makefile
+index db228d7..5bbd29b 100644
+--- a/drivers/staging/dream/camera/Makefile
++++ b/drivers/staging/dream/camera/Makefile
+@@ -1,4 +1,4 @@
+-EXTRA_CFLAGS=-Idrivers/staging/dream/include
++ccflags-y=-Idrivers/staging/dream/include
+ obj-$(CONFIG_MT9T013) += mt9t013.o mt9t013_reg.o
+ obj-$(CONFIG_MT9D112) += mt9d112.o mt9d112_reg.o
+ obj-$(CONFIG_MT9P012) += mt9p012_fox.o mt9p012_reg.o
 -- 
 1.7.3
 
