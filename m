@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038Ab0IXFby (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 01:31:54 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:18932 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750898Ab0IXFbw (ORCPT
+	id S1753667Ab0IXFcW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 01:32:22 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:48151 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752356Ab0IXFcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 01:31:52 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBACfVm0xLd/sX/2dsb2JhbAAHgxSYV7svkiyBIoMtcwQ
-X-IronPort-AV: E=Sophos;i="4.57,227,1283745600"; 
-   d="scan'208";a="76605297"
-Message-ID: <4C9C37B7.7060204@teksavvy.com>
-Date: Fri, 24 Sep 2010 01:31:35 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
+	Fri, 24 Sep 2010 01:32:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=okqNBrCDI44KHB+ngSEsRPu3YMnP3ytImmTs1VhTzR7D4EpQll9N0LkGzNLYtH1i7q
+         kWAU8Kw8pYiXXC4b4ialqsLTQynOZN+Cn2m0GrNeaSDBEDLNpskAzEQayrB2oQPPOHkK
+         R5FfWfcD/0ClC31lzLicnAA/uCkC9NvodsFFk=
+Date: Fri, 24 Sep 2010 13:36:48 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Geoffrey Said <geoffrey@2x.com>
+Cc: stable@kernel.org, linux-kernel@vger.kernel.org, greg@kroah.com
+Subject: Re: Long maintenance kernel versions.
+Message-ID: <20100924053648.GA5453@cr0.nay.redhat.com>
+References: <AANLkTinGJmAzdd=HOKZYSh69F6T9HMznOKW5BS90=Q-4@mail.gmail.com>
 MIME-Version: 1.0
-To: Stan Hoeppner <stan@hardwarefreak.com>
-CC: Kyle McMartin <kyle@mcmartin.ca>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        IDE/ATA development list <linux-ide@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: "blocked for more than 120 secs" --> a valid situation, how to
- prevent?
-References: <4C9BE5A8.1090002@teksavvy.com> <4C9BF624.7090906@hardwarefreak.com> <20100924013748.GH13116@bombadil.infradead.org> <4C9C1F95.5000509@hardwarefreak.com>
-In-Reply-To: <4C9C1F95.5000509@hardwarefreak.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinGJmAzdd=HOKZYSh69F6T9HMznOKW5BS90=Q-4@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10-09-23 11:48 PM, Stan Hoeppner wrote:
-> Kyle McMartin put forth on 9/23/2010 8:37 PM:
->> On Thu, Sep 23, 2010 at 07:51:48PM -0500, Stan Hoeppner wrote:
->>> ~$ man hdparm
->>>
->>
->> kyle@dreadnought ~ $ hdparm
->> hdparm - get/set hard disk parameters - version v9.27, by Mark Lord.
->>                                                         ^^^^^^^^^^^^
->> [...]
+On Fri, Sep 24, 2010 at 07:10:09AM +0200, Geoffrey Said wrote:
+>To whom it may concern.
 >
-> Please pardon me while I wipe this egg off my face. :)
+>I would like to put forward the following questions.  Hope that I am
+>not making a fool of myself!
 >
-> My apologies Mark.  Please feel free to publicly flog me if you wish.
+>How is the procedure by which a certain kernel version is declared as
+>a long maintenance version?
 
-Chuckle.  :)
 
-But you did manage to prompt me to remove that obsolete warning
-from the --security-* commands in hdparm.  They are rather well tested
-at this point in the game.
+This mainly depends on how many major Linux distributions rely on
+that version of kernel, AFAIK.
 
-hdparm-9.31 is now released, with some fixes to --security,
-and with the nasty warnings mostly removed.
+>Is the version decided before or after the release of the stable kernel?
 
-Thanks!
+After.
+
+>And where can I check for planned long term maintenance versions?
+>
+
+http://en.wikipedia.org/wiki/Linux_kernel
 
