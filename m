@@ -1,147 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932537Ab0IXUpn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 16:45:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53694 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753587Ab0IXUpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 16:45:41 -0400
-From: Eric Paris <eparis@redhat.com>
-Subject: [PATCH 6/6] secmark: export secctx, drop secmark in procfs
-To: linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov,
-        netfilter-devel@vger.kernel.org
-Cc: jmorris@namei.org, sds@tycho.nsa.gov, jengelh@medozas.de,
-        paul.moore@hp.com, casey@schaufler-ca.com,
-        linux-security-module@vger.kernel.org, netfilter@vger.kernel.org,
-        mr.dash.four@googlemail.com
-Date: Fri, 24 Sep 2010 16:45:52 -0400
-Message-ID: <20100924204552.28355.48988.stgit@paris.rdu.redhat.com>
-In-Reply-To: <20100924204517.28355.42822.stgit@paris.rdu.redhat.com>
-References: <20100924204517.28355.42822.stgit@paris.rdu.redhat.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S932283Ab0IXUqB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 16:46:01 -0400
+Received: from smtp102.sbc.mail.ac4.yahoo.com ([76.13.13.241]:29102 "HELO
+	smtp102.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756246Ab0IXUpj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 16:45:39 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: 4JPpH5EVM1nW3gA6UX6kpFskITg4cNEOut2hUXJKgozwLvn
+ 5j48kQgK1W9wTUpRLHyGuLS6BhtF7amrIam00zAp5OzJd9JHVvHwnYJZUHk9
+ VZrA6.1UwnWf_qFoeCmjvXxLEaj2ud0RFoIKsM3q8eHowAaxK_WaqnQbbEcG
+ gMSz2d5b4.3qv.gEVYkHbvElgYiFYl5UaTJ9g3xoj2Z8PKzo6TX32FZ6k.81
+ kROb3L_HXjErgQsaSd.d5Of9Zq_k27PKznI.76UQXFYvKsAU_wdKf6b8-
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [PATCH v2 01/11] scsi: Convert struct 
+	Scsi_Host->cmd_serial_number to atomic_t
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Mike Christie <michaelc@cs.wisc.edu>, Joe Eykholt <jeykholt@cisco.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Christoph Hellwig <hch@lst.de>,
+        Tejun Heo <tj@kernel.org>
+In-Reply-To: <4C9C4604.1020804@kernel.dk>
+References: <1284747709-20862-1-git-send-email-nab@linux-iscsi.org>
+	 <4C93BB8E.2080501@cisco.com>  <4C9427B6.9050404@cs.wisc.edu>
+	 <1284839878.13344.300.camel@haakon2.linux-iscsi.org>
+	 <1285278389.1849.199.camel@haakon2.linux-iscsi.org>
+	 <4C9C4604.1020804@kernel.dk>
+Content-Type: text/plain
+Date: Fri, 24 Sep 2010 13:41:20 -0700
+Message-Id: <1285360880.1849.230.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current secmark code exports a secmark= field which just indicates if
-there is special labeling on a packet or not.  We drop this field as it
-isn't particularly useful and instead export a new field secctx= which is
-the actual human readable text label.
+On Fri, 2010-09-24 at 08:32 +0200, Jens Axboe wrote:
+> On 2010-09-23 23:46, Nicholas A. Bellinger wrote:
+> > On Sat, 2010-09-18 at 12:58 -0700, Nicholas A. Bellinger wrote:
 
-Signed-off-by: Eric Paris <eparis@redhat.com>
----
+<SNIP>
 
- .../netfilter/nf_conntrack_l3proto_ipv4_compat.c   |   27 ++++++++++++++++++--
- net/netfilter/nf_conntrack_standalone.c            |   27 ++++++++++++++++++--
- 2 files changed, 48 insertions(+), 6 deletions(-)
+> > diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
+> > index 1de30eb..f35c127 100644
+> > --- a/drivers/scsi/scsi_error.c
+> > +++ b/drivers/scsi/scsi_error.c
+> > @@ -644,11 +644,7 @@ static int __scsi_try_to_abort_cmd(struct scsi_cmnd *scmd)
+> >   */
+> >  static int scsi_try_to_abort_cmd(struct scsi_cmnd *scmd)
+> >  {
+> > -       /*
+> > -        * scsi_done was called just after the command timed out and before
+> > -        * we had a chance to process it. (db)
+> > -        */
+> > -       if (scmd->serial_number == 0)
+> > +       if (test_bit(REQ_ATOM_COMPLETE, &scmd->request->atomic_flags))
+> >                 return SUCCESS;
+> >         return __scsi_try_to_abort_cmd(scmd);
+> >  }
+> > 
+> > and while building I noticed that the simple single enum
+> > REQ_ATOM_COMPLETE=0 is
+> 
+> > currently located in block/blk.h and along with blk_mark_rq_complete()
+> > and blk_clear_rq_complete() for setting this bit within struct
+> > request->atomic_flags.
+> > 
+> > jens, hch, tejun, and co, do you guys have a preference how this
+> > should be handled so that scsi_try_to_abort_cmd() can use proper
+> > atomic struct request bits here and we can get rid of this (racy..?)
+> > method of using struct scsi_cmnd->serial_number for anything wrt to
+> > per struct scsi_cmnd context timeout handling.
+> 
+> Just add a
+> 
+> static inline int blk_test_rq_complete(struct request *rq)
+> {
+>         return test_bit(REQ_ATOM_COMPLETE, &rq->atomic_flags);
+> }
+> 
+> in block/blk.h
+> 
+> I need this too for some lockless completion patches I am playing with.
+> 
 
-diff --git a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
-index 053d7d3..2ca510e 100644
---- a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
-+++ b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
-@@ -11,6 +11,7 @@
- #include <linux/proc_fs.h>
- #include <linux/seq_file.h>
- #include <linux/percpu.h>
-+#include <linux/security.h>
- #include <net/net_namespace.h>
- 
- #include <linux/netfilter.h>
-@@ -87,6 +88,28 @@ static void ct_seq_stop(struct seq_file *s, void *v)
- 	rcu_read_unlock();
- }
- 
-+#ifdef CONFIG_NF_CONNTRACK_SECMARK
-+static int ct_show_secctx(struct seq_file *s, const struct nf_conn *ct)
-+{
-+	int len, ret;
-+	char *secctx;
-+
-+	ret = security_secid_to_secctx(ct->secmark, &secctx, &len);
-+	if (ret)
-+		return ret;
-+
-+	ret = seq_printf(s, "secctx=%s ", secctx);
-+
-+	security_release_secctx(secctx, len);
-+	return ret;
-+}
-+#else
-+static inline int ct_show_secctx(struct seq_file *s, const struct nf_conn *ct)
-+{
-+	return 0;
-+}
-+#endif
-+
- static int ct_seq_show(struct seq_file *s, void *v)
- {
- 	struct nf_conntrack_tuple_hash *hash = v;
-@@ -148,10 +171,8 @@ static int ct_seq_show(struct seq_file *s, void *v)
- 		goto release;
- #endif
- 
--#ifdef CONFIG_NF_CONNTRACK_SECMARK
--	if (seq_printf(s, "secmark=%u ", ct->secmark ? 1 : 0))
-+	if (ct_show_secctx(s, ct))
- 		goto release;
--#endif
- 
- 	if (seq_printf(s, "use=%u\n", atomic_read(&ct->ct_general.use)))
- 		goto release;
-diff --git a/net/netfilter/nf_conntrack_standalone.c b/net/netfilter/nf_conntrack_standalone.c
-index a5761d3..a6985da 100644
---- a/net/netfilter/nf_conntrack_standalone.c
-+++ b/net/netfilter/nf_conntrack_standalone.c
-@@ -15,6 +15,7 @@
- #include <linux/seq_file.h>
- #include <linux/percpu.h>
- #include <linux/netdevice.h>
-+#include <linux/security.h>
- #include <net/net_namespace.h>
- #ifdef CONFIG_SYSCTL
- #include <linux/sysctl.h>
-@@ -108,6 +109,28 @@ static void ct_seq_stop(struct seq_file *s, void *v)
- 	rcu_read_unlock();
- }
- 
-+#ifdef CONFIG_NF_CONNTRACK_SECMARK
-+static int ct_show_secctx(struct seq_file *s, const struct nf_conn *ct)
-+{
-+	int len, ret;
-+	char *secctx;
-+
-+	ret = security_secid_to_secctx(ct->secmark, &secctx, &len);
-+	if (ret)
-+		return ret;
-+
-+	ret = seq_printf(s, "secctx=%s ", secctx);
-+
-+	security_release_secctx(secctx, len);
-+	return ret;
-+}
-+#else
-+static inline int ct_show_secctx(struct seq_file *s, const struct nf_conn *ct)
-+{
-+	return 0;
-+}
-+#endif
-+
- /* return 0 on success, 1 in case of error */
- static int ct_seq_show(struct seq_file *s, void *v)
- {
-@@ -168,10 +191,8 @@ static int ct_seq_show(struct seq_file *s, void *v)
- 		goto release;
- #endif
- 
--#ifdef CONFIG_NF_CONNTRACK_SECMARK
--	if (seq_printf(s, "secmark=%u ", ct->secmark ? 1 : 0))
-+	if (ct_show_secctx(s, ct))
- 		goto release;
--#endif
- 
- #ifdef CONFIG_NF_CONNTRACK_ZONES
- 	if (seq_printf(s, "zone=%u ", nf_ct_zone(ct)))
+Hi Jens,
+
+Perfect, thanks for the heads up on this wrapper.  I will go ahead and
+include this into a RFCv4 series and update scsi_try_to_abort_cmd()
+accordingly.
+
+Best,
+
+--nab
+
 
