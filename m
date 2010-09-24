@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933113Ab0IXQfp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:35:45 -0400
-Received: from kroah.org ([198.145.64.141]:37369 "EHLO coco.kroah.org"
+	id S933156Ab0IXQf6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:35:58 -0400
+Received: from kroah.org ([198.145.64.141]:37445 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933089Ab0IXQfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:35:40 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:48 2010
-Message-Id: <20100924163348.292720334@clark.site>
+	id S932984Ab0IXQf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:35:56 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:49 2010
+Message-Id: <20100924163349.342404390@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:32:12 -0700
+Date: Fri, 24 Sep 2010 09:32:24 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
+To: linux-kernel@vger.kernel.org, stable@kernel.org, linux-mips@linux-mips.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: [48/68] mm: page allocator: update free page counters after pages are placed on the free list
+        David Daney <ddaney@caviumnetworks.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: [60/68] MIPS: Quit using undefined behavior of ADDU in 64-bit atomic operations.
 In-Reply-To: <20100924163357.GA15741@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,80 +26,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mel@csn.ul.ie>
+From: David Daney <ddaney@caviumnetworks.com>
 
-commit 72853e2991a2702ae93aaf889ac7db743a415dd3 upstream.
+commit f2a68272d799bf4092443357142f63b74f7669a1 upstream.
 
-When allocating a page, the system uses NR_FREE_PAGES counters to
-determine if watermarks would remain intact after the allocation was made.
-This check is made without interrupts disabled or the zone lock held and
-so is race-prone by nature.  Unfortunately, when pages are being freed in
-batch, the counters are updated before the pages are added on the list.
-During this window, the counters are misleading as the pages do not exist
-yet.  When under significant pressure on systems with large numbers of
-CPUs, it's possible for processes to make progress even though they should
-have been stalled.  This is particularly problematic if a number of the
-processes are using GFP_ATOMIC as the min watermark can be accidentally
-breached and in extreme cases, the system can livelock.
+For 64-bit, we must use DADDU and DSUBU.
 
-This patch updates the counters after the pages have been added to the
-list.  This makes the allocator more cautious with respect to preserving
-the watermarks and mitigates livelock possibilities.
-
-[akpm@linux-foundation.org: avoid modifying incoming args]
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: Christoph Lameter <cl@linux.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+To: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/1483/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/page_alloc.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ arch/mips/include/asm/atomic.h |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -531,13 +531,13 @@ static void free_pcppages_bulk(struct zo
- {
- 	int migratetype = 0;
- 	int batch_free = 0;
-+	int to_free = count;
- 
- 	spin_lock(&zone->lock);
- 	zone_clear_flag(zone, ZONE_ALL_UNRECLAIMABLE);
- 	zone->pages_scanned = 0;
- 
--	__mod_zone_page_state(zone, NR_FREE_PAGES, count);
--	while (count) {
-+	while (to_free) {
- 		struct page *page;
- 		struct list_head *list;
- 
-@@ -562,8 +562,9 @@ static void free_pcppages_bulk(struct zo
- 			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
- 			__free_one_page(page, zone, 0, page_private(page));
- 			trace_mm_page_pcpu_drain(page, 0, page_private(page));
--		} while (--count && --batch_free && !list_empty(list));
-+		} while (--to_free && --batch_free && !list_empty(list));
- 	}
-+	__mod_zone_page_state(zone, NR_FREE_PAGES, count);
- 	spin_unlock(&zone->lock);
- }
- 
-@@ -574,8 +575,8 @@ static void free_one_page(struct zone *z
- 	zone_clear_flag(zone, ZONE_ALL_UNRECLAIMABLE);
- 	zone->pages_scanned = 0;
- 
--	__mod_zone_page_state(zone, NR_FREE_PAGES, 1 << order);
- 	__free_one_page(page, zone, order, migratetype);
-+	__mod_zone_page_state(zone, NR_FREE_PAGES, 1 << order);
- 	spin_unlock(&zone->lock);
- }
- 
+--- a/arch/mips/include/asm/atomic.h
++++ b/arch/mips/include/asm/atomic.h
+@@ -434,7 +434,7 @@ static __inline__ void atomic64_add(long
+ 		__asm__ __volatile__(
+ 		"	.set	mips3					\n"
+ 		"1:	lld	%0, %1		# atomic64_add		\n"
+-		"	addu	%0, %2					\n"
++		"	daddu	%0, %2					\n"
+ 		"	scd	%0, %1					\n"
+ 		"	beqzl	%0, 1b					\n"
+ 		"	.set	mips0					\n"
+@@ -446,7 +446,7 @@ static __inline__ void atomic64_add(long
+ 		__asm__ __volatile__(
+ 		"	.set	mips3					\n"
+ 		"1:	lld	%0, %1		# atomic64_add		\n"
+-		"	addu	%0, %2					\n"
++		"	daddu	%0, %2					\n"
+ 		"	scd	%0, %1					\n"
+ 		"	beqz	%0, 2f					\n"
+ 		"	.subsection 2					\n"
+@@ -479,7 +479,7 @@ static __inline__ void atomic64_sub(long
+ 		__asm__ __volatile__(
+ 		"	.set	mips3					\n"
+ 		"1:	lld	%0, %1		# atomic64_sub		\n"
+-		"	subu	%0, %2					\n"
++		"	dsubu	%0, %2					\n"
+ 		"	scd	%0, %1					\n"
+ 		"	beqzl	%0, 1b					\n"
+ 		"	.set	mips0					\n"
+@@ -491,7 +491,7 @@ static __inline__ void atomic64_sub(long
+ 		__asm__ __volatile__(
+ 		"	.set	mips3					\n"
+ 		"1:	lld	%0, %1		# atomic64_sub		\n"
+-		"	subu	%0, %2					\n"
++		"	dsubu	%0, %2					\n"
+ 		"	scd	%0, %1					\n"
+ 		"	beqz	%0, 2f					\n"
+ 		"	.subsection 2					\n"
+@@ -524,10 +524,10 @@ static __inline__ long atomic64_add_retu
+ 		__asm__ __volatile__(
+ 		"	.set	mips3					\n"
+ 		"1:	lld	%1, %2		# atomic64_add_return	\n"
+-		"	addu	%0, %1, %3				\n"
++		"	daddu	%0, %1, %3				\n"
+ 		"	scd	%0, %2					\n"
+ 		"	beqzl	%0, 1b					\n"
+-		"	addu	%0, %1, %3				\n"
++		"	daddu	%0, %1, %3				\n"
+ 		"	.set	mips0					\n"
+ 		: "=&r" (result), "=&r" (temp), "=m" (v->counter)
+ 		: "Ir" (i), "m" (v->counter)
+@@ -538,10 +538,10 @@ static __inline__ long atomic64_add_retu
+ 		__asm__ __volatile__(
+ 		"	.set	mips3					\n"
+ 		"1:	lld	%1, %2		# atomic64_add_return	\n"
+-		"	addu	%0, %1, %3				\n"
++		"	daddu	%0, %1, %3				\n"
+ 		"	scd	%0, %2					\n"
+ 		"	beqz	%0, 2f					\n"
+-		"	addu	%0, %1, %3				\n"
++		"	daddu	%0, %1, %3				\n"
+ 		"	.subsection 2					\n"
+ 		"2:	b	1b					\n"
+ 		"	.previous					\n"
+@@ -576,10 +576,10 @@ static __inline__ long atomic64_sub_retu
+ 		__asm__ __volatile__(
+ 		"	.set	mips3					\n"
+ 		"1:	lld	%1, %2		# atomic64_sub_return	\n"
+-		"	subu	%0, %1, %3				\n"
++		"	dsubu	%0, %1, %3				\n"
+ 		"	scd	%0, %2					\n"
+ 		"	beqzl	%0, 1b					\n"
+-		"	subu	%0, %1, %3				\n"
++		"	dsubu	%0, %1, %3				\n"
+ 		"	.set	mips0					\n"
+ 		: "=&r" (result), "=&r" (temp), "=m" (v->counter)
+ 		: "Ir" (i), "m" (v->counter)
+@@ -590,10 +590,10 @@ static __inline__ long atomic64_sub_retu
+ 		__asm__ __volatile__(
+ 		"	.set	mips3					\n"
+ 		"1:	lld	%1, %2		# atomic64_sub_return	\n"
+-		"	subu	%0, %1, %3				\n"
++		"	dsubu	%0, %1, %3				\n"
+ 		"	scd	%0, %2					\n"
+ 		"	beqz	%0, 2f					\n"
+-		"	subu	%0, %1, %3				\n"
++		"	dsubu	%0, %1, %3				\n"
+ 		"	.subsection 2					\n"
+ 		"2:	b	1b					\n"
+ 		"	.previous					\n"
 
 
