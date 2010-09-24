@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932598Ab0IXQ2M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:28:12 -0400
-Received: from kroah.org ([198.145.64.141]:46091 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932572Ab0IXQ2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:28:07 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:16 2010
-Message-Id: <20100924162616.482052666@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:24:06 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [18/80] drivers/net/usb/hso.c: prevent reading uninitialized memory
-In-Reply-To: <20100924162706.GA7381@kroah.com>
+	id S932128Ab0IXQ5i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:57:38 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:59749 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754511Ab0IXQ5h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:57:37 -0400
+Date: Fri, 24 Sep 2010 17:57:16 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: tglx@linutronix.de, mingo@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: what's papered over by set_fs(USER_DS) in amd64 signal delivery?
+Message-ID: <20100924165716.GR19804@ZenIV.linux.org.uk>
+References: <20100924155231.GQ19804@ZenIV.linux.org.uk>
+ <AANLkTik+1k76vGccjwQWeEWZFng61ZoodDyWbN8wvPgE@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTik+1k76vGccjwQWeEWZFng61ZoodDyWbN8wvPgE@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-stable review patch.  If anyone has any objections, please let us know.
+On Fri, Sep 24, 2010 at 09:07:33AM -0700, Linus Torvalds wrote:
 
-------------------
+> I _think_ it is historical, and probably relates to just restoring all
+> the user mode state at signal delivery to a known state. IOW, I think
+> it really does go hand-in-hand with  the whole "clear bits in the
+> eflags register" thing.
+> 
+> x86-64 has historically had some left-over crap that we already
+> cleaned up in 32-bit mode, for the simple reason that the original
+> x86-64 code was forked from an earlier base, and then hacked up
+> somewhat. So I think this "#ifdef CONFIG_X86_64" is just a case of
+> that.
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-
-commit 7011e660938fc44ed86319c18a5954e95a82ab3e upstream.
-
-Fixed formatting (tabs and line breaks).
-
-The TIOCGICOUNT device ioctl allows unprivileged users to read
-uninitialized stack memory, because the "reserved" member of the
-serial_icounter_struct struct declared on the stack in hso_get_count()
-is not altered or zeroed before being copied back to the user.  This
-patch takes care of it.
-
-Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/net/usb/hso.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/drivers/net/usb/hso.c
-+++ b/drivers/net/usb/hso.c
-@@ -1653,6 +1653,8 @@ static int hso_get_count(struct hso_seri
- 	struct uart_icount cnow;
- 	struct hso_tiocmget  *tiocmget = serial->tiocmget;
+Nope - look at the commit that merged them; i386 used to have it as well
+right until the merge.  And yes, I agree that it's most likely a leftover
+from ancient times.
  
-+	memset(&icount, 0, sizeof(struct serial_icounter_struct));
-+
- 	if (!tiocmget)
- 		 return -ENOENT;
- 	spin_lock_irq(&serial->serial_lock);
+> But maybe we should have a WARN_ON_ONCE() to verify it, rather than
+> just kill it outright.
 
+Um...  If we do that, I'd suggest taking it in front of setup_...frame()
+and doing do_exit() with loud warning along the lines of "someone has
+come that -><- close to rooting the box".  Anybody who can trigger that
+(assuming it can be triggered at all) can overwrite arbitrary parts of
+kernel memory.
 
+I'd still like to hear from the x86 maintainers, just in case there's
+something more non-trivial to that than "it has always been that way"...
+
+FWIW, looking at the history it seems that the thing has happened almost
+by accident; the critical part is
+-       regs->cs = USER_CS; regs->ss = USER_DS;
+-       regs->ds = USER_DS; regs->es = USER_DS;
+-       regs->gs = USER_DS; regs->fs = USER_DS;
++       {
++               unsigned long seg = USER_DS;
++               __asm__("mov %w0,%%fs ; mov %w0,%%gs":"=r" (seg) :"0" (seg));
++               set_fs(seg);
++               regs->xds = seg;
++               regs->xes = seg;
++               regs->xss = seg;
++               regs->xcs = USER_CS;
+in 2.1.2.  And that's when we had
+	* fs and gs evicted from pt_regs
+	* fs and gs not saved restored on kernel entry/exit
+	* just introduced set_fs() to start with (that went in 2.1.0)
+
+A bit before my time, so I'm not sure what's been going on there...
