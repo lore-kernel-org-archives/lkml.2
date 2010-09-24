@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933103Ab0IXQm5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:42:57 -0400
-Received: from kroah.org ([198.145.64.141]:37212 "EHLO coco.kroah.org"
+	id S933140Ab0IXQnO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:43:14 -0400
+Received: from kroah.org ([198.145.64.141]:37207 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933029Ab0IXQfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:35:22 -0400
+	id S933026Ab0IXQfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:35:20 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:47 2010
-Message-Id: <20100924163347.047537327@clark.site>
+Message-Id: <20100924163346.961788000@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:31:58 -0700
+Date: Fri, 24 Sep 2010 09:31:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>
-Subject: [34/68] ext4: Fix remaining racy updates of EXT4_I(inode)->i_flags
+        Kashyap Desai <Kashyap.Desai@lsi.com>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [33/68] SCSI: mptsas: fix hangs caused by ATA pass-through
 In-Reply-To: <20100924163357.GA15741@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,82 +26,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Monakhov <dmonakhov@openvz.org>
+From: Ryan Kuester <rkuester@kspace.net>
 
-commit 84a8dce2710cc425089a2b92acc354d4fbb5788d upstream.
+commit 2a1b7e575b80ceb19ea50bfa86ce0053ea57181d upstream.
 
-A few functions were still modifying i_flags in a racy manner.
+I may have an explanation for the LSI 1068 HBA hangs provoked by ATA
+pass-through commands, in particular by smartctl.
 
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+First, my version of the symptoms.  On an LSI SAS1068E B3 HBA running
+01.29.00.00 firmware, with SATA disks, and with smartd running, I'm seeing
+occasional task, bus, and host resets, some of which lead to hard faults of
+the HBA requiring a reboot.  Abusively looping the smartctl command,
+
+    # while true; do smartctl -a /dev/sdb > /dev/null; done
+
+dramatically increases the frequency of these failures to nearly one per
+minute.  A high IO load through the HBA while looping smartctl seems to
+improve the chance of a full scsi host reset or a non-recoverable hang.
+
+I reduced what smartctl was doing down to a simple test case which
+causes the hang with a single IO when pointed at the sd interface.  See
+the code at the bottom of this e-mail.  It uses an SG_IO ioctl to issue
+a single pass-through ATA identify device command.  If the buffer
+userspace gives for the read data has certain alignments, the task is
+issued to the HBA but the HBA fails to respond.  If run against the sg
+interface, neither the test code nor smartctl causes a hang.
+
+sd and sg handle the SG_IO ioctl slightly differently.  Unless you
+specifically set a flag to do direct IO, sg passes a buffer of its own,
+which is page-aligned, to the block layer and later copies the result
+into the userspace buffer regardless of its alignment.  sd, on the other
+hand, always does direct IO unless the userspace buffer fails an
+alignment test at block/blk-map.c line 57, in which case a page-aligned
+buffer is created and used for the transfer.
+
+The alignment test currently checks for word-alignment, the default
+setup by scsi_lib.c; therefore, userspace buffers of almost any
+alignment are given directly to the HBA as DMA targets.  The LSI 1068
+hardware doesn't seem to like at least a couple of the alignments which
+cross a page boundary (see the test code below).  Curiously, many
+page-boundary-crossing alignments do work just fine.
+
+So, either the hardware has an bug handling certain alignments or the
+hardware has a stricter alignment requirement than the driver is
+advertising.  If stricter alignment is required, then in no case should
+misaligned buffers from userspace be allowed through without being
+bounced or at least causing an error to be returned.
+
+It seems the mptsas driver could use blk_queue_dma_alignment() to advertise
+a stricter alignment requirement.  If it does, sd does the right thing and
+bounces misaligned buffers (see block/blk-map.c line 57).  The following
+patch to 2.6.34-rc5 makes my symptoms go away.  I'm sure this is the wrong
+place for this code, but it gets my idea across.
+
+Acked-by: Kashyap Desai <Kashyap.Desai@lsi.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext4/inode.c |   38 ++++++++++++++++++++++----------------
- 1 file changed, 22 insertions(+), 16 deletions(-)
+ drivers/message/fusion/mptscsih.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -4815,20 +4815,26 @@ void ext4_set_inode_flags(struct inode *
- /* Propagate flags from i_flags to EXT4_I(inode)->i_flags */
- void ext4_get_inode_flags(struct ext4_inode_info *ei)
- {
--	unsigned int flags = ei->vfs_inode.i_flags;
-+	unsigned int vfs_fl;
-+	unsigned long old_fl, new_fl;
+--- a/drivers/message/fusion/mptscsih.c
++++ b/drivers/message/fusion/mptscsih.c
+@@ -2439,6 +2439,8 @@ mptscsih_slave_configure(struct scsi_dev
+ 		ioc->name,sdev->tagged_supported, sdev->simple_tags,
+ 		sdev->ordered_tags));
  
--	ei->i_flags &= ~(EXT4_SYNC_FL|EXT4_APPEND_FL|
--			EXT4_IMMUTABLE_FL|EXT4_NOATIME_FL|EXT4_DIRSYNC_FL);
--	if (flags & S_SYNC)
--		ei->i_flags |= EXT4_SYNC_FL;
--	if (flags & S_APPEND)
--		ei->i_flags |= EXT4_APPEND_FL;
--	if (flags & S_IMMUTABLE)
--		ei->i_flags |= EXT4_IMMUTABLE_FL;
--	if (flags & S_NOATIME)
--		ei->i_flags |= EXT4_NOATIME_FL;
--	if (flags & S_DIRSYNC)
--		ei->i_flags |= EXT4_DIRSYNC_FL;
-+	do {
-+		vfs_fl = ei->vfs_inode.i_flags;
-+		old_fl = ei->i_flags;
-+		new_fl = old_fl & ~(EXT4_SYNC_FL|EXT4_APPEND_FL|
-+				EXT4_IMMUTABLE_FL|EXT4_NOATIME_FL|
-+				EXT4_DIRSYNC_FL);
-+		if (vfs_fl & S_SYNC)
-+			new_fl |= EXT4_SYNC_FL;
-+		if (vfs_fl & S_APPEND)
-+			new_fl |= EXT4_APPEND_FL;
-+		if (vfs_fl & S_IMMUTABLE)
-+			new_fl |= EXT4_IMMUTABLE_FL;
-+		if (vfs_fl & S_NOATIME)
-+			new_fl |= EXT4_NOATIME_FL;
-+		if (vfs_fl & S_DIRSYNC)
-+			new_fl |= EXT4_DIRSYNC_FL;
-+	} while (cmpxchg(&ei->i_flags, old_fl, new_fl) != old_fl);
++	blk_queue_dma_alignment (sdev->request_queue, 512 - 1);
++
+ 	return 0;
  }
  
- static blkcnt_t ext4_inode_blocks(struct ext4_inode *raw_inode,
-@@ -5067,7 +5073,7 @@ static int ext4_inode_blocks_set(handle_
- 		 */
- 		raw_inode->i_blocks_lo   = cpu_to_le32(i_blocks);
- 		raw_inode->i_blocks_high = 0;
--		ei->i_flags &= ~EXT4_HUGE_FILE_FL;
-+		ext4_clear_inode_flag(inode, EXT4_INODE_HUGE_FILE);
- 		return 0;
- 	}
- 	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb, EXT4_FEATURE_RO_COMPAT_HUGE_FILE))
-@@ -5080,9 +5086,9 @@ static int ext4_inode_blocks_set(handle_
- 		 */
- 		raw_inode->i_blocks_lo   = cpu_to_le32(i_blocks);
- 		raw_inode->i_blocks_high = cpu_to_le16(i_blocks >> 32);
--		ei->i_flags &= ~EXT4_HUGE_FILE_FL;
-+		ext4_clear_inode_flag(inode, EXT4_INODE_HUGE_FILE);
- 	} else {
--		ei->i_flags |= EXT4_HUGE_FILE_FL;
-+		ext4_set_inode_flag(inode, EXT4_INODE_HUGE_FILE);
- 		/* i_block is stored in file system block size */
- 		i_blocks = i_blocks >> (inode->i_blkbits - 9);
- 		raw_inode->i_blocks_lo   = cpu_to_le32(i_blocks);
 
 
