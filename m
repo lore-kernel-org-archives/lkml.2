@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352Ab0IXIyW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 04:54:22 -0400
-Received: from lo.gmane.org ([80.91.229.12]:52649 "EHLO lo.gmane.org"
+	id S1753407Ab0IXI6G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 04:58:06 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:41583 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751758Ab0IXIyV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 04:54:21 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: el es <el.es.cr@gmail.com>
-Subject: Re: Long maintenance kernel versions.
-Date: Fri, 24 Sep 2010 08:54:10 +0000 (UTC)
-Message-ID: <loom.20100924T104300-582@post.gmane.org>
-References: <AANLkTinGJmAzdd=HOKZYSh69F6T9HMznOKW5BS90=Q-4@mail.gmail.com> <20100924053648.GA5453@cr0.nay.redhat.com> <AANLkTimDtYF_ZNGvH-UxWrFyMsxjzKfsgyDTJnjt70Hs@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751758Ab0IXI6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 04:58:04 -0400
+Message-ID: <4C9C67FF.8040606@kernel.dk>
+Date: Fri, 24 Sep 2010 10:57:35 +0200
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org, hch@lst.de
+Subject: Re: [RFT PATCH] amiga, atari floppy: Use one request queue per disk
+References: <1285271646-2768-1-git-send-email-vgoyal@redhat.com> <20100923223530.GA5658@redhat.com>
+In-Reply-To: <20100923223530.GA5658@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 217.36.116.105 (Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.10) Gecko/20100914 Firefox/3.6.10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geoffrey Said <geoffrey <at> 2x.com> writes:
+On 2010-09-24 00:35, Vivek Goyal wrote:
+> On Thu, Sep 23, 2010 at 03:54:04PM -0400, Vivek Goyal wrote:
+>>
+>> Hi,
+>>
+>> We seem to have deprecated the notion of sharing request queue across gendisks. Now we need to instanciate one request queue per disk.
+>>
+>> There see to be still some drivers sharing request queue across disks. Arch
+>> specific floppy drivers like amiga and atari are doing so.
+>>
+>> These are two patches which should fix the issue. But these patches are
+>> completely untested. Not even compilte tested. Don't have hardware to test
+>> them. 
+>>
+>> Would be great if somebody who has the hardware can lend a hand here to
+>> see if these patches work.
+> 
+> Sending this mail to linux-m68k@lists.linux-m68k.org list, incase somebody
+> can help there with testing.
 
-1. You are top-posting.
+I think for these drivers, the best we can probably due is ensure that it
+cross compiles. As Andreas mentions, getting test coverage is hard and
+it's not even given that they work as-is right now.
 
-2. To my non-developer naked eye it rather looks like - one of the developers
-steps up and announces he's going to care for this particular kernel version,
-and how long.
+And since getting this done serves the greater higher purpose of getting
+rid of some nasty hacks in the core kernel, we can't let some ancient
+and bit rotted (and most likely completely unused) drivers stop this.
 
-3. If it works and is adopted for your needs, why move ? Stick to it. Test new
-kernels (apply your patches to them and test with your programs). Nobody knows
-what you need, unless you tell them - or publish your patches. 
-
-4. If you did that, you may publicly maintain the version you have selected for
-as long as you need. That would be some way to GPL compliance too (IANAL). Move
-to another kernel version only if it has a new feature that you actually need,
-as bugfixes usually apply without need to change versions.
-
-5. If more people like what you were doing, you may even become this stable
-version maintainer.
-
-Lukasz
+-- 
+Jens Axboe
 
