@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758463Ab0IXXN4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 19:13:56 -0400
-Received: from ovro.ovro.caltech.edu ([192.100.16.2]:44953 "EHLO
+	id S1758449Ab0IXXNz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 19:13:55 -0400
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:44951 "EHLO
 	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757411Ab0IXXNx (ORCPT
+	with ESMTP id S1755486Ab0IXXNx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 24 Sep 2010 19:13:53 -0400
 From: "Ira W. Snyder" <iws@ovro.caltech.edu>
 To: linux-kernel@vger.kernel.org
 Cc: Dan Williams <dan.j.williams@intel.com>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH RFCv2 2/2] fsldma: use generic support for scatterlist to scatterlist transfers
-Date: Fri, 24 Sep 2010 16:13:52 -0700
-Message-Id: <1285370032-16937-3-git-send-email-iws@ovro.caltech.edu>
+Subject: [PATCH RFCv2 1/2] dmaengine: add support for scatterlist to scatterlist transfers
+Date: Fri, 24 Sep 2010 16:13:51 -0700
+Message-Id: <1285370032-16937-2-git-send-email-iws@ovro.caltech.edu>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1285370032-16937-1-git-send-email-iws@ovro.caltech.edu>
 References: <1285370032-16937-1-git-send-email-iws@ovro.caltech.edu>
@@ -21,421 +21,184 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The fsldma driver uses the DMA_SLAVE API to handle scatterlist to
-scatterlist DMA transfers. For quite a while now, it has been possible
-to mimic the operation by using the device_prep_dma_memcpy() routine
-intelligently.
-
-Now that the DMAEngine API has grown generic support for scatterlist to
-scatterlist transfers, this operation is no longer needed. The generic
-support is used for scatterlist to scatterlist transfers.
+This adds support for scatterlist to scatterlist DMA transfers. This is
+currently hidden behind a configuration option, which will allow drivers
+which need this functionality to select it individually.
 
 Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
 ---
- arch/powerpc/include/asm/fsldma.h |  115 ++------------------
- drivers/dma/fsldma.c              |  219 +++++++------------------------------
- 2 files changed, 48 insertions(+), 286 deletions(-)
+ drivers/dma/Kconfig       |    3 +
+ drivers/dma/dmaengine.c   |  125 +++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/dmaengine.h |    6 ++
+ 3 files changed, 134 insertions(+), 0 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/fsldma.h b/arch/powerpc/include/asm/fsldma.h
-index debc5ed..dc0bd27 100644
---- a/arch/powerpc/include/asm/fsldma.h
-+++ b/arch/powerpc/include/asm/fsldma.h
-@@ -1,7 +1,7 @@
- /*
-  * Freescale MPC83XX / MPC85XX DMA Controller
-  *
-- * Copyright (c) 2009 Ira W. Snyder <iws@ovro.caltech.edu>
-+ * Copyright (c) 2009-2010 Ira W. Snyder <iws@ovro.caltech.edu>
-  *
-  * This file is licensed under the terms of the GNU General Public License
-  * version 2. This program is licensed "as is" without any warranty of any
-@@ -11,127 +11,32 @@
- #ifndef __ARCH_POWERPC_ASM_FSLDMA_H__
- #define __ARCH_POWERPC_ASM_FSLDMA_H__
+diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+index 9520cf0..82d2244 100644
+--- a/drivers/dma/Kconfig
++++ b/drivers/dma/Kconfig
+@@ -89,6 +89,9 @@ config AT_HDMAC
+ 	  Support the Atmel AHB DMA controller.  This can be integrated in
+ 	  chips such as the Atmel AT91SAM9RL.
  
--#include <linux/slab.h>
- #include <linux/dmaengine.h>
- 
- /*
-- * Definitions for the Freescale DMA controller's DMA_SLAVE implemention
-+ * The Freescale DMA controller has several features that are not accomodated
-+ * in the Linux DMAEngine API. Therefore, the generic structure is expanded
-+ * to allow drivers to use these features.
-  *
-- * The Freescale DMA_SLAVE implementation was designed to handle many-to-many
-- * transfers. An example usage would be an accelerated copy between two
-- * scatterlists. Another example use would be an accelerated copy from
-- * multiple non-contiguous device buffers into a single scatterlist.
-+ * This structure should be passed into the DMAEngine routine device_control()
-+ * as in this example:
-  *
-- * A DMA_SLAVE transaction is defined by a struct fsl_dma_slave. This
-- * structure contains a list of hardware addresses that should be copied
-- * to/from the scatterlist passed into device_prep_slave_sg(). The structure
-- * also has some fields to enable hardware-specific features.
-+ * chan->device->device_control(chan, DMA_SLAVE_CONFIG, (unsigned long)cfg);
-  */
- 
- /**
-- * struct fsl_dma_hw_addr
-- * @entry: linked list entry
-- * @address: the hardware address
-- * @length: length to transfer
-- *
-- * Holds a single physical hardware address / length pair for use
-- * with the DMAEngine DMA_SLAVE API.
-- */
--struct fsl_dma_hw_addr {
--	struct list_head entry;
--
--	dma_addr_t address;
--	size_t length;
--};
--
--/**
-  * struct fsl_dma_slave
-- * @addresses: a linked list of struct fsl_dma_hw_addr structures
-+ * @config: the standard Linux DMAEngine API DMA_SLAVE configuration
-  * @request_count: value for DMA request count
-- * @src_loop_size: setup and enable constant source-address DMA transfers
-- * @dst_loop_size: setup and enable constant destination address DMA transfers
-  * @external_start: enable externally started DMA transfers
-  * @external_pause: enable externally paused DMA transfers
-- *
-- * Holds a list of address / length pairs for use with the DMAEngine
-- * DMA_SLAVE API implementation for the Freescale DMA controller.
-  */
--struct fsl_dma_slave {
-+struct fsldma_slave_config {
-+	struct dma_slave_config config;
- 
--	/* List of hardware address/length pairs */
--	struct list_head addresses;
--
--	/* Support for extra controller features */
- 	unsigned int request_count;
--	unsigned int src_loop_size;
--	unsigned int dst_loop_size;
- 	bool external_start;
- 	bool external_pause;
- };
- 
--/**
-- * fsl_dma_slave_append - add an address/length pair to a struct fsl_dma_slave
-- * @slave: the &struct fsl_dma_slave to add to
-- * @address: the hardware address to add
-- * @length: the length of bytes to transfer from @address
-- *
-- * Add a hardware address/length pair to a struct fsl_dma_slave. Returns 0 on
-- * success, -ERRNO otherwise.
-- */
--static inline int fsl_dma_slave_append(struct fsl_dma_slave *slave,
--				       dma_addr_t address, size_t length)
--{
--	struct fsl_dma_hw_addr *addr;
--
--	addr = kzalloc(sizeof(*addr), GFP_ATOMIC);
--	if (!addr)
--		return -ENOMEM;
--
--	INIT_LIST_HEAD(&addr->entry);
--	addr->address = address;
--	addr->length = length;
--
--	list_add_tail(&addr->entry, &slave->addresses);
--	return 0;
--}
--
--/**
-- * fsl_dma_slave_free - free a struct fsl_dma_slave
-- * @slave: the struct fsl_dma_slave to free
-- *
-- * Free a struct fsl_dma_slave and all associated address/length pairs
-- */
--static inline void fsl_dma_slave_free(struct fsl_dma_slave *slave)
--{
--	struct fsl_dma_hw_addr *addr, *tmp;
--
--	if (slave) {
--		list_for_each_entry_safe(addr, tmp, &slave->addresses, entry) {
--			list_del(&addr->entry);
--			kfree(addr);
--		}
--
--		kfree(slave);
--	}
--}
--
--/**
-- * fsl_dma_slave_alloc - allocate a struct fsl_dma_slave
-- * @gfp: the flags to pass to kmalloc when allocating this structure
-- *
-- * Allocate a struct fsl_dma_slave for use by the DMA_SLAVE API. Returns a new
-- * struct fsl_dma_slave on success, or NULL on failure.
-- */
--static inline struct fsl_dma_slave *fsl_dma_slave_alloc(gfp_t gfp)
--{
--	struct fsl_dma_slave *slave;
--
--	slave = kzalloc(sizeof(*slave), gfp);
--	if (!slave)
--		return NULL;
--
--	INIT_LIST_HEAD(&slave->addresses);
--	return slave;
--}
--
- #endif /* __ARCH_POWERPC_ASM_FSLDMA_H__ */
-diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-index cea08be..c90b393 100644
---- a/drivers/dma/fsldma.c
-+++ b/drivers/dma/fsldma.c
-@@ -599,207 +599,64 @@ static struct dma_async_tx_descriptor *fsl_dma_prep_slave_sg(
- 	struct dma_chan *dchan, struct scatterlist *sgl, unsigned int sg_len,
- 	enum dma_data_direction direction, unsigned long flags)
- {
--	struct fsldma_chan *chan;
--	struct fsl_desc_sw *first = NULL, *prev = NULL, *new = NULL;
--	struct fsl_dma_slave *slave;
--	size_t copy;
--
--	int i;
--	struct scatterlist *sg;
--	size_t sg_used;
--	size_t hw_used;
--	struct fsl_dma_hw_addr *hw;
--	dma_addr_t dma_dst, dma_src;
--
--	if (!dchan)
--		return NULL;
--
--	if (!dchan->private)
--		return NULL;
--
--	chan = to_fsl_chan(dchan);
--	slave = dchan->private;
--
--	if (list_empty(&slave->addresses))
--		return NULL;
--
--	hw = list_first_entry(&slave->addresses, struct fsl_dma_hw_addr, entry);
--	hw_used = 0;
--
- 	/*
--	 * Build the hardware transaction to copy from the scatterlist to
--	 * the hardware, or from the hardware to the scatterlist
-+	 * This operation is not supported on the Freescale DMA controller
- 	 *
--	 * If you are copying from the hardware to the scatterlist and it
--	 * takes two hardware entries to fill an entire page, then both
--	 * hardware entries will be coalesced into the same page
--	 *
--	 * If you are copying from the scatterlist to the hardware and a
--	 * single page can fill two hardware entries, then the data will
--	 * be read out of the page into the first hardware entry, and so on
-+	 * However, we need to provide the function pointer to allow the
-+	 * device_control() method to work.
- 	 */
--	for_each_sg(sgl, sg, sg_len, i) {
--		sg_used = 0;
--
--		/* Loop until the entire scatterlist entry is used */
--		while (sg_used < sg_dma_len(sg)) {
--
--			/*
--			 * If we've used up the current hardware address/length
--			 * pair, we need to load a new one
--			 *
--			 * This is done in a while loop so that descriptors with
--			 * length == 0 will be skipped
--			 */
--			while (hw_used >= hw->length) {
--
--				/*
--				 * If the current hardware entry is the last
--				 * entry in the list, we're finished
--				 */
--				if (list_is_last(&hw->entry, &slave->addresses))
--					goto finished;
--
--				/* Get the next hardware address/length pair */
--				hw = list_entry(hw->entry.next,
--						struct fsl_dma_hw_addr, entry);
--				hw_used = 0;
--			}
--
--			/* Allocate the link descriptor from DMA pool */
--			new = fsl_dma_alloc_descriptor(chan);
--			if (!new) {
--				dev_err(chan->dev, "No free memory for "
--						       "link descriptor\n");
--				goto fail;
--			}
--#ifdef FSL_DMA_LD_DEBUG
--			dev_dbg(chan->dev, "new link desc alloc %p\n", new);
--#endif
--
--			/*
--			 * Calculate the maximum number of bytes to transfer,
--			 * making sure it is less than the DMA controller limit
--			 */
--			copy = min_t(size_t, sg_dma_len(sg) - sg_used,
--					     hw->length - hw_used);
--			copy = min_t(size_t, copy, FSL_DMA_BCR_MAX_CNT);
--
--			/*
--			 * DMA_FROM_DEVICE
--			 * from the hardware to the scatterlist
--			 *
--			 * DMA_TO_DEVICE
--			 * from the scatterlist to the hardware
--			 */
--			if (direction == DMA_FROM_DEVICE) {
--				dma_src = hw->address + hw_used;
--				dma_dst = sg_dma_address(sg) + sg_used;
--			} else {
--				dma_src = sg_dma_address(sg) + sg_used;
--				dma_dst = hw->address + hw_used;
--			}
--
--			/* Fill in the descriptor */
--			set_desc_cnt(chan, &new->hw, copy);
--			set_desc_src(chan, &new->hw, dma_src);
--			set_desc_dst(chan, &new->hw, dma_dst);
--
--			/*
--			 * If this is not the first descriptor, chain the
--			 * current descriptor after the previous descriptor
--			 */
--			if (!first) {
--				first = new;
--			} else {
--				set_desc_next(chan, &prev->hw,
--					      new->async_tx.phys);
--			}
--
--			new->async_tx.cookie = 0;
--			async_tx_ack(&new->async_tx);
--
--			prev = new;
--			sg_used += copy;
--			hw_used += copy;
--
--			/* Insert the link descriptor into the LD ring */
--			list_add_tail(&new->node, &first->tx_list);
--		}
--	}
--
--finished:
--
--	/* All of the hardware address/length pairs had length == 0 */
--	if (!first || !new)
--		return NULL;
--
--	new->async_tx.flags = flags;
--	new->async_tx.cookie = -EBUSY;
--
--	/* Set End-of-link to the last link descriptor of new list */
--	set_ld_eol(chan, new);
--
--	/* Enable extra controller features */
--	if (chan->set_src_loop_size)
--		chan->set_src_loop_size(chan, slave->src_loop_size);
--
--	if (chan->set_dst_loop_size)
--		chan->set_dst_loop_size(chan, slave->dst_loop_size);
--
--	if (chan->toggle_ext_start)
--		chan->toggle_ext_start(chan, slave->external_start);
--
--	if (chan->toggle_ext_pause)
--		chan->toggle_ext_pause(chan, slave->external_pause);
--
--	if (chan->set_request_count)
--		chan->set_request_count(chan, slave->request_count);
--
--	return &first->async_tx;
--
--fail:
--	/* If first was not set, then we failed to allocate the very first
--	 * descriptor, and we're done */
--	if (!first)
--		return NULL;
--
--	/*
--	 * First is set, so all of the descriptors we allocated have been added
--	 * to first->tx_list, INCLUDING "first" itself. Therefore we
--	 * must traverse the list backwards freeing each descriptor in turn
--	 *
--	 * We're re-using variables for the loop, oh well
--	 */
--	fsldma_free_desc_list_reverse(chan, &first->tx_list);
- 	return NULL;
++config DMAENGINE_SG_TO_SG
++	bool
++
+ config FSL_DMA
+ 	tristate "Freescale Elo and Elo Plus DMA support"
+ 	depends on FSL_SOC
+diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
+index 9d31d5e..9238b86 100644
+--- a/drivers/dma/dmaengine.c
++++ b/drivers/dma/dmaengine.c
+@@ -972,6 +972,131 @@ dma_async_memcpy_pg_to_pg(struct dma_chan *chan, struct page *dest_pg,
  }
+ EXPORT_SYMBOL(dma_async_memcpy_pg_to_pg);
  
- static int fsl_dma_device_control(struct dma_chan *dchan,
- 				  enum dma_ctrl_cmd cmd, unsigned long arg)
- {
-+	struct fsldma_slave_config *cfg;
- 	struct fsldma_chan *chan;
- 	unsigned long flags;
- 
--	/* Only supports DMA_TERMINATE_ALL */
--	if (cmd != DMA_TERMINATE_ALL)
--		return -ENXIO;
--
- 	if (!dchan)
- 		return -EINVAL;
- 
- 	chan = to_fsl_chan(dchan);
- 
--	/* Halt the DMA engine */
--	dma_halt(chan);
-+	switch (cmd) {
-+	case DMA_TERMINATE_ALL:
-+		/* Halt the DMA engine */
-+		dma_halt(chan);
- 
--	spin_lock_irqsave(&chan->desc_lock, flags);
-+		spin_lock_irqsave(&chan->desc_lock, flags);
- 
--	/* Remove and free all of the descriptors in the LD queue */
--	fsldma_free_desc_list(chan, &chan->ld_pending);
--	fsldma_free_desc_list(chan, &chan->ld_running);
-+		/* Remove and free all of the descriptors in the LD queue */
-+		fsldma_free_desc_list(chan, &chan->ld_pending);
-+		fsldma_free_desc_list(chan, &chan->ld_running);
- 
--	spin_unlock_irqrestore(&chan->desc_lock, flags);
-+		spin_unlock_irqrestore(&chan->desc_lock, flags);
-+		return 0;
++#ifdef CONFIG_DMAENGINE_SG_TO_SG
++dma_cookie_t
++dma_async_memcpy_sg_to_sg(struct dma_chan *chan,
++			  struct scatterlist *dst_sg, unsigned int dst_nents,
++			  struct scatterlist *src_sg, unsigned int src_nents,
++			  dma_async_tx_callback cb, void *cb_param)
++{
++	struct dma_device *dev = chan->device;
++	struct dma_async_tx_descriptor *tx;
++	dma_cookie_t cookie = -ENOMEM;
++	size_t dst_avail, src_avail;
++	struct scatterlist *sg;
++	size_t transferred = 0;
++	size_t dst_total = 0;
++	size_t src_total = 0;
++	dma_addr_t dst, src;
++	size_t len;
++	int i;
 +
-+	case DMA_SLAVE_CONFIG:
++	if (dst_nents == 0 || src_nents == 0)
++		return -EINVAL;
 +
-+		cfg = (struct fsldma_slave_config *)arg;
-+		if (chan->set_request_count)
-+			chan->set_request_count(chan, cfg->request_count);
++	if (dst_sg == NULL || src_sg == NULL)
++		return -EINVAL;
 +
-+		if (chan->toggle_ext_start)
-+			chan->toggle_ext_start(chan, cfg->external_start);
++	/* get the total count of bytes in each scatterlist */
++	for_each_sg(dst_sg, sg, dst_nents, i)
++		dst_total += sg_dma_len(sg);
 +
-+		if (chan->toggle_ext_pause)
-+			chan->toggle_ext_pause(chan, cfg->external_pause);
++	for_each_sg(src_sg, sg, src_nents, i)
++		src_total += sg_dma_len(sg);
++
++	/* get prepared for the loop */
++	dst_avail = sg_dma_len(dst_sg);
++	src_avail = sg_dma_len(src_sg);
++
++	/* run until we are out of descriptors */
++	while (true) {
++
++		/* create the largest transaction possible */
++		len = min_t(size_t, src_avail, dst_avail);
++		if (len == 0)
++			goto fetch;
++
++		dst = sg_dma_address(dst_sg) + sg_dma_len(dst_sg) - dst_avail;
++		src = sg_dma_address(src_sg) + sg_dma_len(src_sg) - src_avail;
 +
 +		/*
-+		 * TODO: add other features
++		 * get a descriptor
 +		 *
-+		 * I'm not sure how to use the members dma_slave_config to
-+		 * control the src/dst address hold features.
++		 * we must poll for a descriptor here since the DMAEngine API
++		 * does not provide a way for external users to free previously
++		 * allocated descriptors
 +		 */
-+		return 0;
++		for (;;) {
++			tx = dev->device_prep_dma_memcpy(chan, dst, src, len, 0);
++			if (likely(tx))
++				break;
 +
-+	default:
-+		return -ENXIO;
++			dma_async_issue_pending(chan);
++		}
++
++		/* update metadata */
++		transferred += len;
++		dst_avail -= len;
++		src_avail -= len;
++
++		/* if this is the last transfer, setup the callback */
++		if (dst_total == transferred || src_total == transferred) {
++			tx->callback = cb;
++			tx->callback_param = cb_param;
++		}
++
++		/* submit the transaction */
++		cookie = tx->tx_submit(tx);
++		if (dma_submit_error(cookie)) {
++			dev_err(dev->dev, "failed to submit desc\n");
++			return cookie;
++		}
++
++fetch:
++		/* fetch the next dst scatterlist entry */
++		if (dst_avail == 0) {
++
++			/* no more entries: we're done */
++			if (dst_nents == 0)
++				break;
++
++			/* fetch the next entry: if there are no more: done */
++			dst_sg = sg_next(dst_sg);
++			if (dst_sg == NULL)
++				break;
++
++			dst_nents--;
++			dst_avail = sg_dma_len(dst_sg);
++		}
++
++		/* fetch the next src scatterlist entry */
++		if (src_avail == 0) {
++
++			/* no more entries: we're done */
++			if (src_nents == 0)
++				break;
++
++			/* fetch the next entry: if there are no more: done */
++			src_sg = sg_next(src_sg);
++			if (src_sg == NULL)
++				break;
++
++			src_nents--;
++			src_avail = sg_dma_len(src_sg);
++		}
 +	}
++
++	/* update counters */
++	preempt_disable();
++	__this_cpu_add(chan->local->bytes_transferred, transferred);
++	__this_cpu_inc(chan->local->memcpy_count);
++	preempt_enable();
++
++	return 0;
++}
++EXPORT_SYMBOL(dma_async_memcpy_sg_to_sg);
++#endif
++
+ void dma_async_tx_descriptor_init(struct dma_async_tx_descriptor *tx,
+ 	struct dma_chan *chan)
+ {
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index c61d4ca..28803a0 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -632,6 +632,12 @@ dma_cookie_t dma_async_memcpy_buf_to_pg(struct dma_chan *chan,
+ dma_cookie_t dma_async_memcpy_pg_to_pg(struct dma_chan *chan,
+ 	struct page *dest_pg, unsigned int dest_off, struct page *src_pg,
+ 	unsigned int src_off, size_t len);
++#ifdef CONFIG_DMAENGINE_SG_TO_SG
++dma_cookie_t dma_async_memcpy_sg_to_sg(struct dma_chan *chan,
++	struct scatterlist *dst_sg, unsigned int dst_nents,
++	struct scatterlist *src_sg, unsigned int src_nents,
++	dma_async_tx_callback cb, void *cb_param);
++#endif
+ void dma_async_tx_descriptor_init(struct dma_async_tx_descriptor *tx,
+ 	struct dma_chan *chan);
  
- 	return 0;
- }
 -- 
 1.7.1
 
