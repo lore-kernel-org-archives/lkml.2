@@ -1,70 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757990Ab0IXTv5 (ORCPT <rfc822;w@1wt.eu>);
+	id S1758025Ab0IXTwC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 15:52:02 -0400
+Received: from mga11.intel.com ([192.55.52.93]:29639 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757793Ab0IXTv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 24 Sep 2010 15:51:57 -0400
-Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:60764 "HELO
-	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752892Ab0IXTv4 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 15:51:56 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=pDM8/OXekeFq0l/CBwIpcfLwh8eny+v2HVmkHzLbXjffBpYDcXWBEyrOT3SwDB57rMwUIexhnlOyIBpYVbAg9b1AJk/fXKjrZf3S1lm++JGDBuGamsv5+0mb/FOYCk/2;
-Date: Fri, 24 Sep 2010 12:51:53 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Vasily Khoruzhick <anarsoul@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Sitsofe Wheeler <sitsofe@yahoo.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Len Brown <lenb@kernel.org>
-Subject: Re: Interrupt latency on some 945GM platforms
-Message-ID: <20100924125153.4fdf0c1b@jbarnes-desktop>
-In-Reply-To: <201009242248.36554.anarsoul@gmail.com>
-References: <201009132336.17310.anarsoul@gmail.com>
-	<201009162306.59508.anarsoul@gmail.com>
-	<20100924123901.243c85e1@jbarnes-desktop>
-	<201009242248.36554.anarsoul@gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,231,1283756400"; 
+   d="scan'208";a="840691315"
+Subject: Re: [PATCH] iwl3945: queue the right work if the scan needs to be
+ aborted
+From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
+To: Florian Mickler <florian@mickler.org>
+Cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "Chatre, Reinette" <reinette.chatre@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Berg, Johannes" <johannes.berg@intel.com>, Zhu Yi <yi.zhu@intel.com>,
+        "Cahill, Ben M" <ben.m.cahill@intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1285345323-4250-1-git-send-email-florian@mickler.org>
+References: <1285345323-4250-1-git-send-email-florian@mickler.org>
+Content-Type: text/plain
+Date: Fri, 24 Sep 2010 12:51:08 -0700
+Message-Id: <1285357868.12594.8.camel@wwguy-ubuntu>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
+X-Mailer: Evolution 2.26.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Sep 2010 22:48:36 +0300
-Vasily Khoruzhick <anarsoul@gmail.com> wrote:
+Hi Florian,
 
-> On 24 of September 2010 22:39:01 Jesse Barnes wrote:
-> > On Thu, 16 Sep 2010 23:06:46 +0300
-> > 
-> > Vasily Khoruzhick <anarsoul@gmail.com> wrote:
-> > > В сообщении от 16 of September 2010 21:50:50 автор Thomas Gleixner 
-> написал:
-> > > > Ok. The problematic part of HPET was not the clocksource, it was the
-> > > > clock event device which failed to deliver interrupts occasionally. It
-> > > > was worth a try at least.
-> > > 
-> > > Hm, it seems that jerky glxgears is not related to jerky keyboard events.
-> > > Keyboard is jerky only in konsole (kde terminal emulator), it seems
-> > > something happened it seems that font rendering performance is much
-> > > worse in latest xf86-video-intel than in xf86-video-intel-2.12.0.
-> > 
-> > Len just had me try a few things too:
-> >   - maxcpus=1 lets things work
-> >   - offlining cpu1 at runtime (echo 0
-> > 
-> >     > /sys/devices/system/cpu/cpu1/online) lets things work
-> > 
-> >   - binding the i915 interrupt to cpu 0 does *not* help
-> > 
-> > Vasily and Paolo, do you both have Atom CPUs with hyperthreading
-> > enabled?
+On Fri, 2010-09-24 at 09:22 -0700, Florian Mickler wrote:
+> iwl3945's scan_completed calls into the mac80211 stack which triggers a
+> warn on if there is no scan outstanding.
 > 
-> Nope, I have Core2Duo T5500, dual-core, no hyperthreading :)
+> This can be avoided by not calling scan_completed but abort_scan in
+> iwl3945_request_scan  in the done: branch of the function which is used
+> as an error out.
+> 
+> The done: branch seems to be an error-out branch, as, for example, if
+> iwl_is_ready(priv) returns false  the done: branch is executed.
+> 
+> NOTE:
+> I'm not familiar with the driver at all.
+> I just quickly scanned as a reaction to
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=17722
+> 
+> the users of scan_completed in the  iwl3945 driver and noted the odd
+> discrepancy between the comment above this instance and the comment in
+> mac80211 scan_completed function.
+> 
+> Signed-off-by: Florian Mickler <florian@mickler.org>
+> ---
+>  drivers/net/wireless/iwlwifi/iwl-agn-lib.c  |    2 +-
+>  drivers/net/wireless/iwlwifi/iwl3945-base.c |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
+> index 9dd9e64..8fd00a6 100644
+> --- a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
+> +++ b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
+> @@ -1411,7 +1411,7 @@ void iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
+>  	clear_bit(STATUS_SCAN_HW, &priv->status);
+>  	clear_bit(STATUS_SCANNING, &priv->status);
+>  	/* inform mac80211 scan aborted */
+> -	queue_work(priv->workqueue, &priv->scan_completed);
+> +	queue_work(priv->workqueue, &priv->abort_scan);
+>  }
+>  
+>  int iwlagn_manage_ibss_station(struct iwl_priv *priv,
+> diff --git a/drivers/net/wireless/iwlwifi/iwl3945-base.c b/drivers/net/wireless/iwlwifi/iwl3945-base.c
+> index 59a308b..d31661c 100644
+> --- a/drivers/net/wireless/iwlwifi/iwl3945-base.c
+> +++ b/drivers/net/wireless/iwlwifi/iwl3945-base.c
+> @@ -3018,7 +3018,7 @@ void iwl3945_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
+>  	clear_bit(STATUS_SCANNING, &priv->status);
+>  
+>  	/* inform mac80211 scan aborted */
+> -	queue_work(priv->workqueue, &priv->scan_completed);
+> +	queue_work(priv->workqueue, &priv->abort_scan);
+>  }
+>  
+>  static void iwl3945_bg_restart(struct work_struct *data)
 
-Hm, well there goes the theory about Atom HT...
+Thanks for sending the patch, the scan operation in iwlwifi just being
+modified and the changes you have no longer apply.please check the
+latest kernel.
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+Thanks
+Wey
+
