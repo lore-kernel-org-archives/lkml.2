@@ -1,113 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932307Ab0IXOot (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 10:44:49 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:50278 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753587Ab0IXOos convert rfc822-to-8bit (ORCPT
+	id S1756760Ab0IXO5R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 10:57:17 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:36874 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753985Ab0IXO5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 10:44:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=MZKXqwZ5TF3B98wfRvJ9pyhHRVb/CcnjD5s8ILxdSi8Yrpe0Q4GxJmw2/MPs92wWRm
-         XdwkfTNffcJHD/SDyPHza3WNjCTVTHR1FtmCzdIo2ZUqhezCpSjuvaoo7jlAc1bMAHjm
-         bu6AOMKyqM4OuC+SGTPtG5Xmqhy1QlUseoMis=
+	Fri, 24 Sep 2010 10:57:16 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Thomas Renninger <trenn@suse.de>
+Subject: Re: Dynamic Debug module.ddebug fake param enhancements V4
+Date: Fri, 24 Sep 2010 08:56:16 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, jbaron@redhat.com
+References: <20100920184441.GA2915@redhat.com> <1285331311-21753-1-git-send-email-trenn@suse.de>
+In-Reply-To: <1285331311-21753-1-git-send-email-trenn@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <20100924141046.GA26454@sirena.org.uk>
-References: <AANLkTin9Qji_bdyd3yqrP_-ti5xRT9jJ4je2fPM=uHFX@mail.gmail.com>
-	<20100924141046.GA26454@sirena.org.uk>
-Date: Fri, 24 Sep 2010 16:44:46 +0200
-Message-ID: <AANLkTinfUWiWza8vyqfn0nCA7P24nBJSKY6Zr=aFgVQu@mail.gmail.com>
-Subject: Re: [PATCH 1/6] This patch adds support for the ST-Ericsson CG2900
-From: Par-Gunnar Hjalmdahl <pghatwork@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, Pavan Savoy <pavan_savoy@sify.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009240856.17411.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Friday, September 24, 2010 06:28:27 am Thomas Renninger wrote:
+> The patches are intended for Greg's tree and depend on 3 other
+> dynamic debug patches which already are in linux-next, but not in
+> the vanilla kernel yet.
+> 
+> [PATCH 1/4] Dynamic Debug: Introduce global fake module param module.ddebug - V4
+>      V3 -> V4: Do not put that large arrays on the stack, make one func __init
+> 
+> [PATCH 2/4] PNP: Compile all pnp built-in stuff in one module namespace
+> [PATCH 3/4] PNP: Use dev_dbg instead of dev_printk(KERN_DEBUG.. if DYNAMIC_DEBUG is compiled in
+>   -> Compile PNP subsystem in a separate pnp module namespace
+> 
+> [PATCH 4/4] kernel/module.c: Fix compiler warnings if debug is compiled in
+>   -> minor compile fixup
+> 
+> Only the two PNP patches really belong together.
+> If someone e.g. complains about the PNP patches, please still submit the rest.
 
-Thanks for your comments.
+I confess that I don't understand the objective here (only because
+I haven't taken enough time to read and understand the patches).
 
-2010/9/24 Mark Brown <broonie@opensource.wolfsonmicro.com>:
-> On Fri, Sep 24, 2010 at 03:46:44PM +0200, Par-Gunnar Hjalmdahl wrote:
->
->> +#ifndef PIN_INPUT_PULLUP
->> +#define PIN_INPUT_PULLUP             (PIN_DIR_INPUT | PIN_PULL_UP)
->> +#endif
->> +
->> +#ifndef GPIO_LOW
->> +#define GPIO_LOW                     0
->> +#endif
->> +
->> +#ifndef GPIO_HIGH
->> +#define GPIO_HIGH                    1
->> +#endif
->> +
->> +#ifndef GPIO_TO_IRQ
->> +#define GPIO_TO_IRQ                  NOMADIK_GPIO_TO_IRQ
->> +#endif
->
-> None of this looks like things that should be added in driver code -
-> there should be standard ways of doing this stuff that you should use
-> and if there aren't and they are useful they should be added in generic
-> code so that other code can use them.
+Some examples of how you expect to use this would probably help me
+understand.  And if you can compare that with the current, more
+difficult way, that would be even better.
 
-You are absolutely correct in this. As I wrote in the "cover letter"
-[PATCH 0/6] we are already planning changes to this driver where we
-instead register as platform driver and will use normal Kernel
-methodology to implement this. As you can see in the patch these
-comments are regarding a file located in arch/arm/mach-ux500 and the
-driver therefore has a dependency to the Board configuration which
-isn't particularly nice. This will be corrected. These type of defines
-should of course not be located in a C-file either.
+I don't know if it's relevant, but I plan to change some of the
+pnp_dbg() uses to dev_printk(KERN_DEBUG).  Specifically, mainline
+already logs all PCI device BARs with KERN_DEBUG, so that information
+is always in dmesg.  PNP currently uses pnp_dbg() for the corresponding
+ACPI device resource usage, so to get that information, I often have
+to request another boot with CONFIG_PNP_DEBUG_MESSAGES=y and "pnp.debug".
+I want to convert those resource messages to dev_printk(KERN_DEBUG) so
+they're just always in dmesg.
 
->
->> +/** BT_ENABLE_GPIO - GPIO to enable/disable the BT module.
->> + */
->> +#define BT_ENABLE_GPIO                       170
->
-> This sort of thing should be passed in from the board configuration
-> normallly.
-
-See answer above.
-
->
->> +void cg2900_devices_enable_chip(void)
->> +{
->> +     gpio_set_value(GBF_ENA_RESET_GPIO, GPIO_HIGH);
->> +}
->> +EXPORT_SYMBOL(cg2900_devices_enable_chip);
->
-> This looks like something that the driver should be organising rather
-> than something that should be exported for some random code to pick up?
-> In general most of the code in here looks like it should have more
-> device model usage and make more use of standard kernel infrastructure.
-
-See answer above. Will be a callback function in a driver data struct.
-
->
->> +static irqreturn_t cg2900_devices_interrupt(int irq, void *dev_id)
->> +{
->> +     disable_irq_nosync(irq);
->> +     if (cg2900_dev_callback && cg2900_dev_callback->interrupt_cb)
->> +             cg2900_dev_callback->interrupt_cb();
->> +
->> +     return IRQ_HANDLED;
->> +}
->
-> Why is there this callback mechanism - I'd expect the users of this code
-> to just be using the standard IRQ infrastructure?
->
-
-I will have to get back to you regarding this. I did not implement
-that specific part and the guy who did is back on Monday.
-
-
-/P-G
+Bjorn
