@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439Ab0IXMVy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 08:21:54 -0400
-Received: from anguilla.debian.or.at ([86.59.21.37]:54530 "EHLO
-	anguilla.debian.or.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752179Ab0IXMVx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 08:21:53 -0400
-Date: Fri, 24 Sep 2010 14:21:52 +0200
-From: Peter Palfrader <peter@palfrader.org>
-To: linux-kernel@vger.kernel.org
-Subject: 2.6.32.22: panic in put_cred_rs()
-Message-ID: <20100924122152.GV9394@anguilla.noreply.org>
-Mail-Followup-To: Peter Palfrader <peter@palfrader.org>,
-	linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+	id S1754716Ab0IXMYu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 08:24:50 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:35411 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752912Ab0IXMYs convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:3:1>);
+	Fri, 24 Sep 2010 08:24:48 -0400
+Message-Id: <4C9CB4DA0200007800018CFE@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Fri, 24 Sep 2010 13:25:30 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <chris@chris-wilson.co.uk>
+Cc: <eric@anholt.net>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] some clean up to intel-gtt.c
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-X-PGP: 1024D/94C09C7F 5B00 C96D 5D54 AEE1 206B  AF84 DE7A AF6E 94C0 9C7F
-X-Request-PGP: http://www.palfrader.org/keys/94C09C7F.asc
-X-Accept-Language: de, en
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+In commit e517a5e97080bbe52857bd0d7df9b66602d53c4d the call to
+map_page_into_agp() got removed from intel_i830_setup_flush(), but the
+counterpart call from intel_i830_fini_flush() to unmap_page_from_agp()
+was left in place.
 
-one of my x86_64 servers running 2.6.32.22 to host maybe a dozen KVM
-domains panicked a couple minutes ago.
+Additionally, the page allocated here never gets its physical address
+used for sending to hardware, so there's no need to allocate it with
+GFP_DMA32. Nor is __GFP_ZERO really necessary, as the page is used
+only to store data to force flushing of some internal processor state.
 
-| Kernel panic - not syncing: CRED: put_cred_rcu() sees [..] with usage [...]
-| trace:
-|         panic
-|         file_free_rcu
-|         sched_clock
-|         put_cred_rcu
-|         __rcu_process_callbacks
-|         rcu_process_callback
-|         s__do_softirc
-|         call_softirc
-|         do_softirc
-|         irq_exit
-|         smp_apic_timer_interrupt
-|         apic_timer_interrupt
-|         mwait_idle
-|         enter_idle
-|         cpu_idle
-|         start_secondary
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Cc: Eric Anholt <eric@anholt.net>
 
-The full call trace can be found at
-http://asteria.noreply.org/~weasel/volatile/2010-09-24-RKPcUNi7HW4/panic-2.6.32.22.png
+---
+ drivers/char/agp/intel-gtt.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Cheers,
-Peter
--- 
-                           |  .''`.  ** Debian GNU/Linux **
-      Peter Palfrader      | : :' :      The  universal
- http://www.palfrader.org/ | `. `'      Operating System
-                           |   `-    http://www.debian.org/
+--- linux-2.6.36-rc5/drivers/char/agp/intel-gtt.c
++++ 2.6.36-rc5-intel-agp-cleanup/drivers/char/agp/intel-gtt.c
+@@ -768,7 +768,6 @@ static void intel_i830_fini_flush(void)
+ {
+ 	kunmap(intel_private.i8xx_page);
+ 	intel_private.i8xx_flush_page = NULL;
+-	unmap_page_from_agp(intel_private.i8xx_page);
+ 
+ 	__free_page(intel_private.i8xx_page);
+ 	intel_private.i8xx_page = NULL;
+@@ -780,7 +779,7 @@ static void intel_i830_setup_flush(void)
+ 	if (intel_private.i8xx_page)
+ 		return;
+ 
+-	intel_private.i8xx_page = alloc_page(GFP_KERNEL | __GFP_ZERO | GFP_DMA32);
++	intel_private.i8xx_page = alloc_page(GFP_KERNEL);
+ 	if (!intel_private.i8xx_page)
+ 		return;
+ 
+
+
+
