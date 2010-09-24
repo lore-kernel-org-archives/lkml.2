@@ -1,96 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932181Ab0IXUOS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 16:14:18 -0400
+	id S1758056Ab0IXUOL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 16:14:11 -0400
 Received: from mail.logicpd.com ([66.162.60.3]:11017 "EHLO smtp.logicpd.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758075Ab0IXUON (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 16:14:13 -0400
+	id S1754936Ab0IXUOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 16:14:09 -0400
 X-Greylist: delayed 911 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Sep 2010 16:14:09 EDT
 From: Tim Nordell <tim.nordell@logicpd.com>
 To: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Tim Nordell <tim.nordell@logicpd.com>
-Subject: [PATCH v3 0/5] LogicPD minimal board support for LV_SOM and Torpedo
-Date: Fri, 24 Sep 2010 14:58:53 -0500
-Message-Id: <1285358338-3403-1-git-send-email-tim.nordell@logicpd.com>
+Subject: [PATCH v3 1/5] Adding LogicPD OMAP3 board support
+Date: Fri, 24 Sep 2010 14:58:54 -0500
+Message-Id: <1285358338-3403-2-git-send-email-tim.nordell@logicpd.com>
 X-Mailer: git-send-email 1.7.1
-X-OriginalArrivalTime: 24 Sep 2010 19:58:56.0979 (UTC) FILETIME=[EC176230:01CB5C22]
+In-Reply-To: <1285358338-3403-1-git-send-email-tim.nordell@logicpd.com>
+References: <1285358338-3403-1-git-send-email-tim.nordell@logicpd.com>
+X-OriginalArrivalTime: 24 Sep 2010 19:58:57.0135 (UTC) FILETIME=[EC2F2FF0:01CB5C22]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding minimal board support for LogicPD's LV_SOM and Torpedo devkits.  
-This mainly includes only Serial, Ethernet and SD card support for now.
+Adding support for LogicPD's OMAP 3530 LV SOM and
+OMAP 35x Torpedo board.
 
-This was tested (and based) against 2.6.36-rc5.
-
->From the prior set of patches the following is what I've changed:
-
- - Added in a fifth patch that configures UART1 for low level debug
-   support on the LV_SOM and Torpedo
-
-Differences from Patch v2 1/4:
- - I've removed the init_sdram() functions and have passed NULL into
-   sdrc parameters for omap2_init_common_hw().  This is mainly because
-   we have multiple revisions of these boards that contain different
-   memory settings and since we currently don't have any code in the
-   kernel for detecting which revision is being used (it is possible
-   and will be done later), we will leave it up to the boot loader to
-   correctly setup the memory timings.
-
- - Modified the description slightly in Kconfig so that the LV_SOM
-   and torpedo were consistent in their naming.  Removed a couple of
-   trailing spaces here as well
-   
- - Fixed indentation of "vmmc", line inside omap3logic_vmmc1_supply
- 
- - Removed omap3logic_map_io() and replaced with generic
-   omap3_map_io().  These functions were identical and it didn't make 
-   sense to have the local board one.
-   
- - Removed addition of boards to omap2_defconfig, and added "default y"
-   to both boards in Kconfig
-
-Differences from Patch v2 2/4:
- - Moved comments in board_mmc_init() relating to which board was
-   detected to inside each each conditional portion of code rather
-   than immediately above the given code section
- 
-Differences from Patch v2 3/4:
- - No changes
- 
-Differences from Patch v2 4/4:
- - Moved the omap3torpedo_fix_pbias_voltage() out to part of the 
-   omap3logic_init() function rather than being called from within
-   the SMSC911x init function.  This is because there are other IRQ 
-   lines that also use the pins affected by having the rail turned on
-   for these GPIO pins.
-   
- - Moved the comments to just inside the conditionals for lv_som 
-   versus torpedo selection in board_smsc911x_init(), rather than 
-   above the conditionals of each.
-   
- - Removed dead code from within board_smsc911x_init().
-
-Note: I am taking over from Jacob Tanenbaum's earlier patches that were
-submitted in August.  I wasn't sure entirely what the protocol was,
-so these are all signed by me.
-
-Tim Nordell (5):
-  Adding LogicPD OMAP3 board support
-  ARM: OMAP3LOGIC: Adding SDMMC support
-  ARM: OMAP3: Add generic smsc911x support when connected to GPMC
-  ARM: OMAP3LOGIC: Added SMSC Ethernet board support
-  ARM: OMAP3LOGIC: Adding low-level debug support
-
- arch/arm/mach-omap2/Kconfig                     |   18 ++
- arch/arm/mach-omap2/Makefile                    |    7 +
- arch/arm/mach-omap2/board-omap3logic.c          |  244 +++++++++++++++++++++++
- arch/arm/mach-omap2/gpmc-smsc911x.c             |  113 +++++++++++
- arch/arm/plat-omap/include/plat/gpmc-smsc911x.h |   35 ++++
- arch/arm/plat-omap/include/plat/uncompress.h    |    2 +
- 6 files changed, 419 insertions(+), 0 deletions(-)
+Signed-off-by: Tim Nordell <tim.nordell@logicpd.com>
+---
+ arch/arm/mach-omap2/Kconfig            |   18 ++++
+ arch/arm/mach-omap2/Makefile           |    4 +
+ arch/arm/mach-omap2/board-omap3logic.c |  143 ++++++++++++++++++++++++++++++++
+ 3 files changed, 165 insertions(+), 0 deletions(-)
  create mode 100644 arch/arm/mach-omap2/board-omap3logic.c
- create mode 100644 arch/arm/mach-omap2/gpmc-smsc911x.c
- create mode 100644 arch/arm/plat-omap/include/plat/gpmc-smsc911x.h
+
+diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+index b48bacf..2cc61fa 100644
+--- a/arch/arm/mach-omap2/Kconfig
++++ b/arch/arm/mach-omap2/Kconfig
+@@ -135,6 +135,24 @@ config MACH_OMAP_LDP
+ 	default y
+ 	select OMAP_PACKAGE_CBB
+ 
++config MACH_OMAP3530_LV_SOM
++	bool "OMAP3 Logic 3530 LV SOM board"
++	depends on ARCH_OMAP3
++	default y
++	help
++	 Support for the LogicPD OMAP3530 SOM Development kit
++	 for full description please see the products webpage at
++	 http://www.logicpd.com/products/development-kits/texas-instruments-zoom%E2%84%A2-omap35x-development-kit
++
++config MACH_OMAP3_TORPEDO
++	bool "OMAP3 Logic 35x Torpedo board"
++	depends on ARCH_OMAP3
++	default y
++	help
++	 Support for the LogicPD OMAP35x Torpedo Development kit
++	 for full description please see the products webpage at
++	 http://www.logicpd.com/products/development-kits/zoom-omap35x-torpedo-development-kit
++
+ config MACH_OVERO
+ 	bool "Gumstix Overo board"
+ 	depends on ARCH_OMAP3
+diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
+index 88d3a1e..9feadd8 100644
+--- a/arch/arm/mach-omap2/Makefile
++++ b/arch/arm/mach-omap2/Makefile
+@@ -115,6 +115,10 @@ obj-$(CONFIG_MACH_DEVKIT8000)     	+= board-devkit8000.o \
+ obj-$(CONFIG_MACH_OMAP_LDP)		+= board-ldp.o \
+ 					   board-flash.o \
+ 					   hsmmc.o
++obj-$(CONFIG_MACH_OMAP3530_LV_SOM)      += board-omap3logic.o \
++					   hsmmc.o
++obj-$(CONFIG_MACH_OMAP3_TORPEDO)        += board-omap3logic.o \
++					   hsmmc.o
+ obj-$(CONFIG_MACH_OVERO)		+= board-overo.o \
+ 					   hsmmc.o
+ obj-$(CONFIG_MACH_OMAP3EVM)		+= board-omap3evm.o \
+diff --git a/arch/arm/mach-omap2/board-omap3logic.c b/arch/arm/mach-omap2/board-omap3logic.c
+new file mode 100644
+index 0000000..72769f7
+--- /dev/null
++++ b/arch/arm/mach-omap2/board-omap3logic.c
+@@ -0,0 +1,143 @@
++/*
++ * linux/arch/arm/mach-omap2/board-omap3logic.c
++ *
++ * Copyright (C) 2010 Li-Pro.Net
++ * Stephan Linz <linz@li-pro.net>
++ *
++ * Copyright (C) 2010 Logic Product Development, Inc.
++ * Peter Barada <peter.barada@logicpd.com>
++ *
++ * Modified from Beagle, EVM, and RX51
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/platform_device.h>
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/clk.h>
++#include <linux/io.h>
++#include <linux/gpio.h>
++
++#include <linux/regulator/machine.h>
++
++#include <linux/i2c/twl.h>
++
++#include <mach/hardware.h>
++#include <asm/mach-types.h>
++#include <asm/mach/arch.h>
++#include <asm/mach/map.h>
++
++#include "mux.h"
++
++#include <plat/mux.h>
++#include <plat/board.h>
++#include <plat/common.h>
++#include <plat/gpmc.h>
++#include <plat/timer-gp.h>
++#include <plat/sdrc.h>
++#include <plat/control.h>
++
++#define OMAP3LOGIC_SMSC911X_CS			1
++
++#define OMAP3530_LV_SOM_MMC_GPIO_CD             110
++#define OMAP3530_LV_SOM_MMC_GPIO_WP             126
++#define	OMAP3530_LV_SOM_SMSC911X_GPIO_IRQ	152
++
++#define OMAP3_TORPEDO_MMC_GPIO_CD               127
++#define OMAP3_TORPEDO_SMSC911X_GPIO_IRQ		129
++
++static struct regulator_consumer_supply omap3logic_vmmc1_supply = {
++	.supply			= "vmmc",
++};
++
++/* VMMC1 for MMC1 pins CMD, CLK, DAT0..DAT3 (20 mA, plus card == max 220 mA) */
++static struct regulator_init_data omap3logic_vmmc1 = {
++	.constraints = {
++		.name			= "VMMC1",
++		.min_uV			= 1850000,
++		.max_uV			= 3150000,
++		.valid_modes_mask	= REGULATOR_MODE_NORMAL
++					| REGULATOR_MODE_STANDBY,
++		.valid_ops_mask		= REGULATOR_CHANGE_VOLTAGE
++					| REGULATOR_CHANGE_MODE
++					| REGULATOR_CHANGE_STATUS,
++	},
++	.num_consumer_supplies  = 1,
++	.consumer_supplies      = &omap3logic_vmmc1_supply,
++};
++
++static struct twl4030_gpio_platform_data omap3logic_gpio_data = {
++	.gpio_base	= OMAP_MAX_GPIO_LINES,
++	.irq_base	= TWL4030_GPIO_IRQ_BASE,
++	.irq_end	= TWL4030_GPIO_IRQ_END,
++	.use_leds	= true,
++	.pullups	= BIT(1),
++	.pulldowns	= BIT(2)  | BIT(6)  | BIT(7)  | BIT(8)
++			| BIT(13) | BIT(15) | BIT(16) | BIT(17),
++};
++
++static struct twl4030_platform_data omap3logic_twldata = {
++	.irq_base	= TWL4030_IRQ_BASE,
++	.irq_end	= TWL4030_IRQ_END,
++
++	/* platform_data for children goes here */
++	.gpio		= &omap3logic_gpio_data,
++};
++
++static struct i2c_board_info __initdata omap3logic_i2c_boardinfo[] = {
++	{
++		I2C_BOARD_INFO("twl4030", 0x48),
++		.flags = I2C_CLIENT_WAKE,
++		.irq = INT_34XX_SYS_NIRQ,
++		.platform_data = &omap3logic_twldata,
++	},
++};
++
++static int __init omap3logic_i2c_init(void)
++{
++	omap_register_i2c_bus(1, 2600, omap3logic_i2c_boardinfo,
++				ARRAY_SIZE(omap3logic_i2c_boardinfo));
++	return 0;
++}
++
++static void __init omap3logic_init_irq(void)
++{
++	omap2_init_common_hw(NULL, NULL);
++	omap_init_irq();
++	omap_gpio_init();
++}
++
++static void __init omap3logic_init(void)
++{
++	omap3logic_i2c_init();
++	omap_serial_init();
++
++	/* Ensure SDRC pins are mux'd for self-refresh */
++	omap_mux_init_signal("sdrc_cke0", OMAP_PIN_OUTPUT);
++	omap_mux_init_signal("sdrc_cke1", OMAP_PIN_OUTPUT);
++}
++
++MACHINE_START(OMAP3_TORPEDO, "Logic OMAP3 Torpedo board")
++	.phys_io	= 0x48000000,
++	.io_pg_offst	= ((0xd8000000) >> 18) & 0xfffc,
++	.boot_params	= 0x80000100,
++	.map_io		= omap3_map_io,
++	.init_irq	= omap3logic_init_irq,
++	.init_machine	= omap3logic_init,
++	.timer		= &omap_timer,
++MACHINE_END
++
++MACHINE_START(OMAP3530_LV_SOM, "OMAP Logic 3530 LV SOM board")
++	.phys_io	= 0x48000000,
++	.io_pg_offst	= ((0xd8000000) >> 18) & 0xfffc,
++	.boot_params	= 0x80000100,
++	.map_io		= omap3_map_io,
++	.init_irq	= omap3logic_init_irq,
++	.init_machine	= omap3logic_init,
++	.timer		= &omap_timer,
++MACHINE_END
+-- 
+1.7.1
 
