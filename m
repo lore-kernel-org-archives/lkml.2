@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375Ab0IXEuV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 00:50:21 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:60447 "HELO mail.gmx.net"
+	id S1750963Ab0IXEuR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 00:50:17 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:60303 "HELO mail.gmx.net"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752234Ab0IXEuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 00:50:19 -0400
+	id S1751503Ab0IXEuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 00:50:14 -0400
 X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX18iwick8Qwi/pENmjuzTjwQqjGJcHJdR8j4Y/t1mV
-	n5u+Rc1qRBrhwm
+X-Provags-ID: V01U2FsdGVkX1+tDzMWaF2te/EpFVgxyQXHGTJXvnWj/dcrDfl4AI
+	qeiY4aOrpNsYDW
 From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 To: linux-fbdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
+Cc: linux-kernel@vger.kernel.org, Deepak Saxena <dsaxena@laptop.org>,
         Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
         Joseph Chan <JosephChan@via.com.tw>, Jonathan Corbet <corbet@lwn.net>
-Subject: [PATCH 4/4] viafb: fix hardware acceleration for suspend & resume
-Date: Fri, 24 Sep 2010 05:01:26 +0000
-Message-Id: <50111c5c3b3154da765ec850e9ab6672eb820694.1285303223.git.FlorianSchandinat@gmx.de>
+Subject: [PATCH 1/4] Minimal support for viafb suspend/resume
+Date: Fri, 24 Sep 2010 05:01:23 +0000
+Message-Id: <e448105a1db5f747caa3120f77cd0e93a9f43809.1285303223.git.FlorianSchandinat@gmx.de>
 X-Mailer: git-send-email 1.6.3.2
 In-Reply-To: <cover.1285303222.git.FlorianSchandinat@gmx.de>
 References: <cover.1285303222.git.FlorianSchandinat@gmx.de>
@@ -27,136 +27,121 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch splits the acceleration initialization in two parts:
-The first is only called during probe and is used to allocate
-resources. The second part is also called on resume to reinitalize
-the 2D engine. This should fix all acceleration issues after resume
-most notable an "invisible" cursor and as we do nothing special it is
-reasonable to assume that it works on all supported IGPs.
+From: Deepak Saxena <dsaxena@laptop.org>
 
+This patch adds minimal support for suspend/resume of the
+VIA framebuffer device. It requires a version of OFW
+that restores the video mode.
+
+This patch is OLPC-specific as the proper upstream solution
+is to move the VIA video path to using the kernel modesetting
+infrastructure and doing a proper save/restore in the kernel.
+
+[jc: extensive changes for 2.6.34 merge]
+Signed-off-by: Deepak Saxena <dsaxena@laptop.org>
+[fts: viafb_driver moved from viafbdev.c to via-core.c]
 Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 Cc: Joseph Chan <JosephChan@via.com.tw>
 Cc: Jonathan Corbet <corbet@lwn.net>
 ---
- drivers/video/via/accel.c    |   43 +++++++++++++++++++++++++----------------
- drivers/video/via/accel.h    |    3 +-
- drivers/video/via/viafbdev.c |    4 ++-
- 3 files changed, 31 insertions(+), 19 deletions(-)
+ drivers/video/via/via-core.c |    4 +++
+ drivers/video/via/viafbdev.c |   46 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/video/via/viafbdev.h |    5 ++++
+ 3 files changed, 55 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/video/via/accel.c b/drivers/video/via/accel.c
-index e44893e..ae0bdf6 100644
---- a/drivers/video/via/accel.c
-+++ b/drivers/video/via/accel.c
-@@ -314,13 +314,11 @@ static int hw_bitblt_2(void __iomem *engine, u8 op, u32 width, u32 height,
- 	return 0;
+diff --git a/drivers/video/via/via-core.c b/drivers/video/via/via-core.c
+index 66f4030..bca9e9d 100644
+--- a/drivers/video/via/via-core.c
++++ b/drivers/video/via/via-core.c
+@@ -644,6 +644,10 @@ static struct pci_driver via_driver = {
+ 	.id_table	= via_pci_table,
+ 	.probe		= via_pci_probe,
+ 	.remove		= __devexit_p(via_pci_remove),
++#ifdef CONFIG_PM
++	.suspend	= viafb_suspend,
++	.resume		= viafb_resume,
++#endif
+ };
+ 
+ static int __init via_core_init(void)
+diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
+index bdd0e41..f2b68cc 100644
+--- a/drivers/video/via/viafbdev.c
++++ b/drivers/video/via/viafbdev.c
+@@ -1486,6 +1486,52 @@ static int parse_mode(const char *str, u32 *xres, u32 *yres)
  }
  
--int viafb_init_engine(struct fb_info *info)
-+int viafb_setup_engine(struct fb_info *info)
- {
- 	struct viafb_par *viapar = info->par;
- 	void __iomem *engine;
--	int highest_reg, i;
--	u32 vq_start_addr, vq_end_addr, vq_start_low, vq_end_low, vq_high,
--		vq_len, chip_name = viapar->shared->chip_info.gfx_chip_name;
-+	u32 chip_name = viapar->shared->chip_info.gfx_chip_name;
  
- 	engine = viapar->shared->vdev->engine_mmio;
- 	if (!engine) {
-@@ -329,18 +327,6 @@ int viafb_init_engine(struct fb_info *info)
- 		return -ENOMEM;
- 	}
- 
--	/* Initialize registers to reset the 2D engine */
--	switch (viapar->shared->chip_info.twod_engine) {
--	case VIA_2D_ENG_M1:
--		highest_reg = 0x5c;
--		break;
--	default:
--		highest_reg = 0x40;
--		break;
--	}
--	for (i = 0; i <= highest_reg; i += 4)
--		writel(0x0, engine + i);
--
- 	switch (chip_name) {
- 	case UNICHROME_CLE266:
- 	case UNICHROME_K400:
-@@ -386,6 +372,29 @@ int viafb_init_engine(struct fb_info *info)
- 	viapar->shared->vdev->camera_fbmem_offset = viapar->fbmem_free;
- #endif
- 
-+	viafb_reset_engine(viapar);
++#ifdef CONFIG_PM
++int viafb_suspend(struct pci_dev *pdev, pm_message_t state)
++{
++	if (state.event == PM_EVENT_SUSPEND) {
++		acquire_console_sem();
++
++		memcpy_fromio(viaparinfo->shared->saved_regs,
++			      viaparinfo->shared->vdev->engine_mmio + 0x100,
++			      0xff * sizeof(u32));
++
++		fb_set_suspend(viafbinfo, 1);
++
++		viafb_sync(viafbinfo);
++
++		pci_save_state(pdev);
++		pci_disable_device(pdev);
++		pci_set_power_state(pdev, pci_choose_state(pdev, state));
++		release_console_sem();
++	}
++
 +	return 0;
 +}
 +
-+void viafb_reset_engine(struct viafb_par *viapar)
++int viafb_resume(struct pci_dev *pdev)
 +{
-+	void __iomem *engine = viapar->shared->vdev->engine_mmio;
-+	int highest_reg, i;
-+	u32 vq_start_addr, vq_end_addr, vq_start_low, vq_end_low, vq_high,
-+		vq_len, chip_name = viapar->shared->chip_info.gfx_chip_name;
++	acquire_console_sem();
++	pci_set_power_state(pdev, PCI_D0);
++	pci_restore_state(pdev);
++	if (pci_enable_device(pdev))
++		goto fail;
++	pci_set_master(pdev);
 +
-+	/* Initialize registers to reset the 2D engine */
-+	switch (viapar->shared->chip_info.twod_engine) {
-+	case VIA_2D_ENG_M1:
-+		highest_reg = 0x5c;
-+		break;
-+	default:
-+		highest_reg = 0x40;
-+		break;
-+	}
-+	for (i = 0; i <= highest_reg; i += 4)
-+		writel(0x0, engine + i);
++	memcpy_toio(viaparinfo->shared->vdev->engine_mmio + 0x100,
++		    viaparinfo->shared->saved_regs,
++		    0x100 * sizeof(u32));
 +
- 	/* Init AGP and VQ regs */
- 	switch (chip_name) {
- 	case UNICHROME_K8M890:
-@@ -473,7 +482,7 @@ int viafb_init_engine(struct fb_info *info)
- 	writel(0x0, engine + VIA_REG_CURSOR_ORG);
- 	writel(0x0, engine + VIA_REG_CURSOR_BG);
- 	writel(0x0, engine + VIA_REG_CURSOR_FG);
--	return 0;
-+	return;
- }
++	fb_set_suspend(viafbinfo, 0);
++
++fail:
++	release_console_sem();
++	return 0;
++}
++
++#endif
++
++
+ int __devinit via_fb_pci_probe(struct viafb_dev *vdev)
+ {
+ 	u32 default_xres, default_yres;
+diff --git a/drivers/video/via/viafbdev.h b/drivers/video/via/viafbdev.h
+index 52a35fa..3bcae0a 100644
+--- a/drivers/video/via/viafbdev.h
++++ b/drivers/video/via/viafbdev.h
+@@ -57,6 +57,9 @@ struct viafb_shared {
+ 		u8 dst_bpp, u32 dst_addr, u32 dst_pitch, u32 dst_x, u32 dst_y,
+ 		u32 *src_mem, u32 src_addr, u32 src_pitch, u32 src_x, u32 src_y,
+ 		u32 fg_color, u32 bg_color, u8 fill_rop);
++
++	/* For suspend/resume */
++	u32 saved_regs[0x100];
+ };
  
- void viafb_show_hw_cursor(struct fb_info *info, int Status)
-diff --git a/drivers/video/via/accel.h b/drivers/video/via/accel.h
-index 2c122d2..79d5e10 100644
---- a/drivers/video/via/accel.h
-+++ b/drivers/video/via/accel.h
-@@ -203,7 +203,8 @@
- #define VIA_BITBLT_MONO		2
- #define VIA_BITBLT_FILL		3
- 
--int viafb_init_engine(struct fb_info *info);
-+int viafb_setup_engine(struct fb_info *info);
-+void viafb_reset_engine(struct viafb_par *viapar);
- void viafb_show_hw_cursor(struct fb_info *info, int Status);
- void viafb_wait_engine_idle(struct fb_info *info);
- 
-diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
-index c4218ce..fdb1e84 100644
---- a/drivers/video/via/viafbdev.c
-+++ b/drivers/video/via/viafbdev.c
-@@ -1512,6 +1512,8 @@ int viafb_resume(struct pci_dev *pdev)
- 	if (pci_enable_device(pdev))
- 		goto fail;
- 	pci_set_master(pdev);
-+	if (viaparinfo->shared->vdev->engine_mmio)
-+		viafb_reset_engine(viaparinfo);
- 	viafb_set_par(viafbinfo);
- 	if (viafb_dual_fb)
- 		viafb_set_par(viafbinfo1);
-@@ -1583,7 +1585,7 @@ int __devinit via_fb_pci_probe(struct viafb_dev *vdev)
- 	viafbinfo->flags = FBINFO_DEFAULT | FBINFO_HWACCEL_YPAN;
- 
- 	viafbinfo->pseudo_palette = pseudo_pal;
--	if (viafb_accel && !viafb_init_engine(viafbinfo)) {
-+	if (viafb_accel && !viafb_setup_engine(viafbinfo)) {
- 		viafbinfo->flags |= FBINFO_HWACCEL_COPYAREA |
- 			FBINFO_HWACCEL_FILLRECT |  FBINFO_HWACCEL_IMAGEBLIT;
- 		default_var.accel_flags = FB_ACCELF_TEXT;
+ struct viafb_par {
+@@ -103,4 +106,6 @@ void via_fb_pci_remove(struct pci_dev *pdev);
+ /* Temporary */
+ int viafb_init(void);
+ void viafb_exit(void);
++int viafb_suspend(struct pci_dev *pdev, pm_message_t state);
++int viafb_resume(struct pci_dev *pdev);
+ #endif /* __VIAFBDEV_H__ */
 -- 
 1.6.3.2
 
