@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758490Ab0IXXja (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 19:39:30 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:40852 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753360Ab0IXXj3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 19:39:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=easuGEcanrONMw91tSPTyimtjXGU2FX8dQBkv9qQxX9KlCkkvWekWPmNB/VVEbPGN+
-         DyUkihF35+qxEeCpGQQpxyfVwbHDu6KrvjiYs/imXRXRmbZBDs5c3iB7ZhUtOxM1hnyt
-         TWlRvKJ3yQcPpJP9AVJr4a2JfsFdS/KpjNgyQ=
+	id S1758553Ab0IXXnY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 19:43:24 -0400
+Received: from kroah.org ([198.145.64.141]:45277 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755224Ab0IXXnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 19:43:22 -0400
+Date: Fri, 24 Sep 2010 16:40:20 -0700
+From: Greg KH <greg@kroah.com>
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Brian Bloniarz <phunge0@hotmail.com>,
+        Charles Butterfield <charles.butterfield@nextcentury.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Stefan Becker <chemobejk@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [stable] [PATCH v2 0/4] PCI: allocate space top-down, not
+	bottom-up
+Message-ID: <20100924234020.GA20601@kroah.com>
+References: <20100917223109.24687.17697.stgit@bob.kio> <201009241641.40867.bjorn.helgaas@hp.com>
 MIME-Version: 1.0
-Date: Fri, 24 Sep 2010 19:39:28 -0400
-Message-ID: <AANLkTiktbML6rHtTHKAmgP9xcZG-Dq362-Yc-_zJn18N@mail.gmail.com>
-Subject: [PATCH v2 00/21] Staging: cleaned up makefiles cflag lines
-From: T Dent <tdent48227@gmail.com>
-To: greg@kroah.com
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201009241641.40867.bjorn.helgaas@hp.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I changed every makefile in the staging directory to use the proper
-ccflags-y option instead of EXTRA_CFLAGS and also changing the first
-assignment to ":=" from "+=".
+On Fri, Sep 24, 2010 at 04:41:39PM -0600, Bjorn Helgaas wrote:
+> Added cc: stable@kernel.org
+> See:
+>   https://patchwork.kernel.org/patch/189182/
+>   https://patchwork.kernel.org/patch/189232/
+>   https://patchwork.kernel.org/patch/189242/
+>   https://patchwork.kernel.org/patch/189252/
 
+Um, why would -stable want them if they aren't in Linus's tree yet?
+Please, when they are in his tree, _AND_ have gotten a lot of testing,
+then email the git commit ids of what you want added to the stable tree
+to stable@kernel.org.
 
-I couldn't change changing the first assignment to ":=" from "+=" for
-the following four lines in rtl8192u Makefile r it wouldn't compile.
-1.ccflags-y += -DTHOMAS_BEACON -DTHOMAS_TASKLET -DTHOMAS_SKB -DTHOMAS_TURBO
-2.ccflags-y += -DUSE_ONE_PIPE
-3.ccflags-y += -DENABLE_DOT11D
-4.ccflags-y += -Idrivers/staging/rtl8192u/ieee80211
+Doing it beforehand like this is a sure way to cause me a lot of work
+and the patches to be lost.
 
+thanks,
 
-
-It builds  :) .
-
-Thanks,
-Tracey Dent
+greg k-h
