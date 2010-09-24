@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932192Ab0IXNvX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 09:51:23 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62159 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756697Ab0IXNvU (ORCPT
+	id S932224Ab0IXNwV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 09:52:21 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:42769 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932110Ab0IXNwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 09:51:20 -0400
+	Fri, 24 Sep 2010 09:52:18 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:reply-to:date:x-google-sender-auth:message-id
          :subject:from:to:content-type;
-        b=BFWKS+GCgRf31wqDp5m5SL0YZcqLeEX0gajAcz1yI0Jf4jyscDppt/S3bpKB3vElKF
-         xqrVMZ+ZWmZ8ZL99J/Jao2+4sQW6eNbPFcH0ifE723dUVWgwEAYL/u0XyxaScJUtDAwV
-         PJyieYyi1EWnRuvq2Uf1Fk9CE8lblZ4A9KHdE=
+        b=ufwNj292H//zSJ5I2ewf2BWD1wUoi0m1U3WI6BrrGCL+dKfh0X90JMydsIblp+/RGY
+         bLK533GIszQ+xVhpSM7MIU6mbrN/UcaVqZXycy922RxG90pt36YtUlGz4z9m63ef26LT
+         AGuQ8gH3cAmSqkbxdpvKVYxwLoxiTMBRtK0Xk=
 MIME-Version: 1.0
 Reply-To: pghatwork@gmail.com
-Date: Fri, 24 Sep 2010 15:51:19 +0200
-X-Google-Sender-Auth: UV0ndIUFAhm5a4GVcImDpVs5QfI
-Message-ID: <AANLkTi=LDAym0Ef+_ObakQhRXTzLHadw6vmuMRVuhu0-@mail.gmail.com>
-Subject: [PATCH 5/6] This patch adds support for controlling the audio paths
+Date: Fri, 24 Sep 2010 15:52:16 +0200
+X-Google-Sender-Auth: o90I-AbPlu0t-wVCYo-CyvCDc8E
+Message-ID: <AANLkTimOai9_92VuJUZMo26es9Wsu_6d+z36Sv_Q4i+L@mail.gmail.com>
+Subject: [PATCH 6/6] This patch adds support for using the ST-Ericsson CG2900
 From: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
 To: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
         linus.walleij@stericsson.com, Pavan Savoy <pavan_savoy@sify.com>
@@ -28,3140 +28,955 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for controlling the audio paths
- within the ST-Ericsson CG2900 connectivity controller.
- This patch registers as a user into the CG2900 framework
- for the bt_audio and fm_audio channels. It contains an API
- for controlling the audio paths that can also be reached from
- User space using a char device.
+This patch adds support for using the ST-Ericsson CG2900
+ connectivity controller as a driver for the BlueZ Bluetooth
+ stack.
+ This patch registers as a driver into the BlueZ framework and, when
+ opened by BlueZ, it registers as user for bt_cmd, bt_acl, and bt_evt
+ channels.
 
 Signed-off-by: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
 ---
- drivers/mfd/Kconfig               |    7 +
- drivers/mfd/cg2900/Makefile       |    2 +
- drivers/mfd/cg2900/cg2900_audio.c | 2475 +++++++++++++++++++++++++++++++++++++
- include/linux/mfd/cg2900_audio.h  |  583 +++++++++
- 4 files changed, 3067 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/cg2900/cg2900_audio.c
- create mode 100644 include/linux/mfd/cg2900_audio.h
+ drivers/bluetooth/Kconfig      |    7 +
+ drivers/bluetooth/Makefile     |    2 +
+ drivers/bluetooth/cg2900_hci.c |  896 ++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 905 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/bluetooth/cg2900_hci.c
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 2888358..7856fd5 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -603,6 +603,13 @@ config MFD_CG2900_UART
- 	  Support for UART as transport for ST-Ericsson CG2900 Connectivity
- 	  Controller
+diff --git a/drivers/bluetooth/Kconfig b/drivers/bluetooth/Kconfig
+index 02deef4..9ca8d69 100644
+--- a/drivers/bluetooth/Kconfig
++++ b/drivers/bluetooth/Kconfig
+@@ -219,4 +219,11 @@ config BT_ATH3K
+ 	  Say Y here to compile support for "Atheros firmware download driver"
+ 	  into the kernel or say M to compile it as module (ath3k).
 
-+config MFD_CG2900_AUDIO
-+	tristate "Support CG2900 audio interface"
-+	depends on MFD_CG2900
++config BT_CG2900
++	tristate "ST-Ericsson CG2900 driver"
++	depends on MFD_CG2900 && BT
 +	help
-+	  Support for ST-Ericsson CG2900 Connectivity audio interface. Gives a
-+	  module the ability to setup audio paths within the CG2900 controller.
++	  Select if ST-Ericsson CG2900 Connectivity controller shall be used as
++	  Bluetooth controller for BlueZ.
 +
- endif # MFD_SUPPORT
+ endmenu
+diff --git a/drivers/bluetooth/Makefile b/drivers/bluetooth/Makefile
+index 71bdf13..a479c16 100644
+--- a/drivers/bluetooth/Makefile
++++ b/drivers/bluetooth/Makefile
+@@ -19,6 +19,8 @@ obj-$(CONFIG_BT_ATH3K)		+= ath3k.o
+ obj-$(CONFIG_BT_MRVL)		+= btmrvl.o
+ obj-$(CONFIG_BT_MRVL_SDIO)	+= btmrvl_sdio.o
 
- menu "Multimedia Capabilities Port drivers"
-diff --git a/drivers/mfd/cg2900/Makefile b/drivers/mfd/cg2900/Makefile
-index 02b7c25..3a6672b 100644
---- a/drivers/mfd/cg2900/Makefile
-+++ b/drivers/mfd/cg2900/Makefile
-@@ -10,3 +10,5 @@ obj-$(CONFIG_MFD_CG2900_CHIP)       += cg2900_chip.o
- obj-$(CONFIG_MFD_STLC2690_CHIP)     += stlc2690_chip.o
-
- obj-$(CONFIG_MFD_CG2900_UART)       += cg2900_uart.o
++obj-$(CONFIG_BT_CG2900)		+= cg2900_hci.o
 +
-+obj-$(CONFIG_MFD_CG2900_AUDIO)      += cg2900_audio.o
-diff --git a/drivers/mfd/cg2900/cg2900_audio.c
-b/drivers/mfd/cg2900/cg2900_audio.c
+ btmrvl-y			:= btmrvl_main.o
+ btmrvl-$(CONFIG_DEBUG_FS)	+= btmrvl_debugfs.o
+
+diff --git a/drivers/bluetooth/cg2900_hci.c b/drivers/bluetooth/cg2900_hci.c
 new file mode 100644
-index 0000000..bcb0680
+index 0000000..de1ada8
 --- /dev/null
-+++ b/drivers/mfd/cg2900/cg2900_audio.c
-@@ -0,0 +1,2475 @@
++++ b/drivers/bluetooth/cg2900_hci.c
+@@ -0,0 +1,896 @@
 +/*
-+ * drivers/mfd/cg2900/cg2900_audio.c
++ * drivers/bluetooth/cg2900_hci.c
 + *
 + * Copyright (C) ST-Ericsson SA 2010
 + * Authors:
 + * Par-Gunnar Hjalmdahl (par-gunnar.p.hjalmdahl@stericsson.com) for
 ST-Ericsson.
++ * Henrik Possung (henrik.possung@stericsson.com) for ST-Ericsson.
++ * Josef Kindberg (josef.kindberg@stericsson.com) for ST-Ericsson.
++ * Dariusz Szymszak (dariusz.xd.szymczak@stericsson.com) for ST-Ericsson.
 + * Kjell Andersson (kjell.k.andersson@stericsson.com) for ST-Ericsson.
 + * License terms:  GNU General Public License (GPL), version 2
 + *
-+ * Linux Bluetooth Audio Driver for ST-Ericsson CG2900 controller.
++ * Linux Bluetooth HCI H:4 Driver for ST-Ericsson CG2900 connectivity
+controller
++ * towards the BlueZ Bluetooth stack.
 + */
 +
 +#include <linux/module.h>
-+#include <linux/fs.h>
 +#include <linux/types.h>
-+#include <linux/poll.h>
-+#include <linux/cdev.h>
-+#include <linux/mfd/cg2900.h>
-+#include <linux/mfd/cg2900_audio.h>
-+#include <linux/miscdevice.h>
-+#include <linux/mutex.h>
-+#include <linux/device.h>
 +#include <linux/skbuff.h>
-+#include <linux/list.h>
++#include <asm/byteorder.h>
++#include <net/bluetooth/bluetooth.h>
++#include <net/bluetooth/hci.h>
++#include <net/bluetooth/hci_core.h>
++
++#include <linux/workqueue.h>
++#include <linux/wait.h>
++#include <linux/time.h>
++#include <linux/jiffies.h>
 +#include <linux/sched.h>
++#include <linux/timer.h>
 +
-+#include "cg2900_debug.h"
-+#include "hci_defines.h"
-+#include "cg2900_chip.h"
++#include <linux/mfd/cg2900.h>
++#include <mach/cg2900_devices.h>
 +
-+/* Char device op codes */
-+#define OP_CODE_SET_DAI_CONF			0x01
-+#define OP_CODE_GET_DAI_CONF			0x02
-+#define OP_CODE_CONFIGURE_ENDPOINT		0x03
-+#define OP_CODE_START_STREAM			0x04
-+#define OP_CODE_STOP_STREAM			0x05
++/* module_param declared in cg2900_core.c */
++extern int cg2900_debug_level;
 +
-+/* Device names */
-+#define DEVICE_NAME				"cg2900_audio"
++#define NAME			"CG2900 HCI"
 +
-+/* Type of channel used */
-+#define BT_CHANNEL_USED				0x00
-+#define FM_CHANNEL_USED				0x01
++/* Debug defines */
++#define CG2900_DBG_DATA(fmt, arg...)				\
++do {								\
++	if (cg2900_debug_level >= 25)				\
++		printk(KERN_DEBUG NAME " %s: " fmt "\n" , __func__ , ## arg); \
++} while (0)
 +
-+#define MAX_NBR_OF_USERS			10
-+#define FIRST_USER				1
++#define CG2900_DBG(fmt, arg...)				\
++do {								\
++	if (cg2900_debug_level >= 20)				\
++		printk(KERN_DEBUG NAME " %s: " fmt "\n" , __func__ , ## arg); \
++} while (0)
 +
-+#define SET_RESP_STATE(__state_var, __new_state) \
-+	CG2900_SET_STATE("resp_state", __state_var, __new_state)
++#define CG2900_INFO(fmt, arg...)				\
++do {								\
++	if (cg2900_debug_level >= 10)				\
++		printk(KERN_INFO NAME ": " fmt "\n" , ## arg); \
++} while (0)
 +
-+#define DEFAULT_SCO_HANDLE			0x0008
++#define CG2900_ERR(fmt, arg...)					\
++do {								\
++	if (cg2900_debug_level >= 1)				\
++		printk(KERN_ERR NAME " %s: " fmt "\n" , __func__ , ## arg); \
++} while (0)
 +
-+/* Use a timeout of 5 seconds when waiting for a command response */
-+#define RESP_TIMEOUT				5000
++#define CG2900_SET_STATE(__name, __var, __new_state)			\
++do {									\
++	CG2900_DBG("New %s: 0x%X", __name, (uint32_t)__new_state);	\
++	__var = __new_state;						\
++} while (0)
 +
-+/**
-+ * enum chip_resp_state - State when communicating with the CG2900 controller.
-+ * @IDLE:		No outstanding packets to the controller.
-+ * @WAITING:		Packet has been sent to the controller. Waiting for
-+ *			response.
-+ * @RESP_RECEIVED:	Response from controller has been received but not yet
-+ *			handled.
-+ */
-+enum chip_resp_state {
-+	IDLE,
-+	WAITING,
-+	RESP_RECEIVED
-+};
++/* HCI device type */
++#define HCI_CG2900		HCI_VIRTUAL
 +
-+/**
-+ * enum main_state - Main state for the CG2900 Audio driver.
-+ * @OPENED:	Audio driver has registered to CG2900 Core.
-+ * @CLOSED:	Audio driver is not registered to CG2900 Core.
-+ * @RESET:	A reset of CG2900 Core has occurred and no user has re-opened
-+ *		the audio driver.
-+ */
-+enum main_state {
-+	OPENED,
-+	CLOSED,
-+	RESET
-+};
++/* Wait for 5 seconds for a response to our requests */
++#define RESP_TIMEOUT		5000
 +
-+/**
-+ * struct char_dev_info - CG2900 character device info structure.
-+ * @session:		Stored session for the char device.
-+ * @stored_data:	Data returned when executing last command, if any.
-+ * @stored_data_len:	Length of @stored_data in bytes.
-+ * @management_mutex:	Mutex for handling access to char dev management.
-+ * @rw_mutex:		Mutex for handling access to char dev writes and reads.
-+ */
-+struct char_dev_info {
-+	int		session;
-+	u8		*stored_data;
-+	int		stored_data_len;
-+	struct mutex	management_mutex;
-+	struct mutex	rw_mutex;
-+};
++/* State-setting defines */
++#define SET_RESET_STATE(__hci_reset_new_state) \
++	CG2900_SET_STATE("reset_state", hci_info->reset_state, \
++			 __hci_reset_new_state)
++#define SET_ENABLE_STATE(__hci_enable_new_state) \
++	CG2900_SET_STATE("enable_state", hci_info->enable_state, \
++			 __hci_enable_new_state)
++
++/* Bluetooth error codes */
++#define HCI_ERR_NO_ERROR			0x00
++#define HCI_ERR_CMD_DISALLOWED			0x0C
 +
 +/**
-+ * struct audio_user - CG2900 audio user info structure.
-+ * @session:	Stored session for the char device.
-+ * @resp_state:	State for controller communications.
++ * enum reset_state - RESET-states of the HCI driver.
++ *
++ * @RESET_IDLE:		No reset in progress.
++ * @RESET_ACTIVATED:	Reset in progress.
++ * @RESET_UNREGISTERED:	hdev is unregistered.
 + */
-+struct audio_user {
-+	int			session;
-+	enum chip_resp_state	resp_state;
++
++enum reset_state {
++	RESET_IDLE,
++	RESET_ACTIVATED,
++	RESET_UNREGISTERED
 +};
 +
 +/**
-+ * struct endpoint_list - List for storing endpoint configuration nodes.
-+ * @ep_list:		Pointer to first node in list.
-+ * @management_mutex:	Mutex for handling access to list.
++ * enum enable_state - ENABLE-states of the HCI driver.
++ *
++ * @ENABLE_IDLE:			The HCI driver is loaded but not opened.
++ * @ENABLE_WAITING_BT_ENABLED_CC:	The HCI driver is waiting for a command
++ *					complete event from the BT chip as a
++ *					response to a BT Enable (true) command.
++ * @ENABLE_BT_ENABLED:			The BT chip is enabled.
++ * @ENABLE_WAITING_BT_DISABLED_CC:	The HCI driver is waiting for a command
++ *					complete event from the BT chip as a
++ *					response to a BT Enable (false) command.
++ * @ENABLE_BT_DISABLED:			The BT chip is disabled.
++ * @ENABLE_BT_ERROR:			The HCI driver is in a bad state, some
++ *					thing has failed and is not expected to
++ *					work properly.
 + */
-+struct endpoint_list {
-+	struct list_head	ep_list;
-+	struct mutex		management_mutex;
++enum enable_state {
++	ENABLE_IDLE,
++	ENABLE_WAITING_BT_ENABLED_CC,
++	ENABLE_BT_ENABLED,
++	ENABLE_WAITING_BT_DISABLED_CC,
++	ENABLE_BT_DISABLED,
++	ENABLE_BT_ERROR
 +};
 +
 +/**
-+ * struct endpoint_config_node - Node for storing endpoint configuration.
-+ * @list:		list_head struct.
-+ * @endpoint_id:	Endpoint ID.
-+ * @config:		Stored configuration for this endpoint.
++ * struct hci_info - Specifies HCI driver private data.
++ *
++ * This type specifies CG2900 HCI driver private data.
++ *
++ * @bt_cmd:		Device structure for BT command channel.
++ * @bt_evt:		Device structure for BT event channel.
++ * @bt_acl:		Device structure for BT ACL channel.
++ * @hdev:		Device structure for HCI device.
++ * @reset_state:	Device enum for HCI driver reset state.
++ * @enable_state:	Device enum for HCI driver BT enable state.
 + */
-+struct endpoint_config_node {
-+	struct list_head			list;
-+	enum cg2900_audio_endpoint_id		endpoint_id;
-+	union cg2900_endpoint_config_union	config;
++struct hci_info {
++	struct cg2900_device	*bt_cmd;
++	struct cg2900_device	*bt_evt;
++	struct cg2900_device	*bt_acl;
++	struct hci_dev		*hdev;
++	enum reset_state	reset_state;
++	enum enable_state	enable_state;
 +};
 +
 +/**
-+ * struct audio_info - Main CG2900 Audio driver info structure.
-+ * @state:			Current state of the CG2900 Audio driver.
-+ * @dev:			The misc device created by this driver.
-+ * @dev_bt:			CG2900 Core device registered by this driver for
-+ *				the BT audio channel.
-+ * @dev_fm:			CG2900 Core device registered by this driver for
-+ *				the FM audio channel.
-+ * @management_mutex:		Mutex for handling access to CG2900 Audio driver
-+ *				management.
-+ * @bt_mutex:			Mutex for handling access to BT audio channel.
-+ * @fm_mutex:			Mutex for handling access to FM audio channel.
-+ * @nbr_of_users_active:	Number of sessions open in the CG2900 Audio
-+ *				driver.
-+ * @bt_queue:			Received BT events.
-+ * @fm_queue:			Received FM events.
-+ * @audio_sessions:		Pointers to currently opened sessions (maps
-+ *				session ID to user info).
-+ * @i2s_config:			DAI I2S configuration.
-+ * @i2s_pcm_config:		DAI PCM_I2S configuration.
-+ * @i2s_config_known:		@true if @i2s_config has been set,
-+ *				@false otherwise.
-+ * @i2s_pcm_config_known:	@true if @i2s_pcm_config has been set,
-+ *				@false otherwise.
-+ * @endpoints:			List containing the endpoint configurations.
++ * struct dev_info - Specifies private data used when receiving
+callbacks from CPD.
++ *
++ * @hdev:		Device structure for HCI device.
++ * @hci_data_type:	Type of data according to BlueZ.
 + */
-+struct audio_info {
-+	enum main_state			state;
-+	struct miscdevice		dev;
-+	struct cg2900_device		*dev_bt;
-+	struct cg2900_device		*dev_fm;
-+	struct mutex			management_mutex;
-+	struct mutex			bt_mutex;
-+	struct mutex			fm_mutex;
-+	int				nbr_of_users_active;
-+	struct sk_buff_head		bt_queue;
-+	struct sk_buff_head		fm_queue;
-+	struct audio_user		*audio_sessions[MAX_NBR_OF_USERS];
-+	struct cg2900_dai_conf_i2s	i2s_config;
-+	struct cg2900_dai_conf_i2s_pcm	i2s_pcm_config;
-+	bool				i2s_config_known;
-+	bool				i2s_pcm_config_known;
-+	struct endpoint_list		endpoints;
++struct dev_info {
++	struct hci_dev	*hdev;
++	u8		hci_data_type;
 +};
 +
-+/**
-+ * struct audio_cb_info - Callback info structure registered in @user_data.
-+ * @channel:	Stores if this device handles BT or FM events.
-+ * @user:	Audio user currently awaiting data on the channel.
-+ */
-+struct audio_cb_info {
-+	int			channel;
-+	struct audio_user	*user;
-+};
++/* Variables where LSB and MSB for bt_enable command is stored */
++static u16 bt_enable_cmd;
 +
-+/* cg2900_audio wait queues */
-+static DECLARE_WAIT_QUEUE_HEAD(wq_bt);
-+static DECLARE_WAIT_QUEUE_HEAD(wq_fm);
-+
-+static struct audio_info *audio_info;
-+
-+static struct audio_cb_info cb_info_bt = {
-+	.channel = BT_CHANNEL_USED,
-+	.user = NULL
-+};
-+static struct audio_cb_info cb_info_fm = {
-+	.channel = FM_CHANNEL_USED,
-+	.user = NULL
-+};
++static struct hci_info *hci_info;
 +
 +/*
-+ *	Internal helper functions
++ * hci_wait_queue - Main Wait Queue in HCI driver.
 + */
++static DECLARE_WAIT_QUEUE_HEAD(hci_wait_queue);
++
++/* Internal function declarations */
++static int register_to_bluez(void);
++
++/* Internal functions */
 +
 +/**
-+ * read_cb() - Handle data received from STE connectivity driver.
++ * remove_bt_users() - Unregister and remove any existing BT users.
++ * @info:	HCI driver info structure.
++ */
++static void remove_bt_users(struct hci_info *info)
++{
++	if (info->bt_cmd) {
++		kfree(info->bt_cmd->user_data);
++		info->bt_cmd->user_data = NULL;
++		cg2900_deregister_user(info->bt_cmd);
++		info->bt_cmd = NULL;
++	}
++
++	if (info->bt_evt) {
++		kfree(info->bt_evt->user_data);
++		info->bt_evt->user_data = NULL;
++		cg2900_deregister_user(info->bt_evt);
++		info->bt_evt = NULL;
++	}
++
++	if (info->bt_acl) {
++		kfree(info->bt_acl->user_data);
++		info->bt_acl->user_data = NULL;
++		cg2900_deregister_user(info->bt_acl);
++		info->bt_acl = NULL;
++	}
++}
++
++/**
++ * hci_read_cb() - Callback for handling data received from CG2900 driver.
 + * @dev:	Device receiving data.
-+ * @skb:	Buffer with data coming form device.
++ * @skb:	Buffer with data coming from device.
 + */
-+static void read_cb(struct cg2900_device *dev, struct sk_buff *skb)
++static void hci_read_cb(struct cg2900_device *dev, struct sk_buff *skb)
 +{
-+	struct audio_cb_info *cb_info;
-+
-+	CG2900_INFO("CG2900 Audio: read_cb");
-+
-+	if (!dev) {
-+		CG2900_ERR("NULL supplied as dev");
-+		return;
-+	}
++	int err = 0;
++	struct dev_info *dev_info;
++	struct hci_event_hdr *evt;
++	struct hci_ev_cmd_complete *cmd_complete;
++	struct hci_ev_cmd_status *cmd_status;
++	u8 status;
 +
 +	if (!skb) {
-+		CG2900_ERR("NULL supplied as skb");
++		CG2900_ERR("NULL supplied for skb");
 +		return;
 +	}
 +
-+	cb_info = (struct audio_cb_info *)dev->user_data;
-+	if (!cb_info) {
-+		CG2900_ERR("NULL supplied as cb_info");
-+		return;
-+	}
-+	if (!(cb_info->user)) {
-+		CG2900_ERR("NULL supplied as cb_info->user");
-+		return;
++	if (!dev) {
++		CG2900_ERR("dev == NULL");
++		goto fin_free_skb;
 +	}
 +
-+	/* Mark that packet has been received */
-+	SET_RESP_STATE(cb_info->user->resp_state, RESP_RECEIVED);
++	dev_info = (struct dev_info *)dev->user_data;
 +
-+	/* Handle packet depending on channel */
-+	if (cb_info->channel == BT_CHANNEL_USED) {
-+		skb_queue_tail(&(audio_info->bt_queue), skb);
-+		wake_up_interruptible(&wq_bt);
-+	} else if (cb_info->channel == FM_CHANNEL_USED) {
-+		skb_queue_tail(&(audio_info->fm_queue), skb);
-+		wake_up_interruptible(&wq_fm);
++	if (!dev_info) {
++		CG2900_ERR("dev_info == NULL");
++		goto fin_free_skb;
++	}
++
++	evt = (struct hci_event_hdr *)skb->data;
++	cmd_complete = (struct hci_ev_cmd_complete *)(skb->data + sizeof(*evt));
++	cmd_status = (struct hci_ev_cmd_status *)(skb->data + sizeof(*evt));
++
++	/*
++	 * Check if HCI Driver it self is expecting a Command Complete packet
++	 * from the chip after a BT Enable command.
++	 */
++	if ((hci_info->enable_state == ENABLE_WAITING_BT_ENABLED_CC ||
++	     hci_info->enable_state == ENABLE_WAITING_BT_DISABLED_CC) &&
++	    hci_info->bt_evt->h4_channel == dev->h4_channel &&
++	    evt->evt == HCI_EV_CMD_COMPLETE &&
++	    le16_to_cpu(cmd_complete->opcode) == bt_enable_cmd) {
++		/*
++		 * This is the command complete event for
++		 * the HCI_Cmd_VS_Bluetooth_Enable.
++		 * Check result and update state.
++		 *
++		 * The BT chip is enabled/disabled. Either it was enabled/
++		 * disabled now (status NO_ERROR) or it was already enabled/
++		 * disabled (assuming status CMD_DISALLOWED is already enabled/
++		 * disabled).
++		 */
++		status = *(skb->data + sizeof(*evt) + sizeof(*cmd_complete));
++		if (status != HCI_ERR_NO_ERROR &&
++		    status != HCI_ERR_CMD_DISALLOWED) {
++			CG2900_ERR("Could not enable/disable BT core (0x%X)",
++				   status);
++			SET_ENABLE_STATE(ENABLE_BT_ERROR);
++			goto fin_free_skb;
++		}
++
++		if (hci_info->enable_state == ENABLE_WAITING_BT_ENABLED_CC) {
++			SET_ENABLE_STATE(ENABLE_BT_ENABLED);
++			CG2900_INFO("BT core is enabled");
++		} else {
++			SET_ENABLE_STATE(ENABLE_BT_DISABLED);
++			CG2900_INFO("BT core is disabled");
++		}
++
++		/* Wake up whom ever is waiting for this result. */
++		wake_up_interruptible(&hci_wait_queue);
++		goto fin_free_skb;
++	} else if ((hci_info->enable_state == ENABLE_WAITING_BT_DISABLED_CC ||
++		    hci_info->enable_state == ENABLE_WAITING_BT_ENABLED_CC) &&
++		   hci_info->bt_evt->h4_channel == dev->h4_channel &&
++		   evt->evt == HCI_EV_CMD_STATUS &&
++		   le16_to_cpu(cmd_status->opcode) == bt_enable_cmd) {
++		/*
++		 * Clear the status events since the Bluez is not expecting
++		 * them.
++		 */
++		CG2900_DBG("HCI Driver received Command Status(for "
++			   "BT enable): 0x%X", cmd_status->status);
++		/*
++		 * This is the command status event for
++		 * the HCI_Cmd_VS_Bluetooth_Enable.
++		 * Just free the packet.
++		 */
++		goto fin_free_skb;
 +	} else {
-+		/* Unhandled channel; free the packet */
-+		CG2900_ERR("Received callback on bad channel %d",
-+			   cb_info->channel);
-+		kfree_skb(skb);
++		bt_cb(skb)->pkt_type = dev_info->hci_data_type;
++		skb->dev = (struct net_device *)dev_info->hdev;
++		/* Update BlueZ stats */
++		dev_info->hdev->stat.byte_rx += skb->len;
++		if (bt_cb(skb)->pkt_type == HCI_ACLDATA_PKT)
++			dev_info->hdev->stat.acl_rx++;
++		else
++			dev_info->hdev->stat.evt_rx++;
++
++		CG2900_DBG_DATA("Data receive %d bytes", skb->len);
++
++		/* Provide BlueZ with received frame*/
++		err = hci_recv_frame(skb);
++		/* If err, skb have been freed in hci_recv_frame() */
++		if (err)
++			CG2900_ERR("Failed in supplying packet to BlueZ (%d)",
++				   err);
 +	}
++
++	return;
++
++fin_free_skb:
++	kfree_skb(skb);
 +}
 +
 +/**
-+ * reset_cb() - Reset callback function.
-+ * @dev:	CPD device reseting.
++ * hci_reset_cb() - Callback for handling reset from CG2900 driver.
++ * @dev:	CPD device resetting.
 + */
-+static void reset_cb(struct cg2900_device *dev)
++static void hci_reset_cb(struct cg2900_device *dev)
 +{
-+	CG2900_INFO("CG2900 Audio: reset_cb");
-+	mutex_lock(&audio_info->management_mutex);
-+	audio_info->nbr_of_users_active = 0;
-+	audio_info->state = RESET;
-+	mutex_unlock(&audio_info->management_mutex);
++	int err;
++	struct hci_dev *hdev;
++	struct dev_info *dev_info;
++	struct hci_info *info;
++
++	CG2900_INFO("BluezDriver: hci_reset_cb");
++
++	if (!dev) {
++		CG2900_ERR("NULL supplied for dev");
++		return;
++	}
++
++	dev_info = (struct dev_info *)dev->user_data;
++	if (!dev_info) {
++		CG2900_ERR("NULL supplied for dev_info");
++		return;
++	}
++
++	hdev = dev_info->hdev;
++	if (!hdev) {
++		CG2900_ERR("NULL supplied for hdev");
++		return;
++	}
++
++	info = (struct hci_info *)hdev->driver_data;
++	if (!info) {
++		CG2900_ERR("NULL supplied for driver_data");
++		return;
++	}
++
++	switch (dev_info->hci_data_type) {
++
++	case HCI_EVENT_PKT:
++		info->bt_evt = NULL;
++		break;
++
++	case HCI_COMMAND_PKT:
++		info->bt_cmd = NULL;
++		break;
++
++	case HCI_ACLDATA_PKT:
++		info->bt_acl = NULL;
++		break;
++
++	default:
++		CG2900_ERR("Unknown HCI data type:%d",
++			   dev_info->hci_data_type);
++		return;
++	}
++
++	SET_RESET_STATE(RESET_ACTIVATED);
++
++	/* Free userdata as device info structure will be freed by CG2900
++	 * when this callback returns */
++	kfree(dev->user_data);
++	dev->user_data = NULL;
++
++	/*
++	 * Continue to deregister hdev if all channels has been reset else
++	 * return.
++	 */
++	if (info->bt_evt || info->bt_cmd || info->bt_acl)
++		return;
++
++	/*
++	 * Deregister HCI device. Close and Destruct functions should
++	 * in turn be called by BlueZ.
++	 */
++	CG2900_INFO("Deregister HCI device");
++	err = hci_unregister_dev(hdev);
++	if (err)
++		CG2900_ERR("Can not deregister HCI device! (%d)", err);
++		/*
++		 * Now we are in trouble. Try to register a new hdev
++		 * anyway even though this will cost some memory.
++		 */
++
++	wait_event_interruptible_timeout(hci_wait_queue,
++				(RESET_UNREGISTERED == hci_info->reset_state),
++				msecs_to_jiffies(RESP_TIMEOUT));
++	if (RESET_UNREGISTERED != hci_info->reset_state)
++		/*
++		 * Now we are in trouble. Try to register a new hdev
++		 * anyway even though this will cost some memory.
++		 */
++		CG2900_ERR("Timeout expired. Could not deregister HCI device");
++
++	/* Init and register hdev */
++	CG2900_INFO("Register HCI device");
++	err = register_to_bluez();
++	if (err)
++		CG2900_ERR("HCI Device registration error (%d).", err);
 +}
 +
++/*
++ * struct cg2900_cb - Specifies callback structure for CG2900 user.
++ *
++ * @read_cb:	Callback function called when data is received from
++ *		the controller.
++ * @reset_cb:	Callback function called when the controller has been reset.
++ */
 +static struct cg2900_callbacks cg2900_cb = {
-+	.read_cb = read_cb,
-+	.reset_cb = reset_cb
++	.read_cb = hci_read_cb,
++	.reset_cb = hci_reset_cb
 +};
 +
 +/**
-+ * get_session_user() - Check that supplied session is within valid range.
-+ * @session:	Session ID.
++ * open_from_hci() - Open HCI interface.
++ * @hdev:	HCI device being opened.
 + *
-+ * Returns:
-+ *   Audio_user if there is no error.
-+ *   NULL for bad session ID.
-+ */
-+static struct audio_user *get_session_user(int session)
-+{
-+	struct audio_user *audio_user;
-+
-+	if (session < FIRST_USER || session >= MAX_NBR_OF_USERS) {
-+		CG2900_ERR("Calling with invalid session %d", session);
-+		return NULL;
-+	}
-+
-+	audio_user = audio_info->audio_sessions[session];
-+	if (!audio_user)
-+		CG2900_ERR("Calling with non-opened session %d", session);
-+	return audio_user;
-+}
-+
-+/**
-+ * del_endpoint_private() - Deletes an endpoint from @list.
-+ * @endpoint_id:	Endpoint ID.
-+ * @list:		List of endpoints.
-+ *
-+ * Deletes an endpoint from the supplied endpoint list.
-+ * This function is not protected by any semaphore.
-+ */
-+static void del_endpoint_private(enum cg2900_audio_endpoint_id endpoint_id,
-+				 struct endpoint_list *list)
-+{
-+	struct list_head *cursor, *next;
-+	struct endpoint_config_node *tmp;
-+
-+	list_for_each_safe(cursor, next, &(list->ep_list)) {
-+		tmp = list_entry(cursor, struct endpoint_config_node, list);
-+		if (tmp->endpoint_id == endpoint_id) {
-+			list_del(cursor);
-+			kfree(tmp);
-+		}
-+	}
-+}
-+
-+/**
-+ * add_endpoint() - Add endpoint node to @list.
-+ * @ep_config:	Endpoint configuration.
-+ * @list:	List of endpoints.
-+ *
-+ * Add endpoint node to the supplied list and copies supplied config to node.
-+ * If a node already exists for the supplied endpoint, the old node is removed
-+ * and replaced by the new node.
-+ */
-+static void add_endpoint(struct cg2900_endpoint_config *ep_config,
-+			 struct endpoint_list *list)
-+{
-+	struct endpoint_config_node *item;
-+
-+	item = kzalloc(sizeof(*item), GFP_KERNEL);
-+	if (!item) {
-+		CG2900_ERR("Failed to alloc memory!");
-+		return;
-+	}
-+
-+	/* Store values */
-+	item->endpoint_id = ep_config->endpoint_id;
-+	memcpy(&(item->config), &(ep_config->config), sizeof(item->config));
-+
-+	mutex_lock(&(list->management_mutex));
-+
-+	/*
-+	 * Check if endpoint ID already exist in list.
-+	 * If that is the case, remove it.
-+	 */
-+	if (!list_empty(&(list->ep_list)))
-+		del_endpoint_private(ep_config->endpoint_id, list);
-+
-+	list_add_tail(&(item->list), &(list->ep_list));
-+
-+	mutex_unlock(&(list->management_mutex));
-+}
-+
-+/**
-+ * find_endpoint() - Finds endpoint identified by @endpoint_id in @list.
-+ * @endpoint_id:	Endpoint ID.
-+ * @list:		List of endpoints.
-+ *
-+ * Returns:
-+ *   Endpoint configuration if there is no error.
-+ *   NULL if no configuration can be found for @endpoint_id.
-+ */
-+static union cg2900_endpoint_config_union *
-+find_endpoint(enum cg2900_audio_endpoint_id endpoint_id,
-+	      struct endpoint_list *list)
-+{
-+	struct list_head *cursor, *next;
-+	struct endpoint_config_node *tmp;
-+	struct endpoint_config_node *ret_ep = NULL;
-+
-+	mutex_lock(&list->management_mutex);
-+	list_for_each_safe(cursor, next, &(list->ep_list)) {
-+		tmp = list_entry(cursor, struct endpoint_config_node, list);
-+		if (tmp->endpoint_id == endpoint_id) {
-+			ret_ep = tmp;
-+			break;
-+		}
-+	}
-+	mutex_unlock(&list->management_mutex);
-+
-+	if (ret_ep)
-+		return &(ret_ep->config);
-+	else
-+		return NULL;
-+}
-+
-+/**
-+ * flush_endpoint_list() - Deletes all stored endpoints in @list.
-+ * @list:	List of endpoints.
-+ */
-+static void flush_endpoint_list(struct endpoint_list *list)
-+{
-+	struct list_head *cursor, *next;
-+	struct endpoint_config_node *tmp;
-+
-+	mutex_lock(&list->management_mutex);
-+	list_for_each_safe(cursor, next, &(list->ep_list)) {
-+		tmp = list_entry(cursor, struct endpoint_config_node, list);
-+		list_del(cursor);
-+		kfree(tmp);
-+	}
-+	mutex_unlock(&list->management_mutex);
-+}
-+
-+/**
-+ * receive_fm_legacy_response() - Wait for and handle an FM Legacy response.
-+ * @audio_user:	Audio user to check for.
-+ * @rsp_lsb:	LSB of FM command to wait for.
-+ * @rsp_msb:	MSB of FM command to wait for.
-+ *
-+ * This function first waits for FM response (up to 5 seconds) and when one
-+ * arrives, it checks that it is the one we are waiting for and also that no
-+ * error has occurred.
++ * BlueZ callback function for opening HCI interface to device.
 + *
 + * Returns:
 + *   0 if there is no error.
-+ *   -ECOMM if no response was received.
-+ *   -EIO for other errors.
++ *   -EINVAL if NULL pointer is supplied.
++ *   -EOPNOTSUPP if supplied packet type is not supported.
++ *   -EBUSY if device is already opened.
++ *   -EACCES if opening of channels failed.
 + */
-+static int receive_fm_legacy_response(struct audio_user *audio_user,
-+				      u8 rsp_lsb, u8 rsp_msb)
++static int open_from_hci(struct hci_dev *hdev)
 +{
-+	int err = 0;
-+	struct sk_buff *skb;
-+	u8 status;
-+	u8 fm_function;
-+	u8 fm_rsp_hdr_lsb;
-+	u8 fm_rsp_hdr_msb;
-+
-+	/*
-+	 * Wait for callback to receive command complete and then wake us up
-+	 * again.
-+	 */
-+	if (0 >= wait_event_interruptible_timeout(wq_fm,
-+					audio_user->resp_state == RESP_RECEIVED,
-+					msecs_to_jiffies(RESP_TIMEOUT))) {
-+		/* We timed out or an error occurred */
-+		CG2900_ERR("Error occurred while waiting for return packet.");
-+		return -ECOMM;
-+	}
-+
-+	/* OK, now we should have received answer. Let's check it. */
-+	skb = skb_dequeue_tail(&audio_info->fm_queue);
-+	if (!skb) {
-+		CG2900_ERR("No skb in queue when it should be there");
-+		return -EIO;
-+	}
-+
-+	/* Check if we received the correct event */
-+	if (CG2900_FM_GEN_ID_LEGACY !=
-+			skb->data[CG2900_FM_USER_GEN_ID_POS_CMD_CMPL]) {
-+		CG2900_ERR("Received unknown FM packet. 0x%X %X %X %X %X",
-+			   skb->data[0], skb->data[1], skb->data[2],
-+			   skb->data[3], skb->data[4]);
-+		err = -EIO;
-+		goto error_handling_free_skb;
-+	}
-+
-+	/* FM Legacy Command complete event */
-+	status = skb->data[CG2900_FM_USER_LEG_STATUS_POS_CMD_CMPL];
-+	fm_function = skb->data[CG2900_FM_USER_LEG_FUNC_POS_CMD_CMPL];
-+	fm_rsp_hdr_lsb = skb->data[CG2900_FM_USER_LEG_HDR_POS_CMD_CMPL];
-+	fm_rsp_hdr_msb = skb->data[CG2900_FM_USER_LEG_HDR_POS_CMD_CMPL + 1];
-+
-+	if (fm_function != CG2900_FM_CMD_PARAM_WRITECOMMAND ||
-+	    fm_rsp_hdr_lsb != rsp_lsb || fm_rsp_hdr_msb != rsp_msb) {
-+		CG2900_ERR("Received unexpected packet func 0x%X "
-+			   "cmd 0x%02X%02X",
-+			   fm_function, fm_rsp_hdr_msb, fm_rsp_hdr_lsb);
-+		err = -EIO;
-+		goto error_handling_free_skb;
-+	}
-+
-+	if (status != CG2900_FM_CMD_STATUS_COMMAND_SUCCEEDED) {
-+		CG2900_ERR("FM Command failed (%d)", status);
-+		err = -EIO;
-+		goto error_handling_free_skb;
-+	}
-+	/* Operation succeeded. We are now done */
-+
-+error_handling_free_skb:
-+	kfree_skb(skb);
-+	return err;
-+}
-+
-+/**
-+ * receive_bt_cmd_complete() - Wait for and handle an BT Command
-Complete event.
-+ * @audio_user:	Audio user to check for.
-+ * @rsp_lsb:	LSB of BT command to wait for.
-+ * @rsp_msb:	MSB of BT command to wait for.
-+ * @data:	Pointer to buffer if any received data should be stored (except
-+ *		status).
-+ * @data_len:	Length of @data in bytes.
-+ *
-+ * This function first waits for BT Command Complete event (up to 5 seconds)
-+ * and when one arrives, it checks that it is the one we are waiting for and
-+ * also that no error has occurred.
-+ * If @data is supplied it also copies received data into @data.
-+ *
-+ * Returns:
-+ *   0 if there is no error.
-+ *   -ECOMM if no response was received.
-+ *   -EIO for other errors.
-+ */
-+static int receive_bt_cmd_complete(struct audio_user *audio_user, u8 rsp_lsb,
-+				   u8 rsp_msb, void *data, int data_len)
-+{
-+	int err = 0;
-+	struct sk_buff *skb;
-+	u8 evt_id;
-+	u8 op_lsb;
-+	u8 op_msb;
-+	u8 status;
-+
-+	/*
-+	 * Wait for callback to receive command complete and then wake us up
-+	 * again.
-+	 */
-+	if (0 >= wait_event_interruptible_timeout(wq_bt,
-+					audio_user->resp_state == RESP_RECEIVED,
-+					msecs_to_jiffies(RESP_TIMEOUT))) {
-+		/* We timed out or an error occurred */
-+		CG2900_ERR("Error occurred while waiting for return packet.");
-+		return -ECOMM;
-+	}
-+
-+	/* OK, now we should have received answer. Let's check it. */
-+	skb = skb_dequeue_tail(&audio_info->bt_queue);
-+	if (!skb) {
-+		CG2900_ERR("No skb in queue when it should be there");
-+		return -EIO;
-+	}
-+
-+	evt_id = skb->data[HCI_BT_EVT_ID_POS];
-+	if (evt_id != HCI_BT_EVT_CMD_COMPLETE) {
-+		CG2900_ERR("We did not receive the event we expected (0x%X)",
-+			   evt_id);
-+		err = -EIO;
-+		goto error_handling_free_skb;
-+	}
-+
-+	op_lsb = skb->data[HCI_BT_EVT_CMD_COMPL_ID_POS];
-+	op_msb = skb->data[HCI_BT_EVT_CMD_COMPL_ID_POS + 1];
-+	status = skb->data[HCI_BT_EVT_CMD_COMPL_STATUS_POS];
-+
-+	if (rsp_lsb != op_lsb || rsp_msb != op_msb) {
-+		CG2900_ERR("Received cmd complete for unexpected command: "
-+			   "0x%02X%02X", op_msb, op_lsb);
-+		err = -EIO;
-+		goto error_handling_free_skb;
-+	}
-+
-+	if (status != HCI_BT_ERROR_NO_ERROR) {
-+		CG2900_ERR("Received command complete with err %d", status);
-+		err = -EIO;
-+		goto error_handling_free_skb;
-+	}
-+
-+	/* Copy the rest of the parameters if a buffer has been supplied.
-+	 * The caller must have set the length correctly.
-+	 */
-+	if (data)
-+		memcpy(data, &(skb->data[HCI_BT_EVT_CMD_COMPL_STATUS_POS + 1]),
-+		       data_len);
-+
-+	/* Operation succeeded. We are now done */
-+
-+error_handling_free_skb:
-+	kfree_skb(skb);
-+	return err;
-+}
-+
-+/**
-+ * conn_start_i2s_to_fm_rx() - Start an audio stream connecting FM RX to I2S.
-+ * @audio_user:		Audio user to check for.
-+ * @stream_handle:	[out] Pointer where to store the stream handle.
-+ *
-+ * This function sets up an FM RX to I2S stream.
-+ * It does this by first setting the output mode and then the configuration of
-+ * the External Sample Rate Converter.
-+ *
-+ * Returns:
-+ *   0 if there is no error.
-+ *   -ECOMM if no response was received.
-+ *   -ENOMEM upon allocation errors.
-+ *   Errors from @cg2900_write and @receive_fm_legacy_response.
-+ *   -EIO for other errors.
-+ */
-+static int conn_start_i2s_to_fm_rx(struct audio_user *audio_user,
-+				   unsigned int *stream_handle)
-+{
-+	int err = 0;
-+	u8 temp_session_id;
-+	union cg2900_endpoint_config_union *fm_config;
-+	struct sk_buff *skb;
-+	u8 *data;
-+
-+	fm_config = find_endpoint(ENDPOINT_FM_RX,
-+				  &(audio_info->endpoints));
-+	if (!fm_config) {
-+		CG2900_ERR("FM RX not configured before stream start");
-+		return -EIO;
-+	}
-+
-+	if (!(audio_info->i2s_config_known)) {
-+		CG2900_ERR("I2S DAI not configured before stream start");
-+		return -EIO;
-+	}
-+
-+	/*
-+	 * Use mutex to assure that only ONE command is sent at any time on each
-+	 * channel.
-+	 */
-+	mutex_lock(&audio_info->fm_mutex);
-+	mutex_lock(&audio_info->bt_mutex);
-+
-+	/*
-+	 * Now set the output mode of the External Sample Rate Converter by
-+	 * sending HCI_Write command with AUP_EXT_SetMode.
-+	 */
-+	CG2900_DBG("FM: AUP_EXT_SetMode");
-+
-+	skb = cg2900_alloc_skb(CG2900_FM_CMD_LEN_AUP_EXT_SET_MODE, GFP_KERNEL);
-+	if (!skb) {
-+		CG2900_ERR("Could not allocate skb");
-+		err = -ENOMEM;
-+		goto finished_unlock_mutex;
-+	}
-+
-+	/* Enter data into the skb */
-+	data = skb_put(skb, CG2900_FM_CMD_LEN_AUP_EXT_SET_MODE);
-+
-+	data[0] = CG2900_FM_CMD_PARAM_LEN_AUP_EXT_SET_MODE;
-+	data[1] = CG2900_FM_GEN_ID_LEGACY;
-+	data[2] = CG2900_FM_CMD_LEG_PARAM_WRITE;
-+	data[3] = CG2900_FM_CMD_PARAM_WRITECOMMAND;
-+	data[4] = CG2900_FM_CMD_ID_AUP_EXT_SET_MODE_LSB;
-+	data[5] = CG2900_FM_CMD_ID_AUP_EXT_SET_MODE_MSB;
-+	data[6] = HCI_SET_U16_DATA_LSB(CG2900_FM_CMD_AUP_EXT_SET_MODE_PARALLEL);
-+	data[7] = HCI_SET_U16_DATA_MSB(CG2900_FM_CMD_AUP_EXT_SET_MODE_PARALLEL);
-+
-+	cb_info_fm.user = audio_user;
-+	SET_RESP_STATE(audio_user->resp_state, WAITING);
-+
-+	/* Send packet to controller */
-+	err = cg2900_write(audio_info->dev_fm, skb);
-+	if (err) {
-+		CG2900_ERR("Error occurred while transmitting skb (%d)", err);
-+		goto error_handling_free_skb;
-+	}
-+
-+	err = receive_fm_legacy_response(audio_user,
-+					 CG2900_FM_RSP_ID_AUP_EXT_SET_MODE_LSB,
-+					 CG2900_FM_RSP_ID_AUP_EXT_SET_MODE_MSB);
-+	if (err)
-+		goto finished_unlock_mutex;
-+
-+	SET_RESP_STATE(audio_user->resp_state, IDLE);
-+
-+	/*
-+	 * Now configure the External Sample Rate Converter by sending
-+	 * HCI_Write command with AUP_EXT_SetControl.
-+	 */
-+	CG2900_DBG("FM: AUP_EXT_SetControl");
-+
-+	skb = cg2900_alloc_skb(CG2900_FM_CMD_LEN_AUP_EXT_SET_CTRL, GFP_KERNEL);
-+	if (!skb) {
-+		CG2900_ERR("Could not allocate skb");
-+		err = -ENOMEM;
-+		goto finished_unlock_mutex;
-+	}
-+
-+	/* Enter data into the skb */
-+	data = skb_put(skb, CG2900_FM_CMD_LEN_AUP_EXT_SET_CTRL);
-+
-+	data[0] = CG2900_FM_CMD_PARAM_LEN_AUP_EXT_SET_CTRL;
-+	data[1] = CG2900_FM_GEN_ID_LEGACY;
-+	data[2] = CG2900_FM_CMD_LEG_PARAM_WRITE;
-+	data[3] = CG2900_FM_CMD_PARAM_WRITECOMMAND;
-+	data[4] = CG2900_FM_CMD_ID_AUP_EXT_SET_CTRL_LSB;
-+	data[5] = CG2900_FM_CMD_ID_AUP_EXT_SET_CTRL_MSB;
-+	if (fm_config->fm.sample_rate >= ENDPOINT_SAMPLE_RATE_44_1_KHZ) {
-+		data[6] = HCI_SET_U16_DATA_LSB(CG2900_FM_CMD_SET_CTRL_CONV_UP);
-+		data[7] = HCI_SET_U16_DATA_MSB(CG2900_FM_CMD_SET_CTRL_CONV_UP);
-+	} else {
-+		data[6] = HCI_SET_U16_DATA_LSB(
-+				CG2900_FM_CMD_SET_CTRL_CONV_DOWN);
-+		data[7] = HCI_SET_U16_DATA_MSB(
-+				CG2900_FM_CMD_SET_CTRL_CONV_DOWN);
-+	}
-+
-+	cb_info_fm.user = audio_user;
-+	SET_RESP_STATE(audio_user->resp_state, WAITING);
-+
-+	/* Send packet to controller */
-+	err = cg2900_write(audio_info->dev_fm, skb);
-+	if (err) {
-+		CG2900_ERR("Error occurred while transmitting skb (%d)", err);
-+		goto error_handling_free_skb;
-+	}
-+
-+	err = receive_fm_legacy_response(audio_user,
-+					 CG2900_FM_RSP_ID_AUP_EXT_SET_CTRL_LSB,
-+					 CG2900_FM_RSP_ID_AUP_EXT_SET_CTRL_MSB);
-+	if (err)
-+		goto finished_unlock_mutex;
-+
-+	/*
-+	 * Now send HCI_VS_Set_Session_Configuration command
-+	 */
-+	CG2900_DBG("BT: HCI_VS_Set_Session_Configuration");
-+
-+	skb = cg2900_alloc_skb(CG2900_BT_LEN_VS_SET_SESSION_CONFIG, GFP_KERNEL);
-+	if (!skb) {
-+		CG2900_ERR("Could not allocate skb");
-+		err = -ENOMEM;
-+		goto finished_unlock_mutex;
-+	}
-+
-+	/* Enter data into the skb */
-+	data = skb_put(skb, CG2900_BT_LEN_VS_SET_SESSION_CONFIG);
-+	/*
-+	 * Default all bytes to 0 so we don't have to set reserved bytes below.
-+	 */
-+	memset(data, 0, CG2900_BT_LEN_VS_SET_SESSION_CONFIG);
-+
-+	data[0] = CG2900_BT_VS_SET_SESSION_CONFIG_LSB;
-+	data[1] = CG2900_BT_VS_SET_SESSION_CONFIG_MSB;
-+	data[2] = CG2900_BT_PARAM_LEN_VS_SET_SESSION_CONFIG;
-+	data[3] = 1; /* Number of streams */
-+	data[4] = CG2900_BT_SESSION_MEDIA_TYPE_AUDIO;
-+	/* Media configuration: Set sample rate and audio channel setup */
-+	data[5] = CG2900_BT_SESSION_CONF_SET_SAMPLE_RATE(
-+			fm_config->fm.sample_rate);
-+	if (audio_info->i2s_config.channel_sel == CHANNEL_SELECTION_BOTH)
-+		data[5] |= CG2900_BT_MEDIA_CONFIG_STEREO;
-+	else
-+		data[5] |= CG2900_BT_MEDIA_CONFIG_MONO;
-+	/* data[6] - data[10] SBC codec params (not used for FM RX) */
-+	/* Input Virtual Port (VP) configuration */
-+	data[11] = CG2900_BT_VP_TYPE_FM;
-+	/* data[12] - data[23] reserved */
-+	/* Output Virtual Port (VP) configuration */
-+	data[24] = CG2900_BT_VP_TYPE_I2S;
-+	data[25] = CG2900_BT_SESSION_I2S_INDEX_I2S;
-+	data[26] = audio_info->i2s_config.channel_sel;
-+	/* data[27] - data[36] reserved */
-+
-+	cb_info_bt.user = audio_user;
-+	SET_RESP_STATE(audio_user->resp_state, WAITING);
-+
-+	/* Send packet to controller */
-+	err = cg2900_write(audio_info->dev_bt, skb);
-+	if (err) {
-+		CG2900_ERR("Error occurred while transmitting skb (%d)", err);
-+		goto error_handling_free_skb;
-+	}
-+
-+	err = receive_bt_cmd_complete(audio_user,
-+			CG2900_BT_VS_SET_SESSION_CONFIG_LSB,
-+			CG2900_BT_VS_SET_SESSION_CONFIG_MSB,
-+			&temp_session_id, CG2900_BT_PARAM_LEN_SESSION_ID);
-+	if (err)
-+		goto finished_unlock_mutex;
-+
-+	/* Store the stream handle (used for start and stop stream) */
-+	*stream_handle = temp_session_id;
-+	CG2900_DBG("stream_handle set to %d", *stream_handle);
-+
-+	SET_RESP_STATE(audio_user->resp_state, IDLE);
-+
-+	/*
-+	 * Now start the stream by sending HCI_VS_Session_Control command
-+	 */
-+	CG2900_DBG("BT: HCI_VS_Session_Control");
-+
-+	skb = cg2900_alloc_skb(CG2900_BT_LEN_VS_SESSION_CTRL, GFP_KERNEL);
-+	if (!skb) {
-+		CG2900_ERR("Could not allocate skb");
-+		err = -ENOMEM;
-+		goto finished_unlock_mutex;
-+	}
-+
-+	/* Enter data into the skb */
-+	data = skb_put(skb, CG2900_BT_LEN_VS_SESSION_CTRL);
-+
-+	data[0] = CG2900_BT_VS_SESSION_CTRL_LSB;
-+	data[1] = CG2900_BT_VS_SESSION_CTRL_MSB;
-+	data[2] = CG2900_BT_PARAM_LEN_VS_SESSION_CTRL;
-+	data[3] = (u8)(*stream_handle); /* Session ID */
-+	data[4] = CG2900_BT_SESSION_START;
-+
-+	cb_info_bt.user = audio_user;
-+	SET_RESP_STATE(audio_user->resp_state, WAITING);
-+
-+	/* Send packet to controller */
-+	err = cg2900_write(audio_info->dev_bt, skb);
-+	if (err) {
-+		CG2900_ERR("Error occurred while transmitting skb (%d)", err);
-+		goto error_handling_free_skb;
-+	}
-+
-+	err = receive_bt_cmd_complete(audio_user,
-+				      CG2900_BT_VS_SESSION_CTRL_LSB,
-+				      CG2900_BT_VS_SESSION_CTRL_MSB,
-+				      NULL, 0);
-+
-+	goto finished_unlock_mutex;
-+
-+error_handling_free_skb:
-+	kfree_skb(skb);
-+finished_unlock_mutex:
-+	SET_RESP_STATE(audio_user->resp_state, IDLE);
-+	mutex_unlock(&audio_info->bt_mutex);
-+	mutex_unlock(&audio_info->fm_mutex);
-+	return err;
-+}
-+
-+/**
-+ * conn_start_i2s_to_fm_tx() - Start an audio stream connecting FM TX to I2S.
-+ * @audio_user:		Audio user to check for.
-+ * @stream_handle:	[out] Pointer where to store the stream handle.
-+ *
-+ * This function sets up an I2S to FM TX stream.
-+ * It does this by first setting the Audio Input source and then setting the
-+ * configuration and input source of BT sample rate converter.
-+ *
-+ * Returns:
-+ *   0 if there is no error.
-+ *   -ECOMM if no response was received.
-+ *   -ENOMEM upon allocation errors.
-+ *   Errors from @cg2900_write and @receive_fm_legacy_response.
-+ *   -EIO for other errors.
-+ */
-+static int conn_start_i2s_to_fm_tx(struct audio_user *audio_user,
-+				   unsigned int *stream_handle)
-+{
-+	int err = 0;
-+	u8 temp_session_id;
-+	union cg2900_endpoint_config_union *fm_config;
-+	struct sk_buff *skb;
-+	u8 *data;
-+
-+	fm_config = find_endpoint(ENDPOINT_FM_TX, &(audio_info->endpoints));
-+	if (!fm_config) {
-+		CG2900_ERR("FM TX not configured before stream start");
-+		return -EIO;
-+	}
-+
-+	if (!(audio_info->i2s_config_known)) {
-+		CG2900_ERR("I2S DAI not configured before stream start");
-+		return -EIO;
-+	}
-+
-+	/*
-+	 * Use mutex to assure that only ONE command is sent at any time on each
-+	 * channel.
-+	 */
-+	mutex_lock(&audio_info->fm_mutex);
-+	mutex_lock(&audio_info->bt_mutex);
-+
-+	/*
-+	 * Select Audio Input Source by sending HCI_Write command with
-+	 * AIP_SetMode.
-+	 */
-+	CG2900_DBG("FM: AIP_SetMode");
-+
-+	skb = cg2900_alloc_skb(CG2900_FM_CMD_LEN_AIP_SET_MODE, GFP_KERNEL);
-+	if (!skb) {
-+		CG2900_ERR("Could not allocate skb");
-+		err = -ENOMEM;
-+		goto finished_unlock_mutex;
-+	}
-+
-+	/* Enter data into the skb */
-+	data = skb_put(skb, CG2900_FM_CMD_LEN_AIP_SET_MODE);
-+
-+	data[0] = CG2900_FM_CMD_PARAM_LEN_AIP_SET_MODE;
-+	data[1] = CG2900_FM_GEN_ID_LEGACY;
-+	data[2] = CG2900_FM_CMD_LEG_PARAM_WRITE;
-+	data[3] = CG2900_FM_CMD_PARAM_WRITECOMMAND;
-+	data[4] = CG2900_FM_CMD_ID_AIP_SET_MODE_LSB;
-+	data[5] = CG2900_FM_CMD_ID_AIP_SET_MODE_MSB;
-+	data[6] = HCI_SET_U16_DATA_LSB(CG2900_FM_CMD_AIP_SET_MODE_INPUT_DIG);
-+	data[7] = HCI_SET_U16_DATA_MSB(CG2900_FM_CMD_AIP_SET_MODE_INPUT_DIG);
-+
-+	cb_info_fm.user = audio_user;
-+	SET_RESP_STATE(audio_user->resp_state, WAITING);
-+
-+	/* Send packet to controller */
-+	err = cg2900_write(audio_info->dev_fm, skb);
-+	if (err) {
-+		CG2900_ERR("Error occurred while transmitting skb (%d)", err);
-+		goto error_handling_free_skb;
-+	}
-+
-+	err = receive_fm_legacy_response(audio_user,
-+					 CG2900_FM_RSP_ID_AIP_SET_MODE_LSB,
-+					 CG2900_FM_RSP_ID_AIP_SET_MODE_MSB);
-+	if (err)
-+		goto finished_unlock_mutex;
-+
-+	SET_RESP_STATE(audio_user->resp_state, IDLE);
-+
-+	/*
-+	 * Now configure the BT sample rate converter by sending HCI_Write
-+	 * command with AIP_BT_SetControl.
-+	 */
-+	CG2900_DBG("FM: AIP_BT_SetControl");
-+
-+	skb = cg2900_alloc_skb(CG2900_FM_CMD_LEN_AIP_BT_SET_CTRL, GFP_KERNEL);
-+	if (!skb) {
-+		CG2900_ERR("Could not allocate skb");
-+		err = -ENOMEM;
-+		goto finished_unlock_mutex;
-+	}
-+
-+	/* Enter data into the skb */
-+	data = skb_put(skb, CG2900_FM_CMD_LEN_AIP_BT_SET_CTRL);
-+
-+	data[0] = CG2900_FM_CMD_PARAM_LEN_AIP_BT_SET_CTRL;
-+	data[1] = CG2900_FM_GEN_ID_LEGACY;
-+	data[2] = CG2900_FM_CMD_LEG_PARAM_WRITE;
-+	data[3] = CG2900_FM_CMD_PARAM_WRITECOMMAND;
-+	data[4] = CG2900_FM_CMD_ID_AIP_BT_SET_CTRL_LSB;
-+	data[5] = CG2900_FM_CMD_ID_AIP_BT_SET_CTRL_MSB;
-+	if (fm_config->fm.sample_rate >= ENDPOINT_SAMPLE_RATE_44_1_KHZ) {
-+		data[6] = HCI_SET_U16_DATA_LSB(CG2900_FM_CMD_SET_CTRL_CONV_UP);
-+		data[7] = HCI_SET_U16_DATA_MSB(CG2900_FM_CMD_SET_CTRL_CONV_UP);
-+	} else {
-+		data[6] = HCI_SET_U16_DATA_LSB(
-+				CG2900_FM_CMD_SET_CTRL_CONV_DOWN);
-+		data[7] = HCI_SET_U16_DATA_MSB(
-+				CG2900_FM_CMD_SET_CTRL_CONV_DOWN);
-+	}
-+
-+	cb_info_fm.user = audio_user;
-+	SET_RESP_STATE(audio_user->resp_state, WAITING);
-+
-+	/* Send packet to controller */
-+	err = cg2900_write(audio_info->dev_fm, skb);
-+	if (err) {
-+		CG2900_ERR("Error occurred while transmitting skb (%d)", err);
-+		goto error_handling_free_skb;
-+	}
-+
-+	err = receive_fm_legacy_response(audio_user,
-+					 CG2900_FM_RSP_ID_AIP_BT_SET_CTRL_LSB,
-+					 CG2900_FM_RSP_ID_AIP_BT_SET_CTRL_MSB);
-+	if (err)
-+		goto finished_unlock_mutex;
-+
-+	SET_RESP_STATE(audio_user->resp_state, IDLE);
-+
-+
-+	/*
-+	 * Now set input of the BT sample rate converter by sending HCI_Write
-+	 * command with AIP_BT_SetMode.
-+	 */
-+	CG2900_DBG("FM: AIP_BT_SetMode");
-+
-+	skb = cg2900_alloc_skb(CG2900_FM_CMD_LEN_AIP_BT_SET_MODE, GFP_KERNEL);
-+	if (!skb) {
-+		CG2900_ERR("Could not allocate skb");
-+		err = -ENOMEM;
-+		goto finished_unlock_mutex;
-+	}
-+
-+	/* Enter data into the skb */
-+	data = skb_put(skb, CG2900_FM_CMD_LEN_AIP_BT_SET_MODE);
-+
-+	data[0] = CG2900_FM_CMD_PARAM_LEN_AIP_BT_SET_MODE;
-+	data[1] = CG2900_FM_GEN_ID_LEGACY;
-+	data[2] = CG2900_FM_CMD_LEG_PARAM_WRITE;
-+	data[3] = CG2900_FM_CMD_PARAM_WRITECOMMAND;
-+	data[4] = CG2900_FM_CMD_ID_AIP_BT_SET_MODE_LSB;
-+	data[5] = CG2900_FM_CMD_ID_AIP_BT_SET_MODE_MSB;
-+	data[6] = HCI_SET_U16_DATA_LSB(CG2900_FM_CMD_AIP_BT_SET_MODE_INPUT_PAR);
-+	data[7] = HCI_SET_U16_DATA_MSB(CG2900_FM_CMD_AIP_BT_SET_MODE_INPUT_PAR);
-+
-+	cb_info_fm.user = audio_user;
-+	SET_RESP_STATE(audio_user->resp_state, WAITING);
-+
-+	/* Send packet to controller */
-+	err = cg2900_write(audio_info->dev_fm, skb);
-+	if (err) {
-+		CG2900_ERR("Error occurred while transmitting skb (%d)", err);
-+		goto error_handling_free_skb;
-+	}
-+
-+	err = receive_fm_legacy_response(audio_user,
-+					 CG2900_FM_RSP_ID_AIP_BT_SET_MODE_LSB,
-+					 CG2900_FM_RSP_ID_AIP_BT_SET_MODE_MSB);
-+	if (err)
-+		goto finished_unlock_mutex;
-+
-+	/*
-+	 * Now send HCI_VS_Set_Session_Configuration command
-+	 */
-+	CG2900_DBG("BT: HCI_VS_Set_Session_Configuration");
-+
-+	skb = cg2900_alloc_skb(CG2900_BT_LEN_VS_SET_SESSION_CONFIG, GFP_KERNEL);
-+	if (!skb) {
-+		CG2900_ERR("Could not allocate skb");
-+		err = -ENOMEM;
-+		goto finished_unlock_mutex;
-+	}
-+
-+	/* Enter data into the skb */
-+	data = skb_put(skb, CG2900_BT_LEN_VS_SET_SESSION_CONFIG);
-+	/*
-+	 * Default all bytes to 0 so we don't have to set reserved bytes below.
-+	 */
-+	memset(data, 0, CG2900_BT_LEN_VS_SET_SESSION_CONFIG);
-+
-+	data[0] = CG2900_BT_VS_SET_SESSION_CONFIG_LSB;
-+	data[1] = CG2900_BT_VS_SET_SESSION_CONFIG_MSB;
-+	data[2] = CG2900_BT_PARAM_LEN_VS_SET_SESSION_CONFIG;
-+	data[3] = 1; /* Number of streams */
-+	data[4] = CG2900_BT_SESSION_MEDIA_TYPE_AUDIO;
-+	/* Media configuration: Set sample rate and audio channel setup */
-+	data[5] = CG2900_BT_SESSION_CONF_SET_SAMPLE_RATE(
-+			fm_config->fm.sample_rate);
-+	if (audio_info->i2s_config.channel_sel == CHANNEL_SELECTION_BOTH)
-+		data[5] |= CG2900_BT_MEDIA_CONFIG_STEREO;
-+	else
-+		data[5] |= CG2900_BT_MEDIA_CONFIG_MONO;
-+	/* data[6] - data[10] SBC codec params (not used for FM TX) */
-+	/* Input Virtual Port (VP) configuration */
-+	data[11] = CG2900_BT_VP_TYPE_I2S;
-+	data[12] = CG2900_BT_SESSION_I2S_INDEX_I2S;
-+	data[13] = audio_info->i2s_config.channel_sel;
-+	/* data[14] - data[23] reserved */
-+	/* Output Virtual Port (VP) configuration */
-+	data[24] = CG2900_BT_VP_TYPE_FM;
-+	/* data[25] - data[36] reserved */
-+
-+	cb_info_bt.user = audio_user;
-+	SET_RESP_STATE(audio_user->resp_state, WAITING);
-+
-+	/* Send packet to controller */
-+	err = cg2900_write(audio_info->dev_bt, skb);
-+	if (err) {
-+		CG2900_ERR("Error occurred while transmitting skb (%d)", err);
-+		goto error_handling_free_skb;
-+	}
-+
-+	err = receive_bt_cmd_complete(audio_user,
-+				      CG2900_BT_VS_SET_SESSION_CONFIG_LSB,
-+				      CG2900_BT_VS_SET_SESSION_CONFIG_MSB,
-+				      &temp_session_id,
-+				      CG2900_BT_PARAM_LEN_SESSION_ID);
-+	if (err)
-+		goto finished_unlock_mutex;
-+
-+	/* Store the stream handle (used for start and stop stream) */
-+	*stream_handle = temp_session_id;
-+	CG2900_DBG("stream_handle set to %d", *stream_handle);
-+
-+	SET_RESP_STATE(audio_user->resp_state, IDLE);
-+
-+	/*
-+	 * Now start the stream by sending HCI_VS_Session_Control command
-+	 */
-+	CG2900_DBG("BT: HCI_VS_Session_Control");
-+
-+	skb = cg2900_alloc_skb(CG2900_BT_LEN_VS_SESSION_CTRL, GFP_KERNEL);
-+	if (!skb) {
-+		CG2900_ERR("Could not allocate skb");
-+		err = -ENOMEM;
-+		goto finished_unlock_mutex;
-+	}
-+
-+	/* Enter data into the skb */
-+	data = skb_put(skb, CG2900_BT_LEN_VS_SESSION_CTRL);
-+
-+	data[0] = CG2900_BT_VS_SESSION_CTRL_LSB;
-+	data[1] = CG2900_BT_VS_SESSION_CTRL_MSB;
-+	data[2] = CG2900_BT_PARAM_LEN_VS_SESSION_CTRL;
-+	data[3] = (u8)(*stream_handle); /* Session ID */
-+	data[4] = CG2900_BT_SESSION_START;
-+
-+	cb_info_bt.user = audio_user;
-+	SET_RESP_STATE(audio_user->resp_state, WAITING);
-+
-+	/* Send packet to controller */
-+	err = cg2900_write(audio_info->dev_bt, skb);
-+	if (err) {
-+		CG2900_ERR("Error occurred while transmitting skb (%d)", err);
-+		goto error_handling_free_skb;
-+	}
-+
-+	err = receive_bt_cmd_complete(audio_user,
-+				      CG2900_BT_VS_SESSION_CTRL_LSB,
-+				      CG2900_BT_VS_SESSION_CTRL_MSB,
-+				      NULL, 0);
-+
-+	goto finished_unlock_mutex;
-+
-+error_handling_free_skb:
-+	kfree_skb(skb);
-+finished_unlock_mutex:
-+	SET_RESP_STATE(audio_user->resp_state, IDLE);
-+	mutex_unlock(&audio_info->bt_mutex);
-+	mutex_unlock(&audio_info->fm_mutex);
-+	return err;
-+}
-+
-+/**
-+ * conn_start_pcm_to_sco() - Start an audio stream connecting
-Bluetooth (e)SCO to PCM_I2S.
-+ * @audio_user:		Audio user to check for.
-+ * @stream_handle:	[out] Pointer where to store the stream handle.
-+ *
-+ * This function sets up a BT to_from PCM_I2S stream.
-+ * It does this by first setting the Session configuration and then starting
-+ * the Audio Stream.
-+ *
-+ * Returns:
-+ *   0 if there is no error.
-+ *   -ECOMM if no response was received.
-+ *   -ENOMEM upon allocation errors.
-+ *   Errors from @cg2900_write and @receive_bt_cmd_complete.
-+ *   -EIO for other errors.
-+ */
-+static int conn_start_pcm_to_sco(struct audio_user *audio_user,
-+				 unsigned int *stream_handle)
-+{
-+	int err = 0;
-+	u8 temp_session_id;
-+	union cg2900_endpoint_config_union *bt_config;
-+	struct sk_buff *skb;
-+	u8 *data;
-+
-+	bt_config = find_endpoint(ENDPOINT_BT_SCO_INOUT,
-+				  &(audio_info->endpoints));
-+	if (!bt_config) {
-+		CG2900_ERR("BT not configured before stream start");
-+		return -EIO;
-+	}
-+
-+	if (!(audio_info->i2s_pcm_config_known)) {
-+		CG2900_ERR("I2S_PCM DAI not configured before stream start");
-+		return -EIO;
-+	}
-+
-+	/*
-+	 * Use mutex to assure that only ONE command is sent at any time on each
-+	 * channel.
-+	 */
-+	mutex_lock(&audio_info->bt_mutex);
-+
-+	/*
-+	 * First send HCI_VS_Set_Session_Configuration command
-+	 */
-+	CG2900_DBG("BT: HCI_VS_Set_Session_Configuration");
-+
-+	skb = cg2900_alloc_skb(CG2900_BT_LEN_VS_SET_SESSION_CONFIG, GFP_KERNEL);
-+	if (!skb) {
-+		CG2900_ERR("Could not allocate skb");
-+		err = -ENOMEM;
-+		goto finished_unlock_mutex;
-+	}
-+
-+	/* Enter data into the skb */
-+	data = skb_put(skb, CG2900_BT_LEN_VS_SET_SESSION_CONFIG);
-+	/*
-+	 * Default all bytes to 0 so we don't have to set reserved bytes below.
-+	 */
-+	memset(data, 0, CG2900_BT_LEN_VS_SET_SESSION_CONFIG);
-+
-+	data[0] = CG2900_BT_VS_SET_SESSION_CONFIG_LSB;
-+	data[1] = CG2900_BT_VS_SET_SESSION_CONFIG_MSB;
-+	data[2] = CG2900_BT_PARAM_LEN_VS_SET_SESSION_CONFIG;
-+	data[3] = 1; /* Number of streams */
-+	data[4] = CG2900_BT_SESSION_MEDIA_TYPE_AUDIO;
-+	/* Media configuration: Set sample rate and audio channel setup */
-+	data[5] = CG2900_BT_SESSION_CONF_SET_SAMPLE_RATE(
-+			bt_config->sco.sample_rate);
-+	data[5] |= CG2900_BT_MEDIA_CONFIG_MONO;
-+	/* data[6] - data[10] SBC codec params (not used for SCO) */
-+	/* Input Virtual Port (VP) configuration */
-+	data[11] = CG2900_BT_VP_TYPE_BT_SCO;
-+	/*
-+	 * As SCO handle we just use a default value.
-+	 * The chip will automatically connect the right SCO handle
-+	 */
-+	data[12] = HCI_SET_U16_DATA_LSB(DEFAULT_SCO_HANDLE);
-+	data[13] = HCI_SET_U16_DATA_MSB(DEFAULT_SCO_HANDLE);
-+	/* data[14] - data[23] reserved */
-+	/* Output Virtual Port (VP) configuration */
-+	data[24] = CG2900_BT_VP_TYPE_PCM;
-+	data[25] = CG2900_BT_SESSION_PCM_INDEX_PCM_I2S;
-+	if (audio_info->i2s_pcm_config.slot_0_used)
-+		data[26] |= CG2900_BT_SESSION_CONF_SET_PCM_SLOT_USE(0);
-+	if (audio_info->i2s_pcm_config.slot_1_used)
-+		data[26] |= CG2900_BT_SESSION_CONF_SET_PCM_SLOT_USE(1);
-+	if (audio_info->i2s_pcm_config.slot_2_used)
-+		data[26] |= CG2900_BT_SESSION_CONF_SET_PCM_SLOT_USE(2);
-+	if (audio_info->i2s_pcm_config.slot_3_used)
-+		data[26] |= CG2900_BT_SESSION_CONF_SET_PCM_SLOT_USE(3);
-+	data[27] = audio_info->i2s_pcm_config.slot_0_start;
-+	data[28] = audio_info->i2s_pcm_config.slot_1_start;
-+	data[29] = audio_info->i2s_pcm_config.slot_2_start;
-+	data[30] = audio_info->i2s_pcm_config.slot_3_start;
-+	/* data[31] - data[36] reserved */
-+
-+	cb_info_bt.user = audio_user;
-+	SET_RESP_STATE(audio_user->resp_state, WAITING);
-+
-+	/* Send packet to controller */
-+	err = cg2900_write(audio_info->dev_bt, skb);
-+	if (err) {
-+		CG2900_ERR("Error occurred while transmitting skb (%d)", err);
-+		goto error_handling_free_skb;
-+	}
-+
-+	err = receive_bt_cmd_complete(audio_user,
-+				      CG2900_BT_VS_SET_SESSION_CONFIG_LSB,
-+				      CG2900_BT_VS_SET_SESSION_CONFIG_MSB,
-+				      &temp_session_id,
-+				      CG2900_BT_PARAM_LEN_SESSION_ID);
-+	if (err)
-+		goto finished_unlock_mutex;
-+
-+	*stream_handle = temp_session_id;
-+	CG2900_DBG("stream_handle set to %d", *stream_handle);
-+
-+	SET_RESP_STATE(audio_user->resp_state, IDLE);
-+
-+	/*
-+	 * Now start the stream by sending HCI_VS_Session_Control command
-+	 */
-+	CG2900_DBG("BT: HCI_VS_Session_Control");
-+
-+	skb = cg2900_alloc_skb(CG2900_BT_LEN_VS_SESSION_CTRL, GFP_KERNEL);
-+	if (!skb) {
-+		CG2900_ERR("Could not allocate skb");
-+		err = -ENOMEM;
-+		goto finished_unlock_mutex;
-+	}
-+
-+	/* Enter data into the skb */
-+	data = skb_put(skb, CG2900_BT_LEN_VS_SESSION_CTRL);
-+
-+	data[0] = CG2900_BT_VS_SESSION_CTRL_LSB;
-+	data[1] = CG2900_BT_VS_SESSION_CTRL_MSB;
-+	data[2] = CG2900_BT_PARAM_LEN_VS_SESSION_CTRL;
-+	data[3] = (u8)(*stream_handle); /* Session ID */
-+	data[4] = CG2900_BT_SESSION_START;
-+
-+	cb_info_bt.user = audio_user;
-+	SET_RESP_STATE(audio_user->resp_state, WAITING);
-+
-+	/* Send packet to controller */
-+	err = cg2900_write(audio_info->dev_bt, skb);
-+	if (err) {
-+		CG2900_ERR("Error occurred while transmitting skb (%d)", err);
-+		goto error_handling_free_skb;
-+	}
-+
-+	err = receive_bt_cmd_complete(audio_user,
-+				      CG2900_BT_VS_SESSION_CTRL_LSB,
-+				      CG2900_BT_VS_SESSION_CTRL_MSB,
-+				      NULL, 0);
-+
-+	goto finished_unlock_mutex;
-+
-+error_handling_free_skb:
-+	kfree_skb(skb);
-+finished_unlock_mutex:
-+	SET_RESP_STATE(audio_user->resp_state, IDLE);
-+	mutex_unlock(&audio_info->bt_mutex);
-+	return err;
-+}
-+
-+
-+/**
-+ * conn_stop_stream() - Stops an audio stream defined by @stream_handle.
-+ * @audio_user:		Audio user to check for.
-+ * @stream_handle:	Handle of the audio stream.
-+ *
-+ * This function stops an audio stream defined by a stream handle.
-+ * It does this by first stopping the Audio Stream and then resetting the
-+ * Session configuration.
-+ *
-+ * Returns:
-+ *   0 if there is no error.
-+ *   -ECOMM if no response was received.
-+ *   -ENOMEM upon allocation errors.
-+ *   Errors from @cg2900_write and @receive_bt_cmd_complete.
-+ *   -EIO for other errors.
-+ */
-+static int conn_stop_stream(struct audio_user *audio_user,
-+			    unsigned int stream_handle)
-+{
-+	int err = 0;
-+	union cg2900_endpoint_config_union *bt_config;
-+	struct sk_buff *skb;
-+	u8 *data;
-+
-+	bt_config = find_endpoint(ENDPOINT_BT_SCO_INOUT,
-+				  &(audio_info->endpoints));
-+	if (!bt_config) {
-+		CG2900_ERR("BT not configured before stream start");
-+		return -EIO;
-+	}
-+
-+	/*
-+	 * Use mutex to assure that only ONE command is sent at any time on each
-+	 * channel.
-+	 */
-+	mutex_lock(&audio_info->bt_mutex);
-+
-+	/*
-+	 * Now stop the stream by sending HCI_VS_Session_Control command
-+	 */
-+	CG2900_DBG("BT: HCI_VS_Session_Control");
-+
-+	skb = cg2900_alloc_skb(CG2900_BT_LEN_VS_SESSION_CTRL, GFP_KERNEL);
-+	if (!skb) {
-+		CG2900_ERR("Could not allocate skb");
-+		err = -ENOMEM;
-+		goto finished_unlock_mutex;
-+	}
-+
-+	/* Enter data into the skb */
-+	data = skb_put(skb, CG2900_BT_LEN_VS_SESSION_CTRL);
-+
-+	data[0] = CG2900_BT_VS_SESSION_CTRL_LSB;
-+	data[1] = CG2900_BT_VS_SESSION_CTRL_MSB;
-+	data[2] = CG2900_BT_PARAM_LEN_VS_SESSION_CTRL;
-+	data[3] = (u8)stream_handle; /* Session ID */
-+	data[4] = CG2900_BT_SESSION_STOP;
-+
-+	cb_info_bt.user = audio_user;
-+	SET_RESP_STATE(audio_user->resp_state, WAITING);
-+
-+	/* Send packet to controller */
-+	err = cg2900_write(audio_info->dev_bt, skb);
-+	if (err) {
-+		CG2900_ERR("Error occurred while transmitting skb (%d)", err);
-+		goto error_handling_free_skb;
-+	}
-+
-+	err = receive_bt_cmd_complete(audio_user,
-+				      CG2900_BT_VS_SESSION_CTRL_LSB,
-+				      CG2900_BT_VS_SESSION_CTRL_MSB,
-+				      NULL, 0);
-+	if (err)
-+		goto finished_unlock_mutex;
-+
-+	SET_RESP_STATE(audio_user->resp_state, IDLE);
-+
-+	/*
-+	 * Now delete the stream by sending HCI_VS_Reset_Session_Configuration
-+	 * command
-+	 */
-+	CG2900_DBG("BT: HCI_VS_Reset_Session_Configuration");
-+
-+	skb = cg2900_alloc_skb(CG2900_BT_LEN_VS_RESET_SESSION_CONFIG,
-+				 GFP_KERNEL);
-+	if (!skb) {
-+		CG2900_ERR("Could not allocate skb");
-+		err = -ENOMEM;
-+		goto finished_unlock_mutex;
-+	}
-+
-+	/* Enter data into the skb */
-+	data = skb_put(skb, CG2900_BT_LEN_VS_RESET_SESSION_CONFIG);
-+
-+	data[0] = CG2900_BT_VS_RESET_SESSION_CONFIG_LSB;
-+	data[1] = CG2900_BT_VS_RESET_SESSION_CONFIG_MSB;
-+	data[2] = CG2900_BT_PARAM_LEN_VS_SET_SESSION_CONFIG;
-+	data[3] = (u8)stream_handle; /* Session ID */
-+
-+	cb_info_bt.user = audio_user;
-+	SET_RESP_STATE(audio_user->resp_state, WAITING);
-+
-+	/* Send packet to controller */
-+	err = cg2900_write(audio_info->dev_bt, skb);
-+	if (err) {
-+		CG2900_ERR("Error occurred while transmitting skb (%d)", err);
-+		goto error_handling_free_skb;
-+	}
-+
-+	err = receive_bt_cmd_complete(audio_user,
-+				CG2900_BT_VS_RESET_SESSION_CONFIG_LSB,
-+				CG2900_BT_VS_RESET_SESSION_CONFIG_MSB,
-+				NULL, 0);
-+
-+	goto finished_unlock_mutex;
-+
-+error_handling_free_skb:
-+	kfree_skb(skb);
-+finished_unlock_mutex:
-+	SET_RESP_STATE(audio_user->resp_state, IDLE);
-+	mutex_unlock(&audio_info->bt_mutex);
-+	return err;
-+}
-+
-+/*
-+ *	External methods
-+ */
-+int cg2900_audio_open(unsigned int *session)
-+{
-+	int err = 0;
-+	int i;
-+
-+	CG2900_INFO("cg2900_audio_open");
-+
-+	if (!session) {
-+		CG2900_ERR("NULL supplied as session.");
++	struct hci_info *info;
++	struct dev_info *dev_info;
++	struct sk_buff *enable_cmd;
++	int err;
++
++	CG2900_INFO("Open ST-Ericsson connectivity HCI driver");
++
++	if (!hdev) {
++		CG2900_ERR("NULL supplied for hdev");
 +		return -EINVAL;
 +	}
 +
-+	mutex_lock(&audio_info->management_mutex);
-+
-+	*session = 0;
-+
-+	/*
-+	 * First find a free session to use and allocate the session structure.
-+	 */
-+	for (i = FIRST_USER;
-+	     i < MAX_NBR_OF_USERS && audio_info->audio_sessions[i];
-+	     i++)
-+		; /* Just loop until found or end reached */
-+
-+	if (i >= MAX_NBR_OF_USERS) {
-+		CG2900_ERR("Couldn't find free user");
-+		err = -EMFILE;
-+		goto finished;
-+	}
-+
-+	audio_info->audio_sessions[i] =
-+			kzalloc(sizeof(*(audio_info->audio_sessions[0])),
-+				GFP_KERNEL);
-+	if (!audio_info->audio_sessions[i]) {
-+		CG2900_ERR("Could not allocate user");
-+		err = -ENOMEM;
-+		goto finished;
-+	}
-+	CG2900_DBG("Found free session %d", i);
-+	*session = i;
-+	audio_info->nbr_of_users_active++;
-+
-+	SET_RESP_STATE(audio_info->audio_sessions[*session]->resp_state, IDLE);
-+	audio_info->audio_sessions[*session]->session = *session;
-+
-+	if (audio_info->nbr_of_users_active == 1) {
-+		/*
-+		 * First user so register to CG2900 Core.
-+		 * First the BT audio device.
-+		 */
-+		audio_info->dev_bt = cg2900_register_user(CG2900_BT_AUDIO,
-+							  &cg2900_cb);
-+		if (!audio_info->dev_bt) {
-+			CG2900_ERR("Failed to register BT audio channel");
-+			err = -EIO;
-+			goto error_handling;
-+		}
-+
-+		/* Store the callback info structure */
-+		audio_info->dev_bt->user_data = &cb_info_bt;
-+
-+		/* Then the FM audio device */
-+		audio_info->dev_fm = cg2900_register_user(CG2900_FM_RADIO_AUDIO,
-+							  &cg2900_cb);
-+		if (!audio_info->dev_fm) {
-+			CG2900_ERR("Failed to register FM audio channel");
-+			err = -EIO;
-+			goto error_handling;
-+		}
-+
-+		/* Store the callback info structure */
-+		audio_info->dev_fm->user_data = &cb_info_fm;
-+
-+		audio_info->state = OPENED;
-+	}
-+
-+	goto finished;
-+
-+error_handling:
-+	if (audio_info->dev_bt) {
-+		cg2900_deregister_user(audio_info->dev_bt);
-+		audio_info->dev_bt = NULL;
-+	}
-+	audio_info->nbr_of_users_active--;
-+	kfree(audio_info->audio_sessions[*session]);
-+	audio_info->audio_sessions[*session] = NULL;
-+finished:
-+	mutex_unlock(&audio_info->management_mutex);
-+	return err;
-+}
-+EXPORT_SYMBOL(cg2900_audio_open);
-+
-+int cg2900_audio_close(unsigned int *session)
-+{
-+	int err = 0;
-+	struct audio_user *audio_user;
-+
-+	CG2900_INFO("cg2900_audio_close");
-+
-+	if (audio_info->state != OPENED) {
-+		CG2900_ERR("Audio driver not open");
-+		return -EIO;
-+	}
-+
-+	if (!session) {
-+		CG2900_ERR("NULL pointer supplied");
++	info = (struct hci_info *)hdev->driver_data;
++	if (!info) {
++		CG2900_ERR("NULL supplied for driver_data");
 +		return -EINVAL;
 +	}
 +
-+	audio_user = get_session_user(*session);
-+	if (!audio_user) {
-+		CG2900_ERR("Invalid session ID");
-+		return -EINVAL;
++	if (test_and_set_bit(HCI_RUNNING, &(hdev->flags))) {
++		CG2900_ERR("Device already opened!");
++		return -EBUSY;
 +	}
 +
-+	mutex_lock(&audio_info->management_mutex);
-+
-+	if (!(audio_info->audio_sessions[*session])) {
-+		CG2900_ERR("Session %d not opened", *session);
-+		err = -EACCES;
-+		goto err_unlock_mutex;
-+	}
-+
-+	kfree(audio_info->audio_sessions[*session]);
-+	audio_info->audio_sessions[*session] = NULL;
-+	audio_info->nbr_of_users_active--;
-+
-+	if (audio_info->nbr_of_users_active == 0) {
-+		/* No more sessions open. Deregister from CG2900 Core */
-+		cg2900_deregister_user(audio_info->dev_fm);
-+		cg2900_deregister_user(audio_info->dev_bt);
-+		audio_info->state = CLOSED;
-+	}
-+
-+	*session = 0;
-+
-+err_unlock_mutex:
-+	mutex_unlock(&audio_info->management_mutex);
-+	return err;
-+}
-+EXPORT_SYMBOL(cg2900_audio_close);
-+
-+int cg2900_audio_set_dai_config(unsigned int session,
-+				struct cg2900_dai_config *config)
-+{
-+	int err = 0;
-+	struct audio_user *audio_user;
-+	struct cg2900_dai_conf_i2s *i2s = NULL;
-+	struct cg2900_dai_conf_i2s_pcm *i2s_pcm = NULL;
-+	struct sk_buff *skb = NULL;
-+	u8 *data = NULL;
-+
-+	CG2900_INFO("cg2900_audio_set_dai_config");
-+
-+	if (audio_info->state != OPENED) {
-+		CG2900_ERR("Audio driver not open");
-+		return -EIO;
-+	}
-+
-+	audio_user = get_session_user(session);
-+	if (!audio_user)
-+		return -EINVAL;
-+
-+	/*
-+	 * Use mutex to assure that only ONE command is sent at any time on each
-+	 * channel.
-+	 */
-+	mutex_lock(&audio_info->bt_mutex);
-+
-+	/*
-+	 * Send following commands for the supported chips.
-+	 * For CG2900 PG1 = HCI_Cmd_VS_Set_Hardware_Configuration
-+	 */
-+
-+	/* Allocate the sk_buffer. The length is actually a max length since
-+	 * length varies depending on logical transport.
-+	 */
-+	skb = cg2900_alloc_skb(CG2900_BT_LEN_VS_SET_HARDWARE_CONFIG,
-+			       GFP_KERNEL);
-+	if (!skb) {
-+		CG2900_ERR("Could not allocate skb");
-+		err = -ENOMEM;
-+		goto finished_unlock_mutex;
-+	}
-+
-+	/* Format HCI command
-+	 *
-+	 * [vp][ltype][direction + mode][Bitclk][PCM duration]
-+	 * Start with the 2 byte op code.
-+	 */
-+	data = skb_put(skb, 2);
-+	data[0] = CG2900_BT_VS_SET_HARDWARE_CONFIG_LSB;
-+	data[1] = CG2900_BT_VS_SET_HARDWARE_CONFIG_MSB;
-+
-+	/* Now create each command depending on received configuration */
-+	switch (config->port) {
-+	case PORT_0_I2S:
-+		i2s = (struct cg2900_dai_conf_i2s *) &config->conf;
-+
-+		/* We will now have 5 bytes of data (including length field) */
-+		data = skb_put(skb, 5);
-+
-+		/* Parameters begin -----*/
-+		data[0] = 0x04; /* Parameter length */
-+		data[1] = PORT_PROTOCOL_I2S;
-+		/* 0 = Virtual port if multiple on vp, PCM /I2S index */
-+		data[2] = 0x00;
-+		data[3] = i2s->half_period; /* WS Half period size */
-+		if (i2s->mode == DAI_MODE_MASTER)
-+			data[4] = CG2900_BT_HW_CONFIG_I2S_WS_SEL_MASTER;
-+		else
-+			data[4] = CG2900_BT_HW_CONFIG_I2S_WS_SEL_SLAVE;
-+
-+		/* Store the new configuration */
-+		mutex_lock(&audio_info->management_mutex);
-+		memcpy(&(audio_info->i2s_config), &(config->conf.i2s),
-+		       sizeof(config->conf.i2s));
-+		audio_info->i2s_config_known = true;
-+		mutex_unlock(&audio_info->management_mutex);
-+		break;
-+
-+	case PORT_1_I2S_PCM:
-+		i2s_pcm = (struct cg2900_dai_conf_i2s_pcm *) &config->conf;
-+
-+		/* We will now have 7 bytes of data (including length field) */
-+		data = skb_put(skb, 7);
-+
-+		/* Parameters begin -----*/
-+		data[0] = 0x06; /* Parameter total length */
-+		data[1] = PORT_PROTOCOL_PCM;
-+
-+		if (i2s_pcm->protocol != PORT_PROTOCOL_PCM) {
-+			/*
-+			 * Short solution for PG1 chip, don't support I2S over
-+			 * the PCM/I2S bus...
-+			 */
-+			CG2900_ERR("I2S not supported over the PCM/I2S bus");
++	if (!(info->bt_cmd)) {
++		info->bt_cmd = cg2900_register_user(CG2900_BT_CMD,
++						     &cg2900_cb);
++		if (info->bt_cmd) {
++			dev_info = kmalloc(sizeof(*dev_info), GFP_KERNEL);
++			if (dev_info) {
++				dev_info->hdev = hdev;
++				dev_info->hci_data_type = HCI_COMMAND_PKT;
++			}
++			info->bt_cmd->user_data = dev_info;
++		} else {
++			CG2900_ERR("Couldn't register CG2900_BT_CMD to CG2900");
 +			err = -EACCES;
-+			goto error_handling_free_skb;
++			goto handle_error;
 +		}
++	}
 +
-+		/*
-+		 * PCM (logical)
-+		 * 0 = Virtual port if multiple on vp, PCM /I2S index
-+		 */
-+		data[2] = 0x00;
++	if (!(info->bt_evt)) {
++		info->bt_evt = cg2900_register_user(CG2900_BT_EVT,
++						     &cg2900_cb);
++		if (info->bt_evt) {
++			dev_info = kmalloc(sizeof(*dev_info), GFP_KERNEL);
++			if (dev_info) {
++				dev_info->hdev = hdev;
++				dev_info->hci_data_type = HCI_EVENT_PKT;
++			}
++			info->bt_evt->user_data = dev_info;
++		} else {
++			CG2900_ERR("Couldn't register CG2900_BT_EVT to CG2900");
++			err = -EACCES;
++			goto handle_error;
++		}
++	}
 +
-+		/*
-+		 * Set PCM direction and mode. They are a bit field in one byte.
-+		 */
-+		data[3] = CG2900_BT_HW_CONFIG_PCM_SET_DIR(0,
-+							  i2s_pcm->slot_0_dir);
-+		data[3] |= CG2900_BT_HW_CONFIG_PCM_SET_DIR(1,
-+							   i2s_pcm->slot_1_dir);
-+		data[3] |= CG2900_BT_HW_CONFIG_PCM_SET_DIR(2,
-+							   i2s_pcm->slot_2_dir);
-+		data[3] |= CG2900_BT_HW_CONFIG_PCM_SET_DIR(3,
-+							   i2s_pcm->slot_3_dir);
-+		if (i2s_pcm->mode == DAI_MODE_MASTER)
-+			data[3] |= CG2900_BT_HW_CONFIG_PCM_SET_MODE(
-+					CG2900_BT_HW_CONFIG_PCM_MODE_MASTER);
-+		else
-+			data[3] |= CG2900_BT_HW_CONFIG_PCM_SET_MODE(
-+					CG2900_BT_HW_CONFIG_PCM_MODE_SLAVE);
-+		data[4] = i2s_pcm->clk;
-+		data[5] = HCI_SET_U16_DATA_LSB(i2s_pcm->duration);
-+		data[6] = HCI_SET_U16_DATA_MSB(i2s_pcm->duration);
++	if (!(info->bt_acl)) {
++		info->bt_acl = cg2900_register_user(CG2900_BT_ACL,
++						     &cg2900_cb);
++		if (info->bt_acl) {
++			dev_info = kmalloc(sizeof(*dev_info), GFP_KERNEL);
++			if (dev_info) {
++				dev_info->hdev = hdev;
++				dev_info->hci_data_type = HCI_ACLDATA_PKT;
++			}
++			info->bt_acl->user_data = dev_info;
++		} else {
++			CG2900_ERR("Couldn't register CG2900_BT_ACL to CG2900");
++			err = -EACCES;
++			goto handle_error;
++		}
++	}
 +
-+		/* Store the new configuration */
-+		mutex_lock(&audio_info->management_mutex);
-+		memcpy(&(audio_info->i2s_pcm_config), &(config->conf.i2s_pcm),
-+		       sizeof(config->conf.i2s_pcm));
-+		audio_info->i2s_pcm_config_known = true;
-+		mutex_unlock(&audio_info->management_mutex);
-+		break;
++	if (info->reset_state == RESET_ACTIVATED)
++		SET_RESET_STATE(RESET_IDLE);
 +
-+	default:
-+		CG2900_ERR("Unknown port configuration %d", config->port);
++	/*
++	 * Call platform specific function that returns the chip dependent
++	 * bt enable(true) HCI command.
++	 * If NULL is returned, then no bt_enable command should be sent to the
++	 * chip.
++	 */
++	enable_cmd = cg2900_devices_get_bt_enable_cmd(&bt_enable_cmd, true);
++	if (!enable_cmd) {
++		/* The chip is enabled by default */
++		SET_ENABLE_STATE(ENABLE_BT_ENABLED);
++		return 0;
++	}
++
++	/* Set the HCI state before sending command to chip. */
++	SET_ENABLE_STATE(ENABLE_WAITING_BT_ENABLED_CC);
++
++	/* Send command to chip */
++	cg2900_write(info->bt_cmd, enable_cmd);
++
++	/*
++	 * Wait for callback to receive command complete and then wake us up
++	 * again.
++	 */
++	wait_event_interruptible_timeout(hci_wait_queue,
++				(info->enable_state == ENABLE_BT_ENABLED),
++				msecs_to_jiffies(RESP_TIMEOUT));
++	/* Check the current state to se that it worked. */
++	if (info->enable_state != ENABLE_BT_ENABLED) {
++		CG2900_ERR("Could not enable BT core (%d)", info->enable_state);
 +		err = -EACCES;
-+		goto error_handling_free_skb;
-+	};
-+
-+	cb_info_bt.user = audio_user;
-+	SET_RESP_STATE(audio_user->resp_state, WAITING);
-+
-+	/* Send packet to controller */
-+	err = cg2900_write(audio_info->dev_bt, skb);
-+	if (err) {
-+		CG2900_ERR("Error occurred while transmitting skb (%d)", err);
-+		goto error_handling_free_skb;
-+	}
-+
-+	err = receive_bt_cmd_complete(audio_user,
-+				      CG2900_BT_VS_SET_HARDWARE_CONFIG_LSB,
-+				      CG2900_BT_VS_SET_HARDWARE_CONFIG_MSB,
-+				      NULL, 0);
-+
-+	goto finished_unlock_mutex;
-+
-+error_handling_free_skb:
-+	kfree_skb(skb);
-+finished_unlock_mutex:
-+	SET_RESP_STATE(audio_user->resp_state, IDLE);
-+	mutex_unlock(&audio_info->bt_mutex);
-+	return err;
-+}
-+EXPORT_SYMBOL(cg2900_audio_set_dai_config);
-+
-+int cg2900_audio_get_dai_config(unsigned int session,
-+				struct cg2900_dai_config *config)
-+{
-+	int err = 0;
-+	struct audio_user *audio_user;
-+
-+	CG2900_INFO("cg2900_audio_get_dai_config");
-+
-+	if (audio_info->state != OPENED) {
-+		CG2900_ERR("Audio driver not open");
-+		return -EIO;
-+	}
-+
-+	if (!config) {
-+		CG2900_ERR("NULL supplied as config structure");
-+		return -EINVAL;
-+	}
-+
-+	audio_user = get_session_user(session);
-+	if (!audio_user)
-+		return -EINVAL;
-+
-+	/*
-+	 * Return DAI configuration based on the received port.
-+	 * If port has not been configured return error.
-+	 */
-+	switch (config->port) {
-+	case PORT_0_I2S:
-+		mutex_lock(&audio_info->management_mutex);
-+		if (audio_info->i2s_config_known)
-+			memcpy(&(config->conf.i2s),
-+			       &(audio_info->i2s_config),
-+			       sizeof(config->conf.i2s));
-+		else
-+			err = -EIO;
-+		mutex_unlock(&audio_info->management_mutex);
-+		break;
-+
-+	case PORT_1_I2S_PCM:
-+		mutex_lock(&audio_info->management_mutex);
-+		if (audio_info->i2s_pcm_config_known)
-+			memcpy(&(config->conf.i2s_pcm),
-+			       &(audio_info->i2s_pcm_config),
-+			       sizeof(config->conf.i2s_pcm));
-+		else
-+			err = -EIO;
-+		mutex_unlock(&audio_info->management_mutex);
-+		break;
-+
-+	default:
-+		CG2900_ERR("Unknown port configuration %d", config->port);
-+		err = -EIO;
-+		break;
-+	};
-+
-+	return err;
-+}
-+EXPORT_SYMBOL(cg2900_audio_get_dai_config);
-+
-+int cg2900_audio_config_endpoint(unsigned int session,
-+				 struct cg2900_endpoint_config *config)
-+{
-+	struct audio_user *audio_user;
-+
-+	CG2900_INFO("cg2900_audio_config_endpoint");
-+
-+	if (audio_info->state != OPENED) {
-+		CG2900_ERR("Audio driver not open");
-+		return -EIO;
-+	}
-+
-+	if (!config) {
-+		CG2900_ERR("NULL supplied as configuration structure");
-+		return -EINVAL;
-+	}
-+
-+	audio_user = get_session_user(session);
-+	if (!audio_user)
-+		return -EINVAL;
-+
-+	switch (config->endpoint_id) {
-+	case ENDPOINT_BT_SCO_INOUT:
-+	case ENDPOINT_BT_A2DP_SRC:
-+	case ENDPOINT_FM_RX:
-+	case ENDPOINT_FM_TX:
-+		add_endpoint(config, &(audio_info->endpoints));
-+		break;
-+
-+	case ENDPOINT_PORT_0_I2S:
-+	case ENDPOINT_PORT_1_I2S_PCM:
-+	case ENDPOINT_SLIMBUS_VOICE:
-+	case ENDPOINT_SLIMBUS_AUDIO:
-+	case ENDPOINT_BT_A2DP_SNK:
-+	case ENDPOINT_ANALOG_OUT:
-+	case ENDPOINT_DSP_AUDIO_IN:
-+	case ENDPOINT_DSP_AUDIO_OUT:
-+	case ENDPOINT_DSP_VOICE_IN:
-+	case ENDPOINT_DSP_VOICE_OUT:
-+	case ENDPOINT_DSP_TONE_IN:
-+	case ENDPOINT_BURST_BUFFER_IN:
-+	case ENDPOINT_BURST_BUFFER_OUT:
-+	case ENDPOINT_MUSIC_DECODER:
-+	case ENDPOINT_HCI_AUDIO_IN:
-+	default:
-+		CG2900_ERR("Unknown endpoint_id %d", config->endpoint_id);
-+		return -EACCES;
-+	}
-+
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(cg2900_audio_config_endpoint);
-+
-+int cg2900_audio_start_stream(unsigned int session,
-+			      enum cg2900_audio_endpoint_id ep_1,
-+			      enum cg2900_audio_endpoint_id ep_2,
-+			      unsigned int *stream_handle)
-+{
-+	int err;
-+	struct audio_user *audio_user;
-+
-+	CG2900_INFO("cg2900_audio_start_stream");
-+
-+	if (audio_info->state != OPENED) {
-+		CG2900_ERR("Audio driver not open");
-+		return -EIO;
-+	}
-+
-+	audio_user = get_session_user(session);
-+	if (!audio_user)
-+		return -EINVAL;
-+
-+	/* First handle the endpoints */
-+	switch (ep_1) {
-+	case ENDPOINT_PORT_0_I2S:
-+		switch (ep_2) {
-+		case ENDPOINT_FM_RX:
-+			err = conn_start_i2s_to_fm_rx(audio_user,
-+						      stream_handle);
-+			break;
-+
-+		case ENDPOINT_FM_TX:
-+			err = conn_start_i2s_to_fm_tx(audio_user,
-+						      stream_handle);
-+			break;
-+
-+		default:
-+			CG2900_ERR("Endpoint config not handled: ep1: %d, "
-+				   "ep2: %d", ep_1, ep_2);
-+			return -EINVAL;
-+		}
-+		break;
-+
-+	case ENDPOINT_PORT_1_I2S_PCM:
-+		switch (ep_2) {
-+		case ENDPOINT_BT_SCO_INOUT:
-+			err = conn_start_pcm_to_sco(audio_user, stream_handle);
-+			break;
-+
-+		default:
-+			CG2900_ERR("Endpoint config not handled: ep1: %d, "
-+				   "ep2: %d", ep_1, ep_2);
-+			return -EINVAL;
-+		}
-+		break;
-+
-+	case ENDPOINT_BT_SCO_INOUT:
-+		switch (ep_2) {
-+		case ENDPOINT_PORT_1_I2S_PCM:
-+			err = conn_start_pcm_to_sco(audio_user, stream_handle);
-+			break;
-+
-+		default:
-+			CG2900_ERR("Endpoint config not handled: ep1: %d, "
-+				   "ep2: %d", ep_1, ep_2);
-+			return -EINVAL;
-+		}
-+		break;
-+
-+	case ENDPOINT_FM_RX:
-+		switch (ep_2) {
-+		case ENDPOINT_PORT_0_I2S:
-+			err = conn_start_i2s_to_fm_rx(audio_user,
-+						      stream_handle);
-+			break;
-+
-+		default:
-+			CG2900_ERR("Endpoint config not handled: ep1: %d, "
-+				   "ep2: %d", ep_1, ep_2);
-+			return -EINVAL;
-+		}
-+		break;
-+
-+	case ENDPOINT_FM_TX:
-+		switch (ep_2) {
-+		case ENDPOINT_PORT_0_I2S:
-+			err = conn_start_i2s_to_fm_tx(audio_user,
-+						      stream_handle);
-+			break;
-+
-+		default:
-+			CG2900_ERR("Endpoint config not handled: ep1: %d, "
-+				   "ep2: %d", ep_1, ep_2);
-+			return -EINVAL;
-+		}
-+		break;
-+
-+	default:
-+		CG2900_ERR("Endpoint config not handled: ep1: %d, ep2: %d",
-+			   ep_1, ep_2);
-+		return -EINVAL;
-+	}
-+
-+	return err;
-+}
-+EXPORT_SYMBOL(cg2900_audio_start_stream);
-+
-+int cg2900_audio_stop_stream(unsigned int session, unsigned int stream_handle)
-+{
-+	int err = 0;
-+	struct audio_user *audio_user;
-+
-+	CG2900_INFO("cg2900_audio_stop_stream");
-+
-+	if (audio_info->state != OPENED) {
-+		CG2900_ERR("Audio driver not open");
-+		return -EIO;
-+	}
-+
-+	audio_user = get_session_user(session);
-+	if (!audio_user)
-+		return -EINVAL;
-+
-+	err = conn_stop_stream(audio_user, stream_handle);
-+
-+	return err;
-+}
-+EXPORT_SYMBOL(cg2900_audio_stop_stream);
-+
-+/*
-+ *	Character devices for userspace module test
-+ */
-+
-+/**
-+ * audio_dev_open() - Open char device.
-+ * @inode:	Device driver information.
-+ * @filp:	Pointer to the file struct.
-+ *
-+ * Returns:
-+ *   0 if there is no error.
-+ *   -ENOMEM if allocation failed.
-+ *   Errors from @cg2900_audio_open.
-+ */
-+static int audio_dev_open(struct inode *inode, struct file *filp)
-+{
-+	int err;
-+	struct char_dev_info *char_dev_info;
-+
-+	CG2900_INFO("CG2900 Audio: audio_dev_open");
-+
-+	/*
-+	 * Allocate the char dev info structure. It will be stored inside
-+	 * the file pointer and supplied when file_ops are called.
-+	 * It's free'd in audio_dev_release.
-+	 */
-+	char_dev_info = kzalloc(sizeof(*char_dev_info), GFP_KERNEL);
-+	if (!char_dev_info) {
-+		CG2900_ERR("Couldn't allocate char_dev_info");
-+		return -ENOMEM;
-+	}
-+	filp->private_data = char_dev_info;
-+
-+	mutex_init(&char_dev_info->management_mutex);
-+	mutex_init(&char_dev_info->rw_mutex);
-+
-+	mutex_lock(&char_dev_info->management_mutex);
-+	err = cg2900_audio_open(&char_dev_info->session);
-+	mutex_unlock(&char_dev_info->management_mutex);
-+	if (err) {
-+		CG2900_ERR("Failed to open CG2900 Audio driver (%d)", err);
-+		goto error_handling_free_mem;
++		SET_ENABLE_STATE(ENABLE_BT_DISABLED);
++		goto handle_error;
 +	}
 +
 +	return 0;
 +
-+error_handling_free_mem:
-+	kfree(char_dev_info);
-+	filp->private_data = NULL;
++handle_error:
++	remove_bt_users(info);
++	clear_bit(HCI_RUNNING, &(hdev->flags));
 +	return err;
++
 +}
 +
 +/**
-+ * audio_dev_release() - Release char device.
-+ * @inode:	Device driver information.
-+ * @filp:	Pointer to the file struct.
++ * flush_from_hci() - Flush HCI interface.
++ * @hdev:	HCI device being flushed.
 + *
 + * Returns:
 + *   0 if there is no error.
-+ *   -EBADF if NULL pointer was supplied in private data.
-+ *   Errors from @cg2900_audio_close.
++ *   -EINVAL if NULL pointer is supplied.
 + */
-+static int audio_dev_release(struct inode *inode, struct file *filp)
++static int flush_from_hci(struct hci_dev *hdev)
 +{
-+	int err = 0;
-+	struct char_dev_info *dev = (struct char_dev_info *)filp->private_data;
++	CG2900_INFO("flush_from_hci");
 +
-+	CG2900_INFO("CG2900 Audio: audio_dev_release");
-+
-+	if (!dev) {
-+		CG2900_ERR("No dev supplied in private data");
-+		return -EBADF;
++	if (!hdev) {
++		CG2900_ERR("NULL supplied for hdev");
++		return -EINVAL;
 +	}
 +
-+	mutex_lock(&dev->management_mutex);
-+	err = cg2900_audio_close(&dev->session);
-+	if (err)
++	return 0;
++}
++
++/**
++ * close_from_hci() - Close HCI interface.
++ * @hdev:	HCI device being closed.
++ *
++ * BlueZ callback function for closing HCI interface.
++ * It flushes the interface first.
++ *
++ * Returns:
++ *   0 if there is no error.
++ *   -EINVAL if NULL pointer is supplied.
++ *   -EOPNOTSUPP if supplied packet type is not supported.
++ *   -EBUSY if device is not opened.
++ */
++static int close_from_hci(struct hci_dev *hdev)
++{
++	struct hci_info *info = NULL;
++	struct sk_buff *enable_cmd;
++
++	CG2900_INFO("close_from_hci");
++
++	if (!hdev) {
++		CG2900_ERR("NULL supplied for hdev");
++		return -EINVAL;
++	}
++
++	info = (struct hci_info *)hdev->driver_data;
++	if (!info) {
++		CG2900_ERR("NULL supplied for driver_data");
++		return -EINVAL;
++	}
++
++	if (!test_and_clear_bit(HCI_RUNNING, &(hdev->flags))) {
++		CG2900_ERR("Device already closed!");
++		return -EBUSY;
++	}
++
++	flush_from_hci(hdev);
++
++	/* Do not do this if there is an reset ongoing */
++	if (hci_info->reset_state == RESET_ACTIVATED)
++		goto remove_users;
++
++	/*
++	 * Get the chip dependent BT Enable HCI command. The command parameter
++	 * shall be set to false to disable the BT core.
++	 * If NULL is returned, then no BT Enable command should be sent to the
++	 * chip.
++	 */
++	enable_cmd = cg2900_devices_get_bt_enable_cmd(&bt_enable_cmd, false);
++	if (!enable_cmd) {
 +		/*
-+		 * Just print the error. Still free the char_dev_info since we
-+		 * don't know the filp structure is valid after this call
++		 * The chip is enabled by default and we should not disable it.
 +		 */
-+		CG2900_ERR("Error when closing CG2900 audio driver (%d)", err);
++		SET_ENABLE_STATE(ENABLE_BT_ENABLED);
++		goto remove_users;
++	}
 +
-+	mutex_unlock(&dev->management_mutex);
++	/* Set the HCI state before sending command to chip */
++	SET_ENABLE_STATE(ENABLE_WAITING_BT_DISABLED_CC);
 +
-+	kfree(dev);
-+	filp->private_data = NULL;
++	/* Send command to chip */
++	cg2900_write(info->bt_cmd, enable_cmd);
++
++	/*
++	 * Wait for callback to receive command complete and then wake us up
++	 * again.
++	 */
++	wait_event_interruptible_timeout(hci_wait_queue,
++				(info->enable_state == ENABLE_BT_DISABLED),
++				msecs_to_jiffies(RESP_TIMEOUT));
++	/* Check the current state to se that it worked. */
++	if (info->enable_state != ENABLE_BT_DISABLED) {
++		CG2900_ERR("Could not disable BT core.");
++		SET_ENABLE_STATE(ENABLE_BT_ENABLED);
++	}
++
++remove_users:
++	/* Finally deregister all users and free allocated data */
++	remove_bt_users(info);
++	return 0;
++}
++
++/**
++ * send_from_hci() - Send packet to device.
++ * @skb:	sk buffer to be sent.
++ *
++ * BlueZ callback function for sending sk buffer.
++ *
++ * Returns:
++ *   0 if there is no error.
++ *   -EINVAL if NULL pointer is supplied.
++ *   -EOPNOTSUPP if supplied packet type is not supported.
++ *   Error codes from cg2900_write.
++ */
++static int send_from_hci(struct sk_buff *skb)
++{
++	struct hci_dev *hdev;
++	struct hci_info *info;
++	int err = 0;
++
++	if (!skb) {
++		CG2900_ERR("NULL supplied for skb");
++		return -EINVAL;
++	}
++
++	hdev = (struct hci_dev *)(skb->dev);
++	if (!hdev) {
++		CG2900_ERR("NULL supplied for hdev");
++		return -EINVAL;
++	}
++
++	info = (struct hci_info *)hdev->driver_data;
++	if (!info) {
++		CG2900_ERR("NULL supplied for info");
++		return -EINVAL;
++	}
++
++	/* Update BlueZ stats */
++	hdev->stat.byte_tx += skb->len;
++
++	CG2900_DBG_DATA("Data transmit %d bytes", skb->len);
++
++	switch (bt_cb(skb)->pkt_type) {
++	case HCI_COMMAND_PKT:
++		CG2900_DBG("Sending HCI_COMMAND_PKT");
++		err = cg2900_write(info->bt_cmd, skb);
++		hdev->stat.cmd_tx++;
++		break;
++	case HCI_ACLDATA_PKT:
++		CG2900_DBG("Sending HCI_ACLDATA_PKT");
++		err = cg2900_write(info->bt_acl, skb);
++		hdev->stat.acl_tx++;
++		break;
++	default:
++		CG2900_ERR("Trying to transmit unsupported packet type "
++			   "(0x%.2X)", bt_cb(skb)->pkt_type);
++		err = -EOPNOTSUPP;
++		break;
++	};
 +
 +	return err;
 +}
 +
 +/**
-+ * audio_dev_read() - Return information to the user from last @write call.
-+ * @filp:	Pointer to the file struct.
-+ * @buf:	Received buffer.
-+ * @count:	Size of buffer.
-+ * @f_pos:	Position in buffer.
-+ *
-+ * The audio_dev_read() function returns information from
-+ * the last @write call to same char device.
-+ * The data is in the following format:
-+ *   * OpCode of command for this data
-+ *   * Data content (Length of data is determined by the command OpCode, i.e.
-+ *     fixed for each command)
-+ *
-+ * Returns:
-+ *   Bytes successfully read (could be 0).
-+ *   -EBADF if NULL pointer was supplied in private data.
-+ *   -EFAULT if copy_to_user fails.
-+ *   -ENOMEM upon allocation failure.
++ * destruct_from_hci() - Destruct HCI interface.
++ * @hdev:	HCI device being destructed.
 + */
-+static ssize_t audio_dev_read(struct file *filp, char __user *buf,
-size_t count,
-+			      loff_t *f_pos)
++static void destruct_from_hci(struct hci_dev *hdev)
 +{
-+	struct char_dev_info *dev = (struct char_dev_info *)filp->private_data;
-+	unsigned int bytes_to_copy = 0;
-+	int err = 0;
++	CG2900_INFO("destruct_from_hci");
 +
-+	CG2900_INFO("CG2900 Audio: audio_dev_read");
++	if (!hci_info)
++		return;
 +
-+	if (!dev) {
-+		CG2900_ERR("No dev supplied in private data");
-+		return -EBADF;
++	/* When being reset, register a new hdev when hdev is deregistered */
++	if (hci_info->reset_state == RESET_ACTIVATED) {
++		if (hci_info->hdev)
++			hci_free_dev(hci_info->hdev);
++		SET_RESET_STATE(RESET_UNREGISTERED);
 +	}
-+	mutex_lock(&dev->rw_mutex);
-+
-+	if (dev->stored_data_len == 0) {
-+		/* No data to read */
-+		bytes_to_copy = 0;
-+		goto finished;
-+	}
-+
-+	bytes_to_copy = min(count, (unsigned int)(dev->stored_data_len));
-+	if (bytes_to_copy < dev->stored_data_len)
-+		CG2900_ERR("Not enough buffer to store all data. Throwing away "
-+			   "rest of data.");
-+
-+	err = copy_to_user(buf, dev->stored_data, bytes_to_copy);
-+	/*
-+	 * Throw away all data, even though not all was copied.
-+	 * This char device is primarily for testing purposes so we can keep
-+	 * such a limitation.
-+	 */
-+	kfree(dev->stored_data);
-+	dev->stored_data = NULL;
-+	dev->stored_data_len = 0;
-+
-+	if (err) {
-+		CG2900_ERR("copy_to_user error %d", err);
-+		err = -EFAULT;
-+		goto error_handling;
-+	}
-+
-+	goto finished;
-+
-+error_handling:
-+	mutex_unlock(&dev->rw_mutex);
-+	return (ssize_t)err;
-+finished:
-+	mutex_unlock(&dev->rw_mutex);
-+	return bytes_to_copy;
 +}
 +
 +/**
-+ * audio_dev_write() - Call CG2900 Audio API function.
-+ * @filp:	Pointer to the file struct.
-+ * @buf:	Write buffer.
-+ * @count:	Size of the buffer write.
-+ * @f_pos:	Position of buffer.
-+ *
-+ * audio_dev_write() function executes supplied data and
-+ * interprets it as if it was a function call to the CG2900 Audio API.
-+ * The data is according to:
-+ *   * OpCode (4 bytes)
-+ *   * Data according to OpCode (see API). No padding between parameters
-+ *
-+ * OpCodes are:
-+ *   * OP_CODE_SET_DAI_CONF 0x00000001
-+ *   * OP_CODE_GET_DAI_CONF 0x00000002
-+ *   * OP_CODE_CONFIGURE_ENDPOINT 0x00000003
-+ *   * OP_CODE_START_STREAM 0x00000004
-+ *   * OP_CODE_STOP_STREAM 0x00000005
-+ *
-+ * Returns:
-+ *   Bytes successfully written (could be 0). Equals input @count if
-successful.
-+ *   -EBADF if NULL pointer was supplied in private data.
-+ *   -EFAULT if copy_from_user fails.
-+ *   Error codes from all CG2900 Audio API functions.
++ * notify_from_hci() - Notification from the HCI interface.
++ * @hdev:	HCI device notifying.
++ * @evt:	Notification event.
 + */
-+static ssize_t audio_dev_write(struct file *filp, const char __user *buf,
-+			       size_t count, loff_t *f_pos)
++static void notify_from_hci(struct hci_dev *hdev, unsigned int evt)
 +{
-+	u8 *rec_data;
-+	struct char_dev_info *dev = (struct char_dev_info *)filp->private_data;
-+	int err = 0;
-+	int op_code = 0;
-+	u8 *curr_data;
-+	unsigned int stream_handle;
-+	struct cg2900_dai_config dai_config;
-+	struct cg2900_endpoint_config ep_config;
-+	enum cg2900_audio_endpoint_id ep_1;
-+	enum cg2900_audio_endpoint_id ep_2;
-+	int bytes_left = count;
-+
-+	CG2900_INFO("CG2900 Audio: audio_dev_write count %d", count);
-+
-+	if (!dev) {
-+		CG2900_ERR("No dev supplied in private data");
-+		return -EBADF;
-+	}
-+
-+	rec_data = kmalloc(count, GFP_KERNEL);
-+	if (!rec_data) {
-+		CG2900_ERR("kmalloc failed");
-+		return -ENOMEM;
-+	}
-+
-+	mutex_lock(&dev->rw_mutex);
-+
-+	err = copy_from_user(rec_data, buf, count);
-+	if (err) {
-+		CG2900_ERR("copy_from_user failed (%d)", err);
-+		err = -EFAULT;
-+		goto finished_mutex_unlock;
-+	}
-+
-+	/* Initialize temporary data pointer used to traverse the packet */
-+	curr_data = rec_data;
-+
-+	op_code = curr_data[0];
-+	CG2900_DBG("op_code %d", op_code);
-+	/* OpCode is int size to keep data int aligned */
-+	curr_data += sizeof(unsigned int);
-+	bytes_left -= sizeof(unsigned int);
-+
-+	switch (op_code) {
-+	case OP_CODE_SET_DAI_CONF:
-+		CG2900_DBG("OP_CODE_SET_DAI_CONF %d", sizeof(dai_config));
-+		if (bytes_left < sizeof(dai_config)) {
-+			CG2900_ERR("Not enough data supplied for "
-+				   "OP_CODE_SET_DAI_CONF");
-+			err = -EINVAL;
-+			goto finished_mutex_unlock;
-+		}
-+		memcpy(&dai_config, curr_data, sizeof(dai_config));
-+		CG2900_DBG("dai_config.port %d", dai_config.port);
-+		err = cg2900_audio_set_dai_config(dev->session, &dai_config);
-+		break;
-+
-+	case OP_CODE_GET_DAI_CONF:
-+		CG2900_DBG("OP_CODE_GET_DAI_CONF %d", sizeof(dai_config));
-+		if (bytes_left < sizeof(dai_config)) {
-+			CG2900_ERR("Not enough data supplied for "
-+				   "OP_CODE_GET_DAI_CONF");
-+			err = -EINVAL;
-+			goto finished_mutex_unlock;
-+		}
-+		/*
-+		 * Only need to copy the port really, but let's copy
-+		 * like this for simplicity. It's only test functionality
-+		 * after all.
-+		 */
-+		memcpy(&dai_config, curr_data, sizeof(dai_config));
-+		CG2900_DBG("dai_config.port %d", dai_config.port);
-+		err = cg2900_audio_get_dai_config(dev->session, &dai_config);
-+		if (!err) {
-+			/*
-+			 * Command succeeded. Store data so it can be returned
-+			 * when calling read.
-+			 */
-+			if (dev->stored_data) {
-+				CG2900_ERR("Data already allocated (%d bytes). "
-+					   "Throwing it away.",
-+					   dev->stored_data_len);
-+				kfree(dev->stored_data);
-+			}
-+			dev->stored_data_len = sizeof(op_code) +
-+					       sizeof(dai_config);
-+			dev->stored_data = kmalloc(dev->stored_data_len,
-+						   GFP_KERNEL);
-+			if (dev->stored_data) {
-+				memcpy(dev->stored_data, &op_code,
-+				       sizeof(op_code));
-+				memcpy(&(dev->stored_data[sizeof(op_code)]),
-+				       &dai_config, sizeof(dai_config));
-+			}
-+		}
-+		break;
-+
-+	case OP_CODE_CONFIGURE_ENDPOINT:
-+		CG2900_DBG("OP_CODE_CONFIGURE_ENDPOINT %d", sizeof(ep_config));
-+		if (bytes_left < sizeof(ep_config)) {
-+			CG2900_ERR("Not enough data supplied for "
-+				   "OP_CODE_CONFIGURE_ENDPOINT");
-+			err = -EINVAL;
-+			goto finished_mutex_unlock;
-+		}
-+		memcpy(&ep_config, curr_data, sizeof(ep_config));
-+		CG2900_DBG("ep_config.endpoint_id %d", ep_config.endpoint_id);
-+		err = cg2900_audio_config_endpoint(dev->session, &ep_config);
-+		break;
-+
-+	case OP_CODE_START_STREAM:
-+		CG2900_DBG("OP_CODE_START_STREAM %d",
-+			   (sizeof(ep_1) + sizeof(ep_2)));
-+		if (bytes_left < (sizeof(ep_1) + sizeof(ep_2))) {
-+			CG2900_ERR("Not enough data supplied for "
-+				   "OP_CODE_START_STREAM");
-+			err = -EINVAL;
-+			goto finished_mutex_unlock;
-+		}
-+		memcpy(&ep_1, curr_data, sizeof(ep_1));
-+		curr_data += sizeof(ep_1);
-+		memcpy(&ep_2, curr_data, sizeof(ep_2));
-+		CG2900_DBG("ep_1 %d ep_2 %d", ep_1,
-+			   ep_2);
-+
-+		err = cg2900_audio_start_stream(dev->session,
-+			ep_1, ep_2, &stream_handle);
-+		if (!err) {
-+			/*
-+			 * Command succeeded. Store data so it can be returned
-+			 * when calling read.
-+			 */
-+			if (dev->stored_data) {
-+				CG2900_ERR("Data already allocated (%d bytes). "
-+					   "Throwing it away.",
-+					   dev->stored_data_len);
-+				kfree(dev->stored_data);
-+			}
-+			dev->stored_data_len = sizeof(op_code) +
-+					       sizeof(stream_handle);
-+			dev->stored_data = kmalloc(dev->stored_data_len,
-+						   GFP_KERNEL);
-+			if (dev->stored_data) {
-+				memcpy(dev->stored_data, &op_code,
-+				       sizeof(op_code));
-+				memcpy(&(dev->stored_data[sizeof(op_code)]),
-+				       &stream_handle, sizeof(stream_handle));
-+			}
-+			CG2900_DBG("stream_handle %d", stream_handle);
-+		}
-+		break;
-+
-+	case OP_CODE_STOP_STREAM:
-+		if (bytes_left < sizeof(stream_handle)) {
-+			CG2900_ERR("Not enough data supplied for "
-+				   "OP_CODE_STOP_STREAM");
-+			err = -EINVAL;
-+			goto finished_mutex_unlock;
-+		}
-+		CG2900_DBG("OP_CODE_STOP_STREAM %d", sizeof(stream_handle));
-+		memcpy(&stream_handle, curr_data, sizeof(stream_handle));
-+		CG2900_DBG("stream_handle %d", stream_handle);
-+		err = cg2900_audio_stop_stream(dev->session, stream_handle);
-+		break;
-+
-+	default:
-+		CG2900_ERR("Received bad op_code %d", op_code);
-+		break;
-+	};
-+
-+finished_mutex_unlock:
-+	kfree(rec_data);
-+	mutex_unlock(&dev->rw_mutex);
-+
-+	if (err)
-+		return err;
-+	else
-+		return count;
++	CG2900_INFO("notify_from_hci - evt = 0x%.2X", evt);
 +}
 +
 +/**
-+ * audio_dev_poll() - Handle POLL call to the interface.
-+ * @filp:	Pointer to the file struct.
-+ * @wait:	Poll table supplied to caller.
-+ *
-+ * This function is used by the User Space application to see if the device is
-+ * still open and if there is any data available for reading.
++ * ioctl_from_hci() - Handle IOCTL call to the HCI interface.
++ * @hdev: HCI device.
++ * @cmd:  IOCTL command.
++ * @arg:  IOCTL argument.
 + *
 + * Returns:
-+ *   Mask of current set POLL values
++ *   -EINVAL if NULL is supplied for hdev.
++ *   -EPERM otherwise since current driver supports no IOCTL.
 + */
-+static unsigned int audio_dev_poll(struct file *filp, poll_table *wait)
++static int ioctl_from_hci(struct hci_dev *hdev, unsigned int cmd,
++			  unsigned long arg)
 +{
-+	struct char_dev_info *dev = (struct char_dev_info *)filp->private_data;
-+	unsigned int mask = 0;
++	CG2900_INFO("ioctl_from_hci - cmd 0x%X", cmd);
++	CG2900_DBG("DIR: %d, TYPE: %d, NR: %d, SIZE: %d",
++		   _IOC_DIR(cmd), _IOC_TYPE(cmd), _IOC_NR(cmd),
++		   _IOC_SIZE(cmd));
 +
-+	if (!dev) {
-+		CG2900_ERR("No dev supplied in private data");
-+		return POLLERR | POLLRDHUP;
++	if (!hdev) {
++		CG2900_ERR("NULL supplied for hdev");
++		return -EINVAL;;
 +	}
 +
-+	if (RESET == audio_info->state)
-+		mask |= POLLERR | POLLRDHUP | POLLPRI;
-+	else
-+		/* Unless RESET we can transmit */
-+		mask |= POLLOUT;
-+
-+	if (dev->stored_data)
-+		mask |= POLLIN | POLLRDNORM;
-+
-+	return mask;
++	return -EPERM;
 +}
 +
-+static const struct file_operations char_dev_fops = {
-+	.open = audio_dev_open,
-+	.release = audio_dev_release,
-+	.read = audio_dev_read,
-+	.write = audio_dev_write,
-+	.poll = audio_dev_poll
-+};
-+
-+/*
-+ *	Module related methods
-+ */
-+
 +/**
-+ * cg2900_audio_init() - Initialize module.
++ * register_to_bluez() - Initialize module.
 + *
-+ * Initialize the module and register misc device.
++ * Alloc, init, and register HCI device to BlueZ.
 + *
 + * Returns:
 + *   0 if there is no error.
 + *   -ENOMEM if allocation fails.
-+ *   -EEXIST if device has already been started.
-+ *   Error codes from misc_register.
++ *   Error codes from hci_register_dev.
 + */
-+static int __init cg2900_audio_init(void)
++static int register_to_bluez(void)
 +{
 +	int err;
 +
-+	CG2900_INFO("cg2900_audio_init");
-+
-+	if (audio_info) {
-+		CG2900_ERR("ST-Ericsson CG2900 Audio driver already initiated");
-+		return -EEXIST;
-+	}
-+
-+	/* Initialize private data. */
-+	audio_info = kzalloc(sizeof(*audio_info), GFP_KERNEL);
-+	if (!audio_info) {
-+		CG2900_ERR("Could not alloc audio_info struct.");
++	hci_info->hdev = hci_alloc_dev();
++	if (!hci_info->hdev) {
++		CG2900_ERR("Could not allocate mem for HCI driver");
 +		return -ENOMEM;
 +	}
 +
-+	/* Initiate the mutexes */
-+	mutex_init(&(audio_info->management_mutex));
-+	mutex_init(&(audio_info->bt_mutex));
-+	mutex_init(&(audio_info->fm_mutex));
-+	mutex_init(&(audio_info->endpoints.management_mutex));
++	hci_info->hdev->bus = HCI_CG2900;
++	hci_info->hdev->driver_data = hci_info;
++	hci_info->hdev->owner = THIS_MODULE;
++	hci_info->hdev->open = open_from_hci;
++	hci_info->hdev->close = close_from_hci;
++	hci_info->hdev->flush = flush_from_hci;
++	hci_info->hdev->send = send_from_hci;
++	hci_info->hdev->destruct = destruct_from_hci;
++	hci_info->hdev->notify = notify_from_hci;
++	hci_info->hdev->ioctl = ioctl_from_hci;
 +
-+	/* Initiate the SKB queues */
-+	skb_queue_head_init(&(audio_info->bt_queue));
-+	skb_queue_head_init(&(audio_info->fm_queue));
-+
-+	/* Initiate the endpoint list */
-+	INIT_LIST_HEAD(&(audio_info->endpoints.ep_list));
-+
-+	/* Prepare and register MISC device */
-+	audio_info->dev.minor = MISC_DYNAMIC_MINOR;
-+	audio_info->dev.name = DEVICE_NAME;
-+	audio_info->dev.fops = &char_dev_fops;
-+	audio_info->dev.parent = NULL;
-+
-+	err = misc_register(&(audio_info->dev));
++	err = hci_register_dev(hci_info->hdev);
 +	if (err) {
-+		CG2900_ERR("Error %d registering misc dev!", err);
-+		goto error_handling;
++		CG2900_ERR("Can not register HCI device (%d)", err);
++		hci_free_dev(hci_info->hdev);
 +	}
 +
-+	return 0;
++	SET_ENABLE_STATE(ENABLE_IDLE);
++	SET_RESET_STATE(RESET_IDLE);
 +
-+error_handling:
-+	mutex_destroy(&audio_info->management_mutex);
-+	mutex_destroy(&audio_info->bt_mutex);
-+	mutex_destroy(&audio_info->fm_mutex);
-+	mutex_destroy(&audio_info->endpoints.management_mutex);
-+	kfree(audio_info);
-+	audio_info = NULL;
 +	return err;
 +}
 +
 +/**
-+ * cg2900_audio_exit() - Remove module.
++ * hci_init() - Initialize module.
 + *
-+ * Remove misc device and free resources.
++ * Allocate and initialize private data. Register to BlueZ.
++ *
++ * Returns:
++ *   0 if there is no error.
++ *   -ENOMEM if allocation fails.
++ *   Error codes from register_to_bluez.
 + */
-+static void __exit cg2900_audio_exit(void)
++static int __init hci_init(void)
 +{
 +	int err;
++	CG2900_INFO("hci_init");
 +
-+	CG2900_INFO("cg2900_audio_exit");
++	/* Initialize private data. */
++	hci_info = kzalloc(sizeof(*hci_info), GFP_KERNEL);
++	if (!hci_info) {
++		CG2900_ERR("Could not alloc hci_info struct.");
++		return -ENOMEM;
++	}
 +
-+	if (!audio_info)
-+		return;
++	/* Init and register hdev */
++	err = register_to_bluez();
++	if (err) {
++		CG2900_ERR("HCI Device registration error (%d)", err);
++		kfree(hci_info);
++		hci_info = NULL;
++		return err;
++	}
 +
-+	err = misc_deregister(&audio_info->dev);
-+	if (err)
-+		CG2900_ERR("Error deregistering misc dev (%d)!", err);
-+
-+	mutex_destroy(&audio_info->management_mutex);
-+	mutex_destroy(&audio_info->bt_mutex);
-+	mutex_destroy(&audio_info->fm_mutex);
-+
-+	flush_endpoint_list(&(audio_info->endpoints));
-+
-+	skb_queue_purge(&(audio_info->bt_queue));
-+	skb_queue_purge(&(audio_info->fm_queue));
-+
-+	mutex_destroy(&audio_info->endpoints.management_mutex);
-+
-+	kfree(audio_info);
-+	audio_info = NULL;
++	return 0;
 +}
 +
-+module_init(cg2900_audio_init);
-+module_exit(cg2900_audio_exit);
++/**
++ * hci_exit() - Remove module.
++ *
++ * Remove HCI device from CG2900 driver.
++ */
++static void __exit hci_exit(void)
++{
++	int err = 0;
++
++	CG2900_INFO("hci_exit");
++
++	if (!hci_info)
++		return;
++
++	if (!hci_info->hdev)
++		goto finished;
++
++	err = hci_unregister_dev(hci_info->hdev);
++	if (err)
++		CG2900_ERR("Can not unregister HCI device (%d)", err);
++	hci_free_dev(hci_info->hdev);
++
++finished:
++	kfree(hci_info);
++	hci_info = NULL;
++}
++
++module_init(hci_init);
++module_exit(hci_exit);
 +
 +MODULE_AUTHOR("Par-Gunnar Hjalmdahl ST-Ericsson");
-+MODULE_AUTHOR("Kjell Andersson ST-Ericsson");
++MODULE_AUTHOR("Henrik Possung ST-Ericsson");
++MODULE_AUTHOR("Josef Kindberg ST-Ericsson");
 +MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("Linux Bluetooth Audio ST-Ericsson controller");
-diff --git a/include/linux/mfd/cg2900_audio.h b/include/linux/mfd/cg2900_audio.h
-new file mode 100644
-index 0000000..a423285
---- /dev/null
-+++ b/include/linux/mfd/cg2900_audio.h
-@@ -0,0 +1,583 @@
-+/*
-+ * include/linux/mfd/cg2900_audio.h
-+ *
-+ * Copyright (C) ST-Ericsson SA 2010
-+ * Authors:
-+ * Par-Gunnar Hjalmdahl (par-gunnar.p.hjalmdahl@stericsson.com) for
-ST-Ericsson.
-+ * Kjell Andersson (kjell.k.andersson@stericsson.com) for ST-Ericsson.
-+ * License terms:  GNU General Public License (GPL), version 2
-+ *
-+ * Linux Bluetooth Audio Driver for ST-Ericsson controller.
-+ */
-+
-+#ifndef _CG2900_AUDIO_H_
-+#define _CG2900_AUDIO_H_
-+
-+#include <linux/types.h>
-+
-+/*
-+ * Digital Audio Interface configuration types
-+ */
-+
-+/** CG2900_A2DP_MAX_AVDTP_HDR_LEN - Max length of a AVDTP header.
-+ * Max length of a AVDTP header for an A2DP packet.
-+ */
-+#define CG2900_A2DP_MAX_AVDTP_HDR_LEN	25
-+
-+/**
-+ * enum cg2900_dai_dir - Contains the DAI port directions alternatives.
-+ * @DAI_DIR_B_RX_A_TX: Port B as Rx and port A as Tx.
-+ * @DAI_DIR_B_TX_A_RX: Port B as Tx and port A as Rx.
-+ */
-+enum cg2900_dai_dir {
-+	DAI_DIR_B_RX_A_TX = 0x00,
-+	DAI_DIR_B_TX_A_RX = 0x01
-+};
-+
-+/**
-+ * enum cg2900_dai_mode - DAI mode alternatives.
-+ * @DAI_MODE_SLAVE: Slave.
-+ * @DAI_MODE_MASTER: Master.
-+ */
-+enum cg2900_dai_mode {
-+	DAI_MODE_SLAVE = 0x00,
-+	DAI_MODE_MASTER = 0x01
-+};
-+
-+/**
-+ * enum cg2900_dai_stream_ratio - Voice stream ratio alternatives.
-+ * @STREAM_RATIO_FM16_VOICE16:	FM 16kHz, Voice 16kHz.
-+ * @STREAM_RATIO_FM16_VOICE8:	FM 16kHz, Voice 8kHz.
-+ * @STREAM_RATIO_FM48_VOICE16:	FM 48kHz, Voice 16Khz.
-+ * @STREAM_RATIO_FM48_VOICE8:	FM 48kHz, Voice 8kHz.
-+ *
-+ * Contains the alternatives for the voice stream ratio between the
-Audio stream
-+ * sample rate and the Voice stream sample rate.
-+ */
-+enum cg2900_dai_stream_ratio {
-+	STREAM_RATIO_FM16_VOICE16 = 0x01,
-+	STREAM_RATIO_FM16_VOICE8 = 0x02,
-+	STREAM_RATIO_FM48_VOICE16 = 0x03,
-+	STREAM_RATIO_FM48_VOICE8 = 0x06
-+};
-+
-+/**
-+ * enum cg2900_dai_fs_duration - Frame sync duration alternatives.
-+ * @SYNC_DURATION_8: 8 frames sync duration.
-+ * @SYNC_DURATION_16: 16 frames sync duration.
-+ * @SYNC_DURATION_24: 24 frames sync duration.
-+ * @SYNC_DURATION_32: 32 frames sync duration.
-+ * @SYNC_DURATION_48: 48 frames sync duration.
-+ * @SYNC_DURATION_50: 50 frames sync duration.
-+ * @SYNC_DURATION_64: 64 frames sync duration.
-+ * @SYNC_DURATION_75: 75 frames sync duration.
-+ * @SYNC_DURATION_96: 96 frames sync duration.
-+ * @SYNC_DURATION_125: 125 frames sync duration.
-+ * @SYNC_DURATION_128: 128 frames sync duration.
-+ * @SYNC_DURATION_150: 150 frames sync duration.
-+ * @SYNC_DURATION_192: 192 frames sync duration.
-+ * @SYNC_DURATION_250: 250 frames sync duration.
-+ * @SYNC_DURATION_256: 256 frames sync duration.
-+ * @SYNC_DURATION_300: 300 frames sync duration.
-+ * @SYNC_DURATION_384: 384 frames sync duration.
-+ * @SYNC_DURATION_500: 500 frames sync duration.
-+ * @SYNC_DURATION_512: 512 frames sync duration.
-+ * @SYNC_DURATION_600: 600 frames sync duration.
-+ * @SYNC_DURATION_768: 768 frames sync duration.
-+ *
-+ * This parameter sets the PCM frame sync duration. It is calculated as the
-+ * ratio between the bit clock and the frame rate. For example, if the bit
-+ * clock is 512 kHz and the stream sample rate is 8 kHz, the PCM frame sync
-+ * duration is 512 / 8 = 64.
-+ */
-+enum cg2900_dai_fs_duration {
-+	SYNC_DURATION_8 = 8,
-+	SYNC_DURATION_16 = 16,
-+	SYNC_DURATION_24 = 24,
-+	SYNC_DURATION_32 = 32,
-+	SYNC_DURATION_48 = 48,
-+	SYNC_DURATION_50 = 50,
-+	SYNC_DURATION_64 = 64,
-+	SYNC_DURATION_75 = 75,
-+	SYNC_DURATION_96 = 96,
-+	SYNC_DURATION_125 = 125,
-+	SYNC_DURATION_128 = 128,
-+	SYNC_DURATION_150 = 150,
-+	SYNC_DURATION_192 = 192,
-+	SYNC_DURATION_250 = 250,
-+	SYNC_DURATION_256 = 256,
-+	SYNC_DURATION_300 = 300,
-+	SYNC_DURATION_384 = 384,
-+	SYNC_DURATION_500 = 500,
-+	SYNC_DURATION_512 = 512,
-+	SYNC_DURATION_600 = 600,
-+	SYNC_DURATION_768 = 768
-+};
-+
-+/**
-+ * enum cg2900_dai_bit_clk - Bit Clock alternatives.
-+ * @BIT_CLK_128:	128 Kbits clock.
-+ * @BIT_CLK_256:	256 Kbits clock.
-+ * @BIT_CLK_512:	512 Kbits clock.
-+ * @BIT_CLK_768:	768 Kbits clock.
-+ * @BIT_CLK_1024:	1024 Kbits clock.
-+ * @BIT_CLK_1411_76:	1411.76 Kbits clock.
-+ * @BIT_CLK_1536:	1536 Kbits clock.
-+ * @BIT_CLK_2000:	2000 Kbits clock.
-+ * @BIT_CLK_2048:	2048 Kbits clock.
-+ * @BIT_CLK_2400:	2400 Kbits clock.
-+ * @BIT_CLK_2823_52:	2823.52 Kbits clock.
-+ * @BIT_CLK_3072:	3072 Kbits clock.
-+ *
-+ *  This parameter sets the bit clock speed. This is the clocking of the actual
-+ *  data. A usual parameter for eSCO voice is 512 kHz.
-+ */
-+enum cg2900_dai_bit_clk {
-+	BIT_CLK_128 = 0x00,
-+	BIT_CLK_256 = 0x01,
-+	BIT_CLK_512 = 0x02,
-+	BIT_CLK_768 = 0x03,
-+	BIT_CLK_1024 = 0x04,
-+	BIT_CLK_1411_76 = 0x05,
-+	BIT_CLK_1536 = 0x06,
-+	BIT_CLK_2000 = 0x07,
-+	BIT_CLK_2048 = 0x08,
-+	BIT_CLK_2400 = 0x09,
-+	BIT_CLK_2823_52 = 0x0A,
-+	BIT_CLK_3072 = 0x0B
-+};
-+
-+/**
-+ * enum cg2900_dai_sample_rate - Sample rates alternatives.
-+ * @SAMPLE_RATE_8:	8 kHz sample rate.
-+ * @SAMPLE_RATE_16:	16 kHz sample rate.
-+ * @SAMPLE_RATE_44_1:	44.1 kHz sample rate.
-+ * @SAMPLE_RATE_48:	48 kHz sample rate.
-+ */
-+enum cg2900_dai_sample_rate {
-+	SAMPLE_RATE_8 = 0x00,
-+	SAMPLE_RATE_16 = 0x01,
-+	SAMPLE_RATE_44_1 = 0x02,
-+	SAMPLE_RATE_48 = 0x04
-+};
-+
-+/**
-+ * enum cg2900_dai_port_protocol - Port protocol alternatives.
-+ * @PORT_PROTOCOL_PCM: Protocol PCM.
-+ * @PORT_PROTOCOL_I2S: Protocol I2S.
-+ */
-+enum cg2900_dai_port_protocol {
-+	PORT_PROTOCOL_PCM = 0x00,
-+	PORT_PROTOCOL_I2S = 0x01
-+};
-+
-+/**
-+ * enum cg2900_dai_channel_sel - The channel selection alternatives.
-+ * @CHANNEL_SELECTION_RIGHT: Right channel used.
-+ * @CHANNEL_SELECTION_LEFT: Left channel used.
-+ * @CHANNEL_SELECTION_BOTH: Both channels used.
-+ */
-+enum cg2900_dai_channel_sel {
-+	CHANNEL_SELECTION_RIGHT = 0x00,
-+	CHANNEL_SELECTION_LEFT = 0x01,
-+	CHANNEL_SELECTION_BOTH = 0x02
-+};
-+
-+/**
-+ * struct cg2900_dai_conf_i2s_pcm - Port configuration structure.
-+ * @mode:		Operational mode of the port configured.
-+ * @i2s_channel_sel:	I2S channels used. Only valid if used in I2S mode.
-+ * @slot_0_used:	True if SCO slot 0 is used.
-+ * @slot_1_used:	True if SCO slot 1 is used.
-+ * @slot_2_used:	True if SCO slot 2 is used.
-+ * @slot_3_used:	True if SCO slot 3 is used.
-+ * @slot_0_dir:		Direction of slot 0.
-+ * @slot_1_dir:		Direction of slot 1.
-+ * @slot_2_dir:		Direction of slot 2.
-+ * @slot_3_dir:		Direction of slot 3.
-+ * @slot_0_start:	Slot 0 start (relative to the PCM frame sync).
-+ * @slot_1_start:	Slot 1 start (relative to the PCM frame sync)
-+ * @slot_2_start:	Slot 2 start (relative to the PCM frame sync)
-+ * @slot_3_start:	Slot 3 start (relative to the PCM frame sync)
-+ * @ratio:		Voice stream ratio between the Audio stream sample rate
-+ *			and the Voice stream sample rate.
-+ * @protocol:		Protocol used on port.
-+ * @duration:		Frame sync duration.
-+ * @clk:		Bit clock.
-+ * @sample_rate:	Sample rate.
-+ */
-+struct cg2900_dai_conf_i2s_pcm {
-+	enum cg2900_dai_mode mode;
-+	enum cg2900_dai_channel_sel i2s_channel_sel;
-+	bool slot_0_used;
-+	bool slot_1_used;
-+	bool slot_2_used;
-+	bool slot_3_used;
-+	enum cg2900_dai_dir slot_0_dir;
-+	enum cg2900_dai_dir slot_1_dir;
-+	enum cg2900_dai_dir slot_2_dir;
-+	enum cg2900_dai_dir slot_3_dir;
-+	__u8 slot_0_start;
-+	__u8 slot_1_start;
-+	__u8 slot_2_start;
-+	__u8 slot_3_start;
-+	enum cg2900_dai_stream_ratio ratio;
-+	enum cg2900_dai_port_protocol protocol;
-+	enum cg2900_dai_fs_duration duration;
-+	enum cg2900_dai_bit_clk clk;
-+	enum cg2900_dai_sample_rate sample_rate;
-+};
-+
-+/**
-+ * enum cg2900_dai_half_period - Half period duration alternatives.
-+ * @HALF_PER_DUR_8:	8 Bits.
-+ * @HALF_PER_DUR_16:	16 Bits.
-+ * @HALF_PER_DUR_24:	24 Bits.
-+ * @HALF_PER_DUR_25:	25 Bits.
-+ * @HALF_PER_DUR_32:	32 Bits.
-+ * @HALF_PER_DUR_48:	48 Bits.
-+ * @HALF_PER_DUR_64:	64 Bits.
-+ * @HALF_PER_DUR_75:	75 Bits.
-+ * @HALF_PER_DUR_96:	96 Bits.
-+ * @HALF_PER_DUR_128:	128 Bits.
-+ * @HALF_PER_DUR_150:	150 Bits.
-+ * @HALF_PER_DUR_192:	192 Bits.
-+ *
-+ * This parameter sets the number of bits contained in each I2S half period,
-+ * i.e. each channel slot. A usual value is 16 bits.
-+ */
-+enum cg2900_dai_half_period {
-+	HALF_PER_DUR_8 = 0x00,
-+	HALF_PER_DUR_16 = 0x01,
-+	HALF_PER_DUR_24 = 0x02,
-+	HALF_PER_DUR_25 = 0x03,
-+	HALF_PER_DUR_32 = 0x04,
-+	HALF_PER_DUR_48 = 0x05,
-+	HALF_PER_DUR_64 = 0x06,
-+	HALF_PER_DUR_75 = 0x07,
-+	HALF_PER_DUR_96 = 0x08,
-+	HALF_PER_DUR_128 = 0x09,
-+	HALF_PER_DUR_150 = 0x0A,
-+	HALF_PER_DUR_192 = 0x0B
-+};
-+
-+/**
-+ * enum cg2900_dai_word_width - Word width alternatives.
-+ * @WORD_WIDTH_16: 16 bits words.
-+ * @WORD_WIDTH_32: 32 bits words.
-+ */
-+enum cg2900_dai_word_width {
-+	WORD_WIDTH_16 = 0x00,
-+	WORD_WIDTH_32 = 0x01
-+};
-+
-+/**
-+ * struct cg2900_dai_conf_i2s - Port configuration struct for I2S.
-+ * @mode:		Operational mode of the port.
-+ * @half_period:	Half period duration.
-+ * @channel_sel:	Channel selection.
-+ * @sample_rate:	Sample rate.
-+ * @word_width:		Word width.
-+ */
-+struct cg2900_dai_conf_i2s {
-+	enum cg2900_dai_mode			mode;
-+	enum cg2900_dai_half_period		half_period;
-+	enum cg2900_dai_channel_sel		channel_sel;
-+	enum cg2900_dai_sample_rate		sample_rate;
-+	enum cg2900_dai_word_width		word_width;
-+};
-+
-+/**
-+ * union cg2900_dai_port_conf - DAI port configuration union.
-+ * @i2s: The configuration struct for a port supporting only I2S.
-+ * @i2s_pcm: The configuration struct for a port supporting both PCM and I2S.
-+ */
-+union cg2900_dai_port_conf {
-+	struct cg2900_dai_conf_i2s i2s;
-+	struct cg2900_dai_conf_i2s_pcm i2s_pcm;
-+};
-+
-+/**
-+ * enum cg2900_dai_ext_port_id - DAI external port id alternatives.
-+ * @PORT_0_I2S: Port id is 0 and it supports only I2S.
-+ * @PORT_1_I2S_PCM: Port id is 1 and it supports both I2S and PCM.
-+ */
-+enum cg2900_dai_ext_port_id {
-+	PORT_0_I2S,
-+	PORT_1_I2S_PCM
-+};
-+
-+/**
-+ * enum cg2900_audio_endpoint_id - Audio endpoint id alternatives.
-+ * @ENDPOINT_PORT_0_I2S:	Internal audio endpoint of the external I2S
-+ *				interface.
-+ * @ENDPOINT_PORT_1_I2S_PCM:	Internal audio endpoint of the external I2S/PCM
-+ *				interface.
-+ * @ENDPOINT_SLIMBUS_VOICE:	Internal audio endpoint of the external Slimbus
-+ *				voice interface. (Currently not supported)
-+ * @ENDPOINT_SLIMBUS_AUDIO:	Internal audio endpoint of the external Slimbus
-+ *				audio interface. (Currently not supported)
-+ * @ENDPOINT_BT_SCO_INOUT:	Bluetooth SCO bidirectional.
-+ * @ENDPOINT_BT_A2DP_SRC:	Bluetooth A2DP source.
-+ * @ENDPOINT_BT_A2DP_SNK:	Bluetooth A2DP sink.
-+ * @ENDPOINT_FM_RX:		FM receive.
-+ * @ENDPOINT_FM_TX:		FM transmit.
-+ * @ENDPOINT_ANALOG_OUT:	Analog out.
-+ * @ENDPOINT_DSP_AUDIO_IN:	DSP audio in.
-+ * @ENDPOINT_DSP_AUDIO_OUT:	DSP audio out.
-+ * @ENDPOINT_DSP_VOICE_IN:	DSP voice in.
-+ * @ENDPOINT_DSP_VOICE_OUT:	DSP voice out.
-+ * @ENDPOINT_DSP_TONE_IN:	DSP tone in.
-+ * @ENDPOINT_BURST_BUFFER_IN:	Burst buffer in.
-+ * @ENDPOINT_BURST_BUFFER_OUT:	Burst buffer out.
-+ * @ENDPOINT_MUSIC_DECODER:	Music decoder.
-+ * @ENDPOINT_HCI_AUDIO_IN:	HCI audio in.
-+ */
-+enum cg2900_audio_endpoint_id {
-+	ENDPOINT_PORT_0_I2S,
-+	ENDPOINT_PORT_1_I2S_PCM,
-+	ENDPOINT_SLIMBUS_VOICE,
-+	ENDPOINT_SLIMBUS_AUDIO,
-+	ENDPOINT_BT_SCO_INOUT,
-+	ENDPOINT_BT_A2DP_SRC,
-+	ENDPOINT_BT_A2DP_SNK,
-+	ENDPOINT_FM_RX,
-+	ENDPOINT_FM_TX,
-+	ENDPOINT_ANALOG_OUT,
-+	ENDPOINT_DSP_AUDIO_IN,
-+	ENDPOINT_DSP_AUDIO_OUT,
-+	ENDPOINT_DSP_VOICE_IN,
-+	ENDPOINT_DSP_VOICE_OUT,
-+	ENDPOINT_DSP_TONE_IN,
-+	ENDPOINT_BURST_BUFFER_IN,
-+	ENDPOINT_BURST_BUFFER_OUT,
-+	ENDPOINT_MUSIC_DECODER,
-+	ENDPOINT_HCI_AUDIO_IN
-+};
-+
-+/**
-+ * struct cg2900_dai_config - Configuration struct for Digital Audio Interface.
-+ * @port: The port id to configure. Acts as a discriminator for @conf parameter
-+ *	  which is a union.
-+ * @conf: The configuration union that contains the parameters for the port.
-+ */
-+struct cg2900_dai_config {
-+	enum cg2900_dai_ext_port_id	port;
-+	union cg2900_dai_port_conf	conf;
-+};
-+
-+/*
-+ * Endpoint configuration types
-+ */
-+
-+/**
-+ * enum cg2900_endpoint_sample_rate - Audio endpoint configuration
-sample rate alternatives.
-+ * @ENDPOINT_SAMPLE_RATE_8_KHZ: 8 kHz sample rate.
-+ * @ENDPOINT_SAMPLE_RATE_16_KHZ: 16 kHz sample rate.
-+ * @ENDPOINT_SAMPLE_RATE_44_1_KHZ: 44.1 kHz sample rate.
-+ * @ENDPOINT_SAMPLE_RATE_48_KHZ: 48 kHz sample rate.
-+ */
-+enum cg2900_endpoint_sample_rate {
-+	ENDPOINT_SAMPLE_RATE_8_KHZ = 0x01,
-+	ENDPOINT_SAMPLE_RATE_16_KHZ = 0x02,
-+	ENDPOINT_SAMPLE_RATE_44_1_KHZ = 0x04,
-+	ENDPOINT_SAMPLE_RATE_48_KHZ = 0x05
-+};
-+
-+
-+/**
-+ * struct cg2900_endpoint_config_a2dp_src - A2DP source audio
-endpoint configurations.
-+ * @sample_rate: Sample rate.
-+ * @channel_count: Number of channels.
-+ */
-+struct cg2900_endpoint_config_a2dp_src {
-+	enum cg2900_endpoint_sample_rate	sample_rate;
-+	unsigned int				channel_count;
-+};
-+
-+/**
-+ * struct cg2900_endpoint_config_fm - Configuration parameters for an
-FM endpoint.
-+ * @sample_rate: The sample rate alternatives for the FM audio endpoints.
-+ */
-+struct cg2900_endpoint_config_fm {
-+	enum cg2900_endpoint_sample_rate	sample_rate;
-+};
-+
-+
-+/**
-+ * struct cg2900_endpoint_config_sco_in_out - SCO audio endpoint
-configuration structure.
-+ * @sample_rate: Sample rate, valid values are
-+ *		 * ENDPOINT_SAMPLE_RATE_8_KHZ
-+ *		 * ENDPOINT_SAMPLE_RATE_16_KHZ.
-+ */
-+struct cg2900_endpoint_config_sco_in_out {
-+	enum cg2900_endpoint_sample_rate	sample_rate;
-+};
-+
-+/**
-+ * union cg2900_endpoint_config - Different audio endpoint configurations.
-+ * @sco:	SCO audio endpoint configuration structure.
-+ * @a2dp_src:	A2DP source audio endpoint configuration structure.
-+ * @fm:		FM audio endpoint configuration structure.
-+ */
-+union cg2900_endpoint_config_union {
-+	struct cg2900_endpoint_config_sco_in_out	sco;
-+	struct cg2900_endpoint_config_a2dp_src		a2dp_src;
-+	struct cg2900_endpoint_config_fm		fm;
-+};
-+
-+/**
-+ * struct cg2900_endpoint_config - Audio endpoint configuration.
-+ * @endpoint_id:	Identifies the audio endpoint. Works as a discriminator
-+ *			for the config union.
-+ * @config:		Union holding the configuration parameters for
-+ *			the endpoint.
-+ */
-+struct cg2900_endpoint_config {
-+	enum cg2900_audio_endpoint_id		endpoint_id;
-+	union cg2900_endpoint_config_union	config;
-+};
-+
-+/*
-+ * ST-Ericsson CG2900 audio control driver interfaces methods
-+ */
-+
-+/**
-+ * cg2900_audio_open() - Opens a session to the ST-Ericsson CG2900
-Audio control interface.
-+ * @session:	[out] Address where to store the session identifier.
-+ *		Allocated by caller, must not be NULL.
-+ *
-+ * Returns:
-+ *   0 if there is no error.
-+ *   -EINVAL upon bad input parameter.
-+ *   -ENOMEM upon allocation failure.
-+ *   -EMFILE if no more user session could be opened.
-+ *   -EIO upon failure to register to CG2900.
-+ */
-+int cg2900_audio_open(unsigned int *session);
-+
-+/**
-+ * cg2900_audio_close() - Closes an opened session to the ST-Ericsson
-CG2900 audio control interface.
-+ * @session:	[in_out] Pointer to session identifier to close.
-+ *		Will be 0 after this call.
-+ *
-+ * Returns:
-+ *   0 if there is no error.
-+ *   -EINVAL upon bad input parameter.
-+ *   -EIO if driver has not been opened.
-+ *   -EACCES if session has not opened.
-+ */
-+int cg2900_audio_close(unsigned int *session);
-+
-+/**
-+ * cg2900_audio_set_dai_config() -  Sets the Digital Audio Interface
-configuration.
-+ * @session:	Session identifier this call is related to.
-+ * @config:	Pointer to the configuration to set.
-+ *		Allocated by caller, must not be NULL.
-+ *
-+ * Sets the Digital Audio Interface (DAI) configuration. The DAI is
-the external
-+ * interface between the combo chip and the platform.
-+ * For example the PCM or I2S interface.
-+ *
-+ * Returns:
-+ *   0 if there is no error.
-+ *   -EINVAL upon bad input parameter.
-+ *   -EIO if driver has not been opened.
-+ *   -ENOMEM upon allocation failure.
-+ *   -EACCES if trying to set unsupported configuration.
-+ *   Errors from @receive_bt_cmd_complete.
-+ */
-+int cg2900_audio_set_dai_config(unsigned int session,
-+				struct cg2900_dai_config *config);
-+
-+/**
-+ * cg2900_audio_get_dai_config() - Gets the current Digital Audio
-Interface configuration.
-+ * @session:	Session identifier this call is related to.
-+ * @config:	[out] Pointer to the configuration to get.
-+ *		Allocated by caller, must not be NULL.
-+ *
-+ * Gets the current Digital Audio Interface configuration. Currently
-this method
-+ * can only be called after some one has called
-+ * cg2900_audio_set_dai_config(), there is today no way of getting
-+ * the static settings file parameters from this method.
-+ * Note that the @port parameter within @config must be set when calling this
-+ * function so that the ST-Ericsson CG2900 Audio driver will know which
-+ * configuration to return.
-+ *
-+ * Returns:
-+ *   0 if there is no error.
-+ *   -EINVAL upon bad input parameter.
-+ *   -EIO if driver has not been opened or configuration has not been set.
-+ */
-+int cg2900_audio_get_dai_config(unsigned int session,
-+				struct cg2900_dai_config *config);
-+
-+/**
-+ * cg2900_audio_config_endpoint() - Configures one endpoint in the
-combo chip's audio system.
-+ * @session:	Session identifier this call is related to.
-+ * @config:	Pointer to the endpoint's configuration structure.
-+ *
-+ * Configures one endpoint in the combo chip's audio system.
-+ * Supported @endpoint_id values are:
-+ *  * ENDPOINT_BT_SCO_INOUT
-+ *  * ENDPOINT_BT_A2DP_SRC
-+ *  * ENDPOINT_FM_RX
-+ *  * ENDPOINT_FM_TX
-+ *
-+ * Returns:
-+ *   0 if there is no error.
-+ *   -EINVAL upon bad input parameter.
-+ *   -EIO if driver has not been opened.
-+ *   -EACCES if supplied cg2900_dai_config struct contains not supported
-+ *   endpoint_id.
-+ */
-+int cg2900_audio_config_endpoint(unsigned int session,
-+				 struct cg2900_endpoint_config *config);
-+
-+/**
-+ * cg2900_audio_start_stream() - Connects two endpoints and starts
-the audio stream.
-+ * @session:		Session identifier this call is related to.
-+ * @ep_1:		One of the endpoints, no relation to direction or role.
-+ * @ep_2:		The other endpoint, no relation to direction or role.
-+ * @stream_handle:	Pointer where to store the stream handle.
-+ *			Allocated by caller, must not be NULL.
-+ *
-+ * Connects two endpoints and starts the audio stream.
-+ * Note that the endpoints need to be configured before the stream is started;
-+ * DAI endpoints, such as ENDPOINT_PORT_0_I2S, are
-+ * configured through @cg2900_audio_set_dai_config() while other
-+ * endpoints are configured through @cg2900_audio_config_endpoint().
-+ *
-+ * Supported @endpoint_id values are:
-+ *  * ENDPOINT_PORT_0_I2S
-+ *  * ENDPOINT_PORT_1_I2S_PCM
-+ *  * ENDPOINT_BT_SCO_INOUT
-+ *  * ENDPOINT_FM_RX
-+ *  * ENDPOINT_FM_TX
-+ *
-+ * Returns:
-+ *   0 if there is no error.
-+ *   -EINVAL upon bad input parameter or unsupported configuration.
-+ *   -EIO if driver has not been opened.
-+ *   Errors from @conn_start_i2s_to_fm_rx, @conn_start_i2s_to_fm_tx, and
-+ *   @conn_start_pcm_to_sco.
-+ */
-+int cg2900_audio_start_stream(unsigned int session,
-+			      enum cg2900_audio_endpoint_id ep_1,
-+			      enum cg2900_audio_endpoint_id ep_2,
-+			      unsigned int *stream_handle);
-+
-+/**
-+ * cg2900_audio_stop_stream() - Stops a stream and disconnects the endpoints.
-+ * @session:		Session identifier this call is related to.
-+ * @stream_handle:	Handle to the stream to stop.
-+ *
-+ * Returns:
-+ *   0 if there is no error.
-+ *   -EINVAL upon bad input parameter.
-+ *   -EIO if driver has not been opened.
-+ */
-+int cg2900_audio_stop_stream(unsigned int session,
-+			     unsigned int stream_handle);
-+
-+#endif /* _CG2900_AUDIO_H_ */
++MODULE_DESCRIPTION("Linux Bluetooth HCI H:4 Driver for ST-Ericsson
+controller");
 -- 
 1.6.3.3
