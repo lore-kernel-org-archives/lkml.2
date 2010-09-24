@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933100Ab0IXQfl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:35:41 -0400
-Received: from kroah.org ([198.145.64.141]:37365 "EHLO coco.kroah.org"
+	id S933151Ab0IXQjz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:39:55 -0400
+Received: from kroah.org ([198.145.64.141]:37379 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933066Ab0IXQfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:35:39 -0400
+	id S933099Ab0IXQfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:35:41 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:48 2010
-Message-Id: <20100924163348.197319640@clark.site>
+Message-Id: <20100924163348.389905428@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:32:11 -0700
+Date: Fri, 24 Sep 2010 09:32:13 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Christoph Lameter <cl@linux.com>, Mel Gorman <mel@csn.ul.ie>
-Subject: [47/68] mm: page allocator: calculate a better estimate of NR_FREE_PAGES when memory is low and kswapd is awake
+        Tony Luck <tony.luck@intel.com>, dann frazier <dannf@debian.org>
+Subject: [49/68] guard page for stacks that grow upwards
 In-Reply-To: <20100924163357.GA15741@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,185 +25,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Lameter <cl@linux.com>
+From: Luck, Tony <tony.luck@intel.com>
 
-commit aa45484031ddee09b06350ab8528bfe5b2c76d1c upstream.
+commit 8ca3eb08097f6839b2206e2242db4179aee3cfb3 upstream.
 
-Ordinarily watermark checks are based on the vmstat NR_FREE_PAGES as it is
-cheaper than scanning a number of lists.  To avoid synchronization
-overhead, counter deltas are maintained on a per-cpu basis and drained
-both periodically and when the delta is above a threshold.  On large CPU
-systems, the difference between the estimated and real value of
-NR_FREE_PAGES can be very high.  If NR_FREE_PAGES is much higher than
-number of real free page in buddy, the VM can allocate pages below min
-watermark, at worst reducing the real number of pages to zero.  Even if
-the OOM killer kills some victim for freeing memory, it may not free
-memory if the exit path requires a new page resulting in livelock.
+pa-risc and ia64 have stacks that grow upwards. Check that
+they do not run into other mappings. By making VM_GROWSUP
+0x0 on architectures that do not ever use it, we can avoid
+some unpleasant #ifdefs in check_stack_guard_page().
 
-This patch introduces a zone_page_state_snapshot() function (courtesy of
-Christoph) that takes a slightly more accurate view of an arbitrary vmstat
-counter.  It is used to read NR_FREE_PAGES while kswapd is awake to avoid
-the watermark being accidentally broken.  The estimate is not perfect and
-may result in cache line bounces but is expected to be lighter than the
-IPI calls necessary to continually drain the per-cpu counters while kswapd
-is awake.
-
-Signed-off-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dann frazier <dannf@debian.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
 ---
- include/linux/mmzone.h |   13 +++++++++++++
- include/linux/vmstat.h |   22 ++++++++++++++++++++++
- mm/mmzone.c            |   21 +++++++++++++++++++++
- mm/page_alloc.c        |    4 ++--
- mm/vmstat.c            |   15 ++++++++++++++-
- 5 files changed, 72 insertions(+), 3 deletions(-)
+ include/linux/mm.h |    8 +++++++-
+ mm/memory.c        |   15 +++++++++++----
+ mm/mmap.c          |    3 ---
+ 3 files changed, 18 insertions(+), 8 deletions(-)
 
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -290,6 +290,13 @@ struct zone {
- 	unsigned long watermark[NR_WMARK];
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -77,7 +77,11 @@ extern unsigned int kobjsize(const void
+ #define VM_MAYSHARE	0x00000080
  
- 	/*
-+	 * When free pages are below this point, additional steps are taken
-+	 * when reading the number of free pages to avoid per-cpu counter
-+	 * drift allowing watermarks to be breached
-+	 */
-+	unsigned long percpu_drift_mark;
-+
-+	/*
- 	 * We don't know if the memory that we're going to allocate will be freeable
- 	 * or/and it will be released eventually, so to avoid totally wasting several
- 	 * GB of ram we must reserve some of the lower zone memory (otherwise we risk
-@@ -460,6 +467,12 @@ static inline int zone_is_oom_locked(con
- 	return test_bit(ZONE_OOM_LOCKED, &zone->flags);
- }
- 
-+#ifdef CONFIG_SMP
-+unsigned long zone_nr_free_pages(struct zone *zone);
+ #define VM_GROWSDOWN	0x00000100	/* general info on the segment */
++#if defined(CONFIG_STACK_GROWSUP) || defined(CONFIG_IA64)
+ #define VM_GROWSUP	0x00000200
 +#else
-+#define zone_nr_free_pages(zone) zone_page_state(zone, NR_FREE_PAGES)
-+#endif /* CONFIG_SMP */
-+
- /*
-  * The "priority" of VM scanning is how much of the queues we will scan in one
-  * go. A value of 12 for DEF_PRIORITY implies that we will scan 1/4096th of the
---- a/include/linux/vmstat.h
-+++ b/include/linux/vmstat.h
-@@ -166,6 +166,28 @@ static inline unsigned long zone_page_st
- 	return x;
- }
- 
-+/*
-+ * More accurate version that also considers the currently pending
-+ * deltas. For that we need to loop over all cpus to find the current
-+ * deltas. There is no synchronization so the result cannot be
-+ * exactly accurate either.
-+ */
-+static inline unsigned long zone_page_state_snapshot(struct zone *zone,
-+					enum zone_stat_item item)
-+{
-+	long x = atomic_long_read(&zone->vm_stat[item]);
-+
-+#ifdef CONFIG_SMP
-+	int cpu;
-+	for_each_online_cpu(cpu)
-+		x += zone_pcp(zone, cpu)->vm_stat_diff[item];
-+
-+	if (x < 0)
-+		x = 0;
++#define VM_GROWSUP	0x00000000
 +#endif
-+	return x;
-+}
-+
- extern unsigned long global_reclaimable_pages(void);
- extern unsigned long zone_reclaimable_pages(struct zone *zone);
+ #define VM_PFNMAP	0x00000400	/* Page-ranges managed without "struct page", just pure PFN */
+ #define VM_DENYWRITE	0x00000800	/* ETXTBSY on write attempts.. */
  
---- a/mm/mmzone.c
-+++ b/mm/mmzone.c
-@@ -87,3 +87,24 @@ int memmap_valid_within(unsigned long pf
- 	return 1;
+@@ -1195,8 +1199,10 @@ unsigned long ra_submit(struct file_ra_s
+ 
+ /* Do stack extension */
+ extern int expand_stack(struct vm_area_struct *vma, unsigned long address);
+-#ifdef CONFIG_IA64
++#if VM_GROWSUP
+ extern int expand_upwards(struct vm_area_struct *vma, unsigned long address);
++#else
++  #define expand_upwards(vma, address) do { } while (0)
+ #endif
+ extern int expand_stack_downwards(struct vm_area_struct *vma,
+ 				  unsigned long address);
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2630,11 +2630,9 @@ out_release:
  }
- #endif /* CONFIG_ARCH_HAS_HOLES_MEMORYMODEL */
-+
-+#ifdef CONFIG_SMP
-+/* Called when a more accurate view of NR_FREE_PAGES is needed */
-+unsigned long zone_nr_free_pages(struct zone *zone)
-+{
-+	unsigned long nr_free_pages = zone_page_state(zone, NR_FREE_PAGES);
-+
-+	/*
-+	 * While kswapd is awake, it is considered the zone is under some
-+	 * memory pressure. Under pressure, there is a risk that
-+	 * per-cpu-counter-drift will allow the min watermark to be breached
-+	 * potentially causing a live-lock. While kswapd is awake and
-+	 * free pages are low, get a better estimate for free pages
-+	 */
-+	if (nr_free_pages < zone->percpu_drift_mark &&
-+			!waitqueue_active(&zone->zone_pgdat->kswapd_wait))
-+		return zone_page_state_snapshot(zone, NR_FREE_PAGES);
-+
-+	return nr_free_pages;
-+}
-+#endif /* CONFIG_SMP */
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1365,7 +1365,7 @@ int zone_watermark_ok(struct zone *z, in
+ 
+ /*
+- * This is like a special single-page "expand_downwards()",
+- * except we must first make sure that 'address-PAGE_SIZE'
++ * This is like a special single-page "expand_{down|up}wards()",
++ * except we must first make sure that 'address{-|+}PAGE_SIZE'
+  * doesn't hit another vma.
+- *
+- * The "find_vma()" will do the right thing even if we wrap
+  */
+ static inline int check_stack_guard_page(struct vm_area_struct *vma, unsigned long address)
  {
- 	/* free_pages my go negative - that's OK */
- 	long min = mark;
--	long free_pages = zone_page_state(z, NR_FREE_PAGES) - (1 << order) + 1;
-+	long free_pages = zone_nr_free_pages(z) - (1 << order) + 1;
- 	int o;
+@@ -2653,6 +2651,15 @@ static inline int check_stack_guard_page
  
- 	if (alloc_flags & ALLOC_HIGH)
-@@ -2250,7 +2250,7 @@ void show_free_areas(void)
- 			" all_unreclaimable? %s"
- 			"\n",
- 			zone->name,
--			K(zone_page_state(zone, NR_FREE_PAGES)),
-+			K(zone_nr_free_pages(zone)),
- 			K(min_wmark_pages(zone)),
- 			K(low_wmark_pages(zone)),
- 			K(high_wmark_pages(zone)),
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -136,10 +136,23 @@ static void refresh_zone_stat_thresholds
- 	int threshold;
- 
- 	for_each_populated_zone(zone) {
-+		unsigned long max_drift, tolerate_drift;
-+
- 		threshold = calculate_threshold(zone);
- 
- 		for_each_online_cpu(cpu)
- 			zone_pcp(zone, cpu)->stat_threshold = threshold;
-+
-+		/*
-+		 * Only set percpu_drift_mark if there is a danger that
-+		 * NR_FREE_PAGES reports the low watermark is ok when in fact
-+		 * the min watermark could be breached by an allocation
-+		 */
-+		tolerate_drift = low_wmark_pages(zone) - min_wmark_pages(zone);
-+		max_drift = num_online_cpus() * threshold;
-+		if (max_drift > tolerate_drift)
-+			zone->percpu_drift_mark = high_wmark_pages(zone) +
-+					max_drift;
+ 		expand_stack(vma, address - PAGE_SIZE);
  	}
++	if ((vma->vm_flags & VM_GROWSUP) && address + PAGE_SIZE == vma->vm_end) {
++		struct vm_area_struct *next = vma->vm_next;
++
++		/* As VM_GROWSDOWN but s/below/above/ */
++		if (next && next->vm_start == address + PAGE_SIZE)
++			return next->vm_flags & VM_GROWSUP ? 0 : -ENOMEM;
++
++		expand_upwards(vma, address + PAGE_SIZE);
++	}
+ 	return 0;
  }
  
-@@ -715,7 +728,7 @@ static void zoneinfo_show_print(struct s
- 		   "\n        scanned  %lu"
- 		   "\n        spanned  %lu"
- 		   "\n        present  %lu",
--		   zone_page_state(zone, NR_FREE_PAGES),
-+		   zone_nr_free_pages(zone),
- 		   min_wmark_pages(zone),
- 		   low_wmark_pages(zone),
- 		   high_wmark_pages(zone),
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1600,9 +1600,6 @@ static int acct_stack_growth(struct vm_a
+  * PA-RISC uses this for its stack; IA64 for its Register Backing Store.
+  * vma is the last one with address > vma->vm_end.  Have to extend vma.
+  */
+-#ifndef CONFIG_IA64
+-static
+-#endif
+ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
+ {
+ 	int error;
 
 
