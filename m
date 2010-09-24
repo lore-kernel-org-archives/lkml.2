@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758080Ab0IXUSJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 16:18:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26646 "EHLO mx1.redhat.com"
+	id S1758017Ab0IXUVW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 16:21:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22408 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754932Ab0IXUSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 16:18:08 -0400
-Date: Fri, 24 Sep 2010 16:17:56 -0400
+	id S1754700Ab0IXUVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 16:21:21 -0400
+Date: Fri, 24 Sep 2010 16:21:06 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, hch@lst.de
+Cc: linux-kernel@vger.kernel.org, hch@lst.de, Mark Lord <mlord@pobox.com>
 Subject: Re: [RFT PATCH] amiga, atari floppy: Use one request queue per disk
-Message-ID: <20100924201756.GB7145@redhat.com>
+Message-ID: <20100924202106.GC7145@redhat.com>
 References: <1285271646-2768-1-git-send-email-vgoyal@redhat.com>
  <4C9CEFD6.3000106@kernel.dk>
 MIME-Version: 1.0
@@ -42,45 +42,40 @@ On Fri, Sep 24, 2010 at 08:37:10PM +0200, Jens Axboe wrote:
 > I have (tentatively) added both patches to for-2.6.37/drivers. I used the
 > latter version of 2/2.
 
-Thanks Jens.
+Also which cross compiling for m68k, I noticed following commit fails
+compilation. I had to reset git to older commit to test amiga and atari
+flopply driver compilation.
 
-Finally I could setup and do cross compile for m68k. amiga floppy driver
-fails to compile. Please find attached the fix.
+*******************************************************************
+block/blk-exec.c: In function 'blk_execute_rq':
+block/blk-exec.c:101: error: 'sysctl_hung_task_timeout_secs' undeclared
+(first use in this function)
+block/blk-exec.c:101: error: (Each undeclared identifier is reported only
+once
+block/blk-exec.c:101: error: for each function it appears in.)
+make[1]: *** [block/blk-exec.o] Error 1
+make: *** [block] Error 2
+***********************************************************************
+
+commit 4b1977698ceb4c4caa800d475127139da49966f9
+Author: Mark Lord <kernel@teksavvy.com>
+Date:   Fri Sep 24 09:51:13 2010 -0400
+
+    block: Prevent hang_check firing during long I/O
+    
+    During long I/O operations, the hang_check timer may fire,
+    trigger stack dumps that unnecessarily alarm the user.
+    
+    Eg.  hdparm --security-erase NULL /dev/sdb  ## can take *hours* to
+complete
+    
+    So, if hang_check is armed, we should wake up periodically
+    to prevent it from triggering.  This patch uses a wake-up interval
+    equal to half the hang_check timer period, which keeps overhead low
+enough.
+    
+    Signed-off-by: Mark Lord <mlord@pobox.com>
+    Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 
 Thanks
 Vivek
-
-o Compile fixes for amiga floppy driver.
-
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
----
- drivers/block/amiflop.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
-Index: linux-2.6-block/drivers/block/amiflop.c
-===================================================================
---- linux-2.6-block.orig/drivers/block/amiflop.c	2010-09-24 16:12:19.000000000 -0400
-+++ linux-2.6-block/drivers/block/amiflop.c	2010-09-24 16:13:38.000000000 -0400
-@@ -1347,12 +1347,12 @@ static struct request *set_next_request(
- 	if (fdc_queue == FD_MAX_UNITS)
- 		fdc_queue = 0;
- 
--	for(cnt = FD_MAX_UNITS; cnt > 0, cnt--) {
-+	for(cnt = FD_MAX_UNITS; cnt > 0; cnt--) {
- 
- 		if (unit[fdc_queue].type->code == FD_NODRIVE) {
- 			if (++fdc_queue == FD_MAX_UNITS)
- 				fdc_queue = 0;
--			cotinue;
-+			continue;
- 		}
- 
- 		q = unit[fdc_queue].gendisk->queue;
-@@ -1827,7 +1827,6 @@ static int __init amiga_floppy_probe(str
- 	return 0;
- 
- out_probe:
--out_queue:
- 	free_irq(IRQ_AMIGA_CIAA_TB, NULL);
- out_irq2:
- 	free_irq(IRQ_AMIGA_DSKBLK, NULL);
