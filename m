@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab0IXQzh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:55:37 -0400
-Received: from kroah.org ([198.145.64.141]:38317 "EHLO coco.kroah.org"
+	id S1756820Ab0IXQ4D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:56:03 -0400
+Received: from kroah.org ([198.145.64.141]:38279 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932643Ab0IXQ2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:28:21 -0400
+	id S932629Ab0IXQ2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:28:17 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:17 2010
-Message-Id: <20100924162617.765202037@clark.site>
+Message-Id: <20100924162617.428279397@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:24:21 -0700
+Date: Fri, 24 Sep 2010 09:24:17 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [33/80] sched: Fix user time incorrectly accounted as system time on 32-bit
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, tiwai@suse.de,
+        chris@chris-wilson.co.uk, Zhenyu Wang <zhenyuw@linux.intel.com>
+Subject: [29/80] agp/intel: fix physical address mask bits for sandybridge
 In-Reply-To: <20100924162706.GA7381@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,58 +25,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Zhenyu Wang <zhenyuw@linux.intel.com>
 
-commit e75e863dd5c7d96b91ebbd241da5328fc38a78cc upstream.
+[This is backport patch from upstream 8dfc2b14.]
 
-We have 32-bit variable overflow possibility when multiply in
-task_times() and thread_group_times() functions. When the
-overflow happens then the scaled utime value becomes erroneously
-small and the scaled stime becomes i erroneously big.
-
-Reported here:
-
- https://bugzilla.redhat.com/show_bug.cgi?id=633037
- https://bugzilla.kernel.org/show_bug.cgi?id=16559
-
-Reported-by: Michael Chapman <redhat-bugzilla@very.puzzling.org>
-Reported-by: Ciriaco Garcia de Celis <sysman@etherpilot.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-LKML-Reference: <20100914143513.GB8415@redhat.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Zhenyu Wang <zhenyuw@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/sched.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/char/agp/intel-gtt.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -3349,9 +3349,9 @@ void task_times(struct task_struct *p, c
- 	rtime = nsecs_to_cputime(p->se.sum_exec_runtime);
+--- a/drivers/char/agp/intel-gtt.c
++++ b/drivers/char/agp/intel-gtt.c
+@@ -1317,6 +1317,16 @@ static unsigned long intel_i965_mask_mem
+ 	return addr | bridge->driver->masks[type].mask;
+ }
  
- 	if (total) {
--		u64 temp;
-+		u64 temp = rtime;
- 
--		temp = (u64)(rtime * utime);
-+		temp *= utime;
- 		do_div(temp, total);
- 		utime = (cputime_t)temp;
- 	} else
-@@ -3382,9 +3382,9 @@ void thread_group_times(struct task_stru
- 	rtime = nsecs_to_cputime(cputime.sum_exec_runtime);
- 
- 	if (total) {
--		u64 temp;
-+		u64 temp = rtime;
- 
--		temp = (u64)(rtime * cputime.utime);
-+		temp *= cputime.utime;
- 		do_div(temp, total);
- 		utime = (cputime_t)temp;
- 	} else
++static unsigned long intel_gen6_mask_memory(struct agp_bridge_data *bridge,
++					    dma_addr_t addr, int type)
++{
++	/* gen6 has bit11-4 for physical addr bit39-32 */
++	addr |= (addr >> 28) & 0xff0;
++
++	/* Type checking must be done elsewhere */
++	return addr | bridge->driver->masks[type].mask;
++}
++
+ static void intel_i965_get_gtt_range(int *gtt_offset, int *gtt_size)
+ {
+ 	u16 snb_gmch_ctl;
+@@ -1535,7 +1545,7 @@ static const struct agp_bridge_driver in
+ 	.configure		= intel_i9xx_configure,
+ 	.fetch_size		= intel_i9xx_fetch_size,
+ 	.cleanup		= intel_i915_cleanup,
+-	.mask_memory		= intel_i965_mask_memory,
++	.mask_memory		= intel_gen6_mask_memory,
+ 	.masks			= intel_i810_masks,
+ 	.agp_enable		= intel_i810_agp_enable,
+ 	.cache_flush		= global_cache_flush,
 
 
