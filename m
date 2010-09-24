@@ -1,34 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756852Ab0IXXy7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 19:54:59 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:45390 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751845Ab0IXXy6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 19:54:58 -0400
-Date: Fri, 24 Sep 2010 16:54:12 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: matt mooney <mfm@muteddisk.com>
-CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [lm-sensors] [PATCH 04/24] hwmon: change to new flag variable
-Message-ID: <20100924235412.GA21558@ericsson.com>
-References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
- <ffbd189ef2d414ea7c87ffe2b40fce87877dc014.1285355033.git.mfm@muteddisk.com>
+	id S1758665Ab0IXX7J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 19:59:09 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:53121 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751603Ab0IXX7G convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 19:59:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=Nk2j8L0KjKQlAZWlwHyMjKZCgF4O3ONHbzU00HEVmk9Oz7t6szt2nMB2HHP1dsUPCa
+         ZQLayR9GIF8sw6r/wM7Ai+W9VI79eKbZiLHR7vCg7deLtKTQEXhye6o5G3vFBdzGpggg
+         hIbEPrxZUwPfmx8Z3eFT/j8uUByabme7dEN5A=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <ffbd189ef2d414ea7c87ffe2b40fce87877dc014.1285355033.git.mfm@muteddisk.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201009241706.11742.bjorn.helgaas@hp.com>
+References: <20100923233047.12463.61480.stgit@bob.kio>
+	<201009241706.11742.bjorn.helgaas@hp.com>
+Date: Fri, 24 Sep 2010 16:59:05 -0700
+X-Google-Sender-Auth: Gvp4I7icqAP0-mx52neT5_bEIdU
+Message-ID: <AANLkTi=GrH4fR_wSFytaSiXsH+wo2a=DaLAU4H2d0d1M@mail.gmail.com>
+Subject: Re: [PATCH] x86, HPET: mark HPET PCI BARs as IORESOURCE_PCI_FIXED
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: Venkatesh Pallipadi <venki@google.com>,
+        Prarit Bhargava <prarit@redhat.com>, fredlwm@gmail.com,
+        Simon Arlott <simon@fire.lp0.eu>, x86@kernel.org,
+        Clemens Ladisch <clemens@ladisch.de>, linux-kernel@vger.kernel.org,
+        Marc Jones <marcj303@gmail.com>,
+        Jordan Crouse <jcrouse@codeaurora.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 24, 2010 at 03:17:14PM -0400, matt mooney wrote:
-> Replace EXTRA_CFLAGS with ccflags-y.
-> 
-> Signed-off-by: matt mooney <mfm@muteddisk.com>
+On Fri, Sep 24, 2010 at 4:06 PM, Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
+> Sorry Yinghai, I forgot to copy you on the initial post.  Any
+> comments on this?  If not, we should try to get it into linux-next
+> soon.
 
-Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
+should be good.
 
+only one thing, that will punish all other vendors... and run that
+quirk for every pci device.
+
+please check if you can have
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATI, PCI_ANY_ID, mark_pci_hpet_fixed);
+
+AND _AMD maybe, if AMD dump _ATI brand later.
+
+Thanks
+
+Yinghai
