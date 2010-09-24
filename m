@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933089Ab0IXQge (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:36:34 -0400
-Received: from kroah.org ([198.145.64.141]:37486 "EHLO coco.kroah.org"
+	id S933056Ab0IXQgc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:36:32 -0400
+Received: from kroah.org ([198.145.64.141]:37491 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933162Ab0IXQgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:36:05 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:49 2010
-Message-Id: <20100924163349.870703596@clark.site>
+	id S933165Ab0IXQgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:36:06 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:50 2010
+Message-Id: <20100924163349.950024699@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:32:30 -0700
+Date: Fri, 24 Sep 2010 09:32:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <ben@decadent.org.uk>, Dave Airlie <airlied@redhat.com>
-Subject: [66/68] sis-agp: Remove SIS 760, handled by amd64-agp
+        Michael Cree <mcree@orcon.net.nz>, Matt Turner <mattst88@gmail.com>
+Subject: [67/68] alpha: Fix printk format errors
 In-Reply-To: <20100924163357.GA15741@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,38 +25,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Michael Cree <mcree@orcon.net.nz>
 
-commit d831692a1a8e9ceaaa9bb16bb3fc503b7e372558 upstream.
+commit 3e073367a57d41e506f20aebb98e308387ce3090 upstream.
 
-SIS 760 is listed in the device tables for both amd64-agp and sis-agp.
-amd64-agp is apparently preferable since it has workarounds for some
-BIOS misconfigurations that sis-agp doesn't handle.
+When compiling alpha generic build get errors such as:
+arch/alpha/kernel/err_marvel.c: In function ‘marvel_print_err_cyc’:
+arch/alpha/kernel/err_marvel.c:119: error: format ‘%ld’ expects type ‘long int’, but argument 6 has type ‘u64’
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Replaced a number of %ld format specifiers with %lld since u64
+is unsigned long long.
+
+Signed-off-by: Michael Cree <mcree@orcon.net.nz>
+Signed-off-by: Matt Turner <mattst88@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/agp/sis-agp.c |    8 --------
- 1 file changed, 8 deletions(-)
+ arch/alpha/kernel/err_marvel.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/char/agp/sis-agp.c
-+++ b/drivers/char/agp/sis-agp.c
-@@ -415,14 +415,6 @@ static struct pci_device_id agp_sis_pci_
- 		.subvendor	= PCI_ANY_ID,
- 		.subdevice	= PCI_ANY_ID,
- 	},
--	{
--		.class		= (PCI_CLASS_BRIDGE_HOST << 8),
--		.class_mask	= ~0,
--		.vendor		= PCI_VENDOR_ID_SI,
--		.device		= PCI_DEVICE_ID_SI_760,
--		.subvendor	= PCI_ANY_ID,
--		.subdevice	= PCI_ANY_ID,
--	},
- 	{ }
- };
+--- a/arch/alpha/kernel/err_marvel.c
++++ b/arch/alpha/kernel/err_marvel.c
+@@ -109,7 +109,7 @@ marvel_print_err_cyc(u64 err_cyc)
+ #define IO7__ERR_CYC__CYCLE__M	(0x7)
  
+ 	printk("%s        Packet In Error: %s\n"
+-	       "%s        Error in %s, cycle %ld%s%s\n",
++	       "%s        Error in %s, cycle %lld%s%s\n",
+ 	       err_print_prefix, 
+ 	       packet_desc[EXTRACT(err_cyc, IO7__ERR_CYC__PACKET)],
+ 	       err_print_prefix,
+@@ -313,7 +313,7 @@ marvel_print_po7_ugbge_sym(u64 ugbge_sym
+ 	}
+ 
+ 	printk("%s      Up Hose Garbage Symptom:\n"
+-	       "%s        Source Port: %ld - Dest PID: %ld - OpCode: %s\n", 
++	       "%s        Source Port: %lld - Dest PID: %lld - OpCode: %s\n",
+ 	       err_print_prefix,
+ 	       err_print_prefix, 
+ 	       EXTRACT(ugbge_sym, IO7__PO7_UGBGE_SYM__UPH_SRC_PORT),
+@@ -552,7 +552,7 @@ marvel_print_pox_spl_cmplt(u64 spl_cmplt
+ #define IO7__POX_SPLCMPLT__REM_BYTE_COUNT__M	(0xfff)
+ 
+ 	printk("%s      Split Completion Error:\n"	
+-	       "%s         Source (Bus:Dev:Func): %ld:%ld:%ld\n",
++	       "%s         Source (Bus:Dev:Func): %lld:%lld:%lld\n",
+ 	       err_print_prefix,
+ 	       err_print_prefix,
+ 	       EXTRACT(spl_cmplt, IO7__POX_SPLCMPLT__SOURCE_BUS),
 
 
