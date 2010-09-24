@@ -1,189 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756715Ab0IXHRk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 03:17:40 -0400
-Received: from ackle.nomi.cz ([81.31.33.35]:36468 "EHLO ackle.nomi.cz"
+	id S1756727Ab0IXHUc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 03:20:32 -0400
+Received: from pegase1.c-s.fr ([194.2.40.7]:15484 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756128Ab0IXHRj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 03:17:39 -0400
-Date: Fri, 24 Sep 2010 09:17:36 +0200
-From: =?utf-8?B?VG9tw6HFoSBKYW5vdcWhZWs=?= <tomi@nomi.cz>
-To: Greg KH <greg@kroah.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        mingo@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, glommer@redhat.com,
-        alan@lxorguk.ukuu.org.uk, zamsden@redhat.com, stable@kernel.org,
-        mtosatti@redhat.com, gregkh@suse.de, peter@palfrader.org,
-        tglx@linutronix.de, avi@redhat.com, linux-tip-commits@vger.kernel.org
-Subject: Re: [stable] [tip:x86/urgent] x86: Add memory modify constraints
-	to xchg() and cmpxchg()
-Message-ID: <20100924071736.GA11988@nomi.cz>
-References: <4C4F7277.8050306@zytor.com> <tip-113fc5a6e8c2288619ff7e8187a6f556b7e0d372@git.kernel.org> <4C5759FF.1000807@goop.org> <20100802235950.GA662@kroah.com> <20100909195301.GA18291@nomi.cz> <4C894E64.3050800@zytor.com> <20100910131035.GA16636@nomi.cz> <20100923183724.GS23040@kroah.com>
+	id S1752361Ab0IXHUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 03:20:31 -0400
+Message-ID: <4C9C513B.40501@c-s.fr>
+Date: Fri, 24 Sep 2010 09:20:27 +0200
+From: LEROY Christophe <christophe.leroy@c-s.fr>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="sdtB3X0nJg68CQEu"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100923183724.GS23040@kroah.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: David Brownell <dbrownell@users.sourceforge.net>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, Kumar Gala <galak@kernel.crashing.org>,
+        Anton Vorontsov <avorontsov@ru.mvista.com>
+Subject: Re: [PATCH] spi_mpc8xxx: issue with using definition of pram in Device
+ Tree
+References: <20100916070503.10046C7391@messagerie.si.c-s.fr> <20100924071006.GA21318@angua.secretlab.ca>
+In-Reply-To: <20100924071006.GA21318@angua.secretlab.ca>
+Content-Type: multipart/mixed;
+ boundary="------------070408010709090906090605"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---sdtB3X0nJg68CQEu
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+This is a multi-part message in MIME format.
+--------------070408010709090906090605
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 8bit
 
-Hello,
+  Hello,
 
-On Thu, Sep 23, 2010 at 11:37:24AM -0700, Greg KH wrote:
-> Hm, that patch doesn't apply to the latest .32-stable tree.  Can someone
-> provide me with a backported version so I make sure I get it correct?
+The issue is that cpm_muram_alloc_fixed() allocates memory from the 
+general purpose muram area (from 0x0 to 0x1bff).
+Here we need to return a pointer to the parameter RAM, which is located 
+somewhere starting at 0x1c00. It is not a dynamic allocation that is 
+required here but only to point on the correct location in the parameter 
+RAM.
 
-I'm attaching the one I used and tested.
+For the CPM2, I don't know. I'm working with a MPC866.
 
--- 
-Tomáš Janoušek, a.k.a. Liskni_si, http://work.lisk.in/
+Attached is a previous discussion on the subject where I explain a bit 
+more in details the issue.
 
---sdtB3X0nJg68CQEu
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: attachment; filename="0001-x86-asm-Clean-up-and-simplify-set_64bit.patch"
-Content-Transfer-Encoding: quoted-printable
+Regards
+C. Leroy
 
-=46rom 48a45b4cd701520435188fcf9ef0c04e73c79172 Mon Sep 17 00:00:00 2001
-=46rom: H. Peter Anvin <hpa@zytor.com>
-Date: Tue, 27 Jul 2010 23:29:52 -0700
-Subject: [PATCH] x86, asm: Clean up and simplify set_64bit()
+Le 24/09/2010 09:10, Grant Likely a �crit :
+> On Thu, Sep 16, 2010 at 09:05:03AM +0200, christophe leroy wrote:
+>> This patch applies to 2.6.34.7 and 2.6.35.4
+>> It fixes an issue during the probe for CPM1 with definition of parameter ram from DTS
+>>
+>> Signed-off-by: christophe leroy<christophe.leroy@c-s.fr>
+> I'm sorry, I don't understand the fix from the given description.
+> What is the problem, and why is cpm_muram_alloc_fixed() the wrong
+> thing to call on CPM1?  Does CPM2 still need it?
+>
+> g.
+>
+>> diff -urN b/drivers/spi/spi_mpc8xxx.c c/drivers/spi/spi_mpc8xxx.c
+>> --- b/drivers/spi/spi_mpc8xxx.c	2010-09-08 16:43:50.000000000 +0200
+>> +++ c/drivers/spi/spi_mpc8xxx.c	2010-09-08 16:44:03.000000000 +0200
+>> @@ -822,7 +822,7 @@
+>>   	if (!iprop || size != sizeof(*iprop) * 4)
+>>   		return -ENOMEM;
+>>
+>> -	spi_base_ofs = cpm_muram_alloc_fixed(iprop[2], 2);
+>> +	spi_base_ofs = iprop[2];
+>>   	if (IS_ERR_VALUE(spi_base_ofs))
+>>   		return -ENOMEM;
+>>
+>> @@ -844,7 +844,6 @@
+>>   			return spi_base_ofs;
+>>   	}
+>>
+>> -	cpm_muram_free(spi_base_ofs);
+>>   	return pram_ofs;
+>>   }
 
-Clean up and simplify set_64bit().  This code is quite old (1.3.11)
-and contains a fair bit of auxilliary machinery that current versions
-of gcc handle just fine automatically.  Worse, the auxilliary
-machinery can actually cause an unnecessary spill to memory.
+--------------070408010709090906090605
+Content-Type: message/rfc822;
+ name="Message joint"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="Message joint"
 
-Furthermore, the loading of the old value inside the loop in the
-32-bit case is unnecessary: if the value doesn't match, the CMPXCHG8B
-instruction will already have loaded the "new previous" value for us.
+Return-Path: <linuxppc-dev-bounces+christophe.leroy=c-s.fr@lists.ozlabs.org>
+Received: from localhost (localhost [127.0.0.1])
+	by messagerie.si.c-s.fr (Postfix) with ESMTP id 07CC4C73C8
+	for <christophe.leroy@c-s.fr>; Tue,  7 Sep 2010 22:01:34 +0200 (CEST)
+X-Virus-Scanned: amavisd-new at c-s.fr
+Received: from messagerie.si.c-s.fr ([127.0.0.1])
+	by localhost (messagerie.si.c-s.fr [127.0.0.1]) (amavisd-new, port 10023)
+	with ESMTP id I38khnVvb5+l for <christophe.leroy@c-s.fr>;
+	Tue,  7 Sep 2010 22:01:34 +0200 (CEST)
+Received: from mailhub1.si.c-s.fr (mailhub1.cstelecom.cie-signaux.fr [192.168.12.233])
+	by messagerie.si.c-s.fr (Postfix) with ESMTP id CDF71C7393
+	for <chleroy@messagerie.si.c-s.fr>; Tue,  7 Sep 2010 22:01:33 +0200 (CEST)
+Received: from mailhub1.si.c-s.fr (mailhub1 [192.168.12.233])
+	by localhost (Postfix) with ESMTP id 8EC603C006
+	for <chleroy@messagerie.si.c-s.fr>; Tue,  7 Sep 2010 22:01:32 +0200 (CEST)
+X-Spam-Status: No, score=0.0 required=6.0 tests=AWL autolearn=unavailable
+	version=3.3.0
+X-Spam-Level: 
+X-Spam-Checker-Version: SpamAssassin 3.3.0 (2010-01-18) on mailhub1.si.c-s.fr
+Received: from localhost (mailhub1 [192.168.12.233])
+	by pegase1.c-s.fr (Postfix) with ESMTP id 8B9613C005
+	for <chleroy@messagerie.si.c-s.fr>; Tue,  7 Sep 2010 22:01:32 +0200 (CEST)
+X-Virus-Scanned: amavisd-new at c-s.fr
+Received: from mailhub1.si.c-s.fr ([192.168.12.233])
+	by localhost (mailhub1.c-s.fr [127.0.0.1]) (amavisd-new, port 10023)
+	with ESMTP id 2SA7qGc2i3x5 for <chleroy@messagerie.si.c-s.fr>;
+	Tue,  7 Sep 2010 22:01:32 +0200 (CEST)
+Received: from ozlabs.org (ozlabs.org [203.10.76.45])
+	by pegase1.c-s.fr (Postfix) with ESMTP id C974A3C004
+	for <christophe.leroy@c-s.fr>; Tue,  7 Sep 2010 22:01:31 +0200 (CEST)
+Received: from bilbo.ozlabs.org (localhost [127.0.0.1])
+	by ozlabs.org (Postfix) with ESMTP id 93CDCB71D5
+	for <christophe.leroy@c-s.fr>; Wed,  8 Sep 2010 06:01:22 +1000 (EST)
+Received: from TX2EHSOBE008.bigfish.com (tx2ehsobe004.messaging.microsoft.com
+	[65.55.88.14]) by ozlabs.org (Postfix) with ESMTP id 4F478B6EF7
+	for <linuxppc-dev@lists.ozlabs.org>;
+	Wed,  8 Sep 2010 06:01:11 +1000 (EST)
+Received: from mail26-tx2-R.bigfish.com (10.9.14.237) by
+	TX2EHSOBE008.bigfish.com (10.9.40.28) with Microsoft SMTP Server id
+	8.1.340.0; Tue, 7 Sep 2010 20:01:04 +0000
+Received: from mail26-tx2 (localhost.localdomain [127.0.0.1])	by
+	mail26-tx2-R.bigfish.com (Postfix) with ESMTP id 8110DE0439	for
+	<linuxppc-dev@lists.ozlabs.org>; Tue,  7 Sep 2010 20:01:04 +0000 (UTC)
+X-SpamScore: -12
+X-BigFish: VS-12(zz1432N98dNzz1202hzzz2dh2a8h61h)
+Received: from mail26-tx2 (localhost.localdomain [127.0.0.1]) by mail26-tx2
+	(MessageSwitch) id 1283889664159557_3552;
+	Tue,  7 Sep 2010 20:01:04 +0000 (UTC)
+Received: from TX2EHSMHS009.bigfish.com (unknown [10.9.14.247])	by
+	mail26-tx2.bigfish.com (Postfix) with ESMTP id 246DD1590052	for
+	<linuxppc-dev@lists.ozlabs.org>; Tue,  7 Sep 2010 20:01:04 +0000 (UTC)
+Received: from az33egw02.freescale.net (192.88.158.103) by
+	TX2EHSMHS009.bigfish.com (10.9.99.109) with Microsoft SMTP Server (TLS)
+	id 14.0.482.44; Tue, 7 Sep 2010 20:00:50 +0000
+Received: from az33smr01.freescale.net (az33smr01.freescale.net
+	[10.64.34.199])	by az33egw02.freescale.net (8.14.3/8.14.3) with ESMTP
+	id o87K0e8f009102	for <linuxppc-dev@lists.ozlabs.org>;
+	Tue, 7 Sep 2010 13:00:50 -0700 (MST)
+Received: from az33exm25.fsl.freescale.net (az33exm25.am.freescale.net
+	[10.64.32.16])	by az33smr01.freescale.net (8.13.1/8.13.0) with ESMTP id
+	o87KD2vx011794	for <linuxppc-dev@lists.ozlabs.org>;
+	Tue, 7 Sep 2010 15:13:02 -0500 (CDT)
+Received: from schlenkerla.am.freescale.net ([10.82.120.40]) by
+	az33exm25.fsl.freescale.net with Microsoft SMTPSVC(6.0.3790.4675);
+	Tue, 7 Sep 2010 13:00:39 -0700
+Date: Tue, 7 Sep 2010 15:00:38 -0500
+From: Scott Wood <scottwood@freescale.com>
+To: LEROY Christophe <christophe.leroy@c-s.fr>
+Subject: Re: Small issue at init with spi_mpc8xxx.c with CPM1
+Message-ID: <20100907150038.57a7b065@schlenkerla.am.freescale.net>
+In-Reply-To: <4C86031D.5080804@c-s.fr>
+References: <4C86031D.5080804@c-s.fr>
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+X-OriginalArrivalTime: 07 Sep 2010 20:00:39.0706 (UTC)
+	FILETIME=[584C87A0:01CB4EC7]
+X-Reverse-DNS: az33egw02.freescale.net
+Cc: Kumar Gala <kumar.gala@freescale.com>,
+	LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>
+X-BeenThere: linuxppc-dev@lists.ozlabs.org
+X-Mailman-Version: 2.1.13
+Precedence: list
+List-Id: Linux on PowerPC Developers Mail List <linuxppc-dev.lists.ozlabs.org>
+List-Unsubscribe: <https://lists.ozlabs.org/options/linuxppc-dev>,
+	<mailto:linuxppc-dev-request@lists.ozlabs.org?subject=unsubscribe>
+List-Archive: <http://lists.ozlabs.org/pipermail/linuxppc-dev>
+List-Post: <mailto:linuxppc-dev@lists.ozlabs.org>
+List-Help: <mailto:linuxppc-dev-request@lists.ozlabs.org?subject=help>
+List-Subscribe: <https://lists.ozlabs.org/listinfo/linuxppc-dev>,
+	<mailto:linuxppc-dev-request@lists.ozlabs.org?subject=subscribe>
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailman-Copy: yes
+Sender: linuxppc-dev-bounces+christophe.leroy=c-s.fr@lists.ozlabs.org
+Errors-To: linuxppc-dev-bounces+christophe.leroy=c-s.fr@lists.ozlabs.org
 
-Clean up the comment, too, and remove page references to obsolete
-versions of the Intel SDM.
+On Tue, 7 Sep 2010 11:17:17 +0200
+LEROY Christophe <christophe.leroy@c-s.fr> wrote:
 
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-LKML-Reference: <tip-*@vger.kernel.org>
----
- arch/x86/include/asm/cmpxchg_32.h |   65 +++++++++++----------------------=
-----
- arch/x86/include/asm/cmpxchg_64.h |    4 +--
- 2 files changed, 20 insertions(+), 49 deletions(-)
+> 
+>   Dear Kumar,
+> 
+> I have a small issue in the init of spi_mpc8xxx.c with MPC866 (CPM1)
+> 
+> Unlike cpm_uart that maps the parameter ram directly using 
+> of_iomap(np,1), spi_mpc8xxx.c uses cpm_muram_alloc_fixed().
+> 
+> This has two impacts in the .dts file:
+> * The driver must be declared with pram at 1d80 instead of 3d80 whereas 
+> it is not a child of muram@2000 but a child of cpm@9c0
+> * muram@2000/data@0 must be declared with reg = <0x0 0x2000>   whereas 
+> is should be reg=<0x0 0x1c00> to avoid cpm_muram_alloc() to allocate 
+> space from parameters ram.
+> 
+> Maybe I misunderstood something ?
 
-diff --git a/arch/x86/include/asm/cmpxchg_32.h b/arch/x86/include/asm/cmpxc=
-hg_32.h
-index 5af5051..9873a5f 100644
---- a/arch/x86/include/asm/cmpxchg_32.h
-+++ b/arch/x86/include/asm/cmpxchg_32.h
-@@ -17,60 +17,33 @@ struct __xchg_dummy {
- #define __xg(x) ((struct __xchg_dummy *)(x))
-=20
- /*
-- * The semantics of XCHGCMP8B are a bit strange, this is why
-- * there is a loop and the loading of %%eax and %%edx has to
-- * be inside. This inlines well in most cases, the cached
-- * cost is around ~38 cycles. (in the future we might want
-- * to do an SIMD/3DNOW!/MMX/FPU 64-bit store here, but that
-- * might have an implicit FPU-save as a cost, so it's not
-- * clear which path to go.)
-+ * CMPXCHG8B only writes to the target if we had the previous
-+ * value in registers, otherwise it acts as a read and gives us the
-+ * "new previous" value.  That is why there is a loop.  Preloading
-+ * EDX:EAX is a performance optimization: in the common case it means
-+ * we need only one locked operation.
-  *
-- * cmpxchg8b must be used with the lock prefix here to allow
-- * the instruction to be executed atomically, see page 3-102
-- * of the instruction set reference 24319102.pdf. We need
-- * the reader side to see the coherent 64bit value.
-+ * A SIMD/3DNOW!/MMX/FPU 64-bit store here would require at the very
-+ * least an FPU save and/or %cr0.ts manipulation.
-+ *
-+ * cmpxchg8b must be used with the lock prefix here to allow the
-+ * instruction to be executed atomically.  We need to have the reader
-+ * side to see the coherent 64bit value.
-  */
--static inline void __set_64bit(unsigned long long *ptr,
--			       unsigned int low, unsigned int high)
-+static inline void set_64bit(volatile u64 *ptr, u64 value)
- {
-+	u32 low  =3D value;
-+	u32 high =3D value >> 32;
-+	u64 prev =3D *ptr;
-+
- 	asm volatile("\n1:\t"
--		     "movl (%1), %%eax\n\t"
--		     "movl 4(%1), %%edx\n\t"
- 		     LOCK_PREFIX "cmpxchg8b %0\n\t"
- 		     "jnz 1b"
--		     : "=3Dm"(*ptr)
--		     : "D" (ptr),
--		       "b"(low),
--		       "c"(high)
--		     : "ax", "dx", "memory");
--}
--
--static inline void __set_64bit_constant(unsigned long long *ptr,
--					unsigned long long value)
--{
--	__set_64bit(ptr, (unsigned int)value, (unsigned int)(value >> 32));
--}
--
--#define ll_low(x)	*(((unsigned int *)&(x)) + 0)
--#define ll_high(x)	*(((unsigned int *)&(x)) + 1)
--
--static inline void __set_64bit_var(unsigned long long *ptr,
--				   unsigned long long value)
--{
--	__set_64bit(ptr, ll_low(value), ll_high(value));
-+		     : "=3Dm" (*ptr), "+A" (prev)
-+		     : "b" (low), "c" (high)
-+		     : "memory");
- }
-=20
--#define set_64bit(ptr, value)			\
--	(__builtin_constant_p((value))		\
--	 ? __set_64bit_constant((ptr), (value))	\
--	 : __set_64bit_var((ptr), (value)))
--
--#define _set_64bit(ptr, value)						\
--	(__builtin_constant_p(value)					\
--	 ? __set_64bit(ptr, (unsigned int)(value),			\
--		       (unsigned int)((value) >> 32))			\
--	 : __set_64bit(ptr, ll_low((value)), ll_high((value))))
--
- /*
-  * Note: no "lock" prefix even on SMP: xchg always implies lock anyway
-  * Note 2: xchg has side effect, so that attribute volatile is necessary,
-diff --git a/arch/x86/include/asm/cmpxchg_64.h b/arch/x86/include/asm/cmpxc=
-hg_64.h
-index 1871cb0..e8cb051 100644
---- a/arch/x86/include/asm/cmpxchg_64.h
-+++ b/arch/x86/include/asm/cmpxchg_64.h
-@@ -8,13 +8,11 @@
-=20
- #define __xg(x) ((volatile long *)(x))
-=20
--static inline void set_64bit(volatile unsigned long *ptr, unsigned long va=
-l)
-+static inline void set_64bit(volatile u64 *ptr, u64 val)
- {
- 	*ptr =3D val;
- }
-=20
--#define _set_64bit set_64bit
--
- /*
-  * Note: no "lock" prefix even on SMP: xchg always implies lock anyway
-  * Note 2: xchg has side effect, so that attribute volatile is necessary,
---=20
-1.7.1
+Don't make the device tree lie, fix the driver instead.
+
+The allocator should not be given any chunks of muram that are
+dedicated to a fixed purpose -- it might hand it out to something else
+before you reserve it.  I don't think that cpm_muram_alloc_fixed() has
+any legitimate use at all.
+
+-Scott
+
+_______________________________________________
+Linuxppc-dev mailing list
+Linuxppc-dev@lists.ozlabs.org
+https://lists.ozlabs.org/listinfo/linuxppc-dev
 
 
---sdtB3X0nJg68CQEu--
+--------------070408010709090906090605--
