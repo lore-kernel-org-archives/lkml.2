@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757012Ab0IXQ4s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:56:48 -0400
-Received: from kroah.org ([198.145.64.141]:46153 "EHLO coco.kroah.org"
+	id S932584Ab0IXQ2K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:28:10 -0400
+Received: from kroah.org ([198.145.64.141]:46099 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932614Ab0IXQ2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:28:15 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:17 2010
-Message-Id: <20100924162617.249154502@clark.site>
+	id S932528Ab0IXQ2I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:28:08 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:16 2010
+Message-Id: <20100924162616.564823869@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:24:15 -0700
+Date: Fri, 24 Sep 2010 09:24:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hans de Goede <hdegoede@redhat.com>, Amit Shah <amit.shah@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [27/80] virtio: console: Fix poll blocking even though there is data to read
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [19/80] drivers/net/cxgb3/cxgb3_main.c: prevent reading uninitialized stack memory
 In-Reply-To: <20100924162706.GA7381@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,43 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit 6df7aadcd9290807c464675098b5dd2dc9da5075 upstream.
+commit 49c37c0334a9b85d30ab3d6b5d1acb05ef2ef6de upstream.
 
-I found this while working on a Linux agent for spice, the symptom I was
-seeing was select blocking on the spice vdagent virtio serial port even
-though there were messages queued up there.
+Fixed formatting (tabs and line breaks).
 
-virtio_console's port_fops_poll checks port->inbuf != NULL to determine
-if read won't block. However if an application reads enough bytes from
-inbuf through port_fops_read, to empty the current port->inbuf,
-port->inbuf will be NULL even though there may be buffers left in the
-virtqueue.
+The CHELSIO_GET_QSET_NUM device ioctl allows unprivileged users to read
+4 bytes of uninitialized stack memory, because the "addr" member of the
+ch_reg struct declared on the stack in cxgb_extension_ioctl() is not
+altered or zeroed before being copied back to the user.  This patch
+takes care of it.
 
-This causes poll() to block even though there is data to be read,
-this patch fixes this by using will_read_block(port) instead of the
-port->inbuf != NULL check.
-
-Signed-off-By: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/virtio_console.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/cxgb3/cxgb3_main.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -646,7 +646,7 @@ static unsigned int port_fops_poll(struc
- 	poll_wait(filp, &port->waitqueue, wait);
+--- a/drivers/net/cxgb3/cxgb3_main.c
++++ b/drivers/net/cxgb3/cxgb3_main.c
+@@ -2296,6 +2296,8 @@ static int cxgb_extension_ioctl(struct n
+ 	case CHELSIO_GET_QSET_NUM:{
+ 		struct ch_reg edata;
  
- 	ret = 0;
--	if (port->inbuf)
-+	if (!will_read_block(port))
- 		ret |= POLLIN | POLLRDNORM;
- 	if (!will_write_block(port))
- 		ret |= POLLOUT;
++		memset(&edata, 0, sizeof(struct ch_reg));
++
+ 		edata.cmd = CHELSIO_GET_QSET_NUM;
+ 		edata.val = pi->nqsets;
+ 		if (copy_to_user(useraddr, &edata, sizeof(edata)))
 
 
