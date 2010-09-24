@@ -1,123 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752672Ab0IXKyq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 06:54:46 -0400
-Received: from www.tglx.de ([62.245.132.106]:44257 "EHLO www.tglx.de"
+	id S1755365Ab0IXKzF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 06:55:05 -0400
+Received: from smtp206.alice.it ([82.57.200.102]:45922 "EHLO smtp206.alice.it"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751139Ab0IXKyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 06:54:45 -0400
-Date: Fri, 24 Sep 2010 12:55:56 +0200
-From: "Hans J. Koch" <hjk@linutronix.de>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "Hans J. Koch" <hjk@linutronix.de>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 5/5] uio: Implement hotunplug support, using libunload
-Message-ID: <20100924105555.GD1819@silverbox.local>
-References: <m1y6b48973.fsf@fess.ebiederm.org>
- <20100917205946.GF2522@local>
- <m139t451b4.fsf_-_@fess.ebiederm.org>
- <m1eico3mjg.fsf_-_@fess.ebiederm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1eico3mjg.fsf_-_@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754106Ab0IXKzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 06:55:03 -0400
+X-Greylist: delayed 371 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Sep 2010 06:55:02 EDT
+Date: Fri, 24 Sep 2010 12:47:57 +0200
+From: Antonio Ospite <ospite@studenti.unina.it>
+To: Alan Ott <alan@signal11.us>
+Cc: Ville Tervo <ville.tervo@nokia.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stefan Achatz <erazor_de@users.sourceforge.net>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Stephane Chatty <chatty@enac.fr>, Michael Poole <mdpoole@troilus.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Bastien Nocera <hadess@hadess.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH v4 2/2] Bluetooth: hidp: Add support for hidraw 
+ HIDIOCGFEATURE  and HIDIOCSFEATURE
+Message-Id: <20100924124757.fdbf702a.ospite@studenti.unina.it>
+In-Reply-To: <89BCFDE1-0D39-4248-84B2-E02C1480E067@signal11.us>
+References: <1281442367.12579.206.camel@localhost.localdomain>
+	<1281990059-3562-3-git-send-email-alan@signal11.us>
+	<20100923115108.GC2379@null>
+	<89BCFDE1-0D39-4248-84B2-E02C1480E067@signal11.us>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__24_Sep_2010_12_47_57_+0200_3HcSCXOH2tD30cuO"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 20, 2010 at 12:24:19AM -0700, Eric W. Biederman wrote:
-> 
->  }
->  
->  static ssize_t uio_read(struct file *filep, char __user *buf,
->  			size_t count, loff_t *ppos)
->  {
->  	struct uio_listener *listener = filep->private_data;
-> -	struct uio_device *idev = listener->dev;
-> +	struct uio_device *idev = listener_idev(listener);
->  	DECLARE_WAITQUEUE(wait, current);
->  	ssize_t retval;
->  	s32 event_count;
->  
-> -	if (!idev->info->irq)
-> +	if (!unload_trylock(&idev->unload))
->  		return -EIO;
->  
-> +	retval = -EIO;
-> +	if (!idev->info->irq)
-> +		goto out;
-> +
-> +	retval = -EIO;
->  	if (count != sizeof(s32))
-> -		return -EINVAL;
-> +		goto out;
+--Signature=_Fri__24_Sep_2010_12_47_57_+0200_3HcSCXOH2tD30cuO
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-No. uio_read() should return -EINVAL if count != sizeof(s32). This is
-simply wrong userspace code that passes in an illegal value, so it's
-not an IO error but an invalid parameter.
-BTW, you use -EINVAL in the same situation in uio_write()...
+On Thu, 23 Sep 2010 10:16:43 -0400
+Alan Ott <alan@signal11.us> wrote:
 
->  
->  	add_wait_queue(&idev->wait, &wait);
->  
-> @@ -550,12 +586,21 @@ static ssize_t uio_read(struct file *filep, char __user *buf,
->  			retval = -ERESTARTSYS;
->  			break;
->  		}
-> +		unload_unlock(&idev->unload);
-> +
->  		schedule();
-> +
-> +		if (!unload_trylock(&idev->unload)) {
-> +			retval = -EIO;
-> +			break;
-> +		}
->  	} while (1);
->  
->  	__set_current_state(TASK_RUNNING);
->  	remove_wait_queue(&idev->wait, &wait);
->  
-> +out:
-> +	unload_unlock(&idev->unload);
->  	return retval;
->  }
->  
-> @@ -563,24 +608,33 @@ static ssize_t uio_write(struct file *filep, const char __user *buf,
->  			size_t count, loff_t *ppos)
->  {
->  	struct uio_listener *listener = filep->private_data;
-> -	struct uio_device *idev = listener->dev;
-> +	struct uio_device *idev = listener_idev(listener);
->  	ssize_t retval;
->  	s32 irq_on;
->  
-> -	if (!idev->info->irq)
-> +	if (!unload_trylock(&idev->unload))
->  		return -EIO;
->  
-> +	retval = -EIO;
-> +	if (!idev->info->irq)
-> +		goto out;
-> +
-> +	retval = -EINVAL;
->  	if (count != sizeof(s32))
-> -		return -EINVAL;
-> +		goto out;
->  
-> +	retval = -ENOSYS;
->  	if (!idev->info->irqcontrol)
-> -		return -ENOSYS;
-> +		goto out;
->  
-> +	retval = -EFAULT;
->  	if (copy_from_user(&irq_on, buf, count))
-> -		return -EFAULT;
-> +		goto out;
->  
->  	retval = idev->info->irqcontrol(idev->info, irq_on);
->  
-> +out:
-> +	unload_unlock(&idev->unload);
->  	return retval ? retval : sizeof(s32);
->  }
+>=20
+> On Sep 23, 2010, at 7:51 AM, Ville Tervo wrote:
+>=20
+> > Hi Alan,
+> >
+> > One comment.
+> >
+> > How about a variable called ret and using that to return len or =20
+> > errno? It
+> > would eliminate code dublication.
+> >
+>=20
+> Hi Ville,
+>=20
+> Where specifically? In which function? I've gone through it a couple =20
+> of times and failed to find return statements which are superfluous. =20
+> Maybe I'm missing something fundamental?
+>=20
+
+I guess he's referring to the return paths (normal, err_restartsys,
+err_eio) in hidp_get_raw_report(), they could be merged into a
+generic "out:" path by parametrizing the return value.
+
+I don't know if Alan prefers explicit error paths, for me it's OK either
+way.
+
+Regards,
+   Antonio
+
+--=20
+Antonio Ospite
+http://ao2.it
+
+PGP public key ID: 0x4553B001
+
+A: Because it messes up the order in which people normally read text.
+   See http://en.wikipedia.org/wiki/Posting_style
+Q: Why is top-posting such a bad thing?
+
+--Signature=_Fri__24_Sep_2010_12_47_57_+0200_3HcSCXOH2tD30cuO
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkycgd0ACgkQ5xr2akVTsAF0HgCgrjChhONG+kYfvbfkgJjkQkks
+Ek0AoJzjY7yPnFkZqDhB+oX0vNov4eYb
+=0nuG
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__24_Sep_2010_12_47_57_+0200_3HcSCXOH2tD30cuO--
