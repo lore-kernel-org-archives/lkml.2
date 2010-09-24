@@ -1,117 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854Ab0IWXav (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Sep 2010 19:30:51 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:22544 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753407Ab0IWXau (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Sep 2010 19:30:50 -0400
-Subject: [PATCH] x86, HPET: mark HPET PCI BARs as IORESOURCE_PCI_FIXED
-To: Venkatesh Pallipadi <venki@google.com>
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: Prarit Bhargava <prarit@redhat.com>, fredlwm@gmail.com,
-        Simon Arlott <simon@fire.lp0.eu>, x86@kernel.org,
-        Clemens Ladisch <clemens@ladisch.de>, linux-kernel@vger.kernel.org,
-        Marc Jones <marcj303@gmail.com>,
-        Jordan Crouse <jcrouse@codeaurora.org>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 23 Sep 2010 17:30:47 -0600
-Message-ID: <20100923233047.12463.61480.stgit@bob.kio>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1756013Ab0IWXa6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Sep 2010 19:30:58 -0400
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:46036 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755904Ab0IWXa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Sep 2010 19:30:56 -0400
+Date: Thu, 23 Sep 2010 17:31:05 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: hpa@zytor.com
+Cc: linux-kernel@vger.kernel.org, dsd@laptop.org, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org
+Subject: [PATCH] x86: OLPC: some olpc-detection cleanups
+Message-ID: <20100923173105.10fb92d1@debxo>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Following up on dsd's cleanups (3e3c4860), address some minor nits:
 
-We often discover the HPET early, via the static ACPI HPET table, before
-enumerating PCI devices.  If the HPET is implemented as a PCI function,
-we will discover it again during PCI device enumeration.  We must make
-sure we never move the PCI function out from under the driver.
+ - rename check_ofw_arch to olpc_check_arch (as we're checking for OLPC)
+ - add a comment describing why we're checking..
+ - use sizeof(array) rather than hardcoding the size
+ - sprinkle some parens around
 
-Doing this for *any* PCI BAR that matches a previously discovered HPET
-should be more generic than the previous ATI-specific quirk.
-
-This is for a regression from 2.6.34, but the reporter has been unable
-to test it yet.
-
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=18482
-Reported-by: Simon Arlott <simon@fire.lp0.eu>
-Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Signed-off-by: Andres Salomon <dilinger@queued.net>
 ---
+ arch/x86/kernel/olpc.c |   15 +++++++++++----
+ 1 files changed, 11 insertions(+), 4 deletions(-)
 
- arch/x86/kernel/quirks.c |   19 +++++++++++++++++++
- arch/x86/pci/fixup.c     |   28 ----------------------------
- 2 files changed, 19 insertions(+), 28 deletions(-)
-
-
-diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
-index 939b9e9..8acd667 100644
---- a/arch/x86/kernel/quirks.c
-+++ b/arch/x86/kernel/quirks.c
-@@ -507,6 +507,25 @@ static void force_disable_hpet_msi(struct pci_dev *unused)
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_SBX00_SMBUS,
- 			 force_disable_hpet_msi);
- 
-+static void mark_pci_hpet_fixed(struct pci_dev *dev)
-+{
-+	int i;
-+
-+	if (!hpet_address)
-+		return;
-+
-+	for (i = 0; i < 6; i++) {
-+		struct resource *res = &dev->resource[i];
-+
-+		if (resource_type(res) == IORESOURCE_MEM &&
-+		    res->start == hpet_address) {
-+			dev_info(&dev->dev, "BAR %d: %pR is an HPET we found earlier; making it immovable\n",
-+				 i, res);
-+			res->flags |= IORESOURCE_PCI_FIXED;
-+		}
-+	}
-+}
-+DECLARE_PCI_FIXUP_HEADER(PCI_ANY_ID, PCI_ANY_ID, mark_pci_hpet_fixed);
- #endif
- 
- #if defined(CONFIG_PCI) && defined(CONFIG_NUMA)
-diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
-index 6dd8955..08eba69 100644
---- a/arch/x86/pci/fixup.c
-+++ b/arch/x86/pci/fixup.c
-@@ -493,31 +493,3 @@ static void __devinit pci_siemens_interrupt_controller(struct pci_dev *dev)
+diff --git a/arch/x86/kernel/olpc.c b/arch/x86/kernel/olpc.c
+index 37c4993..361c2e0 100644
+--- a/arch/x86/kernel/olpc.c
++++ b/arch/x86/kernel/olpc.c
+@@ -183,18 +183,25 @@ err:
  }
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_SIEMENS, 0x0015,
- 			  pci_siemens_interrupt_controller);
--
--/*
-- * SB600: Disable BAR1 on device 14.0 to avoid HPET resources from
-- * confusing the PCI engine:
-- */
--static void sb600_disable_hpet_bar(struct pci_dev *dev)
--{
--	u8 val;
--
--	/*
--	 * The SB600 and SB700 both share the same device
--	 * ID, but the PM register 0x55 does something different
--	 * for the SB700, so make sure we are dealing with the
--	 * SB600 before touching the bit:
--	 */
--
--	pci_read_config_byte(dev, 0x08, &val);
--
--	if (val < 0x2F) {
--		outb(0x55, 0xCD6);
--		val = inb(0xCD7);
--
--		/* Set bit 7 in PM register 0x55 */
--		outb(0x55, 0xCD6);
--		outb(val | 0x80, 0xCD7);
--	}
--}
--DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_ATI, 0x4385, sb600_disable_hpet_bar);
+ EXPORT_SYMBOL_GPL(olpc_ec_cmd);
+ 
+-static bool __init check_ofw_architecture(void)
++/*
++ * Simply because OFW has been detected does not mean that the machine is
++ * an OLPC device; this ensures that OFW's "/architecture" property is set
++ * to "OLPC".
++ */
++static bool __init olpc_check_architecture(void)
+ {
+ 	size_t propsize;
+ 	char olpc_arch[5];
+-	const void *args[] = { NULL, "architecture", olpc_arch, (void *)5 };
++	const void *args[] = { NULL, "architecture", olpc_arch,
++			(void *)sizeof(olpc_arch) };
+ 	void *res[] = { &propsize };
+ 
+ 	if (olpc_ofw("getprop", args, res)) {
+ 		printk(KERN_ERR "ofw: getprop call failed!\n");
+ 		return false;
+ 	}
+-	return propsize == 5 && strncmp("OLPC", olpc_arch, 5) == 0;
++	return (propsize == sizeof(olpc_arch)) &&
++			(strncmp("OLPC", olpc_arch, sizeof(olpc_arch)) == 0);
+ }
+ 
+ static u32 __init get_board_revision(void)
+@@ -213,7 +220,7 @@ static u32 __init get_board_revision(void)
+ 
+ static bool __init platform_detect(void)
+ {
+-	if (!check_ofw_architecture())
++	if (!olpc_check_architecture())
+ 		return false;
+ 	olpc_platform_info.flags |= OLPC_F_PRESENT;
+ 	olpc_platform_info.boardrev = get_board_revision();
+-- 
+1.5.6.5
 
