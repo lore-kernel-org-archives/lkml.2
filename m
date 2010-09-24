@@ -1,41 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932435Ab0IXQOp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:14:45 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:39677 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932400Ab0IXQOo (ORCPT
+	id S932419Ab0IXQSY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:18:24 -0400
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:49651 "HELO
+	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753729Ab0IXQSX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:14:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=Est6Vawtq619VKfN0N5ZG7StdwX1kKaf/uFYHoMLo+fPj8oXK6NvWPuKw8CYCWNTgt
-         fGZBqag1dqeBH4QLspiPVu6Issv+hFSwll9fi7sxEnOLzHHBEFLJsO2l0NqiGl304MUQ
-         JWbrNidvlOmF2wwF+sdMmkbm9QeUsRLkLz1vU=
-MIME-Version: 1.0
-Date: Fri, 24 Sep 2010 21:44:43 +0530
-Message-ID: <AANLkTikjk-Wqz-dAi4Ozy=PSL7n1-sfrRhrP6GwjavA3@mail.gmail.com>
-Subject: latency tracing in mainline or rt
-From: Jack Daniel <wanders.thirst@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, Jiri Olsa <jolsa@redhat.com>, rostedt@goodmis.org,
-        fweisbec@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 24 Sep 2010 12:18:23 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=Dqa2/1tHIQR+Gq9m51a/KfZ2DdHwbn8OhkMhlaw9DdMzSYRNjpNSJW1p2h1YqUl3EbNW6Q6uK3dw2BFN90rO5tiFax6DutBzeJJ2eVlXefz1zmB6hsgZnMu6Botvyyeh;
+Date: Fri, 24 Sep 2010 09:18:20 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: tim.gardner@canonical.com
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: MCP limit log messages, 2.6.36-rc4
+Message-ID: <20100924091820.4f649786@jbarnes-desktop>
+In-Reply-To: <4C9BD8D5.7080201@canonical.com>
+References: <4C9106C1.4080505@canonical.com>
+	<20100923134816.57e932fc@jbarnes-desktop>
+	<20100923145428.4805adcb@jbarnes-desktop>
+	<4C9BD8D5.7080201@canonical.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 24 Sep 2010 06:46:45 +0800
+Tim Gardner <tim.gardner@canonical.com> wrote:
+> Its just a debug hack which I wrote (that I mentioned in the first 
+> email) so I could figure out why the driver was complaining.
 
-Can some one tell me the difference between Latency tracing that's
-here http://people.redhat.com/mingo/latency-tracing-patches/ and the
-tracing supported in the RT kernel here
-http://www.kernel.org/pub/linux/kernel/projects/rt/ ? What's the
-status of the present latency tracing and its documentation. Does
-Ftrace override these with its superior tracing? Any help is highly
-appreciated.
+Oh sorry, missed that.  An upstream patch for that would be welcome as
+well.
 
+> I'll be back from Asia by Monday and will give these patches a try.
 
-Regards,
-Jack
+Great, as I said you may still see spurious "over power" conditions,
+but that's due to a bug in the i915 driver.
+
+-- 
+Jesse Barnes, Intel Open Source Technology Center
