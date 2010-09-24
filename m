@@ -1,81 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933049Ab0IXQvH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:51:07 -0400
-Received: from kroah.org ([198.145.64.141]:52223 "EHLO coco.kroah.org"
+	id S932675Ab0IXQ21 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:28:27 -0400
+Received: from kroah.org ([198.145.64.141]:38347 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754595Ab0IXQvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:51:00 -0400
-Date: Fri, 24 Sep 2010 09:46:09 -0700
-From: Greg KH <greg@kroah.com>
-To: Mat <jackdachef@gmail.com>
-Cc: Gabriel C <nix.or.die@googlemail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Jiri Kosina <jkosina@suse.cz>,
-        Guillaume Chazarain <guichaz@gmail.com>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>, Oliver Neukum <oliver@neukum.org>,
-        Alan Ott <alan@signal11.us>, linux-usb@vger.kernel.org,
-        linux-input@vger.kernel.org, Andreas Bombe <aeb@debian.org>,
-        Alex Riesen <raa.lkml@gmail.com>
-Subject: Re: [BUG, Regression, bisected] USB mouse causes bug on 1st
- insert, ignored on 2nd insert, lsusb stuck at usbdev_open
-Message-ID: <20100924164609.GB16655@kroah.com>
-References: <Pine.LNX.4.44L0.1009211013460.1644-100000@iolanthe.rowland.org>
- <4C98C70B.3080407@turmel.org>
- <4C98D892.7030605@googlemail.com>
- <AANLkTinQVNy4yOSW=aEbuYh6b_F8nKBLxsjxBDk8zq8O@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinQVNy4yOSW=aEbuYh6b_F8nKBLxsjxBDk8zq8O@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932638Ab0IXQ2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:28:25 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:18 2010
+Message-Id: <20100924162618.102958761@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 24 Sep 2010 09:24:25 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jan Kara <jack@suse.cz>, Jens Axboe <jaxboe@fusionio.com>
+Subject: [37/80] bdi: Fix warnings in __mark_inode_dirty for /dev/zero and friends
+In-Reply-To: <20100924162706.GA7381@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 22, 2010 at 11:47:09AM +0200, Mat wrote:
-> On Tue, Sep 21, 2010 at 6:08 PM, Gabriel C <nix.or.die@googlemail.com> wrote:
-> > On 21.09.2010 16:54, Phil Turmel wrote:
-> >
-> >> On 09/21/2010 10:30 AM, Alan Stern wrote:
-> >>> On Tue, 21 Sep 2010, Jiri Kosina wrote:
-> >>>
-> >>>> I have just found out that it's actually CONFIG_USB_DYNAMIC_MINORS which
-> >>>> makes the difference. When unset, the problem doesn't trigger, and
-> >>>> usb_find_interface() always returns the proper interface. When
-> >>>> CONFIG_USB_DYNAMIC_MINORS is being used, the oops happen.
-> >>>>
-> >>>> I'll look into that.
-> >>>
-> >>> Apparently the problem is that intf->minors doesn't get initialized
-> >>> properly.  This patch should fix it.  Everybody, please try it out.
-> >>
-> >> Yes, this works for me.  (as did Jiri's version.)
-> >
-> >
-> > Both versions of the patch are working fine for me too also.
-> >
-> >>
-> >> Thank you both for the support.
-> >>
-> >> Feel free to add my:
-> >>
-> >> Tested-by: Philip J. Turmel <philip@turmel.org>
-> >
-> >
-> > And mine if you wish.
-> > Tested-by: Gabriel Craciunescu  <nix.or.die@googlemail.com>
-> >
-> >
-> 
-> confirmed !
-> 
-> I also tested both and it works fine so far :)
-> 
-> I don't know if it's too late already:
-> Tested-by: Matthias Bayer <jackdachef@gmail.com>
+2.6.35-stable review patch.  If anyone has any objections, please let us know.
 
-Nope, not to late, I've added this to the patch as well, thanks for
-letting us know.
+------------------
 
-greg k-h
+From: Jan Kara <jack@suse.cz>
+
+commit 692ebd17c2905313fff3c504c249c6a0faad16ec upstream.
+
+Inodes of devices such as /dev/zero can get dirty for example via
+utime(2) syscall or due to atime update. Backing device of such inodes
+(zero_bdi, etc.) is however unable to handle dirty inodes and thus
+__mark_inode_dirty complains.  In fact, inode should be rather dirtied
+against backing device of the filesystem holding it. This is generally a
+good rule except for filesystems such as 'bdev' or 'mtd_inodefs'. Inodes
+in these pseudofilesystems are referenced from ordinary filesystem
+inodes and carry mapping with real data of the device. Thus for these
+inodes we have to use inode->i_mapping->backing_dev_info as we did so
+far. We distinguish these filesystems by checking whether sb->s_bdi
+points to a non-trivial backing device or not.
+
+Example: Assume we have an ext3 filesystem on /dev/sda1 mounted on /.
+There's a device inode A described by a path "/dev/sdb" on this
+filesystem. This inode will be dirtied against backing device "8:0"
+after this patch. bdev filesystem contains block device inode B coupled
+with our inode A. When someone modifies a page of /dev/sdb, it's B that
+gets dirtied and the dirtying happens against the backing device "8:16".
+Thus both inodes get filed to a correct bdi list.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ fs/fs-writeback.c |   23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
+
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -28,8 +28,6 @@
+ #include <linux/buffer_head.h>
+ #include "internal.h"
+ 
+-#define inode_to_bdi(inode)	((inode)->i_mapping->backing_dev_info)
+-
+ /*
+  * We don't actually have pdflush, but this one is exported though /proc...
+  */
+@@ -62,6 +60,27 @@ int writeback_in_progress(struct backing
+ 	return !list_empty(&bdi->work_list);
+ }
+ 
++static inline struct backing_dev_info *inode_to_bdi(struct inode *inode)
++{
++	struct super_block *sb = inode->i_sb;
++	struct backing_dev_info *bdi = inode->i_mapping->backing_dev_info;
++
++	/*
++	 * For inodes on standard filesystems, we use superblock's bdi. For
++	 * inodes on virtual filesystems, we want to use inode mapping's bdi
++	 * because they can possibly point to something useful (think about
++	 * block_dev filesystem).
++	 */
++	if (sb->s_bdi && sb->s_bdi != &noop_backing_dev_info) {
++		/* Some device inodes could play dirty tricks. Catch them... */
++		WARN(bdi != sb->s_bdi && bdi_cap_writeback_dirty(bdi),
++			"Dirtiable inode bdi %s != sb bdi %s\n",
++			bdi->name, sb->s_bdi->name);
++		return sb->s_bdi;
++	}
++	return bdi;
++}
++
+ static void bdi_queue_work(struct backing_dev_info *bdi,
+ 		struct wb_writeback_work *work)
+ {
+
+
