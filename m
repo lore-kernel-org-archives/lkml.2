@@ -1,167 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119Ab0IXQx4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:53:56 -0400
-Received: from kroah.org ([198.145.64.141]:38347 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932672Ab0IXQ21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:28:27 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:18 2010
-Message-Id: <20100924162618.273518132@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:24:27 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [39/80] drivers/pci/intel-iommu.c: fix build with older gccs
-In-Reply-To: <20100924162706.GA7381@kroah.com>
+	id S1756205Ab0IXQyE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:54:04 -0400
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:58966 "HELO
+	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753822Ab0IXQx6 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:53:58 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=Yw48KHfM8vyPEF+sQVKRFRvpGS3kA+Fwx/IJ0zJLaDeikuKYb9E1/GIVxFNP2GhTwCJtykW0ShDVzSU0hYoNieu0TvZSzSNjr5z+BNomk1jFbPdALbtwUTCHaVEt1eSu;
+Date: Fri, 24 Sep 2010 09:53:55 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Chen Gong <gong.chen@linux.intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-pci@vger.kernel.org, Huang Ying <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH] PCI / PCIe / AER: Disable native AER service if BIOS
+ has precedence (v2) (was: Re: [PATCH]  PCI / PCIe / AER ...)
+Message-ID: <20100924095355.36a7b064@jbarnes-desktop>
+In-Reply-To: <201009201850.00626.rjw@sisk.pl>
+References: <201009200002.15609.rjw@sisk.pl>
+	<4C96FCA3.2060704@linux.intel.com>
+	<201009201850.00626.rjw@sisk.pl>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-stable review patch.  If anyone has any objections, please let us know.
+On Mon, 20 Sep 2010 18:50:00 +0200
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-------------------
+> On Monday, September 20, 2010, Chen Gong wrote:
+> > 于 9/20/2010 6:02 AM, Rafael J. Wysocki 写道:
+> > > From: Rafael J. Wysocki<rjw@sisk.pl>
+> > >
+> > > There is a design issue related to PCIe AER and _OSC that the BIOS
+> > > may be asked to grant control of the AER service even if some
+> > > Hardware Error Source Table (HEST) entries contain information
+> > > meaning that the BIOS really should control it.  Namely,
+> > > pcie_port_acpi_setup() calls pcie_aer_get_firmware_first() that
+> > > determines whether or not the AER service should be controlled by
+> > > the BIOS on the basis of the HEST information for the given PCIe
+> > > port.  The BIOS is asked to grant control of the AER service for
+> > > a PCIe Root Complex if pcie_aer_get_firmware_first() returns 'false'
+> > > for at least one root port in that complex, even if all of the other
+> > > root ports' HEST entries have the FIRMWARE_FIRST flag set (and none
+> > > of them has the GLOBAL flag set).  However, if the AER service is
+> > > controlled by the kernel, that may interfere with the BIOS' handling
+> > > of the error sources having the FIRMWARE_FIRST flag.  Moreover,
+> > > there may be PCIe endpoints that have the FIRMWARE_FIRST flag set in
+> > > HEST and are attached to the root ports in question, in which case it
+> > > also may be unsafe to ask the BIOS for control of the AER service.
+> > >
+> > > For this reason, introduce a function checking if there's at least
+> > > one PCIe-related HEST entry with the FIRMWARE_FIRST flag set and
+> > > disable the native AER service altogether if this function returns
+> > > 'true'.
 
-From: Andrew Morton <akpm@linux-foundation.org>
+Applied the second patch to my linux-next branch, thanks.
 
-commit df08cdc7ef606509debe7677c439be0ca48790e4 upstream.
-
-drivers/pci/intel-iommu.c: In function `__iommu_calculate_agaw':
-drivers/pci/intel-iommu.c:437: sorry, unimplemented: inlining failed in call to 'width_to_agaw': function body not available
-drivers/pci/intel-iommu.c:445: sorry, unimplemented: called from here
-
-Move the offending function (and its siblings) to top-of-file, remove the
-forward declaration.
-
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=17441
-
-Reported-by: Martin Mokrejs <mmokrejs@ribosome.natur.cuni.cz>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/pci/intel-iommu.c |   90 +++++++++++++++++++++-------------------------
- 1 file changed, 43 insertions(+), 47 deletions(-)
-
---- a/drivers/pci/intel-iommu.c
-+++ b/drivers/pci/intel-iommu.c
-@@ -71,6 +71,49 @@
- #define DMA_32BIT_PFN		IOVA_PFN(DMA_BIT_MASK(32))
- #define DMA_64BIT_PFN		IOVA_PFN(DMA_BIT_MASK(64))
- 
-+/* page table handling */
-+#define LEVEL_STRIDE		(9)
-+#define LEVEL_MASK		(((u64)1 << LEVEL_STRIDE) - 1)
-+
-+static inline int agaw_to_level(int agaw)
-+{
-+	return agaw + 2;
-+}
-+
-+static inline int agaw_to_width(int agaw)
-+{
-+	return 30 + agaw * LEVEL_STRIDE;
-+}
-+
-+static inline int width_to_agaw(int width)
-+{
-+	return (width - 30) / LEVEL_STRIDE;
-+}
-+
-+static inline unsigned int level_to_offset_bits(int level)
-+{
-+	return (level - 1) * LEVEL_STRIDE;
-+}
-+
-+static inline int pfn_level_offset(unsigned long pfn, int level)
-+{
-+	return (pfn >> level_to_offset_bits(level)) & LEVEL_MASK;
-+}
-+
-+static inline unsigned long level_mask(int level)
-+{
-+	return -1UL << level_to_offset_bits(level);
-+}
-+
-+static inline unsigned long level_size(int level)
-+{
-+	return 1UL << level_to_offset_bits(level);
-+}
-+
-+static inline unsigned long align_to_level(unsigned long pfn, int level)
-+{
-+	return (pfn + level_size(level) - 1) & level_mask(level);
-+}
- 
- /* VT-d pages must always be _smaller_ than MM pages. Otherwise things
-    are never going to work. */
-@@ -434,8 +477,6 @@ void free_iova_mem(struct iova *iova)
- }
- 
- 
--static inline int width_to_agaw(int width);
--
- static int __iommu_calculate_agaw(struct intel_iommu *iommu, int max_gaw)
- {
- 	unsigned long sagaw;
-@@ -646,51 +687,6 @@ out:
- 	spin_unlock_irqrestore(&iommu->lock, flags);
- }
- 
--/* page table handling */
--#define LEVEL_STRIDE		(9)
--#define LEVEL_MASK		(((u64)1 << LEVEL_STRIDE) - 1)
--
--static inline int agaw_to_level(int agaw)
--{
--	return agaw + 2;
--}
--
--static inline int agaw_to_width(int agaw)
--{
--	return 30 + agaw * LEVEL_STRIDE;
--
--}
--
--static inline int width_to_agaw(int width)
--{
--	return (width - 30) / LEVEL_STRIDE;
--}
--
--static inline unsigned int level_to_offset_bits(int level)
--{
--	return (level - 1) * LEVEL_STRIDE;
--}
--
--static inline int pfn_level_offset(unsigned long pfn, int level)
--{
--	return (pfn >> level_to_offset_bits(level)) & LEVEL_MASK;
--}
--
--static inline unsigned long level_mask(int level)
--{
--	return -1UL << level_to_offset_bits(level);
--}
--
--static inline unsigned long level_size(int level)
--{
--	return 1UL << level_to_offset_bits(level);
--}
--
--static inline unsigned long align_to_level(unsigned long pfn, int level)
--{
--	return (pfn + level_size(level) - 1) & level_mask(level);
--}
--
- static struct dma_pte *pfn_to_dma_pte(struct dmar_domain *domain,
- 				      unsigned long pfn)
- {
-
-
+-- 
+Jesse Barnes, Intel Open Source Technology Center
