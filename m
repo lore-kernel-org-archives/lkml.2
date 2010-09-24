@@ -1,65 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757509Ab0IXS4W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 14:56:22 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:50198 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754454Ab0IXS4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 14:56:20 -0400
-Date: Fri, 24 Sep 2010 11:55:09 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jan Beulich <jbeulich@novell.com>
-CC: fenghua.yu@intel.com, khali@linux-fr.org, r.marek@assembler.cz,
-        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: Re: x86/hwmon: conditionalize coretemp's dependency on PCI
-Message-ID: <20100924185509.GA20155@ericsson.com>
-References: <4C8E18790200007800015AF7@vpn.id2.novell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4C8E18790200007800015AF7@vpn.id2.novell.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757513Ab0IXS7O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 14:59:14 -0400
+Received: from cpe-67-242-120-143.stny.res.rr.com ([67.242.120.143]:53054 "EHLO
+	localhost6.localdomain6" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757484Ab0IXS7N convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 14:59:13 -0400
+X-Greylist: delayed 2984 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Sep 2010 14:59:12 EDT
+Subject: Re: [tip:perf/core] jump label: x86 support
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Jason Baron <jbaron@redhat.com>, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+In-Reply-To: <4C9CE01D.1060204@zytor.com>
+References: <f838f49f40fbea0254036194be66dc48b598dcea.1284733808.git.jbaron@redhat.com>
+	 <tip-d9f5ab7b1c0a520867af389bab5d5fcdbd0e407e@git.kernel.org>
+	 <4C9CCF98.7000506@zytor.com> <20100924163435.GE2887@redhat.com>
+	 <4C9CE01D.1060204@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 24 Sep 2010 14:08:50 -0400
+Message-ID: <1285351730.2270.0.camel@frodo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 10:26:33AM -0000, Jan Beulich wrote:
-> PCI specific code is needed only when Atom CPUs are potentially
-> supported by the kernel.
+On Fri, 2010-09-24 at 10:30 -0700, H. Peter Anvin wrote:
+> On 09/24/2010 09:34 AM, Jason Baron wrote:
+> > 
+> > The !CC_OPTIMIZE_FOR_SIZE condition is subsequently removed by a
+> > follow-on patch as part of the commit series.
+> > 
 > 
-> Signed-off-by: Jan Beulich <jbeulich@novell.com>
-> Cc: Rudolf Marek <r.marek@assembler.cz>
-> 
-> ---
-> drivers/hwmon/Kconfig |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> --- linux-2.6.36-rc4/drivers/hwmon/Kconfig	2010-09-13 08:45:02.000000000 +0200
-> +++ 2.6.36-rc4-x86-coretemp-maybe-pci/drivers/hwmon/Kconfig	2010-09-10 16:24:16.000000000 +0200
-> @@ -401,7 +401,8 @@ config SENSORS_GL520SM
->  
->  config SENSORS_CORETEMP
->  	tristate "Intel Core/Core2/Atom temperature sensor"
-> -	depends on X86 && PCI && EXPERIMENTAL
-> +	depends on X86 && EXPERIMENTAL
-> +	depends on PCI || (!MATOM && !GENERIC_CPU && !X86_GENERIC)
->  	help
->  	  If you say yes here you get support for the temperature
->  	  sensor inside your CPU. Most of the family 6 CPUs
+> Ah, okay.  No problem then.
 
-Resending my reply to this one as well. Again, apologies if there is duplication.
+Sorry, I should have Cc'd you on that patch.
 
-The coretemp code unconditionally calls pci functions, even if PCI is not defined.
-I am concerned that this might cause problems. It might be better to stick with
-the more generic dependency instead of trying to optimize too much.
-
-Guenter
+-- Steve
