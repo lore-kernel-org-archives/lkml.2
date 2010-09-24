@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933128Ab0IXQmA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:42:00 -0400
-Received: from kroah.org ([198.145.64.141]:37240 "EHLO coco.kroah.org"
+	id S933086Ab0IXQlq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:41:46 -0400
+Received: from kroah.org ([198.145.64.141]:37246 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933049Ab0IXQf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:35:27 -0400
+	id S933057Ab0IXQf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:35:29 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:47 2010
-Message-Id: <20100924163347.479425794@clark.site>
+Message-Id: <20100924163347.568982799@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:32:03 -0700
+Date: Fri, 24 Sep 2010 09:32:04 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>, Alex Elder <aelder@sgi.com>,
-        dann frazier <dannf@debian.org>
-Subject: [39/68] xfs: prevent reading uninitialized stack memory
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [40/68] drivers/video/via/ioctl.c: prevent reading uninitialized stack memory
 In-Reply-To: <20100924163357.GA15741@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit a122eb2fdfd78b58c6dd992d6f4b1aaef667eef9 upstream.
+commit b4aaa78f4c2f9cde2f335b14f4ca30b01f9651ca upstream.
 
-The XFS_IOC_FSGETXATTR ioctl allows unprivileged users to read 12
-bytes of uninitialized stack memory, because the fsxattr struct
-declared on the stack in xfs_ioc_fsgetxattr() does not alter (or zero)
-the 12-byte fsx_pad member before copying it back to the user.  This
-patch takes care of it.
+The VIAFB_GET_INFO device ioctl allows unprivileged users to read 246
+bytes of uninitialized stack memory, because the "reserved" member of
+the viafb_ioctl_info struct declared on the stack is not altered or
+zeroed before being copied back to the user.  This patch takes care of
+it.
 
 Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-Reviewed-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: Alex Elder <aelder@sgi.com>
-Cc: dann frazier <dannf@debian.org>
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/xfs/linux-2.6/xfs_ioctl.c |    2 ++
+ drivers/video/via/ioctl.c |    2 ++
  1 file changed, 2 insertions(+)
 
---- a/fs/xfs/linux-2.6/xfs_ioctl.c
-+++ b/fs/xfs/linux-2.6/xfs_ioctl.c
-@@ -789,6 +789,8 @@ xfs_ioc_fsgetxattr(
+--- a/drivers/video/via/ioctl.c
++++ b/drivers/video/via/ioctl.c
+@@ -25,6 +25,8 @@ int viafb_ioctl_get_viafb_info(u_long ar
  {
- 	struct fsxattr		fa;
+ 	struct viafb_ioctl_info viainfo;
  
-+	memset(&fa, 0, sizeof(struct fsxattr));
++	memset(&viainfo, 0, sizeof(struct viafb_ioctl_info));
 +
- 	xfs_ilock(ip, XFS_ILOCK_SHARED);
- 	fa.fsx_xflags = xfs_ip2xflags(ip);
- 	fa.fsx_extsize = ip->i_d.di_extsize << ip->i_mount->m_sb.sb_blocklog;
+ 	viainfo.viafb_id = VIAID;
+ 	viainfo.vendor_id = PCI_VIA_VENDOR_ID;
+ 
 
 
