@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755621Ab0IXM2u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 08:28:50 -0400
-Received: from cantor.suse.de ([195.135.220.2]:41536 "EHLO mx1.suse.de"
+	id S1755794Ab0IXM3D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 08:29:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42937 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752714Ab0IXM2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752158Ab0IXM2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 24 Sep 2010 08:28:34 -0400
 From: Thomas Renninger <trenn@suse.de>
 To: gregkh@suse.de
 Cc: linux-kernel@vger.kernel.org, bjorn.helgaas@hp.com, jbaron@redhat.com,
         Thomas Renninger <trenn@suse.de>
-Subject: [PATCH 2/4] PNP: Compile all pnp built-in stuff in one module namespace
-Date: Fri, 24 Sep 2010 14:28:29 +0200
-Message-Id: <1285331311-21753-3-git-send-email-trenn@suse.de>
+Subject: [PATCH 3/4] PNP: Use dev_dbg instead of dev_printk(KERN_DEBUG.. if DYNAMIC_DEBUG is compiled in
+Date: Fri, 24 Sep 2010 14:28:30 +0200
+Message-Id: <1285331311-21753-4-git-send-email-trenn@suse.de>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <20100920184441.GA2915@redhat.com>
 References: <20100920184441.GA2915@redhat.com>
@@ -20,26 +20,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-before, dynamic debug info (/sys/kernel/debug/dynamic_debug/control) showed
-the file name as module name of each dynamic debug message (in square brackets):
-drivers/pnp/core.c:198 [core]pnp_add_device p "%s device, IDs%s (%s)\012"
-drivers/pnp/resource.c:619 [resource]pnp_add_bus_resource p "  add %pr\012"
-..
-drivers/pnp/pnpacpi/core.c:89 [core]pnpacpi_set_resources p "set resources\012"
-..
+This allows usage of generic pnp.ddebug debug parameter instead of pnp.debug
+PNP specific parameter.
 
-With this patch the module name will be pnp for all "drivers/pnp/* -r" code:
-drivers/pnp/core.c:198 [pnp]pnp_add_device p "%s device, IDs%s (%s)\012"
-drivers/pnp/resource.c:619 [pnp]pnp_add_bus_resource p "  add %pr\012"
-..
-drivers/pnp/pnpacpi/core.c:112 [pnp]pnpacpi_disable_resources p "disable resources\012"
-
-This has advantages:
-  - Any pnp code can make use of the moduleparam.h interface, the modules
-    will show up as pnp.param.
-  - Passing pnp.ddebug as kernel boot param will enable all pnp debug messages
-    with my previous patch and CONFIG_DYNAMIC_DEBUG enabled.
-
+I wonder whether CONFIG_PNP_DEBUG_MESSAGES can vanish totally with this or
+at some time. Only advantage having it is:
+If you are restricted and your kernel must not exceed X bytes, you cannot compile
+in PNP debug messages only, but you have to compile in all debug messages.
 
 Signed-off-by: Thomas Renninger <trenn@suse.de>
 CC: Bjorn Helgaas <bjorn.helgaas@hp.com>
@@ -47,74 +34,66 @@ CC: Jason Baron <jbaron@redhat.com>
 CC: Greg KH <gregkh@suse.de>
 CC: lkml <linux-kernel@vger.kernel.org>
 ---
- drivers/pnp/Makefile         |    6 ++++--
- drivers/pnp/isapnp/Makefile  |    6 +++---
- drivers/pnp/pnpacpi/Makefile |    3 ++-
- drivers/pnp/pnpbios/Makefile |    5 +++--
- 4 files changed, 12 insertions(+), 8 deletions(-)
+ drivers/pnp/base.h |    8 ++++++--
+ drivers/pnp/core.c |   16 +++++++++++++++-
+ 2 files changed, 21 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/pnp/Makefile b/drivers/pnp/Makefile
-index 8de3775..bfba893 100644
---- a/drivers/pnp/Makefile
-+++ b/drivers/pnp/Makefile
-@@ -2,11 +2,13 @@
- # Makefile for the Linux Plug-and-Play Support.
- #
+diff --git a/drivers/pnp/base.h b/drivers/pnp/base.h
+index 0bab84e..1f7f9bd 100644
+--- a/drivers/pnp/base.h
++++ b/drivers/pnp/base.h
+@@ -170,12 +170,16 @@ struct pnp_resource *pnp_add_bus_resource(struct pnp_dev *dev,
+ 					  resource_size_t start,
+ 					  resource_size_t end);
  
--obj-y		:= core.o card.o driver.o resource.o manager.o support.o interface.o quirks.o
-+obj-y		:= pnp.o
-+
-+pnp-y		:= core.o card.o driver.o resource.o manager.o support.o interface.o quirks.o
- 
- obj-$(CONFIG_PNPACPI)		+= pnpacpi/
- obj-$(CONFIG_PNPBIOS)		+= pnpbios/
- obj-$(CONFIG_ISAPNP)		+= isapnp/
- 
- # pnp_system_init goes after pnpacpi/pnpbios init
--obj-y				+= system.o
-+pnp-y				+= system.o
-diff --git a/drivers/pnp/isapnp/Makefile b/drivers/pnp/isapnp/Makefile
-index cac18bb..6e607aa 100644
---- a/drivers/pnp/isapnp/Makefile
-+++ b/drivers/pnp/isapnp/Makefile
-@@ -1,7 +1,7 @@
- #
- # Makefile for the kernel ISAPNP driver.
- #
-+obj-y			+= pnp.o
-+pnp-y			:= core.o compat.o
- 
--isapnp-proc-$(CONFIG_PROC_FS) = proc.o
+-extern int pnp_debug;
 -
--obj-y := core.o compat.o $(isapnp-proc-y)
-+pnp-$(CONFIG_PROC_FS)	+= proc.o
-diff --git a/drivers/pnp/pnpacpi/Makefile b/drivers/pnp/pnpacpi/Makefile
-index 905326f..40c93da 100644
---- a/drivers/pnp/pnpacpi/Makefile
-+++ b/drivers/pnp/pnpacpi/Makefile
-@@ -1,5 +1,6 @@
- #
- # Makefile for the kernel PNPACPI driver.
- #
-+obj-y += pnp.o
++#if defined(CONFIG_DYNAMIC_DEBUG)
++#define pnp_dbg(dev, format, arg...)					\
++	({ dev_dbg(dev, format, ## arg); 0; })
++#else
+ #if defined(CONFIG_PNP_DEBUG_MESSAGES)
++extern int pnp_debug;
+ #define pnp_dbg(dev, format, arg...)					\
+ 	({ if (pnp_debug) dev_printk(KERN_DEBUG, dev, format, ## arg); 0; })
+ #else
+ #define pnp_dbg(dev, format, arg...)					\
+ 	({ if (0) dev_printk(KERN_DEBUG, dev, format, ## arg); 0; })
+ #endif
++#endif
+diff --git a/drivers/pnp/core.c b/drivers/pnp/core.c
+index 88b3cde..fe834ac 100644
+--- a/drivers/pnp/core.c
++++ b/drivers/pnp/core.c
+@@ -215,9 +215,21 @@ static int __init pnp_init(void)
  
--obj-y := core.o rsparser.o
-+pnp-y := core.o rsparser.o
-diff --git a/drivers/pnp/pnpbios/Makefile b/drivers/pnp/pnpbios/Makefile
-index 3cd3ed7..240b0ff 100644
---- a/drivers/pnp/pnpbios/Makefile
-+++ b/drivers/pnp/pnpbios/Makefile
-@@ -1,7 +1,8 @@
- #
- # Makefile for the kernel PNPBIOS driver.
- #
-+obj-y := pnp.o
+ subsys_initcall(pnp_init);
  
--pnpbios-proc-$(CONFIG_PNPBIOS_PROC_FS) = proc.o
-+pnp-y := core.o bioscalls.o rsparser.o
+-int pnp_debug;
++#if defined(CONFIG_DYNAMIC_DEBUG)
++static int __init pnp_debug_setup(char *__unused)
++{
++	printk(KERN_INFO "DYNAMIC_DEBUG enabled use pnp.ddebug instead of "
++	       "pnp.debug boot param\n");
++	return 1;
++}
++__setup("pnp.debug", pnp_debug_setup);
++
++#else
  
--obj-y := core.o bioscalls.o rsparser.o $(pnpbios-proc-y)
-+pnp-$(CONFIG_PNPBIOS_PROC_FS) += proc.o
+ #if defined(CONFIG_PNP_DEBUG_MESSAGES)
++
++int pnp_debug;
++
+ static int __init pnp_debug_setup(char *__unused)
+ {
+ 	pnp_debug = 1;
+@@ -225,3 +237,5 @@ static int __init pnp_debug_setup(char *__unused)
+ }
+ __setup("pnp.debug", pnp_debug_setup);
+ #endif
++
++#endif
 -- 
 1.6.4.2
 
