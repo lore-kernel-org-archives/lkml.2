@@ -1,84 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756736Ab0IXOfk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 10:35:40 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:46480 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753198Ab0IXOfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 10:35:39 -0400
-Message-ID: <4C9CB737.9000903@austin.ibm.com>
-Date: Fri, 24 Sep 2010 09:35:35 -0500
-From: Nathan Fontenot <nfont@austin.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+	id S932307Ab0IXOot (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 10:44:49 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:50278 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753587Ab0IXOos convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 10:44:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=MZKXqwZ5TF3B98wfRvJ9pyhHRVb/CcnjD5s8ILxdSi8Yrpe0Q4GxJmw2/MPs92wWRm
+         XdwkfTNffcJHD/SDyPHza3WNjCTVTHR1FtmCzdIo2ZUqhezCpSjuvaoo7jlAc1bMAHjm
+         bu6AOMKyqM4OuC+SGTPtG5Xmqhy1QlUseoMis=
 MIME-Version: 1.0
-To: balbir@linux.vnet.ibm.com
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
-        Greg KH <greg@kroah.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH 0/8] De-couple sysfs memory directories from memory sections
-References: <4C9A0F8F.2030409@austin.ibm.com> <20100923184002.GM3952@balbir.in.ibm.com>
-In-Reply-To: <20100923184002.GM3952@balbir.in.ibm.com>
+In-Reply-To: <20100924141046.GA26454@sirena.org.uk>
+References: <AANLkTin9Qji_bdyd3yqrP_-ti5xRT9jJ4je2fPM=uHFX@mail.gmail.com>
+	<20100924141046.GA26454@sirena.org.uk>
+Date: Fri, 24 Sep 2010 16:44:46 +0200
+Message-ID: <AANLkTinfUWiWza8vyqfn0nCA7P24nBJSKY6Zr=aFgVQu@mail.gmail.com>
+Subject: Re: [PATCH 1/6] This patch adds support for the ST-Ericsson CG2900
+From: Par-Gunnar Hjalmdahl <pghatwork@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, Pavan Savoy <pavan_savoy@sify.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2010 01:40 PM, Balbir Singh wrote:
-> * Nathan Fontenot <nfont@austin.ibm.com> [2010-09-22 09:15:43]:
-> 
->> This set of patches decouples the concept that a single memory
->> section corresponds to a single directory in 
->> /sys/devices/system/memory/.  On systems
->> with large amounts of memory (1+ TB) there are performance issues
->> related to creating the large number of sysfs directories.  For
->> a powerpc machine with 1 TB of memory we are creating 63,000+
->> directories.  This is resulting in boot times of around 45-50
->> minutes for systems with 1 TB of memory and 8 hours for systems
->> with 2 TB of memory.  With this patch set applied I am now seeing
->> boot times of 5 minutes or less.
->>
->> The root of this issue is in sysfs directory creation. Every time
->> a directory is created a string compare is done against all sibling
->> directories to ensure we do not create duplicates.  The list of
->> directory nodes in sysfs is kept as an unsorted list which results
->> in this being an exponentially longer operation as the number of
->> directories are created.
->>
->> The solution solved by this patch set is to allow a single
->> directory in sysfs to span multiple memory sections.  This is
->> controlled by an optional architecturally defined function
->> memory_block_size_bytes().  The default definition of this
->> routine returns a memory block size equal to the memory section
->> size. This maintains the current layout of sysfs memory
->> directories as it appears to userspace to remain the same as it
->> is today.
->>
->> For architectures that define their own version of this routine,
->> as is done for powerpc in this patchset, the view in userspace
->> would change such that each memoryXXX directory would span
->> multiple memory sections.  The number of sections spanned would
->> depend on the value reported by memory_block_size_bytes.
->>
->> In both cases a new file 'end_phys_index' is created in each
->> memoryXXX directory.  This file will contain the physical id
->> of the last memory section covered by the sysfs directory.  For
->> the default case, the value in 'end_phys_index' will be the same
->> as in the existing 'phys_index' file.
->>
-> 
-> What does this mean for memory hotplug or hotunplug? 
-> 
+Hi Mark,
 
-Memory hotplug will function on a memory block size basis.  For
-architectures that do not define their own memory_block_size_bytes()
-routine, they will get the default size and everything will work
-the same as it does today.
+Thanks for your comments.
 
-For architectures that define their own memory_block_size_bytes()
-routine and have multiple memory sections per memory block, hotplug
-operations will add or remove all of the memory sections in the memory
-memory block.
+2010/9/24 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Fri, Sep 24, 2010 at 03:46:44PM +0200, Par-Gunnar Hjalmdahl wrote:
+>
+>> +#ifndef PIN_INPUT_PULLUP
+>> +#define PIN_INPUT_PULLUP             (PIN_DIR_INPUT | PIN_PULL_UP)
+>> +#endif
+>> +
+>> +#ifndef GPIO_LOW
+>> +#define GPIO_LOW                     0
+>> +#endif
+>> +
+>> +#ifndef GPIO_HIGH
+>> +#define GPIO_HIGH                    1
+>> +#endif
+>> +
+>> +#ifndef GPIO_TO_IRQ
+>> +#define GPIO_TO_IRQ                  NOMADIK_GPIO_TO_IRQ
+>> +#endif
+>
+> None of this looks like things that should be added in driver code -
+> there should be standard ways of doing this stuff that you should use
+> and if there aren't and they are useful they should be added in generic
+> code so that other code can use them.
 
--Nathan
+You are absolutely correct in this. As I wrote in the "cover letter"
+[PATCH 0/6] we are already planning changes to this driver where we
+instead register as platform driver and will use normal Kernel
+methodology to implement this. As you can see in the patch these
+comments are regarding a file located in arch/arm/mach-ux500 and the
+driver therefore has a dependency to the Board configuration which
+isn't particularly nice. This will be corrected. These type of defines
+should of course not be located in a C-file either.
+
+>
+>> +/** BT_ENABLE_GPIO - GPIO to enable/disable the BT module.
+>> + */
+>> +#define BT_ENABLE_GPIO                       170
+>
+> This sort of thing should be passed in from the board configuration
+> normallly.
+
+See answer above.
+
+>
+>> +void cg2900_devices_enable_chip(void)
+>> +{
+>> +     gpio_set_value(GBF_ENA_RESET_GPIO, GPIO_HIGH);
+>> +}
+>> +EXPORT_SYMBOL(cg2900_devices_enable_chip);
+>
+> This looks like something that the driver should be organising rather
+> than something that should be exported for some random code to pick up?
+> In general most of the code in here looks like it should have more
+> device model usage and make more use of standard kernel infrastructure.
+
+See answer above. Will be a callback function in a driver data struct.
+
+>
+>> +static irqreturn_t cg2900_devices_interrupt(int irq, void *dev_id)
+>> +{
+>> +     disable_irq_nosync(irq);
+>> +     if (cg2900_dev_callback && cg2900_dev_callback->interrupt_cb)
+>> +             cg2900_dev_callback->interrupt_cb();
+>> +
+>> +     return IRQ_HANDLED;
+>> +}
+>
+> Why is there this callback mechanism - I'd expect the users of this code
+> to just be using the standard IRQ infrastructure?
+>
+
+I will have to get back to you regarding this. I did not implement
+that specific part and the guy who did is back on Monday.
+
+
+/P-G
