@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932719Ab0IXQtA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:49:00 -0400
-Received: from kroah.org ([198.145.64.141]:37030 "EHLO coco.kroah.org"
+	id S932959Ab0IXQtQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:49:16 -0400
+Received: from kroah.org ([198.145.64.141]:37025 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932829Ab0IXQey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:34:54 -0400
+	id S932894Ab0IXQex (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:34:53 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:33:44 2010
-Message-Id: <20100924163344.630105172@clark.site>
+Message-Id: <20100924163344.539370048@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:31:31 -0700
+Date: Fri, 24 Sep 2010 09:31:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: [07/68] tcp: Combat per-cpu skew in orphan tests.
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [06/68] tcp: select(writefds) dont hang up when a peer close connection
 In-Reply-To: <20100924163357.GA15741@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,96 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: David S. Miller <davem@davemloft.net>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-[ Upstream commit ad1af0fedba14f82b240a03fe20eb9b2fdbd0357 ]
+[ Upstream commit d84ba638e4ba3c40023ff997aa5e8d3ed002af36 ]
 
-As reported by Anton Blanchard when we use
-percpu_counter_read_positive() to make our orphan socket limit checks,
-the check can be off by up to num_cpus_online() * batch (which is 32
-by default) which on a 128 cpu machine can be as large as the default
-orphan limit itself.
+This issue come from ruby language community. Below test program
+hang up when only run on Linux.
 
-Fix this by doing the full expensive sum check if the optimized check
-triggers.
+	% uname -mrsv
+	Linux 2.6.26-2-486 #1 Sat Dec 26 08:37:39 UTC 2009 i686
+	% ruby -rsocket -ve '
+	BasicSocket.do_not_reverse_lookup = true
+	serv = TCPServer.open("127.0.0.1", 0)
+	s1 = TCPSocket.open("127.0.0.1", serv.addr[1])
+	s2 = serv.accept
+	s2.close
+	s1.write("a") rescue p $!
+	s1.write("a") rescue p $!
+	Thread.new {
+	  s1.write("a")
+	}.join'
+	ruby 1.9.3dev (2010-07-06 trunk 28554) [i686-linux]
+	#<Errno::EPIPE: Broken pipe>
+	[Hang Here]
 
-Reported-by: Anton Blanchard <anton@samba.org>
+FreeBSD, Solaris, Mac doesn't. because Ruby's write() method call
+select() internally. and tcp_poll has a bug.
+
+SUS defined 'ready for writing' of select() as following.
+
+|  A descriptor shall be considered ready for writing when a call to an output
+|  function with O_NONBLOCK clear would not block, whether or not the function
+|  would transfer data successfully.
+
+That said, EPIPE situation is clearly one of 'ready for writing'.
+
+We don't have read-side issue because tcp_poll() already has read side
+shutdown care.
+
+|        if (sk->sk_shutdown & RCV_SHUTDOWN)
+|                mask |= POLLIN | POLLRDNORM | POLLRDHUP;
+
+So, Let's insert same logic in write side.
+
+- reference url
+  http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-core/31065
+  http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-core/31068
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- include/net/tcp.h    |   18 ++++++++++++++----
- net/ipv4/tcp.c       |    5 +----
- net/ipv4/tcp_timer.c |    8 ++++----
- 3 files changed, 19 insertions(+), 12 deletions(-)
+ net/ipv4/tcp.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -259,11 +259,21 @@ static inline int between(__u32 seq1, __
- 	return seq3 - seq2 >= seq1 - seq2;
- }
- 
--static inline int tcp_too_many_orphans(struct sock *sk, int num)
-+static inline bool tcp_too_many_orphans(struct sock *sk, int shift)
- {
--	return (num > sysctl_tcp_max_orphans) ||
--		(sk->sk_wmem_queued > SOCK_MIN_SNDBUF &&
--		 atomic_read(&tcp_memory_allocated) > sysctl_tcp_mem[2]);
-+	struct percpu_counter *ocp = sk->sk_prot->orphan_count;
-+	int orphans = percpu_counter_read_positive(ocp);
-+
-+	if (orphans << shift > sysctl_tcp_max_orphans) {
-+		orphans = percpu_counter_sum_positive(ocp);
-+		if (orphans << shift > sysctl_tcp_max_orphans)
-+			return true;
-+	}
-+
-+	if (sk->sk_wmem_queued > SOCK_MIN_SNDBUF &&
-+	    atomic_read(&tcp_memory_allocated) > sysctl_tcp_mem[2])
-+		return true;
-+	return false;
- }
- 
- /* syncookies: remember time of last synqueue overflow */
 --- a/net/ipv4/tcp.c
 +++ b/net/ipv4/tcp.c
-@@ -1976,11 +1976,8 @@ adjudge_to_death:
- 		}
- 	}
- 	if (sk->sk_state != TCP_CLOSE) {
--		int orphan_count = percpu_counter_read_positive(
--						sk->sk_prot->orphan_count);
--
- 		sk_mem_reclaim(sk);
--		if (tcp_too_many_orphans(sk, orphan_count)) {
-+		if (tcp_too_many_orphans(sk, 0)) {
- 			if (net_ratelimit())
- 				printk(KERN_INFO "TCP: too many of orphaned "
- 				       "sockets\n");
---- a/net/ipv4/tcp_timer.c
-+++ b/net/ipv4/tcp_timer.c
-@@ -65,18 +65,18 @@ static void tcp_write_err(struct sock *s
- static int tcp_out_of_resources(struct sock *sk, int do_reset)
- {
- 	struct tcp_sock *tp = tcp_sk(sk);
--	int orphans = percpu_counter_read_positive(&tcp_orphan_count);
-+	int shift = 0;
+@@ -451,7 +451,8 @@ unsigned int tcp_poll(struct file *file,
+ 				if (sk_stream_wspace(sk) >= sk_stream_min_wspace(sk))
+ 					mask |= POLLOUT | POLLWRNORM;
+ 			}
+-		}
++		} else
++			mask |= POLLOUT | POLLWRNORM;
  
- 	/* If peer does not open window for long time, or did not transmit
- 	 * anything for long time, penalize it. */
- 	if ((s32)(tcp_time_stamp - tp->lsndtime) > 2*TCP_RTO_MAX || !do_reset)
--		orphans <<= 1;
-+		shift++;
- 
- 	/* If some dubious ICMP arrived, penalize even more. */
- 	if (sk->sk_err_soft)
--		orphans <<= 1;
-+		shift++;
- 
--	if (tcp_too_many_orphans(sk, orphans)) {
-+	if (tcp_too_many_orphans(sk, shift)) {
- 		if (net_ratelimit())
- 			printk(KERN_INFO "Out of socket memory\n");
- 
+ 		if (tp->urg_data & TCP_URG_VALID)
+ 			mask |= POLLPRI;
 
 
