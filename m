@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756950Ab0IXQcm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:32:42 -0400
-Received: from kroah.org ([198.145.64.141]:38511 "EHLO coco.kroah.org"
+	id S1756966Ab0IXQcx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:32:53 -0400
+Received: from kroah.org ([198.145.64.141]:38496 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932744Ab0IXQ2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:28:49 -0400
+	id S932787Ab0IXQ2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:28:47 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:20 2010
-Message-Id: <20100924162620.388656090@clark.site>
+Message-Id: <20100924162620.201348180@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:24:51 -0700
+Date: Fri, 24 Sep 2010 09:24:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Howells <dhowells@redhat.com>,
-        Tavis Ormandy <taviso@cmpxchg8b.com>, dann frazier <dannf@debian.org>
-Subject: [63/80] KEYS: Fix bug in keyctl_session_to_parent() if parent has no session keyring
+        Petr Tesarik <ptesarik@suse.cz>, Tony Luck <tony.luck@intel.com>
+Subject: [61/80] IA64: Optimize ticket spinlocks in fsys_rt_sigprocmask
 In-Reply-To: <20100924162706.GA7381@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,55 +25,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Howells <dhowells@redhat.com>
+From: Petr Tesarik <ptesarik@suse.cz>
 
-commit 3d96406c7da1ed5811ea52a3b0905f4f0e295376 upstream.
+commit 2d2b6901649a62977452be85df53eda2412def24 upstream.
 
-Fix a bug in keyctl_session_to_parent() whereby it tries to check the ownership
-of the parent process's session keyring whether or not the parent has a session
-keyring [CVE-2010-2960].
+Tony's fix (f574c843191728d9407b766a027f779dcd27b272) has a small bug,
+it incorrectly uses "r3" as a scratch register in the first of the two
+unlock paths ... it is also inefficient.  Optimize the fast path again.
 
-This results in the following oops:
-
-  BUG: unable to handle kernel NULL pointer dereference at 00000000000000a0
-  IP: [<ffffffff811ae4dd>] keyctl_session_to_parent+0x251/0x443
-  ...
-  Call Trace:
-   [<ffffffff811ae2f3>] ? keyctl_session_to_parent+0x67/0x443
-   [<ffffffff8109d286>] ? __do_fault+0x24b/0x3d0
-   [<ffffffff811af98c>] sys_keyctl+0xb4/0xb8
-   [<ffffffff81001eab>] system_call_fastpath+0x16/0x1b
-
-if the parent process has no session keyring.
-
-If the system is using pam_keyinit then it mostly protected against this as all
-processes derived from a login will have inherited the session keyring created
-by pam_keyinit during the log in procedure.
-
-To test this, pam_keyinit calls need to be commented out in /etc/pam.d/.
-
-Reported-by: Tavis Ormandy <taviso@cmpxchg8b.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Tavis Ormandy <taviso@cmpxchg8b.com>
-Cc: dann frazier <dannf@debian.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- security/keys/keyctl.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/ia64/kernel/fsys.S |   42 +++++++++++-------------------------------
+ 1 file changed, 11 insertions(+), 31 deletions(-)
 
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -1292,7 +1292,8 @@ long keyctl_session_to_parent(void)
- 		goto not_permitted;
+--- a/arch/ia64/kernel/fsys.S
++++ b/arch/ia64/kernel/fsys.S
+@@ -420,34 +420,31 @@ EX(.fail_efault, ld8 r14=[r33])			// r14
+ 	;;
  
- 	/* the keyrings must have the same UID */
--	if (pcred->tgcred->session_keyring->uid != mycred->euid ||
-+	if ((pcred->tgcred->session_keyring &&
-+	     pcred->tgcred->session_keyring->uid != mycred->euid) ||
- 	    mycred->tgcred->session_keyring->uid != mycred->euid)
- 		goto not_permitted;
+ 	RSM_PSR_I(p0, r18, r19)			// mask interrupt delivery
+-	mov ar.ccv=0
+ 	andcm r14=r14,r17			// filter out SIGKILL & SIGSTOP
++	mov r8=EINVAL			// default to EINVAL
  
+ #ifdef CONFIG_SMP
+ 	// __ticket_spin_trylock(r31)
+ 	ld4 r17=[r31]
+-	mov r8=EINVAL			// default to EINVAL
+-	;;
+-	extr r9=r17,17,15
+ 	;;
+-	xor r18=r17,r9
++	mov.m ar.ccv=r17
++	extr.u r9=r17,17,15
+ 	adds r19=1,r17
++	extr.u r18=r17,0,15
+ 	;;
+-	extr.u r18=r18,0,15
++	cmp.eq p6,p7=r9,r18
+ 	;;
+-	cmp.eq p0,p7=0,r18
++(p6)	cmpxchg4.acq r9=[r31],r19,ar.ccv
++(p6)	dep.z r20=r19,1,15		// next serving ticket for unlock
+ (p7)	br.cond.spnt.many .lock_contention
+-	mov.m ar.ccv=r17
+-	;;
+-	cmpxchg4.acq r9=[r31],r19,ar.ccv
+ 	;;
+ 	cmp4.eq p0,p7=r9,r17
++	adds r31=2,r31
+ (p7)	br.cond.spnt.many .lock_contention
+ 	ld8 r3=[r2]			// re-read current->blocked now that we hold the lock
+ 	;;
+ #else
+ 	ld8 r3=[r2]			// re-read current->blocked now that we hold the lock
+-	mov r8=EINVAL			// default to EINVAL
+ #endif
+ 	add r18=IA64_TASK_PENDING_OFFSET+IA64_SIGPENDING_SIGNAL_OFFSET,r16
+ 	add r19=IA64_TASK_SIGNAL_OFFSET,r16
+@@ -503,16 +500,8 @@ EX(.fail_efault, ld8 r14=[r33])			// r14
+ 
+ #ifdef CONFIG_SMP
+ 	// __ticket_spin_unlock(r31)
+-	adds r31=2,r31
+-	;;
+-	ld2.bias r2=[r31]
+-	mov r3=65534
+-	;;
+-	adds r2=2,r2
+-	;;
+-	and r3=r3,r2
+-	;;
+-	st2.rel [r31]=r3
++	st2.rel [r31]=r20
++	mov r20=0					// i must not leak kernel bits...
+ #endif
+ 	SSM_PSR_I(p0, p9, r31)
+ 	;;
+@@ -535,16 +524,7 @@ EX(.fail_efault, (p15) st8 [r34]=r3)
+ .sig_pending:
+ #ifdef CONFIG_SMP
+ 	// __ticket_spin_unlock(r31)
+-	adds r31=2,r31
+-	;;
+-	ld2.bias r2=[r31]
+-	mov r3=65534
+-	;;
+-	adds r2=2,r2
+-	;;
+-	and r3=r3,r2
+-	;;
+-	st2.rel [r31]=r3
++	st2.rel [r31]=r20			// release the lock
+ #endif
+ 	SSM_PSR_I(p0, p9, r17)
+ 	;;
 
 
