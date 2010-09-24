@@ -1,176 +1,332 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755028Ab0IXLxq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 07:53:46 -0400
-Received: from ppsw-32.csi.cam.ac.uk ([131.111.8.132]:37598 "EHLO
-	ppsw-32.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391Ab0IXLxo (ORCPT
+	id S1755592Ab0IXL6h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 07:58:37 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:7673 "EHLO
+	VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750844Ab0IXL6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 07:53:44 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4C9C927B.1010500@cam.ac.uk>
-Date: Fri, 24 Sep 2010 12:58:51 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100909 Lightning/1.0b3pre Thunderbird/3.1.3
+	Fri, 24 Sep 2010 07:58:36 -0400
+X-SpamScore: -24
+X-BigFish: VS-24(zzbb2cK1432N98dNzz1202hzz8275bh15d4Rz32i87h2a8h2a8h87h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-SS: 0,
+X-FB-DOMAIN-IP-MATCH: fail
+X-WSS-ID: 0L992L6-02-35T-02
+X-M-MSG: 
+Date: Fri, 24 Sep 2010 13:58:20 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Greg KH <gregkh@suse.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@amd64.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: Erratum 383 fix for 32 bit x86 kernels
+Message-ID: <20100924115819.GC9817@amd.com>
+References: <20100924115239.GA9817@amd.com>
 MIME-Version: 1.0
-To: Hemanth V <hemanthv@ti.com>
-CC: LKML <linux-kernel@vger.kernel.org>, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org, Dmitry Torokhov <dtor@mail.ru>,
-        Manuel Stahl <manuel.stahl@iis.fraunhofer.de>,
-        Jean Delvare <khali@linux-fr.org>, Greg KH <greg@kroah.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, drivers@analog.com,
-        achew@nvidia.com, Donggeun Kim <dg77.kim@samsung.com>
-Subject: Re: Sensor event related attribute naming.
-References: <4C98C7FE.4050305@cam.ac.uk> <03d301cb5bd4$152287d0$LocalHost@wipblrx0099946>
-In-Reply-To: <03d301cb5bd4$152287d0$LocalHost@wipblrx0099946>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100924115239.GA9817@amd.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/10 11:34, Hemanth V wrote:
-> ----- Original Message ----- From: "Jonathan Cameron" <jic23@cam.ac.uk>
-> <snip>
->>
->> We have had naming conventions in IIO for a while but they have not
->> yet been terribly satisfactory. Our latest suggestion, which I'm
->> finally happy is general enough whilst remaining clear to be found
->> in  http://marc.info/?l=linux-iio&m=128394796116223&w=2
->>
->> Manuel Stahl pointed out that the following summary covers what was
->> proposed in a clearer fashion.
->>
->> <channel>_<limit>_<dir>_<attr>, where
->> <channel>: name of the channel, i.e. accel_x0
->> <limit>:   thresh, mag, roc
->> <dir>:     rising, falling
->> <attr>:    en, value, period, mean_period
->>
+On Fri, Sep 24, 2010 at 07:52:40AM -0400, Joerg Roedel wrote:
+> here is a patch which I want to ask you to include into the current
+> -stable kernels. This patch fixes the occurence of AMD Erratum 383 on
+> 32 bit x86 kernels when using CPU hotplug. This patch is a combined
+> patch created by cherry-picking (and fixing a small compile error)
+> upstream commits:
 > 
-> Jonathan, I am trying to understand howto apply this to cma3000. I
-> have few parameters like below. Would you be able to suggest how
-> the sysfs entries should look like for the below parameters or are these
-> still to be defined.
-Hi Hemanth,
-
+> 	fd89a137924e0710078c3ae855e7cec1c43cb845
+> 	b7d460897739e02f186425b7276e3fdb1595cea7
 > 
-> grange:  2000, 8000 mg sampling frequency  : 40, 100, 400 Hz
-These weren't covered by this discussion at all. However, I am happy to at
-least tell you how these are handled in IIO.  Firstly instead of defining
-ranges we define _scale attributes.  This decision has a lot to do with
-our approach of using raw data. To process that data, userspace needs to
-know how to scale it appropriately. It really doesn't directly care what the
-limits are.  If there is a particular use case for these limits directly then
-we could propose adding say accel_mag_max. Such a parameter would clearly
-interact with the alternate setting mechanism of accel_scale and maintaining
-that relationship would be a job for the driver.
+> The second commit fixes a problem in the first one. The patch I attach
+> here is against 2.6.32.22 but should also apply against 2.6.35 (At least
+> cherry-picking from 2.6.36-rc gave no conflicts).
+> Please consider to include this patch into the -stable kernel series.
 
-Note that if the multiplication is handled in driver (and hence to userspace
-looks like the device was doing it) then any sysfs based output is obtained
-via accel_x_input and the associated scale would be in accel_calibgain.
-accel_calibgain_available would give a space separated list of available gains.
+Ups, I attached the original patch, not the backported one, sorry. Here
+is the right one for -stable.
 
-Also note that we always stick to SI units, so accelerations are measured in
-m/s^2 rather that g, so there are some factors to be taken into account.
-We are against making an exception for accelerometers because that will then
-make the units for a given sensor type very unpredictable.
 
-Frequency is controlled via sampling_frequency (in Hz) with a space
-separated list of available options in sampling_frequency_available
+>From 46f0a1afac5471a8ba9d716c76b0c561f6b02139 Mon Sep 17 00:00:00 2001
+From: Joerg Roedel <joerg.roedel@amd.com>
+Date: Mon, 16 Aug 2010 14:38:33 +0200
+Subject: [PATCH] x86-32: Separate 1:1 pagetables from swapper_pg_dir
 
-Things are a little fiddly for some parts as the available range can be
-mode dependant - lower frequencies are often used for motion detection.
-For example, when motion detection is enabled on the cma3000 the sampling
-frequency and the measurement range change (10Hz and 8g) so this should be
-reflected in any reads of these attributes.
+This patch fixes machine crashes which occur when heavily exercising the
+CPU hotplug codepaths on a 32-bit kernel. These crashes are caused by
+AMD Erratum 383 and result in a fatal machine check exception. Here's
+the scenario:
 
-> Modes : Motion detect, Measurement, Free fall
-Based on our sca3000 driver and the cma3000 data sheet.
+1. On 32-bit, the swapper_pg_dir page table is used as the initial page
+table for booting a secondary CPU.
 
-The device starts up in Measurement mode - this is the mode it is always
-in if neither of the others are enabled.  It's up to userspace to switch to
-one of the other modes.  If sysfs direct read attributes are supplied and the
-current mode does not allow values to be obtained then we simply return -EBUSY.
+2. To make this work, swapper_pg_dir needs a direct mapping of physical
+memory in it (the low mappings). By adding those low, large page (2M)
+mappings (PAE kernel), we create the necessary conditions for Erratum
+383 to occur.
 
-We then have two event enable attributes.  The names of these are up for
-discussion (and part of what this thread was meant to address).  Let us for
-now call them:
-accel_freefall_en and accel_motiondetect_en
+3. Other CPUs which do not participate in the off- and onlining game may
+use swapper_pg_dir while the low mappings are present (when leave_mm is
+called). For all steps below, the CPU referred to is a CPU that is using
+swapper_pg_dir, and not the CPU which is being onlined.
 
-The will have accompanying parameters
+4. The presence of the low mappings in swapper_pg_dir can result
+in TLB entries for addresses below __PAGE_OFFSET to be established
+speculatively. These TLB entries are marked global and large.
 
-accel_motiondetect_period (MDTMR[3:0] -> in seconds, a pain to do, but it's the
-			only way we will have a consistent interface, for cases
-			like this with few options,
-			 accel_motiondetect_period_available could provide a
-			 list of options)
-accel_motiondetect_value (MDTHR[6:0] -> in either raw units or processed.
-			 Whether we need to make this choice explicit in
-			 the naming is one of the questions I was hoping this
-			 thread might answer) Perhaps
-			 accel_motiondetect_value_input for processed values
-			 and accel_motiondetect_value_raw for raw sensor units
-			 (adc counts).
+5. When the CPU with such TLB entry switches to another page table, this
+TLB entry remains because it is global.
 
-accel_freefall_period (FFTMR[3:0] -> again in seconds)
-accel_freefall_value (FFTMR[3:0])
+6. The process then generates an access to an address covered by the
+above TLB entry but there is a permission mismatch - the TLB entry
+covers a large global page not accessible to userspace.
 
-In our event code structure (not yet posted) we actually allow another option
-which leads to a more logical and general description of these two detectors
-which I am keen on because we do have parts that allow weird subsets and
-devices other than accelerometers that actually perform very similar combined
-axis boolean combinations. Basically freefall and motiondetect don't really
-generalise to anything other than 3d accelerometers.
+7. Due to this permission mismatch a new 4kb, user TLB entry gets
+established. Further, Erratum 383 provides for a small window of time
+where both TLB entries are present. This results in an uncorrectable
+machine check exception signalling a TLB multimatch which panics the
+machine.
 
-For motion detection:
+There are two ways to fix this issue:
 
-accel_x|y|z_thresh_rising_en (the | characters are part of the name,
-			     not indicating options for naming!)
+        1. Always do a global TLB flush when a new cr3 is loaded and the
+        old page table was swapper_pg_dir. I consider this a hack hard
+        to understand and with performance implications
 
-accel_x|y|z_thresh_rising_period, accel_x|y|z_thresh_rising_value
+        2. Do not use swapper_pg_dir to boot secondary CPUs like 64-bit
+        does.
 
-for freefall:
+This patch implements solution 2. It introduces a trampoline_pg_dir
+which has the same layout as swapper_pg_dir with low_mappings. This page
+table is used as the initial page table of the booting CPU. Later in the
+bringup process, it switches to swapper_pg_dir and does a global TLB
+flush. This fixes the crashes in our test cases.
 
-accel_x&y&z_thresh_falling_en
-accel_x&y&z_thresh_falling_value
-accel_x&y&z_thresh_falling_period
+-v2: switch to swapper_pg_dir right after entering start_secondary() so
+that we are able to access percpu data which might not be mapped in the
+trampoline page table.
 
-These generalize to other forms of sensor far better than the magic 'freefall'
-but do not easily allow for more sophisticated free fall detectors. From an IIO
-point of view I would actually like to distinguish how these detectors are
-working but fully appreciate that your average user on a mobile phone doesn't
-care!
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+LKML-Reference: <20100816123833.GB28147@aftab>
+LKML-Reference: <alpine.LSU.2.00.1008242235120.2515@sister.anvils>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/include/asm/pgtable_32.h |    1 +
+ arch/x86/include/asm/trampoline.h |    3 +++
+ arch/x86/kernel/head_32.S         |    8 +++++++-
+ arch/x86/kernel/setup.c           |    3 +++
+ arch/x86/kernel/smpboot.c         |   32 +++++++++++++-------------------
+ arch/x86/kernel/trampoline.c      |   17 +++++++++++++++++
+ 6 files changed, 44 insertions(+), 20 deletions(-)
 
-I also know of some parts that do more complex arithmetic to detect free fall
-such as applying the detector on the sum squared value. I haven't as yet worked
-out how to name that one! Perhaps, accel_sum^2_thresh_falling_en?  One for
-another day I think.
+diff --git a/arch/x86/include/asm/pgtable_32.h b/arch/x86/include/asm/pgtable_32.h
+index 01fd946..750f1bf 100644
+--- a/arch/x86/include/asm/pgtable_32.h
++++ b/arch/x86/include/asm/pgtable_32.h
+@@ -27,6 +27,7 @@ struct mm_struct;
+ struct vm_area_struct;
+ 
+ extern pgd_t swapper_pg_dir[1024];
++extern pgd_t trampoline_pg_dir[1024];
+ 
+ static inline void pgtable_cache_init(void) { }
+ static inline void check_pgt_cache(void) { }
+diff --git a/arch/x86/include/asm/trampoline.h b/arch/x86/include/asm/trampoline.h
+index 90f06c2..2ab4ccd 100644
+--- a/arch/x86/include/asm/trampoline.h
++++ b/arch/x86/include/asm/trampoline.h
+@@ -13,15 +13,18 @@ extern unsigned char *trampoline_base;
+ 
+ extern unsigned long init_rsp;
+ extern unsigned long initial_code;
++extern unsigned long initial_page_table;
+ extern unsigned long initial_gs;
+ 
+ #define TRAMPOLINE_SIZE roundup(trampoline_end - trampoline_data, PAGE_SIZE)
+ #define TRAMPOLINE_BASE 0x6000
+ 
+ extern unsigned long setup_trampoline(void);
++extern void __init setup_trampoline_page_table(void);
+ extern void __init reserve_trampoline_memory(void);
+ #else
+ static inline void reserve_trampoline_memory(void) {};
++extern void __init setup_trampoline_page_table(void) {};
+ #endif /* CONFIG_X86_TRAMPOLINE */
+ 
+ #endif /* __ASSEMBLY__ */
+diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+index 050c278..34c3308 100644
+--- a/arch/x86/kernel/head_32.S
++++ b/arch/x86/kernel/head_32.S
+@@ -324,7 +324,7 @@ ENTRY(startup_32_smp)
+ /*
+  * Enable paging
+  */
+-	movl $pa(swapper_pg_dir),%eax
++	movl pa(initial_page_table), %eax
+ 	movl %eax,%cr3		/* set the page table pointer.. */
+ 	movl %cr0,%eax
+ 	orl  $X86_CR0_PG,%eax
+@@ -604,6 +604,8 @@ ignore_int:
+ .align 4
+ ENTRY(initial_code)
+ 	.long i386_start_kernel
++ENTRY(initial_page_table)
++	.long pa(swapper_pg_dir)
+ 
+ /*
+  * BSS section
+@@ -619,6 +621,10 @@ ENTRY(swapper_pg_dir)
+ #endif
+ swapper_pg_fixmap:
+ 	.fill 1024,4,0
++#ifdef CONFIG_X86_TRAMPOLINE
++ENTRY(trampoline_pg_dir)
++	.fill 1024,4,0
++#endif
+ ENTRY(empty_zero_page)
+ 	.fill 4096,1,0
+ 
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index d7a0888..5449a26 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -110,6 +110,7 @@
+ #include <asm/numa_64.h>
+ #endif
+ #include <asm/mce.h>
++#include <asm/trampoline.h>
+ 
+ /*
+  * end_pfn only includes RAM, while max_pfn_mapped includes all e820 entries.
+@@ -998,6 +999,8 @@ void __init setup_arch(char **cmdline_p)
+ 	paging_init();
+ 	x86_init.paging.pagetable_setup_done(swapper_pg_dir);
+ 
++	setup_trampoline_page_table();
++
+ 	tboot_probe();
+ 
+ #ifdef CONFIG_X86_64
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 29ec560..7e8e905 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -70,7 +70,6 @@
+ 
+ #ifdef CONFIG_X86_32
+ u8 apicid_2_node[MAX_APICID];
+-static int low_mappings;
+ #endif
+ 
+ /* State of each CPU */
+@@ -292,6 +291,18 @@ notrace static void __cpuinit start_secondary(void *unused)
+ 	 * fragile that we want to limit the things done here to the
+ 	 * most necessary things.
+ 	 */
++
++#ifdef CONFIG_X86_32
++	/*
++	 * Switch away from the trampoline page-table
++	 *
++	 * Do this before cpu_init() because it needs to access per-cpu
++	 * data which may not be mapped in the trampoline page-table.
++	 */
++	load_cr3(swapper_pg_dir);
++	__flush_tlb_all();
++#endif
++
+ 	vmi_bringup();
+ 	cpu_init();
+ 	preempt_disable();
+@@ -310,12 +321,6 @@ notrace static void __cpuinit start_secondary(void *unused)
+ 		enable_8259A_irq(0);
+ 	}
+ 
+-#ifdef CONFIG_X86_32
+-	while (low_mappings)
+-		cpu_relax();
+-	__flush_tlb_all();
+-#endif
+-
+ 	/* This must be done before setting cpu_online_mask */
+ 	set_cpu_sibling_map(raw_smp_processor_id());
+ 	wmb();
+@@ -741,6 +746,7 @@ do_rest:
+ #ifdef CONFIG_X86_32
+ 	/* Stack for startup_32 can be just as for start_secondary onwards */
+ 	irq_ctx_init(cpu);
++	initial_page_table = __pa(&trampoline_pg_dir);
+ #else
+ 	clear_tsk_thread_flag(c_idle.idle, TIF_FORK);
+ 	initial_gs = per_cpu_offset(cpu);
+@@ -885,20 +891,8 @@ int __cpuinit native_cpu_up(unsigned int cpu)
+ 
+ 	per_cpu(cpu_state, cpu) = CPU_UP_PREPARE;
+ 
+-#ifdef CONFIG_X86_32
+-	/* init low mem mapping */
+-	clone_pgd_range(swapper_pg_dir, swapper_pg_dir + KERNEL_PGD_BOUNDARY,
+-		min_t(unsigned long, KERNEL_PGD_PTRS, KERNEL_PGD_BOUNDARY));
+-	flush_tlb_all();
+-	low_mappings = 1;
+-
+ 	err = do_boot_cpu(apicid, cpu);
+ 
+-	zap_low_mappings(false);
+-	low_mappings = 0;
+-#else
+-	err = do_boot_cpu(apicid, cpu);
+-#endif
+ 	if (err) {
+ 		pr_debug("do_boot_cpu failed %d\n", err);
+ 		return -EIO;
+diff --git a/arch/x86/kernel/trampoline.c b/arch/x86/kernel/trampoline.c
+index cd02212..0ac23a7 100644
+--- a/arch/x86/kernel/trampoline.c
++++ b/arch/x86/kernel/trampoline.c
+@@ -1,6 +1,7 @@
+ #include <linux/io.h>
+ 
+ #include <asm/trampoline.h>
++#include <asm/pgtable.h>
+ #include <asm/e820.h>
+ 
+ #if defined(CONFIG_X86_64) && defined(CONFIG_ACPI_SLEEP)
+@@ -39,3 +40,19 @@ unsigned long __trampinit setup_trampoline(void)
+ 	memcpy(trampoline_base, trampoline_data, TRAMPOLINE_SIZE);
+ 	return virt_to_phys(trampoline_base);
+ }
++
++void __init setup_trampoline_page_table(void)
++{
++#ifdef CONFIG_X86_32
++	/* Copy kernel address range */
++	clone_pgd_range(trampoline_pg_dir + KERNEL_PGD_BOUNDARY,
++			swapper_pg_dir + KERNEL_PGD_BOUNDARY,
++			KERNEL_PGD_PTRS);
++
++	/* Initialize low mappings */
++	clone_pgd_range(trampoline_pg_dir,
++			swapper_pg_dir + KERNEL_PGD_BOUNDARY,
++			min_t(unsigned long, KERNEL_PGD_PTRS,
++			      KERNEL_PGD_BOUNDARY));
++#endif
++}
+-- 
+1.7.0.4
 
-Anyhow for your part you would need to make the attributes mutually exclusive
-(I think).  Thus we only guarantee that an interrupt will remain enabled as long
-as no userspace interactions occur with the attributes.  Hence if one enabled
-freefall first then motion detection, userspace gets to find out they are
-mutually exclusive by reading back the values when it is done setting up what it
-would like.  Providing the 'mode' type option you suggested unfortunately does
-not generalize. For the cma3000 for example, how do you indicate that full rate
-data (more or less as if you were in measurement mode) is available when in free
-fall mode, but not when in motion detection mode? (on the sca3000 to take this
-futher, motion detecton mode completely disables any direct reading of the
-acceleration values) Also, the mode approach breaks down the moment you have
-a device that can do 2 out of n forms of detection at the same time.  This is
-very common (see Analog devices adis parts which have 2 general purpose alarms
-which can detect various things on one channel each where there may be 10 or
-more channels).
 
-For these special cases, I am perfectly willing to accept that simply labelling
-them free fall and motion detect is fine. I may map the resulting codes in IIO
-to the same as for the above alternate forms, but that doesn't matter for this
-discussion.
+-- 
+AMD Operating System Research Center
 
-Thanks,
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
-Jonathan
