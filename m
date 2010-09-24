@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822Ab0IXQ5D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 12:57:03 -0400
-Received: from kroah.org ([198.145.64.141]:46131 "EHLO coco.kroah.org"
+	id S1756943Ab0IXQ4V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 12:56:21 -0400
+Received: from kroah.org ([198.145.64.141]:38272 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932602Ab0IXQ2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 12:28:13 -0400
+	id S932623Ab0IXQ2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 12:28:16 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Sep 24 09:26:17 2010
-Message-Id: <20100924162616.992399475@clark.site>
+Message-Id: <20100924162617.339270174@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 24 Sep 2010 09:24:12 -0700
+Date: Fri, 24 Sep 2010 09:24:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: [24/80] mm: fix swapin race condition
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, tiwai@suse.de,
+        chris@chris-wilson.co.uk, Zhenyu Wang <zhenyuw@linux.intel.com>
+Subject: [28/80] intel_agp, drm/i915: Add all sandybridge graphics devices support
 In-Reply-To: <20100924162706.GA7381@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,176 +25,163 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Zhenyu Wang <zhenyuw@linux.intel.com>
 
-commit 4969c1192d15afa3389e7ae3302096ff684ba655 upstream.
+New pci ids for all sandybridge graphics versions on desktop/mobile/server.
 
-The pte_same check is reliable only if the swap entry remains pinned (by
-the page lock on swapcache).  We've also to ensure the swapcache isn't
-removed before we take the lock as try_to_free_swap won't care about the
-page pin.
+[This is backport patch from upstream commit 4fefe435 and 85540480.]
 
-One of the possible impacts of this patch is that a KSM-shared page can
-point to the anon_vma of another process, which could exit before the page
-is freed.
-
-This can leave a page with a pointer to a recycled anon_vma object, or
-worse, a pointer to something that is no longer an anon_vma.
-
-[Backport to 2.6.35.5 (anon_vma instead of anon_vma->root in ksm.h) by Hugh]
-
-[riel@redhat.com: changelog help]
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: <stable@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Zhenyu Wang <zhenyuw@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- include/linux/ksm.h |   20 +++++++++-----------
- mm/ksm.c            |    3 ---
- mm/memory.c         |   39 ++++++++++++++++++++++++++++++++++-----
- 3 files changed, 43 insertions(+), 19 deletions(-)
+ drivers/char/agp/intel-agp.c    |   19 +++++++++++++++----
+ drivers/char/agp/intel-agp.h    |   17 ++++++++++++-----
+ drivers/char/agp/intel-gtt.c    |   37 +++++++++++++++++++++++++++++++++++--
+ drivers/gpu/drm/i915/i915_drv.c |    5 +++++
+ 4 files changed, 67 insertions(+), 11 deletions(-)
 
---- a/include/linux/ksm.h
-+++ b/include/linux/ksm.h
-@@ -16,6 +16,9 @@
- struct stable_node;
- struct mem_cgroup;
+--- a/drivers/char/agp/intel-agp.c
++++ b/drivers/char/agp/intel-agp.c
+@@ -815,10 +815,20 @@ static const struct intel_driver_descrip
+ 	    "HD Graphics", NULL, &intel_i965_driver },
+ 	{ PCI_DEVICE_ID_INTEL_IRONLAKE_MC2_HB, PCI_DEVICE_ID_INTEL_IRONLAKE_M_IG,
+ 	    "HD Graphics", NULL, &intel_i965_driver },
+-	{ PCI_DEVICE_ID_INTEL_SANDYBRIDGE_HB, PCI_DEVICE_ID_INTEL_SANDYBRIDGE_IG,
+-	    "Sandybridge", NULL, &intel_i965_driver },
+-	{ PCI_DEVICE_ID_INTEL_SANDYBRIDGE_M_HB, PCI_DEVICE_ID_INTEL_SANDYBRIDGE_M_IG,
+-	    "Sandybridge", NULL, &intel_i965_driver },
++	{ PCI_DEVICE_ID_INTEL_SANDYBRIDGE_HB, PCI_DEVICE_ID_INTEL_SANDYBRIDGE_GT1_IG,
++	    "Sandybridge", NULL, &intel_gen6_driver },
++	{ PCI_DEVICE_ID_INTEL_SANDYBRIDGE_HB, PCI_DEVICE_ID_INTEL_SANDYBRIDGE_GT2_IG,
++	    "Sandybridge", NULL, &intel_gen6_driver },
++	{ PCI_DEVICE_ID_INTEL_SANDYBRIDGE_HB, PCI_DEVICE_ID_INTEL_SANDYBRIDGE_GT2_PLUS_IG,
++	    "Sandybridge", NULL, &intel_gen6_driver },
++	{ PCI_DEVICE_ID_INTEL_SANDYBRIDGE_M_HB, PCI_DEVICE_ID_INTEL_SANDYBRIDGE_M_GT1_IG,
++	    "Sandybridge", NULL, &intel_gen6_driver },
++	{ PCI_DEVICE_ID_INTEL_SANDYBRIDGE_M_HB, PCI_DEVICE_ID_INTEL_SANDYBRIDGE_M_GT2_IG,
++	    "Sandybridge", NULL, &intel_gen6_driver },
++	{ PCI_DEVICE_ID_INTEL_SANDYBRIDGE_M_HB, PCI_DEVICE_ID_INTEL_SANDYBRIDGE_M_GT2_PLUS_IG,
++	    "Sandybridge", NULL, &intel_gen6_driver },
++	{ PCI_DEVICE_ID_INTEL_SANDYBRIDGE_S_HB, PCI_DEVICE_ID_INTEL_SANDYBRIDGE_S_IG,
++	    "Sandybridge", NULL, &intel_gen6_driver },
+ 	{ 0, 0, NULL, NULL, NULL }
+ };
  
-+struct page *ksm_does_need_to_copy(struct page *page,
-+			struct vm_area_struct *vma, unsigned long address);
+@@ -1036,6 +1046,7 @@ static struct pci_device_id agp_intel_pc
+ 	ID(PCI_DEVICE_ID_INTEL_IRONLAKE_MC2_HB),
+ 	ID(PCI_DEVICE_ID_INTEL_SANDYBRIDGE_HB),
+ 	ID(PCI_DEVICE_ID_INTEL_SANDYBRIDGE_M_HB),
++	ID(PCI_DEVICE_ID_INTEL_SANDYBRIDGE_S_HB),
+ 	{ }
+ };
+ 
+--- a/drivers/char/agp/intel-agp.h
++++ b/drivers/char/agp/intel-agp.h
+@@ -194,10 +194,16 @@
+ #define PCI_DEVICE_ID_INTEL_IRONLAKE_MA_HB	    0x0062
+ #define PCI_DEVICE_ID_INTEL_IRONLAKE_MC2_HB    0x006a
+ #define PCI_DEVICE_ID_INTEL_IRONLAKE_M_IG	    0x0046
+-#define PCI_DEVICE_ID_INTEL_SANDYBRIDGE_HB  0x0100
+-#define PCI_DEVICE_ID_INTEL_SANDYBRIDGE_IG  0x0102
+-#define PCI_DEVICE_ID_INTEL_SANDYBRIDGE_M_HB  0x0104
+-#define PCI_DEVICE_ID_INTEL_SANDYBRIDGE_M_IG  0x0106
++#define PCI_DEVICE_ID_INTEL_SANDYBRIDGE_HB		0x0100  /* Desktop */
++#define PCI_DEVICE_ID_INTEL_SANDYBRIDGE_GT1_IG		0x0102
++#define PCI_DEVICE_ID_INTEL_SANDYBRIDGE_GT2_IG		0x0112
++#define PCI_DEVICE_ID_INTEL_SANDYBRIDGE_GT2_PLUS_IG	0x0122
++#define PCI_DEVICE_ID_INTEL_SANDYBRIDGE_M_HB		0x0104  /* Mobile */
++#define PCI_DEVICE_ID_INTEL_SANDYBRIDGE_M_GT1_IG	0x0106
++#define PCI_DEVICE_ID_INTEL_SANDYBRIDGE_M_GT2_IG	0x0116
++#define PCI_DEVICE_ID_INTEL_SANDYBRIDGE_M_GT2_PLUS_IG	0x0126
++#define PCI_DEVICE_ID_INTEL_SANDYBRIDGE_S_HB		0x0108  /* Server */
++#define PCI_DEVICE_ID_INTEL_SANDYBRIDGE_S_IG		0x010A
+ 
+ /* cover 915 and 945 variants */
+ #define IS_I915 (agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_E7221_HB || \
+@@ -224,7 +230,8 @@
+ 		agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_PINEVIEW_HB)
+ 
+ #define IS_SNB (agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_SANDYBRIDGE_HB || \
+-		agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_SANDYBRIDGE_M_HB)
++		agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_SANDYBRIDGE_M_HB || \
++		agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_SANDYBRIDGE_S_HB)
+ 
+ #define IS_G4X (agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_EAGLELAKE_HB || \
+ 		agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_Q45_HB || \
+--- a/drivers/char/agp/intel-gtt.c
++++ b/drivers/char/agp/intel-gtt.c
+@@ -585,8 +585,7 @@ static void intel_i830_init_gtt_entries(
+ 			gtt_entries = 0;
+ 			break;
+ 		}
+-	} else if (agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_SANDYBRIDGE_HB ||
+-		   agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_SANDYBRIDGE_M_HB) {
++	} else if (IS_SNB) {
+ 		/*
+ 		 * SandyBridge has new memory control reg at 0x50.w
+ 		 */
+@@ -1337,6 +1336,7 @@ static void intel_i965_get_gtt_range(int
+ 		break;
+ 	case PCI_DEVICE_ID_INTEL_SANDYBRIDGE_HB:
+ 	case PCI_DEVICE_ID_INTEL_SANDYBRIDGE_M_HB:
++	case PCI_DEVICE_ID_INTEL_SANDYBRIDGE_S_HB:
+ 		*gtt_offset = MB(2);
+ 
+ 		pci_read_config_word(intel_private.pcidev, SNB_GMCH_CTRL, &snb_gmch_ctl);
+@@ -1497,6 +1497,39 @@ static const struct agp_bridge_driver in
+ 	.owner			= THIS_MODULE,
+ 	.aperture_sizes		= intel_i830_sizes,
+ 	.size_type		= FIXED_APER_SIZE,
++	.num_aperture_sizes	= 4,
++	.needs_scratch_page	= true,
++	.configure		= intel_i9xx_configure,
++	.fetch_size		= intel_i9xx_fetch_size,
++	.cleanup		= intel_i915_cleanup,
++	.mask_memory		= intel_i965_mask_memory,
++	.masks			= intel_i810_masks,
++	.agp_enable		= intel_i810_agp_enable,
++	.cache_flush		= global_cache_flush,
++	.create_gatt_table	= intel_i965_create_gatt_table,
++	.free_gatt_table	= intel_i830_free_gatt_table,
++	.insert_memory		= intel_i915_insert_entries,
++	.remove_memory		= intel_i915_remove_entries,
++	.alloc_by_type		= intel_i830_alloc_by_type,
++	.free_by_type		= intel_i810_free_by_type,
++	.agp_alloc_page		= agp_generic_alloc_page,
++	.agp_alloc_pages        = agp_generic_alloc_pages,
++	.agp_destroy_page	= agp_generic_destroy_page,
++	.agp_destroy_pages      = agp_generic_destroy_pages,
++	.agp_type_to_mask_type	= intel_i830_type_to_mask_type,
++	.chipset_flush		= intel_i915_chipset_flush,
++#ifdef USE_PCI_DMA_API
++	.agp_map_page		= intel_agp_map_page,
++	.agp_unmap_page		= intel_agp_unmap_page,
++	.agp_map_memory		= intel_agp_map_memory,
++	.agp_unmap_memory	= intel_agp_unmap_memory,
++#endif
++};
 +
- #ifdef CONFIG_KSM
- int ksm_madvise(struct vm_area_struct *vma, unsigned long start,
- 		unsigned long end, int advice, unsigned long *vm_flags);
-@@ -70,19 +73,14 @@ static inline void set_page_stable_node(
-  * We'd like to make this conditional on vma->vm_flags & VM_MERGEABLE,
-  * but what if the vma was unmerged while the page was swapped out?
-  */
--struct page *ksm_does_need_to_copy(struct page *page,
--			struct vm_area_struct *vma, unsigned long address);
--static inline struct page *ksm_might_need_to_copy(struct page *page,
-+static inline int ksm_might_need_to_copy(struct page *page,
- 			struct vm_area_struct *vma, unsigned long address)
- {
- 	struct anon_vma *anon_vma = page_anon_vma(page);
- 
--	if (!anon_vma ||
--	    (anon_vma == vma->anon_vma &&
--	     page->index == linear_page_index(vma, address)))
--		return page;
--
--	return ksm_does_need_to_copy(page, vma, address);
-+	return anon_vma &&
-+		(anon_vma != vma->anon_vma ||
-+		 page->index != linear_page_index(vma, address));
- }
- 
- int page_referenced_ksm(struct page *page,
-@@ -115,10 +113,10 @@ static inline int ksm_madvise(struct vm_
- 	return 0;
- }
- 
--static inline struct page *ksm_might_need_to_copy(struct page *page,
-+static inline int ksm_might_need_to_copy(struct page *page,
- 			struct vm_area_struct *vma, unsigned long address)
- {
--	return page;
-+	return 0;
- }
- 
- static inline int page_referenced_ksm(struct page *page,
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -1523,8 +1523,6 @@ struct page *ksm_does_need_to_copy(struc
- {
- 	struct page *new_page;
- 
--	unlock_page(page);	/* any racers will COW it, not modify it */
--
- 	new_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, address);
- 	if (new_page) {
- 		copy_user_highpage(new_page, page, address, vma);
-@@ -1540,7 +1538,6 @@ struct page *ksm_does_need_to_copy(struc
- 			add_page_to_unevictable_list(new_page);
- 	}
- 
--	page_cache_release(page);
- 	return new_page;
- }
- 
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2626,7 +2626,7 @@ static int do_swap_page(struct mm_struct
- 		unsigned int flags, pte_t orig_pte)
- {
- 	spinlock_t *ptl;
--	struct page *page;
-+	struct page *page, *swapcache = NULL;
- 	swp_entry_t entry;
- 	pte_t pte;
- 	struct mem_cgroup *ptr = NULL;
-@@ -2681,10 +2681,23 @@ static int do_swap_page(struct mm_struct
- 	lock_page(page);
- 	delayacct_clear_flag(DELAYACCT_PF_SWAPIN);
- 
--	page = ksm_might_need_to_copy(page, vma, address);
--	if (!page) {
--		ret = VM_FAULT_OOM;
--		goto out;
-+	/*
-+	 * Make sure try_to_free_swap didn't release the swapcache
-+	 * from under us. The page pin isn't enough to prevent that.
-+	 */
-+	if (unlikely(!PageSwapCache(page)))
-+		goto out_page;
-+
-+	if (ksm_might_need_to_copy(page, vma, address)) {
-+		swapcache = page;
-+		page = ksm_does_need_to_copy(page, vma, address);
-+
-+		if (unlikely(!page)) {
-+			ret = VM_FAULT_OOM;
-+			page = swapcache;
-+			swapcache = NULL;
-+			goto out_page;
-+		}
- 	}
- 
- 	if (mem_cgroup_try_charge_swapin(mm, page, GFP_KERNEL, &ptr)) {
-@@ -2735,6 +2748,18 @@ static int do_swap_page(struct mm_struct
- 	if (vm_swap_full() || (vma->vm_flags & VM_LOCKED) || PageMlocked(page))
- 		try_to_free_swap(page);
- 	unlock_page(page);
-+	if (swapcache) {
-+		/*
-+		 * Hold the lock to avoid the swap entry to be reused
-+		 * until we take the PT lock for the pte_same() check
-+		 * (to avoid false positives from pte_same). For
-+		 * further safety release the lock after the swap_free
-+		 * so that the swap count won't change under a
-+		 * parallel locked swapcache.
-+		 */
-+		unlock_page(swapcache);
-+		page_cache_release(swapcache);
-+	}
- 
- 	if (flags & FAULT_FLAG_WRITE) {
- 		ret |= do_wp_page(mm, vma, address, page_table, pmd, ptl, pte);
-@@ -2756,6 +2781,10 @@ out_page:
- 	unlock_page(page);
- out_release:
- 	page_cache_release(page);
-+	if (swapcache) {
-+		unlock_page(swapcache);
-+		page_cache_release(swapcache);
-+	}
- 	return ret;
- }
++static const struct agp_bridge_driver intel_gen6_driver = {
++	.owner			= THIS_MODULE,
++	.aperture_sizes		= intel_i830_sizes,
++	.size_type		= FIXED_APER_SIZE,
+ 	.num_aperture_sizes	= 4,
+ 	.needs_scratch_page	= true,
+ 	.configure		= intel_i9xx_configure,
+--- a/drivers/gpu/drm/i915/i915_drv.c
++++ b/drivers/gpu/drm/i915/i915_drv.c
+@@ -180,7 +180,12 @@ static const struct pci_device_id pciidl
+ 	INTEL_VGA_DEVICE(0x0042, &intel_ironlake_d_info),
+ 	INTEL_VGA_DEVICE(0x0046, &intel_ironlake_m_info),
+ 	INTEL_VGA_DEVICE(0x0102, &intel_sandybridge_d_info),
++	INTEL_VGA_DEVICE(0x0112, &intel_sandybridge_d_info),
++	INTEL_VGA_DEVICE(0x0122, &intel_sandybridge_d_info),
+ 	INTEL_VGA_DEVICE(0x0106, &intel_sandybridge_m_info),
++	INTEL_VGA_DEVICE(0x0116, &intel_sandybridge_m_info),
++	INTEL_VGA_DEVICE(0x0126, &intel_sandybridge_m_info),
++	INTEL_VGA_DEVICE(0x010A, &intel_sandybridge_d_info),
+ 	{0, 0, 0}
+ };
  
 
 
