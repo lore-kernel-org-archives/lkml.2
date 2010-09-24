@@ -1,43 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923Ab0IXGVp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 02:21:45 -0400
-Received: from wine.ocn.ne.jp ([122.1.235.145]:56896 "EHLO smtp.wine.ocn.ne.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750880Ab0IXGVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 02:21:44 -0400
-To: mroos@linux.ee
-Cc: linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org,
-        takedakn@nttdata.co.jp, akpm@linux-foundation.org, jmorris@namei.org
-Subject: Re: Tomoyo compile failure on alpha: sys_get[p]pid undefined
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <alpine.SOC.1.00.1009240906200.9058@math.ut.ee>
-In-Reply-To: <alpine.SOC.1.00.1009240906200.9058@math.ut.ee>
-Message-Id: <201009241521.BFC95867.LOQFFHMOFVOJtS@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Fri, 24 Sep 2010 15:21:36 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755043Ab0IXGWU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 02:22:20 -0400
+Received: from mo-65-41-216-221.sta.embarqhsd.net ([65.41.216.221]:49028 "EHLO
+	greer.hardwarefreak.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753790Ab0IXGWS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 02:22:18 -0400
+Message-ID: <4C9C4399.6080602@hardwarefreak.com>
+Date: Fri, 24 Sep 2010 01:22:17 -0500
+From: Stan Hoeppner <stan@hardwarefreak.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Mark Lord <kernel@teksavvy.com>
+CC: Kyle McMartin <kyle@mcmartin.ca>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        IDE/ATA development list <linux-ide@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: "blocked for more than 120 secs" --> a valid situation, how to
+ prevent?
+References: <4C9BE5A8.1090002@teksavvy.com> <4C9BF624.7090906@hardwarefreak.com> <20100924013748.GH13116@bombadil.infradead.org> <4C9C1F95.5000509@hardwarefreak.com> <4C9C37B7.7060204@teksavvy.com>
+In-Reply-To: <4C9C37B7.7060204@teksavvy.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Meelis Roos wrote:
-> 2.6.36-rc5+git as of yesterday:
+Mark Lord put forth on 9/24/2010 12:31 AM:
+> On 10-09-23 11:48 PM, Stan Hoeppner wrote:
+>> Kyle McMartin put forth on 9/23/2010 8:37 PM:
+>>> On Thu, Sep 23, 2010 at 07:51:48PM -0500, Stan Hoeppner wrote:
+>>>> ~$ man hdparm
+>>>>
+>>>
+>>> kyle@dreadnought ~ $ hdparm
+>>> hdparm - get/set hard disk parameters - version v9.27, by Mark Lord.
+>>>                                                         ^^^^^^^^^^^^
+>>> [...]
+>>
+>> Please pardon me while I wipe this egg off my face. :)
+>>
+>> My apologies Mark.  Please feel free to publicly flog me if you wish.
 > 
->   LD      .tmp_vmlinux1
-> security/built-in.o: In function `tomoyo_supervisor':(.text+0xea98): undefined reference to `sys_getpid'
-> security/built-in.o: In function `tomoyo_supervisor':(.text+0xeab0): undefined reference to `sys_getpid'
-> security/built-in.o: In function `tomoyo_supervisor':(.text+0xeac0): undefined reference to `sys_getppid'
-> security/built-in.o: In function `tomoyo_supervisor':(.text+0xeac4): undefined reference to `sys_getppid'
+> Chuckle.  :)
 > 
-> Seems alpha has different mechanisms for using these syscalls from 
-> inside the kernel?
+> But you did manage to prompt me to remove that obsolete warning
+> from the --security-* commands in hdparm.  They are rather well tested
+> at this point in the game.
+> 
+> hdparm-9.31 is now released, with some fixes to --security,
+> and with the nasty warnings mostly removed.
+> 
+> Thanks!
 
-Thank you for reporting.
-I forwarded it to linux-alpha ML and waiting for response now.
+I guess it's a good thing when one can commit such a public blunder and
+still manage to be somewhat helpful?  If so I don't feel 'quite' so
+sheepish now.  :)
 
-http://marc.info/?l=linux-alpha&m=128530336613660&w=2
+NOTE to $self:  when you subscribe to Linux dev lists, the odds are
+_much_ greater that people who actually write the software you use _are_
+the people posting messages.  Perform SENDER_IDENTITY_CHECK and
+SANITY_CHECK routines in the future before referring an author to his
+own documentation. ;)
 
-Regards.
+-- 
+Stan
