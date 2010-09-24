@@ -1,62 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756818Ab0IXP1U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 11:27:20 -0400
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:28201
-	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752639Ab0IXP1T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 11:27:19 -0400
-X-Greylist: delayed 905 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Sep 2010 11:27:19 EDT
-X-SpamScore: -12
-X-BigFish: VS-12(zz1432N98dNzz1202hzz8275bhz2dh2a8h2a8h61h)
-X-Spam-TCS-SCL: 0:0
-Date: Fri, 24 Sep 2010 10:12:08 -0500
-From: Scott Wood <scottwood@freescale.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-CC: LEROY Christophe <christophe.leroy@c-s.fr>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] spi_mpc8xxx: issue with using definition of pram in
- Device Tree
-Message-ID: <20100924101208.7916cfa9@udp111988uds.am.freescale.net>
-In-Reply-To: <20100924075740.GA20599@oksana.dev.rtsoft.ru>
-References: <20100916070503.10046C7391@messagerie.si.c-s.fr>
-	<20100924071006.GA21318@angua.secretlab.ca>
-	<4C9C513B.40501@c-s.fr>
-	<20100924075740.GA20599@oksana.dev.rtsoft.ru>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1756832Ab0IXPlK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 11:41:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50288 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753689Ab0IXPlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 11:41:09 -0400
+Date: Fri, 24 Sep 2010 17:41:02 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: fweisbec@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 1/3] tracing: proper check for irq_depth routines
+Message-ID: <20100924154102.GB1818@jolsa.brq.redhat.com>
+References: <1285243253-7372-1-git-send-email-jolsa@redhat.com>
+ <1285243253-7372-2-git-send-email-jolsa@redhat.com>
+ <1285271293.26872.1613.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 Sep 2010 15:12:09.0831 (UTC) FILETIME=[DBD4F770:01CB5BFA]
-X-Reverse-DNS: de01egw02.freescale.net
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285271293.26872.1613.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Sep 2010 11:57:40 +0400
-Anton Vorontsov <cbouatmailru@gmail.com> wrote:
-
-> Doesn't explain why that worked on MPC8272 (CPM2) and MPC8560
-> (also CPM2) machines though. But here's my guess (I no longer
-> have these boards to test it):
+On Thu, Sep 23, 2010 at 03:48:13PM -0400, Steven Rostedt wrote:
+> On Thu, 2010-09-23 at 14:00 +0200, Jiri Olsa wrote:
+> > The check_irq_entry and check_irq_return could be called
+> > from graph event context. In such case there's no graph
+> > private data allocated. Adding checks to handle this case.
+> > 
+> > wbr,
+> > jirka
+> > 
+> > 
+> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> > ---
+> >  kernel/trace/trace_functions_graph.c |   24 ++++++++++++++++++++----
+> >  1 files changed, 20 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+> > index 02c708a..1390159 100644
+> > --- a/kernel/trace/trace_functions_graph.c
+> > +++ b/kernel/trace/trace_functions_graph.c
+> > @@ -887,12 +887,20 @@ check_irq_entry(struct trace_iterator *iter, u32 flags,
+> >  		unsigned long addr, int depth)
+> >  {
+> >  	int cpu = iter->cpu;
+> > +	int *depth_irq;
+> >  	struct fgraph_data *data = iter->private;
+> > -	int *depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
+> >  
+> > -	if (flags & TRACE_GRAPH_PRINT_IRQS)
+> > +	/*
+> > +	 * We either display irqs, or we got called as
+> > +	 * graph event, and out private data do no exist.
 > 
-> On 8272 I used this node:
+> "out private data do no exist" makes no sense.
 > 
-> +                       spi@4c0 {
-> +                               #address-cells = <1>;
-> +                               #size-cells = <0>;
-> +                               compatible = "fsl,cpm2-spi", "fsl,spi";
-> +                               reg = <0x11a80 0x40 0x89fc 0x2>;
+> > +	 * In both cases we bypass the irq check.
+> > +	 */
+> > +	if ((flags & TRACE_GRAPH_PRINT_IRQS) ||
+> > +	    (!data))
+> >  		return 0;
+> >  
+> > +	depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
+> > +
+> >  	/*
+> >  	 * We are inside the irq code
+> >  	 */
+> > @@ -925,12 +933,20 @@ static int
+> >  check_irq_return(struct trace_iterator *iter, u32 flags, int depth)
+> >  {
+> >  	int cpu = iter->cpu;
+> > +	int *depth_irq;
+> >  	struct fgraph_data *data = iter->private;
+> > -	int *depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
+> >  
+> > -	if (flags & TRACE_GRAPH_PRINT_IRQS)
+> > +	/*
+> > +	 * We either display irqs, or we got called as
+> > +	 * graph event, and out private data do no exist.
 > 
-> On that SOC there are two muram data regions 0x0..0x2000 and
-> 0x9000..0x9100. Note that we actually don't want "data" regions,
-> and the only reason why that worked is that sysdev/cpm_common.c
-> maps muram(0)..muram(max).
+> ditto.
+> 
+> -- Steve
+> 
+> > +	 * In both cases we bypass the irq check.
+> > +	 */
+> > +	if ((flags & TRACE_GRAPH_PRINT_IRQS) ||
+> > +	    (!data))
+> >  		return 0;
+> >  
+> > +	depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
+> > +
+> >  	/*
+> >  	 * We are not inside the irq code.
+> >  	 */
+> 
+> 
 
-Wouldn't it still fail the rh_alloc_fixed call?
+hi,
+attaching changed patch
 
--Scott
+thanks,
+jirka
+
+---
+The check_irq_entry and check_irq_return could be called
+from graph event context. In such case there's no graph
+private data allocated. Adding checks to handle this case.
+
+wbr,
+jirka
+
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ kernel/trace/trace_functions_graph.c |   24 ++++++++++++++++++++----
+ 1 files changed, 20 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+index 02c708a..1390159 100644
+--- a/kernel/trace/trace_functions_graph.c
++++ b/kernel/trace/trace_functions_graph.c
+@@ -887,12 +887,20 @@ check_irq_entry(struct trace_iterator *iter, u32 flags,
+ 		unsigned long addr, int depth)
+ {
+ 	int cpu = iter->cpu;
++	int *depth_irq;
+ 	struct fgraph_data *data = iter->private;
+-	int *depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
+ 
+-	if (flags & TRACE_GRAPH_PRINT_IRQS)
++	/*
++	 * We either display irqs, or we got called as
++	 * graph event, and private data do no exist.
++	 * In both cases we bypass the irq check.
++	 */
++	if ((flags & TRACE_GRAPH_PRINT_IRQS) ||
++	    (!data))
+ 		return 0;
+ 
++	depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
++
+ 	/*
+ 	 * We are inside the irq code
+ 	 */
+@@ -925,12 +933,20 @@ static int
+ check_irq_return(struct trace_iterator *iter, u32 flags, int depth)
+ {
+ 	int cpu = iter->cpu;
++	int *depth_irq;
+ 	struct fgraph_data *data = iter->private;
+-	int *depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
+ 
+-	if (flags & TRACE_GRAPH_PRINT_IRQS)
++	/*
++	 * We either display irqs, or we got called as
++	 * graph event, and private data do no exist.
++	 * In both cases we bypass the irq check.
++	 */
++	if ((flags & TRACE_GRAPH_PRINT_IRQS) ||
++	    (!data))
+ 		return 0;
+ 
++	depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
++
+ 	/*
+ 	 * We are not inside the irq code.
+ 	 */
+-- 
+1.7.1
 
