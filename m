@@ -1,165 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932482Ab0IYERy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 00:17:54 -0400
-Received: from crca.org.au ([74.207.252.120]:33465 "EHLO crca.org.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932444Ab0IYERr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 00:17:47 -0400
-X-Bogosity: Ham, spamicity=0.000000
-From: Nigel Cunningham <nigel@tuxonice.net>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        TuxOnIce-devel <tuxonice-devel@tuxonice.net>
-Subject: [PATCH 22/22] Hibernation: Remove now-empty routines.
-Date: Sat, 25 Sep 2010 14:17:04 +1000
-Message-Id: <1285388224-10012-23-git-send-email-nigel@tuxonice.net>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1285388224-10012-1-git-send-email-nigel@tuxonice.net>
-References: <1285388224-10012-1-git-send-email-nigel@tuxonice.net>
+	id S932547Ab0IYES0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 00:18:26 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33640
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932433Ab0IYESF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Sep 2010 00:18:05 -0400
+Date: Fri, 24 Sep 2010 21:18:24 -0700 (PDT)
+Message-Id: <20100924.211824.242130957.davem@davemloft.net>
+To: padovan@profusion.mobi
+Cc: netdev@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org, marcel@holtmann.org,
+        mathewm@codeaurora.org
+Subject: Re: Deadlock in Bluetooth code in 2.6.36
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1285104013-9946-1-git-send-email-padovan@profusion.mobi>
+References: <1285104013-9946-1-git-send-email-padovan@profusion.mobi>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-release_swap_writer and release_swap_reader are now empty functions.
-Remove them and clean up callers (including swap_reader_finish, which
-just called release_swap_reader).
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+Date: Tue, 21 Sep 2010 18:20:12 -0300
 
-Signed-off-by: Nigel Cunningham <nigel@tuxonice.net>
----
- kernel/power/block_io.c |   36 ++++--------------------------------
- kernel/power/block_io.h |    2 --
- kernel/power/swap.c     |    9 ---------
- 3 files changed, 4 insertions(+), 43 deletions(-)
+> My questions here is on how to fix this properly. Maybe
+> sock_alloc_send_skb() should not be used with SOCK_STREAM and reliable
+> protocols and I'm not aware of that? And should I use something like
+> sk_stream_alloc_skb() instead?
+> 
+> Any comments are welcome. With lucky we can fix that for 2.6.36 and
+> together with others fixes we have queued deliver a fully functional
+> L2CAP layer on 2.6.36.
 
-diff --git a/kernel/power/block_io.c b/kernel/power/block_io.c
-index f452650..fc2e05d 100644
---- a/kernel/power/block_io.c
-+++ b/kernel/power/block_io.c
-@@ -172,28 +172,19 @@ static int write_page(void *buf, sector_t offset, int sync)
- 	return hib_bio_write_page(offset, src, sync);
- }
- 
--void release_swap_writer(void)
--{
--}
--
- int hib_bio_prepare_write(void)
- {
- 	int result, result2;
- 
- 	result = hib_prepare_buffer();
--	if (result) {
--		release_swap_writer();
-+	if (result)
- 		return result;
--	}
- 
- 	first_sector = hib_extent_current(&sector_extents);
- 
- 	result = hib_extents_store(&sector_extents);
- 	result2 = hib_flush_write_buffer();
- 
--	if (result || result2)
--		release_swap_writer();
--
- 	return result ? result : result2;
- }
- 
-@@ -211,38 +202,19 @@ int flush_swap_writer(void)
- 	return 0;
- }
- 
--/**
-- *	The following functions allow us to read data using a swap map
-- *	in a file-alike way
-- */
--
--void release_swap_reader(void)
--{
--}
--
- int get_swap_reader(unsigned int *flags_p, sector_t first_page)
- {
- 	int error;
- 
- 	error = hib_prepare_buffer();
--	if (error) {
--		release_swap_reader();
-+	if (error)
- 		return error;
--	}
- 
- 	/* Bootstrap reading the extents */
- 	error = hib_bio_read_page(first_page, hib_ppio_buffer, 1);
--	if (error) {
--		release_swap_reader();
--		hib_free_buffer();
--		return error;
--	}
- 
--	error = hib_extents_load(&sector_extents, 1);
--
--	if (error) {
--		release_swap_reader();
--	}
-+	if (!error)
-+		error = hib_extents_load(&sector_extents, 1);
- 
- 	hib_free_buffer();
- 	return error;
-diff --git a/kernel/power/block_io.h b/kernel/power/block_io.h
-index 1482060..228fe58 100644
---- a/kernel/power/block_io.h
-+++ b/kernel/power/block_io.h
-@@ -14,12 +14,10 @@ void hib_wait_on_bio_chain(void);
- unsigned int hib_bio_overhead(unsigned int nr_pages);
- sector_t hib_get_first_sector(void);
- extern struct hib_extent_state sector_extents;
--void release_swap_writer(void);
- int hib_bio_prepare_write(void);
- int flush_swap_writer(void);
- int swap_write_page(void *buf, int sync);
- int get_swap_reader(unsigned int *flags_p, sector_t first_page);
--void release_swap_reader(void);
- int swap_read_page(void *buf, int sync);
- int hib_flush_write_buffer(void);
- 
-diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-index d3e5939..5669f92 100644
---- a/kernel/power/swap.c
-+++ b/kernel/power/swap.c
-@@ -223,7 +223,6 @@ static int swap_writer_finish(unsigned int flags, int error)
- 
- 	if (error)
- 		free_all_swap_pages(root_swap);
--	release_swap_writer();
- 	swsusp_close(FMODE_WRITE);
- 
- 	return error;
-@@ -312,13 +311,6 @@ out_finish:
- 	return error;
- }
- 
--static int swap_reader_finish(void)
--{
--	release_swap_reader();
--
--	return 0;
--}
--
- /**
-  *	load_image - load the image using the swap map handle
-  *	@handle and the snapshot handle @snapshot
-@@ -397,7 +389,6 @@ int swsusp_read(unsigned int *flags_p)
- 		error = swap_read_page(header, 1);
- 	if (!error)
- 		error = load_image(&snapshot, header->pages - 1);
--	swap_reader_finish();
- end:
- 	if (!error)
- 		pr_debug("PM: Image successfully loaded\n");
--- 
-1.7.0.4
+Use sock_alloc_send_skb() as you do now, but if it fails wait for socket
+space to become available just like TCP does, then loop back and try to
+allocate again if the space-wait doesn't return an error.
+
+I think you should be able to reuse sk_stream_wait_memory() for this
+purpose just fine and without any problems.
 
