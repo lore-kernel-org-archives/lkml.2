@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754528Ab0IYCwW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 22:52:22 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:49189 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753270Ab0IYCwU (ORCPT
+	id S1754810Ab0IYDVI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 23:21:08 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64638 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750816Ab0IYDVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 22:52:20 -0400
+	Fri, 24 Sep 2010 23:21:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=AK1D1ia28hHt+MON31DuP1DebMsnpEigybEn6/tywnvNGEGT4KtYN2j3HC+IQc+KW8
-         sIyxaGm3CKMzAmFanRASIWKFY7WsmOb4TIHYgMCL6mtzC/H6TXl8wezV7WwzjSbXdykw
-         aCq6uyH2NEoL+0JBDKh1dBn0H6FpE1GmsshL4=
-MIME-Version: 1.0
-In-Reply-To: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
-References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
-Date: Sat, 25 Sep 2010 10:52:20 +0800
-Message-ID: <AANLkTinDVs46mn1apGUy2ALauzO+f5sOhKhWr8MGk8=n@mail.gmail.com>
-Subject: Re: [PATCH 01/24] base: change to new flag variable
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: matt mooney <mfm@muteddisk.com>
-Cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Michal Marek <mmarek@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=p4zaENyDdlmmySzpQtAV8hFq3p04CR2+2qbtOQGpdXdvCpzBL7kayD1NTNn0pSoSKg
+         TaKdHebwn6gd86OUQqk/sm46UVdWSqThN9Jb6iLqCDwgHVY3ic9Cs/y3CgOV1fKj6gFA
+         HI6fH45zjle2W5YAnKtwkIoSiKGD9dns5hTno=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND] signal: annotate siglock acquisition
+Date: Sat, 25 Sep 2010 12:20:56 +0900
+Message-Id: <1285384856-4310-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 25, 2010 at 3:17 AM, matt mooney <mfm@muteddisk.com> wrote:
-> Replace EXTRA_CFLAGS with ccflags-y.
->
-> Signed-off-by: matt mooney <mfm@muteddisk.com>
+lock_task_sighand() conditionally acquires sighand->siglock in case of
+returning non-NULL but unlock_task_sighand() releases it unconditionally.
+This leads sparse to complain about the lock context imbalance. Annotate it
+to make sparse happier.
 
-Nice work, matt!
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ kernel/signal.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-The whole patch set looks good for me:
+diff --git a/kernel/signal.c b/kernel/signal.c
+index bded651..766ae03 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -1038,6 +1038,7 @@ int do_send_sig_info(int sig, struct siginfo *info, struct task_struct *p,
+ 	int ret = -ESRCH;
+ 
+ 	if (lock_task_sighand(p, &flags)) {
++		__acquire(&p->sighand->siglock);  /* make sparse happy */
+ 		ret = send_signal(sig, info, p, group);
+ 		unlock_task_sighand(p, &flags);
+ 	}
+@@ -1227,6 +1228,7 @@ int kill_pid_info_as_uid(int sig, struct siginfo *info, struct pid *pid,
+ 
+ 	if (sig) {
+ 		if (lock_task_sighand(p, &flags)) {
++			__acquire(&p->sighand->siglock);
+ 			ret = __send_signal(sig, info, p, 1, 0);
+ 			unlock_task_sighand(p, &flags);
+ 		} else
+@@ -1406,6 +1408,8 @@ int send_sigqueue(struct sigqueue *q, struct task_struct *t, int group)
+ 	if (!likely(lock_task_sighand(t, &flags)))
+ 		goto ret;
+ 
++	__acquire(&t->sighand->siglock); /* make sparse happy */
++
+ 	ret = 1; /* the signal is ignored */
+ 	if (!prepare_signal(sig, t, 0))
+ 		goto out;
+-- 
+1.7.2.2
 
-Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
-
-Just please do remember to Cc linux-kbuild and Michal next time.
-
-Thanks!
