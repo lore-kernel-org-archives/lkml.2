@@ -1,55 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756513Ab0IYUiz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 16:38:55 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:41376 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750797Ab0IYUix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 16:38:53 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Huang Ying <ying.huang@intel.com>
-Subject: Re: [PATCH] PCI / PCIe / AER: Disable native AER service if BIOS has precedence (v2) (was: Re: [PATCH]  PCI / PCIe / AER ...)
-Date: Sat, 25 Sep 2010 22:37:52 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc5-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Chen Gong <gong.chen@linux.intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-References: <201009200002.15609.rjw@sisk.pl> <201009201850.00626.rjw@sisk.pl> <1285393862.15685.37.camel@yhuang-dev>
-In-Reply-To: <1285393862.15685.37.camel@yhuang-dev>
+	id S1756862Ab0IYUjc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 16:39:32 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:36382 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754442Ab0IYUja (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Sep 2010 16:39:30 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: jgarzik@pobox.com
+Subject: [PATCH] de2104x: fix TP link detection
+Date: Sat, 25 Sep 2010 22:39:17 +0200
+User-Agent: KMail/1.9.10
+Cc: netdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+Content-Type: text/plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009252237.52589.rjw@sisk.pl>
+Content-Disposition: inline
+Message-Id: <201009252239.21376.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, September 25, 2010, Huang Ying wrote:
-> Hi, Rafael,
-> 
-> On Tue, 2010-09-21 at 00:50 +0800, Rafael J. Wysocki wrote:
-> > --- linux-2.6.orig/drivers/pci/pcie/portdrv_acpi.c
-> > +++ linux-2.6/drivers/pci/pcie/portdrv_acpi.c
-> > @@ -49,7 +49,7 @@ int pcie_port_acpi_setup(struct pci_dev 
-> >  		| OSC_PCI_EXPRESS_PME_CONTROL;
-> >  
-> >  	if (pci_aer_available()) {
-> > -		if (pcie_aer_get_firmware_first(port))
-> > +		if (aer_acpi_firmware_first())
-> >  			dev_dbg(&port->dev, "PCIe errors handled by BIOS.\n");
-> >  		else
-> >  			flags |= OSC_PCI_EXPRESS_AER_CONTROL;
-> 
-> The original per-device firmware_first is overridden by the new global
-> firmware_first? If it is, why keep the original per-device
-> firmware_first?
+Compex FreedomLine 32 PnP-PCI2 cards have only TP and BNC connectors but the
+SROM contains AUI port too. When TP loses link, the driver switches to
+non-existing AUI port (which reports that carrier is always present).
 
-I didn't want to remove it just yet, but I do think it should be removed.
+Connecting TP back generates LinkPass interrupt but de_media_interrupt() is
+broken - it only updates the link state of currently connected media, ignoring
+the fact that LinkPass and LinkFail bits of MacStatus register belong to the
+TP port only (the chip documentation says that).
 
-Rafael
+This patch changes de_media_interrupt() to switch media to TP when link goes
+up (and media type is not locked) and also to update the link state only when
+the TP port is used.
+
+Also the NonselPortActive (and also SelPortActive) bits of SIAStatus register
+need to be cleared (by writing 1) after reading or they're useless.
+
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+
+--- linux-2.6.36-rc3-/drivers/net/tulip/de2104x.c	2010-09-25 21:19:53.000000000 +0200
++++ linux-2.6.36-rc3/drivers/net/tulip/de2104x.c	2010-09-25 21:22:11.000000000 +0200
+@@ -243,6 +243,7 @@ enum {
+ 	NWayState		= (1 << 14) | (1 << 13) | (1 << 12),
+ 	NWayRestart		= (1 << 12),
+ 	NonselPortActive	= (1 << 9),
++	SelPortActive		= (1 << 8),
+ 	LinkFailStatus		= (1 << 2),
+ 	NetCxnErr		= (1 << 1),
+ };
+@@ -1066,6 +1067,9 @@ static void de21041_media_timer (unsigne
+ 	unsigned int carrier;
+ 	unsigned long flags;
+ 
++	/* clear port active bits */
++	dw32(SIAStatus, NonselPortActive | SelPortActive);
++
+ 	carrier = (status & NetCxnErr) ? 0 : 1;
+ 
+ 	if (carrier) {
+@@ -1160,14 +1164,29 @@ no_link_yet:
+ static void de_media_interrupt (struct de_private *de, u32 status)
+ {
+ 	if (status & LinkPass) {
++		/* Ignore if current media is AUI or BNC and we can't use TP */
++		if ((de->media_type == DE_MEDIA_AUI ||
++		     de->media_type == DE_MEDIA_BNC) &&
++		    (de->media_lock ||
++		     !de_ok_to_advertise(de, DE_MEDIA_TP_AUTO)))
++			return;
++		/* If current media is not TP, change it to TP */
++		if ((de->media_type == DE_MEDIA_AUI ||
++		     de->media_type == DE_MEDIA_BNC)) {
++			de->media_type = DE_MEDIA_TP_AUTO;
++			de_stop_rxtx(de);
++			de_set_media(de);
++			de_start_rxtx(de);
++		}
+ 		de_link_up(de);
+ 		mod_timer(&de->media_timer, jiffies + DE_TIMER_LINK);
+ 		return;
+ 	}
+ 
+ 	BUG_ON(!(status & LinkFail));
+-
+-	if (netif_carrier_ok(de->dev)) {
++	/* Mark the link as down only if current media is TP */
++	if (netif_carrier_ok(de->dev) && de->media_type != DE_MEDIA_AUI &&
++	    de->media_type != DE_MEDIA_BNC) {
+ 		de_link_down(de);
+ 		mod_timer(&de->media_timer, jiffies + DE_TIMER_NO_LINK);
+ 	}
+
+
+-- 
+Ondrej Zary
