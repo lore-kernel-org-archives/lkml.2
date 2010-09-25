@@ -1,82 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756698Ab0IYSe1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 14:34:27 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:54221 "EHLO
+	id S1756339Ab0IYSfC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 14:35:02 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:63518 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756037Ab0IYSc5 (ORCPT
+	with ESMTP id S1750927Ab0IYSe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 14:32:57 -0400
+	Sat, 25 Sep 2010 14:34:59 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=KXHENuEYnRG7KnN6iJA4F+g6Wtec+vy9Sbw9hNPfbUzrSnUYSE6+x5aiI40E7twvPs
-         pBn4PuAax+PM/dG4Uor4B0R998OhUl86BzMuhB7Du5AOJZASfvOUcc8VXAC6GsMi3RSX
-         ML17YMwZS/qkFhgp6ol1yDoN6NLNTNAXsDOLM=
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=AYa7xPJ0RUZ7rG9vmSBO1tduTV1AZjYIC4+5NbVw7O002mpw23cmMMJfVLn/G4EJMg
+         2D17/KOFlUtDZZjkY6AGoNDdUN+WSHwrtUCC9xgaUEJNvAJ+0MM6zpMSvOzXeDDlLase
+         jyqmfCGvVPhKsmVrtXAFf1VbGwxvsvLNy0PvA=
 From: Tracey Dent <tdent48227@gmail.com>
 To: tytso@mit.edu
 Cc: adilger.kernel@dilger.ca, jack@suse.cz, dmonakhov@openvz.org,
         sandeen@redhat.com, hch@lst.de, linux-ext4@vger.kernel.org,
         linux-kernel@vger.kernel.org, Tracey Dent <Tdent48227@gmail.com>,
         Tracey Dent <tdent48227@gmail.com>
-Subject: [PATCH 03/10] Fs: ext: balloc: fixed a few issues that checkpatch.pl was having
-Date: Sat, 25 Sep 2010 14:31:54 -0400
-Message-Id: <1285439521-2557-3-git-send-email-tdent48227@gmail.com>
+Subject: [PATCH 09/10] Fs: ext4: mballoc.c: whitespace cleanup
+Date: Sat, 25 Sep 2010 14:34:54 -0400
+Message-Id: <1285439694-2609-1-git-send-email-tdent48227@gmail.com>
 X-Mailer: git-send-email 1.7.3
-In-Reply-To: <1285439521-2557-1-git-send-email-tdent48227@gmail.com>
-References: <1285439521-2557-1-git-send-email-tdent48227@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tracey Dent <Tdent48227@gmail.com>
 
-Fixed space after a variable with help of checkpatch.pl
+Fixed whitespace and indent issues that checkpatch.pl had an issue with
 
 Signed-off-by: Tracey Dent <tdent48227@gmail.com>
 ---
- fs/ext4/balloc.c |   10 +++++-----
+ fs/ext4/mballoc.c |   10 +++++-----
  1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/fs/ext4/balloc.c b/fs/ext4/balloc.c
-index bd30799..ca3a161 100644
---- a/fs/ext4/balloc.c
-+++ b/fs/ext4/balloc.c
-@@ -390,9 +390,9 @@ void ext4_add_groupblocks(handle_t *handle, struct super_block *sb,
- 	 * Check to see if we are freeing blocks across a group
- 	 * boundary.
- 	 */
--	if (bit + count > EXT4_BLOCKS_PER_GROUP(sb)) {
-+	if (bit + count > EXT4_BLOCKS_PER_GROUP(sb)) 
- 		goto error_return;
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index 4b4ad4b..0bc545c 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -2410,9 +2410,9 @@ int ext4_mb_init(struct super_block *sb, int needs_recovery)
+ 	i = (sb->s_blocksize_bits + 2) * sizeof(*sbi->s_mb_offsets);
+ 
+ 	sbi->s_mb_offsets = kmalloc(i, GFP_KERNEL);
+-	if (sbi->s_mb_offsets == NULL) {
++	if (sbi->s_mb_offsets == NULL) 
+ 		return -ENOMEM;
 -	}
-+
- 	bitmap_bh = ext4_read_block_bitmap(sb, block_group);
- 	if (!bitmap_bh)
- 		goto error_return;
-@@ -710,7 +710,7 @@ static unsigned long ext4_bg_num_gdb_nometa(struct super_block *sb,
- 	if (!ext4_bg_has_super(sb, group))
- 		return 0;
++	
  
--	if (EXT4_HAS_INCOMPAT_FEATURE(sb,EXT4_FEATURE_INCOMPAT_META_BG))
-+	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_META_BG))
- 		return le32_to_cpu(EXT4_SB(sb)->s_es->s_first_meta_bg);
- 	else
- 		return EXT4_SB(sb)->s_gdb_count;
-@@ -731,11 +731,11 @@ unsigned long ext4_bg_num_gdb(struct super_block *sb, ext4_group_t group)
- 			le32_to_cpu(EXT4_SB(sb)->s_es->s_first_meta_bg);
- 	unsigned long metagroup = group / EXT4_DESC_PER_BLOCK(sb);
+ 	i = (sb->s_blocksize_bits + 2) * sizeof(*sbi->s_mb_maxs);
+ 	sbi->s_mb_maxs = kmalloc(i, GFP_KERNEL);
+@@ -3908,7 +3908,7 @@ static void ext4_mb_show_ac(struct ext4_allocation_context *ac)
+ 			(int)ac->ac_criteria);
+ 	printk(KERN_ERR "EXT4-fs: %lu scanned, %d found\n", ac->ac_ex_scanned,
+ 		ac->ac_found);
+-	printk(KERN_ERR "EXT4-fs: groups: \n");
++	printk(KERN_ERR "EXT4-fs: groups:\n");
+ 	ngroups = ext4_get_groups_count(sb);
+ 	for (i = 0; i < ngroups; i++) {
+ 		struct ext4_group_info *grp = ext4_get_group_info(sb, i);
+@@ -3923,14 +3923,14 @@ static void ext4_mb_show_ac(struct ext4_allocation_context *ac)
+ 			ext4_get_group_no_and_offset(sb, pa->pa_pstart,
+ 						     NULL, &start);
+ 			spin_unlock(&pa->pa_lock);
+-			printk(KERN_ERR "PA:%u:%d:%u \n", i,
++			printk(KERN_ERR "PA:%u:%d:%u\n", i,
+ 			       start, pa->pa_len);
+ 		}
+ 		ext4_unlock_group(sb, i);
  
--	if (!EXT4_HAS_INCOMPAT_FEATURE(sb,EXT4_FEATURE_INCOMPAT_META_BG) ||
-+	if (!EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_META_BG) ||
- 			metagroup < first_meta_bg)
- 		return ext4_bg_num_gdb_nometa(sb, group);
- 
--	return ext4_bg_num_gdb_meta(sb,group);
-+	return ext4_bg_num_gdb_meta(sb, group);
- 
- }
- 
+ 		if (grp->bb_free == 0)
+ 			continue;
+-		printk(KERN_ERR "%u: %d/%d \n",
++		printk(KERN_ERR "%u: %d/%d\n",
+ 		       i, grp->bb_free, grp->bb_fragments);
+ 	}
+ 	printk(KERN_ERR "\n");
 -- 
 1.7.3
 
