@@ -1,100 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756862Ab0IYUjc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 16:39:32 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:36382 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754442Ab0IYUja (ORCPT
+	id S1756183Ab0IYUu2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 16:50:28 -0400
+Received: from adsl-67-113-118-6.dsl.sndg02.pacbell.net ([67.113.118.6]:49344
+	"EHLO multivac.one-eyed-alien.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751178Ab0IYUu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 16:39:30 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: jgarzik@pobox.com
-Subject: [PATCH] de2104x: fix TP link detection
-Date: Sat, 25 Sep 2010 22:39:17 +0200
-User-Agent: KMail/1.9.10
-Cc: netdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+	Sat, 25 Sep 2010 16:50:26 -0400
+Date: Sat, 25 Sep 2010 13:47:36 -0700
+From: Matthew Dharm <mdharm-kernel@one-eyed-alien.net>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: Greg KH <greg@kroah.com>, trivial@kernel.org, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        alsa-devel@alsa-project.org, dri-devel@lists.freedesktop.org,
+        linux-ide@vger.kernel.org
+Subject: Re: [RFC 2/3 v3]update web addresses in stagging
+Message-ID: <20100925204736.GD25677@one-eyed-alien.net>
+Mail-Followup-To: "Justin P. Mattock" <justinmattock@gmail.com>,
+	Greg KH <greg@kroah.com>, trivial@kernel.org,
+	linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+	linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org,
+	linux-fbdev@vger.kernel.org, alsa-devel@alsa-project.org,
+	dri-devel@lists.freedesktop.org, linux-ide@vger.kernel.org
+References: <1285373337-10945-1-git-send-email-justinmattock@gmail.com> <1285373337-10945-2-git-send-email-justinmattock@gmail.com> <20100925003406.GA30029@kroah.com> <4C9D47AC.6000002@gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7CZp05NP8/gJM8Cl"
 Content-Disposition: inline
-Message-Id: <201009252239.21376.linux@rainbow-software.org>
+In-Reply-To: <4C9D47AC.6000002@gmail.com>
+User-Agent: Mutt/1.4.2.3i
+Organization: One Eyed Alien Networks
+X-Copyright: (C) 2010 Matthew Dharm, all rights reserved.
+X-Message-Flag: Get a real e-mail client.  http://www.mutt.org/
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (multivac.one-eyed-alien.net [127.0.0.1]); Sat, 25 Sep 2010 13:47:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compex FreedomLine 32 PnP-PCI2 cards have only TP and BNC connectors but the
-SROM contains AUI port too. When TP loses link, the driver switches to
-non-existing AUI port (which reports that carrier is always present).
 
-Connecting TP back generates LinkPass interrupt but de_media_interrupt() is
-broken - it only updates the link state of currently connected media, ignoring
-the fact that LinkPass and LinkFail bits of MacStatus register belong to the
-TP port only (the chip documentation says that).
+--7CZp05NP8/gJM8Cl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch changes de_media_interrupt() to switch media to TP when link goes
-up (and media type is not locked) and also to update the link state only when
-the TP port is used.
+On Fri, Sep 24, 2010 at 05:51:56PM -0700, Justin P. Mattock wrote:
+> On 09/24/2010 05:34 PM, Greg KH wrote:
+> >On Fri, Sep 24, 2010 at 05:08:56PM -0700, Justin P. Mattock wrote:
+> >>The below patch, is a simple fix to a broken web address not using a=20
+> >>period in it's
+> >>name. I'll leave this up to you guys if you want to use it...
+> >>
+> >>  Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+> >
+> >I'll queue it up, thanks.
+> >
+> >Oh, it's "staging", not "stagging" as you have up there in the Subject:
+> >:)
+> >
+> >thanks,
+> >
+> >greg k-h
+> >
+>=20
+> shoot... and I actually changed it from staging to stagging thinking=20
+> that was correct..(duh)..
+>=20
+> Anyways alright.. I'll exclude this one if the other sets get finalized.
 
-Also the NonselPortActive (and also SelPortActive) bits of SIAStatus register
-need to be cleared (by writing 1) after reading or they're useless.
+One random suggestion:  Perhaps you should include a date here?  i.e. "URL
+blah blah blah (as of Sept 2010)"
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+That way, people have some idea how much they can trust that URL without
+having to dig into the kernel history to see when it was last changed.
 
---- linux-2.6.36-rc3-/drivers/net/tulip/de2104x.c	2010-09-25 21:19:53.000000000 +0200
-+++ linux-2.6.36-rc3/drivers/net/tulip/de2104x.c	2010-09-25 21:22:11.000000000 +0200
-@@ -243,6 +243,7 @@ enum {
- 	NWayState		= (1 << 14) | (1 << 13) | (1 << 12),
- 	NWayRestart		= (1 << 12),
- 	NonselPortActive	= (1 << 9),
-+	SelPortActive		= (1 << 8),
- 	LinkFailStatus		= (1 << 2),
- 	NetCxnErr		= (1 << 1),
- };
-@@ -1066,6 +1067,9 @@ static void de21041_media_timer (unsigne
- 	unsigned int carrier;
- 	unsigned long flags;
- 
-+	/* clear port active bits */
-+	dw32(SIAStatus, NonselPortActive | SelPortActive);
-+
- 	carrier = (status & NetCxnErr) ? 0 : 1;
- 
- 	if (carrier) {
-@@ -1160,14 +1164,29 @@ no_link_yet:
- static void de_media_interrupt (struct de_private *de, u32 status)
- {
- 	if (status & LinkPass) {
-+		/* Ignore if current media is AUI or BNC and we can't use TP */
-+		if ((de->media_type == DE_MEDIA_AUI ||
-+		     de->media_type == DE_MEDIA_BNC) &&
-+		    (de->media_lock ||
-+		     !de_ok_to_advertise(de, DE_MEDIA_TP_AUTO)))
-+			return;
-+		/* If current media is not TP, change it to TP */
-+		if ((de->media_type == DE_MEDIA_AUI ||
-+		     de->media_type == DE_MEDIA_BNC)) {
-+			de->media_type = DE_MEDIA_TP_AUTO;
-+			de_stop_rxtx(de);
-+			de_set_media(de);
-+			de_start_rxtx(de);
-+		}
- 		de_link_up(de);
- 		mod_timer(&de->media_timer, jiffies + DE_TIMER_LINK);
- 		return;
- 	}
- 
- 	BUG_ON(!(status & LinkFail));
--
--	if (netif_carrier_ok(de->dev)) {
-+	/* Mark the link as down only if current media is TP */
-+	if (netif_carrier_ok(de->dev) && de->media_type != DE_MEDIA_AUI &&
-+	    de->media_type != DE_MEDIA_BNC) {
- 		de_link_down(de);
- 		mod_timer(&de->media_timer, jiffies + DE_TIMER_NO_LINK);
- 	}
+Matt
 
+--=20
+Matthew Dharm                              Home: mdharm-usb@one-eyed-alien.=
+net=20
+Maintainer, Linux USB Mass Storage Driver
 
--- 
-Ondrej Zary
+It was a new hope.
+					-- Dust Puppy
+User Friendly, 12/25/1998
+
+--7CZp05NP8/gJM8Cl
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.7 (GNU/Linux)
+
+iD8DBQFMnl/o3gL8qCooyc4RAqGYAJ0Vtb9UGcVSOagW2v+EWpTeucsEpACeOJOu
+8n2eXNSWdRbDQNClZROGuGE=
+=rS8p
+-----END PGP SIGNATURE-----
+
+--7CZp05NP8/gJM8Cl--
