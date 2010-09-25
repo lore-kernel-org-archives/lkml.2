@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756558Ab0IYSdA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 14:33:00 -0400
+	id S1756746Ab0IYSdn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 14:33:43 -0400
 Received: from mail-iw0-f174.google.com ([209.85.214.174]:41084 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756098Ab0IYSc5 (ORCPT
+	with ESMTP id S1754647Ab0IYSdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 14:32:57 -0400
+	Sat, 25 Sep 2010 14:33:03 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=C6cKs7DZJGTuZyS8Syt98wDVU4OCfsQH05eaLtZhSvmVJLokXIpU/MT31vKQ+tuPK2
-         +8T/7+fVduC7Nobqk72IVzUelZf74a/eNwpRbhbBfRNxuywuQlE1uuqjTRHcpehEYDOi
-         YFk+T7s8nd/d8xUQngwLbk1LN4KjVvn64dFds=
+        b=XfLBXgHB+6T9o9xTsAWqwNWFY/bLHIbgarypsKpH6zV3PqN4IR+RTQ1l5OLT+EwY58
+         9F8UiMzMYY4RsmAF79OK5EMdzmC5Rd7nzaOP35PK3rBORVouy72cSGMHUyhPbiUDCNt1
+         nWw//KYKoBzXTD8Vu7YUy/efeQpnnhyS6iFaQ=
 From: Tracey Dent <tdent48227@gmail.com>
 To: tytso@mit.edu
 Cc: adilger.kernel@dilger.ca, jack@suse.cz, dmonakhov@openvz.org,
         sandeen@redhat.com, hch@lst.de, linux-ext4@vger.kernel.org,
         linux-kernel@vger.kernel.org, Tracey Dent <Tdent48227@gmail.com>,
-        Tracey Dent <tdent48227@gmail.com>
-Subject: [PATCH 05/10] Fs: ext4: ext4: cleaned up the file with checkpatch.pl
-Date: Sat, 25 Sep 2010 14:31:56 -0400
-Message-Id: <1285439521-2557-5-git-send-email-tdent48227@gmail.com>
+        Tracey Dent <tden48227@gmail.com>
+Subject: [PATCH 09/10] Fs: ext4: mballoc.c: whitespace cleanup
+Date: Sat, 25 Sep 2010 14:32:00 -0400
+Message-Id: <1285439521-2557-9-git-send-email-tdent48227@gmail.com>
 X-Mailer: git-send-email 1.7.3
 In-Reply-To: <1285439521-2557-1-git-send-email-tdent48227@gmail.com>
 References: <1285439521-2557-1-git-send-email-tdent48227@gmail.com>
@@ -31,123 +31,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tracey Dent <Tdent48227@gmail.com>
 
-Fixed numerous issues that checkpatch.pl was having with the file
+Fixed whitespace and indent issues that checkpatch.pl had an issue with
 
-Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+Signed-off-by: Tracey Dent <tden48227@gmail.com>
 ---
- fs/ext4/ext4.h |   43 ++++++++++++++++++++-----------------------
- 1 files changed, 20 insertions(+), 23 deletions(-)
+ fs/ext4/mballoc.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 889ec9d..6aa5871 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -233,8 +233,7 @@ typedef struct ext4_io_end {
- /*
-  * Structure of a blocks group descriptor
-  */
--struct ext4_group_desc
--{
-+struct ext4_group_desc	{
- 	__le32	bg_block_bitmap_lo;	/* Blocks bitmap block */
- 	__le32	bg_inode_bitmap_lo;	/* Inodes bitmap block */
- 	__le32	bg_inode_table_lo;	/* Inodes table block */
-@@ -513,8 +512,8 @@ struct ext4_new_group_data {
- #define EXT4_IOC_GROUP_EXTEND		_IOW('f', 7, unsigned long)
- #define EXT4_IOC_GROUP_ADD		_IOW('f', 8, struct ext4_new_group_input)
- #define EXT4_IOC_MIGRATE		_IO('f', 9)
-- /* note ioctl 10 reserved for an early version of the FIEMAP ioctl */
-- /* note ioctl 11 reserved for filesystem-independent FIEMAP ioctl */
-+	/* note ioctl 10 reserved for an early version of the FIEMAP ioctl */
-+	/* note ioctl 11 reserved for filesystem-independent FIEMAP ioctl */
- #define EXT4_IOC_ALLOC_DA_BLKS		_IO('f', 12)
- #define EXT4_IOC_MOVE_EXT		_IOWR('f', 15, struct move_extent)
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index 4b4ad4b..0bc545c 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -2410,9 +2410,9 @@ int ext4_mb_init(struct super_block *sb, int needs_recovery)
+ 	i = (sb->s_blocksize_bits + 2) * sizeof(*sbi->s_mb_offsets);
  
-@@ -649,17 +648,17 @@ struct move_extent {
+ 	sbi->s_mb_offsets = kmalloc(i, GFP_KERNEL);
+-	if (sbi->s_mb_offsets == NULL) {
++	if (sbi->s_mb_offsets == NULL) 
+ 		return -ENOMEM;
+-	}
++	
  
- static inline __le32 ext4_encode_extra_time(struct timespec *time)
- {
--       return cpu_to_le32((sizeof(time->tv_sec) > 4 ?
--			   (time->tv_sec >> 32) & EXT4_EPOCH_MASK : 0) |
--                          ((time->tv_nsec << EXT4_EPOCH_BITS) & EXT4_NSEC_MASK));
-+		return cpu_to_le32((sizeof(time->tv_sec) > 4 ?
-+				(time->tv_sec >> 32) & EXT4_EPOCH_MASK : 0) |
-+						((time->tv_nsec << EXT4_EPOCH_BITS) & EXT4_NSEC_MASK));
- }
+ 	i = (sb->s_blocksize_bits + 2) * sizeof(*sbi->s_mb_maxs);
+ 	sbi->s_mb_maxs = kmalloc(i, GFP_KERNEL);
+@@ -3908,7 +3908,7 @@ static void ext4_mb_show_ac(struct ext4_allocation_context *ac)
+ 			(int)ac->ac_criteria);
+ 	printk(KERN_ERR "EXT4-fs: %lu scanned, %d found\n", ac->ac_ex_scanned,
+ 		ac->ac_found);
+-	printk(KERN_ERR "EXT4-fs: groups: \n");
++	printk(KERN_ERR "EXT4-fs: groups:\n");
+ 	ngroups = ext4_get_groups_count(sb);
+ 	for (i = 0; i < ngroups; i++) {
+ 		struct ext4_group_info *grp = ext4_get_group_info(sb, i);
+@@ -3923,14 +3923,14 @@ static void ext4_mb_show_ac(struct ext4_allocation_context *ac)
+ 			ext4_get_group_no_and_offset(sb, pa->pa_pstart,
+ 						     NULL, &start);
+ 			spin_unlock(&pa->pa_lock);
+-			printk(KERN_ERR "PA:%u:%d:%u \n", i,
++			printk(KERN_ERR "PA:%u:%d:%u\n", i,
+ 			       start, pa->pa_len);
+ 		}
+ 		ext4_unlock_group(sb, i);
  
- static inline void ext4_decode_extra_time(struct timespec *time, __le32 extra)
- {
--       if (sizeof(time->tv_sec) > 4)
-+		if (sizeof(time->tv_sec) > 4)
- 	       time->tv_sec |= (__u64)(le32_to_cpu(extra) & EXT4_EPOCH_MASK)
- 			       << 32;
--       time->tv_nsec = (le32_to_cpu(extra) & EXT4_NSEC_MASK) >> EXT4_EPOCH_BITS;
-+		time->tv_nsec = (le32_to_cpu(extra) & EXT4_NSEC_MASK) >> EXT4_EPOCH_BITS;
- }
- 
- #define EXT4_INODE_SET_XTIME(xtime, inode, raw_inode)			       \
-@@ -1261,23 +1260,23 @@ EXT4_INODE_BIT_FNS(state, state_flags)
-  * Feature set definitions
-  */
- 
--#define EXT4_HAS_COMPAT_FEATURE(sb,mask)			\
-+#define EXT4_HAS_COMPAT_FEATURE(sb, mask)			\
- 	((EXT4_SB(sb)->s_es->s_feature_compat & cpu_to_le32(mask)) != 0)
--#define EXT4_HAS_RO_COMPAT_FEATURE(sb,mask)			\
-+#define EXT4_HAS_RO_COMPAT_FEATURE(sb, mask)			\
- 	((EXT4_SB(sb)->s_es->s_feature_ro_compat & cpu_to_le32(mask)) != 0)
--#define EXT4_HAS_INCOMPAT_FEATURE(sb,mask)			\
-+#define EXT4_HAS_INCOMPAT_FEATURE(sb, mask)			\
- 	((EXT4_SB(sb)->s_es->s_feature_incompat & cpu_to_le32(mask)) != 0)
--#define EXT4_SET_COMPAT_FEATURE(sb,mask)			\
-+#define EXT4_SET_COMPAT_FEATURE(sb, mask)			\
- 	EXT4_SB(sb)->s_es->s_feature_compat |= cpu_to_le32(mask)
--#define EXT4_SET_RO_COMPAT_FEATURE(sb,mask)			\
-+#define EXT4_SET_RO_COMPAT_FEATURE(sb, mask)			\
- 	EXT4_SB(sb)->s_es->s_feature_ro_compat |= cpu_to_le32(mask)
--#define EXT4_SET_INCOMPAT_FEATURE(sb,mask)			\
-+#define EXT4_SET_INCOMPAT_FEATURE(sb, mask)			\
- 	EXT4_SB(sb)->s_es->s_feature_incompat |= cpu_to_le32(mask)
--#define EXT4_CLEAR_COMPAT_FEATURE(sb,mask)			\
-+#define EXT4_CLEAR_COMPAT_FEATURE(sb, mask)			\
- 	EXT4_SB(sb)->s_es->s_feature_compat &= ~cpu_to_le32(mask)
--#define EXT4_CLEAR_RO_COMPAT_FEATURE(sb,mask)			\
-+#define EXT4_CLEAR_RO_COMPAT_FEATURE(sb, mask)			\
- 	EXT4_SB(sb)->s_es->s_feature_ro_compat &= ~cpu_to_le32(mask)
--#define EXT4_CLEAR_INCOMPAT_FEATURE(sb,mask)			\
-+#define EXT4_CLEAR_INCOMPAT_FEATURE(sb, mask)			\
- 	EXT4_SB(sb)->s_es->s_feature_incompat &= ~cpu_to_le32(mask)
- 
- #define EXT4_FEATURE_COMPAT_DIR_PREALLOC	0x0001
-@@ -1471,8 +1470,7 @@ static inline __le16 ext4_rec_len_to_disk(unsigned len, unsigned blocksize)
- #ifdef __KERNEL__
- 
- /* hash info structure used by the directory hash */
--struct dx_hash_info
--{
-+struct dx_hash_info		{
- 	u32		hash;
- 	u32		minor_hash;
- 	int		hash_version;
-@@ -1490,8 +1488,7 @@ struct dx_hash_info
- /*
-  * Describe an inode's exact location on disk and in memory
-  */
--struct ext4_iloc
--{
-+struct ext4_iloc		{
- 	struct buffer_head *bh;
- 	unsigned long offset;
- 	ext4_group_t block_group;
-@@ -1947,7 +1944,7 @@ static inline void ext4_unlock_group(struct super_block *sb,
- static inline void ext4_mark_super_dirty(struct super_block *sb)
- {
- 	if (EXT4_SB(sb)->s_journal == NULL)
--		sb->s_dirt =1;
-+		sb->s_dirt = 1;
- }
- 
- /*
+ 		if (grp->bb_free == 0)
+ 			continue;
+-		printk(KERN_ERR "%u: %d/%d \n",
++		printk(KERN_ERR "%u: %d/%d\n",
+ 		       i, grp->bb_free, grp->bb_fragments);
+ 	}
+ 	printk(KERN_ERR "\n");
 -- 
 1.7.3
 
