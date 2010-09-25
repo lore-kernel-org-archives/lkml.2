@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756054Ab0IYEOq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 00:14:46 -0400
+	id S932066Ab0IYEPk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 00:15:40 -0400
 Received: from mga02.intel.com ([134.134.136.20]:27792 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751431Ab0IYEKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 00:10:45 -0400
+	id S1751079Ab0IYEKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Sep 2010 00:10:44 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.57,233,1283756400"; 
-   d="scan'208";a="557826774"
+   d="scan'208";a="557826768"
 From: xiaohui.xin@intel.com
 To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         mingo@elte.hu, davem@davemloft.net, herbert@gondor.hengli.com.au,
         jdike@linux.intel.com
 Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [PATCH v11 04/17]Add a function make external buffer owner to query capability.
-Date: Sat, 25 Sep 2010 12:27:22 +0800
-Message-Id: <6df1b1c2d2ffe70da911984c7fe6fab16f23043b.1285385607.git.xiaohui.xin@intel.com>
+Subject: [PATCH v11 03/17] Add a ndo_mp_port_prep pointer to net_device_ops.
+Date: Sat, 25 Sep 2010 12:27:21 +0800
+Message-Id: <79267b300503d98d43ccfcf11d1374f59fec8578.1285385607.git.xiaohui.xin@intel.com>
 X-Mailer: git-send-email 1.7.3
 In-Reply-To: <1285388855-27410-1-git-send-email-xiaohui.xin@intel.com>
 References: <1285388855-27410-1-git-send-email-xiaohui.xin@intel.com>
@@ -28,87 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Xin Xiaohui <xiaohui.xin@intel.com>
 
-The external buffer owner can use the functions to get
-the capability of the underlying NIC driver.
+If the driver want to allocate external buffers,
+then it can export it's capability, as the skb
+buffer header length, the page length can be DMA, etc.
+The external buffers owner may utilize this.
 
+Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
+Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
+Reviewed-by: Jeff Dike <jdike@linux.intel.com>
 ---
- include/linux/netdevice.h |    2 +
- net/core/dev.c            |   49 +++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 51 insertions(+), 0 deletions(-)
+ include/linux/netdevice.h |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
 diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index aba0308..5f192de 100644
+index ba582e1..aba0308 100644
 --- a/include/linux/netdevice.h
 +++ b/include/linux/netdevice.h
-@@ -1599,6 +1599,8 @@ extern gro_result_t	napi_frags_finish(struct napi_struct *napi,
- 					  gro_result_t ret);
- extern struct sk_buff *	napi_frags_skb(struct napi_struct *napi);
- extern gro_result_t	napi_gro_frags(struct napi_struct *napi);
-+extern int netdev_mp_port_prep(struct net_device *dev,
-+				struct mpassthru_port *port);
- 
- static inline void napi_free_frags(struct napi_struct *napi)
- {
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 264137f..636f11b 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2468,6 +2468,55 @@ void netif_nit_deliver(struct sk_buff *skb)
- 	rcu_read_unlock();
- }
- 
-+/* To support meidate passthru(zero-copy) with NIC driver,
-+ * we'd better query NIC driver for the capability it can
-+ * provide, especially for packet split mode, now we only
-+ * query for the header size, and the payload a descriptor
-+ * may carry. If a driver does not use the API to export,
-+ * then we may try to use a default value, currently,
-+ * we use the default value from an IGB driver. Now,
-+ * it's only called by mpassthru device.
-+ */
+@@ -710,6 +710,10 @@ struct net_device_ops {
+ 	int			(*ndo_fcoe_get_wwn)(struct net_device *dev,
+ 						    u64 *wwn, int type);
+ #endif
 +#if defined(CONFIG_MEDIATE_PASSTHRU) || defined(CONFIG_MEDIATE_PASSTHRU_MODULE)
-+int netdev_mp_port_prep(struct net_device *dev,
-+		struct mpassthru_port *port)
-+{
-+	int rc;
-+	int npages, data_len;
-+	const struct net_device_ops *ops = dev->netdev_ops;
-+
-+	if (ops->ndo_mp_port_prep) {
-+		rc = ops->ndo_mp_port_prep(dev, port);
-+		if (rc)
-+			return rc;
-+	} else {
-+		/* If the NIC driver did not report this,
-+		 * then we try to use default value.
-+		 */
-+		port->hdr_len = 128;
-+		port->data_len = 2048;
-+		port->npages = 1;
-+	}
-+
-+	if (port->hdr_len <= 0)
-+		goto err;
-+
-+	npages = port->npages;
-+	data_len = port->data_len;
-+	if (npages <= 0 || npages > MAX_SKB_FRAGS ||
-+			(data_len < PAGE_SIZE * (npages - 1) ||
-+			 data_len > PAGE_SIZE * npages))
-+		goto err;
-+
-+	return 0;
-+err:
-+	dev_warn(&dev->dev, "invalid page constructor parameters\n");
-+
-+	return -EINVAL;
-+}
-+EXPORT_SYMBOL(netdev_mp_port_prep);
++	int			(*ndo_mp_port_prep)(struct net_device *dev,
++						struct mpassthru_port *port);
 +#endif
-+
- /**
-  *	netif_receive_skb - process receive buffer from network
-  *	@skb: buffer to process
+ };
+ 
+ /*
 -- 
 1.7.3
 
