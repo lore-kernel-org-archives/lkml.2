@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756612Ab0IYLhA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 07:37:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7856 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756503Ab0IYLg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 07:36:58 -0400
-Date: Sat, 25 Sep 2010 07:36:52 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Cc: linux-m68k@vger.kernel.org
-Subject: [PATCH] amiga floppy: Compile failure fixes
-Message-ID: <20100925113652.GA20016@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1756583Ab0IYLxx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 07:53:53 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:57053 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755714Ab0IYLxw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Sep 2010 07:53:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=DzcNu2Gg16ofMT9rOV2/CCkaohdkbFR5LdnPr+Z6Qs4J2PnVZX53xL+TM9ikuMCah3
+         E+N/LMwylGlg/G8FH2BWf/RGtty8MvBOTr1mosyMftMPyOlo8Q0iMKQ4TBxB51Y02oJ7
+         tEGdIkk4JXOcGqAiMZsHhRmSxD805z7X0PlMQ=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH v2] ptrace: annotate siglock acquisition
+Date: Sat, 25 Sep 2010 20:53:41 +0900
+Message-Id: <1285415621-28548-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens,
+lock_task_sighand() conditionally acquires sighand->siglock in case of
+returning non-NULL but unlock_task_sighand() releases it unconditionally.
+This leads sparse to complain about the lock context imbalance. Annotate it
+to make sparse happier.
 
-I did cross compile for m68k and noticed amiga floppy driver failed to
-compile with my patch. Please find attached the fix.
-
-I had sent same patch in original mail thread. Resending it in a separate
-mail.
-
-Thanks
-Vivek
-
-
-o Compile fixes for amiga floppy driver.
-
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 ---
- drivers/block/amiflop.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
 
-Index: linux-2.6-block/drivers/block/amiflop.c
-===================================================================
---- linux-2.6-block.orig/drivers/block/amiflop.c	2010-09-24 16:12:19.000000000 -0400
-+++ linux-2.6-block/drivers/block/amiflop.c	2010-09-24 16:13:38.000000000 -0400
-@@ -1347,12 +1347,12 @@ static struct request *set_next_request(
- 	if (fdc_queue == FD_MAX_UNITS)
- 		fdc_queue = 0;
+Roland, I sent the same patch a month ago and got your Acked-by but this
+time I update it using __cond_lock() suggested by Al Viro. Please take a
+look again, Thanks.
+
+ kernel/ptrace.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+index f34d798..8d9b7b2 100644
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -435,7 +435,8 @@ static int ptrace_getsiginfo(struct task_struct *child, siginfo_t *info)
+ 	unsigned long flags;
+ 	int error = -ESRCH;
  
--	for(cnt = FD_MAX_UNITS; cnt > 0, cnt--) {
-+	for(cnt = FD_MAX_UNITS; cnt > 0; cnt--) {
+-	if (lock_task_sighand(child, &flags)) {
++	if (__cond_lock(&child->sighand->siglock,
++			lock_task_sighand(child, &flags))) {
+ 		error = -EINVAL;
+ 		if (likely(child->last_siginfo != NULL)) {
+ 			*info = *child->last_siginfo;
+@@ -451,7 +452,8 @@ static int ptrace_setsiginfo(struct task_struct *child, const siginfo_t *info)
+ 	unsigned long flags;
+ 	int error = -ESRCH;
  
- 		if (unit[fdc_queue].type->code == FD_NODRIVE) {
- 			if (++fdc_queue == FD_MAX_UNITS)
- 				fdc_queue = 0;
--			cotinue;
-+			continue;
- 		}
- 
- 		q = unit[fdc_queue].gendisk->queue;
-@@ -1827,7 +1827,6 @@ static int __init amiga_floppy_probe(str
- 	return 0;
- 
- out_probe:
--out_queue:
- 	free_irq(IRQ_AMIGA_CIAA_TB, NULL);
- out_irq2:
- 	free_irq(IRQ_AMIGA_DSKBLK, NULL);
+-	if (lock_task_sighand(child, &flags)) {
++	if (__cond_lock(&child->sighand->siglock,
++			lock_task_sighand(child, &flags))) {
+ 		error = -EINVAL;
+ 		if (likely(child->last_siginfo != NULL)) {
+ 			*child->last_siginfo = *info;
+-- 
+1.7.2.2
+
