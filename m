@@ -1,41 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830Ab0IYBzD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 21:55:03 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52951 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754001Ab0IYBzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 21:55:02 -0400
-Message-ID: <4C9D5643.10505@zytor.com>
-Date: Fri, 24 Sep 2010 18:54:11 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
+	id S1754880Ab0IYCHG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 22:07:06 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:33405 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754271Ab0IYCHE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 22:07:04 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Hans J. Koch" <hjk@linutronix.de>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+References: <m1y6b48973.fsf@fess.ebiederm.org> <20100917205946.GF2522@local>
+	<m139t451b4.fsf_-_@fess.ebiederm.org>
+	<m1eico3mjg.fsf_-_@fess.ebiederm.org>
+	<20100924105555.GD1819@silverbox.local>
+Date: Fri, 24 Sep 2010 19:06:59 -0700
+In-Reply-To: <20100924105555.GD1819@silverbox.local> (Hans J. Koch's message
+	of "Fri, 24 Sep 2010 12:55:56 +0200")
+Message-ID: <m1r5gi4lvg.fsf_-_@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: "Ma, Ling" <ling.ma@intel.com>
-CC: "mingo@elte.hu" <mingo@elte.hu>, "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: FW: [RFC PATCH] [X86/mem] Optimize memmove for small size and
- unaligned cases
-References: <C10D3FB0CD45994C8A51FEC1227CE22F139131A574@shsmsx502.ccr.corp.intel.com>
-In-Reply-To: <C10D3FB0CD45994C8A51FEC1227CE22F139131A574@shsmsx502.ccr.corp.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 98.207.157.188
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"Hans J. Koch" <hjk@linutronix.de>
+X-Spam-Relay-Country: 
+Subject: [PATCH] uio: Fix accidentally changed return value in uio_read
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2010 06:36 PM, Ma, Ling wrote:
-> Any comments ?
-> 
-> Thanks
-> Ling
 
-Sorry... thought I had applied this one already -- looks like that was
-really another patch.
+Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
+---
+ drivers/uio/uio.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-	-hpa
-
+diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+index b0032e3..20743aa 100644
+--- a/drivers/uio/uio.c
++++ b/drivers/uio/uio.c
+@@ -557,7 +557,7 @@ static ssize_t uio_read(struct file *filep, char __user *buf,
+ 	if (!idev->info->irq)
+ 		goto out;
+ 
+-	retval = -EIO;
++	retval = -EINVAL;
+ 	if (count != sizeof(s32))
+ 		goto out;
+ 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.2.3
 
