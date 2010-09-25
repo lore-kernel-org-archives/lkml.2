@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756189Ab0IYK2F (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 06:28:05 -0400
-Received: from pfepa.post.tele.dk ([195.41.46.235]:33673 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755842Ab0IYK2E (ORCPT
+	id S1756240Ab0IYK21 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 06:28:27 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:38995 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755842Ab0IYK20 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 06:28:04 -0400
-Date: Sat, 25 Sep 2010 12:28:01 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Tracey Dent <tdent48227@gmail.com>
-Cc: greg@kroah.com, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 01/22] Staging: cx25821: Makefile:cleaned up
-	makefile cflag lines
-Message-ID: <20100925102801.GA3450@merkur.ravnborg.org>
-References: <1285370890-8984-1-git-send-email-tdent48227@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1285370890-8984-1-git-send-email-tdent48227@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sat, 25 Sep 2010 06:28:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
+         :mime-version:content-type:content-transfer-encoding;
+        b=MxQcqh+56zWl/2ASzmyfUMAwXbHUZA2pH8bmn2Sr9yRknMYFEDi84etcjqHXCY01Ll
+         gyqwKZ864jsxfWiz6Nxsyz9Fv4iwuJWH3YxCOcffQhfPq4hNqZLebV+hzvQ9X5l65dCu
+         BZd/u4fgPMnvaVflGbHSen0wpk9rOdNSvjY40=
+Date: Sat, 25 Sep 2010 12:28:20 +0200
+From: Paolo Ornati <ornati@gmail.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Vasily Khoruzhick <anarsoul@gmail.com>,
+        Simon Farnsworth <simon.farnsworth@onelan.co.uk>,
+        intel-gfx@lists.freedesktop.org, Sitsofe Wheeler <sitsofe@yahoo.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [Intel-gfx] Interrupt latency on some 945GM platforms
+Message-ID: <20100925122820.37c01ea3@gmail.com>
+In-Reply-To: <20100921155653.440afea4@jbarnes-desktop>
+References: <201009132336.17310.anarsoul@gmail.com>
+	<201009171002.09187.simon.farnsworth@onelan.co.uk>
+	<4b4d1e0a-b1ad-40f1-a829-6d4726d2b2d3@email.android.com>
+	<201009171550.48480.anarsoul@gmail.com>
+	<20100921202607.2b46ffca@gmail.com>
+	<20100921155653.440afea4@jbarnes-desktop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 24, 2010 at 07:27:49PM -0400, Tracey Dent wrote:
-> changed to use proper ccflags-y option
+On Tue, 21 Sep 2010 15:56:53 -0700
+Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+
+> > I've a laptop with 945GM (Asus x5dij) and with 2.6.32+ kernels I'm
+> > having random, but not frequent, screen flickering problems (for some
+> > reasons 2.6.31 works fine).
+> > 
+> > Problem goes away with "nohz=off".
+> > 
+> > I'll try with "processor.max_cstate=?" and see if that works too.  
 > 
-> Signed-off-by: Tracey Dent <tdent48227@gmail.com>
-> ---
->  drivers/staging/cx25821/Makefile |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/staging/cx25821/Makefile b/drivers/staging/cx25821/Makefile
-> index d0eb16e..2f1c73e 100644
-> --- a/drivers/staging/cx25821/Makefile
-> +++ b/drivers/staging/cx25821/Makefile
-> @@ -7,7 +7,7 @@ cx25821-objs   := cx25821-core.o cx25821-cards.o cx25821-i2c.o \
->  obj-$(CONFIG_VIDEO_CX25821) += cx25821.o
->  obj-$(CONFIG_VIDEO_CX25821_ALSA) += cx25821-alsa.o
->  
-> -EXTRA_CFLAGS += -Idrivers/media/video
-> -EXTRA_CFLAGS += -Idrivers/media/common/tuners
-> -EXTRA_CFLAGS += -Idrivers/media/dvb/dvb-core
-> -EXTRA_CFLAGS += -Idrivers/media/dvb/frontends
-> +ccflags-y := -Idrivers/media/video
-> +ccflags-y := -Idrivers/media/common/tuners
-> +ccflags-y := -Idrivers/media/dvb/dvb-core
-> +ccflags-y := -Idrivers/media/dvb/frontends
+> Can you guys try something like this?  My theory is that 945GM has some
+> power management behavior we're failing to configure correctly.  If
+> disabling it works, then it's likely related.
 
-This is wrong.
+UPDATE: "processor.max_cstate=2" doesn't solve the sporadic flicker
+problem.
 
-First you assign "ccflags-y" the value -Idrivers/media/video
-And in next line you assign it a new value - loosing the old value.
+The patch, applied on top of 2.6.35.4, freezes the laptop on boot.
 
-It should lok like this:
-> +ccflags-y := -Idrivers/media/video
-> +ccflags-y += -Idrivers/media/common/tuners
-> +ccflags-y += -Idrivers/media/dvb/dvb-core
-> +ccflags-y += -Idrivers/media/dvb/frontends
+Summary:
+	nohz=off		good
+	processor.max_cstate=1	good
+	processor.max_cstate=2	bad
 
-In this way you append to the variable.
+Bye,
 
-You said in another mil that it builds.
-This tells me that either some of the assignments are not needes - or you just loose
-something that you are not aware of.
-
-Please go through all your patches and fix it up - I saw the above
-bug in the two patches I looked at.
-
-	Sam
+-- 
+	Paolo Ornati
+	Linux 2.6.35.4 on x86_64
