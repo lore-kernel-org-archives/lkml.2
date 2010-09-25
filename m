@@ -1,97 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522Ab0IYBhv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 21:37:51 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:52112 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752802Ab0IYBht (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 21:37:49 -0400
-Date: Sat, 25 Sep 2010 11:37:43 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
+	id S1754570Ab0IYByl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 21:54:41 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:47914 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753863Ab0IYByj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 21:54:39 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
 To: Greg KH <gregkh@suse.de>
-Cc: Pavan Savoy <pavan_savoy@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: drivers:staging:ti-st: merge issues.
-Message-Id: <20100925113743.f1e31a0a.sfr@canb.auug.org.au>
-In-Reply-To: <20100924193027.GA17728@suse.de>
-References: <AANLkTinbEH0Z61z69ThcM9-GoHW4s5nRZig8b6v8uC8r@mail.gmail.com>
-	<20100924193027.GA17728@suse.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Sat__25_Sep_2010_11_37_43_+1000_mw23Iizs6DVciPTF"
+Cc: "Hans J. Koch" <hjk@linutronix.de>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+References: <m1y6b48973.fsf@fess.ebiederm.org> <20100917205946.GF2522@local>
+	<m139t451b4.fsf_-_@fess.ebiederm.org>
+	<20100924104555.GC1819@silverbox.local>
+	<m1hbhfcbdo.fsf@fess.ebiederm.org>
+	<20100924173106.GA4966@silverbox.local>
+	<m14ode662q.fsf@fess.ebiederm.org> <20100925003308.GA29910@suse.de>
+Date: Fri, 24 Sep 2010 18:54:34 -0700
+In-Reply-To: <20100925003308.GA29910@suse.de> (Greg KH's message of "Fri, 24
+	Sep 2010 17:33:08 -0700")
+Message-ID: <m1wrqa4mg5.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 98.207.157.188
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Greg KH <gregkh@suse.de>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 0/5] uio hotplug support
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__25_Sep_2010_11_37_43_+1000_mw23Iizs6DVciPTF
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Greg KH <gregkh@suse.de> writes:
 
-Hi Greg,
-
-On Fri, 24 Sep 2010 12:30:27 -0700 Greg KH <gregkh@suse.de> wrote:
+> On Fri, Sep 24, 2010 at 05:05:17PM -0700, Eric W. Biederman wrote:
+>> "Hans J. Koch" <hjk@linutronix.de> writes:
+>> 
+>> >
+>> > Hmm, I applied your first series of 5 patches (which I signed-off). When
+>> > trying to apply your second series, I get this from quilt:
+>> >
+>> > Applying patch 2_1-Simplify-the-lifetime-logic-of-struct-uio_device.patch
+>> > patching file drivers/uio/uio.c
+>> > Hunk #2 succeeded at 287 (offset 8 lines).
+>> > Hunk #3 succeeded at 312 (offset 8 lines).
+>> > Hunk #4 FAILED at 339.
+>> > Hunk #5 succeeded at 806 (offset 17 lines).
+>> > Hunk #6 FAILED at 831.
+>> > Hunk #7 FAILED at 858.
+>> > Hunk #8 FAILED at 889.
+>> > 4 out of 8 hunks FAILED -- rejects in file drivers/uio/uio.c
+>> > Patch 2_1-Simplify-the-lifetime-logic-of-struct-uio_device.patch does not apply (enforce with -f)
+>> >
+>> > The first series applied without any fuzz against 2.6.36-rc5.
+>> 
+>> I am stumped.  Do you perhaps have some local uio changes?
+>> 
+>> Using 2.6.36-rc5 as a base I tried it twice.  Once by taking my patches
+>> that I sent, and again by saving my email and then applying the changes.
+>> 
+>> Both times the changes applied cleanly.  No offsets, and no fuzz.  At
+>> least that is what git-am said.
+>> 
+>> Should I perhaps make a git branch you could pull?
 >
-> On Fri, Sep 24, 2010 at 02:11:50PM -0500, Pavan Savoy wrote:
-> >=20
-> > The merges bbf96b3cb54a237f1a66883390637e30bb4407ba and the merge on
-> > 759b9f0fe0c5be0d9fa1b92e14e093961312f6ac has caused the
-> > drivers/staging/ti-st to get corrupted, I had submitted few patches
-> > and it was all merged.
-> >=20
-> > basically the merge for bbf96b3cb54a237f1a66883390637e30bb4407ba for
-> > drivers/staging/ti-st/ shouldn't have happened.
-> > The head for the drivers/staging/ti-st/ should have been @
-> > 83ef41f0858b48cce4f8ca23f674ec55d50bf47d
->=20
-> I have no idea what this all means, sorry.
+> Try it on linux-next, as I've applied your previous patches there
+> already.
 
-I was with you, here (until I looked hard :-().
+Done.  git-am on my saved mbox works without problems.  The worst
+I get is a warning about trailing whitespace.   Nothing that
+looks like the above.
 
-> Are these linux-next merges?
-
-bbf96b3cb54a237f1a66883390637e30bb4407ba is the merge of the staging-next
-tree into linux-next. 759b9f0fe0c5be0d9fa1b92e14e093961312f6ac is the
-patch "Staging: ti-st: remove st_get_plat_device" that is in
-staging.current (and also in staging-next as commmit
-dbd3a8709560365ff9b1e5eca263f608877a8a89).
-83ef41f0858b48cce4f8ca23f674ec55d50bf47d is the commit "staging: ti-st:
-mv headers to ti_wilink_st" that is in the staging-next tree.
-
-> If I need to apply a patch to the staging-next, or Linus's tree, please
-> let me know.
->=20
-> confused,
-
-I was as well.  All I could guess was that my merge resolution when merging
-the staging-next tree was not correct?  The resolution I did was to remove
-drivers/staging/ti-st/st.h and drivers/staging/ti-st/st_core.h (since
-that had been done in commit 83ef41f0 ("staging: ti-st: mv headers to
-ti_wilink_st") in staging-next) and ...
-
-(I see it now) I used the wrong version of
-drivers/staging/ti-st/st_kim.c ... Sorry about that.  I will correct that
-merge in the next release of linux-next.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Sat__25_Sep_2010_11_37_43_+1000_mw23Iizs6DVciPTF
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMnVJnAAoJEDMEi1NhKgbseUMH/RKOU6cfIR9iPTCGIa0Ief+c
-fBgNhveldAJddXkIM6QsJXaQXtQzHzlwAqhiJDK7Nn3h/dEc2xtD0Cz+j1rLX1pL
-oqD43OV4RkeKtQMQPw91mACsvx+CgmtOKCUqnMKnegD73g6/10/2t0Zn1qWM3XN/
-5kZiO9lpHoIQ9k434vpQ2D3Br+fNhdbsWMIEy/mVfof15hGR4ySSKSmKrv5CmTr2
-oVfBdoQj5yhAvmp2qoR3soo6MV3NTiqt1+CEw2z29AU1wGPJiLzG7bi/boyJIp4S
-zpkonLLckmY12luLpF15YutxTHtNEdRCRX0tT2rKPnZvMA85SZhsxhaSxVYv2yU=
-=uIPw
------END PGP SIGNATURE-----
-
---Signature=_Sat__25_Sep_2010_11_37_43_+1000_mw23Iizs6DVciPTF--
+Eric
