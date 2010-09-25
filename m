@@ -1,73 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060Ab0IYRRC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 13:17:02 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:40511 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753597Ab0IYRRA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 13:17:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=BbS6Z68aBJ2iImD8vERinrG08JxfpjoY3p7LAeGNExU6BBc6c1HGEXMca54BntMctY
-         1ragbfUeJfyaUJScT542ISlq/tBQlXUmP24vWVcmy/AHckDQGbZhC44qJn9bdDdpNFM6
-         eqUBsux6DcCPRBlMz0K7udELHDud2z0InrbK4=
-Message-ID: <4C9E2E88.3080101@pobox.com>
-Date: Sat, 25 Sep 2010 13:16:56 -0400
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
+	id S1755037Ab0IYRXR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 13:23:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53725 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751952Ab0IYRXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Sep 2010 13:23:16 -0400
+Date: Sat, 25 Sep 2010 08:04:15 -0700
+From: Greg KH <gregkh@suse.de>
+To: Rahul Ruikar <rahul.ruikar@gmail.com>
+Cc: jirislaby@gmail.com, ak@linux.intel.com, adobriyan@gmail.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] misc: phantom: Added missing warning messages in
+	phantom_probe
+Message-ID: <20100925150415.GA4124@suse.de>
+References: <1285422505-7128-1-git-send-email-rahul.ruikar@gmail.com> <AANLkTik-1noL87D7dnq8AzV9i9BfxYoa-KboAB15r=oT@mail.gmail.com>
 MIME-Version: 1.0
-To: Ondrej Zary <linux@rainbow-software.org>
-CC: netdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: de2104x: fix power management
-References: <201009251157.07197.linux@rainbow-software.org>
-In-Reply-To: <201009251157.07197.linux@rainbow-software.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTik-1noL87D7dnq8AzV9i9BfxYoa-KboAB15r=oT@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2010 05:57 AM, Ondrej Zary wrote:
-> At least my 21041 cards come out of suspend with bus mastering disabled so
-> they did not work after resume(no data transferred).
-> After adding pci_set_master(), the driver oopsed immediately on resume -
-> because de_clean_rings() is called on suspend but de_init_rings() call
-> was missing in resume.
->
-> Also disable link (reset SIA) before sleep (de4x5 does this too).
->
-> Signed-off-by: Ondrej Zary<linux@rainbow-software.org>
->
-> --- linux-2.6.36-rc3-/drivers/net/tulip/de2104x.c	2010-09-25 11:27:26.000000000 +0200
-> +++ linux-2.6.36-rc3/drivers/net/tulip/de2104x.c	2010-09-25 11:29:22.000000000 +0200
-> @@ -1231,6 +1231,7 @@ static void de_adapter_sleep (struct de_
->   	if (de->de21040)
->   		return;
->
-> +	dw32(CSR13, 0); /* Reset phy */
->   	pci_read_config_dword(de->pdev, PCIPM,&pmctl);
->   	pmctl |= PM_Sleep;
->   	pci_write_config_dword(de->pdev, PCIPM, pmctl);
-> @@ -2166,6 +2167,8 @@ static int de_resume (struct pci_dev *pd
->   		dev_err(&dev->dev, "pci_enable_device failed in resume\n");
->   		goto out;
->   	}
-> +	pci_set_master(pdev);
-> +	de_init_rings(de);
->   	de_init_hw(de);
->   out_attach:
->   	netif_device_attach(dev);
+On Sat, Sep 25, 2010 at 07:45:10PM +0530, Rahul Ruikar wrote:
+> missed greg in earlier mail.
 
-Acked-by: Jeff Garzik <jgarzik@redhat.com>
+Ok, but why?  Is drivers/misc/phantom.c my code?
 
-IMO suspend/resume could use another look; if netif_running is false 
-(interface is down), de2104x does not put the PCI device to sleep, which 
-seems strange.
+confused,
 
-I also wonder if rtnl_lock() couldn't be eliminated, as other net 
-drivers don't need it in suspend/resume.
-
+greg k-h
