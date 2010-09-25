@@ -1,58 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758665Ab0IXX7J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 19:59:09 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:53121 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751603Ab0IXX7G convert rfc822-to-8bit (ORCPT
+	id S1758688Ab0IYAF0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 20:05:26 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:44711 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755677Ab0IYAFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 19:59:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Nk2j8L0KjKQlAZWlwHyMjKZCgF4O3ONHbzU00HEVmk9Oz7t6szt2nMB2HHP1dsUPCa
-         ZQLayR9GIF8sw6r/wM7Ai+W9VI79eKbZiLHR7vCg7deLtKTQEXhye6o5G3vFBdzGpggg
-         hIbEPrxZUwPfmx8Z3eFT/j8uUByabme7dEN5A=
+	Fri, 24 Sep 2010 20:05:24 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Hans J. Koch" <hjk@linutronix.de>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+References: <m1y6b48973.fsf@fess.ebiederm.org> <20100917205946.GF2522@local>
+	<m139t451b4.fsf_-_@fess.ebiederm.org>
+	<20100924104555.GC1819@silverbox.local>
+	<m1hbhfcbdo.fsf@fess.ebiederm.org>
+	<20100924173106.GA4966@silverbox.local>
+Date: Fri, 24 Sep 2010 17:05:17 -0700
+In-Reply-To: <20100924173106.GA4966@silverbox.local> (Hans J. Koch's message
+	of "Fri, 24 Sep 2010 19:31:07 +0200")
+Message-ID: <m14ode662q.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <201009241706.11742.bjorn.helgaas@hp.com>
-References: <20100923233047.12463.61480.stgit@bob.kio>
-	<201009241706.11742.bjorn.helgaas@hp.com>
-Date: Fri, 24 Sep 2010 16:59:05 -0700
-X-Google-Sender-Auth: Gvp4I7icqAP0-mx52neT5_bEIdU
-Message-ID: <AANLkTi=GrH4fR_wSFytaSiXsH+wo2a=DaLAU4H2d0d1M@mail.gmail.com>
-Subject: Re: [PATCH] x86, HPET: mark HPET PCI BARs as IORESOURCE_PCI_FIXED
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: Venkatesh Pallipadi <venki@google.com>,
-        Prarit Bhargava <prarit@redhat.com>, fredlwm@gmail.com,
-        Simon Arlott <simon@fire.lp0.eu>, x86@kernel.org,
-        Clemens Ladisch <clemens@ladisch.de>, linux-kernel@vger.kernel.org,
-        Marc Jones <marcj303@gmail.com>,
-        Jordan Crouse <jcrouse@codeaurora.org>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 98.207.157.188
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"Hans J. Koch" <hjk@linutronix.de>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 0/5] uio hotplug support
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 24, 2010 at 4:06 PM, Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
-> Sorry Yinghai, I forgot to copy you on the initial post.  Any
-> comments on this?  If not, we should try to get it into linux-next
-> soon.
+"Hans J. Koch" <hjk@linutronix.de> writes:
 
-should be good.
+> On Fri, Sep 24, 2010 at 10:14:11AM -0700, Eric W. Biederman wrote:
+>> "Hans J. Koch" <hjk@linutronix.de> writes:
+>> 
+>> > On Mon, Sep 20, 2010 at 12:19:59AM -0700, Eric W. Biederman wrote:
+>> >> 
+>> >> Implement the ability to hotunplug a uio device while file handles
+>> >> are still open without crashing.
+>> >
+>> > Could you please create patches that apply on top of your already
+>> > accepted UIO changes?
+>> 
+>> That is what the patches I sent should be.  My apologies if I had not
+>> made that clear.  Certainly these patches were built against my previous
+>> changes, on top of 2.6.36-rc4.  Are you having problems?
+>
+> Hmm, I applied your first series of 5 patches (which I signed-off). When
+> trying to apply your second series, I get this from quilt:
+>
+> Applying patch 2_1-Simplify-the-lifetime-logic-of-struct-uio_device.patch
+> patching file drivers/uio/uio.c
+> Hunk #2 succeeded at 287 (offset 8 lines).
+> Hunk #3 succeeded at 312 (offset 8 lines).
+> Hunk #4 FAILED at 339.
+> Hunk #5 succeeded at 806 (offset 17 lines).
+> Hunk #6 FAILED at 831.
+> Hunk #7 FAILED at 858.
+> Hunk #8 FAILED at 889.
+> 4 out of 8 hunks FAILED -- rejects in file drivers/uio/uio.c
+> Patch 2_1-Simplify-the-lifetime-logic-of-struct-uio_device.patch does not apply (enforce with -f)
+>
+> The first series applied without any fuzz against 2.6.36-rc5.
 
-only one thing, that will punish all other vendors... and run that
-quirk for every pci device.
+I am stumped.  Do you perhaps have some local uio changes?
 
-please check if you can have
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATI, PCI_ANY_ID, mark_pci_hpet_fixed);
+Using 2.6.36-rc5 as a base I tried it twice.  Once by taking my patches
+that I sent, and again by saving my email and then applying the changes.
 
-AND _AMD maybe, if AMD dump _ATI brand later.
+Both times the changes applied cleanly.  No offsets, and no fuzz.  At
+least that is what git-am said.
 
-Thanks
+Should I perhaps make a git branch you could pull?
 
-Yinghai
+Eric
