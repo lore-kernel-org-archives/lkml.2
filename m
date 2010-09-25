@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086Ab0IYEN5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 00:13:57 -0400
-Received: from mga02.intel.com ([134.134.136.20]:27792 "EHLO mga02.intel.com"
+	id S1755736Ab0IYEND (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 00:13:03 -0400
+Received: from mga02.intel.com ([134.134.136.20]:47863 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751830Ab0IYEKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 00:10:45 -0400
+	id S1750793Ab0IYEKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Sep 2010 00:10:46 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.57,233,1283756400"; 
-   d="scan'208";a="557826790"
+   d="scan'208";a="557826801"
 From: xiaohui.xin@intel.com
 To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         mingo@elte.hu, davem@davemloft.net, herbert@gondor.hengli.com.au,
         jdike@linux.intel.com
 Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [PATCH v11 06/17]Use callback to deal with skb_release_data() specially.
-Date: Sat, 25 Sep 2010 12:27:24 +0800
-Message-Id: <08d6446b209d0422e448bf964807846df73426b0.1285385607.git.xiaohui.xin@intel.com>
+Subject: [PATCH v11 10/17] Add a hook to intercept external buffers from NIC driver.
+Date: Sat, 25 Sep 2010 12:27:28 +0800
+Message-Id: <22aaeb00a5bd57d8b76ad714f495823c1db06927.1285385607.git.xiaohui.xin@intel.com>
 X-Mailer: git-send-email 1.7.3
 In-Reply-To: <1285388855-27410-1-git-send-email-xiaohui.xin@intel.com>
 References: <1285388855-27410-1-git-send-email-xiaohui.xin@intel.com>
@@ -28,61 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Xin Xiaohui <xiaohui.xin@intel.com>
 
-If buffer is external, then use the callback to destruct
-buffers.
-
+The hook is called in netif_receive_skb().
 Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
 Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
 Reviewed-by: Jeff Dike <jdike@linux.intel.com>
 
 ---
- include/linux/skbuff.h |    3 ++-
- net/core/skbuff.c      |    8 ++++++++
- 2 files changed, 10 insertions(+), 1 deletions(-)
+ net/core/dev.c |   35 +++++++++++++++++++++++++++++++++++
+ 1 files changed, 35 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 74af06c..ab29675 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -197,10 +197,11 @@ struct skb_shared_info {
- 	union skb_shared_tx tx_flags;
- 	struct sk_buff	*frag_list;
- 	struct skb_shared_hwtstamps hwtstamps;
--	skb_frag_t	frags[MAX_SKB_FRAGS];
- 	/* Intermediate layers must ensure that destructor_arg
- 	 * remains valid until skb destructor */
- 	void *		destructor_arg;
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 636f11b..4b379b1 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2517,6 +2517,37 @@ err:
+ EXPORT_SYMBOL(netdev_mp_port_prep);
+ #endif
+ 
++#if defined(CONFIG_MEDIATE_PASSTHRU) || defined(CONFIG_MEDIATE_PASSTHRU_MODULE)
++/* Add a hook to intercept mediate passthru(zero-copy) packets,
++ * and insert it to the socket queue owned by mp_port specially.
++ */
++static inline struct sk_buff *handle_mpassthru(struct sk_buff *skb,
++					       struct packet_type **pt_prev,
++					       int *ret,
++					       struct net_device *orig_dev)
++{
++	struct mpassthru_port *mp_port = NULL;
++	struct sock *sk = NULL;
 +
-+	skb_frag_t	frags[MAX_SKB_FRAGS];
- };
- 
- /* The structure is for a skb which pages may point to
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 93c4e06..117d82b 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -217,6 +217,7 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
- 	shinfo->gso_type = 0;
- 	shinfo->ip6_frag_id = 0;
- 	shinfo->tx_flags.flags = 0;
-+	shinfo->destructor_arg = NULL;
- 	skb_frag_list_init(skb);
- 	memset(&shinfo->hwtstamps, 0, sizeof(shinfo->hwtstamps));
- 
-@@ -350,6 +351,13 @@ static void skb_release_data(struct sk_buff *skb)
- 		if (skb_has_frags(skb))
- 			skb_drop_fraglist(skb);
- 
-+		if (skb->dev && dev_is_mpassthru(skb->dev)) {
-+			struct skb_ext_page *ext_page =
-+				skb_shinfo(skb)->destructor_arg;
-+			if (ext_page && ext_page->dtor)
-+				ext_page->dtor(ext_page);
-+		}
++	if (!dev_is_mpassthru(skb->dev))
++		return skb;
++	mp_port = skb->dev->mp_port;
 +
- 		kfree(skb->head);
- 	}
- }
++	if (*pt_prev) {
++		*ret = deliver_skb(skb, *pt_prev, orig_dev);
++		*pt_prev = NULL;
++	}
++
++	sk = mp_port->sock->sk;
++	skb_queue_tail(&sk->sk_receive_queue, skb);
++	sk->sk_state_change(sk);
++
++	return NULL;
++}
++#else
++#define handle_mpassthru(skb, pt_prev, ret, orig_dev)     (skb)
++#endif
++
+ /**
+  *	netif_receive_skb - process receive buffer from network
+  *	@skb: buffer to process
+@@ -2598,6 +2629,10 @@ int netif_receive_skb(struct sk_buff *skb)
+ ncls:
+ #endif
+ 
++	/* To intercept mediate passthru(zero-copy) packets here */
++	skb = handle_mpassthru(skb, &pt_prev, &ret, orig_dev);
++	if (!skb)
++		goto out;
+ 	skb = handle_bridge(skb, &pt_prev, &ret, orig_dev);
+ 	if (!skb)
+ 		goto out;
 -- 
 1.7.3
 
