@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977Ab0IYQaH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 12:30:07 -0400
-Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:54759 "EHLO
-	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754655Ab0IYQaF (ORCPT
+	id S1755881Ab0IYQtL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 12:49:11 -0400
+Received: from 26.mail-out.ovh.net ([91.121.27.225]:49102 "HELO
+	26.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754496Ab0IYQtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 12:30:05 -0400
-Date: Sat, 25 Sep 2010 10:30:11 -0600
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Greg KH <greg@kroah.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Brian Bloniarz <phunge0@hotmail.com>,
-        Charles Butterfield <charles.butterfield@nextcentury.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Stefan Becker <chemobejk@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [stable] [PATCH v2 0/4] PCI: allocate space top-down, not
- bottom-up
-Message-ID: <20100925163011.GA26747@helgaas.com>
-References: <20100917223109.24687.17697.stgit@bob.kio>
- <201009241641.40867.bjorn.helgaas@hp.com>
- <20100924234020.GA20601@kroah.com>
+	Sat, 25 Sep 2010 12:49:10 -0400
+Message-ID: <4C9E2801.4020609@example.com>
+Date: Sat, 25 Sep 2010 18:49:05 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100917 Icedove/3.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100924234020.GA20601@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Greg KH <gregkh@suse.de>
+CC: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [00/80] 2.6.35.6 stable review
+References: <20100924162706.GA7381@kroah.com>
+In-Reply-To: <20100924162706.GA7381@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 2882866713509196176
+X-Ovh-Remote: 83.6.189.13 (abaz13.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 24, 2010 at 04:40:20PM -0700, Greg KH wrote:
-> On Fri, Sep 24, 2010 at 04:41:39PM -0600, Bjorn Helgaas wrote:
-> > Added cc: stable@kernel.org
-> > See:
-> >   https://patchwork.kernel.org/patch/189182/
-> >   https://patchwork.kernel.org/patch/189232/
-> >   https://patchwork.kernel.org/patch/189242/
-> >   https://patchwork.kernel.org/patch/189252/
-> 
-> Um, why would -stable want them if they aren't in Linus's tree yet?
-> Please, when they are in his tree, _AND_ have gotten a lot of testing,
-> then email the git commit ids of what you want added to the stable tree
-> to stable@kernel.org.
-> 
-> Doing it beforehand like this is a sure way to cause me a lot of work
-> and the patches to be lost.
+On 24.09.2010 18:27, Greg KH wrote:
 
-Oops, sorry, I'm inexperienced in the ways of -stable.  Akpm reminded me tocc:
-stable, and I thought he meant now, but he probably meant later.  I'll put it
-on my list for later.
+> This is the start of the stable review cycle for the 2.6.35.6 release.
+> There are 80 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let us know.  If anyone is a maintainer of the proper subsystem, and
+> wants to add a Signed-off-by: line to the patch, please respond with it.
+>
+> Responses should be made by Sunday September 26, 17:00:00 UTC
+> Anything received after that time might be too late.
 
-Bjorn
+nouveau graphics driver does not work at all. I submitted full data a 
+few days ago.
+
+Regards,
+
+Piotr Hosowicz
+
+-- 
+- Poszed³em wczoraj z ¿on± do ZOO
+- I jak?
+- Nie wziêli...
+NP: Pantera - A New Level
+NB: 2.6.35.6-rc1
