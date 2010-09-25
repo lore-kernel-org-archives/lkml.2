@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755842Ab0IYQJd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 12:09:33 -0400
-Received: from vms173015pub.verizon.net ([206.46.173.15]:40817 "EHLO
-	vms173015pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755682Ab0IYQJb (ORCPT
+	id S1755942Ab0IYQKI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 12:10:08 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:40297 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755682Ab0IYQKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 12:09:31 -0400
-Date: Sat, 25 Sep 2010 12:09:11 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: Ike Panhc <ike.pan@canonical.com>
-Cc: linux-pm@lists.linux-foundation.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: intel_idle (Lenovo ideapad S10-3)
-In-reply-to: <4C8DE00F.7070801@canonical.com>
-Message-id: <alpine.LFD.2.00.1009251201150.17910@localhost.localdomain>
-References: <4C8DE00F.7070801@canonical.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 25 Sep 2010 12:10:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=WzACYhz9OQ795GjmcpVaypBTjzcRsOWMBA780B04g/GX5gZH6Ygk6Yaa0a6hUDIkZK
+         gzrWQNflkYzZUp5U+lMLotgvJQr2xlYvvJC81+5AyK5n/Ukcp85a7+YmUeT6pXZrfgy6
+         aURvmCKfs6NXlRVhfJ3zsTYzwzTtrHbCsnSEQ=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] posix-timers: annotate lock_timer()
+Date: Sun, 26 Sep 2010 01:09:55 +0900
+Message-Id: <1285430995-13619-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+lock_timer() conditionally grabs it_lock in case of returning non-NULL
+but unlock_timer() releases it unconditionally. This leads sparse to
+complain about the lock context imbalance. Rename and wrap lock_timer
+using __cond_lock() macro to make sparse happy.
 
-> I test myself which says when CONFIG_CPU_IDLE=y, Lenovo ideapad S10-3 can
-> not boot. The CPU is Atom N450, and I also find the report[2] that says intel_idle
-> works fine with N450.
-> 
-> I do not have much knowledge about intel_idle. is there any similar report that on
-> some machine intel_idle halt the system or any suggestion for next step debug?
-> 
-> 
-> [1] http://launchpad.net/bugs/634702
-> [2] http://www.spinics.net/lists/linux-pm/msg21334.html
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ kernel/posix-timers.c |   10 ++++++++--
+ 1 files changed, 8 insertions(+), 2 deletions(-)
 
-Please test the fix here:
-http://bugs.meego.com/show_bug.cgi?id=7093
-
-thanks,
--Len
+diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
+index 9ca4973..93bd2eb 100644
+--- a/kernel/posix-timers.c
++++ b/kernel/posix-timers.c
+@@ -145,7 +145,13 @@ static int common_timer_del(struct k_itimer *timer);
+ 
+ static enum hrtimer_restart posix_timer_fn(struct hrtimer *data);
+ 
+-static struct k_itimer *lock_timer(timer_t timer_id, unsigned long *flags);
++static struct k_itimer *__lock_timer(timer_t timer_id, unsigned long *flags);
++
++#define lock_timer(tid, flags)						   \
++({	struct k_itimer *__timr;					   \
++	__cond_lock(&__timr->it_lock, __timr = __lock_timer(tid, flags));  \
++	__timr;								   \
++})
+ 
+ static inline void unlock_timer(struct k_itimer *timr, unsigned long flags)
+ {
+@@ -619,7 +625,7 @@ out:
+  * the find to the timer lock.  To avoid a dead lock, the timer id MUST
+  * be release with out holding the timer lock.
+  */
+-static struct k_itimer *lock_timer(timer_t timer_id, unsigned long *flags)
++static struct k_itimer *__lock_timer(timer_t timer_id, unsigned long *flags)
+ {
+ 	struct k_itimer *timr;
+ 	/*
+-- 
+1.7.2.2
 
