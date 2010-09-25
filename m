@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758697Ab0IYAO2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 20:14:28 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:49893 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753751Ab0IYAO1 (ORCPT
+	id S1758566Ab0IYAUX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 20:20:23 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:34893 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753120Ab0IYAUW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 20:14:27 -0400
-Message-ID: <4C9D3E8B.7090000@kernel.org>
-Date: Fri, 24 Sep 2010 17:12:59 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Prarit Bhargava <prarit@redhat.com>, fredlwm@gmail.com,
-        Simon Arlott <simon@fire.lp0.eu>, x86@kernel.org,
-        Clemens Ladisch <clemens@ladisch.de>, linux-kernel@vger.kernel.org,
-        Marc Jones <marcj303@gmail.com>,
-        Jordan Crouse <jcrouse@codeaurora.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86, HPET: mark HPET PCI BARs as IORESOURCE_PCI_FIXED
-References: <20100923233047.12463.61480.stgit@bob.kio>	<201009241706.11742.bjorn.helgaas@hp.com> <AANLkTi=GrH4fR_wSFytaSiXsH+wo2a=DaLAU4H2d0d1M@mail.gmail.com> <4C9D3D79.9060908@zytor.com>
-In-Reply-To: <4C9D3D79.9060908@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 24 Sep 2010 20:20:22 -0400
+Subject: Re: [PATCH/RFC] timer: fix deadlock on cpu hotplug
+From: Peter Zijlstra <peterz@infradead.org>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+In-Reply-To: <20100923133103.GA3832@osiris.boeblingen.de.ibm.com>
+References: <20100921142017.GA2291@osiris.boeblingen.de.ibm.com>
+	 <4C98D0EB.30002@kernel.org> <1285083618.2275.884.camel@laptop>
+	 <20100922083706.GA2177@osiris.boeblingen.de.ibm.com>
+	 <1285147362.2275.896.camel@laptop> <1285165776.2275.1022.camel@laptop>
+	 <20100923133103.GA3832@osiris.boeblingen.de.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Sat, 25 Sep 2010 02:19:47 +0200
+Message-ID: <1285373987.2275.1048.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2010 05:08 PM, H. Peter Anvin wrote:
-> On 09/24/2010 04:59 PM, Yinghai Lu wrote:
->> On Fri, Sep 24, 2010 at 4:06 PM, Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
->>> Sorry Yinghai, I forgot to copy you on the initial post.  Any
->>> comments on this?  If not, we should try to get it into linux-next
->>> soon.
->>
->> should be good.
->>
->> only one thing, that will punish all other vendors... and run that
->> quirk for every pci device.
->>
->> please check if you can have
->> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATI, PCI_ANY_ID, mark_pci_hpet_fixed);
->>
->> AND _AMD maybe, if AMD dump _ATI brand later.
->>
+On Thu, 2010-09-23 at 15:31 +0200, Heiko Carstens wrote:
+> On Wed, Sep 22, 2010 at 04:29:36PM +0200, Peter Zijlstra wrote:
+> > On Wed, 2010-09-22 at 11:22 +0200, Peter Zijlstra wrote:
+> > 
+> > > The idea was to move it to a class of its own above SCHED_FIFO.
+> > > 
+> > > I'll try and get something done, but I'm heading out to LinuxCon.JP
+> > > soon.
+> > 
+> > Something like the below, it seems to boot, build a kernel and hotplug.
 > 
-> No, because the problem is known to happen on multiple vendors.
+> Thanks for the fast patch. Yes, it works. Sort of:
 > 
-Do you have URL to them?
+> ------------[ cut here ]------------
 
-INTEL ?
-ServerWorks?
-Via?
+<SPLAT>
 
-Yinghai
+> 
+> ..and crashes afterwards ;)
+
+Yeah, I can imagine,. weird though, kthread_create() should leave the
+new thread in uninterruptible context. The above warning implies this is
+not so.. 
+
+> Btw. I also tried to boot 2.6.35.5 with your patch and it hangs just at
+> the beginning. I also had to apply 5e3d20a68f63fc5a310687d81956c3b96e488b84
+> "init: Remove the BKL from startup code" to make the machine boot again,
+> which was a bit surprising.
+
+Most curious and unexpected,.. I'll try and have a look, but it might
+have to wait until after LinuxCon.JP..
+
+
