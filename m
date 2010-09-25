@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab0IYCHG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 22:07:06 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:33405 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754271Ab0IYCHE (ORCPT
+	id S1755052Ab0IYCIC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 22:08:02 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:55554 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754499Ab0IYCIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 22:07:04 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Hans J. Koch" <hjk@linutronix.de>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-References: <m1y6b48973.fsf@fess.ebiederm.org> <20100917205946.GF2522@local>
-	<m139t451b4.fsf_-_@fess.ebiederm.org>
-	<m1eico3mjg.fsf_-_@fess.ebiederm.org>
-	<20100924105555.GD1819@silverbox.local>
-Date: Fri, 24 Sep 2010 19:06:59 -0700
-In-Reply-To: <20100924105555.GD1819@silverbox.local> (Hans J. Koch's message
-	of "Fri, 24 Sep 2010 12:55:56 +0200")
-Message-ID: <m1r5gi4lvg.fsf_-_@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Fri, 24 Sep 2010 22:08:00 -0400
+X-Sasl-enc: QCf2nadV/vTvrw05adsJHcyJKAoddmmXCfGjcXhFvUeN 1285380479
+Date: Fri, 24 Sep 2010 23:07:53 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Vernon Mauery <vernux@us.ibm.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Keith Mannthey <kmannth@us.ibm.com>
+Subject: Re: [RFC][Patch] IBM Real-Time "SMI Free" mode driver -v5
+Message-ID: <20100925020753.GA31997@khazad-dum.debian.net>
+References: <20100921224610.GO13162@lucy>
+ <20100923221253.GA4960@lucy>
+ <20100923225346.GB4960@lucy>
+ <201009241512.39311.arnd@arndb.de>
+ <AANLkTimMWAk22gSn2cXA25VNJ1o3OX-mazJfFFd_+MH2@mail.gmail.com>
+ <20100924095625.5beedf5a.rdunlap@xenotime.net>
+ <20100924210642.GE10777@lucy>
+ <20100924142006.a79833ab.rdunlap@xenotime.net>
+ <20100924213009.GF10777@lucy>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 98.207.157.188
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"Hans J. Koch" <hjk@linutronix.de>
-X-Spam-Relay-Country: 
-Subject: [PATCH] uio: Fix accidentally changed return value in uio_read
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Disposition: inline
+In-Reply-To: <20100924213009.GF10777@lucy>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 24 Sep 2010, Vernon Mauery wrote:
+> >>+/* The RTL table as presented by the EBDA: */
+> >>+struct ibm_rtl_table {
+> >>+	char signature[5];
+> >
+> >Question:  are all 5 bytes of signature[] used?  It looks like the search code
+> >only checks for 32 bits of signature (and the last byte can be garbage?).
+> 
+> Technically, the 5 bytes are supposed to be "_RTL_", but it is a lot
+> easier to just check _RTL since we can do that with a single read.
+> I suppose I could do a 64-bit read and mask the bits that matter.
 
-Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
----
- drivers/uio/uio.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Well, as long as you guys write in stone there at IBM that you will
+remember to not have a possible future _RTL2_ that would clash horribly
+with an non-up-to-date version of the driver that has no clue about
+RTL2 and still would match the signature because it only looks at the first
+32 bits...
 
-diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-index b0032e3..20743aa 100644
---- a/drivers/uio/uio.c
-+++ b/drivers/uio/uio.c
-@@ -557,7 +557,7 @@ static ssize_t uio_read(struct file *filep, char __user *buf,
- 	if (!idev->info->irq)
- 		goto out;
- 
--	retval = -EIO;
-+	retval = -EINVAL;
- 	if (count != sizeof(s32))
- 		goto out;
- 
 -- 
-1.7.2.3
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
