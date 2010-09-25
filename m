@@ -1,500 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366Ab0IYOne (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 10:43:34 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:43320 "EHLO e7.ny.us.ibm.com"
+	id S1754662Ab0IYPC5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 11:02:57 -0400
+Received: from kroah.org ([198.145.64.141]:51779 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751006Ab0IYOnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 10:43:32 -0400
-Date: Sat, 25 Sep 2010 07:42:55 -0700
-From: Vernon Mauery <vernux@us.ibm.com>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>
-Subject: Re: [RFC][Patch] IBM Real-Time "SMI Free" mode driver -v6
-Message-ID: <20100925144255.GI10777@lucy>
-References: <20100921224610.GO13162@lucy>
- <20100923221253.GA4960@lucy>
- <20100923225346.GB4960@lucy>
- <201009241512.39311.arnd@arndb.de>
- <AANLkTimMWAk22gSn2cXA25VNJ1o3OX-mazJfFFd_+MH2@mail.gmail.com>
- <20100924095625.5beedf5a.rdunlap@xenotime.net>
- <20100924210642.GE10777@lucy>
- <20100924142006.a79833ab.rdunlap@xenotime.net>
- <20100924213009.GF10777@lucy>
- <20100925020753.GA31997@khazad-dum.debian.net>
+	id S1751006Ab0IYPC4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Sep 2010 11:02:56 -0400
+Date: Sat, 25 Sep 2010 08:02:01 -0700
+From: Greg KH <greg@kroah.com>
+To: Gene Heskett <gene.heskett@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [00/80] 2.6.35.6 stable review
+Message-ID: <20100925150201.GA3964@kroah.com>
+References: <20100924162706.GA7381@kroah.com> <201009241649.57150.gene.heskett@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Type: multipart/mixed; boundary="vtzGhvizbBRQ85DL"
 Content-Disposition: inline
-In-Reply-To: <20100925020753.GA31997@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201009241649.57150.gene.heskett@gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24-Sep-2010 11:07 PM, Henrique de Moraes Holschuh wrote:
->On Fri, 24 Sep 2010, Vernon Mauery wrote:
->> >>+/* The RTL table as presented by the EBDA: */
->> >>+struct ibm_rtl_table {
->> >>+	char signature[5];
->> >
->> >Question:  are all 5 bytes of signature[] used?  It looks like the search code
->> >only checks for 32 bits of signature (and the last byte can be garbage?).
->>
->> Technically, the 5 bytes are supposed to be "_RTL_", but it is a lot
->> easier to just check _RTL since we can do that with a single read.
->> I suppose I could do a 64-bit read and mask the bits that matter.
->
->Well, as long as you guys write in stone there at IBM that you will
->remember to not have a possible future _RTL2_ that would clash horribly
->with an non-up-to-date version of the driver that has no clue about
->RTL2 and still would match the signature because it only looks at the first
->32 bits...
 
-I do not have a strong opinion either way. Yes, a 5-byte compare is more 
-precise, but 4-bytes is very likely to be unique.  There is a spec 
-(written in stone, as it were) that tells what the table looks like.  It 
-says a 5-byte signature followed by a 1-byte version number.  Currently 
-there is only one version, but rather than change the signature on 
-future versions, we will change the version number.
+--vtzGhvizbBRQ85DL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-That said, here is a new version that does a 5-byte masked quad-word 
-compare to find the signature.
+On Fri, Sep 24, 2010 at 04:49:57PM -0400, Gene Heskett wrote:
+> On Friday, September 24, 2010, Greg KH wrote:
+> >This is the start of the stable review cycle for the 2.6.35.6 release.
+> >There are 80 patches in this series, all will be posted as a response
+> >to this one.  If anyone has any issues with these being applied, please
+> >let us know.  If anyone is a maintainer of the proper subsystem, and
+> >wants to add a Signed-off-by: line to the patch, please respond with it.
+> >
+> >Responses should be made by Sunday September 26, 17:00:00 UTC
+> >Anything received after that time might be too late.
+> >
+> >The whole patch series can be found in one patch at:
+> >	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.35.6-rc1.gz
+> 
+> Hi Greg;  I just pulled this about an hour ago, built it from a make 
+> oldconfig based on a flawlessly running 2.6.35.4.
 
---Vernon
+Please cc: me on messages, I don't read lkml as well as I should these
+days due to travel.
 
+> 3 things I call regressions.
+> 
+> 1. On rebooting to it, and launching kmail, cpu went to 100% of whatever 
+> core it skipped to on a 4 core amd phenom box with 4G of ram.  Normally, 
+> kmail on a restart will check and rebuild its indices, taking maybe 4 or 5 
+> minutes to do this up till now, during that time keyboard/mouse 
+> interactivity lags a split second.  This time it was 44 minutes before I 
+> got my machine back.  At times the keyboard went dead for minutes at a 
+> time.  I even went to the kitchen and got fresh batteries for it, only to 
+> have everything I had typed blind 2 minutes before, show up on screen while 
+> there was no batteries in it.
 
-IBM Real-Time "SMI Free" mode driver
+Odd, can you try reverting the patch below to see if it makes things
+better?  I need to drop it as Jens said it might cause problems.  Let me
+know if that solves the problem or not please.
 
-This driver supports the Real-Time Linux (RTL) BIOS feature.
-The RTL feature allows non-fatal System Management Interrupts
-(SMIs) to be disabled on supported IBM platforms and is
-intended to be coupled with a user-space daemon to monitor
-the hardware in a way that can be prioritized and scheduled
-to better suit the requirements for the system.
+> 2. That I think is separate from the login screen, there I had no keyboard 
+> or mouse for a minute, but something finally registered and I was able to 
+> log in then.
+> 
+> 3. My usb tree is not fully populated, this has been a frequent problem for 
+> the last year or so, udev often does not wait for responses long enough to 
+> trace a several hubs tall tree to the last branch so I have to crawl under 
+> and unplug the missing stuff later, which is then properly recognized when I 
+> plug it back into the same socket on the same hub.  One of my often missing 
+> printers is 4 hubs away in the basement.
 
-The Device is presented as a special "_RTL_" table to the OS
-in the Extended BIOS Data Area.  There is a simple protocol
-for entering and exiting the mode at runtime.  This driver
-creates a simple sysfs interface to allow a simple entry and
-exit from RTL mode in the UFI/BIOS.
+These both sound like the same issue, you might want to work to resolve
+them.
 
-Since the driver is specific to IBM SystemX hardware (x86-
-based servers) it only builds on x86 builds.  To reduce the
-risk of loading on the wrong hardware, the module uses DMI
-information and checks a list of servers that are known to
-work.
+Oh, and 4 hubs distance, that's pushing the limits of USB, one flaky
+cable and you are not going to have a working printer...
 
-Signed-off-by: Vernon Mauery <vernux@us.ibm.com>
+thanks,
 
-diff --git a/Documentation/ABI/testing/sysfs-devices-system-ibm-rtl b/Documentation/ABI/testing/sysfs-devices-system-ibm-rtl
-new file mode 100644
-index 0000000..b82deea
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-devices-system-ibm-rtl
-@@ -0,0 +1,22 @@
-+What:           state
-+Date:           Sep 2010
-+KernelVersion:  2.6.37
-+Contact:        Vernon Mauery <vernux@us.ibm.com>
-+Description:    The state file allows a means by which to change in and
-+                out of Premium Real-Time Mode (PRTM), as well as the
-+                ability to query the current state.
-+                    0 => PRTM off
-+                    1 => PRTM enabled
-+Users:          The ibm-prtm userspace daemon uses this interface.
-+
-+
-+What:           version
-+Date:           Sep 2010
-+KernelVersion:  2.6.37
-+Contact:        Vernon Mauery <vernux@us.ibm.com>
-+Description:    The version file provides a means by which to query
-+                the RTL table version that lives in the Extended
-+                BIOS Data Area (EBDA).
-+Users:          The ibm-prtm userspace daemon uses this interface.
-+
-+
-diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index cff7cc2..55c6b86 100644
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -590,4 +590,20 @@ config INTEL_IPS
-  	  functionality.  If in doubt, say Y here; it will only load on
-  	  supported platforms.
-  
-+config IBM_RTL
-+	tristate "Device driver to enable PRTL support"
-+	depends on X86 && PCI
-+	---help---
-+	  Enable support for IBM Premium Real Time Mode (PRTM).
-+	  This module will allow you the enter and exit PRTM in the BIOS via
-+	  sysfs on platforms that support this feature.  System in PRTM will
-+	  not receive CPU-generated SMIs for recoverable errors.  Use of this
-+	  feature without proper support may void your hardware warranty.
-+
-+	  If the proper BIOS support is found the driver will load and create
-+	  /sys/devices/system/ibm_rtl/.  The "state" variable will indicate
-+	  whether or not the BIOS is in PRTM.
-+	  state = 0 (BIOS SMIs on)
-+	  state = 1 (BIOS SMIs off)
-+
-  endif # X86_PLATFORM_DEVICES
-diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
-index 85fb2b8..50fae7a 100644
---- a/drivers/platform/x86/Makefile
-+++ b/drivers/platform/x86/Makefile
-@@ -30,4 +30,5 @@ obj-$(CONFIG_INTEL_SCU_IPC)	+= intel_scu_ipc.o
-  obj-$(CONFIG_RAR_REGISTER)	+= intel_rar_register.o
-  obj-$(CONFIG_INTEL_IPS)		+= intel_ips.o
-  obj-$(CONFIG_GPIO_INTEL_PMIC)	+= intel_pmic_gpio.o
-+obj-$(CONFIG_IBM_RTL)		+= ibm_rtl.o
-  
-diff --git a/drivers/platform/x86/ibm_rtl.c b/drivers/platform/x86/ibm_rtl.c
-new file mode 100644
-index 0000000..3c2c6b9
---- /dev/null
-+++ b/drivers/platform/x86/ibm_rtl.c
-@@ -0,0 +1,341 @@
-+/*
-+ * IBM Real-Time Linux driver
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ *
-+ * Copyright (C) IBM Corporation, 2010
-+ *
-+ * Author: Keith Mannthey <kmannth@us.ibm.com>
-+ *         Vernon Mauery <vernux@us.ibm.com>
-+ *
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/delay.h>
-+#include <linux/module.h>
-+#include <linux/io.h>
-+#include <linux/sysdev.h>
-+#include <linux/dmi.h>
-+#include <linux/mutex.h>
-+#include <asm/bios_ebda.h>
-+
-+static bool force;
-+module_param(force, bool, 0);
-+MODULE_PARM_DESC(force, "Force driver load, ignore DMI data");
-+
-+static bool debug;
-+module_param(debug, bool, 0644);
-+MODULE_PARM_DESC(debug, "Show debug output");
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Keith Mannthey <kmmanth@us.ibm.com>");
-+MODULE_AUTHOR("Vernon Mauery <vernux@us.ibm.com>");
-+
-+#define RTL_ADDR_TYPE_IO    1
-+#define RTL_ADDR_TYPE_MMIO  2
-+
-+#define RTL_CMD_ENTER_PRTM  1
-+#define RTL_CMD_EXIT_PRTM   2
-+
-+/* The RTL table as presented by the EBDA: */
-+struct ibm_rtl_table {
-+	char signature[5]; /* signature should be "_RTL_" */
-+	u8 version;
-+	u8 rt_status;
-+	u8 command;
-+	u8 command_status;
-+	u8 cmd_address_type;
-+	u8 cmd_granularity;
-+	u8 cmd_offset;
-+	u16 reserve1;
-+	u32 cmd_port_address; /* platform dependent address */
-+	u32 cmd_port_value;   /* platform dependent value */
-+} __attribute__((packed));
-+
-+/* to locate "_RTL_" signature do a masked 5-byte integer compare */
-+#define RTL_SIGNATURE 0x0000005f4c54525fULL
-+#define RTL_MASK      0x000000ffffffffffULL
-+
-+#define RTL_DEBUG(A, ...) do { \
-+	if (debug) \
-+		pr_info("ibm-rtl: " A, ##__VA_ARGS__ ); \
-+} while (0)
-+
-+static DEFINE_MUTEX(rtl_lock);
-+static struct ibm_rtl_table __iomem *rtl_table;
-+static void __iomem *ebda_map;
-+static void __iomem *rtl_cmd_addr;
-+static u8 rtl_cmd_type;
-+static u8 rtl_cmd_width;
-+
-+static void __iomem *rtl_port_map(phys_addr_t addr, unsigned long len)
+greg k-h
+
+--vtzGhvizbBRQ85DL
+Content-Type: text/x-patch; charset=us-ascii
+Content-Disposition: attachment; filename="bdi-fix-warnings-in-__mark_inode_dirty-for-dev-zero-and-friends.patch"
+
+>From 692ebd17c2905313fff3c504c249c6a0faad16ec Mon Sep 17 00:00:00 2001
+From: Jan Kara <jack@suse.cz>
+Date: Tue, 21 Sep 2010 11:51:01 +0200
+Subject: bdi: Fix warnings in __mark_inode_dirty for /dev/zero and friends
+
+From: Jan Kara <jack@suse.cz>
+
+commit 692ebd17c2905313fff3c504c249c6a0faad16ec upstream.
+
+Inodes of devices such as /dev/zero can get dirty for example via
+utime(2) syscall or due to atime update. Backing device of such inodes
+(zero_bdi, etc.) is however unable to handle dirty inodes and thus
+__mark_inode_dirty complains.  In fact, inode should be rather dirtied
+against backing device of the filesystem holding it. This is generally a
+good rule except for filesystems such as 'bdev' or 'mtd_inodefs'. Inodes
+in these pseudofilesystems are referenced from ordinary filesystem
+inodes and carry mapping with real data of the device. Thus for these
+inodes we have to use inode->i_mapping->backing_dev_info as we did so
+far. We distinguish these filesystems by checking whether sb->s_bdi
+points to a non-trivial backing device or not.
+
+Example: Assume we have an ext3 filesystem on /dev/sda1 mounted on /.
+There's a device inode A described by a path "/dev/sdb" on this
+filesystem. This inode will be dirtied against backing device "8:0"
+after this patch. bdev filesystem contains block device inode B coupled
+with our inode A. When someone modifies a page of /dev/sdb, it's B that
+gets dirtied and the dirtying happens against the backing device "8:16".
+Thus both inodes get filed to a correct bdi list.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ fs/fs-writeback.c |   23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
+
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -28,8 +28,6 @@
+ #include <linux/buffer_head.h>
+ #include "internal.h"
+ 
+-#define inode_to_bdi(inode)	((inode)->i_mapping->backing_dev_info)
+-
+ /*
+  * We don't actually have pdflush, but this one is exported though /proc...
+  */
+@@ -62,6 +60,27 @@ int writeback_in_progress(struct backing
+ 	return !list_empty(&bdi->work_list);
+ }
+ 
++static inline struct backing_dev_info *inode_to_bdi(struct inode *inode)
 +{
-+	if (rtl_cmd_type == RTL_ADDR_TYPE_MMIO)
-+		return ioremap(addr, len);
-+	return ioport_map(addr, len);
-+}
++	struct super_block *sb = inode->i_sb;
++	struct backing_dev_info *bdi = inode->i_mapping->backing_dev_info;
 +
-+static void rtl_port_unmap(void __iomem *addr)
-+{
-+	if (addr && rtl_cmd_type == RTL_ADDR_TYPE_MMIO)
-+		iounmap(addr);
-+	else
-+		ioport_unmap(addr);
-+}
-+
-+static int ibm_rtl_write(u8 value)
-+{
-+	int ret = 0, count = 0;
-+	static u32 cmd_port_val;
-+
-+	RTL_DEBUG("%s(%d)\n", __FUNCTION__, value);
-+
-+	value = value == 1 ? RTL_CMD_ENTER_PRTM : RTL_CMD_EXIT_PRTM;
-+
-+	mutex_lock(&rtl_lock);
-+
-+	if (ioread8(&rtl_table->rt_status) != value) {
-+		iowrite8(value, &rtl_table->command);
-+
-+		switch (rtl_cmd_width) {
-+		case 8:
-+			cmd_port_val = ioread8(&rtl_table->cmd_port_value);
-+			RTL_DEBUG("cmd_port_val = %u\n", cmd_port_val);
-+			iowrite8((u8)cmd_port_val, rtl_cmd_addr);
-+			break;
-+		case 16:
-+			cmd_port_val = ioread16(&rtl_table->cmd_port_value);
-+			RTL_DEBUG("cmd_port_val = %u\n", cmd_port_val);
-+			iowrite16((u16)cmd_port_val, rtl_cmd_addr);
-+			break;
-+		case 32:
-+			cmd_port_val = ioread32(&rtl_table->cmd_port_value);
-+			RTL_DEBUG("cmd_port_val = %u\n", cmd_port_val);
-+			iowrite32(cmd_port_val, rtl_cmd_addr);
-+			break;
-+		}
-+
-+		while (ioread8(&rtl_table->command)) {
-+			msleep(10);
-+			if (count++ > 500) {
-+				pr_err("ibm-rtl: Hardware not responding to "
-+					"mode switch request\n");
-+				ret = -EIO;
-+				break;
-+			}
-+
-+		}
-+
-+		if (ioread8(&rtl_table->command_status)) {
-+			RTL_DEBUG("command_status reports failed command\n");
-+			ret = -EIO;
-+		}
++	/*
++	 * For inodes on standard filesystems, we use superblock's bdi. For
++	 * inodes on virtual filesystems, we want to use inode mapping's bdi
++	 * because they can possibly point to something useful (think about
++	 * block_dev filesystem).
++	 */
++	if (sb->s_bdi && sb->s_bdi != &noop_backing_dev_info) {
++		/* Some device inodes could play dirty tricks. Catch them... */
++		WARN(bdi != sb->s_bdi && bdi_cap_writeback_dirty(bdi),
++			"Dirtiable inode bdi %s != sb bdi %s\n",
++			bdi->name, sb->s_bdi->name);
++		return sb->s_bdi;
 +	}
-+
-+	mutex_unlock(&rtl_lock);
-+	return ret;
++	return bdi;
 +}
 +
-+static ssize_t rtl_show_version(struct sysdev_class * dev,
-+                                struct sysdev_class_attribute *attr,
-+                                char *buf)
-+{
-+	return sprintf(buf, "%d\n", (int)ioread8(&rtl_table->version));
-+}
-+
-+static ssize_t rtl_show_state(struct sysdev_class *dev,
-+                              struct sysdev_class_attribute *attr,
-+                              char *buf)
-+{
-+	return sprintf(buf, "%d\n", ioread8(&rtl_table->rt_status));
-+}
-+
-+static ssize_t rtl_set_state(struct sysdev_class *dev,
-+                             struct sysdev_class_attribute *attr,
-+                             const char *buf,
-+                             size_t count)
-+{
-+	ssize_t ret;
-+
-+	if (count < 1 || count > 2)
-+		return -EINVAL;
-+
-+	switch (buf[0]) {
-+	case '0':
-+		ret = ibm_rtl_write(0);
-+		break;
-+	case '1':
-+		ret = ibm_rtl_write(1);
-+		break;
-+	default:
-+		ret = -EINVAL;
-+	}
-+	if (ret >= 0)
-+		ret = count;
-+
-+	return ret;
-+}
-+
-+static struct sysdev_class class_rtl = {
-+	.name = "ibm_rtl",
-+};
-+
-+static SYSDEV_CLASS_ATTR(version, S_IRUGO, rtl_show_version, NULL);
-+static SYSDEV_CLASS_ATTR(state, 0600, rtl_show_state, rtl_set_state);
-+
-+static struct sysdev_class_attribute *rtl_attributes[] = {
-+	&attr_version,
-+	&attr_state,
-+	NULL
-+};
-+
-+
-+static int rtl_setup_sysfs(void) {
-+	int ret, i;
-+	ret = sysdev_class_register(&class_rtl);
-+
-+	if (!ret) {
-+		for (i = 0; rtl_attributes[i]; i ++)
-+			sysdev_class_create_file(&class_rtl, rtl_attributes[i]);
-+	}
-+	return ret;
-+}
-+
-+static void rtl_teardown_sysfs(void) {
-+	int i;
-+	for (i = 0; rtl_attributes[i]; i ++)
-+		sysdev_class_remove_file(&class_rtl, rtl_attributes[i]);
-+	sysdev_class_unregister(&class_rtl);
-+}
-+
-+static int dmi_check_cb(const struct dmi_system_id *id)
-+{
-+	RTL_DEBUG("found IBM server '%s'\n", id->ident);
-+	return 0;
-+}
-+
-+#define ibm_dmi_entry(NAME, TYPE)                  \
-+{                                                  \
-+	.ident = NAME,                             \
-+	.matches = {                               \
-+		DMI_MATCH(DMI_SYS_VENDOR, "IBM"),  \
-+		DMI_MATCH(DMI_PRODUCT_NAME, TYPE), \
-+	},                                         \
-+	.callback = dmi_check_cb                   \
-+}
-+
-+static struct dmi_system_id __initdata ibm_rtl_dmi_table[] = {
-+	ibm_dmi_entry("BladeCenter LS21", "7971"),
-+	ibm_dmi_entry("BladeCenter LS22", "7901"),
-+	ibm_dmi_entry("BladeCenter HS21 XM", "7995"),
-+	ibm_dmi_entry("BladeCenter HS22", "7870"),
-+	ibm_dmi_entry("BladeCenter HS22V", "7871"),
-+	ibm_dmi_entry("System x3550 M2", "7946"),
-+	ibm_dmi_entry("System x3650 M2", "7947"),
-+	ibm_dmi_entry("System x3550 M3", "7944"),
-+	ibm_dmi_entry("System x3650 M3", "7945"),
-+	{ }
-+};
-+
-+static int __init ibm_rtl_init(void) {
-+	unsigned long ebda_addr, ebda_size;
-+	unsigned int ebda_kb;
-+	int ret = -ENODEV, i;
-+
-+	if (force)
-+		pr_warning("ibm-rtl: module loaded by force\n");
-+	/* first ensure that we are running on IBM HW */
-+	else if (!dmi_check_system(ibm_rtl_dmi_table))
-+		return -ENODEV;
-+
-+	/* Get the address for the Extended BIOS Data Area */
-+	ebda_addr = get_bios_ebda();
-+	if (!ebda_addr) {
-+		RTL_DEBUG("no BIOS EBDA found\n");
-+		return -ENODEV;
-+	}
-+
-+	ebda_map = ioremap(ebda_addr, 4);
-+	if (!ebda_map)
-+		return -ENOMEM;
-+
-+	/* First word in the EDBA is the Size in KB */
-+	ebda_kb = ioread16(ebda_map);
-+	RTL_DEBUG("EBDA is %d kB\n", ebda_kb);
-+
-+	if (ebda_kb == 0)
-+		goto out;
-+
-+	iounmap(ebda_map);
-+	ebda_size = ebda_kb*1024;
-+
-+	/* Remap the whole table */
-+	ebda_map = ioremap(ebda_addr, ebda_size);
-+	if (!ebda_map)
-+		return -ENOMEM;
-+
-+	/* search for the _RTL_ signature at the start of the table */
-+	for (i = 0 ; i < ebda_size/sizeof(unsigned int); i++) {
-+		struct ibm_rtl_table __iomem * tmp;
-+		tmp = (struct ibm_rtl_table __iomem *) (ebda_map+i);
-+		if ((readq(&tmp->signature) & RTL_MASK) == RTL_SIGNATURE) {
-+			phys_addr_t addr;
-+			unsigned int plen;
-+			RTL_DEBUG("found RTL_SIGNATURE at %#llx\n", (u64)tmp);
-+			rtl_table = tmp;
-+			/* The address, value, width and offset are platform
-+			 * dependent and found in the ibm_rtl_table */
-+			rtl_cmd_width = ioread8(&rtl_table->cmd_granularity);
-+			rtl_cmd_type = ioread8(&rtl_table->cmd_address_type);
-+			RTL_DEBUG("rtl_cmd_width = %u, rtl_cmd_type = %u\n",
-+			      rtl_cmd_width, rtl_cmd_type);
-+			addr = ioread32(&rtl_table->cmd_port_address);
-+			RTL_DEBUG("addr = %#llx\n", addr);
-+			plen = rtl_cmd_width/sizeof(char);
-+			rtl_cmd_addr = rtl_port_map(addr, plen);
-+			RTL_DEBUG("rtl_cmd_addr = %#llx\n", (u64)rtl_cmd_addr);
-+			if (!rtl_cmd_addr) {
-+				ret = -ENOMEM;
-+				break;
-+			}
-+			ret = rtl_setup_sysfs();
-+			break;
-+		}
-+	}
-+
-+out:
-+	if (ret) {
-+		iounmap(ebda_map);
-+		rtl_port_unmap(rtl_cmd_addr);
-+	}
-+
-+	return ret;
-+}
-+
-+static void __exit ibm_rtl_exit(void)
-+{
-+	if (rtl_table) {
-+		RTL_DEBUG("cleaning up");
-+		/* do not leave the machine in SMI-free mode */
-+		ibm_rtl_write(0);
-+		/* unmap, unlink and remove all traces */
-+		rtl_teardown_sysfs();
-+		iounmap(ebda_map);
-+		rtl_port_unmap(rtl_cmd_addr);
-+	}
-+}
-+
-+module_init(ibm_rtl_init);
-+module_exit(ibm_rtl_exit);
+ static void bdi_queue_work(struct backing_dev_info *bdi,
+ 		struct wb_writeback_work *work)
+ {
+
+--vtzGhvizbBRQ85DL--
