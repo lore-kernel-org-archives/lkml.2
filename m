@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756286Ab0IYRrk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 13:47:40 -0400
-Received: from 26.mail-out.ovh.net ([91.121.27.225]:49131 "HELO
+	id S1756309Ab0IYRtQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 13:49:16 -0400
+Received: from 26.mail-out.ovh.net ([91.121.27.225]:55233 "HELO
 	26.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750927Ab0IYRrj (ORCPT
+	with SMTP id S1750824Ab0IYRtP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 13:47:39 -0400
-Message-ID: <4C9E35B5.8040503@example.com>
-Date: Sat, 25 Sep 2010 19:47:33 +0200
+	Sat, 25 Sep 2010 13:49:15 -0400
+Message-ID: <4C9E3618.1030709@example.com>
+Date: Sat, 25 Sep 2010 19:49:12 +0200
 From: Piotr Hosowicz <piotr@hosowicz.com>
 Reply-To: piotr@hosowicz.com
 Organization: hosowicz.com
@@ -23,7 +23,7 @@ References: <20100924162706.GA7381@kroah.com> <4C9E2801.4020609@example.com> <20
 In-Reply-To: <20100925174145.GA11836@suse.de>
 Content-Type: text/plain; charset=ISO-8859-2; format=flowed
 Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 3870280931699618192
+X-Ovh-Tracer-Id: 3898146954508595600
 X-Ovh-Remote: 83.6.189.13 (abaz13.neoplus.adsl.tpnet.pl)
 X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
 X-Spam-Check: DONE|U 0.5/N
@@ -61,17 +61,15 @@ On 25.09.2010 19:41, Greg KH wrote:
 > working with the nouveau developers about this issue, as it doesn't seem
 > to be a -stable specific problem at the moment.
 
-It never worked for me on any kernel I tried. I rebuild regularly since 
-.34 as far as I remember. But then I used NVidia driver. So I do not 
-know if kernel driver was ok at that time.
+What is their mail group?
 
 Regards,
 
 Piotr Hosowicz
 
 -- 
-Z cyklu "Uroki demokracji", czyli pytania i odpowiedzi w teledurniejach:
-- Gdzie odbywa³y siê l±dowania Aliantów (D-Day)?
-- Pearl Harbour?
-NP: Peter Green Splinter Group - You'll Be Sorry Someday
+Na przyjêciu ch³opak pyta blondynkê:
+- Czy mogê ciê prosiæ do walca?
+- Zg³upia³e¶? To ju¿ nie mia³e¶ czym przyjechaæ?
+NP: Peter Green Splinter Group - Tribal Dance
 NB: 2.6.35.6-rc1
