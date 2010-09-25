@@ -1,33 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748Ab0IYD0l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 23:26:41 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:53206 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816Ab0IYD0l (ORCPT
+	id S1755038Ab0IYDdn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 23:33:43 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56240 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751603Ab0IYDdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 23:26:41 -0400
-Date: Sat, 25 Sep 2010 04:26:38 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] signal: annotate siglock acquisition
-Message-ID: <20100925032638.GT19804@ZenIV.linux.org.uk>
-References: <1285384856-4310-1-git-send-email-namhyung@gmail.com>
+	Fri, 24 Sep 2010 23:33:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=Y8bHFmxf7qUwW636HQwbG2ECHokN9vEFXKM2RaXKfellcxeEfpCYX9djhYskvp26Bp
+         RmaWevJMHWkOfDpCNSpTaObxlJtQm9t+LiExWpyokrM36npuIKMKvCh5PZHGn+12n7z2
+         i3QebXP3gTyXhvw/Vm6+hPm4EpZsVXdtuC/Ac=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1285384856-4310-1-git-send-email-namhyung@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Date: Sat, 25 Sep 2010 13:33:40 +1000
+Message-ID: <AANLkTimFAGK2EHHvOS0nneYdqzaEXLX5jB3W7TE=80fz@mail.gmail.com>
+Subject: Southern Plumbers Miniconf CFP (LCA 2011 - Brisbane)
+From: Dave Airlie <airlied@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, lwn@lwn.net
+Cc: Matthew Wilcox <matthew@wil.cx>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 25, 2010 at 12:20:56PM +0900, Namhyung Kim wrote:
-> lock_task_sighand() conditionally acquires sighand->siglock in case of
-> returning non-NULL but unlock_task_sighand() releases it unconditionally.
-> This leads sparse to complain about the lock context imbalance. Annotate it
-> to make sparse happier.
+Southern Plumbers Mini-conference (LCA 2011 - Brisbane)
 
-That's not a good way to do it; use __cond_lock instead.
+As part of LCA 2011, we are organising a mini-conference to provide a
+place for low-level system developers to gather and discuss
+interesting aspects of the kernel and lowlevel userspace. This
+miniconf is aimed at a similar audience to the Linux Plumbers
+Conference.
+
+We'd really like to have talks that are entry points to open floor
+discussions and interactive sessions, though if a talk is interesting
+enough it will be considered depending on the quality of other
+submissions.
+
+Areas of interest:
+	- Linux kernel
+	- X.org / Mesa
+	- toolchain/gdb (not deep compiler stuff, more system interactions)
+	- udev/u*/*Kit/hal replacements
+	- systemd/upstart/sysvinit
+	- virtualisation
+
+The Southern Plumbers mini-conference is planned for Monday 24th Jan 2011.
+
+Please send all submissions to airlied@gmail.com. Submissions will
+close on Friday, October 29th (when I leave for the real Linux
+Plumbers Conference), though I may accept submission over the week of
+LPC as well if I can drum up interest.
+
+CFP available at http://planet.kernel.org/splca/cfp.txt
+
+--
+Dave Airlie and Matthew Wilcox.
