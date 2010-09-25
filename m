@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756951Ab0IYU4S (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 16:56:18 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:41404 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756037Ab0IYU4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 16:56:16 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH v4] power: introduce library for device-specific OPPs
-Date: Sat, 25 Sep 2010 22:55:20 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc5-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Nishanth Menon <nm@ti.com>,
-        "linux-pm" <linux-pm@lists.linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm" <linux-arm-kernel@lists.infradead.org>,
-        "linux-omap" <linux-omap@vger.kernel.org>
-References: <1285332640-16736-1-git-send-email-nm@ti.com> <20100924193742.GJ2375@linux.vnet.ibm.com>
-In-Reply-To: <20100924193742.GJ2375@linux.vnet.ibm.com>
+	id S1756973Ab0IYU6N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 16:58:13 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40547 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751973Ab0IYU6M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Sep 2010 16:58:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=PLXIdhMAdolE3DQpw5fywxnbXoFhU0GHnYABgOVps89XAot8fGoWcI+0uo3WuHS56+
+         A7XUzIg+qD7LgBBdqU0ZU9Ub8UR3VPOfvWTCugqtmiUm/9+KCWuArQIeLrgZmUq8yFzH
+         WnD+NBxcYfubCzd+U72DuqJmH8hI+a4F7TBAI=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009252255.20933.rjw@sisk.pl>
+In-Reply-To: <201009252239.21376.linux@rainbow-software.org>
+References: <201009252239.21376.linux@rainbow-software.org>
+Date: Sat, 25 Sep 2010 16:58:10 -0400
+X-Google-Sender-Auth: 0B8ZghUJKi9EzRxUv03scOlNrNg
+Message-ID: <AANLkTikasuZbf6ymCWBjAW3oq7+BBox1N06jPZqTBQr4@mail.gmail.com>
+Subject: Re: [PATCH] de2104x: fix TP link detection
+From: Jeff Garzik <jgarzik@pobox.com>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: netdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o8PKwMde010757
 
-On Friday, September 24, 2010, Paul E. McKenney wrote:
-> On Fri, Sep 24, 2010 at 07:50:40AM -0500, Nishanth Menon wrote:
-...
-> 
-> Looks like a good start!!!  Some questions and suggestions about RCU
-> usage interspersed below.
-...
-> > + * Locking: RCU reader.
-> > + */
-> > +int opp_get_opp_count(struct device *dev)
-> > +{
-> > +	struct device_opp *dev_opp;
-> > +	struct opp *temp_opp;
-> > +	int count = 0;
-> > +
-> > +	dev_opp = find_device_opp(dev);
-> > +	if (IS_ERR(dev_opp))
-> > +		return PTR_ERR(dev_opp);
-> > +
-> > +	rcu_read_lock();
-> > +	list_for_each_entry_rcu(temp_opp, &dev_opp->opp_list, node) {
-> > +		if (temp_opp->available)
-> > +			count++;
-> > +	}
-> > +	rcu_read_unlock();
-> 
-> This one is OK as well.  You are returning a count, so if all of the
-> counted structures are freed at this point, no problem.  The count was
-> valid when it was accumulated, and the fact that it might now be obsolete
-> is (usually) not a problem.
+On Sat, Sep 25, 2010 at 4:39 PM, Ondrej Zary <linux@rainbow-software.org> wrote:
+> @@ -1160,14 +1164,29 @@ no_link_yet:
+>  static void de_media_interrupt (struct de_private *de, u32 status)
+>  {
+>        if (status & LinkPass) {
+> +               /* Ignore if current media is AUI or BNC and we can't use TP */
+> +               if ((de->media_type == DE_MEDIA_AUI ||
+> +                    de->media_type == DE_MEDIA_BNC) &&
+> +                   (de->media_lock ||
+> +                    !de_ok_to_advertise(de, DE_MEDIA_TP_AUTO)))
+> +                       return;
+> +               /* If current media is not TP, change it to TP */
+> +               if ((de->media_type == DE_MEDIA_AUI ||
+> +                    de->media_type == DE_MEDIA_BNC)) {
+> +                       de->media_type = DE_MEDIA_TP_AUTO;
+> +                       de_stop_rxtx(de);
+> +                       de_set_media(de);
+> +                       de_start_rxtx(de);
+> +               }
+>                de_link_up(de);
+>                mod_timer(&de->media_timer, jiffies + DE_TIMER_LINK);
+>                return;
+>        }
+>
+>        BUG_ON(!(status & LinkFail));
+> -
+> -       if (netif_carrier_ok(de->dev)) {
+> +       /* Mark the link as down only if current media is TP */
+> +       if (netif_carrier_ok(de->dev) && de->media_type != DE_MEDIA_AUI &&
+> +           de->media_type != DE_MEDIA_BNC) {
+>                de_link_down(de);
+>                mod_timer(&de->media_timer, jiffies + DE_TIMER_NO_LINK);
+>        }
 
-However, it looks like it should run rcu_read_lock() before calling
-find_device_opp(dev), shouldn't it?
-
-Rafael
+Acked-by: Jeff Garzik <jgarzik@redhat.com>
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
