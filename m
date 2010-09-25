@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932577Ab0IYETx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 00:19:53 -0400
-Received: from crca.org.au ([74.207.252.120]:35759 "EHLO crca.org.au"
+	id S932256Ab0IYERY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 00:17:24 -0400
+Received: from crca.org.au ([74.207.252.120]:34980 "EHLO crca.org.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932277Ab0IYER0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 00:17:26 -0400
+	id S932162Ab0IYERV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Sep 2010 00:17:21 -0400
 X-Bogosity: Ham, spamicity=0.000000
 From: Nigel Cunningham <nigel@tuxonice.net>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>,
         Linux PM <linux-pm@lists.linux-foundation.org>,
         LKML <linux-kernel@vger.kernel.org>,
         TuxOnIce-devel <tuxonice-devel@tuxonice.net>
-Subject: [PATCH 10/22] Hibernation: Stop passing bio_chain around
-Date: Sat, 25 Sep 2010 14:16:52 +1000
-Message-Id: <1285388224-10012-11-git-send-email-nigel@tuxonice.net>
+Subject: [PATCH 07/22] Hibernation: Generic extents support.
+Date: Sat, 25 Sep 2010 14:16:49 +1000
+Message-Id: <1285388224-10012-8-git-send-email-nigel@tuxonice.net>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1285388224-10012-1-git-send-email-nigel@tuxonice.net>
 References: <1285388224-10012-1-git-send-email-nigel@tuxonice.net>
@@ -22,362 +22,373 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stop using the struct bio **bio_chain as a means of tracking
-outstanding i/o and signalling when we want synchronous i/o.
-Instead, keep a bio_chain in the block_io code and use a flag
-to explicitly request synchronous I/O.
+Separate out the extent storage and manipulation into a separate
+file and make them more generic, so we can also use extents for
+recording what sectors are used and (later) support multiple
+storage devices more easily.
 
 Signed-off-by: Nigel Cunningham <nigel@tuxonice.net>
 ---
- kernel/power/block_io.c |   27 +++++++++++-----------
- kernel/power/power.h    |    8 ++----
- kernel/power/swap.c     |   56 +++++++++++++++++++++-------------------------
- 3 files changed, 43 insertions(+), 48 deletions(-)
+ kernel/power/Makefile  |    2 +-
+ kernel/power/extents.c |  125 ++++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/power/extents.h |   35 +++++++++++++
+ kernel/power/swap.c    |  117 +++++---------------------------------------
+ 4 files changed, 175 insertions(+), 104 deletions(-)
+ create mode 100644 kernel/power/extents.c
+ create mode 100644 kernel/power/extents.h
 
-diff --git a/kernel/power/block_io.c b/kernel/power/block_io.c
-index 83bbc7c..aa239a2 100644
---- a/kernel/power/block_io.c
-+++ b/kernel/power/block_io.c
-@@ -14,6 +14,8 @@
+diff --git a/kernel/power/Makefile b/kernel/power/Makefile
+index f9063c6..df24cab 100644
+--- a/kernel/power/Makefile
++++ b/kernel/power/Makefile
+@@ -9,7 +9,7 @@ obj-$(CONFIG_FREEZER)		+= process.o
+ obj-$(CONFIG_SUSPEND)		+= suspend.o
+ obj-$(CONFIG_PM_TEST_SUSPEND)	+= suspend_test.o
+ obj-$(CONFIG_HIBERNATION)	+= hibernate.o snapshot.o swap.o user.o \
+-				   block_io.o
++				   block_io.o extents.o
+ obj-$(CONFIG_SUSPEND_NVS)	+= nvs.o
  
- #include "power.h"
- 
-+static struct bio *bio_chain;
+ obj-$(CONFIG_MAGIC_SYSRQ)	+= poweroff.o
+diff --git a/kernel/power/extents.c b/kernel/power/extents.c
+new file mode 100644
+index 0000000..172322d
+--- /dev/null
++++ b/kernel/power/extents.c
+@@ -0,0 +1,125 @@
++/*
++ * linux/kernel/power/extents.c
++ *
++ * This file provides functions for storing and using a series of
++ * extents.
++ *
++ * Copyright (C) 1998,2001-2005 Pavel Machek <pavel@suse.cz>
++ * Copyright (C) 2006 Rafael J. Wysocki <rjw@sisk.pl>
++ * Copyright (C) 2010 Nigel Cunningham <nigel@tuxonice.net>
++ *
++ * This file is released under the GPLv2.
++ *
++ */
 +
- /**
-  *	submit - submit BIO request.
-  *	@rw:	READ or WRITE.
-@@ -26,7 +28,7 @@
-  *	Then submit it and, if @bio_chain == NULL, wait.
-  */
- static int submit(int rw, struct block_device *bdev, sector_t sector,
--		struct page *page, struct bio **bio_chain)
-+		struct page *page, int sync)
- {
- 	const int bio_rw = rw | REQ_SYNC | REQ_UNPLUG;
- 	struct bio *bio;
-@@ -46,7 +48,7 @@ static int submit(int rw, struct block_device *bdev, sector_t sector,
- 	lock_page(page);
- 	bio_get(bio);
- 
--	if (bio_chain == NULL) {
-+	if (sync) {
- 		submit_bio(bio_rw, bio);
- 		wait_on_page_locked(page);
- 		if (rw == READ)
-@@ -55,26 +57,26 @@ static int submit(int rw, struct block_device *bdev, sector_t sector,
- 	} else {
- 		if (rw == READ)
- 			get_page(page);	/* These pages are freed later */
--		bio->bi_private = *bio_chain;
--		*bio_chain = bio;
-+		bio->bi_private = bio_chain;
-+		bio_chain = bio;
- 		submit_bio(bio_rw, bio);
- 	}
- 	return 0;
- }
- 
--int hib_bio_read_page(pgoff_t page_off, void *addr, struct bio **bio_chain)
-+int hib_bio_read_page(pgoff_t page_off, void *addr, int sync)
- {
- 	return submit(READ, hib_resume_bdev, page_off * (PAGE_SIZE >> 9),
--			virt_to_page(addr), bio_chain);
-+			virt_to_page(addr), sync);
- }
- 
--int hib_bio_write_page(pgoff_t page_off, void *addr, struct bio **bio_chain)
-+int hib_bio_write_page(pgoff_t page_off, void *addr, int sync)
- {
- 	return submit(WRITE, hib_resume_bdev, page_off * (PAGE_SIZE >> 9),
--			virt_to_page(addr), bio_chain);
-+			virt_to_page(addr), sync);
- }
- 
--int hib_wait_on_bio_chain(struct bio **bio_chain)
-+int hib_wait_on_bio_chain(void)
- {
- 	struct bio *bio;
- 	struct bio *next_bio;
-@@ -83,9 +85,8 @@ int hib_wait_on_bio_chain(struct bio **bio_chain)
- 	if (bio_chain == NULL)
- 		return 0;
- 
--	bio = *bio_chain;
--	if (bio == NULL)
--		return 0;
-+	bio = bio_chain;
++#include <linux/slab.h>
++#include "extents.h"
 +
- 	while (bio) {
- 		struct page *page;
- 
-@@ -98,6 +99,6 @@ int hib_wait_on_bio_chain(struct bio **bio_chain)
- 		bio_put(bio);
- 		bio = next_bio;
- 	}
--	*bio_chain = NULL;
-+	bio_chain = NULL;
- 	return ret;
- }
-diff --git a/kernel/power/power.h b/kernel/power/power.h
-index 67b6896..1750f64 100644
---- a/kernel/power/power.h
-+++ b/kernel/power/power.h
-@@ -147,11 +147,9 @@ extern void swsusp_close(fmode_t);
- /* kernel/power/block_io.c */
- extern struct block_device *hib_resume_bdev;
- 
--extern int hib_bio_read_page(pgoff_t page_off, void *addr,
--		struct bio **bio_chain);
--extern int hib_bio_write_page(pgoff_t page_off, void *addr,
--		struct bio **bio_chain);
--extern int hib_wait_on_bio_chain(struct bio **bio_chain);
-+extern int hib_bio_read_page(pgoff_t page_off, void *addr, int sync);
-+extern int hib_bio_write_page(pgoff_t page_off, void *addr, int sync);
-+extern int hib_wait_on_bio_chain(void);
- 
- struct timeval;
- /* kernel/power/swsusp.c */
++int hib_extents_empty(struct hib_extent_state *pos)
++{
++	return RB_EMPTY_ROOT(&pos->root);
++}
++
++void hib_reset_extent_pos(struct hib_extent_state *pos)
++{
++	if (hib_extents_empty(pos))
++		return;
++
++	pos->node = rb_first(&pos->root);
++
++	if (!pos->node) {
++		pos->cur_ext = NULL;
++		pos->offset = 0;
++		return;
++	}
++
++	pos->cur_ext = container_of(pos->node, struct hib_extent, node);
++	pos->offset = pos->cur_ext->start;
++}
++
++unsigned long hib_extent_current(struct hib_extent_state *pos)
++{
++	return (pos->node) ? pos->offset : 0;
++}
++
++unsigned long hib_extent_next(struct hib_extent_state *pos)
++{
++	if (!pos->node)
++		return 0;
++
++	if (pos->cur_ext->end >= pos->offset)
++		return pos->offset++;
++
++	pos->node = rb_next(pos->node);
++	if (!pos->node)
++		return 0;
++
++	pos->cur_ext = container_of(pos->node, struct hib_extent, node);
++	pos->offset = pos->cur_ext->start;
++	return pos->offset;
++}
++
++int hib_extents_insert(struct hib_extent_state *pos, unsigned long value)
++{
++	struct rb_node **new = &(pos->root.rb_node);
++	struct rb_node *parent = NULL;
++	struct hib_extent *ext;
++
++	/* Figure out where to put the new node */
++	while (*new) {
++		ext = container_of(*new, struct hib_extent, node);
++		parent = *new;
++		if (value < ext->start) {
++			/* Try to merge */
++			if (value == ext->start - 1) {
++				ext->start--;
++				return 0;
++			}
++			new = &((*new)->rb_left);
++		} else if (value > ext->end) {
++			/* Try to merge */
++			if (value == ext->end + 1) {
++				ext->end++;
++				return 0;
++			}
++			new = &((*new)->rb_right);
++		} else {
++			/* It already is in the tree */
++			return -EINVAL;
++		}
++	}
++	/* Add the new node and rebalance the tree. */
++	ext = kzalloc(sizeof(struct hib_extent), GFP_KERNEL);
++	if (!ext)
++		return -ENOMEM;
++
++	ext->start = value;
++	ext->end = value;
++	rb_link_node(&ext->node, parent, new);
++	rb_insert_color(&ext->node, &pos->root);
++	pos->num_extents++;
++	return 0;
++}
++
++/**
++ *	free_all_swap_pages - free swap pages allocated for saving image data.
++ *	It also frees the extents used to register which swap entres had been
++ *	allocated.
++ */
++
++void hib_extents_clear(struct hib_extent_state *pos)
++{
++	struct rb_node *node;
++
++	if (hib_extents_empty(pos))
++		return;
++
++	while ((node = pos->root.rb_node)) {
++		struct hib_extent *ext;
++
++		ext = container_of(node, struct hib_extent, node);
++		rb_erase(node, &pos->root);
++		pos->num_extents--;
++		kfree(ext);
++	}
++}
+diff --git a/kernel/power/extents.h b/kernel/power/extents.h
+new file mode 100644
+index 0000000..0b69b8e
+--- /dev/null
++++ b/kernel/power/extents.h
+@@ -0,0 +1,35 @@
++/*
++ * linux/kernel/power/extents.h
++ *
++ * Copyright (C) 2010 Nigel Cunningham <nigel@tuxonice.net>
++ *
++ * This file is released under the GPLv2.
++ *
++ */
++
++#include <linux/rbtree.h>
++
++struct hib_extent {
++	struct rb_node node;
++	unsigned long start;
++	unsigned long end;
++};
++
++struct hib_extent_state {
++	/* Tree */
++	struct rb_root root;
++	int num_extents;
++
++	/* Current position */
++	struct rb_node *node;
++	struct hib_extent *cur_ext;
++	unsigned long offset;
++};
++
++
++void hib_reset_extent_pos(struct hib_extent_state *pos);
++unsigned long hib_extent_current(struct hib_extent_state *pos);
++unsigned long hib_extent_next(struct hib_extent_state *pos);
++int hib_extents_insert(struct hib_extent_state *pos, unsigned long value);
++void hib_extents_clear(struct hib_extent_state *pos);
++int hib_extents_empty(struct hib_extent_state *pos);
 diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-index 1df890f..a881086 100644
+index 2ef2bad..da2439d 100644
 --- a/kernel/power/swap.c
 +++ b/kernel/power/swap.c
-@@ -179,7 +179,7 @@ static int mark_swapfiles(unsigned int flags)
+@@ -23,9 +23,9 @@
+ #include <linux/swap.h>
+ #include <linux/swapops.h>
+ #include <linux/pm.h>
+-#include <linux/slab.h>
+ 
+ #include "power.h"
++#include "extents.h"
+ 
+ #define SWSUSP_SIG	"S1SUSPEND"
+ 
+@@ -76,97 +76,14 @@ struct swsusp_header {
+ 
+ static struct swsusp_header *swsusp_header;
+ 
+-/**
+- *	The following functions are used for tracing the allocated
+- *	swap pages, so that they can be freed in case of an error.
+- */
+-
+-struct swsusp_extent {
+-	struct rb_node node;
+-	unsigned long start;
+-	unsigned long end;
+-};
+-
+-static struct rb_root swsusp_extents = RB_ROOT;
+-
+-struct storage_position {
+-	struct rb_node *node;
+-	struct swsusp_extent *cur_ext;
+-	unsigned long offset;
+-};
+-
+-static struct storage_position pos;
+-
+-static void reset_storage_pos(void)
+-{
+-	pos.node = rb_first(&swsusp_extents);
+-
+-	if (!pos.node) {
+-		pos.cur_ext = NULL;
+-		pos.offset = 0;
+-		return;
+-	}
+-
+-	pos.cur_ext = container_of(pos.node, struct swsusp_extent, node);
+-	pos.offset = pos.cur_ext->start;
+-}
++static struct hib_extent_state swap_extents;
+ 
+ static sector_t next_swapdev_block(void)
  {
- 	int error;
- 
--	hib_bio_read_page(swsusp_resume_block, swsusp_header, NULL);
-+	hib_bio_read_page(swsusp_resume_block, swsusp_header, 1);
- 	if (!memcmp("SWAP-SPACE",swsusp_header->sig, 10) ||
- 	    !memcmp("SWAPSPACE2",swsusp_header->sig, 10)) {
- 		memcpy(swsusp_header->orig_sig,swsusp_header->sig, 10);
-@@ -188,7 +188,7 @@ static int mark_swapfiles(unsigned int flags)
- 		swsusp_header->image = handle.first_sector;
- 		swsusp_header->flags = flags;
- 		error = hib_bio_write_page(swsusp_resume_block,
--					swsusp_header, NULL);
-+					swsusp_header, 1);
- 	} else {
- 		printk(KERN_ERR "PM: Swap header not found!\n");
- 		error = -ENODEV;
-@@ -227,29 +227,29 @@ static int swsusp_swap_check(void)
-  *	write_page - Write one page to given swap location.
-  *	@buf:		Address we're writing.
-  *	@offset:	Offset of the swap page we're writing to.
-- *	@bio_chain:	Link the next write BIO here
-+ *	@sync:		Whether to force synchronous i/o.
-  */
- 
--static int write_page(void *buf, sector_t offset, struct bio **bio_chain)
-+static int write_page(void *buf, sector_t offset, int sync)
- {
- 	void *src;
- 
- 	if (!offset)
- 		return -ENOSPC;
- 
--	if (bio_chain) {
-+	if (!sync) {
- 		src = (void *)__get_free_page(__GFP_WAIT | __GFP_HIGH);
- 		if (src) {
- 			memcpy(src, buf, PAGE_SIZE);
- 		} else {
- 			WARN_ON_ONCE(1);
--			bio_chain = NULL;	/* Go synchronous */
-+			sync = 1;	/* Go synchronous */
- 			src = buf;
- 		}
- 	} else {
- 		src = buf;
- 	}
--	return hib_bio_write_page(offset, src, bio_chain);
-+	return hib_bio_write_page(offset, src, sync);
+-	if (!pos.node)
+-		return 0;
+-
+-	if (pos.cur_ext->end >= pos.offset)
+-		return pos.offset++;
+-
+-	pos.node = rb_next(pos.node);
+-	if (!pos.node)
+-		return 0;
+-
+-	pos.cur_ext = container_of(pos.node, struct swsusp_extent, node);
+-	pos.offset = pos.cur_ext->start;
+-	return pos.offset;
+-}
+-
+-static int swsusp_extents_insert(unsigned long swap_offset)
+-{
+-	struct rb_node **new = &(swsusp_extents.rb_node);
+-	struct rb_node *parent = NULL;
+-	struct swsusp_extent *ext;
+-
+-	/* Figure out where to put the new node */
+-	while (*new) {
+-		ext = container_of(*new, struct swsusp_extent, node);
+-		parent = *new;
+-		if (swap_offset < ext->start) {
+-			/* Try to merge */
+-			if (swap_offset == ext->start - 1) {
+-				ext->start--;
+-				return 0;
+-			}
+-			new = &((*new)->rb_left);
+-		} else if (swap_offset > ext->end) {
+-			/* Try to merge */
+-			if (swap_offset == ext->end + 1) {
+-				ext->end++;
+-				return 0;
+-			}
+-			new = &((*new)->rb_right);
+-		} else {
+-			/* It already is in the tree */
+-			return -EINVAL;
+-		}
+-	}
+-	/* Add the new node and rebalance the tree. */
+-	ext = kzalloc(sizeof(struct swsusp_extent), GFP_KERNEL);
+-	if (!ext)
+-		return -ENOMEM;
+-
+-	ext->start = swap_offset;
+-	ext->end = swap_offset;
+-	rb_link_node(&ext->node, parent, new);
+-	rb_insert_color(&ext->node, &swsusp_extents);
+-	return 0;
++	unsigned long res = hib_extent_next(&swap_extents);
++	if (res)
++		res = swapdev_block(root_swap, res);
++	return res;
  }
  
- static void release_swap_writer(void)
-@@ -295,7 +295,7 @@ err_close:
- 	return ret;
+ /**
+@@ -180,7 +97,7 @@ sector_t alloc_swapdev_block(int swap)
+ 
+ 	offset = swp_offset(get_swap_page_of_type(swap));
+ 	if (offset) {
+-		if (swsusp_extents_insert(offset))
++		if (hib_extents_insert(&swap_extents, offset))
+ 			swap_free(swp_entry(swap, offset));
+ 		else
+ 			return swapdev_block(swap, offset);
+@@ -224,7 +141,7 @@ static int allocate_swap(unsigned int nr_pages)
+ 		return 0;
+ 	}
+ 
+-	reset_storage_pos();
++	hib_reset_extent_pos(&swap_extents);
+ 	return 1;
  }
  
--static int swap_write_page(void *buf, struct bio **bio_chain)
-+static int swap_write_page(void *buf, int sync)
+@@ -236,24 +153,18 @@ static int allocate_swap(unsigned int nr_pages)
+ 
+ void free_all_swap_pages(int swap)
  {
- 	int error = 0;
- 	sector_t offset;
-@@ -303,19 +303,19 @@ static int swap_write_page(void *buf, struct bio **bio_chain)
- 	if (!handle.cur)
- 		return -EINVAL;
- 	offset = hib_extent_next(&sector_extents);
--	error = write_page(buf, offset, bio_chain);
-+	error = write_page(buf, offset, sync);
- 	if (error)
- 		return error;
- 	handle.cur->entries[handle.k++] = offset;
- 	if (handle.k >= MAP_PAGE_ENTRIES) {
--		error = hib_wait_on_bio_chain(bio_chain);
-+		error = hib_wait_on_bio_chain();
- 		if (error)
- 			goto out;
- 		offset = hib_extent_next(&sector_extents);
- 		if (!offset)
- 			return -ENOSPC;
- 		handle.cur->next_swap = offset;
--		error = write_page(handle.cur, handle.cur_swap, NULL);
-+		error = write_page(handle.cur, handle.cur_swap, 1);
- 		if (error)
- 			goto out;
- 		memset(handle.cur, 0, PAGE_SIZE);
-@@ -329,7 +329,7 @@ static int swap_write_page(void *buf, struct bio **bio_chain)
- static int flush_swap_writer(void)
+-	struct rb_node *node;
+-
+-	while ((node = swsusp_extents.rb_node)) {
+-		struct swsusp_extent *ext;
+-		unsigned long offset;
++	unsigned long offset;
+ 
+-		ext = container_of(node, struct swsusp_extent, node);
+-		rb_erase(node, &swsusp_extents);
+-		for (offset = ext->start; offset <= ext->end; offset++)
+-			swap_free(swp_entry(swap, offset));
++	hib_reset_extent_pos(&swap_extents);
++	while ((offset = hib_extent_next(&swap_extents)))
++		swap_free(swp_entry(swap, offset));
+ 
+-		kfree(ext);
+-	}
++	hib_extents_clear(&swap_extents);
+ }
+ 
+ int swsusp_swap_in_use(void)
  {
- 	if (handle.cur && handle.cur_swap)
--		return write_page(handle.cur, handle.cur_swap, NULL);
-+		return write_page(handle.cur, handle.cur_swap, 1);
- 	else
- 		return -EINVAL;
- }
-@@ -362,7 +362,6 @@ static int save_image(struct snapshot_handle *snapshot,
- 	int ret;
- 	int nr_pages;
- 	int err2;
--	struct bio *bio;
- 	struct timeval start;
- 	struct timeval stop;
- 	int mps;
-@@ -373,20 +372,19 @@ static int save_image(struct snapshot_handle *snapshot,
- 	if (!m)
- 		m = 1;
- 	nr_pages = 0;
--	bio = NULL;
- 	do_gettimeofday(&start);
- 	while (1) {
- 		ret = snapshot_read_next(snapshot);
- 		if (ret <= 0)
- 			break;
--		ret = swap_write_page(data_of(*snapshot), &bio);
-+		ret = swap_write_page(data_of(*snapshot), 0);
- 		if (ret)
- 			break;
- 		if (!(nr_pages % m))
- 			printk(KERN_CONT "\b\b\b\b%3d%%", nr_pages / m);
- 		nr_pages++;
- 	}
--	err2 = hib_wait_on_bio_chain(&bio);
-+	err2 = hib_wait_on_bio_chain();
- 	do_gettimeofday(&stop);
- 	if (!ret)
- 		ret = err2;
-@@ -431,7 +429,7 @@ int swsusp_write(unsigned int flags)
- 		goto out_finish;
- 	}
- 	header = (struct swsusp_info *)data_of(snapshot);
--	error = swap_write_page(header, NULL);
-+	error = swap_write_page(header, 1);
- 	if (!error)
- 		error = save_image(&snapshot, pages - 1);
- out_finish:
-@@ -464,7 +462,7 @@ static int get_swap_reader(unsigned int *flags_p)
- 	if (!handle.cur)
- 		return -ENOMEM;
- 
--	error = hib_bio_read_page(swsusp_header->image, handle.cur, NULL);
-+	error = hib_bio_read_page(swsusp_header->image, handle.cur, 1);
- 	if (error) {
- 		release_swap_reader();
- 		return error;
-@@ -473,7 +471,7 @@ static int get_swap_reader(unsigned int *flags_p)
- 	return 0;
+-	return (swsusp_extents.rb_node != NULL);
++	return (!hib_extents_empty(&swap_extents));
  }
  
--static int swap_read_page(void *buf, struct bio **bio_chain)
-+static int swap_read_page(void *buf, int sync)
- {
- 	sector_t offset;
- 	int error;
-@@ -483,17 +481,17 @@ static int swap_read_page(void *buf, struct bio **bio_chain)
- 	offset = handle.cur->entries[handle.k];
- 	if (!offset)
- 		return -EFAULT;
--	error = hib_bio_read_page(offset, buf, bio_chain);
-+	error = hib_bio_read_page(offset, buf, sync);
- 	if (error)
- 		return error;
- 	if (++handle.k >= MAP_PAGE_ENTRIES) {
--		error = hib_wait_on_bio_chain(bio_chain);
-+		error = hib_wait_on_bio_chain();
- 		handle.k = 0;
- 		offset = handle.cur->next_swap;
- 		if (!offset)
- 			release_swap_reader();
- 		else if (!error)
--			error = hib_bio_read_page(offset, handle.cur, NULL);
-+			error = hib_bio_read_page(offset, handle.cur, 1);
- 	}
- 	return error;
- }
-@@ -517,7 +515,6 @@ static int load_image(struct snapshot_handle *snapshot, unsigned int nr_to_read)
- 	int error = 0;
- 	struct timeval start;
- 	struct timeval stop;
--	struct bio *bio;
- 	int err2;
- 	unsigned nr_pages;
- 	int mps;
-@@ -528,24 +525,23 @@ static int load_image(struct snapshot_handle *snapshot, unsigned int nr_to_read)
- 	if (!m)
- 		m = 1;
- 	nr_pages = 0;
--	bio = NULL;
- 	do_gettimeofday(&start);
- 	for ( ; ; ) {
- 		error = snapshot_write_next(snapshot);
- 		if (error <= 0)
- 			break;
--		error = swap_read_page(data_of(*snapshot), &bio);
-+		error = swap_read_page(data_of(*snapshot), 0);
- 		if (error)
- 			break;
- 		if (snapshot->sync_read)
--			error = hib_wait_on_bio_chain(&bio);
-+			error = hib_wait_on_bio_chain();
- 		if (error)
- 			break;
- 		if (!(nr_pages % m))
- 			printk("\b\b\b\b%3d%%", nr_pages / m);
- 		nr_pages++;
- 	}
--	err2 = hib_wait_on_bio_chain(&bio);
-+	err2 = hib_wait_on_bio_chain();
- 	do_gettimeofday(&stop);
- 	if (!error)
- 		error = err2;
-@@ -582,7 +578,7 @@ int swsusp_read(unsigned int *flags_p)
- 	if (error)
- 		goto end;
- 	if (!error)
--		error = swap_read_page(header, NULL);
-+		error = swap_read_page(header, 1);
- 	if (!error)
- 		error = load_image(&snapshot, header->pages - 1);
- 	swap_reader_finish();
-@@ -607,7 +603,7 @@ int swsusp_check(void)
- 		set_blocksize(hib_resume_bdev, PAGE_SIZE);
- 		memset(swsusp_header, 0, PAGE_SIZE);
- 		error = hib_bio_read_page(swsusp_resume_block,
--					swsusp_header, NULL);
-+					swsusp_header, 1);
- 		if (error)
- 			goto put;
- 
-@@ -616,7 +612,7 @@ int swsusp_check(void)
- 			memcpy(swsusp_header->sig, swsusp_header->orig_sig, 10);
- 			/* Reset swap signature now */
- 			error = hib_bio_write_page(swsusp_resume_block,
--						swsusp_header, NULL);
-+						swsusp_header, 1);
- 		} else {
- 			error = -EINVAL;
- 		}
+ /*
 -- 
 1.7.0.4
 
