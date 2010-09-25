@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755810Ab0IYScy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 14:32:54 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:41084 "EHLO
+	id S1751154Ab0IYSdF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 14:33:05 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:54221 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331Ab0IYScx (ORCPT
+	with ESMTP id S1751736Ab0IYSdB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 14:32:53 -0400
+	Sat, 25 Sep 2010 14:33:01 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=F5VtvCRqhbWsq7zwJConZmXcs7rChDlFF4tHIGYh7+ibKN8Zz6nSlGGP2ZychmOMlS
-         y4md633PyM3HV+EARc1uGEW6zC7bLbj4O7jPmIQ9s+Lf3RZ/AzUIGIEj33kWl4/zn9IJ
-         RxHxCSWcPTV5vmlIgWScBby613dt3gOMWNUDM=
+        b=u37yl7bY5Kg64CjpnBbr1uK3jo2uXScP1HbzQ3Jz64vLlF76+dmbuJQMmP89OClRRb
+         U9ADkHC0s4S0HcIdDMG9SeAYOndSTMLTO02bb4Nn33MeK0S1Yn9RYIInlSFcDfje7m7X
+         uQ0QASj6cAWAi0oUbKO+jm3xlC01ScvgJcpaw=
 From: Tracey Dent <tdent48227@gmail.com>
 To: tytso@mit.edu
 Cc: adilger.kernel@dilger.ca, jack@suse.cz, dmonakhov@openvz.org,
         sandeen@redhat.com, hch@lst.de, linux-ext4@vger.kernel.org,
         linux-kernel@vger.kernel.org, Tracey Dent <Tdent48227@gmail.com>,
         Tracey Dent <tdent48227@gmail.com>
-Subject: [PATCH 02/10] Fs: ext4: acl.h: whitespace cleanup
-Date: Sat, 25 Sep 2010 14:31:53 -0400
-Message-Id: <1285439521-2557-2-git-send-email-tdent48227@gmail.com>
+Subject: [PATCH 08/10] Fs: ext4: ioctl: fixed spacing issue
+Date: Sat, 25 Sep 2010 14:31:59 -0400
+Message-Id: <1285439521-2557-8-git-send-email-tdent48227@gmail.com>
 X-Mailer: git-send-email 1.7.3
 In-Reply-To: <1285439521-2557-1-git-send-email-tdent48227@gmail.com>
 References: <1285439521-2557-1-git-send-email-tdent48227@gmail.com>
@@ -31,27 +31,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tracey Dent <Tdent48227@gmail.com>
 
-I cleaned up whitespaces that was having an issue with checkpatch.pl
+Fixed spaceing issues using checkpatch.pl
 
 Signed-off-by: Tracey Dent <tdent48227@gmail.com>
 ---
- fs/ext4/acl.h |    4 ++--
+ fs/ext4/ioctl.c |    4 ++--
  1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/ext4/acl.h b/fs/ext4/acl.h
-index 9d843d5..bb225cf 100644
---- a/fs/ext4/acl.h
-+++ b/fs/ext4/acl.h
-@@ -1,7 +1,7 @@
- /*
--  File: fs/ext4/acl.h
-+	File: fs/ext4/acl.h
+diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
+index bf5ae88..4e3ed22 100644
+--- a/fs/ext4/ioctl.c
++++ b/fs/ext4/ioctl.c
+@@ -200,7 +200,7 @@ setversion_out:
+ 	case EXT4_IOC_GROUP_EXTEND: {
+ 		ext4_fsblk_t n_blocks_count;
+ 		struct super_block *sb = inode->i_sb;
+-		int err, err2=0;
++		int err, err2 = 0;
  
--  (C) 2001 Andreas Gruenbacher, <a.gruenbacher@computer.org>
-+	(C) 2001 Andreas Gruenbacher, <a.gruenbacher@computer.org>
- */
+ 		if (!capable(CAP_SYS_RESOURCE))
+ 			return -EPERM;
+@@ -269,7 +269,7 @@ mext_out:
+ 	case EXT4_IOC_GROUP_ADD: {
+ 		struct ext4_new_group_data input;
+ 		struct super_block *sb = inode->i_sb;
+-		int err, err2=0;
++		int err, err2 = 0;
  
- #include <linux/posix_acl_xattr.h>
+ 		if (!capable(CAP_SYS_RESOURCE))
+ 			return -EPERM;
 -- 
 1.7.3
 
