@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753679Ab0IYWUR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 18:20:17 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:41576 "EHLO ogre.sisk.pl"
+	id S1754603Ab0IYWXW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 18:23:22 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:41585 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751178Ab0IYWUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 18:20:15 -0400
+	id S1751178Ab0IYWXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Sep 2010 18:23:21 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Nigel Cunningham <nigel@tuxonice.net>
-Subject: Re: Nigel's current for-rafael queue
-Date: Sun, 26 Sep 2010 00:19:37 +0200
+Subject: Re: [PATCH 05/22] Hibernation: Switch to preallocating swap.
+Date: Sun, 26 Sep 2010 00:22:36 +0200
 User-Agent: KMail/1.13.5 (Linux/2.6.36-rc5-rjw+; KDE/4.4.4; x86_64; ; )
 Cc: Linux PM <linux-pm@lists.linux-foundation.org>,
         LKML <linux-kernel@vger.kernel.org>,
         "TuxOnIce-devel" <tuxonice-devel@tuxonice.net>
-References: <1285388224-10012-1-git-send-email-nigel@tuxonice.net>
-In-Reply-To: <1285388224-10012-1-git-send-email-nigel@tuxonice.net>
+References: <1285388224-10012-1-git-send-email-nigel@tuxonice.net> <201009252324.39445.rjw@sisk.pl> <4C9E6A75.8090702@tuxonice.net>
+In-Reply-To: <4C9E6A75.8090702@tuxonice.net>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009260019.37438.rjw@sisk.pl>
+Message-Id: <201009260022.36244.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Saturday, September 25, 2010, Nigel Cunningham wrote:
-> Hi Rafael.
-
-Hi Nigel,
-
-> Please find attached a slightly updated version of the patchset I sent
-> a few months ago. The main change is that I've prepended and additional
-> patch which lets the user see the speed at which the image is being
-> read and written. This is accomplished by recording the MB/s in a single
-> byte in the image header, and using a couple of __nosavedata variables
-> to get the data back through the atomic restore. I realise the char limits
-> us to 255MB/s at the moment. In future patches, I intend to address this
-> by storing the data in a 'proper' image header (it's a real problem -
-> TuxOnIce reads and writes on the same set up at speeds around 250MB/s).
+> Morning.
 > 
-> Results on my Dell XPS M1530, which has an SSD hard drive are:
+> On 26/09/10 07:24, Rafael J. Wysocki wrote:
+> > On Saturday, September 25, 2010, Nigel Cunningham wrote:
+> >> Switch from allocating swap as the image is written to allocating
+> >> storage prior to writing the image.
+> >
+> > Hmm, I think I know what the patch does, but I don't really understand the
+> > changelog.  Care to explain/fix?
 > 
-> With just patch 1 applied:
-> Attempt 1: Write 74MB/s; Read 52MB/s
-> Attempt 2: Write 68MB/s; Read 52MB/s
-> Attempt 3: Write 73MB/s; Read 53MB/s
+> Sure. I was a little terse, wasn't I? :)
 > 
-> With the whole sequence:
-> Attempt 1: Write 181MB/s; Read 52MB/s
-> Attempt 2: Write 156MB/s; Read 53MB/s
-> Attempt 3: Write 160MB/s; Read 52MB/s
+> Prior to this patch, we allocated swap as we were writing the image. 
+> This patch changes things so that we instead allocate all the swap we'll 
+> need prior to starting to write the image. It lays groundwork for later 
+> patches that switch from doing I/O in batches.
 
-Thanks for the patches, they look like a real improvement to me.
+Good.  I'll use the above as a replacement changelog if you don't mind.
 
-I only had a couple of minor comments, sent separately in replies to individual
-patches.  I'd like to push this series for 2.6.37, if the comments are
-addressed timely.
-
-Best regards,
+Thanks,
 Rafael
