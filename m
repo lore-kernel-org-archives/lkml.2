@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755881Ab0IYQtL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 12:49:11 -0400
-Received: from 26.mail-out.ovh.net ([91.121.27.225]:49102 "HELO
-	26.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754496Ab0IYQtK (ORCPT
+	id S1752767Ab0IYRAU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 13:00:20 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51361 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751254Ab0IYRAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 12:49:10 -0400
-Message-ID: <4C9E2801.4020609@example.com>
-Date: Sat, 25 Sep 2010 18:49:05 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100917 Icedove/3.0.8
+	Sat, 25 Sep 2010 13:00:19 -0400
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [00/80] 2.6.35.6 stable review
-References: <20100924162706.GA7381@kroah.com>
-In-Reply-To: <20100924162706.GA7381@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 2882866713509196176
-X-Ovh-Remote: 83.6.189.13 (abaz13.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+In-Reply-To: <4C9DD2D5.8090807@fusionio.com>
+References: <4C9DD2D5.8090807@fusionio.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 25 Sep 2010 09:59:28 -0700
+Message-ID: <AANLkTikcR8fu11jyLcD3Fuvm4TPxU=46jLcpsYryHONP@mail.gmail.com>
+Subject: Re: [GIT PULL] One important block fix for 2.6.36-rc
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24.09.2010 18:27, Greg KH wrote:
-
-> This is the start of the stable review cycle for the 2.6.35.6 release.
-> There are 80 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let us know.  If anyone is a maintainer of the proper subsystem, and
-> wants to add a Signed-off-by: line to the patch, please respond with it.
+On Sat, Sep 25, 2010 at 3:45 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
 >
-> Responses should be made by Sunday September 26, 17:00:00 UTC
-> Anything received after that time might be too late.
+> Please pull asap, thanks.
 
-nouveau graphics driver does not work at all. I submitted full data a 
-few days ago.
+Pulled, but I _really_ wish you started looking at cleanliness issues,
+even with bug-reports.
 
-Regards,
+That's a singularly stupid and unreadable way of testing "do those
+flags match". It is quite possible that the compiler fixes up the
+stupidity, but that doesn't make it much better.
 
-Piotr Hosowicz
+Here's how things like this _should_ be tested:
 
--- 
-- Poszed³em wczoraj z ¿on± do ZOO
-- I jak?
-- Nie wziêli...
-NP: Pantera - A New Level
-NB: 2.6.35.6-rc1
+   #define REQ_FLAGS_MUST_MATCH (REQ_SECURE | REQ_DISCARD)
+
+   ...
+   /* Check that flags match in the required bits */
+   if ((req->cmd_flags ^ next->cmd_flags) & REQ_FLAGS_MUST_MATCH)
+      return 0;
+   ...
+
+which is (a) smaller (b) easier and clearer to add flags as needed and
+(c) actually more readable due to not having duplicated logic (not
+just one if-statement, but one mask too).
+
+And yes, I think you'd want to add a few flags there. Looking at the
+REQ_xyz flags, I suspect most o them should really really match for
+requests to be mergeable. Wouldn't it be better to think of it in
+terms of "do we really allow different cmd_flags requests to merge"
+than adding one bit ad-hoc at a time?
+
+                           Linus
