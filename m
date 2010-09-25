@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756411Ab0IYRwS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 13:52:18 -0400
-Received: from 26.mail-out.ovh.net ([91.121.27.225]:44250 "HELO
-	26.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750987Ab0IYRwR (ORCPT
+	id S1756221Ab0IYSNI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 14:13:08 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:37811 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755654Ab0IYSNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 13:52:17 -0400
-Message-ID: <4C9E36CC.4090807@example.com>
-Date: Sat, 25 Sep 2010 19:52:12 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100917 Icedove/3.0.8
+	Sat, 25 Sep 2010 14:13:07 -0400
+Date: Sat, 25 Sep 2010 19:13:04 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: rth@twiddle.net
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: alpha: potential race around hae_cache in RESTORE_ALL
+Message-ID: <20100925181304.GV19804@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [00/80] 2.6.35.6 stable review
-References: <20100924162706.GA7381@kroah.com> <4C9E2801.4020609@example.com> <20100925172459.GA2208@suse.de> <4C9E31A9.4020802@example.com> <20100925174238.GB11836@suse.de>
-In-Reply-To: <20100925174238.GB11836@suse.de>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 3949093923398578576
-X-Ovh-Remote: 83.6.189.13 (abaz13.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25.09.2010 19:42, Greg KH wrote:
-> On Sat, Sep 25, 2010 at 07:30:17PM +0200, Piotr Hosowicz wrote:
->> On 25.09.2010 19:24, Greg KH wrote:
->>> On Sat, Sep 25, 2010 at 06:49:05PM +0200, Piotr Hosowicz wrote:
->>>> On 24.09.2010 18:27, Greg KH wrote:
->>>>
->>>>> This is the start of the stable review cycle for the 2.6.35.6 release.
->>>>> There are 80 patches in this series, all will be posted as a response
->>>>> to this one.  If anyone has any issues with these being applied, please
->>>>> let us know.  If anyone is a maintainer of the proper subsystem, and
->>>>> wants to add a Signed-off-by: line to the patch, please respond with it.
->>>>>
->>>>> Responses should be made by Sunday September 26, 17:00:00 UTC
->>>>> Anything received after that time might be too late.
->>>>
->>>> nouveau graphics driver does not work at all. I submitted full data a few
->>>> days ago.
->>>
->>> Was that with .5 or is this something new for .6?  And sorry if I missed
->>> this, for some reason I thought the problem was with the nvidia driver.
->>
->> Tested now with .5-rc1. It is with the kernel NVidia driver, the nouveau.
->
-> And that works?  Or not?
+	What happens if we get to RESTORE_ALL with interrupts enabled,
+find that we want to restore HAE, get to
+        stq     $21, HAE_CACHE($19);    \
+and get hit by an interrupt right after that assignment?  Note that
+*alpha_mv->hae_register is still not updated, but alpha_mv->hae_cache
+already is, so if the interrupt calls set_hae() it would get seriously
+confused if the value it wants is equal to the value we've put into
+->hae_cache.
 
-No, does not.
+	Until ~2002 it used to have a couple of swpipl around these
+assignments and __set_hae() is still doing those.  I agree that on
+many exits we *will* have interrupts disabled when we get to RESTORE_ALL,
+but not on all of them.  E.g. any interrupt taken in kernel mode will
+happily go to restore_all without bothering with swpipl at all.
 
-> Why not try the "real" 2.6.36.5 release?
+	AFAICS, it looks like a race; the change in question had been
+introduced in "Update Alpha UP for thread_info and scheduler changes"
+(Feb 10 2002, commit 374eeee8a8a50e12278dfa37021df7b6efe506c3 in historical
+git tree).
 
-I thought that you want us to test the rc1 release, so I downloaded the 
-2.6.35.5 and patched it with the summary patch you gave an URL for.
-
--- 
-- Jaka jest najwiêksza anomalia fizjologiczno-polityczna?
-- Cz³onek wysuniêty z ramienia na czo³o.
-NP: Peter Green Splinter Group - Tribal Dance
-NB: 2.6.35.6-rc1
+	Comments?
