@@ -1,92 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755350Ab0IYDvP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 23:51:15 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43954 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752821Ab0IYDvN convert rfc822-to-8bit (ORCPT
+	id S1751030Ab0IYEHP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 00:07:15 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48248
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750722Ab0IYEHN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 23:51:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=BzjJmjk6g62yois8NilxglHW8VlBjRoj43NfOt/l7jHCnGMdiDWH6YShz5CGbAw8Rc
-         hhwruPgzQxZpiYXqSRnPf5ilnjGgoxLWmA5aIFx2/eA3vKTZdeCdB2Laa4YLvSvwUmE1
-         aB29Wce/LeMJp7F9txCH45zqmCbLDha6MMLsw=
-MIME-Version: 1.0
-In-Reply-To: <20100925024804.GS19804@ZenIV.linux.org.uk>
-References: <20100924155231.GQ19804@ZenIV.linux.org.uk>
-	<AANLkTik+1k76vGccjwQWeEWZFng61ZoodDyWbN8wvPgE@mail.gmail.com>
-	<20100924165716.GR19804@ZenIV.linux.org.uk>
-	<AANLkTikV5O1QxYEHRzZzCrE=VSWj8aV6nA5Z3QOTxtL=@mail.gmail.com>
-	<20100925024804.GS19804@ZenIV.linux.org.uk>
-Date: Fri, 24 Sep 2010 23:51:11 -0400
-Message-ID: <AANLkTikKtK1s8mGF4chhLtXRJW1G43BKAAY3wC-EVbQH@mail.gmail.com>
-Subject: Re: what's papered over by set_fs(USER_DS) in amd64 signal delivery?
-From: Brian Gerst <brgerst@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, tglx@linutronix.de,
-        mingo@redhat.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 25 Sep 2010 00:07:13 -0400
+Date: Fri, 24 Sep 2010 21:07:33 -0700 (PDT)
+Message-Id: <20100924.210733.15237730.davem@davemloft.net>
+To: masa-korg@dsn.okisemi.com
+Cc: randy.dunlap@oracle.com, john.linn@xilinx.com, ralf@linux-mips.org,
+        kristoffer@gaisler.com, mbizon@freebox.fr, gregory.v.rose@intel.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        okada533@dsn.okisemi.com, shimizu394@dsn.okisemi.com,
+        morinaga526@dsn.okisemi.com, meego-dev@meego.com, qi.wang@intel.com,
+        yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
+        joel.clark@intel.com, margie.foster@intel.com
+Subject: Re: [PATCH v5] Gigabit Ethernet driver of Topcliff PCH
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4C989A8B.5070902@dsn.okisemi.com>
+References: <4C989A8B.5070902@dsn.okisemi.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 24, 2010 at 10:48 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Fri, Sep 24, 2010 at 10:25:15PM -0400, Brian Gerst wrote:
->> > + ?? ?? ?? ?? ?? ?? ?? __asm__("mov %w0,%%fs ; mov %w0,%%gs":"=r" (seg) :"0" (seg));
->> > + ?? ?? ?? ?? ?? ?? ?? set_fs(seg);
->> > + ?? ?? ?? ?? ?? ?? ?? regs->xds = seg;
->> > + ?? ?? ?? ?? ?? ?? ?? regs->xes = seg;
->> > + ?? ?? ?? ?? ?? ?? ?? regs->xss = seg;
->> > + ?? ?? ?? ?? ?? ?? ?? regs->xcs = USER_CS;
->> > in 2.1.2. ??And that's when we had
->> > ?? ?? ?? ??* fs and gs evicted from pt_regs
->> > ?? ?? ?? ??* fs and gs not saved restored on kernel entry/exit
->> > ?? ?? ?? ??* just introduced set_fs() to start with (that went in 2.1.0)
->> >
->> > A bit before my time, so I'm not sure what's been going on there...
->>
->> I believe it can be safely removed.  Looking through the history, the
->> corresponding set_fs() calls were removed from 32-bit by commit
->> b93b6ca3.  This is just an artifact from ancient i386 code where
->> set_fs (which is grossly misnamed now) really did set the %fs
->> register.
->
-> Not quite.  If you look at the tree where it has shown up (2.1.2), you'll see
-> that
->        a) by that time it _wasn't_ an assignment to %fs
->        b) the same patch that has introduced that call there does direct
-> assignment to %fs right next to that set_fs().  See that __asm__ above?
->
-> Again, I agree that it almost certainly can be dropped.  I really wonder
-> about the history, though.  It predates git and bk by far (late 1996).
-> Linus, do you have any recollection regarding that stuff?
->
+From: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+Date: Tue, 21 Sep 2010 20:44:11 +0900
 
-In the beginning, the i386 kernel used a non-flat segmented memory
-layout.  USER_[CD]S were 3GB segments at base 0, and KERNEL_[CD]S were
-1GB segments at base 3GB.  This meant that the kernel could not access
-userspace addresses without using a fs segment override (%fs was saved
-in pt_regs, reloaded with USER_DS on kernel entry, and restored on
-kernel exit).  You had to reload %fs with KERNEL_DS for the *_user
-functions to address the kernel segment.
+> The dev_pm_ops was used.
+> Unnecessary "__attribute__ ((packed))" was deleted.
+> 
+> Signed-off-by: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
 
-v2.1.2 introduced the modern flat memory layout with 4GB segments at
-base 0.  %fs no longer was used for userspace access, so it wasn't
-saved in pt_regs or touched in any way until a task switch.  Instead
-of the hardware enforcing the limit, the check was moved to software.
+Applied, but the driver didn't even build on my machine (sparc64,
+problem is lack of vmalloc.h include) and once that problem was fixed
+it emitted several warnings when building (casting pointers to "u32").
 
-Originally the signal handler had to set regs->xfs = USER_DS so that
-the signal handler had a known state when it ran.  That had nothing to
-do with the kernel's userspace access mechanism.  It was converted to
-do both the immediate reloading of the %fs register (since it was no
-longer saved in pt_regs and wouldn't get restored on kernel exit), and
-to a new set_fs(USER_DS) call which meant something completely
-different.  That is the origin of the code we are trying to remove
-now.
+I therefore added the following fixes when commiting your driver:
 
---
-Brian Gerst
+diff --git a/drivers/net/pch_gbe/pch_gbe.h b/drivers/net/pch_gbe/pch_gbe.h
+index 91250cd..b925ab3 100644
+--- a/drivers/net/pch_gbe/pch_gbe.h
++++ b/drivers/net/pch_gbe/pch_gbe.h
+@@ -29,6 +29,7 @@
+ #include <linux/netdevice.h>
+ #include <linux/etherdevice.h>
+ #include <linux/ethtool.h>
++#include <linux/vmalloc.h>
+ #include <net/ip.h>
+ 
+ /**
+diff --git a/drivers/net/pch_gbe/pch_gbe_main.c b/drivers/net/pch_gbe/pch_gbe_main.c
+index adeadfc..53c56cf 100644
+--- a/drivers/net/pch_gbe/pch_gbe_main.c
++++ b/drivers/net/pch_gbe/pch_gbe_main.c
+@@ -1401,9 +1401,9 @@ pch_gbe_clean_rx(struct pch_gbe_adapter *adapter,
+ 		prefetch(skb->data);
+ 
+ 		pr_debug("RxDecNo = 0x%04x  Status[DMA:0x%02x GBE:0x%04x "
+-			 "TCP:0x%08x]  BufInf = 0x%08x\n",
++			 "TCP:0x%08x]  BufInf = 0x%p\n",
+ 			 i, dma_status, gbec_status, tcp_ip_status,
+-			 (u32) (buffer_info));
++			 buffer_info);
+ 		/* Error check */
+ 		if (unlikely(gbec_status & PCH_GBE_RXD_GMAC_STAT_NOTOCTAL)) {
+ 			adapter->stats.rx_frame_errors++;
+@@ -1545,9 +1545,9 @@ int pch_gbe_setup_tx_resources(struct pch_gbe_adapter *adapter,
+ 		tx_desc = PCH_GBE_TX_DESC(*tx_ring, desNo);
+ 		tx_desc->gbec_status = DSC_INIT16;
+ 	}
+-	pr_debug("tx_ring->desc = 0x%08x  tx_ring->dma = 0x%08llx\n"
++	pr_debug("tx_ring->desc = 0x%p  tx_ring->dma = 0x%08llx\n"
+ 		 "next_to_clean = 0x%08x  next_to_use = 0x%08x\n",
+-		 (u32) tx_ring->desc, (unsigned long long)tx_ring->dma,
++		 tx_ring->desc, (unsigned long long)tx_ring->dma,
+ 		 tx_ring->next_to_clean, tx_ring->next_to_use);
+ 	return 0;
+ }
+@@ -1591,9 +1591,9 @@ int pch_gbe_setup_rx_resources(struct pch_gbe_adapter *adapter,
+ 		rx_desc = PCH_GBE_RX_DESC(*rx_ring, desNo);
+ 		rx_desc->gbec_status = DSC_INIT16;
+ 	}
+-	pr_debug("rx_ring->desc = 0x%08x  rx_ring->dma = 0x%08llx "
++	pr_debug("rx_ring->desc = 0x%p  rx_ring->dma = 0x%08llx "
+ 		 "next_to_clean = 0x%08x  next_to_use = 0x%08x\n",
+-		 (u32) rx_ring->desc, (unsigned long long)rx_ring->dma,
++		 rx_ring->desc, (unsigned long long)rx_ring->dma,
+ 		 rx_ring->next_to_clean, rx_ring->next_to_use);
+ 	return 0;
+ }
+@@ -2102,8 +2102,6 @@ static void pch_gbe_netpoll(struct net_device *netdev)
+ 	pch_gbe_intr(adapter->pdev->irq, netdev);
+ 	enable_irq(adapter->pdev->irq);
+ }
+-#else
+-#define pch_gbe_netpoll NULL
+ #endif
+ 
+ static const struct net_device_ops pch_gbe_netdev_ops = {
+@@ -2116,7 +2114,9 @@ static const struct net_device_ops pch_gbe_netdev_ops = {
+ 	.ndo_change_mtu = pch_gbe_change_mtu,
+ 	.ndo_do_ioctl = pch_gbe_ioctl,
+ 	.ndo_set_multicast_list = &pch_gbe_set_multi,
++#ifdef CONFIG_NET_POLL_CONTROLLER
+ 	.ndo_poll_controller = pch_gbe_netpoll,
++#endif
+ };
+ 
+ static pci_ers_result_t pch_gbe_io_error_detected(struct pci_dev *pdev,
+@@ -2196,6 +2196,7 @@ static int __pch_gbe_suspend(struct pci_dev *pdev)
+ 	return retval;
+ }
+ 
++#ifdef CONFIG_PM
+ static int pch_gbe_suspend(struct device *device)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(device);
+@@ -2203,7 +2204,6 @@ static int pch_gbe_suspend(struct device *device)
+ 	return __pch_gbe_suspend(pdev);
+ }
+ 
+-#ifdef CONFIG_PM
+ static int pch_gbe_resume(struct device *device)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(device);
+
