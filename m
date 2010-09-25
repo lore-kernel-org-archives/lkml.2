@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756172Ab0IYRe4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 13:34:56 -0400
-Received: from fanny.its.uu.se ([130.238.4.241]:10928 "EHLO fanny.its.uu.se"
+	id S1756053Ab0IYRlt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 13:41:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54107 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753597Ab0IYRez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 13:34:55 -0400
+	id S1750797Ab0IYRls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Sep 2010 13:41:48 -0400
+Date: Sat, 25 Sep 2010 10:41:45 -0700
+From: Greg KH <gregkh@suse.de>
+To: Piotr Hosowicz <piotr@hosowicz.com>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [00/80] 2.6.35.6 stable review
+Message-ID: <20100925174145.GA11836@suse.de>
+References: <20100924162706.GA7381@kroah.com> <4C9E2801.4020609@example.com> <20100925172459.GA2208@suse.de> <4C9E3296.90808@example.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <19614.12985.649827.886053@pilspetsen.it.uu.se>
-Date: Sat, 25 Sep 2010 19:34:49 +0200
-From: Mikael Pettersson <mikpe@it.uu.se>
-To: David Miller <davem@davemloft.net>
-Cc: mikpe@it.uu.se, sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [2.6.36-rc regression] occasional complete system hangs on
- sparc64 SMP
-In-Reply-To: <20100923.120935.173861259.davem@davemloft.net>
-References: <19611.34846.813757.309183@pilspetsen.it.uu.se>
-	<20100923.120935.173861259.davem@davemloft.net>
-X-Mailer: VM 7.17 under Emacs 20.7.1
+Content-Disposition: inline
+In-Reply-To: <4C9E3296.90808@example.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller writes:
- > From: Mikael Pettersson <mikpe@it.uu.se>
- > Date: Thu, 23 Sep 2010 19:02:22 +0200
- > 
- > > The 2.6.36-rc kernels do appear to be solid on a UP Ultra5, but that
- > > one no longer does any gcc builds or tests, only kernel builds.
- > > 
- > > Any ideas, or do I have to try to bisect this?
- > 
- > I've seen this too, it's some kind of deadlock obviously.
- > 
- > Unfortunately I haven't gotten any further than you have in the
- > analysis.
+On Sat, Sep 25, 2010 at 07:34:14PM +0200, Piotr Hosowicz wrote:
+> On 25.09.2010 19:24, Greg KH wrote:
+>> On Sat, Sep 25, 2010 at 06:49:05PM +0200, Piotr Hosowicz wrote:
+>>> On 24.09.2010 18:27, Greg KH wrote:
+>>>
+>>>> This is the start of the stable review cycle for the 2.6.35.6 release.
+>>>> There are 80 patches in this series, all will be posted as a response
+>>>> to this one.  If anyone has any issues with these being applied, please
+>>>> let us know.  If anyone is a maintainer of the proper subsystem, and
+>>>> wants to add a Signed-off-by: line to the patch, please respond with it.
+>>>>
+>>>> Responses should be made by Sunday September 26, 17:00:00 UTC
+>>>> Anything received after that time might be too late.
+>>>
+>>> nouveau graphics driver does not work at all. I submitted full data a few
+>>> days ago.
+>>
+>> Was that with .5 or is this something new for .6?  And sorry if I missed
+>> this, for some reason I thought the problem was with the nvidia driver.
+>>
+>> If it showed up in .5 can you bisect to see what the problem patch was?
+>
+> And in this case I'm afraid that I cannot bisect, because there is no good 
+> state, that driver failed always for me.
 
-Update: I got another hang with 2.6.36-rc5, then went back to
-2.6.36-rc1 which hung twice.  SYSRQ would print help text and
-the name of the command but not print anything useful on the
-console.  Now trying some of the 2.6.35-git snapshots before -rc1.
+So it never worked for .35 at all?  Did it for .34?  I suggest going and
+working with the nouveau developers about this issue, as it doesn't seem
+to be a -stable specific problem at the moment.
+
+thanks,
+
+greg k-h
