@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756462Ab0IYEVl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 00:21:41 -0400
-Received: from crca.org.au ([74.207.252.120]:51648 "EHLO crca.org.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750786Ab0IYERM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 00:17:12 -0400
-X-Bogosity: Ham, spamicity=0.000000
-From: Nigel Cunningham <nigel@tuxonice.net>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        TuxOnIce-devel <tuxonice-devel@tuxonice.net>
-Subject: [PATCH 02/22] Hibernation: Swap iteration functions.
-Date: Sat, 25 Sep 2010 14:16:44 +1000
-Message-Id: <1285388224-10012-3-git-send-email-nigel@tuxonice.net>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1285388224-10012-1-git-send-email-nigel@tuxonice.net>
-References: <1285388224-10012-1-git-send-email-nigel@tuxonice.net>
+	id S1755811Ab0IYE0o (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 00:26:44 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33645
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751491Ab0IYE0m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Sep 2010 00:26:42 -0400
+Date: Fri, 24 Sep 2010 21:27:02 -0700 (PDT)
+Message-Id: <20100924.212702.116381928.davem@davemloft.net>
+To: linux@rainbow-software.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: de4x5 hangs with SMP: synchronize_irq() in interrupt handler?
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <201009212230.51036.linux@rainbow-software.org>
+References: <201009212230.51036.linux@rainbow-software.org>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the data structure 'storage_position' and routines that allow
-a caller to iterate over swap in sector order. Note that calling
-reset_storage_pos only resets the position. next_swapdev_block
-must also be called to get the address of the first (and subsequent
-sectors).
+From: Ondrej Zary <linux@rainbow-software.org>
+Date: Tue, 21 Sep 2010 22:30:49 +0200
 
-Signed-off-by: Nigel Cunningham <nigel@tuxonice.net>
----
- kernel/power/swap.c |   39 +++++++++++++++++++++++++++++++++++++++
- 1 files changed, 39 insertions(+), 0 deletions(-)
+> I'm trying to get two Compex FreedomLine 32 PnP-PCI2 cards to work (21041-AA 
+> and 21041-PA) - there are problems with de2104x driver (one of the cards does 
+> not work at all and the other one switches to non-existing AUI port when the 
+> link goes down and never switches back to RJ45) and I know that de4x5 driver 
+> worked for me in past.
+> 
+> Loading de4x5 causes the machine to hang immediately. It hangs at 
+> synchronize_irq() call from de4x5_interrupt(). Commenting out this allows the 
+> driver to work. Without SMP, synchronize_irq() is redefined to barrier() so 
+> it works.
+> 
+> I don't have a clue how to fix this properly - does anyone know?
 
-diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-index 728f85b..d53417b 100644
---- a/kernel/power/swap.c
-+++ b/kernel/power/swap.c
-@@ -87,6 +87,45 @@ struct swsusp_extent {
- 
- static struct rb_root swsusp_extents = RB_ROOT;
- 
-+struct storage_position {
-+	struct rb_node *node;
-+	struct swsusp_extent *cur_ext;
-+	unsigned long offset;
-+};
-+
-+static struct storage_position pos;
-+
-+static void reset_storage_pos(void)
-+{
-+	pos.node = rb_first(&swsusp_extents);
-+
-+	if (!pos.node) {
-+		pos.cur_ext = NULL;
-+		pos.offset = 0;
-+		return;
-+	}
-+
-+	pos.cur_ext = container_of(pos.node, struct swsusp_extent, node);
-+	pos.offset = pos.cur_ext->start;
-+}
-+
-+static sector_t next_swapdev_block(void)
-+{
-+	if (!pos.node)
-+		return 0;
-+
-+	if (pos.cur_ext->end >= pos.offset)
-+		return pos.offset++;
-+
-+	pos.node = rb_next(pos.node);
-+	if (!pos.node)
-+		return 0;
-+
-+	pos.cur_ext = container_of(pos.node, struct swsusp_extent, node);
-+	pos.offset = pos.cur_ext->start;
-+	return pos.offset;
-+}
-+
- static int swsusp_extents_insert(unsigned long swap_offset)
- {
- 	struct rb_node **new = &(swsusp_extents.rb_node);
--- 
-1.7.0.4
+This driver is an enormous mess.
 
+Someone half-converted the driver over to use a spinlock to protect
+the interrupt handler and other parts of the driver, but that
+conversion is so obvsiously buggy that I can't see how it was
+ever tested.
+
+All of the tests on lp->interrupt are racy, nothing protects the
+setting and testing of that value.  It is set with lp->lock held
+but tested asynchronously by the driver's ->ndo_start_xmit
+method.
+
+It uses this value to determine if it should queue the packet into
+a software queue that gets processed at the end of the interrupt
+processing.
+
+Problem is, that code path deadlocks, the end of de4x5_interrupt
+pulls the packets out of that queue in a loop, and sends them
+to the function named de4x5_queue_pkt().
+
+Which tries to take the lp->lock spinlock, which is already held
+by de4x5_interrupt().
+
+This driver needs major surgery to get into a working state on
+SMP.
