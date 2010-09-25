@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756746Ab0IYSdn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 14:33:43 -0400
+	id S1756382Ab0IYSc6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 14:32:58 -0400
 Received: from mail-iw0-f174.google.com ([209.85.214.174]:41084 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754647Ab0IYSdD (ORCPT
+	with ESMTP id S1751331Ab0IYSc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 14:33:03 -0400
+	Sat, 25 Sep 2010 14:32:56 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=XfLBXgHB+6T9o9xTsAWqwNWFY/bLHIbgarypsKpH6zV3PqN4IR+RTQ1l5OLT+EwY58
-         9F8UiMzMYY4RsmAF79OK5EMdzmC5Rd7nzaOP35PK3rBORVouy72cSGMHUyhPbiUDCNt1
-         nWw//KYKoBzXTD8Vu7YUy/efeQpnnhyS6iFaQ=
+        b=QsELM6YT/ipWb1h2fCfKqstXrT5Z5cDWzwoRWbPkHBzYZxVuAUYCnGAsD/RDDVTXfZ
+         6TVSLBugapSrueMD4IyEdYU1JK98pzfGltLMlQ8YvLEUIt4/h0a0+BpFxnOr4VMcFE9E
+         2ISBQZU7u+ZWXcSUeuZ3u0UhJsdUuh1Pcx6GM=
 From: Tracey Dent <tdent48227@gmail.com>
 To: tytso@mit.edu
 Cc: adilger.kernel@dilger.ca, jack@suse.cz, dmonakhov@openvz.org,
         sandeen@redhat.com, hch@lst.de, linux-ext4@vger.kernel.org,
         linux-kernel@vger.kernel.org, Tracey Dent <Tdent48227@gmail.com>,
-        Tracey Dent <tden48227@gmail.com>
-Subject: [PATCH 09/10] Fs: ext4: mballoc.c: whitespace cleanup
-Date: Sat, 25 Sep 2010 14:32:00 -0400
-Message-Id: <1285439521-2557-9-git-send-email-tdent48227@gmail.com>
+        Tracey Dent <tdent48227@gmail.com>
+Subject: [PATCH 04/10] Fs: ext4: block_validity: added space around = sign
+Date: Sat, 25 Sep 2010 14:31:55 -0400
+Message-Id: <1285439521-2557-4-git-send-email-tdent48227@gmail.com>
 X-Mailer: git-send-email 1.7.3
 In-Reply-To: <1285439521-2557-1-git-send-email-tdent48227@gmail.com>
 References: <1285439521-2557-1-git-send-email-tdent48227@gmail.com>
@@ -31,55 +31,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tracey Dent <Tdent48227@gmail.com>
 
-Fixed whitespace and indent issues that checkpatch.pl had an issue with
+Added space around = sign. Checkpatch.pl detected the issue
 
-Signed-off-by: Tracey Dent <tden48227@gmail.com>
+Signed-off-by: Tracey Dent <tdent48227@gmail.com>
 ---
- fs/ext4/mballoc.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+ fs/ext4/block_validity.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index 4b4ad4b..0bc545c 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -2410,9 +2410,9 @@ int ext4_mb_init(struct super_block *sb, int needs_recovery)
- 	i = (sb->s_blocksize_bits + 2) * sizeof(*sbi->s_mb_offsets);
+diff --git a/fs/ext4/block_validity.c b/fs/ext4/block_validity.c
+index 3db5084..25e9f52 100644
+--- a/fs/ext4/block_validity.c
++++ b/fs/ext4/block_validity.c
+@@ -156,7 +156,7 @@ int ext4_setup_system_zone(struct super_block *sb)
+ 	if (EXT4_SB(sb)->system_blks.rb_node)
+ 		return 0;
  
- 	sbi->s_mb_offsets = kmalloc(i, GFP_KERNEL);
--	if (sbi->s_mb_offsets == NULL) {
-+	if (sbi->s_mb_offsets == NULL) 
- 		return -ENOMEM;
--	}
-+	
- 
- 	i = (sb->s_blocksize_bits + 2) * sizeof(*sbi->s_mb_maxs);
- 	sbi->s_mb_maxs = kmalloc(i, GFP_KERNEL);
-@@ -3908,7 +3908,7 @@ static void ext4_mb_show_ac(struct ext4_allocation_context *ac)
- 			(int)ac->ac_criteria);
- 	printk(KERN_ERR "EXT4-fs: %lu scanned, %d found\n", ac->ac_ex_scanned,
- 		ac->ac_found);
--	printk(KERN_ERR "EXT4-fs: groups: \n");
-+	printk(KERN_ERR "EXT4-fs: groups:\n");
- 	ngroups = ext4_get_groups_count(sb);
- 	for (i = 0; i < ngroups; i++) {
- 		struct ext4_group_info *grp = ext4_get_group_info(sb, i);
-@@ -3923,14 +3923,14 @@ static void ext4_mb_show_ac(struct ext4_allocation_context *ac)
- 			ext4_get_group_no_and_offset(sb, pa->pa_pstart,
- 						     NULL, &start);
- 			spin_unlock(&pa->pa_lock);
--			printk(KERN_ERR "PA:%u:%d:%u \n", i,
-+			printk(KERN_ERR "PA:%u:%d:%u\n", i,
- 			       start, pa->pa_len);
- 		}
- 		ext4_unlock_group(sb, i);
- 
- 		if (grp->bb_free == 0)
- 			continue;
--		printk(KERN_ERR "%u: %d/%d \n",
-+		printk(KERN_ERR "%u: %d/%d\n",
- 		       i, grp->bb_free, grp->bb_fragments);
- 	}
- 	printk(KERN_ERR "\n");
+-	for (i=0; i < ngroups; i++) {
++	for (i = 0; i < ngroups; i++) {
+ 		if (ext4_bg_has_super(sb, i) &&
+ 		    ((i < 5) || ((i % flex_size) == 0)))
+ 			add_system_zone(sbi, ext4_group_first_block_no(sb, i),
 -- 
 1.7.3
 
