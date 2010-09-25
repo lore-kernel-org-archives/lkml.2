@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757054Ab0IYWzv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 18:55:51 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:43742 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752125Ab0IYWzu (ORCPT
+	id S1757045Ab0IYXLW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 19:11:22 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43204 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754232Ab0IYXLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 18:55:50 -0400
-X-Greylist: delayed 589 seconds by postgrey-1.27 at vger.kernel.org; Sat, 25 Sep 2010 18:55:50 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Aj4DABkYnkxFpamy/2dsb2JhbAAHoT3GS4VDBJF5
-X-IronPort-AV: E=Sophos;i="4.57,237,1283745600"; 
-   d="scan'208";a="76913623"
-Message-ID: <4C9E7BA6.6070602@polymtl.ca>
-Date: Sat, 25 Sep 2010 18:45:58 -0400
-From: Alexandre Montplaisir <alexandre.montplaisir@polymtl.ca>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100922 Lightning/1.0b2 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, ubuntu-devel-discuss@lists.ubuntu.com,
-        ltt-dev <ltt-dev@lists.casi.polymtl.ca>
-Subject: [ANNOUNCE] LTTng kernel packages for Ubuntu Maverick
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	Sat, 25 Sep 2010 19:11:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=i0PIRxuEj+5iXvhqih0AmYNXdR8idmYtKK5c95CBD5VW3zzHNJA4ixSceH8TaA8EDA
+         5rYLkj+EAKI85/HbYTty3o8w4TlzVrVJcNti1tDLyf6gt5sl+aJ7Fvt84fTrZcZ/fiAj
+         jjY8avD7yWqnUsfeBcomh7xU2RJt3FT9ET6BI=
+From: Phillip Kurtenbach <pkurtenbach@googlemail.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Phillip Kurtenbach <pkurtenbach@gmail.com>
+Subject: [PATCH] staging: iio: whitespace cleanup
+Date: Sun, 26 Sep 2010 01:11:09 +0200
+Message-Id: <1285456269-27582-1-git-send-email-pkurtenbach@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fixed whitespace coding style issues.
 
-LTTng, the Linux Trace Toolkit Next Generation, is a project that aims 
-at producing a highly efficient full system tracing solution.  It is 
-composed of several components to allow tracing of the kernel, of 
-userspace, trace viewing and analysis and trace streaming.  LTTng is 
-open source software. It is being actively developed with the community.
+Signed-off-by: Phillip Kurtenbach <pkurtenbach@gmail.com>
+---
+ drivers/staging/iio/industrialio-core.c |    2 +-
+ drivers/staging/iio/industrialio-ring.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/staging/iio/industrialio-core.c b/drivers/staging/iio/industrialio-core.c
+index dd4d87a..c03e1ae 100644
+--- a/drivers/staging/iio/industrialio-core.c
++++ b/drivers/staging/iio/industrialio-core.c
+@@ -59,7 +59,7 @@ EXPORT_SYMBOL(__iio_change_event);
+  * are queued. Hence a client MUST open the chrdev before the ring buffer is
+  * switched on.
+  */
+- int __iio_push_event(struct iio_event_interface *ev_int,
++int __iio_push_event(struct iio_event_interface *ev_int,
+ 		     int ev_code,
+ 		     s64 timestamp,
+ 		     struct iio_shared_ev_pointer *
+diff --git a/drivers/staging/iio/industrialio-ring.c b/drivers/staging/iio/industrialio-ring.c
+index 6ab578e..972a41a 100644
+--- a/drivers/staging/iio/industrialio-ring.c
++++ b/drivers/staging/iio/industrialio-ring.c
+@@ -312,7 +312,7 @@ ssize_t iio_read_ring_length(struct device *dev,
+ }
+ EXPORT_SYMBOL(iio_read_ring_length);
+ 
+- ssize_t iio_write_ring_length(struct device *dev,
++ssize_t iio_write_ring_length(struct device *dev,
+ 			       struct device_attribute *attr,
+ 			       const char *buf,
+ 			       size_t len)
+-- 
+1.7.2.3
 
-Hi all,
-
-A LTTng-patched kernel package for Ubuntu Maverick has been uploaded to 
-a PPA[1], which should greatly simplify the installation procedure.
-
-The PPA also contains packages for other related projects, namely LTTv 
-(the trace visualizer) and UST (the Userspace Tracer). They will be kept 
-up-to-date to follow the upstream releases as much as possible.
-
-[1] https://launchpad.net/~lttng/+archive/ppa
-
-
-Project website: http://lttng.org
-
-
-Thanks,
-
---
-Alexandre Montplaisir
-DORSAL lab,
-École Polytechnique de Montréal
