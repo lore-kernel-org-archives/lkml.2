@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932195Ab0IYERs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 00:17:48 -0400
-Received: from crca.org.au ([74.207.252.120]:35115 "EHLO crca.org.au"
+	id S932516Ab0IYESG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 00:18:06 -0400
+Received: from crca.org.au ([74.207.252.120]:47213 "EHLO crca.org.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932379Ab0IYERo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 00:17:44 -0400
-X-Bogosity: Ham, spamicity=0.000001
+	id S932430Ab0IYERp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Sep 2010 00:17:45 -0400
+X-Bogosity: Ham, spamicity=0.000000
 From: Nigel Cunningham <nigel@tuxonice.net>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>,
         Linux PM <linux-pm@lists.linux-foundation.org>,
         LKML <linux-kernel@vger.kernel.org>,
         TuxOnIce-devel <tuxonice-devel@tuxonice.net>
-Subject: [PATCH 20/22] Hibernation: Prepare for handle.cur removal
-Date: Sat, 25 Sep 2010 14:17:02 +1000
-Message-Id: <1285388224-10012-21-git-send-email-nigel@tuxonice.net>
+Subject: [PATCH 21/22] Hibernation: Remove swap_map structure
+Date: Sat, 25 Sep 2010 14:17:03 +1000
+Message-Id: <1285388224-10012-22-git-send-email-nigel@tuxonice.net>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1285388224-10012-1-git-send-email-nigel@tuxonice.net>
 References: <1285388224-10012-1-git-send-email-nigel@tuxonice.net>
@@ -22,53 +22,136 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare for the removal of handle.cur by stopping using
-it in get_swap_reader.
+Remove the now unused swap_map structure and associated
+swap_map_handle.
 
 Signed-off-by: Nigel Cunningham <nigel@tuxonice.net>
 ---
- kernel/power/block_io.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+ kernel/power/block_io.c |   56 -----------------------------------------------
+ 1 files changed, 0 insertions(+), 56 deletions(-)
 
 diff --git a/kernel/power/block_io.c b/kernel/power/block_io.c
-index c154a92..4f46878 100644
+index 4f46878..f452650 100644
 --- a/kernel/power/block_io.c
 +++ b/kernel/power/block_io.c
-@@ -276,29 +276,29 @@ int get_swap_reader(unsigned int *flags_p, sector_t first_page)
- 	if (!handle.cur)
- 		return -ENOMEM;
+@@ -126,40 +126,7 @@ void hib_wait_on_bio_chain(void)
+ 	wait_event(num_in_progress_wait, !atomic_read(&hib_io_in_progress));
+ }
  
--	error = hib_bio_read_page(first_page, handle.cur, 1);
-+	error = hib_prepare_buffer();
+-/*
+- *	The swap map is a data structure used for keeping track of each page
+- *	written to a swap partition.  It consists of many swap_map_page
+- *	structures that contain each an array of MAP_PAGE_SIZE swap entries.
+- *	These structures are stored on the swap and linked together with the
+- *	help of the .next_swap member.
+- *
+- *	The swap map is created during suspend.  The swap map pages are
+- *	allocated and populated one at a time, so we only need one memory
+- *	page to set up the entire structure.
+- *
+- *	During resume we also only need to use one swap_map_page structure
+- *	at a time.
+- */
+-
+-#define MAP_PAGE_ENTRIES	(PAGE_SIZE / sizeof(sector_t) - 1)
+-
+-struct swap_map_page {
+-	sector_t entries[MAP_PAGE_ENTRIES];
+-	sector_t next_swap;
+-};
+-
+-/**
+- *	The swap_map_handle structure is used for handling swap in
+- *	a file-alike way
+- */
+-
+-struct swap_map_handle {
+-	struct swap_map_page *cur;
+-	unsigned int k;
+-};
+-
+ static sector_t first_sector;
+-static struct swap_map_handle handle;
+ 
+ extern struct hib_extent_state sector_extents;
+ 
+@@ -207,20 +174,12 @@ static int write_page(void *buf, sector_t offset, int sync)
+ 
+ void release_swap_writer(void)
+ {
+-	if (handle.cur)
+-		free_page((unsigned long)handle.cur);
+-	handle.cur = NULL;
+ }
+ 
+ int hib_bio_prepare_write(void)
+ {
+ 	int result, result2;
+ 
+-	handle.cur = (struct swap_map_page *)get_zeroed_page(GFP_KERNEL);
+-
+-	if (!handle.cur)
+-		return -ENOMEM;
+-
+ 	result = hib_prepare_buffer();
+ 	if (result) {
+ 		release_swap_writer();
+@@ -232,8 +191,6 @@ int hib_bio_prepare_write(void)
+ 	result = hib_extents_store(&sector_extents);
+ 	result2 = hib_flush_write_buffer();
+ 
+-	handle.k = 0;
+-
+ 	if (result || result2)
+ 		release_swap_writer();
+ 
+@@ -244,8 +201,6 @@ int swap_write_page(void *buf, int sync)
+ {
+ 	sector_t offset;
+ 
+-	if (!handle.cur)
+-		return -EINVAL;
+ 	offset = hib_extent_next(&sector_extents);
+ 	return write_page(buf, offset, sync);
+ }
+@@ -263,19 +218,12 @@ int flush_swap_writer(void)
+ 
+ void release_swap_reader(void)
+ {
+-	if (handle.cur)
+-		free_page((unsigned long)handle.cur);
+-	handle.cur = NULL;
+ }
+ 
+ int get_swap_reader(unsigned int *flags_p, sector_t first_page)
+ {
+ 	int error;
+ 
+-	handle.cur = (struct swap_map_page *)get_zeroed_page(__GFP_WAIT | __GFP_HIGH);
+-	if (!handle.cur)
+-		return -ENOMEM;
+-
+ 	error = hib_prepare_buffer();
  	if (error) {
  		release_swap_reader();
+@@ -290,8 +238,6 @@ int get_swap_reader(unsigned int *flags_p, sector_t first_page)
  		return error;
  	}
  
--	error = hib_prepare_buffer();
-+	/* Bootstrap reading the extents */
-+	error = hib_bio_read_page(first_page, hib_ppio_buffer, 1);
- 	if (error) {
- 		release_swap_reader();
-+		hib_free_buffer();
- 		return error;
- 	}
- 
- 	handle.k = 0;
- 
--	/* Bootstrap reading the extents */
--	memcpy(hib_ppio_buffer, handle.cur, PAGE_SIZE);
+-	handle.k = 0;
+-
  	error = hib_extents_load(&sector_extents, 1);
  
  	if (error) {
- 		release_swap_reader();
--		return error;
- 	}
+@@ -306,8 +252,6 @@ int swap_read_page(void *buf, int sync)
+ {
+ 	sector_t offset;
  
-+	hib_free_buffer();
- 	return error;
- }
- 
+-	if (!handle.cur)
+-		return -EINVAL;
+ 	offset = hib_extent_next(&sector_extents);
+ 	if (!offset)
+ 		return -EFAULT;
 -- 
 1.7.0.4
 
