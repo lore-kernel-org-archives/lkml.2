@@ -1,93 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469Ab0IYA3b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Sep 2010 20:29:31 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:53208 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753772Ab0IYA3a convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Sep 2010 20:29:30 -0400
-Subject: Re: kgdb segv in the latest tip due to perf ctx changes
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, kgdb-bugreport@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <4C9D0A82.5020406@windriver.com>
-References: <20100924180417.GC1818@jolsa.brq.redhat.com>
-	 <4C9D0A82.5020406@windriver.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sat, 25 Sep 2010 02:29:20 +0200
-Message-ID: <1285374560.2275.1054.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1757093Ab0IYAfG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Sep 2010 20:35:06 -0400
+Received: from cantor.suse.de ([195.135.220.2]:33837 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754685Ab0IYAfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Sep 2010 20:35:03 -0400
+Date: Fri, 24 Sep 2010 17:33:08 -0700
+From: Greg KH <gregkh@suse.de>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: "Hans J. Koch" <hjk@linutronix.de>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/5] uio hotplug support
+Message-ID: <20100925003308.GA29910@suse.de>
+References: <m1y6b48973.fsf@fess.ebiederm.org> <20100917205946.GF2522@local> <m139t451b4.fsf_-_@fess.ebiederm.org> <20100924104555.GC1819@silverbox.local> <m1hbhfcbdo.fsf@fess.ebiederm.org> <20100924173106.GA4966@silverbox.local> <m14ode662q.fsf@fess.ebiederm.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m14ode662q.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-09-24 at 15:30 -0500, Jason Wessel wrote:
-> Jiri,
+On Fri, Sep 24, 2010 at 05:05:17PM -0700, Eric W. Biederman wrote:
+> "Hans J. Koch" <hjk@linutronix.de> writes:
 > 
-> Can you try this simple patch which is attached?
-> 
-> 
-> 
-> On 09/24/2010 01:04 PM, Jiri Olsa wrote:
-> > while starting kgdb early debug on latest tip tree,
-> > I got SIGSEGV inside kernel in following location:
+> > On Fri, Sep 24, 2010 at 10:14:11AM -0700, Eric W. Biederman wrote:
+> >> "Hans J. Koch" <hjk@linutronix.de> writes:
+> >> 
+> >> > On Mon, Sep 20, 2010 at 12:19:59AM -0700, Eric W. Biederman wrote:
+> >> >> 
+> >> >> Implement the ability to hotunplug a uio device while file handles
+> >> >> are still open without crashing.
+> >> >
+> >> > Could you please create patches that apply on top of your already
+> >> > accepted UIO changes?
+> >> 
+> >> That is what the patches I sent should be.  My apologies if I had not
+> >> made that clear.  Certainly these patches were built against my previous
+> >> changes, on top of 2.6.36-rc4.  Are you having problems?
 > >
-> >   
-> [clip]
-> > I found out it's due to foolowing commit, that's causing the init code
-> > to be called without the ctx field being defined...
+> > Hmm, I applied your first series of 5 patches (which I signed-off). When
+> > trying to apply your second series, I get this from quilt:
 > >
-> > commit c3f00c70276d8ae82578c8b773e2db657f69a478
-> > Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Date:   Wed Aug 18 14:37:15 2010 +0200
+> > Applying patch 2_1-Simplify-the-lifetime-logic-of-struct-uio_device.patch
+> > patching file drivers/uio/uio.c
+> > Hunk #2 succeeded at 287 (offset 8 lines).
+> > Hunk #3 succeeded at 312 (offset 8 lines).
+> > Hunk #4 FAILED at 339.
+> > Hunk #5 succeeded at 806 (offset 17 lines).
+> > Hunk #6 FAILED at 831.
+> > Hunk #7 FAILED at 858.
+> > Hunk #8 FAILED at 889.
+> > 4 out of 8 hunks FAILED -- rejects in file drivers/uio/uio.c
+> > Patch 2_1-Simplify-the-lifetime-logic-of-struct-uio_device.patch does not apply (enforce with -f)
 > >
-> >
-> >   
+> > The first series applied without any fuzz against 2.6.36-rc5.
 > 
-> I took a look at the tip core, and the ctx parameter is no longer passed
-> into the perf_event_alloc() from perf_event_create_kernel_counter() kgdb
-> no longer gets it filled in for free.
+> I am stumped.  Do you perhaps have some local uio changes?
 > 
-> The reality is that kgdb never had a true context or a way to mark the
-> hw breakpoint as a kernel only context for the hw breakpoint
-> reservations.  The patch is only a short term fix perhaps until on of
-> the perf guys explains the right way to use it. :-)
-
-Argh, yes, its using the ctx rather early.. we cannot have a context
-before we've initialized the event, and here it looks like hw_breakpoint
-wants to use the context to initialize the event, chick, egg, etc..
-
-Frederic, anything we can do about that?
-
-> differences between files attachment
-> (0001-Fix-null-dereference-when-using-early-kgdb.patch)
-> From 17f3febd001a26aee9a75c61152b60b7e0ae1ea9 Mon Sep 17 00:00:00 2001
-> From: Jason Wessel <jason.wessel@windriver.com>
-> Date: Fri, 24 Sep 2010 15:21:11 -0500
-> Subject: [PATCH] Fix null dereference when using early kgdb
+> Using 2.6.36-rc5 as a base I tried it twice.  Once by taking my patches
+> that I sent, and again by saving my email and then applying the changes.
 > 
-> Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-> ---
->  kernel/hw_breakpoint.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> Both times the changes applied cleanly.  No offsets, and no fuzz.  At
+> least that is what git-am said.
 > 
-> diff --git a/kernel/hw_breakpoint.c b/kernel/hw_breakpoint.c
-> index 3b714e8..3c7ccdf 100644
-> --- a/kernel/hw_breakpoint.c
-> +++ b/kernel/hw_breakpoint.c
-> @@ -213,7 +213,7 @@ toggle_bp_slot(struct perf_event *bp, bool enable, enum bp_type_idx type,
->  	       int weight)
->  {
->  	int cpu = bp->cpu;
-> -	struct task_struct *tsk = bp->ctx->task;
-> +	struct task_struct *tsk = bp->ctx ? bp->ctx->task : NULL;
->  
->  	/* Pinned counter cpu profiling */
->  	if (!tsk) {
+> Should I perhaps make a git branch you could pull?
 
-That'll probably screw over some accounting, not sure what tsk is used
-for there.
+Try it on linux-next, as I've applied your previous patches there
+already.
+
+thanks,
+
+greg k-h
