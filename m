@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757045Ab0IYXLW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 19:11:22 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43204 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754232Ab0IYXLV (ORCPT
+	id S1755425Ab0IYXdS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 19:33:18 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:46800 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751700Ab0IYXdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 19:11:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=i0PIRxuEj+5iXvhqih0AmYNXdR8idmYtKK5c95CBD5VW3zzHNJA4ixSceH8TaA8EDA
-         5rYLkj+EAKI85/HbYTty3o8w4TlzVrVJcNti1tDLyf6gt5sl+aJ7Fvt84fTrZcZ/fiAj
-         jjY8avD7yWqnUsfeBcomh7xU2RJt3FT9ET6BI=
-From: Phillip Kurtenbach <pkurtenbach@googlemail.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Phillip Kurtenbach <pkurtenbach@gmail.com>
-Subject: [PATCH] staging: iio: whitespace cleanup
-Date: Sun, 26 Sep 2010 01:11:09 +0200
-Message-Id: <1285456269-27582-1-git-send-email-pkurtenbach@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	Sat, 25 Sep 2010 19:33:16 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Hugh Dickins <hugh@veritas.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>
+Date: Sat, 25 Sep 2010 16:33:09 -0700
+Message-ID: <m1sk0x9z62.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 98.207.157.188
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Andrew Morton <akpm@linux-foundation.org>
+X-Spam-Relay-Country: 
+Subject: [PATCH 0/3] Generic support for revoking mappings
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed whitespace coding style issues.
 
-Signed-off-by: Phillip Kurtenbach <pkurtenbach@gmail.com>
+During hotplug or rmmod if a device or file is mmaped, it's mapping
+needs to be removed and future access need to return SIGBUS almost like
+truncate.  This case is rare enough that it barely gets tested, and
+making a generic implementation warranted.  I have tried with sysfs but
+a complete and generic implementation does not seem possible without mm
+support.
+
+It looks like a fully generic implementation with mm knowledge
+is shorter and easier to get right than what I have in sysfs today.
+
+So here is that fully generic implementation.
+
+Eric W. Biederman (3):
+      mm: Introduce revoke_mappings.
+      mm: Consolidate vma destruction into remove_vma.
+      mm: Cause revoke_mappings to wait until all close methods have completed.
 ---
- drivers/staging/iio/industrialio-core.c |    2 +-
- drivers/staging/iio/industrialio-ring.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ include/linux/fs.h |    2 +
+ include/linux/mm.h |    2 +
+ mm/Makefile        |    2 +-
+ mm/mmap.c          |   34 +++++-----
+ mm/nommu.c         |    5 ++
+ mm/revoke.c        |  192 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 219 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/staging/iio/industrialio-core.c b/drivers/staging/iio/industrialio-core.c
-index dd4d87a..c03e1ae 100644
---- a/drivers/staging/iio/industrialio-core.c
-+++ b/drivers/staging/iio/industrialio-core.c
-@@ -59,7 +59,7 @@ EXPORT_SYMBOL(__iio_change_event);
-  * are queued. Hence a client MUST open the chrdev before the ring buffer is
-  * switched on.
-  */
-- int __iio_push_event(struct iio_event_interface *ev_int,
-+int __iio_push_event(struct iio_event_interface *ev_int,
- 		     int ev_code,
- 		     s64 timestamp,
- 		     struct iio_shared_ev_pointer *
-diff --git a/drivers/staging/iio/industrialio-ring.c b/drivers/staging/iio/industrialio-ring.c
-index 6ab578e..972a41a 100644
---- a/drivers/staging/iio/industrialio-ring.c
-+++ b/drivers/staging/iio/industrialio-ring.c
-@@ -312,7 +312,7 @@ ssize_t iio_read_ring_length(struct device *dev,
- }
- EXPORT_SYMBOL(iio_read_ring_length);
- 
-- ssize_t iio_write_ring_length(struct device *dev,
-+ssize_t iio_write_ring_length(struct device *dev,
- 			       struct device_attribute *attr,
- 			       const char *buf,
- 			       size_t len)
--- 
-1.7.2.3
-
+Eric
