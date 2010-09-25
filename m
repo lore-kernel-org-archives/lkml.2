@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756583Ab0IYLxx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 07:53:53 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:57053 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755714Ab0IYLxw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 07:53:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=DzcNu2Gg16ofMT9rOV2/CCkaohdkbFR5LdnPr+Z6Qs4J2PnVZX53xL+TM9ikuMCah3
-         E+N/LMwylGlg/G8FH2BWf/RGtty8MvBOTr1mosyMftMPyOlo8Q0iMKQ4TBxB51Y02oJ7
-         tEGdIkk4JXOcGqAiMZsHhRmSxD805z7X0PlMQ=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v2] ptrace: annotate siglock acquisition
-Date: Sat, 25 Sep 2010 20:53:41 +0900
-Message-Id: <1285415621-28548-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.2.2
+	id S1756622Ab0IYMA1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 08:00:27 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:33905 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755335Ab0IYMA0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Sep 2010 08:00:26 -0400
+Date: Sat, 25 Sep 2010 14:00:23 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        linux-pcmcia@lists.infradead.org,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] Add an utility to parse CIS files to readable form
+Message-ID: <20100925120023.GA4223@isilmar-3.linta.de>
+Mail-Followup-To: Wolfram Sang <w.sang@pengutronix.de>,
+	Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+	linux-pcmcia@lists.infradead.org,
+	David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+References: <1285346965-23499-1-git-send-email-dbaryshkov@gmail.com> <1285346965-23499-5-git-send-email-dbaryshkov@gmail.com> <20100925073342.GA31947@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100925073342.GA31947@pengutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lock_task_sighand() conditionally acquires sighand->siglock in case of
-returning non-NULL but unlock_task_sighand() releases it unconditionally.
-This leads sparse to complain about the lock context imbalance. Annotate it
-to make sparse happier.
+Hey,
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
+On Sat, Sep 25, 2010 at 09:33:42AM +0200, Wolfram Sang wrote:
+> On Fri, Sep 24, 2010 at 08:49:24PM +0400, Dmitry Eremin-Solenikov wrote:
+> > Import from pcmcia-cs project a dump_cis utility. It reads
+> > machine-readable CIS file and output text representation (which can be
+> > processed by mkcis utility).
+> > 
+> > Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+> 
+> pcmciautils also include dump_cis ("make debugtools"). As this version is
+> probably better maintained, we probably should not introduce a split here?
 
-Roland, I sent the same patch a month ago and got your Acked-by but this
-time I update it using __cond_lock() suggested by Al Viro. Please take a
-look again, Thanks.
+dump_cis did not receive a single meaningful change, and I do not expect
+one, so I wouldn't fear a split/fork here.
 
- kernel/ptrace.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index f34d798..8d9b7b2 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -435,7 +435,8 @@ static int ptrace_getsiginfo(struct task_struct *child, siginfo_t *info)
- 	unsigned long flags;
- 	int error = -ESRCH;
- 
--	if (lock_task_sighand(child, &flags)) {
-+	if (__cond_lock(&child->sighand->siglock,
-+			lock_task_sighand(child, &flags))) {
- 		error = -EINVAL;
- 		if (likely(child->last_siginfo != NULL)) {
- 			*info = *child->last_siginfo;
-@@ -451,7 +452,8 @@ static int ptrace_setsiginfo(struct task_struct *child, const siginfo_t *info)
- 	unsigned long flags;
- 	int error = -ESRCH;
- 
--	if (lock_task_sighand(child, &flags)) {
-+	if (__cond_lock(&child->sighand->siglock,
-+			lock_task_sighand(child, &flags))) {
- 		error = -EINVAL;
- 		if (likely(child->last_siginfo != NULL)) {
- 			*child->last_siginfo = *info;
--- 
-1.7.2.2
-
+Best,
+	Dominik
