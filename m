@@ -1,64 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757132Ab0IYVeD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 17:34:03 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36793 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753580Ab0IYVeA convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 17:34:00 -0400
+	id S1757002Ab0IYViN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 17:38:13 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63069 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824Ab0IYViL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Sep 2010 17:38:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=vNlaBrOgOGu3sYS1d1KTjHyr6QmXf/JcLZAfnlThn6ed4r8L4Z0mcsHbHbFLrG24sz
+         vthzQAP+ExlpRAqE2wbYN+p9jtY23Ch88tDNlYlfZGvei4YHZwIgw0i2j5MjDB+RvMAg
+         EqsxrlGDSdxk1+6u2bQtTTXk23vicT6PW+wyE=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikEVr6wA6D_f2Z6OEFu6SCP_-89u0-k-K-wKgb=@mail.gmail.com>
-References: <20100925181304.GV19804@ZenIV.linux.org.uk> <AANLkTi=XURM0hOiitvNSiacd9+7Vx8s7V0KZ+oZQsDDQ@mail.gmail.com>
- <20100925191836.GW19804@ZenIV.linux.org.uk> <20100925192509.GX19804@ZenIV.linux.org.uk>
- <AANLkTikEVr6wA6D_f2Z6OEFu6SCP_-89u0-k-K-wKgb=@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 25 Sep 2010 14:33:36 -0700
-Message-ID: <AANLkTind6v89k6eG=fx=G21-CH=Km-HsRL_cx85uz65x@mail.gmail.com>
-Subject: Re: alpha: potential race around hae_cache in RESTORE_ALL
-To: Al Viro <viro@zeniv.linux.org.uk>, Matt Turner <mattst88@gmail.com>
-Cc: rth@twiddle.net, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
+Date: Sat, 25 Sep 2010 16:38:10 -0500
+Message-ID: <AANLkTimKZdD1DjymuhwKCtrraK2QwBOw5XUo0HBnQPKv@mail.gmail.com>
+Subject: [PATCH] vmscan: raise the bar to PAGEOUT_IO_SYNC stalls
+From: William Immendorf <will.immendorf@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Wu Fengguang <fengguang.wu@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gaah. This got bounced, because that idiotic android gmail client
-sends emails out as html even though they are just plain text. And
-lkml (correctly) thinks that html emails are likely to be spam and
-useless.
+This is a backport of Upstream commit e31f3698cd3499e676f6b0ea12e3528f569c4fa3.
+Originally submitted by Wu Fengguang. The rest of the message is his.
+I think this would be a good canadate for the stable tree.
 
-Too bad. I like being able to pen some replies on the road, and
-android is pretty good at it otherwise.
+Fix "system goes unresponsive under memory pressure and lots of
+dirty/writeback pages" bug.
 
-Btw Al, I just noticed that you only cc'd me and rth. These days, for
-alpha stuff, you probably should have added at least Matt Turner to
-the cc too. I don't think Richard has been active in the alpha
-community for many years now.
+http://lkml.org/lkml/2010/4/4/86
 
-Matt - see the whole discussion on lkml (or I can forward you the
-emails, if you want to).
+In the above thread, Andreas Mohr described that
 
-                    Linus
+Invoking any command locked up for minutes (note that I'm
+talking about attempted additional I/O to the _other_,
+_unaffected_ main system HDD - such as loading some shell
+binaries -, NOT the external SSD18M!!).
 
-On Sat, Sep 25, 2010 at 1:14 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> I think it's not only UP-only, I think it ends up being an issue only on
-> really old machines.
->
-> The newer alpha's have byte/word operations and thus have enough physical
-> address space to just map all the IO in at the same time. It was only the
-> old crappy alphas that needed the whole windowing thing due to the whole
-> silly "encode operand size in the address" thing.
->
-> But I forget exactly where the cut-off point is.
->
->          Linus
->
-> On Sep 25, 2010 12:26 PM, "Al Viro" <viro@zeniv.linux.org.uk> wrote:
->>
->> BTW, am I right assuming that HAE modifications is UP-only thing? It would
->> be obviously b0rken on any SMP box, since alpha_mv is not per-CPU thing...
->
+This happens when the two conditions are both meet:
+- under memory pressure
+- writing heavily to a slow device
+
+OOM also happens in Andreas' system.  The OOM trace shows that 3 processes
+are stuck in wait_on_page_writeback() in the direct reclaim path.  One in
+do_fork() and the other two in unix_stream_sendmsg().  They are blocked on
+this condition:
+
+(sc->order && priority < DEF_PRIORITY - 2)
+
+which was introduced in commit 78dc583d (vmscan: low order lumpy reclaim
+also should use PAGEOUT_IO_SYNC) one year ago.  That condition may be too
+permissive.  In Andreas' case, 512MB/1024 = 512KB.  If the direct reclaim
+for the order-1 fork() allocation runs into a range of 512KB
+hard-to-reclaim LRU pages, it will be stalled.
+
+It's a severe problem in three ways.
+
+Firstly, it can easily happen in daily desktop usage.  vmscan priority can
+easily go below (DEF_PRIORITY - 2) on _local_ memory pressure.  Even if
+the system has 50% globally reclaimable pages, it still has good
+opportunity to have 0.1% sized hard-to-reclaim ranges.  For example, a
+simple dd can easily create a big range (up to 20%) of dirty pages in the
+LRU lists.  And order-1 to order-3 allocations are more than common with
+SLUB.  Try "grep -v '1 :' /proc/slabinfo" to get the list of high order
+slab caches.  For example, the order-1 radix_tree_node slab cache may
+stall applications at swap-in time; the order-3 inode cache on most
+filesystems may stall applications when trying to read some file; the
+order-2 proc_inode_cache may stall applications when trying to open a
+/proc file.
+
+Secondly, once triggered, it will stall unrelated processes (not doing IO
+at all) in the system.  This "one slow USB device stalls the whole system"
+avalanching effect is very bad.
+
+Thirdly, once stalled, the stall time could be intolerable long for the
+users.  When there are 20MB queued writeback pages and USB 1.1 is writing
+them in 1MB/s, wait_on_page_writeback() will stuck for up to 20 seconds.
+Not to mention it may be called multiple times.
+
+So raise the bar to only enable PAGEOUT_IO_SYNC when priority goes below
+DEF_PRIORITY/3, or 6.25% LRU size.  As the default dirty throttle ratio is
+20%, it will hardly be triggered by pure dirty pages.  We'd better treat
+PAGEOUT_IO_SYNC as some last resort workaround -- its stall time is so
+uncomfortably long (easily goes beyond 1s).
+
+The bar is only raised for (order < PAGE_ALLOC_COSTLY_ORDER) allocations,
+which are easy to satisfy in 1TB memory boxes.  So, although 6.25% of
+memory could be an awful lot of pages to scan on a system with 1TB of
+memory, it won't really have to busy scan that much.
+
+Andreas tested an older version of this patch and reported that it mostly
+fixed his problem.  Mel Gorman helped improve it and KOSAKI Motohiro will
+fix it further in the next patch.
+
+-- 
+William Immendorf
+The ultimate in free computing.
+Messages in plain text, please, no HTML.
+GPG key ID: 1697BE98
+If it's not signed, it's not from me.
+
+--------------
+
+"Every nonfree program has a lord, a master --
+and if you use the program, he is your master."  Richard Stallman
+---
+ mm/vmscan.c |   53 +++++++++++++++++++++++++++++++++++++++++++----------
+ 1 files changed, 43 insertions(+), 10 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index b94fe1b..7ce9d62 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1112,6 +1112,47 @@ static int too_many_isolated(struct zone *zone, int file,
+ }
+
+ /*
++ * Returns true if the caller should wait to clean dirty/writeback pages.
++ *
++ * If we are direct reclaiming for contiguous pages and we do not reclaim
++ * everything in the list, try again and wait for writeback IO to complete.
++ * This will stall high-order allocations noticeably. Only do that when really
++ * need to free the pages under high memory pressure.
++ */
++static inline bool should_reclaim_stall(unsigned long nr_taken,
++					unsigned long nr_freed,
++					int priority,
++					struct scan_control *sc)
++{
++	int lumpy_stall_priority;
++
++	/* kswapd should not stall on sync IO */
++	if (current_is_kswapd())
++		return false;
++
++	/* Only stall on lumpy reclaim */
++	if (!sc->lumpy_reclaim_mode)
++		return false;
++
++	/* If we have relaimed everything on the isolated list, no stall */
++	if (nr_freed == nr_taken)
++		return false;
++
++	/*
++	 * For high-order allocations, there are two stall thresholds.
++	 * High-cost allocations stall immediately where as lower
++	 * order allocations such as stacks require the scanning
++	 * priority to be much higher before stalling.
++	 */
++	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
++		lumpy_stall_priority = DEF_PRIORITY;
++	else
++		lumpy_stall_priority = DEF_PRIORITY / 3;
++
++	return priority <= lumpy_stall_priority;
++}
++
++/*
+  * shrink_inactive_list() is a helper for shrink_zone().  It returns the number
+  * of reclaimed pages
+  */
+@@ -1201,16 +1242,8 @@ static unsigned long
+shrink_inactive_list(unsigned long max_scan,
+ 		nr_scanned += nr_scan;
+ 		nr_freed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC);
+
+-		/*
+-		 * If we are direct reclaiming for contiguous pages and we do
+-		 * not reclaim everything in the list, try again and wait
+-		 * for IO to complete. This will stall high-order allocations
+-		 * but that should be acceptable to the caller
+-		 */
+-		if (nr_freed < nr_taken && !current_is_kswapd() &&
+-		    sc->lumpy_reclaim_mode) {
+-			congestion_wait(BLK_RW_ASYNC, HZ/10);
+-
++		/* Check if we should syncronously wait for writeback */
++		if (should_reclaim_stall(nr_taken, nr_freed, priority, sc)) {
+ 			/*
+ 			 * The attempt at page out may have made some
+ 			 * of the pages active, mark them inactive again.
+-- 
+1.7.0.4
