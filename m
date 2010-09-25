@@ -1,39 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756900Ab0IYTZN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 15:25:13 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:53524 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753680Ab0IYTZM (ORCPT
+	id S1756912Ab0IYTap (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 15:30:45 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50153 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331Ab0IYTao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 15:25:12 -0400
-Date: Sat, 25 Sep 2010 20:25:09 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: rth@twiddle.net, linux-kernel@vger.kernel.org
-Subject: Re: alpha: potential race around hae_cache in RESTORE_ALL
-Message-ID: <20100925192509.GX19804@ZenIV.linux.org.uk>
-References: <20100925181304.GV19804@ZenIV.linux.org.uk>
- <AANLkTi=XURM0hOiitvNSiacd9+7Vx8s7V0KZ+oZQsDDQ@mail.gmail.com>
- <20100925191836.GW19804@ZenIV.linux.org.uk>
+	Sat, 25 Sep 2010 15:30:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=hnKoY5cgqfMTotgJz1m6FHBsIZ7TLkvZ5n+ZsYDtMDy7XyCKXxI2SqcePxNL00iBBd
+         Jhyy2P2ylRDNOcJs3xbV5YpHvHMpSnBn80ntD4/BrYT22kKZgKeBwu7kQkZIJwg/+k6L
+         ByTWz+s2JTmxUiO8nqBPq7dZ+hX2EAMWEg1AA=
+Message-ID: <4C9E4DDB.6070503@gmail.com>
+Date: Sat, 25 Sep 2010 22:30:35 +0300
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.9) Gecko/20100914 SUSE/3.1.4 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100925191836.GW19804@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Don Zickus <dzickus@redhat.com>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        linux-ide@vger.kernel.org
+Subject: Re: hibernation hangs with ATA errors (lockup_detector bug)
+References: <4C03C608.1040600@gmail.com> <20100601135004.GP15159@redhat.com> <4C051D44.7040203@gmail.com> <20100602184459.GA15159@redhat.com> <4C0B3E94.6020506@gmail.com> <4C80B338.6020701@gmail.com> <20100903135613.GV4879@redhat.com> <4C9CBF4A.9060302@gmail.com> <20100924191946.GS26290@redhat.com>
+In-Reply-To: <20100924191946.GS26290@redhat.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 25, 2010 at 08:18:36PM +0100, Al Viro wrote:
-> Agreed.  There are only two places that need change (return to kernel path
-> in ret_from_syscall and kernel_thread essentially jumping to the same path),
-> so I'll just add
-> ret_to_kernel:
->         lda     $16, 7
->         call_pal PAL_swpipl
-> 	br	restore_all
-> and make these two places go to ret_to_kernel instead of restore_all.
+On 09/24/2010 10:19 PM, Don Zickus wrote:
+> Actually there seems to have been some clean up in the cpu hotplug error
+> handling code.  Could you remove that snippet of code and see if the
+> problem still happens?
 
-BTW, am I right assuming that HAE modifications is UP-only thing?  It would
-be obviously b0rken on any SMP box, since alpha_mv is not per-CPU thing...
+The thing is I don't remember what problems exactly I had. From the
+description I wrote, I cannot reproduce it anymore :).
+
+thanks for looking into that,
+-- 
+js
