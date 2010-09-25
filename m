@@ -1,48 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756281Ab0IYKky (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 06:40:54 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:36982 "EHLO kernel.dk"
+	id S1756318Ab0IYKpE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 06:45:04 -0400
+Received: from mx01.sz.bfs.de ([194.94.69.103]:31018 "EHLO mx01.sz.bfs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755194Ab0IYKkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 06:40:53 -0400
-Message-ID: <4C9DD1B0.9020902@kernel.dk>
-Date: Sat, 25 Sep 2010 12:40:48 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1752066Ab0IYKpB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Sep 2010 06:45:01 -0400
+Message-ID: <4C9DD2A4.6080508@bfs.de>
+Date: Sat, 25 Sep 2010 12:44:52 +0200
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
 MIME-Version: 1.0
-To: Adrian Hunter <adrian.hunter@nokia.com>
-CC: linux-kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] block: prevent merges of discard and write requests
-References: <1285411002-22924-1-git-send-email-adrian.hunter@nokia.com>
-In-Reply-To: <1285411002-22924-1-git-send-email-adrian.hunter@nokia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tracey Dent <tdent48227@gmail.com>
+CC: greg@kroah.com, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 11/22] Staging: rtl8187se: Makefile: cleaned up makefile
+ cflag lines
+References: <1285370890-8984-1-git-send-email-tdent48227@gmail.com> <1285370890-8984-11-git-send-email-tdent48227@gmail.com>
+In-Reply-To: <1285370890-8984-11-git-send-email-tdent48227@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-09-25 12:36, Adrian Hunter wrote:
-> Add logic to prevent two I/O requests being merged if
-> only one of them is a discard.  Ditto secure discard.
-> 
-> Without this fix, it is possible for write requests
-> to transform into discard requests.  For example:
-> 
->   Submit bio 1 to discard 8 sectors from sector n
->   Submit bio 2 to write 8 sectors from sector n + 16
->   Submit bio 3 to write 8 sectors from sector n + 8
-> 
-> Bio 1 becomes request 1.  Bio 2 becomes request 2.
-> Bio 3 is merged with request 2, and then subsequently
-> request 2 is merged with request 1 resulting in just
-> one I/O request which discards all 24 sectors.
 
-Wow, that's a disaster. We can now have requests in the
-same direction and of the same type (fs), but not mergeable.
 
-I would move the check up above the position calculations.
-I will apply this and upstream it right away. Thanks a lot!
+Tracey Dent schrieb:
+> Changed to use proper ccflags-y option
+> 
+> Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+> ---
+>  drivers/staging/rtl8187se/Makefile |   20 ++++++++++----------
+>  1 files changed, 10 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/staging/rtl8187se/Makefile b/drivers/staging/rtl8187se/Makefile
+> index e6adf91..51fbd24 100644
+> --- a/drivers/staging/rtl8187se/Makefile
+> +++ b/drivers/staging/rtl8187se/Makefile
+> @@ -1,20 +1,20 @@
+>  
+> -#EXTRA_CFLAGS += -DCONFIG_IEEE80211_NOWEP=y
+> -#EXTRA_CFLAGS += -std=gnu89
+> -#EXTRA_CFLAGS += -O2
+> +#ccflags-y := -DCONFIG_IEEE80211_NOWEP=y
+> +#ccflags-y := -std=gnu89
+> +#ccflags-y := -O2
+>  #CC            = gcc
+>  
+> -EXTRA_CFLAGS += -DSW_ANTE
+> -EXTRA_CFLAGS += -DTX_TRACK
+> -EXTRA_CFLAGS += -DHIGH_POWER
+> -EXTRA_CFLAGS += -DSW_DIG
+> -EXTRA_CFLAGS += -DRATE_ADAPT
+> +ccflags-y := -DSW_ANTE
+> +ccflags-y := -DTX_TRACK
+> +ccflags-y := -DHIGH_POWER
+> +ccflags-y := -DSW_DIG
+> +ccflags-y := -DRATE_ADAPT
+>  
+>  #enable it for legacy power save, disable it for leisure  power save
+> -EXTRA_CFLAGS += -DENABLE_LPS
+> +ccflags-y := -DENABLE_LPS
+>  
+>  
+> -#EXTRA_CFLAGS += -mhard-float -DCONFIG_FORCE_HARD_FLOAT=y
+> +#ccflags-y := -mhard-float -DCONFIG_FORCE_HARD_FLOAT=y
+>  
 
--- 
-Jens Axboe
+I do not understand this. If CONFIG_FORCE_HARD_FLOAT is required by the
+driver so he should fail if CONFIG_FORCE_HARD_FLOAT=n
+Or you need to protect the -mhard-float with an if().
+
+re,
+ wh
 
