@@ -1,66 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755811Ab0IYE0o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 00:26:44 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33645
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751491Ab0IYE0m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 00:26:42 -0400
-Date: Fri, 24 Sep 2010 21:27:02 -0700 (PDT)
-Message-Id: <20100924.212702.116381928.davem@davemloft.net>
-To: linux@rainbow-software.org
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: de4x5 hangs with SMP: synchronize_irq() in interrupt handler?
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <201009212230.51036.linux@rainbow-software.org>
-References: <201009212230.51036.linux@rainbow-software.org>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1753684Ab0IYFRQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 01:17:16 -0400
+Received: from smtp.nexicom.net ([216.168.96.13]:59152 "EHLO smtp.nexicom.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752242Ab0IYFRO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Sep 2010 01:17:14 -0400
+X-Greylist: delayed 380 seconds by postgrey-1.27 at vger.kernel.org; Sat, 25 Sep 2010 01:17:14 EDT
+Message-ID: <4C9D845A.4060105@lockie.ca>
+Date: Sat, 25 Sep 2010 01:10:50 -0400
+From: James <bjlockie@lockie.ca>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100908 Lightning/1.0b3pre Thunderbird/3.1.3
+MIME-Version: 1.0
+To: Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: no modules :-)
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ondrej Zary <linux@rainbow-software.org>
-Date: Tue, 21 Sep 2010 22:30:49 +0200
+ I don't like modules. :-)
 
-> I'm trying to get two Compex FreedomLine 32 PnP-PCI2 cards to work (21041-AA 
-> and 21041-PA) - there are problems with de2104x driver (one of the cards does 
-> not work at all and the other one switches to non-existing AUI port when the 
-> link goes down and never switches back to RJ45) and I know that de4x5 driver 
-> worked for me in past.
-> 
-> Loading de4x5 causes the machine to hang immediately. It hangs at 
-> synchronize_irq() call from de4x5_interrupt(). Commenting out this allows the 
-> driver to work. Without SMP, synchronize_irq() is redefined to barrier() so 
-> it works.
-> 
-> I don't have a clue how to fix this properly - does anyone know?
+What is pulling this in:
 
-This driver is an enormous mess.
+CONFIG_SCSI_WAIT_SCAN=m
 
-Someone half-converted the driver over to use a spinlock to protect
-the interrupt handler and other parts of the driver, but that
-conversion is so obvsiously buggy that I can't see how it was
-ever tested.
-
-All of the tests on lp->interrupt are racy, nothing protects the
-setting and testing of that value.  It is set with lp->lock held
-but tested asynchronously by the driver's ->ndo_start_xmit
-method.
-
-It uses this value to determine if it should queue the packet into
-a software queue that gets processed at the end of the interrupt
-processing.
-
-Problem is, that code path deadlocks, the end of de4x5_interrupt
-pulls the packets out of that queue in a loop, and sends them
-to the function named de4x5_queue_pkt().
-
-Which tries to take the lp->lock spinlock, which is already held
-by de4x5_interrupt().
-
-This driver needs major surgery to get into a working state on
-SMP.
+I edited .config but make must have turned it back on.
