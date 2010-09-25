@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755976Ab0IYHdq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 03:33:46 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40747 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752767Ab0IYHdp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 03:33:45 -0400
-Date: Sat, 25 Sep 2010 09:33:42 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        linux-pcmcia@lists.infradead.org
-Subject: Re: [PATCH 4/5] Add an utility to parse CIS files to readable form
-Message-ID: <20100925073342.GA31947@pengutronix.de>
-References: <1285346965-23499-1-git-send-email-dbaryshkov@gmail.com> <1285346965-23499-5-git-send-email-dbaryshkov@gmail.com>
+	id S1752948Ab0IYIq2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 04:46:28 -0400
+Received: from mail.us.es ([193.147.175.20]:41001 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751019Ab0IYIq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Sep 2010 04:46:26 -0400
+Message-ID: <4C9DB54C.4010100@netfilter.org>
+Date: Sat, 25 Sep 2010 10:39:40 +0200
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100619 Icedove/3.0.5
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0OAP2g/MAC+5xKAE"
-Content-Disposition: inline
-In-Reply-To: <1285346965-23499-5-git-send-email-dbaryshkov@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Eric Paris <eparis@redhat.com>
+CC: linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov,
+        netfilter-devel@vger.kernel.org, jmorris@namei.org, sds@tycho.nsa.gov,
+        jengelh@medozas.de, paul.moore@hp.com, casey@schaufler-ca.com,
+        linux-security-module@vger.kernel.org, netfilter@vger.kernel.org,
+        mr.dash.four@googlemail.com
+Subject: Re: [PATCH 2/6] secmark: make secmark object handling generic
+References: <20100924204517.28355.42822.stgit@paris.rdu.redhat.com> <20100924204524.28355.87206.stgit@paris.rdu.redhat.com>
+In-Reply-To: <20100924204524.28355.87206.stgit@paris.rdu.redhat.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 24/09/10 22:45, Eric Paris wrote:
+> Right now secmark has lots of direct selinux calls.  Use all LSM calls and
+> remove all SELinux specific knowledge.  The only SELinux specific knowledge
+> we leave is the mode.  The only point is to make sure that other LSMs at
+> least test this generic code before they assume it works.  (They may also
+> have to make changes if they do not represent labels as strings)
+> 
+> Signed-off-by: Eric Paris <eparis@redhat.com>
+> ---
+> 
+>  include/linux/netfilter/xt_SECMARK.h |   14 ++------
+>  include/linux/security.h             |   25 +++++++++++++
+>  include/linux/selinux.h              |   63 ----------------------------------
+>  net/netfilter/xt_CT.c                |    1 -
+>  net/netfilter/xt_SECMARK.c           |   57 +++++++++++++++----------------
+>  security/capability.c                |   17 +++++++++
+>  security/security.c                  |   18 ++++++++++
+>  security/selinux/exports.c           |   49 --------------------------
+>  security/selinux/hooks.c             |   24 +++++++++++++
+>  security/selinux/include/security.h  |    1 +
+>  10 files changed, 116 insertions(+), 153 deletions(-)
+> 
+> diff --git a/include/linux/netfilter/xt_SECMARK.h b/include/linux/netfilter/xt_SECMARK.h
+> index 6fcd344..b8d55c4 100644
+> --- a/include/linux/netfilter/xt_SECMARK.h
+> +++ b/include/linux/netfilter/xt_SECMARK.h
+> @@ -10,19 +10,13 @@
+>   * 'mode' refers to the specific security subsystem which the
+>   * packets are being marked for.
+>   */
+> -#define SECMARK_MODE_SEL	0x01		/* SELinux */
+> -#define SECMARK_SELCTX_MAX	256
+> -
+> -struct xt_secmark_target_selinux_info {
+> -	__u32 selsid;
+> -	char selctx[SECMARK_SELCTX_MAX];
+> -};
+> +#define SECMARK_MODE_SELINUX	0x01		/* SELinux */
+> +#define SECMARK_SECCTX_MAX	256
 
---0OAP2g/MAC+5xKAE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Fri, Sep 24, 2010 at 08:49:24PM +0400, Dmitry Eremin-Solenikov wrote:
-> Import from pcmcia-cs project a dump_cis utility. It reads
-> machine-readable CIS file and output text representation (which can be
-> processed by mkcis utility).
->=20
-> Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-
-pcmciautils also include dump_cis ("make debugtools"). As this version is
-probably better maintained, we probably should not introduce a split here?
-
-Regards,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---0OAP2g/MAC+5xKAE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAkydpdYACgkQD27XaX1/VRu2IgCfQPo52k1W2Hnrbt0OsxBb/UC4
-2NwAn1tcCXayVnC5Vi9WLkgRHxHFYu2m
-=OMH6
------END PGP SIGNATURE-----
-
---0OAP2g/MAC+5xKAE--
+The SECMARK_MODE_SEL is exposed to user-space, even if we have a copy of
+it in the internal iptables tree, I'm not sure if it's a good policy to
+change it.
