@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756770Ab0IZPRW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 11:17:22 -0400
-Received: from vps.mortis.eu ([79.99.135.181]:44178 "EHLO vps.mortis.eu"
+	id S1757019Ab0IZPTu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 11:19:50 -0400
+Received: from vps.mortis.eu ([79.99.135.181]:44189 "EHLO vps.mortis.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751462Ab0IZPRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 11:17:21 -0400
-Date: Sun, 26 Sep 2010 17:17:18 +0200
+	id S1756815Ab0IZPTt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Sep 2010 11:19:49 -0400
+Date: Sun, 26 Sep 2010 17:19:47 +0200
 From: Giel van Schijndel <me@mortis.eu>
 To: Lutz Ballaschke <vegan.grindcore@googlemail.com>
-Cc: Wim van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+Cc: wim@iguana.be, linux-watchdog@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 3/3] watchdog: f71808e_wdt: Cleaned up and replaced
- some magic numbers by constants
-Message-ID: <20100926151718.GC7185@salidar.me.mortis.eu>
-References: <20100926143820.GD2150@kreios.titan>
+Subject: Re: [PATCHv3 2/3] watchdog: add f71862fg support
+Message-ID: <20100926151947.GD7185@salidar.me.mortis.eu>
+References: <20100926143241.GC2150@kreios.titan>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oJ71EGRlYNjSvfq7"
+	protocol="application/pgp-signature"; boundary="IMjqdzrDRly81ofr"
 Content-Disposition: inline
-In-Reply-To: <20100926143820.GD2150@kreios.titan>
+In-Reply-To: <20100926143241.GC2150@kreios.titan>
 OpenPGP: id=CEE5E742; url=http://gpg.mortis.eu/me.asc
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,31 +26,52 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---oJ71EGRlYNjSvfq7
+--IMjqdzrDRly81ofr
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Sun, Sep 26, 2010 at 04:38:20PM +0200, Lutz Ballaschke wrote:
-> Cleaned up and replaced some magic numbers by constants.
+On Sun, Sep 26, 2010 at 04:32:41PM +0200, Lutz Ballaschke wrote:
+> ioctl WDIOC_GETTIMELEFT and helper function added to watchdog driver=20
+> for common usage.
 >=20
-> Signed-off-by: Lutz Ballaschke <vegan.grindcore@googlemail.com>
-> ---
+> ... snip ...
 >=20
->  drivers/watchdog/f71808e_wdt.c |   10 ++++------
->  1 files changed, 4 insertions(+), 6 deletions(-)
+> +static int watchdog_time_left(void)
+> +{
+> +	int ret =3D 0;
+> +
+> +	mutex_lock(&watchdog.lock);
+> +	ret =3D superio_enter(watchdog.sioaddr);
+> +	if (ret)
+> +		goto exit_unlock;
+> +
+> +	superio_select(watchdog.sioaddr, SIO_F71808FG_LD_WDT);
+> +	ret =3D superio_inb(watchdog.sioaddr, F71808FG_REG_WD_TIME);
+> +	superio_exit(watchdog.sioaddr);
+> +
+> +exit_unlock:
+> +	mutex_unlock(&watchdog.lock);
+> +	return ret;
+> +}
 
-Signed-off-by: Giel van Schijndel <me@mortis.eu>
+This function still has the problem I described earlier, namely that of
+returning minutes to userspace (which expects seconds) when minutes_mode
+is true.
+
+I would thus suggest not to commit this patch as it violates the
+Watchdog API.
 
 --=20
 Met vriendelijke groet,
 With kind regards,
 Giel van Schijndel
 --
-"A clever person solves a problem. A wise person avoids it."
-  -- Albert Einstein
+"There are only two kinds of languages: the ones people complain about
+ and the ones nobody uses."
+  -- Bjarne Stroustrup
 
---oJ71EGRlYNjSvfq7
+--IMjqdzrDRly81ofr
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 Content-Disposition: inline
@@ -59,9 +79,9 @@ Content-Disposition: inline
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEARECAAYFAkyfY/4ACgkQZBYm/87l50JhbwCfSajwVdRFRKhvAX534729G8rq
-gKcAniEKX9BpfqmFB86T4fS7LqDKMHSL
-=hjDh
+iEYEARECAAYFAkyfZJMACgkQZBYm/87l50J82gCfWog/Uh/IbMVWO0c7bCShu7SH
+SfgAn3XakqbSitpVCnZpxNjTA5Qy7xr4
+=ISkq
 -----END PGP SIGNATURE-----
 
---oJ71EGRlYNjSvfq7--
+--IMjqdzrDRly81ofr--
