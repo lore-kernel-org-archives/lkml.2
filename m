@@ -1,112 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755448Ab0IZA1m (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 20:27:42 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:61238 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752459Ab0IZA1l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 20:27:41 -0400
-Date: Sat, 25 Sep 2010 21:14:48 -0300
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org, marcel@holtmann.org,
-        mathewm@codeaurora.org
-Subject: Re: Deadlock in Bluetooth code in 2.6.36
-Message-ID: <20100926001448.GA2979@vigoh>
-References: <1285104013-9946-1-git-send-email-padovan@profusion.mobi>
- <20100924.211824.242130957.davem@davemloft.net>
+	id S1757236Ab0IZAdF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 20:33:05 -0400
+Received: from thunk.org ([69.25.196.29]:42590 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754013Ab0IZAdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Sep 2010 20:33:03 -0400
+Date: Sat, 25 Sep 2010 20:32:55 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Joe Perches <joe@perches.com>
+Cc: Christoph Hellwig <hch@lst.de>, T Dent <tdent48227@gmail.com>,
+        adilger.kernel@dilger.ca, jack@suse.cz, dmonakhov@openvz.org,
+        sandeen@redhat.com, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/10] Fs: ext4: acl.c: fixed indent issue
+Message-ID: <20100926003255.GA19690@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Joe Perches <joe@perches.com>,
+	Christoph Hellwig <hch@lst.de>, T Dent <tdent48227@gmail.com>,
+	adilger.kernel@dilger.ca, jack@suse.cz, dmonakhov@openvz.org,
+	sandeen@redhat.com, linux-ext4@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1285439521-2557-1-git-send-email-tdent48227@gmail.com>
+ <20100925233600.GA2854@lst.de>
+ <AANLkTimf9Q=jfga=--H0VaZeWnbAVNhCPMn_G81sZ8vh@mail.gmail.com>
+ <20100925235643.GA3224@lst.de>
+ <20100926000154.GB5299@thunk.org>
+ <1285459769.6115.74.camel@Joe-Laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100924.211824.242130957.davem@davemloft.net>
+In-Reply-To: <1285459769.6115.74.camel@Joe-Laptop>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* David Miller <davem@davemloft.net> [2010-09-24 21:18:24 -0700]:
-
-> From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-> Date: Tue, 21 Sep 2010 18:20:12 -0300
+On Sat, Sep 25, 2010 at 05:09:29PM -0700, Joe Perches wrote:
+> > Wow, I just looked at how get_maintainer.pl works, and it's amazing
+> > how broken it is.  I guess I had heard some rumblings of unhappiness
+> > about it, but I'm surprised it's been allowed to live.
 > 
-> > My questions here is on how to fix this properly. Maybe
-> > sock_alloc_send_skb() should not be used with SOCK_STREAM and reliable
-> > protocols and I'm not aware of that? And should I use something like
-> > sk_stream_alloc_skb() instead?
-> > 
-> > Any comments are welcome. With lucky we can fix that for 2.6.36 and
-> > together with others fixes we have queued deliver a fully functional
-> > L2CAP layer on 2.6.36.
+> In your opinion Ted, what's broken about it?
 > 
-> Use sock_alloc_send_skb() as you do now, but if it fails wait for socket
-> space to become available just like TCP does, then loop back and try to
-> allocate again if the space-wait doesn't return an error.
 
-sock_alloc_send_skb() doesn't fail when there is no space available
-it sleeps and try again later. That is the problem. So if
-sock_alloc_send_skb() is called with the socket lock held potentially we
-can have a starvation in the backlog queue and then the deadlock due to
-be unable to read the acknowledgments packets residing in the backlog
-queue.
+It's casting **way** too wide of a net:
 
-Our current solution is release the lock before call
-sock_alloc_send_skb() and acquire it again when sock_alloc_send_skb()
-returns. Patch follows:
+ ./scripts/get_maintainer.pl --roles -f fs/ext4/inode.c
+"Theodore Ts'o" <tytso@mit.edu> (maintainer:EXT4 FILE SYSTEM,commit_signer)
+Andreas Dilger <adilger.kernel@dilger.ca> (maintainer:EXT4 FILE SYSTEM)
+Jan Kara <jack@suse.cz> (commit_signer)
+Eric Sandeen <sandeen@redhat.com> (commit_signer)
+Dmitry Monakhov <dmonakhov@openvz.org> (commit_signer)
+Christoph Hellwig <hch@lst.de> (commit_signer)
+linux-ext4@vger.kernel.org (open list:EXT4 FILE SYSTEM)
+linux-kernel@vger.kernel.org (open list)
 
-------
-Bluetooth: Fix deadlock in the ERTM logic                        
-                                                                                      
-The Enhanced Retransmission Mode(ERTM) is a reliable mode of operation               
-of the Bluetooth L2CAP layer. Think on it like a simplified version of                
-TCP.                                                                                  
-The problem we were facing here was a deadlock. ERTM uses a backlog                   
-queue to queue incomimg packets while the user is helding the lock. At                
-some moment the sk_sndbuf can be exceeded and we can't alloc new skbs                 
-then the code sleep with the lock to wait for memory, that stalls the                 
-ERTM connection once we can't read the acknowledgements packets in the                
-backlog queue to free memory and make the allocation of outcoming skb
-successful.
+The right answer is to just send the e-mail to the linux-ext4 list.
+That's what the MAINTAINERS file says, and it's right.  Using people
+who have signed off of on commits, and blindly assuming that they are
+therefore are maintainers, is Just Wrong.
 
-This patch actually affect all users of bt_skb_send_alloc(), i.e., all
-L2CAP modes and SCO.
+Christoph has said he doesn't want to get e-mails about ext4 patches
+--- and he shouldn't get them just because the get_maintainers.pl
+script is broken.
 
-Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
-Signed-off-by: Ulisses Furquim <ulisses@profusion.mobi>
----
- include/net/bluetooth/bluetooth.h |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+					- Ted
 
-diff --git a/include/net/bluetooth/bluetooth.h b/include/net/bluetooth/bluetooth.h
-index 27a902d..118b69b 100644
---- a/include/net/bluetooth/bluetooth.h
-+++ b/include/net/bluetooth/bluetooth.h
-@@ -161,10 +161,21 @@ static inline struct sk_buff *bt_skb_send_alloc(struct sock *sk, unsigned long l
- {
-        struct sk_buff *skb;
- 
-+       release_sock(sk);
-        if ((skb = sock_alloc_send_skb(sk, len + BT_SKB_RESERVE, nb, err))) {
-                skb_reserve(skb, BT_SKB_RESERVE);
-                bt_cb(skb)->incoming  = 0;
-        }
-+       lock_sock(sk);
-+
-+       if (*err)
-+               return NULL;
-+
-+       *err = sock_error(sk);
-+       if (*err) {
-+               kfree_skb(skb);
-+               return NULL;
-+       }
- 
-        return skb;
- }
--- 
-1.7.2.2
 
--- 
-Gustavo F. Padovan
-ProFUSION embedded systems - http://profusion.mobi
