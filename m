@@ -1,41 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751299Ab0IZGgr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 02:36:47 -0400
-Received: from khc.piap.pl ([195.187.100.11]:37010 "EHLO khc.piap.pl"
+	id S1751372Ab0IZGmm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 02:42:42 -0400
+Received: from khc.piap.pl ([195.187.100.11]:57809 "EHLO khc.piap.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751061Ab0IZGgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 02:36:46 -0400
+	id S1751061Ab0IZGml (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Sep 2010 02:42:41 -0400
 From: Krzysztof Halasa <khc@pm.waw.pl>
-To: Tracey Dent <tdent48227@gmail.com>
-Cc: tytso@mit.edu, linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/10] Fs: ext4: namei: fixed file of checkpatch/pl warnings and errors
+To: Joe Perches <joe@perches.com>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Andrew Morton <akpm@linux-foundation.org>,
+        T Dent <tdent48227@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/10] Fs: ext4: acl.c: fixed indent issue
 References: <1285439521-2557-1-git-send-email-tdent48227@gmail.com>
-	<1285439521-2557-10-git-send-email-tdent48227@gmail.com>
-Date: Sun, 26 Sep 2010 08:36:34 +0200
-In-Reply-To: <1285439521-2557-10-git-send-email-tdent48227@gmail.com> (Tracey
-	Dent's message of "Sat, 25 Sep 2010 14:32:01 -0400")
-Message-ID: <m3pqw16mfh.fsf@intrepid.localdomain>
+	<20100925233600.GA2854@lst.de>
+	<AANLkTimf9Q=jfga=--H0VaZeWnbAVNhCPMn_G81sZ8vh@mail.gmail.com>
+	<20100925235643.GA3224@lst.de> <20100926000154.GB5299@thunk.org>
+	<1285459769.6115.74.camel@Joe-Laptop>
+	<20100926003255.GA19690@thunk.org>
+	<1285462243.6115.89.camel@Joe-Laptop>
+	<1285462722.6115.95.camel@Joe-Laptop>
+Date: Sun, 26 Sep 2010 08:42:23 +0200
+In-Reply-To: <1285462722.6115.95.camel@Joe-Laptop> (Joe Perches's message of
+	"Sat, 25 Sep 2010 17:58:42 -0700")
+Message-ID: <m3iq1t6m5s.fsf@intrepid.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tracey Dent <tdent48227@gmail.com> writes:
+Joe Perches <joe@perches.com> writes:
 
-> +		printk("%s%3u:%03u hash %8x/%8x ", levels ? "":"   ", i, block, hash, range);
-> +		if (!(bh = ext4_bread(NULL,dir, block, 0,&err))) continue;
+> Many initial contributors of drivers and such put
+> their name in MAINTAINERS and stop soon after.
+>
+> There are many "MAINTAINERS" that are inactive and
+> no longer contributors.
 
-Put a SPACE after the comma. "continue" should usually be on the next
-line. It doesn't make sense to fix the formatting only partially.
-
-
-BTW I wouldn't trust checkpatch so blindly. Also keep in mind checkpatch
-is only a tool and that maintainers have full authority to ignore the
-problems (or "problems") it spews.
-And I would merge all the changes (which make sense) and send them in
-one patch - that should increase the odds of it actually being applied.
-To be honest, fixing the style isn't an easy job.
+Then their code should be "orphaned".
 -- 
 Krzysztof Halasa
