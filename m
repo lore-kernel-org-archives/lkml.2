@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757019Ab0IZPTu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 11:19:50 -0400
-Received: from vps.mortis.eu ([79.99.135.181]:44189 "EHLO vps.mortis.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756815Ab0IZPTt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 11:19:49 -0400
-Date: Sun, 26 Sep 2010 17:19:47 +0200
-From: Giel van Schijndel <me@mortis.eu>
-To: Lutz Ballaschke <vegan.grindcore@googlemail.com>
-Cc: wim@iguana.be, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 2/3] watchdog: add f71862fg support
-Message-ID: <20100926151947.GD7185@salidar.me.mortis.eu>
-References: <20100926143241.GC2150@kreios.titan>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IMjqdzrDRly81ofr"
-Content-Disposition: inline
-In-Reply-To: <20100926143241.GC2150@kreios.titan>
-OpenPGP: id=CEE5E742; url=http://gpg.mortis.eu/me.asc
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756948Ab0IZP2l (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 11:28:41 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:42728 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751697Ab0IZP2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Sep 2010 11:28:40 -0400
+X-Authenticated: #15668376
+X-Provags-ID: V01U2FsdGVkX1+pmT0ciOapgZolUFZEqmn7qgHyjEFWipn4z1V7Xu
+	PrD8a9McEJqaPe
+From: Sven Eckelmann <sven.eckelmann@gmx.de>
+To: ericvh@gmail.com
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sven Eckelmann <sven.eckelmann@gmx.de>
+Subject: [PATCH] net/9p: Mount only matching virtio channels
+Date: Sun, 26 Sep 2010 17:28:13 +0200
+Message-Id: <1285514893-11233-1-git-send-email-sven.eckelmann@gmx.de>
+X-Mailer: git-send-email 1.7.2.3
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+p9_virtio_create will only compare the the channel's tag characters
+against the device name till the end of the channel's tag but not till
+the end of the device name. This means that if a user defines channels
+with the tags foo and foobar then he would mount foo when he requested
+foonot and may mount foo when he requested foobar.
 
---IMjqdzrDRly81ofr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thus it is necessary to check both string lengths against each other in
+case of a successful partial string match.
 
-On Sun, Sep 26, 2010 at 04:32:41PM +0200, Lutz Ballaschke wrote:
-> ioctl WDIOC_GETTIMELEFT and helper function added to watchdog driver=20
-> for common usage.
->=20
-> ... snip ...
->=20
-> +static int watchdog_time_left(void)
-> +{
-> +	int ret =3D 0;
-> +
-> +	mutex_lock(&watchdog.lock);
-> +	ret =3D superio_enter(watchdog.sioaddr);
-> +	if (ret)
-> +		goto exit_unlock;
-> +
-> +	superio_select(watchdog.sioaddr, SIO_F71808FG_LD_WDT);
-> +	ret =3D superio_inb(watchdog.sioaddr, F71808FG_REG_WD_TIME);
-> +	superio_exit(watchdog.sioaddr);
-> +
-> +exit_unlock:
-> +	mutex_unlock(&watchdog.lock);
-> +	return ret;
-> +}
+Signed-off-by: Sven Eckelmann <sven.eckelmann@gmx.de>
+---
+ net/9p/trans_virtio.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-This function still has the problem I described earlier, namely that of
-returning minutes to userspace (which expects seconds) when minutes_mode
-is true.
+diff --git a/net/9p/trans_virtio.c b/net/9p/trans_virtio.c
+index dcfbe99..b885159 100644
+--- a/net/9p/trans_virtio.c
++++ b/net/9p/trans_virtio.c
+@@ -329,7 +329,8 @@ p9_virtio_create(struct p9_client *client, const char *devname, char *args)
+ 
+ 	mutex_lock(&virtio_9p_lock);
+ 	list_for_each_entry(chan, &virtio_chan_list, chan_list) {
+-		if (!strncmp(devname, chan->tag, chan->tag_len)) {
++		if (!strncmp(devname, chan->tag, chan->tag_len) &&
++		    strlen(devname) == chan->tag_len) {
+ 			if (!chan->inuse) {
+ 				chan->inuse = true;
+ 				found = 1;
+-- 
+1.7.2.3
 
-I would thus suggest not to commit this patch as it violates the
-Watchdog API.
-
---=20
-Met vriendelijke groet,
-With kind regards,
-Giel van Schijndel
---
-"There are only two kinds of languages: the ones people complain about
- and the ones nobody uses."
-  -- Bjarne Stroustrup
-
---IMjqdzrDRly81ofr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkyfZJMACgkQZBYm/87l50J82gCfWog/Uh/IbMVWO0c7bCShu7SH
-SfgAn3XakqbSitpVCnZpxNjTA5Qy7xr4
-=ISkq
------END PGP SIGNATURE-----
-
---IMjqdzrDRly81ofr--
