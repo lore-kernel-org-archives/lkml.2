@@ -1,42 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757931Ab0IZWLg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 18:11:36 -0400
-Received: from mga03.intel.com ([143.182.124.21]:51316 "EHLO mga03.intel.com"
+	id S1758204Ab0IZWRJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 18:17:09 -0400
+Received: from mail.perches.com ([173.55.12.10]:2456 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757592Ab0IZWLg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 18:11:36 -0400
-Message-Id: <89k83a$9plvtg@azsmga001.ch.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,240,1283756400"; 
-   d="scan'208";a="328925104"
-Date: Sun, 26 Sep 2010 23:11:31 +0100
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] i915 regression fixes
-Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
-From: Chris Wilson <chris@chris-wilson.co.uk>
+	id S1757781Ab0IZWRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Sep 2010 18:17:08 -0400
+Subject: Re: [PATCH 01/10] Fs: ext4: acl.c: fixed indent issue
+From: Joe Perches <joe@perches.com>
+To: Christoph Hellwig <hch@lst.de>, Andrew Morton <akpm@linux-foundation.org>
+Cc: T Dent <tdent48227@gmail.com>, tytso@mit.edu, adilger.kernel@dilger.ca,
+        jack@suse.cz, dmonakhov@openvz.org, sandeen@redhat.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20100926200611.GA4375@lst.de>
+References: <1285439521-2557-1-git-send-email-tdent48227@gmail.com>
+	 <20100925233600.GA2854@lst.de>
+	 <AANLkTimf9Q=jfga=--H0VaZeWnbAVNhCPMn_G81sZ8vh@mail.gmail.com>
+	 <20100925235643.GA3224@lst.de> <1285459579.6115.72.camel@Joe-Laptop>
+	 <20100926200611.GA4375@lst.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 26 Sep 2010 15:17:05 -0700
+Message-ID: <1285539425.1732.38.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus, a couple of fixes for some recent regressions.
+On Sun, 2010-09-26 at 22:06 +0200, Christoph Hellwig wrote:
+> On Sat, Sep 25, 2010 at 05:06:19PM -0700, Joe Perches wrote:
+> > On Sun, 2010-09-26 at 01:56 +0200, Christoph Hellwig wrote:
+> > > On Sat, Sep 25, 2010 at 07:53:02PM -0400, T Dent wrote:
+> > > > On 9/25/10, Christoph Hellwig <hch@lst.de> wrote:
+> > > > > Please don't Cc me on ext4 patches, thanks.
+> > > > Ok.. i just used the get maintainer script and your name was on it.
+> > > The script is broken but the maintainer refuses to fix it.
+> > That'd be false.
+> > https://patchwork.kernel.org/patch/185352/
+> Thanks for changing your opinion after the last discussion and fixing
+> the worst fallout.  Can you please prod Andrew to sned it on to Linus
+> ASAP?
 
-The following changes since commit 32163f4b2cef28a5aab8b226ffecfc6379a53786:
+I didn't change my mind.
 
-  alpha: fix usp value in multithreaded coredumps (2010-09-25 14:38:13 -0700)
+I've never particularly liked the --git option
+and rarely if ever use it.
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/ickle/drm-intel.git drm-intel-fixes
+What I said was I'd wait for a consensus.
 
-Chris Wilson (3):
-      drm/i915: Fix 945GM regression in e259befd
-      drm/i915/sdvo: Cleanup connector on error path
-      drm/i915/sdvo: Handle unsupported GET_SUPPORTED_ENHANCEMENTS gracefully
+Andrew generally doesn't like to forward stuff
+to Linus unless it fixes some regression.  I
+don't know if this qualifies.  Andrew?
 
- drivers/gpu/drm/i915/i915_gem.c   |    2 +-
- drivers/gpu/drm/i915/intel_sdvo.c |   15 ++++++---------
- 2 files changed, 7 insertions(+), 10 deletions(-)
--Chris
+I'd prefer to change the --rolestats default
+to on as well and force scripts to include
+--norolestats --noroles to get bare email
+addresses.
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+cheers, Joe
+
