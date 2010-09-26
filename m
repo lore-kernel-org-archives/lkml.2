@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757476Ab0IZKzz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 06:55:55 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:56530 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757083Ab0IZKzy (ORCPT
+	id S1757507Ab0IZLbJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 07:31:09 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:55781 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757462Ab0IZLbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 06:55:54 -0400
-From: "Martin Rogge" <marogge@onlinehome.de>
-To: linux-kernel@vger.kernel.org
-Subject: Re: no modules :-)
-Date: Sun, 26 Sep 2010 12:55:51 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4; KDE/4.5.1; x86_64; ; )
-Cc: bjlockie@lockie.ca
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009261255.51913.marogge@onlinehome.de>
-X-Provags-ID: V02:K0:wM6QhJ2FwouDf/389AXKhbk0MJrXkRnBJxH8/nm5kyY
- ynIax+LGbFE/BfX0SSJBZsSELZq8j/y+AsVws11QqpGUkgfk6l
- BV6/ZlRbvCKV1CgXLJat9iNmxil8fZL1puGzzQ8sqQ85/STKo5
- NKc3+nXAByTcJIBbJaRE30XNLGEsK1wm0LFeZIaE8+BIMOr1QT
- Unxk4jNOAZFfBGeSezWfA==
+	Sun, 26 Sep 2010 07:31:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=m6beM3PZXmh5QoRn3i2mcI7VKJS/6F1CazdSCRnCi/TMqv0fTd5V6AA8WzfEOy0FsQ
+         PuFmgqOj/2bdYu95cgrnYHo8/YKNCDuOfi1UtaSpQ24Yh562KGlzJgE4RTTLCoyhrFk/
+         9Rd/TD73cXe7T3d9WDt2tzSDgpPX0TkvRfGOE=
+From: Rahul Ruikar <rahul.ruikar@gmail.com>
+To: linux@dominikbrodowski.net, komurojun-mbn@nifty.com, w.sang@pengutronix.de,
+        davem@davemloft.net
+Cc: linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Rahul Ruikar <rahul.ruikar@gmail.com>
+Subject: [PATCH] pcmcia: pd6729: Fix error path
+Date: Sun, 26 Sep 2010 17:00:29 +0530
+Message-Id: <1285500629-6024-1-git-send-email-rahul.ruikar@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James wrote:
-> I don't like modules. :-)
-> 
-> What is pulling this in:
-> 
-> CONFIG_SCSI_WAIT_SCAN=m
-> 
-> I edited .config but make must have turned it back on.
+In error return path
+call pci_disable_device() which was enabled earlier.
 
-It has been doing this for years (forcing itself upon you as soon as you 
-enable the MODULES & SCSI options). It is the only module doing that. 
+Signed-off-by: Rahul Ruikar <rahul.ruikar@gmail.com>
+---
+ drivers/pcmcia/pd6729.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I consider the behaviour broken since it takes the option away from me to have 
-a static kernel with only third party software as modules. But it is no big 
-issue.
+diff --git a/drivers/pcmcia/pd6729.c b/drivers/pcmcia/pd6729.c
+index b8a869a..deef665 100644
+--- a/drivers/pcmcia/pd6729.c
++++ b/drivers/pcmcia/pd6729.c
+@@ -646,7 +646,7 @@ static int __devinit pd6729_pci_probe(struct pci_dev *dev,
+ 	if (!pci_resource_start(dev, 0)) {
+ 		dev_warn(&dev->dev, "refusing to load the driver as the "
+ 			"io_base is NULL.\n");
+-		goto err_out_free_mem;
++		goto err_out_disable;
+ 	}
+ 
+ 	dev_info(&dev->dev, "Cirrus PD6729 PCI to PCMCIA Bridge at 0x%llx "
+-- 
+1.7.2.3
 
-Martin
