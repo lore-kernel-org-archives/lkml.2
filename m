@@ -1,50 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751381Ab0IZGt3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 02:49:29 -0400
-Received: from mail.perches.com ([173.55.12.10]:2438 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751061Ab0IZGt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 02:49:28 -0400
-Subject: Re: [PATCH 01/10] Fs: ext4: acl.c: fixed indent issue
-From: Joe Perches <joe@perches.com>
-To: Krzysztof Halasa <khc@pm.waw.pl>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Andrew Morton <akpm@linux-foundation.org>,
-        T Dent <tdent48227@gmail.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <m3iq1t6m5s.fsf@intrepid.localdomain>
-References: <1285439521-2557-1-git-send-email-tdent48227@gmail.com>
-	 <20100925233600.GA2854@lst.de>
-	 <AANLkTimf9Q=jfga=--H0VaZeWnbAVNhCPMn_G81sZ8vh@mail.gmail.com>
-	 <20100925235643.GA3224@lst.de> <20100926000154.GB5299@thunk.org>
-	 <1285459769.6115.74.camel@Joe-Laptop> <20100926003255.GA19690@thunk.org>
-	 <1285462243.6115.89.camel@Joe-Laptop> <1285462722.6115.95.camel@Joe-Laptop>
-	 <m3iq1t6m5s.fsf@intrepid.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 25 Sep 2010 23:49:26 -0700
-Message-ID: <1285483766.6115.180.camel@Joe-Laptop>
+	id S1751578Ab0IZH3s (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 03:29:48 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:39918 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061Ab0IZH3r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Sep 2010 03:29:47 -0400
+Date: Sun, 26 Sep 2010 09:29:31 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: matt mooney <mfm@muteddisk.com>
+Cc: kernel-janitors@vger.kernel.org,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/24] i2c: change to new flag variable
+Message-ID: <20100926092931.68980448@endymion.delvare>
+In-Reply-To: <20100926021217.GC8191@haskell.muteddisk.com>
+References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
+	<9968d4260be8850200cc9c7dfe08addf611468b4.1285355033.git.mfm@muteddisk.com>
+	<036514b5dd23c5af14303519d79d60d79adccbee.1285355033.git.mfm@muteddisk.com>
+	<ffbd189ef2d414ea7c87ffe2b40fce87877dc014.1285355033.git.mfm@muteddisk.com>
+	<b3e2061e1e6703f7b84c0484030e07de6000546a.1285355033.git.mfm@muteddisk.com>
+	<20100925132611.03ef0882@endymion.delvare>
+	<20100926021217.GC8191@haskell.muteddisk.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-09-26 at 08:42 +0200, Krzysztof Halasa wrote:
-> Joe Perches <joe@perches.com> writes:
-> > Many initial contributors of drivers and such put
-> > their name in MAINTAINERS and stop soon after.
-> > There are many "MAINTAINERS" that are inactive and
-> > no longer contributors.
-> Then their code should be "orphaned".
+On Sat, 25 Sep 2010 19:12:17 -0700, matt mooney wrote:
+> On 13:26 Sat 25 Sep     , Jean Delvare wrote:
+> > On Fri, 24 Sep 2010 12:17:15 -0700, matt mooney wrote:
+> > > Replace EXTRA_CFLAGS with ccflags-y.
+> > > 
+> > > Signed-off-by: matt mooney <mfm@muteddisk.com>
+> > > ---
+> > >  drivers/i2c/Makefile        |    4 +---
+> > >  drivers/i2c/algos/Makefile  |    4 +---
+> > >  drivers/i2c/busses/Makefile |    4 +---
+> > >  drivers/i2c/muxes/Makefile  |    4 +---
+> > >  4 files changed, 4 insertions(+), 12 deletions(-)
+> > > 
+> > > diff --git a/drivers/i2c/Makefile b/drivers/i2c/Makefile
+> > > index c00fd66..23ac61e 100644
+> > > --- a/drivers/i2c/Makefile
+> > > +++ b/drivers/i2c/Makefile
+> > > @@ -9,6 +9,4 @@ obj-$(CONFIG_I2C_CHARDEV)	+= i2c-dev.o
+> > >  obj-$(CONFIG_I2C_MUX)		+= i2c-mux.o
+> > >  obj-y				+= algos/ busses/ muxes/
+> > >  
+> > > -ifeq ($(CONFIG_I2C_DEBUG_CORE),y)
+> > > -EXTRA_CFLAGS += -DDEBUG
+> > > -endif
+> > > +ccflags-$(CONFIG_I2C_DEBUG_CORE) := -DDEBUG
+> > > diff --git a/drivers/i2c/algos/Makefile b/drivers/i2c/algos/Makefile
+> > > index 18b3e96..215303f 100644
+> > > --- a/drivers/i2c/algos/Makefile
+> > > +++ b/drivers/i2c/algos/Makefile
+> > > @@ -6,6 +6,4 @@ obj-$(CONFIG_I2C_ALGOBIT)	+= i2c-algo-bit.o
+> > >  obj-$(CONFIG_I2C_ALGOPCF)	+= i2c-algo-pcf.o
+> > >  obj-$(CONFIG_I2C_ALGOPCA)	+= i2c-algo-pca.o
+> > >  
+> > > -ifeq ($(CONFIG_I2C_DEBUG_ALGO),y)
+> > > -EXTRA_CFLAGS += -DDEBUG
+> > > -endif
+> > > +ccflags-$(CONFIG_I2C_DEBUG_ALGO) := -DDEBUG
+> > > diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
+> > > index c3ef492..033ad41 100644
+> > > --- a/drivers/i2c/busses/Makefile
+> > > +++ b/drivers/i2c/busses/Makefile
+> > > @@ -76,6 +76,4 @@ obj-$(CONFIG_I2C_STUB)		+= i2c-stub.o
+> > >  obj-$(CONFIG_SCx200_ACB)	+= scx200_acb.o
+> > >  obj-$(CONFIG_SCx200_I2C)	+= scx200_i2c.o
+> > >  
+> > > -ifeq ($(CONFIG_I2C_DEBUG_BUS),y)
+> > > -EXTRA_CFLAGS += -DDEBUG
+> > > -endif
+> > > +ccflags-$(CONFIG_I2C_DEBUG_BUS) := -DDEBUG
+> > > diff --git a/drivers/i2c/muxes/Makefile b/drivers/i2c/muxes/Makefile
+> > > index bd83b52..6f49786 100644
+> > > --- a/drivers/i2c/muxes/Makefile
+> > > +++ b/drivers/i2c/muxes/Makefile
+> > > @@ -3,6 +3,4 @@
+> > >  
+> > >  obj-$(CONFIG_I2C_MUX_PCA954x)	+= pca954x.o
+> > >  
+> > > -ifeq ($(CONFIG_I2C_DEBUG_BUS),y)
+> > > -EXTRA_CFLAGS += -DDEBUG
+> > > -endif
+> > > +ccflags-$(CONFIG_I2C_DEBUG_BUS) := -DDEBUG
+> > 
+> > If this is the way the whole kernel is going, I have no objection. 
+> 
+> Sam had implemented these newer style flag variables a while back as an
+> eloquent way of handling conditional flags. A lot of newer (and some older)
+> modules and subsystems were using them already, so to provide uniformity and for
+> an eventual removal of the deprecated flags, I converted all remaining instances
+> to the newer style. (IMHO, I think it flows better with the way the rest of the
+> build system works.)
 
-It's relatively easy to see if named
-maintainer has authored or signed a
-commit in the past few years.
+Fine with me. What's the planned merge path for this patch? Will you
+push all the patches upstream yourself, or do you expect me to pick
+this one?
 
-Perhaps you'll go through the effort to
-mark the sections as orphaned.
-
-I find it's not a task that brings any
-satisfaction or cheer.
-
-
+-- 
+Jean Delvare
