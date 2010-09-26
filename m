@@ -1,110 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751578Ab0IZH3s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 03:29:48 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:39918 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061Ab0IZH3r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 03:29:47 -0400
-Date: Sun, 26 Sep 2010 09:29:31 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: matt mooney <mfm@muteddisk.com>
-Cc: kernel-janitors@vger.kernel.org,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/24] i2c: change to new flag variable
-Message-ID: <20100926092931.68980448@endymion.delvare>
-In-Reply-To: <20100926021217.GC8191@haskell.muteddisk.com>
-References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
-	<9968d4260be8850200cc9c7dfe08addf611468b4.1285355033.git.mfm@muteddisk.com>
-	<036514b5dd23c5af14303519d79d60d79adccbee.1285355033.git.mfm@muteddisk.com>
-	<ffbd189ef2d414ea7c87ffe2b40fce87877dc014.1285355033.git.mfm@muteddisk.com>
-	<b3e2061e1e6703f7b84c0484030e07de6000546a.1285355033.git.mfm@muteddisk.com>
-	<20100925132611.03ef0882@endymion.delvare>
-	<20100926021217.GC8191@haskell.muteddisk.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751743Ab0IZHcz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 03:32:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12836 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751467Ab0IZHcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Sep 2010 03:32:54 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1285461624.15685.51.camel@yhuang-dev>
+References: <1285461624.15685.51.camel@yhuang-dev> <1284627425.2754.434.camel@yhuang-dev> <1284360648.3269.115.camel@yhuang-dev.sh.intel.com> <20100913123213.76b1b5fa@mschwide.boeblingen.de.ibm.com> <1284377790.2275.212.camel@laptop> <1284528590.2256.135.camel@yhuang-dev.sh.intel.com> <1284539320.3764.266.camel@twins> <615.1285272720@redhat.com> 
+To: Huang Ying <ying.huang@intel.com>
+Cc: dhowells@redhat.com, Peter Zijlstra <peterz@infradead.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        paulus <paulus@samba.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Russell King <rmk@arm.linux.org.uk>,
+        Kyle McMartin <kyle@mcmartin.ca>, davem <davem@davemloft.net>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Matt Fleming <matt@console-pimps.org>
+Subject: Re: [PATCH -tip -v4] irq_work: generic hard-irq context callbacks
+Date: Sun, 26 Sep 2010 08:32:03 +0100
+Message-ID: <5042.1285486323@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 25 Sep 2010 19:12:17 -0700, matt mooney wrote:
-> On 13:26 Sat 25 Sep     , Jean Delvare wrote:
-> > On Fri, 24 Sep 2010 12:17:15 -0700, matt mooney wrote:
-> > > Replace EXTRA_CFLAGS with ccflags-y.
-> > > 
-> > > Signed-off-by: matt mooney <mfm@muteddisk.com>
-> > > ---
-> > >  drivers/i2c/Makefile        |    4 +---
-> > >  drivers/i2c/algos/Makefile  |    4 +---
-> > >  drivers/i2c/busses/Makefile |    4 +---
-> > >  drivers/i2c/muxes/Makefile  |    4 +---
-> > >  4 files changed, 4 insertions(+), 12 deletions(-)
-> > > 
-> > > diff --git a/drivers/i2c/Makefile b/drivers/i2c/Makefile
-> > > index c00fd66..23ac61e 100644
-> > > --- a/drivers/i2c/Makefile
-> > > +++ b/drivers/i2c/Makefile
-> > > @@ -9,6 +9,4 @@ obj-$(CONFIG_I2C_CHARDEV)	+= i2c-dev.o
-> > >  obj-$(CONFIG_I2C_MUX)		+= i2c-mux.o
-> > >  obj-y				+= algos/ busses/ muxes/
-> > >  
-> > > -ifeq ($(CONFIG_I2C_DEBUG_CORE),y)
-> > > -EXTRA_CFLAGS += -DDEBUG
-> > > -endif
-> > > +ccflags-$(CONFIG_I2C_DEBUG_CORE) := -DDEBUG
-> > > diff --git a/drivers/i2c/algos/Makefile b/drivers/i2c/algos/Makefile
-> > > index 18b3e96..215303f 100644
-> > > --- a/drivers/i2c/algos/Makefile
-> > > +++ b/drivers/i2c/algos/Makefile
-> > > @@ -6,6 +6,4 @@ obj-$(CONFIG_I2C_ALGOBIT)	+= i2c-algo-bit.o
-> > >  obj-$(CONFIG_I2C_ALGOPCF)	+= i2c-algo-pcf.o
-> > >  obj-$(CONFIG_I2C_ALGOPCA)	+= i2c-algo-pca.o
-> > >  
-> > > -ifeq ($(CONFIG_I2C_DEBUG_ALGO),y)
-> > > -EXTRA_CFLAGS += -DDEBUG
-> > > -endif
-> > > +ccflags-$(CONFIG_I2C_DEBUG_ALGO) := -DDEBUG
-> > > diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
-> > > index c3ef492..033ad41 100644
-> > > --- a/drivers/i2c/busses/Makefile
-> > > +++ b/drivers/i2c/busses/Makefile
-> > > @@ -76,6 +76,4 @@ obj-$(CONFIG_I2C_STUB)		+= i2c-stub.o
-> > >  obj-$(CONFIG_SCx200_ACB)	+= scx200_acb.o
-> > >  obj-$(CONFIG_SCx200_I2C)	+= scx200_i2c.o
-> > >  
-> > > -ifeq ($(CONFIG_I2C_DEBUG_BUS),y)
-> > > -EXTRA_CFLAGS += -DDEBUG
-> > > -endif
-> > > +ccflags-$(CONFIG_I2C_DEBUG_BUS) := -DDEBUG
-> > > diff --git a/drivers/i2c/muxes/Makefile b/drivers/i2c/muxes/Makefile
-> > > index bd83b52..6f49786 100644
-> > > --- a/drivers/i2c/muxes/Makefile
-> > > +++ b/drivers/i2c/muxes/Makefile
-> > > @@ -3,6 +3,4 @@
-> > >  
-> > >  obj-$(CONFIG_I2C_MUX_PCA954x)	+= pca954x.o
-> > >  
-> > > -ifeq ($(CONFIG_I2C_DEBUG_BUS),y)
-> > > -EXTRA_CFLAGS += -DDEBUG
-> > > -endif
-> > > +ccflags-$(CONFIG_I2C_DEBUG_BUS) := -DDEBUG
-> > 
-> > If this is the way the whole kernel is going, I have no objection. 
-> 
-> Sam had implemented these newer style flag variables a while back as an
-> eloquent way of handling conditional flags. A lot of newer (and some older)
-> modules and subsystems were using them already, so to provide uniformity and for
-> an eventual removal of the deprecated flags, I converted all remaining instances
-> to the newer style. (IMHO, I think it flows better with the way the rest of the
-> build system works.)
+Huang Ying <ying.huang@intel.com> wrote:
 
-Fine with me. What's the planned merge path for this patch? Will you
-push all the patches upstream yourself, or do you expect me to pick
-this one?
+> /home/caritas/projects/mce/kernel/linux-mce.git/arch/frv/mm/tlb-flush.S: Assembler messages:
+> /home/caritas/projects/mce/kernel/linux-mce.git/arch/frv/mm/tlb-flush.S:51: Error: operand out of range (4294967295 not between -32768 and 32767) `setlos #0xffffffff,gr4'
 
--- 
-Jean Delvare
+Hmmm...  It's a newer binutils by the looks of it.  They seem to have made it
+more stroppy about unsigned constants for signed parameters:-(
+
+I'll get back to you on it.
+
+David
