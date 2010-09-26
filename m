@@ -1,55 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756948Ab0IZP2l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 11:28:41 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:42728 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751697Ab0IZP2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 11:28:40 -0400
-X-Authenticated: #15668376
-X-Provags-ID: V01U2FsdGVkX1+pmT0ciOapgZolUFZEqmn7qgHyjEFWipn4z1V7Xu
-	PrD8a9McEJqaPe
-From: Sven Eckelmann <sven.eckelmann@gmx.de>
-To: ericvh@gmail.com
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sven Eckelmann <sven.eckelmann@gmx.de>
-Subject: [PATCH] net/9p: Mount only matching virtio channels
-Date: Sun, 26 Sep 2010 17:28:13 +0200
-Message-Id: <1285514893-11233-1-git-send-email-sven.eckelmann@gmx.de>
-X-Mailer: git-send-email 1.7.2.3
-X-Y-GMX-Trusted: 0
+	id S1757028Ab0IZPcF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 11:32:05 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:55992 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751755Ab0IZPcE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Sep 2010 11:32:04 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: greg@kroah.com
+Subject: [PATCH] staging: make new character devices nonseekable
+Date: Sun, 26 Sep 2010 17:31:52 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc5+; KDE/4.5.1; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009261731.53062.arnd@arndb.de>
+X-Provags-ID: V02:K0:zL/kyQOxEXR7ba2EG/rNwqC4HcR+iu3VDIh7/dg49pZ
+ +cSatUw4iM7AIFpYT3n8iu1+jOf3jIHKi3pp+uRAIq+1Gwbt6A
+ BCSiU9t8nzyRrTm9cvdnR8vjN/G6jteel7DNIk6S3kEgUt2hTL
+ gg3uIosyR7zeVBE7wnitaMxTa5qy8TcnkQJ7KgFSTu3pkOS1mr
+ i0JQy2P3FrYcDV3BxY/9w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-p9_virtio_create will only compare the the channel's tag characters
-against the device name till the end of the channel's tag but not till
-the end of the device name. This means that if a user defines channels
-with the tags foo and foobar then he would mount foo when he requested
-foonot and may mount foo when he requested foobar.
+As a preparation for changing the default behaviour of llseek to no_llseek,
+every file_operations structure should have a .llseek operation.
 
-Thus it is necessary to check both string lengths against each other in
-case of a successful partial string match.
+There are three new instances in staging now, which can all be changed
+into no_llseek explicitly since the devices do not need to seek.
 
-Signed-off-by: Sven Eckelmann <sven.eckelmann@gmx.de>
+Add nonseekable_open where appropriate, to prevent pread/pwrite as well.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
- net/9p/trans_virtio.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ bcm/Bcmchar.c                    |    3 +++
+ bcm/InterfaceInit.c              |    1 +
+ ft1000/ft1000-usb/ft1000_chdev.c |    2 ++
+ 3 files changed, 6 insertions(+)
 
-diff --git a/net/9p/trans_virtio.c b/net/9p/trans_virtio.c
-index dcfbe99..b885159 100644
---- a/net/9p/trans_virtio.c
-+++ b/net/9p/trans_virtio.c
-@@ -329,7 +329,8 @@ p9_virtio_create(struct p9_client *client, const char *devname, char *args)
+These are the only instances I can't patch automatically because the code
+is not yet upstream. Please apply.
+
+diff --git a/drivers/staging/bcm/Bcmchar.c b/drivers/staging/bcm/Bcmchar.c
+index b239862..559d909 100644
+--- a/drivers/staging/bcm/Bcmchar.c
++++ b/drivers/staging/bcm/Bcmchar.c
+@@ -35,6 +35,8 @@ static int bcm_char_open(struct inode *inode, struct file * filp)
  
- 	mutex_lock(&virtio_9p_lock);
- 	list_for_each_entry(chan, &virtio_chan_list, chan_list) {
--		if (!strncmp(devname, chan->tag, chan->tag_len)) {
-+		if (!strncmp(devname, chan->tag, chan->tag_len) &&
-+		    strlen(devname) == chan->tag_len) {
- 			if (!chan->inuse) {
- 				chan->inuse = true;
- 				found = 1;
--- 
-1.7.2.3
-
+ 	/*Start Queuing the control response Packets*/
+ 	atomic_inc(&Adapter->ApplicationRunning);
++
++	nonseekable_open(inode, file);
+ 	return 0;
+ }
+ static int bcm_char_release(struct inode *inode, struct file *filp)
+@@ -2360,6 +2362,7 @@ static struct file_operations bcm_fops = {
+     .release  = bcm_char_release,
+     .read     = bcm_char_read,
+     .unlocked_ioctl    = bcm_char_ioctl,
++	.llseek = no_llseek,
+ };
+ 
+ 
+diff --git a/drivers/staging/bcm/InterfaceInit.c b/drivers/staging/bcm/InterfaceInit.c
+index d22a0e5..67d8572 100644
+--- a/drivers/staging/bcm/InterfaceInit.c
++++ b/drivers/staging/bcm/InterfaceInit.c
+@@ -163,6 +163,7 @@ static struct file_operations usbbcm_fops = {
+     .read    =  usbbcm_read,
+     .write   =  usbbcm_write,
+     .owner   =  THIS_MODULE,
++	.llseek = no_llseek,
+ };
+ 
+ static struct usb_class_driver usbbcm_class = {
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
+index 65087ce..92c0c04 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
+@@ -85,6 +85,7 @@ static struct file_operations ft1000fops =
+     poll:     ft1000_ChPoll,
+     open:     ft1000_ChOpen,
+     release:  ft1000_ChRelease
++	.llseek = no_llseek,
+ };
+ 
+ 
+@@ -470,6 +471,7 @@ static int ft1000_ChOpen (struct inode *Inode, struct file *File)
+ 
+     File->private_data = pdevobj[num]->net;
+ 
++	nonseekable_open(Inode, File);
+     return 0;
+ }
+ 
