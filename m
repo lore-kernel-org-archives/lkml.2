@@ -1,96 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608Ab0IZJQh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 05:16:37 -0400
-Received: from mga09.intel.com ([134.134.136.24]:41394 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752496Ab0IZJQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 05:16:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,238,1283756400"; 
-   d="scan'208";a="558051256"
-From: yakui.zhao@intel.com
-To: hpa@zytor.com
-Cc: linux-kernel@vger.kernel.org, Zhao Yakui <yakui.zhao@intel.com>
-Subject: [PATCH] X86/Mem: Use string copy operation to optimze copy in kernel compression
-Date: Sun, 26 Sep 2010 17:12:01 +0800
-Message-Id: <1285492321-14606-1-git-send-email-yakui.zhao@intel.com>
-X-Mailer: git-send-email 1.5.4.5
+	id S1754892Ab0IZJ0K (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 05:26:10 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:52228 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752675Ab0IZJ0J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Sep 2010 05:26:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=bag+qt1eLV33SUZWuGd/wWkLVvdPMOjyXR3p07eyXntJkzyWq4c1gOOqekkrJ6VshO
+         /U0P0/NiNAKl+S7XCjlaufMjxKAxVQVx8pc46rHlr3jXyLLZe10+DaL6ULixpB008utQ
+         STNzhxT61TJNq27G82nqnyuQATdGBgzT8cwfg=
+Message-ID: <4C9F11A9.7040808@gmail.com>
+Date: Sun, 26 Sep 2010 12:26:01 +0300
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.9) Gecko/20100914 SUSE/3.1.4 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Rahul Ruikar <rahul.ruikar@gmail.com>
+CC: ak@linux.intel.com, adobriyan@gmail.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] misc: phantom: Added missing warning messages in phantom_probe
+References: <1285422505-7128-1-git-send-email-rahul.ruikar@gmail.com>
+In-Reply-To: <1285422505-7128-1-git-send-email-rahul.ruikar@gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhao Yakui <yakui.zhao@intel.com>
+On 09/25/2010 04:48 PM, Rahul Ruikar wrote:
+> phantom_probe can fail at many places. missing warning messages
+> have been added for 2 cases.
+> pci_enable_device()
+> pci_request_regions()
+> 
+> Signed-off-by: Rahul Ruikar <rahul.ruikar@gmail.com>
 
-It will parse the elf and then copy them to the corresponding destination after
-the kernel decompression is finished. And now it uses the slow byte-copy mode.
-How about using the string copy operation to accelerate the copy speed in
-course of kernel compression?(It is orignated from the arch/x86/lib/memcpy_32.c)
+Acked-by: Jiri Slaby <jirislaby@gmail.com>
 
-In the test the copy performance can be improved very significantly after using
-the string copy operation mechanism.
-        1. The copy time can be reduced from 150ms to 20ms on one atom machine
-	2. The copy time can be reduced about 80% on another machine
-		The time is reduced from 7ms to 1.5ms when using 32-bit kernel.
-		The time is reduced from 10ms to 2ms when using 64-bit kernel.
+Andrew, could you take it?
 
-Signed-off-by: Zhao Yakui <yakui.zhao@intel.com>
----
- arch/x86/boot/compressed/misc.c |   35 +++++++++++++++++++++++++++++------
- 1 files changed, 29 insertions(+), 6 deletions(-)
+> ---
+>  drivers/misc/phantom.c |    8 ++++++--
+>  1 files changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/misc/phantom.c b/drivers/misc/phantom.c
+> index 75ee0d3..b4c105f 100644
+> --- a/drivers/misc/phantom.c
+> +++ b/drivers/misc/phantom.c
+> @@ -341,8 +341,10 @@ static int __devinit phantom_probe(struct pci_dev *pdev,
+>  	int retval;
+>  
+>  	retval = pci_enable_device(pdev);
+> -	if (retval)
+> +	if (retval) {
+> +		dev_err(&pdev->dev, "pci_enable_device failed!\n");
+>  		goto err;
+> +	}
+>  
+>  	minor = phantom_get_free();
+>  	if (minor == PHANTOM_MAX_MINORS) {
+> @@ -354,8 +356,10 @@ static int __devinit phantom_probe(struct pci_dev *pdev,
+>  	phantom_devices[minor] = 1;
+>  
+>  	retval = pci_request_regions(pdev, "phantom");
+> -	if (retval)
+> +	if (retval) {
+> +		dev_err(&pdev->dev, "pci_request_regions failed!\n");
+>  		goto err_null;
+> +	}
+>  
+>  	retval = -ENOMEM;
+>  	pht = kzalloc(sizeof(*pht), GFP_KERNEL);
 
-diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
-index 8f7bef8..34793ae 100644
---- a/arch/x86/boot/compressed/misc.c
-+++ b/arch/x86/boot/compressed/misc.c
-@@ -229,18 +229,41 @@ void *memset(void *s, int c, size_t n)
- 		ss[i] = c;
- 	return s;
- }
--
-+#ifdef CONFIG_X86_32
- void *memcpy(void *dest, const void *src, size_t n)
- {
--	int i;
--	const char *s = src;
--	char *d = dest;
-+	int d0, d1, d2;
-+	asm volatile(
-+		"rep ; movsl\n\t"
-+		"movl %4,%%ecx\n\t"
-+		"andl $3,%%ecx\n\t"
-+		"jz 1f\n\t"
-+		"rep ; movsb\n\t"
-+		"1:"
-+		: "=&c" (d0), "=&D" (d1), "=&S" (d2)
-+		: "0" (n / 4), "g" (n), "1" ((long)dest), "2" ((long)src)
-+		: "memory");
- 
--	for (i = 0; i < n; i++)
--		d[i] = s[i];
- 	return dest;
- }
-+#else
-+void *memcpy(void *dest, const void *src, size_t n)
-+{
-+	long d0, d1, d2;
-+	asm volatile(
-+		"rep ; movsq\n\t"
-+		"movq %4,%%rcx\n\t"
-+		"andq $7,%%rcx\n\t"
-+		"jz 1f\n\t"
-+		"rep ; movsb\n\t"
-+		"1:"
-+		: "=&c" (d0), "=&D" (d1), "=&S" (d2)
-+		: "0" (n / 8), "g" (n), "1" ((long)dest), "2" ((long)src)
-+		: "memory");
- 
-+	return dest;
-+}
-+#endif
- 
- static void error(char *x)
- {
+thanks,
 -- 
-1.5.4.5
-
+js
