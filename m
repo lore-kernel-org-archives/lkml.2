@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932453Ab0IZWrI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 18:47:08 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:60857 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757876Ab0IZWrG (ORCPT
+	id S932484Ab0IZWr6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 18:47:58 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:39107 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932202Ab0IZWr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 18:47:06 -0400
+	Sun, 26 Sep 2010 18:47:56 -0400
 From: ebiederm@xmission.com (Eric W. Biederman)
 To: Greg KH <greg@kroah.com>
 Cc: Greg KH <gregkh@suse.de>, "Hans J. Koch" <hjk@linutronix.de>,
@@ -18,14 +18,14 @@ References: <m1y6b48973.fsf@fess.ebiederm.org> <20100917205946.GF2522@local>
 	<20100924173106.GA4966@silverbox.local>
 	<m14ode662q.fsf@fess.ebiederm.org> <20100925003308.GA29910@suse.de>
 	<m1wrqa4mg5.fsf@fess.ebiederm.org> <20100926192142.GA7252@kroah.com>
-Date: Sun, 26 Sep 2010 15:46:56 -0700
+Date: Sun, 26 Sep 2010 15:47:52 -0700
 In-Reply-To: <20100926192142.GA7252@kroah.com> (Greg KH's message of "Sun, 26
 	Sep 2010 12:21:42 -0700")
-Message-ID: <m162xs9l7j.fsf_-_@fess.ebiederm.org>
+Message-ID: <m1zkv486lj.fsf_-_@fess.ebiederm.org>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
 X-SA-Exim-Connect-IP: 98.207.157.188
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
@@ -40,132 +40,71 @@ X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
 X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
 X-Spam-Combo: ;Greg KH <greg@kroah.com>
 X-Spam-Relay-Country: 
-Subject: [PATCH 1/5] uio: Simplify the lifetime logic of struct uio_device.
+Subject: [PATCH 2/5] uio: Kill unused vma_count.
 X-Spam-Flag: No
 X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Embed struct device into struct uio_device, and use
-the refcounting and the release method of struct device
-to control struct uio_device.
-
-This allows device_create and device_destroy to be replaced
-with the more standard device_register and device_unregister,
-and allows the struct device reference count to act as a
-reference count on struct idev as well.
+Remove the tracking of how many vmas are using in the uio memory
+mapping mode.  The uio code doesn't use that information anywhere.
 
 Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
 ---
- drivers/uio/uio.c |   42 ++++++++++++++++++++++++++++--------------
- 1 files changed, 28 insertions(+), 14 deletions(-)
+ drivers/uio/uio.c |   16 ----------------
+ 1 files changed, 0 insertions(+), 16 deletions(-)
 
 diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-index 6285afb..565559c 100644
+index 565559c..95f25ae 100644
 --- a/drivers/uio/uio.c
 +++ b/drivers/uio/uio.c
-@@ -30,7 +30,7 @@
- 
- struct uio_device {
- 	struct module		*owner;
--	struct device		*dev;
-+	struct device		device;
- 	int			minor;
+@@ -35,7 +35,6 @@ struct uio_device {
  	atomic_t		event;
  	struct fasync_struct	*async_queue;
-@@ -279,7 +279,7 @@ static int uio_dev_add_attributes(struct uio_device *idev)
- 		if (!map_found) {
- 			map_found = 1;
- 			idev->map_dir = kobject_create_and_add("maps",
--							&idev->dev->kobj);
-+							&idev->device.kobj);
- 			if (!idev->map_dir)
- 				goto err_map;
- 		}
-@@ -304,7 +304,7 @@ static int uio_dev_add_attributes(struct uio_device *idev)
- 		if (!portio_found) {
- 			portio_found = 1;
- 			idev->portio_dir = kobject_create_and_add("portio",
--							&idev->dev->kobj);
-+							&idev->device.kobj);
- 			if (!idev->portio_dir)
- 				goto err_portio;
- 		}
-@@ -339,7 +339,7 @@ err_map:
- 		kobject_put(&map->kobj);
- 	}
- 	kobject_put(idev->map_dir);
--	dev_err(idev->dev, "error creating sysfs files (%d)\n", ret);
-+	dev_err(&idev->device, "error creating sysfs files (%d)\n", ret);
- 	return ret;
+ 	wait_queue_head_t	wait;
+-	int			vma_count;
+ 	struct uio_info		*info;
+ 	struct kobject		*map_dir;
+ 	struct kobject		*portio_dir;
+@@ -599,18 +598,6 @@ static int uio_find_mem_index(struct vm_area_struct *vma)
+ 	return -1;
  }
  
-@@ -789,6 +789,13 @@ static void release_uio_class(void)
- 	uio_major_cleanup();
+-static void uio_vma_open(struct vm_area_struct *vma)
+-{
+-	struct uio_device *idev = vma->vm_private_data;
+-	idev->vma_count++;
+-}
+-
+-static void uio_vma_close(struct vm_area_struct *vma)
+-{
+-	struct uio_device *idev = vma->vm_private_data;
+-	idev->vma_count--;
+-}
+-
+ static int uio_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ {
+ 	struct uio_device *idev = vma->vm_private_data;
+@@ -638,8 +625,6 @@ static int uio_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
  }
  
-+static void uio_device_release(struct device *dev)
-+{
-+	struct uio_device *idev = dev_get_drvdata(dev);
-+
-+	kfree(idev);
-+}
-+
- /**
-  * uio_register_device - register a new userspace IO device
-  * @owner:	module that creates the new device
-@@ -824,14 +831,19 @@ int __uio_register_device(struct module *owner,
- 	if (ret)
- 		goto err_get_minor;
+ static const struct vm_operations_struct uio_vm_ops = {
+-	.open = uio_vma_open,
+-	.close = uio_vma_close,
+ 	.fault = uio_vma_fault,
+ };
  
--	idev->dev = device_create(&uio_class, parent,
--				  MKDEV(uio_major, idev->minor), idev,
--				  "uio%d", idev->minor);
--	if (IS_ERR(idev->dev)) {
--		printk(KERN_ERR "UIO: device register failed\n");
--		ret = PTR_ERR(idev->dev);
-+	idev->device.devt = MKDEV(uio_major, idev->minor);
-+	idev->device.class = &uio_class;
-+	idev->device.parent = parent;
-+	idev->device.release = uio_device_release;
-+	dev_set_drvdata(&idev->device, idev);
-+
-+	ret = kobject_set_name(&idev->device.kobj, "uio%d", idev->minor);
-+	if (ret)
-+		goto err_device_create;
-+
-+	ret = device_register(&idev->device);
-+	if (ret)
- 		goto err_device_create;
--	}
- 
- 	ret = uio_dev_add_attributes(idev);
- 	if (ret)
-@@ -851,7 +863,10 @@ int __uio_register_device(struct module *owner,
- err_request_irq:
- 	uio_dev_del_attributes(idev);
- err_uio_dev_add_attributes:
--	device_destroy(&uio_class, MKDEV(uio_major, idev->minor));
-+	uio_free_minor(idev);
-+	device_unregister(&idev->device);
-+	return ret;
-+
- err_device_create:
- 	uio_free_minor(idev);
- err_get_minor:
-@@ -882,8 +897,7 @@ void uio_unregister_device(struct uio_info *info)
- 
- 	uio_dev_del_attributes(idev);
- 
--	device_destroy(&uio_class, MKDEV(uio_major, idev->minor));
--	kfree(idev);
-+	device_unregister(&idev->device);
- 
- 	return;
+@@ -665,7 +650,6 @@ static int uio_mmap_logical(struct vm_area_struct *vma)
+ {
+ 	vma->vm_flags |= VM_RESERVED;
+ 	vma->vm_ops = &uio_vm_ops;
+-	uio_vma_open(vma);
+ 	return 0;
  }
+ 
 -- 
 1.7.2.2
 
