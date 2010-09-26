@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757761Ab0IZNAB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 09:00:01 -0400
-Received: from mtagate1.de.ibm.com ([195.212.17.161]:36785 "EHLO
-	mtagate1.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757576Ab0IZNAA (ORCPT
+	id S1757713Ab0IZNCL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 09:02:11 -0400
+Received: from 68.mail-out.ovh.net ([91.121.185.69]:48865 "HELO
+	68.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757576Ab0IZNCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 09:00:00 -0400
-Date: Sun, 26 Sep 2010 14:59:45 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH] generic-ipi: fix deadlock in __smp_call_function_single
-Message-ID: <20100926125945.GA2597@osiris.boeblingen.de.ibm.com>
-References: <20100909135050.GB2228@osiris.boeblingen.de.ibm.com>
- <1284116817.402.33.camel@laptop>
- <20100910172805.a4fe5c7f.akpm@linux-foundation.org>
- <20100926084233.GA28809@elte.hu>
+	Sun, 26 Sep 2010 09:02:09 -0400
+Message-ID: <4C9F444D.8060604@example.com>
+Date: Sun, 26 Sep 2010 15:02:05 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100917 Icedove/3.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100926084233.GA28809@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Greg KH <gregkh@suse.de>
+CC: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, linux-nvidia@lists.surfsouth.com
+Subject: Re: [00/80] 2.6.35.6 stable review
+References: <20100924162706.GA7381@kroah.com> <4C9E2801.4020609@example.com> <20100925172459.GA2208@suse.de> <4C9E31A9.4020802@example.com> <20100925174238.GB11836@suse.de> <4C9E36CC.4090807@example.com> <20100926113222.GA19452@suse.de>
+In-Reply-To: <20100926113222.GA19452@suse.de>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 4921871444017050000
+X-Ovh-Remote: 95.49.244.5 (afjk5.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 26, 2010 at 10:42:33AM +0200, Ingo Molnar wrote:
-> 
-> * Andrew Morton <akpm@linux-foundation.org> wrote:
-> 
-> > Maybe.  Or maybe it papers over a scheduler bug by gratuitously adding 
-> > additional code which no present callsites actually need.
-> 
-> Hm, indeed.
-> 
-> We now have the scheduler bug fixed upstream. Do we really need this 
-> patch?
+On 26.09.2010 13:32, Greg KH wrote:
 
-General consensus was that it is good if smp_call_function_single() and
-__smp_call_function_single() would behave the same if remote cpu == current
-cpu.
+> If .35.1 didn't work for you, then no, odds are this will not work for
+> you either.  I suggest working with the nouveau driver developers (their
+> email can be found in the MAINTAINERS file) to get this resolved.
 
-If you're not applying this patch then at least at a WARN_ON() which triggers
-when remote cpu == current cpu. I don't want to debug something like this
-again.
- 
-> > The patch didn't update the __smp_call_function_single() kerneldoc. 
-> > Compare it with smp_call_function_single() and note the subtle 
-> > difference between "a specific CPU" and the now incorrect "on another 
-> > CPU".
-> 
-> In any case this feedback didnt get addressed AFAICS.
+I did not find that email. Please nvidia guys perhaps you know, what's 
+the email where I can report problems with nouveau Linux driver?
 
-It did get addressed in an updated patch which is the one which you
-applied: http://lkml.org/lkml/2010/9/10/245
+Regards,
+
+Piotr Hosowicz
+-- 
+W korytarzach kremlowskich Bre¿niew spotyka Sus³owa. Sus³ow pyta:
+- Leonid, wiesz, ¿e jeden but masz ¿ó³ty, a drugi czarny?
+- Wiem, Misza, chcia³em nawet zmieniæ, ale w domu mam to samo,
+   jeden ¿ó³ty i jeden czarny.
+NP:  -
+NB: 2.6.36-rc5-git7
