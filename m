@@ -1,63 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733Ab0IZJNe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 05:13:34 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:34058 "EHLO mx3.mail.elte.hu"
+	id S1753608Ab0IZJQh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 05:16:37 -0400
+Received: from mga09.intel.com ([134.134.136.24]:41394 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752695Ab0IZJNa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 05:13:30 -0400
-Date: Sun, 26 Sep 2010 11:13:06 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Brian Gerst <brgerst@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, tglx@linutronix.de,
-        mingo@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: what's papered over by set_fs(USER_DS) in amd64 signal delivery?
-Message-ID: <20100926091306.GA3857@elte.hu>
-References: <20100924155231.GQ19804@ZenIV.linux.org.uk>
- <AANLkTik+1k76vGccjwQWeEWZFng61ZoodDyWbN8wvPgE@mail.gmail.com>
- <20100924165716.GR19804@ZenIV.linux.org.uk>
- <AANLkTikV5O1QxYEHRzZzCrE=VSWj8aV6nA5Z3QOTxtL=@mail.gmail.com>
- <20100925024804.GS19804@ZenIV.linux.org.uk>
- <AANLkTikKtK1s8mGF4chhLtXRJW1G43BKAAY3wC-EVbQH@mail.gmail.com>
- <20100925052054.GU19804@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100925052054.GU19804@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.0 required=5.9 tests=BAYES_20 autolearn=no SpamAssassin version=3.2.5
-	-1.0 BAYES_20               BODY: Bayesian spam probability is 5 to 20%
-	[score: 0.1653]
+	id S1752496Ab0IZJQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Sep 2010 05:16:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,238,1283756400"; 
+   d="scan'208";a="558051256"
+From: yakui.zhao@intel.com
+To: hpa@zytor.com
+Cc: linux-kernel@vger.kernel.org, Zhao Yakui <yakui.zhao@intel.com>
+Subject: [PATCH] X86/Mem: Use string copy operation to optimze copy in kernel compression
+Date: Sun, 26 Sep 2010 17:12:01 +0800
+Message-Id: <1285492321-14606-1-git-send-email-yakui.zhao@intel.com>
+X-Mailer: git-send-email 1.5.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Zhao Yakui <yakui.zhao@intel.com>
 
-* Al Viro <viro@ZenIV.linux.org.uk> wrote:
+It will parse the elf and then copy them to the corresponding destination after
+the kernel decompression is finished. And now it uses the slow byte-copy mode.
+How about using the string copy operation to accelerate the copy speed in
+course of kernel compression?(It is orignated from the arch/x86/lib/memcpy_32.c)
 
-> [...]  IOW, that set_fs() seems to have been useless from the day 1, 
-> unless I'm missing something really subtle, like e.g. some processes 
-> deliberately running (in 2.0) with %fs set to something with lower 
-> limit, with signal handlers allowed to switch back to normal for 
-> duration.  And even that would've been broken, since there wouldn't be 
-> a matching set_fs() in sigreturn()...
+In the test the copy performance can be improved very significantly after using
+the string copy operation mechanism.
+        1. The copy time can be reduced from 150ms to 20ms on one atom machine
+	2. The copy time can be reduced about 80% on another machine
+		The time is reduced from 7ms to 1.5ms when using 32-bit kernel.
+		The time is reduced from 10ms to 2ms when using 64-bit kernel.
 
-I dont recall us ever having done anything particularly 'clever' with 
-in-kernel set_fs()/restore_fs(). Beyond fork/clone it was always 
-supposed to be set/restored in a balanced manner. We sometimes leaked it 
-unintentionally, and those were security holes.
+Signed-off-by: Zhao Yakui <yakui.zhao@intel.com>
+---
+ arch/x86/boot/compressed/misc.c |   35 +++++++++++++++++++++++++++++------
+ 1 files changed, 29 insertions(+), 6 deletions(-)
 
-( Cleverness with security primitives was in fact always actively
-  discouraged, even in the early days, as cleverness has the uncanny
-  tendency to bit-rot and then has the tendency to slow-convert to a
-  security hole by stealth. We always wanted obvious, boringly dumb,
-  fail-safe primitives, which can take a few years of bitrot robustly. )
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 8f7bef8..34793ae 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -229,18 +229,41 @@ void *memset(void *s, int c, size_t n)
+ 		ss[i] = c;
+ 	return s;
+ }
+-
++#ifdef CONFIG_X86_32
+ void *memcpy(void *dest, const void *src, size_t n)
+ {
+-	int i;
+-	const char *s = src;
+-	char *d = dest;
++	int d0, d1, d2;
++	asm volatile(
++		"rep ; movsl\n\t"
++		"movl %4,%%ecx\n\t"
++		"andl $3,%%ecx\n\t"
++		"jz 1f\n\t"
++		"rep ; movsb\n\t"
++		"1:"
++		: "=&c" (d0), "=&D" (d1), "=&S" (d2)
++		: "0" (n / 4), "g" (n), "1" ((long)dest), "2" ((long)src)
++		: "memory");
+ 
+-	for (i = 0; i < n; i++)
+-		d[i] = s[i];
+ 	return dest;
+ }
++#else
++void *memcpy(void *dest, const void *src, size_t n)
++{
++	long d0, d1, d2;
++	asm volatile(
++		"rep ; movsq\n\t"
++		"movq %4,%%rcx\n\t"
++		"andq $7,%%rcx\n\t"
++		"jz 1f\n\t"
++		"rep ; movsb\n\t"
++		"1:"
++		: "=&c" (d0), "=&D" (d1), "=&S" (d2)
++		: "0" (n / 8), "g" (n), "1" ((long)dest), "2" ((long)src)
++		: "memory");
+ 
++	return dest;
++}
++#endif
+ 
+ static void error(char *x)
+ {
+-- 
+1.5.4.5
 
-Thanks,
-
-	Ingo
