@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757713Ab0IZNCL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 09:02:11 -0400
-Received: from 68.mail-out.ovh.net ([91.121.185.69]:48865 "HELO
-	68.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757576Ab0IZNCJ (ORCPT
+	id S1757802Ab0IZNCj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 09:02:39 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60047 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757745Ab0IZNCi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 09:02:09 -0400
-Message-ID: <4C9F444D.8060604@example.com>
-Date: Sun, 26 Sep 2010 15:02:05 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100917 Icedove/3.0.8
+	Sun, 26 Sep 2010 09:02:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=IjVhimWDnaLQpf+YexO5Xq6p0TAMX5AcF81/sGlk1/BQo0joBiLbd3t237csBk7G9x
+         /Ycv38Ax4Ek+NUEuvFsTud2XK84qgWacKUn7VltbrQ/LwhQ37+7f5P6ekEcmf4TCq5lU
+         FScSAE4TRF39rJ6mOS1RbjC9RpxbbIKaRN+wY=
+Date: Sun, 26 Sep 2010 15:02:33 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        =?iso-8859-1?Q?M=E1rton_N=E9meth?= <nm127@freemail.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ian Kent <raven@themaw.net>
+Subject: Re: [PATCH 1/2] autofs: Only declare function when CONFIG_COMPAT
+	is defined
+Message-ID: <20100926130230.GA5378@nowhere>
+References: <1285334543-7074-1-git-send-regression-fweisbec@gmail.com> <201009251755.57690.arnd@arndb.de>
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, linux-nvidia@lists.surfsouth.com
-Subject: Re: [00/80] 2.6.35.6 stable review
-References: <20100924162706.GA7381@kroah.com> <4C9E2801.4020609@example.com> <20100925172459.GA2208@suse.de> <4C9E31A9.4020802@example.com> <20100925174238.GB11836@suse.de> <4C9E36CC.4090807@example.com> <20100926113222.GA19452@suse.de>
-In-Reply-To: <20100926113222.GA19452@suse.de>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 4921871444017050000
-X-Ovh-Remote: 95.49.244.5 (afjk5.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+In-Reply-To: <201009251755.57690.arnd@arndb.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.09.2010 13:32, Greg KH wrote:
+On Sat, Sep 25, 2010 at 05:55:57PM +0200, Arnd Bergmann wrote:
+> On Friday 24 September 2010 15:22:22 Frederic Weisbecker wrote:
+> > From: MÃ¡rton NÃ©meth <nm127@freemail.hu>
+> > 
+> > The patch solves the following warnings message when CONFIG_COMPAT
+> > is not defined:
+> > 
+> > fs/autofs/root.c:30: warning: â€˜autofs_root_compat_ioctlâ€™ declared â€˜staticâ€™ but never defined
+> > 
+> > Signed-off-by: MÃ¡rton NÃ©meth <nm127@freemail.hu>
+> > Cc: "H. Peter Anvin" <hpa@zytor.com>
+> > Cc: Arnd Bergmann <arnd@arndb.de>
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> 
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> 
+> My initial reaction was to put these into my bkl/vfs tree, but then I noticed
+> that they are against a 2.6.36 bug. Who's taking care of getting them upstream?
+> 
+> - Ian (maintainer)
+> - Arnd (who wrote the broken patch to start with)
+> - Frederic (who pushed the broken patch to Linus)
+> - Andrew (took them into -mm)
+> 
+> I don't care either way, just trying to make sure it gets there and we don't
+> all submit the same patch simultaneously.
+> 
+> The current state is annoying but harmless, so I could also just add the
+> patches to my 2.6.37 queue, which already has autofs patches for the BKL.
+> 
+> 	Arnd
 
-> If .35.1 didn't work for you, then no, odds are this will not work for
-> you either.  I suggest working with the nouveau driver developers (their
-> email can be found in the MAINTAINERS file) to get this resolved.
 
-I did not find that email. Please nvidia guys perhaps you know, what's 
-the email where I can report problems with nouveau Linux driver?
 
-Regards,
+I think Andrew has taken the autofs one, as I've received an mmotm notification.
+I don't know about the autofs4 one though.
 
-Piotr Hosowicz
--- 
-W korytarzach kremlowskich Bre¿niew spotyka Sus³owa. Sus³ow pyta:
-- Leonid, wiesz, ¿e jeden but masz ¿ó³ty, a drugi czarny?
-- Wiem, Misza, chcia³em nawet zmieniæ, ale w domu mam to samo,
-   jeden ¿ó³ty i jeden czarny.
-NP:  -
-NB: 2.6.36-rc5-git7
