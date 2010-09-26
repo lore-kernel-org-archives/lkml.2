@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756277Ab0IZCpf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 22:45:35 -0400
-Received: from mail.perches.com ([173.55.12.10]:2426 "EHLO mail.perches.com"
+	id S1756474Ab0IZDV5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 23:21:57 -0400
+Received: from mx1.fusionio.com ([64.244.102.30]:43282 "EHLO mx1.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755443Ab0IZCpe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 22:45:34 -0400
-Subject: Re: [PATCH 01/10] Fs: ext4: acl.c: fixed indent issue
-From: Joe Perches <joe@perches.com>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Andy Whitcroft <apw@canonical.com>, Christoph Hellwig <hch@lst.de>,
-        T Dent <tdent48227@gmail.com>, adilger.kernel@dilger.ca, jack@suse.cz,
-        dmonakhov@openvz.org, sandeen@redhat.com, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20100926022137.GK19690@thunk.org>
-References: <20100925235643.GA3224@lst.de> <20100926000154.GB5299@thunk.org>
-	 <1285459769.6115.74.camel@Joe-Laptop> <20100926003255.GA19690@thunk.org>
-	 <1285462243.6115.89.camel@Joe-Laptop> <20100926010410.GC19690@thunk.org>
-	 <1285464746.6115.108.camel@Joe-Laptop> <20100926015328.GI19690@thunk.org>
-	 <1285466591.6115.117.camel@Joe-Laptop> <20100926021030.GJ19690@thunk.org>
-	 <20100926022137.GK19690@thunk.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 25 Sep 2010 19:45:32 -0700
-Message-ID: <1285469132.6115.162.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755980Ab0IZDV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Sep 2010 23:21:56 -0400
+X-ASG-Debug-ID: 1285471315-0e1238330001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4C9EBC50.3080201@fusionio.com>
+Date: Sun, 26 Sep 2010 12:21:52 +0900
+From: Jens Axboe <jaxboe@fusionio.com>
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] One important block fix for 2.6.36-rc
+References: <4C9DD2D5.8090807@fusionio.com> <AANLkTikcR8fu11jyLcD3Fuvm4TPxU=46jLcpsYryHONP@mail.gmail.com>
+X-ASG-Orig-Subj: Re: [GIT PULL] One important block fix for 2.6.36-rc
+In-Reply-To: <AANLkTikcR8fu11jyLcD3Fuvm4TPxU=46jLcpsYryHONP@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1285471315
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0005 1.0000 -2.0176
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.41906
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-09-25 at 22:21 -0400, Ted Ts'o wrote:
-> P.S.  This is also completely insane:
->     --git-min-percent => minimum percentage of commits required (default: 5)
-> Anyone who has 5% of the commits should be considered a maintainer?!?
+On 2010-09-26 01:59, Linus Torvalds wrote:
+> On Sat, Sep 25, 2010 at 3:45 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
+>>
+>> Please pull asap, thanks.
+> 
+> Pulled, but I _really_ wish you started looking at cleanliness issues,
+> even with bug-reports.
+> 
+> That's a singularly stupid and unreadable way of testing "do those
+> flags match". It is quite possible that the compiler fixes up the
+> stupidity, but that doesn't make it much better.
+> 
+> Here's how things like this _should_ be tested:
+> 
+>    #define REQ_FLAGS_MUST_MATCH (REQ_SECURE | REQ_DISCARD)
+> 
+>    ...
+>    /* Check that flags match in the required bits */
+>    if ((req->cmd_flags ^ next->cmd_flags) & REQ_FLAGS_MUST_MATCH)
+>       return 0;
+>    ...
+> 
+> which is (a) smaller (b) easier and clearer to add flags as needed and
+> (c) actually more readable due to not having duplicated logic (not
+> just one if-statement, but one mask too).
 
-Probably --git-min-signatures=1 isn't high enough either.
+Completely agree, I will clean this up for the .37. Since we are very
+late in the rc cycle, I prefer obvious patches greatly. Especially
+for something like this, which could cause data corruption.
 
-I have no issue changing those to whatever is appropriate.
+> And yes, I think you'd want to add a few flags there. Looking at the
+> REQ_xyz flags, I suspect most o them should really really match for
+> requests to be mergeable. Wouldn't it be better to think of it in
+> terms of "do we really allow different cmd_flags requests to merge"
+> than adding one bit ad-hoc at a time?
 
-I believe the only person to comment on the % before
-was Mark Brown, who might have suggested that number.
+The above bits and the failfast bits at least should disallow merging,
+and the direction bit as well. So yes, I think we should add an
+explicit mask for this.
 
-There've always been tradeoffs between activity on the file,
-direct maintainership and reasonable accuracy of patterns.
-
-Today, patterns are mostly reasonable, except for arch/arm/.
+-- 
+Jens Axboe
 
