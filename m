@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932107Ab0IZNL4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 09:11:56 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:65033 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757791Ab0IZNLy (ORCPT
+	id S1757843Ab0IZNPq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 09:15:46 -0400
+Received: from 68.mail-out.ovh.net ([91.121.185.69]:33350 "HELO
+	68.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757817Ab0IZNPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 09:11:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=Ivpt11ZBFDwIQfkx4uLHOlXHnqUwNrInnoMbiArEgeHDUpaKxc9U+/nSCa/E8TNc3x
-         Z2+bW1RkPcKCJ3VQFpHb6VUwBbYEa4DdeEM9XBoTCfg4rbh+cumhh51Be+qggqfzbVY0
-         2Wbu8DG4CQHvIEhIWAaTXevFoE0q/lz83p6z0=
-Date: Sun, 26 Sep 2010 15:11:51 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Vasiliy Kulikov <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Marek Belisko <marek.belisko@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: ft1000: fix error path
-Message-ID: <20100926131151.GC6134@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Vasiliy Kulikov <segooon@gmail.com>,
-	kernel-janitors@vger.kernel.org,
-	Greg Kroah-Hartman <gregkh@suse.de>,
-	Marek Belisko <marek.belisko@gmail.com>, devel@driverdev.osuosl.org,
-	linux-kernel@vger.kernel.org
-References: <1285491595-377-1-git-send-email-segooon@gmail.com>
+	Sun, 26 Sep 2010 09:15:45 -0400
+Message-ID: <4C9F477C.3030000@example.com>
+Date: Sun, 26 Sep 2010 15:15:40 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100917 Icedove/3.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1285491595-377-1-git-send-email-segooon@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Sven Joachim <svenjoac@gmx.de>
+CC: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
+        stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        linux-nvidia@lists.surfsouth.com
+Subject: Re: [00/80] 2.6.35.6 stable review
+References: <20100924162706.GA7381@kroah.com> <4C9E2801.4020609@example.com>	<20100925172459.GA2208@suse.de> <4C9E31A9.4020802@example.com>	<20100925174238.GB11836@suse.de> <4C9E36CC.4090807@example.com>	<20100926113222.GA19452@suse.de> <4C9F444D.8060604@example.com> <87y6aobqhf.fsf@turtle.gmx.de>
+In-Reply-To: <87y6aobqhf.fsf@turtle.gmx.de>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 5151273550760931709
+X-Ovh-Remote: 95.49.244.5 (afjk5.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 26, 2010 at 12:59:55PM +0400, Vasiliy Kulikov wrote:
-> +err_free:
-> +	for (i--; i>=0; i--) {
-> +		kfree(pdpram_blk->pbuffer);
-> +		kfree(pdpram_blk);
-> +	}
+On 26.09.2010 15:10, Sven Joachim wrote:
+> On 2010-09-26 15:02 +0200, Piotr Hosowicz wrote:
+>
+>> On 26.09.2010 13:32, Greg KH wrote:
+>>
+>>> If .35.1 didn't work for you, then no, odds are this will not work for
+>>> you either.  I suggest working with the nouveau driver developers (their
+>>> email can be found in the MAINTAINERS file) to get this resolved.
+>>
+>> I did not find that email. Please nvidia guys perhaps you know, what's
+>> the email where I can report problems with nouveau Linux driver?
+>
+> Their address is nouveau@lists.freedesktop.org.  And it is true that
+> they are not mentioned in MAINTAINERS.
 
-This is wrong.  I don't have linux-next so I can't see the context, why
-are we looping here?  The second iteration through the loop will cause a
-NULL dereference.
+Thanks.
 
-Also there should be spaces before and after the ">=".
+Regards,
 
-regards,
-dan carpenter
+Piotr Hosowicz
 
-> +	return STATUS_FAILURE;
->  }
->  
-
+-- 
+Z cyklu "Uroki demokracji", czyli pytania i odpowiedzi w teledurniejach:
+- Znamy trzy stany skupienia - sta³y, ciek³y i...?
+- Galaretka.
+NP:  -
+NB: 2.6.36-rc5-git7
