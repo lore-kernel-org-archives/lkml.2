@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223Ab0IZJiy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 05:38:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6973 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755542Ab0IZJiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755999Ab0IZJiq (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 26 Sep 2010 05:38:46 -0400
-From: Avi Kivity <avi@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-trace-users@vger.kernel.org
-Subject: [PATCH trace-cmd] plugin_kvm: remove stray line from kvm_emulate_insn_handler()
-Date: Sun, 26 Sep 2010 11:38:42 +0200
-Message-Id: <1285493922-29797-1-git-send-email-avi@redhat.com>
+Received: from ppsw-32.csi.cam.ac.uk ([131.111.8.132]:55620 "EHLO
+	ppsw-32.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755177Ab0IZJio (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Sep 2010 05:38:44 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4C9F15E7.6030003@cam.ac.uk>
+Date: Sun, 26 Sep 2010 10:44:07 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100909 Lightning/1.0b3pre Thunderbird/3.1.3
+MIME-Version: 1.0
+To: Phillip Kurtenbach <pkurtenbach@googlemail.com>
+CC: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Phillip Kurtenbach <pkurtenbach@gmail.com>
+Subject: Re: [PATCH] staging: iio: whitespace cleanup
+References: <1285456269-27582-1-git-send-email-pkurtenbach@gmail.com>
+In-Reply-To: <1285456269-27582-1-git-send-email-pkurtenbach@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'guest_rip' is not part of kvm_emulate_insn.
+On 09/26/10 00:11, Phillip Kurtenbach wrote:
+> Fixed whitespace coding style issues.
+> 
+> Signed-off-by: Phillip Kurtenbach <pkurtenbach@gmail.com>
+Thanks. Those two seem to have been there a long time!
 
-Signed-off-by: Avi Kivity <avi@redhat.com>
----
- plugin_kvm.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
-
-diff --git a/plugin_kvm.c b/plugin_kvm.c
-index 00cac5a..cdd52c7 100644
---- a/plugin_kvm.c
-+++ b/plugin_kvm.c
-@@ -199,8 +199,6 @@ static int kvm_emulate_insn_handler(struct trace_seq *s, struct record *record,
- 	trace_seq_printf(s, "%llx:%llx: %s%s", csbase, rip, disasm,
- 			 failed ? " FAIL" : "");
- 
--	pevent_print_num_field(s, " rip %0xlx", event, "guest_rip", record, 1);
--
- 	return 0;
- }
- 
--- 
-1.7.2.3
+Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+> ---
+>  drivers/staging/iio/industrialio-core.c |    2 +-
+>  drivers/staging/iio/industrialio-ring.c |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/iio/industrialio-core.c b/drivers/staging/iio/industrialio-core.c
+> index dd4d87a..c03e1ae 100644
+> --- a/drivers/staging/iio/industrialio-core.c
+> +++ b/drivers/staging/iio/industrialio-core.c
+> @@ -59,7 +59,7 @@ EXPORT_SYMBOL(__iio_change_event);
+>   * are queued. Hence a client MUST open the chrdev before the ring buffer is
+>   * switched on.
+>   */
+> - int __iio_push_event(struct iio_event_interface *ev_int,
+> +int __iio_push_event(struct iio_event_interface *ev_int,
+>  		     int ev_code,
+>  		     s64 timestamp,
+>  		     struct iio_shared_ev_pointer *
+> diff --git a/drivers/staging/iio/industrialio-ring.c b/drivers/staging/iio/industrialio-ring.c
+> index 6ab578e..972a41a 100644
+> --- a/drivers/staging/iio/industrialio-ring.c
+> +++ b/drivers/staging/iio/industrialio-ring.c
+> @@ -312,7 +312,7 @@ ssize_t iio_read_ring_length(struct device *dev,
+>  }
+>  EXPORT_SYMBOL(iio_read_ring_length);
+>  
+> - ssize_t iio_write_ring_length(struct device *dev,
+> +ssize_t iio_write_ring_length(struct device *dev,
+>  			       struct device_attribute *attr,
+>  			       const char *buf,
+>  			       size_t len)
 
