@@ -1,41 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758357Ab0I0AEJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 20:04:09 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:33470 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753233Ab0I0AEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 20:04:07 -0400
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: torvalds@linux-foundation.org
-CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon fixes for 2.6.36 - take two
-Date: Sun, 26 Sep 2010 17:11:57 -0700
-Message-ID: <1285546317-18970-1-git-send-email-guenter.roeck@ericsson.com>
-X-Mailer: git-send-email 1.7.0.87.g0901d
+	id S1758218Ab0I0AIA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 20:08:00 -0400
+Received: from aa011msr.fastwebnet.it ([85.18.95.71]:36778 "EHLO
+	aa011msr.fastwebnet.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753233Ab0I0AH7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Sep 2010 20:07:59 -0400
+Message-ID: <10453785.195601285542881854.JavaMail.defaultUser@defaultHost>
+Date: Mon, 27 Sep 2010 01:14:41 +0200 (CEST)
+From: BARR ALBERTHO RAHIM <maurizio.perotti@fastwebnet.it>
+Reply-To: barralbertho@mail.mn
+Subject: VERY URGENT
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain;charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 175.137.170.41
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Please pull hwmon subsystem fixes for Linux 2.6.36 from:
+ I am Albertho Rahim,an attorney at law a deceased client of mine that shares th
+e same last name as yours died in a heart-related condition in 2005,due to Sumat
+ra Indonesia earthquake 2004 that took all the family members.http://en.wikipedi
+a.org/wiki/2004_Indian_Ocean_earthquake. i  need you to assist me in distributin
+g(uS$17,500,000.00 Million)left by   my client. Get back to me for more details.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging.git hwmon-for-linus
 
-This is a single commit which fixes the built breakage introduced with the
-series I sent out yesterday. For your convenience, I also copied you on the 
-patch itself.
+ Regard
+ Barr Albertho Rahim
 
-Thanks,
-Guenter Roeck
-
-------
-
-Guenter Roeck (1):
-      hwmon (coretemp): Fix build breakage if SMP is undefined
-
- drivers/hwmon/coretemp.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
