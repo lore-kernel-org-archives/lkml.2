@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156Ab0IZOgd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 10:36:33 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42105 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932092Ab0IZOgb (ORCPT
+	id S1756087Ab0IZOxA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 10:53:00 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:55522 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751755Ab0IZOw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 10:36:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=ZHm4A0nvLsmp/svgixsZOvFVlkkZhFyxIawqRA+SFpK2LjziqclRLlyppc52adfkJ9
-         +N4RFI87MxYeU2w5hts2knIDLcrq2IG9akKbXHW0AvzNZKjUmCIQgZtiA4oXw6Su1lfD
-         8zFe6XRigQNlCBsmxhbzp9ZAtPjWPb8OQTbsM=
-Date: Sun, 26 Sep 2010 16:38:20 +0200
-From: Lutz Ballaschke <vegan.grindcore@googlemail.com>
-To: Giel van Schijndel <me@mortis.eu>
-Cc: wim@iguana.be, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHv3 3/3] watchdog: add f71862fg support
-Message-ID: <20100926143820.GD2150@kreios.titan>
+	Sun, 26 Sep 2010 10:52:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Amit Shah <amit.shah@redhat.com>
+Subject: Re: linux-next: manual merge of the bkl-llseek tree with the rr tree
+Date: Sun, 26 Sep 2010 16:52:44 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc5+; KDE/4.5.1; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
+References: <20100915132646.4aef58f8.sfr@canb.auug.org.au> <201009161020.01392.arnd@arndb.de> <20100916085608.GB8159@amit-laptop.redhat.com>
+In-Reply-To: <20100916085608.GB8159@amit-laptop.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009261652.44542.arnd@arndb.de>
+X-Provags-ID: V02:K0:vwUcL9aMy+85+SXR2cc+637FDe23OSKKKvqN/+5fwsb
+ J87LvaqESrDVi3KS/gxcLqVMKOXBmilkBF9PS1GP9LSY8tpqnE
+ H3wBr7vf8U+6893eQJVHdxYz6txuRqYCsXZyGw8ca8RSRob0aM
+ ZU0yBabtM+8cfW3HXNE6Kb/bEXqVHge8g1AXIv+DAEUjVkFZ3Z
+ XS1xtp7JK98LQ2k678V3g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-from: Lutz Ballaschke <vegan.grindcore@googlemail.com>
+On Thursday 16 September 2010 10:56:08 Amit Shah wrote:
+> On (Thu) Sep 16 2010 [10:20:01], Arnd Bergmann wrote:
+> > On Thursday 16 September 2010 08:54:39 Amit Shah wrote:
+> > > Arnd, the device is supposed to be non-seekable so I'll add a
+> > > nonseekable_open() to the open() call.
+> > > 
+> > > So I guess the llseek operation should ne no_llseek instead of
+> > > noop_llseek.  Will you change that in your patchset?  Should I do that
+> > > in the patch I'll queue up?
+> > 
+> > Yes, I think it's best if you just do both changes in your patch, I'll
+> > drop this file from my series then.
+> 
+> Great, I'll queue that up.
 
-Cleaned up and replaced some magic numbers by constants.
+I don't see this change in linux-next yet. What happened?
 
-Signed-off-by: Lutz Ballaschke <vegan.grindcore@googlemail.com>
----
-
- drivers/watchdog/f71808e_wdt.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
-
-
-diff --git a/drivers/watchdog/f71808e_wdt.c b/drivers/watchdog/f71808e_wdt.c
-index d070086..c7b9ba7 100644
---- a/drivers/watchdog/f71808e_wdt.c
-+++ b/drivers/watchdog/f71808e_wdt.c
-@@ -57,8 +57,6 @@
- #define SIO_F71882_ID		0x0541	/* Chipset ID */
- #define SIO_F71889_ID		0x0723	/* Chipset ID */
- 
--#define	F71882FG_REG_START		0x01
--
- #define F71808FG_REG_WDO_CONF		0xf0
- #define F71808FG_REG_WDT_CONF		0xf5
- #define F71808FG_REG_WD_TIME		0xf6
-@@ -83,7 +81,7 @@ module_param(force_id, ushort, 0);
- MODULE_PARM_DESC(force_id, "Override the detected device ID");
- 
- static const int max_timeout = WATCHDOG_MAX_TIMEOUT;
--static int timeout = 60;	/* default timeout in seconds */
-+static int timeout = WATCHDOG_TIMEOUT;	/* default timeout in seconds */
- module_param(timeout, int, 0);
- MODULE_PARM_DESC(timeout,
- 	"Watchdog timeout in seconds. 1<= timeout <="
-@@ -352,13 +350,13 @@ static int watchdog_start(void)
- 	switch (watchdog.type) {
- 	case f71808fg:
- 		/* Set pin 21 to GPIO23/WDTRST#, then to WDTRST# */
--		superio_clear_bit(watchdog.sioaddr, 0x2a, 3);
--		superio_clear_bit(watchdog.sioaddr, 0x2b, 3);
-+		superio_clear_bit(watchdog.sioaddr, SIO_REG_MFUNCT2, 3);
-+		superio_clear_bit(watchdog.sioaddr, SIO_REG_MFUNCT3, 3);
- 		break;
- 
- 	case f71882fg:
- 		/* Set pin 56 to WDTRST# */
--		superio_set_bit(watchdog.sioaddr, 0x29, 1);
-+		superio_set_bit(watchdog.sioaddr, SIO_REG_MFUNCT1, 1);
- 		break;
- 
- 	case f71862fg:
+	Arnd
