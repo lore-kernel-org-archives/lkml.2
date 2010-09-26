@@ -1,40 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757720Ab0IZMvW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 08:51:22 -0400
-Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:33683 "EHLO
-	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757576Ab0IZMvV (ORCPT
+	id S1757761Ab0IZNAB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 09:00:01 -0400
+Received: from mtagate1.de.ibm.com ([195.212.17.161]:36785 "EHLO
+	mtagate1.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757576Ab0IZNAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 08:51:21 -0400
-Date: Sun, 26 Sep 2010 13:51:17 +0100
-From: Sitsofe Wheeler <sitsofe@yahoo.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Persistant Ext4 error
-Message-ID: <20100926125116.GA30683@sucs.org>
+	Sun, 26 Sep 2010 09:00:00 -0400
+Date: Sun, 26 Sep 2010 14:59:45 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH] generic-ipi: fix deadlock in __smp_call_function_single
+Message-ID: <20100926125945.GA2597@osiris.boeblingen.de.ibm.com>
+References: <20100909135050.GB2228@osiris.boeblingen.de.ibm.com>
+ <1284116817.402.33.camel@laptop>
+ <20100910172805.a4fe5c7f.akpm@linux-foundation.org>
+ <20100926084233.GA28809@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100926084233.GA28809@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Sep 26, 2010 at 10:42:33AM +0200, Ingo Molnar wrote:
+> 
+> * Andrew Morton <akpm@linux-foundation.org> wrote:
+> 
+> > Maybe.  Or maybe it papers over a scheduler bug by gratuitously adding 
+> > additional code which no present callsites actually need.
+> 
+> Hm, indeed.
+> 
+> We now have the scheduler bug fixed upstream. Do we really need this 
+> patch?
 
-I've been seeing regular errors when using Ext4 on an EeePC 900 with a
-recent 2.6.36 kernel since a few weeks ago.
+General consensus was that it is good if smp_call_function_single() and
+__smp_call_function_single() would behave the same if remote cpu == current
+cpu.
 
-[  304.096022] EXT4-fs (sdb2): error count: 5
-[  304.096034] EXT4-fs (sdb2): initial error at 1284296437: ext4_lookup:1052: inode 141510
-[  304.096042] EXT4-fs (sdb2): last error at 1284300370: htree_dirblock_to_tree:586: inode 129800: block 532439
+If you're not applying this patch then at least at a WARN_ON() which triggers
+when remote cpu == current cpu. I don't want to debug something like this
+again.
+ 
+> > The patch didn't update the __smp_call_function_single() kerneldoc. 
+> > Compare it with smp_call_function_single() and note the subtle 
+> > difference between "a specific CPU" and the now incorrect "on another 
+> > CPU".
+> 
+> In any case this feedback didnt get addressed AFAICS.
 
-The error seems to persist no matter how much I fsck the partition
-(e2fsck comes from e2fsprogs 1.41.11-1ubuntu2). The distro I am using is
-Ubuntu 10.04.
-
-Any ideas on what is causing this and how to fix it?
-
--- 
-Sitsofe | http://sucs.org/~sits/
+It did get addressed in an updated patch which is the one which you
+applied: http://lkml.org/lkml/2010/9/10/245
