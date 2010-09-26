@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757364Ab0IZC3z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 22:29:55 -0400
-Received: from mail.perches.com ([173.55.12.10]:2417 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756196Ab0IZC3y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 22:29:54 -0400
-Subject: Re: [PATCH 01/10] Fs: ext4: acl.c: fixed indent issue
-From: Joe Perches <joe@perches.com>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Andy Whitcroft <apw@canonical.com>, Christoph Hellwig <hch@lst.de>,
-        T Dent <tdent48227@gmail.com>, adilger.kernel@dilger.ca, jack@suse.cz,
-        dmonakhov@openvz.org, sandeen@redhat.com, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20100926021030.GJ19690@thunk.org>
-References: <AANLkTimf9Q=jfga=--H0VaZeWnbAVNhCPMn_G81sZ8vh@mail.gmail.com>
-	 <20100925235643.GA3224@lst.de> <20100926000154.GB5299@thunk.org>
-	 <1285459769.6115.74.camel@Joe-Laptop> <20100926003255.GA19690@thunk.org>
-	 <1285462243.6115.89.camel@Joe-Laptop> <20100926010410.GC19690@thunk.org>
-	 <1285464746.6115.108.camel@Joe-Laptop> <20100926015328.GI19690@thunk.org>
-	 <1285466591.6115.117.camel@Joe-Laptop>  <20100926021030.GJ19690@thunk.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 25 Sep 2010 19:29:52 -0700
-Message-ID: <1285468192.6115.131.camel@Joe-Laptop>
+	id S1757297Ab0IZCjR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 22:39:17 -0400
+Received: from xenotime.net ([72.52.115.56]:52295 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755956Ab0IZCjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Sep 2010 22:39:16 -0400
+Date: Sat, 25 Sep 2010 19:39:14 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: James <bjlockie@lockie.ca>
+Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: no modules :-)
+Message-Id: <20100925193914.f3c919d1.rdunlap@xenotime.net>
+In-Reply-To: <4C9D845A.4060105@lockie.ca>
+References: <4C9D845A.4060105@lockie.ca>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-09-25 at 22:10 -0400, Ted Ts'o wrote:
-> On Sat, Sep 25, 2010 at 07:03:11PM -0700, Joe Perches wrote:
-> > When you define "it" that way, not as any simple
-> > file pattern match, but as a control for what
-> > 	"git log -- path"
-> > to inspect,  it's quite feasible to use the pattern
-> > match rather than the file name.
-> > So, thanks, that's a good suggestion.
-> Don't make it an option, though.  If you must use hueristics, then at
-> least *try* to make the hueristics smarter.  If the file name falls
-> into certain patterns, such as:
->      fs/*/*.[ch]
->      drivers/scsi/*/*.[ch]
->      drivers/net/*/*.[ch]
-> etc., then you really should be doing the analysis by subdirectory,
-> and not by file.
- 
-I think if there's an exact pattern "depth" match, then
-git history should be searched by that subdirectory.
+On Sat, 25 Sep 2010 01:10:50 -0400 James wrote:
 
-So for example:
-	F:	drivers/scsi/megaraid/
+>  I don't like modules. :-)
+> 
+> What is pulling this in:
+> 
+> CONFIG_SCSI_WAIT_SCAN=m
+> 
+> I edited .config but make must have turned it back on.
+> --
 
-A lookup for drivers/scsi/megaraid/mega_common.h (same depth,
-search all commits in drivers/scsi/megaraid) now shows:
+If you have SCSI enabled and MODULES enabled, this kconfig symbol will be
+enabled (=m) automatically.  From drivers/scsi/Kconfig (with # comments):
 
-$ ./scripts/get_maintainer.pl -f drivers/scsi/megaraid/mega_common.h  --rolestats --git
-Neela Syam Kolli <megaraidlinux@lsi.com> (maintainer:MEGARAID SCSI DRI...)
-"James E.J. Bottomley" <James.Bottomley@suse.de> (maintainer:SCSI SUBSYSTEM,commit_signer:20/27=74%)
-linux-scsi@vger.kernel.org (open list:MEGARAID SCSI DRI...)
-linux-kernel@vger.kernel.org (open list)
 
-> But what was shipped as part of 2.6.35 was really, really, *REALLY*
-> bad.  It makes me wonder how much testing someone did with the
-> hueristics before turning it loose for the newbies to use.
- 
-A fair bit with all public discussions.
+config SCSI_WAIT_SCAN
+	tristate  # No prompt here, this is an invisible symbol.
+	default m
+	depends on SCSI
+	depends on MODULES
+# scsi_wait_scan is a loadable module which waits until all the async scans are
+# complete.  The idea is to use it in initrd/ initramfs scripts.  You modprobe
+# it after all the modprobes of the root SCSI drivers and it will wait until
+# they have all finished scanning their buses before allowing the boot to
+# proceed.  (This method is not applicable if targets boot independently in
+# parallel with the initiator, or with transports with non-deterministic target
+# discovery schemes, or if a transport driver does not support scsi_wait_scan.)
+#
+# This symbol is not exposed as a prompt because little is to be gained by
+# disabling it, whereas people who accidentally switch it off may wonder why
+# their mkinitrd gets into trouble.
 
-It's been shipped more or less that way since 2.6.30
-beginning in April, 2009.
 
-I get annoyed when people suggest that the maintainer
-of that silly script isn't responsive.
-
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
