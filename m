@@ -1,43 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757864Ab0IZODi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 10:03:38 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:41337 "EHLO linta.de"
+	id S1757917Ab0IZODj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 10:03:39 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:41335 "EHLO linta.de"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757682Ab0IZODg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 10:03:36 -0400
-Date: Sun, 26 Sep 2010 16:03:26 +0200
+	id S1757792Ab0IZODh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Sep 2010 10:03:37 -0400
+Date: Sun, 26 Sep 2010 15:54:44 +0200
 From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: torvalds@osdl.org, akpm@osdl.org
-Cc: linux-kernel@vger.kernel.org, linux-pcmcia@lists.infradead.org
-Subject: [git pull] PCMCIA bugfixes for 2.6.36-rc5
-Message-ID: <20100926140326.GA859@comet.dominikbrodowski.net>
-Mail-Followup-To: torvalds@osdl.org, akpm@osdl.org,
-	linux-kernel@vger.kernel.org, linux-pcmcia@lists.infradead.org
+To: Rahul Ruikar <rahul.ruikar@gmail.com>
+Cc: komurojun-mbn@nifty.com, w.sang@pengutronix.de, davem@davemloft.net,
+        linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pcmcia: pd6729: Fix error path
+Message-ID: <20100926135444.GA32380@comet.dominikbrodowski.net>
+Mail-Followup-To: Rahul Ruikar <rahul.ruikar@gmail.com>,
+	komurojun-mbn@nifty.com, w.sang@pengutronix.de, davem@davemloft.net,
+	linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1285500629-6024-1-git-send-email-rahul.ruikar@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1285500629-6024-1-git-send-email-rahul.ruikar@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Sun, Sep 26, 2010 at 05:00:29PM +0530, Rahul Ruikar wrote:
+> In error return path
+> call pci_disable_device() which was enabled earlier.
+> 
+> Signed-off-by: Rahul Ruikar <rahul.ruikar@gmail.com>
 
-in order to get some more serial devices to work, and to fix an error
-path in a socet driver, please pull from
+Applied, thanks!
 
-git://git.kernel.org/pub/scm/linux/kernel/git/brodo/pcmcia-2.6.git urgent
-
-Thanks,
 	Dominik
-
-Dominik Brodowski (1):
-      pcmcia: preserve configuration information if request_io fails partly
-
-Rahul Ruikar (1):
-      pcmcia: pd6729: Fix error path
-
- drivers/pcmcia/pcmcia_resource.c |    6 ++++++
- drivers/pcmcia/pd6729.c          |    2 +-
- 2 files changed, 7 insertions(+), 1 deletions(-)
