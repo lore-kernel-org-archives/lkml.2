@@ -1,75 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758178Ab0IZWkV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 18:40:21 -0400
-Received: from xenotime.net ([72.52.115.56]:51944 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757876Ab0IZWkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 18:40:21 -0400
-Date: Sun, 26 Sep 2010 15:40:11 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Thomas Meyer <thomas@m3y3r.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        jbeulich@novell.com, r.marek@assembler.cz, guenter.roeck@ericsson.com
-Subject: Re: 2.6.36-rc5+: drivers/hwmon/coretemp.c:506: error: implicit
- declaration of function 'cpu_sibling_mask'
-Message-Id: <20100926154011.61333ffd.rdunlap@xenotime.net>
-In-Reply-To: <201009262317.50500.thomas@m3y3r.de>
-References: <201009262317.50500.thomas@m3y3r.de>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932453Ab0IZWrI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 18:47:08 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:60857 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757876Ab0IZWrG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Sep 2010 18:47:06 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Greg KH <greg@kroah.com>
+Cc: Greg KH <gregkh@suse.de>, "Hans J. Koch" <hjk@linutronix.de>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+References: <m1y6b48973.fsf@fess.ebiederm.org> <20100917205946.GF2522@local>
+	<m139t451b4.fsf_-_@fess.ebiederm.org>
+	<20100924104555.GC1819@silverbox.local>
+	<m1hbhfcbdo.fsf@fess.ebiederm.org>
+	<20100924173106.GA4966@silverbox.local>
+	<m14ode662q.fsf@fess.ebiederm.org> <20100925003308.GA29910@suse.de>
+	<m1wrqa4mg5.fsf@fess.ebiederm.org> <20100926192142.GA7252@kroah.com>
+Date: Sun, 26 Sep 2010 15:46:56 -0700
+In-Reply-To: <20100926192142.GA7252@kroah.com> (Greg KH's message of "Sun, 26
+	Sep 2010 12:21:42 -0700")
+Message-ID: <m162xs9l7j.fsf_-_@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 98.207.157.188
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Greg KH <greg@kroah.com>
+X-Spam-Relay-Country: 
+Subject: [PATCH 1/5] uio: Simplify the lifetime logic of struct uio_device.
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 26 Sep 2010 23:17:50 +0200 Thomas Meyer wrote:
 
-> $ make V=2
->   CHK     include/linux/version.h
->   CHK     include/generated/utsrelease.h
->   CALL    scripts/checksyscalls.sh - due to target is PHONY
->   CHK     include/generated/compile.h
->   CC [M]  drivers/hwmon/coretemp.o - due to target missing
-> drivers/hwmon/coretemp.c: In function 'coretemp_device_remove':
-> drivers/hwmon/coretemp.c:506: error: implicit declaration of function 'cpu_sibling_mask'
-> make[2]: *** [drivers/hwmon/coretemp.o] Error 1
-> make[1]: *** [drivers/hwmon] Error 2
-> make: *** [drivers] Error 2
-> 
-> above function is not defined on UP.
+Embed struct device into struct uio_device, and use
+the refcounting and the release method of struct device
+to control struct uio_device.
 
-Patch just posted:
+This allows device_create and device_destroy to be replaced
+with the more standard device_register and device_unregister,
+and allows the struct device reference count to act as a
+reference count on struct idev as well.
 
-http://lkml.org/lkml/2010/9/26/112
-
-
-> This commit introduced the error:
-> 
-> commit e40cc4bdfd4b89813f072f72bd9c7055814d3f0f
-> Author: Jan Beulich <jbeulich@novell.com>
-> Date:   Mon Sep 13 10:23:05 2010 +0000
-> 
->     x86/hwmon: register alternate sibling upon CPU removal
->     
->     Just like pkgtemp registers another core of the same package when one
->     gets removed, coretemp should register another hyperthread (if
->     available) in that situation.
->     
->     As pointed out in the patch fixing the respective code in pkgtemp, the
->     list protectng mutex must be dropped before calling
->     coretemp_device_add(), and due to the restructured loop (including an
->     explicit return) the "safe" variant of the list iterator isn't needed
->     anymore.
->     
->     Signed-off-by: Jan Beulich <jbeulich@novell.com>
->     Cc: Rudolf Marek <r.marek@assembler.cz>
->     Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-> --
-
-
+Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ drivers/uio/uio.c |   42 ++++++++++++++++++++++++++++--------------
+ 1 files changed, 28 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+index 6285afb..565559c 100644
+--- a/drivers/uio/uio.c
++++ b/drivers/uio/uio.c
+@@ -30,7 +30,7 @@
+ 
+ struct uio_device {
+ 	struct module		*owner;
+-	struct device		*dev;
++	struct device		device;
+ 	int			minor;
+ 	atomic_t		event;
+ 	struct fasync_struct	*async_queue;
+@@ -279,7 +279,7 @@ static int uio_dev_add_attributes(struct uio_device *idev)
+ 		if (!map_found) {
+ 			map_found = 1;
+ 			idev->map_dir = kobject_create_and_add("maps",
+-							&idev->dev->kobj);
++							&idev->device.kobj);
+ 			if (!idev->map_dir)
+ 				goto err_map;
+ 		}
+@@ -304,7 +304,7 @@ static int uio_dev_add_attributes(struct uio_device *idev)
+ 		if (!portio_found) {
+ 			portio_found = 1;
+ 			idev->portio_dir = kobject_create_and_add("portio",
+-							&idev->dev->kobj);
++							&idev->device.kobj);
+ 			if (!idev->portio_dir)
+ 				goto err_portio;
+ 		}
+@@ -339,7 +339,7 @@ err_map:
+ 		kobject_put(&map->kobj);
+ 	}
+ 	kobject_put(idev->map_dir);
+-	dev_err(idev->dev, "error creating sysfs files (%d)\n", ret);
++	dev_err(&idev->device, "error creating sysfs files (%d)\n", ret);
+ 	return ret;
+ }
+ 
+@@ -789,6 +789,13 @@ static void release_uio_class(void)
+ 	uio_major_cleanup();
+ }
+ 
++static void uio_device_release(struct device *dev)
++{
++	struct uio_device *idev = dev_get_drvdata(dev);
++
++	kfree(idev);
++}
++
+ /**
+  * uio_register_device - register a new userspace IO device
+  * @owner:	module that creates the new device
+@@ -824,14 +831,19 @@ int __uio_register_device(struct module *owner,
+ 	if (ret)
+ 		goto err_get_minor;
+ 
+-	idev->dev = device_create(&uio_class, parent,
+-				  MKDEV(uio_major, idev->minor), idev,
+-				  "uio%d", idev->minor);
+-	if (IS_ERR(idev->dev)) {
+-		printk(KERN_ERR "UIO: device register failed\n");
+-		ret = PTR_ERR(idev->dev);
++	idev->device.devt = MKDEV(uio_major, idev->minor);
++	idev->device.class = &uio_class;
++	idev->device.parent = parent;
++	idev->device.release = uio_device_release;
++	dev_set_drvdata(&idev->device, idev);
++
++	ret = kobject_set_name(&idev->device.kobj, "uio%d", idev->minor);
++	if (ret)
++		goto err_device_create;
++
++	ret = device_register(&idev->device);
++	if (ret)
+ 		goto err_device_create;
+-	}
+ 
+ 	ret = uio_dev_add_attributes(idev);
+ 	if (ret)
+@@ -851,7 +863,10 @@ int __uio_register_device(struct module *owner,
+ err_request_irq:
+ 	uio_dev_del_attributes(idev);
+ err_uio_dev_add_attributes:
+-	device_destroy(&uio_class, MKDEV(uio_major, idev->minor));
++	uio_free_minor(idev);
++	device_unregister(&idev->device);
++	return ret;
++
+ err_device_create:
+ 	uio_free_minor(idev);
+ err_get_minor:
+@@ -882,8 +897,7 @@ void uio_unregister_device(struct uio_info *info)
+ 
+ 	uio_dev_del_attributes(idev);
+ 
+-	device_destroy(&uio_class, MKDEV(uio_major, idev->minor));
+-	kfree(idev);
++	device_unregister(&idev->device);
+ 
+ 	return;
+ }
+-- 
+1.7.2.2
+
