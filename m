@@ -1,82 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741Ab0IZI7o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 04:59:44 -0400
+	id S1753317Ab0IZI7s (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 04:59:48 -0400
 Received: from mail-ew0-f46.google.com ([209.85.215.46]:59317 "EHLO
 	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751610Ab0IZI7m (ORCPT
+	with ESMTP id S1751937Ab0IZI7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 04:59:42 -0400
+	Sun, 26 Sep 2010 04:59:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=w0e4kS7jguA0yOsaTXDrw9FxCm1/xGtLU3WRW9JZoNsLL8a3ULTYRrd/LpoYm8uc3P
-         5bfTsr7CdeJQ5DStxUNcNzWXwPbEKrB6Bql2hBbwpmsk7w2jIub9lpGraimrO6Cb07md
-         Nnvf4zkfxAwSNlR3SOfx4UZtxjrTl0CCk9cH8=
+        b=f0PB27yK84zW3vD/FpOALngKTviuQ+l+VMQ1qesoU83PyzxqY9lmKwokTN5KitmP+l
+         GJYp9o4I3Q5Lpj4MV9rPo0o0/SZR0yUfeG1PJKVElVd4/GNMZruDRFtOVfQYR4UOGSLO
+         m2zw/nTjzYFSsI3VKF13dPLb/svzjvCXvuW10=
 From: Vasiliy Kulikov <segooon@gmail.com>
 To: kernel-janitors@vger.kernel.org
-Cc: Yehuda Sadeh <yehuda@hq.newdream.net>, Sage Weil <sage@newdream.net>,
-        ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] block: rbd: fixed may leaks
-Date: Sun, 26 Sep 2010 12:59:37 +0400
-Message-Id: <1285491578-32580-1-git-send-email-segooon@gmail.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] edac: i7300_edac: call pci_disable_device
+Date: Sun, 26 Sep 2010 12:59:41 +0400
+Message-Id: <1285491581-32622-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rbd_client_create() doesn't free rbdc, this leads to many leaks.
-
-seg_len in rbd_do_op() is unsigned, so (seg_len < 0) makes no sense.
-Also if fixed check fails then seg_name is leaked.
+Neither i7300_init_one() nor i7300_remove_one() calls pci_disable_device()
+after enabling it.
 ---
  Compile tested.
 
- drivers/block/rbd.c |   14 ++++++++------
- 1 files changed, 8 insertions(+), 6 deletions(-)
+ drivers/edac/i7300_edac.c |   35 +++++++++++++++++++++--------------
+ 1 files changed, 21 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
-index c42f305..83b15dd 100644
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -241,6 +241,7 @@ static struct rbd_client *rbd_client_create(struct ceph_options *opt)
- 	rbdc->client = ceph_create_client(opt, rbdc);
- 	if (IS_ERR(rbdc->client))
- 		goto out_rbdc;
-+	opt = NULL; /* Now rbdc->client is responsible for opt */
+diff --git a/drivers/edac/i7300_edac.c b/drivers/edac/i7300_edac.c
+index 38920c0..749fa75 100644
+--- a/drivers/edac/i7300_edac.c
++++ b/drivers/edac/i7300_edac.c
+@@ -1046,7 +1046,7 @@ static int __devinit i7300_init_one(struct pci_dev *pdev,
  
- 	ret = ceph_open_session(rbdc->client);
- 	if (ret < 0)
-@@ -255,13 +256,12 @@ static struct rbd_client *rbd_client_create(struct ceph_options *opt)
+ 	/* wake up device */
+ 	rc = pci_enable_device(pdev);
+-	if (rc == -EIO)
++	if (rc)
+ 		return rc;
  
- out_err:
- 	ceph_destroy_client(rbdc->client);
--	return ERR_PTR(ret);
+ 	debugf0("MC: " __FILE__ ": %s(), pdev bus %u dev=0x%x fn=0x%x\n",
+@@ -1055,8 +1055,9 @@ static int __devinit i7300_init_one(struct pci_dev *pdev,
+ 		PCI_SLOT(pdev->devfn), PCI_FUNC(pdev->devfn));
+ 
+ 	/* We only are looking for func 0 of the set */
++	rc = -ENODEV;
+ 	if (PCI_FUNC(pdev->devfn) != 0)
+-		return -ENODEV;
++		goto fail_disable;
+ 
+ 	/* As we don't have a motherboard identification routine to determine
+ 	 * actual number of slots/dimms per channel, we thus utilize the
+@@ -1073,10 +1074,10 @@ static int __devinit i7300_init_one(struct pci_dev *pdev,
+ 		__func__, num_channels, num_dimms_per_channel, num_csrows);
+ 
+ 	/* allocate a new MC control structure */
++	rc = -ENOMEM;
+ 	mci = edac_mc_alloc(sizeof(*pvt), num_csrows, num_channels, 0);
 -
- out_rbdc:
- 	kfree(rbdc);
- out_opt:
--	ceph_destroy_options(opt);
--	return ERR_PTR(-ENOMEM);
-+	if (opt)
-+		ceph_destroy_options(opt);
-+	return ERR_PTR(ret);
+ 	if (mci == NULL)
+-		return -ENOMEM;
++		goto fail_disable;
+ 
+ 	debugf0("MC: " __FILE__ ": %s(): mci = %p\n", __func__, mci);
+ 
+@@ -1085,15 +1086,15 @@ static int __devinit i7300_init_one(struct pci_dev *pdev,
+ 	pvt = mci->pvt_info;
+ 	pvt->pci_dev_16_0_fsb_ctlr = pdev;	/* Record this device in our private */
+ 
++	rc = -ENOMEM;
+ 	pvt->tmp_prt_buffer = kmalloc(PAGE_SIZE, GFP_KERNEL);
+-	if (!pvt->tmp_prt_buffer) {
+-		edac_mc_free(mci);
+-		return -ENOMEM;
+-	}
++	if (!pvt->tmp_prt_buffer)
++		goto fail_free;
+ 
+ 	/* 'get' the pci devices we want to reserve for our use */
++	rc = -ENODEV;
+ 	if (i7300_get_devices(mci))
+-		goto fail0;
++		goto fail_buffer_free;
+ 
+ 	mci->mc_idx = 0;
+ 	mci->mtype_cap = MEM_FLAG_FB_DDR2;
+@@ -1121,13 +1122,14 @@ static int __devinit i7300_init_one(struct pci_dev *pdev,
+ 	}
+ 
+ 	/* add this new MC control structure to EDAC's list of MCs */
++	rc = -ENODEV;
+ 	if (edac_mc_add_mc(mci)) {
+ 		debugf0("MC: " __FILE__
+ 			": %s(): failed edac_mc_add_mc()\n", __func__);
+ 		/* FIXME: perhaps some code should go here that disables error
+ 		 * reporting if we just enabled it
+ 		 */
+-		goto fail1;
++		goto fail_put;
+ 	}
+ 
+ 	i7300_clear_error(mci);
+@@ -1146,14 +1148,18 @@ static int __devinit i7300_init_one(struct pci_dev *pdev,
+ 	return 0;
+ 
+ 	/* Error exit unwinding stack */
+-fail1:
+-
++fail_put:
+ 	i7300_put_devices(mci);
+ 
+-fail0:
++fail_buffer_free:
+ 	kfree(pvt->tmp_prt_buffer);
++
++fail_free:
+ 	edac_mc_free(mci);
+-	return -ENODEV;
++
++fail_disable:
++	pci_disable_device(pdev);
++	return rc;
+ }
+ 
+ /**
+@@ -1181,6 +1187,7 @@ static void __devexit i7300_remove_one(struct pci_dev *pdev)
+ 
+ 	kfree(tmp);
+ 	edac_mc_free(mci);
++	pci_disable_device(pdev);
  }
  
  /*
-@@ -889,8 +889,10 @@ static int rbd_do_op(struct request *rq,
- 				  rbd_dev->header.block_name,
- 				  ofs, len,
- 				  seg_name, &seg_ofs);
--	if (seg_len < 0)
--		return seg_len;
-+	if ((s64)seg_len < 0) {
-+		ret = seg_len;
-+		goto done;
-+	}
- 
- 	payload_len = (flags & CEPH_OSD_FLAG_WRITE ? seg_len : 0);
- 
 -- 
 1.7.0.4
 
