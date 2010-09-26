@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757285Ab0IZCBm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Sep 2010 22:01:42 -0400
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:34431 "EHLO lunge.queued.net"
+	id S1757279Ab0IZCCX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Sep 2010 22:02:23 -0400
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:34437 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755956Ab0IZCBl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Sep 2010 22:01:41 -0400
-Date: Sat, 25 Sep 2010 19:06:30 -0700
+	id S1755956Ab0IZCCW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Sep 2010 22:02:22 -0400
+Date: Sat, 25 Sep 2010 19:07:12 -0700
 From: Andres Salomon <dilinger@queued.net>
 To: Greg KH <gregkh@suse.de>
 Cc: devel@driverdev.osuosl.org, cjb@laptop.org, jon.nettleton@gmail.com,
-        dsd@laptop.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] staging: olpc_dcon: drop old VT switch code, watch for
- CONBLANK event
-Message-ID: <20100925190630.27d42de1@debxo>
+        dsd@laptop.org, linux-kernel@vger.kernel.org,
+        linux-geode@lists.infradead.org
+Subject: [PATCH 3/4] cs5535: add some additional cs5535-specific GPIO
+ functionality
+Message-ID: <20100925190712.6aa5c2fc@debxo>
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -23,96 +24,118 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Eons ago, in a galaxy far far away, Jordan committed code to work around
-the fact that X might have put the DCON to sleep and then crashed (in that
-galaxy, X crashed a lot; crazy, right?)
+This adds (well, re-adds actually) handling for events/IRQs through cs5535
+GPIOs.  In the wild and wooly world of CS5535, setup_event() is for
+assigning an IRQ to a GPIO filter/event pair, and set_irq() sets up
+the pair to trigger IRQs.
 
-This code was based on a custom API.  These days, we have code which watches
-for FB unblanks, and should perform the same function.. Therefore, the older
-code can be dropped.  We should probably be watching for CONBLANK events to,
-so allow those to turn the DCON back on.
-
-Dropping the old code is necessary for building the driver.
+These should really only be used in highly platform-specific drivers (such
+as OLPC's DCON driver).  Sadly, because set_irq() uses MSRs, this causes the
+driver to become X86-specific.
 
 Signed-off-by: Andres Salomon <dilinger@queued.net>
 ---
- drivers/staging/olpc_dcon/olpc_dcon.c |   26 ++++++--------------------
- 1 files changed, 6 insertions(+), 20 deletions(-)
+ drivers/gpio/Kconfig       |    2 +-
+ drivers/gpio/cs5535-gpio.c |   52 ++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/cs5535.h     |    2 +
+ 3 files changed, 55 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c b/drivers/staging/olpc_dcon/olpc_dcon.c
-index 287085f..75aa7a3 100644
---- a/drivers/staging/olpc_dcon/olpc_dcon.c
-+++ b/drivers/staging/olpc_dcon/olpc_dcon.c
-@@ -19,7 +19,6 @@
- #include <linux/platform_device.h>
- #include <linux/i2c-id.h>
- #include <linux/pci.h>
--#include <linux/vt_kern.h>
- #include <linux/pci_ids.h>
- #include <linux/interrupt.h>
- #include <linux/delay.h>
-@@ -634,25 +633,11 @@ static int dcon_reboot_notify(struct notifier_block *nb, unsigned long foo, void
- 	return 0;
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 510aa20..80f6702 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -271,7 +271,7 @@ comment "PCI GPIO expanders:"
+ 
+ config GPIO_CS5535
+ 	tristate "AMD CS5535/CS5536 GPIO support"
+-	depends on PCI && !CS5535_GPIO
++	depends on PCI && X86 && !CS5535_GPIO
+ 	help
+ 	  The AMD CS5535 and CS5536 southbridges support 28 GPIO pins that
+ 	  can be used for quite a number of things.  The CS5535/6 is found on
+diff --git a/drivers/gpio/cs5535-gpio.c b/drivers/gpio/cs5535-gpio.c
+index e23c068..7e5ab74 100644
+--- a/drivers/gpio/cs5535-gpio.c
++++ b/drivers/gpio/cs5535-gpio.c
+@@ -15,6 +15,7 @@
+ #include <linux/gpio.h>
+ #include <linux/io.h>
+ #include <linux/cs5535.h>
++#include <asm/msr.h>
+ 
+ #define DRV_NAME "cs5535-gpio"
+ #define GPIO_BAR 1
+@@ -121,6 +122,57 @@ int cs5535_gpio_isset(unsigned offset, unsigned int reg)
  }
+ EXPORT_SYMBOL_GPL(cs5535_gpio_isset);
  
--static int dcon_conswitch_notify(struct notifier_block *nb,
--				 unsigned long mode, void *dummy)
--{
--	if (mode == CONSOLE_EVENT_SWITCH_TEXT)
--		dcon_sleep(DCON_ACTIVE);
--
--	return 0;
--}
--
- static struct notifier_block dcon_nb = {
- 	.notifier_call = dcon_reboot_notify,
- 	.priority = -1,
- };
++int cs5535_gpio_set_irq(unsigned group, unsigned irq)
++{
++	uint32_t lo, hi;
++
++	if (group > 7 || irq > 15)
++		return -EINVAL;
++
++	rdmsr(MSR_PIC_ZSEL_HIGH, lo, hi);
++
++	lo &= ~(0xF << (group * 4));
++	lo |= (irq & 0xF) << (group * 4);
++
++	wrmsr(MSR_PIC_ZSEL_HIGH, lo, hi);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(cs5535_gpio_set_irq);
++
++void cs5535_gpio_setup_event(unsigned offset, int pair, int pme)
++{
++	struct cs5535_gpio_chip *chip = &cs5535_gpio_chip;
++	uint32_t shift = (offset % 8) * 4;
++	unsigned long flags;
++	uint32_t val;
++
++	if (offset >= 24)
++		offset = GPIO_MAP_W;
++	else if (offset >= 16)
++		offset = GPIO_MAP_Z;
++	else if (offset >= 8)
++		offset = GPIO_MAP_Y;
++	else
++		offset = GPIO_MAP_X;
++
++	spin_lock_irqsave(&chip->lock, flags);
++	val = inl(chip->base + offset);
++
++	/* Clear whatever was there before */
++	val &= ~(0xF << shift);
++
++	/* Set the new value */
++	val |= ((pair & 7) << shift);
++
++	/* Set the PME bit if this is a PME event */
++	if (pme)
++		val |= (1 << (shift + 3));
++
++	outl(val, chip->base + offset);
++	spin_unlock_irqrestore(&chip->lock, flags);
++}
++EXPORT_SYMBOL_GPL(cs5535_gpio_setup_event);
++
+ /*
+  * Generic gpio_chip API support.
+  */
+diff --git a/include/linux/cs5535.h b/include/linux/cs5535.h
+index d5a1d48..213cc50 100644
+--- a/include/linux/cs5535.h
++++ b/include/linux/cs5535.h
+@@ -111,6 +111,8 @@ static inline int cs5535_has_vsa2(void)
+ void cs5535_gpio_set(unsigned offset, unsigned int reg);
+ void cs5535_gpio_clear(unsigned offset, unsigned int reg);
+ int cs5535_gpio_isset(unsigned offset, unsigned int reg);
++int cs5535_gpio_set_irq(unsigned group, unsigned irq);
++void cs5535_gpio_setup_event(unsigned offset, int pair, int pme);
  
--static struct notifier_block dcon_console_nb = {
--	.notifier_call = dcon_conswitch_notify,
--	.priority = -1,
--};
--
- static int unfreeze_on_panic(struct notifier_block *nb, unsigned long e, void *p)
- {
- 	pdata->set_dconload(1);
-@@ -663,13 +648,16 @@ static struct notifier_block dcon_panic_nb = {
- 	.notifier_call = unfreeze_on_panic,
- };
+ /* MFGPTs */
  
--/* when framebuffer sleeps due to external source (e.g. user idle), power down
-- * the DCON. also power up when the framebuffer comes back to life. */
-+/*
-+ * When the framebuffer sleeps due to external sources (e.g. user idle), power
-+ * down the DCON as well.  Power it back up when the fb comes back to life.
-+ */
- static int fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
- {
- 	struct fb_event *evdata = data;
- 	int *blank = (int *) evdata->data;
--	if (event != FB_EVENT_BLANK || ignore_fb_events)
-+	if (((event != FB_EVENT_BLANK) && (event != FB_EVENT_CONBLANK)) ||
-+			ignore_fb_events)
- 		return 0;
- 	dcon_sleep((*blank) ? DCON_SLEEP : DCON_ACTIVE);
- 	return 0;
-@@ -737,7 +725,6 @@ static int dcon_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 	}
- 
- 	register_reboot_notifier(&dcon_nb);
--	console_event_register(&dcon_console_nb);
- 	atomic_notifier_chain_register(&panic_notifier_list, &dcon_panic_nb);
- 	fb_register_client(&fb_nb);
- 
-@@ -759,7 +746,6 @@ static int dcon_remove(struct i2c_client *client)
- 
- 	fb_unregister_client(&fb_nb);
- 	unregister_reboot_notifier(&dcon_nb);
--	console_event_unregister(&dcon_console_nb);
- 	atomic_notifier_chain_unregister(&panic_notifier_list, &dcon_panic_nb);
- 
- 	free_irq(DCON_IRQ, &dcon_driver);
 -- 
 1.5.6.5
 
