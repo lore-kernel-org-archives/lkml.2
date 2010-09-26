@@ -1,145 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757557Ab0IZLx6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 07:53:58 -0400
-Received: from fly.osdn.org.ua ([212.40.45.6]:35350 "EHLO fly.osdn.org.ua"
+	id S1757587Ab0IZL4f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 07:56:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30873 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757378Ab0IZLx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 07:53:57 -0400
-Date: Sun, 26 Sep 2010 14:53:54 +0300
-From: Michael Shigorin <mike@osdn.org.ua>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Volodymyr G. Lukiianyk" <volodymyrgl@gmail.com>,
-        Alexander Chumachenko <ledest@gmail.com>,
-        Glauber de Oliveira Costa <gcosta@redhat.com>
-Subject: Re: fs hang in 2.6.27.y | Fwd: [Bug 15658] New: [PATCH] x86 constant_test_bit() prone to misoptimization with gcc-4.4
-Message-ID: <20100926115354.GA30247@osdn.org.ua>
-Mail-Followup-To: Andrew Morton <akpm@linux-foundation.org>,
-	linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	"Volodymyr G. Lukiianyk" <volodymyrgl@gmail.com>,
-	Alexander Chumachenko <ledest@gmail.com>,
-	Glauber de Oliveira Costa <gcosta@redhat.com>
-References: <20100827213629.GA11342@osdn.org.ua> <20100923165022.6982ffc1.akpm@linux-foundation.org>
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="QKdGvSO+nmPlgiQ/"
+	id S1750778Ab0IZL4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Sep 2010 07:56:33 -0400
+Date: Sun, 26 Sep 2010 13:50:18 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "herbert@gondor.hengli.com.au" <herbert@gondor.hengli.com.au>,
+        "jdike@linux.intel.com" <jdike@linux.intel.com>
+Subject: Re: [RFC PATCH v9 12/16] Add mp(mediate passthru) device.
+Message-ID: <20100926115018.GA19655@redhat.com>
+References: <20100915112811.GB29267@redhat.com>
+ <1284970128-7343-1-git-send-email-xiaohui.xin@intel.com>
+ <20100920113643.GB23898@redhat.com>
+ <F2E9EB7348B8264F86B6AB8151CE2D792B8CAA0F6A@shsmsx502.ccr.corp.intel.com>
+ <20100921131421.GA10439@redhat.com>
+ <F2E9EB7348B8264F86B6AB8151CE2D792D171853DF@shsmsx502.ccr.corp.intel.com>
+ <20100922115505.GF16423@redhat.com>
+ <F2E9EB7348B8264F86B6AB8151CE2D792D17185524@shsmsx502.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100923165022.6982ffc1.akpm@linux-foundation.org>
-User-Agent: Mutt/1.4.2.1i
+In-Reply-To: <F2E9EB7348B8264F86B6AB8151CE2D792D17185524@shsmsx502.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Sep 23, 2010 at 08:56:33PM +0800, Xin, Xiaohui wrote:
+> >-----Original Message-----
+> >From: Michael S. Tsirkin [mailto:mst@redhat.com]
+> >Sent: Wednesday, September 22, 2010 7:55 PM
+> >To: Xin, Xiaohui
+> >Cc: netdev@vger.kernel.org; kvm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> >mingo@elte.hu; davem@davemloft.net; herbert@gondor.hengli.com.au;
+> >jdike@linux.intel.com
+> >Subject: Re: [RFC PATCH v9 12/16] Add mp(mediate passthru) device.
+> >
+> >On Wed, Sep 22, 2010 at 07:41:36PM +0800, Xin, Xiaohui wrote:
+> >> >-----Original Message-----
+> >> >From: Michael S. Tsirkin [mailto:mst@redhat.com]
+> >> >Sent: Tuesday, September 21, 2010 9:14 PM
+> >> >To: Xin, Xiaohui
+> >> >Cc: netdev@vger.kernel.org; kvm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> >> >mingo@elte.hu; davem@davemloft.net; herbert@gondor.hengli.com.au;
+> >> >jdike@linux.intel.com
+> >> >Subject: Re: [RFC PATCH v9 12/16] Add mp(mediate passthru) device.
+> >> >
+> >> >On Tue, Sep 21, 2010 at 09:39:31AM +0800, Xin, Xiaohui wrote:
+> >> >> >From: Michael S. Tsirkin [mailto:mst@redhat.com]
+> >> >> >Sent: Monday, September 20, 2010 7:37 PM
+> >> >> >To: Xin, Xiaohui
+> >> >> >Cc: netdev@vger.kernel.org; kvm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> >> >> >mingo@elte.hu; davem@davemloft.net; herbert@gondor.hengli.com.au;
+> >> >> >jdike@linux.intel.com
+> >> >> >Subject: Re: [RFC PATCH v9 12/16] Add mp(mediate passthru) device.
+> >> >> >
+> >> >> >On Mon, Sep 20, 2010 at 04:08:48PM +0800, xiaohui.xin@intel.com wrote:
+> >> >> >> From: Xin Xiaohui <xiaohui.xin@intel.com>
+> >> >> >>
+> >> >> >> ---
+> >> >> >> Michael,
+> >> >> >> I have move the ioctl to configure the locked memory to vhost
+> >> >> >
+> >> >> >It's ok to move this to vhost but vhost does not
+> >> >> >know how much memory is needed by the backend.
+> >> >>
+> >> >> I think the backend here you mean is mp device.
+> >> >> Actually, the memory needed is related to vq->num to run zero-copy
+> >> >> smoothly.
+> >> >> That means mp device did not know it but vhost did.
+> >> >
+> >> >Well, this might be so if you insist on locking
+> >> >all posted buffers immediately. However, let's assume I have a
+> >> >very large ring and prepost a ton of RX buffers:
+> >> >there's no need to lock all of them directly:
+> >> >
+> >> >if we have buffers A and B, we can lock A, pass it
+> >> >to hardware, and when A is consumed unlock A, lock B
+> >> >and pass it to hardware.
+> >> >
+> >> >
+> >> >It's not really critical. But note we can always have userspace
+> >> >tell MP device all it wants to know, after all.
+> >> >
+> >> Ok. Here are two values we have mentioned, one is how much memory
+> >> user application wants to lock, and one is how much memory locked
+> >> is needed to run smoothly. When net backend is setup, we first need
+> >> an ioctl to get how much memory is needed to lock, and then we call
+> >> another ioctl to set how much it want to lock. Is that what's in your mind?
+> >
+> >That's fine.
+> >
+> >> >> And the rlimt stuff is per process, we use current pointer to set
+> >> >> and check the rlimit, the operations should be in the same process.
+> >> >
+> >> >Well no, the ring is handled from the kernel thread: we switch the mm to
+> >> >point to the owner task so copy from/to user and friends work, but you
+> >> >can't access the rlimit etc.
+> >> >
+> >> Yes, the userspace and vhost kernel is not the same process. But we can
+> >> record the task pointer as mm.
+> >
+> >So you will have to store mm and do device->mm, not current->mm.
+> >Anyway, better not touch mm on data path.
+> >
+> >> >> Now the check operations are in vhost process, as mp_recvmsg() or
+> >> >> mp_sendmsg() are called by vhost.
+> >> >
+> >> >Hmm, what do you mean by the check operations?
+> >> >send/recv are data path operations, they shouldn't
+> >> >do any checks, should they?
+> >> >
+> >> As you mentioned what infiniband driver done:
+> >>         down_write(&current->mm->mmap_sem);
+> >>
+> >>         locked     = npages + current->mm->locked_vm;
+> >>         lock_limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
+> >>
+> >>         if ((locked > lock_limit) && !capable(CAP_IPC_LOCK)) {
+> >>                 ret = -ENOMEM;
+> >>                 goto out;
+> >>         }
+> >>
+> >>         cur_base = addr & PAGE_MASK;
+> >>
+> >>         ret = 0;
+> >>         while (npages) {
+> >>                 ret = get_user_pages(current, current->mm, cur_base,
+> >>                                      min_t(unsigned long, npages,
+> >>                                            PAGE_SIZE / sizeof (struct page *)),
+> >>                                      1, !umem->writable, page_list, vma_list);
+> >>
+> >> I think it's a data path too.
+> >
+> >in infiniband this is used to 'register memory' which is not data path.
+> >
+> >> We do the check because get_user_pages() really pin and locked
+> >> the memory.
+> >
+> >Don't do this. Performance will be bad.
+> >Do the check once in ioctl and increment locked_vm by max amount you will use.
+> >On data path just make sure you do not exceed what userspace told you
+> >to.
+> 
+> What's in my mind is that in the ioctl which to get the memory locked needed to run smoothly,
+> it just return a value of how much memory is needed by mp device.
+> And then in the ioctl which to set the memory locked by user space, it check the rlimit and
+> increment locked_vm by user want.
 
---QKdGvSO+nmPlgiQ/
-Content-Type: multipart/mixed; boundary="7JfCtLOvnd9MIVvH"
-Content-Disposition: inline
+Fine.
+
+> But I'm not sure how to "make sure do not exceed what
+> userspace told to". If we don't check locked_vm, what do we use to check? And Is it another kind of check on data path?
+
+An example: on ioctl we have incremented locked_vm by say 128K.
+We will record this number 128K in mp data structure and on data path
+verify that amount of memory we actually lock with get_user_pages_fast
+does not exceed 128K. This is not part of mm and so can use
+any locking scheme, no need to take mm semaphore.
 
 
---7JfCtLOvnd9MIVvH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Thu, Sep 23, 2010 at 04:50:22PM -0700, Andrew Morton wrote:
-> Working around a gcc-4.4 bug is a good thing, and the patch cleans the
-> code up anyway - is there a reason for casting away the `volatile const'?
-
-It turned out that I translated the original assumption of _gcc_
-fault (from our bugzilla) when the latter conclusion was that it
-was correctly optimizing the code given that addr wasn't marked
-as volatile.  My fault, sorry; fixed the commit comment this time.
-
-> I changed the patch cosmetics a bit, see below.
-> We don't have a Signed-off-by: for this patch - it would be
-> good to have one, please.  We should at least have yours, as
-> you sent the patch.
-
-The simplicity of adding that somewhat went over my head --
-please find attached the corrected original patch against HEAD
-with Signed-off-by: for both of us.  led@ didn't change cosmetics
--- thanks for providing it anyways.
-
-> Also, we prefer to have real names in kernel commits.
-> Does "Led" refer to Alexander Chumachenko?
-
-(just in case) Yes.
-
---=20
- ---- WBR, Michael Shigorin <mike@altlinux.ru>
-  ------ Linux.Kiev http://www.linux.kiev.ua/
-
---7JfCtLOvnd9MIVvH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="0001-x86-avoid-constant_test_bit-misoptimization-due-to-c.patch"
-Content-Transfer-Encoding: quoted-printable
-
-=46rom 70e6a20b3720e522633f4b791f2f35e817d7ced3 Mon Sep 17 00:00:00 2001
-From: Led <ledest@gmail.com>
-Date: Thu, 1 Apr 2010 15:34:52 +0300
-Subject: [PATCH] x86: avoid 'constant_test_bit()' misoptimization due to ca=
-st to non-volatile
-
-While debugging bit_spin_lock() hang, it was tracked down to gcc-4.4
-misoptimization of non-inlined constant_test_bit() due to non-volatile
-addr when 'const volatile unsigned long *addr' cast to 'unsigned long *'
-with subsequent unconditional jump to pause (and not to the test) leading
-to hang.
-
-Compiling with gcc-4.3 or disabling CONFIG_OPTIMIZE_INLINING yields inlined
-constant_test_bit() and correct jump, thus working around the kernel bug.
-
-Other arches than asm-x86 may implement this slightly differently;
-2.6.29 mitigates the misoptimization by changing the function prototype
-(commit c4295fbb6048d85f0b41c5ced5cbf63f6811c46c) but probably fixing the i=
-ssue
-itself is better.
-
-Signed-off-by: Alexander Chumachenko <ledest@gmail.com>
-Signed-off-by: Michael Shigorin <mike@osdn.org.ua>
-
----
- arch/x86/include/asm/bitops.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
-index 545776e..bafd80d 100644
---- a/arch/x86/include/asm/bitops.h
-+++ b/arch/x86/include/asm/bitops.h
-@@ -309,7 +309,7 @@ static inline int test_and_change_bit(int nr, volatile =
-unsigned long *addr)
- static __always_inline int constant_test_bit(unsigned int nr, const volati=
-le unsigned long *addr)
- {
- 	return ((1UL << (nr % BITS_PER_LONG)) &
--		(((unsigned long *)addr)[nr / BITS_PER_LONG])) !=3D 0;
-+		(addr[nr / BITS_PER_LONG])) !=3D 0;
- }
-=20
- static inline int variable_test_bit(int nr, volatile const unsigned long *=
-addr)
---=20
-1.7.2.3
-
-
---7JfCtLOvnd9MIVvH--
-
---QKdGvSO+nmPlgiQ/
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.1 (GNU/Linux)
-
-iD8DBQFMnzRRbsPDprYMm3IRArCWAJ9lTjMNStIvFxc3rfVDWIRsJJXdCACg2vi9
-W6FjdO208LgTPZEgtBsggdg=
-=/YG2
------END PGP SIGNATURE-----
-
---QKdGvSO+nmPlgiQ/--
+> >
+> >>
+> >> >> So set operations should be in
+> >> >> vhost process too, it's natural.
+> >> >>
+> >> >> >So I think we'll need another ioctl in the backend
+> >> >> >to tell userspace how much memory is needed?
+> >> >> >
+> >> >> Except vhost tells it to mp device, mp did not know
+> >> >> how much memory is needed to run zero-copy smoothly.
+> >> >> Is userspace interested about the memory mp is needed?
+> >> >
+> >> >Couldn't parse this last question.
+> >> >I think userspace generally does want control over
+> >> >how much memory we'll lock. We should not just lock
+> >> >as much as we can.
+> >> >
+> >> >--
+> >> >MST
