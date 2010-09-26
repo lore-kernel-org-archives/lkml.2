@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab0IZKbl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 06:31:41 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:53057 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756075Ab0IZKbj (ORCPT
+	id S1757455Ab0IZKxw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 06:53:52 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:61648 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757272Ab0IZKxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 06:31:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=FnvNTJOL603baz4yH5xm/M/R6vx7KtG+18AoAbMdv37l8HG0NZIlAKMEfMFUlHoONm
-         LzzpdBPaAVapdDnRLFD9dPzyylNZ/aVgFpFdxTuD8C0yOLOp1BFvJPck0MNTh8JWfwe+
-         REtAgSXkigzR1wRGRmpRq606dh3Ra+vIrTlWU=
+	Sun, 26 Sep 2010 06:53:51 -0400
+Message-ID: <4C9F262F.7030709@biereigel-wb.de>
+Date: Sun, 26 Sep 2010 12:53:35 +0200
+From: Stefan Biereigel <security@biereigel-wb.de>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; de; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <40a2d76d013ad025d08a411992af10f6bbef0a13.1285355033.git.mfm@muteddisk.com>
-References: <9968d4260be8850200cc9c7dfe08addf611468b4.1285355033.git.mfm@muteddisk.com>
-	<036514b5dd23c5af14303519d79d60d79adccbee.1285355033.git.mfm@muteddisk.com>
-	<ffbd189ef2d414ea7c87ffe2b40fce87877dc014.1285355033.git.mfm@muteddisk.com>
-	<b3e2061e1e6703f7b84c0484030e07de6000546a.1285355033.git.mfm@muteddisk.com>
-	<e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
-	<70fe6b462b3ee22922698a12d62d650cf029033a.1285355033.git.mfm@muteddisk.com>
-	<40a2d76d013ad025d08a411992af10f6bbef0a13.1285355033.git.mfm@muteddisk.com>
-Date: Sun, 26 Sep 2010 14:31:38 +0400
-Message-ID: <AANLkTik1ngVjK9ZObC_BfS6Cb-b5trcCAGk2i26TgEz_@mail.gmail.com>
-Subject: Re: [PATCH 07/24] ieee802154: change to new flag variable
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-To: matt mooney <mfm@muteddisk.com>
-Cc: kernel-janitors@vger.kernel.org, Sergey Lapin <slapin@ossfans.org>,
-        linux-zigbee-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org
+CC: Vasily Khoruzhick <anarsoul@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sitsofe Wheeler <sitsofe@yahoo.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        intel-gfx@lists.freedesktop.org, Len Brown <lenb@kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: Interrupt latency on some 945GM platforms
+References: <201009132336.17310.anarsoul@gmail.com>	<201009162306.59508.anarsoul@gmail.com>	<20100924123901.243c85e1@jbarnes-desktop>	<201009242248.36554.anarsoul@gmail.com> <20100924125153.4fdf0c1b@jbarnes-desktop>
+In-Reply-To: <20100924125153.4fdf0c1b@jbarnes-desktop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V02:K0:4Rbqs1DlbEL8NLbKBYw4EiX1+OR8XlmIoIDHWWgw8IC
+ n4PfoAtaSKHLmIvVQQFHkZEsxeQcBukk8/4PPL6pkHr9r+IAbi
+ K1pyLyBdhR16Kxi6srMmPAChfp9ZvAmXxDdtVQ5IVz/W4RJ9K7
+ M26mOGG2V8YuGy72VlFDA01Lrr5/QOERY6Gc1Ono+zLAZCrUEz
+ fTBA725BSJWNgBoyDN4q1tQaPF41WHOuENakoSsK30=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/24/10, matt mooney <mfm@muteddisk.com> wrote:
-> Replace EXTRA_CFLAGS with ccflags-y.
+  Am 24.09.2010 21:51, schrieb Jesse Barnes:
+> On Fri, 24 Sep 2010 22:48:36 +0300
+> Vasily Khoruzhick<anarsoul@gmail.com>  wrote:
 >
-> Signed-off-by: matt mooney <mfm@muteddisk.com>
-Acked-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+>> On 24 of September 2010 22:39:01 Jesse Barnes wrote:
+>>> On Thu, 16 Sep 2010 23:06:46 +0300
+>>>
+>>> Vasily Khoruzhick<anarsoul@gmail.com>  wrote:
+>>>> В сообщении от 16 of September 2010 21:50:50 автор Thomas Gleixner
+>> написал:
+>>>>> Ok. The problematic part of HPET was not the clocksource, it was the
+>>>>> clock event device which failed to deliver interrupts occasionally. It
+>>>>> was worth a try at least.
+>>>> Hm, it seems that jerky glxgears is not related to jerky keyboard events.
+>>>> Keyboard is jerky only in konsole (kde terminal emulator), it seems
+>>>> something happened it seems that font rendering performance is much
+>>>> worse in latest xf86-video-intel than in xf86-video-intel-2.12.0.
+>>> Len just had me try a few things too:
+>>>    - maxcpus=1 lets things work
+>>>    - offlining cpu1 at runtime (echo 0
+>>>
+>>>      >  /sys/devices/system/cpu/cpu1/online) lets things work
+>>>
+>>>    - binding the i915 interrupt to cpu 0 does *not* help
+>>>
+>>> Vasily and Paolo, do you both have Atom CPUs with hyperthreading
+>>> enabled?
+>> Nope, I have Core2Duo T5500, dual-core, no hyperthreading :)
+> Hm, well there goes the theory about Atom HT...
+>
 
-> ---
->  drivers/ieee802154/Makefile |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-
-
--- 
-With best wishes
-Dmitry
+Hello Everyone,
+just to add on to reports of this problem, there was a Thread here in 
+LKML some months ago targeting the same problem (but not really 
+attacking it at the Chipset driver). As I have one of those Laptops with 
+a 945GM-Chipset and am stuck with the same Problem (disabled tickless 
+now as a workaround and set ticks to 1000) I could maybe do some testing 
+of patches.
+So what I can summarize is what the others did before: Disabling CPU1 
+helps, adding nohz=off helps, changing the Clocksource afterwards helps, 
+binding the Interrupt does NOT help.
+So here's the Link to the old Discussion with follow-ups, maybe you can 
+get some furter information from there.
+http://linux.derkeiler.com/Mailing-Lists/Kernel/2010-05/msg03696.html
+We targeted the BIOS itself as everyone in this thread happened to own 
+an Phoenix BIOS with some special version string.
+best, Stefan
