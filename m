@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759735Ab0I0QwH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 12:52:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63300 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756232Ab0I0QwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 12:52:03 -0400
-Subject: Re: [PATCH 5/6] conntrack: export lsm context rather than internal
- secid	via netlink
-From: Eric Paris <eparis@redhat.com>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov,
-        netfilter-devel@vger.kernel.org, jmorris@namei.org, sds@tycho.nsa.gov,
-        jengelh@medozas.de, paul.moore@hp.com, casey@schaufler-ca.com,
-        linux-security-module@vger.kernel.org, netfilter@vger.kernel.org,
-        mr.dash.four@googlemail.com
-In-Reply-To: <4CA0799E.4010200@netfilter.org>
-References: <20100924204517.28355.42822.stgit@paris.rdu.redhat.com>
-	 <20100924204545.28355.92767.stgit@paris.rdu.redhat.com>
-	 <4CA0799E.4010200@netfilter.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 27 Sep 2010 12:51:06 -0400
-Message-ID: <1285606266.2815.21.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758346Ab0I0Qyp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 12:54:45 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:21102 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756176Ab0I0Qyo (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Mon, 27 Sep 2010 12:54:44 -0400
+Date: Mon, 27 Sep 2010 12:53:40 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Ingo Molnar <mingo@elte.hu>,
+        Andre Goddard Rosa <andre.goddard@gmail.com>
+Subject: Re: [PATCH 6/9] swiotlb: Declare swiotlb_init_with_default_size()
+Message-ID: <20100927165340.GA5644@dumpdata.com>
+References: <1285281496-24696-1-git-send-email-ddaney@caviumnetworks.com>
+ <1285282051-24907-1-git-send-email-ddaney@caviumnetworks.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285282051-24907-1-git-send-email-ddaney@caviumnetworks.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-27 at 13:01 +0200, Pablo Neira Ayuso wrote:
-> On 24/09/10 22:45, Eric Paris wrote:
-> > @@ -172,4 +173,11 @@ enum ctattr_help {
-> >   };
-> >   #define CTA_HELP_MAX (__CTA_HELP_MAX - 1)
-> >
-> > +enum ctattr_secctx {
-> > +	CTA_SECCTX_UNSPEC,
-> > +	CTA_SECCTX_NAME,
-> > +	__CTA_SECCTX_MAX
-> > +};
-> > +#define CTA_SECCTX_MAX (__CTA_SECCTX_MAX - 1)
+On Thu, Sep 23, 2010 at 03:47:30PM -0700, David Daney wrote:
+> It comes from swiotlb.c and must be called by external code, so declare it.
 > 
-> I guess that you have included this nest for consistency with CTA_HELP. 
-> My question: do you think that we'll include more attributes in that 
-> nest in the future? Otherwise, I would remove that nest and put 
-> CTA_SECCTX_NAME in the first level, since the nest would increase the 
-> message size.
+> Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Andre Goddard Rosa <andre.goddard@gmail.com>
+> ---
+>  include/linux/swiotlb.h |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
+> index 8c0e349..dba51fe 100644
+> --- a/include/linux/swiotlb.h
+> +++ b/include/linux/swiotlb.h
+> @@ -23,6 +23,7 @@ extern int swiotlb_force;
+>  #define IO_TLB_SHIFT 11
+>  
+>  extern void swiotlb_init(int verbose);
+> +extern void swiotlb_init_with_default_size(size_t, int);
+>  extern void swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
 
-My initial thought was that you were right (and I did just copy the
-CTA_HELP implementation), but now I've decided that I like that nest.  I
-have no idea what future representation an LSM might use.  The only 2
-LSMs that make sense to use this interface SELinux and SMACK both use a
-string, but I don't know why we have to limit it to that....
-
--Eric
-
+Just use the swiotlb_init_with_tbl. If you need an example of how it is utilized, take
+a look at how swiotlb-xen.c does it.
