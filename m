@@ -1,87 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759986Ab0I0Sxx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 14:53:53 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39649 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757124Ab0I0Sxw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 14:53:52 -0400
-Date: Mon, 27 Sep 2010 11:52:07 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Matt Mackall <mpm@selenic.com>
-Cc: Christoph Lameter <cl@linux.com>, David Airlie <airlied@linux.ie>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Linux Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: DRM-related kmalloc-32 memory leak in 2.6.35
-Message-Id: <20100927115207.633024b1.akpm@linux-foundation.org>
-In-Reply-To: <1282769949.3007.7.camel@calx>
-References: <alpine.DEB.2.00.1008221615350.29062@chino.kir.corp.google.com>
-	<1282623994.10679.921.camel@calx>
-	<alpine.DEB.2.00.1008232134480.25742@chino.kir.corp.google.com>
-	<1282663241.10679.958.camel@calx>
-	<alpine.DEB.2.00.1008241036250.344@router.home>
-	<1282769949.3007.7.camel@calx>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1760048Ab0I0Sy5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 14:54:57 -0400
+Received: from www.tglx.de ([62.245.132.106]:33211 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757189Ab0I0Syz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 14:54:55 -0400
+Date: Mon, 27 Sep 2010 20:49:49 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Luck, Tony" <tony.luck@intel.com>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-alpha@vger.kernel.org" <linux-alpha@vger.kernel.org>,
+        "linux-cris-kernel@axis.com" <linux-cris-kernel@axis.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Greg Ungerer <gerg@uclinux.org>, Jeff Dike <jdike@addtoit.com>,
+        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
+        Chris Zankel <chris@zankel.net>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: RE: [RFC trollpatch 1/1] genirq: Remove the fits all and nothing
+ __do_IRQ() code
+In-Reply-To: <987664A83D2D224EAE907B061CE93D5301604712B4@orsmsx505.amr.corp.intel.com>
+Message-ID: <alpine.LFD.2.00.1009272048100.2416@localhost6.localdomain6>
+References: <20100908152036.643594727@linutronix.de> <AANLkTikVHO9DmyTX==CwViDK1rP0masBwjMakHZ0U=kZ@mail.gmail.com> <alpine.LFD.2.00.1009271953390.2416@localhost6.localdomain6> <987664A83D2D224EAE907B061CE93D5301604712B4@orsmsx505.amr.corp.intel.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Aug 2010 15:59:09 -0500
-Matt Mackall <mpm@selenic.com> wrote:
+On Mon, 27 Sep 2010, Luck, Tony wrote:
 
-> On Tue, 2010-08-24 at 10:37 -0500, Christoph Lameter wrote:
-> > On Tue, 24 Aug 2010, Matt Mackall wrote:
-> > 
-> > > kmalloc-32        1113344 1113344     32  128    1 : tunables    0    0
-> > > 0 : slabdata   8698   8698      0
-> > >
-> > > That's /proc/slabinfo on my laptop with SLUB. It looks like my last
-> > > reboot popped me back to 2.6.33 so it may also be old news, but I
-> > > couldn't spot any reports with Google.
-> > 
-> > Boot with "slub_debug" as a kernel parameter
-> > 
-> > and then do a
-> > 
-> > cat /sys/kernel/slab/kmalloc-32/alloc_calls
-> > 
-> > to find the caller allocating the objets.
+> > No, it's deliberate. The solution is to use the correct flow handler
+> > for your device. We have currently several flow handlers implemented:
 > 
-> Still present in 2.6.35. Appears to be DRM:
+> Yes, I found the different "handle_*_irq()" functions. The _percpu_
+> variant works fine for the ia64 per-cpu interrupt paths.
 > 
->     845 drm_vm_open_locked+0x72/0x109 age=43/37572/59269 pid=2089
-> cpus=0-1
-> 
-> That's after about a minute of uptime. Grows to 100k in about a day.
-> 
-> dmesg bits:
-> [    0.834653] [drm] Initialized drm 1.1.0 20060810
-> [    0.834986] pci 0000:00:02.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-> [    0.834995] pci 0000:00:02.0: setting latency timer to 64
-> [    1.002572] mtrr: type mismatch for e0000000,10000000 old: write-back new: write-combining
-> [    1.002580] [drm] MTRR allocation failed.  Graphics performance may suffer.
-> [    1.019880] acpi device:03: registered as cooling_device2
-> [    1.021520] input: Video Bus as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/LNXVIDEO:00/input/input3
-> [    1.021543] ACPI: Video Device [GFX0] (multi-head: yes  rom: no  post: no)
-> [    1.021855] [drm] Initialized i915 1.6.0 20080730 for 0000:00:02.0 on minor 0
-> 
-> This is with:
-> 
-> 00:02.0 VGA compatible controller: Intel Corporation Mobile GM965/GL960
-> Integrated Graphics Controller (rev 03)
-> 00:02.1 Display controller: Intel Corporation Mobile GM965/GL960
-> Integrated Graphics Controller (rev 03)
-> 
+> But *NONE* of them call desc->chip->end() (even though the code flow
+> in Documentation/DcoBook/genericirq.tmpl says that three of them do
+> call it].  So it appears that this was thought to be necessary when
+> the docs were written, but was not put into the code.
 
-Matt tells me that this (drop-dead box-killing!) bug is still present
-in current kernels.  Could someone take a look please?
+Yeah, sorry.
+ 
+> The ia64 chip->end function for edge triggered interrupts is a nop(),
+> so handle_edge_irq() ought to work just fine for it [can't confirm
+> from my initial tests because the HP box I'm using only has level
+> triggered ones].
+> 
+> handle_level_irq() works for my level triggered interrupts if I add
+> a "desc->chip->end(irq)" call to it.
 
-The code seems very simple, and I couldn't spot a problem.  Probably
-this means that I'm even simpler.
+Hmm, why isn't chip->unmask() sufficient ?
+ 
+> git grep "chip->end" appears to show that the only use of chip->end
+> is in the "Recovery handler for misrouted interrupts": try_one_irq()
 
+Right, that's just due to the old __do_IRQ() compability.
+ 
+> At minimum we seem to have some documentation inconsistencies with
+> the code.
+
+Will fix.
+
+Thanks,
+
+	tglx
