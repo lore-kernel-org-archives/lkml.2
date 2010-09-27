@@ -1,75 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759195Ab0I0MpE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 08:45:04 -0400
-Received: from www.tglx.de ([62.245.132.106]:34544 "EHLO www.tglx.de"
+	id S1759227Ab0I0Mpy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 08:45:54 -0400
+Received: from www.tglx.de ([62.245.132.106]:34559 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759115Ab0I0MpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 08:45:00 -0400
-Message-Id: <20100927121841.742126604@linutronix.de>
+	id S1759188Ab0I0MpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 08:45:04 -0400
+Message-Id: <20100927121842.240806983@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Mon, 27 Sep 2010 12:44:32 -0000
+Date: Mon, 27 Sep 2010 12:44:50 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 03/19] genirq: Provide advanced irq chip functions
+Subject: [patch 08/19] genirq; Provide compat handling for chip->mask_ack()
 References: <20100927121651.904100669@linutronix.de>
-Content-Disposition: inline;
-	filename=genirq-migration-path-for-irq-chip-functions.patch
+Content-Disposition: inline; filename=genirq-wrap-chip-mask-ack.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The low level irq chip functions want access to irq_desc->irq_data.
-Provide new functions which hand down irq_data instead of the irq
-number so these functions avoid to call irq_to_desc() which is a radix
-tree lookup in case of sparse irq.
-
-This provides all the old functions except one: end(). end() is a
-relict of __do_IRQ() and will just go away with the __do_IRQ() code.
-
-The replacement for set_affinity() has an extra argument "bool
-force". The reason for this is to notify the low level code, that the
-move has to be done right away and cannot be delayed until the next
-interrupt happens. That's necessary to handle the irq fixup on cpu
-unplug in the generic code.
+Wrap the old chip function mask_ack() until the migration is complete
+and the old chip functions are removed.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/irq.h |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
-
-Index: linux-2.6-tip/include/linux/irq.h
+ kernel/irq/chip.c      |   20 ++++++++++++++++++--
+ kernel/irq/internals.h |   17 +++++++++++------
+ kernel/irq/manage.c    |   22 +++++++++++-----------
+ 3 files changed, 40 insertions(+), 19 deletions(-)
+Index: linux-2.6-tip/kernel/irq/chip.c
 ===================================================================
---- linux-2.6-tip.orig/include/linux/irq.h
-+++ linux-2.6-tip/include/linux/irq.h
-@@ -151,6 +151,26 @@ struct irq_chip {
- 	void		(*bus_lock)(unsigned int irq);
- 	void		(*bus_sync_unlock)(unsigned int irq);
+--- linux-2.6-tip.orig/kernel/irq/chip.c
++++ linux-2.6-tip/kernel/irq/chip.c
+@@ -343,6 +343,11 @@ static void compat_irq_ack(struct irq_da
+ 	irq_data_to_desc(data)->chip->ack(data->irq);
+ }
  
-+	unsigned int	(*irq_startup)(struct irq_data *data);
-+	void		(*irq_shutdown)(struct irq_data *data);
-+	void		(*irq_enable)(struct irq_data *data);
-+	void		(*irq_disable)(struct irq_data *data);
++static void compat_irq_mask_ack(struct irq_data *data)
++{
++	irq_data_to_desc(data)->chip->mask_ack(data->irq);
++}
 +
-+	void		(*irq_ack)(struct irq_data *data);
-+	void		(*irq_mask)(struct irq_data *data);
-+	void		(*irq_mask_ack)(struct irq_data *data);
-+	void		(*irq_unmask)(struct irq_data *data);
-+	void		(*irq_eoi)(struct irq_data *data);
-+	void		(*irq_end)(struct irq_data *data);
-+
-+	int		(*irq_set_affinity)(struct irq_data *data, const struct cpumask *dest, bool force);
-+	int		(*irq_retrigger)(struct irq_data *data);
-+	int		(*irq_set_type)(struct irq_data *data, unsigned int flow_type);
-+	int		(*irq_set_wake)(struct irq_data *data, unsigned int on);
-+
-+	void		(*irq_bus_lock)(struct irq_data *data);
-+	void		(*irq_bus_sync_unlock)(struct irq_data *data);
-+
- 	/* Currently used only by UML, might disappear one day.*/
- #ifdef CONFIG_IRQ_RELEASE_METHOD
- 	void		(*release)(unsigned int irq, void *dev_id);
+ static void compat_bus_lock(struct irq_data *data)
+ {
+ 	irq_data_to_desc(data)->chip->bus_lock(data->irq);
+@@ -386,12 +391,14 @@ void irq_chip_set_defaults(struct irq_ch
+ 		chip->irq_unmask = compat_irq_unmask;
+ 	if (chip->ack)
+ 		chip->irq_ack = compat_irq_ack;
++	if (chip->mask_ack)
++		chip->irq_mask_ack = compat_irq_mask_ack;
+ }
+ 
+-static inline void mask_ack_irq(struct irq_desc *desc, int irq)
++static inline void mask_ack_irq(struct irq_desc *desc)
+ {
+-	if (desc->chip->mask_ack)
+-		desc->chip->mask_ack(irq);
++	if (desc->chip->irq_mask_ack)
++		desc->chip->irq_mask_ack(&desc->irq_data);
+ 	else {
+ 		desc->chip->irq_mask(&desc->irq_data);
+ 		if (desc->chip->irq_ack)
+@@ -514,7 +521,7 @@ handle_level_irq(unsigned int irq, struc
+ 	irqreturn_t action_ret;
+ 
+ 	raw_spin_lock(&desc->lock);
+-	mask_ack_irq(desc, irq);
++	mask_ack_irq(desc);
+ 
+ 	if (unlikely(desc->status & IRQ_INPROGRESS))
+ 		goto out_unlock;
+@@ -628,7 +635,7 @@ handle_edge_irq(unsigned int irq, struct
+ 	if (unlikely((desc->status & (IRQ_INPROGRESS | IRQ_DISABLED)) ||
+ 		    !desc->action)) {
+ 		desc->status |= (IRQ_PENDING | IRQ_MASKED);
+-		mask_ack_irq(desc, irq);
++		mask_ack_irq(desc);
+ 		goto out_unlock;
+ 	}
+ 	kstat_incr_irqs_this_cpu(irq, desc);
+@@ -733,7 +740,7 @@ __set_irq_handler(unsigned int irq, irq_
+ 	/* Uninstall? */
+ 	if (handle == handle_bad_irq) {
+ 		if (desc->chip != &no_irq_chip)
+-			mask_ack_irq(desc, irq);
++			mask_ack_irq(desc);
+ 		desc->status |= IRQ_DISABLED;
+ 		desc->depth = 1;
+ 	}
 
 
