@@ -1,127 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759242Ab0I0NhU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 09:37:20 -0400
-Received: from smtp.kponet.fi ([213.145.209.38]:35437 "EHLO smtp.kponet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753373Ab0I0NhS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 09:37:18 -0400
-X-Greylist: delayed 1060 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Sep 2010 09:37:18 EDT
-Date: Mon, 27 Sep 2010 16:19:35 +0300
-From: Sami Farin <hvtaifwkbgefbaei@gmail.com>
-To: Linux kernel Mailing List <linux-kernel@vger.kernel.org>,
-        e1000-devel@lists.sourceforge.net
-Cc: Sami Farin <hvtaifwkbgefbaei@gmail.com>
-Subject: Linux 2.6.35.6/e1000e does not receive replies from DHCP server,
- 2.6.33 works
-Message-ID: <20100927131935.d5f2ghpfaufiq6yx@m.safari.iki.fi>
-Mail-Followup-To: Sami Farin <hvtaifwkbgefbaei@gmail.com>,
-	linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net
+	id S1759364Ab0I0NjC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 09:39:02 -0400
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:19288
+	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755067Ab0I0Ni7 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 09:38:59 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzzz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-SS: 0,
+X-WSS-ID: 0L9ER7R-01-D1Q-02
+X-M-MSG: 
+Date: Mon, 27 Sep 2010 15:38:16 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: huang ying <huang.ying.caritas@gmail.com>
+CC: Huang Ying <ying.huang@intel.com>, Don Zickus <dzickus@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v2 6/7] x86, NMI, Add support to notify hardware error
+ with unknown NMI
+Message-ID: <20100927133816.GP13563@erda.amd.com>
+References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
+ <1285549026-5008-6-git-send-email-ying.huang@intel.com>
+ <20100927100901.GC32222@erda.amd.com>
+ <AANLkTimY5hr3DgN9=v83Z289MkzjgX8k0WzdTWZbGorj@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <AANLkTimY5hr3DgN9=v83Z289MkzjgX8k0WzdTWZbGorj@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi (please Cc:),
+On 27.09.10 08:47:53, huang ying wrote:
 
-With 2.6.33 I could reliably get IP address from ISP's DHCP server,
-but when I upgraded to 2.6.35, it just does not work anymore.
-ISP's technicians verified that from their end, they see my DHCP Request
-packets and they send the DHCP ACK packet, but my Linux just does not
-see the ACKs.  I have been running tcpdump to verify this.
-Technician got DHCP connection up just fine with a Windows system.
-I am using Telewell TW-EA501.
-Also, sometimes changing MAC addresses of the Intel NIC back and forth
-makes DHCP work.
+> >>  arch/x86/kernel/hwerr.c    |   55 +++++++++++++++++++++++++++++++++++++++++++++
+> >
+> > Instead of creating this file the code should be implemented in
+> >
+> >  arch/x86/kernel/cpu/intel.c
+> >
+> > Similar AMD NB code is implemented in amd.c and k8.c.
+> 
+> Why? This file is not vendor specific.
 
-Three days ago with 2.6.35.5, dhclient sent quite a many packets
-in eight hours, but received only one DHCP ACK packet, and
-then it failed to get ARP reply, so dhclient did not succeed in
-getting connection up.
+No, it only implements an Intel specific PCI device, nothing else.
 
-Now I tried 2.6.35.6 with latest e1000e version from Linux git
-32163f4b2cef28a5aab8b226ffecfc6379a53786, and DHCP ACK was received
-just fine.  e1000e from 2.6.35.1 did not work any better than 2.6.35.6.
-Combination kernel 2.6.35.6 + e1000e from 2.6.33 did not compile.
+> >> +late_initcall(check_unknown_nmi_for_hwerr);
+> >
+> > Maybe you can use early pci functions like read_pci_config() to avoid
+> > late init.
+> 
+> I don't think late init is a big issue. Hardware error is rare after all.
 
-So, what changed 2.6.35.6 --> Git in e1000e driver?
-If that is what's the problem..
+Just want to let you know this as an option.
 
-I have Intel DQ965GF motherboard.
+> >> --- a/arch/x86/kernel/traps.c
+> >> +++ b/arch/x86/kernel/traps.c
+> >> @@ -83,6 +83,8 @@ EXPORT_SYMBOL_GPL(used_vectors);
+> >>
+> >>  static int ignore_nmis;
+> >>
+> >> +int unknown_nmi_for_hwerr;
+> >
+> > If it is an nmi for hwerr, it is no longer an unknown nmi. So we
+> > should drop 'unknow' in the naming.
+> 
+> I think unkown NMI is the one we can not identify the source.
+> Something like anonymous.
+> 
+> >> +
+> >>  /*
+> >>   * Prevent NMI reason port (0x61) being accessed simultaneously, can
+> >>   * only be used in NMI handler.
+> >> @@ -360,6 +362,14 @@ io_check_error(unsigned char reason, str
+> >>  static notrace __kprobes void
+> >>  unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
+> >>  {
+> >> +     /*
+> >> +      * On some platforms, hardware errors may be notified via
+> >> +      * unknown NMI
+> >> +      */
+> >> +     if (unknown_nmi_for_hwerr)
+> >> +             panic("NMI for hardware error without error record: "
+> >> +                   "Not continuing");
+> >> +
+> >
+> > Instead of checking this flag you should implement and register an nmi
+> > handler for this case.
+> 
+> I think explicit function calls have better readability than notifier chains.
 
-the dmesg is the same, whether it works or not..
+What is different to unknown_nmi() then?
 
-[ 6759.184351] e1000e: Intel(R) PRO/1000 Network Driver - 1.0.2-k4
-[ 6759.184357] e1000e: Copyright (c) 1999 - 2009 Intel Corporation.
-[ 6759.184413] e1000e 0000:00:19.0: PCI INT A -> GSI 20 (level, low) -> IRQ 20
-[ 6759.184426] e1000e 0000:00:19.0: setting latency timer to 64
-[ 6759.184714] e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
-[ 6759.415542] e1000e 0000:00:19.0: eth0: (PCI Express:2.5GB/s:Width x1) 00:19:d1:00:5f:01
-[ 6759.415548] e1000e 0000:00:19.0: eth0: Intel(R) PRO/1000 Network Connection
-[ 6759.415579] e1000e 0000:00:19.0: eth0: MAC: 6, PHY: 6, PBA No: ffffff-0ff
-[ 6759.946202] e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
-[ 6759.997053] e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
-...
-[ 7506.674005] eth0: no IPv6 routers present
-[ 7530.742331] e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
-[ 7530.793171] e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
-[ 7530.793813] ADDRCONF(NETDEV_UP): eth0: link is not ready
-[ 7532.160896] e1000e: eth0 NIC Link is Up 100 Mbps Full Duplex, Flow Control: RX/TX
-[ 7532.161539] ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
-[ 7532.566537] eth0: IPv6 duplicate address fe80::219:d1ff:fe00:5f01 detected!
+So no, in your case you want to catch unknown nmis for a certain
+hardware and then throw a panic. This should be clearly implemented in
+a separate handler for this piece of hardware.
 
-# grep eth0 /proc/interrupts 
- 46:    1044515          0   PCI-MSI-edge      eth0
+We want to cleanup this code and throw out all hardware specific
+snippets, and not introduce new special cases here.
 
-lspci
-00:19.0 Ethernet controller: Intel Corporation 82566DM Gigabit Network Connection (rev 02)
-        Subsystem: Intel Corporation Device 0001
-        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx+
-        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-        Latency: 0
-        Interrupt: pin A routed to IRQ 46
-        Region 0: Memory at d0300000 (32-bit, non-prefetchable) [size=128K]
-        Region 1: Memory at d0324000 (32-bit, non-prefetchable) [size=4K]
-        Region 2: I/O ports at 20e0 [size=32]
-        Capabilities: [c8] Power Management version 2
-                Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
-                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=1 PME-
-        Capabilities: [d0] MSI: Enable+ Count=1/1 Maskable- 64bit+
-                Address: 00000000fee0300c  Data: 418b
-        Kernel driver in use: e1000e
-        Kernel modules: e1000e
-00: 86 80 4a 10 07 04 10 00 02 00 00 02 00 00 00 00
-10: 00 00 30 d0 00 40 32 d0 e1 20 00 00 00 00 00 00
-20: 00 00 00 00 00 00 00 00 00 00 00 00 86 80 01 00
-30: 00 00 00 00 c8 00 00 00 00 00 00 00 09 01 00 00
-
-# ethtool eth0
-Settings for eth0:
-        Supported ports: [ TP ]
-        Supported link modes:   10baseT/Half 10baseT/Full 
-                                100baseT/Half 100baseT/Full 
-                                1000baseT/Full 
-        Supports auto-negotiation: Yes
-        Advertised link modes:  10baseT/Half 10baseT/Full 
-                                100baseT/Half 100baseT/Full 
-                                1000baseT/Full 
-        Advertised pause frame use: No
-        Advertised auto-negotiation: Yes
-        Speed: 100Mb/s
-        Duplex: Full
-        Port: Twisted Pair
-        PHYAD: 1
-        Transceiver: internal
-        Auto-negotiation: on
-        MDI-X: off
-        Supports Wake-on: pumbag
-        Wake-on: g
-        Current message level: 0x00000001 (1)
-        Link detected: yes
+-Robert
 
 -- 
-Do what you love because life is too short for anything else.
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
