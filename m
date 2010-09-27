@@ -1,81 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760117Ab0I0T1D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 15:27:03 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55373 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933235Ab0I0T0y convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 15:26:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=UXaqBsvjaNXvoEwRV/Qy9xQAmXsvg6ORBz1EnEK55zjad5YMYY+g596m4RornqiVP3
-         ThRRihseMdG+lOF2C2znVxfbyg91VyoPnIkqTRYHtPOlmeqNNgzfwuAijSONoTAA5g2D
-         gShHos+xTLUZHxKkfbtD+KituP/upG1+QrEp0=
+	id S1760100Ab0I0T2O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 15:28:14 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:46913 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755703Ab0I0T2M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 15:28:12 -0400
+Message-ID: <4CA0F049.8000203@austin.ibm.com>
+Date: Mon, 27 Sep 2010 14:28:09 -0500
+From: Nathan Fontenot <nfont@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
 MIME-Version: 1.0
-In-Reply-To: <201009272051.33882.pluto@agmk.net>
-References: <201009272051.33882.pluto@agmk.net>
-Date: Mon, 27 Sep 2010 21:26:53 +0200
-Message-ID: <AANLkTinCL--ndP3bbATGU46V8VJLs5hOWC++jbsodBiB@mail.gmail.com>
-Subject: Re: git bisect selects commit outside initial bisect range?
-From: "N.P.S. N.P.S." <napohybelskurwysynom2010@gmail.com>
-To: =?ISO-8859-2?Q?Pawe=B3_Sikora?= <pluto@agmk.net>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org
+CC: Greg KH <greg@kroah.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH 7/8] v2 Define memory_block_size_bytes() for powerpc/pseries
+References: <4CA0EBEB.1030204@austin.ibm.com>
+In-Reply-To: <4CA0EBEB.1030204@austin.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Define a version of memory_block_size_bytes() for powerpc/pseries such that
+a memory block spans an entire lmb.
 
-W dniu 27 wrze¶nia 2010 20:51 u¿ytkownik Pawe³ Sikora <pluto@agmk.net> napisa³:
-> hi,
->
-> i've noticed on kernel 2.6.35.y some weird screen blinking during
-> e.g. <alt-tab> on kde4 with enabled accelerated desktop effects.
->
-> i've started git bisect between good-v2.6.34 and bad-v2.6.35-rc1
-> and after few steps git-bisect jumps to commit before v2.6.34.
->
-> [~/src/linux/linux-2.6]$ make kernelrelease
-> 2.6.34-rc6-00551-g7a6cb0d
->
-> [~/src/linux/linux-2.6]$ git bisect log
-> git bisect start
-> # good: [e40152ee1e1c7a63f4777791863215e3faa37a86] Linus 2.6.34
-> git bisect good e40152ee1e1c7a63f4777791863215e3faa37a86
-> # bad: [67a3e12b05e055c0415c556a315a3d3eb637e29e] Linux 2.6.35-rc1
-> git bisect bad 67a3e12b05e055c0415c556a315a3d3eb637e29e
-> # good: [f8965467f366fd18f01feafb5db10512d7b4422c] Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next-2.6
-> git bisect good f8965467f366fd18f01feafb5db10512d7b4422c
-> # bad: [d79df0b1eda0099a22cbcece01ce5e7d222450de] Merge git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging-2.6
-> git bisect bad d79df0b1eda0099a22cbcece01ce5e7d222450de
-> # good: [ac3ee84c604502240122c47b52f0542ec8774f15] Merge branch 'dbg-early-merge' of git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb
-> git bisect good ac3ee84c604502240122c47b52f0542ec8774f15
->
-> is it normal that bisect selects next step outside initial range?
+Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 
-It seems to me that it could happen - there are many merges of many
-branches of the code - some of them may have really old commits.
+---
+ arch/powerpc/platforms/pseries/hotplug-memory.c |   66 +++++++++++++++++++-----
+ 1 file changed, 53 insertions(+), 13 deletions(-)
 
->
-> BR,
-> Pawel.
->
-> ps).
-> please CC me on reply.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Index: linux-next/arch/powerpc/platforms/pseries/hotplug-memory.c
+===================================================================
+--- linux-next.orig/arch/powerpc/platforms/pseries/hotplug-memory.c	2010-09-27 13:49:34.000000000 -0500
++++ linux-next/arch/powerpc/platforms/pseries/hotplug-memory.c	2010-09-27 13:50:45.000000000 -0500
+@@ -17,6 +17,54 @@
+ #include <asm/pSeries_reconfig.h>
+ #include <asm/sparsemem.h>
+ 
++static u32 get_memblock_size(void)
++{
++	struct device_node *np;
++	unsigned int memblock_size = 0;
++
++	np = of_find_node_by_path("/ibm,dynamic-reconfiguration-memory");
++	if (np) {
++		const unsigned long *size;
++
++		size = of_get_property(np, "ibm,lmb-size", NULL);
++		memblock_size = size ? *size : 0;
++
++		of_node_put(np);
++	} else {
++		unsigned int memzero_size = 0;
++		const unsigned int *regs;
++
++		np = of_find_node_by_path("/memory@0");
++		if (np) {
++			regs = of_get_property(np, "reg", NULL);
++			memzero_size = regs ? regs[3] : 0;
++			of_node_put(np);
++		}
++
++		if (memzero_size) {
++			/* We now know the size of memory@0, use this to find
++			 * the first memoryblock and get its size.
++			 */
++			char buf[64];
++
++			sprintf(buf, "/memory@%x", memzero_size);
++			np = of_find_node_by_path(buf);
++			if (np) {
++				regs = of_get_property(np, "reg", NULL);
++				memblock_size = regs ? regs[3] : 0;
++				of_node_put(np);
++			}
++		}
++	}
++
++	return memblock_size;
++}
++
++u32 memory_block_size_bytes(void)
++{
++	return get_memblock_size();
++}
++
+ static int pseries_remove_memblock(unsigned long base, unsigned int memblock_size)
+ {
+ 	unsigned long start, start_pfn;
+@@ -127,30 +175,22 @@
+ 
+ static int pseries_drconf_memory(unsigned long *base, unsigned int action)
+ {
+-	struct device_node *np;
+-	const unsigned long *lmb_size;
++	unsigned long memblock_size;
+ 	int rc;
+ 
+-	np = of_find_node_by_path("/ibm,dynamic-reconfiguration-memory");
+-	if (!np)
++	memblock_size = get_memblock_size();
++	if (!memblock_size)
+ 		return -EINVAL;
+ 
+-	lmb_size = of_get_property(np, "ibm,lmb-size", NULL);
+-	if (!lmb_size) {
+-		of_node_put(np);
+-		return -EINVAL;
+-	}
+-
+ 	if (action == PSERIES_DRCONF_MEM_ADD) {
+-		rc = memblock_add(*base, *lmb_size);
++		rc = memblock_add(*base, memblock_size);
+ 		rc = (rc < 0) ? -EINVAL : 0;
+ 	} else if (action == PSERIES_DRCONF_MEM_REMOVE) {
+-		rc = pseries_remove_memblock(*base, *lmb_size);
++		rc = pseries_remove_memblock(*base, memblock_size);
+ 	} else {
+ 		rc = -EINVAL;
+ 	}
+ 
+-	of_node_put(np);
+ 	return rc;
+ }
 
-
-
--- 
-Slawa!
-N.P.S.
