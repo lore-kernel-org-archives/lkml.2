@@ -1,61 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760284Ab0I0XMb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 19:12:31 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60330 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756506Ab0I0XM3 (ORCPT
+	id S933164Ab0I0XRD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 19:17:03 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:45921 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756413Ab0I0XRB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 19:12:29 -0400
-Date: Mon, 27 Sep 2010 16:12:03 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dan Carpenter <error27@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Cliff Wickman <cpw@sgi.com>, Jack Steiner <steiner@sgi.com>,
-        Robin Holt <holt@sgi.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [patch] tlb_uv: handle large snprintf() returns
-Message-Id: <20100927161203.732833b0.akpm@linux-foundation.org>
-In-Reply-To: <20100816105502.GC645@bicker>
-References: <20100816105502.GC645@bicker>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 27 Sep 2010 19:17:01 -0400
+Message-Id: <1285629420.10278.1397188599@webmail.messagingengine.com>
+X-Sasl-Enc: um9IF2Hx2dx0TK/Un1IXX0MxBeGYDi5v2o82XCd7nU5n 1285629420
+From: "Robert Mueller" <robm@fastmail.fm>
+To: "Christoph Lameter" <cl@linux.com>,
+        "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>
+Cc: "Mel Gorman" <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+        "Bron Gondwana" <brong@fastmail.fm>, "linux-mm" <linux-mm@kvack.org>
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: MessagingEngine.com Webmail Interface
+References: <52C8765522A740A4A5C027E8FDFFDFE3@jem>
+ <20100921090407.GA11439@csn.ul.ie>
+ <20100927110049.6B31.A69D9226@jp.fujitsu.com>
+ <alpine.DEB.2.00.1009270828510.7000@router.home>
+Subject: Re: Default zone_reclaim_mode = 1 on NUMA kernel is bad
+ forfile/email/web servers
+In-Reply-To: <alpine.DEB.2.00.1009270828510.7000@router.home>
+Reply-To: robm@fastmail.fm
+Date: Tue, 28 Sep 2010 09:17:00 +1000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Aug 2010 12:55:02 +0200
-Dan Carpenter <error27@gmail.com> wrote:
 
-> snprintf() returns the number of bytes that *would* have been copied if
-> the buffer was large enough, so it can be larger than the size of the
-> buffer.  In this case it's ok, but let's put a cap on it anyway so it's
-> easier to audit.
+> You can switch off zone reclaim of course which means that the
+> applications will not be getting memory thats optimal for them to access.
+
+That's true, but also remember that going to disk is going to be way
+more expensive than memory on another node. What we found was that data
+that should have been cached because it was being accessed a lot, wasn't
+being cached, so it had to keep going back to disk to get it. That's
+even worse.
+
+> 1. Fix the ACPI information to indicate lower memory access
+>    differences (was that info actually acurate?) so that zone reclaim
+>    defaults to off.
 > 
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
-> 
-> diff --git a/arch/x86/kernel/tlb_uv.c b/arch/x86/kernel/tlb_uv.c
-> index 312ef02..5e88b3a 100644
-> --- a/arch/x86/kernel/tlb_uv.c
-> +++ b/arch/x86/kernel/tlb_uv.c
-> @@ -1012,6 +1012,9 @@ static ssize_t tunables_read(struct file *file, char __user *userbuf,
->  		timeoutsb4reset, ipi_reset_limit, complete_threshold,
->  		congested_response_us, congested_reps, congested_period);
->  
-> +	if (ret > 300)
-> +		ret = 300;
-> +
->  	return simple_read_from_buffer(userbuf, count, ppos, buf, ret);
->  }
+> 2. Change the RECLAIM_DISTANCE setting for the arch so that the ACPI
+>    information does not trigger zone reclaim to be enabled.
 
-That 300-byte local array is yuk.
+How would the ACPI information actually be changed?
 
-Duplicating the "300" later in the function (instead of using sizeof)
-is also yuk.
+I ran numactl -H to get the hardware information, and that seems to
+include distances. As mentioned previously, this is a very standard
+Intel server motherboard.
 
-The code can be deyukked by using sprintf_to_user(), only we don't have
-one.  But we do have kasprintf().
+http://www.intel.com/Products/Server/Motherboards/S5520UR/S5520UR-specifications.htm
 
+Intel 5520 chipset with Intel I/O Controller Hub ICH10R
+
+$ numactl -H
+available: 2 nodes (0-1)
+node 0 cpus: 0 2 4 6 8 10 12 14
+node 0 size: 24517 MB
+node 0 free: 1523 MB
+node 1 cpus: 1 3 5 7 9 11 13 15
+node 1 size: 24576 MB
+node 1 free: 39 MB
+node distances:
+node   0   1
+  0:  10  21
+  1:  21  10
+
+Since I'm not sure what the "distance" values mean, I have no idea if
+those values large or not?
+
+> 3. Run the application with numactl settings for interleaving of
+>    memory accesses (or corresponding cpuset settings).
+>
+> 4. Fix the application to be conscious of the effect of memory
+>    allocations on a NUMA systems. Use the numa memory allocations API
+>    to allocate anonymous memory locally for optimal access and set
+>    interleave for the file backed pages.
+
+The problem we saw was purely with file caching. The application wasn't
+actually allocating much memory itself, but it was reading lots of files
+from disk (via mmap'ed memory mostly), and as most people would, we
+expected that data would be cached in memory to reduce future reads from
+disk. That was not happening.
+
+Rob
