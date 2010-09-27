@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932686Ab0I0FoO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 01:44:14 -0400
-Received: from crca.org.au ([74.207.252.120]:39255 "EHLO crca.org.au"
+	id S932702Ab0I0FoR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 01:44:17 -0400
+Received: from crca.org.au ([74.207.252.120]:50165 "EHLO crca.org.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932080Ab0I0FoI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 01:44:08 -0400
+	id S932080Ab0I0FoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 01:44:15 -0400
 X-Bogosity: Ham, spamicity=0.000000
 From: Nigel Cunningham <nigel@tuxonice.net>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>,
         Linux PM <linux-pm@lists.linux-foundation.org>,
         LKML <linux-kernel@vger.kernel.org>,
         TuxOnIce-devel <tuxonice-devel@tuxonice.net>
-Subject: [PATCH 03/23] Hibernation: Swap iteration functions.
-Date: Mon, 27 Sep 2010 15:43:38 +1000
-Message-Id: <1285566238-10966-4-git-send-email-nigel@tuxonice.net>
+Subject: [PATCH 07/23] Hiberation: Fix speed display.
+Date: Mon, 27 Sep 2010 15:43:42 +1000
+Message-Id: <1285566238-10966-8-git-send-email-nigel@tuxonice.net>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1285566238-10966-1-git-send-email-nigel@tuxonice.net>
 References: <1285566238-10966-1-git-send-email-nigel@tuxonice.net>
@@ -22,67 +22,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the data structure 'storage_position' and routines that allow
-a caller to iterate over swap in sector order. Note that calling
-reset_storage_pos only resets the position. next_swapdev_block
-must also be called to get the address of the first (and subsequent
-sectors).
+Correct the situation where, if an error occurs while writing an image,
+the speed display still uses the number of pages that should have been
+written, rather than the number of pages that were written.
 
 Signed-off-by: Nigel Cunningham <nigel@tuxonice.net>
 ---
- kernel/power/swap.c |   39 +++++++++++++++++++++++++++++++++++++++
- 1 files changed, 39 insertions(+), 0 deletions(-)
+ kernel/power/swap.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-index caf4db8..4e5f6e3 100644
+index 4c08329..fbda5cd 100644
 --- a/kernel/power/swap.c
 +++ b/kernel/power/swap.c
-@@ -68,6 +68,45 @@ struct swsusp_extent {
- 
- static struct rb_root swsusp_extents = RB_ROOT;
- 
-+struct storage_position {
-+	struct rb_node *node;
-+	struct swsusp_extent *cur_ext;
-+	unsigned long offset;
-+};
-+
-+static struct storage_position pos;
-+
-+static void reset_storage_pos(void)
-+{
-+	pos.node = rb_first(&swsusp_extents);
-+
-+	if (!pos.node) {
-+		pos.cur_ext = NULL;
-+		pos.offset = 0;
-+		return;
-+	}
-+
-+	pos.cur_ext = container_of(pos.node, struct swsusp_extent, node);
-+	pos.offset = pos.cur_ext->start;
-+}
-+
-+static sector_t next_swapdev_block(void)
-+{
-+	if (!pos.node)
-+		return 0;
-+
-+	if (pos.cur_ext->end >= pos.offset)
-+		return pos.offset++;
-+
-+	pos.node = rb_next(pos.node);
-+	if (!pos.node)
-+		return 0;
-+
-+	pos.cur_ext = container_of(pos.node, struct swsusp_extent, node);
-+	pos.offset = pos.cur_ext->start;
-+	return pos.offset;
-+}
-+
- static int swsusp_extents_insert(unsigned long swap_offset)
- {
- 	struct rb_node **new = &(swsusp_extents.rb_node);
+@@ -474,7 +474,7 @@ static int save_image(struct swap_map_handle *handle,
+ 		printk(KERN_CONT "\b\b\b\bdone\n");
+ 	else
+ 		printk(KERN_CONT "\n");
+-	mps = swsusp_show_speed(&start, &stop, nr_to_write, "Wrote");
++	mps = swsusp_show_speed(&start, &stop, nr_pages, "Wrote");
+ 	write_speed = (mps < 256) ? (char) mps : 0;
+ 	return ret;
+ }
 -- 
 1.7.0.4
 
