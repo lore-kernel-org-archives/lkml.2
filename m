@@ -1,90 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932650Ab0I0OQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 10:16:56 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:60380 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750847Ab0I0OQz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 10:16:55 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Petr Vandrovec <petr@vandrovec.name>
-Subject: Re: [PATCH] Remove BKL usage from ncpfs
-Date: Mon, 27 Sep 2010 16:16:41 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-fsdevel@vger.kernel.org, aia21@cam.ac.uk,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk
-References: <20100926234733.GA31884@vana.vc.cvut.cz>
-In-Reply-To: <20100926234733.GA31884@vana.vc.cvut.cz>
+	id S933060Ab0I0ORY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 10:17:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30191 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932938Ab0I0ORX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 10:17:23 -0400
+Message-ID: <4CA0A76B.6000803@redhat.com>
+Date: Mon, 27 Sep 2010 16:17:15 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Joerg Roedel <joro@8bytes.org>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] x86, nmi: workaround sti; hlt race vs nmi; intr
+References: <1284913699-14986-1-git-send-email-avi@redhat.com> <20100927103128.GO15338@8bytes.org>
+In-Reply-To: <20100927103128.GO15338@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009271616.42190.arnd@arndb.de>
-X-Provags-ID: V02:K0:BqYS83Ibp663l7rvCEC1dLRB4jo/Prd/mQ5MwqxU50F
- 6HDm5EK16HBFCsQK6xM8rkTpT4jUXeJE05Fn21vpHf8fmiFIDM
- LehIFDHhpTJ+qtGu/yeJZF/j2DB/7b4JjFE4HP4YPaTyH6Qc2I
- 94T7CCnF50GMcqqp1NwbW5DF1CTYVkkYkI3OIeeFXsSaCegZoU
- 45H/XJ2Eh14FUv1tUOxcQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 27 September 2010, Petr Vandrovec wrote:
-> commit 92498b5267aa58e85e20c7b2cbd84d1ed86df47d
-> Author: Petr Vandrovec <petr@vandrovec.name>
-> Date:   Sun Sep 26 16:19:12 2010 -0700
-> 
->     Remove BKL from ncpfs
+  On 09/27/2010 12:31 PM, Joerg Roedel wrote:
+> On Sun, Sep 19, 2010 at 06:28:19PM +0200, Avi Kivity wrote:
+> >  On machines without monitor/mwait we use an sti; hlt sequence to atomically
+> >  enable interrupts and put the cpu to sleep.  The sequence uses the "interrupt
+> >  shadow" property of the sti instruction: interrupts are enabled only after
+> >  the instruction following sti has been executed.  This means an interrupt
+> >  cannot happen in the middle of the sequence, which would leave us with
+> >  the interrupt processed but the cpu halted.
+> >
+> >  The interrupt shadow, however, can be broken by an nmi; the following
+> >  sequence
+> >
+> >     sti
+> >       nmi ... iret
+> >       # interrupt shadow disabled
+> >       intr ... iret
+> >     hlt
+> >
+> >  puts the cpu to sleep, even though the interrupt may need additional
+> >  processing after the hlt (like scheduling a task).
+>
+> Doesn't the interrupt return path check for a re-schedule condition
+> before iret? So to my believe the handler would not jump back to the
+> idle task if something else becomes running in the interrupt handler,
+> no?
+>
 
-Hi Petr,
+Perhaps on preemptible kernels?  But at least on non-preemptible 
+kernels, you can't just switch tasks while running kernel code.
 
-Thanks for taking care of this.
+void cpu_idle(void)
+{
+     current_thread_info()->status |= TS_POLLING;
 
-Would you like me to take this patch into my bkl/vfs tree? I think
-that would make it easier for me because I'm adding another instance
-of the BKL there, in the ncp_fill_super function. As far as I can tell
-that change (see below) becomes pointless with your patch.
+     /*
+      * If we're the non-boot CPU, nothing set the stack canary up
+      * for us.  CPU0 already has it initialized but no harm in
+      * doing it again.  This is a good place for updating it, as
+      * we wont ever return from this function (so the invalid
+      * canaries already on the stack wont ever trigger).
+      */
+     boot_init_stack_canary();
 
-I could either just revert my change or replace it with your patch,
-whichever you prefer.
+     /* endless idle loop with no priority at all */
+     while (1) {
+         tick_nohz_stop_sched_tick(1);
+         while (!need_resched()) {
 
-	Arnd
+             rmb();
 
-diff --git a/fs/ncpfs/inode.c b/fs/ncpfs/inode.c
-index b4de38c..cdf0fce 100644
---- a/fs/ncpfs/inode.c
-+++ b/fs/ncpfs/inode.c
-@@ -445,10 +445,14 @@ static int ncp_fill_super(struct super_block *sb, void *raw_data, int silent)
- #endif
-        struct ncp_entry_info finfo;
- 
-+       lock_kernel();
-+
-        data.wdog_pid = NULL;
-        server = kzalloc(sizeof(struct ncp_server), GFP_KERNEL);
--       if (!server)
-+       if (!server) {
-+               unlock_kernel();
-                return -ENOMEM;
-+       }
-        sb->s_fs_info = server;
- 
-        error = -EFAULT;
-@@ -700,6 +704,7 @@ static int ncp_fill_super(struct super_block *sb, void *raw_data, int silent)
-         if (!sb->s_root)
-                goto out_no_root;
-        sb->s_root->d_op = &ncp_root_dentry_operations;
-+       unlock_kernel();
-        return 0;
- 
- out_no_root:
-@@ -736,6 +741,7 @@ out:
-        put_pid(data.wdog_pid);
-        sb->s_fs_info = NULL;
-        kfree(server);
-+       unlock_kernel();
-        return error;
- }
- 
+             if (cpu_is_offline(smp_processor_id()))
+                 play_dead();
+             /*
+              * Idle routines should keep interrupts disabled
+              * from here on, until they go to idle.
+              * Otherwise, idle callbacks can misfire.
+              */
+             local_irq_disable();
+             enter_idle();
+             /* Don't trace irqs off for idle */
+             stop_critical_timings();
+             pm_idle();
+             start_critical_timings();
+
+             trace_power_end(smp_processor_id());
+
+             /* In many cases the interrupt that ended idle
+                has already called exit_idle. But some idle
+                loops can be woken up without interrupt. */
+             __exit_idle();
+         }
+
+         tick_nohz_restart_sched_tick();
+         preempt_enable_no_resched();
+         schedule();
+         preempt_disable();
+     }
+}
+
+Looks like we rely on an explicit schedule() - pm_idle() is called with 
+preemption disabled.
+
+(pm_idle eventually calls safe_halt() if no other idle method is used)
+
+-- 
+error compiling committee.c: too many arguments to function
 
