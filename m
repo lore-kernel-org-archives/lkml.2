@@ -1,120 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759271Ab0I0NOT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 09:14:19 -0400
-Received: from mtagate4.de.ibm.com ([195.212.17.164]:43839 "EHLO
-	mtagate4.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759147Ab0I0NOQ (ORCPT
+	id S1759312Ab0I0NPE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 09:15:04 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41090 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754896Ab0I0NPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 09:14:16 -0400
-Date: Mon, 27 Sep 2010 15:14:14 +0200
-From: Christof Schmitt <christof.schmitt@de.ibm.com>
-To: Vasiliy Kulikov <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Swen Schillig <swen@vnet.ibm.com>,
-        linux390@de.ibm.com, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        James Bottomley <James.Bottomley@suse.de>, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/14] s390: scsi: fix error path
-Message-ID: <20100927131413.GA8473@schmichrtp.mainz.de.ibm.com>
-References: <1284900877-24201-1-git-send-email-segooon@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284900877-24201-1-git-send-email-segooon@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 27 Sep 2010 09:15:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
+         :in-reply-to:references;
+        b=fn0GBu8WckT9nGQOm5wZjk4cp9ve6kZGHW4OQjuwmqRcqPHBtVr5fP6tZJZMnmPBTr
+         VPEaiF15wxKCp3mgTC2z+Lb3iw7RBA0HnMWoqDK2m3GrHZ1BlJ6W3IF8jl/k4SJh1QDA
+         Iq0EO+WZaOamNwLZg3FRk7mxe5iwOTASeIMdM=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jarek Poplawski <jarkao2@gmail.com>,
+        "All since 2.6.32" <stable@kernel.org>
+Subject: [PATCH 2/2] reiserfs: Fix unwanted reiserfs lock recursion
+Date: Mon, 27 Sep 2010 15:14:51 +0200
+Message-Id: <1285593291-11527-2-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-regression
+X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
+In-Reply-To: <1285593291-11527-1-git-send-regression-fweisbec@gmail.com>
+References: <1285593291-11527-1-git-send-regression-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 19, 2010 at 04:54:36PM +0400, Vasiliy Kulikov wrote:
-> zfcp_unit_add() doesn't free all allocated resources in error case.
-> 
-> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+Prevent from recursively locking the reiserfs lock in
+reiserfs_unpack() because we may call journal_begin()
+that requires the lock to be taken only once, otherwise
+it won't be able to release the lock while taking other
+mutexes, ending up in inverted dependencies between
+the journal mutex and the reiserfs lock for example.
 
-Where do you see a problem? The memory management for the unit 
-device has to be done the way the current code does:
+This fixes:
 
-After dev_set_name, the struct has to be deleted through put_device
-that calls the release functions and also frees the memory allocated
-for the device name.
+[   67.110273] =======================================================
+[   67.110313] [ INFO: possible circular locking dependency detected ]
+[   67.110313] 2.6.35.4.4a #3
+[   67.110313] -------------------------------------------------------
+[   67.110313] lilo/1620 is trying to acquire lock:
+[   67.110313]  (&journal->j_mutex){+.+...}, at: [<d0325bff>] do_journal_begin_r+0x7f/0x340 [reiserfs]
+[   67.110313]
+[   67.110313] but task is already holding lock:
+[   67.110313]  (&REISERFS_SB(s)->lock){+.+.+.}, at: [<d032a278>] reiserfs_write_lock+0x28/0x40 [reiserfs]
+[   67.110313]
+[   67.110313] which lock already depends on the new lock.
+[   67.110313]
+[   67.110313]
+[   67.110313] the existing dependency chain (in reverse order) is:
+[   67.110313]
+[   67.110313] -> #1 (&REISERFS_SB(s)->lock){+.+.+.}:
+[   67.110313]        [<c10562b7>] lock_acquire+0x67/0x80
+[   67.110313]        [<c12facad>] __mutex_lock_common+0x4d/0x410
+[   67.110313]        [<c12fb0c8>] mutex_lock_nested+0x18/0x20
+[   67.110313]        [<d032a278>] reiserfs_write_lock+0x28/0x40 [reiserfs]
+[   67.110313]        [<d0325c06>] do_journal_begin_r+0x86/0x340 [reiserfs]
+[   67.110313]        [<d0325f77>] journal_begin+0x77/0x140 [reiserfs]
+[   67.110313]        [<d0315be4>] reiserfs_remount+0x224/0x530 [reiserfs]
+[   67.110313]        [<c10b6a20>] do_remount_sb+0x60/0x110
+[   67.110313]        [<c10cee25>] do_mount+0x625/0x790
+[   67.110313]        [<c10cf014>] sys_mount+0x84/0xb0
+[   67.110313]        [<c12fca3d>] syscall_call+0x7/0xb
+[   67.110313]
+[   67.110313] -> #0 (&journal->j_mutex){+.+...}:
+[   67.110313]        [<c10560f6>] __lock_acquire+0x1026/0x1180
+[   67.110313]        [<c10562b7>] lock_acquire+0x67/0x80
+[   67.110313]        [<c12facad>] __mutex_lock_common+0x4d/0x410
+[   67.110313]        [<c12fb0c8>] mutex_lock_nested+0x18/0x20
+[   67.110313]        [<d0325bff>] do_journal_begin_r+0x7f/0x340 [reiserfs]
+[   67.110313]        [<d0325f77>] journal_begin+0x77/0x140 [reiserfs]
+[   67.110313]        [<d0326271>] reiserfs_persistent_transaction+0x41/0x90 [reiserfs]
+[   67.110313]        [<d030d06c>] reiserfs_get_block+0x22c/0x1530 [reiserfs]
+[   67.110313]        [<c10db9db>] __block_prepare_write+0x1bb/0x3a0
+[   67.110313]        [<c10dbbe6>] block_prepare_write+0x26/0x40
+[   67.110313]        [<d030b738>] reiserfs_prepare_write+0x88/0x170 [reiserfs]
+[   67.110313]        [<d03294d6>] reiserfs_unpack+0xe6/0x120 [reiserfs]
+[   67.110313]        [<d0329782>] reiserfs_ioctl+0x272/0x320 [reiserfs]
+[   67.110313]        [<c10c3188>] vfs_ioctl+0x28/0xa0
+[   67.110313]        [<c10c3bbd>] do_vfs_ioctl+0x32d/0x5c0
+[   67.110313]        [<c10c3eb3>] sys_ioctl+0x63/0x70
+[   67.110313]        [<c12fca3d>] syscall_call+0x7/0xb
+[   67.110313]
+[   67.110313] other info that might help us debug this:
+[   67.110313]
+[   67.110313] 2 locks held by lilo/1620:
+[   67.110313]  #0:  (&sb->s_type->i_mutex_key#8){+.+.+.}, at: [<d032945a>] reiserfs_unpack+0x6a/0x120 [reiserfs]
+[   67.110313]  #1:  (&REISERFS_SB(s)->lock){+.+.+.}, at: [<d032a278>] reiserfs_write_lock+0x28/0x40 [reiserfs]
+[   67.110313]
+[   67.110313] stack backtrace:
+[   67.110313] Pid: 1620, comm: lilo Not tainted 2.6.35.4.4a #3
+[   67.110313] Call Trace:
+[   67.110313]  [<c12f9aba>] ? printk+0x18/0x1e
+[   67.110313]  [<c1054182>] print_circular_bug+0xd2/0xe0
+[   67.110313]  [<c10560f6>] __lock_acquire+0x1026/0x1180
+[   67.110313]  [<c10562b7>] lock_acquire+0x67/0x80
+[   67.110313]  [<d0325bff>] ? do_journal_begin_r+0x7f/0x340 [reiserfs]
+[   67.110313]  [<c12facad>] __mutex_lock_common+0x4d/0x410
+[   67.110313]  [<d0325bff>] ? do_journal_begin_r+0x7f/0x340 [reiserfs]
+[   67.110313]  [<c1055275>] ? __lock_acquire+0x1a5/0x1180
+[   67.110313]  [<c10897ae>] ? mempool_alloc_slab+0xe/0x10
+[   67.110313]  [<c12fb0c8>] mutex_lock_nested+0x18/0x20
+[   67.110313]  [<d0325bff>] ? do_journal_begin_r+0x7f/0x340 [reiserfs]
+[   67.110313]  [<d0325bff>] do_journal_begin_r+0x7f/0x340 [reiserfs]
+[   67.110313]  [<c1054bd2>] ? mark_held_locks+0x62/0x80
+[   67.110313]  [<c10b163d>] ? kmem_cache_alloc+0x7d/0xb0
+[   67.110313]  [<c1054e5c>] ? trace_hardirqs_on_caller+0x11c/0x160
+[   67.110313]  [<d0325f77>] journal_begin+0x77/0x140 [reiserfs]
+[   67.110313]  [<d0326262>] ? reiserfs_persistent_transaction+0x32/0x90 [reiserfs]
+[   67.110313]  [<d0326271>] reiserfs_persistent_transaction+0x41/0x90 [reiserfs]
+[   67.110313]  [<d030d06c>] reiserfs_get_block+0x22c/0x1530 [reiserfs]
+[   67.110313]  [<c1055275>] ? __lock_acquire+0x1a5/0x1180
+[   67.110313]  [<c12fc672>] ? _raw_spin_unlock_irq+0x22/0x50
+[   67.110313]  [<c10b163d>] ? kmem_cache_alloc+0x7d/0xb0
+[   67.110313]  [<c1054e5c>] ? trace_hardirqs_on_caller+0x11c/0x160
+[   67.110313]  [<c102789b>] ? sub_preempt_count+0x7b/0xb0
+[   67.110313]  [<c12fc457>] ? _raw_spin_unlock+0x27/0x40
+[   67.110313]  [<c10db9db>] __block_prepare_write+0x1bb/0x3a0
+[   67.110313]  [<c10dbbe6>] block_prepare_write+0x26/0x40
+[   67.110313]  [<d030ce40>] ? reiserfs_get_block+0x0/0x1530 [reiserfs]
+[   67.110313]  [<d030b738>] reiserfs_prepare_write+0x88/0x170 [reiserfs]
+[   67.110313]  [<d030ce40>] ? reiserfs_get_block+0x0/0x1530 [reiserfs]
+[   67.110313]  [<d03294d6>] reiserfs_unpack+0xe6/0x120 [reiserfs]
+[   67.110313]  [<d0329782>] reiserfs_ioctl+0x272/0x320 [reiserfs]
+[   67.110313]  [<d0329510>] ? reiserfs_ioctl+0x0/0x320 [reiserfs]
+[   67.110313]  [<c10c3188>] vfs_ioctl+0x28/0xa0
+[   67.110313]  [<c10c3bbd>] do_vfs_ioctl+0x32d/0x5c0
+[   67.110313]  [<c109a228>] ? might_fault+0x88/0x90
+[   67.110313]  [<c109a1e2>] ? might_fault+0x42/0x90
+[   67.110313]  [<c10b6588>] ? fget_light+0xf8/0x2f0
+[   67.110313]  [<c10c3eb3>] sys_ioctl+0x63/0x70
+[   67.110313]  [<c12fca3d>] syscall_call+0x7/0xb
+[   67.110313]  [<c12f007b>] ? cookie_v6_check+0x44b/0x630
 
-When the memory is freed through the release function, an additional
-call to kfree is wrong, the release function already calls kfree.
-device_unregister calls the put_device, so this also frees the memory
-through the release function.
+Reported-by: Jarek Poplawski <jarkao2@gmail.com>
+Tested-by: Jarek Poplawski <jarkao2@gmail.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: All since 2.6.32 <stable@kernel.org>
+---
+ fs/reiserfs/ioctl.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-The only thing i found wrong is that zfcp_unit_release calls
-put_device on the port, and this could be done before get_device was
-called on the port. I will prepare a patch to move the get_device.
+diff --git a/fs/reiserfs/ioctl.c b/fs/reiserfs/ioctl.c
+index 679d502..5cbb81e 100644
+--- a/fs/reiserfs/ioctl.c
++++ b/fs/reiserfs/ioctl.c
+@@ -170,6 +170,7 @@ int reiserfs_prepare_write(struct file *f, struct page *page,
+ int reiserfs_unpack(struct inode *inode, struct file *filp)
+ {
+ 	int retval = 0;
++	int depth;
+ 	int index;
+ 	struct page *page;
+ 	struct address_space *mapping;
+@@ -189,7 +190,7 @@ int reiserfs_unpack(struct inode *inode, struct file *filp)
+ 	 ** us
+ 	 */
+ 	reiserfs_mutex_lock_safe(&inode->i_mutex, inode->i_sb);
+-	reiserfs_write_lock(inode->i_sb);
++	depth = reiserfs_write_lock_once(inode->i_sb);
+ 
+ 	write_from = inode->i_size & (blocksize - 1);
+ 	/* if we are on a block boundary, we are already unpacked.  */
+@@ -224,6 +225,6 @@ int reiserfs_unpack(struct inode *inode, struct file *filp)
+ 
+       out:
+ 	mutex_unlock(&inode->i_mutex);
+-	reiserfs_write_unlock(inode->i_sb);
++	reiserfs_write_unlock_once(inode->i_sb, depth);
+ 	return retval;
+ }
+-- 
+1.6.2.3
 
-> ---
->  I cannot compile this driver, so it is not tested at all.
-> 
->  drivers/s390/scsi/zfcp_unit.c |   28 +++++++++++++++++-----------
->  1 files changed, 17 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/s390/scsi/zfcp_unit.c b/drivers/s390/scsi/zfcp_unit.c
-> index 1119c53..8eb4046 100644
-> --- a/drivers/s390/scsi/zfcp_unit.c
-> +++ b/drivers/s390/scsi/zfcp_unit.c
-> @@ -119,6 +119,7 @@ static void zfcp_unit_release(struct device *dev)
->  int zfcp_unit_add(struct zfcp_port *port, u64 fcp_lun)
->  {
->  	struct zfcp_unit *unit;
-> +	int err;
-> 
->  	unit = zfcp_unit_find(port, fcp_lun);
->  	if (unit) {
-> @@ -136,21 +137,20 @@ int zfcp_unit_add(struct zfcp_port *port, u64 fcp_lun)
->  	unit->dev.release = zfcp_unit_release;
->  	INIT_WORK(&unit->scsi_work, zfcp_unit_scsi_scan_work);
-> 
-> -	if (dev_set_name(&unit->dev, "0x%016llx",
-> -			 (unsigned long long) fcp_lun)) {
-> -		kfree(unit);
-> -		return -ENOMEM;
-> -	}
-> +	err = dev_set_name(&unit->dev, "0x%016llx",
-> +			 (unsigned long long) fcp_lun);
-> +	if (err)
-> +		goto err_free;
-> 
-> -	if (device_register(&unit->dev)) {
-> +	err = device_register(&unit->dev);
-> +	if (err) {
->  		put_device(&unit->dev);
-> -		return -ENOMEM;
-> +		goto err_free;
->  	}
-> 
-> -	if (sysfs_create_group(&unit->dev.kobj, &zfcp_sysfs_unit_attrs)) {
-> -		device_unregister(&unit->dev);
-> -		return -EINVAL;
-> -	}
-> +	err = sysfs_create_group(&unit->dev.kobj, &zfcp_sysfs_unit_attrs);
-> +	if (err)
-> +		goto err_unreg;
-> 
->  	get_device(&port->dev);
-> 
-> @@ -161,6 +161,12 @@ int zfcp_unit_add(struct zfcp_port *port, u64 fcp_lun)
->  	zfcp_unit_scsi_scan(unit);
-> 
->  	return 0;
-> +
-> +err_unreg:
-> +	device_unregister(&unit->dev);
-> +err_free:
-> +	kfree(unit);
-> +	return err;
->  }
-> 
->  /**
-> -- 
-> 1.7.0.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-s390" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
