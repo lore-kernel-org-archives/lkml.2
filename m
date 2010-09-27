@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759092Ab0I0MMu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 08:12:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37100 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754170Ab0I0MMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 08:12:49 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] MN10300: Default config choice GDBSTUB_TTYSM0 should be
-	GDBSTUB_ON_TTYSM0
-To: torvalds@osdl.org, akpm@linux-foundation.org
-Cc: linux-am33-list@redhat.com, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>
-Date: Mon, 27 Sep 2010 13:12:33 +0100
-Message-ID: <20100927121233.14187.3870.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1759067Ab0I0MQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 08:16:29 -0400
+Received: from mtoichi12.ns.itscom.net ([219.110.2.182]:33900 "EHLO
+	mtoichi12.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754170Ab0I0MQ2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 08:16:28 -0400
+From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Subject: Re: [PATCH 6/7 v3] overlay: hybrid overlay filesystem prototype
+To: Andreas Gruenbacher <agruen@suse.de>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Valerie Aurora <vaurora@redhat.com>,
+        linuxram@us.ibm.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, neilb@suse.de, viro@zeniv.linux.org.uk
+In-Reply-To: <201009271349.49077.agruen@suse.de>
+References: <20100920180404.939991832@szeredi.hu> <20100924175653.GB25129@shell> <E1P08oT-0004C7-3O@pomaz-ex.szeredi.hu> <201009271349.49077.agruen@suse.de>
+Date: Mon, 27 Sep 2010 21:15:29 +0900
+Message-ID: <307.1285589729@jrobl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The configuration choice for the port on which the GDB stub listens has a
-default of GDBSTUB_TTYSM0, but this should be GDBSTUB_ON_TTYSM0 to match the
-option.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+Andreas Gruenbacher:
+> I can think of arguments for either behavior, perhaps with a slight preference 
+> for your suggestion (default = opaque).
+>
+> In any case, admins will need a way to flip opaque flags and remove undesired 
+> whiteouts.
 
- arch/mn10300/Kconfig.debug |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Agreed.
+Aufs is providing two options for this issue, "diropq=always" and
+"diropq=whiteouted". Several years ago, the default was "always". But
+soon it changed to "whiteouted" and I have never received objection
+from users.
+As for as I know, some users are happy since the number of whiteouts was
+reduced. Because they merge layers manually for system
+maintenance. Unnecessary whiteouts are not good to them.
 
 
-diff --git a/arch/mn10300/Kconfig.debug b/arch/mn10300/Kconfig.debug
-index ff80e86..ce83c74 100644
---- a/arch/mn10300/Kconfig.debug
-+++ b/arch/mn10300/Kconfig.debug
-@@ -101,7 +101,7 @@ config GDBSTUB_DEBUG_BREAKPOINT
- 
- choice
- 	prompt "GDB stub port"
--	default GDBSTUB_TTYSM0
-+	default GDBSTUB_ON_TTYSM0
- 	depends on GDBSTUB
- 	help
- 	  Select the serial port used for GDB-stub.
-
+J. R. Okajima
