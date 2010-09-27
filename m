@@ -1,159 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759048Ab0I0XwN (ORCPT <rfc822;w@1wt.eu>);
+	id S1759323Ab0I0XwR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 19:52:17 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53564 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758491Ab0I0XwN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 Sep 2010 19:52:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47452 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752831Ab0I0XwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 19:52:11 -0400
-Date: Tue, 28 Sep 2010 01:51:12 +0200
-From: Jan Kara <jack@suse.cz>
-To: Chris Mason <chris.mason@oracle.com>
-Cc: Jan Kara <jack@suse.cz>, Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Andrew Morton <akpm@linux-foundation.org>, hch@lst.de,
-        linux-kernel@vger.kernel.org, Jens Axboe <jaxboe@fusionio.com>,
-        linux-btrfs@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, stable@kernel.org,
-        Jens Axboe <axboe@kernel.dk>,
-        =?utf-8?Q?Micha=C5=82?= Piotrowski <mkkp4x4@gmail.com>,
-        Chuck Ebbert <cebbert@redhat.com>, kernel@lists.fedoraproject.org
-Subject: Re: Dirtiable inode bdi default != sb bdi btrfs
-Message-ID: <20100927235111.GI3610@quack.suse.cz>
-References: <4C9AA546.6050201@cesarb.net>
- <20100923123849.8975fe47.akpm@linux-foundation.org>
- <20100927222548.GG3610@quack.suse.cz>
- <20100927225452.GG4270@think>
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=E0f4FI8suqvsKqGWm+dznbVu1xA7nJQHgtP0CJ43Po1m76m2OQcVxnn81QJOKX8pDj
+         xwXrCTSRyV5e3zwHXPtsu9Lyq8SSvZOgKDoz30Wf+VPWp5SoBmOEHhlhv0Qqco+yPMk7
+         tEcMogTtIFgtLR0XFE41ZBdEDmiMQ2Kd2ig30=
+Date: Tue, 28 Sep 2010 01:52:08 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC PATCH] x86: Barf when faults happen in NMI
+Message-ID: <20100927235206.GB6316@nowhere>
+References: <1285615833-5324-1-git-send-regression-fweisbec@gmail.com> <20100927211401.GA20402@Krystal>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100927225452.GG4270@think>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100927211401.GA20402@Krystal>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 27-09-10 18:54:52, Chris Mason wrote:
-> On Tue, Sep 28, 2010 at 12:25:48AM +0200, Jan Kara wrote:
-> > [Added CCs for similar ecryptfs warning]
-> > On Thu 23-09-10 12:38:49, Andrew Morton wrote:
-> > > > This started appearing for me on v2.6.36-rc5-49-gc79bd89; it did not 
-> > > > happen on v2.6.36-rc5-33-g1ce1e41, probably because it does not have 
-> > > > commit 692ebd17c2905313fff3c504c249c6a0faad16ec which introduces the 
-> > > > warning.
-> > > > [...]
-> > > > device fsid 44d595920ddedfa-3ece6b56e80f689e devid 1 transid 22342 
-> > > > /dev/mapper/vg_cesarbinspiro-lv_home
-> > > > SELinux: initialized (dev dm-3, type btrfs), uses xattr
-> > > > ------------[ cut here ]------------
-> > > > WARNING: at fs/fs-writeback.c:87 inode_to_bdi+0x62/0x6d()
-> > > > Hardware name: Inspiron N4010
-> > > > Dirtiable inode bdi default != sb bdi btrfs
-> > > > Modules linked in: ipv6 kvm_intel kvm uinput arc4 ecb 
-> > > > snd_hda_codec_intelhdmi snd_hda_codec_realtek iwlagn snd_hda_intel 
-> > > > iwlcore snd_hda_codec uvcvideo snd_hwdep mac80211 videodev snd_seq 
-> > > > snd_seq_device v4l1_compat snd_pcm atl1c v4l2_compat_ioctl32 btusb 
-> > > > cfg80211 snd_timer i2c_i801 bluetooth iTCO_wdt dell_wmi dell_laptop snd 
-> > > > pcspkr wmi dcdbas shpchp iTCO_vendor_support soundcore snd_page_alloc 
-> > > > rfkill joydev microcode btrfs zlib_deflate libcrc32c cryptd aes_x86_64 
-> > > > aes_generic xts gf128mul dm_crypt usb_storage i915 drm_kms_helper drm 
-> > > > i2c_algo_bit i2c_core video output [last unloaded: scsi_wait_scan]
-> > > > Pid: 1073, comm: find Not tainted 2.6.36-rc5+ #8
-> > > > Call Trace:
-> > > >   [<ffffffff8104d0e4>] warn_slowpath_common+0x85/0x9d
-> > > >   [<ffffffff8104d19f>] warn_slowpath_fmt+0x46/0x48
-> > > >   [<ffffffff811308b7>] inode_to_bdi+0x62/0x6d
-> > > >   [<ffffffff81131b48>] __mark_inode_dirty+0xd0/0x177
-> > > >   [<ffffffff81127168>] touch_atime+0x107/0x12a
-> > > >   [<ffffffff81122384>] ? filldir+0x0/0xd0
-> > > >   [<ffffffff8112259b>] vfs_readdir+0x8d/0xb4
-> > > >   [<ffffffff8112270b>] sys_getdents+0x81/0xd1
-> > > >   [<ffffffff81009c72>] system_call_fastpath+0x16/0x1b
-> >   Thanks for the report. These bdi pointers are a mess. As Chris pointed
-> > out, btrfs forgets to properly initialize inode->i_mapping.backing_dev_info
-> > for directories and special inodes and thus these were previously attached
-> > to default_backing_dev_info which probably isn't what Chris would like to
-> > see.
-> 
-> There's no actual writeback for these, so it works fine for btrfs either
-> way.
-  Ah, OK. I see you do all the writing already at inode dirtying time so
-you don't really care what happens after the dirtying for inodes without
-page cache. So it's really just a cosmetic issue for btrfs.
-
-> >   I've also got a similar report for ecryptfs which also does not
-> > initialize inode->i_mapping.backing_dev_info although it sets sb->s_bdi and
-> > thus again its inodes get filed to default_backing_dev_info lists.  Quick
-> > search seems to reveal that other filesystems using handcrafted bdi's get
-> > it wrong as well and thus their inodes end up in the default_backing_dev_info
-> > lists which is generally undesirable (this was happening already before my
-> > patch, my code just started complaining about that).
-> >   That suggests that we should probably handle such cases in a more generic
-> > way by changing the code in inode_init_always(). The patch below makes at
-> > least btrfs happy for me... Could you maybe test it? Thanks.
-> 
-> Christoph had a slightly different plan for this, I've cc'd him and kept
-> the patch below for comment.
-  OK, thanks.
-
-								Honza
+On Mon, Sep 27, 2010 at 05:14:01PM -0400, Mathieu Desnoyers wrote:
+> * Frederic Weisbecker (fweisbec@gmail.com) wrote:
+> > In x86, faults exit by executing the iret instruction, which then
+> > reenables NMIs if we faulted in NMI context. Then if a fault
+> > happens in NMI, another NMI can nest after the fault exits.
+> > 
+> > But we don't yet support nested NMIs because we have only one NMI
+> > stack. To prevent that, trigger a bug when a fault happens in NMI
+> > context.
+> > 
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Ingo Molnar <mingo@elte.hu>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: H. Peter Anvin <hpa@zytor.com>
+> > Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 > > ---
 > > 
-> > From 29f60c2b08ff9637a10439d1513805835ddcc746 Mon Sep 17 00:00:00 2001
-> > From: Jan Kara <jack@suse.cz>
-> > Date: Mon, 27 Sep 2010 23:56:48 +0200
-> > Subject: [PATCH] bdi: Initialize inode->i_mapping.backing_dev_info to sb->s_bdi
+> > I first thought about putting it in the vmalloc fault path only.
+> > But then I saw more occasions for the kernel to fault (kmemcheck
+> > or so), and so I thought it should be better put in the all in one
+> > path. But I suspect you won't like that conditional in the big
+> > x86 fault path.
 > > 
-> > Currently, we initialize inode->i_mapping.backing_dev_info to the bdi of device
-> > sb->s_bdev points to. However there is quite a big number of filesystems that
-> > do not set sb->s_bdev (because they do not have one) but do set sb->s_bdi.
-> > These filesystems would generally benefit from setting
-> > inode->i_mapping.backing_dev_info to their s_bdi because otherwise their inodes
-> > would point to default_backing_dev_info and thus dirty inode tracking would
-> > happen there. So change inode initialization code to use sb->s_bdi if it
-> > is available.
 > > 
-> > Signed-off-by: Jan Kara <jack@suse.cz>
-> > ---
-> >  fs/inode.c |   22 ++++++++++++++--------
-> >  1 files changed, 14 insertions(+), 8 deletions(-)
+> >  arch/x86/mm/fault.c |    2 ++
+> >  1 files changed, 2 insertions(+), 0 deletions(-)
 > > 
-> > diff --git a/fs/inode.c b/fs/inode.c
-> > index 8646433..e415be4 100644
-> > --- a/fs/inode.c
-> > +++ b/fs/inode.c
-> > @@ -172,15 +172,21 @@ int inode_init_always(struct super_block *sb, struct inode *inode)
-> >  	mapping->writeback_index = 0;
+> > diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+> > index 4c4508e..80c997e 100644
+> > --- a/arch/x86/mm/fault.c
+> > +++ b/arch/x86/mm/fault.c
+> > @@ -955,6 +955,8 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
+> >  	int write;
+> >  	int fault;
 > >  
-> >  	/*
-> > -	 * If the block_device provides a backing_dev_info for client
-> > -	 * inodes then use that.  Otherwise the inode share the bdev's
-> > -	 * backing_dev_info.
-> > +	 * If the filesystem provides a backing_dev_info for client inodes
-> > +	 * then use that. Otherwise inodes share default_backing_dev_info.
-> >  	 */
-> > -	if (sb->s_bdev) {
-> > -		struct backing_dev_info *bdi;
-> > -
-> > -		bdi = sb->s_bdev->bd_inode->i_mapping->backing_dev_info;
-> > -		mapping->backing_dev_info = bdi;
-> > +	if (sb->s_bdi && sb->s_bdi != &noop_backing_dev_info) {
-> > +		/*
-> > +		 * Catch cases where filesystem might be bitten by using s_bdi
-> > +		 * instead of sb->s_bdev. Can be removed in 2.6.38.
-> > +		 */
-> > +		if (sb->s_bdev) {
-> > +			struct backing_dev_info *bdi =
-> > +			  sb->s_bdev->bd_inode->i_mapping->backing_dev_info;
-> > +			WARN(bdi != sb->s_bdi, "s_bdev bdi %s != s_bdi %s\n",
-> > +			     bdi->name, sb->s_bdi->name);
-> > +		}
-> > +		mapping->backing_dev_info = sb->s_bdi;
-> >  	}
-> >  	inode->i_private = NULL;
-> >  	inode->i_mapping = mapping;
-> > -- 
-> > 1.6.4.2
-> > 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> > +	BUG_ON(in_nmi());
+> 
+> Alternative idea: we could put the test at the beginning of the NMI handler, so
+> if a NMI handler nests over a processor already "in_nmi", then we bug. I agree
+> that this will trigger less easily than bugging in the fault handler (because we
+> need to hit the actual nmi-coming-in-because-iret-reenabled-them-too-early
+> scenario, but it's far less intrusive.
+> 
+> Thoughts ?
+
+
+In fact we have that already in nmi_enter(). Now as you said that alone is probably
+too light to find the reason of a nested NMI or to prevent it.
+
