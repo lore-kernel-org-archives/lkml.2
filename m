@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756307Ab0I0X0y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 19:26:54 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:53884 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502Ab0I0X0x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 19:26:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:from:date:message-id:subject:to:cc
-         :content-type;
-        b=pZ5UXvxABRBgTKmu7IQF3eQ4mwZnhpj6j3QlgR3Y3zRjc9D49e+Xqn/h30zrl3M2U/
-         w1ImU9uP0fxINmpe5+7Hw/+YOvrtLB2g0eYmHQYbBnFaMrkbWP1W3Zr12l7bGVXcNJ8k
-         4vUYegfbvutnC1mf2M0AQbeA2N3YhZByiASTI=
+	id S1757036Ab0I0X1j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 19:27:39 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54688 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752203Ab0I0X1i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 19:27:38 -0400
+Message-ID: <4CA1283C.9010105@zytor.com>
+Date: Mon, 27 Sep 2010 16:26:52 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
 MIME-Version: 1.0
-Reply-To: linasvepstas@gmail.com
-From: Linas Vepstas <linasvepstas@gmail.com>
-Date: Mon, 27 Sep 2010 18:26:29 -0500
-Message-ID: <AANLkTi=33kimswSJ1tYsnG-PVs6Z4dVBtnqq65GN8Vxw@mail.gmail.com>
-Subject: asm-generic/unistd.h and glibc use of NR_ipc
-To: Arnd Bergmann <arnd@arndb.de>, GLIBC Devel <libc-alpha@sourceware.org>
-Cc: linux-kernel@vger.kernel.org
+To: Yinghai Lu <yinghai@kernel.org>
+CC: caiqian@redhat.com, Ingo Molnar <mingo@elte.hu>,
+        kexec <kexec@lists.infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: kexec load failure introduced by "x86, memblock: Replace e820_/_early
+ string with memblock_"
+References: <632974489.2046131285586512527.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com> <4CA11918.7050708@kernel.org> <4CA11FB7.2080101@zytor.com> <4CA126BE.7000609@kernel.org>
+In-Reply-To: <4CA126BE.7000609@kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm trying to figure out the status of glibc w.r.t the latest linux
-unistd syscall interface, specifically, the status of the NR_ipc
-syscall.   Currently, I see the following:
+On 09/27/2010 04:20 PM, Yinghai Lu wrote:
+> 
+> x86 own version for find_area?
+> 
 
--- Circa June 2009, Arnd Bergman introduced asm-generic/unistd.h
-(into the linux kernel) to provide a generic interface to system
-calls. It does *not* define NR_ipc, and instead provides
-NR_msgsnd, msgrcv, msgget, msgctl etc. syscalls.
+No, double no.
 
--- Current glibc (2.12.1, as well as the current eglibc) does
-not appear to use these new calls anywhere. Instead, glibc
-has generic (non-arch-specific) implementations of msgsnd
-etc.  that use the old NR_ipc interface (see, e.g.
-sysdeps/unix/sysv/linux/msgsnd.c, semget.c, shmdt.c, msgrcv.c,
-shmget.c, etc.)
+Same kind of crap: overloading an interface with semantics it shouldn't
+have.  The right thing is to introduce a new interface with carries the
+explicitly needed policy with it... e.g. memblock_find_in_range_lowest().
 
-Is someone working on patches to get glibc to use the new
-syscall interfaces (for IPC)?  Am I missing something? Seems like
-any arch wishing to use asm-generic/unistd.h and get glibc working
-gets to break new ground, here ... right?
+That interface would have the explicit semantics of returning the lowest
+possible address, as opposed to any suitable address (which may change
+if policy requirements change.)
 
--- Linas
+The other question is why does kexec need this in the first place?  Is
+this due to a design bug in kexec or is there some fundamental reason
+for this?
+
+	-hpa
