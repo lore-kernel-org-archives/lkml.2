@@ -1,43 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756470Ab0I0Lmr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 07:42:47 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:64808 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374Ab0I0Lmq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 07:42:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=WLWL0dSlqbiFY+6OtOOLx9fG7aJwzkMsZYmxJ3hSTHl6Fi2kQiTImgwMma8sPAhLeg
-         vzw+ef1dwjfEK5frx/u4KPsbVKUMu3JNlvaAgfJYMN29pxqnUXrbh4dQ+X1D+qOOiEDP
-         /j+PDQmRyzMYH/XnUXfH/mVbMGv6n/9+PTWRo=
-From: Vasily Khoruzhick <anarsoul@gmail.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Subject: Re: Interrupt latency on some 945GM platforms
-Date: Mon, 27 Sep 2010 14:41:17 +0300
-User-Agent: KMail/1.13.5 (Linux/2.6.35-gentoo-r8-anarsoul; KDE/4.5.1; i686; ; )
-Cc: Stefan Biereigel <security@biereigel-wb.de>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sitsofe Wheeler <sitsofe@yahoo.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        intel-gfx@lists.freedesktop.org, Len Brown <lenb@kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-References: <201009132336.17310.anarsoul@gmail.com> <4C9F262F.7030709@biereigel-wb.de> <AANLkTinZ-A-D=yEsN00dGB=fpTgV72BgrEra9UpkmVHX@mail.gmail.com>
-In-Reply-To: <AANLkTinZ-A-D=yEsN00dGB=fpTgV72BgrEra9UpkmVHX@mail.gmail.com>
+	id S1754885Ab0I0LtJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 07:49:09 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:56432 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750905Ab0I0LtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 07:49:08 -0400
+Date: Mon, 27 Sep 2010 04:48:01 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        Fenghua Yu <fenghua.yu@intel.com>, Jean Delvare <khali@linux-fr.org>
+Subject: Re: [PATCH] hwmon (coretemp): Fix build breakage if SMP is
+ undefined
+Message-ID: <20100927114801.GA31757@ericsson.com>
+References: <1285530603-2510-1-git-send-email-guenter.roeck@ericsson.com>
+ <20100927062510.GA17825@elte.hu>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="koi8-r"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009271441.17703.anarsoul@gmail.com>
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100927062510.GA17825@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 of September 2010 03:46:23 Shaohua Li wrote:
+On Mon, Sep 27, 2010 at 02:25:10AM -0400, Ingo Molnar wrote:
+> 
+> * Guenter Roeck <guenter.roeck@ericsson.com> wrote:
+> 
+> > Commit e40cc4bdfd4b89813f072f72bd9c7055814d3f0f introduced
+> > a build breakage if CONFIG_SMP is undefined. This patch
+> > fixes the problem.
+> > 
+> > Reported-by: Ingo Molnar <mingo@elte.hu>
+> > Cc: Fenghua Yu <fenghua.yu@intel.com>
+> > Cc: Jean Delvare <khali@linux-fr.org>
+> > Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> > 
+> > ---
+> >  drivers/hwmon/coretemp.c |    2 ++
+> >  1 files changed, 2 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+> > index baa842a..58a3c2d 100644
+> > --- a/drivers/hwmon/coretemp.c
+> > +++ b/drivers/hwmon/coretemp.c
+> > @@ -503,9 +503,11 @@ static void coretemp_device_remove(unsigned int cpu)
+> >  		list_del(&p->list);
+> >  		mutex_unlock(&pdev_list_mutex);
+> >  		kfree(p);
+> > +#ifdef CONFIG_SMP
+> >  		for_each_cpu(i, cpu_sibling_mask(cpu))
+> >  			if (i != cpu && !coretemp_device_add(i))
+> >  				break;
+> > +#endif
+> 
+> Wont this result in an 'unused variable i' compiler warning?
+> 
+Sigh. Yes, of course. Must have been blind when I compiled it. Serves me right, 
+for pushing this out in a hurry. You'll see rev2 of the patch in a minute.
 
-> does disable msi help with 'pci=nomsi'?
-
-Doesn't help on my system :(
+Guenter
