@@ -1,38 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759250Ab0I0Vzz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 17:55:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:32959 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751136Ab0I0Vzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 17:55:54 -0400
-Message-ID: <4CA112D1.2020004@zytor.com>
-Date: Mon, 27 Sep 2010 14:55:29 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Alexander Graf <agraf@suse.de>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH] x86, nmi: workaround sti; hlt race vs nmi; intr
-References: <1284913699-14986-1-git-send-email-avi@redhat.com> <4CA057EA.7000609@redhat.com> <768A5DC0-131A-4BC8-ADDD-044D8169545E@suse.de> <61284934-1AD3-4F7A-9488-D46FCEE9B753@suse.de> <4CA06147.7080805@redhat.com> <C725B379-9631-46E4-A825-E43A5120681E@suse.de> <4CA06373.5030501@redhat.com>
-In-Reply-To: <4CA06373.5030501@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1759307Ab0I0V7s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 17:59:48 -0400
+Received: from nic.NetDirect.CA ([216.16.235.2]:47209 "EHLO
+	rubicon.netdirect.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780Ab0I0V7r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 17:59:47 -0400
+X-Originating-Ip: 216.16.235.2
+Date: Mon, 27 Sep 2010 17:59:41 -0400
+From: Chris Frey <cdfrey@foursquare.net>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: ext3 filesystem corruption in user mode linux
+Message-ID: <20100927215941.GA20458@foursquare.net>
+References: <20100924041410.GA18040@foursquare.net> <20100924060557.GA21238@foursquare.net> <20100924064446.GA22588@foursquare.net> <AANLkTinQ20uSgFP5KV17B0J0v8Y0zAg=AgAd_kf+4Bh0@mail.gmail.com> <20100927211842.GA19667@foursquare.net> <AANLkTinYjJ8m6UjsR++zFCxo4jecDEzCAX_F_CF6NwZV@mail.gmail.com> <20100927212650.GA20386@foursquare.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100927212650.GA20386@foursquare.net>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2010 02:27 AM, Avi Kivity wrote:
+On Mon, Sep 27, 2010 at 05:26:50PM -0400, Chris Frey wrote:
+> > Hmm, maybe this issue affects only your configuration.
+> > When I have some spare time I'll try to trigger this on my setup.
 > 
-> I don't have write permissions for the spec.  If you can verify that all 
-> existing and future hardware will mask NMI after STI and convince the 
-> spec owners to update the specifications, I'm all for it; it's certainly 
-> a cleaner solution.
-> 
+> That would be great.  Let me know if you need any specific data from my end.
 
-I'm trying to see if this is doable.  As you can well imagine, though,
-it takes time.
+One data point that I'm finding so far, is that it is easier to trigger
+in 2.6.35.x than 2.6.32.x.  It also doesn't seem to be dependent on the
+version of the host kernel.  I can reproduce it running 2.6.35.4 or
+2.6.32.22.
 
-	-hpa
+If you want a small gentoo starting point, I have a 56M compressed
+ext3 gentoo guest filesystem I can share with those who wish to test.
+I don't want to make it available to everyone, due to size.
+
+- Chris
 
