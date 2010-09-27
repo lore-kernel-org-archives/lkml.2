@@ -1,80 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932761Ab0I0Gjs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 02:39:48 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:42270 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754525Ab0I0Gjr convert rfc822-to-8bit (ORCPT
+	id S1757937Ab0I0GkL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 02:40:11 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:11988 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754525Ab0I0GkJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 02:39:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=lmRis8ryTI/ob8dlfUtM1Hzf5LO6kMYSRcjfaz8KVrGc2DSDcNTrz1amt88IgVS5LF
-         q3M00lBGf9NpVyK9U+x1bhjJu7c+VFAO9/SzoJxPW37vI16VBVJ04TB97C+Ff9/8vw+U
-         83A3kCv8to7HmwGccf8ZcjaqXvdL+1rqzxFyE=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTin4DKGhcZ4=os1-NxrQ65pEDZ+USG1xpW54y4_T@mail.gmail.com>
-References: <m1sk0x9z62.fsf@fess.ebiederm.org>
-	<m1iq1t9z3y.fsf@fess.ebiederm.org>
-	<AANLkTin4DKGhcZ4=os1-NxrQ65pEDZ+USG1xpW54y4_T@mail.gmail.com>
-Date: Mon, 27 Sep 2010 09:39:46 +0300
-X-Google-Sender-Auth: PWCYmB_zcChTE_6YvIgKnE6U1B8
-Message-ID: <AANLkTinHGKK-14jq=D__+Q20egPw07qFHg6iQo+aFC9R@mail.gmail.com>
-Subject: Re: [PATCH 2/3] mm: Consolidate vma destruction into remove_vma.
-From: Pekka Enberg <penberg@kernel.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 27 Sep 2010 02:40:09 -0400
+Message-ID: <002c01cb5e0e$d23087a0$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Eric Dumazet" <eric.dumazet@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        "Randy Dunlap" <randy.dunlap@oracle.com>,
+        "John Linn" <john.linn@xilinx.com>,
+        "Ralf Baechle" <ralf@linux-mips.org>,
+        "Kristoffer Glembo" <kristoffer@gaisler.com>,
+        "Maxime Bizon" <mbizon@freebox.fr>,
+        "Greg Rose" <gregory.v.rose@intel.com>,
+        "ML netdev" <netdev@vger.kernel.org>,
+        "LKML" <linux-kernel@vger.kernel.org>,
+        "Toshiharu Okada" <okada533@dsn.okisemi.com>,
+        "Takahiro Shimizu" <shimizu394@dsn.okisemi.com>,
+        "Tomoya Morinaga" <morinaga526@dsn.okisemi.com>,
+        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
+        "Andrew" <andrew.chih.howe.khor@intel.com>,
+        "Intel OTC" <joel.clark@intel.com>,
+        "Foster, Margie" <margie.foster@intel.com>,
+        "MeeGo" <meego-dev@meego.com>
+References: <4CA03198.8080802@dsn.okisemi.com> <1285567800.2357.565.camel@edumazet-laptop>
+Subject: Re: [PATCH v6] Gigabit Ethernet driver of Topcliff PCH
+Date: Mon, 27 Sep 2010 15:39:57 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Fixing Hugh's email address.)
+Hi Eric
 
-On Mon, Sep 27, 2010 at 9:37 AM, Pekka Enberg <penberg@kernel.org> wrote:
-> Hi Eric,
+Thank you for information.
+I did not know "net-next-2.6."
+This driver is not changed.
+
+Thanks, Ohtake
+-----
+Date: Mon, 27 Sep 2010 08:10:00 +0200
+From: "Eric Dumazet" <eric.dumazet@gmail.com>
+
+
+> Le lundi 27 septembre 2010 a 14:54 +0900, Masayuki Ohtake a ecrit :
+> > Gigabit Ethernet driver of Topcliff PCH
+> >
+> > Topcliff PCH is the platform controller hub that is going to be used in
+> > Intel's upcoming general embedded platform. All IO peripherals in
+> > Topcliff PCH are actually devices sitting on AMBA bus.
+> > Topcliff PCH has Gigabit Ethernet I/F. Using this I/F, it is able to
+> > access system devices connected to Gigabit Ethernet.
+> >
+> > Signed-off-by: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+> > ---
 >
-> On Sun, Sep 26, 2010 at 2:34 AM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
->> Consolidate vma destruction in remove_vma.   This is slightly
->> better for code size and for code maintenance.  Avoiding the pain
->> of 3 copies of everything needed to tear down a vma.
->>
->> Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
->> ---
->>  mm/mmap.c |   21 +++++----------------
->>  1 files changed, 5 insertions(+), 16 deletions(-)
->>
->> diff --git a/mm/mmap.c b/mm/mmap.c
->> index 6128dc8..17dd003 100644
->> --- a/mm/mmap.c
->> +++ b/mm/mmap.c
->> @@ -643,16 +643,10 @@ again:                    remove_next = 1 + (end > next->vm_end);
->>                spin_unlock(&mapping->i_mmap_lock);
->>
->>        if (remove_next) {
->> -               if (file) {
->> -                       fput(file);
->> -                       if (next->vm_flags & VM_EXECUTABLE)
->> -                               removed_exe_file_vma(mm);
->> -               }
->>                if (next->anon_vma)
->>                        anon_vma_merge(vma, next);
->> +               remove_vma(next);
+> Hmm, what is going on ?
 >
-> remove_vma() does vma->vm_ops->close() but we don't do that here. Are
-> you sure the conversion is safe?
+> David already put your driver in net-next-2.6
 >
->>                mm->map_count--;
->> -               mpol_put(vma_policy(next));
->> -               kmem_cache_free(vm_area_cachep, next);
->>                /*
->>                 * In mprotect's case 6 (see comments on vma_merge),
->>                 * we must remove another next too. It would clutter
+> http://git.kernel.org/?p=linux/kernel/git/davem/net-next-2.6.git;a=commit;h=77555ee7228234257957fd54daa0b69178906320
 >
+> If you want to make changes, you have to send diffs now, not the full
+> version.
+
+
+
+
