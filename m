@@ -1,115 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933504Ab0I0TqB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 15:46:01 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:34533 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933389Ab0I0Tp7 (ORCPT
+	id S933512Ab0I0Tsj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 15:48:39 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:60920 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933389Ab0I0Tsg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 15:45:59 -0400
-Subject: Re: [PATCH 3/6] secmark: export binary yes/no rather than kernel
- internal secid
-From: Paul Moore <paul.moore@hp.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
-        selinux@tycho.nsa.gov, netfilter-devel@vger.kernel.org,
-        sds@tycho.nsa.gov, jengelh@medozas.de, casey@schaufler-ca.com,
-        linux-security-module@vger.kernel.org, netfilter@vger.kernel.org,
-        mr.dash.four@googlemail.com
-In-Reply-To: <1285615525.2815.76.camel@localhost.localdomain>
-References: <20100924204517.28355.42822.stgit@paris.rdu.redhat.com>
-	 <20100924204531.28355.20320.stgit@paris.rdu.redhat.com>
-	 <alpine.LRH.2.00.1009271038280.25748@tundra.namei.org>
-	 <1285606896.2815.36.camel@localhost.localdomain>
-	 <1285612156.4935.16.camel@sifl>
-	 <1285615525.2815.76.camel@localhost.localdomain>
-Content-Type: text/plain; charset="us-ascii"
-Organization: Hewlett Packard
-Date: Mon, 27 Sep 2010 15:45:48 -0400
-Message-ID: <1285616748.4935.43.camel@sifl>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 27 Sep 2010 15:48:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=TzumJcTvnsSA/0tVSZEB/93XOj3KjinbaX7Yyu+4Xqgn3libW+sxtv/Lz+Zd324qu4
+         NHvu2l00vgQk4uGxEs8sSLGaNepysH+u+wtPoFMfH5ktweShNlOtGtrc7+3PjaEbcidp
+         uDSreqkilZtcAnr0DwzK0HeUEEoe14xY/vo+M=
+MIME-Version: 1.0
+In-Reply-To: <20100908152036.643594727@linutronix.de>
+References: <20100908152036.643594727@linutronix.de>
+Date: Mon, 27 Sep 2010 21:48:34 +0200
+Message-ID: <AANLkTin23sJT+OqjDqjyk-Gr5r-GfJ_03Q1WUqNLCzgH@mail.gmail.com>
+Subject: Re: [RFC trollpatch 1/1] genirq: Remove the fits all and nothing
+ __do_IRQ() code
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>, linux-alpha@vger.kernel.org,
+        linux-cris-kernel@axis.com, Haavard Skinnemoen <hskinnemoen@atmel.com>,
+        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Greg Ungerer <gerg@uclinux.org>, Jeff Dike <jdike@addtoit.com>,
+        linux-parisc@vger.kernel.org, Chris Zankel <chris@zankel.net>,
+        linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-27 at 15:25 -0400, Eric Paris wrote:
-> On Mon, 2010-09-27 at 14:29 -0400, Paul Moore wrote:
-> > On Mon, 2010-09-27 at 13:01 -0400, Eric Paris wrote:
-> > > On Mon, 2010-09-27 at 10:50 +1000, James Morris wrote:
-> > > > On Fri, 24 Sep 2010, Eric Paris wrote:
-> > > 
-> > > > For the reasons above, I think the secctx string needs to be exported in 
-> > > > addition to this rather than instead of.
-> > > 
-> > > I won't argue, I don't agree with your reasoning, but I'm not opposed to
-> > > this result.  We have 3 competing suggestions:
-> > > 
-> > > Jan suggested we:
-> > > completely eliminate secmark from procfs+netlink and only export secctx
-> > > in netlink.
-> > > 
-> > > Eric suggested we:
-> > > completely eliminate secmark from procfs+netlink and then export secctx
-> > > in procfs+netlink
-> > > 
-> > > sounds like James suggested we:
-> > > continue to export meaningless and confusing secmark from procfs+netlink
-> > > and then export secctx in procfs+netlink as well.
-> > > 
-> > > I'm going to implement James' idea and resend the patch series.  Any
-> > > strong objections?
-> > 
-> > I apologize for not getting a chance to look at these patches sooner.
-> > In general they look fine to me and my only real concern was addressed
-> > by Pablo already (breaking userspace due to #define changes).
-> > 
-> > As far as exporting the 32bit secid/secmark to userspace, I think that
-> > is a mistake.  James correctly points out that it does map to a LSM
-> > specific value, e.g. SELinux and Smack security labels, but I don't
-> > think he makes it clear that in the two LSMs that currently use secids
-> > the mapping between the secid and the secctx is not constant; the secids
-> > are transient values that will change with each boot in a manner that
-> > userspace can not predict.  For this reason, I think exporting the
-> > secids is only going to cause users/admins grief, whereas exporting the
-> > associated secctx should be a much more stable value and is likely what
-> > the user/admin is expecting anyway.
-> 
-> So it sounds to me like Paul agrees with me that exporting the SELinux
-> sid as 'secmark=' was a bad idea.  It's the whole reason this thread
-> started, someone wanted to be able to translate and use that field (and
-> instantly realized it was useless.)
-> 
-> I see it as having 3 options.  lets assume was have a packet with
-> selinux sid=121 and selinux context=packet_t.  We can
-> 
-> 1) secmark=121 secctx=packet_t
-> 	This continues to send secmark like we do and people might continue to
-> be baffled by the 121.
-> 
-> 2) secmark=1 secctx=packet_t
-> 	This sends a secmark field to userspace so if an application which
-> reads this exists (I doubt such an application actually exists in in the
-> real world) it will still get all of the information it got before but
-> noone will be baffled by what the number means.  1/0 is pretty obvious.
-> 
-> 3) secctx=packet_t
-> 	Smallest easiest, what my patches actually do.  Could theoretically
-> break some script that expected the field to be there, but any such
-> script is already broken since that field can be easily compiled
-> out......
-> 
-> James, if you are adamant about #1 I'll resend, otherwise I'm sticking
-> with #3.....
+On Wed, Sep 8, 2010 at 8:14 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> __do_IRQ() has been deprecated after a two years migration phase in
+>  The following architectures are still using __do_IRQ():
+>
+>  alpha, cris, ia64, h8300, m32r, m68knommu, parisc, um
+>
 
-James, if you do feel strongly about door #1, can you provide a good
-example of how someone might use the secid to do something useful in
-userspace?  I ask because I can't think of anything and it would be nice
-to have the example on record for future work.
+Maybe I'm naive but shouldn't this path work?
+Does um need some extra work?
 
--- 
-paul moore
-linux @ hp
+The linux executable aborts immediately when I apply my patch.
 
+---cut---
+Locating the bottom of the address space ... 0x10000
+Locating the top of the address space ... 0xc0000000
+Core dump limits :
+        soft - 0
+        hard - NONE
+Checking that ptrace can change system call numbers...OK
+Checking syscall emulation patch for ptrace...OK
+Checking advanced syscall emulation patch for ptrace...OK
+Checking for tmpfs mount on /dev/shm...nothing mounted on /dev/shm
+Checking PROT_EXEC mmap in /tmp/...OK
+Checking for the skas3 patch in the host:
+  - /proc/mm...not found: No such file or directory
+  - PTRACE_FAULTINFO...not found
+  - PTRACE_LDT...not found
+UML running in SKAS0 mode
+Aborted
+---cut---
 
+diff --git a/arch/um/Kconfig.um b/arch/um/Kconfig.um
+index ec2b8da..ae950e0 100644
+--- a/arch/um/Kconfig.um
++++ b/arch/um/Kconfig.um
+@@ -147,3 +147,8 @@ config KERNEL_STACK_ORDER
+          This option determines the size of UML kernel stacks.  They will
+          be 1 << order pages.  The default is OK unless you're running Valgrind
+          on UML, in which case, set this to 3.
++
++config GENERIC_HARDIRQS_NO__DO_IRQ
++       def_bool y
++
++
+diff --git a/arch/um/kernel/irq.c b/arch/um/kernel/irq.c
+index a3f0b04..3d44535 100644
+--- a/arch/um/kernel/irq.c
++++ b/arch/um/kernel/irq.c
+@@ -334,7 +334,7 @@ unsigned int do_IRQ(int irq, struct uml_pt_regs *regs)
+ {
+        struct pt_regs *old_regs = set_irq_regs((struct pt_regs *)regs);
+        irq_enter();
+-       __do_IRQ(irq);
++       generic_handle_irq(irq);
+        irq_exit();
+        set_irq_regs(old_regs);
+        return 1;
