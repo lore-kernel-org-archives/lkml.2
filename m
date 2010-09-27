@@ -1,85 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759843Ab0I0RKm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 13:10:42 -0400
-Received: from shakespeare.ccsl.carleton.ca ([134.117.225.11]:56148 "EHLO
-	shakespeare.ccsl.carleton.ca" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757041Ab0I0RKl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 13:10:41 -0400
-Date: Mon, 27 Sep 2010 13:10:10 -0400
-From: Glenn Wurster <gwurster@scs.carleton.ca>
-To: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH linux-2.6 v2] IPv6: Temp addresses are immediately deleted.
-Message-ID: <20100927171010.GB7106@adams.ccsl.carleton.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-TUID: c0de4ddd34f07db9
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1759832Ab0I0RQc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 13:16:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48245 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757099Ab0I0RQa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 13:16:30 -0400
+Subject: Re: [PATCH 2/6] secmark: make secmark object handling generic
+From: Eric Paris <eparis@redhat.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov,
+        netfilter-devel@vger.kernel.org, jmorris@namei.org, sds@tycho.nsa.gov,
+        jengelh@medozas.de, paul.moore@hp.com, casey@schaufler-ca.com,
+        linux-security-module@vger.kernel.org, netfilter@vger.kernel.org,
+        mr.dash.four@googlemail.com
+In-Reply-To: <4C9DB54C.4010100@netfilter.org>
+References: <20100924204517.28355.42822.stgit@paris.rdu.redhat.com>
+	 <20100924204524.28355.87206.stgit@paris.rdu.redhat.com>
+	 <4C9DB54C.4010100@netfilter.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 27 Sep 2010 12:47:56 -0400
+Message-ID: <1285606076.2815.15.camel@localhost.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a bug in the interaction between ipv6_create_tempaddr and 
-addrconf_verify.  Because ipv6_create_tempaddr uses the cstamp and tstamp 
-from the public address in creating a private address, if we have not 
-received a router advertisement in a while, tstamp + temp_valid_lft might be 
-< now.  If this happens, the new address is created inside 
-ipv6_create_tempaddr, then the loop within addrconf_verify starts again and 
-the address is immediately deleted.  We are left with no temporary addresses 
-on the interface, and no more will be created until the public IP address is 
-updated.  To avoid this, set the expiry time to be the minimum of the time 
-left on the public address or the config option PLUS the current age of the 
-public interface.
+On Sat, 2010-09-25 at 10:39 +0200, Pablo Neira Ayuso wrote:
+> On 24/09/10 22:45, Eric Paris wrote:
+> > Right now secmark has lots of direct selinux calls.  Use all LSM calls and
+> > remove all SELinux specific knowledge.  The only SELinux specific knowledge
+> > we leave is the mode.  The only point is to make sure that other LSMs at
+> > least test this generic code before they assume it works.  (They may also
+> > have to make changes if they do not represent labels as strings)
+> > 
+> > Signed-off-by: Eric Paris <eparis@redhat.com>
+> > ---
+> > 
+> >  include/linux/netfilter/xt_SECMARK.h |   14 ++------
+> >  include/linux/security.h             |   25 +++++++++++++
+> >  include/linux/selinux.h              |   63 ----------------------------------
+> >  net/netfilter/xt_CT.c                |    1 -
+> >  net/netfilter/xt_SECMARK.c           |   57 +++++++++++++++----------------
+> >  security/capability.c                |   17 +++++++++
+> >  security/security.c                  |   18 ++++++++++
+> >  security/selinux/exports.c           |   49 --------------------------
+> >  security/selinux/hooks.c             |   24 +++++++++++++
+> >  security/selinux/include/security.h  |    1 +
+> >  10 files changed, 116 insertions(+), 153 deletions(-)
+> > 
+> > diff --git a/include/linux/netfilter/xt_SECMARK.h b/include/linux/netfilter/xt_SECMARK.h
+> > index 6fcd344..b8d55c4 100644
+> > --- a/include/linux/netfilter/xt_SECMARK.h
+> > +++ b/include/linux/netfilter/xt_SECMARK.h
+> > @@ -10,19 +10,13 @@
+> >   * 'mode' refers to the specific security subsystem which the
+> >   * packets are being marked for.
+> >   */
+> > -#define SECMARK_MODE_SEL	0x01		/* SELinux */
+> > -#define SECMARK_SELCTX_MAX	256
+> > -
+> > -struct xt_secmark_target_selinux_info {
+> > -	__u32 selsid;
+> > -	char selctx[SECMARK_SELCTX_MAX];
+> > -};
+> > +#define SECMARK_MODE_SELINUX	0x01		/* SELinux */
+> > +#define SECMARK_SECCTX_MAX	256
+> 
+> The SECMARK_MODE_SEL is exposed to user-space, even if we have a copy of
+> it in the internal iptables tree, I'm not sure if it's a good policy to
+> change it.
 
-Version 2, now with 100% fewer line wraps.  Thanks to David Miller for
-pointing out the line wrapping issue.
+Ok.  I just hate 'SEL' as an abbreviation of SELinux.  I always think
+it's select or something like that.  I could do something hideous like
 
-Signed-off-by: Glenn Wurster <gwurster@scs.carleton.ca>
----
- net/ipv6/addrconf.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+#define SECMARK_MODE_SEL	0x01
+#define SECMARK_MODE_SELINUX	SECMARK_MODE_SEL
 
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index cfee6ae..9c74454 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -836,7 +836,7 @@ static int ipv6_create_tempaddr(struct inet6_ifaddr *ifp, struct inet6_ifaddr *i
- {
- 	struct inet6_dev *idev = ifp->idev;
- 	struct in6_addr addr, *tmpaddr;
--	unsigned long tmp_prefered_lft, tmp_valid_lft, tmp_cstamp, tmp_tstamp;
-+	unsigned long tmp_prefered_lft, tmp_valid_lft, tmp_cstamp, tmp_tstamp, age;
- 	unsigned long regen_advance;
- 	int tmp_plen;
- 	int ret = 0;
-@@ -886,12 +886,13 @@ retry:
- 		goto out;
- 	}
- 	memcpy(&addr.s6_addr[8], idev->rndid, 8);
-+	age = (jiffies - ifp->tstamp) / HZ;
- 	tmp_valid_lft = min_t(__u32,
- 			      ifp->valid_lft,
--			      idev->cnf.temp_valid_lft);
-+			      idev->cnf.temp_valid_lft + age);
- 	tmp_prefered_lft = min_t(__u32,
- 				 ifp->prefered_lft,
--				 idev->cnf.temp_prefered_lft -
-+				 idev->cnf.temp_prefered_lft + age -
- 				 idev->cnf.max_desync_factor);
- 	tmp_plen = ifp->prefix_len;
- 	max_addresses = idev->cnf.max_addresses;
--- 
-1.5.6.5
+But it seems like too much work and doesn't add anything really.  I'll
+revert that part of this change.
+
+-Eric
+
+
 
