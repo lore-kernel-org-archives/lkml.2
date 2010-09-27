@@ -1,46 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759556Ab0I0PKN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 11:10:13 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:28640 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756562Ab0I0PKM (ORCPT
+	id S1759575Ab0I0PLA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 11:11:00 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:51858 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756562Ab0I0PK7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 11:10:12 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Thomas Renninger <trenn@suse.de>
-Subject: Re: Dynamic Debug module.ddebug fake param enhancements V4
-Date: Mon, 27 Sep 2010 09:09:18 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, jbaron@redhat.com
-References: <20100920184441.GA2915@redhat.com> <201009240856.17411.bjorn.helgaas@hp.com> <201009271025.47558.trenn@suse.de>
-In-Reply-To: <201009271025.47558.trenn@suse.de>
+	Mon, 27 Sep 2010 11:10:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=r6fYFSr2MyMTc/2j7kUAyCUdDnkMdwOVgPv5cwqncnN2c0m2zD6i+j+6Nqini8gdgp
+         moMSuW8zutE34wMwAs7hHP8QOksDIirF7hSlJBKSjDhZPjykCZ6r1JEbOW0vJOdhdCeW
+         bsGdBySSskTcOZ7M5SZUELkrRDIis46TqEIXE=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009270909.18490.bjorn.helgaas@hp.com>
+In-Reply-To: <20100927121842.240806983@linutronix.de>
+References: <20100927121651.904100669@linutronix.de>
+	<20100927121842.240806983@linutronix.de>
+Date: Mon, 27 Sep 2010 17:10:58 +0200
+X-Google-Sender-Auth: EDf1WG_sWafbW__Rgh_giVTkCWU
+Message-ID: <AANLkTimpavoLaAeY7dXPh7-596+xK0ZFxYMb8AHT6fv1@mail.gmail.com>
+Subject: Re: [patch 08/19] genirq; Provide compat handling for chip->mask_ack()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, September 27, 2010 02:25:46 am Thomas Renninger wrote:
+On Mon, Sep 27, 2010 at 14:44, Thomas Gleixner <tglx@linutronix.de> wrote:
+> Wrap the old chip function mask_ack() until the migration is complete
+> and the old chip functions are removed.
+>
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  kernel/irq/chip.c      |   20 ++++++++++++++++++--
+>  kernel/irq/internals.h |   17 +++++++++++------
+>  kernel/irq/manage.c    |   22 +++++++++++-----------
+>  3 files changed, 40 insertions(+), 19 deletions(-)
 
-> What do you think (dev_dbg vs printk(KERN_DEBUG...)?
+3 files
 
-Well, 99% of the time, what I want is simply the resource usage of all
-the devices in the system.  Currently, a dmesg log gives me that for
-PCI devices.  I plan to change PNP so the dmesg log will also contain
-that for PNP devices.  That's simple and requires no user action at all
-and no extra boots.
+> Index: linux-2.6-tip/kernel/irq/chip.c
+> ===================================================================
+> --- linux-2.6-tip.orig/kernel/irq/chip.c
+> +++ linux-2.6-tip/kernel/irq/chip.c
 
-The times when we need more extensive debugging are rare enough that
-I'm not sure it's worth keeping them compiled into the kernel, even
-if they are turned off by default (I understand the tradeoff from
-a distro point of view might be different).
+Only 1 file?
 
-With the exception of the ones in pnp/resource.c that I want to convert
-to dev_printk(KERN_DEBUG), I think all the pnp_dbg() uses are things
-I used during PNP development and haven't ever needed since.
+Gr{oetje,eeting}s,
 
-Bjorn
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
