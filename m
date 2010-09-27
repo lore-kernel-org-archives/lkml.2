@@ -1,91 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759240Ab0I0Vwf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 17:52:35 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:43680 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405Ab0I0Vwe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 17:52:34 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: =?utf-8?Q?Pawe=C5=82?= Sikora <pluto@agmk.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: git bisect selects commit outside initial bisect range?
-In-Reply-To: Your message of "Mon, 27 Sep 2010 22:29:13 +0200."
-             <m2fwwv7wx2.fsf@igel.home>
-From: Valdis.Kletnieks@vt.edu
-References: <201009272051.33882.pluto@agmk.net>
-            <m2fwwv7wx2.fsf@igel.home>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1285624307_7757P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1759250Ab0I0Vzz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 17:55:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:32959 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751136Ab0I0Vzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 17:55:54 -0400
+Message-ID: <4CA112D1.2020004@zytor.com>
+Date: Mon, 27 Sep 2010 14:55:29 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Alexander Graf <agraf@suse.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] x86, nmi: workaround sti; hlt race vs nmi; intr
+References: <1284913699-14986-1-git-send-email-avi@redhat.com> <4CA057EA.7000609@redhat.com> <768A5DC0-131A-4BC8-ADDD-044D8169545E@suse.de> <61284934-1AD3-4F7A-9488-D46FCEE9B753@suse.de> <4CA06147.7080805@redhat.com> <C725B379-9631-46E4-A825-E43A5120681E@suse.de> <4CA06373.5030501@redhat.com>
+In-Reply-To: <4CA06373.5030501@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Date: Mon, 27 Sep 2010 17:51:47 -0400
-Message-ID: <32106.1285624307@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A090209.4CA111F3.0158,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1285624307_7757P
-Content-Type: text/plain; charset=us-ascii
-
-On Mon, 27 Sep 2010 22:29:13 +0200, Andreas Schwab said:
-> Paweł Sikora <pluto@agmk.net> writes:
+On 09/27/2010 02:27 AM, Avi Kivity wrote:
 > 
-> > i've started git bisect between good-v2.6.34 and bad-v2.6.35-rc1
-> > and after few steps git-bisect jumps to commit before v2.6.34.
-> >
-> > [~/src/linux/linux-2.6]$ make kernelrelease
-> > 2.6.34-rc6-00551-g7a6cb0d
-> >
-> > is it normal that bisect selects next step outside initial range?
+> I don't have write permissions for the spec.  If you can verify that all 
+> existing and future hardware will mask NMI after STI and convince the 
+> spec owners to update the specifications, I'm all for it; it's certainly 
+> a cleaner solution.
 > 
-> It's not outside the range:
-> 
-> $ git rev-list v2.6.34..v2.6.35-rc1 | grep ^7a6cb0d
-> 7a6cb0d5497418599d2125b670926b75e673861c
-> 
-> 7a6cb0d is a commit in a branch reachable from v2.6.35-rc1 but not from
-> v2.6.34.
 
-I think he was confused because that commit is in an section of the tree
-that was committed to a maintainer tree before 2.6.34 - so when he boots
-the resulting kernel it says 2.6.33-rc3-mumble or similar.  I know it threw
-me for a loop the first few times it happened.
+I'm trying to see if this is doable.  As you can well imagine, though,
+it takes time.
 
-Pawel: What's happened is you're looking at a commit that got into a maintainer
-tree *before* 2.6.34 came out (so the top-level Makefile *at that time in that
-tree* said 2.6.33-mumble or something), but the maintainer fed it into Linus's
-tree in the merge window *after* 2.6.34 shipped.  Yes, it's bizarre, but that's
-how git deals with it.  If you look at the graph produced by 'git bisect
-visualize' it makes a bit more sense.
-
-
---==_Exmh_1285624307_7757P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFMoRHzcC3lWbTT17ARAniOAKDaMU1ZLAjLfuRheopjF4p7YYjwqgCbBvfV
-bQQ5iABIFmbyxtfCgOnfLTg=
-=/Nia
------END PGP SIGNATURE-----
-
---==_Exmh_1285624307_7757P--
+	-hpa
 
