@@ -1,51 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759606Ab0I0PXi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 11:23:38 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:48427 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756219Ab0I0PXh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 11:23:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=OOPqrcjhtAXtvDnY/G+ilQJy6BX3c9gib3KYwJhcIAU4GzHlys1Qexb4NJM3YDbBzs
-         8XYDxxAiFaVjA0NL6mXVXxmoDNymai5cVnVTIUaKImYhCqFr/Ii6WQ/UObyaHdKt7qps
-         YrXkF4k9Pl+DNrW/YgB6hdM0wQKSrfIOTV5CY=
-MIME-Version: 1.0
-In-Reply-To: <1285370032-16937-2-git-send-email-iws@ovro.caltech.edu>
-References: <1285370032-16937-1-git-send-email-iws@ovro.caltech.edu>
-	<1285370032-16937-2-git-send-email-iws@ovro.caltech.edu>
-Date: Mon, 27 Sep 2010 17:23:34 +0200
-Message-ID: <AANLkTimzdEhAZ=oXbbB3Ge5=YY7OXq3fjaRH4roPNB-k@mail.gmail.com>
-Subject: Re: [PATCH RFCv2 1/2] dmaengine: add support for scatterlist to
- scatterlist transfers
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: "Ira W. Snyder" <iws@ovro.caltech.edu>
-Cc: linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>,
-        linuxppc-dev@lists.ozlabs.org,
-        =?ISO-8859-1?Q?Per_Frid=E9n?= <per.friden@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1759617Ab0I0PYA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 11:24:00 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:52936 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756219Ab0I0PX7 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:6:1>);
+	Mon, 27 Sep 2010 11:23:59 -0400
+Message-Id: <4CA0D328020000780001914F@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Mon, 27 Sep 2010 16:23:52 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Guenter Roeck" <guenter.roeck@ericsson.com>
+Cc: "r.marek@assembler.cz" <r.marek@assembler.cz>,
+        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: x86/hwmon: conditionalize coretemp's dependency on PCI
+References: <4C8E18790200007800015AF7@vpn.id2.novell.com>
+ <20100924185509.GA20155@ericsson.com>
+ <4CA05F220200007800018F81@vpn.id2.novell.com>
+ <20100927121650.GB31847@ericsson.com>
+ <4CA0AE5E0200007800019097@vpn.id2.novell.com>
+ <20100927130220.GA2277@ericsson.com>
+In-Reply-To: <20100927130220.GA2277@ericsson.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/9/25 Ira W. Snyder <iws@ovro.caltech.edu>:
+>>> On 27.09.10 at 15:02, Guenter Roeck <guenter.roeck@ericsson.com> wrote:
+> On Mon, Sep 27, 2010 at 08:46:54AM -0400, Jan Beulich wrote:
+>> >>> On 27.09.10 at 14:16, Guenter Roeck <guenter.roeck@ericsson.com> wrote:
+>> > On Mon, Sep 27, 2010 at 03:08:50AM -0400, Jan Beulich wrote:
+>> > [...]
+>> > 
+>> >> >>  
+>> >> >>  config SENSORS_CORETEMP
+>> >> >>  	tristate "Intel Core/Core2/Atom temperature sensor"
+>> >> >> -	depends on X86 && PCI && EXPERIMENTAL
+>> >> >> +	depends on X86 && EXPERIMENTAL
+>> >> >> +	depends on PCI || (!MATOM && !GENERIC_CPU && !X86_GENERIC)
+>> >> >>  	help
+>> >> >>  	  If you say yes here you get support for the temperature
+>> >> >>  	  sensor inside your CPU. Most of the family 6 CPUs
+>> >> > 
+>> >> > Resending my reply to this one as well. Again, apologies if there is 
+>> >> > duplication.
+>> >> > 
+>> >> > The coretemp code unconditionally calls pci functions, even if PCI is not 
+>> >> > defined.
+>> >> > I am concerned that this might cause problems. It might be better to stick 
+> 
+>> >> > with
+>> >> > the more generic dependency instead of trying to optimize too much.
+>> >> 
+>> >> pci.h takes care to define stub inline functions for the !CONFIG_PCI
+>> >> case. It seemed largely odd for a driver like this to depend on PCI
+>> >> at all, and hence I think it is more transparent to make the needs
+>> >> explicit.
+>> >> 
+>> > Seems to me the dependency should not exist in the first place, then.
+>> > Otherwise, the driver would still be disabled for GENERIC_CPU, which isn't
+>> > good either.
+>> 
+>> Oh, not having a dependency on PCI at all would be even better.
+>> I didn't dare to suggest that.
+>> 
+>> > Are there examples of other drivers which are not defining the PCI 
+>> > dependency
+>> > but are conditionally calling pci functions ?
+>> 
+>> I'm not aware of any, but also didn't explicitly look for such.
+>> 
+> It still compiles if I remove the PCI dependency and disable PCI. So that is 
+> one plus.
+> 
+> That whole dependency is just to get the host bridge ID which is then used
+> to determine tjmax. Personally I would prefer to have a wrong tjmax over not 
+> having 
+> coretemp at all, and the means to determine tjmax through the bridge ID is 
+> kind
+> of bogus anyway. So at least in this case it would make sense for me to 
+> remove
+> the dependency completely. Actually, we won't even change functionality,
+> since tjmax is only set to a higher value for specific bridge IDs.
+> 
+> So, if you don't mind, please re-submit with the PCI dependency removed 
+> entirely.
 
-> This adds support for scatterlist to scatterlist DMA transfers.
+Hmm, no, I'd rather not - I just can't tell what implications it has
+if you run on !PCI && MATOM, i.e. I wouldn't be able to really justify
+that change other than by second hand knowledge (from what you
+wrote above). If you're convinced the dropped dependency doesn't
+make things worse, you're much better positioned to craft a respective
+patch.
 
-This is a good idea, we have a local function to do this in DMA40 already,
-stedma40_memcpy_sg().
+> Unless someone starts screaming, I'll apply that to my -next tree.
 
-> This is
-> currently hidden behind a configuration option, which will allow drivers
-> which need this functionality to select it individually.
+Jan
 
-Why? Isn't it better to add this as a new capability flag
-if you don't want to announce it? Or is the intent to save
-memory footprint?
-
-Yours,
-Linus Walleij
