@@ -1,157 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759139Ab0I0Q5S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 12:57:18 -0400
-Received: from mga02.intel.com ([134.134.136.20]:14481 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752196Ab0I0Q5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 12:57:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,243,1283756400"; 
-   d="scan'208";a="661583624"
-Date: Mon, 27 Sep 2010 18:57:38 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Daniel Drake <dsd@laptop.org>
-Cc: linux-kernel@vger.kernel.org, laforge@gnumonks.org
-Subject: Re: [PATCH] Add VIA VX855 multi-function device support
-Message-ID: <20100927165737.GJ2560@sortiz-mobl>
-References: <20100919172301.91EEA9D401B@zog.reactivated.net>
+	id S1759353Ab0I0Q7j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 12:59:39 -0400
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:23481
+	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755554Ab0I0Q7i convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 12:59:38 -0400
+X-SpamScore: -19
+X-BigFish: VPS-19(zzbb2cK1432N98dN1521Mzz1202hzzz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L9F0HI-01-SNM-02
+X-M-MSG: 
+Date: Mon, 27 Sep 2010 18:58:31 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Don Zickus <dzickus@redhat.com>
+CC: huang ying <huang.ying.caritas@gmail.com>,
+        Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v2 7/7] x86, NMI, Remove do_nmi_callback logic
+Message-ID: <20100927165831.GT13563@erda.amd.com>
+References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
+ <1285549026-5008-7-git-send-email-ying.huang@intel.com>
+ <20100927104426.GD32222@erda.amd.com>
+ <AANLkTinA2HK57w5wqCtq319WNy-PLtWaGBe-v+uoFB=Y@mail.gmail.com>
+ <20100927134341.GQ13563@erda.amd.com>
+ <20100927151607.GX26290@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Disposition: inline
-In-Reply-To: <20100919172301.91EEA9D401B@zog.reactivated.net>
+In-Reply-To: <20100927151607.GX26290@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
-
-On Sun, Sep 19, 2010 at 06:23:01PM +0100, Daniel Drake wrote:
-> From: Harald Welte <laforge@gnumonks.org>
+On 27.09.10 11:16:07, Don Zickus wrote:
+> On Mon, Sep 27, 2010 at 03:43:41PM +0200, Robert Richter wrote:
+> > On 27.09.10 08:56:44, huang ying wrote:
+> > 
+> > > >> -static int unknown_nmi_panic_callback(struct pt_regs *regs, int cpu)
+> > > >> -{
+> > > >> -     unsigned char reason = get_nmi_reason();
+> > > >> -     char buf[64];
+> > > >> -
+> > > >> -     sprintf(buf, "NMI received for unknown reason %02x\n", reason);
+> > > >> -     die_nmi(buf, regs, 1); /* Always panic here */
+> > > >> -     return 0;
+> > > >
+> > > > You are dropping this code that is different to panic().
+> > > 
+> > > What is the difference? Is it relevant?
+> > 
+> > I think yes, since the code behaves different. Otherwise we could
+> > remove die_nmi() completly and replace it by panic(). But both are
+> > different implementions. Maybe we can merge the code, but I didn't
+> > look at it closly.
 > 
-> Initially we add support for the south bridge GPIO lines via GPIOLIB
-> as well as some skeleton for the SPI controllers.
+> Actually die_nmi is a wrapper around panic with two important pieces.
+> One, it dumps some registers and two it does another notifier call to
+> DIE_NMIWATCHDOG (which correlates to another discussion in this patch
+> series).
 > 
-> This hardware can be found in the OLPC XO-1.5 laptop.
-Some comments below:
+> So if we do any consolidation between panic and die_nmi, it should be
+> convert to die_nmi.  But then I wonder if that breaks the original
+> semantics of 'panic_on_unrecovered_nmi'.  I don't think so though.
 
- 
-> +static int vx855_client_dev_register(struct vx855 *vg, const char *name,
-> +				     struct platform_device **pdev)
-> +{
-> +	struct vx855_subdev_pdata *subdev_pdata;
-> +	int ret;
-> +
-> +	*pdev = platform_device_alloc(name, -1);
-> +	if (!*pdev) {
-> +		dev_err(&vg->pdev->dev, "Failed to allocate pdev %s\n", name);
-> +		return -ENOMEM;
-> +	}
-> +
-> +	subdev_pdata = kmalloc(sizeof(*subdev_pdata), GFP_KERNEL);
-> +	if (!subdev_pdata) {
-> +		platform_device_put(*pdev);
-> +		return -ENOMEM;
-> +	}
-> +
-> +	subdev_pdata->vx855 = vg;
-> +	(*pdev)->dev.platform_data = subdev_pdata;
-> +	(*pdev)->dev.parent = &vg->pdev->dev;
-> +
-> +	ret = platform_device_add(*pdev);
-> +	if (ret) {
-> +		dev_err(&vg->pdev->dev, "Failed to register pdev %s\n", name);
-> +		kfree(subdev_pdata);
-> +		platform_device_put(*pdev);
-> +		*pdev = NULL;
-> +		return ret;
-> +	}
-> +
-> +	return 0;
-> +}
-We do have an MFD API for registering sub devices as platform devices. See
-mfd_add_devices(). You'd have to define cells (statically or not) and set the
-cell->platform_data pointer properly. I'd prefer to see this driver using this
-API.
-You will also need to depend on MFD_CORE.
+I agree, panic_on_unrecovered_nmi and unknown_nmi_panic almost do the
+same thing, though die_nmi() is specifically for nmi handlers. In the
+end we can consolidate both. We should then modify kernel.txt and
+route unknown_nmi_panic to panic_on_unrecovered_nmi or vice versa.
 
-> +static __devinit int vx855gpio_probe(struct platform_device *pdev)
-> +{
-> +	struct vx855_gpio *vg;
-> +	struct vx855_subdev_pdata *pdata = pdev->dev.platform_data;
-> +	u_int16_t io_offset;
-> +	int ret;
-> +
-> +	vg = kzalloc(sizeof(*vg), GFP_KERNEL);
-> +	if (!vg)
-> +		return -ENOMEM;
-> +
-> +	vg->vx855 = pdata->vx855;
-> +	platform_set_drvdata(pdev, vg);
-> +
-> +	ret = pci_read_config_word(vg->vx855->pdev,
-> +				   VX855_CFG_PMIO_OFFSET, &io_offset);
-So it seems the only thing you need from the parent device is the I/O region.
-If that really is the case then you may want to pass it from the actual MFD
-driver as a platform resource (you do the pci_read_config_word() from the MFD
-driver). The drivers/mfd/lcp_sch.c driver is a good example for that.
-The benefit you get from that design is that your sub devices drivers are
-completely independent from the parent one, they don't even have to share any
-data structure, you could get rid of vx855.h.
-
-
-> +	if (ret) {
-> +		ret = -EIO;
-> +		goto out_free;
-> +	}
-> +
-> +	if (!io_offset) {
-> +		dev_warn(&pdev->dev, "BIOS did not assign PMIO base offset?!?\n");
-> +		ret = -ENODEV;
-> +		goto out_free;
-> +	}
-> +
-> +	/* mask out the lowest seven bits, as they are always zero, but
-> +	 * hardware returns them as 0x01 */
-> +	io_offset &= 0xff80;
-> +	io_offset += VX855_PMIO_GPPM;
-> +
-> +	dev_info(&pdev->dev, "found VX855 PMIO at base 0x%x\n", io_offset);
-> +
-> +	vg->io_base = io_offset;
-> +	spin_lock_init(&vg->lock);
-> +
-> +	/* Typically the ACPI code will already have requested this
-> +	 * region, so we have to skip requesting it.  If you run a
-> +	 * system without ACPI, you should enable VX855GPIO_REQUEST_REGION */
-> +#ifdef VX855GPIO_REQUEST_REGION
-Is this something you want to define in Kconfig ?
-
-
-> +static int __init via_spi_probe(struct platform_device *pdev)
-> +{
-> +	struct vx855_subdev_pdata *pdata = pdev->dev.platform_data;
-> +	struct via_spi *vspi;
-> +	struct spi_master *master;
-> +	u_int32_t ctrlreg;
-> +	int err;
-> +
-> +	vspi = kzalloc(sizeof(*vspi), GFP_KERNEL);
-> +	if (!vspi)
-> +		return -ENOMEM;
-> +
-> +	vspi->vx855 = pdata->vx855;
-> +	platform_set_drvdata(pdev, vspi);
-> +
-> +	/* First we determine the MMIO base of the control registers */
-> +	pci_read_config_dword(vspi->vx855->pdev, 0xbc, &vspi->ctrl.mmio_base);
-Same comment applies to this SPI driver, it seems the onyl thing it needs from
-the parent is the MMIO base address.
-
-Cheers,
-Samuel.
+-Robert
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
