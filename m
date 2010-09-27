@@ -1,66 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759123Ab0I0Mfe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 08:35:34 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:51302 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759095Ab0I0Mfc (ORCPT
+	id S1759128Ab0I0Mj0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 08:39:26 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:63738 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751502Ab0I0MjZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 08:35:32 -0400
+	Mon, 27 Sep 2010 08:39:25 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=YPLPWlqSi27QGCav/uUTqYWX3HmfWS7x6IyVlFewvyrxYkphgEml78AYjYa6WO2Ude
-         FZ436PNVC2XAGwz/HcsXt/LbKQAxWeNgQqN/d/jI0NjyvDEwlJtiB4avwBXtSq7BvHIR
-         F1QH9bBDeGnzfx4QEicNoczJfEvZBBpHnCK6w=
+         :cc:content-type:content-transfer-encoding;
+        b=mLWEDg/x0Vw3zSr8TWipJRDPZ6kQ5nbKAqqGdx0iPYLi7sSGIiwueM8YLt2HmXYNsM
+         hAlNa3vdp0Kv8skiAGv/aXpG2xZVcij9Rt1aRpk8ob9NqYayla/ay2WmlCml7JxjrL5g
+         AgTw1pOIr/LdCFta4xY/BQO+4atnR5qUwMrgc=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinh+JTwyE4E33QXdnZ8obYA8S0SU71i3kGi=wRT@mail.gmail.com>
-References: <1285529740-28232-1-git-send-email-notasas@gmail.com>
-	<AANLkTinkxokX9BGtxysYOr19xbZR4S8oPRYUAyneutzc@mail.gmail.com>
-	<AANLkTinh+JTwyE4E33QXdnZ8obYA8S0SU71i3kGi=wRT@mail.gmail.com>
-Date: Mon, 27 Sep 2010 18:05:22 +0530
-Message-ID: <AANLkTik0LOQN8kOPjv_VohhO5To6pZDS=M0mw=q0whPp@mail.gmail.com>
-Subject: Re: [PATCH v3] power_supply: Add driver for TWL4030/TPS65950 BCI charger
-From: Arun Murthy <arunrmurthy.83@gmail.com>
-To: Grazvydas Ignotas <notasas@gmail.com>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Madhusudhan <madhu.cr@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20100927094136.GB32222@erda.amd.com>
+References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
+	<1285549026-5008-4-git-send-email-ying.huang@intel.com>
+	<20100927094136.GB32222@erda.amd.com>
+Date: Mon, 27 Sep 2010 20:39:24 +0800
+Message-ID: <AANLkTimTg1uqXdAJ+GyZ3_B6n2xKWdqFL96jvv18JBM+@mail.gmail.com>
+Subject: Re: [PATCH -v2 4/7] x86, NMI, Rewrite NMI handler
+From: huang ying <huang.ying.caritas@gmail.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Huang Ying <ying.huang@intel.com>, Don Zickus <dzickus@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 4:24 PM, Grazvydas Ignotas <notasas@gmail.com> wrote:
-> On Mon, Sep 27, 2010 at 10:21 AM, Arun Murthy <arunrmurthy.83@gmail.com> wrote:
->> On Mon, Sep 27, 2010 at 1:05 AM, Grazvydas Ignotas <notasas@gmail.com>
->> wrote:
->>> ---
->> Only AC and USB monitoring is achieved by registering with power supply
->> class.
->> How is battery monitored?
->> An instance of battery is to be registered with power supply class in order
->> to monitor battery.
->
-> The problem is that BCI is only active while charging, when it is not
-> charging most (all?) monitoring registers freeze and no monitoring
-> happens (BCI registers read frozen values from last charge). So I
-> don't register battery as it has no useful data to report. I heard it
-> is possible to use MADC to perform monitoring while not charging, so
-> battery can be added when MADC driver is merged and corresponding code
-> is written for this driver.
->
-How do I check the battery voltage?
-I need to check the battery voltage/current/temp and, if I am not
-wrong these are obtained from MADC.
-MADC driver has to be added first and then the battery.
-With being able to read the basic parameter battery voltage, this
-driver becomes incomplete.
+Hi, Robert,
 
-How do I get notified if battery voltage is low and needs charging
-from user space?
+On Mon, Sep 27, 2010 at 5:41 PM, Robert Richter <robert.richter@amd.com> wrote:
+> On 26.09.10 20:57:03, Huang Ying wrote:
+>> The original NMI handler is quite outdated in many aspects. This patch
+>> try to fix it.
+>>
+>> The order to process the NMI sources are changed as follow:
+>>
+>> notify_die(DIE_NMI_IPI);
+>> notify_die(DIE_NMI);
+>> /* process io port 0x61 */
+>> nmi_watchdog_touch();
+>> notify_die(DIE_NMIUNKNOWN);
+>> unknown_nmi();
+>>
+>> DIE_NMI_IPI is used to process CPU specific NMI sources, such as perf
+>> event, oprofile, crash IPI, etc. While DIE_NMI is used to process
+>> non-CPU-specific NMI sources, such as APEI (ACPI Platform Error
+>> Interface) GHES (Generic Hardware Error Source), etc. Non-CPU-specific
+>> NMI sources can be processed on any CPU,
+>>
+>> DIE_NMI_IPI must be processed before DIE_NMI. For example, perf event
+>> trigger a NMI on CPU 1, at the same time, APEI GHES trigger another
+>> NMI on CPU 0. If DIE_NMI is processed before DIE_NMI_IPI, it is
+>> possible that APEI GHES is processed on CPU 1, while unknown NMI is
+>> gotten on CPU 0.
+>
+> I think macro names DIE_NMI_IPI and DIE_NMI should be swapped as
+> e.g. the perf nmi is actually local and non-IPI.
 
-Thanks and Regards,
-Arun R Murthy
----------------------
+DIE_NMI_IPI may be not a good name for perf, but DIE_NMI is a even
+worse name for perf! DIE_NMI is originally used for IOCHK and PCI SERR
+NMI.
+
+> We might consider to rework the IPI thing completly, but may be in a
+> follow-on patch.
+>
+>>
+>> In this new order of processing, performance sensitive NMI sources
+>> such as oprofile or perf event will have better performance because
+>> the time consuming IO port reading is done after them.
+>>
+>> Only one NMI is eaten for each NMI handler call, even for PCI SERR and
+>> IOCHK NMIs. Because one NMI should be raised for each of them, eating
+>> too many NMI will cause unnecessary unknown NMI.
+>>
+>> The die value used in NMI sources are fixed accordingly.
+>>
+>> The NMI handler in the patch is designed by Andi Kleen.
+>>
+>>
+>> v2:
+>>
+>> - Split process NMI reason (0x61) on non-BSP into another patch
+>>
+>> Signed-off-by: Huang Ying <ying.huang@intel.com>
+>> ---
+>>  arch/x86/kernel/cpu/perf_event.c  |    1
+>>  arch/x86/kernel/traps.c           |   80 +++++++++++++++++++-------------------
+>>  arch/x86/oprofile/nmi_int.c       |    1
+>>  arch/x86/oprofile/nmi_timer_int.c |    2
+>>  drivers/char/ipmi/ipmi_watchdog.c |    2
+>>  drivers/watchdog/hpwdt.c          |    2
+>>  6 files changed, 43 insertions(+), 45 deletions(-)
+>>
+>> --- a/arch/x86/kernel/cpu/perf_event.c
+>> +++ b/arch/x86/kernel/cpu/perf_event.c
+>> @@ -1247,7 +1247,6 @@ perf_event_nmi_handler(struct notifier_b
+>>               return NOTIFY_DONE;
+>>
+>>       switch (cmd) {
+>> -     case DIE_NMI:
+>>       case DIE_NMI_IPI:
+>
+> See my comment above. Same is true for oprofile and some other
+> handlers below. It isn't an IPI and should be case DIE_NMI: instead.
+>
+>>               break;
+>>       case DIE_NMIUNKNOWN:
+>> --- a/arch/x86/kernel/traps.c
+>> +++ b/arch/x86/kernel/traps.c
+>> @@ -354,9 +354,6 @@ io_check_error(unsigned char reason, str
+>>  static notrace __kprobes void
+>>  unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
+>>  {
+>> -     if (notify_die(DIE_NMIUNKNOWN, "nmi", regs, reason, 2, SIGINT) ==
+>> -                     NOTIFY_STOP)
+>> -             return;
+>>  #ifdef CONFIG_MCA
+>>       /*
+>>        * Might actually be able to figure out what the guilty party
+>> @@ -385,51 +382,54 @@ static notrace __kprobes void default_do
+>>
+>>       cpu = smp_processor_id();
+>
+> This should go to if (!cpu) and maybe we drop variable cpu completly.
+
+The variable cpu is dropped in 5/7.
+
+>>
+>> -     /* Only the BSP gets external NMIs from the system. */
+>> -     if (!cpu)
+>> -             reason = get_nmi_reason();
+>> +     /*
+>> +      * CPU-specific NMI must be processed before non-CPU-specific
+>> +      * NMI, otherwise we may lose it, because the CPU-specific
+>> +      * NMI can not be detected/processed on other CPUs.
+>> +      */
+>>
+>> -     if (!(reason & NMI_REASON_MASK)) {
+>> -             if (notify_die(DIE_NMI_IPI, "nmi_ipi", regs, reason, 2, SIGINT)
+>> -                                                             == NOTIFY_STOP)
+>> -                     return;
+>> +     /*
+>> +      * CPU-specific NMI: send to specific CPU or NMI sources must
+>> +      * be processed on specific CPU
+>> +      */
+>> +     if (notify_die(DIE_NMI_IPI, "nmi_ipi", regs, 0, 2, SIGINT)
+>> +         == NOTIFY_STOP)
+>> +             return;
+>>
+>> -#ifdef CONFIG_X86_LOCAL_APIC
+>
+> Are you sure we may drop this option?
+
+Yes. DIE_NMI is used for non-CPU-specific NMI sources now.
+
+>> -             if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT)
+>> -                                                     == NOTIFY_STOP)
+>> -                     return;
+>> +     /* Non-CPU-specific NMI: NMI sources can be processed on any CPU */
+>> +     if (notify_die(DIE_NMI, "nmi", regs, 0, 2, SIGINT) == NOTIFY_STOP)
+>> +             return;
+>
+> As said, IPI and non-IPI are mixed up.
+
+They are processed one after the other.
+
+>>
+>> -#ifndef CONFIG_LOCKUP_DETECTOR
+>> -             /*
+>> -              * Ok, so this is none of the documented NMI sources,
+>> -              * so it must be the NMI watchdog.
+>> -              */
+>> -             if (nmi_watchdog_tick(regs, reason))
+>> -                     return;
+>> -             if (!do_nmi_callback(regs, cpu))
+>> -#endif /* !CONFIG_LOCKUP_DETECTOR */
+>> -                     unknown_nmi_error(reason, regs);
+>> -#else
+>> -             unknown_nmi_error(reason, regs);
+>> +     if (!cpu) {
+>> +             reason = get_nmi_reason();
+>> +             if (reason & NMI_REASON_MASK) {
+>> +                     if (reason & NMI_REASON_SERR)
+>> +                             pci_serr_error(reason, regs);
+>> +                     else if (reason & NMI_REASON_IOCHK)
+>> +                             io_check_error(reason, regs);
+>> +#ifdef CONFIG_X86_32
+>> +                     /*
+>> +                      * Reassert NMI in case it became active
+>> +                      * meanwhile as it's edge-triggered:
+>> +                      */
+>> +                     reassert_nmi();
+>>  #endif
+>> +                     return;
+>> +             }
+>> +     }
+>>
+>> +#if defined(CONFIG_X86_LOCAL_APIC) && !defined(CONFIG_LOCKUP_DETECTOR)
+>> +     if (nmi_watchdog_tick(regs, reason))
+>>               return;
+>> -     }
+>> -     if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT) == NOTIFY_STOP)
+>> +     if (do_nmi_callback(regs, smp_processor_id()))
+>>               return;
+>> -
+>> -     /* AK: following checks seem to be broken on modern chipsets. FIXME */
+>> -     if (reason & NMI_REASON_SERR)
+>> -             pci_serr_error(reason, regs);
+>> -     if (reason & NMI_REASON_IOCHK)
+>> -             io_check_error(reason, regs);
+>> -#ifdef CONFIG_X86_32
+>> -     /*
+>> -      * Reassert NMI in case it became active meanwhile
+>> -      * as it's edge-triggered:
+>> -      */
+>> -     reassert_nmi();
+>>  #endif
+>> +
+>> +     if (notify_die(DIE_NMIUNKNOWN, "nmi_unknown", regs, reason, 2, SIGINT)
+>> +         == NOTIFY_STOP)
+>> +             return;
+>> +
+>> +     unknown_nmi_error(reason, regs);
+>>  }
+>>
+>>  dotraplinkage notrace __kprobes void
+>> --- a/arch/x86/oprofile/nmi_int.c
+>> +++ b/arch/x86/oprofile/nmi_int.c
+>> @@ -64,7 +64,6 @@ static int profile_exceptions_notify(str
+>>       int ret = NOTIFY_DONE;
+>>
+>>       switch (val) {
+>> -     case DIE_NMI:
+>>       case DIE_NMI_IPI:
+>>               if (ctr_running)
+>>                       model->check_ctrs(args->regs, &__get_cpu_var(cpu_msrs));
+>> --- a/arch/x86/oprofile/nmi_timer_int.c
+>> +++ b/arch/x86/oprofile/nmi_timer_int.c
+>> @@ -25,7 +25,7 @@ static int profile_timer_exceptions_noti
+>>       int ret = NOTIFY_DONE;
+>>
+>>       switch (val) {
+>> -     case DIE_NMI:
+>> +     case DIE_NMI_IPI:
+>>               oprofile_add_sample(args->regs, 0);
+>>               ret = NOTIFY_STOP;
+>>               break;
+>> --- a/drivers/char/ipmi/ipmi_watchdog.c
+>> +++ b/drivers/char/ipmi/ipmi_watchdog.c
+>> @@ -1080,7 +1080,7 @@ ipmi_nmi(struct notifier_block *self, un
+>>  {
+>>       struct die_args *args = data;
+>>
+>> -     if (val != DIE_NMI)
+>> +     if (val != DIE_NMIUNKNOWN)
+
+All watchdogs use DIE_NMIUNKNOWN in this patch. Because they should be
+processed after CPU specific and non-CPU-specific NMIs. Or we define a
+special DIE_NMI_XX for it? like DIE_NMI_WATCHDOG?
+
+Best Regards,
+Huang Ying
