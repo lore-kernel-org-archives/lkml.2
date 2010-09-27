@@ -1,100 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759333Ab0I0Nb1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 09:31:27 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:50214 "EHLO smtps.tip.net.au"
+	id S1759242Ab0I0NhU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 09:37:20 -0400
+Received: from smtp.kponet.fi ([213.145.209.38]:35437 "EHLO smtp.kponet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751635Ab0I0Nb0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 09:31:26 -0400
-Date: Mon, 27 Sep 2010 23:31:15 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Len Brown <lenb@kernel.org>
-Cc: Zhang Rui <rui.zhang@intel.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build warnings in Linus' tree
-Message-Id: <20100927233115.27a5a379.sfr@canb.auug.org.au>
-In-Reply-To: <20100917142630.b968977c.sfr@canb.auug.org.au>
-References: <20100817112439.18f9d958.sfr@canb.auug.org.au>
-	<20100830114222.3a1f53e6.sfr@canb.auug.org.au>
-	<1283148482.3707.167.camel@rui>
-	<20100917142630.b968977c.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__27_Sep_2010_23_31_15_+1000_AjTzLEdK8FCaJ.Hy"
+	id S1753373Ab0I0NhS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 09:37:18 -0400
+X-Greylist: delayed 1060 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Sep 2010 09:37:18 EDT
+Date: Mon, 27 Sep 2010 16:19:35 +0300
+From: Sami Farin <hvtaifwkbgefbaei@gmail.com>
+To: Linux kernel Mailing List <linux-kernel@vger.kernel.org>,
+        e1000-devel@lists.sourceforge.net
+Cc: Sami Farin <hvtaifwkbgefbaei@gmail.com>
+Subject: Linux 2.6.35.6/e1000e does not receive replies from DHCP server,
+ 2.6.33 works
+Message-ID: <20100927131935.d5f2ghpfaufiq6yx@m.safari.iki.fi>
+Mail-Followup-To: Sami Farin <hvtaifwkbgefbaei@gmail.com>,
+	linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__27_Sep_2010_23_31_15_+1000_AjTzLEdK8FCaJ.Hy
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi (please Cc:),
 
-Hi Len,
+With 2.6.33 I could reliably get IP address from ISP's DHCP server,
+but when I upgraded to 2.6.35, it just does not work anymore.
+ISP's technicians verified that from their end, they see my DHCP Request
+packets and they send the DHCP ACK packet, but my Linux just does not
+see the ACKs.  I have been running tcpdump to verify this.
+Technician got DHCP connection up just fine with a Windows system.
+I am using Telewell TW-EA501.
+Also, sometimes changing MAC addresses of the Intel NIC back and forth
+makes DHCP work.
 
-On Fri, 17 Sep 2010 14:26:30 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> On Mon, 30 Aug 2010 14:08:02 +0800 Zhang Rui <rui.zhang@intel.com> wrote:
-> >
-> > On Mon, 2010-08-30 at 09:42 +0800, Stephen Rothwell wrote:
-> > > Hi Len,
-> > >=20
-> > > On Tue, 17 Aug 2010 11:24:39 +1000 Stephen Rothwell <sfr@canb.auug.or=
-g.au> wrote:
-> > > >
-> > > > Today's linux-next build (x86_64 allmodconfig) produced these warni=
-ngs:
-> > > >=20
-> > > > drivers/acpi/sysfs.c:152: warning: passing argument 1 of '__check_o=
-ld_set_param' from incompatible pointer type
-> > > > include/linux/moduleparam.h:165: note: expected 'int (*)(const char=
- *, struct kernel_param *)' but argument is of type 'int (*)(const char *, =
-const struct kernel_param *)'
->=20
-> [several more elided]
->=20
-> > > > Introduced by commit 1c8fce27e275fd7c6b75bc6455745f02d3903ee6 ("ACP=
-I:
-> > > > introduce drivers/acpi/sysfs.c") interacting with commit
-> > > > 9bbb9e5a33109b2832e2e63dcc7a132924ab374b ("param: use ops in struct
-> > > > kernel_param, rather than get and set fns directly").
-> > >=20
-> > > Can we have this fixed, please?
-> > patch attached. :)
-> >=20
-> > Use module_param_cb instead of the obsoleted module_param_call to fix a=
- build warning.
-> >=20
-> > Signed-off-by: Zhang Rui <rui.zhang@intel.com>
->=20
-> Now that this has been in linux-next since Sep 6, can you please send it
-> to Linus.  It removes quite a few warnings that were introduced during
-> this merge window - and I think we already have too many warnings.
+Three days ago with 2.6.35.5, dhclient sent quite a many packets
+in eight hours, but received only one DHCP ACK packet, and
+then it failed to get ARP reply, so dhclient did not succeed in
+getting connection up.
 
-Ping?
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Now I tried 2.6.35.6 with latest e1000e version from Linux git
+32163f4b2cef28a5aab8b226ffecfc6379a53786, and DHCP ACK was received
+just fine.  e1000e from 2.6.35.1 did not work any better than 2.6.35.6.
+Combination kernel 2.6.35.6 + e1000e from 2.6.33 did not compile.
 
---Signature=_Mon__27_Sep_2010_23_31_15_+1000_AjTzLEdK8FCaJ.Hy
-Content-Type: application/pgp-signature
+So, what changed 2.6.35.6 --> Git in e1000e driver?
+If that is what's the problem..
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+I have Intel DQ965GF motherboard.
 
-iQEcBAEBAgAGBQJMoJyjAAoJEDMEi1NhKgbsUl4IAIBK8u8SsjAR5QX2b8OP6ItC
-U7/scfLbC7xz//Cvk/fEfu7MpbOYzPXg7xiHPoun7yQ6U6+lwCpY2odm7WZms/PP
-NgbHM/DnuSKUpwWg3utNlHX/F2Psl2aEupDnw0ICoAWK5UwFUJ4mRDuKTCAxyV1G
-n8fytJxnvQ4V2ipxqHa6FvEyOX0Y996S3xmaP53ANruvX7DrPbPHnNNS8/VWXNaW
-yj0oI3We3jhE7xXEOjZkm5eHYAXM27nuubI0sxNKSaH3hzffmQwHrIacv4CDzuca
-ZRQ+fSwGBYZuX1XqwmsSVz4F/EVfXrAVDPinIQZ5lRr5cCYH/9PQoF/hrqoErW8=
-=ZbnJ
------END PGP SIGNATURE-----
+the dmesg is the same, whether it works or not..
 
---Signature=_Mon__27_Sep_2010_23_31_15_+1000_AjTzLEdK8FCaJ.Hy--
+[ 6759.184351] e1000e: Intel(R) PRO/1000 Network Driver - 1.0.2-k4
+[ 6759.184357] e1000e: Copyright (c) 1999 - 2009 Intel Corporation.
+[ 6759.184413] e1000e 0000:00:19.0: PCI INT A -> GSI 20 (level, low) -> IRQ 20
+[ 6759.184426] e1000e 0000:00:19.0: setting latency timer to 64
+[ 6759.184714] e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
+[ 6759.415542] e1000e 0000:00:19.0: eth0: (PCI Express:2.5GB/s:Width x1) 00:19:d1:00:5f:01
+[ 6759.415548] e1000e 0000:00:19.0: eth0: Intel(R) PRO/1000 Network Connection
+[ 6759.415579] e1000e 0000:00:19.0: eth0: MAC: 6, PHY: 6, PBA No: ffffff-0ff
+[ 6759.946202] e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
+[ 6759.997053] e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
+...
+[ 7506.674005] eth0: no IPv6 routers present
+[ 7530.742331] e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
+[ 7530.793171] e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
+[ 7530.793813] ADDRCONF(NETDEV_UP): eth0: link is not ready
+[ 7532.160896] e1000e: eth0 NIC Link is Up 100 Mbps Full Duplex, Flow Control: RX/TX
+[ 7532.161539] ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
+[ 7532.566537] eth0: IPv6 duplicate address fe80::219:d1ff:fe00:5f01 detected!
+
+# grep eth0 /proc/interrupts 
+ 46:    1044515          0   PCI-MSI-edge      eth0
+
+lspci
+00:19.0 Ethernet controller: Intel Corporation 82566DM Gigabit Network Connection (rev 02)
+        Subsystem: Intel Corporation Device 0001
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx+
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0
+        Interrupt: pin A routed to IRQ 46
+        Region 0: Memory at d0300000 (32-bit, non-prefetchable) [size=128K]
+        Region 1: Memory at d0324000 (32-bit, non-prefetchable) [size=4K]
+        Region 2: I/O ports at 20e0 [size=32]
+        Capabilities: [c8] Power Management version 2
+                Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=1 PME-
+        Capabilities: [d0] MSI: Enable+ Count=1/1 Maskable- 64bit+
+                Address: 00000000fee0300c  Data: 418b
+        Kernel driver in use: e1000e
+        Kernel modules: e1000e
+00: 86 80 4a 10 07 04 10 00 02 00 00 02 00 00 00 00
+10: 00 00 30 d0 00 40 32 d0 e1 20 00 00 00 00 00 00
+20: 00 00 00 00 00 00 00 00 00 00 00 00 86 80 01 00
+30: 00 00 00 00 c8 00 00 00 00 00 00 00 09 01 00 00
+
+# ethtool eth0
+Settings for eth0:
+        Supported ports: [ TP ]
+        Supported link modes:   10baseT/Half 10baseT/Full 
+                                100baseT/Half 100baseT/Full 
+                                1000baseT/Full 
+        Supports auto-negotiation: Yes
+        Advertised link modes:  10baseT/Half 10baseT/Full 
+                                100baseT/Half 100baseT/Full 
+                                1000baseT/Full 
+        Advertised pause frame use: No
+        Advertised auto-negotiation: Yes
+        Speed: 100Mb/s
+        Duplex: Full
+        Port: Twisted Pair
+        PHYAD: 1
+        Transceiver: internal
+        Auto-negotiation: on
+        MDI-X: off
+        Supports Wake-on: pumbag
+        Wake-on: g
+        Current message level: 0x00000001 (1)
+        Link detected: yes
+
+-- 
+Do what you love because life is too short for anything else.
+
