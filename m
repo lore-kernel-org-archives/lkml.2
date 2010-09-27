@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933105Ab0I0POt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 11:14:49 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:60274 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755632Ab0I0POq (ORCPT
+	id S933138Ab0I0PPe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 11:15:34 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54017 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755835Ab0I0PPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 11:14:46 -0400
-Date: Mon, 27 Sep 2010 11:10:06 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        alsa-devel@alsa-project.org, dri-devel@lists.freedesktop.org,
-        linux-ide@vger.kernel.org, "Maciej W. Rozycki" <macro@linux-mips.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Finn Thain <fthain@telegraphics.com.au>,
-        Randy Dunlap <rdunlap@xenotime.net>, Matt Turner <mattst88@gmail.com>,
-        Dimitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mike Frysinger <vapier.adi@gmail.com>
-Subject: Re: [RFC v4]update broken web addresses in the kernel.
-Message-ID: <20100927151005.GC11086@tuxdriver.com>
-References: <1285525875-9920-1-git-send-email-justinmattock@gmail.com>
+	Mon, 27 Sep 2010 11:15:32 -0400
+Date: Mon, 27 Sep 2010 08:15:50 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Par-Gunnar Hjalmdahl <pghatwork@gmail.com>
+Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, Pavan Savoy <pavan_savoy@sify.com>
+Subject: Re: [PATCH 1/6] This patch adds support for the ST-Ericsson CG2900
+Message-ID: <20100927151550.GC13754@opensource.wolfsonmicro.com>
+References: <AANLkTin9Qji_bdyd3yqrP_-ti5xRT9jJ4je2fPM=uHFX@mail.gmail.com>
+ <20100924141046.GA26454@sirena.org.uk>
+ <AANLkTin=PPfgnD5tKBPR1QXf2OeBKBH-kXtoT+s-KPhk@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1285525875-9920-1-git-send-email-justinmattock@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTin=PPfgnD5tKBPR1QXf2OeBKBH-kXtoT+s-KPhk@mail.gmail.com>
+X-Cookie: Excellent day to have a rotten day.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 26, 2010 at 11:31:15AM -0700, Justin P. Mattock wrote:
-> Below is an updated patch from the original fixing broken web addresses in the kernel.
-> Thanks for all the help and info on this to everybody..
-> Hopefully I didnt miss any of them(if so let me know, and I'll resend).
+On Mon, Sep 27, 2010 at 10:16:11AM +0200, Par-Gunnar Hjalmdahl wrote:
+> 2010/9/24 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> > On Fri, Sep 24, 2010 at 03:46:44PM +0200, Par-Gunnar Hjalmdahl wrote:
 
-Changing a URL for a relocated page is one thing, but removing links
-isn't necessarily a great idea.  Even if the site is technically
-gone, it may be possible to find information e.g through the Internet
-Archive Wayback Machine.
+> >> +static irqreturn_t cg2900_devices_interrupt(int irq, void *dev_id)
+> >> +{
+> >> +     disable_irq_nosync(irq);
+> >> +     if (cg2900_dev_callback && cg2900_dev_callback->interrupt_cb)
+> >> +             cg2900_dev_callback->interrupt_cb();
+> >> +
+> >> +     return IRQ_HANDLED;
+> >> +}
 
-> diff --git a/drivers/net/wireless/orinoco/main.c b/drivers/net/wireless/orinoco/main.c
-> index e8e2d0f..ba10b07 100644
-> --- a/drivers/net/wireless/orinoco/main.c
-> +++ b/drivers/net/wireless/orinoco/main.c
-> @@ -17,7 +17,6 @@
->   *
->   * Portions based on wvlan_cs.c 1.0.6, Copyright Andreas Neuhaus <andy
->   * AT fasta.fh-dortmund.de>
-> - *      http://www.stud.fh-dortmund.de/~andy/wvlan/
->   *
->   * The contents of this file are subject to the Mozilla Public License
->   * Version 1.1 (the "License"); you may not use this file except in
+> > Why is there this callback mechanism - I'd expect the users of this code
+> > to just be using the standard IRQ infrastructure?
 
-http://web.archive.org/web/20070716051348/http://www.stud.fh-dortmund.de/~andy/wvlan/
+> This is our local IRQ which is handled in cg2900_uart.c by creating a work:
 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+I can tell it's an IRQ - that's my point; the kernel has an interrupt
+handling subsystem which this isn't using.
+
+> I understand your concern that client implementing the
+> cg2900_dev_callback->interrupt_cb();
+> might not know realized that this is irq context which might cause problems.
+
+No, you're misunderstanding my point.  The kernel has facilities for
+representing interrupt controllers which this is not using.
+
+> If not then suggest what is expected way of handling it ? eg. moving
+> workqueue down to cg2900_devices
+> or other solution?
+
+Use the standard kernel IRQ framework to report interrupts to the
+clients - there's quite a few examples of using this in the drivers/mfd
+code.  This will make your code more idiomatic and give you access to
+all the diagnostic infrastructure the kernel provides for interrupts.
