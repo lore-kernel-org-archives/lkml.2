@@ -1,125 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759152Ab0I0Mo7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 08:44:59 -0400
-Received: from www.tglx.de ([62.245.132.106]:34536 "EHLO www.tglx.de"
+	id S932325Ab0I0MpJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 08:45:09 -0400
+Received: from www.tglx.de ([62.245.132.106]:34564 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759115Ab0I0Mo5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 08:44:57 -0400
-Message-Id: <20100927121842.043608928@linutronix.de>
+	id S1759197Ab0I0MpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 08:45:05 -0400
+Message-Id: <20100927121842.142624725@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Mon, 27 Sep 2010 12:44:44 -0000
+Date: Mon, 27 Sep 2010 12:44:47 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 06/19] genirq; Provide compat handling for chip->unmask()
+Subject: [patch 07/19] genirq; Provide compat handling for chip->ack()
 References: <20100927121651.904100669@linutronix.de>
-Content-Disposition: inline; filename=genirq-wrap-chip-unmask.patch
+Content-Disposition: inline; filename=genirq-wrap-chip-ack.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wrap the old chip function unmask() until the migration is complete
-and the old chip functions are removed.
+Wrap the old chip function ack() until the migration is complete and
+the old chip functions are removed.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/irq/chip.c      |   20 ++++++++++++++------
- kernel/irq/manage.c    |    2 +-
- kernel/irq/migration.c |    2 +-
- 3 files changed, 16 insertions(+), 8 deletions(-)
+ kernel/irq/chip.c |   20 ++++++++++++--------
+ 1 file changed, 12 insertions(+), 8 deletions(-)
 Index: linux-2.6-tip/kernel/irq/chip.c
 ===================================================================
 --- linux-2.6-tip.orig/kernel/irq/chip.c
 +++ linux-2.6-tip/kernel/irq/chip.c
-@@ -294,7 +294,7 @@ static void default_enable(unsigned int 
- {
- 	struct irq_desc *desc = irq_to_desc(irq);
- 
--	desc->chip->unmask(irq);
-+	desc->chip->irq_unmask(&desc->irq_data);
- 	desc->status &= ~IRQ_MASKED;
+@@ -338,6 +338,11 @@ static void compat_irq_unmask(struct irq
+ 	irq_data_to_desc(data)->chip->unmask(data->irq);
  }
  
-@@ -333,6 +333,11 @@ static void compat_irq_mask(struct irq_d
- 	irq_data_to_desc(data)->chip->mask(data->irq);
- }
- 
-+static void compat_irq_unmask(struct irq_data *data)
++static void compat_irq_ack(struct irq_data *data)
 +{
-+	irq_data_to_desc(data)->chip->unmask(data->irq);
++	irq_data_to_desc(data)->chip->ack(data->irq);
 +}
 +
  static void compat_bus_lock(struct irq_data *data)
  {
  	irq_data_to_desc(data)->chip->bus_lock(data->irq);
-@@ -373,6 +378,9 @@ void irq_chip_set_defaults(struct irq_ch
- 
+@@ -375,12 +380,12 @@ void irq_chip_set_defaults(struct irq_ch
+ 		chip->irq_bus_lock = compat_bus_lock;
+ 	if (chip->bus_sync_unlock)
+ 		chip->irq_bus_sync_unlock = compat_bus_sync_unlock;
+-
  	if (chip->mask)
  		chip->irq_mask = compat_irq_mask;
-+
-+	if (chip->unmask)
-+		chip->irq_unmask = compat_irq_unmask;
+-
+ 	if (chip->unmask)
+ 		chip->irq_unmask = compat_irq_unmask;
++	if (chip->ack)
++		chip->irq_ack = compat_irq_ack;
  }
  
  static inline void mask_ack_irq(struct irq_desc *desc, int irq)
-@@ -395,10 +403,10 @@ static inline void mask_irq(struct irq_d
+@@ -389,8 +394,8 @@ static inline void mask_ack_irq(struct i
+ 		desc->chip->mask_ack(irq);
+ 	else {
+ 		desc->chip->irq_mask(&desc->irq_data);
+-		if (desc->chip->ack)
+-			desc->chip->ack(irq);
++		if (desc->chip->irq_ack)
++			desc->chip->irq_ack(&desc->irq_data);
  	}
+ 	desc->status |= IRQ_MASKED;
  }
+@@ -629,8 +634,7 @@ handle_edge_irq(unsigned int irq, struct
+ 	kstat_incr_irqs_this_cpu(irq, desc);
  
--static inline void unmask_irq(struct irq_desc *desc, int irq)
-+static inline void unmask_irq(struct irq_desc *desc)
- {
--	if (desc->chip->unmask) {
--		desc->chip->unmask(irq);
-+	if (desc->chip->irq_unmask) {
-+		desc->chip->irq_unmask(&desc->irq_data);
- 		desc->status &= ~IRQ_MASKED;
- 	}
- }
-@@ -527,7 +535,7 @@ handle_level_irq(unsigned int irq, struc
- 	desc->status &= ~IRQ_INPROGRESS;
+ 	/* Start handling the irq */
+-	if (desc->chip->ack)
+-		desc->chip->ack(irq);
++	desc->chip->irq_ack(&desc->irq_data);
  
- 	if (!(desc->status & (IRQ_DISABLED | IRQ_ONESHOT)))
--		unmask_irq(desc, irq);
-+		unmask_irq(desc);
- out_unlock:
- 	raw_spin_unlock(&desc->lock);
- }
-@@ -644,7 +652,7 @@ handle_edge_irq(unsigned int irq, struct
- 		if (unlikely((desc->status &
- 			       (IRQ_PENDING | IRQ_MASKED | IRQ_DISABLED)) ==
- 			      (IRQ_PENDING | IRQ_MASKED))) {
--			unmask_irq(desc, irq);
-+			unmask_irq(desc);
- 		}
+ 	/* Mark the IRQ currently in progress.*/
+ 	desc->status |= IRQ_INPROGRESS;
+@@ -683,8 +687,8 @@ handle_percpu_irq(unsigned int irq, stru
  
- 		desc->status &= ~IRQ_PENDING;
-Index: linux-2.6-tip/kernel/irq/manage.c
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/manage.c
-+++ linux-2.6-tip/kernel/irq/manage.c
-@@ -528,7 +528,7 @@ again:
+ 	kstat_incr_irqs_this_cpu(irq, desc);
  
- 	if (!(desc->status & IRQ_DISABLED) && (desc->status & IRQ_MASKED)) {
- 		desc->status &= ~IRQ_MASKED;
--		desc->chip->unmask(irq);
-+		desc->chip->irq_unmask(&desc->irq_data);
- 	}
- 	raw_spin_unlock_irq(&desc->lock);
- 	chip_bus_sync_unlock(desc);
-Index: linux-2.6-tip/kernel/irq/migration.c
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/migration.c
-+++ linux-2.6-tip/kernel/irq/migration.c
-@@ -63,6 +63,6 @@ void move_native_irq(int irq)
+-	if (desc->chip->ack)
+-		desc->chip->ack(irq);
++	if (desc->chip->irq_ack)
++		desc->chip->irq_ack(&desc->irq_data);
  
- 	desc->chip->irq_mask(&desc->irq_data);
- 	move_masked_irq(irq);
--	desc->chip->unmask(irq);
-+	desc->chip->irq_unmask(&desc->irq_data);
- }
- 
+ 	action_ret = handle_IRQ_event(irq, desc->action);
+ 	if (!noirqdebug)
 
 
