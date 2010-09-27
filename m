@@ -1,91 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758897Ab0I0LDu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 07:03:50 -0400
-Received: from smtp.nokia.com ([147.243.1.47]:32594 "EHLO mgw-sa01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751635Ab0I0LDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 07:03:48 -0400
-Subject: Re: [PATCH 2/4] leds: Driver for National Semiconductors LP5523
- chip
-From: "Matti J. Aaltonen" <matti.j.aaltonen@nokia.com>
-Reply-To: matti.j.aaltonen@nokia.com
-To: "Onkalo Samu.P (Nokia-MS/Tampere)" <samu.p.onkalo@nokia.com>
-Cc: "rpurdie@linux.intel.com" <rpurdie@linux.intel.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1285584868.8182.194.camel@masi.mnp.nokia.com>
-References: <1284631946-5350-1-git-send-email-samu.p.onkalo@nokia.com>
-	 <1284631946-5350-3-git-send-email-samu.p.onkalo@nokia.com>
-	 <1285584868.8182.194.camel@masi.mnp.nokia.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Nokia
-Date: Mon, 27 Sep 2010 14:03:37 +0300
-Message-ID: <1285585417.8182.201.camel@masi.mnp.nokia.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
-X-Nokia-AV: Clean
+	id S1757705Ab0I0LGO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 07:06:14 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:47095 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754953Ab0I0LGN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 07:06:13 -0400
+Date: Mon, 27 Sep 2010 13:06:56 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Doug Thompson <norsk5@yahoo.com>, edac-devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] amd64_edac fix for 36-rc6
+Message-ID: <20100927110656.GB2834@aftab>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi Linus,
 
-My original intention was to send my comment directly to Samu. So an
-apology to all of you who don't understand Finnish. Basically I was
-commenting the use braces in the code fragments below...
+please pull the following fix so that rmmod'ing the amd64_edac module
+doesn't hang anymore, details in the commit message below.
 
-Regards,
-Matti 
+Thanks.
 
+--
+amd64_edac: Fix driver module removal
 
-On Mon, 2010-09-27 at 13:54 +0300, Matti J. Aaltonen wrote:
-> Moi.
-> 
-> On Thu, 2010-09-16 at 12:12 +0200, Onkalo Samu.P (Nokia-MS/Tampere)
-> wrote:
-> > +
-> > +       for (i = 0; i < LP5523_ENGINES; i++) {
-> > +               if (chip->engines[i].mode == LP5523_CMD_LOAD)
-> > +                       sysfs_remove_group(&dev->kobj, &lp5523_engine_group[i]);
-> > +       }
-> > +
-> > +       for (i = 0; i < chip->num_leds; i++)
-> > +               sysfs_remove_group(&chip->leds[i].cdev.dev->kobj,
-> > +                               &lp5523_led_attribute_group);
-> > +}
-> 
-> Tossa ylla on se asia, josta puhuttiin, style guide sanoo:
-> 
-> Do not unnecessarily use braces where a single statement will do.
-> 
-> if (condition)
-> 	action();
-> 
-> Tossa ylla on kummankin for:in jalkeen single statement joista kumpikaan
-> ei mahdu yhdelle riville... Mun nakemyksen mukaan ne molemmat olis yhta
-> selkeita ilman sulkuja...
-> 
-> 
-> > +       if (mode == LP5523_CMD_RUN)
-> > +               ret = lp5523_run_program(engine);
-> > +
-> > +       else if (mode == LP5523_CMD_LOAD) {
-> > +
-> > +               lp5523_set_engine_mode(engine, LP5523_CMD_DISABLED);
-> > +               lp5523_set_engine_mode(engine, LP5523_CMD_LOAD);
-> > +
-> > +               ret = sysfs_create_group(&dev->kobj, engine->attributes);
-> > +               if (ret)
-> > +                       return ret;
-> > +       }
-> > +
-> 
-> Aaltosulut myos if:n jalkeiseen statementtiin....
-> 
-> t.m.a.
-> 
-> 
+f4347553b30ec66530bfe63c84530afea3803396 removed the edac polling
+mechanism in favor of using a notifier chain for conveying MCE
+information to edac. However, the module removal path didn't test
+whether the driver had setup the polling function workqueue at all and
+the rmmod process was hanging in the kernel at try_to_del_timer_sync()
+in the cancel_delayed_work() path while trying to cancel an
+uninitialized work struct.
+
+Fix that by adding a balancing check to the workqueue removal path.
+
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+
+diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
+index 3630308..6b21e25 100644
+--- a/drivers/edac/edac_mc.c
++++ b/drivers/edac/edac_mc.c
+@@ -339,6 +339,9 @@ static void edac_mc_workq_teardown(struct mem_ctl_info *mci)
+ {
+ 	int status;
+
++	if (mci->op_state != OP_RUNNING_POLL)
++		return;
++
+ 	status = cancel_delayed_work(&mci->work);
+ 	if (status == 0) {
+ 		debugf0("%s() not canceled, flush the queue\n",
+
+--
+
+The following changes since commit b30a3f6257ed2105259b404d419b4964e363928c:
+
+  Linux 2.6.36-rc5 (2010-09-20 16:56:53 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git for-linus
+
+Borislav Petkov (1):
+      amd64_edac: Fix driver module removal
+
+ drivers/edac/edac_mc.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
 
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
