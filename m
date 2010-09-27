@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758767Ab0I0CRY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 22:17:24 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54726 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757773Ab0I0CRW (ORCPT
+	id S1758782Ab0I0Cfj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 22:35:39 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:55645 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757758Ab0I0Cfh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 22:17:22 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [PATCH] mm: do not print backtraces on GFP_ATOMIC failures
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-In-Reply-To: <1285088427.2617.723.camel@edumazet-laptop>
-References: <20100921094638.9910add0.akpm@linux-foundation.org> <1285088427.2617.723.camel@edumazet-laptop>
-Message-Id: <20100927110723.6B37.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Mon, 27 Sep 2010 11:17:19 +0900 (JST)
+	Sun, 26 Sep 2010 22:35:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=q6P23zj66c61cridocZA2jez3lSPPOSAqovNw2saO3DqLxOC+D4ft6n3BTaTE0V9U0
+         YXScLYOt6FAEmRveC66kyxSKeDDjFEhBu51V6+uF6PcxKiHTRhN2np9jZDcvri0a1OBG
+         E9p9yoh7WRXHX8z+m0mun86XaxTcrbxqcXUWE=
+From: Otavio Salvador <otavio@ossystems.com.br>
+To: linux-kernel@vger.kernel.org
+Cc: Otavio Salvador <otavio@ossystems.com.br>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 4/4] net: r6040: store BIOS default MAC in perm_add
+Date: Sun, 26 Sep 2010 23:35:07 -0300
+Message-Id: <1285554907-4495-4-git-send-email-otavio@ossystems.com.br>
+X-Mailer: git-send-email 1.7.2.3.313.gcd15
+In-Reply-To: <1285554907-4495-1-git-send-email-otavio@ossystems.com.br>
+References: <1285554907-4495-1-git-send-email-otavio@ossystems.com.br>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > @@ -72,7 +72,7 @@ struct vm_area_struct;
-> > >  /* This equals 0, but use constants in case they ever change */
-> > >  #define GFP_NOWAIT	(GFP_ATOMIC & ~__GFP_HIGH)
-> > >  /* GFP_ATOMIC means both !wait (__GFP_WAIT not set) and use emergency pool */
-> > > -#define GFP_ATOMIC	(__GFP_HIGH)
-> > > +#define GFP_ATOMIC	(__GFP_HIGH | __GFP_NOWARN)
-> > >  #define GFP_NOIO	(__GFP_WAIT)
-> > >  #define GFP_NOFS	(__GFP_WAIT | __GFP_IO)
-> > >  #define GFP_KERNEL	(__GFP_WAIT | __GFP_IO | __GFP_FS)
-> > 
-> > A much finer-tuned implementation would be to add __GFP_NOWARN just to
-> > the networking call sites.  I asked about this in June and it got
-> > nixed:
-> > 
-> > http://www.spinics.net/lists/netdev/msg131965.html
-> > --
-> 
-> Yes, I remember this particular report was useful to find and correct a
-> bug.
-> 
-> I dont know what to say.
-> 
-> Being silent or verbose, it really depends on the context ?
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Otavio Salvador <otavio@ossystems.com.br>
+---
+ drivers/net/r6040.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-At least, MM developers don't want to track network allocation failure
-issue. We don't have enough knowledge in this area. To be honest, We 
-are unhappy current bad S/N bug report rate ;)
-
-Traditionally, We hoped this warnings help to debug VM issue. but
-It haven't happen. We haven't detect VM issue from this allocation
-failure report. Instead, We've received a lot of network allocation
-failure report.
-
-Recently, The S/N ratio became more bad. If the network device enable
-jumbo frame feature, order-2 GFP_ATOMIC allocation is called frequently.
-Anybody don't have to assume order-2 allocation can success anytime.
-
-I'm not against accurate warning at all. but I cant tolerate this
-semi-random warning steal our time. If anyone will not make accurate
-warning, I hope to remove this one completely instead.
-
-
-
-
+diff --git a/drivers/net/r6040.c b/drivers/net/r6040.c
+index 142c381..5780d08 100644
+--- a/drivers/net/r6040.c
++++ b/drivers/net/r6040.c
+@@ -740,6 +740,9 @@ static void r6040_mac_address(struct net_device *dev)
+ 	iowrite16(adrp[0], ioaddr + MID_0L);
+ 	iowrite16(adrp[1], ioaddr + MID_0M);
+ 	iowrite16(adrp[2], ioaddr + MID_0H);
++
++	/* Store MAC Address in perm_addr */
++	memcpy(dev->perm_addr, dev->dev_addr, ETH_ALEN);
+ }
+ 
+ static int r6040_open(struct net_device *dev)
+-- 
+1.7.2.3.313.gcd15
 
