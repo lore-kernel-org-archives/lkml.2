@@ -1,102 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760054Ab0I0TGc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 15:06:32 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:60093 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757120Ab0I0TGb convert rfc822-to-8bit (ORCPT
+	id S1760060Ab0I0TJf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 15:09:35 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:56673 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757175Ab0I0TJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 15:06:31 -0400
-MIME-Version: 1.0
-X-Originating-IP: [46.116.86.31]
-In-Reply-To: <AANLkTi=2KqQb+gvuigxb+-tSzawx7=q3HtnkkE6t_4XF@mail.gmail.com>
-References: <20100927154408.55a28127.sfr@canb.auug.org.au> <AANLkTinHk82jM7Ztwb1aB1xb-hSLeg5Hb07mhYCaeszi@mail.gmail.com>
- <20100927180412.GD11086@tuxdriver.com> <20100927.111818.149846920.davem@davemloft.net>
- <20100927182546.GE11086@tuxdriver.com> <AANLkTi=YHhRWFix1QDuEnRW7r_UaNtp6KSL9uLdUzdqM@mail.gmail.com>
- <20100927184445.GF11086@tuxdriver.com> <AANLkTi=2KqQb+gvuigxb+-tSzawx7=q3HtnkkE6t_4XF@mail.gmail.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Mon, 27 Sep 2010 21:06:09 +0200
-Message-ID: <AANLkTim9nHmhNLmECnYk-OHYmyk96tz65kd=ybz24M3Y@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the final tree (net tree related)
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: David Miller <davem@davemloft.net>, sfr@canb.auug.org.au,
-        netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 27 Sep 2010 15:09:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=P/V4WFDcuEoi7njKZ7yWSWklAWKXAFmw6Faf6rQWSmkos5OdUeCzHKv0kQpKz7fDJK
+         CKUyDJqUovc1Z7zS1SasvrlNgln/c2Fb2iyrg+sq0lco3wCThs9gOsQN41UQKozBKOdg
+         dK3h4zuXO3zk/s7BEriD10BjrPXx7VHhivwBI=
+Date: Mon, 27 Sep 2010 15:09:30 -0400
+From: tmhikaru@gmail.com
+To: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: Linux 2.6.35.6
+Message-ID: <20100927190930.GA7086@roll>
+References: <20100927003608.GA20395@kroah.com> <20100927163208.GA4892@roll> <20100927175412.GA23347@suse.de>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xHFwDpU9dbj6ez1V"
+Content-Disposition: inline
+In-Reply-To: <20100927175412.GA23347@suse.de>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 9:01 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> On Mon, Sep 27, 2010 at 8:44 PM, John W. Linville
-> <linville@tuxdriver.com> wrote:
->> On Mon, Sep 27, 2010 at 08:38:50PM +0200, Ohad Ben-Cohen wrote:
->>> On Mon, Sep 27, 2010 at 8:25 PM, John W. Linville
->>> <linville@tuxdriver.com> wrote:
->>> >> BTW, if this fuglet going to work if the driver is built modular?
->>> >>
->>> >> The idea of this things seems to be to allow arch platform code to call
->>> >> into it to set things.  Such calls from arch platform code are going
->>> >> to be "obj-y"
->>> >>
->>> >> So if this is built into the modular driver, I can't see how it
->>> >> can work.
->>> >
->>> > Dave is right -- these Kconfig dependencies (or lack thereof) seem
->>> > to be wrong.
->>>
->>> This is why I had to put it in drivers/net/wireless/Makefile (in both
->>> the original patch and in the fix I sent earlier) and not in
->>> drivers/net/wireless/wl12xx/Makefile (as it was in the fix that Dave
->>> was referring to).
->>>
->>> This way it works with a modular driver.
->>
->> That doesn't seem very helpful if someone selects
->>
->> CONFIG_MACH_OMAP_ZOOM2=y
->> CONFIG_WL12XX_PLATFORM_DATA=n
 
+--xHFwDpU9dbj6ez1V
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-That's a good point (it's a separate issue); we need to have a select there.
+On Mon, Sep 27, 2010 at 10:54:12AM -0700, Greg KH wrote:
+> On Mon, Sep 27, 2010 at 12:32:08PM -0400, tmhikaru@gmail.com wrote:
+> > 	I'm not exactly sure what's going on here and I'd like some help
+> > figuring out what is. For some inexplicable reason, ever since I started
+> > using the 2.6.35.x series with the 2.6.35.3 release, my loadaverages te=
+nd to
+> > bounce anywhere from as low to .2 to 1.5 - constantly, while the machine
+> > seems idle.
+>=20
+> But .34 doesn't show this issue?
+>=20
+> If so, can you run 'git bisect' between the .34 and .35 releases to find
+> out where the problem comes in?
 
-I'll send a patch.
+=2E34 does not, that is correct.
+>=20
+> > Consistently, there are no programs in D state in ps aux output,
+> > no cpu hogging programs running in top, nothing I can see that should
+> > explain the bizzarely high load average.
+>=20
+> Loadaverage can be affected by a driver doing an uninteruptable sleep.
+> This doesn't actually cause a load on the system, but it does affect the
+> way that number is calcuated.  Perhaps that's the problem here.
+>
 
->>
->
-> CONFIG_WL12XX_PLATFORM_DATA is selected automatically if the relevant
-> driver is selected (this is independent of the underlying arch/board):
->
-> config WL12XX_PLATFORM_DATA
->        bool
->        depends on WL1271_SDIO != n
->        default y
->
-> All we have to make sure is that it will be compiled built-in. If we
-> use drivers/net/wireless/wl12xx/Makefile, and we build a modular
-> wl1271_sdio, it won't (despite it being selected as y).
->
-> That's why I put it in drivers/net/wireless/Makefile.
->
-> In the original patch I put the code itself in
-> drivers/net/wireless/wl12xx to make it look nicer, but as Stephen
-> reported that seem to break building with a separate object folder...
->
-> So the fix I sent just moves that builtin code to
-> drivers/net/wireless. This maintains the builtin property even if the
-> driver is modular, and fixes the issue reported by Stephen.
->
-> Please tell me if you have any thoughts/suggestions.
->
-> Thanks,
-> Ohad.
->
->> or am I missing something?
->>
->> John
->> --
->> John W. Linville                Someday the world will need a hero, and you
->> linville@tuxdriver.com                  might be all we have.  Be ready.
->>
->
+That would explain a lot.
+> > 	If you have any tips or recommendations on what I should use to
+> > investigate this further, please let me know. Once I have ensured to my=
+ own
+> > satisfaction that I'm not doing something bizzare that's screwing up my
+> > machine, I'll make a detailed bug report and start on figuring out how =
+to
+> > use git bisect.
+>=20
+> 'man git-bisect' will help with this :)
+>=20
+> thanks,
+>=20
+> greg k-h
+
+Thank you for the tips. If I don't find anything obvious I'll bisect it very
+soon, but I'll likely attempt to track backwards from .3 myself since I've
+backtracked through patches before. Once I have narrowed it down to a patch
+release it'll likely take less time to bisect. (eg, if I know it happened
+between 2.6.35-rc1 and rc2 I'd only have to bisect the patches between those
+versions, whereas right now I only know positively between 2.6.34 and
+2.6.35.3 something went wrong.)
+
+Tim McGrath
+
+--xHFwDpU9dbj6ez1V
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEVAwUBTKDr6pEncCrqzVruAQJLSgf+P4KzAKCCVEpDhxYz2PCWo//buyP/+gRP
+APMqLFWHiiyTi+LHWi1pl64AqgHoqUD2Vr0ljz8Cuz28mT5D7bIXZOGBMISr5gUe
+ReyQxR8zd51ufQF2pm0Hu9r9jyuTM+9iW9tsfQ/o5BpviaZTOERi/17ScuS3GK2h
+O+/wooLvdpTJHtfHt4WFiK1ZXbt6bCTG8PSRrQuKCPNt9liGrz+lXDW+wt+N9p3t
+HRPmt6ISDFLG0ZTwzkaUvpKLHpdlF3AA6InHKe5pc8VvLqtFbUi4YdxpmnLXs9mi
+F297U4UiSKNA61OfxH6kvJLGSJqPjqhkzeN1LF8oYznxpVMElZhP3Q==
+=0BTF
+-----END PGP SIGNATURE-----
+
+--xHFwDpU9dbj6ez1V--
