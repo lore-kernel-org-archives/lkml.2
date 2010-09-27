@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759425Ab0I0RCl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 13:02:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57716 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756287Ab0I0RCk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 13:02:40 -0400
-Subject: Re: [PATCH 3/6] secmark: export binary yes/no rather than kernel
- internal secid
-From: Eric Paris <eparis@redhat.com>
-To: James Morris <jmorris@namei.org>
-Cc: linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov,
-        netfilter-devel@vger.kernel.org, sds@tycho.nsa.gov, jengelh@medozas.de,
-        paul.moore@hp.com, casey@schaufler-ca.com,
-        linux-security-module@vger.kernel.org, netfilter@vger.kernel.org,
-        mr.dash.four@googlemail.com
-In-Reply-To: <alpine.LRH.2.00.1009271038280.25748@tundra.namei.org>
-References: <20100924204517.28355.42822.stgit@paris.rdu.redhat.com>
-	 <20100924204531.28355.20320.stgit@paris.rdu.redhat.com>
-	 <alpine.LRH.2.00.1009271038280.25748@tundra.namei.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 27 Sep 2010 13:01:36 -0400
-Message-ID: <1285606896.2815.36.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759517Ab0I0RFJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 13:05:09 -0400
+Received: from shakespeare.ccsl.carleton.ca ([134.117.225.11]:32771 "EHLO
+	shakespeare.ccsl.carleton.ca" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756459Ab0I0RFH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 13:05:07 -0400
+Date: Mon, 27 Sep 2010 13:04:30 -0400
+From: Glenn Wurster <gwurster@scs.carleton.ca>
+To: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH linux-2.6 v2] IPv6:  Create temporary address if none
+	exists.
+Message-ID: <20100927170430.GA7106@adams.ccsl.carleton.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-TUID: 74e835a4da6b3e7d
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-27 at 10:50 +1000, James Morris wrote:
-> On Fri, 24 Sep 2010, Eric Paris wrote:
+If privacy extentions are enabled, but no current temporary address exists,
+then create one when we get a router advertisement.
 
-> For the reasons above, I think the secctx string needs to be exported in 
-> addition to this rather than instead of.
+Version 2, now with 100% fewer line wraps.  Thanks to David Miller for
+pointing out the line wrapping issue.
 
-I won't argue, I don't agree with your reasoning, but I'm not opposed to
-this result.  We have 3 competing suggestions:
+Signed-off-by: Glenn Wurster <gwurster@scs.carleton.ca>
+---
+ net/ipv6/addrconf.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-Jan suggested we:
-completely eliminate secmark from procfs+netlink and only export secctx
-in netlink.
+diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+index ab70a3f..cfee6ae 100644
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -2022,10 +2022,11 @@ ok:
+ 					ipv6_ifa_notify(0, ift);
+ 			}
+ 
+-			if (create && in6_dev->cnf.use_tempaddr > 0) {
++			if ((create || list_empty(&in6_dev->tempaddr_list)) && in6_dev->cnf.use_tempaddr > 0) {
+ 				/*
+ 				 * When a new public address is created as described in [ADDRCONF],
+-				 * also create a new temporary address.
++				 * also create a new temporary address. Also create a temporary
++				 * address if it's enabled but no temporary address currently exists.
+ 				 */
+ 				read_unlock_bh(&in6_dev->lock);
+ 				ipv6_create_tempaddr(ifp, NULL);
+-- 
+1.5.6.5
 
-Eric suggested we:
-completely eliminate secmark from procfs+netlink and then export secctx
-in procfs+netlink
-
-sounds like James suggested we:
-continue to export meaningless and confusing secmark from procfs+netlink
-and then export secctx in procfs+netlink as well.
-
-I'm going to implement James' idea and resend the patch series.  Any
-strong objections?
-
--Eric
 
