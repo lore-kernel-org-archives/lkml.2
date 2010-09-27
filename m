@@ -1,91 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933164Ab0I0XRD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 19:17:03 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:45921 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756413Ab0I0XRB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 19:17:01 -0400
-Message-Id: <1285629420.10278.1397188599@webmail.messagingengine.com>
-X-Sasl-Enc: um9IF2Hx2dx0TK/Un1IXX0MxBeGYDi5v2o82XCd7nU5n 1285629420
-From: "Robert Mueller" <robm@fastmail.fm>
-To: "Christoph Lameter" <cl@linux.com>,
-        "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>
-Cc: "Mel Gorman" <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-        "Bron Gondwana" <brong@fastmail.fm>, "linux-mm" <linux-mm@kvack.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: MessagingEngine.com Webmail Interface
-References: <52C8765522A740A4A5C027E8FDFFDFE3@jem>
- <20100921090407.GA11439@csn.ul.ie>
- <20100927110049.6B31.A69D9226@jp.fujitsu.com>
- <alpine.DEB.2.00.1009270828510.7000@router.home>
-Subject: Re: Default zone_reclaim_mode = 1 on NUMA kernel is bad
- forfile/email/web servers
-In-Reply-To: <alpine.DEB.2.00.1009270828510.7000@router.home>
-Reply-To: robm@fastmail.fm
-Date: Tue, 28 Sep 2010 09:17:00 +1000
+	id S1760520Ab0I0XSK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 19:18:10 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:55713 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759394Ab0I0XSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 19:18:08 -0400
+From: Nishanth Aravamudan <nacc@us.ibm.com>
+To: nacc@us.ibm.com
+Cc: miltonm@bga.com, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: [RFC PATCH 0/2] Fix IRQ round-robing w/o irqbalance on pseries
+Date: Mon, 27 Sep 2010 16:17:41 -0700
+Message-Id: <1285629463-27699-1-git-send-email-nacc@us.ibm.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We have received reports on power systems not running irqbalance where
+all interrupts are being routed to CPU0 rather than being interleaved by
+default across the system. Current firmware only allows either sending
+interrupts to all CPUs or sending them to one CPU. The following two
+patches address this issue by fixing the mask used in generic code and
+by fixing the check for the "all" setting in the pseries code.
 
-> You can switch off zone reclaim of course which means that the
-> applications will not be getting memory thats optimal for them to access.
+Nishanth Aravamudan (2):
+  IRQ: use cpu_possible_mask rather than online_mask in setup_affinity
+  pseries/xics: use cpu_possible_mask rather than cpu_all_mask
 
-That's true, but also remember that going to disk is going to be way
-more expensive than memory on another node. What we found was that data
-that should have been cached because it was being accessed a lot, wasn't
-being cached, so it had to keep going back to disk to get it. That's
-even worse.
+ arch/powerpc/platforms/pseries/xics.c |    2 +-
+ kernel/irq/manage.c                   |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-> 1. Fix the ACPI information to indicate lower memory access
->    differences (was that info actually acurate?) so that zone reclaim
->    defaults to off.
-> 
-> 2. Change the RECLAIM_DISTANCE setting for the arch so that the ACPI
->    information does not trigger zone reclaim to be enabled.
+Cc: linuxppc-dev@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org
 
-How would the ACPI information actually be changed?
-
-I ran numactl -H to get the hardware information, and that seems to
-include distances. As mentioned previously, this is a very standard
-Intel server motherboard.
-
-http://www.intel.com/Products/Server/Motherboards/S5520UR/S5520UR-specifications.htm
-
-Intel 5520 chipset with Intel I/O Controller Hub ICH10R
-
-$ numactl -H
-available: 2 nodes (0-1)
-node 0 cpus: 0 2 4 6 8 10 12 14
-node 0 size: 24517 MB
-node 0 free: 1523 MB
-node 1 cpus: 1 3 5 7 9 11 13 15
-node 1 size: 24576 MB
-node 1 free: 39 MB
-node distances:
-node   0   1
-  0:  10  21
-  1:  21  10
-
-Since I'm not sure what the "distance" values mean, I have no idea if
-those values large or not?
-
-> 3. Run the application with numactl settings for interleaving of
->    memory accesses (or corresponding cpuset settings).
->
-> 4. Fix the application to be conscious of the effect of memory
->    allocations on a NUMA systems. Use the numa memory allocations API
->    to allocate anonymous memory locally for optimal access and set
->    interleave for the file backed pages.
-
-The problem we saw was purely with file caching. The application wasn't
-actually allocating much memory itself, but it was reading lots of files
-from disk (via mmap'ed memory mostly), and as most people would, we
-expected that data would be cached in memory to reduce future reads from
-disk. That was not happening.
-
-Rob
