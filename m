@@ -1,105 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757586Ab0I0IQX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 04:16:23 -0400
-Received: from mail-tx2.bigfish.com ([65.55.88.10]:37048 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754170Ab0I0IQW (ORCPT
+	id S1758916Ab0I0IRN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 04:17:13 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35647
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754170Ab0I0IRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 04:16:22 -0400
-X-Greylist: delayed 903 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Sep 2010 04:16:22 EDT
-X-SpamScore: -15
-X-BigFish: VPS-15(zzbb2cK1432N98dN10d1Izz1202hzz8275bhz32i2a8h43h)
-X-WSS-ID: 0L9EBLS-02-3FO-02
-X-M-MSG: 
-Date: Mon, 27 Sep 2010 10:01:06 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Huang Ying <ying.huang@intel.com>
-CC: Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v2 3/7] x86, NMI, Rename memory parity error to PCI
- SERR error
-Message-ID: <20100927080106.GA32222@erda.amd.com>
-References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
- <1285549026-5008-3-git-send-email-ying.huang@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1285549026-5008-3-git-send-email-ying.huang@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+	Mon, 27 Sep 2010 04:17:12 -0400
+Date: Mon, 27 Sep 2010 01:17:32 -0700 (PDT)
+Message-Id: <20100927.011732.42806207.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ohad@wizery.com, linville@tuxdriver.com
+Subject: Re: linux-next: build failure after merge of the final tree (net
+ tree related)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100927154408.55a28127.sfr@canb.auug.org.au>
+References: <20100927154408.55a28127.sfr@canb.auug.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.09.10 20:57:02, Huang Ying wrote:
-> memory parity error is only valid for IBM PC-AT, newer machine use 7
-> bit (0x80) of 0x61 port for PCI SERR. While memory error is usually
-> reported via MCE. So corresponding function name and kernel log string
-> is changed.
-> 
-> But on some machines, PCI SERR line is still used to report memory
-> errors. This is used by EDAC, so corresponding EDAC call is reserved.
-> 
-> 
-> v2:
-> 
-> - EDAC call in pci_serr_error is reserved.
-> 
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
-> ---
->  arch/x86/include/asm/mach_traps.h |    6 +++---
->  arch/x86/kernel/traps.c           |   21 ++++++++++-----------
->  2 files changed, 13 insertions(+), 14 deletions(-)
-> 
-> --- a/arch/x86/include/asm/mach_traps.h
-> +++ b/arch/x86/include/asm/mach_traps.h
-> @@ -9,11 +9,11 @@
->  
->  #define NMI_REASON_PORT		0x61
->  
-> -#define NMI_REASON_MEMPAR	0x80
-> +#define NMI_REASON_SERR		0x80
->  #define NMI_REASON_IOCHK	0x40
-> -#define NMI_REASON_MASK		(NMI_REASON_MEMPAR | NMI_REASON_IOCHK)
-> +#define NMI_REASON_MASK		(NMI_REASON_SERR | NMI_REASON_IOCHK)
->  
-> -#define NMI_REASON_CLEAR_MEMPAR	0x04
-> +#define NMI_REASON_CLEAR_SERR	0x04
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 27 Sep 2010 15:44:08 +1000
 
-I already commented on this, patch #1 and #3 are basically the same in
-most parts which should be merged. What remains then in this patch is
-the modified printk() and the comment. Both could be added to #1 too
-which is then some sort of code cleanup patch.
+> After merging the final tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> Assembler messages:
+> Fatal error: can't create drivers/net/wireless/wl12xx/.tmp_wl12xx_platform_data.o: No such file or directory
+> drivers/net/wireless/wl12xx/wl12xx_platform_data.c: In function 'wl12xx_get_platform_data':
+> drivers/net/wireless/wl12xx/wl12xx_platform_data.c:28: error: cannot open drivers/net/wireless/wl12xx/.tmp_wl12xx_platform_data.gcno
+> drivers/net/wireless/wl12xx/wl12xx_platform_data.c:28: confused by earlier errors, bailing out
+> 
+> Presumably caused by commit 61ee7007a5d61aa066076da578e8e8084e122d7d
+> ("wl12xx: add platform data passing support").
+> 
+> I do my builds with a separate object directory (which may be a reason
+> you don't see this).
 
->  #define NMI_REASON_CLEAR_IOCHK	0x08
->  #define NMI_REASON_CLEAR_MASK	0x0f
->  
-> --- a/arch/x86/kernel/traps.c
-> +++ b/arch/x86/kernel/traps.c
-> @@ -301,15 +301,14 @@ gp_in_kernel:
->  }
->  
->  static notrace __kprobes void
-> -mem_parity_error(unsigned char reason, struct pt_regs *regs)
-> +pci_serr_error(unsigned char reason, struct pt_regs *regs)
->  {
-> -	printk(KERN_EMERG
-> -		"Uhhuh. NMI received for unknown reason %02x on CPU %d.\n",
-> -			reason, smp_processor_id());
-> -
-> -	printk(KERN_EMERG
-> -		"You have some hardware problem, likely on the PCI bus.\n");
-> +	printk(KERN_EMERG "NMI: PCI system error (SERR).\n");
-
-You should keep reporting the cpu id to identify the affected node and
-also the reason.
-
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+John, please get this fixed, thanks.
