@@ -1,121 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758966Ab0I0IiJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 04:38:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49424 "EHLO mx1.redhat.com"
+	id S932907Ab0I0IjY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 04:39:24 -0400
+Received: from mga01.intel.com ([192.55.52.88]:4270 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752833Ab0I0IiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 04:38:07 -0400
-Message-ID: <4CA057EA.7000609@redhat.com>
-Date: Mon, 27 Sep 2010 10:38:02 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
-MIME-Version: 1.0
-To: x86@kernel.org
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH] x86, nmi: workaround sti; hlt race vs nmi; intr
-References: <1284913699-14986-1-git-send-email-avi@redhat.com>
-In-Reply-To: <1284913699-14986-1-git-send-email-avi@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S932844Ab0I0IjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 04:39:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,242,1283756400"; 
+   d="scan'208";a="841217077"
+Subject: Re: [PATCH -v2 3/7] x86, NMI, Rename memory parity error to PCI
+ SERR error
+From: Huang Ying <ying.huang@intel.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+In-Reply-To: <20100927080106.GA32222@erda.amd.com>
+References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
+	 <1285549026-5008-3-git-send-email-ying.huang@intel.com>
+	 <20100927080106.GA32222@erda.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 27 Sep 2010 16:39:20 +0800
+Message-ID: <1285576760.20791.70.camel@yhuang-dev>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 09/19/2010 06:28 PM, Avi Kivity wrote:
-> On machines without monitor/mwait we use an sti; hlt sequence to atomically
-> enable interrupts and put the cpu to sleep.  The sequence uses the "interrupt
-> shadow" property of the sti instruction: interrupts are enabled only after
-> the instruction following sti has been executed.  This means an interrupt
-> cannot happen in the middle of the sequence, which would leave us with
-> the interrupt processed but the cpu halted.
->
-> The interrupt shadow, however, can be broken by an nmi; the following
-> sequence
->
->     sti
->       nmi ... iret
->       # interrupt shadow disabled
->       intr ... iret
->     hlt
->
-> puts the cpu to sleep, even though the interrupt may need additional processing
-> after the hlt (like scheduling a task).
->
-> sti is explicitly documented not to force an interrupt shadow; though many
-> processors do inhibit nmi immediately after sti.
->
-> Avoid the race by checking, during an nmi, if we hit the safe halt sequence.
-> If we did, increment the instruction pointer past the hlt instruction; this
-> allows an immediately following interrupt to return to a safe place.
->
-> Signed-off-by: Avi Kivity<avi@redhat.com>
+On Mon, 2010-09-27 at 16:01 +0800, Robert Richter wrote:
+> On 26.09.10 20:57:02, Huang Ying wrote:
+> > memory parity error is only valid for IBM PC-AT, newer machine use 7
+> > bit (0x80) of 0x61 port for PCI SERR. While memory error is usually
+> > reported via MCE. So corresponding function name and kernel log string
+> > is changed.
+> > 
+> > But on some machines, PCI SERR line is still used to report memory
+> > errors. This is used by EDAC, so corresponding EDAC call is reserved.
+> > 
+> > 
+> > v2:
+> > 
+> > - EDAC call in pci_serr_error is reserved.
+> > 
+> > Signed-off-by: Huang Ying <ying.huang@intel.com>
+> > ---
+> >  arch/x86/include/asm/mach_traps.h |    6 +++---
+> >  arch/x86/kernel/traps.c           |   21 ++++++++++-----------
+> >  2 files changed, 13 insertions(+), 14 deletions(-)
+> > 
+> > --- a/arch/x86/include/asm/mach_traps.h
+> > +++ b/arch/x86/include/asm/mach_traps.h
+> > @@ -9,11 +9,11 @@
+> >  
+> >  #define NMI_REASON_PORT		0x61
+> >  
+> > -#define NMI_REASON_MEMPAR	0x80
+> > +#define NMI_REASON_SERR		0x80
+> >  #define NMI_REASON_IOCHK	0x40
+> > -#define NMI_REASON_MASK		(NMI_REASON_MEMPAR | NMI_REASON_IOCHK)
+> > +#define NMI_REASON_MASK		(NMI_REASON_SERR | NMI_REASON_IOCHK)
+> >  
+> > -#define NMI_REASON_CLEAR_MEMPAR	0x04
+> > +#define NMI_REASON_CLEAR_SERR	0x04
+> 
+> I already commented on this, patch #1 and #3 are basically the same in
+> most parts which should be merged. What remains then in this patch is
+> the modified printk() and the comment. Both could be added to #1 too
+> which is then some sort of code cleanup patch.
 
-Ping.
+Don thinks it is Ok to keep 2 patches.
 
-> ---
->   arch/x86/include/asm/irqflags.h |   18 +++++++++++++++++-
->   arch/x86/kernel/traps.c         |   14 ++++++++++++++
->   2 files changed, 31 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/x86/include/asm/irqflags.h b/arch/x86/include/asm/irqflags.h
-> index 9e2b952..f412167 100644
-> --- a/arch/x86/include/asm/irqflags.h
-> +++ b/arch/x86/include/asm/irqflags.h
-> @@ -44,9 +44,25 @@ static inline void native_irq_enable(void)
->   	asm volatile("sti": : :"memory");
->   }
->
-> +extern void safe_halt_addr(void);
-> +
->   static inline void native_safe_halt(void)
->   {
-> -	asm volatile("sti; hlt": : :"memory");
-> +	asm volatile("sti \n\t"
-> +		     /*
-> +		      * If NMI hits us here, it negates the interrupt shadow
-> +		      * induced by STI.  So the NMI handler checks for
-> +		      * safe_halt_addr and skips the hlt if it loses the
-> +		      * interrupt shadow.
-> +		      *
-> +		      * If native_safe_halt() is ever instantiated more
-> +		      * than once, this will fail to build, and we'll need
-> +		      * a list of addresses in a special section.
-> +		      */
-> +		     ".globl safe_halt_addr \n\t"
-> +		     "safe_halt_addr: \n\t"
-> +		     "hlt"
-> +		     : : :"memory");
->   }
->
->   static inline void native_halt(void)
-> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-> index 60788de..f67da48 100644
-> --- a/arch/x86/kernel/traps.c
-> +++ b/arch/x86/kernel/traps.c
-> @@ -438,6 +438,20 @@ do_nmi(struct pt_regs *regs, long error_code)
->
->   	inc_irq_stat(__nmi_count);
->
-> +	/*
-> +	 * We hit in the middle of an sti; hlt instruction.  When we return,
-> +	 * the interrupt shadow cast by sti will no longer be in effect; then,
-> +	 * if an interrupt causes a wakeup, we won't notice it since the hlt
-> +	 * will take effect and block the cpu.
-> +	 *
-> +	 * If we detect this situation, fix it by advancing the instruction
-> +	 * pointer past the hlt instruction; if the interrupt doesn't happen,
-> +	 * we'll spend a few cycles falling asleep again, but that's better
-> +	 * than a missed wakeup.
-> +	 */
-> +	if (regs->cs == __KERNEL_CS&&  regs->ip == (ulong)safe_halt_addr)
-> +		++regs->ip;
-> +
->   	if (!ignore_nmis)
->   		default_do_nmi(regs);
->
+> >  #define NMI_REASON_CLEAR_IOCHK	0x08
+> >  #define NMI_REASON_CLEAR_MASK	0x0f
+> >  
+> > --- a/arch/x86/kernel/traps.c
+> > +++ b/arch/x86/kernel/traps.c
+> > @@ -301,15 +301,14 @@ gp_in_kernel:
+> >  }
+> >  
+> >  static notrace __kprobes void
+> > -mem_parity_error(unsigned char reason, struct pt_regs *regs)
+> > +pci_serr_error(unsigned char reason, struct pt_regs *regs)
+> >  {
+> > -	printk(KERN_EMERG
+> > -		"Uhhuh. NMI received for unknown reason %02x on CPU %d.\n",
+> > -			reason, smp_processor_id());
+> > -
+> > -	printk(KERN_EMERG
+> > -		"You have some hardware problem, likely on the PCI bus.\n");
+> > +	printk(KERN_EMERG "NMI: PCI system error (SERR).\n");
+> 
+> You should keep reporting the cpu id to identify the affected node and
+> also the reason.
 
+Ok. I will add CPU ID in message. Because we know the reason, I don't
+think we need the reason in message.
 
--- 
-error compiling committee.c: too many arguments to function
+Best Regards,
+Huang Ying
+
 
