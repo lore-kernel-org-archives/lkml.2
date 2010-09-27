@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933273Ab0I0Q0P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 12:26:15 -0400
-Received: from jurassic.park.msu.ru ([195.208.223.243]:47177 "EHLO
-	jurassic.park.msu.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933262Ab0I0Q0N (ORCPT
+	id S1759790Ab0I0Qbq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 12:31:46 -0400
+Received: from sj-iport-5.cisco.com ([171.68.10.87]:27896 "EHLO
+	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755682Ab0I0Qbp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 12:26:13 -0400
-Date: Mon, 27 Sep 2010 20:26:10 +0400
-From: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, rth@twiddle.net,
-        linux-kernel@vger.kernel.org, Matt Turner <mattst88@gmail.com>
-Subject: Re: alpha: potential race around hae_cache in RESTORE_ALL
-Message-ID: <20100927162610.GA18373@jurassic.park.msu.ru>
-References: <20100925181304.GV19804@ZenIV.linux.org.uk> <AANLkTi=XURM0hOiitvNSiacd9+7Vx8s7V0KZ+oZQsDDQ@mail.gmail.com> <20100925191836.GW19804@ZenIV.linux.org.uk> <20100925192509.GX19804@ZenIV.linux.org.uk> <20100927075828.GA15344@jurassic.park.msu.ru> <20100927121227.GB19804@ZenIV.linux.org.uk> <20100927124624.GC19804@ZenIV.linux.org.uk>
+	Mon, 27 Sep 2010 12:31:45 -0400
+Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEADVjoEyrR7Ht/2dsb2JhbACiLnGsBpw7hUQEhFCFag
+X-IronPort-AV: E=Sophos;i="4.57,243,1283731200"; 
+   d="scan'208";a="261228324"
+From: Roland Dreier <rdreier@cisco.com>
+To: torvalds@linux-foundation.org, akpm@linux-foundation.org
+Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] please pull infiniband.git
+X-Message-Flag: Warning: May contain useful information
+Date: Mon, 27 Sep 2010 09:31:40 -0700
+Message-ID: <ada1v8f87wz.fsf@cisco.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100927124624.GC19804@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 01:46:24PM +0100, Al Viro wrote:
-> AFAICS, we have 3 variants:
-> 	1) alpha_mv.hae_register == &alpha_mv.hae_cache; all that code
-> becomes a no-op.
-> 	2) UP boxen with hae_register pointing someplace real; we save
-> HAE in SAVE_ALL, restore it in RESTORE_ALL and disable interrupts around
-> the updates of hae_cache/*hae_register to keep them in sync.  readl()
-> et.al. set HAE, then do memory access and rely on not giving CPU up between
-> these moments.  Since alpha doesn't do PREEMPT, we are OK (otherwise we'd
-> needed to disable preempt in those places; also not a big deal)
-> 	3) SMP t2 boxen; we protect the entire sequence from setting HAE to
-> memory access with spinlock and with disabling interrupts.  We don't rely on
-> interrupts not modifying the damn thing, but we *do* rely on other CPU not
-> messing with HAE on syscall paths outside of spinlock-protected area.  And
-> we have RESTORE_ALL hit us on all exits to userland, interrupt, trap and
-> syscall alike.
-> 
-> 	Looks like (3) has always been broken...
+Linus, please pull from
 
-Ah, agreed with all of the above.
+    master.kernel.org:/pub/scm/linux/kernel/git/roland/infiniband.git for-linus
 
-Looks like we need to drop HAE bits from SAVE_ALL/RESTORE_ALL, which
-benefits (1) and automatically fixes (3), and do the entire IO sequences
-in (2) with disabled interrupts (if HAE is involved).
-The latter includes apecs, lca and jensen.
+This tree is also available from kernel.org mirrors at:
 
-Ivan.
+    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git for-linus
+
+This will get one cxgb3 driver fix:
+
+Steve Wise (1):
+      RDMA/cxgb3: Turn off RX coalescing for iWARP connections
+
+ drivers/infiniband/hw/cxgb3/iwch_cm.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
