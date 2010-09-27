@@ -1,110 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759501Ab0I0Q7o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 12:59:44 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:59187 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759434Ab0I0Q7m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 12:59:42 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
-        "xiyou.wangcong\@gmail.com" <xiyou.wangcong@gmail.com>,
-        "paulmck\@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "simon.kagstrom\@netinsight.net" <simon.kagstrom@netinsight.net>,
-        "kexec\@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        "dle-develop\@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        "David.Woodhouse\@intel.com" <David.Woodhouse@intel.com>,
-        "anton\@samba.org" <anton@samba.org>,
-        "ben\@decadent.org.uk" <ben@decadent.org.uk>,
-        "randy.dunlap\@oracle.com" <randy.dunlap@oracle.com>,
-        "jason.wessel\@windriver.com" <jason.wessel@windriver.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C0979C90E@USINDEVS01.corp.hds.com>
-	<m1wrql2sf1.fsf@fess.ebiederm.org>
-	<5C4C569E8A4B9B42A84A977CF070A35B2C0DCFFB3E@USINDEVS01.corp.hds.com>
-Date: Mon, 27 Sep 2010 09:59:28 -0700
-In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C0DCFFB3E@USINDEVS01.corp.hds.com>
-	(Seiji Aguchi's message of "Fri, 24 Sep 2010 09:08:14 -0400")
-Message-ID: <m1eicfp1fz.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 98.207.157.188
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Seiji Aguchi <seiji.aguchi@hds.com>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC][PATCH] Fix kexec abort due to IPI from panic().
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	id S1759525Ab0I0RAa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 13:00:30 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:36612 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759342Ab0I0RA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 13:00:29 -0400
+Date: Mon, 27 Sep 2010 19:00:26 +0200
+From: Florian Mickler <florian@mickler.org>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: RFC: get_maintainer.pl: append reason for cc to the name by
+ default
+Message-ID: <20100927190026.20ddc268@schatten.dmk.lab>
+In-Reply-To: <20100927154441.GE3602@thunk.org>
+References: <1284111212-10659-1-git-send-email-florian@mickler.org>
+	<1285527125.1732.24.camel@Joe-Laptop>
+	<20100927165748.354742f2@schatten.dmk.lab>
+	<20100927154441.GE3602@thunk.org>
+X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seiji Aguchi <seiji.aguchi@hds.com> writes:
+On Mon, 27 Sep 2010 11:44:41 -0400
+Ted Ts'o <tytso@mit.edu> wrote:
 
-> Hi Eric,
->
-> This is a patch which makes kmsg_dump() non-blocking.
-> Please give me your comments and suggestions.
->
-> I improved it as follows.
->
-> (1) Improvement of dump_list_lock
->     (1-1) I changed dump_list to RCU for deleting dump_list_lock in kmsg_dump().
->     (1-2) I moved kmsg_dump(KMSG_DUMP_KEXEC) behind machine_crash_shutdown() 
->           for avoiding concurrent execution of dump_list functions.
->     (1-3) I also moved kmsg_dump(KMSG_DUMP_PANIC) behind smp_send_stop() for the 
->           same reason.
->  
-> (2) Improvement of logbuf_lock
->     I added spinlock_init(&logbuf_lock) when executing kmsg_dump() in kexec or panic path
->     for preventing dead lock.
->
-> We can delete blocking kmsg_dump call in crash_kexec and panic path.
+> On Mon, Sep 27, 2010 at 04:57:48PM +0200, Florian Mickler wrote:
+> > 
+> > Would in essence have the same effect, but I think it's slightly better
+> > to have some shorter tags in the mail addresses, as I expect them to
+> > actually show up on lkml quite a bit.
+> 
+> What if there are no tags on mail addresses that come from the
+> MAINTAINERS file, but only tags on the mail addresses that come from
+> guessing wildly based on git sign-offs?  People should just be looking
+> in the MAINTAINERS file, after all, and I don't think that's something
+> that needs an explanation.
+> 
+> The thing that needs explanation is when someone like Steve Hemminger
+> gets cc'ed on a patch for fs/ext4/acl.c, which really makes no sense
+> at all, where you desperately need some kind of tag:
+> 
+> shemminger@vyatta.com (Wild guess using get_maintainer.pl --git)
+> 
+> 	      	    	  			  - Ted
 
-This looks better, but it still gives me the willies.
+Might make sense to omit the tags on the MAINTAINER-source. I can
+agree to your reasoning there. 
 
-I tried tracing through the ramoops code to see if there were anything
-else that could block, but I couldn't make it through do_gettimeofday.
 
-I couldn't even make it that far with the mtd oops tracer.
+As far as I can see, the use and the use cases for the git-part of
+get_maintainer.pl are mostly to get patches to not-so-well-maintained
+parts of the tree upstream. What I envision for the git part is a
+scoring based classification scheme that uses all readily available
+information of the git-history to determine relevant people for patch
+review and patch routing.
 
-The fact that the code is exported and modular doesn't make me feel
-safe because there have been people in the past who have asked for an
-notifier on crash so they could do stupid things when the kernel is
-broken.
+I already have implemented a small parser that extracts that information
+out of git-log and makes them available to the script, but didn't have
+time to wire it up yet. 
 
-The fact that this wasn't noticed until we actually had a hang, doesn't
-give me an especially great feeling about long term stability.
+Another improvement (beyond finding a decent heuristic based on the
+artifacts 'authorship', 'signed-off-by', 'reviewed-by', 'acked-by',
+'committer' and nr-of-lines-changed.. and maybe time) is probably to
+not make an arbitrarily 1-Year-Back cut-off, but to check the last N
+commits on that region of the tree. (I'm thinking of the more
+"settled down" areas of the tree here)
+But let's see what I come up with...
 
-Most of all I don't see the use case of calling kmsg_dump when you have
-kexec on panic setup to do the same thing.  Having kmsg_dump not on
-the kexec on panic code path would let me sleep much easier at night.
-
-Then there is the historical side of this.  Through many failed attempts
-it has been show that dumpers in the kernel are fragile beasts that work
-up until you actually have a real world failure and then they let you
-down.  Kexec on panic is better as it works 65% or so of the time,
-and definitely won't corrupt your bits if it fails.  I don't see what
-makes kmsg_dump better than all of the past failed and useless kernel
-dumpers.
-
-Eric
+Regards,
+Flo
