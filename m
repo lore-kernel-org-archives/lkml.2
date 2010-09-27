@@ -1,86 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803Ab0I0Kme (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 06:42:34 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:42034 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159Ab0I0Kmc (ORCPT
+	id S1756059Ab0I0KpP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 06:45:15 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:55091 "EHLO
+	TX2EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754832Ab0I0KpO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 06:42:32 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Randy Dunlap <randy.dunlap@oracle.com>, linux-nfs@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH] sunrpc: prompt for RPCSEC_GSS_KRB5 even if NFS_V4 is enabled
-Date: Mon, 27 Sep 2010 12:41:59 +0200
-Message-Id: <1285584120-16860-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <20100909181454.GB14915@pengutronix.de>
-References: <20100909181454.GB14915@pengutronix.de>
+	Mon, 27 Sep 2010 06:45:14 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275bh8275dhz32i2a8h43h62h)
+X-Spam-TCS-SCL: 1:0
+X-WSS-ID: 0L9EJ62-01-2CH-02
+X-M-MSG: 
+Date: Mon, 27 Sep 2010 12:44:26 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Huang Ying <ying.huang@intel.com>
+CC: Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v2 7/7] x86, NMI, Remove do_nmi_callback logic
+Message-ID: <20100927104426.GD32222@erda.amd.com>
+References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
+ <1285549026-5008-7-git-send-email-ying.huang@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1285549026-5008-7-git-send-email-ying.huang@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NFS_V4 works fine without RPCSEC_GSS_KRB5 (even without CRYPTO).
-This dependency was introduced in
+On 26.09.10 20:57:06, Huang Ying wrote:
+> do_nmi_callback related logic is removed, because it is useless, just
+> adds code complexity.
+> 
+> unknown_nmi_panic sysctl is reserved to keep kernel ABI unchanged.
 
-	df486a2 (NFS: Fix the selection of security flavours in Kconfig)
+"unknown_nmi_panic" and "panic_on_unrecovered_nmi" are different. See
+below and also Documentation/sysctl/kernel.txt.
 
-to fix a build failure as RPCSEC_GSS_KRB5 was thought to be needed for
-NFS_V4.  The fix didn't work completely as NFS_V4 didn't enforce CRYPTO
-and so the select on RPCSEC_GSS_KRB5 didn't work in all situations (e.g.
-arm/mx1_defconfig).
+> 
+> Signed-off-by: Huang Ying <ying.huang@intel.com>
+> ---
+>  arch/x86/include/asm/nmi.h    |   10 +++++++++-
+>  arch/x86/kernel/apic/hw_nmi.c |    1 -
+>  arch/x86/kernel/apic/nmi.c    |   29 +----------------------------
+>  arch/x86/kernel/traps.c       |   16 ++++++++++------
+>  4 files changed, 20 insertions(+), 36 deletions(-)
+> 
+> --- a/arch/x86/include/asm/nmi.h
+> +++ b/arch/x86/include/asm/nmi.h
+> @@ -30,9 +30,17 @@ extern void setup_apic_nmi_watchdog(void
+>  extern void stop_apic_nmi_watchdog(void *);
+>  extern void disable_timer_nmi_watchdog(void);
+>  extern void enable_timer_nmi_watchdog(void);
+> -extern int nmi_watchdog_tick(struct pt_regs *regs, unsigned reason);
+>  extern void cpu_nmi_set_wd_enabled(void);
+>  
+> +#if defined(CONFIG_X86_LOCAL_APIC) && !defined(CONFIG_LOCKUP_DETECTOR)
+> +extern int nmi_watchdog_tick(struct pt_regs *regs);
+> +#else
+> +static inline int nmi_watchdog_tick(struct pt_regs *regs)
+> +{
+> +	return 0;
+> +}
+> +#endif
+> +
+>  extern atomic_t nmi_active;
+>  extern unsigned int nmi_watchdog;
+>  #define NMI_NONE	0
+> --- a/arch/x86/kernel/apic/hw_nmi.c
+> +++ b/arch/x86/kernel/apic/hw_nmi.c
+> @@ -100,7 +100,6 @@ void acpi_nmi_disable(void) { return; }
+>  #endif
+>  atomic_t nmi_active = ATOMIC_INIT(0);           /* oprofile uses this */
+>  EXPORT_SYMBOL(nmi_active);
+> -int unknown_nmi_panic;
+>  void cpu_nmi_set_wd_enabled(void) { return; }
+>  void stop_apic_nmi_watchdog(void *unused) { return; }
+>  void setup_apic_nmi_watchdog(void *unused) { return; }
+> --- a/arch/x86/kernel/apic/nmi.c
+> +++ b/arch/x86/kernel/apic/nmi.c
+> @@ -37,7 +37,6 @@
+>  
+>  #include <asm/mach_traps.h>
+>  
+> -int unknown_nmi_panic;
+>  int nmi_watchdog_enabled;
+>  
+>  /* For reliability, we're prepared to waste bits here. */
+> @@ -389,7 +388,7 @@ void touch_nmi_watchdog(void)
+>  EXPORT_SYMBOL(touch_nmi_watchdog);
+>  
+>  notrace __kprobes int
+> -nmi_watchdog_tick(struct pt_regs *regs, unsigned reason)
+> +nmi_watchdog_tick(struct pt_regs *regs)
+>  {
+>  	/*
+>  	 * Since current_thread_info()-> is always on the stack, and we
+> @@ -483,23 +482,6 @@ static void disable_ioapic_nmi_watchdog(
+>  	on_each_cpu(stop_apic_nmi_watchdog, NULL, 1);
+>  }
+>  
+> -static int __init setup_unknown_nmi_panic(char *str)
+> -{
+> -	unknown_nmi_panic = 1;
+> -	return 1;
+> -}
+> -__setup("unknown_nmi_panic", setup_unknown_nmi_panic);
+> -
+> -static int unknown_nmi_panic_callback(struct pt_regs *regs, int cpu)
+> -{
+> -	unsigned char reason = get_nmi_reason();
+> -	char buf[64];
+> -
+> -	sprintf(buf, "NMI received for unknown reason %02x\n", reason);
+> -	die_nmi(buf, regs, 1); /* Always panic here */
+> -	return 0;
 
-This was rectified by
+You are dropping this code that is different to panic().
 
-	827e345 (SUNRPC: Fix the NFSv4 and RPCSEC_GSS Kconfig dependencies)
+> -}
+> -
+>  /*
+>   * proc handler for /proc/sys/kernel/nmi
+>   */
+> @@ -540,15 +522,6 @@ int proc_nmi_enabled(struct ctl_table *t
+>  
+>  #endif /* CONFIG_SYSCTL */
+>  
+> -int do_nmi_callback(struct pt_regs *regs, int cpu)
+> -{
+> -#ifdef CONFIG_SYSCTL
+> -	if (unknown_nmi_panic)
+> -		return unknown_nmi_panic_callback(regs, cpu);
+> -#endif
+> -	return 0;
+> -}
+> -
+>  void arch_trigger_all_cpu_backtrace(void)
+>  {
+>  	int i;
+> --- a/arch/x86/kernel/traps.c
+> +++ b/arch/x86/kernel/traps.c
+> @@ -84,6 +84,7 @@ EXPORT_SYMBOL_GPL(used_vectors);
+>  static int ignore_nmis;
+>  
+>  int unknown_nmi_for_hwerr;
+> +int unknown_nmi_panic;
+>  
+>  /*
+>   * Prevent NMI reason port (0x61) being accessed simultaneously, can
+> @@ -308,6 +309,13 @@ gp_in_kernel:
+>  	die("general protection fault", regs, error_code);
+>  }
+>  
+> +static int __init setup_unknown_nmi_panic(char *str)
+> +{
+> +	unknown_nmi_panic = 1;
 
-but the magic for RPCSEC_GSS_KRB5 introduced by df486a2 wasn't reverted.
+We should register a handler here for this case instead of using
+global variables.
 
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
-Hello,
+> +	return 1;
+> +}
+> +__setup("unknown_nmi_panic", setup_unknown_nmi_panic);
+> +
+>  static notrace __kprobes void
+>  pci_serr_error(unsigned char reason, struct pt_regs *regs)
+>  {
+> @@ -385,7 +393,7 @@ unknown_nmi_error(unsigned char reason,
+>  			reason, smp_processor_id());
+>  
+>  	printk(KERN_EMERG "Do you have a strange power saving mode enabled?\n");
+> -	if (panic_on_unrecovered_nmi)
+> +	if (unknown_nmi_panic || panic_on_unrecovered_nmi)
+>  		panic("NMI: Not continuing");
 
-after Trond sent me the patch that later ended in 827e345702 I suggested
-to fold the patch below into it[1], but without reaction and success as I
-noticed just now. :-(
+There is different behavior, we should rather keep this code and add a
+handler in the unknown_nmi_panic case with:
 
-Best regards
-Uwe
+		die_nmi(...)
+		...
 
-[1] http://thread.gmane.org/gmane.linux.kernel/1027380/focus=1033847
+-Robert
 
- net/sunrpc/Kconfig |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+>  
+>  	printk(KERN_EMERG "Dazed and confused, but trying to continue\n");
+> @@ -432,12 +440,8 @@ static notrace __kprobes void default_do
+>  	}
+>  	raw_spin_unlock(&nmi_reason_lock);
+>  
+> -#if defined(CONFIG_X86_LOCAL_APIC) && !defined(CONFIG_LOCKUP_DETECTOR)
+> -	if (nmi_watchdog_tick(regs, reason))
+> -		return;
+> -	if (do_nmi_callback(regs, smp_processor_id()))
+> +	if (nmi_watchdog_tick(regs))
+>  		return;
+> -#endif
+>  
+>  	if (notify_die(DIE_NMIUNKNOWN, "nmi_unknown", regs, reason, 2, SIGINT)
+>  	    == NOTIFY_STOP)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-diff --git a/net/sunrpc/Kconfig b/net/sunrpc/Kconfig
-index 3376d76..442efe1 100644
---- a/net/sunrpc/Kconfig
-+++ b/net/sunrpc/Kconfig
-@@ -20,8 +20,7 @@ config SUNRPC_XPRT_RDMA
- config RPCSEC_GSS_KRB5
- 	tristate
- 	depends on SUNRPC && CRYPTO
--	prompt "Secure RPC: Kerberos V mechanism" if !(NFS_V4 || NFSD_V4)
--	default y
-+	prompt "Secure RPC: Kerberos V mechanism"
- 	select SUNRPC_GSS
- 	select CRYPTO_MD5
- 	select CRYPTO_DES
 -- 
-1.7.2.3
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
