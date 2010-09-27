@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975Ab0I0ElO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 00:41:14 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:57854 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269Ab0I0ElN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 00:41:13 -0400
-Date: Mon, 27 Sep 2010 12:41:00 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
+	id S1751959Ab0I0Ep0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 00:45:26 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:59360 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751038Ab0I0EpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 00:45:25 -0400
+Date: Mon, 27 Sep 2010 14:45:19 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Arnd Bergmann <arnd@arndb.de>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dmitry Kasatkin <dmitry.kasatkin@nokia.com>,
-        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org
-Subject: Re: linux-next: manual merge of the crypto tree with the omap tree
-Message-ID: <20100927044100.GA30155@gondor.apana.org.au>
-References: <20100927143300.9fa73063.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100927143300.9fa73063.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+        Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>
+Subject: linux-next: manual merge of the bkl-trivial tree with the block
+ tree
+Message-Id: <20100927144519.25cd3afa.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 02:33:00PM +1000, Stephen Rothwell wrote:
-> Hi Herbert,
-> 
-> Today's linux-next merge of the crypto tree got a conflict in
-> arch/arm/mach-omap2/devices.c between commit
-> 5d14f2792f9d63c5d25903bd048017c4b53c7d9a ("omap: crypto: updates to
-> enable omap aes") from the omap tree and commit
-> b744c679f62b368cb94c21c1dcd4618e42d88d63 ("crypto: updates to enable omap
-> aes") from the crypto tree.
-> 
-> Two versions of the same patch.  The version in the omap tree has been
-> updated, so I used that.
+Hi Arnd,
 
-Thanks for the note Stephen.
+Today's linux-next merge of the bkl-trivial tree got a conflict in
+drivers/block/ataflop.c between commit
+639e2f2aa76eefaf22078dccbbf2f3483f587aa7 ("atari floppy: Stop sharing
+request queue across multiple gendisks") from the block tree and commit
+5778067afcfd8b718ffc3744c25fdd194fc886a1 ("block: autoconvert trivial BKL
+users to private mutex") from the bkl-trivial tree.
+
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/block/ataflop.c
+index 0f4eec4,8c021bb..0000000
+--- a/drivers/block/ataflop.c
++++ b/drivers/block/ataflop.c
+@@@ -79,8 -79,9 +79,9 @@@
+  
+  #undef DEBUG
+  
++ static DEFINE_MUTEX(ataflop_mutex);
+ -static struct request_queue *floppy_queue;
+  static struct request *fd_request;
+ +static int fdc_queue;
+  
+  /* Disk types: DD, HD, ED */
+  static struct atari_disk_type {
