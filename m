@@ -1,156 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759244Ab0I0MqF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 08:46:05 -0400
-Received: from www.tglx.de ([62.245.132.106]:48847 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759231Ab0I0MqB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 08:46:01 -0400
-Message-Id: <20100927121842.732894108@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Mon, 27 Sep 2010 12:45:41 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 13/19] genirq; Provide compat handling for chip->set_affinity()
-References: <20100927121651.904100669@linutronix.de>
-Content-Disposition: inline; filename=genirq-wrap-chip-set-affinity.patch
+	id S1759253Ab0I0Mqa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 08:46:30 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:44027 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759188Ab0I0Mq2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 08:46:28 -0400
+Date: Mon, 27 Sep 2010 13:46:24 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, rth@twiddle.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: alpha: potential race around hae_cache in RESTORE_ALL
+Message-ID: <20100927124624.GC19804@ZenIV.linux.org.uk>
+References: <20100925181304.GV19804@ZenIV.linux.org.uk>
+ <AANLkTi=XURM0hOiitvNSiacd9+7Vx8s7V0KZ+oZQsDDQ@mail.gmail.com>
+ <20100925191836.GW19804@ZenIV.linux.org.uk>
+ <20100925192509.GX19804@ZenIV.linux.org.uk>
+ <20100927075828.GA15344@jurassic.park.msu.ru>
+ <20100927121227.GB19804@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100927121227.GB19804@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wrap the old chip function set_affinity() until the migration is
-complete and the old chip functions are removed.
+On Mon, Sep 27, 2010 at 01:12:28PM +0100, Al Viro wrote:
+> On Mon, Sep 27, 2010 at 11:58:28AM +0400, Ivan Kokshaysky wrote:
+> > On Sat, Sep 25, 2010 at 08:25:09PM +0100, Al Viro wrote:
+> > > BTW, am I right assuming that HAE modifications is UP-only thing?  It would
+> > > be obviously b0rken on any SMP box, since alpha_mv is not per-CPU thing...
+> > 
+> > The only SMP system that does HAE modifications at runtime is T2, so it has
+> > a spinlock protection around set_hae() - see core_t2.h. Others are either
+> > limited to use HAE window 0 only, or do not have HAE hardware at all.
+> 
+> Um?  Pardon me, but that makes no sense; how would a spinlock taken in
+> e.g. readl() stop another process from leaving a syscall, getting to
+> RESTORE_ALL and overwriting HAE register while we are halfway through
+> the spinlock-protected area?
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/irq/chip.c      |    8 ++++++++
- kernel/irq/manage.c    |   11 ++++++-----
- kernel/irq/migration.c |    6 ++++--
- kernel/irq/proc.c      |    2 +-
- 4 files changed, 19 insertions(+), 8 deletions(-)
+AFAICS, we have 3 variants:
+	1) alpha_mv.hae_register == &alpha_mv.hae_cache; all that code
+becomes a no-op.
+	2) UP boxen with hae_register pointing someplace real; we save
+HAE in SAVE_ALL, restore it in RESTORE_ALL and disable interrupts around
+the updates of hae_cache/*hae_register to keep them in sync.  readl()
+et.al. set HAE, then do memory access and rely on not giving CPU up between
+these moments.  Since alpha doesn't do PREEMPT, we are OK (otherwise we'd
+needed to disable preempt in those places; also not a big deal)
+	3) SMP t2 boxen; we protect the entire sequence from setting HAE to
+memory access with spinlock and with disabling interrupts.  We don't rely on
+interrupts not modifying the damn thing, but we *do* rely on other CPU not
+messing with HAE on syscall paths outside of spinlock-protected area.  And
+we have RESTORE_ALL hit us on all exits to userland, interrupt, trap and
+syscall alike.
 
-Index: linux-2.6-tip/kernel/irq/chip.c
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/chip.c
-+++ linux-2.6-tip/kernel/irq/chip.c
-@@ -373,6 +373,12 @@ static unsigned int compat_irq_startup(s
- 	return irq_data_to_desc(data)->chip->startup(data->irq);
- }
- 
-+static int compat_irq_set_affinity(struct irq_data *data,
-+				   const struct cpumask *dest, bool force)
-+{
-+	return irq_data_to_desc(data)->chip->set_affinity(data->irq, dest);
-+}
-+
- static void compat_bus_lock(struct irq_data *data)
- {
- 	irq_data_to_desc(data)->chip->bus_lock(data->irq);
-@@ -439,6 +445,8 @@ void irq_chip_set_defaults(struct irq_ch
- 		chip->irq_mask_ack = compat_irq_mask_ack;
- 	if (chip->eoi)
- 		chip->irq_eoi = compat_irq_eoi;
-+	if (chip->set_affinity)
-+		chip->irq_set_affinity = compat_irq_set_affinity;
- }
- 
- static inline void mask_ack_irq(struct irq_desc *desc)
-Index: linux-2.6-tip/kernel/irq/manage.c
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/manage.c
-+++ linux-2.6-tip/kernel/irq/manage.c
-@@ -74,7 +74,7 @@ int irq_can_set_affinity(unsigned int ir
- 	struct irq_desc *desc = irq_to_desc(irq);
- 
- 	if (CHECK_IRQ_PER_CPU(desc->status) || !desc->chip ||
--	    !desc->chip->set_affinity)
-+	    !desc->chip->irq_set_affinity)
- 		return 0;
- 
- 	return 1;
-@@ -109,16 +109,17 @@ void irq_set_thread_affinity(struct irq_
- int irq_set_affinity(unsigned int irq, const struct cpumask *cpumask)
- {
- 	struct irq_desc *desc = irq_to_desc(irq);
-+	struct irq_chip *chip = desc->chip;
- 	unsigned long flags;
- 
--	if (!desc->chip->set_affinity)
-+	if (!chip->irq_set_affinity)
- 		return -EINVAL;
- 
- 	raw_spin_lock_irqsave(&desc->lock, flags);
- 
- #ifdef CONFIG_GENERIC_PENDING_IRQ
- 	if (desc->status & IRQ_MOVE_PCNTXT) {
--		if (!desc->chip->set_affinity(irq, cpumask)) {
-+		if (!chip->irq_set_affinity(&desc->irq_data, cpumask, false)) {
- 			cpumask_copy(desc->affinity, cpumask);
- 			irq_set_thread_affinity(desc);
- 		}
-@@ -128,7 +129,7 @@ int irq_set_affinity(unsigned int irq, c
- 		cpumask_copy(desc->pending_mask, cpumask);
- 	}
- #else
--	if (!desc->chip->set_affinity(irq, cpumask)) {
-+	if (!chip->irq_set_affinity(&dest->irq_data, cpumask, false)) {
- 		cpumask_copy(desc->affinity, cpumask);
- 		irq_set_thread_affinity(desc);
- 	}
-@@ -177,7 +178,7 @@ static int setup_affinity(unsigned int i
- 
- 	cpumask_and(desc->affinity, cpu_online_mask, irq_default_affinity);
- set_affinity:
--	desc->chip->set_affinity(irq, desc->affinity);
-+	desc->chip->irq_set_affinity(&desc->irq_data, desc->affinity, false);
- 
- 	return 0;
- }
-Index: linux-2.6-tip/kernel/irq/migration.c
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/migration.c
-+++ linux-2.6-tip/kernel/irq/migration.c
-@@ -7,6 +7,7 @@
- void move_masked_irq(int irq)
- {
- 	struct irq_desc *desc = irq_to_desc(irq);
-+	struct irq_chip *chip = desc->chip;
- 
- 	if (likely(!(desc->status & IRQ_MOVE_PENDING)))
- 		return;
-@@ -24,7 +25,7 @@ void move_masked_irq(int irq)
- 	if (unlikely(cpumask_empty(desc->pending_mask)))
- 		return;
- 
--	if (!desc->chip->set_affinity)
-+	if (!chip->irq_set_affinity)
- 		return;
- 
- 	assert_raw_spin_locked(&desc->lock);
-@@ -43,7 +44,8 @@ void move_masked_irq(int irq)
- 	 */
- 	if (likely(cpumask_any_and(desc->pending_mask, cpu_online_mask)
- 		   < nr_cpu_ids))
--		if (!desc->chip->set_affinity(irq, desc->pending_mask)) {
-+		if (!chip->irq_set_affinity(&desc->irq_data,
-+					    desc->pending_mask, false)) {
- 			cpumask_copy(desc->affinity, desc->pending_mask);
- 			irq_set_thread_affinity(desc);
- 		}
-Index: linux-2.6-tip/kernel/irq/proc.c
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/proc.c
-+++ linux-2.6-tip/kernel/irq/proc.c
-@@ -65,7 +65,7 @@ static ssize_t irq_affinity_proc_write(s
- 	cpumask_var_t new_value;
- 	int err;
- 
--	if (!irq_to_desc(irq)->chip->set_affinity || no_irq_affinity ||
-+	if (!irq_to_desc(irq)->chip->irq_set_affinity || no_irq_affinity ||
- 	    irq_balancing_disabled(irq))
- 		return -EIO;
- 
-
-
+	Looks like (3) has always been broken...
