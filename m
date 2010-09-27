@@ -1,104 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758603Ab0I0Iw7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 04:52:59 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:44669 "EHLO
-	mx01.colomx.prod.int.phx2.redhat.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752833Ab0I0Iw6 (ORCPT
+	id S1758947Ab0I0I7J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 04:59:09 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44556 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756203Ab0I0I7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 04:52:58 -0400
-Date: Mon, 27 Sep 2010 04:52:29 -0400 (EDT)
-From: CAI Qian <caiqian@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Hugh Dickins <hugh@veritas.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Message-ID: <1933893701.2026841285577549772.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <m1sk0x9z62.fsf@fess.ebiederm.org>
-Subject: Re: [PATCH 0/3] Generic support for revoking mappings
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.5.72]
-X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.21_GA_3150.RHEL4_64)
+	Mon, 27 Sep 2010 04:59:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=WbciT+E76k7N5ukZU7ASAiwkf6eZpn0NgDHPdcBT5DT8UbZMM22Yt1gmAGiNceH0AS
+         v05X4PTyez2z5nNWploENE2fuzaSZjVv3x8Utem/ZGGKQHSeZ7NsWBn6Jj2JXn6nQvCa
+         5pvZ/YdzoWqO/X8j20CNh9I2j+FwVbcP4/OuI=
+Subject: Re: [PATCH] ubifs: avoid kernel error if ubifs superblock read
+ fails
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Steffen Sledz <sledz@dresearch.de>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <1285322081-17144-1-git-send-email-sledz@dresearch.de>
+References: <1285322081-17144-1-git-send-email-sledz@dresearch.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 27 Sep 2010 11:57:17 +0300
+Message-ID: <1285577837.16181.14.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just a head up. Tried to boot latest mmotm kernel with those patches applied hit this. I am wondering what I did wrong.
-
-Pid: 1, comm: init Not tainted 2.6.36-rc5-mm1+ #2 /KVM
-RIP: 0010:[<ffffffff811d4c78>]  [<ffffffff811d4c78>] prio_tree_insert+0x188/0x2a0
-RSP: 0018:ffff880c3b1bfcd8  EFLAGS: 00010202
-RAX: ffff880c374b40d8 RBX: 0000000000000100 RCX: ffff880c374b40d8
-RDX: 0000000000000179 RSI: 0000000000000000 RDI: 0000000000000179
-RBP: ffff880c9f4ba188 R08: 0000000000000001 R09: ffff880c374b9330
-R10: 0000000000000001 R11: 0000000000000002 R12: ffff880c374b40d8
-R13: 00000007fa7367ba R14: 00000007fa7367be R15: 0000000000000000
-FS:  00007fa7369d9700(0000) GS:ffff8800df540000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: ffffffffffffffc0 CR3: 0000000c374b1000 CR4: 00000000000006e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process init (pid: 1, threadinfo ffff880c3b1be000, task ffff880c3b1bd400)
-Stack:
- ffff880c3b1bd400 ffff880c374b4088 ffff880c374b40d8 ffff880c374b4088
-<0> ffff880c9f4ba168 ffff880c9f4ba188 ffff880c374b3680 ffffffff810daff8
-<0> 0000000000000002 ffff880c374b41f8 ffff880c374b42b0 ffffffff810e9171
-Call Trace:
- [<ffffffff810daff8>] ? vma_prio_tree_insert+0x28/0x120
- [<ffffffff810e9171>] ? vma_adjust+0xe1/0x560
- [<ffffffff8119715b>] ? avc_has_perm+0x6b/0xa0
- [<ffffffff810e97b9>] ? __split_vma+0x1c9/0x250
- [<ffffffff810ebf88>] ? mprotect_fixup+0x708/0x7b0
- [<ffffffff810e4aca>] ? handle_mm_fault+0x1da/0xcf0
- [<ffffffff81033910>] ? pvclock_clocksource_read+0x50/0xc0
- [<ffffffff81047220>] ? __dequeue_entity+0x40/0x50
- [<ffffffff81198a31>] ? file_has_perm+0xf1/0x100
- [<ffffffff810ec1b2>] ? sys_mprotect+0x182/0x250
- [<ffffffff8100aec2>] ? system_call_fastpath+0x16/0x1b
-Code: 56 20 e9 d4 fe ff ff bb 01 00 00 00 48 d3 e3 48 85 db 0f 84 08 01 00 00 45 31 ff 66 45 85 c0 4c 89 e1 74 78 0f 1f 80 00 00 00 00 <48> 8b 46 c0 48 2b 46 b8 4c 8b 6e 40 48 c1 e8 0c 4c 39 ef 4d 8d 
-RIP  [<ffffffff811d4c78>] prio_tree_insert+0x188/0x2a0
- RSP <ffff880c3b1bfcd8>
-CR2: ffffffffffffffc0
----[ end trace 667258bb79b38e02 ]---
-
------ "Eric W. Biederman" <ebiederm@xmission.com> wrote:
-
-> During hotplug or rmmod if a device or file is mmaped, it's mapping
-> needs to be removed and future access need to return SIGBUS almost
-> like
-> truncate.  This case is rare enough that it barely gets tested, and
-> making a generic implementation warranted.  I have tried with sysfs
-> but
-> a complete and generic implementation does not seem possible without
-> mm
-> support.
+On Fri, 2010-09-24 at 11:54 +0200, Steffen Sledz wrote:
+> * .get_sb is called on mounts with automatic fs detection too, so this
+>   function should not print an error if it cannot read the superblock
+>   (new behaviour conforms the other fs types)
 > 
-> It looks like a fully generic implementation with mm knowledge
-> is shorter and easier to get right than what I have in sysfs today.
-> 
-> So here is that fully generic implementation.
-> 
-> Eric W. Biederman (3):
->       mm: Introduce revoke_mappings.
->       mm: Consolidate vma destruction into remove_vma.
->       mm: Cause revoke_mappings to wait until all close methods have
-> completed.
+> Signed-off-by: Steffen Sledz <sledz@dresearch.de>
 > ---
->  include/linux/fs.h |    2 +
->  include/linux/mm.h |    2 +
->  mm/Makefile        |    2 +-
->  mm/mmap.c          |   34 +++++-----
->  mm/nommu.c         |    5 ++
->  mm/revoke.c        |  192
-> ++++++++++++++++++++++++++++++++++++++++++++++++++++
->  6 files changed, 219 insertions(+), 18 deletions(-)
+>  fs/ubifs/super.c |    2 --
+>  1 files changed, 0 insertions(+), 2 deletions(-)
 > 
-> Eric
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
+> index cd5900b..e62bb75 100644
+> --- a/fs/ubifs/super.c
+> +++ b/fs/ubifs/super.c
+> @@ -2049,8 +2049,6 @@ static int ubifs_get_sb(struct file_system_type *fs_type, int flags,
+>  	 */
+>  	ubi = open_ubi(name, UBI_READONLY);
+>  	if (IS_ERR(ubi)) {
+> -		ubifs_err("cannot open \"%s\", error %d",
+> -			  name, (int)PTR_ERR(ubi));
+>  		return PTR_ERR(ubi);
+>  	}
+>  	ubi_get_volume_info(ubi, &vi);
+
+Hi, could you please instead turn this message into dbg_err() - in this
+case we'll have the message only when debugging is enabled.
+
+Also, please CC:
+
+Artem Bityutskiy <dedekind1@gmail.com>
+linux-mtd@lists.infradead.org
+
+Thanks!
+
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
+
