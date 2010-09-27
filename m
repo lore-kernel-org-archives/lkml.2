@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932840Ab0I0JeR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 05:34:17 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:57389 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932633Ab0I0JeQ (ORCPT
+	id S932823Ab0I0Jgv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 05:36:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47429 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755201Ab0I0Jgu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 05:34:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=QM4j4FBpAGXXZU1A8woiKFN29790jIUfNXkJDK//652iDaXHtnP2XQwC5veem/L6hs
-         p++sTVX2vVu0A0x/84Ma1/JnIyaa5WpH7W+fHXQ2Bh+xM9fu06ouLzA+BGdBUlDoXQbY
-         8f2drnKqQNPMA7uH6bVireUMwLKKzcx3mbrwY=
-Message-ID: <4CA06514.1080704@gmail.com>
-Date: Mon, 27 Sep 2010 11:34:12 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.9) Gecko/20100914 SUSE/3.1.4 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        chris@chris-wilson.co.uk, dri-devel@lists.freedesktop.org
-Subject: i915 flickering [was: mmotm 2010-09-22-16-11 uploaded]
-References: <201009222343.o8MNh9Mp023931@imap1.linux-foundation.org>
-In-Reply-To: <201009222343.o8MNh9Mp023931@imap1.linux-foundation.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+	Mon, 27 Sep 2010 05:36:50 -0400
+Subject: Re: [PATCH] x86, nmi: workaround sti; hlt race vs nmi; intr
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <4CA06373.5030501@redhat.com>
+Date: Mon, 27 Sep 2010 11:36:46 +0200
+Cc: x86@kernel.org, LKML List <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>,
+        Wilfred Yu <wilfred.yu@intel.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <1640BBFF-4E7C-4F56-BF53-AD290C353F64@suse.de>
+References: <1284913699-14986-1-git-send-email-avi@redhat.com> <4CA057EA.7000609@redhat.com> <768A5DC0-131A-4BC8-ADDD-044D8169545E@suse.de> <61284934-1AD3-4F7A-9488-D46FCEE9B753@suse.de> <4CA06147.7080805@redhat.com> <C725B379-9631-46E4-A825-E43A5120681E@suse.de> <4CA06373.5030501@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2010 01:12 AM, akpm@linux-foundation.org wrote:
-> The mm-of-the-moment snapshot 2010-09-22-16-11 has been uploaded to
 
-Hi, it introduced a regression against 2010-09-15-16-21 in i915. The
-screen, especially in thunderbird and firefox screen elements, flickers.
-Is this known/is there a patch for this already?
+On 27.09.2010, at 11:27, Avi Kivity wrote:
 
-00:02.0 VGA compatible controller: Intel Corporation 82G33/G31 Express
-Integrated Graphics Controller (rev 02) (prog-if 00 [VGA controller])
-        Subsystem: Intel Corporation 82G33/G31 Express Integrated
-Graphics Controller
-        Flags: bus master, fast devsel, latency 0, IRQ 42
-        Memory at feb80000 (32-bit, non-prefetchable) [size=512K]
-        I/O ports at ec00 [size=8]
-        Memory at d0000000 (32-bit, prefetchable) [size=256M]
-        Memory at fea00000 (32-bit, non-prefetchable) [size=1M]
-        Expansion ROM at <unassigned> [disabled]
-        Capabilities: [90] MSI: Enable+ Count=1/1 Maskable- 64bit-
-        Capabilities: [d0] Power Management version 2
-        Kernel driver in use: i915
+> On 09/27/2010 11:22 AM, Alexander Graf wrote:
+>> On 27.09.2010, at 11:17, Avi Kivity wrote:
+>> 
+>> >  On 09/27/2010 11:15 AM, Alexander Graf wrote:
+>> >>  >
+>> >>  >   Wow, this is incredibly ugly :). Can't we just mask NMIs when the interrupt shadow is active?
+>> >
+>> >  I plan to do that, for all the code that's out there relying on on STI interrupt shadow masking NMIs.
+>> >
+>> >>  Yeah, that's me writing without thinking. So this means that the race can also happen on real hardware?
+>> >>
+>> >
+>> >  Yes.  At least on documented hardware.  Some (most? all?) hardware does mask NMIs after STI.
+>> 
+>> If all hardware masks NMIs after STI, wouldn't it be better to update the spec and declare KVM buggy for injecting NMIs there?
+>> 
+> 
+> I don't have write permissions for the spec.  If you can verify that all existing and future hardware will mask NMI after STI and convince the spec owners to update the specifications, I'm all for it; it's certainly a cleaner solution.
 
-thanks,
--- 
-js
+*shrug* I don't have permissions for that either, but we can CC people who might get into touch with some who can.
+
+
+Alex
+
