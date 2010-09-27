@@ -1,81 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760232Ab0I0UsJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 16:48:09 -0400
-Received: from thunk.org ([69.25.196.29]:58013 "EHLO thunker.thunk.org"
+	id S1760210Ab0I0UvN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 16:51:13 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:47283 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755319Ab0I0UsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 16:48:07 -0400
-Date: Mon, 27 Sep 2010 16:47:56 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Joe Perches <joe@perches.com>
-Cc: Florian Mickler <florian@mickler.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: RFC: get_maintainer.pl: append reason for cc to the name by
- default
-Message-ID: <20100927204756.GC3168@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Joe Perches <joe@perches.com>,
-	Florian Mickler <florian@mickler.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Stephen Hemminger <shemminger@vyatta.com>,
-	Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org
-References: <1284111212-10659-1-git-send-email-florian@mickler.org>
- <1285527125.1732.24.camel@Joe-Laptop>
- <20100927165748.354742f2@schatten.dmk.lab>
- <20100927154441.GE3602@thunk.org>
- <20100927190026.20ddc268@schatten.dmk.lab>
- <20100927182124.GA3168@thunk.org>
- <20100927212650.62859ee0@schatten.dmk.lab>
- <1285618097.1732.204.camel@Joe-Laptop>
+	id S1754244Ab0I0UvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 16:51:12 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Nigel Cunningham <nigel@tuxonice.net>
+Subject: Re: [PATCH 02/23] Record & display i/o speed post resume.
+Date: Mon, 27 Sep 2010 22:49:59 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc5-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Linux PM <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "TuxOnIce-devel" <tuxonice-devel@tuxonice.net>
+References: <1285566238-10966-1-git-send-email-nigel@tuxonice.net> <201009272206.20020.rjw@sisk.pl> <4CA0FDE8.3000601@tuxonice.net>
+In-Reply-To: <4CA0FDE8.3000601@tuxonice.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1285618097.1732.204.camel@Joe-Laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009272249.59966.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 01:08:17PM -0700, Joe Perches wrote:
-> On Mon, 2010-09-27 at 21:26 +0200, Florian Mickler wrote:
-> > But we should definitely try to tune down the annoying part of
-> > it by making it less random and maybe by adding a tag in the cc field...
+On Monday, September 27, 2010, Nigel Cunningham wrote:
+> Hi.
 > 
-> Less random: sure, whatever's reasonable.
+> On 28/09/10 06:06, Rafael J. Wysocki wrote:
+> > On Monday, September 27, 2010, Nigel Cunningham wrote:
+> >> Record the speed at which the image is written and read, and
+> >> display it to the user post-resume.
+> >>
+> >> Signed-off-by: Nigel Cunningham<nigel@tuxonice.net>
+> >> ---
+> >>   kernel/power/hibernate.c |   11 ++++++++++-
+> >>   kernel/power/power.h     |    3 ++-
+> >>   kernel/power/swap.c      |   14 +++++++++++---
+> >>   3 files changed, 23 insertions(+), 5 deletions(-)
+> >>
+> >> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+> >> index 6c9c9dc..0cd1f05 100644
+> >> --- a/kernel/power/hibernate.c
+> >> +++ b/kernel/power/hibernate.c
+> >> @@ -212,7 +212,7 @@ static void platform_recover(int platform_mode)
+> >>    *	@msg -		introductory message to print
+> >>    */
+> >>
+> >> -void swsusp_show_speed(struct timeval *start, struct timeval *stop,
+> >> +int swsusp_show_speed(struct timeval *start, struct timeval *stop,
+> >>   			unsigned nr_pages, char *msg)
+> >>   {
+> >>   	s64 elapsed_centisecs64;
+> >> @@ -231,6 +231,7 @@ void swsusp_show_speed(struct timeval *start, struct timeval *stop,
+> >>   			msg, k,
+> >>   			centisecs / 100, centisecs % 100,
+> >>   			kps / 1000, (kps % 1000) / 10);
+> >> +	return kps / 1000;
+> >>   }
+> >>
+> >>   /**
+> >> @@ -648,6 +649,14 @@ int hibernate(void)
+> >>   			power_down();
+> >>   	} else {
+> >>   		pr_debug("PM: Image restored successfully.\n");
+> >> +		if (write_speed)
+> >> +			pr_debug("PM: Image written at %u MB/s.\n",
+> >> +					(u8) write_speed);
+> >> +		write_speed = 0;
+> >> +		if (read_speed)
+> >> +			pr_debug("PM: Image read at %u MB/s.\n",
+> >> +					(u8) read_speed);
+> >> +		read_speed = 0;
+> >>   	}
+> >>
+> >>    Thaw:
+> >> diff --git a/kernel/power/power.h b/kernel/power/power.h
+> >> index 03634be..22f8607 100644
+> >> --- a/kernel/power/power.h
+> >> +++ b/kernel/power/power.h
+> >> @@ -53,6 +53,7 @@ extern int hibernation_snapshot(int platform_mode);
+> >>   extern int hibernation_restore(int platform_mode);
+> >>   extern int hibernation_platform_enter(void);
+> >>
+> >> +extern char __nosavedata write_speed, read_speed;
+> >>   #else /* !CONFIG_HIBERNATION */
+> >>
+> >>   static inline void hibernate_image_size_init(void) {}
+> >> @@ -161,7 +162,7 @@ extern int hib_wait_on_bio_chain(struct bio **bio_chain);
+> >>
+> >>   struct timeval;
+> >>   /* kernel/power/swsusp.c */
+> >> -extern void swsusp_show_speed(struct timeval *, struct timeval *,
+> >> +extern int swsusp_show_speed(struct timeval *, struct timeval *,
+> >>   				unsigned int, char *);
+> >>
+> >>   #ifdef CONFIG_SUSPEND
+> >> diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+> >> index 3c01105..caf4db8 100644
+> >> --- a/kernel/power/swap.c
+> >> +++ b/kernel/power/swap.c
+> >> @@ -45,7 +45,8 @@ struct swap_map_page {
+> >>   };
+> >>
+> >>   struct swsusp_header {
+> >> -	char reserved[PAGE_SIZE - 20 - sizeof(sector_t) - sizeof(int)];
+> >> +	char reserved[PAGE_SIZE - 21 - sizeof(sector_t) - sizeof(int)];
+> >> +	char write_speed;
+> >>   	sector_t image;
+> >>   	unsigned int flags;	/* Flags to pass to the "boot" kernel */
+> >>   	char	orig_sig[10];
+> >> @@ -161,6 +162,7 @@ int swsusp_swap_in_use(void)
+> >>
+> >>   static unsigned short root_swap = 0xffff;
+> >>   struct block_device *hib_resume_bdev;
+> >> +char __nosavedata write_speed, read_speed;
+> >
+> > I really should have noticed that earlier, but I don't really like __nosavedata
+> > being used here.  In fact, it shouldn't be used at all any more, because it's
+> > meaningless on x86_64.
 > 
-> I still think that tagging the name portion of an email address
-> is not a good idea, especially without some way of turning it
-> off.  Maybe a mechanism to optionally enable it would be ok.
+> Really? Okay. When did that change?
 
-Well, at the moment, what is currently shipping in git-head and 2.6.35
-does such an __awful__ job that I think a lot of people would be a lot
-happier if we could get the e-mail messages tagged.  Maybe the call
-for that would be less if some of queued fixes for get_maintainer.pl
-could get pushed out more quickly, or you made an out-of-tree version
-of get_mainatiner.pl so that fixes could get pushed to the newbies
-more quickly.
+Well, some time ago, looks like in 2007, but the files changed and were moving
+around, so it's hard to say exactly.
 
-Still, if as you argue, the heuristic guessing from the git repository
-becomes something which will (eventually) be rarely done, then what
-harm does it done if when those time that get_maintainer.pl is
-guessing wildly by trying to read git history, those e-mail names are
-tagged?
+> > I'm not sure how to implement that without __nosavedata, but please don't
+> > use it.  Sorry aboiut that.
+> 
+> Well then, for now, let's drop that patch then. At least it's got us the 
+> numbers we needed to see these patches are useful. Longer term, I'll do 
+> what I do in TuxOnIce and allocate a page while writing the image, store 
+> it's location in the image header and use it the transfer information 
+> from the boot kernel to the resumed kernel. (Essentially the same thing, 
+> except without the special section).
 
-I'd argue that users shouldn't be using get_maintainer.pl in scripts.
-Those who use them properly can always cut away the tags.  If someone
-is lazy enough to be using get_maintainer.pl in a script to send
-e-mail, then I think it's only fair and transparent that the fact that
-(a) they are using get_maintainer in a script, and (b)
-get_maintainer.pl was forced to guess would be a good thing.
+The problem is that on x86_64 the boot kernel may be completely different
+from the image kernel (different version, different configuration), so there is
+no guarantee that your page frame allocated while writing the image would be
+available to the boot kernel (it may contain the kernel code, for example).
 
-Think about it this way; if we see something to LKML with an a
-get_maintainer.pl tag indicating that it had to guess, it's a hint
-that the MAINTAINERS file needs to be updated?  Wouldn't that be a
-valuable way of notifying people of that fact?   :-)
+You'd really need to replace one of the image pages with  something prepared
+while the image was being read.  For that, you'd need to allocate a page before
+creating the image and pass its PFN in the image header.
 
-	     		  	    	 - Ted
+Thanks,
+Rafael
