@@ -1,102 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760095Ab0I0T0T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 15:26:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21704 "EHLO mx1.redhat.com"
+	id S1760108Ab0I0T0X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 15:26:23 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:51834 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759624Ab0I0T0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 15:26:17 -0400
-Subject: Re: [PATCH 3/6] secmark: export binary yes/no rather than kernel
- internal secid
-From: Eric Paris <eparis@redhat.com>
-To: Paul Moore <paul.moore@hp.com>
-Cc: James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
-        selinux@tycho.nsa.gov, netfilter-devel@vger.kernel.org,
-        sds@tycho.nsa.gov, jengelh@medozas.de, casey@schaufler-ca.com,
-        linux-security-module@vger.kernel.org, netfilter@vger.kernel.org,
-        mr.dash.four@googlemail.com
-In-Reply-To: <1285612156.4935.16.camel@sifl>
-References: <20100924204517.28355.42822.stgit@paris.rdu.redhat.com>
-	 <20100924204531.28355.20320.stgit@paris.rdu.redhat.com>
-	 <alpine.LRH.2.00.1009271038280.25748@tundra.namei.org>
-	 <1285606896.2815.36.camel@localhost.localdomain>
-	 <1285612156.4935.16.camel@sifl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 27 Sep 2010 15:25:25 -0400
-Message-ID: <1285615525.2815.76.camel@localhost.localdomain>
-Mime-Version: 1.0
+	id S1759624Ab0I0T0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 15:26:20 -0400
+Message-ID: <4CA0EFDA.9020703@austin.ibm.com>
+Date: Mon, 27 Sep 2010 14:26:18 -0500
+From: Nathan Fontenot <nfont@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org
+CC: Greg KH <greg@kroah.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH 5/8] v2 Add end_phys_index file
+References: <4CA0EBEB.1030204@austin.ibm.com>
+In-Reply-To: <4CA0EBEB.1030204@austin.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-27 at 14:29 -0400, Paul Moore wrote:
-> On Mon, 2010-09-27 at 13:01 -0400, Eric Paris wrote:
-> > On Mon, 2010-09-27 at 10:50 +1000, James Morris wrote:
-> > > On Fri, 24 Sep 2010, Eric Paris wrote:
-> > 
-> > > For the reasons above, I think the secctx string needs to be exported in 
-> > > addition to this rather than instead of.
-> > 
-> > I won't argue, I don't agree with your reasoning, but I'm not opposed to
-> > this result.  We have 3 competing suggestions:
-> > 
-> > Jan suggested we:
-> > completely eliminate secmark from procfs+netlink and only export secctx
-> > in netlink.
-> > 
-> > Eric suggested we:
-> > completely eliminate secmark from procfs+netlink and then export secctx
-> > in procfs+netlink
-> > 
-> > sounds like James suggested we:
-> > continue to export meaningless and confusing secmark from procfs+netlink
-> > and then export secctx in procfs+netlink as well.
-> > 
-> > I'm going to implement James' idea and resend the patch series.  Any
-> > strong objections?
-> 
-> I apologize for not getting a chance to look at these patches sooner.
-> In general they look fine to me and my only real concern was addressed
-> by Pablo already (breaking userspace due to #define changes).
-> 
-> As far as exporting the 32bit secid/secmark to userspace, I think that
-> is a mistake.  James correctly points out that it does map to a LSM
-> specific value, e.g. SELinux and Smack security labels, but I don't
-> think he makes it clear that in the two LSMs that currently use secids
-> the mapping between the secid and the secctx is not constant; the secids
-> are transient values that will change with each boot in a manner that
-> userspace can not predict.  For this reason, I think exporting the
-> secids is only going to cause users/admins grief, whereas exporting the
-> associated secctx should be a much more stable value and is likely what
-> the user/admin is expecting anyway.
+Update the 'phys_index' properties of a memory block to include a
+'start_phys_index' which is the same as the current 'phys_index' property.
+The property still appears as 'phys_index' in sysfs but the memory_block
+struct name is updated to indicate the start and end values.
+This also adds an 'end_phys_index' property to indicate the id of the
+last section in th memory block.
 
-So it sounds to me like Paul agrees with me that exporting the SELinux
-sid as 'secmark=' was a bad idea.  It's the whole reason this thread
-started, someone wanted to be able to translate and use that field (and
-instantly realized it was useless.)
+Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 
-I see it as having 3 options.  lets assume was have a packet with
-selinux sid=121 and selinux context=packet_t.  We can
+---
+ drivers/base/memory.c  |   39 ++++++++++++++++++++++++++++++---------
+ include/linux/memory.h |    3 ++-
+ 2 files changed, 32 insertions(+), 10 deletions(-)
 
-1) secmark=121 secctx=packet_t
-	This continues to send secmark like we do and people might continue to
-be baffled by the 121.
-
-2) secmark=1 secctx=packet_t
-	This sends a secmark field to userspace so if an application which
-reads this exists (I doubt such an application actually exists in in the
-real world) it will still get all of the information it got before but
-noone will be baffled by what the number means.  1/0 is pretty obvious.
-
-3) secctx=packet_t
-	Smallest easiest, what my patches actually do.  Could theoretically
-break some script that expected the field to be there, but any such
-script is already broken since that field can be easily compiled
-out......
-
-James, if you are adamant about #1 I'll resend, otherwise I'm sticking
-with #3.....
-
--Eric
+Index: linux-next/drivers/base/memory.c
+===================================================================
+--- linux-next.orig/drivers/base/memory.c	2010-09-27 13:50:18.000000000 -0500
++++ linux-next/drivers/base/memory.c	2010-09-27 13:50:38.000000000 -0500
+@@ -97,7 +97,7 @@
+ 	int error;
+ 
+ 	memory->sysdev.cls = &memory_sysdev_class;
+-	memory->sysdev.id = memory->phys_index / sections_per_block;
++	memory->sysdev.id = memory->start_phys_index / sections_per_block;
+ 
+ 	error = sysdev_register(&memory->sysdev);
+ 	return error;
+@@ -138,12 +138,26 @@
+  * uses.
+  */
+ 
+-static ssize_t show_mem_phys_index(struct sys_device *dev,
++static ssize_t show_mem_start_phys_index(struct sys_device *dev,
+ 			struct sysdev_attribute *attr, char *buf)
+ {
+ 	struct memory_block *mem =
+ 		container_of(dev, struct memory_block, sysdev);
+-	return sprintf(buf, "%08lx\n", mem->phys_index / sections_per_block);
++	unsigned long phys_index;
++
++	phys_index = mem->start_phys_index / sections_per_block;
++	return sprintf(buf, "%08lx\n", phys_index);
++}
++
++static ssize_t show_mem_end_phys_index(struct sys_device *dev,
++			struct sysdev_attribute *attr, char *buf)
++{
++	struct memory_block *mem =
++		container_of(dev, struct memory_block, sysdev);
++	unsigned long phys_index;
++
++	phys_index = mem->end_phys_index / sections_per_block;
++	return sprintf(buf, "%08lx\n", phys_index);
+ }
+ 
+ /*
+@@ -158,7 +172,7 @@
+ 		container_of(dev, struct memory_block, sysdev);
+ 
+ 	for (i = 0; i < sections_per_block; i++) {
+-		pfn = section_nr_to_pfn(mem->phys_index + i);
++		pfn = section_nr_to_pfn(mem->start_phys_index + i);
+ 		ret &= is_mem_section_removable(pfn, PAGES_PER_SECTION);
+ 	}
+ 
+@@ -275,14 +289,15 @@
+ 		mem->state = MEM_GOING_OFFLINE;
+ 
+ 	for (i = 0; i < sections_per_block; i++) {
+-		ret = memory_section_action(mem->phys_index + i, to_state);
++		ret = memory_section_action(mem->start_phys_index + i,
++					    to_state);
+ 		if (ret)
+ 			break;
+ 	}
+ 
+ 	if (ret) {
+ 		for (i = 0; i < sections_per_block; i++)
+-			memory_section_action(mem->phys_index + i,
++			memory_section_action(mem->start_phys_index + i,
+ 					      from_state_req);
+ 
+ 		mem->state = from_state_req;
+@@ -330,7 +345,8 @@
+ 	return sprintf(buf, "%d\n", mem->phys_device);
+ }
+ 
+-static SYSDEV_ATTR(phys_index, 0444, show_mem_phys_index, NULL);
++static SYSDEV_ATTR(phys_index, 0444, show_mem_start_phys_index, NULL);
++static SYSDEV_ATTR(end_phys_index, 0444, show_mem_end_phys_index, NULL);
+ static SYSDEV_ATTR(state, 0644, show_mem_state, store_mem_state);
+ static SYSDEV_ATTR(phys_device, 0444, show_phys_device, NULL);
+ static SYSDEV_ATTR(removable, 0444, show_mem_removable, NULL);
+@@ -514,17 +530,21 @@
+ 		return -ENOMEM;
+ 
+ 	scn_nr = __section_nr(section);
+-	mem->phys_index = base_memory_block_id(scn_nr) * sections_per_block;
++	mem->start_phys_index =
++			base_memory_block_id(scn_nr) * sections_per_block;
++	mem->end_phys_index = mem->start_phys_index + sections_per_block - 1;
+ 	mem->state = state;
+ 	atomic_inc(&mem->section_count);
+ 	mutex_init(&mem->state_mutex);
+-	start_pfn = section_nr_to_pfn(mem->phys_index);
++	start_pfn = section_nr_to_pfn(mem->start_phys_index);
+ 	mem->phys_device = arch_get_memory_phys_device(start_pfn);
+ 
+ 	ret = register_memory(mem);
+ 	if (!ret)
+ 		ret = mem_create_simple_file(mem, phys_index);
+ 	if (!ret)
++		ret = mem_create_simple_file(mem, end_phys_index);
++	if (!ret)
+ 		ret = mem_create_simple_file(mem, state);
+ 	if (!ret)
+ 		ret = mem_create_simple_file(mem, phys_device);
+@@ -571,6 +591,7 @@
+ 	if (atomic_dec_and_test(&mem->section_count)) {
+ 		unregister_mem_sect_under_nodes(mem);
+ 		mem_remove_simple_file(mem, phys_index);
++		mem_remove_simple_file(mem, end_phys_index);
+ 		mem_remove_simple_file(mem, state);
+ 		mem_remove_simple_file(mem, phys_device);
+ 		mem_remove_simple_file(mem, removable);
+Index: linux-next/include/linux/memory.h
+===================================================================
+--- linux-next.orig/include/linux/memory.h	2010-09-27 13:49:37.000000000 -0500
++++ linux-next/include/linux/memory.h	2010-09-27 13:50:38.000000000 -0500
+@@ -22,7 +22,8 @@
+ #include <asm/atomic.h>
+ 
+ struct memory_block {
+-	unsigned long phys_index;
++	unsigned long start_phys_index;
++	unsigned long end_phys_index;
+ 	unsigned long state;
+ 	atomic_t section_count;
 
