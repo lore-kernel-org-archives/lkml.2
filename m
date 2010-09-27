@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760085Ab0I0Tak (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 15:30:40 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47658 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755885Ab0I0Taj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 15:30:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version;
-        b=mS1Get6YIfXUrc3lrzaPzihULeAily2yxpXmuzLvcdtjraguPqQ8TnESTnYdRYLIcC
-         0aeqGQHEePTf5f5JE18y3SWRsrfu8fShm7h7/Ouet0if0ESTEeUD/Iuj71t7nxyTFcnf
-         9AhZTEzaoY4gFm72y36HW1AxjtSPbtAgoNYEg=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC PATCH] x86: Barf when faults happen in NMI
-Date: Mon, 27 Sep 2010 21:30:33 +0200
-Message-Id: <1285615833-5324-1-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-regression
-X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
+	id S1760106Ab0I0TcK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 15:32:10 -0400
+Received: from cantor.suse.de ([195.135.220.2]:41201 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758481Ab0I0TcJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 15:32:09 -0400
+Date: Mon, 27 Sep 2010 12:28:20 -0700
+From: Greg KH <gregkh@suse.de>
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: security@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Staging: vt6655/vt6656 security issues
+Message-ID: <20100927192820.GC25713@suse.de>
+References: <1285612256.10963.44.camel@dan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285612256.10963.44.camel@dan>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In x86, faults exit by executing the iret instruction, which then
-reenables NMIs if we faulted in NMI context. Then if a fault
-happens in NMI, another NMI can nest after the fault exits.
+On Mon, Sep 27, 2010 at 02:30:56PM -0400, Dan Rosenberg wrote:
+> Based on a brief glance looking for security issues, I just wanted to
+> mention that these drivers are nowhere near ready to be added to the
+> main kernel.  I'm not interested in developing these drivers further,
+> but there are at least six stack buffer overflows:
+> 
+> vt6655/wpactl.c: wpa_set_keys(), line 239
+> vt6655/wpactl.c: wpa_set_keys(), line 280
+> vt6655/wpactl.c: wpa_set_associate(), line 770 (reported by Dan
+> Carpenter)
+> 
+> vt6656/wpactl.c: wpa_set_keys(), line 239
+> vt6656/wpactl.c: wpa_set_keys(), line 279
+> vt6656/wpactl.c: wpa_set_associate(), line 779
+> 
+> And four heap corruption issues due to integer overflow in the
+> allocation size:
+> 
+> vt6655/ioctl.c: private_ioctl(), line 329
+> vt6655/ioctl.c: private_ioctl(), line 625
+> 
+> vt6656/ioctl.c: private_ioctl(), line 326
+> vt6656/ioctl.c: private_ioctl(), line 615
+> 
+> They are all caused by unchecked copy_from_user() calls with
+> user-provided length fields or kmalloc() calls with arithmetic on
+> user-provided sizes.  This kind of sloppiness suggests there are almost
+> certainly other major security issues in this code.
 
-But we don't yet support nested NMIs because we have only one NMI
-stack. To prevent that, trigger a bug when a fault happens in NMI
-context.
+I would not doubt that at all.  For the moment, these drivers are being
+used to allow users to use their machines, and a "real" driver is soon
+replacing them for the long-term.  They also all run on laptops, where
+such security issues are not as relevant due to the "physical access"
+mode.  Not that this excuses such horrible behavior, but it does lesten
+the threat model a lot.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
+I thank you for your patches and looking into this code, but if you
+want, don't really worry about future work in this area, as the drivers
+will just be deleted entirely soon (with any luck).
 
-I first thought about putting it in the vmalloc fault path only.
-But then I saw more occasions for the kernel to fault (kmemcheck
-or so), and so I thought it should be better put in the all in one
-path. But I suspect you won't like that conditional in the big
-x86 fault path.
+thanks,
 
-
- arch/x86/mm/fault.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 4c4508e..80c997e 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -955,6 +955,8 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
- 	int write;
- 	int fault;
- 
-+	BUG_ON(in_nmi());
-+
- 	tsk = current;
- 	mm = tsk->mm;
- 
--- 
-1.6.2.3
-
+greg k-h
