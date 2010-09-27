@@ -1,141 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933397Ab0I0XBq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 19:01:46 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:36602 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753411Ab0I0XBp (ORCPT
+	id S1760273Ab0I0XGs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 19:06:48 -0400
+Received: from smtp125.sbc.mail.sp1.yahoo.com ([69.147.65.184]:37970 "HELO
+	smtp125.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757460Ab0I0XGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 19:01:45 -0400
-Date: Mon, 27 Sep 2010 16:01:11 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Mingming Cao <cmm@us.ibm.com>,
-        Ric Wheeler <rwheeler@redhat.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
+	Mon, 27 Sep 2010 19:06:46 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: yVdcvxMVM1lIcPh0K57Dab.W1ynWHHEOXfzC.G8UJUiLlFU
+ 659G6a8as7r9HDeJnyxo4q9ylCfG23fX.hbsuqjLY2DSTXYLFHzZBaQ2_sLy
+ TwVCOijjjU2ok5BBVdDxBrwcs86qj3bxJcXHfCOI7c8S_yzSBWQEf2gKfa2A
+ oxBsUANvItuLTntuaUfgOvoD_QiHdXKJ9LiL1pAC2Cky_vqPPh75bu1NDzVs
+ VZk_S33IMlBYwNmalGJKpxLLgrwhbqmsY6SmiswgjmDrNtuD4kMqkcJDRlab
+ w5kLj__oenYF.97TkK0a236U-
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [PATCH v2 01/11] scsi: Convert struct
+	Scsi_Host->cmd_serial_number to atomic_t
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Christof Schmitt <christof.schmitt@de.ibm.com>
+Cc: Mike Christie <michaelc@cs.wisc.edu>, Joe Eykholt <jeykholt@cisco.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>,
-        Tejun Heo <tj@kernel.org>, hch@lst.de
-Subject: Re: Performance testing of various barrier reduction patches [was:
-	Re: [RFC v4] ext4: Coordinate fsync requests]
-Message-ID: <20100927230111.GV25555@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20100805164008.GH2901@thunk.org> <20100805164504.GI2901@thunk.org> <20100806070424.GD2109@tux1.beaverton.ibm.com> <20100809195324.GG2109@tux1.beaverton.ibm.com> <4D5AEB7F-32E2-481A-A6C8-7E7E0BD3CE98@dilger.ca> <20100809233805.GH2109@tux1.beaverton.ibm.com> <20100819021441.GM2109@tux1.beaverton.ibm.com> <20100823183119.GA28105@tux1.beaverton.ibm.com> <20100923232527.GB25624@tux1.beaverton.ibm.com> <B0A8EB94-E2F7-4268-AE99-C4A7402E880D@dilger.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <B0A8EB94-E2F7-4268-AE99-C4A7402E880D@dilger.ca>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Christoph Hellwig <hch@lst.de>
+In-Reply-To: <20100927140551.GB8473@schmichrtp.mainz.de.ibm.com>
+References: <1284747709-20862-1-git-send-email-nab@linux-iscsi.org>
+	 <4C93BB8E.2080501@cisco.com> <4C9427B6.9050404@cs.wisc.edu>
+	 <1284839878.13344.300.camel@haakon2.linux-iscsi.org>
+	 <20100927140551.GB8473@schmichrtp.mainz.de.ibm.com>
+Content-Type: text/plain
+Date: Mon, 27 Sep 2010 16:02:28 -0700
+Message-Id: <1285628548.8880.64.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 24, 2010 at 12:24:04AM -0600, Andreas Dilger wrote:
-> On 2010-09-23, at 17:25, Darrick J. Wong wrote:
-> > To try to find an explanation, I started looking for connections between
-> > fsync delay values and average flush times.  I noticed that the setups with
-> > low (< 8ms) flush times exhibit better performance when fsync coordination
-> > is not attempted, and the setups with higher flush times exhibit better
-> > performance when fsync coordination happens.  This also is no surprise, as
-> > it seems perfectly reasonable that the more time consuming a flush is, the
-> > more desirous it is to spend a little time coordinating those flushes
-> > across CPUs.
+On Mon, 2010-09-27 at 16:05 +0200, Christof Schmitt wrote:
+> On Sat, Sep 18, 2010 at 12:57:58PM -0700, Nicholas A. Bellinger wrote:
+> > On Fri, 2010-09-17 at 21:45 -0500, Mike Christie wrote:
+> > > On 09/17/2010 02:03 PM, Joe Eykholt wrote:
+> > > >
+> > > > How about instead of adding use_serial_number, let's just have the
+> > > > drivers that want a serial number call scsi_cmd_get_serial()
+> > > 
+> > > I think this sounds better.
+> > > 
 > > 
-> > I think a reasonable next step would be to alter this patch so that
-> > ext4_sync_file always measures the duration of the flushes that it issues,
-> > but only enable the coordination steps if it detects the flushes taking
-> > more than about 8ms.  One thing I don't know for sure is whether 8ms is a
-> > result of 2*HZ (currently set to 250) or if 8ms is a hardware property.
+> > In that case I will go ahead and add explict scsi_cmd_get_serial() calls
+> > to the LLDs that use struct scsi_cmnd->serial_number in anything beyond
+> > an obvious and simple informational purpose.
+> > 
+> > > You could also convert drivers to the host tagging if you needed a 
+> > > unique id for each command sent to a host.
+> > 
+> > Hmmm, what does this entail again..?
+> > 
+> > > 
+> > > > and stop calling it from scsi_dispatch_cmd()?   AFAICT, it's only
+> > > > used in debug messages in some drivers.  I didn't find other usages
+> > > > but didn't do an exhaustive search.
+> > > 
+> > > The comments for serial_number say that it is only supposed to be used 
+> > > for debugging printks and most drivers use it for that.
+> > 
+> > So I would suppose it would be OK for those drivers to continue to
+> > printk serial_number to show the internal serial_number allocation is
+> > now disabled by default.
+> > 
+
+<SNIP>
+
+> > > 
+> > > zfcp looks like it copies it. It does not look like the driver needs it.
+> > > 
+> > 
+> > Ok, I will look at removing it's usage in zfcp or if necessary add an
+> > the explict scsi_cmd_get_serial() call.
 > 
-> Note that the JBD/JBD2 code will already dynamically adjust the journal flush
-> interval based on the delay seen when writing the journal commit block.  This
-> was done to allow aggregating sync journal operations for slow devices, and
-> allowing fast (no delay) sync on fast devices.  See jbd2_journal_stop() for
-> details.
-> 
-> I think the best approach is to just depend on the journal to do this sync
-> aggregation, if at all possible, otherwise use the same mechanism in ext3/4
-> for fsync operations that do not involve the journal (e.g. nojournal mode,
-> data sync in writeback mode, etc).
+> In zfcp, the serial_number is only accessed for writing it to debug
+> traces. With the change that the driver has to request the serial
+> number through use_serial_number, simply remove the serial number from
+> zfcp.
 
-I've been informed that there's confusion about how to interpret this
-spreadsheet.  I'll first provide a few clarifications, then discuss Andreas'
-suggestion, which I've coded up and given some light testing.
+Hi Christof,
 
-Zeroth, the kernel is 2.6.36-rc5 with a few patchsets applied:
- 1. Tejun Heo's conversion of barriers to flush/fua.
- 2. Jan Kara's barrier generation patch.
- 3. My old patch to record if there's dirty data in the disk cache.
- 4. My newer patch to implement fsync coordination in ext4.
- 5. My newest patch which implements coordination via jbd2.
+So since the use of struct scsi_cmnd->serial_number is purely
+informational for some LLDs (including zfcp) , I have been putting the
+conversion of these LLDs as a low priority ATM.   I would happily accept
+a patch to remove these.  8-)
 
-Patches 2, 3, 4, and 5 all have debugging toggles so I can quickly run
-experiments.
+Best,
 
-First, the "fsync_delay_us" column records the behavior of my (latest) fsync
-coordination patch.  The raw control values might be a bit confusing, so I
-elaborated them a little more in the spreadsheet.  The "old fsync behavior"
-entries use the current upstream semantics (no coordination, everyone issues
-their own flush).  "jbd2 fsync" means coordination of fsyncs through jbd2 as
-detailed below.  "use avg sync time" measures the average time it takes to
-issue a flush command, and tells the first thread into ext4_sync_pages to wait
-that amount of time for other threads to catch up.
+--nab
 
-Second, the "nojan" column is a control knob I added to Jan Kara's old barrier
-generation patch so that I could measure its effects.  0 means always track
-barrier generations and don't submit flushes for already-flushed data.  1 means
-always issue flushes, regardless of generation counts.
 
-Third, the "nodj" column is a control knob that controls my old
-EXT4_STATE_DIRTY_DATA patch.  A zero here means that a flush will only be
-triggered if ext4_write_page has written some dirty data and there hasn't been
-a flush yet.  1 disables this logic.
-
-Fourth, the bolded cells in the table represent the highest transactions per
-second count across all fsync_delay_us values when holding the other four
-control variables constant.  For example, let's take a look at
-host=elm3a4,directio=0,nojan=0,nodj=0.  There are five fsync_delay_us values
-(old, jbd2, avg, 1, 500) and five corresponding results (145.84, 184.06,
-181.58, 152.39, 158.19).  184.06 is the highest, hence jbd2 wins and is in bold
-face.
-
-Background colors are used to group the rows by fsync_delay_us.
-
-The barriers=0 results are, of course, the transactions per second count when
-the fs is mounted with barrier support disabled.  This ought to provide a rough
-idea of the upper performance limit of each piece of hardware.
-
-------
-
-As for Andreas' suggestion, he wants ext4 to use jbd2 as coordination point for
-all fsync calls.  I could be wrong, but I think that the following snippet
-ought to do the trick:
-
-h = ext4_journal_start(journal, 0);
-ext4_journal_stop(h);
-if (jbd2_journal_start_commit(journal, &target))
-	jbd2_log_wait_commit(journal, target);
-
-It looks as though this snippet effectively says "Send an empty transaction.
-Then, if there are any live or committing transactions, wait for them to
-finish", which sounds like what we want.  I figured this also means that the
-nojan/nodj settings would not have any significant effect on the results, which
-seems to be true (though nojan/nodj have had little effect under Tejun's
-patchset).  So I coded up that patch and gave it a spin on my testing farm.
-The results have been added to the 2.6.36-rc5 spreadsheet.  Though I have to
-say, this seems like an awful lot of overhead just to issue a flush command.
-
-Given a quick look around the jbd2 code, it seems that going through the journal
-ought to have a higher overhead cost, which would negatively impact performance
-on hardware that features low flush times, and this seems to be true for
-elm3a63, elm3c44_sas, and elm3c71_sas in directio=1 mode, where we see rather
-large regressions against fsync_delay=avg_sync_time.  Curiously, I saw a
-dramatic increase in speed for the SSDs when directio=1, which probably relates
-to the way SSDs perform writes.
-
-Other than those regressions, the jbd2 fsync coordination is about as fast as
-sending the flush directly from ext4.  Unfortunately, where there _are_
-regressions they seem rather large, which makes this approach (as implemented,
-anyway) less attractive.  Perhaps there is a better way to do it?
-
---D
