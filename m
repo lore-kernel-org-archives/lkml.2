@@ -1,129 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760100Ab0I0T2O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 15:28:14 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:46913 "EHLO e6.ny.us.ibm.com"
+	id S1760134Ab0I0T2n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 15:28:43 -0400
+Received: from mail.atheros.com ([12.19.149.2]:36661 "EHLO mail.atheros.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755703Ab0I0T2M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 15:28:12 -0400
-Message-ID: <4CA0F049.8000203@austin.ibm.com>
-Date: Mon, 27 Sep 2010 14:28:09 -0500
-From: Nathan Fontenot <nfont@austin.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+	id S1755703Ab0I0T2m convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 15:28:42 -0400
+From: Vipin Mehta <Vipin.Mehta@Atheros.com>
+To: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        driverdevel <devel@driverdev.osuosl.org>,
+        "gregkh@suse.de" <gregkh@suse.de>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "forest@alittletooquiet.net" <forest@alittletooquiet.net>,
+        "yunpeng.gao@intel.com" <yunpeng.gao@intel.com>
+Date: Mon, 27 Sep 2010 12:28:40 -0700
+Subject: RE: linux-next: Tree for September 27 (staging: ath6kl, spectra, &
+ vt6655)
+Thread-Topic: linux-next: Tree for September 27 (staging: ath6kl, spectra, &
+ vt6655)
+Thread-Index: Actecy+qI7WntGk5R++QRYCfdjQxAwABhiQQ
+Message-ID: <35B17FE5076C7040809188FBE7913F983F23AFDDA6@SC1EXMB-MBCL.global.atheros.com>
+References: <20100927162143.3a9c1efe.sfr@canb.auug.org.au>
+ <20100927113829.2928636a.rdunlap@xenotime.net>
+In-Reply-To: <20100927113829.2928636a.rdunlap@xenotime.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org
-CC: Greg KH <greg@kroah.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH 7/8] v2 Define memory_block_size_bytes() for powerpc/pseries
-References: <4CA0EBEB.1030204@austin.ibm.com>
-In-Reply-To: <4CA0EBEB.1030204@austin.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define a version of memory_block_size_bytes() for powerpc/pseries such that
-a memory block spans an entire lmb.
+> Hi all,
+> 
+> Changes since 20100924:
 
-Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 
----
- arch/powerpc/platforms/pseries/hotplug-memory.c |   66 +++++++++++++++++++-----
- 1 file changed, 53 insertions(+), 13 deletions(-)
+drivers/staging/ath6kl/os/linux/ar6000_drv.c:1370:1: warning: "CONFIG_AR600x_BT_RESET_PIN" redefined
+./include/generated/autoconf.h:419:1: warning: this is the location of the previous definition
+drivers/staging/ath6kl/os/linux/ioctl.c:4673: warning: the frame size of 2052 bytes is larger than 1024 bytes
+drivers/staging/ath6kl/hif/sdio/linux_sdio/src/hif_scatter.c:288: error: 'struct mmc_host' has no member named 'max_hw_segs'
+drivers/staging/ath6kl/hif/sdio/linux_sdio/src/hif_scatter.c:289: error: 'struct mmc_host' has no member named 'max_hw_segs'
 
-Index: linux-next/arch/powerpc/platforms/pseries/hotplug-memory.c
-===================================================================
---- linux-next.orig/arch/powerpc/platforms/pseries/hotplug-memory.c	2010-09-27 13:49:34.000000000 -0500
-+++ linux-next/arch/powerpc/platforms/pseries/hotplug-memory.c	2010-09-27 13:50:45.000000000 -0500
-@@ -17,6 +17,54 @@
- #include <asm/pSeries_reconfig.h>
- #include <asm/sparsemem.h>
- 
-+static u32 get_memblock_size(void)
-+{
-+	struct device_node *np;
-+	unsigned int memblock_size = 0;
-+
-+	np = of_find_node_by_path("/ibm,dynamic-reconfiguration-memory");
-+	if (np) {
-+		const unsigned long *size;
-+
-+		size = of_get_property(np, "ibm,lmb-size", NULL);
-+		memblock_size = size ? *size : 0;
-+
-+		of_node_put(np);
-+	} else {
-+		unsigned int memzero_size = 0;
-+		const unsigned int *regs;
-+
-+		np = of_find_node_by_path("/memory@0");
-+		if (np) {
-+			regs = of_get_property(np, "reg", NULL);
-+			memzero_size = regs ? regs[3] : 0;
-+			of_node_put(np);
-+		}
-+
-+		if (memzero_size) {
-+			/* We now know the size of memory@0, use this to find
-+			 * the first memoryblock and get its size.
-+			 */
-+			char buf[64];
-+
-+			sprintf(buf, "/memory@%x", memzero_size);
-+			np = of_find_node_by_path(buf);
-+			if (np) {
-+				regs = of_get_property(np, "reg", NULL);
-+				memblock_size = regs ? regs[3] : 0;
-+				of_node_put(np);
-+			}
-+		}
-+	}
-+
-+	return memblock_size;
-+}
-+
-+u32 memory_block_size_bytes(void)
-+{
-+	return get_memblock_size();
-+}
-+
- static int pseries_remove_memblock(unsigned long base, unsigned int memblock_size)
- {
- 	unsigned long start, start_pfn;
-@@ -127,30 +175,22 @@
- 
- static int pseries_drconf_memory(unsigned long *base, unsigned int action)
- {
--	struct device_node *np;
--	const unsigned long *lmb_size;
-+	unsigned long memblock_size;
- 	int rc;
- 
--	np = of_find_node_by_path("/ibm,dynamic-reconfiguration-memory");
--	if (!np)
-+	memblock_size = get_memblock_size();
-+	if (!memblock_size)
- 		return -EINVAL;
- 
--	lmb_size = of_get_property(np, "ibm,lmb-size", NULL);
--	if (!lmb_size) {
--		of_node_put(np);
--		return -EINVAL;
--	}
--
- 	if (action == PSERIES_DRCONF_MEM_ADD) {
--		rc = memblock_add(*base, *lmb_size);
-+		rc = memblock_add(*base, memblock_size);
- 		rc = (rc < 0) ? -EINVAL : 0;
- 	} else if (action == PSERIES_DRCONF_MEM_REMOVE) {
--		rc = pseries_remove_memblock(*base, *lmb_size);
-+		rc = pseries_remove_memblock(*base, memblock_size);
- 	} else {
- 		rc = -EINVAL;
- 	}
- 
--	of_node_put(np);
- 	return rc;
- }
-
+The problem is because the mmc stack is out of sync in Greg's staging tree and Stephen's linux-next tree. Greg asked me to generate a patch which I did and emailed to Greg. 
