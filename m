@@ -1,42 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759067Ab0I0MQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 08:16:29 -0400
-Received: from mtoichi12.ns.itscom.net ([219.110.2.182]:33900 "EHLO
-	mtoichi12.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754170Ab0I0MQ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 08:16:28 -0400
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: Re: [PATCH 6/7 v3] overlay: hybrid overlay filesystem prototype
-To: Andreas Gruenbacher <agruen@suse.de>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Valerie Aurora <vaurora@redhat.com>,
-        linuxram@us.ibm.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, neilb@suse.de, viro@zeniv.linux.org.uk
-In-Reply-To: <201009271349.49077.agruen@suse.de>
-References: <20100920180404.939991832@szeredi.hu> <20100924175653.GB25129@shell> <E1P08oT-0004C7-3O@pomaz-ex.szeredi.hu> <201009271349.49077.agruen@suse.de>
-Date: Mon, 27 Sep 2010 21:15:29 +0900
-Message-ID: <307.1285589729@jrobl>
+	id S1759100Ab0I0MR3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 08:17:29 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:38835 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759046Ab0I0MR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 08:17:28 -0400
+Date: Mon, 27 Sep 2010 05:16:50 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jan Beulich <JBeulich@novell.com>
+CC: "r.marek@assembler.cz" <r.marek@assembler.cz>,
+        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: x86/hwmon: conditionalize coretemp's dependency on PCI
+Message-ID: <20100927121650.GB31847@ericsson.com>
+References: <4C8E18790200007800015AF7@vpn.id2.novell.com>
+ <20100924185509.GA20155@ericsson.com>
+ <4CA05F220200007800018F81@vpn.id2.novell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4CA05F220200007800018F81@vpn.id2.novell.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 27, 2010 at 03:08:50AM -0400, Jan Beulich wrote:
+[...]
 
-Andreas Gruenbacher:
-> I can think of arguments for either behavior, perhaps with a slight preference 
-> for your suggestion (default = opaque).
->
-> In any case, admins will need a way to flip opaque flags and remove undesired 
-> whiteouts.
+> >>  
+> >>  config SENSORS_CORETEMP
+> >>  	tristate "Intel Core/Core2/Atom temperature sensor"
+> >> -	depends on X86 && PCI && EXPERIMENTAL
+> >> +	depends on X86 && EXPERIMENTAL
+> >> +	depends on PCI || (!MATOM && !GENERIC_CPU && !X86_GENERIC)
+> >>  	help
+> >>  	  If you say yes here you get support for the temperature
+> >>  	  sensor inside your CPU. Most of the family 6 CPUs
+> > 
+> > Resending my reply to this one as well. Again, apologies if there is 
+> > duplication.
+> > 
+> > The coretemp code unconditionally calls pci functions, even if PCI is not 
+> > defined.
+> > I am concerned that this might cause problems. It might be better to stick 
+> > with
+> > the more generic dependency instead of trying to optimize too much.
+> 
+> pci.h takes care to define stub inline functions for the !CONFIG_PCI
+> case. It seemed largely odd for a driver like this to depend on PCI
+> at all, and hence I think it is more transparent to make the needs
+> explicit.
+> 
+Seems to me the dependency should not exist in the first place, then.
+Otherwise, the driver would still be disabled for GENERIC_CPU, which isn't
+good either.
 
-Agreed.
-Aufs is providing two options for this issue, "diropq=always" and
-"diropq=whiteouted". Several years ago, the default was "always". But
-soon it changed to "whiteouted" and I have never received objection
-from users.
-As for as I know, some users are happy since the number of whiteouts was
-reduced. Because they merge layers manually for system
-maintenance. Unnecessary whiteouts are not good to them.
+Are there examples of other drivers which are not defining the PCI dependency
+but are conditionally calling pci functions ?
 
-
-J. R. Okajima
+Guenter
