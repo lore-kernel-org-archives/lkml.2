@@ -1,70 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759132Ab0I0VmI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 17:42:08 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:33101 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754734Ab0I0VmG (ORCPT
+	id S1759240Ab0I0Vwf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 17:52:35 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:43680 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751405Ab0I0Vwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 17:42:06 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: jgarzik@pobox.com
-Subject: [PATCH] de2104x: fix ethtool
-Date: Mon, 27 Sep 2010 23:41:45 +0200
-User-Agent: KMail/1.9.10
-Cc: netdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
+	Mon, 27 Sep 2010 17:52:34 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Andreas Schwab <schwab@linux-m68k.org>
+Cc: =?utf-8?Q?Pawe=C5=82?= Sikora <pluto@agmk.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: git bisect selects commit outside initial bisect range?
+In-Reply-To: Your message of "Mon, 27 Sep 2010 22:29:13 +0200."
+             <m2fwwv7wx2.fsf@igel.home>
+From: Valdis.Kletnieks@vt.edu
+References: <201009272051.33882.pluto@agmk.net>
+            <m2fwwv7wx2.fsf@igel.home>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1285624307_7757P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201009272341.50668.linux@rainbow-software.org>
+Date: Mon, 27 Sep 2010 17:51:47 -0400
+Message-ID: <32106.1285624307@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A090209.4CA111F3.0158,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the interface is up, using ethtool breaks it because:
-a) link is put down but media_timer interval is not shortened to NO_LINK
-b) rxtx is stopped but not restarted
+--==_Exmh_1285624307_7757P
+Content-Type: text/plain; charset=us-ascii
 
-Also manual 10baseT-HD (and probably FD too - untested) mode does not work -
-the link is forced up, packets are transmitted but nothing is received.
-Changing CSR14 value to match documentation (not disabling link check) fixes this.
+On Mon, 27 Sep 2010 22:29:13 +0200, Andreas Schwab said:
+> Paweł Sikora <pluto@agmk.net> writes:
+> 
+> > i've started git bisect between good-v2.6.34 and bad-v2.6.35-rc1
+> > and after few steps git-bisect jumps to commit before v2.6.34.
+> >
+> > [~/src/linux/linux-2.6]$ make kernelrelease
+> > 2.6.34-rc6-00551-g7a6cb0d
+> >
+> > is it normal that bisect selects next step outside initial range?
+> 
+> It's not outside the range:
+> 
+> $ git rev-list v2.6.34..v2.6.35-rc1 | grep ^7a6cb0d
+> 7a6cb0d5497418599d2125b670926b75e673861c
+> 
+> 7a6cb0d is a commit in a branch reachable from v2.6.35-rc1 but not from
+> v2.6.34.
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+I think he was confused because that commit is in an section of the tree
+that was committed to a maintainer tree before 2.6.34 - so when he boots
+the resulting kernel it says 2.6.33-rc3-mumble or similar.  I know it threw
+me for a loop the first few times it happened.
 
---- linux-2.6.36-rc3-/drivers/net/tulip/de2104x.c	2010-09-26 21:58:42.000000000 +0200
-+++ linux-2.6.36-rc3/drivers/net/tulip/de2104x.c	2010-09-27 23:36:51.000000000 +0200
-@@ -364,9 +364,9 @@ static u16 t21040_csr15[] = { 0, 0, 0x00
- 
- /* 21041 transceiver register settings: TP AUTO, BNC, AUI, TP, TP FD*/
- static u16 t21041_csr13[] = { 0xEF01, 0xEF09, 0xEF09, 0xEF01, 0xEF09, };
--static u16 t21041_csr14[] = { 0xFFFF, 0xF7FD, 0xF7FD, 0x6F3F, 0x6F3D, };
-+static u16 t21041_csr14[] = { 0xFFFF, 0xF7FD, 0xF7FD, 0x7F3F, 0x7F3D, };
- /* If on-chip autonegotiation is broken, use half-duplex (FF3F) instead */
--static u16 t21041_csr14_brk[] = { 0xFF3F, 0xF7FD, 0xF7FD, 0x6F3F, 0x6F3D, };
-+static u16 t21041_csr14_brk[] = { 0xFF3F, 0xF7FD, 0xF7FD, 0x7F3F, 0x7F3D, };
- static u16 t21041_csr15[] = { 0x0008, 0x0006, 0x000E, 0x0008, 0x0008, };
- 
- 
-@@ -1596,12 +1596,15 @@ static int __de_set_settings(struct de_p
- 		return 0; /* nothing to change */
- 
- 	de_link_down(de);
-+	mod_timer(&de->media_timer, jiffies + DE_TIMER_NO_LINK);
- 	de_stop_rxtx(de);
- 
- 	de->media_type = new_media;
- 	de->media_lock = media_lock;
- 	de->media_advertise = ecmd->advertising;
- 	de_set_media(de);
-+	if (netif_running(de->dev))
-+		de_start_rxtx(de);
- 
- 	return 0;
- }
+Pawel: What's happened is you're looking at a commit that got into a maintainer
+tree *before* 2.6.34 came out (so the top-level Makefile *at that time in that
+tree* said 2.6.33-mumble or something), but the maintainer fed it into Linus's
+tree in the merge window *after* 2.6.34 shipped.  Yes, it's bizarre, but that's
+how git deals with it.  If you look at the graph produced by 'git bisect
+visualize' it makes a bit more sense.
 
 
--- 
-Ondrej Zary
+--==_Exmh_1285624307_7757P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFMoRHzcC3lWbTT17ARAniOAKDaMU1ZLAjLfuRheopjF4p7YYjwqgCbBvfV
+bQQ5iABIFmbyxtfCgOnfLTg=
+=/Nia
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1285624307_7757P--
+
