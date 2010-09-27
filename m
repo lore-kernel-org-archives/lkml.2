@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933052Ab0I0KDf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 06:03:35 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:64410 "EHLO song.cn.fujitsu.com"
+	id S1752121Ab0I0KFF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 06:05:05 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:60348 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932188Ab0I0KDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 06:03:33 -0400
-Message-ID: <4CA06CFF.6090105@cn.fujitsu.com>
-Date: Mon, 27 Sep 2010 18:07:59 +0800
+	id S1750923Ab0I0KFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 06:05:03 -0400
+Message-ID: <4CA06D59.5050704@cn.fujitsu.com>
+Date: Mon, 27 Sep 2010 18:09:29 +0800
 From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         KVM <kvm@vger.kernel.org>
-Subject: [PATCH 6/7] KVM: MMU: audit: introduce audit_printk to cleanup audit
- code
+Subject: [PATCH 7/7] KVM: MMU: audit: check whether have unsync sps after
+ root sync
 References: <4CA06BA4.4090303@cn.fujitsu.com>
 In-Reply-To: <4CA06BA4.4090303@cn.fujitsu.com>
 Content-Type: text/plain; charset=UTF-8
@@ -24,123 +24,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce audit_printk, and record audit point instead audit name
+After root synced, all unsync sps are synced, this patch add a check to make
+sure it's no unsync sps in VCPU's page table
 
 Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- arch/x86/kvm/mmu_audit.c |   42 ++++++++++++++++++------------------------
- 1 files changed, 18 insertions(+), 24 deletions(-)
+ arch/x86/kvm/mmu.c       |   11 +++++++++--
+ arch/x86/kvm/mmu_audit.c |   11 ++++++++++-
+ 2 files changed, 19 insertions(+), 3 deletions(-)
 
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index afde64b..ba7e764 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -53,14 +53,18 @@ enum {
+ 	AUDIT_PRE_PAGE_FAULT,
+ 	AUDIT_POST_PAGE_FAULT,
+ 	AUDIT_PRE_PTE_WRITE,
+-	AUDIT_POST_PTE_WRITE
++	AUDIT_POST_PTE_WRITE,
++	AUDIT_PRE_SYNC,
++	AUDIT_POST_SYNC
+ };
+ 
+ char *audit_point_name[] = {
+ 	"pre page fault",
+ 	"post page fault",
+ 	"pre pte write",
+-	"post pte write"
++	"post pte write",
++	"pre sync",
++	"post sync"
+ };
+ 
+ #undef MMU_DEBUG
+@@ -2516,6 +2520,8 @@ static void mmu_sync_roots(struct kvm_vcpu *vcpu)
+ 
+ 	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
+ 		return;
++
++	trace_kvm_mmu_audit(vcpu, AUDIT_PRE_SYNC);
+ 	if (vcpu->arch.mmu.root_level == PT64_ROOT_LEVEL) {
+ 		hpa_t root = vcpu->arch.mmu.root_hpa;
+ 		sp = page_header(root);
+@@ -2531,6 +2537,7 @@ static void mmu_sync_roots(struct kvm_vcpu *vcpu)
+ 			mmu_sync_children(vcpu, sp);
+ 		}
+ 	}
++	trace_kvm_mmu_audit(vcpu, AUDIT_POST_SYNC);
+ }
+ 
+ void kvm_mmu_sync_roots(struct kvm_vcpu *vcpu)
 diff --git a/arch/x86/kvm/mmu_audit.c b/arch/x86/kvm/mmu_audit.c
-index dcca3e7..66219af 100644
+index 66219af..4aee32c 100644
 --- a/arch/x86/kvm/mmu_audit.c
 +++ b/arch/x86/kvm/mmu_audit.c
-@@ -19,7 +19,11 @@
+@@ -164,6 +164,14 @@ static void audit_sptes_have_rmaps(struct kvm_vcpu *vcpu, u64 *sptep, int level)
+ 		inspect_spte_has_rmap(vcpu->kvm, sptep);
+ }
  
- #include <linux/ratelimit.h>
- 
--static const char *audit_msg;
-+static int audit_point;
++static void audit_spte_after_sync(struct kvm_vcpu *vcpu, u64 *sptep, int level)
++{
++	struct kvm_mmu_page *sp = page_header(__pa(sptep));
 +
-+#define audit_printk(fmt, args...)		\
-+	printk(KERN_ERR "audit: (%s) error: "	\
-+		fmt, audit_point_name[audit_point], ##args)
- 
- typedef void (*inspect_spte_fn) (struct kvm_vcpu *vcpu, u64 *sptep, int level);
- 
-@@ -93,21 +97,18 @@ static void audit_mappings(struct kvm_vcpu *vcpu, u64 *sptep, int level)
- 
- 	if (sp->unsync) {
- 		if (level != PT_PAGE_TABLE_LEVEL) {
--			printk(KERN_ERR "audit: (%s) error: unsync sp: %p level = %d\n",
--				audit_msg, sp, level);
-+			audit_printk("unsync sp: %p level = %d\n", sp, level);
- 			return;
- 		}
- 
- 		if (*sptep == shadow_notrap_nonpresent_pte) {
--			printk(KERN_ERR "audit: (%s) error: notrap spte in unsync sp: %p\n",
--				audit_msg, sp);
-+			audit_printk("notrap spte in unsync sp: %p\n", sp);
- 			return;
- 		}
- 	}
- 
- 	if (sp->role.direct && *sptep == shadow_notrap_nonpresent_pte) {
--		printk(KERN_ERR "audit: (%s) error: notrap spte in direct sp: %p\n",
--			audit_msg, sp);
-+		audit_printk("notrap spte in direct sp: %p\n", sp);
- 		return;
- 	}
- 
-@@ -124,10 +125,8 @@ static void audit_mappings(struct kvm_vcpu *vcpu, u64 *sptep, int level)
- 
- 	hpa =  pfn << PAGE_SHIFT;
- 	if ((*sptep & PT64_BASE_ADDR_MASK) != hpa)
--		printk(KERN_ERR "xx audit error: (%s) levels %d"
--				   "pfn %llx hpa %llx ent %llxn",
--				   audit_msg, vcpu->arch.mmu.root_level,
--				   pfn, hpa, *sptep);
-+		audit_printk("levels %d pfn %llx hpa %llx ent %llxn",
-+				   vcpu->arch.mmu.root_level, pfn, hpa, *sptep);
- }
- 
- static void inspect_spte_has_rmap(struct kvm *kvm, u64 *sptep)
-@@ -143,11 +142,9 @@ static void inspect_spte_has_rmap(struct kvm *kvm, u64 *sptep)
- 	if (!gfn_to_memslot(kvm, gfn)) {
- 		if (!printk_ratelimit())
- 			return;
--		printk(KERN_ERR "%s: no memslot for gfn %llx\n",
--				 audit_msg, gfn);
--		printk(KERN_ERR "%s: index %ld of sp (gfn=%llx)\n",
--		       audit_msg, (long int)(sptep - rev_sp->spt),
--				rev_sp->gfn);
-+		audit_printk("no memslot for gfn %llx\n", gfn);
-+		audit_printk("index %ld of sp (gfn=%llx)\n",
-+		       (long int)(sptep - rev_sp->spt), rev_sp->gfn);
- 		dump_stack();
- 		return;
- 	}
-@@ -156,8 +153,7 @@ static void inspect_spte_has_rmap(struct kvm *kvm, u64 *sptep)
- 	if (!*rmapp) {
- 		if (!printk_ratelimit())
- 			return;
--		printk(KERN_ERR "%s: no rmap for writable spte %llx\n",
--				 audit_msg, *sptep);
-+		audit_printk("no rmap for writable spte %llx\n", *sptep);
- 		dump_stack();
- 	}
- }
-@@ -198,10 +194,8 @@ void audit_write_protection(struct kvm *kvm, struct kvm_mmu_page *sp)
- 	spte = rmap_next(kvm, rmapp, NULL);
- 	while (spte) {
- 		if (is_writable_pte(*spte))
--			printk(KERN_ERR "%s: (%s) shadow page has "
--				"writable mappings: gfn %llx role %x\n",
--			       __func__, audit_msg, sp->gfn,
--			       sp->role.word);
-+			audit_printk("shadow page has writable mappings: gfn "
-+				     "%llx role %x\n", sp->gfn, sp->role.word);
- 		spte = rmap_next(kvm, rmapp, spte);
- 	}
- }
-@@ -228,14 +222,14 @@ static void audit_vcpu_spte(struct kvm_vcpu *vcpu)
- 	mmu_spte_walk(vcpu, audit_spte);
- }
- 
--static void kvm_mmu_audit(void *ignore, struct kvm_vcpu *vcpu, int audit_point)
-+static void kvm_mmu_audit(void *ignore, struct kvm_vcpu *vcpu, int point)
++	if (audit_point == AUDIT_POST_SYNC && sp->unsync)
++		audit_printk("meet unsync sp(%p) after sync root.\n", sp);
++}
++
+ static void check_mappings_rmap(struct kvm *kvm, struct kvm_mmu_page *sp)
  {
- 	static DEFINE_RATELIMIT_STATE(ratelimit_state, 5 * HZ, 10);
- 
- 	if (!__ratelimit(&ratelimit_state))
- 		return;
- 
--	audit_msg = audit_point_name[audit_point];
-+	audit_point = point;
- 	audit_all_active_sps(vcpu->kvm);
- 	audit_vcpu_spte(vcpu);
+ 	int i;
+@@ -179,7 +187,7 @@ static void check_mappings_rmap(struct kvm *kvm, struct kvm_mmu_page *sp)
+ 	}
  }
+ 
+-void audit_write_protection(struct kvm *kvm, struct kvm_mmu_page *sp)
++static void audit_write_protection(struct kvm *kvm, struct kvm_mmu_page *sp)
+ {
+ 	struct kvm_memory_slot *slot;
+ 	unsigned long *rmapp;
+@@ -215,6 +223,7 @@ static void audit_spte(struct kvm_vcpu *vcpu, u64 *sptep, int level)
+ {
+ 	audit_sptes_have_rmaps(vcpu, sptep, level);
+ 	audit_mappings(vcpu, sptep, level);
++	audit_spte_after_sync(vcpu, sptep, level);
+ }
+ 
+ static void audit_vcpu_spte(struct kvm_vcpu *vcpu)
 -- 
 1.7.0.4
 
