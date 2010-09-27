@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758912Ab0I0I2V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 04:28:21 -0400
-Received: from tuxonice.net ([74.207.252.127]:42487 "EHLO mail.tuxonice.net"
+	id S1758930Ab0I0I3j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 04:29:39 -0400
+Received: from tuxonice.net ([74.207.252.127]:45279 "EHLO mail.tuxonice.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755911Ab0I0I2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 04:28:20 -0400
+	id S1755911Ab0I0I3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 04:29:38 -0400
 X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4CA055A1.6060405@tuxonice.net>
-Date: Mon, 27 Sep 2010 18:28:17 +1000
+Message-ID: <4CA055EF.6050608@tuxonice.net>
+Date: Mon, 27 Sep 2010 18:29:35 +1000
 From: Nigel Cunningham <nigel@tuxonice.net>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.10pre) Gecko/20100903 Shredder/3.1.4pre
 MIME-Version: 1.0
@@ -18,8 +18,8 @@ CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
         LKML <linux-kernel@vger.kernel.org>,
         TuxOnIce-devel <tuxonice-devel@tuxonice.net>
 Subject: Re: [TuxOnIce-devel] Swsusp patches applied to suspend-2.6#linux-next
-References: <1285566238-10966-1-git-send-email-nigel@tuxonice.net> <20100927065946.GR7007@wrars-comp.wrarsdomain>
-In-Reply-To: <20100927065946.GR7007@wrars-comp.wrarsdomain>
+References: <1285566238-10966-1-git-send-email-nigel@tuxonice.net> <20100927080000.GA7032@wrars-comp.wrarsdomain>
+In-Reply-To: <20100927080000.GA7032@wrars-comp.wrarsdomain>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,7 +28,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi.
 
-On 27/09/10 16:59, Andrey Rahmatullin wrote:
+On 27/09/10 18:00, Andrey Rahmatullin wrote:
 > On Mon, Sep 27, 2010 at 03:43:35PM +1000, Nigel Cunningham wrote:
 >> Hi again Rafael.
 >>
@@ -43,13 +43,11 @@ On 27/09/10 16:59, Andrey Rahmatullin wrote:
 >> Reading speed improves from 218MB/s to around 245MB/s. I expect that
 >> multithreaded writing would bring the writing (and reading) speeds back
 >> up. It's on my swsusp to do list :)
-> Can I test this patchset by just building for-rafael branch?
+> Works here.
 
-I don't have it available on git at the moment, but since you're 
-interested, I'll address that...
+Ah. You're too fast for me :)
 
-Okay. There's a new suspend-next branch in the tuxonice-head tree that 
-has what you're after.
+What sort of speeds are you seeing?
 
 Regards,
 
