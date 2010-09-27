@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933564Ab0I0UIV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 16:08:21 -0400
-Received: from mail.perches.com ([173.55.12.10]:2478 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932619Ab0I0UIT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 16:08:19 -0400
-Subject: Re: RFC: get_maintainer.pl: append reason for cc to the name by
- default
-From: Joe Perches <joe@perches.com>
-To: Florian Mickler <florian@mickler.org>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100927212650.62859ee0@schatten.dmk.lab>
-References: <1284111212-10659-1-git-send-email-florian@mickler.org>
-	 <1285527125.1732.24.camel@Joe-Laptop>
-	 <20100927165748.354742f2@schatten.dmk.lab>
-	 <20100927154441.GE3602@thunk.org>
-	 <20100927190026.20ddc268@schatten.dmk.lab>
-	 <20100927182124.GA3168@thunk.org>
-	 <20100927212650.62859ee0@schatten.dmk.lab>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 27 Sep 2010 13:08:17 -0700
-Message-ID: <1285618097.1732.204.camel@Joe-Laptop>
+	id S933571Ab0I0UJK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 16:09:10 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60481 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933483Ab0I0UJI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 16:09:08 -0400
+Date: Mon, 27 Sep 2010 13:08:44 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Matt Mackall <mpm@selenic.com>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH] drm: Prune GEM vma entries
+Message-Id: <20100927130844.b57ee9eb.akpm@linux-foundation.org>
+In-Reply-To: <1285618116-10086-1-git-send-email-chris@chris-wilson.co.uk>
+References: <20100927115207.633024b1.akpm@linux-foundation.org>
+	<1285618116-10086-1-git-send-email-chris@chris-wilson.co.uk>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-27 at 21:26 +0200, Florian Mickler wrote:
-> But we should definitely try to tune down the annoying part of
-> it by making it less random and maybe by adding a tag in the cc field...
+That was quick, thanks.
 
-Less random: sure, whatever's reasonable.
+On Mon, 27 Sep 2010 21:08:36 +0100
+Chris Wilson <chris@chris-wilson.co.uk> wrote:
 
-I still think that tagging the name portion of an email address
-is not a good idea, especially without some way of turning it
-off.  Maybe a mechanism to optionally enable it would be ok.
+> Hook the GEM vm open/close ops into the generic drm vm open/close so
+> that the vma entries are created and destroy appropriately.
+
+Please update the changelog to indicate that it fixes a memory leak.
+
+> Reported-by: Matt Mackall <mpm@selenic.com>
+> Cc: Dave Airlie <airlied@redhat.com>
+> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+
+And here please add
+
+Cc: <stable@kernel.org>
+
+so that earlier kernels get reliably fixed.
+
+Thanks.
+
 
