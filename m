@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759610Ab0I0VRW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 17:17:22 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:42881 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751806Ab0I0VRT (ORCPT
+	id S1759233Ab0I0VSq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 17:18:46 -0400
+Received: from nic.NetDirect.CA ([216.16.235.2]:40098 "EHLO
+	rubicon.netdirect.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755266Ab0I0VSp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 17:17:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=YwNSzqfYzgUaEQKtzxC7riPHNCf8ZsaqIn0oC9CSC9JGrSiTrZ9yw9kKcN2P0XrlGs
-         JU/wEQ4D5Ui4hHf511khmexWODY3DyIT8Mk3hdDxR7QCrBaBNKtHylojcizQ2WsThQSV
-         bnRdSeJMB4WxYd0pKRLpnDF1GC+EW9duW5WHc=
-Subject: Re: [PATCH] si time accounting accounts bh_disable'd time to si
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Paul Turner <pjt@google.com>
-In-Reply-To: <AANLkTim2=ZN=DMFCYcvVx31mOPd40q+EoTVfx-bqMCob@mail.gmail.com>
-References: <1285003599.2275.756.camel@laptop>
-	 <1285619753-10892-1-git-send-email-venki@google.com>
-	 <1285620805.2512.128.camel@edumazet-laptop>
-	 <AANLkTim2=ZN=DMFCYcvVx31mOPd40q+EoTVfx-bqMCob@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 27 Sep 2010 23:16:09 +0200
-Message-ID: <1285622169.2512.135.camel@edumazet-laptop>
+	Mon, 27 Sep 2010 17:18:45 -0400
+X-Originating-Ip: 216.16.235.2
+Date: Mon, 27 Sep 2010 17:18:42 -0400
+From: Chris Frey <cdfrey@foursquare.net>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: ext3 filesystem corruption in user mode linux
+Message-ID: <20100927211842.GA19667@foursquare.net>
+References: <20100924041410.GA18040@foursquare.net> <20100924060557.GA21238@foursquare.net> <20100924064446.GA22588@foursquare.net> <AANLkTinQ20uSgFP5KV17B0J0v8Y0zAg=AgAd_kf+4Bh0@mail.gmail.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinQ20uSgFP5KV17B0J0v8Y0zAg=AgAd_kf+4Bh0@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 27 septembre 2010 à 14:11 -0700, Venkatesh Pallipadi a écrit :
-> On Mon, Sep 27, 2010 at 1:53 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-
-> > But softirq handlers sometime call functions that might disable bh
-> > again. It would be good to not switch softirq time to system time ;)
-> 
-> Yes. Good point :-). I should rather have
-> +#define in_serving_softirq() (softirq_count() & SOFTIRQ_OFFSET)
-> 
+On Mon, Sep 27, 2010 at 11:04:07PM +0200, richard -rw- weinberger wrote:
+> On Fri, Sep 24, 2010 at 8:44 AM, Chris Frey <cdfrey@foursquare.net> wrote:
+> > On Fri, Sep 24, 2010 at 02:05:57AM -0400, Chris Frey wrote:
+> >> So far I have been unable to make 2.6.32.21 corrupt its filesystem
+> >> when running as the UML kernel (Host 2.6.35.4, UML 2.6.32.21)
 > >
-> > Shouldnt we reserve a bit (high order bit out of 8) instead ?
+> > Spoke too soon... 2.6.32.21 has errors too, if pushed hard enough.
 > >
-> >  * PREEMPT_MASK:    0x000000ff
-> >  * SOFTIRQ_MASK:    0x0000ff00
-> >  * SERVING_SOFTIRQ: 0x00008000
-> >  * HARDIRQ_MASK:    0x03ff0000
-> >  *     NMI_MASK:    0x04000000
 > 
-> Things will be very much similar using higher order bit or lower order
-> bit. Somehow I felt using lower order bit was cleaner...
-> 
+> can you do a git bisect?
 
-No problem, I now undertand what you wanted to achieve ;)
+I've been trying, but so far the range of buggy versions stretches back
+to 2.6.32.x at least.  I'm trying to find a version that doesn't have
+this issue.
 
+I'm kinda surprised that nobody else has run into this.  Or maybe user
+mode linux isn't used as much as I thought?   Or I'm just doing something
+completely bone headed. :-)
 
+- Chris
 
