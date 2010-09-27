@@ -1,87 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759400Ab0I0Npy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 09:45:54 -0400
-Received: from mail.solarflare.com ([216.237.3.220]:27653 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755699Ab0I0Npw (ORCPT
+	id S1759410Ab0I0Nqu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 09:46:50 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57838 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755699Ab0I0Nqt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 09:45:52 -0400
-Subject: Re: [PATCH v11 04/17]Add a function make external buffer owner to
- query capability.
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: xiaohui.xin@intel.com
-Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, davem@davemloft.net, herbert@gondor.hengli.com.au,
-        jdike@linux.intel.com
-In-Reply-To: <6df1b1c2d2ffe70da911984c7fe6fab16f23043b.1285385607.git.xiaohui.xin@intel.com>
-References: <1285388855-27410-1-git-send-email-xiaohui.xin@intel.com>
-	 <6df1b1c2d2ffe70da911984c7fe6fab16f23043b.1285385607.git.xiaohui.xin@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Mon, 27 Sep 2010 14:45:49 +0100
-Message-ID: <1285595149.2263.8.camel@achroite.uk.solarflarecom.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Sep 2010 13:45:52.0594 (UTC) FILETIME=[4D328B20:01CB5E4A]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17668.005
-X-TM-AS-Result: No--19.587100-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	Mon, 27 Sep 2010 09:46:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=xVrp67C3fc1NqKWFOrVL4zr6DXMsJW5gBij1WLcxAaQS0ZNt6j5MWu3T8BAXt3Hjpv
+         hzJ2MaeWKkOYa0RMq4X1dyIq5S7DGNW1YJ0b/GKBSDrAdGaTtOqMmQ+6TJEqFguE6am/
+         Ek3fZ1fwupmhSgeysTsj2pqQEXjRK7wVoCygs=
+Date: Mon, 27 Sep 2010 15:46:43 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] perf: Wrap perf_lock_task_context using
+	__cond_lock()
+Message-ID: <20100927134641.GA5456@nowhere>
+References: <1285583997-1262-1-git-send-email-namhyung@gmail.com> <1285583997-1262-2-git-send-email-namhyung@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285583997-1262-2-git-send-email-namhyung@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-09-25 at 12:27 +0800, xiaohui.xin@intel.com wrote:
-[...]
-> diff --git a/net/core/dev.c b/net/core/dev.c
-> index 264137f..636f11b 100644
-> --- a/net/core/dev.c
-> +++ b/net/core/dev.c
-> @@ -2468,6 +2468,55 @@ void netif_nit_deliver(struct sk_buff *skb)
->  	rcu_read_unlock();
+On Mon, Sep 27, 2010 at 07:39:53PM +0900, Namhyung Kim wrote:
+> perf_lock_task_context() conditionally grabs ctx->lock in case of
+> returning non-NULL. Rename and wrap it using __cond_lock to make
+> sparse happy.
+> 
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> ---
+>  kernel/perf_event.c |   10 +++++++++-
+>  1 files changed, 9 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+> index db5b560..c058a42 100644
+> --- a/kernel/perf_event.c
+> +++ b/kernel/perf_event.c
+> @@ -151,7 +151,7 @@ static u64 primary_event_id(struct perf_event *event)
+>   * the context could get moved to another task.
+>   */
+>  static struct perf_event_context *
+> -perf_lock_task_context(struct task_struct *task, unsigned long *flags)
+> +__perf_lock_task_context(struct task_struct *task, unsigned long *flags)
+>  {
+>  	struct perf_event_context *ctx;
+>  
+> @@ -184,6 +184,14 @@ perf_lock_task_context(struct task_struct *task, unsigned long *flags)
+>  	return ctx;
 >  }
 >  
-> +/* To support meidate passthru(zero-copy) with NIC driver,
-> + * we'd better query NIC driver for the capability it can
-> + * provide, especially for packet split mode, now we only
-> + * query for the header size, and the payload a descriptor
-> + * may carry. If a driver does not use the API to export,
-> + * then we may try to use a default value, currently,
-> + * we use the default value from an IGB driver. Now,
-> + * it's only called by mpassthru device.
-> + */
-> +#if defined(CONFIG_MEDIATE_PASSTHRU) || defined(CONFIG_MEDIATE_PASSTHRU_MODULE)
-> +int netdev_mp_port_prep(struct net_device *dev,
-> +		struct mpassthru_port *port)
+> +static inline struct perf_event_context *
+> +perf_lock_task_context(struct task_struct *task, unsigned long *flags)
 > +{
-> +	int rc;
-> +	int npages, data_len;
-> +	const struct net_device_ops *ops = dev->netdev_ops;
-> +
-> +	if (ops->ndo_mp_port_prep) {
-> +		rc = ops->ndo_mp_port_prep(dev, port);
-> +		if (rc)
-> +			return rc;
-> +	} else {
-> +		/* If the NIC driver did not report this,
-> +		 * then we try to use default value.
-> +		 */
-> +		port->hdr_len = 128;
-> +		port->data_len = 2048;
-> +		port->npages = 1;
-> +	}
-[...]
+> +	struct perf_event_context *ctx;
+> +	__cond_lock(&ctx->lock, ctx = __perf_lock_task_context(task, flags));
+> +	return ctx;
+> +}
 
-Is it really necessary to have a default?
 
-Also have you considered an API for changing the header/data split?
 
-Ben.
+That's a pity we need to make the code less readable just to make a tool
+happy.
 
--- 
-Ben Hutchings, Senior Software Engineer, Solarflare Communications
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+How do functions like mutex_lock_interruptible() that may
+or may not lock? I don't see __cond_lock adds there.
+
+Thanks.
 
