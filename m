@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759445Ab0I0VRK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 17:17:10 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:47363 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757032Ab0I0VRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 17:17:08 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Nigel Cunningham <nigel@tuxonice.net>
-Subject: Re: [PATCH 02/23] Record & display i/o speed post resume.
-Date: Mon, 27 Sep 2010 23:16:30 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc5-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Linux PM <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "TuxOnIce-devel" <tuxonice-devel@tuxonice.net>
-References: <1285566238-10966-1-git-send-email-nigel@tuxonice.net> <201009272249.59966.rjw@sisk.pl> <4CA10729.5010001@tuxonice.net>
-In-Reply-To: <4CA10729.5010001@tuxonice.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009272316.30718.rjw@sisk.pl>
+	id S1759610Ab0I0VRW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 17:17:22 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:42881 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751806Ab0I0VRT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 17:17:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=YwNSzqfYzgUaEQKtzxC7riPHNCf8ZsaqIn0oC9CSC9JGrSiTrZ9yw9kKcN2P0XrlGs
+         JU/wEQ4D5Ui4hHf511khmexWODY3DyIT8Mk3hdDxR7QCrBaBNKtHylojcizQ2WsThQSV
+         bnRdSeJMB4WxYd0pKRLpnDF1GC+EW9duW5WHc=
+Subject: Re: [PATCH] si time accounting accounts bh_disable'd time to si
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Venkatesh Pallipadi <venki@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Paul Turner <pjt@google.com>
+In-Reply-To: <AANLkTim2=ZN=DMFCYcvVx31mOPd40q+EoTVfx-bqMCob@mail.gmail.com>
+References: <1285003599.2275.756.camel@laptop>
+	 <1285619753-10892-1-git-send-email-venki@google.com>
+	 <1285620805.2512.128.camel@edumazet-laptop>
+	 <AANLkTim2=ZN=DMFCYcvVx31mOPd40q+EoTVfx-bqMCob@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 27 Sep 2010 23:16:09 +0200
+Message-ID: <1285622169.2512.135.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, September 27, 2010, Nigel Cunningham wrote:
-> Hi.
-> 
-> On 28/09/10 06:49, Rafael J. Wysocki wrote:
-> > On Monday, September 27, 2010, Nigel Cunningham wrote:
-...
-> >> Well then, for now, let's drop that patch then. At least it's got us the
-> >> numbers we needed to see these patches are useful. Longer term, I'll do
-> >> what I do in TuxOnIce and allocate a page while writing the image, store
-> >> it's location in the image header and use it the transfer information
-> >> from the boot kernel to the resumed kernel. (Essentially the same thing,
-> >> except without the special section).
-> >
-> > The problem is that on x86_64 the boot kernel may be completely different
-> > from the image kernel (different version, different configuration), so there is
-> > no guarantee that your page frame allocated while writing the image would be
-> > available to the boot kernel (it may contain the kernel code, for example).
-> >
-> > You'd really need to replace one of the image pages with  something prepared
-> > while the image was being read.  For that, you'd need to allocate a page before
-> > creating the image and pass its PFN in the image header.
-> 
-> Yes - that's what I'm doing. Maybe that's why the __nosavedata changes 
-> you mentioned above haven't bitten me.
+Le lundi 27 septembre 2010 à 14:11 -0700, Venkatesh Pallipadi a écrit :
+> On Mon, Sep 27, 2010 at 1:53 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
 
-Well, other than that, the majority of people don't know about that change and
-they still use the same kernel for boot/image. :-)
+> > But softirq handlers sometime call functions that might disable bh
+> > again. It would be good to not switch softirq time to system time ;)
+> 
+> Yes. Good point :-). I should rather have
+> +#define in_serving_softirq() (softirq_count() & SOFTIRQ_OFFSET)
+> 
+> >
+> > Shouldnt we reserve a bit (high order bit out of 8) instead ?
+> >
+> >  * PREEMPT_MASK:    0x000000ff
+> >  * SOFTIRQ_MASK:    0x0000ff00
+> >  * SERVING_SOFTIRQ: 0x00008000
+> >  * HARDIRQ_MASK:    0x03ff0000
+> >  *     NMI_MASK:    0x04000000
+> 
+> Things will be very much similar using higher order bit or lower order
+> bit. Somehow I felt using lower order bit was cleaner...
+> 
 
-Thanks,
-Rafael
+No problem, I now undertand what you wanted to achieve ;)
+
+
+
