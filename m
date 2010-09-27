@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959Ab0I0Ep0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 00:45:26 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:59360 "EHLO smtps.tip.net.au"
+	id S1752189Ab0I0E77 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 00:59:59 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:37119 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751038Ab0I0EpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 00:45:25 -0400
-Date: Mon, 27 Sep 2010 14:45:19 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>
-Subject: linux-next: manual merge of the bkl-trivial tree with the block
- tree
-Message-Id: <20100927144519.25cd3afa.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751287Ab0I0E76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 00:59:58 -0400
+Message-ID: <4CA024C8.3000203@kernel.dk>
+Date: Mon, 27 Sep 2010 13:59:52 +0900
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Kyle McMartin <kyle@mcmartin.ca>
+CC: Adrian Hunter <adrian.hunter@nokia.com>,
+        linux-kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable@kernel.org
+Subject: Re: [PATCH] block: prevent merges of discard and write requests
+References: <1285411002-22924-1-git-send-email-adrian.hunter@nokia.com> <4C9DD1B0.9020902@kernel.dk> <20100927033030.GR13116@bombadil.infradead.org>
+In-Reply-To: <20100927033030.GR13116@bombadil.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On 2010-09-27 12:30, Kyle McMartin wrote:
+> On Sat, Sep 25, 2010 at 12:40:48PM +0200, Jens Axboe wrote:
+>> On 2010-09-25 12:36, Adrian Hunter wrote:
+>>> Add logic to prevent two I/O requests being merged if
+>>> only one of them is a discard.  Ditto secure discard.
+>>>
+>>> Without this fix, it is possible for write requests
+>>> to transform into discard requests.  For example:
+>>>
+>>>   Submit bio 1 to discard 8 sectors from sector n
+>>>   Submit bio 2 to write 8 sectors from sector n + 16
+>>>   Submit bio 3 to write 8 sectors from sector n + 8
+>>>
+>>> Bio 1 becomes request 1.  Bio 2 becomes request 2.
+>>> Bio 3 is merged with request 2, and then subsequently
+>>> request 2 is merged with request 1 resulting in just
+>>> one I/O request which discards all 24 sectors.
+>>
+>> Wow, that's a disaster. We can now have requests in the
+>> same direction and of the same type (fs), but not mergeable.
+>>
+>> I would move the check up above the position calculations.
+>> I will apply this and upstream it right away. Thanks a lot!
+>>
+> 
+> Jens, is this (the REQ_DISCARD hunk) required for stable as well? It
+> appears there's not much change relating to merging requests between
+> HEAD and v2.6.35, so I assume it is?
 
-Today's linux-next merge of the bkl-trivial tree got a conflict in
-drivers/block/ataflop.c between commit
-639e2f2aa76eefaf22078dccbbf2f3483f587aa7 ("atari floppy: Stop sharing
-request queue across multiple gendisks") from the block tree and commit
-5778067afcfd8b718ffc3744c25fdd194fc886a1 ("block: autoconvert trivial BKL
-users to private mutex") from the bkl-trivial tree.
+No, 2.6.35 and earlier is safe, it's only 2.6.36-rc that is
+affected by this bug.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Jens Axboe
 
-diff --cc drivers/block/ataflop.c
-index 0f4eec4,8c021bb..0000000
---- a/drivers/block/ataflop.c
-+++ b/drivers/block/ataflop.c
-@@@ -79,8 -79,9 +79,9 @@@
-  
-  #undef DEBUG
-  
-+ static DEFINE_MUTEX(ataflop_mutex);
- -static struct request_queue *floppy_queue;
-  static struct request *fd_request;
- +static int fdc_queue;
-  
-  /* Disk types: DD, HD, ED */
-  static struct atari_disk_type {
