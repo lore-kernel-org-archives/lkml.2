@@ -1,203 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759963Ab0I0Rvo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 13:51:44 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:33447 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759162Ab0I0Rvn (ORCPT
+	id S1759973Ab0I0RwM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 13:52:12 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:57834 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759155Ab0I0RwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 13:51:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=ICbZdwarJm7l1ra7sKFK8lkVWk2qx1o4KHL49FXK0ZDoJI0kz48dS2SY/F0KYj5K+1
-         DG0Us5WWSRereYGi0tUaTq5JJTwSJnnhzyfJSKcRTAi/ynQzUn7f5LQTdHtJ+kMw1hzb
-         9rMeQDFsfaiMV4jWZn1Mq+MgqLaJe3jXFdIpQ=
-MIME-Version: 1.0
-In-Reply-To: <201009271616.42190.arnd@arndb.de>
-References: <20100926234733.GA31884@vana.vc.cvut.cz>
-	<201009271616.42190.arnd@arndb.de>
-Date: Mon, 27 Sep 2010 10:51:40 -0700
-X-Google-Sender-Auth: _11QuaUCuA_vFUylXOG1FUvl4hk
-Message-ID: <AANLkTinhD+P8y3BwNxro9fVr62MmASTubrefP9=Z8ce4@mail.gmail.com>
-Subject: Re: [PATCH] Remove BKL usage from ncpfs
-From: Petr Vandrovec <petr@vandrovec.name>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-fsdevel@vger.kernel.org, aia21@cam.ac.uk,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk
-Content-Type: multipart/mixed; boundary=0016e646a34e73553d0491416165
+	Mon, 27 Sep 2010 13:52:11 -0400
+Date: Mon, 27 Sep 2010 19:15:36 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, Greg KH <gregkh@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Ian Jackson <Ian.Jackson@eu.citrix.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Subject: Re: Powertop shows events/0 waking at high rate due to ptys
+Message-ID: <20100927191536.1de29492@lxorguk.ukuu.org.uk>
+In-Reply-To: <4CA0D660.3010804@goop.org>
+References: <4CA0D660.3010804@goop.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016e646a34e73553d0491416165
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Mon, 27 Sep 2010 10:37:36 -0700
+Jeremy Fitzhardinge <jeremy@goop.org> wrote:
 
-On Mon, Sep 27, 2010 at 7:16 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Monday 27 September 2010, Petr Vandrovec wrote:
->> commit 92498b5267aa58e85e20c7b2cbd84d1ed86df47d
->> Author: Petr Vandrovec <petr@vandrovec.name>
->> Date: =A0 Sun Sep 26 16:19:12 2010 -0700
->>
->> =A0 =A0 Remove BKL from ncpfs
->
-> Hi Petr,
->
-> Thanks for taking care of this.
->
-> Would you like me to take this patch into my bkl/vfs tree? I think
-> that would make it easier for me because I'm adding another instance
-> of the BKL there, in the ncp_fill_super function. As far as I can tell
-> that change (see below) becomes pointless with your patch.
+>  Hi,
+> 
+> I noticed on one of my systems that powertop was showing events/0 waking
+> at a high rate (~2000 times/sec, HZ=1000).  After a lot of tracing I
+> found it was due to writes pending to ptys which hadn't been read.
 
-Thanks.  I would appreciate it.
+Yes ptys will trigger this case while its there with a normal tty but
+very hard to hit.
 
-> I could either just revert my change or replace it with your patch,
-> whichever you prefer.
+> problem; he reports that this wakeup behaviour is a regression compared
+> to a 2.6.16 Debian kernel.
 
-Yes, I believe it is not necessary.  fill_super(sb) should not run
-concurrently with anything else because MS_BORN and MS_ACTIVE are not
-set yet so nobody else should use this sb from VFS.  One thing which
-seems to be missing is doing lock_sock() around code which sets
-sk->sk_{error_report,data_ready,write_space} - there does not seem to
-be anything else to protect ipv4/ipv6/ipx from seeing partially
-updated pointers on systems where these writes are not atomic - that's
-ncpfs2.patch.
+Be aware that you'll get misleading results to an extent with old
+kernels. The old pty code is differently buggy and doesn't use the code
+path in question at all.
 
-Also I found some whitespace problems, and one missing const, so if
-you could merge ncpfs3.patch & ncpfs4.patch with original BKL removal,
-it would be cool.  Or I can resend all 4 patches as one bigger diff if
-you prefer.
+With a non pty and care you can duplicate the problem on old kernels.
 
-Thanks,
-Petr
+Really the line discipline should wake the work queue when it sets
+tty->receive_room non-zero, but while only n_tty currently uses that
+facility the existing code doesn't do it in any kind of race-free manner
+and sometimes is only saved by the polling picking it up.
 
---0016e646a34e73553d0491416165
-Content-Type: application/octet-stream; name="ncpfs2.patch"
-Content-Disposition: attachment; filename="ncpfs2.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gelmit620
+It's all really just a symptom of the fact that input and output buffers
+shouldn't be attached to the tty in the first place but to a struct
+representing the physical port. Fix that and the race conditions in
+serial output go away, as do the potential crashes and this wakeup stuff
+as well as a ton of locking in the irq/tx/rx paths. In several cases it
+also saves you an entire copy.
 
-TG9jayBzb2NrZXQgaW4gbmNwZnMgd2hpbGUgc2V0dGluZyBpdHMgY2FsbGJhY2tzCgpPdGhlcndp
-c2UgcGFydGlhbGx5IHVwZGF0ZWQgcG9pbnRlcnMgY291bGQgYmUgc2VlbiBpZgpwb2ludGVyIHVw
-ZGF0ZSBpcyBub3QgYXRvbWljLgoKU2lnbmVkLW9mZi1ieTogUGV0ciBWYW5kcm92ZWMgPHBldHJA
-dmFuZHJvdmVjLm5hbWU+CgpkaWZmIC0tZ2l0IGEvZnMvbmNwZnMvaW5vZGUuYyBiL2ZzL25jcGZz
-L2lub2RlLmMKaW5kZXggNWY0ZTU4ZC4uOTg1ZmFiYiAxMDA2NDQKLS0tIGEvZnMvbmNwZnMvaW5v
-ZGUuYworKysgYi9mcy9uY3Bmcy9pbm9kZS5jCkBAIC0zMDMsMTAgKzMwMywxMiBAQCBuY3BfZXZp
-Y3RfaW5vZGUoc3RydWN0IGlub2RlICppbm9kZSkKIAogc3RhdGljIHZvaWQgbmNwX3N0b3BfdGFz
-a3Moc3RydWN0IG5jcF9zZXJ2ZXIgKnNlcnZlcikgewogCXN0cnVjdCBzb2NrKiBzayA9IHNlcnZl
-ci0+bmNwX3NvY2stPnNrOwotCQkKKworCWxvY2tfc29jayhzayk7CiAJc2stPnNrX2Vycm9yX3Jl
-cG9ydCA9IHNlcnZlci0+ZXJyb3JfcmVwb3J0OwogCXNrLT5za19kYXRhX3JlYWR5ICAgPSBzZXJ2
-ZXItPmRhdGFfcmVhZHk7CiAJc2stPnNrX3dyaXRlX3NwYWNlICA9IHNlcnZlci0+d3JpdGVfc3Bh
-Y2U7CisJcmVsZWFzZV9zb2NrKHNrKTsKIAlkZWxfdGltZXJfc3luYygmc2VydmVyLT50aW1lb3V0
-X3RtKTsKIAlmbHVzaF9zY2hlZHVsZWRfd29yaygpOwogfQpAQCAtNjA1LDEwICs2MDcsNiBAQCBz
-dGF0aWMgaW50IG5jcF9maWxsX3N1cGVyKHN0cnVjdCBzdXBlcl9ibG9jayAqc2IsIHZvaWQgKnJh
-d19kYXRhLCBpbnQgc2lsZW50KQogCW11dGV4X2luaXQoJnNlcnZlci0+cmN2LmNyZXFfbXV0ZXgp
-OwogCXNlcnZlci0+dHguY3JlcQkJPSBOVUxMOwogCXNlcnZlci0+cmN2LmNyZXEJPSBOVUxMOwot
-CXNlcnZlci0+ZGF0YV9yZWFkeQk9IHNvY2stPnNrLT5za19kYXRhX3JlYWR5OwotCXNlcnZlci0+
-d3JpdGVfc3BhY2UJPSBzb2NrLT5zay0+c2tfd3JpdGVfc3BhY2U7Ci0Jc2VydmVyLT5lcnJvcl9y
-ZXBvcnQJPSBzb2NrLT5zay0+c2tfZXJyb3JfcmVwb3J0OwotCXNvY2stPnNrLT5za191c2VyX2Rh
-dGEJPSBzZXJ2ZXI7CiAKIAlpbml0X3RpbWVyKCZzZXJ2ZXItPnRpbWVvdXRfdG0pOwogI3VuZGVm
-IE5DUF9QQUNLRVRfU0laRQpAQCAtNjI1LDYgKzYyMywxMSBAQCBzdGF0aWMgaW50IG5jcF9maWxs
-X3N1cGVyKHN0cnVjdCBzdXBlcl9ibG9jayAqc2IsIHZvaWQgKnJhd19kYXRhLCBpbnQgc2lsZW50
-KQogCWlmIChzZXJ2ZXItPnJ4YnVmID09IE5VTEwpCiAJCWdvdG8gb3V0X3R4YnVmOwogCisJbG9j
-a19zb2NrKHNvY2stPnNrKTsKKwlzZXJ2ZXItPmRhdGFfcmVhZHkJPSBzb2NrLT5zay0+c2tfZGF0
-YV9yZWFkeTsKKwlzZXJ2ZXItPndyaXRlX3NwYWNlCT0gc29jay0+c2stPnNrX3dyaXRlX3NwYWNl
-OworCXNlcnZlci0+ZXJyb3JfcmVwb3J0CT0gc29jay0+c2stPnNrX2Vycm9yX3JlcG9ydDsKKwlz
-b2NrLT5zay0+c2tfdXNlcl9kYXRhCT0gc2VydmVyOwogCXNvY2stPnNrLT5za19kYXRhX3JlYWR5
-CSAgPSBuY3BfdGNwX2RhdGFfcmVhZHk7CiAJc29jay0+c2stPnNrX2Vycm9yX3JlcG9ydCA9IG5j
-cF90Y3BfZXJyb3JfcmVwb3J0OwogCWlmIChzb2NrLT50eXBlID09IFNPQ0tfU1RSRUFNKSB7CkBA
-IC02NDAsNiArNjQzLDcgQEAgc3RhdGljIGludCBuY3BfZmlsbF9zdXBlcihzdHJ1Y3Qgc3VwZXJf
-YmxvY2sgKnNiLCB2b2lkICpyYXdfZGF0YSwgaW50IHNpbGVudCkKIAkJc2VydmVyLT50aW1lb3V0
-X3RtLmRhdGEgPSAodW5zaWduZWQgbG9uZylzZXJ2ZXI7CiAJCXNlcnZlci0+dGltZW91dF90bS5m
-dW5jdGlvbiA9IG5jcGRncmFtX3RpbWVvdXRfY2FsbDsKIAl9CisJcmVsZWFzZV9zb2NrKHNvY2st
-PnNrKTsKIAogCW5jcF9sb2NrX3NlcnZlcihzZXJ2ZXIpOwogCWVycm9yID0gbmNwX2Nvbm5lY3Qo
-c2VydmVyKTsK
---0016e646a34e73553d0491416165
-Content-Type: application/octet-stream; name="ncpfs3.patch"
-Content-Disposition: attachment; filename="ncpfs3.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gelmv1mk1
+Unfortunately while I got the tty port structures into lots of places
+needed the job never gone done.
 
-UmVtb3ZlIHNvbWUgd2hpdGVzcGFjZSBmcm9tIG5jcGZzCgpGZXcgd2hpdGVzcGFjZSBlcnJvcnMg
-c25lYWtlZCBpbiBpbiBsYXN0IGRpZmYuICBSZW1vdmUgdGhlbS4KClNpZ25lZC1vZmYtYnk6IFBl
-dHIgVmFuZHJvdmVjIDxwZXRyQHZhbmRyb3ZlYy5uYW1lPgoKZGlmZiAtLWdpdCBhL2ZzL25jcGZz
-L2lvY3RsLmMgYi9mcy9uY3Bmcy9pb2N0bC5jCmluZGV4IGRhOWQwZTAuLmMyYTFmOWEgMTAwNjQ0
-Ci0tLSBhL2ZzL25jcGZzL2lvY3RsLmMKKysrIGIvZnMvbmNwZnMvaW9jdGwuYwpAQCAtMzA0LDcg
-KzMwNCw3IEBAIHN0YXRpYyBsb25nIF9fbmNwX2lvY3RsKHN0cnVjdCBpbm9kZSAqaW5vZGUsIHVu
-c2lnbmVkIGludCBjbWQsIHVuc2lnbmVkIGxvbmcgYXJnCiAJCXNlcnZlci0+Y3VycmVudF9zaXpl
-ID0gcmVxdWVzdC5zaXplOwogCQltZW1jcHkoc2VydmVyLT5wYWNrZXQsIGJvdW5jZWJ1ZmZlciwg
-cmVxdWVzdC5zaXplKTsKIAotCQlyZXN1bHQgPSBuY3BfcmVxdWVzdDIoc2VydmVyLCByZXF1ZXN0
-LmZ1bmN0aW9uLCAKKwkJcmVzdWx0ID0gbmNwX3JlcXVlc3QyKHNlcnZlciwgcmVxdWVzdC5mdW5j
-dGlvbiwKIAkJCWJvdW5jZWJ1ZmZlciwgTkNQX1BBQ0tFVF9TSVpFX0lOVEVSTkFMKTsKIAkJaWYg
-KHJlc3VsdCA8IDApCiAJCQlyZXN1bHQgPSAtRUlPOwpAQCAtMzc4LDcgKzM3OCw3IEBAIHN0YXRp
-YyBsb25nIF9fbmNwX2lvY3RsKHN0cnVjdCBpbm9kZSAqaW5vZGUsIHVuc2lnbmVkIGludCBjbWQs
-IHVuc2lnbmVkIGxvbmcgYXJnCiAKIAkJCQlpZiAoZGVudHJ5KSB7CiAJCQkJCXN0cnVjdCBpbm9k
-ZSogc19pbm9kZSA9IGRlbnRyeS0+ZF9pbm9kZTsKLQkJCQkKKwogCQkJCQlpZiAoc19pbm9kZSkg
-ewogCQkJCQkJc3Iudm9sTnVtYmVyID0gTkNQX0ZJTkZPKHNfaW5vZGUpLT52b2xOdW1iZXI7CiAJ
-CQkJCQlzci5kaXJFbnROdW0gPSBOQ1BfRklORk8oc19pbm9kZSktPmRpckVudE51bTsKQEAgLTQz
-Myw3ICs0MzMsNyBAQCBzdGF0aWMgbG9uZyBfX25jcF9pb2N0bChzdHJ1Y3QgaW5vZGUgKmlub2Rl
-LCB1bnNpZ25lZCBpbnQgY21kLCB1bnNpZ25lZCBsb25nIGFyZwogCQkJCQlkZW50cnkgPSBpbm9k
-ZS0+aV9zYi0+c19yb290OwogCQkJCQlpZiAoZGVudHJ5KSB7CiAJCQkJCQlzdHJ1Y3QgaW5vZGUq
-IHNfaW5vZGUgPSBkZW50cnktPmRfaW5vZGU7Ci0JCQkJCisKIAkJCQkJCWlmIChzX2lub2RlKSB7
-CiAJCQkJCQkJTkNQX0ZJTkZPKHNfaW5vZGUpLT52b2xOdW1iZXIgPSB2bnVtOwogCQkJCQkJCU5D
-UF9GSU5GTyhzX2lub2RlKS0+ZGlyRW50TnVtID0gZGU7CkBAIC00NTUsNyArNDU1LDcgQEAgc3Rh
-dGljIGxvbmcgX19uY3BfaW9jdGwoc3RydWN0IGlub2RlICppbm9kZSwgdW5zaWduZWQgaW50IGNt
-ZCwgdW5zaWduZWQgbG9uZyBhcmcKIAkJCXJldHVybiByZXN1bHQ7CiAJCX0KIAotI2lmZGVmIENP
-TkZJR19OQ1BGU19QQUNLRVRfU0lHTklORwkKKyNpZmRlZiBDT05GSUdfTkNQRlNfUEFDS0VUX1NJ
-R05JTkcKIAljYXNlIE5DUF9JT0NfU0lHTl9JTklUOgogCQl7CiAJCQlzdHJ1Y3QgbmNwX3NpZ25f
-aW5pdCBzaWduOwpAQCAtNDc3LDE0ICs0NzcsMTQgQEAgc3RhdGljIGxvbmcgX19uY3BfaW9jdGwo
-c3RydWN0IGlub2RlICppbm9kZSwgdW5zaWduZWQgaW50IGNtZCwgdW5zaWduZWQgbG9uZyBhcmcK
-IAkJCX0KIAkJCW11dGV4X3VubG9jaygmc2VydmVyLT5yY3YuY3JlcV9tdXRleCk7CiAJCQluY3Bf
-dW5sb2NrX3NlcnZlcihzZXJ2ZXIpOwotCQkJcmV0dXJuIDA7CQkKKwkJCXJldHVybiAwOwogCQl9
-Ci0JCQorCiAgICAgICAgIGNhc2UgTkNQX0lPQ19TSUdOX1dBTlRFRDoKIAkJewogCQkJaW50IHN0
-YXRlOwogCi0JCQluY3BfbG9ja19zZXJ2ZXIoc2VydmVyKTsJCisJCQluY3BfbG9ja19zZXJ2ZXIo
-c2VydmVyKTsKIAkJCXN0YXRlID0gc2VydmVyLT5zaWduX3dhbnRlZDsKIAkJCW5jcF91bmxvY2tf
-c2VydmVyKHNlcnZlcik7CiAJCQlpZiAocHV0X3VzZXIoc3RhdGUsIChpbnQgX191c2VyICopYXJn
-cCkpCkBAIC01NTAsNyArNTUwLDcgQEAgc3RhdGljIGxvbmcgX19uY3BfaW9jdGwoc3RydWN0IGlu
-b2RlICppbm9kZSwgdW5zaWduZWQgaW50IGNtZCwgdW5zaWduZWQgbG9uZyBhcmcKIAkJCWlmIChy
-cWRhdGEuY21kID09IE5DUF9MT0NLX0NMRUFSKQogCQkJewogCQkJCXJlc3VsdCA9IG5jcF9DbGVh
-clBoeXNpY2FsUmVjb3JkKE5DUF9TRVJWRVIoaW5vZGUpLAotCQkJCQkJCU5DUF9GSU5GTyhpbm9k
-ZSktPmZpbGVfaGFuZGxlLCAKKwkJCQkJCQlOQ1BfRklORk8oaW5vZGUpLT5maWxlX2hhbmRsZSwK
-IAkJCQkJCQlycWRhdGEub2Zmc2V0LAogCQkJCQkJCXJxZGF0YS5sZW5ndGgpOwogCQkJCWlmIChy
-ZXN1bHQgPiAwKSByZXN1bHQgPSAwOwkvKiBubyBzdWNoIGxvY2sgKi8KQEAgLTU3Myw3ICs1NzMs
-NyBAQCBzdGF0aWMgbG9uZyBfX25jcF9pb2N0bChzdHJ1Y3QgaW5vZGUgKmlub2RlLCB1bnNpZ25l
-ZCBpbnQgY21kLCB1bnNpZ25lZCBsb25nIGFyZwogCQkJCQkJCXJxZGF0YS50aW1lb3V0KTsKIAkJ
-CQlpZiAocmVzdWx0ID4gMCkgcmVzdWx0ID0gLUVBR0FJTjsKIAkJCX0KLW91dHJlbDoJCQkKK291
-dHJlbDoKIAkJCW5jcF9pbm9kZV9jbG9zZShpbm9kZSk7CiAJCQlyZXR1cm4gcmVzdWx0OwogCQl9
-CkBAIC03NzcsNyArNzc3LDcgQEAgb3V0cmVsOgogI2lmZGVmIENPTkZJR19OQ1BGU19OTFMKIAlj
-YXNlIE5DUF9JT0NfU0VUQ0hBUlNFVFM6CiAJCXJldHVybiBuY3Bfc2V0X2NoYXJzZXRzKHNlcnZl
-ciwgYXJncCk7Ci0JCQorCiAJY2FzZSBOQ1BfSU9DX0dFVENIQVJTRVRTOgogCQlyZXR1cm4gbmNw
-X2dldF9jaGFyc2V0cyhzZXJ2ZXIsIGFyZ3ApOwogCkBAIC03OTYsNyArNzk2LDcgQEAgb3V0cmVs
-OgogCQkJYXRvbWljX3NldCgmc2VydmVyLT5kZW50cnlfdHRsLCB1c2VyKTsKIAkJCXJldHVybiAw
-OwogCQl9Ci0JCQorCiAJY2FzZSBOQ1BfSU9DX0dFVERFTlRSWVRUTDoKIAkJewogCQkJdV9pbnQz
-Ml90IHVzZXIgPSAoYXRvbWljX3JlYWQoJnNlcnZlci0+ZGVudHJ5X3R0bCkgKiAxMDAwKSAvIEha
-OwpkaWZmIC0tZ2l0IGEvZnMvbmNwZnMvbmNwbGliX2tlcm5lbC5jIGIvZnMvbmNwZnMvbmNwbGli
-X2tlcm5lbC5jCmluZGV4IDdiY2M5OWQuLmE5NTYxNWEgMTAwNjQ0Ci0tLSBhL2ZzL25jcGZzL25j
-cGxpYl9rZXJuZWwuYworKysgYi9mcy9uY3Bmcy9uY3BsaWJfa2VybmVsLmMKQEAgLTU3OCw3ICs1
-NzgsNyBAQCBuY3BfbW91bnRfc3ViZGlyKHN0cnVjdCBuY3Bfc2VydmVyICpzZXJ2ZXIsCiAJaW50
-IGRzdE5TOwogCWludCByZXN1bHQ7CiAKLQluY3BfdXBkYXRlX2tub3duX25hbWVzcGFjZShzZXJ2
-ZXIsIHZvbE51bWJlciwgJmRzdE5TKTsJCisJbmNwX3VwZGF0ZV9rbm93bl9uYW1lc3BhY2Uoc2Vy
-dmVyLCB2b2xOdW1iZXIsICZkc3ROUyk7CiAJaWYgKChyZXN1bHQgPSBuY3BfT2J0YWluU3BlY2lm
-aWNEaXJCYXNlKHNlcnZlciwgc3JjTlMsIGRzdE5TLCB2b2xOdW1iZXIsIAogCQkJCSAgICAgIGRp
-ckVudE51bSwgTlVMTCwgbmV3RGlyRW50LCBuZXdEb3NFbnQpKSAhPSAwKQogCXsKIAo=
---0016e646a34e73553d0491416165
-Content-Type: application/octet-stream; name="ncpfs4.patch"
-Content-Disposition: attachment; filename="ncpfs4.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gelmv6wd2
-
-TWlzc2luZyBjb25zdCBxdWFsaWZpZXIgaW4gbmNwZnMKCk9uZSBtb3JlIHBsYWNlIHdoaWNoIGRl
-c2VydmVzIGNoYXIqIHRvIGJlIGNvbnN0IGNoYXIgKi4KClNpZ25lZC1vZmYtYnk6IFBldHIgVmFu
-ZHJvdmVjIDxwZXRyQHZhbmRyb3ZlYy5uYW1lPgoKZGlmZiAtLWdpdCBhL2ZzL25jcGZzL25jcGxp
-Yl9rZXJuZWwuYyBiL2ZzL25jcGZzL25jcGxpYl9rZXJuZWwuYwppbmRleCA3YmNjOTlkLi5hOTU2
-MTVhIDEwMDY0NAotLS0gYS9mcy9uY3Bmcy9uY3BsaWJfa2VybmVsLmMKKysrIGIvZnMvbmNwZnMv
-bmNwbGliX2tlcm5lbC5jCkBAIC03MDksNyArNzA5LDcgQEAgaW50IG5jcF9tb2RpZnlfbmZzX2lu
-Zm8oc3RydWN0IG5jcF9zZXJ2ZXIgKnNlcnZlciwgX191OCB2b2xudW0sIF9fbGUzMiBkaXJlbnQs
-CiBzdGF0aWMgaW50CiBuY3BfRGVsZXRlTlNFbnRyeShzdHJ1Y3QgbmNwX3NlcnZlciAqc2VydmVy
-LAogCQkgIF9fdTggaGF2ZV9kaXJfYmFzZSwgX191OCB2b2xudW0sIF9fbGUzMiBkaXJlbnQsCi0J
-CSAgY2hhciogbmFtZSwgX191OCBucywgX19sZTE2IGF0dHIpCisJCSAgY29uc3QgY2hhciogbmFt
-ZSwgX191OCBucywgX19sZTE2IGF0dHIpCiB7CiAJaW50IHJlc3VsdDsKIAo=
---0016e646a34e73553d0491416165--
+Alan
