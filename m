@@ -1,107 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759910Ab0I0QpV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 12:45:21 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:15435 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759900Ab0I0QpQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 12:45:16 -0400
-X-SpamScore: -15
-X-BigFish: VPS-15(zzbb2cK1432N98dN10d1Izz1202hzzz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L9EZV1-01-RIS-02
-X-M-MSG: 
-Date: Mon, 27 Sep 2010 18:45:02 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Don Zickus <dzickus@redhat.com>
-CC: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v2 3/7] x86, NMI, Rename memory parity error to PCI
- SERR error
-Message-ID: <20100927164502.GS13563@erda.amd.com>
-References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
- <1285549026-5008-3-git-send-email-ying.huang@intel.com>
- <20100927080106.GA32222@erda.amd.com>
- <1285576760.20791.70.camel@yhuang-dev>
- <20100927090056.GJ13563@erda.amd.com>
- <20100927153315.GB26290@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100927153315.GB26290@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	id S1759895Ab0I0QpM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 12:45:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21534 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759881Ab0I0QpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 12:45:08 -0400
+Subject: Re: [PATCH 3/6] secmark: export binary yes/no rather than kernel
+ internal	secid
+From: Eric Paris <eparis@redhat.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov,
+        netfilter-devel@vger.kernel.org, jmorris@namei.org, sds@tycho.nsa.gov,
+        jengelh@medozas.de, paul.moore@hp.com, casey@schaufler-ca.com,
+        linux-security-module@vger.kernel.org, netfilter@vger.kernel.org,
+        mr.dash.four@googlemail.com
+In-Reply-To: <4C9DB5CE.7090305@netfilter.org>
+References: <20100924204517.28355.42822.stgit@paris.rdu.redhat.com>
+	 <20100924204531.28355.20320.stgit@paris.rdu.redhat.com>
+	 <4C9DB5CE.7090305@netfilter.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 27 Sep 2010 12:44:05 -0400
+Message-ID: <1285605845.2815.7.camel@localhost.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.09.10 11:33:15, Don Zickus wrote:
-> On Mon, Sep 27, 2010 at 11:00:56AM +0200, Robert Richter wrote:
-> > On 27.09.10 04:39:20, Huang Ying wrote:
-> > > > I already commented on this, patch #1 and #3 are basically the same in
-> > > > most parts which should be merged. What remains then in this patch is
-> > > > the modified printk() and the comment. Both could be added to #1 too
-> > > > which is then some sort of code cleanup patch.
-> > > 
-> > > Don thinks it is Ok to keep 2 patches.
-> > 
-> > I don't like reviewing new changes which are thrown away with the next
-> > patch. I review things twice and it is much harder to see what really
-> > changed then. Also we should have a clean history.
+On Sat, 2010-09-25 at 10:41 +0200, Pablo Neira Ayuso wrote:
+> On 24/09/10 22:45, Eric Paris wrote:
+> > Currently the nfconntrack export code sends the kernel internal secid to
+> > userspace in a couple of proc files and over netlink as an integer.  This
+> > is wrong.  This number is a kernel internal.  This patch changes the export
+> > code to output either 0 or 1 for this value.  A future patch will implement
+> > sending the name rather than the number in a new field.
 > 
-> I didn't care either way.  But if it makes it easier to review, it's nice
-> to keep reviewers happy too. :-)
-
-Yes, thanks, this makes me happy. :)
-
+> I'm not sure why you need this transitional patch if you later on
+> replace it.
 > 
-> Hunag, I think there is going to be a V3 of this series, could you just
-> combine these patches then?
-> 
-> > 
-> > And with git it is fairly easy to join patches.
-> > 
-> > > 
-> > > > >  #define NMI_REASON_CLEAR_IOCHK	0x08
-> > > > >  #define NMI_REASON_CLEAR_MASK	0x0f
-> > > > >  
-> > > > > --- a/arch/x86/kernel/traps.c
-> > > > > +++ b/arch/x86/kernel/traps.c
-> > > > > @@ -301,15 +301,14 @@ gp_in_kernel:
-> > > > >  }
-> > > > >  
-> > > > >  static notrace __kprobes void
-> > > > > -mem_parity_error(unsigned char reason, struct pt_regs *regs)
-> > > > > +pci_serr_error(unsigned char reason, struct pt_regs *regs)
-> > > > >  {
-> > > > > -	printk(KERN_EMERG
-> > > > > -		"Uhhuh. NMI received for unknown reason %02x on CPU %d.\n",
-> > > > > -			reason, smp_processor_id());
-> > > > > -
-> > > > > -	printk(KERN_EMERG
-> > > > > -		"You have some hardware problem, likely on the PCI bus.\n");
-> > > > > +	printk(KERN_EMERG "NMI: PCI system error (SERR).\n");
-> > > > 
-> > > > You should keep reporting the cpu id to identify the affected node and
-> > > > also the reason.
-> > > 
-> > > Ok. I will add CPU ID in message. Because we know the reason, I don't
-> > > think we need the reason in message.
-> > 
-> > You only know that bit 7 is set, not the rest. As this is an error
-> > message we should provide as much information as possible.
-> 
-> Well, what other info do we know besides that bit being set?  (I wish we
-> had more, but I don't think we do)
+> Better to change the /proc output to make it consistent with patch 5/6?
 
-We should keep printing the reason byte as it did before.
+Jan has stated his opinion I should not export the new secctx field via
+the procfs interface.  This patch was included in the series in case
+that was the consensus of the lists and thus we just wouldn't apply
+patch 6/6 (which drops secmark and adds secctx to procfs)
 
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+-Eric
 
