@@ -1,55 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759941Ab0I0SFa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 14:05:30 -0400
-Received: from cantor.suse.de ([195.135.220.2]:38258 "EHLO mx1.suse.de"
+	id S933000Ab0I0SGq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 14:06:46 -0400
+Received: from www.tglx.de ([62.245.132.106]:36755 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752067Ab0I0SF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 14:05:29 -0400
-Date: Mon, 27 Sep 2010 10:54:12 -0700
-From: Greg KH <gregkh@suse.de>
-To: tmhikaru@gmail.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Linux 2.6.35.6
-Message-ID: <20100927175412.GA23347@suse.de>
-References: <20100927003608.GA20395@kroah.com> <20100927163208.GA4892@roll>
+	id S1755835Ab0I0SGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 14:06:43 -0400
+Date: Mon, 27 Sep 2010 20:01:26 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Tony Luck <tony.luck@intel.com>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>, linux-alpha@vger.kernel.org,
+        linux-cris-kernel@axis.com, Haavard Skinnemoen <hskinnemoen@atmel.com>,
+        linux-ia64@vger.kernel.org,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Greg Ungerer <gerg@uclinux.org>, Jeff Dike <jdike@addtoit.com>,
+        linux-parisc@vger.kernel.org, Chris Zankel <chris@zankel.net>,
+        linux-arch@vger.kernel.org
+Subject: Re: [RFC trollpatch 1/1] genirq: Remove the fits all and nothing
+ __do_IRQ() code
+In-Reply-To: <AANLkTikVHO9DmyTX==CwViDK1rP0masBwjMakHZ0U=kZ@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1009271953390.2416@localhost6.localdomain6>
+References: <20100908152036.643594727@linutronix.de> <AANLkTikVHO9DmyTX==CwViDK1rP0masBwjMakHZ0U=kZ@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100927163208.GA4892@roll>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-1703548383-1285610489=:2416"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 12:32:08PM -0400, tmhikaru@gmail.com wrote:
-> 	I'm not exactly sure what's going on here and I'd like some help
-> figuring out what is. For some inexplicable reason, ever since I started
-> using the 2.6.35.x series with the 2.6.35.3 release, my loadaverages tend to
-> bounce anywhere from as low to .2 to 1.5 - constantly, while the machine
-> seems idle.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-But .34 doesn't show this issue?
+---1463795968-1703548383-1285610489=:2416
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-If so, can you run 'git bisect' between the .34 and .35 releases to find
-out where the problem comes in?
 
-> Consistently, there are no programs in D state in ps aux output,
-> no cpu hogging programs running in top, nothing I can see that should
-> explain the bizzarely high load average.
 
-Loadaverage can be affected by a driver doing an uninteruptable sleep.
-This doesn't actually cause a load on the system, but it does affect the
-way that number is calcuated.  Perhaps that's the problem here.
+On Mon, 27 Sep 2010, Tony Luck wrote:
 
-> 	If you have any tips or recommendations on what I should use to
-> investigate this further, please let me know. Once I have ensured to my own
-> satisfaction that I'm not doing something bizzare that's screwing up my
-> machine, I'll make a detailed bug report and start on figuring out how to
-> use git bisect.
+> On Wed, Sep 8, 2010 at 11:14 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> >  The following architectures are still using __do_IRQ():
+> >
+> >  alpha, cris, ia64, h8300, m32r, m68knommu, parisc, um
+> 
+> Thomas,
+> 
+> I (belatedly) took a look at fixing ia64 ... but I've run into a small snag.
+> The __do_IRQ() routine makes a call to:
+> 
+>  desc->chip->end(irq);
+> 
+> while neither of the "handle_level_irq()" nor "handle_edge_irq()"
+> functions do this.
+> 
+> On ia64 iosapic_end_level_irq() call iosapic_eoi() for me. Without it
+> my system hangs during boot (with some driver timeout complaining
+> about dropped interrupts).
+> 
+> Is the omission of desc->chip->end(irq); deliberate? In which case
+> I need to find another place to call iosapic_eoi(). Or is it accidental?
 
-'man git-bisect' will help with this :)
+No, it's deliberate. The solution is to use the correct flow handler
+for your device. We have currently several flow handlers implemented:
 
-thanks,
+    handle_level_irq
+	{
+		if (chip->mask_ack)
+			chip->mask_ack()
+		else {
+		     chip->mask();
+		     if (chip->ack)
+		     	chip->ack();
+		}
 
-greg k-h
+		....
+
+		chip->unmask();
+	}
+
+    handle_edge_irq
+	{
+		chip->ack()
+
+		...
+	}
+
+    handle_simple_irq
+	{
+		...
+	}
+
+    handle_fasteoi_irq
+	{
+		...
+		chip->eoi();
+	}
+
+    handle_percpu_irq
+	{	
+		if (chip->ack)
+		     	chip->ack();
+		
+		if (chip->eoi)
+		     	chip->eoi();
+	}
+
+Note, that handle_percpu_irq does not take the irq_desc->lock.
+
+So the trick is to select the matching handler and have separate irq
+chip implementations if necessary.
+
+Hope that helps.
+
+Thanks,
+
+	tglx
+
+---1463795968-1703548383-1285610489=:2416--
