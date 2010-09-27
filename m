@@ -1,106 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760273Ab0I0XGs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 19:06:48 -0400
-Received: from smtp125.sbc.mail.sp1.yahoo.com ([69.147.65.184]:37970 "HELO
-	smtp125.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757460Ab0I0XGq (ORCPT
+	id S1760284Ab0I0XMb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 19:12:31 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60330 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756506Ab0I0XM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 19:06:46 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: yVdcvxMVM1lIcPh0K57Dab.W1ynWHHEOXfzC.G8UJUiLlFU
- 659G6a8as7r9HDeJnyxo4q9ylCfG23fX.hbsuqjLY2DSTXYLFHzZBaQ2_sLy
- TwVCOijjjU2ok5BBVdDxBrwcs86qj3bxJcXHfCOI7c8S_yzSBWQEf2gKfa2A
- oxBsUANvItuLTntuaUfgOvoD_QiHdXKJ9LiL1pAC2Cky_vqPPh75bu1NDzVs
- VZk_S33IMlBYwNmalGJKpxLLgrwhbqmsY6SmiswgjmDrNtuD4kMqkcJDRlab
- w5kLj__oenYF.97TkK0a236U-
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [PATCH v2 01/11] scsi: Convert struct
-	Scsi_Host->cmd_serial_number to atomic_t
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Christof Schmitt <christof.schmitt@de.ibm.com>
-Cc: Mike Christie <michaelc@cs.wisc.edu>, Joe Eykholt <jeykholt@cisco.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        James Smart <james.smart@emulex.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Christoph Hellwig <hch@lst.de>
-In-Reply-To: <20100927140551.GB8473@schmichrtp.mainz.de.ibm.com>
-References: <1284747709-20862-1-git-send-email-nab@linux-iscsi.org>
-	 <4C93BB8E.2080501@cisco.com> <4C9427B6.9050404@cs.wisc.edu>
-	 <1284839878.13344.300.camel@haakon2.linux-iscsi.org>
-	 <20100927140551.GB8473@schmichrtp.mainz.de.ibm.com>
-Content-Type: text/plain
-Date: Mon, 27 Sep 2010 16:02:28 -0700
-Message-Id: <1285628548.8880.64.camel@haakon2.linux-iscsi.org>
+	Mon, 27 Sep 2010 19:12:29 -0400
+Date: Mon, 27 Sep 2010 16:12:03 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dan Carpenter <error27@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Cliff Wickman <cpw@sgi.com>, Jack Steiner <steiner@sgi.com>,
+        Robin Holt <holt@sgi.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] tlb_uv: handle large snprintf() returns
+Message-Id: <20100927161203.732833b0.akpm@linux-foundation.org>
+In-Reply-To: <20100816105502.GC645@bicker>
+References: <20100816105502.GC645@bicker>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-27 at 16:05 +0200, Christof Schmitt wrote:
-> On Sat, Sep 18, 2010 at 12:57:58PM -0700, Nicholas A. Bellinger wrote:
-> > On Fri, 2010-09-17 at 21:45 -0500, Mike Christie wrote:
-> > > On 09/17/2010 02:03 PM, Joe Eykholt wrote:
-> > > >
-> > > > How about instead of adding use_serial_number, let's just have the
-> > > > drivers that want a serial number call scsi_cmd_get_serial()
-> > > 
-> > > I think this sounds better.
-> > > 
-> > 
-> > In that case I will go ahead and add explict scsi_cmd_get_serial() calls
-> > to the LLDs that use struct scsi_cmnd->serial_number in anything beyond
-> > an obvious and simple informational purpose.
-> > 
-> > > You could also convert drivers to the host tagging if you needed a 
-> > > unique id for each command sent to a host.
-> > 
-> > Hmmm, what does this entail again..?
-> > 
-> > > 
-> > > > and stop calling it from scsi_dispatch_cmd()?   AFAICT, it's only
-> > > > used in debug messages in some drivers.  I didn't find other usages
-> > > > but didn't do an exhaustive search.
-> > > 
-> > > The comments for serial_number say that it is only supposed to be used 
-> > > for debugging printks and most drivers use it for that.
-> > 
-> > So I would suppose it would be OK for those drivers to continue to
-> > printk serial_number to show the internal serial_number allocation is
-> > now disabled by default.
-> > 
+On Mon, 16 Aug 2010 12:55:02 +0200
+Dan Carpenter <error27@gmail.com> wrote:
 
-<SNIP>
-
-> > > 
-> > > zfcp looks like it copies it. It does not look like the driver needs it.
-> > > 
-> > 
-> > Ok, I will look at removing it's usage in zfcp or if necessary add an
-> > the explict scsi_cmd_get_serial() call.
+> snprintf() returns the number of bytes that *would* have been copied if
+> the buffer was large enough, so it can be larger than the size of the
+> buffer.  In this case it's ok, but let's put a cap on it anyway so it's
+> easier to audit.
 > 
-> In zfcp, the serial_number is only accessed for writing it to debug
-> traces. With the change that the driver has to request the serial
-> number through use_serial_number, simply remove the serial number from
-> zfcp.
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
+> 
+> diff --git a/arch/x86/kernel/tlb_uv.c b/arch/x86/kernel/tlb_uv.c
+> index 312ef02..5e88b3a 100644
+> --- a/arch/x86/kernel/tlb_uv.c
+> +++ b/arch/x86/kernel/tlb_uv.c
+> @@ -1012,6 +1012,9 @@ static ssize_t tunables_read(struct file *file, char __user *userbuf,
+>  		timeoutsb4reset, ipi_reset_limit, complete_threshold,
+>  		congested_response_us, congested_reps, congested_period);
+>  
+> +	if (ret > 300)
+> +		ret = 300;
+> +
+>  	return simple_read_from_buffer(userbuf, count, ppos, buf, ret);
+>  }
 
-Hi Christof,
+That 300-byte local array is yuk.
 
-So since the use of struct scsi_cmnd->serial_number is purely
-informational for some LLDs (including zfcp) , I have been putting the
-conversion of these LLDs as a low priority ATM.   I would happily accept
-a patch to remove these.  8-)
+Duplicating the "300" later in the function (instead of using sizeof)
+is also yuk.
 
-Best,
-
---nab
-
+The code can be deyukked by using sprintf_to_user(), only we don't have
+one.  But we do have kasprintf().
 
