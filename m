@@ -1,114 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933362Ab0I0SsW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 14:48:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46773 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757124Ab0I0SsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 14:48:21 -0400
-Date: Mon, 27 Sep 2010 14:47:47 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: agruen@suse.de, linuxram@us.ibm.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, neilb@suse.de, viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 6/7 v3] overlay: hybrid overlay filesystem prototype
-Message-ID: <20100927184747.GC8089@shell>
-References: <20100920180404.939991832@szeredi.hu> <20100920180447.854260354@szeredi.hu> <20100924175653.GB25129@shell> <E1P08oT-0004C7-3O@pomaz-ex.szeredi.hu>
+	id S933382Ab0I0St5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 14:49:57 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60005 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757124Ab0I0St4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 14:49:56 -0400
+Date: Mon, 27 Sep 2010 11:49:11 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Rik van Riel <riel@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] mm: do not print backtraces on GFP_ATOMIC failures
+Message-Id: <20100927114911.bc95ac87.akpm@linux-foundation.org>
+In-Reply-To: <20100927110723.6B37.A69D9226@jp.fujitsu.com>
+References: <20100921094638.9910add0.akpm@linux-foundation.org>
+	<1285088427.2617.723.camel@edumazet-laptop>
+	<20100927110723.6B37.A69D9226@jp.fujitsu.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1P08oT-0004C7-3O@pomaz-ex.szeredi.hu>
-User-Agent: Mutt/1.4.2.2i
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 10:11:53AM +0200, Miklos Szeredi wrote:
-> On Fri, 24 Sep 2010, Valerie Aurora wrote:
-> > On Mon, Sep 20, 2010 at 08:04:10PM +0200, Miklos Szeredi wrote:
-> > > From: Miklos Szeredi <mszeredi@suse.cz>
+On Mon, 27 Sep 2010 11:17:19 +0900 (JST)
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+
+> > > > @@ -72,7 +72,7 @@ struct vm_area_struct;
+> > > >  /* This equals 0, but use constants in case they ever change */
+> > > >  #define GFP_NOWAIT	(GFP_ATOMIC & ~__GFP_HIGH)
+> > > >  /* GFP_ATOMIC means both !wait (__GFP_WAIT not set) and use emergency pool */
+> > > > -#define GFP_ATOMIC	(__GFP_HIGH)
+> > > > +#define GFP_ATOMIC	(__GFP_HIGH | __GFP_NOWARN)
+> > > >  #define GFP_NOIO	(__GFP_WAIT)
+> > > >  #define GFP_NOFS	(__GFP_WAIT | __GFP_IO)
+> > > >  #define GFP_KERNEL	(__GFP_WAIT | __GFP_IO | __GFP_FS)
 > > > 
-> > > This overlay filesystem is a hybrid of entirely filesystem based
-> > > (unionfs, aufs) and entierly VFS based (union mounts) solutions.
+> > > A much finer-tuned implementation would be to add __GFP_NOWARN just to
+> > > the networking call sites.  I asked about this in June and it got
+> > > nixed:
+> > > 
+> > > http://www.spinics.net/lists/netdev/msg131965.html
+> > > --
 > > 
-> > [...]
+> > Yes, I remember this particular report was useful to find and correct a
+> > bug.
 > > 
-> > > +static int ovl_create_object(struct dentry *dentry, int mode, dev_t rdev,
-> > > +			     const char *link)
-> > > +{
-> > > +	int err;
-> > > +	struct dentry *newdentry;
-> > > +	struct dentry *upperdir;
-> > > +	struct inode *inode;
-> > > +	struct kstat stat = {
-> > > +		.mode = mode,
-> > > +		.rdev = rdev,
-> > > +	};
-> > > +
-> > > +	err = -ENOMEM;
-> > > +	inode = ovl_new_inode(dentry->d_sb, mode);
-> > > +	if (!inode)
-> > > +		goto out;
-> > > +
-> > > +	err = ovl_copy_up(dentry->d_parent);
-> > > +	if (err)
-> > > +		goto out_iput;
-> > > +
-> > > +	upperdir = ovl_dentry_upper(dentry->d_parent);
-> > > +	mutex_lock_nested(&upperdir->d_inode->i_mutex, I_MUTEX_PARENT);
-> > > +
-> > > +	newdentry = ovl_upper_create(upperdir, dentry, &stat, link);
-> > > +	err = PTR_ERR(newdentry);
-> > > +	if (IS_ERR(newdentry))
-> > > +		goto out_unlock;
-> > > +
-> > > +	if (ovl_dentry_is_opaque(dentry) && S_ISDIR(mode)) {
-> > > +		err = ovl_set_opaque(newdentry);
-> > > +		if (err)
-> > > +			goto out_dput;
-> > > +	}
+> > I dont know what to say.
 > > 
-> > Andreas Gruenbacher just convinced me that every single new directory
-> > created in the unioned file system should be marked opaque.  "New"
-> > means either it replaces a whiteout or has no matching directory on
-> > the lower layer.  The theory is that the topmost file system changes
-> > should take precedence and override any changes (off-line) in the
-> > lower file system.
+> > Being silent or verbose, it really depends on the context ?
 > 
-> That's logical.  However marking new directories opaque is only a half
-> solution.  E.g. consider the case when we have /a/b/c/ on the lower fs
-> and /a/b/ on the upper, which is not opaque.  Then /a/b/c/ is created
-> on the upper fs off-line.  The union logic can't notice that "c"
-> should really be opaque and will merge with the contents of the lower
-> layer.
+> At least, MM developers don't want to track network allocation failure
+> issue. We don't have enough knowledge in this area. To be honest, We 
+> are unhappy current bad S/N bug report rate ;)
+> 
+> Traditionally, We hoped this warnings help to debug VM issue.
 
-Maybe I don't understand.  It seems like directories created when the
-file system is *not* union mounted should definitely be merged with
-matching directories on the lower layer.
+Well, no, not really.  I thought that the main reason for having that
+warning was to debug _callers_ of the memory allocator.
 
-Take the case of /etc/fstab.  The first union mount never touches /etc
-and it doesn't exist on the topmost layer.  Then we unmount the upper
-layer, mount it somewhere else as a plain mount, and create /etc/ and
-/etc/fstab.  When we union mount it back over the lower layer again,
-we still want the lower layer /etc/ to be merged with the topmost
-/etc/, or else init.d will disappear.
+Firstly it tells us when callsites are being too optimistic: asking for
+large amounts of contiguous pages, sometimes from atomic context. 
+Quite a number of such callsites have been fixed as a result.
 
-However, if while the file system is union mounted, /etc/ doesn't
-exist, and /etc/ is created, a later mount shouldn't merge a newly
-created /etc/ on the lower layer.
+Secondly, memory allocation failures are a rare event, so the calling
+code's error paths are not well tested.  This warning turns the bug
+report "hey, my computer locked up" into the much better "hey, I got
+this error message and then my computer locked up".  This allows us to
+go and look at the offending code and see if it is handling ENOMEM
+correctly.  However I don't recall this scenario ever having actually
+happened.
 
-> The real solution to this problem is to make opaque the default and
-> only mark *non* opaque directories.  These are only created on copy-up
-> or by explicit admin action on the upper fs.
+> but
+> It haven't happen. We haven't detect VM issue from this allocation
+> failure report. Instead, We've received a lot of network allocation
+> failure report.
+> 
+> Recently, The S/N ratio became more bad. If the network device enable
+> jumbo frame feature, order-2 GFP_ATOMIC allocation is called frequently.
+> Anybody don't have to assume order-2 allocation can success anytime.
+> 
+> I'm not against accurate warning at all. but I cant tolerate this
+> semi-random warning steal our time. If anyone will not make accurate
+> warning, I hope to remove this one completely instead.
 
-Again, maybe I'm misunderstanding, but this doesn't make much sense to
-me.  Say I create:
+We can disable the warning for only net drivers quite easily.  I don't
+have any strong opinions, really - yes, we get quite a few such bug
+reports but most of them end up in my lap anyway and it can't be more
+than one per week, shrug.
 
-/upper/a_dir/upper_file
-/lower/a_dir/lower_file
-
-Then when I union mount them, I want a_dir/ to be transparent
-automatically and show both upper_file and lower_file, without marking
-it manually.
-
--VAL
