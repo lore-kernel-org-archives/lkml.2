@@ -1,107 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760255Ab0I0U6M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 16:58:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26624 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759971Ab0I0U6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 16:58:09 -0400
-Subject: Re: [PATCH 3/3] VFIO V4: VFIO driver: Non-privileged user level
- PCI drivers
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Tom Lyon <pugs@cisco.com>, linux-pci@vger.kernel.org,
-        jbarnes@virtuousgeek.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, randy.dunlap@oracle.com, arnd@arndb.de,
-        joro@8bytes.org, hjk@linutronix.de, avi@redhat.com, gregkh@suse.de,
-        chrisw@sous-sol.org
-In-Reply-To: <20100927115420.GA7427@redhat.com>
-References: <4c9a72a0.u2cnjUB7QZ91tLeo%pugs@cisco.com>
-	 <20100927115420.GA7427@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 27 Sep 2010 14:57:49 -0600
-Message-ID: <1285621069.4951.61.camel@x201>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751751Ab0I0VAs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 17:00:48 -0400
+Received: from xenotime.net ([72.52.115.56]:34398 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751806Ab0I0VAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 17:00:47 -0400
+Message-ID: <47466.64.134.138.103.1285621238.squirrel@www.xenotime.net>
+In-Reply-To: <20100927205442.GA18596@foursquare.net>
+References: <20100924041410.GA18040@foursquare.net>
+    <20100927205442.GA18596@foursquare.net>
+Date: Mon, 27 Sep 2010 14:00:38 -0700 (PDT)
+Subject: Re: ext3 filesystem corruption in user mode linux
+From: "Randy Dunlap" <rdunlap@xenotime.net>
+To: "Chris Frey" <cdfrey@foursquare.net>
+Cc: linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.5.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-27 at 13:54 +0200, Michael S. Tsirkin wrote:
-> On Wed, Sep 22, 2010 at 02:18:24PM -0700, Tom Lyon wrote:
-> > 
-> > Signed-off-by: Tom Lyon <pugs@cisco.com>
-> 
-> Some comments on the pci bits:
-> 
-> After going over them for the Nth time - something needs to be done
-> with the rvirt/write tables. I doubt anyone besides me and you
-> has gone over them: 
 
-/me bites tongue...
+On Mon, September 27, 2010 1:54 pm, Chris Frey wrote:
+> On Fri, Sep 24, 2010 at 12:14:10AM -0400, Chris Frey wrote:
+>
+>> I'm not sure what the next debugging step should be.  I can test
+>> different versions of UML kernels, or test patches, if more testing is
+>> needed.
+>
+> Is this the wrong place to post about user mode linux?  I searched
+> but I don't see a mailing list specific to ARCH=um.
 
-> > +static void vfio_bar_fixup(struct vfio_dev *vdev)
-> > +{
-> 
-> So you do this on each read?
-> Why don't you mask the appropriate bits on write?
-> This is what real hardware does, after all.
-> Then you won't need the bardirty field.
-> 
-> 
-> > +	struct pci_dev *pdev = vdev->pdev;
-> > +	int bar;
-> > +	u32 *lp;
-> > +	u64 mask;
-> > +
-> > +	for (bar = 0; bar <= 5; bar++) {
-> > +		if (pci_resource_start(pdev, bar))
-> > +			mask = ~(pci_resource_len(pdev, bar) - 1);
-> > +		else
-> > +			mask = 0;
-> > +		lp = (u32 *)vdev->vconfig + PCI_BASE_ADDRESS_0 + 4*bar;
-> > +		*lp &= (u32)mask;
-> > +
-> > +		if (pci_resource_flags(pdev, bar) & IORESOURCE_IO)
-> > +			*lp |= PCI_BASE_ADDRESS_SPACE_IO;
-> > +		else if (pci_resource_flags(pdev, bar) & IORESOURCE_MEM) {
-> > +			*lp |= PCI_BASE_ADDRESS_SPACE_MEMORY;
-> > +			if (pci_resource_flags(pdev, bar) & IORESOURCE_PREFETCH)
-> > +				*lp |= PCI_BASE_ADDRESS_MEM_PREFETCH;
-> > +			if (pci_resource_flags(pdev, bar) & IORESOURCE_MEM_64) {
-> > +				*lp |= PCI_BASE_ADDRESS_MEM_TYPE_64;
-> > +				lp++;
-> > +				*lp &= (u32)(mask >> 32);
-> > +				bar++;
-> > +			}
-> > +		}
-> > +	}
-> > +
-> > +	if (pci_resource_start(pdev, PCI_ROM_RESOURCE))
-> 
-> Not if (pci_resource_len)?
+I would expect here to be OK, but the MAINTAINERS file also lists
+2 mailing lists and one web site:
 
-Using this test covers both zero length/unimplemented BARs and BARs that
-aren't mapped by the host.  Unmapped BARs on the host are exposed as
-unimplemented BARs to the vfio user.  I wonder if this is still
-necessary if we do the iomap/rom_map on open as I propose.
+L:	user-mode-linux-devel@lists.sourceforge.net
+L:	user-mode-linux-user@lists.sourceforge.net
+W:	http://user-mode-linux.sourceforge.net
 
-> > +		mask = ~(pci_resource_len(pdev, PCI_ROM_RESOURCE) - 1);
-> > +	else
-> > +		mask = 0;
-> > +	lp = (u32 *)vdev->vconfig + PCI_ROM_ADDRESS;
-> > +	*lp &= (u32)mask;
-> > +
-> > +	vdev->bardirty = 0;
-> 
-> Aren't the pci values in little endian format?
-> If so doing operations on them in native endianness is wrong.
-> sparse generally is good at catching these, but you will
-> have to avoid so many type casts and annotate endian-ness
-> for it to be of any use.
-
-Yep, I expect there are a number of endian issues here, good call
-pointing them out.
-
-Alex
+-- 
+~Randy
 
