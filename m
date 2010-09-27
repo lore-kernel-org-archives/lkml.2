@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933281Ab0I0S3Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 14:29:25 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:44036 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757190Ab0I0S3X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 14:29:23 -0400
-Subject: Re: [PATCH 3/6] secmark: export binary yes/no rather than kernel
- internal secid
-From: Paul Moore <paul.moore@hp.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
-        selinux@tycho.nsa.gov, netfilter-devel@vger.kernel.org,
-        sds@tycho.nsa.gov, jengelh@medozas.de, casey@schaufler-ca.com,
-        linux-security-module@vger.kernel.org, netfilter@vger.kernel.org,
-        mr.dash.four@googlemail.com
-In-Reply-To: <1285606896.2815.36.camel@localhost.localdomain>
-References: <20100924204517.28355.42822.stgit@paris.rdu.redhat.com>
-	 <20100924204531.28355.20320.stgit@paris.rdu.redhat.com>
-	 <alpine.LRH.2.00.1009271038280.25748@tundra.namei.org>
-	 <1285606896.2815.36.camel@localhost.localdomain>
-Content-Type: text/plain; charset="us-ascii"
-Organization: Hewlett Packard
-Date: Mon, 27 Sep 2010 14:29:16 -0400
-Message-ID: <1285612156.4935.16.camel@sifl>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S933358Ab0I0SbF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 14:31:05 -0400
+Received: from a.mail.sonic.net ([64.142.16.245]:33691 "EHLO a.mail.sonic.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932448Ab0I0SbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 14:31:04 -0400
+X-Greylist: delayed 1509 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Sep 2010 14:31:03 EDT
+Message-ID: <4CA0DCDE.5030401@twiddle.net>
+Date: Mon, 27 Sep 2010 11:05:18 -0700
+From: Richard Henderson <rth@twiddle.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Matt Turner <mattst88@gmail.com>
+Subject: Re: alpha: potential race around hae_cache in RESTORE_ALL
+References: <20100925181304.GV19804@ZenIV.linux.org.uk> <AANLkTi=XURM0hOiitvNSiacd9+7Vx8s7V0KZ+oZQsDDQ@mail.gmail.com> <20100925191836.GW19804@ZenIV.linux.org.uk> <20100925192509.GX19804@ZenIV.linux.org.uk> <20100927075828.GA15344@jurassic.park.msu.ru> <20100927121227.GB19804@ZenIV.linux.org.uk> <20100927124624.GC19804@ZenIV.linux.org.uk> <20100927162610.GA18373@jurassic.park.msu.ru> <AANLkTimjep+H2VDJC1sFvT52XPmiKgMHuRBirzNm6qnL@mail.gmail.com>
+In-Reply-To: <AANLkTimjep+H2VDJC1sFvT52XPmiKgMHuRBirzNm6qnL@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-27 at 13:01 -0400, Eric Paris wrote:
-> On Mon, 2010-09-27 at 10:50 +1000, James Morris wrote:
-> > On Fri, 24 Sep 2010, Eric Paris wrote:
+On 09/27/2010 10:10 AM, Linus Torvalds wrote:
+> On Mon, Sep 27, 2010 at 9:26 AM, Ivan Kokshaysky
+> <ink@jurassic.park.msu.ru> wrote:
+>>
+>> Looks like we need to drop HAE bits from SAVE_ALL/RESTORE_ALL, which
+>> benefits (1) and automatically fixes (3), and do the entire IO sequences
+>> in (2) with disabled interrupts (if HAE is involved).
 > 
-> > For the reasons above, I think the secctx string needs to be exported in 
-> > addition to this rather than instead of.
+> No can do.
 > 
-> I won't argue, I don't agree with your reasoning, but I'm not opposed to
-> this result.  We have 3 competing suggestions:
+> HAE is used in user space too (the X server), and it depends on the
+> kernel restoring HAE over interrupts and system calls, afaik.
 > 
-> Jan suggested we:
-> completely eliminate secmark from procfs+netlink and only export secctx
-> in netlink.
-> 
-> Eric suggested we:
-> completely eliminate secmark from procfs+netlink and then export secctx
-> in procfs+netlink
-> 
-> sounds like James suggested we:
-> continue to export meaningless and confusing secmark from procfs+netlink
-> and then export secctx in procfs+netlink as well.
-> 
-> I'm going to implement James' idea and resend the patch series.  Any
-> strong objections?
+> I'm also pretty certain that all SMP machines either don't have HAE at
+> all, or have a per-CPU HAE in hardware (and then it's possible that we
+> screw it up in software, of course). Anything else would be too broken
+> for words. Can somebody find documentation saying otherwise?
 
-I apologize for not getting a chance to look at these patches sooner.
-In general they look fine to me and my only real concern was addressed
-by Pablo already (breaking userspace due to #define changes).
+I'm pretty sure T2 is too broken for words, and RAWHIDE has
+wide enough HAE that we can get away with leaving it at
+defaults most of the time.
 
-As far as exporting the 32bit secid/secmark to userspace, I think that
-is a mistake.  James correctly points out that it does map to a LSM
-specific value, e.g. SELinux and Smack security labels, but I don't
-think he makes it clear that in the two LSMs that currently use secids
-the mapping between the secid and the secctx is not constant; the secids
-are transient values that will change with each boot in a manner that
-userspace can not predict.  For this reason, I think exporting the
-secids is only going to cause users/admins grief, whereas exporting the
-associated secctx should be a much more stable value and is likely what
-the user/admin is expecting anyway.
+That said, I'm pretty sure I've never heard of anyone trying
+T2 that wasn't at DEC.  I'm pretty sure if we deleted it, no
+one would notice.
 
--- 
-paul moore
-linux @ hp
+But all the respectable smp hardware doesn't use the HAE.
 
 
+r~
