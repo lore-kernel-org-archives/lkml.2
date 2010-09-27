@@ -1,45 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758809Ab0I0Gqo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 02:46:44 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35387
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758591Ab0I0Gqn (ORCPT
+	id S1758803Ab0I0Gxm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 02:53:42 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:44096 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758691Ab0I0Gxl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 02:46:43 -0400
-Date: Sun, 26 Sep 2010 23:47:03 -0700 (PDT)
-Message-Id: <20100926.234703.52201352.davem@davemloft.net>
-To: masa-korg@dsn.okisemi.com
-Cc: eric.dumazet@gmail.com, randy.dunlap@oracle.com, john.linn@xilinx.com,
-        ralf@linux-mips.org, kristoffer@gaisler.com, mbizon@freebox.fr,
-        gregory.v.rose@intel.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, okada533@dsn.okisemi.com,
-        shimizu394@dsn.okisemi.com, morinaga526@dsn.okisemi.com,
-        qi.wang@intel.com, yong.y.wang@intel.com,
-        andrew.chih.howe.khor@intel.com, joel.clark@intel.com,
-        margie.foster@intel.com, meego-dev@meego.com
-Subject: Re: [PATCH v6] Gigabit Ethernet driver of Topcliff PCH
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <002c01cb5e0e$d23087a0$66f8800a@maildom.okisemi.com>
-References: <4CA03198.8080802@dsn.okisemi.com>
-	<1285567800.2357.565.camel@edumazet-laptop>
-	<002c01cb5e0e$d23087a0$66f8800a@maildom.okisemi.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 27 Sep 2010 02:53:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=LR+tbO+h7lUR6ou3QK/21QL15N5uCvEjxhrCB3LhGhigjUV303GrHavEw9mmWNMn6f
+         Ffv9M8ILUrR6k+DJwTZRoEMo5OTKVq3nDKYrJ+7yGLcuIrUsk3Vh+NHhl1d7jETeoRMZ
+         YqmnMrxRHkOoRYeubDkMuoJzJwoa9UV7vk2o4=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTi=k7kHfxvdOK2MfAJzKi9sKjURvr1C+mqaiQVX5@mail.gmail.com>
+References: <AANLkTimMH604FW_NZehY68w8B_cV_Lhe-ZwZq0cAYUfd@mail.gmail.com>
+	<AANLkTi=mLizQGyp5cdR_WtHjMMhixBOOagkFUNVqO4vj@mail.gmail.com>
+	<8739svu3hi.fsf@gmail.com>
+	<AANLkTi=k7kHfxvdOK2MfAJzKi9sKjURvr1C+mqaiQVX5@mail.gmail.com>
+Date: Sun, 26 Sep 2010 23:53:40 -0700
+Message-ID: <AANLkTi=uo_7xxfx7_23v7axxRhtgGOs+ZgDAK60gpt4E@mail.gmail.com>
+Subject: Re: HDMI open source to handle audio/video/CEC in one driver
+From: Raymond Liu <raymondliu3linux@gmail.com>
+To: Ben Gamari <bgamari@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-Date: Mon, 27 Sep 2010 15:39:57 +0900
+Hi Ben,
 
-> Thank you for information.
-> I did not know "net-next-2.6."
-> This driver is not changed.
+I think this should be "the one", correct?  Several articles are
+pointing to this one.
 
-Regardless of whether you know about the net-next-2.6 tree
-or not, what do you think it means what I say to you "Applied"?
+http://linuxdriverproject.org/twiki/bin/view/Main/WebHome
 
-It means I've added your patch, there is no possible confusion.
+Thanks,
+Raymond
+
+
+On Sun, Sep 26, 2010 at 11:26 PM, Raymond Liu
+<raymondliu3linux@gmail.com> wrote:
+> Hi Ben,
+>
+> Could you point me to the exact link of Linux Driver Project[1] you mentioned?
+>
+> Thanks,
+> Raymond
+>
+> On Sun, Sep 26, 2010 at 11:04 PM, Ben Gamari <bgamari@gmail.com> wrote:
+>> On Sun, 26 Sep 2010 22:40:12 -0700, Raymond Liu <raymondliu3linux@gmail.com> wrote:
+>>> Hi,
+>>>
+>>> My company is working on the Linux HDMI open source driver for our
+>>> chipsets (with audio/video/CEC controls).  Is there any similar
+>>> project ongoing for this kind of driver in Linux community?  Who
+>>> should I contact with for this?
+>>>
+>> I believe the Linux Driver Project[1] might be a helpful starting
+>> point. This project was formed with the goal of interacting with
+>> hardware vendors who are interested in getting their devices supported
+>> by Linux. Good luck!
+>>
+>> - Ben
+>>
+>
