@@ -1,54 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758930Ab0I0I3j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 04:29:39 -0400
-Received: from tuxonice.net ([74.207.252.127]:45279 "EHLO mail.tuxonice.net"
+	id S932825Ab0I0IgO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 04:36:14 -0400
+Received: from mga02.intel.com ([134.134.136.20]:46433 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755911Ab0I0I3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 04:29:38 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4CA055EF.6050608@tuxonice.net>
-Date: Mon, 27 Sep 2010 18:29:35 +1000
-From: Nigel Cunningham <nigel@tuxonice.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.10pre) Gecko/20100903 Shredder/3.1.4pre
-MIME-Version: 1.0
-To: Andrey Rahmatullin <wrar@altlinux.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        TuxOnIce-devel <tuxonice-devel@tuxonice.net>
-Subject: Re: [TuxOnIce-devel] Swsusp patches applied to suspend-2.6#linux-next
-References: <1285566238-10966-1-git-send-email-nigel@tuxonice.net> <20100927080000.GA7032@wrars-comp.wrarsdomain>
-In-Reply-To: <20100927080000.GA7032@wrars-comp.wrarsdomain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932793Ab0I0IgN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 04:36:13 -0400
+Message-Id: <8u3s8d$jmp9g4@orsmga001.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,242,1283756400"; 
+   d="scan'208";a="661431812"
+Date: Mon, 27 Sep 2010 09:36:09 +0100
+To: Hugh Dickins <hughd@google.com>
+Subject: Re: How best to pin pages in physical memory?
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>
+References: <8u3s8d$jmkug0@orsmga001.jf.intel.com> <alpine.LSU.2.00.1009261559540.11745@sister.anvils>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <alpine.LSU.2.00.1009261559540.11745@sister.anvils>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+On Sun, 26 Sep 2010 16:29:23 -0700 (PDT), Hugh Dickins <hughd@google.com> wrote:
+> If i915_get_object_get_pages() isn't doing its job, I think you need to
+> wonder why not - maybe somewhere doing a put_page or page_cache_release,
+> freeing one or all pages too soon?
 
-On 27/09/10 18:00, Andrey Rahmatullin wrote:
-> On Mon, Sep 27, 2010 at 03:43:35PM +1000, Nigel Cunningham wrote:
->> Hi again Rafael.
->>
->> As discussed, here are the patches, modified to apply against your current
->> linux-next tree. A new first patch splits compression support out into its
->> own file, removing the need to have two versions of the load_image and
->> save_image routines, minimising the changes to the remainder of the
->> patches and making things cleaner than would otherwise be the case.
->>
->> On my laptop, single-threaded compression actually slows writing down from
->> 175MB/s to around 100-120MB/s (depending on how well the image compresses).
->> Reading speed improves from 218MB/s to around 245MB/s. I expect that
->> multithreaded writing would bring the writing (and reading) speeds back
->> up. It's on my swsusp to do list :)
-> Works here.
+Thanks, that's a very useful bit of review. I surmised that after seeing
+corruption in a batch buffer after a swap storm that the pages were not as
+safe required. The fact that swapping was involved could have been a
+coincidence, except for the growing number of reports from other users
+reporting crashes in conjunction with swapping.
 
-Ah. You're too fast for me :)
+So back to seeing whether i915_gem_object_[get/put]_pages is sufficient
+for our uses.
+-Chris
 
-What sort of speeds are you seeing?
-
-Regards,
-
-Nigel
+-- 
+Chris Wilson, Intel Open Source Technology Centre
