@@ -1,47 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759326Ab0I0RvE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 13:51:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3339 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755266Ab0I0RvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 13:51:02 -0400
-Date: Mon, 27 Sep 2010 13:50:45 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v2 3/7] x86, NMI, Rename memory parity error to PCI SERR
- error
-Message-ID: <20100927175045.GD26290@redhat.com>
-References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
- <1285549026-5008-3-git-send-email-ying.huang@intel.com>
- <20100927080106.GA32222@erda.amd.com>
- <1285576760.20791.70.camel@yhuang-dev>
- <20100927090056.GJ13563@erda.amd.com>
- <20100927153315.GB26290@redhat.com>
- <20100927164502.GS13563@erda.amd.com>
+	id S1759963Ab0I0Rvo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 13:51:44 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:33447 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759162Ab0I0Rvn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 13:51:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=ICbZdwarJm7l1ra7sKFK8lkVWk2qx1o4KHL49FXK0ZDoJI0kz48dS2SY/F0KYj5K+1
+         DG0Us5WWSRereYGi0tUaTq5JJTwSJnnhzyfJSKcRTAi/ynQzUn7f5LQTdHtJ+kMw1hzb
+         9rMeQDFsfaiMV4jWZn1Mq+MgqLaJe3jXFdIpQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100927164502.GS13563@erda.amd.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <201009271616.42190.arnd@arndb.de>
+References: <20100926234733.GA31884@vana.vc.cvut.cz>
+	<201009271616.42190.arnd@arndb.de>
+Date: Mon, 27 Sep 2010 10:51:40 -0700
+X-Google-Sender-Auth: _11QuaUCuA_vFUylXOG1FUvl4hk
+Message-ID: <AANLkTinhD+P8y3BwNxro9fVr62MmASTubrefP9=Z8ce4@mail.gmail.com>
+Subject: Re: [PATCH] Remove BKL usage from ncpfs
+From: Petr Vandrovec <petr@vandrovec.name>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-fsdevel@vger.kernel.org, aia21@cam.ac.uk,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk
+Content-Type: multipart/mixed; boundary=0016e646a34e73553d0491416165
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 06:45:02PM +0200, Robert Richter wrote:
-> On 27.09.10 11:33:15, Don Zickus wrote:
-> > Well, what other info do we know besides that bit being set?  (I wish we
-> > had more, but I don't think we do)
-> 
-> We should keep printing the reason byte as it did before.
+--0016e646a34e73553d0491416165
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-oh right.  Fair enough.  Though in my experience, it always confuses
-people.  They think they are getting different failures (0xa2 vs 0xb2 for
-example).
+On Mon, Sep 27, 2010 at 7:16 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Monday 27 September 2010, Petr Vandrovec wrote:
+>> commit 92498b5267aa58e85e20c7b2cbd84d1ed86df47d
+>> Author: Petr Vandrovec <petr@vandrovec.name>
+>> Date: =A0 Sun Sep 26 16:19:12 2010 -0700
+>>
+>> =A0 =A0 Remove BKL from ncpfs
+>
+> Hi Petr,
+>
+> Thanks for taking care of this.
+>
+> Would you like me to take this patch into my bkl/vfs tree? I think
+> that would make it easier for me because I'm adding another instance
+> of the BKL there, in the ncp_fill_super function. As far as I can tell
+> that change (see below) becomes pointless with your patch.
 
-Cheers,
-Don
+Thanks.  I would appreciate it.
+
+> I could either just revert my change or replace it with your patch,
+> whichever you prefer.
+
+Yes, I believe it is not necessary.  fill_super(sb) should not run
+concurrently with anything else because MS_BORN and MS_ACTIVE are not
+set yet so nobody else should use this sb from VFS.  One thing which
+seems to be missing is doing lock_sock() around code which sets
+sk->sk_{error_report,data_ready,write_space} - there does not seem to
+be anything else to protect ipv4/ipv6/ipx from seeing partially
+updated pointers on systems where these writes are not atomic - that's
+ncpfs2.patch.
+
+Also I found some whitespace problems, and one missing const, so if
+you could merge ncpfs3.patch & ncpfs4.patch with original BKL removal,
+it would be cool.  Or I can resend all 4 patches as one bigger diff if
+you prefer.
+
+Thanks,
+Petr
+
+--0016e646a34e73553d0491416165
+Content-Type: application/octet-stream; name="ncpfs2.patch"
+Content-Disposition: attachment; filename="ncpfs2.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gelmit620
+
+TG9jayBzb2NrZXQgaW4gbmNwZnMgd2hpbGUgc2V0dGluZyBpdHMgY2FsbGJhY2tzCgpPdGhlcndp
+c2UgcGFydGlhbGx5IHVwZGF0ZWQgcG9pbnRlcnMgY291bGQgYmUgc2VlbiBpZgpwb2ludGVyIHVw
+ZGF0ZSBpcyBub3QgYXRvbWljLgoKU2lnbmVkLW9mZi1ieTogUGV0ciBWYW5kcm92ZWMgPHBldHJA
+dmFuZHJvdmVjLm5hbWU+CgpkaWZmIC0tZ2l0IGEvZnMvbmNwZnMvaW5vZGUuYyBiL2ZzL25jcGZz
+L2lub2RlLmMKaW5kZXggNWY0ZTU4ZC4uOTg1ZmFiYiAxMDA2NDQKLS0tIGEvZnMvbmNwZnMvaW5v
+ZGUuYworKysgYi9mcy9uY3Bmcy9pbm9kZS5jCkBAIC0zMDMsMTAgKzMwMywxMiBAQCBuY3BfZXZp
+Y3RfaW5vZGUoc3RydWN0IGlub2RlICppbm9kZSkKIAogc3RhdGljIHZvaWQgbmNwX3N0b3BfdGFz
+a3Moc3RydWN0IG5jcF9zZXJ2ZXIgKnNlcnZlcikgewogCXN0cnVjdCBzb2NrKiBzayA9IHNlcnZl
+ci0+bmNwX3NvY2stPnNrOwotCQkKKworCWxvY2tfc29jayhzayk7CiAJc2stPnNrX2Vycm9yX3Jl
+cG9ydCA9IHNlcnZlci0+ZXJyb3JfcmVwb3J0OwogCXNrLT5za19kYXRhX3JlYWR5ICAgPSBzZXJ2
+ZXItPmRhdGFfcmVhZHk7CiAJc2stPnNrX3dyaXRlX3NwYWNlICA9IHNlcnZlci0+d3JpdGVfc3Bh
+Y2U7CisJcmVsZWFzZV9zb2NrKHNrKTsKIAlkZWxfdGltZXJfc3luYygmc2VydmVyLT50aW1lb3V0
+X3RtKTsKIAlmbHVzaF9zY2hlZHVsZWRfd29yaygpOwogfQpAQCAtNjA1LDEwICs2MDcsNiBAQCBz
+dGF0aWMgaW50IG5jcF9maWxsX3N1cGVyKHN0cnVjdCBzdXBlcl9ibG9jayAqc2IsIHZvaWQgKnJh
+d19kYXRhLCBpbnQgc2lsZW50KQogCW11dGV4X2luaXQoJnNlcnZlci0+cmN2LmNyZXFfbXV0ZXgp
+OwogCXNlcnZlci0+dHguY3JlcQkJPSBOVUxMOwogCXNlcnZlci0+cmN2LmNyZXEJPSBOVUxMOwot
+CXNlcnZlci0+ZGF0YV9yZWFkeQk9IHNvY2stPnNrLT5za19kYXRhX3JlYWR5OwotCXNlcnZlci0+
+d3JpdGVfc3BhY2UJPSBzb2NrLT5zay0+c2tfd3JpdGVfc3BhY2U7Ci0Jc2VydmVyLT5lcnJvcl9y
+ZXBvcnQJPSBzb2NrLT5zay0+c2tfZXJyb3JfcmVwb3J0OwotCXNvY2stPnNrLT5za191c2VyX2Rh
+dGEJPSBzZXJ2ZXI7CiAKIAlpbml0X3RpbWVyKCZzZXJ2ZXItPnRpbWVvdXRfdG0pOwogI3VuZGVm
+IE5DUF9QQUNLRVRfU0laRQpAQCAtNjI1LDYgKzYyMywxMSBAQCBzdGF0aWMgaW50IG5jcF9maWxs
+X3N1cGVyKHN0cnVjdCBzdXBlcl9ibG9jayAqc2IsIHZvaWQgKnJhd19kYXRhLCBpbnQgc2lsZW50
+KQogCWlmIChzZXJ2ZXItPnJ4YnVmID09IE5VTEwpCiAJCWdvdG8gb3V0X3R4YnVmOwogCisJbG9j
+a19zb2NrKHNvY2stPnNrKTsKKwlzZXJ2ZXItPmRhdGFfcmVhZHkJPSBzb2NrLT5zay0+c2tfZGF0
+YV9yZWFkeTsKKwlzZXJ2ZXItPndyaXRlX3NwYWNlCT0gc29jay0+c2stPnNrX3dyaXRlX3NwYWNl
+OworCXNlcnZlci0+ZXJyb3JfcmVwb3J0CT0gc29jay0+c2stPnNrX2Vycm9yX3JlcG9ydDsKKwlz
+b2NrLT5zay0+c2tfdXNlcl9kYXRhCT0gc2VydmVyOwogCXNvY2stPnNrLT5za19kYXRhX3JlYWR5
+CSAgPSBuY3BfdGNwX2RhdGFfcmVhZHk7CiAJc29jay0+c2stPnNrX2Vycm9yX3JlcG9ydCA9IG5j
+cF90Y3BfZXJyb3JfcmVwb3J0OwogCWlmIChzb2NrLT50eXBlID09IFNPQ0tfU1RSRUFNKSB7CkBA
+IC02NDAsNiArNjQzLDcgQEAgc3RhdGljIGludCBuY3BfZmlsbF9zdXBlcihzdHJ1Y3Qgc3VwZXJf
+YmxvY2sgKnNiLCB2b2lkICpyYXdfZGF0YSwgaW50IHNpbGVudCkKIAkJc2VydmVyLT50aW1lb3V0
+X3RtLmRhdGEgPSAodW5zaWduZWQgbG9uZylzZXJ2ZXI7CiAJCXNlcnZlci0+dGltZW91dF90bS5m
+dW5jdGlvbiA9IG5jcGRncmFtX3RpbWVvdXRfY2FsbDsKIAl9CisJcmVsZWFzZV9zb2NrKHNvY2st
+PnNrKTsKIAogCW5jcF9sb2NrX3NlcnZlcihzZXJ2ZXIpOwogCWVycm9yID0gbmNwX2Nvbm5lY3Qo
+c2VydmVyKTsK
+--0016e646a34e73553d0491416165
+Content-Type: application/octet-stream; name="ncpfs3.patch"
+Content-Disposition: attachment; filename="ncpfs3.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gelmv1mk1
+
+UmVtb3ZlIHNvbWUgd2hpdGVzcGFjZSBmcm9tIG5jcGZzCgpGZXcgd2hpdGVzcGFjZSBlcnJvcnMg
+c25lYWtlZCBpbiBpbiBsYXN0IGRpZmYuICBSZW1vdmUgdGhlbS4KClNpZ25lZC1vZmYtYnk6IFBl
+dHIgVmFuZHJvdmVjIDxwZXRyQHZhbmRyb3ZlYy5uYW1lPgoKZGlmZiAtLWdpdCBhL2ZzL25jcGZz
+L2lvY3RsLmMgYi9mcy9uY3Bmcy9pb2N0bC5jCmluZGV4IGRhOWQwZTAuLmMyYTFmOWEgMTAwNjQ0
+Ci0tLSBhL2ZzL25jcGZzL2lvY3RsLmMKKysrIGIvZnMvbmNwZnMvaW9jdGwuYwpAQCAtMzA0LDcg
+KzMwNCw3IEBAIHN0YXRpYyBsb25nIF9fbmNwX2lvY3RsKHN0cnVjdCBpbm9kZSAqaW5vZGUsIHVu
+c2lnbmVkIGludCBjbWQsIHVuc2lnbmVkIGxvbmcgYXJnCiAJCXNlcnZlci0+Y3VycmVudF9zaXpl
+ID0gcmVxdWVzdC5zaXplOwogCQltZW1jcHkoc2VydmVyLT5wYWNrZXQsIGJvdW5jZWJ1ZmZlciwg
+cmVxdWVzdC5zaXplKTsKIAotCQlyZXN1bHQgPSBuY3BfcmVxdWVzdDIoc2VydmVyLCByZXF1ZXN0
+LmZ1bmN0aW9uLCAKKwkJcmVzdWx0ID0gbmNwX3JlcXVlc3QyKHNlcnZlciwgcmVxdWVzdC5mdW5j
+dGlvbiwKIAkJCWJvdW5jZWJ1ZmZlciwgTkNQX1BBQ0tFVF9TSVpFX0lOVEVSTkFMKTsKIAkJaWYg
+KHJlc3VsdCA8IDApCiAJCQlyZXN1bHQgPSAtRUlPOwpAQCAtMzc4LDcgKzM3OCw3IEBAIHN0YXRp
+YyBsb25nIF9fbmNwX2lvY3RsKHN0cnVjdCBpbm9kZSAqaW5vZGUsIHVuc2lnbmVkIGludCBjbWQs
+IHVuc2lnbmVkIGxvbmcgYXJnCiAKIAkJCQlpZiAoZGVudHJ5KSB7CiAJCQkJCXN0cnVjdCBpbm9k
+ZSogc19pbm9kZSA9IGRlbnRyeS0+ZF9pbm9kZTsKLQkJCQkKKwogCQkJCQlpZiAoc19pbm9kZSkg
+ewogCQkJCQkJc3Iudm9sTnVtYmVyID0gTkNQX0ZJTkZPKHNfaW5vZGUpLT52b2xOdW1iZXI7CiAJ
+CQkJCQlzci5kaXJFbnROdW0gPSBOQ1BfRklORk8oc19pbm9kZSktPmRpckVudE51bTsKQEAgLTQz
+Myw3ICs0MzMsNyBAQCBzdGF0aWMgbG9uZyBfX25jcF9pb2N0bChzdHJ1Y3QgaW5vZGUgKmlub2Rl
+LCB1bnNpZ25lZCBpbnQgY21kLCB1bnNpZ25lZCBsb25nIGFyZwogCQkJCQlkZW50cnkgPSBpbm9k
+ZS0+aV9zYi0+c19yb290OwogCQkJCQlpZiAoZGVudHJ5KSB7CiAJCQkJCQlzdHJ1Y3QgaW5vZGUq
+IHNfaW5vZGUgPSBkZW50cnktPmRfaW5vZGU7Ci0JCQkJCisKIAkJCQkJCWlmIChzX2lub2RlKSB7
+CiAJCQkJCQkJTkNQX0ZJTkZPKHNfaW5vZGUpLT52b2xOdW1iZXIgPSB2bnVtOwogCQkJCQkJCU5D
+UF9GSU5GTyhzX2lub2RlKS0+ZGlyRW50TnVtID0gZGU7CkBAIC00NTUsNyArNDU1LDcgQEAgc3Rh
+dGljIGxvbmcgX19uY3BfaW9jdGwoc3RydWN0IGlub2RlICppbm9kZSwgdW5zaWduZWQgaW50IGNt
+ZCwgdW5zaWduZWQgbG9uZyBhcmcKIAkJCXJldHVybiByZXN1bHQ7CiAJCX0KIAotI2lmZGVmIENP
+TkZJR19OQ1BGU19QQUNLRVRfU0lHTklORwkKKyNpZmRlZiBDT05GSUdfTkNQRlNfUEFDS0VUX1NJ
+R05JTkcKIAljYXNlIE5DUF9JT0NfU0lHTl9JTklUOgogCQl7CiAJCQlzdHJ1Y3QgbmNwX3NpZ25f
+aW5pdCBzaWduOwpAQCAtNDc3LDE0ICs0NzcsMTQgQEAgc3RhdGljIGxvbmcgX19uY3BfaW9jdGwo
+c3RydWN0IGlub2RlICppbm9kZSwgdW5zaWduZWQgaW50IGNtZCwgdW5zaWduZWQgbG9uZyBhcmcK
+IAkJCX0KIAkJCW11dGV4X3VubG9jaygmc2VydmVyLT5yY3YuY3JlcV9tdXRleCk7CiAJCQluY3Bf
+dW5sb2NrX3NlcnZlcihzZXJ2ZXIpOwotCQkJcmV0dXJuIDA7CQkKKwkJCXJldHVybiAwOwogCQl9
+Ci0JCQorCiAgICAgICAgIGNhc2UgTkNQX0lPQ19TSUdOX1dBTlRFRDoKIAkJewogCQkJaW50IHN0
+YXRlOwogCi0JCQluY3BfbG9ja19zZXJ2ZXIoc2VydmVyKTsJCisJCQluY3BfbG9ja19zZXJ2ZXIo
+c2VydmVyKTsKIAkJCXN0YXRlID0gc2VydmVyLT5zaWduX3dhbnRlZDsKIAkJCW5jcF91bmxvY2tf
+c2VydmVyKHNlcnZlcik7CiAJCQlpZiAocHV0X3VzZXIoc3RhdGUsIChpbnQgX191c2VyICopYXJn
+cCkpCkBAIC01NTAsNyArNTUwLDcgQEAgc3RhdGljIGxvbmcgX19uY3BfaW9jdGwoc3RydWN0IGlu
+b2RlICppbm9kZSwgdW5zaWduZWQgaW50IGNtZCwgdW5zaWduZWQgbG9uZyBhcmcKIAkJCWlmIChy
+cWRhdGEuY21kID09IE5DUF9MT0NLX0NMRUFSKQogCQkJewogCQkJCXJlc3VsdCA9IG5jcF9DbGVh
+clBoeXNpY2FsUmVjb3JkKE5DUF9TRVJWRVIoaW5vZGUpLAotCQkJCQkJCU5DUF9GSU5GTyhpbm9k
+ZSktPmZpbGVfaGFuZGxlLCAKKwkJCQkJCQlOQ1BfRklORk8oaW5vZGUpLT5maWxlX2hhbmRsZSwK
+IAkJCQkJCQlycWRhdGEub2Zmc2V0LAogCQkJCQkJCXJxZGF0YS5sZW5ndGgpOwogCQkJCWlmIChy
+ZXN1bHQgPiAwKSByZXN1bHQgPSAwOwkvKiBubyBzdWNoIGxvY2sgKi8KQEAgLTU3Myw3ICs1NzMs
+NyBAQCBzdGF0aWMgbG9uZyBfX25jcF9pb2N0bChzdHJ1Y3QgaW5vZGUgKmlub2RlLCB1bnNpZ25l
+ZCBpbnQgY21kLCB1bnNpZ25lZCBsb25nIGFyZwogCQkJCQkJCXJxZGF0YS50aW1lb3V0KTsKIAkJ
+CQlpZiAocmVzdWx0ID4gMCkgcmVzdWx0ID0gLUVBR0FJTjsKIAkJCX0KLW91dHJlbDoJCQkKK291
+dHJlbDoKIAkJCW5jcF9pbm9kZV9jbG9zZShpbm9kZSk7CiAJCQlyZXR1cm4gcmVzdWx0OwogCQl9
+CkBAIC03NzcsNyArNzc3LDcgQEAgb3V0cmVsOgogI2lmZGVmIENPTkZJR19OQ1BGU19OTFMKIAlj
+YXNlIE5DUF9JT0NfU0VUQ0hBUlNFVFM6CiAJCXJldHVybiBuY3Bfc2V0X2NoYXJzZXRzKHNlcnZl
+ciwgYXJncCk7Ci0JCQorCiAJY2FzZSBOQ1BfSU9DX0dFVENIQVJTRVRTOgogCQlyZXR1cm4gbmNw
+X2dldF9jaGFyc2V0cyhzZXJ2ZXIsIGFyZ3ApOwogCkBAIC03OTYsNyArNzk2LDcgQEAgb3V0cmVs
+OgogCQkJYXRvbWljX3NldCgmc2VydmVyLT5kZW50cnlfdHRsLCB1c2VyKTsKIAkJCXJldHVybiAw
+OwogCQl9Ci0JCQorCiAJY2FzZSBOQ1BfSU9DX0dFVERFTlRSWVRUTDoKIAkJewogCQkJdV9pbnQz
+Ml90IHVzZXIgPSAoYXRvbWljX3JlYWQoJnNlcnZlci0+ZGVudHJ5X3R0bCkgKiAxMDAwKSAvIEha
+OwpkaWZmIC0tZ2l0IGEvZnMvbmNwZnMvbmNwbGliX2tlcm5lbC5jIGIvZnMvbmNwZnMvbmNwbGli
+X2tlcm5lbC5jCmluZGV4IDdiY2M5OWQuLmE5NTYxNWEgMTAwNjQ0Ci0tLSBhL2ZzL25jcGZzL25j
+cGxpYl9rZXJuZWwuYworKysgYi9mcy9uY3Bmcy9uY3BsaWJfa2VybmVsLmMKQEAgLTU3OCw3ICs1
+NzgsNyBAQCBuY3BfbW91bnRfc3ViZGlyKHN0cnVjdCBuY3Bfc2VydmVyICpzZXJ2ZXIsCiAJaW50
+IGRzdE5TOwogCWludCByZXN1bHQ7CiAKLQluY3BfdXBkYXRlX2tub3duX25hbWVzcGFjZShzZXJ2
+ZXIsIHZvbE51bWJlciwgJmRzdE5TKTsJCisJbmNwX3VwZGF0ZV9rbm93bl9uYW1lc3BhY2Uoc2Vy
+dmVyLCB2b2xOdW1iZXIsICZkc3ROUyk7CiAJaWYgKChyZXN1bHQgPSBuY3BfT2J0YWluU3BlY2lm
+aWNEaXJCYXNlKHNlcnZlciwgc3JjTlMsIGRzdE5TLCB2b2xOdW1iZXIsIAogCQkJCSAgICAgIGRp
+ckVudE51bSwgTlVMTCwgbmV3RGlyRW50LCBuZXdEb3NFbnQpKSAhPSAwKQogCXsKIAo=
+--0016e646a34e73553d0491416165
+Content-Type: application/octet-stream; name="ncpfs4.patch"
+Content-Disposition: attachment; filename="ncpfs4.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gelmv6wd2
+
+TWlzc2luZyBjb25zdCBxdWFsaWZpZXIgaW4gbmNwZnMKCk9uZSBtb3JlIHBsYWNlIHdoaWNoIGRl
+c2VydmVzIGNoYXIqIHRvIGJlIGNvbnN0IGNoYXIgKi4KClNpZ25lZC1vZmYtYnk6IFBldHIgVmFu
+ZHJvdmVjIDxwZXRyQHZhbmRyb3ZlYy5uYW1lPgoKZGlmZiAtLWdpdCBhL2ZzL25jcGZzL25jcGxp
+Yl9rZXJuZWwuYyBiL2ZzL25jcGZzL25jcGxpYl9rZXJuZWwuYwppbmRleCA3YmNjOTlkLi5hOTU2
+MTVhIDEwMDY0NAotLS0gYS9mcy9uY3Bmcy9uY3BsaWJfa2VybmVsLmMKKysrIGIvZnMvbmNwZnMv
+bmNwbGliX2tlcm5lbC5jCkBAIC03MDksNyArNzA5LDcgQEAgaW50IG5jcF9tb2RpZnlfbmZzX2lu
+Zm8oc3RydWN0IG5jcF9zZXJ2ZXIgKnNlcnZlciwgX191OCB2b2xudW0sIF9fbGUzMiBkaXJlbnQs
+CiBzdGF0aWMgaW50CiBuY3BfRGVsZXRlTlNFbnRyeShzdHJ1Y3QgbmNwX3NlcnZlciAqc2VydmVy
+LAogCQkgIF9fdTggaGF2ZV9kaXJfYmFzZSwgX191OCB2b2xudW0sIF9fbGUzMiBkaXJlbnQsCi0J
+CSAgY2hhciogbmFtZSwgX191OCBucywgX19sZTE2IGF0dHIpCisJCSAgY29uc3QgY2hhciogbmFt
+ZSwgX191OCBucywgX19sZTE2IGF0dHIpCiB7CiAJaW50IHJlc3VsdDsKIAo=
+--0016e646a34e73553d0491416165--
