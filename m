@@ -1,70 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759489Ab0I0OXX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 10:23:23 -0400
-Received: from uucp.gnuu.de ([83.246.114.63]:4348 "EHLO uucp.gnuu.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759477Ab0I0OXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 10:23:21 -0400
-X-Greylist: delayed 1667 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Sep 2010 10:23:21 EDT
-Date: Mon, 27 Sep 2010 14:50:37 +0200
-From: =?iso-8859-1?Q?J=F6rg?= Sommer <joerg@alea.gnuu.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
-Subject: Re: Oops in trace_hardirqs_on (powerpc)
-Message-ID: <20100927125037.GA4497@alea.gnuu.de>
-References: <20100806233157.GA7117@alea.gnuu.de>
- <1285184671.26872.127.camel@gandalf.stny.rr.com>
+	id S1759362Ab0I0OZy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 10:25:54 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:55715 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996Ab0I0OZx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 10:25:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:in-reply-to:references:user-agent:date
+         :message-id:mime-version:content-type;
+        b=qGoyIs9J3ruBhzBpCn0KosZqdG+EYRNnAYQ/hE2ImlKtZs3aUdNttuwffyyoDROz/s
+         gngFyAnqsAqeILQjcZP7MckAVn8eqbnYUL+sclmyOc3QgPKxMzoyxQ7C457yvk1VUUPj
+         iDw6mFrxBvw7hQGPac8S3HTykeL4XbKtNuZOU=
+From: Ben Gamari <bgamari@gmail.com>
+To: Raymond Liu <raymondliu3linux@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: HDMI open source to handle audio/video/CEC in one driver
+In-Reply-To: <AANLkTi=uo_7xxfx7_23v7axxRhtgGOs+ZgDAK60gpt4E@mail.gmail.com>
+References: <AANLkTimMH604FW_NZehY68w8B_cV_Lhe-ZwZq0cAYUfd@mail.gmail.com> <AANLkTi=mLizQGyp5cdR_WtHjMMhixBOOagkFUNVqO4vj@mail.gmail.com> <8739svu3hi.fsf@gmail.com> <AANLkTi=k7kHfxvdOK2MfAJzKi9sKjURvr1C+mqaiQVX5@mail.gmail.com> <AANLkTi=uo_7xxfx7_23v7axxRhtgGOs+ZgDAK60gpt4E@mail.gmail.com>
+User-Agent: Notmuch/0.3.1-62-g4723706 (http://notmuchmail.org) Emacs/23.1.1 (x86_64-pc-linux-gnu)
+Date: Mon, 27 Sep 2010 10:25:45 -0400
+Message-ID: <87sk0vqn4m.fsf@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MGYHOYXEY6WxJCY8"
-Content-Disposition: inline
-In-Reply-To: <1285184671.26872.127.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 26 Sep 2010 23:53:40 -0700, Raymond Liu <raymondliu3linux@gmail.com> wrote:
+> Hi Ben,
+> 
+> I think this should be "the one", correct?  Several articles are
+> pointing to this one.
+> 
+Ahh, yes; you have it. This is one of many reasons I shouldn't be
+allowed to send messages past midnight.
 
---MGYHOYXEY6WxJCY8
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hello Steven,
-
-Steven Rostedt hat am Wed 22. Sep, 15:44 (-0400) geschrieben:
-> Sorry for the late reply, but I was on vacation when you sent this, and
-> I missed it while going through email.
->=20
-> Do you still have this issue?
-
-No. I've rebuild my kernel without TRACE_IRQFLAGS and the problem
-vanished, as expected. The problem is, that in some cases the stack is
-only two frames deep, which causes the macro CALLER_ADDR1 makes an
-invalid access. Someone told me, there a workaround for the problem on
-i386, too.
-
-% sed -n 2p arch/x86/lib/thunk_32.S
- * Trampoline to trace irqs off. (otherwise CALLER_ADDR1 might crash)
-
-Bye, J=F6rg.
---=20
-Angenehme Worte sind nie wahr,
-wahre Worte sind nie angenehm.
-
---MGYHOYXEY6WxJCY8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature http://en.wikipedia.org/wiki/OpenPGP
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkygkx0ACgkQwe0mZwH1VICMRACfS1qucjIyFj+p8CB55kopPB3Q
-oHwAoJmA2XysgTSHqoBhVchfOs7Fdm8J
-=zPt1
------END PGP SIGNATURE-----
-
---MGYHOYXEY6WxJCY8--
+- Ben Gamari
