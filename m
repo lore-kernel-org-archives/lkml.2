@@ -1,36 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758936Ab0I0IUO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 04:20:14 -0400
-Received: from jurassic.park.msu.ru ([195.208.223.243]:39828 "EHLO
-	jurassic.park.msu.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755911Ab0I0IUM (ORCPT
+	id S1758909Ab0I0IWk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 04:22:40 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59659 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755911Ab0I0IWj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 04:20:12 -0400
-X-Greylist: delayed 1301 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Sep 2010 04:20:12 EDT
-Date: Mon, 27 Sep 2010 11:58:28 +0400
-From: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, rth@twiddle.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: alpha: potential race around hae_cache in RESTORE_ALL
-Message-ID: <20100927075828.GA15344@jurassic.park.msu.ru>
-References: <20100925181304.GV19804@ZenIV.linux.org.uk> <AANLkTi=XURM0hOiitvNSiacd9+7Vx8s7V0KZ+oZQsDDQ@mail.gmail.com> <20100925191836.GW19804@ZenIV.linux.org.uk> <20100925192509.GX19804@ZenIV.linux.org.uk>
+	Mon, 27 Sep 2010 04:22:39 -0400
+Date: Mon, 27 Sep 2010 16:22:47 +0800
+From: Hu Tao <hutao@cn.fujitsu.com>
+To: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Update num_symtab, symtab and strtab right after setup
+ of core_num_syms, core_symtab and core_strtab.
+Message-ID: <20100927082247.GA2463@localhost.localdomain>
+References: <20100927073028.GA1040@localhost.localdomain>
+ <20100927080954.GC5785@cr0.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20100925192509.GX19804@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20100927080954.GC5785@cr0.nay.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 25, 2010 at 08:25:09PM +0100, Al Viro wrote:
-> BTW, am I right assuming that HAE modifications is UP-only thing?  It would
-> be obviously b0rken on any SMP box, since alpha_mv is not per-CPU thing...
+On Mon, Sep 27, 2010 at 04:09:54PM +0800, Américo Wang wrote:
+> On Mon, Sep 27, 2010 at 03:30:28PM +0800, Hu Tao wrote:
+> >Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
+> 
+> 
+> Changelog is empty.
+> What bug did you observe?
 
-The only SMP system that does HAE modifications at runtime is T2, so it has
-a spinlock protection around set_hae() - see core_t2.h. Others are either
-limited to use HAE window 0 only, or do not have HAE hardware at all.
+symtab and strtab will point to vfreed memory after free_copy(&info)
+near end of load_module().
 
-Ivan.
+> 
+> >---
+> > kernel/module.c |    9 ++++-----
+> > 1 files changed, 4 insertions(+), 5 deletions(-)
+> >
+> >diff --git a/kernel/module.c b/kernel/module.c
+> >index d0b5f8d..d5dc98b 100644
+> >--- a/kernel/module.c
+> >+++ b/kernel/module.c
+> >@@ -2029,6 +2029,10 @@ static void add_kallsyms(struct module *mod, const struct load_info *info)
+> > 	for (*s = 0, i = 1; i < info->sechdrs[info->index.str].sh_size; ++i)
+> > 		if (test_bit(i, info->strmap))
+> > 			*++s = mod->strtab[i];
+> >+
+> >+	mod->num_symtab = mod->core_num_syms;
+> >+	mod->symtab = mod->core_symtab;
+> >+	mod->strtab = mod->core_strtab;
+> > }
+> > #else
+> > static inline void layout_symtab(struct module *mod, struct load_info *info)
+> >@@ -2738,11 +2742,6 @@ SYSCALL_DEFINE3(init_module, void __user *, umod,
+> > 	/* Drop initial reference. */
+> > 	module_put(mod);
+> > 	trim_init_extable(mod);
+> >-#ifdef CONFIG_KALLSYMS
+> >-	mod->num_symtab = mod->core_num_syms;
+> >-	mod->symtab = mod->core_symtab;
+> >-	mod->strtab = mod->core_strtab;
+> >-#endif
+> > 	module_free(mod, mod->module_init);
+> > 	mod->module_init = NULL;
+> > 	mod->init_size = 0;
+> 
+> 
+> This patch is not correct, symbols that are not core symbols will be
+> dropped right after this piece of code. So NACK.
+
+There is the reason why we should update num_symtab, symtab and strtab
+before non-core-symbols are dropped.
