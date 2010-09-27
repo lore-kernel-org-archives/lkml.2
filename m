@@ -1,76 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932681Ab0I0IF1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 04:05:27 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:47562 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752620Ab0I0IFZ (ORCPT
+	id S1758889Ab0I0IMS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 04:12:18 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:44387 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758581Ab0I0IMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 04:05:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=JcouXLzYxnlWEW/oxSTMYAGgw+unukicDHHQbnaXEcNBwtccIompyu3rkFw38MK2Fi
-         cs4MdECPOkRp0jLFSmS1EzskLRQTT+8E9TwGL/bDWfAfX7Ju1itApr6g4Qh/kt8tPZhI
-         TrustI3uijbSB7nGmh1tUDjYT84Ii3fK5Ftcg=
-Date: Mon, 27 Sep 2010 16:09:54 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Hu Tao <hutao@cn.fujitsu.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Update num_symtab, symtab and strtab right after setup
- of core_num_syms, core_symtab and core_strtab.
-Message-ID: <20100927080954.GC5785@cr0.nay.redhat.com>
-References: <20100927073028.GA1040@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100927073028.GA1040@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 27 Sep 2010 04:12:16 -0400
+To: Valerie Aurora <vaurora@redhat.com>
+CC: miklos@szeredi.hu, agruen@suse.de, linuxram@us.ibm.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        neilb@suse.de, viro@zeniv.linux.org.uk
+In-reply-to: <20100924175653.GB25129@shell> (message from Valerie Aurora on
+	Fri, 24 Sep 2010 13:56:54 -0400)
+Subject: Re: [PATCH 6/7 v3] overlay: hybrid overlay filesystem prototype
+References: <20100920180404.939991832@szeredi.hu> <20100920180447.854260354@szeredi.hu> <20100924175653.GB25129@shell>
+Message-Id: <E1P08oT-0004C7-3O@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Mon, 27 Sep 2010 10:11:53 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 03:30:28PM +0800, Hu Tao wrote:
->Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
+On Fri, 24 Sep 2010, Valerie Aurora wrote:
+> On Mon, Sep 20, 2010 at 08:04:10PM +0200, Miklos Szeredi wrote:
+> > From: Miklos Szeredi <mszeredi@suse.cz>
+> > 
+> > This overlay filesystem is a hybrid of entirely filesystem based
+> > (unionfs, aufs) and entierly VFS based (union mounts) solutions.
+> 
+> [...]
+> 
+> > +static int ovl_create_object(struct dentry *dentry, int mode, dev_t rdev,
+> > +			     const char *link)
+> > +{
+> > +	int err;
+> > +	struct dentry *newdentry;
+> > +	struct dentry *upperdir;
+> > +	struct inode *inode;
+> > +	struct kstat stat = {
+> > +		.mode = mode,
+> > +		.rdev = rdev,
+> > +	};
+> > +
+> > +	err = -ENOMEM;
+> > +	inode = ovl_new_inode(dentry->d_sb, mode);
+> > +	if (!inode)
+> > +		goto out;
+> > +
+> > +	err = ovl_copy_up(dentry->d_parent);
+> > +	if (err)
+> > +		goto out_iput;
+> > +
+> > +	upperdir = ovl_dentry_upper(dentry->d_parent);
+> > +	mutex_lock_nested(&upperdir->d_inode->i_mutex, I_MUTEX_PARENT);
+> > +
+> > +	newdentry = ovl_upper_create(upperdir, dentry, &stat, link);
+> > +	err = PTR_ERR(newdentry);
+> > +	if (IS_ERR(newdentry))
+> > +		goto out_unlock;
+> > +
+> > +	if (ovl_dentry_is_opaque(dentry) && S_ISDIR(mode)) {
+> > +		err = ovl_set_opaque(newdentry);
+> > +		if (err)
+> > +			goto out_dput;
+> > +	}
+> 
+> Andreas Gruenbacher just convinced me that every single new directory
+> created in the unioned file system should be marked opaque.  "New"
+> means either it replaces a whiteout or has no matching directory on
+> the lower layer.  The theory is that the topmost file system changes
+> should take precedence and override any changes (off-line) in the
+> lower file system.
 
+That's logical.  However marking new directories opaque is only a half
+solution.  E.g. consider the case when we have /a/b/c/ on the lower fs
+and /a/b/ on the upper, which is not opaque.  Then /a/b/c/ is created
+on the upper fs off-line.  The union logic can't notice that "c"
+should really be opaque and will merge with the contents of the lower
+layer.
 
-Changelog is empty.
-What bug did you observe?
+The real solution to this problem is to make opaque the default and
+only mark *non* opaque directories.  These are only created on copy-up
+or by explicit admin action on the upper fs.
 
->---
-> kernel/module.c |    9 ++++-----
-> 1 files changed, 4 insertions(+), 5 deletions(-)
->
->diff --git a/kernel/module.c b/kernel/module.c
->index d0b5f8d..d5dc98b 100644
->--- a/kernel/module.c
->+++ b/kernel/module.c
->@@ -2029,6 +2029,10 @@ static void add_kallsyms(struct module *mod, const struct load_info *info)
-> 	for (*s = 0, i = 1; i < info->sechdrs[info->index.str].sh_size; ++i)
-> 		if (test_bit(i, info->strmap))
-> 			*++s = mod->strtab[i];
->+
->+	mod->num_symtab = mod->core_num_syms;
->+	mod->symtab = mod->core_symtab;
->+	mod->strtab = mod->core_strtab;
-> }
-> #else
-> static inline void layout_symtab(struct module *mod, struct load_info *info)
->@@ -2738,11 +2742,6 @@ SYSCALL_DEFINE3(init_module, void __user *, umod,
-> 	/* Drop initial reference. */
-> 	module_put(mod);
-> 	trim_init_extable(mod);
->-#ifdef CONFIG_KALLSYMS
->-	mod->num_symtab = mod->core_num_syms;
->-	mod->symtab = mod->core_symtab;
->-	mod->strtab = mod->core_strtab;
->-#endif
-> 	module_free(mod, mod->module_init);
-> 	mod->module_init = NULL;
-> 	mod->init_size = 0;
-
-
-This patch is not correct, symbols that are not core symbols will be
-dropped right after this piece of code. So NACK.
+Thanks,
+Miklos
