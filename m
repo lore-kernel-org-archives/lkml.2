@@ -1,99 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933148Ab0I0PsD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 11:48:03 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63360 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933099Ab0I0PsA (ORCPT
+	id S933099Ab0I0PwM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 11:52:12 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:47301 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755550Ab0I0PwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 11:48:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=lBRIUwrSZ1hFnXMeondajkNORHh45iwr156JKsOSAe9ToqbS0N0RfnJRKdSKFOeqo0
-         /rIcDzOwQF55OOpehMRrU+tgq2tTmuD+omX3s3YtqiCNGfEXxDCNvIBUV2dBzRsQQ2aa
-         sHvEteRGTSekNsMGIW3lnPP7GhWcXSwlSJc2w=
-Date: Mon, 27 Sep 2010 17:47:52 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: kgdb segv in the latest tip due to perf ctx changes
-Message-ID: <20100927154750.GA5346@nowhere>
-References: <20100924180417.GC1818@jolsa.brq.redhat.com> <4C9D0A82.5020406@windriver.com> <1285374560.2275.1054.camel@laptop> <20100925135532.GA5349@nowhere> <20100927081216.GC1829@jolsa.brq.redhat.com>
+	Mon, 27 Sep 2010 11:52:10 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: izkq7KAVM1ltRg.q81tPkRSd4btDUdmn0x4HjXqIumjSaYo
+ y3IwgMzq3ILZfCrctJjr82ewQiGpYU57gYbyEVvi1.cWurTOEb31xG5hh75q
+ N6D.YQUYnNSypIFaO7If2HIs_WzD80JTCKg2HAsX8SjPWZVFL5QolqSep_ca
+ .4qSKqsQfWMAjNyp3Or.mMsj8oYKS17UUCnuxKnYvzW95wh.QeXzq9Q7nUHA
+ GOMBjequ4cls7PKcX6_nPWHzHgUqs
+X-Yahoo-Newman-Property: ymail-3
+Date: Mon, 27 Sep 2010 10:52:02 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: john stultz <johnstul@us.ibm.com>
+cc: Richard Cochran <richardcochran@gmail.com>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-api@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        netdev@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        David Miller <davem@davemloft.net>, Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v6 0/8] ptp: IEEE 1588 hardware clock support
+In-Reply-To: <1285278136.2587.154.camel@localhost.localdomain>
+Message-ID: <alpine.DEB.2.00.1009271038150.9258@router.home>
+References: <cover.1285261533.git.richard.cochran@omicron.at>  <alpine.DEB.2.00.1009231238170.2962@router.home>  <1285268380.2587.11.camel@localhost.localdomain>  <alpine.DEB.2.00.1009231402420.2962@router.home>  <1285273684.2587.92.camel@localhost.localdomain>
+  <alpine.DEB.2.00.1009231533040.7522@router.home> <1285278136.2587.154.camel@localhost.localdomain>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100927081216.GC1829@jolsa.brq.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 10:12:16AM +0200, Jiri Olsa wrote:
-> On Sat, Sep 25, 2010 at 03:55:35PM +0200, Frederic Weisbecker wrote:
-> > On Sat, Sep 25, 2010 at 02:29:20AM +0200, Peter Zijlstra wrote:
-> > > On Fri, 2010-09-24 at 15:30 -0500, Jason Wessel wrote:
-> > > > Jiri,
-> > > > 
-> > > > Can you try this simple patch which is attached?
-> > > > 
-> > > > 
-> > > > 
-> > > > On 09/24/2010 01:04 PM, Jiri Olsa wrote:
-> > > > > while starting kgdb early debug on latest tip tree,
-> > > > > I got SIGSEGV inside kernel in following location:
-> > > > >
-> > > > >   
-> > > > [clip]
-> > > > > I found out it's due to foolowing commit, that's causing the init code
-> > > > > to be called without the ctx field being defined...
-> > > > >
-> > > > > commit c3f00c70276d8ae82578c8b773e2db657f69a478
-> > > > > Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > > > > Date:   Wed Aug 18 14:37:15 2010 +0200
-> > > > >
-> > > > >
-> > > > >   
-> > > > 
-> > > > I took a look at the tip core, and the ctx parameter is no longer passed
-> > > > into the perf_event_alloc() from perf_event_create_kernel_counter() kgdb
-> > > > no longer gets it filled in for free.
-> > > > 
-> > > > The reality is that kgdb never had a true context or a way to mark the
-> > > > hw breakpoint as a kernel only context for the hw breakpoint
-> > > > reservations.  The patch is only a short term fix perhaps until on of
-> > > > the perf guys explains the right way to use it. :-)
-> > > 
-> > > Argh, yes, its using the ctx rather early.. we cannot have a context
-> > > before we've initialized the event, and here it looks like hw_breakpoint
-> > > wants to use the context to initialize the event, chick, egg, etc..
-> > > 
-> > > Frederic, anything we can do about that?
-> > 
-> > 
-> > 
-> > Jason's patch is partially good, it just lacks one place to handle.
-> > Jiri, can you test that?
-> 
-> it works ok
-> 
-> feel free to add
-> Tested-by: Jiri Olsa <jolsa@redhat.com>
-> 
-> thanks,
-> jirka
+On Thu, 23 Sep 2010, john stultz wrote:
+
+> > > 3) Further, the PTP hardware counter can be simply set to a new offset
+> > > to put it in line with the network time. This could cause trouble with
+> > > timekeeping much like unsynced TSCs do.
+> >
+> > You can do the same for system time.
+>
+> Settimeofday does allow CLOCK_REALTIME to jump, but the CLOCK_MONOTONIC
+> time cannot jump around. Having a clocksource that is non-monotonic
+> would break this.
+
+Currently time runs at the same speed. CLOCK_MONOTONIC runs at a offset
+to CLOCK_REALTIME. We are creating APIs here that allow time to run at
+different speeds.
+
+> The design actually avoids most userland induced latency.
+>
+> 1) On the PTP hardware syncing point, the reference packet gets
+> timestamped with the PTP hardware time on arrival. This allows the
+> offset calculation to be done in userland without introducing latency.
+
+The timestamps allows the calculation of the network transmission time I
+guess and therefore its more accurate to calculate that effect out. Ok but
+then the overhead of getting to code in user space (that does the proper
+clock adjustments) is resulting in the addition of a relatively long time
+that is subject to OS scheduling latencies and noises.
+
+> 2) On the system syncing side, the proposal for the PPS interrupt allows
+> the PTP hardware to trigger an interrupt on the second boundary that
+> would take a timestamp of the system time. Then the pps interface allows
+> for the timestamp to be read from userland allowing the offset to be
+> calculated without introducing additional latency.
+
+Sorry dont really get the whole picture here it seems. Sounds like one is
+going through additional unnecessary layers. Why would the PTP hardware
+triggger an interrupt? I thought the PTP messages came in via
+timestamping and are then processed by software. Then the software is
+issuing a hardware interrupt that then triggers the PPS subsystem. And
+that is supposed to be better than directly interfacing with the PTP?
 
 
-Actually I'm just realizing that, after the recent perf changes,
-it does not only concern the early kgdb needs but every breakpoints
-now that the context is found/allocated after the event gets initialized.
+> Additionally, even just in userland, it would be easy to bracket two
+> reads of the system time around one read of the PTP clock to bound any
+> userland latency fairly well. It may not be as good as the PPS interface
+> (although that depends on the interrupt latency), but if the accesses
+> are all local, it probably could get fairly close.
 
-So I need to do a good bunch of changes in the breakpoints to fix that.
+That sounds hacky.
 
-I'll come back with something.
+> > Ok maybe we need some sort of control interface to manage the clock like
+> > the others have.
+>
+> That's what the clock_adjtime call provides.
 
-Thanks.
+Ummm... You are managing a hardware device with hardware (driver) specific
+settings. That is currently being done via ioctls. Why generalize it?
+
+> > The posix clocks today assumes one notion of real "time" in the kernel.
+> > All clocks increase in lockstep (aside from offset updates).
+>
+> Not true. The cputime clockids do not increment at the same rate (as the
+> apps don't always run). Further CLOCK_MONOTONIC_RAW provides a non-freq
+> corrected view of CLOCK_MONOTONIC, so it increments at a slightly
+> different rate.
+
+cputime clockids are not tracking time but cpu resource use.
+
+> Re-using the fairly nice (Alan of course disagrees :) posix interface
+> seems at least a little better for application developers who actually
+> have to use the hardware.
+
+Well it may also be confusing for others. The application developers also
+will have a hard time using a generic clock interface to control PTP
+device specific things like frequencies, rates etc etc. So you always need
+to ioctl/device specific control interface regardless.
+
+
 
