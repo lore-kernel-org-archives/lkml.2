@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759916Ab0I0RYc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 13:24:32 -0400
-Received: from qmta05.emeryville.ca.mail.comcast.net ([76.96.30.48]:51541 "EHLO
-	qmta05.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759479Ab0I0RYb (ORCPT
+	id S1759907Ab0I0RcN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 13:32:13 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:3906 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759799Ab0I0RcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 13:24:31 -0400
-Date: Mon, 27 Sep 2010 10:23:13 -0700
-From: matt mooney <mfm@muteddisk.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: kernel-janitors@vger.kernel.org, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/24] hwmon: change to new flag variable
-Message-ID: <20100927172313.GC4598@haskell.muteddisk.com>
-Mail-Followup-To: Valdis.Kletnieks@vt.edu, kernel-janitors@vger.kernel.org,
-	lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
- <9968d4260be8850200cc9c7dfe08addf611468b4.1285355033.git.mfm@muteddisk.com>
- <036514b5dd23c5af14303519d79d60d79adccbee.1285355033.git.mfm@muteddisk.com>
- <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
- <ffbd189ef2d414ea7c87ffe2b40fce87877dc014.1285355033.git.mfm@muteddisk.com>
- <12873.1285599840@localhost>
+	Mon, 27 Sep 2010 13:32:12 -0400
+Message-ID: <4CA0D516.9060404@caviumnetworks.com>
+Date: Mon, 27 Sep 2010 10:32:06 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <12873.1285599840@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Bernhard Walle <walle@corscience.de>
+CC: khali@linux-fr.org, rade.bozic.ext@nsn.com, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MIPS: I2C: Return -ETIMEDOUT in octeon_i2c_wait() on
+ timeout
+References: <1285584916-21317-1-git-send-email-walle@corscience.de>
+In-Reply-To: <1285584916-21317-1-git-send-email-walle@corscience.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 27 Sep 2010 17:32:11.0145 (UTC) FILETIME=[EAA4FF90:01CB5E69]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11:04 Mon 27 Sep     , Valdis.Kletnieks@vt.edu wrote:
-> On Fri, 24 Sep 2010 12:17:14 PDT, matt mooney said:
-> > Replace EXTRA_CFLAGS with ccflags-y.
-> > 
-> > Signed-off-by: matt mooney <mfm@muteddisk.com>
-> > ---
-> >  drivers/hwmon/Makefile |    4 +---
-> >  1 files changed, 1 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-> > index e3c2484..764b4db 100644
-> > --- a/drivers/hwmon/Makefile
-> > +++ b/drivers/hwmon/Makefile
-> > @@ -109,7 +109,5 @@ obj-$(CONFIG_SENSORS_W83L786NG)	+= w83l786ng.o
-> >  obj-$(CONFIG_SENSORS_WM831X)	+= wm831x-hwmon.o
-> >  obj-$(CONFIG_SENSORS_WM8350)	+= wm8350-hwmon.o
-> >  
-> > -ifeq ($(CONFIG_HWMON_DEBUG_CHIP),y)
-> > -EXTRA_CFLAGS += -DDEBUG
-> > -endif
-> > +ccflags-$(CONFIG_HWMON_DEBUG_CHIP) := -DDEBUG
-> 
-> Was this series intended as := rather than += as it seems that
-> overriding the entirely of a passed-in ccflags-y may not be what
-> we wanted to do.
+On 09/27/2010 03:55 AM, Bernhard Walle wrote:
+> It doesn't make sense to set result to -ETIMEDOUT but return 0 (success)
+> afterwards. Since there's code in octeon_i2c_start() to handle the
+> error, it should be called.
+>
+> Signed-off-by: Bernhard Walle<walle@corscience.de>
 
-That is exactly why I changed += to :=. ccflags-y (and the older EXTRA_CFLAGS)
-is a per directory variable that only has effect on the current directory, so
-there is no passing in of ccflags-y.
+Thanks for fixing this.
 
--mfm
+Acked-by: David Daney <ddaney@caviumnetworks.com>
+
+
+> ---
+>   drivers/i2c/busses/i2c-octeon.c |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/i2c/busses/i2c-octeon.c b/drivers/i2c/busses/i2c-octeon.c
+> index 0e9f85d..56dbe54 100644
+> --- a/drivers/i2c/busses/i2c-octeon.c
+> +++ b/drivers/i2c/busses/i2c-octeon.c
+> @@ -218,7 +218,7 @@ static int octeon_i2c_wait(struct octeon_i2c *i2c)
+>   		return result;
+>   	} else if (result == 0) {
+>   		dev_dbg(i2c->dev, "%s: timeout\n", __func__);
+> -		result = -ETIMEDOUT;
+> +		return -ETIMEDOUT;
+>   	}
+>
+>   	return 0;
 
