@@ -1,87 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759832Ab0I0RQc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 13:16:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48245 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757099Ab0I0RQa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 13:16:30 -0400
-Subject: Re: [PATCH 2/6] secmark: make secmark object handling generic
-From: Eric Paris <eparis@redhat.com>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov,
-        netfilter-devel@vger.kernel.org, jmorris@namei.org, sds@tycho.nsa.gov,
-        jengelh@medozas.de, paul.moore@hp.com, casey@schaufler-ca.com,
-        linux-security-module@vger.kernel.org, netfilter@vger.kernel.org,
-        mr.dash.four@googlemail.com
-In-Reply-To: <4C9DB54C.4010100@netfilter.org>
-References: <20100924204517.28355.42822.stgit@paris.rdu.redhat.com>
-	 <20100924204524.28355.87206.stgit@paris.rdu.redhat.com>
-	 <4C9DB54C.4010100@netfilter.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 27 Sep 2010 12:47:56 -0400
-Message-ID: <1285606076.2815.15.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759862Ab0I0RSA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 13:18:00 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36730 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759480Ab0I0RR7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 13:17:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <20100927162610.GA18373@jurassic.park.msu.ru>
+References: <20100925181304.GV19804@ZenIV.linux.org.uk> <AANLkTi=XURM0hOiitvNSiacd9+7Vx8s7V0KZ+oZQsDDQ@mail.gmail.com>
+ <20100925191836.GW19804@ZenIV.linux.org.uk> <20100925192509.GX19804@ZenIV.linux.org.uk>
+ <20100927075828.GA15344@jurassic.park.msu.ru> <20100927121227.GB19804@ZenIV.linux.org.uk>
+ <20100927124624.GC19804@ZenIV.linux.org.uk> <20100927162610.GA18373@jurassic.park.msu.ru>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 27 Sep 2010 10:10:40 -0700
+Message-ID: <AANLkTimjep+H2VDJC1sFvT52XPmiKgMHuRBirzNm6qnL@mail.gmail.com>
+Subject: Re: alpha: potential race around hae_cache in RESTORE_ALL
+To: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, rth@twiddle.net,
+        linux-kernel@vger.kernel.org, Matt Turner <mattst88@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-09-25 at 10:39 +0200, Pablo Neira Ayuso wrote:
-> On 24/09/10 22:45, Eric Paris wrote:
-> > Right now secmark has lots of direct selinux calls.  Use all LSM calls and
-> > remove all SELinux specific knowledge.  The only SELinux specific knowledge
-> > we leave is the mode.  The only point is to make sure that other LSMs at
-> > least test this generic code before they assume it works.  (They may also
-> > have to make changes if they do not represent labels as strings)
-> > 
-> > Signed-off-by: Eric Paris <eparis@redhat.com>
-> > ---
-> > 
-> >  include/linux/netfilter/xt_SECMARK.h |   14 ++------
-> >  include/linux/security.h             |   25 +++++++++++++
-> >  include/linux/selinux.h              |   63 ----------------------------------
-> >  net/netfilter/xt_CT.c                |    1 -
-> >  net/netfilter/xt_SECMARK.c           |   57 +++++++++++++++----------------
-> >  security/capability.c                |   17 +++++++++
-> >  security/security.c                  |   18 ++++++++++
-> >  security/selinux/exports.c           |   49 --------------------------
-> >  security/selinux/hooks.c             |   24 +++++++++++++
-> >  security/selinux/include/security.h  |    1 +
-> >  10 files changed, 116 insertions(+), 153 deletions(-)
-> > 
-> > diff --git a/include/linux/netfilter/xt_SECMARK.h b/include/linux/netfilter/xt_SECMARK.h
-> > index 6fcd344..b8d55c4 100644
-> > --- a/include/linux/netfilter/xt_SECMARK.h
-> > +++ b/include/linux/netfilter/xt_SECMARK.h
-> > @@ -10,19 +10,13 @@
-> >   * 'mode' refers to the specific security subsystem which the
-> >   * packets are being marked for.
-> >   */
-> > -#define SECMARK_MODE_SEL	0x01		/* SELinux */
-> > -#define SECMARK_SELCTX_MAX	256
-> > -
-> > -struct xt_secmark_target_selinux_info {
-> > -	__u32 selsid;
-> > -	char selctx[SECMARK_SELCTX_MAX];
-> > -};
-> > +#define SECMARK_MODE_SELINUX	0x01		/* SELinux */
-> > +#define SECMARK_SECCTX_MAX	256
-> 
-> The SECMARK_MODE_SEL is exposed to user-space, even if we have a copy of
-> it in the internal iptables tree, I'm not sure if it's a good policy to
-> change it.
+On Mon, Sep 27, 2010 at 9:26 AM, Ivan Kokshaysky
+<ink@jurassic.park.msu.ru> wrote:
+>
+> Looks like we need to drop HAE bits from SAVE_ALL/RESTORE_ALL, which
+> benefits (1) and automatically fixes (3), and do the entire IO sequences
+> in (2) with disabled interrupts (if HAE is involved).
 
-Ok.  I just hate 'SEL' as an abbreviation of SELinux.  I always think
-it's select or something like that.  I could do something hideous like
+No can do.
 
-#define SECMARK_MODE_SEL	0x01
-#define SECMARK_MODE_SELINUX	SECMARK_MODE_SEL
+HAE is used in user space too (the X server), and it depends on the
+kernel restoring HAE over interrupts and system calls, afaik.
 
-But it seems like too much work and doesn't add anything really.  I'll
-revert that part of this change.
+I'm also pretty certain that all SMP machines either don't have HAE at
+all, or have a per-CPU HAE in hardware (and then it's possible that we
+screw it up in software, of course). Anything else would be too broken
+for words. Can somebody find documentation saying otherwise?
 
--Eric
-
-
-
+                        Linus
