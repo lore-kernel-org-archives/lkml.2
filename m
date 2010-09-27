@@ -1,63 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759687Ab0I0T61 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 15:58:27 -0400
-Received: from www.tglx.de ([62.245.132.106]:49868 "EHLO www.tglx.de"
+	id S1760148Ab0I0T7b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 15:59:31 -0400
+Received: from mga01.intel.com ([192.55.52.88]:13834 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755947Ab0I0T6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 15:58:23 -0400
-Date: Mon, 27 Sep 2010 21:54:06 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-alpha@vger.kernel.org,
-        linux-cris-kernel@axis.com, Haavard Skinnemoen <hskinnemoen@atmel.com>,
-        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Greg Ungerer <gerg@uclinux.org>, Jeff Dike <jdike@addtoit.com>,
-        linux-parisc@vger.kernel.org, Chris Zankel <chris@zankel.net>,
-        linux-arch@vger.kernel.org
-Subject: Re: [RFC trollpatch 1/1] genirq: Remove the fits all and nothing
- __do_IRQ() code
-In-Reply-To: <AANLkTin23sJT+OqjDqjyk-Gr5r-GfJ_03Q1WUqNLCzgH@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1009272152360.2416@localhost6.localdomain6>
-References: <20100908152036.643594727@linutronix.de> <AANLkTin23sJT+OqjDqjyk-Gr5r-GfJ_03Q1WUqNLCzgH@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756262Ab0I0T7a convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 15:59:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,244,1283756400"; 
+   d="scan'208";a="610936211"
+From: "Guy, Wey-Yi W" <wey-yi.w.guy@intel.com>
+To: Florian Mickler <florian@mickler.org>
+CC: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "Chatre, Reinette" <reinette.chatre@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Berg, Johannes" <johannes.berg@intel.com>, Zhu Yi <yi.zhu@intel.com>,
+        "Cahill, Ben M" <ben.m.cahill@intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 27 Sep 2010 12:59:18 -0700
+Subject: RE: [PATCH] iwl3945: queue the right work if the scan needs to be
+ aborted
+Thread-Topic: [PATCH] iwl3945: queue the right work if the scan needs to be
+ aborted
+Thread-Index: ActeCy8h8BY50sNtRoiNDYEMT3NOcgAcvyOQ
+Message-ID: <E9954878DD1FB34FAE5187FB88C58A35012BADC9EC@orsmsx506.amr.corp.intel.com>
+References: <1285345323-4250-1-git-send-email-florian@mickler.org>
+	<1285357868.12594.8.camel@wwguy-ubuntu>
+ <20100927081358.07b30327@schatten.dmk.lab>
+In-Reply-To: <20100927081358.07b30327@schatten.dmk.lab>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-1112802732-1285617250=:2416"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi Florian,
 
----1463795968-1112802732-1285617250=:2416
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Agree the patch is needed for .35 and .36.
 
-On Mon, 27 Sep 2010, richard -rw- weinberger wrote:
+Thanks
 
-> On Wed, Sep 8, 2010 at 8:14 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > __do_IRQ() has been deprecated after a two years migration phase in
-> >  The following architectures are still using __do_IRQ():
-> >
-> >  alpha, cris, ia64, h8300, m32r, m68knommu, parisc, um
-> >
-> 
-> Maybe I'm naive but shouldn't this path work?
-> Does um need some extra work?
+Wey
 
-Yes. It needs to set the proper flow handlers. Look for set_irq_chip*
-functions and how they are used in other archs.
+-----Original Message-----
+From: Florian Mickler [mailto:florian@mickler.org]
+Sent: Sunday, September 26, 2010 11:14 PM
+To: Guy, Wey-Yi W
+Cc: linux-wireless@vger.kernel.org; Chatre, Reinette; Intel Linux Wireless; John W. Linville; Berg, Johannes; Zhu Yi; Cahill, Ben M; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] iwl3945: queue the right work if the scan needs to be aborted
 
-Thanks,
+On Fri, 24 Sep 2010 12:51:08 -0700
+"Guy, Wey-Yi" <wey-yi.w.guy@intel.com> wrote:
 
-	tglx
+> Hi Florian,
+>
+> Thanks for sending the patch, the scan operation in iwlwifi just being
+> modified and the changes you have no longer apply.please check the
+> latest kernel.
+>
+> Thanks
+> Wey
+>
 
- 
----1463795968-1112802732-1285617250=:2416--
+Ok, I checked out
+git://git.kernel.org/pub/scm/linux/kernel/git/iwlwifi/iwlwifi-2.6.git
+and it definitely looks better in there. This patch shouldn't be
+necessary for that.
+
+Do you plan on submitting this for 2.6.36 or .37?
+
+I think my patch should fix the instance reported in the bug in a less
+invasive manner.
+Only remaining question is why it did only show up now. But that's
+probably due to the workqueue changes.
+
+
+Regards,
+Flo
