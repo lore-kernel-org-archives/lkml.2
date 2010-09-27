@@ -1,198 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759303Ab0I0Mr5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 08:47:57 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:35051 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759115Ab0I0Mry convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 08:47:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=nmU5hN2HVfxcbH7DhVbKAl7O0QQWT/5KzzpS0K0teVyZZlErkweNKApUZ3wzr7mIO5
-         u4U5GYKyIFxBlQVVgdAcAkfVeZ3AgCXK/nZUqxyuOTWvjrCty6yDH8Kte6vnbyzdUujZ
-         w1wB3Ik+qmbrInQvThOoZQLUKIri3b+mrPXE8=
-MIME-Version: 1.0
-In-Reply-To: <20100927100901.GC32222@erda.amd.com>
-References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
-	<1285549026-5008-6-git-send-email-ying.huang@intel.com>
-	<20100927100901.GC32222@erda.amd.com>
-Date: Mon, 27 Sep 2010 20:47:53 +0800
-Message-ID: <AANLkTimY5hr3DgN9=v83Z289MkzjgX8k0WzdTWZbGorj@mail.gmail.com>
-Subject: Re: [PATCH -v2 6/7] x86, NMI, Add support to notify hardware error
- with unknown NMI
-From: huang ying <huang.ying.caritas@gmail.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Huang Ying <ying.huang@intel.com>, Don Zickus <dzickus@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1759306Ab0I0MsS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 08:48:18 -0400
+Received: from www.tglx.de ([62.245.132.106]:34631 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759214Ab0I0Mpx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 08:45:53 -0400
+Message-Id: <20100927121842.532070631@linutronix.de>
+User-Agent: quilt/0.48-1
+Date: Mon, 27 Sep 2010 12:45:02 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Subject: [patch 11/19] genirq;
+	Provide compat handling for chip->disable()/shutdown()
+References: <20100927121651.904100669@linutronix.de>
+Content-Disposition: inline; filename=genirq-wrap-chip-disable.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 6:09 PM, Robert Richter <robert.richter@amd.com> wrote:
-> On 26.09.10 20:57:05, Huang Ying wrote:
->> On some platforms, fatal hardware error may be notified via unknown
->> NMI.
->>
->> For example, on some platform with APEI firmware first mode support,
->> firmware generates NMI for fatal error but without error record. The
->> unknown NMI should be treated as notification of fatal hardware
->> error. The unknown_nmi_for_hwerr is added for these platform, if it is
->> not zero, system will treat unknown NMI as notification of fatal
->> hardware error.
->>
->> These platforms are identified via the presentation of APEI HEST or
->> some PCI ID of the host bridge. The PCI ID of host bridge instead of
->> DMI ID is used, so that the checking can be done based on the platform
->> type instead of motherboard. This should be simpler and sufficient.
->>
->> The method to identify the platforms is designed by Andi Kleen.
->>
->> Signed-off-by: Huang Ying <ying.huang@intel.com>
->> ---
->>  arch/x86/include/asm/nmi.h |    1
->>  arch/x86/kernel/Makefile   |    2 +
->>  arch/x86/kernel/hwerr.c    |   55 +++++++++++++++++++++++++++++++++++++++++++++
->
-> Instead of creating this file the code should be implemented in
->
->  arch/x86/kernel/cpu/intel.c
->
-> Similar AMD NB code is implemented in amd.c and k8.c.
+Wrap the old chip functions disable() and shutdown() until the
+migration is complete and the old chip functions are removed.
 
-Why? This file is not vendor specific.
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/irq/autoprobe.c |    6 +++---
+ kernel/irq/chip.c      |   37 +++++++++++++++++++++++++++----------
+ kernel/irq/manage.c    |    8 ++++----
+ kernel/irq/spurious.c  |    2 +-
+ 4 files changed, 35 insertions(+), 18 deletions(-)
 
->>  arch/x86/kernel/traps.c    |   10 ++++++++
->>  drivers/acpi/apei/hest.c   |    8 ++++++
->>  5 files changed, 76 insertions(+)
->>  create mode 100644 arch/x86/kernel/hwerr.c
->>
->> --- a/arch/x86/include/asm/nmi.h
->> +++ b/arch/x86/include/asm/nmi.h
->> @@ -44,6 +44,7 @@ struct ctl_table;
->>  extern int proc_nmi_enabled(struct ctl_table *, int ,
->>                       void __user *, size_t *, loff_t *);
->>  extern int unknown_nmi_panic;
->> +extern int unknown_nmi_for_hwerr;
->>
->>  void arch_trigger_all_cpu_backtrace(void);
->>  #define arch_trigger_all_cpu_backtrace arch_trigger_all_cpu_backtrace
->> --- a/arch/x86/kernel/Makefile
->> +++ b/arch/x86/kernel/Makefile
->> @@ -118,6 +118,8 @@ obj-$(CONFIG_X86_CHECK_BIOS_CORRUPTION)
->>
->>  obj-$(CONFIG_SWIOTLB)                        += pci-swiotlb.o
->>
->> +obj-y                                        += hwerr.o
->> +
->>  ###
->>  # 64 bit specific files
->>  ifeq ($(CONFIG_X86_64),y)
->> --- /dev/null
->> +++ b/arch/x86/kernel/hwerr.c
->> @@ -0,0 +1,55 @@
->> +/*
->> + * Hardware error architecture dependent processing
->> + *
->> + * Copyright 2010 Intel Corp.
->> + *   Author: Huang Ying <ying.huang@intel.com>
->> + *
->> + * This program is free software; you can redistribute it and/or
->> + * modify it under the terms of the GNU General Public License version
->> + * 2 as published by the Free Software Foundation.
->> + *
->> + * This program is distributed in the hope that it will be useful,
->> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + *
->> + * You should have received a copy of the GNU General Public License
->> + * along with this program; if not, write to the Free Software
->> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
->> + */
->> +
->> +#include <linux/kernel.h>
->> +#include <linux/pci.h>
->> +#include <linux/init.h>
->> +#include <linux/nmi.h>
->> +
->> +/*
->> + * On some platform, hardware errors may be notified via unknown
->> + * NMI. These platform is identified via the PCI ID of host bridge.
->> + *
->> + * The PCI ID of host bridge instead of DMI ID is used, so that the
->> + * checking can be done based on the platform instead of motherboard.
->> + * This should be simpler and sufficient.
->> + */
->> +static const
->> +struct pci_device_id unknown_nmi_for_hwerr_platform[] __initdata = {
->> +     { PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x3406) },
->> +     { 0, }
->> +};
->> +
->> +int __init check_unknown_nmi_for_hwerr(void)
->> +{
->> +     struct pci_dev *dev = NULL;
->> +
->> +     for_each_pci_dev(dev) {
->> +             if (pci_match_id(unknown_nmi_for_hwerr_platform, dev)) {
->> +                     pr_info(
->> +"Host bridge is identified, will treat unknown NMI as hardware error!\n");
->> +                     unknown_nmi_for_hwerr = 1;
->> +                     break;
->> +             }
->> +     }
->> +
->> +     return 0;
->> +}
->> +late_initcall(check_unknown_nmi_for_hwerr);
->
-> Maybe you can use early pci functions like read_pci_config() to avoid
-> late init.
+Index: linux-2.6-tip/kernel/irq/autoprobe.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/irq/autoprobe.c
++++ linux-2.6-tip/kernel/irq/autoprobe.c
+@@ -98,7 +98,7 @@ unsigned long probe_irq_on(void)
+ 			/* It triggered already - consider it spurious. */
+ 			if (!(status & IRQ_WAITING)) {
+ 				desc->status = status & ~IRQ_AUTODETECT;
+-				desc->chip->shutdown(i);
++				desc->chip->irq_shutdown(&desc->irq_data);
+ 			} else
+ 				if (i < 32)
+ 					mask |= 1 << i;
+@@ -137,7 +137,7 @@ unsigned int probe_irq_mask(unsigned lon
+ 				mask |= 1 << i;
+ 
+ 			desc->status = status & ~IRQ_AUTODETECT;
+-			desc->chip->shutdown(i);
++			desc->chip->irq_shutdown(&desc->irq_data);
+ 		}
+ 		raw_spin_unlock_irq(&desc->lock);
+ 	}
+@@ -181,7 +181,7 @@ int probe_irq_off(unsigned long val)
+ 				nr_of_irqs++;
+ 			}
+ 			desc->status = status & ~IRQ_AUTODETECT;
+-			desc->chip->shutdown(i);
++			desc->chip->irq_shutdown(&desc->irq_data);
+ 		}
+ 		raw_spin_unlock_irq(&desc->lock);
+ 	}
+Index: linux-2.6-tip/kernel/irq/chip.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/irq/chip.c
++++ linux-2.6-tip/kernel/irq/chip.c
+@@ -301,7 +301,7 @@ static void default_enable(struct irq_da
+ /*
+  * default disable function
+  */
+-static void default_disable(unsigned int irq)
++static void default_disable(struct irq_data *data)
+ {
+ }
+ 
+@@ -319,9 +319,9 @@ static unsigned int default_startup(unsi
+ /*
+  * default shutdown function
+  */
+-static void default_shutdown(unsigned int irq)
++static void default_shutdown(struct irq_data *data)
+ {
+-	struct irq_desc *desc = irq_to_desc(irq);
++	struct irq_desc *desc = irq_data_to_desc(data);
+ 
+ 	desc->chip->irq_mask(&desc->irq_data);
+ 	desc->status |= IRQ_MASKED;
+@@ -358,6 +358,16 @@ static void compat_irq_enable(struct irq
+ 	irq_data_to_desc(data)->chip->enable(data->irq);
+ }
+ 
++static void compat_irq_disable(struct irq_data *data)
++{
++	irq_data_to_desc(data)->chip->disable(data->irq);
++}
++
++static void compat_irq_shutdown(struct irq_data *data)
++{
++	irq_data_to_desc(data)->chip->shutdown(data->irq);
++}
++
+ static void compat_bus_lock(struct irq_data *data)
+ {
+ 	irq_data_to_desc(data)->chip->bus_lock(data->irq);
+@@ -379,28 +389,35 @@ void irq_chip_set_defaults(struct irq_ch
+ 	 */
+ 	if (chip->enable)
+ 		chip->irq_enable = compat_irq_enable;
++	if (chip->disable)
++		chip->irq_disable = compat_irq_disable;
++	if (chip->shutdown)
++		chip->irq_shutdown = compat_irq_shutdown;
+ 
+ 	/*
+ 	 * The real defaults
+ 	 */
+ 	if (!chip->irq_enable)
+ 		chip->irq_enable = default_enable;
+-	if (!chip->disable)
+-		chip->disable = default_disable;
++	if (!chip->irq_disable)
++		chip->irq_disable = default_disable;
+ 	if (!chip->startup)
+ 		chip->startup = default_startup;
+ 	/*
+-	 * We use chip->disable, when the user provided its own. When
+-	 * we have default_disable set for chip->disable, then we need
++	 * We use chip->irq_disable, when the user provided its own. When
++	 * we have default_disable set for chip->irq_disable, then we need
+ 	 * to use default_shutdown, otherwise the irq line is not
+ 	 * disabled on free_irq():
+ 	 */
+-	if (!chip->shutdown)
+-		chip->shutdown = chip->disable != default_disable ?
+-			chip->disable : default_shutdown;
++	if (!chip->irq_shutdown)
++		chip->irq_shutdown = chip->irq_disable != default_disable ?
++			chip->irq_disable : default_shutdown;
+ 	if (!chip->end)
+ 		chip->end = dummy_irq_chip.end;
+ 
++	/*
++	 * Now fix up the remaining compat handlers
++	 */
+ 	if (chip->bus_lock)
+ 		chip->irq_bus_lock = compat_bus_lock;
+ 	if (chip->bus_sync_unlock)
+Index: linux-2.6-tip/kernel/irq/manage.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/irq/manage.c
++++ linux-2.6-tip/kernel/irq/manage.c
+@@ -223,7 +223,7 @@ void __disable_irq(struct irq_desc *desc
+ 
+ 	if (!desc->depth++) {
+ 		desc->status |= IRQ_DISABLED;
+-		desc->chip->disable(irq);
++		desc->chip->irq_disable(&desc->irq_data);
+ 	}
+ }
+ 
+@@ -919,10 +919,10 @@ static struct irqaction *__free_irq(unsi
+ 	/* If this was the last handler, shut down the IRQ line: */
+ 	if (!desc->action) {
+ 		desc->status |= IRQ_DISABLED;
+-		if (desc->chip->shutdown)
+-			desc->chip->shutdown(irq);
++		if (desc->chip->irq_shutdown)
++			desc->chip->irq_shutdown(&desc->irq_data);
+ 		else
+-			desc->chip->disable(irq);
++			desc->chip->irq_disable(&desc->irq_data);
+ 	}
+ 
+ #ifdef CONFIG_SMP
+Index: linux-2.6-tip/kernel/irq/spurious.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/irq/spurious.c
++++ linux-2.6-tip/kernel/irq/spurious.c
+@@ -254,7 +254,7 @@ void note_interrupt(unsigned int irq, st
+ 		printk(KERN_EMERG "Disabling IRQ #%d\n", irq);
+ 		desc->status |= IRQ_DISABLED | IRQ_SPURIOUS_DISABLED;
+ 		desc->depth++;
+-		desc->chip->disable(irq);
++		desc->chip->irq_disable(&desc->irq_data);
+ 
+ 		mod_timer(&poll_spurious_irq_timer,
+ 			  jiffies + POLL_SPURIOUS_IRQ_INTERVAL);
 
-I don't think late init is a big issue. Hardware error is rare after all.
 
->> --- a/arch/x86/kernel/traps.c
->> +++ b/arch/x86/kernel/traps.c
->> @@ -83,6 +83,8 @@ EXPORT_SYMBOL_GPL(used_vectors);
->>
->>  static int ignore_nmis;
->>
->> +int unknown_nmi_for_hwerr;
->
-> If it is an nmi for hwerr, it is no longer an unknown nmi. So we
-> should drop 'unknow' in the naming.
-
-I think unkown NMI is the one we can not identify the source.
-Something like anonymous.
-
->> +
->>  /*
->>   * Prevent NMI reason port (0x61) being accessed simultaneously, can
->>   * only be used in NMI handler.
->> @@ -360,6 +362,14 @@ io_check_error(unsigned char reason, str
->>  static notrace __kprobes void
->>  unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
->>  {
->> +     /*
->> +      * On some platforms, hardware errors may be notified via
->> +      * unknown NMI
->> +      */
->> +     if (unknown_nmi_for_hwerr)
->> +             panic("NMI for hardware error without error record: "
->> +                   "Not continuing");
->> +
->
-> Instead of checking this flag you should implement and register an nmi
-> handler for this case.
-
-I think explicit function calls have better readability than notifier chains.
-
-Best Regards,
-Huang Ying
