@@ -1,136 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756374Ab0I0VLa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 17:11:30 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:52952 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930Ab0I0VL3 convert rfc822-to-8bit (ORCPT
+	id S1756914Ab0I0VOH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 17:14:07 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:37521 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752067Ab0I0VOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 17:11:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=tRMun5lmYGs9ns7b0Ht5J6yFF0ox1DZNR1hRLwpDtz7anZeY1cZPwQZwKcx9PrYI/u
-         GhEKbUN1boRlOLsgIQ8Q==
+	Mon, 27 Sep 2010 17:14:05 -0400
+Date: Mon, 27 Sep 2010 17:14:01 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC PATCH] x86: Barf when faults happen in NMI
+Message-ID: <20100927211401.GA20402@Krystal>
+References: <1285615833-5324-1-git-send-regression-fweisbec@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1285620805.2512.128.camel@edumazet-laptop>
-References: <1285003599.2275.756.camel@laptop>
-	<1285619753-10892-1-git-send-email-venki@google.com>
-	<1285620805.2512.128.camel@edumazet-laptop>
-Date: Mon, 27 Sep 2010 14:11:25 -0700
-Message-ID: <AANLkTim2=ZN=DMFCYcvVx31mOPd40q+EoTVfx-bqMCob@mail.gmail.com>
-Subject: Re: [PATCH] si time accounting accounts bh_disable'd time to si
-From: Venkatesh Pallipadi <venki@google.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Paul Turner <pjt@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285615833-5324-1-git-send-regression-fweisbec@gmail.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 17:11:56 up 5 days,  1:14,  1 user,  load average: 0.38, 0.11,
+	0.03
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 1:53 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le lundi 27 septembre 2010 à 13:35 -0700, Venkatesh Pallipadi a écrit :
->> >> >> > You still do have the problem with local_bh_disable() though, since you
->> >> >> > cannot distinguish between having bh disabled and processing softirq.
->> >> >> >
->> >> >> > So a hardirq that hits while you have bh disabled will inflate your
->> >> >> > softirq time.
->>
->> >> >> Hmm, that bug is valid for CONFIG_VIRT_CPU_ACCOUNTING=y as well.
->> >> >
->> >> > And nobody ever noticed?
->> >> >
->> >> Yes. I inherited the API from VIRT_CPU_ACCOUNTING along with this
->> >> local_bh_disable bug. Agree that we need one extra bit to handle this
->> >> case. I will take a stab at fixing this along with refresh of this
->> >> patchset if no one else has beaten me to it until then.
->> >
->> >Make sure to only fix the softirq processing on the hardirq tail, not
->> > the ksoftirqd one :-)
->>
->> softirq processing from hardirq tail and ksoftirqd are currently
->> handled in the same way and I didn't see any issues changing both of
->> them. Am I missing something?
->>
->> Here's the patch I have for this.
->>
->> [PATCH] si time accounting accounts bh_disable'd time to si
->>
->> Peter Zijlstra found a bug in the way softirq time is accounted in
->> VIRT_CPU_ACCOUNTING on this thread.
->> http://lkml.indiana.edu/hypermail//linux/kernel/1009.2/01366.html
->>
->> The problem is, softirq processing uses local_bh_disable internally and there
->> would be no way later in the flow to differentiate between whether softirq is
->> being processed or is it just that bh has been disabled. So, a hardirq when bh
->> id disabled results in time being wrongly accounted for softirq.
->>
->> Looking at the code a bit more, the problem exists in !VIRT_CPU_ACCOUNTING
->> as well. As account_system_time() in normal tick based accouting also uses
->> softirq_count, which will be set when not in softirq with bh disabled.
->>
->> Peter also suggested solution of using 2 * SOFTIRQ_OFFSET as irq count
->> for local_bh_{disable,enable} and using just SOFTIRQ_OFFSET while softirq
->> processing. The patch below does that and adds API in_serving_softirq() which
->> returns whether we are currently processing softirq or not.
->>
->> Also changes one of the usages of softirq_count in net/sched/cls_cgroup.c
->> to in_serving_softirq.
->>
->> Looks like many usages of in_softirq really want in_serving_softirq. Those
->> changes can be made individually on a case by case basis.
->>
->> Signed-off-by: Venkatesh Pallipadi <venki@google.com>
->> ---
->>  include/linux/hardirq.h |    3 ++
->>  include/linux/sched.h   |    2 +-
->>  kernel/sched.c          |    2 +-
->>  kernel/softirq.c        |   51 +++++++++++++++++++++++++++++++---------------
->>  net/sched/cls_cgroup.c  |    2 +-
->>  5 files changed, 40 insertions(+), 20 deletions(-)
->>
->> diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
->> index d5b3876..1c736ae 100644
->> --- a/include/linux/hardirq.h
->> +++ b/include/linux/hardirq.h
->> @@ -82,10 +82,13 @@
->>  /*
->>   * Are we doing bottom half or hardware interrupt processing?
->>   * Are we in a softirq context? Interrupt context?
->> + * in_softirq answers - are we currently processing softirq or have bh disabled?
->> + * in_serving_softirq answers - are we currently processing softirq?
->>   */
->>  #define in_irq()             (hardirq_count())
->>  #define in_softirq()         (softirq_count())
->>  #define in_interrupt()               (irq_count())
->> +#define in_serving_softirq() (softirq_count() == SOFTIRQ_OFFSET)
->>
->
-> But softirq handlers sometime call functions that might disable bh
-> again. It would be good to not switch softirq time to system time ;)
+* Frederic Weisbecker (fweisbec@gmail.com) wrote:
+> In x86, faults exit by executing the iret instruction, which then
+> reenables NMIs if we faulted in NMI context. Then if a fault
+> happens in NMI, another NMI can nest after the fault exits.
+> 
+> But we don't yet support nested NMIs because we have only one NMI
+> stack. To prevent that, trigger a bug when a fault happens in NMI
+> context.
+> 
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: H. Peter Anvin <hpa@zytor.com>
+> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
+> 
+> I first thought about putting it in the vmalloc fault path only.
+> But then I saw more occasions for the kernel to fault (kmemcheck
+> or so), and so I thought it should be better put in the all in one
+> path. But I suspect you won't like that conditional in the big
+> x86 fault path.
+> 
+> 
+>  arch/x86/mm/fault.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+> index 4c4508e..80c997e 100644
+> --- a/arch/x86/mm/fault.c
+> +++ b/arch/x86/mm/fault.c
+> @@ -955,6 +955,8 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
+>  	int write;
+>  	int fault;
+>  
+> +	BUG_ON(in_nmi());
 
-Yes. Good point :-). I should rather have
-+#define in_serving_softirq() (softirq_count() & SOFTIRQ_OFFSET)
+Alternative idea: we could put the test at the beginning of the NMI handler, so
+if a NMI handler nests over a processor already "in_nmi", then we bug. I agree
+that this will trigger less easily than bugging in the fault handler (because we
+need to hit the actual nmi-coming-in-because-iret-reenabled-them-too-early
+scenario, but it's far less intrusive.
 
->
-> Shouldnt we reserve a bit (high order bit out of 8) instead ?
->
->  * PREEMPT_MASK:    0x000000ff
->  * SOFTIRQ_MASK:    0x0000ff00
->  * SERVING_SOFTIRQ: 0x00008000
->  * HARDIRQ_MASK:    0x03ff0000
->  *     NMI_MASK:    0x04000000
+Thoughts ?
 
-Things will be very much similar using higher order bit or lower order
-bit. Somehow I felt using lower order bit was cleaner...
+Mathieu
 
-Thanks,
-Venki
+> +
+>  	tsk = current;
+>  	mm = tsk->mm;
+>  
+> -- 
+> 1.6.2.3
+> 
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
