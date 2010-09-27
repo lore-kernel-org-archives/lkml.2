@@ -1,100 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933512Ab0I0Tsj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 15:48:39 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:60920 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933389Ab0I0Tsg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 15:48:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=TzumJcTvnsSA/0tVSZEB/93XOj3KjinbaX7Yyu+4Xqgn3libW+sxtv/Lz+Zd324qu4
-         NHvu2l00vgQk4uGxEs8sSLGaNepysH+u+wtPoFMfH5ktweShNlOtGtrc7+3PjaEbcidp
-         uDSreqkilZtcAnr0DwzK0HeUEEoe14xY/vo+M=
-MIME-Version: 1.0
-In-Reply-To: <20100908152036.643594727@linutronix.de>
-References: <20100908152036.643594727@linutronix.de>
-Date: Mon, 27 Sep 2010 21:48:34 +0200
-Message-ID: <AANLkTin23sJT+OqjDqjyk-Gr5r-GfJ_03Q1WUqNLCzgH@mail.gmail.com>
-Subject: Re: [RFC trollpatch 1/1] genirq: Remove the fits all and nothing
- __do_IRQ() code
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-alpha@vger.kernel.org,
-        linux-cris-kernel@axis.com, Haavard Skinnemoen <hskinnemoen@atmel.com>,
-        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Greg Ungerer <gerg@uclinux.org>, Jeff Dike <jdike@addtoit.com>,
-        linux-parisc@vger.kernel.org, Chris Zankel <chris@zankel.net>,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S933515Ab0I0Tvi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 15:51:38 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:53168 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933389Ab0I0Tvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 15:51:37 -0400
+Date: Mon, 27 Sep 2010 21:51:35 +0200
+From: Florian Mickler <florian@mickler.org>
+To: tmhikaru@gmail.com
+Newsgroups: gmane.linux.kernel
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: Linux 2.6.35.6
+Message-ID: <20100927215135.3d11d587@schatten.dmk.lab>
+In-Reply-To: <20100927163208.GA4892@roll>
+References: <20100927003608.GA20395@kroah.com>
+	<20100927163208.GA4892@roll>
+X-Newsreader: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 8, 2010 at 8:14 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> __do_IRQ() has been deprecated after a two years migration phase in
->  The following architectures are still using __do_IRQ():
->
->  alpha, cris, ia64, h8300, m32r, m68knommu, parisc, um
->
+On Mon, 27 Sep 2010 12:32:08 -0400
+tmhikaru@gmail.com wrote:
 
-Maybe I'm naive but shouldn't this path work?
-Does um need some extra work?
+> 	I'm not exactly sure what's going on here and I'd like some help
+> figuring out what is. For some inexplicable reason, ever since I started
+> using the 2.6.35.x series with the 2.6.35.3 release, my loadaverages tend to
+> bounce anywhere from as low to .2 to 1.5 - constantly, while the machine
+> seems idle. Consistently, there are no programs in D state in ps aux output,
+> no cpu hogging programs running in top, nothing I can see that should
+> explain the bizzarely high load average. *Something* is wrong beyond the
+> mere loadaverage numbers going crazy however, since timed runs of kernel
+> compiles done with my distro's kernel and 2.6.35.5 show that while there is
+> no *apparent* use of cpu or disk showing in vmstat while the machine is
+> idle, the compiles on the newer kernel are taking approximately twice as
+> long as before. Now, while I could try to figure out what patch started the
+> problem, I think it would be a better idea for me to make sure I'm looking
+> for the actual problem in the right place. Therefore, I know that cpu use,
+> disk I/O, and the kernel can drive the load average up. Of these things, cpu
+> use and disk I/O are trackable in top/ps output (eg, a process in D state is
+> waiting on the disk to do something and can't sleep.) but I don't know if
+> there's any easy way to determine if the kernel itself is doing something
+> that's driving up the load average. It's perplexing me that I can see the
+> loadaverage constantly bouncing about but can't seem to find any reason why
+> it is doing so.
 
-The linux executable aborts immediately when I apply my patch.
+I can't comment on the bouncing part, but increased load average is
+partly bisected down in Bug 16525 (unexpected high load since 2.6.35
+Bug 16525)[1]. Maybe you are seeing something similiar? 
 
----cut---
-Locating the bottom of the address space ... 0x10000
-Locating the top of the address space ... 0xc0000000
-Core dump limits :
-        soft - 0
-        hard - NONE
-Checking that ptrace can change system call numbers...OK
-Checking syscall emulation patch for ptrace...OK
-Checking advanced syscall emulation patch for ptrace...OK
-Checking for tmpfs mount on /dev/shm...nothing mounted on /dev/shm
-Checking PROT_EXEC mmap in /tmp/...OK
-Checking for the skas3 patch in the host:
-  - /proc/mm...not found: No such file or directory
-  - PTRACE_FAULTINFO...not found
-  - PTRACE_LDT...not found
-UML running in SKAS0 mode
-Aborted
----cut---
-
-diff --git a/arch/um/Kconfig.um b/arch/um/Kconfig.um
-index ec2b8da..ae950e0 100644
---- a/arch/um/Kconfig.um
-+++ b/arch/um/Kconfig.um
-@@ -147,3 +147,8 @@ config KERNEL_STACK_ORDER
-          This option determines the size of UML kernel stacks.  They will
-          be 1 << order pages.  The default is OK unless you're running Valgrind
-          on UML, in which case, set this to 3.
-+
-+config GENERIC_HARDIRQS_NO__DO_IRQ
-+       def_bool y
-+
-+
-diff --git a/arch/um/kernel/irq.c b/arch/um/kernel/irq.c
-index a3f0b04..3d44535 100644
---- a/arch/um/kernel/irq.c
-+++ b/arch/um/kernel/irq.c
-@@ -334,7 +334,7 @@ unsigned int do_IRQ(int irq, struct uml_pt_regs *regs)
- {
-        struct pt_regs *old_regs = set_irq_regs((struct pt_regs *)regs);
-        irq_enter();
--       __do_IRQ(irq);
-+       generic_handle_irq(irq);
-        irq_exit();
-        set_irq_regs(old_regs);
-        return 1;
+> 
+> 	If you have any tips or recommendations on what I should use to
+> investigate this further, please let me know. Once I have ensured to my own
+> satisfaction that I'm not doing something bizzare that's screwing up my
+> machine, I'll make a detailed bug report and start on figuring out how to
+> use git bisect.
+> 
+> 	Tim McGrath
+> 
