@@ -1,135 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933540Ab0I0UFc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 16:05:32 -0400
-Received: from server109-228-6-235.live-servers.net ([109.228.6.235]:58438
-	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755947Ab0I0UFb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 16:05:31 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Matt Mackall <mpm@selenic.com>, Andrew Morton <akpm@linux-foundation.org>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Dave Airlie <airlied@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [PATCH] drm: Prune GEM vma entries
-Date: Mon, 27 Sep 2010 21:08:36 +0100
-Message-Id: <1285618116-10086-1-git-send-email-chris@chris-wilson.co.uk>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20100927115207.633024b1.akpm@linux-foundation.org>
-References: <20100927115207.633024b1.akpm@linux-foundation.org>
-X-Originating-IP: 78.156.66.37
+	id S933551Ab0I0UHO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 16:07:14 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:47175 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932927Ab0I0UHM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 16:07:12 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Nigel Cunningham <nigel@tuxonice.net>
+Subject: Re: [PATCH 02/23] Record & display i/o speed post resume.
+Date: Mon, 27 Sep 2010 22:06:19 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc5-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Linux PM <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "TuxOnIce-devel" <tuxonice-devel@tuxonice.net>
+References: <1285566238-10966-1-git-send-email-nigel@tuxonice.net> <1285566238-10966-3-git-send-email-nigel@tuxonice.net>
+In-Reply-To: <1285566238-10966-3-git-send-email-nigel@tuxonice.net>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009272206.20020.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hook the GEM vm open/close ops into the generic drm vm open/close so
-that the vma entries are created and destroy appropriately.
+On Monday, September 27, 2010, Nigel Cunningham wrote:
+> Record the speed at which the image is written and read, and
+> display it to the user post-resume.
+> 
+> Signed-off-by: Nigel Cunningham <nigel@tuxonice.net>
+> ---
+>  kernel/power/hibernate.c |   11 ++++++++++-
+>  kernel/power/power.h     |    3 ++-
+>  kernel/power/swap.c      |   14 +++++++++++---
+>  3 files changed, 23 insertions(+), 5 deletions(-)
+> 
+> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+> index 6c9c9dc..0cd1f05 100644
+> --- a/kernel/power/hibernate.c
+> +++ b/kernel/power/hibernate.c
+> @@ -212,7 +212,7 @@ static void platform_recover(int platform_mode)
+>   *	@msg -		introductory message to print
+>   */
+>  
+> -void swsusp_show_speed(struct timeval *start, struct timeval *stop,
+> +int swsusp_show_speed(struct timeval *start, struct timeval *stop,
+>  			unsigned nr_pages, char *msg)
+>  {
+>  	s64 elapsed_centisecs64;
+> @@ -231,6 +231,7 @@ void swsusp_show_speed(struct timeval *start, struct timeval *stop,
+>  			msg, k,
+>  			centisecs / 100, centisecs % 100,
+>  			kps / 1000, (kps % 1000) / 10);
+> +	return kps / 1000;
+>  }
+>  
+>  /**
+> @@ -648,6 +649,14 @@ int hibernate(void)
+>  			power_down();
+>  	} else {
+>  		pr_debug("PM: Image restored successfully.\n");
+> +		if (write_speed)
+> +			pr_debug("PM: Image written at %u MB/s.\n",
+> +					(u8) write_speed);
+> +		write_speed = 0;
+> +		if (read_speed)
+> +			pr_debug("PM: Image read at %u MB/s.\n",
+> +					(u8) read_speed);
+> +		read_speed = 0;
+>  	}
+>  
+>   Thaw:
+> diff --git a/kernel/power/power.h b/kernel/power/power.h
+> index 03634be..22f8607 100644
+> --- a/kernel/power/power.h
+> +++ b/kernel/power/power.h
+> @@ -53,6 +53,7 @@ extern int hibernation_snapshot(int platform_mode);
+>  extern int hibernation_restore(int platform_mode);
+>  extern int hibernation_platform_enter(void);
+>  
+> +extern char __nosavedata write_speed, read_speed;
+>  #else /* !CONFIG_HIBERNATION */
+>  
+>  static inline void hibernate_image_size_init(void) {}
+> @@ -161,7 +162,7 @@ extern int hib_wait_on_bio_chain(struct bio **bio_chain);
+>  
+>  struct timeval;
+>  /* kernel/power/swsusp.c */
+> -extern void swsusp_show_speed(struct timeval *, struct timeval *,
+> +extern int swsusp_show_speed(struct timeval *, struct timeval *,
+>  				unsigned int, char *);
+>  
+>  #ifdef CONFIG_SUSPEND
+> diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+> index 3c01105..caf4db8 100644
+> --- a/kernel/power/swap.c
+> +++ b/kernel/power/swap.c
+> @@ -45,7 +45,8 @@ struct swap_map_page {
+>  };
+>  
+>  struct swsusp_header {
+> -	char reserved[PAGE_SIZE - 20 - sizeof(sector_t) - sizeof(int)];
+> +	char reserved[PAGE_SIZE - 21 - sizeof(sector_t) - sizeof(int)];
+> +	char write_speed;
+>  	sector_t image;
+>  	unsigned int flags;	/* Flags to pass to the "boot" kernel */
+>  	char	orig_sig[10];
+> @@ -161,6 +162,7 @@ int swsusp_swap_in_use(void)
+>  
+>  static unsigned short root_swap = 0xffff;
+>  struct block_device *hib_resume_bdev;
+> +char __nosavedata write_speed, read_speed;
 
-Reported-by: Matt Mackall <mpm@selenic.com>
-Cc: Dave Airlie <airlied@redhat.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
----
- drivers/gpu/drm/drm_gem.c |    9 ++++++++-
- drivers/gpu/drm/drm_vm.c  |   28 ++++++++++++++++++----------
- include/drm/drmP.h        |    1 +
- 3 files changed, 27 insertions(+), 11 deletions(-)
+I really should have noticed that earlier, but I don't really like __nosavedata
+being used here.  In fact, it shouldn't be used at all any more, because it's
+meaningless on x86_64.
 
-diff --git a/drivers/gpu/drm/drm_gem.c b/drivers/gpu/drm/drm_gem.c
-index bf92d07..6fe2cd2 100644
---- a/drivers/gpu/drm/drm_gem.c
-+++ b/drivers/gpu/drm/drm_gem.c
-@@ -528,6 +528,10 @@ void drm_gem_vm_open(struct vm_area_struct *vma)
- 	struct drm_gem_object *obj = vma->vm_private_data;
- 
- 	drm_gem_object_reference(obj);
-+
-+	mutex_lock(&obj->dev->struct_mutex);
-+	drm_vm_open_locked(vma);
-+	mutex_unlock(&obj->dev->struct_mutex);
- }
- EXPORT_SYMBOL(drm_gem_vm_open);
- 
-@@ -535,7 +539,10 @@ void drm_gem_vm_close(struct vm_area_struct *vma)
- {
- 	struct drm_gem_object *obj = vma->vm_private_data;
- 
--	drm_gem_object_unreference_unlocked(obj);
-+	mutex_lock(&obj->dev->struct_mutex);
-+	drm_vm_close_locked(vma);
-+	drm_gem_object_unreference(obj);
-+	mutex_unlock(&obj->dev->struct_mutex);
- }
- EXPORT_SYMBOL(drm_gem_vm_close);
- 
-diff --git a/drivers/gpu/drm/drm_vm.c b/drivers/gpu/drm/drm_vm.c
-index fda6746..5df4506 100644
---- a/drivers/gpu/drm/drm_vm.c
-+++ b/drivers/gpu/drm/drm_vm.c
-@@ -433,15 +433,7 @@ static void drm_vm_open(struct vm_area_struct *vma)
- 	mutex_unlock(&dev->struct_mutex);
- }
- 
--/**
-- * \c close method for all virtual memory types.
-- *
-- * \param vma virtual memory area.
-- *
-- * Search the \p vma private data entry in drm_device::vmalist, unlink it, and
-- * free it.
-- */
--static void drm_vm_close(struct vm_area_struct *vma)
-+void drm_vm_close_locked(struct vm_area_struct *vma)
- {
- 	struct drm_file *priv = vma->vm_file->private_data;
- 	struct drm_device *dev = priv->minor->dev;
-@@ -451,7 +443,6 @@ static void drm_vm_close(struct vm_area_struct *vma)
- 		  vma->vm_start, vma->vm_end - vma->vm_start);
- 	atomic_dec(&dev->vma_count);
- 
--	mutex_lock(&dev->struct_mutex);
- 	list_for_each_entry_safe(pt, temp, &dev->vmalist, head) {
- 		if (pt->vma == vma) {
- 			list_del(&pt->head);
-@@ -459,6 +450,23 @@ static void drm_vm_close(struct vm_area_struct *vma)
- 			break;
- 		}
- 	}
-+}
-+
-+/**
-+ * \c close method for all virtual memory types.
-+ *
-+ * \param vma virtual memory area.
-+ *
-+ * Search the \p vma private data entry in drm_device::vmalist, unlink it, and
-+ * free it.
-+ */
-+static void drm_vm_close(struct vm_area_struct *vma)
-+{
-+	struct drm_file *priv = vma->vm_file->private_data;
-+	struct drm_device *dev = priv->minor->dev;
-+
-+	mutex_lock(&dev->struct_mutex);
-+	drm_vm_close_locked(vma);
- 	mutex_unlock(&dev->struct_mutex);
- }
- 
-diff --git a/include/drm/drmP.h b/include/drm/drmP.h
-index 7809d23..774e1d4 100644
---- a/include/drm/drmP.h
-+++ b/include/drm/drmP.h
-@@ -1175,6 +1175,7 @@ extern int drm_release(struct inode *inode, struct file *filp);
- extern int drm_mmap(struct file *filp, struct vm_area_struct *vma);
- extern int drm_mmap_locked(struct file *filp, struct vm_area_struct *vma);
- extern void drm_vm_open_locked(struct vm_area_struct *vma);
-+extern void drm_vm_close_locked(struct vm_area_struct *vma);
- extern resource_size_t drm_core_get_map_ofs(struct drm_local_map * map);
- extern resource_size_t drm_core_get_reg_ofs(struct drm_device *dev);
- extern unsigned int drm_poll(struct file *filp, struct poll_table_struct *wait);
--- 
-1.7.1
+I'm not sure how to implement that without __nosavedata, but please don't
+use it.  Sorry aboiut that.
 
+Rafael
