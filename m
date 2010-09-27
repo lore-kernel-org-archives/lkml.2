@@ -1,45 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760240Ab0I0VEK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 17:04:10 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:58159 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756013Ab0I0VEI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 17:04:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=KWj9fVJb3ujkedrEgnJr/xaEJk26D3rScxRBYaElBdU47WQWJhXMjIsnoo84Qx905i
-         QJRXbS6Trd//phbp8GnTinSxYwuAGJ/QC3mnY/dH6mKvyCa+u3WkPpBLrj74uuutkUbc
-         /Z392B9z4olnD0pb7T4oHVEYLMlTGXM5yr26Y=
+	id S1759546Ab0I0VFr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 17:05:47 -0400
+Received: from tuxonice.net ([74.207.252.127]:39525 "EHLO mail.tuxonice.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751930Ab0I0VFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 17:05:46 -0400
+X-Bogosity: Ham, spamicity=0.000000
+Message-ID: <4CA10729.5010001@tuxonice.net>
+Date: Tue, 28 Sep 2010 07:05:45 +1000
+From: Nigel Cunningham <nigel@tuxonice.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.10pre) Gecko/20100903 Shredder/3.1.4pre
 MIME-Version: 1.0
-In-Reply-To: <20100924064446.GA22588@foursquare.net>
-References: <20100924041410.GA18040@foursquare.net>
-	<20100924060557.GA21238@foursquare.net>
-	<20100924064446.GA22588@foursquare.net>
-Date: Mon, 27 Sep 2010 23:04:07 +0200
-Message-ID: <AANLkTinQ20uSgFP5KV17B0J0v8Y0zAg=AgAd_kf+4Bh0@mail.gmail.com>
-Subject: Re: ext3 filesystem corruption in user mode linux
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Chris Frey <cdfrey@foursquare.net>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux PM <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        TuxOnIce-devel <tuxonice-devel@tuxonice.net>
+Subject: Re: [PATCH 02/23] Record & display i/o speed post resume.
+References: <1285566238-10966-1-git-send-email-nigel@tuxonice.net> <201009272206.20020.rjw@sisk.pl> <4CA0FDE8.3000601@tuxonice.net> <201009272249.59966.rjw@sisk.pl>
+In-Reply-To: <201009272249.59966.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 24, 2010 at 8:44 AM, Chris Frey <cdfrey@foursquare.net> wrote:
-> On Fri, Sep 24, 2010 at 02:05:57AM -0400, Chris Frey wrote:
->> So far I have been unable to make 2.6.32.21 corrupt its filesystem
->> when running as the UML kernel (Host 2.6.35.4, UML 2.6.32.21)
->
-> Spoke too soon... 2.6.32.21 has errors too, if pushed hard enough.
->
+Hi.
 
-can you do a git bisect?
+On 28/09/10 06:49, Rafael J. Wysocki wrote:
+> On Monday, September 27, 2010, Nigel Cunningham wrote:
+>> Hi.
+>>
+>> On 28/09/10 06:06, Rafael J. Wysocki wrote:
+>>> On Monday, September 27, 2010, Nigel Cunningham wrote:
+>>>> Record the speed at which the image is written and read, and
+>>>> display it to the user post-resume.
+>>>>
+>>>> Signed-off-by: Nigel Cunningham<nigel@tuxonice.net>
+>>>> ---
+>>>>    kernel/power/hibernate.c |   11 ++++++++++-
+>>>>    kernel/power/power.h     |    3 ++-
+>>>>    kernel/power/swap.c      |   14 +++++++++++---
+>>>>    3 files changed, 23 insertions(+), 5 deletions(-)
+>>>>
+>>>> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+>>>> index 6c9c9dc..0cd1f05 100644
+>>>> --- a/kernel/power/hibernate.c
+>>>> +++ b/kernel/power/hibernate.c
+>>>> @@ -212,7 +212,7 @@ static void platform_recover(int platform_mode)
+>>>>     *	@msg -		introductory message to print
+>>>>     */
+>>>>
+>>>> -void swsusp_show_speed(struct timeval *start, struct timeval *stop,
+>>>> +int swsusp_show_speed(struct timeval *start, struct timeval *stop,
+>>>>    			unsigned nr_pages, char *msg)
+>>>>    {
+>>>>    	s64 elapsed_centisecs64;
+>>>> @@ -231,6 +231,7 @@ void swsusp_show_speed(struct timeval *start, struct timeval *stop,
+>>>>    			msg, k,
+>>>>    			centisecs / 100, centisecs % 100,
+>>>>    			kps / 1000, (kps % 1000) / 10);
+>>>> +	return kps / 1000;
+>>>>    }
+>>>>
+>>>>    /**
+>>>> @@ -648,6 +649,14 @@ int hibernate(void)
+>>>>    			power_down();
+>>>>    	} else {
+>>>>    		pr_debug("PM: Image restored successfully.\n");
+>>>> +		if (write_speed)
+>>>> +			pr_debug("PM: Image written at %u MB/s.\n",
+>>>> +					(u8) write_speed);
+>>>> +		write_speed = 0;
+>>>> +		if (read_speed)
+>>>> +			pr_debug("PM: Image read at %u MB/s.\n",
+>>>> +					(u8) read_speed);
+>>>> +		read_speed = 0;
+>>>>    	}
+>>>>
+>>>>     Thaw:
+>>>> diff --git a/kernel/power/power.h b/kernel/power/power.h
+>>>> index 03634be..22f8607 100644
+>>>> --- a/kernel/power/power.h
+>>>> +++ b/kernel/power/power.h
+>>>> @@ -53,6 +53,7 @@ extern int hibernation_snapshot(int platform_mode);
+>>>>    extern int hibernation_restore(int platform_mode);
+>>>>    extern int hibernation_platform_enter(void);
+>>>>
+>>>> +extern char __nosavedata write_speed, read_speed;
+>>>>    #else /* !CONFIG_HIBERNATION */
+>>>>
+>>>>    static inline void hibernate_image_size_init(void) {}
+>>>> @@ -161,7 +162,7 @@ extern int hib_wait_on_bio_chain(struct bio **bio_chain);
+>>>>
+>>>>    struct timeval;
+>>>>    /* kernel/power/swsusp.c */
+>>>> -extern void swsusp_show_speed(struct timeval *, struct timeval *,
+>>>> +extern int swsusp_show_speed(struct timeval *, struct timeval *,
+>>>>    				unsigned int, char *);
+>>>>
+>>>>    #ifdef CONFIG_SUSPEND
+>>>> diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+>>>> index 3c01105..caf4db8 100644
+>>>> --- a/kernel/power/swap.c
+>>>> +++ b/kernel/power/swap.c
+>>>> @@ -45,7 +45,8 @@ struct swap_map_page {
+>>>>    };
+>>>>
+>>>>    struct swsusp_header {
+>>>> -	char reserved[PAGE_SIZE - 20 - sizeof(sector_t) - sizeof(int)];
+>>>> +	char reserved[PAGE_SIZE - 21 - sizeof(sector_t) - sizeof(int)];
+>>>> +	char write_speed;
+>>>>    	sector_t image;
+>>>>    	unsigned int flags;	/* Flags to pass to the "boot" kernel */
+>>>>    	char	orig_sig[10];
+>>>> @@ -161,6 +162,7 @@ int swsusp_swap_in_use(void)
+>>>>
+>>>>    static unsigned short root_swap = 0xffff;
+>>>>    struct block_device *hib_resume_bdev;
+>>>> +char __nosavedata write_speed, read_speed;
+>>>
+>>> I really should have noticed that earlier, but I don't really like __nosavedata
+>>> being used here.  In fact, it shouldn't be used at all any more, because it's
+>>> meaningless on x86_64.
+>>
+>> Really? Okay. When did that change?
+>
+> Well, some time ago, looks like in 2007, but the files changed and were moving
+> around, so it's hard to say exactly.
 
--- 
-Cheers,
-//richard
+Hmm. Really failed to notice that one, didn't I? :)
+
+>>> I'm not sure how to implement that without __nosavedata, but please don't
+>>> use it.  Sorry aboiut that.
+>>
+>> Well then, for now, let's drop that patch then. At least it's got us the
+>> numbers we needed to see these patches are useful. Longer term, I'll do
+>> what I do in TuxOnIce and allocate a page while writing the image, store
+>> it's location in the image header and use it the transfer information
+>> from the boot kernel to the resumed kernel. (Essentially the same thing,
+>> except without the special section).
+>
+> The problem is that on x86_64 the boot kernel may be completely different
+> from the image kernel (different version, different configuration), so there is
+> no guarantee that your page frame allocated while writing the image would be
+> available to the boot kernel (it may contain the kernel code, for example).
+>
+> You'd really need to replace one of the image pages with  something prepared
+> while the image was being read.  For that, you'd need to allocate a page before
+> creating the image and pass its PFN in the image header.
+
+Yes - that's what I'm doing. Maybe that's why the __nosavedata changes 
+you mentioned above haven't bitten me.
+
+Regards,
+
+Nigel
