@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758079Ab0I0KlV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 06:41:21 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43309 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757703Ab0I0KlU (ORCPT
+	id S1755803Ab0I0Kme (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 06:42:34 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42034 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159Ab0I0Kmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 06:41:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ZbAHrb1ZgVrCkCnNfhlPooSfcMGj9YnIFqxqmhW9+tpdX03qDbD10foPP7XRyjjtPM
-         YzEc3RyubtpQQpxJu+grjvP3DOr1Yp1mjj8WQrWtG5MF1eTKegHNiuOft6j4Izqk6ccn
-         UoPQDmPw99zF2xB8gYk7E65PCIpxPap5oh9/k=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] perf: Declare hw_perf_{dis,en}able() in perf_event.h
-Date: Mon, 27 Sep 2010 19:39:57 +0900
-Message-Id: <1285583997-1262-6-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <1285583997-1262-1-git-send-email-namhyung@gmail.com>
-References: <1285583997-1262-1-git-send-email-namhyung@gmail.com>
+	Mon, 27 Sep 2010 06:42:32 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Randy Dunlap <randy.dunlap@oracle.com>, linux-nfs@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [PATCH] sunrpc: prompt for RPCSEC_GSS_KRB5 even if NFS_V4 is enabled
+Date: Mon, 27 Sep 2010 12:41:59 +0200
+Message-Id: <1285584120-16860-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <20100909181454.GB14915@pengutronix.de>
+References: <20100909181454.GB14915@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since they can be defined in arch-specific code declare them in
-perf_event.h and remove following warnings from sparse:
+NFS_V4 works fine without RPCSEC_GSS_KRB5 (even without CRYPTO).
+This dependency was introduced in
 
- kernel/perf_event.c:83:13: warning: symbol 'hw_perf_disable' was not declared. Should it be static?
- kernel/perf_event.c:84:13: warning: symbol 'hw_perf_enable' was not declared. Should it be static?
+	df486a2 (NFS: Fix the selection of security flavours in Kconfig)
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+to fix a build failure as RPCSEC_GSS_KRB5 was thought to be needed for
+NFS_V4.  The fix didn't work completely as NFS_V4 didn't enforce CRYPTO
+and so the select on RPCSEC_GSS_KRB5 didn't work in all situations (e.g.
+arm/mx1_defconfig).
+
+This was rectified by
+
+	827e345 (SUNRPC: Fix the NFSv4 and RPCSEC_GSS Kconfig dependencies)
+
+but the magic for RPCSEC_GSS_KRB5 introduced by df486a2 wasn't reverted.
+
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
- include/linux/perf_event.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Hello,
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 167dd3d..26859c7 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -848,6 +848,8 @@ struct perf_output_handle {
- extern int perf_max_events;
- 
- extern const struct pmu *hw_perf_event_init(struct perf_event *event);
-+extern void hw_perf_disable(void);
-+extern void hw_perf_enable(void);
- 
- extern void perf_event_task_sched_in(struct task_struct *task);
- extern void perf_event_task_sched_out(struct task_struct *task, struct task_struct *next);
+after Trond sent me the patch that later ended in 827e345702 I suggested
+to fold the patch below into it[1], but without reaction and success as I
+noticed just now. :-(
+
+Best regards
+Uwe
+
+[1] http://thread.gmane.org/gmane.linux.kernel/1027380/focus=1033847
+
+ net/sunrpc/Kconfig |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/net/sunrpc/Kconfig b/net/sunrpc/Kconfig
+index 3376d76..442efe1 100644
+--- a/net/sunrpc/Kconfig
++++ b/net/sunrpc/Kconfig
+@@ -20,8 +20,7 @@ config SUNRPC_XPRT_RDMA
+ config RPCSEC_GSS_KRB5
+ 	tristate
+ 	depends on SUNRPC && CRYPTO
+-	prompt "Secure RPC: Kerberos V mechanism" if !(NFS_V4 || NFSD_V4)
+-	default y
++	prompt "Secure RPC: Kerberos V mechanism"
+ 	select SUNRPC_GSS
+ 	select CRYPTO_MD5
+ 	select CRYPTO_DES
 -- 
-1.7.2.2
+1.7.2.3
 
