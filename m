@@ -1,94 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933417Ab0I0TBc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 15:01:32 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:33542 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933403Ab0I0TB3 convert rfc822-to-8bit (ORCPT
+	id S933438Ab0I0TB7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 15:01:59 -0400
+Received: from mga01.intel.com ([192.55.52.88]:23932 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933375Ab0I0TBy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 15:01:29 -0400
-MIME-Version: 1.0
-X-Originating-IP: [46.116.86.31]
-In-Reply-To: <20100927184445.GF11086@tuxdriver.com>
-References: <20100927154408.55a28127.sfr@canb.auug.org.au> <AANLkTinHk82jM7Ztwb1aB1xb-hSLeg5Hb07mhYCaeszi@mail.gmail.com>
- <20100927180412.GD11086@tuxdriver.com> <20100927.111818.149846920.davem@davemloft.net>
- <20100927182546.GE11086@tuxdriver.com> <AANLkTi=YHhRWFix1QDuEnRW7r_UaNtp6KSL9uLdUzdqM@mail.gmail.com>
- <20100927184445.GF11086@tuxdriver.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Mon, 27 Sep 2010 21:01:08 +0200
-Message-ID: <AANLkTi=2KqQb+gvuigxb+-tSzawx7=q3HtnkkE6t_4XF@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the final tree (net tree related)
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: David Miller <davem@davemloft.net>, sfr@canb.auug.org.au,
-        netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 27 Sep 2010 15:01:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,244,1283756400"; 
+   d="scan'208";a="841382294"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-alpha@vger.kernel.org" <linux-alpha@vger.kernel.org>,
+        "linux-cris-kernel@axis.com" <linux-cris-kernel@axis.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Greg Ungerer <gerg@uclinux.org>, Jeff Dike <jdike@addtoit.com>,
+        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
+        Chris Zankel <chris@zankel.net>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Date: Mon, 27 Sep 2010 12:01:51 -0700
+Subject: RE: [RFC trollpatch 1/1] genirq: Remove the fits all and nothing
+ __do_IRQ() code
+Thread-Topic: [RFC trollpatch 1/1] genirq: Remove the fits all and nothing
+ __do_IRQ() code
+Thread-Index: ActedNyThmWIOFhLRrar/oa2Z2pp8gAAVRfQ
+Message-ID: <987664A83D2D224EAE907B061CE93D530160471328@orsmsx505.amr.corp.intel.com>
+References: <20100908152036.643594727@linutronix.de>
+ <AANLkTikVHO9DmyTX==CwViDK1rP0masBwjMakHZ0U=kZ@mail.gmail.com>
+ <alpine.LFD.2.00.1009271953390.2416@localhost6.localdomain6>
+ <987664A83D2D224EAE907B061CE93D5301604712B4@orsmsx505.amr.corp.intel.com>
+ <alpine.LFD.2.00.1009272048100.2416@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1009272048100.2416@localhost6.localdomain6>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 8:44 PM, John W. Linville
-<linville@tuxdriver.com> wrote:
-> On Mon, Sep 27, 2010 at 08:38:50PM +0200, Ohad Ben-Cohen wrote:
->> On Mon, Sep 27, 2010 at 8:25 PM, John W. Linville
->> <linville@tuxdriver.com> wrote:
->> >> BTW, if this fuglet going to work if the driver is built modular?
->> >>
->> >> The idea of this things seems to be to allow arch platform code to call
->> >> into it to set things.  Such calls from arch platform code are going
->> >> to be "obj-y"
->> >>
->> >> So if this is built into the modular driver, I can't see how it
->> >> can work.
->> >
->> > Dave is right -- these Kconfig dependencies (or lack thereof) seem
->> > to be wrong.
->>
->> This is why I had to put it in drivers/net/wireless/Makefile (in both
->> the original patch and in the fix I sent earlier) and not in
->> drivers/net/wireless/wl12xx/Makefile (as it was in the fix that Dave
->> was referring to).
->>
->> This way it works with a modular driver.
+>> handle_level_irq() works for my level triggered interrupts if I add
+>> a "desc->chip->end(irq)" call to it.
 >
-> That doesn't seem very helpful if someone selects
->
-> CONFIG_MACH_OMAP_ZOOM2=y
-> CONFIG_WL12XX_PLATFORM_DATA=n
->
+> Hmm, why isn't chip->unmask() sufficient ?
+ 
+That's a good question.  I'll take a look at what ia64 is doing
+in the ->unmask() and ->end() functions to see if I can fix this
+with some code shuffling.
 
-CONFIG_WL12XX_PLATFORM_DATA is selected automatically if the relevant
-driver is selected (this is independent of the underlying arch/board):
+Thanks
 
-config WL12XX_PLATFORM_DATA
-        bool
-        depends on WL1271_SDIO != n
-        default y
-
-All we have to make sure is that it will be compiled built-in. If we
-use drivers/net/wireless/wl12xx/Makefile, and we build a modular
-wl1271_sdio, it won't (despite it being selected as y).
-
-That's why I put it in drivers/net/wireless/Makefile.
-
-In the original patch I put the code itself in
-drivers/net/wireless/wl12xx to make it look nicer, but as Stephen
-reported that seem to break building with a separate object folder...
-
-So the fix I sent just moves that builtin code to
-drivers/net/wireless. This maintains the builtin property even if the
-driver is modular, and fixes the issue reported by Stephen.
-
-Please tell me if you have any thoughts/suggestions.
-
-Thanks,
-Ohad.
-
-> or am I missing something?
->
-> John
-> --
-> John W. Linville                Someday the world will need a hero, and you
-> linville@tuxdriver.com                  might be all we have.  Be ready.
->
+-Tony
