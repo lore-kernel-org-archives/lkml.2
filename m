@@ -1,84 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759283Ab0I0NXM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 09:23:12 -0400
-Received: from mtagate2.de.ibm.com ([195.212.17.162]:50725 "EHLO
-	mtagate2.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756013Ab0I0NXK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 09:23:10 -0400
-Subject: Re: [RFC][PATCH 09/10] taskstats: Fix exit CPU time accounting
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Reply-To: holzheu@linux.vnet.ibm.com
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20100926181127.GA26985@redhat.com>
-References: <1285249681.1837.28.camel@holzheu-laptop>
-	 <1285250541.1837.95.camel@holzheu-laptop>
-	 <20100923171025.GA26623@redhat.com>
-	 <1285330688.2179.305.camel@holzheu-laptop>
-	 <20100926181127.GA26985@redhat.com>
-Content-Type: text/plain; charset="us-ascii"
-Organization: IBM
-Date: Mon, 27 Sep 2010 15:23:04 +0200
-Message-ID: <1285593784.2116.97.camel@holzheu-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1759297Ab0I0N0d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 09:26:33 -0400
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:38907
+	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755679Ab0I0N0c convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 09:26:32 -0400
+X-SpamScore: -22
+X-BigFish: VPS-22(zzbb2cK1432N98dN9371Pzz1202hzz8275bhz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-SS: 0,
+X-WSS-ID: 0L9EQMP-01-C72-02
+X-M-MSG: 
+Date: Mon, 27 Sep 2010 15:25:38 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: huang ying <huang.ying.caritas@gmail.com>
+CC: Huang Ying <ying.huang@intel.com>, Don Zickus <dzickus@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v2 4/7] x86, NMI, Rewrite NMI handler
+Message-ID: <20100927132537.GO13563@erda.amd.com>
+References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
+ <1285549026-5008-4-git-send-email-ying.huang@intel.com>
+ <20100927094136.GB32222@erda.amd.com>
+ <AANLkTimTg1uqXdAJ+GyZ3_B6n2xKWdqFL96jvv18JBM+@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <AANLkTimTg1uqXdAJ+GyZ3_B6n2xKWdqFL96jvv18JBM+@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Oleg,
+On 27.09.10 08:39:24, huang ying wrote:
 
-On Sun, 2010-09-26 at 20:11 +0200, Oleg Nesterov wrote:
-> > I think one place was "khelper" (kmod.c). It is created with
-> > kernel_thread() and it exits without having accounted the times with
-> > sys_wait() to the parent's ctimes
+Looking at all you comments below I would vote for the following:
+
+We implement all handlers using DIE_NMI and set its priority
+accordingly in struct notifier_block when registering the the nmi
+handler. We define NMI priorities as macros such as
+NMI_PRIORITY_LOCAL, NMI_PRIORITY_WATCHDOG, NMI_PRIORITY_IO, etc. and
+require all handlers to set the priority. register_die_notifier() with
+(!nb->priority) should return -EINVAL. DIE_NMI_UNKNOWN should only be
+used if there is a handler for the case when all others fail such as
+implemented in the perf nmi handler or when reporting an unknown nmi.
+
+This will avoid all the confusion below and also makes the code much
+cleaner.
+
+-Robert
+
+> Hi, Robert,
 > 
-> No. Well yes, it is not accounted, but this is not because it is
-> kthread.
+> On Mon, Sep 27, 2010 at 5:41 PM, Robert Richter <robert.richter@amd.com> wrote:
+> > On 26.09.10 20:57:03, Huang Ying wrote:
+> >> The original NMI handler is quite outdated in many aspects. This patch
+> >> try to fix it.
+> >>
+> >> The order to process the NMI sources are changed as follow:
+> >>
+> >> notify_die(DIE_NMI_IPI);
+> >> notify_die(DIE_NMI);
+> >> /* process io port 0x61 */
+> >> nmi_watchdog_touch();
+> >> notify_die(DIE_NMIUNKNOWN);
+> >> unknown_nmi();
+> >>
+> >> DIE_NMI_IPI is used to process CPU specific NMI sources, such as perf
+> >> event, oprofile, crash IPI, etc. While DIE_NMI is used to process
+> >> non-CPU-specific NMI sources, such as APEI (ACPI Platform Error
+> >> Interface) GHES (Generic Hardware Error Source), etc. Non-CPU-specific
+> >> NMI sources can be processed on any CPU,
+> >>
+> >> DIE_NMI_IPI must be processed before DIE_NMI. For example, perf event
+> >> trigger a NMI on CPU 1, at the same time, APEI GHES trigger another
+> >> NMI on CPU 0. If DIE_NMI is processed before DIE_NMI_IPI, it is
+> >> possible that APEI GHES is processed on CPU 1, while unknown NMI is
+> >> gotten on CPU 0.
+> >
+> > I think macro names DIE_NMI_IPI and DIE_NMI should be swapped as
+> > e.g. the perf nmi is actually local and non-IPI.
 > 
-> To simplify the discussion, lets talk about utime/cutime only,
-> and lets forget about the multithreading.
+> DIE_NMI_IPI may be not a good name for perf, but DIE_NMI is a even
+> worse name for perf! DIE_NMI is originally used for IOCHK and PCI SERR
+> NMI.
 > 
-> It is very simple, currently linux accounts the exiting task's
-> utime and adds its to ->cutime _only_ if parent does do_wait().
-> If parent ignores SIGCHLD, the child reaps itself and it is not
-> accounted.
+> > We might consider to rework the IPI thing completly, but may be in a
+> > follow-on patch.
+> >
+> >>
+> >> In this new order of processing, performance sensitive NMI sources
+> >> such as oprofile or perf event will have better performance because
+> >> the time consuming IO port reading is done after them.
+> >>
+> >> Only one NMI is eaten for each NMI handler call, even for PCI SERR and
+> >> IOCHK NMIs. Because one NMI should be raised for each of them, eating
+> >> too many NMI will cause unnecessary unknown NMI.
+> >>
+> >> The die value used in NMI sources are fixed accordingly.
+> >>
+> >> The NMI handler in the patch is designed by Andi Kleen.
+> >>
+> >>
+> >> v2:
+> >>
+> >> - Split process NMI reason (0x61) on non-BSP into another patch
+> >>
+> >> Signed-off-by: Huang Ying <ying.huang@intel.com>
+> >> ---
+> >>  arch/x86/kernel/cpu/perf_event.c  |    1
+> >>  arch/x86/kernel/traps.c           |   80 +++++++++++++++++++-------------------
+> >>  arch/x86/oprofile/nmi_int.c       |    1
+> >>  arch/x86/oprofile/nmi_timer_int.c |    2
+> >>  drivers/char/ipmi/ipmi_watchdog.c |    2
+> >>  drivers/watchdog/hpwdt.c          |    2
+> >>  6 files changed, 43 insertions(+), 45 deletions(-)
+> >>
+> >> --- a/arch/x86/kernel/cpu/perf_event.c
+> >> +++ b/arch/x86/kernel/cpu/perf_event.c
+> >> @@ -1247,7 +1247,6 @@ perf_event_nmi_handler(struct notifier_b
+> >>               return NOTIFY_DONE;
+> >>
+> >>       switch (cmd) {
+> >> -     case DIE_NMI:
+> >>       case DIE_NMI_IPI:
+> >
+> > See my comment above. Same is true for oprofile and some other
+> > handlers below. It isn't an IPI and should be case DIE_NMI: instead.
+> >
+> >>               break;
+> >>       case DIE_NMIUNKNOWN:
+> >> --- a/arch/x86/kernel/traps.c
+> >> +++ b/arch/x86/kernel/traps.c
+> >> @@ -354,9 +354,6 @@ io_check_error(unsigned char reason, str
+> >>  static notrace __kprobes void
+> >>  unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
+> >>  {
+> >> -     if (notify_die(DIE_NMIUNKNOWN, "nmi", regs, reason, 2, SIGINT) ==
+> >> -                     NOTIFY_STOP)
+> >> -             return;
+> >>  #ifdef CONFIG_MCA
+> >>       /*
+> >>        * Might actually be able to figure out what the guilty party
+> >> @@ -385,51 +382,54 @@ static notrace __kprobes void default_do
+> >>
+> >>       cpu = smp_processor_id();
+> >
+> > This should go to if (!cpu) and maybe we drop variable cpu completly.
 > 
-> I do not know why it was done this way, but I'm afraid we can't
-> change this historical behaviour.
-
-Ok thanks, I didn't know this. So time can disappear, if the parent
-ignores SIGCHLD.
-
-I am a bit disappointed, because I thought by looking at all tasks of a
-system it should be possible to evaluate all consumed CPU time from now
-to the time where the system has been booted. That would have been a
-nice thing.
-
-> > Ok, the problem is that I did not consider exiting threads that are no
-> > thread group leaders. When they exit the ctime of the parent is not
-> > updated. Instead the time is accumulated in the signal struct.
+> The variable cpu is dropped in 5/7.
 > 
-> I think I am a bit confused, but see above. With or without threads
-> the whole process can exit without accounting.
+> >>
+> >> -     /* Only the BSP gets external NMIs from the system. */
+> >> -     if (!cpu)
+> >> -             reason = get_nmi_reason();
+> >> +     /*
+> >> +      * CPU-specific NMI must be processed before non-CPU-specific
+> >> +      * NMI, otherwise we may lose it, because the CPU-specific
+> >> +      * NMI can not be detected/processed on other CPUs.
+> >> +      */
+> >>
+> >> -     if (!(reason & NMI_REASON_MASK)) {
+> >> -             if (notify_die(DIE_NMI_IPI, "nmi_ipi", regs, reason, 2, SIGINT)
+> >> -                                                             == NOTIFY_STOP)
+> >> -                     return;
+> >> +     /*
+> >> +      * CPU-specific NMI: send to specific CPU or NMI sources must
+> >> +      * be processed on specific CPU
+> >> +      */
+> >> +     if (notify_die(DIE_NMI_IPI, "nmi_ipi", regs, 0, 2, SIGINT)
+> >> +         == NOTIFY_STOP)
+> >> +             return;
+> >>
+> >> -#ifdef CONFIG_X86_LOCAL_APIC
+> >
+> > Are you sure we may drop this option?
+> 
+> Yes. DIE_NMI is used for non-CPU-specific NMI sources now.
+> 
+> >> -             if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT)
+> >> -                                                     == NOTIFY_STOP)
+> >> -                     return;
+> >> +     /* Non-CPU-specific NMI: NMI sources can be processed on any CPU */
+> >> +     if (notify_die(DIE_NMI, "nmi", regs, 0, 2, SIGINT) == NOTIFY_STOP)
+> >> +             return;
+> >
+> > As said, IPI and non-IPI are mixed up.
+> 
+> They are processed one after the other.
+> 
+> >>
+> >> -#ifndef CONFIG_LOCKUP_DETECTOR
+> >> -             /*
+> >> -              * Ok, so this is none of the documented NMI sources,
+> >> -              * so it must be the NMI watchdog.
+> >> -              */
+> >> -             if (nmi_watchdog_tick(regs, reason))
+> >> -                     return;
+> >> -             if (!do_nmi_callback(regs, cpu))
+> >> -#endif /* !CONFIG_LOCKUP_DETECTOR */
+> >> -                     unknown_nmi_error(reason, regs);
+> >> -#else
+> >> -             unknown_nmi_error(reason, regs);
+> >> +     if (!cpu) {
+> >> +             reason = get_nmi_reason();
+> >> +             if (reason & NMI_REASON_MASK) {
+> >> +                     if (reason & NMI_REASON_SERR)
+> >> +                             pci_serr_error(reason, regs);
+> >> +                     else if (reason & NMI_REASON_IOCHK)
+> >> +                             io_check_error(reason, regs);
+> >> +#ifdef CONFIG_X86_32
+> >> +                     /*
+> >> +                      * Reassert NMI in case it became active
+> >> +                      * meanwhile as it's edge-triggered:
+> >> +                      */
+> >> +                     reassert_nmi();
+> >>  #endif
+> >> +                     return;
+> >> +             }
+> >> +     }
+> >>
+> >> +#if defined(CONFIG_X86_LOCAL_APIC) && !defined(CONFIG_LOCKUP_DETECTOR)
+> >> +     if (nmi_watchdog_tick(regs, reason))
+> >>               return;
+> >> -     }
+> >> -     if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT) == NOTIFY_STOP)
+> >> +     if (do_nmi_callback(regs, smp_processor_id()))
+> >>               return;
+> >> -
+> >> -     /* AK: following checks seem to be broken on modern chipsets. FIXME */
+> >> -     if (reason & NMI_REASON_SERR)
+> >> -             pci_serr_error(reason, regs);
+> >> -     if (reason & NMI_REASON_IOCHK)
+> >> -             io_check_error(reason, regs);
+> >> -#ifdef CONFIG_X86_32
+> >> -     /*
+> >> -      * Reassert NMI in case it became active meanwhile
+> >> -      * as it's edge-triggered:
+> >> -      */
+> >> -     reassert_nmi();
+> >>  #endif
+> >> +
+> >> +     if (notify_die(DIE_NMIUNKNOWN, "nmi_unknown", regs, reason, 2, SIGINT)
+> >> +         == NOTIFY_STOP)
+> >> +             return;
+> >> +
+> >> +     unknown_nmi_error(reason, regs);
+> >>  }
+> >>
+> >>  dotraplinkage notrace __kprobes void
+> >> --- a/arch/x86/oprofile/nmi_int.c
+> >> +++ b/arch/x86/oprofile/nmi_int.c
+> >> @@ -64,7 +64,6 @@ static int profile_exceptions_notify(str
+> >>       int ret = NOTIFY_DONE;
+> >>
+> >>       switch (val) {
+> >> -     case DIE_NMI:
+> >>       case DIE_NMI_IPI:
+> >>               if (ctr_running)
+> >>                       model->check_ctrs(args->regs, &__get_cpu_var(cpu_msrs));
+> >> --- a/arch/x86/oprofile/nmi_timer_int.c
+> >> +++ b/arch/x86/oprofile/nmi_timer_int.c
+> >> @@ -25,7 +25,7 @@ static int profile_timer_exceptions_noti
+> >>       int ret = NOTIFY_DONE;
+> >>
+> >>       switch (val) {
+> >> -     case DIE_NMI:
+> >> +     case DIE_NMI_IPI:
+> >>               oprofile_add_sample(args->regs, 0);
+> >>               ret = NOTIFY_STOP;
+> >>               break;
+> >> --- a/drivers/char/ipmi/ipmi_watchdog.c
+> >> +++ b/drivers/char/ipmi/ipmi_watchdog.c
+> >> @@ -1080,7 +1080,7 @@ ipmi_nmi(struct notifier_block *self, un
+> >>  {
+> >>       struct die_args *args = data;
+> >>
+> >> -     if (val != DIE_NMI)
+> >> +     if (val != DIE_NMIUNKNOWN)
+> 
+> All watchdogs use DIE_NMIUNKNOWN in this patch. Because they should be
+> processed after CPU specific and non-CPU-specific NMIs. Or we define a
+> special DIE_NMI_XX for it? like DIE_NMI_WATCHDOG?
+> 
+> Best Regards,
+> Huang Ying
+> 
 
-Sorry that I couldn't explain my thoughts clear enough, believe me, I
-tried my best :-)
-
-Michael
-
-
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
