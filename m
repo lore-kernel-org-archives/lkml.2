@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759517Ab0I0RFJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 13:05:09 -0400
-Received: from shakespeare.ccsl.carleton.ca ([134.117.225.11]:32771 "EHLO
-	shakespeare.ccsl.carleton.ca" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756459Ab0I0RFH (ORCPT
+	id S1759732Ab0I0RFV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 13:05:21 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57187 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759406Ab0I0RFT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 13:05:07 -0400
-Date: Mon, 27 Sep 2010 13:04:30 -0400
-From: Glenn Wurster <gwurster@scs.carleton.ca>
-To: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH linux-2.6 v2] IPv6:  Create temporary address if none
-	exists.
-Message-ID: <20100927170430.GA7106@adams.ccsl.carleton.ca>
+	Mon, 27 Sep 2010 13:05:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Ksv3s/3GlO+k51YNaPDCqsQel5aC2I9cOa4qZVF7FZrX1ymEZIMGj99G3b/jdAPQow
+         nYpaZ7K3f3epo/djb4yrr0NWnge+NH0iOkkCXeuDYshLVSBmQlZwaa5TIyVyt2unq7Hr
+         PyggViTRZ4YQCQj93vlAo5rwZw+IJq2e/9vec=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-TUID: 74e835a4da6b3e7d
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100927013152.GA21139@suse.de>
+References: <20100927003608.GA20395@kroah.com>
+	<AANLkTikHtuXhMtjudLTUMPR7uL9eGGePUP93MqFLTfb5@mail.gmail.com>
+	<20100927013152.GA21139@suse.de>
+Date: Mon, 27 Sep 2010 20:05:17 +0300
+Message-ID: <AANLkTim9hkqCbndaaNT3wME6tj+bvpVE6GrgibZjNO5G@mail.gmail.com>
+Subject: Re: Linux 2.6.35.6
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If privacy extentions are enabled, but no current temporary address exists,
-then create one when we get a router advertisement.
+On Mon, Sep 27, 2010 at 4:31 AM, Greg KH <gregkh@suse.de> wrote:
+> On Mon, Sep 27, 2010 at 04:00:51AM +0300, Felipe Contreras wrote:
+>> Can you add a 'master' branch that points to the latest tag? That
+>> would make things easier for other people, specially the ones that
+>> just do 'git pull'.
+>
+> I don't understand, this works for me this way, the master branch _is_
+> the latest version at all times.  Did you just need to wait a few
+> minutes to have the mirror catch up?
 
-Version 2, now with 100% fewer line wraps.  Thanks to David Miller for
-pointing out the line wrapping issue.
+It wasn't about timing: 'git branch -a' didn't show any remote branch.
+Anyway, I tried cloning from scratch, and cloning with a template and
+the branch was there. Also, I tried removing and creating the remote
+again and voila; the branch is not there. But have been a weird git
+bug.
 
-Signed-off-by: Glenn Wurster <gwurster@scs.carleton.ca>
----
- net/ipv6/addrconf.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+Sorry for the noise.
 
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index ab70a3f..cfee6ae 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -2022,10 +2022,11 @@ ok:
- 					ipv6_ifa_notify(0, ift);
- 			}
- 
--			if (create && in6_dev->cnf.use_tempaddr > 0) {
-+			if ((create || list_empty(&in6_dev->tempaddr_list)) && in6_dev->cnf.use_tempaddr > 0) {
- 				/*
- 				 * When a new public address is created as described in [ADDRCONF],
--				 * also create a new temporary address.
-+				 * also create a new temporary address. Also create a temporary
-+				 * address if it's enabled but no temporary address currently exists.
- 				 */
- 				read_unlock_bh(&in6_dev->lock);
- 				ipv6_create_tempaddr(ifp, NULL);
 -- 
-1.5.6.5
-
-
+Felipe Contreras
