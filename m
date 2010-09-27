@@ -1,104 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759407Ab0I0OTc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 10:19:32 -0400
-Received: from mtagate7.uk.ibm.com ([194.196.100.167]:33628 "EHLO
-	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759023Ab0I0OTa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 10:19:30 -0400
-Date: Mon, 27 Sep 2010 16:19:23 +0200
-From: Christof Schmitt <christof.schmitt@de.ibm.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Brian King <brking@linux.vnet.ibm.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        James Smart <james.smart@emulex.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
-        Christoph Hellwig <hch@lst.de>,
-        MPTFusionLinux <DL-MPTFusionLinux@lsi.com>,
-        "eata.c maintainer" <dario.ballabio@inwind.it>
-Subject: Re: [RFC v3 01/15] scsi: Drop struct Scsi_Host->host_lock usage in
- scsi_dispatch_cmd()
-Message-ID: <20100927141923.GC8473@schmichrtp.mainz.de.ibm.com>
-References: <1285285052-16351-1-git-send-email-nab@linux-iscsi.org>
- <4C9CAA80.1030702@linux.vnet.ibm.com>
- <1285361040.1849.235.camel@haakon2.linux-iscsi.org>
+	id S1759462Ab0I0OW3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 10:22:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42248 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755997Ab0I0OW1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 10:22:27 -0400
+Date: Mon, 27 Sep 2010 10:21:49 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        linux-ide@vger.kernel.org
+Subject: Re: hibernation hangs with ATA errors (lockup_detector bug)
+Message-ID: <20100927142149.GV26290@redhat.com>
+References: <4C03C608.1040600@gmail.com>
+ <20100601135004.GP15159@redhat.com>
+ <4C051D44.7040203@gmail.com>
+ <20100602184459.GA15159@redhat.com>
+ <4C0B3E94.6020506@gmail.com>
+ <4C80B338.6020701@gmail.com>
+ <20100903135613.GV4879@redhat.com>
+ <4C9CBF4A.9060302@gmail.com>
+ <20100924191946.GS26290@redhat.com>
+ <4C9E4DDB.6070503@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1285361040.1849.235.camel@haakon2.linux-iscsi.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4C9E4DDB.6070503@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 24, 2010 at 01:44:00PM -0700, Nicholas A. Bellinger wrote:
-> On Fri, 2010-09-24 at 08:41 -0500, Brian King wrote:
-> > On 09/23/2010 06:37 PM, Nicholas A. Bellinger wrote:
-> > > @@ -651,7 +655,6 @@ static inline void scsi_cmd_get_serial(struct Scsi_Host *host, struct scsi_cmnd
-> > >  int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
-> > >  {
-> > >  	struct Scsi_Host *host = cmd->device->host;
-> > > -	unsigned long flags = 0;
-> > >  	unsigned long timeout;
-> > >  	int rtn = 0;
-> > > 
-> > > @@ -736,15 +739,11 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
-> > >  		scsi_done(cmd);
-> > >  		goto out;
-> > >  	}
-> > > -
-> > > -	spin_lock_irqsave(host->host_lock, flags);
-> > >  	/*
-> > > -	 * AK: unlikely race here: for some reason the timer could
-> > > -	 * expire before the serial number is set up below.
-> > > -	 *
-> > > -	 * TODO: kill serial or move to blk layer
-> > > +	 * Note that scsi_cmd_get_serial() used to be called here, but
-> > > +	 * now we expect the legacy SCSI LLDs that actually need this
-> > > +	 * to call it directly within their SHT->queuecommand() caller.
-> > >  	 */
-> > > -	scsi_cmd_get_serial(host, cmd); 
-> > > 
-> > >  	if (unlikely(host->shost_state == SHOST_DEL)) {
-> > >  		cmd->result = (DID_NO_CONNECT << 16);
-> > > @@ -753,7 +752,7 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
-> > >  		trace_scsi_dispatch_cmd_start(cmd);
-> > >  		rtn = host->hostt->queuecommand(cmd, scsi_done);
-> > >  	}
-> > > -	spin_unlock_irqrestore(host->host_lock, flags);
-> > > +
-> > >  	if (rtn) {
-> > >  		trace_scsi_dispatch_cmd_error(cmd, rtn);
-> > >  		if (rtn != SCSI_MLQUEUE_DEVICE_BUSY &&
-> > 
-> > Are you planning a future revision that moves the acquiring of the host lock
-> > into the LLDD's queuecommand for all the other drivers you don't currently
-> > touch in this patch set?
-> > 
+On Sat, Sep 25, 2010 at 10:30:35PM +0300, Jiri Slaby wrote:
+> On 09/24/2010 10:19 PM, Don Zickus wrote:
+> > Actually there seems to have been some clean up in the cpu hotplug error
+> > handling code.  Could you remove that snippet of code and see if the
+> > problem still happens?
 > 
-> Hi Brian,
+> The thing is I don't remember what problems exactly I had. From the
+> description I wrote, I cannot reproduce it anymore :).
 > 
-> I was under the impression that this would be unnecessary for the vast
-> majority of existing LLD drivers, but if you are aware of specific LLDs
-> that would still need the struct Scsi_Host->host_lock held in their
-> SHT->queuecommand() for whaterver reason please let me know and I would
-> be happy to include this into an RFCv4.
-> 
-> Thanks for your comments!
+> thanks for looking into that,
 
-zfcp relies on having the interrupts disabled when calling
-queuecommand. Without the spin_lock_irqsave in scsi_dispatch_cmd, the
-locking in zfcp_fsf_send_fcp_command_task has to be changed from
-spin_lock(&qdio->req_q_lock) to spin_lock_irqsave. It is a simple
-change, but other drivers might have similar requirements.
+ok. :-)  Let me know if it pops up again.
 
-Christof
+Cheers,
+Don
