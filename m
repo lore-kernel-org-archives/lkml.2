@@ -1,47 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758763Ab0I0CMg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 22:12:36 -0400
-Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:49674 "EHLO
-	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758099Ab0I0CMf (ORCPT
+	id S1758767Ab0I0CRY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 22:17:24 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54726 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757773Ab0I0CRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 22:12:35 -0400
-From: matt mooney <mfm@muteddisk.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [PATCH] kbuild: remove duplicate -I flag in addtree
-Date: Sun, 26 Sep 2010 19:11:12 -0700
-Message-Id: <1285553472-924-1-git-send-email-mfm@muteddisk.com>
-X-Mailer: git-send-email 1.6.4.2
+	Sun, 26 Sep 2010 22:17:22 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH] mm: do not print backtraces on GFP_ATOMIC failures
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+In-Reply-To: <1285088427.2617.723.camel@edumazet-laptop>
+References: <20100921094638.9910add0.akpm@linux-foundation.org> <1285088427.2617.723.camel@edumazet-laptop>
+Message-Id: <20100927110723.6B37.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Mon, 27 Sep 2010 11:17:19 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When O= is used, any -I flag given that is not an absolute path gets
-duplicated. The $(1) appended to the conditional clause covers the
-absolute case, but due to being outside of the conditional statement
-it gets added everytime.
+> > > @@ -72,7 +72,7 @@ struct vm_area_struct;
+> > >  /* This equals 0, but use constants in case they ever change */
+> > >  #define GFP_NOWAIT	(GFP_ATOMIC & ~__GFP_HIGH)
+> > >  /* GFP_ATOMIC means both !wait (__GFP_WAIT not set) and use emergency pool */
+> > > -#define GFP_ATOMIC	(__GFP_HIGH)
+> > > +#define GFP_ATOMIC	(__GFP_HIGH | __GFP_NOWARN)
+> > >  #define GFP_NOIO	(__GFP_WAIT)
+> > >  #define GFP_NOFS	(__GFP_WAIT | __GFP_IO)
+> > >  #define GFP_KERNEL	(__GFP_WAIT | __GFP_IO | __GFP_FS)
+> > 
+> > A much finer-tuned implementation would be to add __GFP_NOWARN just to
+> > the networking call sites.  I asked about this in June and it got
+> > nixed:
+> > 
+> > http://www.spinics.net/lists/netdev/msg131965.html
+> > --
+> 
+> Yes, I remember this particular report was useful to find and correct a
+> bug.
+> 
+> I dont know what to say.
+> 
+> Being silent or verbose, it really depends on the context ?
 
-Signed-off-by: matt mooney <mfm@muteddisk.com>
----
- scripts/Kbuild.include |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+At least, MM developers don't want to track network allocation failure
+issue. We don't have enough knowledge in this area. To be honest, We 
+are unhappy current bad S/N bug report rate ;)
 
-diff --git a/scripts/Kbuild.include b/scripts/Kbuild.include
-index ed2773e..08c74ed 100644
---- a/scripts/Kbuild.include
-+++ b/scripts/Kbuild.include
-@@ -158,7 +158,7 @@ modbuiltin := -f $(if $(KBUILD_SRC),$(srctree)/)scripts/Makefile.modbuiltin obj
- # Prefix -I with $(srctree) if it is not an absolute path.
- # skip if -I has no parameter
- addtree = $(if $(patsubst -I%,%,$(1)), \
--$(if $(filter-out -I/%,$(1)),$(patsubst -I%,-I$(srctree)/%,$(1))) $(1))
-+$(if $(filter-out -I/%,$(1)),$(patsubst -I%,-I$(srctree)/%,$(1)),$(1)))
- 
- # Find all -I options and call addtree
- flags = $(foreach o,$($(1)),$(if $(filter -I%,$(o)),$(call addtree,$(o)),$(o)))
--- 
-1.7.2.1
+Traditionally, We hoped this warnings help to debug VM issue. but
+It haven't happen. We haven't detect VM issue from this allocation
+failure report. Instead, We've received a lot of network allocation
+failure report.
+
+Recently, The S/N ratio became more bad. If the network device enable
+jumbo frame feature, order-2 GFP_ATOMIC allocation is called frequently.
+Anybody don't have to assume order-2 allocation can success anytime.
+
+I'm not against accurate warning at all. but I cant tolerate this
+semi-random warning steal our time. If anyone will not make accurate
+warning, I hope to remove this one completely instead.
+
+
+
+
 
