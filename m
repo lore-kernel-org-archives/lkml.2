@@ -1,54 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933426Ab0I0TU3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 15:20:29 -0400
-Received: from mail.agmk.net ([91.192.224.71]:59129 "EHLO mail.agmk.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755885Ab0I0TU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 15:20:28 -0400
-X-Greylist: delayed 1726 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Sep 2010 15:20:27 EDT
-From: =?utf-8?q?Pawe=C5=82_Sikora?= <pluto@agmk.net>
-To: linux-kernel@vger.kernel.org
-Subject: git bisect selects commit outside initial bisect range?
-Date: Mon, 27 Sep 2010 20:51:33 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.34-rc6-00551-g7a6cb0d; KDE/4.5.1; x86_64; ; )
+	id S933451Ab0I0TVY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 15:21:24 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:34667 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933439Ab0I0TVX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 15:21:23 -0400
+Message-ID: <4CA0EEA8.4050009@austin.ibm.com>
+Date: Mon, 27 Sep 2010 14:21:12 -0500
+From: Nathan Fontenot <nfont@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org
+CC: Greg KH <greg@kroah.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH 1/8] v2 Move find_memory_block() routine
+References: <4CA0EBEB.1030204@austin.ibm.com>
+In-Reply-To: <4CA0EBEB.1030204@austin.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009272051.33882.pluto@agmk.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
+Move the find_memory_block() routine up to avoid needing a forward
+declaration in subsequent patches.
 
-i've noticed on kernel 2.6.35.y some weird screen blinking during
-e.g. <alt-tab> on kde4 with enabled accelerated desktop effects.
+Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 
-i've started git bisect between good-v2.6.34 and bad-v2.6.35-rc1
-and after few steps git-bisect jumps to commit before v2.6.34.
+---
+ drivers/base/memory.c |   62 +++++++++++++++++++++++++-------------------------
+ 1 file changed, 31 insertions(+), 31 deletions(-)
 
-[~/src/linux/linux-2.6]$ make kernelrelease
-2.6.34-rc6-00551-g7a6cb0d
+Index: linux-next/drivers/base/memory.c
+===================================================================
+--- linux-next.orig/drivers/base/memory.c	2010-09-21 11:59:24.000000000 -0500
++++ linux-next/drivers/base/memory.c	2010-09-21 12:32:45.000000000 -0500
+@@ -435,6 +435,37 @@ int __weak arch_get_memory_phys_device(u
+ 	return 0;
+ }
+ 
++/*
++ * For now, we have a linear search to go find the appropriate
++ * memory_block corresponding to a particular phys_index. If
++ * this gets to be a real problem, we can always use a radix
++ * tree or something here.
++ *
++ * This could be made generic for all sysdev classes.
++ */
++struct memory_block *find_memory_block(struct mem_section *section)
++{
++	struct kobject *kobj;
++	struct sys_device *sysdev;
++	struct memory_block *mem;
++	char name[sizeof(MEMORY_CLASS_NAME) + 9 + 1];
++
++	/*
++	 * This only works because we know that section == sysdev->id
++	 * slightly redundant with sysdev_register()
++	 */
++	sprintf(&name[0], "%s%d", MEMORY_CLASS_NAME, __section_nr(section));
++
++	kobj = kset_find_obj(&memory_sysdev_class.kset, name);
++	if (!kobj)
++		return NULL;
++
++	sysdev = container_of(kobj, struct sys_device, kobj);
++	mem = container_of(sysdev, struct memory_block, sysdev);
++
++	return mem;
++}
++
+ static int add_memory_block(int nid, struct mem_section *section,
+ 			unsigned long state, enum mem_add_context context)
+ {
+@@ -468,37 +499,6 @@ static int add_memory_block(int nid, str
+ 	return ret;
+ }
+ 
+-/*
+- * For now, we have a linear search to go find the appropriate
+- * memory_block corresponding to a particular phys_index. If
+- * this gets to be a real problem, we can always use a radix
+- * tree or something here.
+- *
+- * This could be made generic for all sysdev classes.
+- */
+-struct memory_block *find_memory_block(struct mem_section *section)
+-{
+-	struct kobject *kobj;
+-	struct sys_device *sysdev;
+-	struct memory_block *mem;
+-	char name[sizeof(MEMORY_CLASS_NAME) + 9 + 1];
+-
+-	/*
+-	 * This only works because we know that section == sysdev->id
+-	 * slightly redundant with sysdev_register()
+-	 */
+-	sprintf(&name[0], "%s%d", MEMORY_CLASS_NAME, __section_nr(section));
+-
+-	kobj = kset_find_obj(&memory_sysdev_class.kset, name);
+-	if (!kobj)
+-		return NULL;
+-
+-	sysdev = container_of(kobj, struct sys_device, kobj);
+-	mem = container_of(sysdev, struct memory_block, sysdev);
+-
+-	return mem;
+-}
+-
+ int remove_memory_block(unsigned long node_id, struct mem_section *section,
+ 		int phys_device)
+ {
 
-[~/src/linux/linux-2.6]$ git bisect log
-git bisect start
-# good: [e40152ee1e1c7a63f4777791863215e3faa37a86] Linus 2.6.34
-git bisect good e40152ee1e1c7a63f4777791863215e3faa37a86
-# bad: [67a3e12b05e055c0415c556a315a3d3eb637e29e] Linux 2.6.35-rc1
-git bisect bad 67a3e12b05e055c0415c556a315a3d3eb637e29e
-# good: [f8965467f366fd18f01feafb5db10512d7b4422c] Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next-2.6
-git bisect good f8965467f366fd18f01feafb5db10512d7b4422c
-# bad: [d79df0b1eda0099a22cbcece01ce5e7d222450de] Merge git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging-2.6
-git bisect bad d79df0b1eda0099a22cbcece01ce5e7d222450de
-# good: [ac3ee84c604502240122c47b52f0542ec8774f15] Merge branch 'dbg-early-merge' of git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb
-git bisect good ac3ee84c604502240122c47b52f0542ec8774f15
-
-is it normal that bisect selects next step outside initial range?
-
-BR,
-Pawel.
-
-ps).
-please CC me on reply.
