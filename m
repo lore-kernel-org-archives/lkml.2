@@ -1,75 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760289Ab0I0WfV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 18:35:21 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:36006 "EHLO
-	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760265Ab0I0WfU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 18:35:20 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzzz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L9FG2K-01-ECB-02
-X-M-MSG: 
-Date: Tue, 28 Sep 2010 00:35:07 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Don Zickus <dzickus@redhat.com>
-CC: huang ying <huang.ying.caritas@gmail.com>,
-        Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v2 4/7] x86, NMI, Rewrite NMI handler
-Message-ID: <20100927223507.GW13563@erda.amd.com>
-References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
- <1285549026-5008-4-git-send-email-ying.huang@intel.com>
- <20100927094136.GB32222@erda.amd.com>
- <AANLkTimTg1uqXdAJ+GyZ3_B6n2xKWdqFL96jvv18JBM+@mail.gmail.com>
- <20100927132537.GO13563@erda.amd.com>
- <20100927152916.GZ26290@redhat.com>
- <20100927174057.GU13563@erda.amd.com>
- <20100927191433.GG26290@redhat.com>
+	id S1760297Ab0I0WgL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 18:36:11 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45907 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760265Ab0I0WgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 18:36:09 -0400
+Date: Tue, 28 Sep 2010 00:35:15 +0200
+From: Jan Kara <jack@suse.cz>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Jan Kara <jack@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>,
+        Lennart Poettering <lennart@poettering.net>
+Subject: Re: Request starvation with CFQ
+Message-ID: <20100927223515.GH3610@quack.suse.cz>
+References: <20100927190024.GF3610@quack.suse.cz>
+ <20100927200232.GA2377@redhat.com>
+ <4CA114F8.8000102@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100927191433.GG26290@redhat.com>
+In-Reply-To: <4CA114F8.8000102@fusionio.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.09.10 15:14:33, Don Zickus wrote:
-> Actually, looking through the handlers, by introducing priorities means
-> that people have to register multiple handlers to deal with the different
-> priorities.
+On Tue 28-09-10 07:04:40, Jens Axboe wrote:
+> On 2010-09-28 05:02, Vivek Goyal wrote:
+> > On Mon, Sep 27, 2010 at 09:00:24PM +0200, Jan Kara wrote:
+> >>   Hi,
+> >>
+> >>   when helping Lennart with answering some questions, I've spotted the
+> >> following problem (at least I think it's a problem ;): The thing is that
+> >> CFQ schedules how requests should be dispatched but does not in any
+> >> significant way limit to whom requests get allocated. Given we have a
+> >> quite limited pool of available requests it can happen that processes
+> >> will be actually starved not waiting for disk but waiting for requests
+> >> getting allocated and any IO scheduling priorities or classes will not
+> >> have serious effect.
+> >>   A pathological example I've tried below:
+> >> #include <fcntl.h>
+> >> #include <stdio.h>
+> >> #include <stdlib.h>
+> >> #include <sys/stat.h>
+> >>
+> >> int main(void)
+> >> {
+> >>   int fd = open("/dev/vdb", O_RDONLY);
+> >>   int loop = 0;
+> >>
+> >>   if (fd < 0) {
+> >>     perror("open");
+> >>     exit(1);
+> >>   }
+> >>   while (1) {
+> >>     if (loop % 100 == 0)
+> >>       printf("Loop %d\n", loop);
+> >>     posix_fadvise(fd, (random() * 4096) % 1000204886016ULL, 4096, POSIX_FADV_WILLNEED);
+> >>     loop++;
+> >>   }
+> >> }
+> >>
+> >>   This program will just push as many requests as possible to the block
+> >> layer and does not wait for any IO. Thus it will basically ignore any
+> >> decisions about when requests get dispatched. BTW, don't get distracted
+> >> by the fact that the program operates directly on the device, that is just
+> >> for simplicity. Large enough file would work the same way.
+> >>   Even though I run this program with ionice -c 3, I still see that any
+> >> other IO to the device is basically stalled. When I look at the block
+> >> traces, I indeed see that what happens is that the above program submits
+> >> requests until there are no more available:
+<snip>
+> >>   I can provide the full traces for download if someone is interested
+> >> in some part I didn't include here. The kernel is 2.6.36-rc4.
+> >>   Now I agree that the above program is about as bad as it can get but
+> >> Lennart would like to implement readahead during boot on background and
+> >> I believe that could starve other IO in a similar way. So any idea how
+> >> to solve this? To me it seems as if we also needed to somehow limit the
+> >> number of allocated requests per cfqq but OTOH we have to be really careful
+> >> to not harm common workloads where we benefit from having lots of requests
+> >> queued...
+> > 
+> > Hi Jan,
+> > 
+> > True that during request allocation, there is no consideration for ioprio.
+> > I think the whole logic is round robin, where after getting a bunch of
+> > request each process is put to sleep in the queue and then we do round
+> > robin on all waiters. This should in general be an issue with request
+> > queue and not just CFQ.
+> > 
+> > So if there are bunch of threads which are very bullish on doing IO, and 
+> > there is a dependent reader, read latencies will shoot up.
+> > 
+> > In fact current implementation of blkio controller also suffers with this
+> > limitation because we don't yet have per group request descriptors and
+> > once request queue is congested, requests from one group can get stuck
+> > behind the requests from other group.
+> > 
+> > One way forward could be to implement per cgroup request descriptors and
+> > put this readahead thread into a separate cgroup of low weight.
+> > 
+> > Other could be to implemnet some kind of request quota per priority level.
+> > This is similar to per cgroup quota I talked above, just one level below.
+> > 
+> > Third could be ad-hoc way of putting some limit on per cfqq. But I think a
+> > process can easily circumvent that by forking off child which are not
+> > sharing cfq context and then we are back to same situaiton.
+> > 
+> > A very hackish solution could be to try to increase nr_requests on the 
+> > queue to say 1024. This will work only if you know that read-ahead process
+> > does some limited amount of read-ahead and does not overwhelm the queue
+> > with more than 1024 requets.  And then use ioprio with low prio for
+> > read-ahead process.
 > 
-> For example, perf would need two handlers, one for DIE_NMI and one for
-> DIE_NMIUNKOWN.  I am not sure that is the way to go.
+> I don't think that is necessarily hackish. The current rq allocation
+> batching and accounting is pretty horrible imho, in fact in recent
+> patches I ripped that out. The vm copes a lot better with larger depths
+> these days, so what I want to add is just a per-ioc queue limit instead.
+  So no per-queue request limit? Since ioc is per-process if I'm right,
+that would solve the problem quite nicely. Thanks for info.
 
-Ok, this could be a problem for handlers dealing with both DIE_NMI and
-DIE_NMI_UNKNOW. But without priorities as it is implemented now, the
-handlers are called in registration order or even without any order.
-So I don't think we need this fine grained priorities for different
-cases. If we have priorities, the order would be always the same for
-all chains, which should be fine for most cases.
-
-> I would be inclined to leave the patch as is until we can come up with a
-> better way to handle the priorities.
-> 
-> Though I agree that DIE_NMI_IPI isn't a great name (doesn't it all go
-> through the local apic?), it isn't being introduced with this patch.
-> 
-> Thoughts?
-
-At least we should give the above a try. If it turns out it is not as
-easy as I think, the still can fall back. But if we could finally get
-rid of DIE_NMI_IPI, this would eas much.
-
--Robert
-
+								Honza
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
