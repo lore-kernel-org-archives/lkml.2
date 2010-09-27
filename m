@@ -1,100 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760156Ab0I0UEQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 16:04:16 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50666 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755947Ab0I0UEO (ORCPT
+	id S933540Ab0I0UFc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 16:05:32 -0400
+Received: from server109-228-6-235.live-servers.net ([109.228.6.235]:58438
+	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755947Ab0I0UFb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 16:04:14 -0400
-Date: Mon, 27 Sep 2010 13:02:56 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: holzheu@linux.vnet.ibm.com
-Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Oleg Nesterov <oleg@redhat.com>, John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: [RFC][PATCH 00/10] taskstats: Enhancements for precise
- accounting
-Message-Id: <20100927130256.5d9a3db8.akpm@linux-foundation.org>
-In-Reply-To: <1285579127.2116.62.camel@holzheu-laptop>
-References: <1285249681.1837.28.camel@holzheu-laptop>
-	<20100923131136.356075f4.akpm@linux-foundation.org>
-	<1285319415.2179.116.camel@holzheu-laptop>
-	<20100924115002.fcb4385a.akpm@linux-foundation.org>
-	<1285579127.2116.62.camel@holzheu-laptop>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 27 Sep 2010 16:05:31 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Matt Mackall <mpm@selenic.com>, Andrew Morton <akpm@linux-foundation.org>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Dave Airlie <airlied@redhat.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [PATCH] drm: Prune GEM vma entries
+Date: Mon, 27 Sep 2010 21:08:36 +0100
+Message-Id: <1285618116-10086-1-git-send-email-chris@chris-wilson.co.uk>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20100927115207.633024b1.akpm@linux-foundation.org>
+References: <20100927115207.633024b1.akpm@linux-foundation.org>
+X-Originating-IP: 78.156.66.37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Sep 2010 11:18:47 +0200
-Michael Holzheu <holzheu@linux.vnet.ibm.com> wrote:
+Hook the GEM vm open/close ops into the generic drm vm open/close so
+that the vma entries are created and destroy appropriately.
 
-> Hello Andrew,
-> 
-> On Fri, 2010-09-24 at 11:50 -0700, Andrew Morton wrote:
-> > > > This is a big change!  If this is done right then we're heading in the
-> > > > direction of deprecating the longstanding way in which userspace
-> > > > observes the state of Linux processes and we're recommending that the
-> > > > whole world migrate to taskstats.  I think?
-> > > 
-> > > Or it can be used as alternative. Since procfs has its drawbacks (e.g.
-> > > performance) an alternative could be helpful. 
-> > 
-> > And it can be harmful.  More kernel code to maintain and test, more
-> > userspace code to develop, maintain, etc.  Less user testing than if
-> > there was a single interface.
-> 
-> Sure, the value has to be big enough to justify the effort.
-> 
-> But as I said, with taskstats and procfs we already have two interfaces
-> for getting task information.
+Reported-by: Matt Mackall <mpm@selenic.com>
+Cc: Dave Airlie <airlied@redhat.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+---
+ drivers/gpu/drm/drm_gem.c |    9 ++++++++-
+ drivers/gpu/drm/drm_vm.c  |   28 ++++++++++++++++++----------
+ include/drm/drmP.h        |    1 +
+ 3 files changed, 27 insertions(+), 11 deletions(-)
 
-That doesn't mean it was the right thing to do!  For the reasons I
-outline above, it can be the wrong thing to do and strengthening one of
-the alternatives worsens the problem.
-
-> Currently in procfs there is information
-> than you can't find in taskstats. But also the other way round in the
-> taskstats structure there is very useful information that you can't get
-> under proc. E.g. the task delay times, IO accounting, etc.
-
-Sounds like a big screwup ;)
-
-Look at it this way: if you were going to sit down and start to design
-a new operating system from scratch, would you design the task status
-reporting system as it currently stands in Linux?  Don't think so!
-
-> So currently
-> tools have to use both interfaces to get all information, which is not
-> optimal.
-> 
-> > > 
-> > > > I worry that there's a dependency on CONFIG_NET?  If so then that's a
-> > > > big problem because in N years time, 99% of the world will be using
-> > > > taskstats, but a few embedded losers will be stuck using (and having to
-> > > > support) the old tools.
-> > > 
-> > > Sure, but if we could add the /proc/taskstats approach, this dependency
-> > > would not be there.
-> > 
-> > So why do we need to present the same info over netlink?
-> 
-> Good point. It is not really necessary. I started development using the
-> netlink code. Therefore I first added the new command in the netlink
-> code. I also thought, it would be a good idea to provide all netlink
-> commands over the procfs interface to be consistent.
-
-Maybe we should have delivered taskstats over procfs from day one.
+diff --git a/drivers/gpu/drm/drm_gem.c b/drivers/gpu/drm/drm_gem.c
+index bf92d07..6fe2cd2 100644
+--- a/drivers/gpu/drm/drm_gem.c
++++ b/drivers/gpu/drm/drm_gem.c
+@@ -528,6 +528,10 @@ void drm_gem_vm_open(struct vm_area_struct *vma)
+ 	struct drm_gem_object *obj = vma->vm_private_data;
+ 
+ 	drm_gem_object_reference(obj);
++
++	mutex_lock(&obj->dev->struct_mutex);
++	drm_vm_open_locked(vma);
++	mutex_unlock(&obj->dev->struct_mutex);
+ }
+ EXPORT_SYMBOL(drm_gem_vm_open);
+ 
+@@ -535,7 +539,10 @@ void drm_gem_vm_close(struct vm_area_struct *vma)
+ {
+ 	struct drm_gem_object *obj = vma->vm_private_data;
+ 
+-	drm_gem_object_unreference_unlocked(obj);
++	mutex_lock(&obj->dev->struct_mutex);
++	drm_vm_close_locked(vma);
++	drm_gem_object_unreference(obj);
++	mutex_unlock(&obj->dev->struct_mutex);
+ }
+ EXPORT_SYMBOL(drm_gem_vm_close);
+ 
+diff --git a/drivers/gpu/drm/drm_vm.c b/drivers/gpu/drm/drm_vm.c
+index fda6746..5df4506 100644
+--- a/drivers/gpu/drm/drm_vm.c
++++ b/drivers/gpu/drm/drm_vm.c
+@@ -433,15 +433,7 @@ static void drm_vm_open(struct vm_area_struct *vma)
+ 	mutex_unlock(&dev->struct_mutex);
+ }
+ 
+-/**
+- * \c close method for all virtual memory types.
+- *
+- * \param vma virtual memory area.
+- *
+- * Search the \p vma private data entry in drm_device::vmalist, unlink it, and
+- * free it.
+- */
+-static void drm_vm_close(struct vm_area_struct *vma)
++void drm_vm_close_locked(struct vm_area_struct *vma)
+ {
+ 	struct drm_file *priv = vma->vm_file->private_data;
+ 	struct drm_device *dev = priv->minor->dev;
+@@ -451,7 +443,6 @@ static void drm_vm_close(struct vm_area_struct *vma)
+ 		  vma->vm_start, vma->vm_end - vma->vm_start);
+ 	atomic_dec(&dev->vma_count);
+ 
+-	mutex_lock(&dev->struct_mutex);
+ 	list_for_each_entry_safe(pt, temp, &dev->vmalist, head) {
+ 		if (pt->vma == vma) {
+ 			list_del(&pt->head);
+@@ -459,6 +450,23 @@ static void drm_vm_close(struct vm_area_struct *vma)
+ 			break;
+ 		}
+ 	}
++}
++
++/**
++ * \c close method for all virtual memory types.
++ *
++ * \param vma virtual memory area.
++ *
++ * Search the \p vma private data entry in drm_device::vmalist, unlink it, and
++ * free it.
++ */
++static void drm_vm_close(struct vm_area_struct *vma)
++{
++	struct drm_file *priv = vma->vm_file->private_data;
++	struct drm_device *dev = priv->minor->dev;
++
++	mutex_lock(&dev->struct_mutex);
++	drm_vm_close_locked(vma);
+ 	mutex_unlock(&dev->struct_mutex);
+ }
+ 
+diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+index 7809d23..774e1d4 100644
+--- a/include/drm/drmP.h
++++ b/include/drm/drmP.h
+@@ -1175,6 +1175,7 @@ extern int drm_release(struct inode *inode, struct file *filp);
+ extern int drm_mmap(struct file *filp, struct vm_area_struct *vma);
+ extern int drm_mmap_locked(struct file *filp, struct vm_area_struct *vma);
+ extern void drm_vm_open_locked(struct vm_area_struct *vma);
++extern void drm_vm_close_locked(struct vm_area_struct *vma);
+ extern resource_size_t drm_core_get_map_ofs(struct drm_local_map * map);
+ extern resource_size_t drm_core_get_reg_ofs(struct drm_device *dev);
+ extern unsigned int drm_poll(struct file *filp, struct poll_table_struct *wait);
+-- 
+1.7.1
 
