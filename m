@@ -1,94 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309Ab0I0Gdi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 02:33:38 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:40357 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753729Ab0I0Gdh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 02:33:37 -0400
-Message-ID: <4CA03A2D.4050503@kernel.org>
-Date: Sun, 26 Sep 2010 23:31:09 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	id S932721Ab0I0Gem (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 02:34:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41772 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754246Ab0I0Gel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 02:34:41 -0400
+Date: Mon, 27 Sep 2010 02:34:05 -0400
+From: Kyle McMartin <kmcmartin@redhat.com>
+To: Greg KH <greg@kroah.com>
+Cc: James Dingwall <james.dingwall@amdocs.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable@kernel.org
+Subject: Re: [stable] PROBLEM: [BISECTED] 2.6.35.5 xen domU panics just after
+ the boot
+Message-ID: <20100927063405.GM19458@ihatethathostname.lab.bos.redhat.com>
+References: <3B7AEC3C7FCC864282DFAC9A56A7BA363D81475787@UKLNDMAIL1.corp.amdocs.com>
+ <20100927024044.GQ13116@bombadil.infradead.org>
+ <20100927061336.GA22721@kroah.com>
 MIME-Version: 1.0
-To: caiqian@redhat.com
-CC: kexec <kexec@lists.infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: kexec load failure introduced by "x86, memblock: Replace e820_/_early
- string with memblock_"
-References: <870873343.2003871285555329846.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <870873343.2003871285555329846.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100927061336.GA22721@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please check this one on top of tip or next.
+On Sun, Sep 26, 2010 at 11:13:36PM -0700, Greg KH wrote:
+> > Greg, a spelling mistake cropped into this patch during 2.6.35.5 that
+> > James here points out. Adding you to CC since it seems to have missed
+> > stable 2.6.35.6...
+> > 
+> > Was in xen-use-percpu-interrupts-for-ipis-and-virqs.patch.
+> 
+> I don't understand, where did the error come from?  Was it in a patch I
+> applied, or did I mess up some patch?  Is the same problem upstream, and
+> if not, why not?
 
-Thanks
+It's correct upstream, and wrong in the patches you added to
+stable-queue.git for .32 and .35, no idea how it got introduced. :/
 
-Yinghai
+> 
+> And finally, can you send this in a format that I can apply it?
+> 
 
-[PATCH] x86, memblock: Fix crashkernel allocation
+I'm just the messenger... James, can you send a patch to Greg with your
+signed-off-by and such?
 
-Cai Qian found that crashkernel is broken with x86 memblock changes
-1. crashkernel=128M@32M always reported that range is used, even first kernel is small
-   no one use that range
-2. always get following report when using "kexec -p"
-	Could not find a free area of memory of a000 bytes...
-	locate_hole failed
+--Kyle
 
-The root cause is that generic memblock_find_in_range() will try to get range from top_down.
-But crashkernel do need from low and specified range.
-
-Let's limit the target range with rash_base + crash_size to make sure that
-We get range from bottom.
-
-Reported-and-Bisected-by: CAI Qian <caiqian@redhat.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
----
- arch/x86/kernel/setup.c |   19 ++++++++++++++-----
- 1 file changed, 14 insertions(+), 5 deletions(-)
-
-Index: linux-2.6/arch/x86/kernel/setup.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/setup.c
-+++ linux-2.6/arch/x86/kernel/setup.c
-@@ -516,19 +516,28 @@ static void __init reserve_crashkernel(v
- 
- 	/* 0 means: find the address automatically */
- 	if (crash_base <= 0) {
-+		unsigned long long start = 0;
- 		const unsigned long long alignment = 16<<20;	/* 16M */
- 
--		crash_base = memblock_find_in_range(alignment, ULONG_MAX, crash_size,
--				 alignment);
--		if (crash_base == MEMBLOCK_ERROR) {
-+		crash_base = alignment;
-+		while (crash_base < 0xffffffff) {
-+			start = memblock_find_in_range(crash_base,
-+				crash_base + crash_size, crash_size, alignment);
-+
-+			if (start == crash_base)
-+				break;
-+
-+			crash_base += alignment;
-+		}
-+		if (start != crash_base) {
- 			pr_info("crashkernel reservation failed - No suitable area found.\n");
- 			return;
- 		}
- 	} else {
- 		unsigned long long start;
- 
--		start = memblock_find_in_range(crash_base, ULONG_MAX, crash_size,
--				 1<<20);
-+		start = memblock_find_in_range(crash_base,
-+				 crash_base + crash_size, crash_size, 1<<20);
- 		if (start != crash_base) {
- 			pr_info("crashkernel reservation failed - memory is in use.\n");
- 			return;
+> thanks,
+> 
+> greg k-h
