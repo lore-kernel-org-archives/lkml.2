@@ -1,158 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759546Ab0I0VFr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 17:05:47 -0400
-Received: from tuxonice.net ([74.207.252.127]:39525 "EHLO mail.tuxonice.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751930Ab0I0VFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 17:05:46 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4CA10729.5010001@tuxonice.net>
-Date: Tue, 28 Sep 2010 07:05:45 +1000
-From: Nigel Cunningham <nigel@tuxonice.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.10pre) Gecko/20100903 Shredder/3.1.4pre
+	id S1756374Ab0I0VLa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 17:11:30 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:52952 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751930Ab0I0VL3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 17:11:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=tRMun5lmYGs9ns7b0Ht5J6yFF0ox1DZNR1hRLwpDtz7anZeY1cZPwQZwKcx9PrYI/u
+         GhEKbUN1boRlOLsgIQ8Q==
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux PM <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        TuxOnIce-devel <tuxonice-devel@tuxonice.net>
-Subject: Re: [PATCH 02/23] Record & display i/o speed post resume.
-References: <1285566238-10966-1-git-send-email-nigel@tuxonice.net> <201009272206.20020.rjw@sisk.pl> <4CA0FDE8.3000601@tuxonice.net> <201009272249.59966.rjw@sisk.pl>
-In-Reply-To: <201009272249.59966.rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1285620805.2512.128.camel@edumazet-laptop>
+References: <1285003599.2275.756.camel@laptop>
+	<1285619753-10892-1-git-send-email-venki@google.com>
+	<1285620805.2512.128.camel@edumazet-laptop>
+Date: Mon, 27 Sep 2010 14:11:25 -0700
+Message-ID: <AANLkTim2=ZN=DMFCYcvVx31mOPd40q+EoTVfx-bqMCob@mail.gmail.com>
+Subject: Re: [PATCH] si time accounting accounts bh_disable'd time to si
+From: Venkatesh Pallipadi <venki@google.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Paul Turner <pjt@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
-
-On 28/09/10 06:49, Rafael J. Wysocki wrote:
-> On Monday, September 27, 2010, Nigel Cunningham wrote:
->> Hi.
+On Mon, Sep 27, 2010 at 1:53 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le lundi 27 septembre 2010 à 13:35 -0700, Venkatesh Pallipadi a écrit :
+>> >> >> > You still do have the problem with local_bh_disable() though, since you
+>> >> >> > cannot distinguish between having bh disabled and processing softirq.
+>> >> >> >
+>> >> >> > So a hardirq that hits while you have bh disabled will inflate your
+>> >> >> > softirq time.
 >>
->> On 28/09/10 06:06, Rafael J. Wysocki wrote:
->>> On Monday, September 27, 2010, Nigel Cunningham wrote:
->>>> Record the speed at which the image is written and read, and
->>>> display it to the user post-resume.
->>>>
->>>> Signed-off-by: Nigel Cunningham<nigel@tuxonice.net>
->>>> ---
->>>>    kernel/power/hibernate.c |   11 ++++++++++-
->>>>    kernel/power/power.h     |    3 ++-
->>>>    kernel/power/swap.c      |   14 +++++++++++---
->>>>    3 files changed, 23 insertions(+), 5 deletions(-)
->>>>
->>>> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
->>>> index 6c9c9dc..0cd1f05 100644
->>>> --- a/kernel/power/hibernate.c
->>>> +++ b/kernel/power/hibernate.c
->>>> @@ -212,7 +212,7 @@ static void platform_recover(int platform_mode)
->>>>     *	@msg -		introductory message to print
->>>>     */
->>>>
->>>> -void swsusp_show_speed(struct timeval *start, struct timeval *stop,
->>>> +int swsusp_show_speed(struct timeval *start, struct timeval *stop,
->>>>    			unsigned nr_pages, char *msg)
->>>>    {
->>>>    	s64 elapsed_centisecs64;
->>>> @@ -231,6 +231,7 @@ void swsusp_show_speed(struct timeval *start, struct timeval *stop,
->>>>    			msg, k,
->>>>    			centisecs / 100, centisecs % 100,
->>>>    			kps / 1000, (kps % 1000) / 10);
->>>> +	return kps / 1000;
->>>>    }
->>>>
->>>>    /**
->>>> @@ -648,6 +649,14 @@ int hibernate(void)
->>>>    			power_down();
->>>>    	} else {
->>>>    		pr_debug("PM: Image restored successfully.\n");
->>>> +		if (write_speed)
->>>> +			pr_debug("PM: Image written at %u MB/s.\n",
->>>> +					(u8) write_speed);
->>>> +		write_speed = 0;
->>>> +		if (read_speed)
->>>> +			pr_debug("PM: Image read at %u MB/s.\n",
->>>> +					(u8) read_speed);
->>>> +		read_speed = 0;
->>>>    	}
->>>>
->>>>     Thaw:
->>>> diff --git a/kernel/power/power.h b/kernel/power/power.h
->>>> index 03634be..22f8607 100644
->>>> --- a/kernel/power/power.h
->>>> +++ b/kernel/power/power.h
->>>> @@ -53,6 +53,7 @@ extern int hibernation_snapshot(int platform_mode);
->>>>    extern int hibernation_restore(int platform_mode);
->>>>    extern int hibernation_platform_enter(void);
->>>>
->>>> +extern char __nosavedata write_speed, read_speed;
->>>>    #else /* !CONFIG_HIBERNATION */
->>>>
->>>>    static inline void hibernate_image_size_init(void) {}
->>>> @@ -161,7 +162,7 @@ extern int hib_wait_on_bio_chain(struct bio **bio_chain);
->>>>
->>>>    struct timeval;
->>>>    /* kernel/power/swsusp.c */
->>>> -extern void swsusp_show_speed(struct timeval *, struct timeval *,
->>>> +extern int swsusp_show_speed(struct timeval *, struct timeval *,
->>>>    				unsigned int, char *);
->>>>
->>>>    #ifdef CONFIG_SUSPEND
->>>> diff --git a/kernel/power/swap.c b/kernel/power/swap.c
->>>> index 3c01105..caf4db8 100644
->>>> --- a/kernel/power/swap.c
->>>> +++ b/kernel/power/swap.c
->>>> @@ -45,7 +45,8 @@ struct swap_map_page {
->>>>    };
->>>>
->>>>    struct swsusp_header {
->>>> -	char reserved[PAGE_SIZE - 20 - sizeof(sector_t) - sizeof(int)];
->>>> +	char reserved[PAGE_SIZE - 21 - sizeof(sector_t) - sizeof(int)];
->>>> +	char write_speed;
->>>>    	sector_t image;
->>>>    	unsigned int flags;	/* Flags to pass to the "boot" kernel */
->>>>    	char	orig_sig[10];
->>>> @@ -161,6 +162,7 @@ int swsusp_swap_in_use(void)
->>>>
->>>>    static unsigned short root_swap = 0xffff;
->>>>    struct block_device *hib_resume_bdev;
->>>> +char __nosavedata write_speed, read_speed;
->>>
->>> I really should have noticed that earlier, but I don't really like __nosavedata
->>> being used here.  In fact, it shouldn't be used at all any more, because it's
->>> meaningless on x86_64.
+>> >> >> Hmm, that bug is valid for CONFIG_VIRT_CPU_ACCOUNTING=y as well.
+>> >> >
+>> >> > And nobody ever noticed?
+>> >> >
+>> >> Yes. I inherited the API from VIRT_CPU_ACCOUNTING along with this
+>> >> local_bh_disable bug. Agree that we need one extra bit to handle this
+>> >> case. I will take a stab at fixing this along with refresh of this
+>> >> patchset if no one else has beaten me to it until then.
+>> >
+>> >Make sure to only fix the softirq processing on the hardirq tail, not
+>> > the ksoftirqd one :-)
 >>
->> Really? Okay. When did that change?
->
-> Well, some time ago, looks like in 2007, but the files changed and were moving
-> around, so it's hard to say exactly.
-
-Hmm. Really failed to notice that one, didn't I? :)
-
->>> I'm not sure how to implement that without __nosavedata, but please don't
->>> use it.  Sorry aboiut that.
+>> softirq processing from hardirq tail and ksoftirqd are currently
+>> handled in the same way and I didn't see any issues changing both of
+>> them. Am I missing something?
 >>
->> Well then, for now, let's drop that patch then. At least it's got us the
->> numbers we needed to see these patches are useful. Longer term, I'll do
->> what I do in TuxOnIce and allocate a page while writing the image, store
->> it's location in the image header and use it the transfer information
->> from the boot kernel to the resumed kernel. (Essentially the same thing,
->> except without the special section).
+>> Here's the patch I have for this.
+>>
+>> [PATCH] si time accounting accounts bh_disable'd time to si
+>>
+>> Peter Zijlstra found a bug in the way softirq time is accounted in
+>> VIRT_CPU_ACCOUNTING on this thread.
+>> http://lkml.indiana.edu/hypermail//linux/kernel/1009.2/01366.html
+>>
+>> The problem is, softirq processing uses local_bh_disable internally and there
+>> would be no way later in the flow to differentiate between whether softirq is
+>> being processed or is it just that bh has been disabled. So, a hardirq when bh
+>> id disabled results in time being wrongly accounted for softirq.
+>>
+>> Looking at the code a bit more, the problem exists in !VIRT_CPU_ACCOUNTING
+>> as well. As account_system_time() in normal tick based accouting also uses
+>> softirq_count, which will be set when not in softirq with bh disabled.
+>>
+>> Peter also suggested solution of using 2 * SOFTIRQ_OFFSET as irq count
+>> for local_bh_{disable,enable} and using just SOFTIRQ_OFFSET while softirq
+>> processing. The patch below does that and adds API in_serving_softirq() which
+>> returns whether we are currently processing softirq or not.
+>>
+>> Also changes one of the usages of softirq_count in net/sched/cls_cgroup.c
+>> to in_serving_softirq.
+>>
+>> Looks like many usages of in_softirq really want in_serving_softirq. Those
+>> changes can be made individually on a case by case basis.
+>>
+>> Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+>> ---
+>>  include/linux/hardirq.h |    3 ++
+>>  include/linux/sched.h   |    2 +-
+>>  kernel/sched.c          |    2 +-
+>>  kernel/softirq.c        |   51 +++++++++++++++++++++++++++++++---------------
+>>  net/sched/cls_cgroup.c  |    2 +-
+>>  5 files changed, 40 insertions(+), 20 deletions(-)
+>>
+>> diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
+>> index d5b3876..1c736ae 100644
+>> --- a/include/linux/hardirq.h
+>> +++ b/include/linux/hardirq.h
+>> @@ -82,10 +82,13 @@
+>>  /*
+>>   * Are we doing bottom half or hardware interrupt processing?
+>>   * Are we in a softirq context? Interrupt context?
+>> + * in_softirq answers - are we currently processing softirq or have bh disabled?
+>> + * in_serving_softirq answers - are we currently processing softirq?
+>>   */
+>>  #define in_irq()             (hardirq_count())
+>>  #define in_softirq()         (softirq_count())
+>>  #define in_interrupt()               (irq_count())
+>> +#define in_serving_softirq() (softirq_count() == SOFTIRQ_OFFSET)
+>>
 >
-> The problem is that on x86_64 the boot kernel may be completely different
-> from the image kernel (different version, different configuration), so there is
-> no guarantee that your page frame allocated while writing the image would be
-> available to the boot kernel (it may contain the kernel code, for example).
+> But softirq handlers sometime call functions that might disable bh
+> again. It would be good to not switch softirq time to system time ;)
+
+Yes. Good point :-). I should rather have
++#define in_serving_softirq() (softirq_count() & SOFTIRQ_OFFSET)
+
 >
-> You'd really need to replace one of the image pages with  something prepared
-> while the image was being read.  For that, you'd need to allocate a page before
-> creating the image and pass its PFN in the image header.
+> Shouldnt we reserve a bit (high order bit out of 8) instead ?
+>
+>  * PREEMPT_MASK:    0x000000ff
+>  * SOFTIRQ_MASK:    0x0000ff00
+>  * SERVING_SOFTIRQ: 0x00008000
+>  * HARDIRQ_MASK:    0x03ff0000
+>  *     NMI_MASK:    0x04000000
 
-Yes - that's what I'm doing. Maybe that's why the __nosavedata changes 
-you mentioned above haven't bitten me.
+Things will be very much similar using higher order bit or lower order
+bit. Somehow I felt using lower order bit was cleaner...
 
-Regards,
-
-Nigel
+Thanks,
+Venki
