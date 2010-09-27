@@ -1,149 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933094Ab0I0O6y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 10:58:54 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:36710 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756421Ab0I0O6x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 10:58:53 -0400
-Date: Mon, 27 Sep 2010 07:58:14 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Chen Gong <gong.chen@linux.intel.com>
-CC: lm-sensors@lm-sensors.org, JBeulich@novell.com,
+	id S1759547Ab0I0PEj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 11:04:39 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:33102 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759517Ab0I0PEi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 11:04:38 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: matt mooney <mfm@muteddisk.com>
+Cc: kernel-janitors@vger.kernel.org, lm-sensors@lm-sensors.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [2/2] hwmon: cleanup some hotplug related macro definition
-Message-ID: <20100927145814.GA2666@ericsson.com>
-References: <1285480800-14558-3-git-send-email-gong.chen@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1285480800-14558-3-git-send-email-gong.chen@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Subject: Re: [PATCH 04/24] hwmon: change to new flag variable
+In-Reply-To: Your message of "Fri, 24 Sep 2010 12:17:14 PDT."
+             <ffbd189ef2d414ea7c87ffe2b40fce87877dc014.1285355033.git.mfm@muteddisk.com>
+From: Valdis.Kletnieks@vt.edu
+References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com> <9968d4260be8850200cc9c7dfe08addf611468b4.1285355033.git.mfm@muteddisk.com> <036514b5dd23c5af14303519d79d60d79adccbee.1285355033.git.mfm@muteddisk.com> <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
+            <ffbd189ef2d414ea7c87ffe2b40fce87877dc014.1285355033.git.mfm@muteddisk.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1285599840_7757P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Mon, 27 Sep 2010 11:04:00 -0400
+Message-ID: <12873.1285599840@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020202.4CA0B261.0054,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 26, 2010 at 06:00:00AM -0000, Chen Gong wrote:
-> CONFIG_HOTPLUG_CPU is used too much in some drivers.
-> This patch clean them up and add some proper __cpuinit definitons.
+--==_Exmh_1285599840_7757P
+Content-Type: text/plain; charset=us-ascii
+
+On Fri, 24 Sep 2010 12:17:14 PDT, matt mooney said:
+> Replace EXTRA_CFLAGS with ccflags-y.
 > 
-> Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
-> Acked-by: Jan Beulich <jbeulich@novell.com>
-> 
-I am ok with the changes. However, they interfer with other changes 
-made by Jan earlier, which I already applied. 
-
-It would be great if you can rebase this patch to 
-	git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging.git hwmon-next
-
-That would help me a lot.
-
-Thanks,
-Guenter
-
+> Signed-off-by: matt mooney <mfm@muteddisk.com>
 > ---
-> drivers/hwmon/coretemp.c    |    5 ++---
->  drivers/hwmon/pkgtemp.c     |    7 ++-----
->  drivers/hwmon/via-cputemp.c |    9 ++-------
->  3 files changed, 6 insertions(+), 15 deletions(-)
+>  drivers/hwmon/Makefile |    4 +---
+>  1 files changed, 1 insertions(+), 3 deletions(-)
 > 
-> diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-> index baa842a..887ab93 100644
-> --- a/drivers/hwmon/coretemp.c
-> +++ b/drivers/hwmon/coretemp.c
-> @@ -489,7 +489,7 @@ exit:
->  	return err;
->  }
+> diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+> index e3c2484..764b4db 100644
+> --- a/drivers/hwmon/Makefile
+> +++ b/drivers/hwmon/Makefile
+> @@ -109,7 +109,5 @@ obj-$(CONFIG_SENSORS_W83L786NG)	+= w83l786ng.o
+>  obj-$(CONFIG_SENSORS_WM831X)	+= wm831x-hwmon.o
+>  obj-$(CONFIG_SENSORS_WM8350)	+= wm8350-hwmon.o
 >  
-> -static void coretemp_device_remove(unsigned int cpu)
-> +static void __cpuinit coretemp_device_remove(unsigned int cpu)
->  {
->  	struct pdev_entry *p;
->  	unsigned int i;
-> @@ -568,9 +568,8 @@ exit:
->  static void __exit coretemp_exit(void)
->  {
->  	struct pdev_entry *p, *n;
-> -#ifdef CONFIG_HOTPLUG_CPU
-> +
->  	unregister_hotcpu_notifier(&coretemp_cpu_notifier);
-> -#endif
->  	mutex_lock(&pdev_list_mutex);
->  	list_for_each_entry_safe(p, n, &pdev_list, list) {
->  		platform_device_unregister(p->pdev);
-> diff --git a/drivers/hwmon/pkgtemp.c b/drivers/hwmon/pkgtemp.c
-> index 6186041..0516d52 100644
-> --- a/drivers/hwmon/pkgtemp.c
-> +++ b/drivers/hwmon/pkgtemp.c
-> @@ -339,8 +339,7 @@ exit:
->  	return err;
->  }
->  
-> -#ifdef CONFIG_HOTPLUG_CPU
-> -static void pkgtemp_device_remove(unsigned int cpu)
-> +static void __cpuinit pkgtemp_device_remove(unsigned int cpu)
->  {
->  	struct pdev_entry *p;
->  	unsigned int i;
-> @@ -387,7 +386,6 @@ static int __cpuinit pkgtemp_cpu_callback(struct notifier_block *nfb,
->  static struct notifier_block pkgtemp_cpu_notifier __refdata = {
->  	.notifier_call = pkgtemp_cpu_callback,
->  };
-> -#endif				/* !CONFIG_HOTPLUG_CPU */
->  
->  static int __init pkgtemp_init(void)
->  {
-> @@ -425,9 +423,8 @@ exit:
->  static void __exit pkgtemp_exit(void)
->  {
->  	struct pdev_entry *p, *n;
-> -#ifdef CONFIG_HOTPLUG_CPU
-> +
->  	unregister_hotcpu_notifier(&pkgtemp_cpu_notifier);
-> -#endif
->  	mutex_lock(&pdev_list_mutex);
->  	list_for_each_entry_safe(p, n, &pdev_list, list) {
->  		platform_device_unregister(p->pdev);
-> diff --git a/drivers/hwmon/via-cputemp.c b/drivers/hwmon/via-cputemp.c
-> index ffb793a..ebbdc25 100644
-> --- a/drivers/hwmon/via-cputemp.c
-> +++ b/drivers/hwmon/via-cputemp.c
-> @@ -237,8 +237,7 @@ exit:
->  	return err;
->  }
->  
-> -#ifdef CONFIG_HOTPLUG_CPU
-> -static void via_cputemp_device_remove(unsigned int cpu)
-> +static void __cpuinit via_cputemp_device_remove(unsigned int cpu)
->  {
->  	struct pdev_entry *p, *n;
->  	mutex_lock(&pdev_list_mutex);
-> @@ -272,7 +271,6 @@ static int __cpuinit via_cputemp_cpu_callback(struct notifier_block *nfb,
->  static struct notifier_block via_cputemp_cpu_notifier __refdata = {
->  	.notifier_call = via_cputemp_cpu_callback,
->  };
-> -#endif				/* !CONFIG_HOTPLUG_CPU */
->  
->  static int __init via_cputemp_init(void)
->  {
-> @@ -313,9 +311,7 @@ static int __init via_cputemp_init(void)
->  		goto exit_driver_unreg;
->  	}
->  
-> -#ifdef CONFIG_HOTPLUG_CPU
->  	register_hotcpu_notifier(&via_cputemp_cpu_notifier);
-> -#endif
->  	return 0;
->  
->  exit_devices_unreg:
-> @@ -335,9 +331,8 @@ exit:
->  static void __exit via_cputemp_exit(void)
->  {
->  	struct pdev_entry *p, *n;
-> -#ifdef CONFIG_HOTPLUG_CPU
-> +
->  	unregister_hotcpu_notifier(&via_cputemp_cpu_notifier);
-> -#endif
->  	mutex_lock(&pdev_list_mutex);
->  	list_for_each_entry_safe(p, n, &pdev_list, list) {
->  		platform_device_unregister(p->pdev);
+> -ifeq ($(CONFIG_HWMON_DEBUG_CHIP),y)
+> -EXTRA_CFLAGS += -DDEBUG
+> -endif
+> +ccflags-$(CONFIG_HWMON_DEBUG_CHIP) := -DDEBUG
+
+Was this series intended as := rather than += as it seems that
+overriding the entirely of a passed-in ccflags-y may not be what
+we wanted to do.
+
+--==_Exmh_1285599840_7757P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD4DBQFMoLJgcC3lWbTT17ARAnB9AJ43etrGzs3rpT2wWlkSvoxsalabnQCVETvx
+uT13wbvrHiv2Eu5nrnWPoA==
+=7AZa
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1285599840_7757P--
+
