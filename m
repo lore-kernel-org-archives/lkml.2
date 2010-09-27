@@ -1,42 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754212Ab0I0FkP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 01:40:15 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:34921 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753305Ab0I0FkN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 01:40:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=P1sv/tBQEVh3Kwh0hvlZB5FQnNeMgBXUASpjwiZHQAlMa3/8+uWMs6iyPF2/+fijHH
-         uCnh3/phwo0eQa+UnhyLZN+r0PTwaiSZ3AzSOCSpIhwm626oHQTqdPEf48xGt9YQGUpt
-         NWy86EFx5fjQH3wQ0KkIdb7NsdAep7afVNnLk=
+	id S1754411Ab0I0FmZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 01:42:25 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:43136 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753200Ab0I0FmX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 01:42:23 -0400
+Date: Sun, 26 Sep 2010 22:42:05 -0700
+From: Ram Pai <linuxram@us.ibm.com>
+To: Valerie Aurora <vaurora@redhat.com>
+Cc: Ram Pai <linuxram@us.ibm.com>, Ram Pai <ram.n.pai@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andreas Gruenbacher <agruen@suse.de>, Nick Piggin <npiggin@kernel.dk>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 03/34] VFS: Add CL_NO_SLAVE flag to
+ clone_mnt()/copy_tree()
+Message-ID: <20100927054205.GE4999@ram-laptop>
+Reply-To: Ram Pai <linuxram@us.ibm.com>
+References: <1284675145-4391-1-git-send-email-vaurora@redhat.com>
+ <1284675145-4391-4-git-send-email-vaurora@redhat.com>
+ <AANLkTim1bbGrrPcFHThx3XOm8GmudQFSmFUs3NAXT5yC@mail.gmail.com>
+ <20100917043401.GD8926@ram-laptop>
+ <20100917171514.GA32258@shell>
+ <20100920052553.GM8926@ram-laptop>
+ <20100921000344.GB9032@shell>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimMH604FW_NZehY68w8B_cV_Lhe-ZwZq0cAYUfd@mail.gmail.com>
-References: <AANLkTimMH604FW_NZehY68w8B_cV_Lhe-ZwZq0cAYUfd@mail.gmail.com>
-Date: Sun, 26 Sep 2010 22:40:12 -0700
-Message-ID: <AANLkTi=mLizQGyp5cdR_WtHjMMhixBOOagkFUNVqO4vj@mail.gmail.com>
-Subject: HDMI open source to handle audio/video/CEC in one driver
-From: Raymond Liu <raymondliu3linux@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100921000344.GB9032@shell>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Sep 20, 2010 at 08:03:44PM -0400, Valerie Aurora wrote:
+> On Sun, Sep 19, 2010 at 10:25:53PM -0700, Ram Pai wrote:
+> > 
+> > I understand your intentions, but I think you are making a wrong assumption.
+> > You seem to be thinking that if a slave-mount is cloned, the new cloned
+> > mount will also be a slave-mount and will hence receive propagations. As
+> > per shared subtree semantics, a slave-mount when cloned will create a private
+> > mount. Since your intention is to avoid generating any new mounts that 
+> > recieve propagations, you should be checking for shared-mounts and 
+> > slave-shared-mounts because these are the two kind of mounts that when
+> > cloned create new mounts that receive propagation.
+> 
+> No.  This isn't about the semantics of the clone mount operation.  It
+> is about the administrator creating a slave mount, unioning it, and
+> then being surprised when the unioned file system does not receive
+> mount propagation events.
+> 
+> Think of the source vfsmount tree as a set of command line arguments
+> for the union mount.
 
-My company is working on the Linux HDMI open source driver for our
-chipsets (with audio/video/CEC controls).  Is there any similar
-project ongoing for this kind of driver in Linux community?  Who
-should I contact with for this?
+Ok. In that case,  you introduced a subtle change in the semantics of clone_mnt().
+As I understand it, the flags parameter of clone_mnt() are meant to be a modifier 
+for the cloned mount, not a filter on the source mount.
 
-Thanks,
-Raymond Liu
-
-P.S. I wish to be personally CC'ed the answers/comments posted to the
-list in response to my posting.
+RP
