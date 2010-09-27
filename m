@@ -1,65 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759390Ab0I0Nn4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 09:43:56 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:3628 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756154Ab0I0Nnz convert rfc822-to-8bit (ORCPT
+	id S1759400Ab0I0Npy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 09:45:54 -0400
+Received: from mail.solarflare.com ([216.237.3.220]:27653 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755699Ab0I0Npw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 09:43:55 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzzz32i2a8h43h62h)
-X-Spam-TCS-SCL: 1:0
-X-FB-SS: 0,
-X-WSS-ID: 0L9ERGS-01-DDJ-02
-X-M-MSG: 
-Date: Mon, 27 Sep 2010 15:43:41 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: huang ying <huang.ying.caritas@gmail.com>
-CC: Huang Ying <ying.huang@intel.com>, Don Zickus <dzickus@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v2 7/7] x86, NMI, Remove do_nmi_callback logic
-Message-ID: <20100927134341.GQ13563@erda.amd.com>
-References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
- <1285549026-5008-7-git-send-email-ying.huang@intel.com>
- <20100927104426.GD32222@erda.amd.com>
- <AANLkTinA2HK57w5wqCtq319WNy-PLtWaGBe-v+uoFB=Y@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <AANLkTinA2HK57w5wqCtq319WNy-PLtWaGBe-v+uoFB=Y@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
-X-Reverse-DNS: unknown
+	Mon, 27 Sep 2010 09:45:52 -0400
+Subject: Re: [PATCH v11 04/17]Add a function make external buffer owner to
+ query capability.
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: xiaohui.xin@intel.com
+Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, davem@davemloft.net, herbert@gondor.hengli.com.au,
+        jdike@linux.intel.com
+In-Reply-To: <6df1b1c2d2ffe70da911984c7fe6fab16f23043b.1285385607.git.xiaohui.xin@intel.com>
+References: <1285388855-27410-1-git-send-email-xiaohui.xin@intel.com>
+	 <6df1b1c2d2ffe70da911984c7fe6fab16f23043b.1285385607.git.xiaohui.xin@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Mon, 27 Sep 2010 14:45:49 +0100
+Message-ID: <1285595149.2263.8.camel@achroite.uk.solarflarecom.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 27 Sep 2010 13:45:52.0594 (UTC) FILETIME=[4D328B20:01CB5E4A]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17668.005
+X-TM-AS-Result: No--19.587100-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.09.10 08:56:44, huang ying wrote:
+On Sat, 2010-09-25 at 12:27 +0800, xiaohui.xin@intel.com wrote:
+[...]
+> diff --git a/net/core/dev.c b/net/core/dev.c
+> index 264137f..636f11b 100644
+> --- a/net/core/dev.c
+> +++ b/net/core/dev.c
+> @@ -2468,6 +2468,55 @@ void netif_nit_deliver(struct sk_buff *skb)
+>  	rcu_read_unlock();
+>  }
+>  
+> +/* To support meidate passthru(zero-copy) with NIC driver,
+> + * we'd better query NIC driver for the capability it can
+> + * provide, especially for packet split mode, now we only
+> + * query for the header size, and the payload a descriptor
+> + * may carry. If a driver does not use the API to export,
+> + * then we may try to use a default value, currently,
+> + * we use the default value from an IGB driver. Now,
+> + * it's only called by mpassthru device.
+> + */
+> +#if defined(CONFIG_MEDIATE_PASSTHRU) || defined(CONFIG_MEDIATE_PASSTHRU_MODULE)
+> +int netdev_mp_port_prep(struct net_device *dev,
+> +		struct mpassthru_port *port)
+> +{
+> +	int rc;
+> +	int npages, data_len;
+> +	const struct net_device_ops *ops = dev->netdev_ops;
+> +
+> +	if (ops->ndo_mp_port_prep) {
+> +		rc = ops->ndo_mp_port_prep(dev, port);
+> +		if (rc)
+> +			return rc;
+> +	} else {
+> +		/* If the NIC driver did not report this,
+> +		 * then we try to use default value.
+> +		 */
+> +		port->hdr_len = 128;
+> +		port->data_len = 2048;
+> +		port->npages = 1;
+> +	}
+[...]
 
-> >> -static int unknown_nmi_panic_callback(struct pt_regs *regs, int cpu)
-> >> -{
-> >> -     unsigned char reason = get_nmi_reason();
-> >> -     char buf[64];
-> >> -
-> >> -     sprintf(buf, "NMI received for unknown reason %02x\n", reason);
-> >> -     die_nmi(buf, regs, 1); /* Always panic here */
-> >> -     return 0;
-> >
-> > You are dropping this code that is different to panic().
-> 
-> What is the difference? Is it relevant?
+Is it really necessary to have a default?
 
-I think yes, since the code behaves different. Otherwise we could
-remove die_nmi() completly and replace it by panic(). But both are
-different implementions. Maybe we can merge the code, but I didn't
-look at it closly.
+Also have you considered an API for changing the header/data split?
 
--Robert
+Ben.
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+Ben Hutchings, Senior Software Engineer, Solarflare Communications
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
