@@ -1,63 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933434Ab0I0T0z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 15:26:55 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:42987 "EHLO mx01.d-labs.de"
+	id S1760129Ab0I0T1R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 15:27:17 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:40475 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759624Ab0I0T0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 15:26:53 -0400
-Date: Mon, 27 Sep 2010 21:26:50 +0200
-From: Florian Mickler <florian@mickler.org>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: RFC: get_maintainer.pl: append reason for cc to the name by
- default
-Message-ID: <20100927212650.62859ee0@schatten.dmk.lab>
-In-Reply-To: <20100927182124.GA3168@thunk.org>
-References: <1284111212-10659-1-git-send-email-florian@mickler.org>
-	<1285527125.1732.24.camel@Joe-Laptop>
-	<20100927165748.354742f2@schatten.dmk.lab>
-	<20100927154441.GE3602@thunk.org>
-	<20100927190026.20ddc268@schatten.dmk.lab>
-	<20100927182124.GA3168@thunk.org>
-X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1760067Ab0I0T1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 15:27:15 -0400
+Message-ID: <4CA0F00D.9000702@austin.ibm.com>
+Date: Mon, 27 Sep 2010 14:27:09 -0500
+From: Nathan Fontenot <nfont@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org
+CC: Greg KH <greg@kroah.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH 6/8] v2 Update node sysfs code
+References: <4CA0EBEB.1030204@austin.ibm.com>
+In-Reply-To: <4CA0EBEB.1030204@austin.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Sep 2010 14:21:24 -0400
-Ted Ts'o <tytso@mit.edu> wrote:
+Update the node sysfs code to be aware of the new capability for a memory
+block to contain multiple memory sections.  This requires an additional
+parameter to unregister_mem_sect_under_nodes so that we know which memory
+section of the memory block to unregister.
 
-> (I've argued for not even trying, but clearly
-> people who have tried to argue for that have lost that battle; enough
-> people seem to think it's worth while to make wild guesses even though
-> the script is called get_maintainer.pl, and not
-> get_maintainer_or_make_wild_stabs_in_the_dark.pl.)
-> 
-> 						- Ted
+Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 
-Actually, I think get_maintainer_or_make_wild_stabs_in_the_dark.pl is
-a better strategy to ensure that a patch doesn't get ignored then
-to ... well.. do nothing.
+---
+ drivers/base/memory.c |    2 +-
+ drivers/base/node.c   |   12 ++++++++----
+ include/linux/node.h  |    6 ++++--
+ 3 files changed, 13 insertions(+), 7 deletions(-)
+
+Index: linux-next/drivers/base/node.c
+===================================================================
+--- linux-next.orig/drivers/base/node.c	2010-09-27 13:49:36.000000000 -0500
++++ linux-next/drivers/base/node.c	2010-09-27 13:50:43.000000000 -0500
+@@ -346,8 +346,10 @@
+ 		return -EFAULT;
+ 	if (!node_online(nid))
+ 		return 0;
+-	sect_start_pfn = section_nr_to_pfn(mem_blk->phys_index);
+-	sect_end_pfn = sect_start_pfn + PAGES_PER_SECTION - 1;
++
++	sect_start_pfn = section_nr_to_pfn(mem_blk->start_phys_index);
++	sect_end_pfn = section_nr_to_pfn(mem_blk->end_phys_index);
++	sect_end_pfn += PAGES_PER_SECTION - 1;
+ 	for (pfn = sect_start_pfn; pfn <= sect_end_pfn; pfn++) {
+ 		int page_nid;
  
-> P.S.  Wouldn't it be better to train kernel newbies how to read
-> through the output of git log themselves?  I'm not sure that training
-> people to rely blindly on dumb scripts is in the end actually going to
-> be doing ourselves and the whole community a service.  Sigh....
-
-Yes and no. Reaching out to people is something kernel newbies
-need to learn too... 
-I'd agree if the end result of get_maintainer.pl would be to send it to
-random machines... but we actually give out
-addresses of human beings, so I don't think it is _that_ bad an idea. 
-
-But we should definitely try to tune down the annoying part of
-it by making it less random and maybe by adding a tag in the cc field...
-
+@@ -371,7 +373,8 @@
+ }
+ 
+ /* unregister memory section under all nodes that it spans */
+-int unregister_mem_sect_under_nodes(struct memory_block *mem_blk)
++int unregister_mem_sect_under_nodes(struct memory_block *mem_blk,
++				    unsigned long phys_index)
+ {
+ 	NODEMASK_ALLOC(nodemask_t, unlinked_nodes, GFP_KERNEL);
+ 	unsigned long pfn, sect_start_pfn, sect_end_pfn;
+@@ -383,7 +386,8 @@
+ 	if (!unlinked_nodes)
+ 		return -ENOMEM;
+ 	nodes_clear(*unlinked_nodes);
+-	sect_start_pfn = section_nr_to_pfn(mem_blk->phys_index);
++
++	sect_start_pfn = section_nr_to_pfn(phys_index);
+ 	sect_end_pfn = sect_start_pfn + PAGES_PER_SECTION - 1;
+ 	for (pfn = sect_start_pfn; pfn <= sect_end_pfn; pfn++) {
+ 		int nid;
+Index: linux-next/drivers/base/memory.c
+===================================================================
+--- linux-next.orig/drivers/base/memory.c	2010-09-27 13:50:38.000000000 -0500
++++ linux-next/drivers/base/memory.c	2010-09-27 13:50:43.000000000 -0500
+@@ -587,9 +587,9 @@
+ 
+ 	mutex_lock(&mem_sysfs_mutex);
+ 	mem = find_memory_block(section);
++	unregister_mem_sect_under_nodes(mem, __section_nr(section));
+ 
+ 	if (atomic_dec_and_test(&mem->section_count)) {
+-		unregister_mem_sect_under_nodes(mem);
+ 		mem_remove_simple_file(mem, phys_index);
+ 		mem_remove_simple_file(mem, end_phys_index);
+ 		mem_remove_simple_file(mem, state);
+Index: linux-next/include/linux/node.h
+===================================================================
+--- linux-next.orig/include/linux/node.h	2010-09-27 13:49:36.000000000 -0500
++++ linux-next/include/linux/node.h	2010-09-27 13:50:43.000000000 -0500
+@@ -44,7 +44,8 @@
+ extern int unregister_cpu_under_node(unsigned int cpu, unsigned int nid);
+ extern int register_mem_sect_under_node(struct memory_block *mem_blk,
+ 						int nid);
+-extern int unregister_mem_sect_under_nodes(struct memory_block *mem_blk);
++extern int unregister_mem_sect_under_nodes(struct memory_block *mem_blk,
++					   unsigned long phys_index);
+ 
+ #ifdef CONFIG_HUGETLBFS
+ extern void register_hugetlbfs_with_node(node_registration_func_t doregister,
+@@ -72,7 +73,8 @@
+ {
+ 	return 0;
+ }
+-static inline int unregister_mem_sect_under_nodes(struct memory_block *mem_blk)
++static inline int unregister_mem_sect_under_nodes(struct memory_block *mem_blk,
++						  unsigned long phys_index)
+ {
+ 	return 0;
+ }
 
 
