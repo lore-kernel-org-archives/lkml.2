@@ -1,153 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760151Ab0I0UCl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 16:02:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62983 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756773Ab0I0UCk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 16:02:40 -0400
-Date: Mon, 27 Sep 2010 16:02:32 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jan Kara <jack@suse.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>, jmoyer@redhat.com,
-        jaxboe@fusionio.com, Lennart Poettering <lennart@poettering.net>
-Subject: Re: Request starvation with CFQ
-Message-ID: <20100927200232.GA2377@redhat.com>
-References: <20100927190024.GF3610@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100927190024.GF3610@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760156Ab0I0UEQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 16:04:16 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:50666 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755947Ab0I0UEO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 16:04:14 -0400
+Date: Mon, 27 Sep 2010 13:02:56 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: holzheu@linux.vnet.ibm.com
+Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Oleg Nesterov <oleg@redhat.com>, John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: Re: [RFC][PATCH 00/10] taskstats: Enhancements for precise
+ accounting
+Message-Id: <20100927130256.5d9a3db8.akpm@linux-foundation.org>
+In-Reply-To: <1285579127.2116.62.camel@holzheu-laptop>
+References: <1285249681.1837.28.camel@holzheu-laptop>
+	<20100923131136.356075f4.akpm@linux-foundation.org>
+	<1285319415.2179.116.camel@holzheu-laptop>
+	<20100924115002.fcb4385a.akpm@linux-foundation.org>
+	<1285579127.2116.62.camel@holzheu-laptop>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 09:00:24PM +0200, Jan Kara wrote:
->   Hi,
+On Mon, 27 Sep 2010 11:18:47 +0200
+Michael Holzheu <holzheu@linux.vnet.ibm.com> wrote:
+
+> Hello Andrew,
 > 
->   when helping Lennart with answering some questions, I've spotted the
-> following problem (at least I think it's a problem ;): The thing is that
-> CFQ schedules how requests should be dispatched but does not in any
-> significant way limit to whom requests get allocated. Given we have a
-> quite limited pool of available requests it can happen that processes
-> will be actually starved not waiting for disk but waiting for requests
-> getting allocated and any IO scheduling priorities or classes will not
-> have serious effect.
->   A pathological example I've tried below:
-> #include <fcntl.h>
-> #include <stdio.h>
-> #include <stdlib.h>
-> #include <sys/stat.h>
+> On Fri, 2010-09-24 at 11:50 -0700, Andrew Morton wrote:
+> > > > This is a big change!  If this is done right then we're heading in the
+> > > > direction of deprecating the longstanding way in which userspace
+> > > > observes the state of Linux processes and we're recommending that the
+> > > > whole world migrate to taskstats.  I think?
+> > > 
+> > > Or it can be used as alternative. Since procfs has its drawbacks (e.g.
+> > > performance) an alternative could be helpful. 
+> > 
+> > And it can be harmful.  More kernel code to maintain and test, more
+> > userspace code to develop, maintain, etc.  Less user testing than if
+> > there was a single interface.
 > 
-> int main(void)
-> {
->   int fd = open("/dev/vdb", O_RDONLY);
->   int loop = 0;
+> Sure, the value has to be big enough to justify the effort.
 > 
->   if (fd < 0) {
->     perror("open");
->     exit(1);
->   }
->   while (1) {
->     if (loop % 100 == 0)
->       printf("Loop %d\n", loop);
->     posix_fadvise(fd, (random() * 4096) % 1000204886016ULL, 4096, POSIX_FADV_WILLNEED);
->     loop++;
->   }
-> }
+> But as I said, with taskstats and procfs we already have two interfaces
+> for getting task information.
+
+That doesn't mean it was the right thing to do!  For the reasons I
+outline above, it can be the wrong thing to do and strengthening one of
+the alternatives worsens the problem.
+
+> Currently in procfs there is information
+> than you can't find in taskstats. But also the other way round in the
+> taskstats structure there is very useful information that you can't get
+> under proc. E.g. the task delay times, IO accounting, etc.
+
+Sounds like a big screwup ;)
+
+Look at it this way: if you were going to sit down and start to design
+a new operating system from scratch, would you design the task status
+reporting system as it currently stands in Linux?  Don't think so!
+
+> So currently
+> tools have to use both interfaces to get all information, which is not
+> optimal.
 > 
->   This program will just push as many requests as possible to the block
-> layer and does not wait for any IO. Thus it will basically ignore any
-> decisions about when requests get dispatched. BTW, don't get distracted
-> by the fact that the program operates directly on the device, that is just
-> for simplicity. Large enough file would work the same way.
->   Even though I run this program with ionice -c 3, I still see that any
-> other IO to the device is basically stalled. When I look at the block
-> traces, I indeed see that what happens is that the above program submits
-> requests until there are no more available:
-> ...
-> 254,16   2      802     1.411285520  2563  Q   R 696733184 + 8 [random_read]
-> 254,16   2      803     1.411314880  2563  G   R 696733184 + 8 [random_read]
-> 254,16   2      804     1.411338220  2563  I   R 696733184 + 8 [random_read]
-> 254,16   2      805     1.411415040  2563  Q   R 1006864600 + 8 [random_read]
-> 254,16   2      806     1.411441620  2563  S   R 1006864600 + 8 [random_read]
+> > > 
+> > > > I worry that there's a dependency on CONFIG_NET?  If so then that's a
+> > > > big problem because in N years time, 99% of the world will be using
+> > > > taskstats, but a few embedded losers will be stuck using (and having to
+> > > > support) the old tools.
+> > > 
+> > > Sure, but if we could add the /proc/taskstats approach, this dependency
+> > > would not be there.
+> > 
+> > So why do we need to present the same info over netlink?
 > 
-> during and after that IO happens:
-> 254,16   3       31     1.417898030     0  C   R 345134640 + 8 [0]
-> 254,16   3       32     1.418171910     0  D   R 1524771568 + 8 [swapper]
-> 254,16   0       33     1.432317140     0  C   R 1524771568 + 8 [0]
-> 254,16   0       34     1.432597000     0  D   R 1077270768 + 8 [swapper]
-> ...
-> 254,16   0       35     1.503238050     0  C   R 33633744 + 8 [0]
-> 254,16   0       36     1.503558290     0  D   R 22178968 + 8 [swapper]
-> 
-> and the other program comes with IO and gets stalled:
-> 254,16   1       39     1.508843180  2564  A  RM 12346 + 8 <- (254,17) 12312
-> 254,16   1       40     1.508876520  2564  Q  RM 12346 + 8 [ls]
-> 254,16   1       41     1.508905140  2564  S  RM 12346 + 8 [ls]
-> ...
-> IO is still running:
-> 254,16   2      807     1.512081560     0  C   R 22178968 + 8 [0]
-> 254,16   2      808     1.512365010     0  D   R 475025688 + 8 [swapper]
-> 254,16   3       35     1.522113270     0  C   R 475025688 + 8 [0]
-> 254,16   3       36     1.522390779     0  D   R 697010128 + 8 [swapper]
-> 254,16   4       33     1.531443760     0  C   R 697010128 + 8 [0]
-> ...
-> random reader even gets to submitting more requests:
-> 254,16   2      815     1.785734950  2563  G   R 1006864600 + 8 [random_read]
-> 254,16   2      816     1.785752290  2563  I   R 1006864600 + 8 [random_read]
-> 254,16   2      817     1.785825880  2563  Q   R 832683552 + 8 [random_read]
-> 254,16   2      818     1.785850890  2563  G   R 832683552 + 8 [random_read]
-> 254,16   2      819     1.785874610  2563  I   R 832683552 + 8 [random_read]
-> ...
-> and finally our program gets to adding it's request as well:
-> 254,16   1       60     2.160884040  2564  G  RM 12346 + 8 [ls]
-> 254,16   1       61     2.160914700  2564  I   R 12346 + 8 [ls]
-> 254,16   1       62     2.161142170  2564  D   R 12346 + 8 [ls]
-> 254,16   1       63     2.161233670  2564  U   N [ls] 128
-> 
->   I can provide the full traces for download if someone is interested
-> in some part I didn't include here. The kernel is 2.6.36-rc4.
->   Now I agree that the above program is about as bad as it can get but
-> Lennart would like to implement readahead during boot on background and
-> I believe that could starve other IO in a similar way. So any idea how
-> to solve this? To me it seems as if we also needed to somehow limit the
-> number of allocated requests per cfqq but OTOH we have to be really careful
-> to not harm common workloads where we benefit from having lots of requests
-> queued...
+> Good point. It is not really necessary. I started development using the
+> netlink code. Therefore I first added the new command in the netlink
+> code. I also thought, it would be a good idea to provide all netlink
+> commands over the procfs interface to be consistent.
 
-Hi Jan,
+Maybe we should have delivered taskstats over procfs from day one.
 
-True that during request allocation, there is no consideration for ioprio.
-I think the whole logic is round robin, where after getting a bunch of
-request each process is put to sleep in the queue and then we do round
-robin on all waiters. This should in general be an issue with request
-queue and not just CFQ.
-
-So if there are bunch of threads which are very bullish on doing IO, and 
-there is a dependent reader, read latencies will shoot up.
-
-In fact current implementation of blkio controller also suffers with this
-limitation because we don't yet have per group request descriptors and
-once request queue is congested, requests from one group can get stuck
-behind the requests from other group.
-
-One way forward could be to implement per cgroup request descriptors and
-put this readahead thread into a separate cgroup of low weight.
-
-Other could be to implemnet some kind of request quota per priority level.
-This is similar to per cgroup quota I talked above, just one level below.
-
-Third could be ad-hoc way of putting some limit on per cfqq. But I think a
-process can easily circumvent that by forking off child which are not
-sharing cfq context and then we are back to same situaiton.
-
-A very hackish solution could be to try to increase nr_requests on the 
-queue to say 1024. This will work only if you know that read-ahead process
-does some limited amount of read-ahead and does not overwhelm the queue
-with more than 1024 requets.  And then use ioprio with low prio for
-read-ahead process.
-
-Thanks
-Vivek
