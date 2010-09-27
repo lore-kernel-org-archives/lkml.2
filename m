@@ -1,85 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759432Ab0I0Oac (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 10:30:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9995 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757999Ab0I0Oab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 10:30:31 -0400
-Message-ID: <4CA0AA7E.4090901@redhat.com>
-Date: Mon, 27 Sep 2010 16:30:22 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+	id S1759494Ab0I0Ob7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 10:31:59 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35369 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755783Ab0I0Ob6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 10:31:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=diHKKLu2sx0jlAkcX36kzTC3akuLNoa/OwCrQXJI36SK23CFQ2/281NqmOnRMA97Ud
+         y13zHApcC0GsyPG8jxox9x/XZR6zlodNTIMWiF6kF8+AlZy/RDqQZMU7X0+O89MO85zt
+         hcP+hPOUuxnzfvNdojKNHjrvOfIpD1KjZwxB8=
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/7] KVM: MMU: cleanup for error mask set while walk guest
- page table
-References: <4CA06BA4.4090303@cn.fujitsu.com> <4CA06BEF.7060401@cn.fujitsu.com>
-In-Reply-To: <4CA06BEF.7060401@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1285120171-3030-1-git-send-email-tom.leiming@gmail.com>
+References: <1285120171-3030-1-git-send-email-tom.leiming@gmail.com>
+Date: Mon, 27 Sep 2010 22:31:56 +0800
+Message-ID: <AANLkTikrhE=3FYtv9d+jzy5sohwpvhWsZPhm9+PCPZVn@mail.gmail.com>
+Subject: Re: [PATCH] mfd: speedup twl4030 irq response time and decrease irq
+ disable time
+From: Ming Lei <tom.leiming@gmail.com>
+To: sameo@linux.intel.com
+Cc: linux-omap@vger.kernel.org, Ming Lei <tom.leiming@gmail.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Balaji T K <balajitk@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 09/27/2010 12:03 PM, Xiao Guangrong wrote:
-> Small cleanup for set page fault error code
+2010/9/22  <tom.leiming@gmail.com>:
+> From: Ming Lei <tom.leiming@gmail.com>
 >
-> Xiao Guangrong<xiaoguangrong@cn.fujitsu.com>
+> This patch sets scheduler policy of twl4030 irq thread
+> (twl4030_irq_thread) as SCHED_FIFO to speedup irq response
+> time, just like taken by kernel threaded irq in irq_thread
+> (kernel/irq/manage.c). Also higher priority than that of
+> threaded irq is taken to avoid preemption from twl4030
+> subchips's threaded irq handler, so pih irq disable time may
+> be decreased.
+>
+> The pih irq is disabled in handle_twl4030_pih which may
+> wakeup twl4030 irq thread, and the pih irq will be enabled
+> again until complete of all sih irqs' handling in twl4030
+> irq thread.
+>
+> Also for each one interrupt line of twl4030 subchip, only
+> two irq events can be buffered by twl4030(4.4.2.3 of TPS65950 TRM).
+
+Ping...
+
+> Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Cc: Balaji T K <balajitk@ti.com>
+> Cc: Rajendra Nayak <rnayak@ti.com>
+> Cc: Kevin Hilman <khilman@deeprootsystems.com>
+> Cc: linux-kernel@vger.kernel.org
 > ---
->   arch/x86/kvm/paging_tmpl.h |   17 +++++++----------
->   1 files changed, 7 insertions(+), 10 deletions(-)
+>  drivers/mfd/twl4030-irq.c |   10 +++++++++-
+>  1 files changed, 9 insertions(+), 1 deletions(-)
 >
-> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-> index 2bdd843..a83ff37 100644
-> --- a/arch/x86/kvm/paging_tmpl.h
-> +++ b/arch/x86/kvm/paging_tmpl.h
-> @@ -224,9 +224,7 @@ walk:
->   			    is_cpuid_PSE36())
->   				gfn += pse36_gfn_delta(pte);
->
-> -			access |= write_fault ? PFERR_WRITE_MASK : 0;
-> -			access |= fetch_fault ? PFERR_FETCH_MASK : 0;
-> -			access |= user_fault  ? PFERR_USER_MASK  : 0;
-> +			access |= write_fault | fetch_fault | user_fault;
->
->   			real_gpa = mmu->translate_gpa(vcpu, gfn_to_gpa(gfn),
->   						      access);
-> @@ -268,10 +266,9 @@ error:
->   	walker->error_code = 0;
->   	if (present)
->   		walker->error_code |= PFERR_PRESENT_MASK;
-> -	if (write_fault)
-> -		walker->error_code |= PFERR_WRITE_MASK;
-> -	if (user_fault)
-> -		walker->error_code |= PFERR_USER_MASK;
+> diff --git a/drivers/mfd/twl4030-irq.c b/drivers/mfd/twl4030-irq.c
+> index 097f24d..d1e0d80 100644
+> --- a/drivers/mfd/twl4030-irq.c
+> +++ b/drivers/mfd/twl4030-irq.c
+> @@ -286,8 +286,16 @@ static int twl4030_irq_thread(void *data)
+>        long irq = (long)data;
+>        static unsigned i2c_errors;
+>        static const unsigned max_i2c_errors = 100;
+> -
+> -
+> +       struct sched_param param = {
+> +               .sched_priority = MAX_USER_RT_PRIO/2 + 10,
+> +       };
 > +
-> +	walker->error_code |= write_fault | user_fault;
-> +
->   	if (fetch_fault&&  mmu->nx)
->   		walker->error_code |= PFERR_FETCH_MASK;
->   	if (rsvd_fault)
-> @@ -673,9 +670,9 @@ static gpa_t FNAME(gva_to_gpa)(struct kvm_vcpu *vcpu, gva_t vaddr, u32 access,
->   	int r;
+> +       /* Take higher priority than threaded irq to make us immune of
+> +        * preemption from twl4030 subchips's threaded irq handler, then
+> +        * we can complete all SIH irqs' handling and enable PIH irq
+> +        * again asap.
+> +        * */
+> +       sched_setscheduler(current, SCHED_FIFO, &param);
+>        current->flags |= PF_NOFREEZE;
 >
->   	r = FNAME(walk_addr)(&walker, vcpu, vaddr,
-> -			     !!(access&  PFERR_WRITE_MASK),
-> -			     !!(access&  PFERR_USER_MASK),
-> -			     !!(access&  PFERR_FETCH_MASK));
-> +			     access&  PFERR_WRITE_MASK,
-> +			     access&  PFERR_USER_MASK,
-> +			     access&  PFERR_FETCH_MASK);
+>        while (!kthread_should_stop()) {
+> --
+> 1.6.2.5
 >
->   	if (r) {
->   		gpa = gfn_to_gpa(walker.gfn);
+>
 
-Interesting.  Maybe a next step is to pass the page-fault error code 
-instead of the various bits?  Not sure how that interacts with nested 
-ept (which has a different permission model).
 
+thanks,
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Lei Ming
