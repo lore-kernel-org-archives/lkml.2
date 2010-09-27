@@ -1,34 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759851Ab0I0QnW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 12:43:22 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:53347 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759802Ab0I0QnV (ORCPT
+	id S1759871Ab0I0Qo1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 12:44:27 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:64444 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759707Ab0I0Qo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 12:43:21 -0400
-Date: Mon, 27 Sep 2010 18:05:58 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Christoph Lameter <cl@linux.com>
-Cc: Richard Cochran <richardcochran@gmail.com>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-api@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        David Miller <davem@davemloft.net>, John Stultz <johnstul@us.ibm.com>,
-        Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v6 0/8] ptp: IEEE 1588 hardware clock support
-Message-ID: <20100927180558.52817d5f@lxorguk.ukuu.org.uk>
-In-Reply-To: <alpine.DEB.2.00.1009271054320.9258@router.home>
-References: <cover.1285261533.git.richard.cochran@omicron.at>
-	<20100923213654.0c64b047@lxorguk.ukuu.org.uk>
-	<20100924131407.GA3113@riccoc20.at.omicron.at>
-	<20100924150246.0e6064b6@lxorguk.ukuu.org.uk>
-	<alpine.DEB.2.00.1009271054320.9258@router.home>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Mon, 27 Sep 2010 12:44:26 -0400
+Date: Mon, 27 Sep 2010 09:43:07 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch 18/19] genirq: Provide Kconfig
+Message-Id: <20100927094307.6582c188.randy.dunlap@oracle.com>
+In-Reply-To: <20100927121843.217333624@linutronix.de>
+References: <20100927121651.904100669@linutronix.de>
+	<20100927121843.217333624@linutronix.de>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -36,21 +27,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Sep 2010 10:56:09 -0500 (CDT)
-Christoph Lameter <cl@linux.com> wrote:
+On Mon, 27 Sep 2010 12:45:59 -0000 Thomas Gleixner wrote:
 
+> The generic irq Kconfig options are copied around all archs. Provide a
+> generic Kconfig file which can be included.
 > 
-> On Fri, 24 Sep 2010, Alan Cox wrote:
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  kernel/irq/Kconfig |   49 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 49 insertions(+)
 > 
-> > Whether you add new syscalls or do the fd passing using flags and hide
-> > the ugly bits in glibc is another question.
-> 
-> Use device specific ioctls instead of syscalls?
+> Index: linux-2.6-tip/kernel/irq/Kconfig
+> ===================================================================
+> --- /dev/null
+> +++ linux-2.6-tip/kernel/irq/Kconfig
+> @@ -0,0 +1,49 @@
+> +#
+> +# Interrupt subsystem related configuration options
+> +#
+> +
+> +menu "Interrupt handling subsystem"
+> +
+> +config GENERIC_HARDIRQS
+> +	def_bool y
+> +
+> +config GENERIC_HARDIRQS_NO__DO_IRQ
+> +       def_bool y
+> +
+> +# Options selectable by the architecture code
+> +config HAVE_SPARSE_IRQ
+> +       def_bool n
+> +
+> +config GENERIC_IRQ_PROBE
+> +	def_bool n
+> +
+> +config GENERIC_PENDING_IRQ
+> +	def_bool n
+> +
+> +if SPARSE_IRQ && NUMA
+> +config NUMA_IRQ_DESC
+> +	def_bool n
+> +endif
+> +
+> +config AUTO_IRQ_AFFINITY
+> +       def_bool n
+> +
+> +config IRQ_PER_CPU
+> +       def_bool n
+> +
+> +config HARDIRQS_SW_RESEND
+> +       def_bool n
+> +
+> +config SPARSE_IRQ
+> +	bool "Support sparse irq numbering"
+> +	depends on HAVE_SPARSE_IRQ
+> +	---help---
+> +	  This enables support for sparse irqs. This is useful for distro
+> +	  kernels that want to define a high CONFIG_NR_CPUS value but still
+> +	  want to have low kernel memory footprint on smaller machines.
+> +
 
-Some of the ioctls are probably not device specific, the job of the OS in
-part is to present a unified interface. We already have a mess of HPET
-and RTC driver ioctls.
+I see that this is just moved from another location, but it would be good if
+the "irq"s above could be like the one below (IRQ or IRQs).
 
-Some of it undoubtedly is device specific.
+> +	  ( Sparse IRQs can also be beneficial on NUMA boxes, as they spread
+> +	    out the irq_desc[] array in a more NUMA-friendly way. )
+> +
+> +	  If you don't know what to do here, say N.
 
-Alan
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
