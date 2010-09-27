@@ -1,232 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759184Ab0I0WSr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 18:18:47 -0400
-Received: from isrv.corpit.ru ([86.62.121.231]:43843 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750780Ab0I0WSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 18:18:45 -0400
-Message-ID: <4CA11842.5080300@msgid.tls.msk.ru>
-Date: Tue, 28 Sep 2010 02:18:42 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.12) Gecko/20100913 Icedove/3.0.7
+	id S1760259Ab0I0WYd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 18:24:33 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:49347 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136Ab0I0WYc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 18:24:32 -0400
+Message-ID: <4CA11918.7050708@kernel.org>
+Date: Mon, 27 Sep 2010 15:22:16 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-To: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, kvm-devel <kvm@vger.kernel.org>
-Subject: Re: [stable 2.6.32] instant crash (jump to NULL) with virtio-net,
- tap, bridge and veth
-References: <4C753BC0.6010803@msgid.tls.msk.ru>
-In-Reply-To: <4C753BC0.6010803@msgid.tls.msk.ru>
-X-Enigmail-Version: 1.0.1
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: caiqian@redhat.com
+CC: Ingo Molnar <mingo@elte.hu>, kexec <kexec@lists.infradead.org>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: kexec load failure introduced by "x86, memblock: Replace e820_/_early
+ string with memblock_"
+References: <632974489.2046131285586512527.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <632974489.2046131285586512527.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+Content-Type: multipart/mixed;
+ boundary="------------010001080501070701010608"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replying to my own, quite old (more than a month old)
-email, and top-posting as well.
+This is a multi-part message in MIME format.
+--------------010001080501070701010608
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 
-I had a chance finally to try another theory with this
-problem -- the suspect this time was stack overflow.
-And indeed it looks like the case.  I can disable
-the bridge hooks in /proc/sys/net/bridge/, and the
-system works just fine (in the backtraces we can
-see ip_rcv_finish() and ip_rcv() calls, which are
-in the NF_HOOK macro).
+On 09/27/2010 04:21 AM, caiqian@redhat.com wrote:
+> 
+> ----- "CAI Qian" <caiqian@redhat.com> wrote:
+> 
+>> ----- "Yinghai Lu" <yinghai@kernel.org> wrote:
+>>
+>>> Please check this one on top of tip or next.
+>> This failed for both trees.
+>> [root@localhost linux-next]# patch -Np1 <memblock.patch
+>> patching file arch/x86/kernel/setup.c
+>> Hunk #1 FAILED at 516.
+>> 1 out of 1 hunk FAILED -- saving rejects to file
+>> arch/x86/kernel/setup.c.rej
+> After manually applied the patch on the top of the latest mmotm tree, now there was no /proc/vmcore exported to the second kernel anymore. It could be the results of other recent commits in mmotm though. It said,
+> 
+> Warning: Core image elf header is notsane
+> Kdump: vmcore not initialized
+> 
+> Here is the dmesg from the second kernel,
+> 
+> Initializing cgroup subsys cpuset
+> Linux version 2.6.36-rc5-mm1+ (root@localhost.localdomain) (gcc version 4.4.4 20100726 (Red Hat 4.4.4-13) (GCC) ) #6 SMP Mon Sep 27 07:00:15 EDT 2010
+> Command line: ro root=/dev/mapper/VolGroup-lv_root rd_LVM_LV=VolGroup/lv_root rd_LVM_LV=VolGroup/lv_swap rd_NO_LUKS rd_NO_MD rd_NO_DM LANG=en_US.UTF-8 SYSFONT=latarcyrheb-sun16 KEYBOARDTYPE=pc KEYTABLE=us rhgb quiet console=tty0 console=ttyS0,115200 crashkernel=128M irqpoll maxcpus=1 reset_devices cgroup_disable=memory  memmap=exactmap memmap=640K@0K memmap=130408K@32768K elfcorehdr=163176K kexec_jump_back_entry=0x000000000232f063
+> BIOS-provided physical RAM map:
+>  BIOS-e820: 0000000000000100 - 000000000009f400 (usable)
+>  BIOS-e820: 000000000009f400 - 00000000000a0000 (reserved)
+>  BIOS-e820: 00000000000f0000 - 0000000000100000 (reserved)
+>  BIOS-e820: 0000000000100000 - 00000000dfffb000 (usable)
+>  BIOS-e820: 00000000dfffb000 - 00000000e0000000 (reserved)
+>  BIOS-e820: 00000000fffbc000 - 0000000100000000 (reserved)
+>  BIOS-e820: 0000000100000000 - 0000000ca0000000 (usable)
+> last_pfn = 0xca0000 max_arch_pfn = 0x400000000
+> NX (Execute Disable) protection: active
+> user-defined physical RAM map:
+>  user: 0000000000000000 - 00000000000a0000 (usable)
+>  user: 0000000002000000 - 0000000009f5a000 (usable)
+...
 
-So, by disabling all nf hooks the problem goes away.
-After enabling them again the kernel crashes again
-as before.
+> Dquot-cache hash table entries: 512 (order 0, 4096 bytes)
+> Warning: Core image elf header is notsane
+> Kdump: vmcore not initialized
+> 
+>>
 
-Since this is our production host, I wont do more
-tests in a near future, leaving the nf hooks disabled.
+it should work on tip..., I tested on RHEL 6.0 beta.
+with
+/etc/init.d/kdump restart
 
-Thanks for listening!
+BTW, second kernel is not supposed to take crashkernel=128M again.
+/etc/init.d/kdump scripts remove that while using /proc/cmdline.
 
-/mjt
+please refer
+http://people.redhat.com/mingo/tip.git/readme.txt
+to get tip/master
 
-25.08.2010 19:50, Michael Tokarev wrote:
-> Hello.
-> 
-> I'm seeing instant host kernel crash triggered by _any_
-> network activity to/from a kvm guest that's using virtio-net.
-> 
-> My setup is maybe a bit unusual, but here we go.
-> 
-> I've a host machine that has one bridge configured,
-> and is running a few kvm virtual machines and a few
-> linux containers (LXC).  All the guests/containers
-> are "connected" to that single bridge - guests using
-> tap devices, lxc containers using veth devices. Host
-> eth0 is connected to the same bridge as well.
-> 
-> The problem happens with virtio-net drivers used in
-> guest (this is windowsXP virtual machine with latest
-> netkvm driver from alt.fedoraproject.org), when I
-> connect to that guest from an LXC container.  I.e,
-> when packet goes lxc => veth => bridge => tun =>
-> kvm => virtio in guest (or back).
-> 
-> When I connect to the same guest from _host_, it all
-> works as expected.  When I change (virtual) NIC in
-> guest to e1000 or older (from 2009) virtio-net driver,
-> it works.  When I connect from lxc container to a
-> linux guest with latest virtio-net drivers, it all
-> works as expected too.  So only one combination so
-> far that triggers the issue.
-> 
-> This is all with 2.6.32 kernel.  Initially it was
-> 2.6.32.15, but 2.6.32.20 behaves the same way too.
-> All 64bit.
-> 
-> Also it does NOT happen with 2.6.35.3, the current
-> latest released kernel.
-> 
-> Here's one of captured OOPSes (i did it several
-> times, but they were incomplete):
-> 
-> console [netcon0] enabled
-> netconsole: network logging started
-> BUG: unable to handle kernel NULL pointer dereference at (null)
-> IP: [<(null)>] (null)
-> PGD 177bf2067 PUD 177ae5067 PMD 0
-> Oops: 0010 [#1] SMP
-> last sysfs file: /sys/devices/virtual/block/md8/md/mismatch_cnt
-> CPU 0
-> Modules linked in: netconsole configfs squashfs kvm_amd kvm veth autofs4 bridge quota_v2 quota_tree ext4 jbd2 crc16 raid0 raid456 async_pq async_xor xor async_memcpy async_raid6_recov raid6_pq async_tx loop sr_mod cdrom tun powernow_k8 processor thermal_sys 8021q garp stp llc asus_atk0110 hwmon atl1 mii ext3 jbd mbcache raid1 md_mod pata_atiixp ehci_hcd ohci_hcd usbcore nls_base ahci libata sd_mod scsi_mod
-> Pid: 2345, comm: kvm Not tainted 2.6.32-amd64 #2.6.32.20 System Product Name
-> RIP: 0010:[<0000000000000000>]  [<(null)>] (null)
-> RSP: 0018:ffff880028203e70  EFLAGS: 00010293
-> RAX: ffff880179480ec0 RBX: ffff8801a07770c0 RCX: 0000000000000000
-> RDX: 0000000000000000 RSI: ffff8801a07770c0 RDI: ffff8801a07770c0
-> RBP: ffff880124b89030 R08: ffffffff8125fab0 R09: ffff880028203e40
-> R10: 0000000000000000 R11: 0000000000000000 R12: ffff880028210888
-> R13: ffff880028210880 R14: 000000010000e60f R15: 0000000000000040
-> FS:  00007fe2da5e5700(0000) GS:ffff880028200000(0000) knlGS:00000000f74a59d0
-> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> CR2: 0000000000000000 CR3: 0000000177a8a000 CR4: 00000000000006f0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process kvm64 (pid: 2345, threadinfo ffff880177be2000, task ffff880177a7c0c0)
-> Stack:
->  ffffffff8125fbd5 0000000000000040 ffffffff8126013c 0000000080000000
-> <0> ffff8800282108b8 0000000000000002 ffff880028210888 ffff880028210880
-> <0> ffffffff81236276 ffff880028203f48 ffff8800282108b8 0000000000000000
-> Call Trace:
->  <IRQ>
->  [<ffffffff8125fbd5>] ? ip_rcv_finish+0x125/0x430
->  [<ffffffff8126013c>] ? ip_rcv+0x25c/0x350
->  [<ffffffff81236276>] ? process_backlog+0x76/0xd0
->  [<ffffffff81236a18>] ? net_rx_action+0xf8/0x1f0
->  [<ffffffff81059120>] ? __do_softirq+0xb0/0x1d0
->  [<ffffffff8100c56c>] ? call_softirq+0x1c/0x30
->  <EOI>
->  [<ffffffff8100e595>] ? do_softirq+0x65/0xa0
->  [<ffffffff81236b2e>] ? netif_rx_ni+0x1e/0x30
->  [<ffffffffa014e97a>] ? tun_chr_aio_write+0x35a/0x510 [tun]
->  [<ffffffffa014e620>] ? tun_chr_aio_write+0x0/0x510 [tun]
->  [<ffffffff810ffea4>] ? do_sync_readv_writev+0xd4/0x110
->  [<ffffffff8106e890>] ? autoremove_wake_function+0x0/0x30
->  [<ffffffff81071709>] ? enqueue_hrtimer+0x79/0xc0
->  [<ffffffff810ffd08>] ? rw_copy_check_uvector+0x88/0x110
->  [<ffffffff811005bc>] ? do_readv_writev+0xdc/0x220
->  [<ffffffff8106dafc>] ? sys_timer_settime+0x13c/0x2e0
->  [<ffffffff8110084e>] ? sys_writev+0x4e/0x90
->  [<ffffffff8100b482>] ? system_call_fastpath+0x16/0x1b
-> Code:  Bad RIP value.
-> RIP  [<(null)>] (null)
->  RSP <ffff880028203e70>
-> CR2: 0000000000000000
-> ---[ end trace 1dcd3c52bde0fa25 ]---
-> Kernel panic - not syncing: Fatal exception in interrupt
-> Pid: 2345, comm: kvm Tainted: G      D    2.6.32-amd64 #2.6.32.20
-> Call Trace:
->  <IRQ>  [<ffffffff812c22de>] ? panic+0x7a/0x134
->  [<ffffffff812c23d8>] ? printk+0x40/0x48
->  [<ffffffff8100faa3>] ? oops_end+0xa3/0xb0
->  [<ffffffff8103138a>] ? no_context+0xfa/0x260
->  [<ffffffff812c52a5>] ? page_fault+0x25/0x30
->  [<ffffffff8125fab0>] ? ip_rcv_finish+0x0/0x430
->  [<ffffffff8125fbd5>] ? ip_rcv_finish+0x125/0x430
->  [<ffffffff8126013c>] ? ip_rcv+0x25c/0x350
->  [<ffffffff81236276>] ? process_backlog+0x76/0xd0
->  [<ffffffff81236a18>] ? net_rx_action+0xf8/0x1f0
->  [<ffffffff81059120>] ? __do_softirq+0xb0/0x1d0
->  [<ffffffff8100c56c>] ? call_softirq+0x1c/0x30
->  <EOI>  [<ffffffff8100e595>] ? do_softirq+0x65/0xa0
->  [<ffffffff81236b2e>] ? netif_rx_ni+0x1e/0x30
->  [<ffffffffa014e97a>] ? tun_chr_aio_write+0x35a/0x510 [tun]
->  [<ffffffffa014e620>] ? tun_chr_aio_write+0x0/0x510 [tun]
->  [<ffffffff810ffea4>] ? do_sync_readv_writev+0xd4/0x110
->  [<ffffffff8106e890>] ? autoremove_wake_function+0x0/0x30
->  [<ffffffff81071709>] ? enqueue_hrtimer+0x79/0xc0
->  [<ffffffff810ffd08>] ? rw_copy_check_uvector+0x88/0x110
->  [<ffffffff811005bc>] ? do_readv_writev+0xdc/0x220
->  [<ffffffff8106dafc>] ? sys_timer_settime+0x13c/0x2e0
->  [<ffffffff8110084e>] ? sys_writev+0x4e/0x90
->  [<ffffffff8100b482>] ? system_call_fastpath+0x16/0x1b
-> Rebooting in 60 seconds..
-> 
-> 
-> Another:
-> 
-> BUG: unable to handle kernel NULL pointer dereference at (null)
-> IP: [<(null)>] (null)
-> PGD 10c804067 PUD 212d0e067 PMD 0
-> Oops: 0010 [#1] SMP
-> last sysfs file: /sys/devices/virtual/vc/vcsa2/dev
-> CPU 0
-> Modules linked in: netconsole configfs squashfs kvm_amd kvm veth autofs4 bridge quota_v2 quota_tree ext4 jbd2 crc16 raid0 raid456 async_pq async_xor xor async_memcpy async_raid6_recov raid6_pq async_tx loop sr_mod cdrom tun powernow_k8 processor thermal_sys 8021q garp stp llc asus_atk0110 hwmon atl1 mii ext3 jbd mbcache raid1 md_mod pata_atiixp ehci_hcd ohci_hcd usbcore nls_base [<ffffffff8100bff3>] ? apic_timer_interrupt+0x13/0x20
->  [<ffffffff8100fced>] ? oops_end+0x9d/0xb0
->  [<ffffffff810320b7>] ? no_context+0xf7/0x260
->  [<ffffffff81032375>] ? __bad_area_nosemaphore+0x155/0x230
->  [<ffffffffa0273ea0>] ? br_nf_pre_routing_finish+0x0/0x350 [bridge]
->  [<ffffffffa0274759>] ? br_nf_pre_routing+0x569/0x880 [bridge]
->  [<ffffffff812cc945>] ? page_fault+0x25/0x30
->  [<ffffffff812650a0>] ? ip_rcv+0x0/0x350
->  [<ffffffff81264c60>] ? ip_rcv_finish+0x0/0x440
->  [<ffffffff81264e19>] ? ip_rcv_finish+0x1b9/0x440
->  [<ffffffff81265354>] ? ip_rcv+0x2b4/0x350
->  [<ffffffff8123ba85>] ? process_backlog+0x75/0xc0
->  [<ffffffff8123c246>] ? net_rx_action+0x106/0x220
->  [<ffffffff8105abcb>] ? __do_softirq+0xfb/0x1d0
->  [<ffffffff8100c62c>] ? call_softirq+0x1c/0x30
->  <EOI>  [<ffffffff8100e765>] ? do_softirq+0x65/0xa0
->  [<ffffffff8123c379>] ? netif_rx_ni+0x19/0x20
->  [<ffffffffa0151b0b>] ? tun_chr_aio_write+0x3fb/0x550 [tun]
->  [<ffffffffa0151710>] ? tun_chr_aio_write+0x0/0x550 [tun]
->  [<ffffffff811031fb>] ? do_sync_readv_writev+0xcb/0x110
->  [<ffffffff81065941>] ? __dequeue_signal+0xe1/0x210
->  [<ffffffff810706b0>] ? autoremove_wake_function+0x0/0x30
->  [<ffffffff81012bc2>] ? read_tsc+0x12/0x40
->  [<ffffffff81024608>] ? lapic_next_event+0x18/0x20
->  [<ffffffff8107d156>] ? tick_dev_program_event+0x36/0xb0
->  [<ffffffff81103036>] ? rw_copy_check_uvector+0x86/0x130
->  [<ffffffff81103912>] ? do_readv_writev+0xe2/0x230
->  [<ffffffff8106f883>] ? sys_timer_settime+0x153/0x350
->  [<ffffffff81103bb3>] ? sys_writev+0x53/0xa0
->  [<ffffffff8100b542>] ? system_call_fastpath+0x16/0x1b
-> Rebooting in 60 seconds..
-> 
-> I looked at the changes in tun, virtio-net, bridge code and
-> veth between 2.6.32 and 2.6.35, but I see nothing relevant
-> in there (but I'm not an expert in that area anyway). The
-> changes mentions a few crashes, but all were related to
-> device registration/deregistration or module unload, not
-> to normal send/receive path.
-> 
-> It will be really nice to fix this for long-stable 2.6.32
-> series... ;)
-> 
-> Thanks!
-> 
-> /mjt
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+and apply attached patch
+cat crashkernel_limit.patch | patch -p1
 
+Thanks
+
+Yinghai
+
+
+--------------010001080501070701010608
+Content-Type: text/x-patch;
+ name="crashkernel_limit.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="crashkernel_limit.patch"
+
+[PATCH -v2] x86, memblock: Fix crashkernel allocation
+
+Cai Qian found crashkernel is broken with x86 memblock changes
+1. crashkernel=128M@32M always reported that range is used, even first kernel is small
+   no one use that range
+2. always get following report when using "kexec -p"
+	Could not find a free area of memory of a000 bytes...
+	locate_hole failed
+
+The root cause is that generic memblock_find_in_range() will try to get range from top_down.
+But crashkernel do need from low and specified range.
+
+Let's limit the target range with rash_base + crash_size to make sure that
+We get range from bottom.
+
+-v2: don't limit it with 0xffffffff, in case kexec will use bzImage 64bit entry or vmlinux,
+     and try to allocate huge area for crashkernel.
+
+Reported-and-Bisected-by: CAI Qian <caiqian@redhat.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ arch/x86/kernel/setup.c |   19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
+
+Index: linux-2.6/arch/x86/kernel/setup.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/setup.c
++++ linux-2.6/arch/x86/kernel/setup.c
+@@ -516,19 +516,28 @@ static void __init reserve_crashkernel(v
+ 
+ 	/* 0 means: find the address automatically */
+ 	if (crash_base <= 0) {
++		unsigned long long start = 0;
+ 		const unsigned long long alignment = 16<<20;	/* 16M */
+ 
+-		crash_base = memblock_find_in_range(alignment, ULONG_MAX, crash_size,
+-				 alignment);
+-		if (crash_base == MEMBLOCK_ERROR) {
++		crash_base = alignment;
++		while ((crash_base + crash_size) <= total_mem) {
++			start = memblock_find_in_range(crash_base,
++				crash_base + crash_size, crash_size, alignment);
++
++			if (start == crash_base)
++				break;
++
++			crash_base += alignment;
++		}
++		if (start != crash_base) {
+ 			pr_info("crashkernel reservation failed - No suitable area found.\n");
+ 			return;
+ 		}
+ 	} else {
+ 		unsigned long long start;
+ 
+-		start = memblock_find_in_range(crash_base, ULONG_MAX, crash_size,
+-				 1<<20);
++		start = memblock_find_in_range(crash_base,
++				 crash_base + crash_size, crash_size, 1<<20);
+ 		if (start != crash_base) {
+ 			pr_info("crashkernel reservation failed - memory is in use.\n");
+ 			return;
+
+--------------010001080501070701010608--
