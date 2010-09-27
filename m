@@ -1,167 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760360Ab0I0W4n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 18:56:43 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:58670 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757511Ab0I0W4l (ORCPT
+	id S1760444Ab0I0W6F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 18:58:05 -0400
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:35830 "EHLO
+	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760270Ab0I0W57 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 18:56:41 -0400
-Date: Mon, 27 Sep 2010 18:54:52 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Andrew Morton <akpm@linux-foundation.org>, hch@lst.de,
-        linux-kernel@vger.kernel.org, Jens Axboe <jaxboe@fusionio.com>,
-        linux-btrfs@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, stable@kernel.org,
-        Jens Axboe <axboe@kernel.dk>,
-        =?utf-8?Q?Micha=C5=82?= Piotrowski <mkkp4x4@gmail.com>,
-        Chuck Ebbert <cebbert@redhat.com>, kernel@lists.fedoraproject.org
-Subject: Re: Dirtiable inode bdi default != sb bdi btrfs
-Message-ID: <20100927225452.GG4270@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Jan Kara <jack@suse.cz>, Cesar Eduardo Barros <cesarb@cesarb.net>,
-	Andrew Morton <akpm@linux-foundation.org>, hch@lst.de,
-	linux-kernel@vger.kernel.org, Jens Axboe <jaxboe@fusionio.com>,
-	linux-btrfs@vger.kernel.org,
-	Alexander Viro <viro@zeniv.linux.org.uk>,
-	linux-fsdevel@vger.kernel.org, stable@kernel.org,
-	Jens Axboe <axboe@kernel.dk>,
-	=?utf-8?Q?Micha=C5=82?= Piotrowski <mkkp4x4@gmail.com>,
-	Chuck Ebbert <cebbert@redhat.com>, kernel@lists.fedoraproject.org
-References: <4C9AA546.6050201@cesarb.net>
- <20100923123849.8975fe47.akpm@linux-foundation.org>
- <20100927222548.GG3610@quack.suse.cz>
+	Mon, 27 Sep 2010 18:57:59 -0400
+From: "Ira W. Snyder" <iws@ovro.caltech.edu>
+To: linux-kernel@vger.kernel.org
+Cc: Dan Williams <dan.j.williams@intel.com>, linuxppc-dev@lists.ozlabs.org,
+        Linus Walleij <linus.ml.walleij@gmail.com>,
+        =?UTF-8?q?Per=20Frid=C3=A9n?= <per.friden@stericsson.com>
+Subject: [PATCH 4/4] ste_dma40: implement support for scatterlist to scatterlist copy
+Date: Mon, 27 Sep 2010 15:57:57 -0700
+Message-Id: <1285628277-26894-5-git-send-email-iws@ovro.caltech.edu>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1285628277-26894-1-git-send-email-iws@ovro.caltech.edu>
+References: <1285628277-26894-1-git-send-email-iws@ovro.caltech.edu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100927222548.GG3610@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.0 (ovro.ovro.caltech.edu); Mon, 27 Sep 2010 15:57:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 28, 2010 at 12:25:48AM +0200, Jan Kara wrote:
-> [Added CCs for similar ecryptfs warning]
-> On Thu 23-09-10 12:38:49, Andrew Morton wrote:
-> > > This started appearing for me on v2.6.36-rc5-49-gc79bd89; it did not 
-> > > happen on v2.6.36-rc5-33-g1ce1e41, probably because it does not have 
-> > > commit 692ebd17c2905313fff3c504c249c6a0faad16ec which introduces the 
-> > > warning.
-> > > [...]
-> > > device fsid 44d595920ddedfa-3ece6b56e80f689e devid 1 transid 22342 
-> > > /dev/mapper/vg_cesarbinspiro-lv_home
-> > > SELinux: initialized (dev dm-3, type btrfs), uses xattr
-> > > ------------[ cut here ]------------
-> > > WARNING: at fs/fs-writeback.c:87 inode_to_bdi+0x62/0x6d()
-> > > Hardware name: Inspiron N4010
-> > > Dirtiable inode bdi default != sb bdi btrfs
-> > > Modules linked in: ipv6 kvm_intel kvm uinput arc4 ecb 
-> > > snd_hda_codec_intelhdmi snd_hda_codec_realtek iwlagn snd_hda_intel 
-> > > iwlcore snd_hda_codec uvcvideo snd_hwdep mac80211 videodev snd_seq 
-> > > snd_seq_device v4l1_compat snd_pcm atl1c v4l2_compat_ioctl32 btusb 
-> > > cfg80211 snd_timer i2c_i801 bluetooth iTCO_wdt dell_wmi dell_laptop snd 
-> > > pcspkr wmi dcdbas shpchp iTCO_vendor_support soundcore snd_page_alloc 
-> > > rfkill joydev microcode btrfs zlib_deflate libcrc32c cryptd aes_x86_64 
-> > > aes_generic xts gf128mul dm_crypt usb_storage i915 drm_kms_helper drm 
-> > > i2c_algo_bit i2c_core video output [last unloaded: scsi_wait_scan]
-> > > Pid: 1073, comm: find Not tainted 2.6.36-rc5+ #8
-> > > Call Trace:
-> > >   [<ffffffff8104d0e4>] warn_slowpath_common+0x85/0x9d
-> > >   [<ffffffff8104d19f>] warn_slowpath_fmt+0x46/0x48
-> > >   [<ffffffff811308b7>] inode_to_bdi+0x62/0x6d
-> > >   [<ffffffff81131b48>] __mark_inode_dirty+0xd0/0x177
-> > >   [<ffffffff81127168>] touch_atime+0x107/0x12a
-> > >   [<ffffffff81122384>] ? filldir+0x0/0xd0
-> > >   [<ffffffff8112259b>] vfs_readdir+0x8d/0xb4
-> > >   [<ffffffff8112270b>] sys_getdents+0x81/0xd1
-> > >   [<ffffffff81009c72>] system_call_fastpath+0x16/0x1b
->   Thanks for the report. These bdi pointers are a mess. As Chris pointed
-> out, btrfs forgets to properly initialize inode->i_mapping.backing_dev_info
-> for directories and special inodes and thus these were previously attached
-> to default_backing_dev_info which probably isn't what Chris would like to
-> see.
+Now that the DMAEngine API has support for scatterlist to scatterlist
+copy, implement support for the STE DMA40 DMA controller.
 
-There's no actual writeback for these, so it works fine for btrfs either
-way.
+Cc: Linus Walleij <linus.ml.walleij@gmail.com>
+Cc: Per Fridén <per.friden@stericsson.com>
+Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
+---
+ drivers/dma/ste_dma40.c |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
 
->   I've also got a similar report for ecryptfs which also does not
-> initialize inode->i_mapping.backing_dev_info although it sets sb->s_bdi and
-> thus again its inodes get filed to default_backing_dev_info lists.  Quick
-> search seems to reveal that other filesystems using handcrafted bdi's get
-> it wrong as well and thus their inodes end up in the default_backing_dev_info
-> lists which is generally undesirable (this was happening already before my
-> patch, my code just started complaining about that).
->   That suggests that we should probably handle such cases in a more generic
-> way by changing the code in inode_init_always(). The patch below makes at
-> least btrfs happy for me... Could you maybe test it? Thanks.
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index 17e2600..cd48859 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -1857,6 +1857,18 @@ err:
+ 	return NULL;
+ }
+ 
++static struct dma_async_tx_descriptor *
++d40_prep_sg(struct dma_chan *chan,
++	    struct scatterlist *dst_sg, unsigned int dst_nents,
++	    struct scatterlist *src_sg, unsigned int src_nents,
++	    unsigned long dma_flags)
++{
++	if (dst_nents != src_nents)
++		return -EINVAL;
++
++	return stedma40_memcpy_sg(chan, dst_sg, src_sg, dst_nents, dma_flags);
++}
++
+ static int d40_prep_slave_sg_log(struct d40_desc *d40d,
+ 				 struct d40_chan *d40c,
+ 				 struct scatterlist *sgl,
+@@ -2281,6 +2293,7 @@ static int __init d40_dmaengine_init(struct d40_base *base,
+ 	base->dma_slave.device_alloc_chan_resources = d40_alloc_chan_resources;
+ 	base->dma_slave.device_free_chan_resources = d40_free_chan_resources;
+ 	base->dma_slave.device_prep_dma_memcpy = d40_prep_memcpy;
++	base->dma_slave.device_prep_dma_sg = d40_prep_sg;
+ 	base->dma_slave.device_prep_slave_sg = d40_prep_slave_sg;
+ 	base->dma_slave.device_tx_status = d40_tx_status;
+ 	base->dma_slave.device_issue_pending = d40_issue_pending;
+@@ -2301,10 +2314,12 @@ static int __init d40_dmaengine_init(struct d40_base *base,
+ 
+ 	dma_cap_zero(base->dma_memcpy.cap_mask);
+ 	dma_cap_set(DMA_MEMCPY, base->dma_memcpy.cap_mask);
++	dma_cap_set(DMA_SG, base->dma_slave.cap_mask);
+ 
+ 	base->dma_memcpy.device_alloc_chan_resources = d40_alloc_chan_resources;
+ 	base->dma_memcpy.device_free_chan_resources = d40_free_chan_resources;
+ 	base->dma_memcpy.device_prep_dma_memcpy = d40_prep_memcpy;
++	base->dma_slave.device_prep_dma_sg = d40_prep_sg;
+ 	base->dma_memcpy.device_prep_slave_sg = d40_prep_slave_sg;
+ 	base->dma_memcpy.device_tx_status = d40_tx_status;
+ 	base->dma_memcpy.device_issue_pending = d40_issue_pending;
+@@ -2331,10 +2346,12 @@ static int __init d40_dmaengine_init(struct d40_base *base,
+ 	dma_cap_zero(base->dma_both.cap_mask);
+ 	dma_cap_set(DMA_SLAVE, base->dma_both.cap_mask);
+ 	dma_cap_set(DMA_MEMCPY, base->dma_both.cap_mask);
++	dma_cap_set(DMA_SG, base->dma_slave.cap_mask);
+ 
+ 	base->dma_both.device_alloc_chan_resources = d40_alloc_chan_resources;
+ 	base->dma_both.device_free_chan_resources = d40_free_chan_resources;
+ 	base->dma_both.device_prep_dma_memcpy = d40_prep_memcpy;
++	base->dma_slave.device_prep_dma_sg = d40_prep_sg;
+ 	base->dma_both.device_prep_slave_sg = d40_prep_slave_sg;
+ 	base->dma_both.device_tx_status = d40_tx_status;
+ 	base->dma_both.device_issue_pending = d40_issue_pending;
+-- 
+1.7.1
 
-Christoph had a slightly different plan for this, I've cc'd him and kept
-the patch below for comment.
-
--chris
-
-> 
-> 								Honza
-> -- 
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
-> ---
-> 
-> From 29f60c2b08ff9637a10439d1513805835ddcc746 Mon Sep 17 00:00:00 2001
-> From: Jan Kara <jack@suse.cz>
-> Date: Mon, 27 Sep 2010 23:56:48 +0200
-> Subject: [PATCH] bdi: Initialize inode->i_mapping.backing_dev_info to sb->s_bdi
-> 
-> Currently, we initialize inode->i_mapping.backing_dev_info to the bdi of device
-> sb->s_bdev points to. However there is quite a big number of filesystems that
-> do not set sb->s_bdev (because they do not have one) but do set sb->s_bdi.
-> These filesystems would generally benefit from setting
-> inode->i_mapping.backing_dev_info to their s_bdi because otherwise their inodes
-> would point to default_backing_dev_info and thus dirty inode tracking would
-> happen there. So change inode initialization code to use sb->s_bdi if it
-> is available.
-> 
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> ---
->  fs/inode.c |   22 ++++++++++++++--------
->  1 files changed, 14 insertions(+), 8 deletions(-)
-> 
-> diff --git a/fs/inode.c b/fs/inode.c
-> index 8646433..e415be4 100644
-> --- a/fs/inode.c
-> +++ b/fs/inode.c
-> @@ -172,15 +172,21 @@ int inode_init_always(struct super_block *sb, struct inode *inode)
->  	mapping->writeback_index = 0;
->  
->  	/*
-> -	 * If the block_device provides a backing_dev_info for client
-> -	 * inodes then use that.  Otherwise the inode share the bdev's
-> -	 * backing_dev_info.
-> +	 * If the filesystem provides a backing_dev_info for client inodes
-> +	 * then use that. Otherwise inodes share default_backing_dev_info.
->  	 */
-> -	if (sb->s_bdev) {
-> -		struct backing_dev_info *bdi;
-> -
-> -		bdi = sb->s_bdev->bd_inode->i_mapping->backing_dev_info;
-> -		mapping->backing_dev_info = bdi;
-> +	if (sb->s_bdi && sb->s_bdi != &noop_backing_dev_info) {
-> +		/*
-> +		 * Catch cases where filesystem might be bitten by using s_bdi
-> +		 * instead of sb->s_bdev. Can be removed in 2.6.38.
-> +		 */
-> +		if (sb->s_bdev) {
-> +			struct backing_dev_info *bdi =
-> +			  sb->s_bdev->bd_inode->i_mapping->backing_dev_info;
-> +			WARN(bdi != sb->s_bdi, "s_bdev bdi %s != s_bdi %s\n",
-> +			     bdi->name, sb->s_bdi->name);
-> +		}
-> +		mapping->backing_dev_info = sb->s_bdi;
->  	}
->  	inode->i_private = NULL;
->  	inode->i_mapping = mapping;
-> -- 
-> 1.6.4.2
-> 
