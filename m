@@ -1,105 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760060Ab0I0TJf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 15:09:35 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:56673 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757175Ab0I0TJd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 15:09:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=P/V4WFDcuEoi7njKZ7yWSWklAWKXAFmw6Faf6rQWSmkos5OdUeCzHKv0kQpKz7fDJK
-         CKUyDJqUovc1Z7zS1SasvrlNgln/c2Fb2iyrg+sq0lco3wCThs9gOsQN41UQKozBKOdg
-         dK3h4zuXO3zk/s7BEriD10BjrPXx7VHhivwBI=
-Date: Mon, 27 Sep 2010 15:09:30 -0400
-From: tmhikaru@gmail.com
-To: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: Linux 2.6.35.6
-Message-ID: <20100927190930.GA7086@roll>
-References: <20100927003608.GA20395@kroah.com> <20100927163208.GA4892@roll> <20100927175412.GA23347@suse.de>
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xHFwDpU9dbj6ez1V"
-Content-Disposition: inline
-In-Reply-To: <20100927175412.GA23347@suse.de>
-User-Agent: Mutt/1.4.2.3i
+	id S1760074Ab0I0TJx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 15:09:53 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:47885 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760043Ab0I0TJw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 15:09:52 -0400
+Message-ID: <4CA0EBEB.1030204@austin.ibm.com>
+Date: Mon, 27 Sep 2010 14:09:31 -0500
+From: Nathan Fontenot <nfont@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org
+CC: Greg KH <greg@kroah.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH 0/8] v2 De-Couple sysfs memory directories from memory sections
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This set of patches decouples the concept that a single memory
+section corresponds to a single directory in 
+/sys/devices/system/memory/.  On systems
+with large amounts of memory (1+ TB) there are perfomance issues
+related to creating the large number of sysfs directories.  For
+a powerpc machine with 1 TB of memory we are creating 63,000+
+directories.  This is resulting in boot times of around 45-50
+minutes for systems with 1 TB of memory and 8 hours for systems
+with 2 TB of memory.  With this patch set applied I am now seeing
+boot times of 5 minutes or less.
 
---xHFwDpU9dbj6ez1V
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The root of this issue is in sysfs directory creation. Every time
+a directory is created a string compare is done against all sibling
+directories to ensure we do not create duplicates.  The list of
+directory nodes in sysfs is kept as an unsorted list which results
+in this being an exponentially longer operation as the number of
+directories are created.
 
-On Mon, Sep 27, 2010 at 10:54:12AM -0700, Greg KH wrote:
-> On Mon, Sep 27, 2010 at 12:32:08PM -0400, tmhikaru@gmail.com wrote:
-> > 	I'm not exactly sure what's going on here and I'd like some help
-> > figuring out what is. For some inexplicable reason, ever since I started
-> > using the 2.6.35.x series with the 2.6.35.3 release, my loadaverages te=
-nd to
-> > bounce anywhere from as low to .2 to 1.5 - constantly, while the machine
-> > seems idle.
->=20
-> But .34 doesn't show this issue?
->=20
-> If so, can you run 'git bisect' between the .34 and .35 releases to find
-> out where the problem comes in?
+The solution solved by this patch set is to allow a single
+directory in sysfs to span multiple memory sections.  This is
+controlled by an optional architecturally defined function
+memory_block_size_bytes().  The default definition of this
+routine returns a memory block size equal to the memory section
+size. This maintains the current layout of sysfs memory
+directories as it appears to userspace to remain the same as it
+is today.
 
-=2E34 does not, that is correct.
->=20
-> > Consistently, there are no programs in D state in ps aux output,
-> > no cpu hogging programs running in top, nothing I can see that should
-> > explain the bizzarely high load average.
->=20
-> Loadaverage can be affected by a driver doing an uninteruptable sleep.
-> This doesn't actually cause a load on the system, but it does affect the
-> way that number is calcuated.  Perhaps that's the problem here.
->
+For architectures that define their own version of this routine,
+as is done for powerpc in this patchset, the view in userspace
+would change such that each memoryXXX directory would span
+multiple memory sections.  The number of sections spanned would
+depend on the value reported by memory_block_size_bytes.
 
-That would explain a lot.
-> > 	If you have any tips or recommendations on what I should use to
-> > investigate this further, please let me know. Once I have ensured to my=
- own
-> > satisfaction that I'm not doing something bizzare that's screwing up my
-> > machine, I'll make a detailed bug report and start on figuring out how =
-to
-> > use git bisect.
->=20
-> 'man git-bisect' will help with this :)
->=20
-> thanks,
->=20
-> greg k-h
+In both cases a new file 'end_phys_index' is created in each
+memoryXXX directory.  This file will contain the physical id
+of the last memory section covered by the sysfs directory.  For
+the default case, the value in 'end_phys_index' will be the same
+as in the existing 'phys_index' file.
 
-Thank you for the tips. If I don't find anything obvious I'll bisect it very
-soon, but I'll likely attempt to track backwards from .3 myself since I've
-backtracked through patches before. Once I have narrowed it down to a patch
-release it'll likely take less time to bisect. (eg, if I know it happened
-between 2.6.35-rc1 and rc2 I'd only have to bisect the patches between those
-versions, whereas right now I only know positively between 2.6.34 and
-2.6.35.3 something went wrong.)
+This version of the patch set includes an update to to properly
+report block_size_bytes, phys_index, and end_phys_index.  Additionally,
+the patch that adds the end_phys_index sysfs file is now patch 5/8
+instead of being patch 2/8 as in the previous version of the patches.
 
-Tim McGrath
-
---xHFwDpU9dbj6ez1V
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEVAwUBTKDr6pEncCrqzVruAQJLSgf+P4KzAKCCVEpDhxYz2PCWo//buyP/+gRP
-APMqLFWHiiyTi+LHWi1pl64AqgHoqUD2Vr0ljz8Cuz28mT5D7bIXZOGBMISr5gUe
-ReyQxR8zd51ufQF2pm0Hu9r9jyuTM+9iW9tsfQ/o5BpviaZTOERi/17ScuS3GK2h
-O+/wooLvdpTJHtfHt4WFiK1ZXbt6bCTG8PSRrQuKCPNt9liGrz+lXDW+wt+N9p3t
-HRPmt6ISDFLG0ZTwzkaUvpKLHpdlF3AA6InHKe5pc8VvLqtFbUi4YdxpmnLXs9mi
-F297U4UiSKNA61OfxH6kvJLGSJqPjqhkzeN1LF8oYznxpVMElZhP3Q==
-=0BTF
------END PGP SIGNATURE-----
-
---xHFwDpU9dbj6ez1V--
+-Nathan Fontenot
