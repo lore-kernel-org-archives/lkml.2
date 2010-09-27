@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759603Ab0I0PWO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 11:22:14 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:41884 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755783Ab0I0PWN (ORCPT
+	id S1759606Ab0I0PXi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 11:23:38 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:48427 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756219Ab0I0PXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 11:22:13 -0400
-Date: Mon, 27 Sep 2010 11:22:11 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Jens Axboe <axboe@kernel.dk>
-cc: Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Runtime PM and the block layer
-In-Reply-To: <4C73FCBE.7020305@kernel.dk>
-Message-ID: <Pine.LNX.4.44L0.1009271117000.1751-100000@iolanthe.rowland.org>
+	Mon, 27 Sep 2010 11:23:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=OOPqrcjhtAXtvDnY/G+ilQJy6BX3c9gib3KYwJhcIAU4GzHlys1Qexb4NJM3YDbBzs
+         8XYDxxAiFaVjA0NL6mXVXxmoDNymai5cVnVTIUaKImYhCqFr/Ii6WQ/UObyaHdKt7qps
+         YrXkF4k9Pl+DNrW/YgB6hdM0wQKSrfIOTV5CY=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1285370032-16937-2-git-send-email-iws@ovro.caltech.edu>
+References: <1285370032-16937-1-git-send-email-iws@ovro.caltech.edu>
+	<1285370032-16937-2-git-send-email-iws@ovro.caltech.edu>
+Date: Mon, 27 Sep 2010 17:23:34 +0200
+Message-ID: <AANLkTimzdEhAZ=oXbbB3Ge5=YY7OXq3fjaRH4roPNB-k@mail.gmail.com>
+Subject: Re: [PATCH RFCv2 1/2] dmaengine: add support for scatterlist to
+ scatterlist transfers
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: "Ira W. Snyder" <iws@ovro.caltech.edu>
+Cc: linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>,
+        linuxppc-dev@lists.ozlabs.org,
+        =?ISO-8859-1?Q?Per_Frid=E9n?= <per.friden@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 Aug 2010, Jens Axboe wrote:
+2010/9/25 Ira W. Snyder <iws@ovro.caltech.edu>:
 
-> > Are you sure it needs to be in the block layer?  Is there no way for 
-> > the driver's completion handler to tell whether the queue is now empty?  
-> > Certainly it already has enough information to know whether the device 
-> > is still busy processing another request.  When the device is no longer 
-> > busy and the queue is empty, that's when the idle timer should be 
-> > started or restarted.
-> 
-> To some extent there is, but there can be context outside of the queue
-> it doesn't know about. That is the case for the plugging rework, for
-> instance. That also removes the queue_empty() call. Then there's
-> blk_fetch_request(), but that may return NULL while there's IO pending
-> in the block layer - so not reliable for that either. The block layer is
-> tracking this state anyway, if you are leaving it to the driver then it
-> would have to check everytime it completes the last request it has. It's
-> cheaper to do in the block layer.
+> This adds support for scatterlist to scatterlist DMA transfers.
 
-I'm going to take your advice.  To make this work, I need to know when 
-the number of pending requests increases from 0 and when it drops to 0.
+This is a good idea, we have a local function to do this in DMA40 already,
+stedma40_memcpy_sg().
 
-The most direct approach is to keep a count of the number of pending
-requests for each request_queue.  As far as I can tell, a request
-enters the system in elv_insert(), so that's where the count should be
-incremented (except in the ELEVATOR_INSERT_REQUEUE case).  And a
-request leaves the system in blk_finish_request(), so that's where the
-count should be decremented.
+> This is
+> currently hidden behind a configuration option, which will allow drivers
+> which need this functionality to select it individually.
 
-Am I missing anything?  What about elv_merge_requests()?
+Why? Isn't it better to add this as a new capability flag
+if you don't want to announce it? Or is the intent to save
+memory footprint?
 
-Alan Stern
-
+Yours,
+Linus Walleij
