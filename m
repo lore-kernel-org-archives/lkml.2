@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758725Ab0I0CBs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 22:01:48 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54721 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754544Ab0I0CBr (ORCPT
+	id S1758741Ab0I0CE7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 22:04:59 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53956 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758701Ab0I0CE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 22:01:47 -0400
+	Sun, 26 Sep 2010 22:04:58 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Subject: Re: Default zone_reclaim_mode = 1 on NUMA kernel is bad forfile/email/web servers
-Cc: kosaki.motohiro@jp.fujitsu.com, Rob Mueller <robm@fastmail.fm>,
-        linux-kernel@vger.kernel.org, Bron Gondwana <brong@fastmail.fm>,
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: Default zone_reclaim_mode = 1 on NUMA kernel is bad for file/email/web servers
+Cc: kosaki.motohiro@jp.fujitsu.com, robm@fastmail.fm,
+        linux-kernel@vger.kernel.org, "Bron Gondwana" <brong@fastmail.fm>,
         linux-mm <linux-mm@kvack.org>,
-        Christoph Lameter <cl@linux-foundation.org>
-In-Reply-To: <20100921090407.GA11439@csn.ul.ie>
-References: <52C8765522A740A4A5C027E8FDFFDFE3@jem> <20100921090407.GA11439@csn.ul.ie>
-Message-Id: <20100927110049.6B31.A69D9226@jp.fujitsu.com>
+        Christoph Lameter <cl@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>
+In-Reply-To: <20100921100522.be252b3d.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100916184240.3BC9.A69D9226@jp.fujitsu.com> <20100921100522.be252b3d.kamezawa.hiroyu@jp.fujitsu.com>
+Message-Id: <20100927110417.6B34.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Mon, 27 Sep 2010 11:01:41 +0900 (JST)
+Date: Mon, 27 Sep 2010 11:04:54 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+> On Thu, 16 Sep 2010 19:01:32 +0900 (JST)
+> KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+> 
+> > Yes, sadly intel motherboard turn on zone_reclaim_mode by default. and
+> > current zone_reclaim_mode doesn't fit file/web server usecase ;-)
+> > 
+> > So, I've created new proof concept patch. This doesn't disable zone_reclaim
+> > at all. Instead, distinguish for file cache and for anon allocation and
+> > only file cache doesn't use zone-reclaim.
+> > 
+> > That said, high-end hpc user often turn on cpuset.memory_spread_page and
+> > they avoid this issue. But, why don't we consider avoid it by default?
+> > 
+> > 
+> > Rob, I wonder if following patch help you. Could you please try it?
+> > 
+> > 
+> > Subject: [RFC] vmscan: file cache doesn't use zone_reclaim by default
+> > 
+> 
+> Hm, can't we use migration of file caches rather than pageout in
+> zone_reclaim_mode ? Doent' it fix anything ?
 
-> No doubt this is true. The only real difference is that there are more NUMA
-> machines running mail/web/file servers now than there might have been in the
-> past. The default made sense once upon a time. Personally I wouldn't mind
-> the default changing but my preference would be that distribution packages
-> installing on NUMA machines would prompt if the default should be changed if it
-> is likely to be of benefit for that package (e.g. the mail, file and web ones).
+Doesn't.
 
-At first impression, I thought this is cute idea. But, after while thinking, I've found some
-weak point. The problem is, too many package need to disable zone_reclaim_mode.
-zone_reclaim doesn't works fine if an application need large working set rather than
-local node size. It mean major desktop applications (e.g. OpenOffice.org, Firefox, GIMP)
-need to disable zone_reclaim. It mean even though basic package installation require 
-zone_reclaim disabling. Then, this mechanism doesn't works practically. Even though
-the user hope to use the machine for hpc, disable zone_reclaim will be turn on anyway.
+Two problem. 1) Migration makes copy. then it's slower than zone_reclaim=0
+2) Migration is only effective if target node has much free pages. but it
+is not generic assumption.
 
-Probably, opposite switch (default is zone_reclaim=0, and installation MPI library change
-to zone_reclaim=1) might works. but I can guess why you don't propose this one.
+For this case, zone_reclaim_mode=0 is best. my patch works as second best.
+your one works as third.
 
-Hmm....
-
+If you have more concern, please let us know it.
 
