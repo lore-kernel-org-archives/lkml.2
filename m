@@ -1,144 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760281Ab0I0W0q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 18:26:46 -0400
-Received: from cantor.suse.de ([195.135.220.2]:45595 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760265Ab0I0W0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 18:26:44 -0400
-Date: Tue, 28 Sep 2010 00:25:48 +0200
-From: Jan Kara <jack@suse.cz>
-To: Cesar Eduardo Barros <cesarb@cesarb.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Jens Axboe <jaxboe@fusionio.com>,
-        Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, stable@kernel.org,
-        Jens Axboe <axboe@kernel.dk>,
-        =?utf-8?Q?Micha=C5=82?= Piotrowski <mkkp4x4@gmail.com>,
-        Chuck Ebbert <cebbert@redhat.com>, kernel@lists.fedoraproject.org
-Subject: Re: Dirtiable inode bdi default != sb bdi btrfs
-Message-ID: <20100927222548.GG3610@quack.suse.cz>
-References: <4C9AA546.6050201@cesarb.net>
- <20100923123849.8975fe47.akpm@linux-foundation.org>
+	id S1760289Ab0I0WfV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 18:35:21 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:36006 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760265Ab0I0WfU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 18:35:20 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzzz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L9FG2K-01-ECB-02
+X-M-MSG: 
+Date: Tue, 28 Sep 2010 00:35:07 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Don Zickus <dzickus@redhat.com>
+CC: huang ying <huang.ying.caritas@gmail.com>,
+        Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v2 4/7] x86, NMI, Rewrite NMI handler
+Message-ID: <20100927223507.GW13563@erda.amd.com>
+References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
+ <1285549026-5008-4-git-send-email-ying.huang@intel.com>
+ <20100927094136.GB32222@erda.amd.com>
+ <AANLkTimTg1uqXdAJ+GyZ3_B6n2xKWdqFL96jvv18JBM+@mail.gmail.com>
+ <20100927132537.GO13563@erda.amd.com>
+ <20100927152916.GZ26290@redhat.com>
+ <20100927174057.GU13563@erda.amd.com>
+ <20100927191433.GG26290@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20100923123849.8975fe47.akpm@linux-foundation.org>
+In-Reply-To: <20100927191433.GG26290@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Added CCs for similar ecryptfs warning]
-On Thu 23-09-10 12:38:49, Andrew Morton wrote:
-> > This started appearing for me on v2.6.36-rc5-49-gc79bd89; it did not 
-> > happen on v2.6.36-rc5-33-g1ce1e41, probably because it does not have 
-> > commit 692ebd17c2905313fff3c504c249c6a0faad16ec which introduces the 
-> > warning.
-> > [...]
-> > device fsid 44d595920ddedfa-3ece6b56e80f689e devid 1 transid 22342 
-> > /dev/mapper/vg_cesarbinspiro-lv_home
-> > SELinux: initialized (dev dm-3, type btrfs), uses xattr
-> > ------------[ cut here ]------------
-> > WARNING: at fs/fs-writeback.c:87 inode_to_bdi+0x62/0x6d()
-> > Hardware name: Inspiron N4010
-> > Dirtiable inode bdi default != sb bdi btrfs
-> > Modules linked in: ipv6 kvm_intel kvm uinput arc4 ecb 
-> > snd_hda_codec_intelhdmi snd_hda_codec_realtek iwlagn snd_hda_intel 
-> > iwlcore snd_hda_codec uvcvideo snd_hwdep mac80211 videodev snd_seq 
-> > snd_seq_device v4l1_compat snd_pcm atl1c v4l2_compat_ioctl32 btusb 
-> > cfg80211 snd_timer i2c_i801 bluetooth iTCO_wdt dell_wmi dell_laptop snd 
-> > pcspkr wmi dcdbas shpchp iTCO_vendor_support soundcore snd_page_alloc 
-> > rfkill joydev microcode btrfs zlib_deflate libcrc32c cryptd aes_x86_64 
-> > aes_generic xts gf128mul dm_crypt usb_storage i915 drm_kms_helper drm 
-> > i2c_algo_bit i2c_core video output [last unloaded: scsi_wait_scan]
-> > Pid: 1073, comm: find Not tainted 2.6.36-rc5+ #8
-> > Call Trace:
-> >   [<ffffffff8104d0e4>] warn_slowpath_common+0x85/0x9d
-> >   [<ffffffff8104d19f>] warn_slowpath_fmt+0x46/0x48
-> >   [<ffffffff811308b7>] inode_to_bdi+0x62/0x6d
-> >   [<ffffffff81131b48>] __mark_inode_dirty+0xd0/0x177
-> >   [<ffffffff81127168>] touch_atime+0x107/0x12a
-> >   [<ffffffff81122384>] ? filldir+0x0/0xd0
-> >   [<ffffffff8112259b>] vfs_readdir+0x8d/0xb4
-> >   [<ffffffff8112270b>] sys_getdents+0x81/0xd1
-> >   [<ffffffff81009c72>] system_call_fastpath+0x16/0x1b
-  Thanks for the report. These bdi pointers are a mess. As Chris pointed
-out, btrfs forgets to properly initialize inode->i_mapping.backing_dev_info
-for directories and special inodes and thus these were previously attached
-to default_backing_dev_info which probably isn't what Chris would like to
-see.
-  I've also got a similar report for ecryptfs which also does not
-initialize inode->i_mapping.backing_dev_info although it sets sb->s_bdi and
-thus again its inodes get filed to default_backing_dev_info lists.  Quick
-search seems to reveal that other filesystems using handcrafted bdi's get
-it wrong as well and thus their inodes end up in the default_backing_dev_info
-lists which is generally undesirable (this was happening already before my
-patch, my code just started complaining about that).
-  That suggests that we should probably handle such cases in a more generic
-way by changing the code in inode_init_always(). The patch below makes at
-least btrfs happy for me... Could you maybe test it? Thanks.
+On 27.09.10 15:14:33, Don Zickus wrote:
+> Actually, looking through the handlers, by introducing priorities means
+> that people have to register multiple handlers to deal with the different
+> priorities.
+> 
+> For example, perf would need two handlers, one for DIE_NMI and one for
+> DIE_NMIUNKOWN.  I am not sure that is the way to go.
 
-								Honza
+Ok, this could be a problem for handlers dealing with both DIE_NMI and
+DIE_NMI_UNKNOW. But without priorities as it is implemented now, the
+handlers are called in registration order or even without any order.
+So I don't think we need this fine grained priorities for different
+cases. If we have priorities, the order would be always the same for
+all chains, which should be fine for most cases.
+
+> I would be inclined to leave the patch as is until we can come up with a
+> better way to handle the priorities.
+> 
+> Though I agree that DIE_NMI_IPI isn't a great name (doesn't it all go
+> through the local apic?), it isn't being introduced with this patch.
+> 
+> Thoughts?
+
+At least we should give the above a try. If it turns out it is not as
+easy as I think, the still can fall back. But if we could finally get
+rid of DIE_NMI_IPI, this would eas much.
+
+-Robert
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
----
-
->From 29f60c2b08ff9637a10439d1513805835ddcc746 Mon Sep 17 00:00:00 2001
-From: Jan Kara <jack@suse.cz>
-Date: Mon, 27 Sep 2010 23:56:48 +0200
-Subject: [PATCH] bdi: Initialize inode->i_mapping.backing_dev_info to sb->s_bdi
-
-Currently, we initialize inode->i_mapping.backing_dev_info to the bdi of device
-sb->s_bdev points to. However there is quite a big number of filesystems that
-do not set sb->s_bdev (because they do not have one) but do set sb->s_bdi.
-These filesystems would generally benefit from setting
-inode->i_mapping.backing_dev_info to their s_bdi because otherwise their inodes
-would point to default_backing_dev_info and thus dirty inode tracking would
-happen there. So change inode initialization code to use sb->s_bdi if it
-is available.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/inode.c |   22 ++++++++++++++--------
- 1 files changed, 14 insertions(+), 8 deletions(-)
-
-diff --git a/fs/inode.c b/fs/inode.c
-index 8646433..e415be4 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -172,15 +172,21 @@ int inode_init_always(struct super_block *sb, struct inode *inode)
- 	mapping->writeback_index = 0;
- 
- 	/*
--	 * If the block_device provides a backing_dev_info for client
--	 * inodes then use that.  Otherwise the inode share the bdev's
--	 * backing_dev_info.
-+	 * If the filesystem provides a backing_dev_info for client inodes
-+	 * then use that. Otherwise inodes share default_backing_dev_info.
- 	 */
--	if (sb->s_bdev) {
--		struct backing_dev_info *bdi;
--
--		bdi = sb->s_bdev->bd_inode->i_mapping->backing_dev_info;
--		mapping->backing_dev_info = bdi;
-+	if (sb->s_bdi && sb->s_bdi != &noop_backing_dev_info) {
-+		/*
-+		 * Catch cases where filesystem might be bitten by using s_bdi
-+		 * instead of sb->s_bdev. Can be removed in 2.6.38.
-+		 */
-+		if (sb->s_bdev) {
-+			struct backing_dev_info *bdi =
-+			  sb->s_bdev->bd_inode->i_mapping->backing_dev_info;
-+			WARN(bdi != sb->s_bdi, "s_bdev bdi %s != s_bdi %s\n",
-+			     bdi->name, sb->s_bdi->name);
-+		}
-+		mapping->backing_dev_info = sb->s_bdi;
- 	}
- 	inode->i_private = NULL;
- 	inode->i_mapping = mapping;
--- 
-1.6.4.2
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
