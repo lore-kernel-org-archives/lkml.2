@@ -1,128 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760297Ab0I0WgL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 18:36:11 -0400
-Received: from cantor.suse.de ([195.135.220.2]:45907 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760265Ab0I0WgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 18:36:09 -0400
-Date: Tue, 28 Sep 2010 00:35:15 +0200
-From: Jan Kara <jack@suse.cz>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jan Kara <jack@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "jmoyer@redhat.com" <jmoyer@redhat.com>,
-        Lennart Poettering <lennart@poettering.net>
-Subject: Re: Request starvation with CFQ
-Message-ID: <20100927223515.GH3610@quack.suse.cz>
-References: <20100927190024.GF3610@quack.suse.cz>
- <20100927200232.GA2377@redhat.com>
- <4CA114F8.8000102@fusionio.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CA114F8.8000102@fusionio.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932746Ab0I0WgV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 18:36:21 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33697
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757411Ab0I0WgT convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 18:36:19 -0400
+Date: Mon, 27 Sep 2010 15:36:39 -0700 (PDT)
+Message-Id: <20100927.153639.212415479.davem@davemloft.net>
+To: dipankar@in.ibm.com
+Cc: eric.dumazet@gmail.com, holt@sgi.com, viro@zeniv.linux.org.uk,
+        bcrl@kvack.org, den@openvz.org, mingo@elte.hu, mszeredi@suse.cz,
+        cmm@us.ibm.com, npiggin@kernel.dk, xemul@openvz.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: When booting a 16TB system, unix_create1 fails due to integer
+ overflow.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100923141037.GA3811@in.ibm.com>
+References: <20100923121704.GR14064@sgi.com>
+	<1285246384.362.3.camel@edumazet-laptop>
+	<20100923141037.GA3811@in.ibm.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 28-09-10 07:04:40, Jens Axboe wrote:
-> On 2010-09-28 05:02, Vivek Goyal wrote:
-> > On Mon, Sep 27, 2010 at 09:00:24PM +0200, Jan Kara wrote:
-> >>   Hi,
-> >>
-> >>   when helping Lennart with answering some questions, I've spotted the
-> >> following problem (at least I think it's a problem ;): The thing is that
-> >> CFQ schedules how requests should be dispatched but does not in any
-> >> significant way limit to whom requests get allocated. Given we have a
-> >> quite limited pool of available requests it can happen that processes
-> >> will be actually starved not waiting for disk but waiting for requests
-> >> getting allocated and any IO scheduling priorities or classes will not
-> >> have serious effect.
-> >>   A pathological example I've tried below:
-> >> #include <fcntl.h>
-> >> #include <stdio.h>
-> >> #include <stdlib.h>
-> >> #include <sys/stat.h>
-> >>
-> >> int main(void)
-> >> {
-> >>   int fd = open("/dev/vdb", O_RDONLY);
-> >>   int loop = 0;
-> >>
-> >>   if (fd < 0) {
-> >>     perror("open");
-> >>     exit(1);
-> >>   }
-> >>   while (1) {
-> >>     if (loop % 100 == 0)
-> >>       printf("Loop %d\n", loop);
-> >>     posix_fadvise(fd, (random() * 4096) % 1000204886016ULL, 4096, POSIX_FADV_WILLNEED);
-> >>     loop++;
-> >>   }
-> >> }
-> >>
-> >>   This program will just push as many requests as possible to the block
-> >> layer and does not wait for any IO. Thus it will basically ignore any
-> >> decisions about when requests get dispatched. BTW, don't get distracted
-> >> by the fact that the program operates directly on the device, that is just
-> >> for simplicity. Large enough file would work the same way.
-> >>   Even though I run this program with ionice -c 3, I still see that any
-> >> other IO to the device is basically stalled. When I look at the block
-> >> traces, I indeed see that what happens is that the above program submits
-> >> requests until there are no more available:
-<snip>
-> >>   I can provide the full traces for download if someone is interested
-> >> in some part I didn't include here. The kernel is 2.6.36-rc4.
-> >>   Now I agree that the above program is about as bad as it can get but
-> >> Lennart would like to implement readahead during boot on background and
-> >> I believe that could starve other IO in a similar way. So any idea how
-> >> to solve this? To me it seems as if we also needed to somehow limit the
-> >> number of allocated requests per cfqq but OTOH we have to be really careful
-> >> to not harm common workloads where we benefit from having lots of requests
-> >> queued...
-> > 
-> > Hi Jan,
-> > 
-> > True that during request allocation, there is no consideration for ioprio.
-> > I think the whole logic is round robin, where after getting a bunch of
-> > request each process is put to sleep in the queue and then we do round
-> > robin on all waiters. This should in general be an issue with request
-> > queue and not just CFQ.
-> > 
-> > So if there are bunch of threads which are very bullish on doing IO, and 
-> > there is a dependent reader, read latencies will shoot up.
-> > 
-> > In fact current implementation of blkio controller also suffers with this
-> > limitation because we don't yet have per group request descriptors and
-> > once request queue is congested, requests from one group can get stuck
-> > behind the requests from other group.
-> > 
-> > One way forward could be to implement per cgroup request descriptors and
-> > put this readahead thread into a separate cgroup of low weight.
-> > 
-> > Other could be to implemnet some kind of request quota per priority level.
-> > This is similar to per cgroup quota I talked above, just one level below.
-> > 
-> > Third could be ad-hoc way of putting some limit on per cfqq. But I think a
-> > process can easily circumvent that by forking off child which are not
-> > sharing cfq context and then we are back to same situaiton.
-> > 
-> > A very hackish solution could be to try to increase nr_requests on the 
-> > queue to say 1024. This will work only if you know that read-ahead process
-> > does some limited amount of read-ahead and does not overwhelm the queue
-> > with more than 1024 requets.  And then use ioprio with low prio for
-> > read-ahead process.
-> 
-> I don't think that is necessarily hackish. The current rq allocation
-> batching and accounting is pretty horrible imho, in fact in recent
-> patches I ripped that out. The vm copes a lot better with larger depths
-> these days, so what I want to add is just a per-ioc queue limit instead.
-  So no per-queue request limit? Since ioc is per-process if I'm right,
-that would solve the problem quite nicely. Thanks for info.
+From: Dipankar Sarma <dipankar@in.ibm.com>
+Date: Thu, 23 Sep 2010 19:40:37 +0530
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> On Thu, Sep 23, 2010 at 02:53:04PM +0200, Eric Dumazet wrote:
+>> Le jeudi 23 septembre 2010 à 07:17 -0500, Robin Holt a écrit : 
+>> > I do not know which direction to take, but here is the summary of the
+>> > problem.
+>> > 
+>> > We recently started trying to boot a customer's two new machines which
+>> > are configured with 384GB short of 16TB of memory.
+>> > 
+>> > We were seeing a failure which prevented boot.  The kernel was incapable
+>> > of creating either a named pipe or unix domain socket.  This comes down
+>> > to a common kernel function called unix_create1() which does:
+>> > 
+>> > 	atomic_inc(&unix_nr_socks);
+>> > 	if (atomic_read(&unix_nr_socks) > 2 * get_max_files())
+>> > 		goto out;
+>> > 
+>> 
+>> Hi Robin
+>> 
+>> I would say : We can use atomic_long_t instead of atomic_t
+>> 
+>> And make get_max_files(void) return a long ?
+>> 
+>> Something like :
+>> 
+>> 
+>>  fs/file_table.c    |   10 +++++-----
+>>  include/linux/fs.h |    2 +-
+>>  net/unix/af_unix.c |   14 +++++++-------
+>>  3 files changed, 13 insertions(+), 13 deletions(-)
+>> 
+>> diff --git a/fs/file_table.c b/fs/file_table.c
+>> 
+>>  	n = (mempages * (PAGE_SIZE / 1024)) / 10;
+>> -	files_stat.max_files = n; 
+>> +	files_stat.max_files = min(n, 0x7FFFFFFFUL);
+> 
+> It may be cleaner to just convert both the file counters and
+> the file limits to usnsigned long.
+> 
+> Other than that, this seems like a reasonable thing to do.
+
+Is someone following up on integrating this upstream so this thing
+gets fixed?
+
+Thanks.
