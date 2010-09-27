@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266Ab0I0VgV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 17:36:21 -0400
-Received: from mail.solarflare.com ([216.237.3.220]:9159 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930Ab0I0VgU (ORCPT
+	id S1756234Ab0I0VlF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 17:41:05 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46260 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752289Ab0I0VlE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 17:36:20 -0400
-Subject: Re: [PATCH v11 17/17]add two new ioctls for mp device.
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: xiaohui.xin@intel.com
-Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, davem@davemloft.net, herbert@gondor.hengli.com.au,
-        jdike@linux.intel.com
-In-Reply-To: <b74412a16bc32fe2550461f25156e5b2563c5a2c.1285385607.git.xiaohui.xin@intel.com>
-References: <1285388855-27410-1-git-send-email-xiaohui.xin@intel.com>
-	 <b74412a16bc32fe2550461f25156e5b2563c5a2c.1285385607.git.xiaohui.xin@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Mon, 27 Sep 2010 22:36:15 +0100
-Message-ID: <1285623375.2263.552.camel@achroite.uk.solarflarecom.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Sep 2010 21:36:19.0376 (UTC) FILETIME=[05ABAB00:01CB5E8C]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17668.005
-X-TM-AS-Result: No--11.564900-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	Mon, 27 Sep 2010 17:41:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=rtmlq7I4zjGcLXAZypfagslDsh1ljnL5wm0WcylzvGJKuWNq5ngXgM85LKU9zF+CjI
+         4DFCBxOCVKaa9tqH4OrWM1snmx+oiuHrrymKw1AOdNjS9v7TTQM85evZXb0Wy1GZTtp5
+         0/XEWNBK95dW3X7LOvZVF/1EEp50qyjY6x+kk=
+MIME-Version: 1.0
+In-Reply-To: <20100927120641.6B3F.A69D9226@jp.fujitsu.com>
+References: <AANLkTimKZdD1DjymuhwKCtrraK2QwBOw5XUo0HBnQPKv@mail.gmail.com>
+	<20100927120641.6B3F.A69D9226@jp.fujitsu.com>
+Date: Mon, 27 Sep 2010 16:40:59 -0500
+Message-ID: <AANLkTiknh_oVCtaUzcH8rh5XdORm-Pb83z22_zPB_4pO@mail.gmail.com>
+Subject: Re: [PATCH] vmscan: raise the bar to PAGEOUT_IO_SYNC stalls
+From: William Immendorf <will.immendorf@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-09-25 at 12:27 +0800, xiaohui.xin@intel.com wrote:
-> From: Xin Xiaohui <xiaohui.xin@intel.com>
-> 
-> The patch add two ioctls for mp device.
-> One is for userspace to query how much memory locked to make mp device
-> run smoothly. Another one is for userspace to set how much meory locked
-> it really wants.
-[...]
-> diff --git a/include/linux/mpassthru.h b/include/linux/mpassthru.h
-> index ba8f320..083e9f7 100644
-> --- a/include/linux/mpassthru.h
-> +++ b/include/linux/mpassthru.h
-> @@ -7,6 +7,8 @@
->  /* ioctl defines */
->  #define MPASSTHRU_BINDDEV      _IOW('M', 213, int)
->  #define MPASSTHRU_UNBINDDEV    _IO('M', 214)
-> +#define MPASSTHRU_SET_MEM_LOCKED	_IOW('M', 215, unsigned long)
-> +#define MPASSTHRU_GET_MEM_LOCKED_NEED	_IOR('M', 216, unsigned long)
-[...]
+On Sun, Sep 26, 2010 at 10:04 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+>> This is a backport of Upstream commit e31f3698cd3499e676f6b0ea12e3528f569c4fa3.
+>> Originally submitted by Wu Fengguang. The rest of the message is his.
+>> I think this would be a good canadate for the stable tree.
+>
+> We already did :)
+I really meant for this patch to reach the stable tree. KOSAKI, can
+you please email the stable tree mantianer and tell him to put this
+patch in a 2.6.35.7 stable quere? (and also tell me the stable commits
+address for refrence.)
 
-These will need compat handling.  You can avoid that by defining them to
-use a parameter type of u32 or u64.
-
-Ben.
 
 -- 
-Ben Hutchings, Senior Software Engineer, Solarflare Communications
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+William Immendorf
+The ultimate in free computing.
+Messages in plain text, please, no HTML.
+GPG key ID: 1697BE98
+If it's not signed, it's not from me.
 
+--------------
+
+"Every nonfree program has a lord, a master --
+and if you use the program, he is your master."  Richard Stallman
