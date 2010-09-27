@@ -1,57 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760559Ab0I0XS0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 19:18:26 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:59065 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759802Ab0I0XSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 19:18:08 -0400
-From: Nishanth Aravamudan <nacc@us.ibm.com>
-To: nacc@us.ibm.com
-Cc: miltonm@bga.com, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        Mark Nelson <markn@au1.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 2/2] pseries/xics: use cpu_possible_mask rather than cpu_all_mask
-Date: Mon, 27 Sep 2010 16:17:43 -0700
-Message-Id: <1285629463-27699-3-git-send-email-nacc@us.ibm.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1285629463-27699-1-git-send-email-nacc@us.ibm.com>
-References: <1285629463-27699-1-git-send-email-nacc@us.ibm.com>
+	id S1760514Ab0I0XT3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 19:19:29 -0400
+Received: from smtp128.sbc.mail.sp1.yahoo.com ([69.147.65.187]:23372 "HELO
+	smtp128.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1759394Ab0I0XT1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 19:19:27 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: T1ix0U4VM1k3E7TQ6uJJiHmnPHVg.TNDcCRQUfhr7Uwgz82
+ sR.x9JbCH5fdwhRvOsBQuqx_mR4kznIjwsftO4N5NqiqwncYqvukLDFZoAOl
+ HxT9lMW5mrq6abWn44F5g4d.94rVkVWJYAFOjKnGJkhbPjlOzRzno2VGKde8
+ sOE_swqEdKjgF1OFwX5.RqwL632Z6Uvo71ySWrq1h7twYxS63fqicglqRKs7
+ oJO96bju4UZjPSq99BuKicdcZBB1pXQKPdnz4JSfqY112VOotPteDcPchOq2
+ 12iaT_gGDyHUG_cODQ_OKJoI-
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [RFC v3 01/15] scsi: Drop struct Scsi_Host->host_lock usage in
+	scsi_dispatch_cmd()
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Christof Schmitt <christof.schmitt@de.ibm.com>
+Cc: Brian King <brking@linux.vnet.ibm.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
+        Christoph Hellwig <hch@lst.de>,
+        MPTFusionLinux <DL-MPTFusionLinux@lsi.com>,
+        "eata.c maintainer" <dario.ballabio@inwind.it>
+In-Reply-To: <20100927141923.GC8473@schmichrtp.mainz.de.ibm.com>
+References: <1285285052-16351-1-git-send-email-nab@linux-iscsi.org>
+	 <4C9CAA80.1030702@linux.vnet.ibm.com>
+	 <1285361040.1849.235.camel@haakon2.linux-iscsi.org>
+	 <20100927141923.GC8473@schmichrtp.mainz.de.ibm.com>
+Content-Type: text/plain
+Date: Mon, 27 Sep 2010 16:15:10 -0700
+Message-Id: <1285629310.8880.78.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current firmware only allows us to send IRQs to the first processor or
-all processors. We currently check to see if the passed in mask is equal
-to the all_mask, but the firmware is only considering whether the
-request is for the equivalent of the possible_mask. Thus, we think the
-request is for some subset of CPUs and only assign IRQs to the first CPU
-(on systems without irqbalance running) as evidenced by
-/proc/interrupts. By using possible_mask instead, we account for this
-and proper interleaving of interrupts occurs. Without this change and
-"pseries/xics: use cpu_possible_mask rather than cpu_all_mask", IRQs are
-all routed to CPU0 on power machines not running irqbalance.
+On Mon, 2010-09-27 at 16:19 +0200, Christof Schmitt wrote:
+> On Fri, Sep 24, 2010 at 01:44:00PM -0700, Nicholas A. Bellinger wrote:
+> > On Fri, 2010-09-24 at 08:41 -0500, Brian King wrote:
+> > > On 09/23/2010 06:37 PM, Nicholas A. Bellinger wrote:
+> > > > @@ -651,7 +655,6 @@ static inline void scsi_cmd_get_serial(struct Scsi_Host *host, struct scsi_cmnd
+> > > >  int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+> > > >  {
+> > > >  	struct Scsi_Host *host = cmd->device->host;
+> > > > -	unsigned long flags = 0;
+> > > >  	unsigned long timeout;
+> > > >  	int rtn = 0;
+> > > > 
+> > > > @@ -736,15 +739,11 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+> > > >  		scsi_done(cmd);
+> > > >  		goto out;
+> > > >  	}
+> > > > -
+> > > > -	spin_lock_irqsave(host->host_lock, flags);
+> > > >  	/*
+> > > > -	 * AK: unlikely race here: for some reason the timer could
+> > > > -	 * expire before the serial number is set up below.
+> > > > -	 *
+> > > > -	 * TODO: kill serial or move to blk layer
+> > > > +	 * Note that scsi_cmd_get_serial() used to be called here, but
+> > > > +	 * now we expect the legacy SCSI LLDs that actually need this
+> > > > +	 * to call it directly within their SHT->queuecommand() caller.
+> > > >  	 */
+> > > > -	scsi_cmd_get_serial(host, cmd); 
+> > > > 
+> > > >  	if (unlikely(host->shost_state == SHOST_DEL)) {
+> > > >  		cmd->result = (DID_NO_CONNECT << 16);
+> > > > @@ -753,7 +752,7 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
+> > > >  		trace_scsi_dispatch_cmd_start(cmd);
+> > > >  		rtn = host->hostt->queuecommand(cmd, scsi_done);
+> > > >  	}
+> > > > -	spin_unlock_irqrestore(host->host_lock, flags);
+> > > > +
+> > > >  	if (rtn) {
+> > > >  		trace_scsi_dispatch_cmd_error(cmd, rtn);
+> > > >  		if (rtn != SCSI_MLQUEUE_DEVICE_BUSY &&
+> > > 
+> > > Are you planning a future revision that moves the acquiring of the host lock
+> > > into the LLDD's queuecommand for all the other drivers you don't currently
+> > > touch in this patch set?
+> > > 
+> > 
+> > Hi Brian,
+> > 
+> > I was under the impression that this would be unnecessary for the vast
+> > majority of existing LLD drivers, but if you are aware of specific LLDs
+> > that would still need the struct Scsi_Host->host_lock held in their
+> > SHT->queuecommand() for whaterver reason please let me know and I would
+> > be happy to include this into an RFCv4.
+> > 
+> > Thanks for your comments!
+> 
+> zfcp relies on having the interrupts disabled when calling
+> queuecommand. Without the spin_lock_irqsave in scsi_dispatch_cmd, the
+> locking in zfcp_fsf_send_fcp_command_task has to be changed from
+> spin_lock(&qdio->req_q_lock) to spin_lock_irqsave. It is a simple
+> change, but other drivers might have similar requirements.
+> 
 
-Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
----
- arch/powerpc/platforms/pseries/xics.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Very good to know, thanks for this useful bit of knowledge Christof.
 
-diff --git a/arch/powerpc/platforms/pseries/xics.c b/arch/powerpc/platforms/pseries/xics.c
-index 93834b0..7c1e342 100644
---- a/arch/powerpc/platforms/pseries/xics.c
-+++ b/arch/powerpc/platforms/pseries/xics.c
-@@ -178,7 +178,7 @@ static int get_irq_server(unsigned int virq, const struct cpumask *cpumask,
- 	if (!distribute_irqs)
- 		return default_server;
- 
--	if (!cpumask_equal(cpumask, cpu_all_mask)) {
-+	if (!cpumask_subset(cpu_possible_mask, cpumask)) {
- 		int server = cpumask_first_and(cpu_online_mask, cpumask);
- 
- 		if (server < nr_cpu_ids)
--- 
-1.7.0.4
+So my next steps for an RFC v4 of this series is to:
+
+*) Create a seperate scsi_legacy_dispatch_cmd() that still uses
+host_lock for SHT->queuecommand(), and enable this by default for all
+the LLDs not included in the RFCv3 series to drop their historical
+'->queuecommand() unlock -> do_work() -> lock' optimization and that we
+know are 100% sure we can run w/o host_lock being held.  Also note that
+MPT/Fusion and mpt2sas will do not require host_lock as Tim Chen has
+demonstrated with his testing.  (Any LSI folks comments here..?)
+
+*) Following Mike Anderson's comments wrt to the signaling
+scsi_try_to_abort_cmd() callpath for block softirq completion w/o struct
+scsi_cmnd->serial_number, and how it currently breaks scsi_unjam_host ->
+scsi_eh_abort_cmds -> scsi_try_to_abort_cmd().
+
+I don't for see any particular issues with the former at this point, and
+I will be reposting with these changes soon.  For the latter it appears
+we need a seperate struct request->atomic_flags bit for signaling the
+call from block softirq context, so that the scsi_try_to_abort_cmd() can
+still complete the outstanding struct scsi_cmnd descriptor in the EH
+scsi_unjam_host() path.  Any other comments on this particular item from
+Intel, IBM and other distro kernel folks would be apperciated.
+
+Thanks for your comments!
+
+--nab
+	 
 
