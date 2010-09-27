@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933166Ab0I0P4S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 11:56:18 -0400
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:22714 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932849Ab0I0P4O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 11:56:14 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: RFSXUzwVM1nOPyMrLjbHT9RDBGsJMGlF2NIESCLZL8vd3m_
- 4Cvlvv_4rO7cjEikIeGizDu6cLPG0EeMI_YohIL3UpLkO3ko7jrpBvrz3Z4t
- FMgo9CYzsBXzz1odjnXRDGCZHuFge8_xYCM4Pqmgu2n7o.5eQ0G.SwQ4tF.J
- qYBmn9d_i8s5T34iYrWMm6tbA2hE8Lnwv_Y5LRbMieudTWEQEa2ElrjjbRlO
- sJsks1YVQFo8B9Z3oNygvHkKWE0M-
-X-Yahoo-Newman-Property: ymail-3
-Date: Mon, 27 Sep 2010 10:56:09 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-cc: Richard Cochran <richardcochran@gmail.com>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-api@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        David Miller <davem@davemloft.net>, John Stultz <johnstul@us.ibm.com>,
-        Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v6 0/8] ptp: IEEE 1588 hardware clock support
-In-Reply-To: <20100924150246.0e6064b6@lxorguk.ukuu.org.uk>
-Message-ID: <alpine.DEB.2.00.1009271054320.9258@router.home>
-References: <cover.1285261533.git.richard.cochran@omicron.at> <20100923213654.0c64b047@lxorguk.ukuu.org.uk> <20100924131407.GA3113@riccoc20.at.omicron.at> <20100924150246.0e6064b6@lxorguk.ukuu.org.uk>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1759702Ab0I0QDJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 12:03:09 -0400
+Received: from mail.perches.com ([173.55.12.10]:2471 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756390Ab0I0QDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 12:03:06 -0400
+Subject: Re: [RFC v4]update broken web addresses in the kernel.
+From: Joe Perches <joe@perches.com>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: "Justin P. Mattock" <justinmattock@gmail.com>, trivial@kernel.org,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, alsa-devel@alsa-project.org,
+        dri-devel@lists.freedesktop.org, linux-ide@vger.kernel.org,
+        "Maciej W. Rozycki" <macro@linux-mips.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Finn Thain <fthain@telegraphics.com.au>,
+        Randy Dunlap <rdunlap@xenotime.net>, Matt Turner <mattst88@gmail.com>,
+        Dimitry Torokhov <dmitry.torokhov@gmail.com>,
+        Mike Frysinger <vapier.adi@gmail.com>
+In-Reply-To: <20100927151005.GC11086@tuxdriver.com>
+References: <1285525875-9920-1-git-send-email-justinmattock@gmail.com>
+	 <20100927151005.GC11086@tuxdriver.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 27 Sep 2010 09:03:03 -0700
+Message-ID: <1285603383.1732.106.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2010-09-27 at 11:10 -0400, John W. Linville wrote:
+> On Sun, Sep 26, 2010 at 11:31:15AM -0700, Justin P. Mattock wrote:
+> > Below is an updated patch from the original fixing broken web addresses in the kernel.
+> > Thanks for all the help and info on this to everybody..
+> > Hopefully I didnt miss any of them(if so let me know, and I'll resend).
+> Changing a URL for a relocated page is one thing, but removing links
+> isn't necessarily a great idea.  Even if the site is technically
+> gone, it may be possible to find information e.g through the Internet
+> Archive Wayback Machine.
 
-On Fri, 24 Sep 2010, Alan Cox wrote:
+Perhaps it'd be better to scrape the contents of the various
+web pages, collect them somewhere like wiki.kernel.org and
+encourage others to put new contributions in that site.
 
-> Whether you add new syscalls or do the fd passing using flags and hide
-> the ugly bits in glibc is another question.
 
-Use device specific ioctls instead of syscalls?
 
