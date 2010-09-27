@@ -1,76 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759286Ab0I0MrF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 08:47:05 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:37122 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932995Ab0I0MrB convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:6:1>);
-	Mon, 27 Sep 2010 08:47:01 -0400
-Message-Id: <4CA0AE5E0200007800019097@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Mon, 27 Sep 2010 13:46:54 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Guenter Roeck" <guenter.roeck@ericsson.com>
-Cc: "r.marek@assembler.cz" <r.marek@assembler.cz>,
-        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: x86/hwmon: conditionalize coretemp's dependency on PCI
-References: <4C8E18790200007800015AF7@vpn.id2.novell.com>
- <20100924185509.GA20155@ericsson.com>
- <4CA05F220200007800018F81@vpn.id2.novell.com>
- <20100927121650.GB31847@ericsson.com>
-In-Reply-To: <20100927121650.GB31847@ericsson.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1759244Ab0I0MqF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 08:46:05 -0400
+Received: from www.tglx.de ([62.245.132.106]:48847 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759231Ab0I0MqB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 08:46:01 -0400
+Message-Id: <20100927121842.732894108@linutronix.de>
+User-Agent: quilt/0.48-1
+Date: Mon, 27 Sep 2010 12:45:41 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Subject: [patch 13/19] genirq; Provide compat handling for chip->set_affinity()
+References: <20100927121651.904100669@linutronix.de>
+Content-Disposition: inline; filename=genirq-wrap-chip-set-affinity.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 27.09.10 at 14:16, Guenter Roeck <guenter.roeck@ericsson.com> wrote:
-> On Mon, Sep 27, 2010 at 03:08:50AM -0400, Jan Beulich wrote:
-> [...]
-> 
->> >>  
->> >>  config SENSORS_CORETEMP
->> >>  	tristate "Intel Core/Core2/Atom temperature sensor"
->> >> -	depends on X86 && PCI && EXPERIMENTAL
->> >> +	depends on X86 && EXPERIMENTAL
->> >> +	depends on PCI || (!MATOM && !GENERIC_CPU && !X86_GENERIC)
->> >>  	help
->> >>  	  If you say yes here you get support for the temperature
->> >>  	  sensor inside your CPU. Most of the family 6 CPUs
->> > 
->> > Resending my reply to this one as well. Again, apologies if there is 
->> > duplication.
->> > 
->> > The coretemp code unconditionally calls pci functions, even if PCI is not 
->> > defined.
->> > I am concerned that this might cause problems. It might be better to stick 
->> > with
->> > the more generic dependency instead of trying to optimize too much.
->> 
->> pci.h takes care to define stub inline functions for the !CONFIG_PCI
->> case. It seemed largely odd for a driver like this to depend on PCI
->> at all, and hence I think it is more transparent to make the needs
->> explicit.
->> 
-> Seems to me the dependency should not exist in the first place, then.
-> Otherwise, the driver would still be disabled for GENERIC_CPU, which isn't
-> good either.
+Wrap the old chip function set_affinity() until the migration is
+complete and the old chip functions are removed.
 
-Oh, not having a dependency on PCI at all would be even better.
-I didn't dare to suggest that.
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/irq/chip.c      |    8 ++++++++
+ kernel/irq/manage.c    |   11 ++++++-----
+ kernel/irq/migration.c |    6 ++++--
+ kernel/irq/proc.c      |    2 +-
+ 4 files changed, 19 insertions(+), 8 deletions(-)
 
-> Are there examples of other drivers which are not defining the PCI 
-> dependency
-> but are conditionally calling pci functions ?
+Index: linux-2.6-tip/kernel/irq/chip.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/irq/chip.c
++++ linux-2.6-tip/kernel/irq/chip.c
+@@ -373,6 +373,12 @@ static unsigned int compat_irq_startup(s
+ 	return irq_data_to_desc(data)->chip->startup(data->irq);
+ }
+ 
++static int compat_irq_set_affinity(struct irq_data *data,
++				   const struct cpumask *dest, bool force)
++{
++	return irq_data_to_desc(data)->chip->set_affinity(data->irq, dest);
++}
++
+ static void compat_bus_lock(struct irq_data *data)
+ {
+ 	irq_data_to_desc(data)->chip->bus_lock(data->irq);
+@@ -439,6 +445,8 @@ void irq_chip_set_defaults(struct irq_ch
+ 		chip->irq_mask_ack = compat_irq_mask_ack;
+ 	if (chip->eoi)
+ 		chip->irq_eoi = compat_irq_eoi;
++	if (chip->set_affinity)
++		chip->irq_set_affinity = compat_irq_set_affinity;
+ }
+ 
+ static inline void mask_ack_irq(struct irq_desc *desc)
+Index: linux-2.6-tip/kernel/irq/manage.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/irq/manage.c
++++ linux-2.6-tip/kernel/irq/manage.c
+@@ -74,7 +74,7 @@ int irq_can_set_affinity(unsigned int ir
+ 	struct irq_desc *desc = irq_to_desc(irq);
+ 
+ 	if (CHECK_IRQ_PER_CPU(desc->status) || !desc->chip ||
+-	    !desc->chip->set_affinity)
++	    !desc->chip->irq_set_affinity)
+ 		return 0;
+ 
+ 	return 1;
+@@ -109,16 +109,17 @@ void irq_set_thread_affinity(struct irq_
+ int irq_set_affinity(unsigned int irq, const struct cpumask *cpumask)
+ {
+ 	struct irq_desc *desc = irq_to_desc(irq);
++	struct irq_chip *chip = desc->chip;
+ 	unsigned long flags;
+ 
+-	if (!desc->chip->set_affinity)
++	if (!chip->irq_set_affinity)
+ 		return -EINVAL;
+ 
+ 	raw_spin_lock_irqsave(&desc->lock, flags);
+ 
+ #ifdef CONFIG_GENERIC_PENDING_IRQ
+ 	if (desc->status & IRQ_MOVE_PCNTXT) {
+-		if (!desc->chip->set_affinity(irq, cpumask)) {
++		if (!chip->irq_set_affinity(&desc->irq_data, cpumask, false)) {
+ 			cpumask_copy(desc->affinity, cpumask);
+ 			irq_set_thread_affinity(desc);
+ 		}
+@@ -128,7 +129,7 @@ int irq_set_affinity(unsigned int irq, c
+ 		cpumask_copy(desc->pending_mask, cpumask);
+ 	}
+ #else
+-	if (!desc->chip->set_affinity(irq, cpumask)) {
++	if (!chip->irq_set_affinity(&dest->irq_data, cpumask, false)) {
+ 		cpumask_copy(desc->affinity, cpumask);
+ 		irq_set_thread_affinity(desc);
+ 	}
+@@ -177,7 +178,7 @@ static int setup_affinity(unsigned int i
+ 
+ 	cpumask_and(desc->affinity, cpu_online_mask, irq_default_affinity);
+ set_affinity:
+-	desc->chip->set_affinity(irq, desc->affinity);
++	desc->chip->irq_set_affinity(&desc->irq_data, desc->affinity, false);
+ 
+ 	return 0;
+ }
+Index: linux-2.6-tip/kernel/irq/migration.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/irq/migration.c
++++ linux-2.6-tip/kernel/irq/migration.c
+@@ -7,6 +7,7 @@
+ void move_masked_irq(int irq)
+ {
+ 	struct irq_desc *desc = irq_to_desc(irq);
++	struct irq_chip *chip = desc->chip;
+ 
+ 	if (likely(!(desc->status & IRQ_MOVE_PENDING)))
+ 		return;
+@@ -24,7 +25,7 @@ void move_masked_irq(int irq)
+ 	if (unlikely(cpumask_empty(desc->pending_mask)))
+ 		return;
+ 
+-	if (!desc->chip->set_affinity)
++	if (!chip->irq_set_affinity)
+ 		return;
+ 
+ 	assert_raw_spin_locked(&desc->lock);
+@@ -43,7 +44,8 @@ void move_masked_irq(int irq)
+ 	 */
+ 	if (likely(cpumask_any_and(desc->pending_mask, cpu_online_mask)
+ 		   < nr_cpu_ids))
+-		if (!desc->chip->set_affinity(irq, desc->pending_mask)) {
++		if (!chip->irq_set_affinity(&desc->irq_data,
++					    desc->pending_mask, false)) {
+ 			cpumask_copy(desc->affinity, desc->pending_mask);
+ 			irq_set_thread_affinity(desc);
+ 		}
+Index: linux-2.6-tip/kernel/irq/proc.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/irq/proc.c
++++ linux-2.6-tip/kernel/irq/proc.c
+@@ -65,7 +65,7 @@ static ssize_t irq_affinity_proc_write(s
+ 	cpumask_var_t new_value;
+ 	int err;
+ 
+-	if (!irq_to_desc(irq)->chip->set_affinity || no_irq_affinity ||
++	if (!irq_to_desc(irq)->chip->irq_set_affinity || no_irq_affinity ||
+ 	    irq_balancing_disabled(irq))
+ 		return -EIO;
+ 
 
-I'm not aware of any, but also didn't explicitly look for such.
-
-Jan
 
