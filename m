@@ -1,152 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933501Ab0I0Toi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 15:44:38 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:56946 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933389Ab0I0Tog (ORCPT
+	id S933504Ab0I0TqB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 15:46:01 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:34533 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933389Ab0I0Tp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 15:44:36 -0400
-Date: Mon, 27 Sep 2010 15:44:08 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: David Miller <davem@davemloft.net>, sfr@canb.auug.org.au,
-        netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (net
- tree related)
-Message-ID: <20100927194408.GG11086@tuxdriver.com>
-References: <20100927154408.55a28127.sfr@canb.auug.org.au>
- <AANLkTinHk82jM7Ztwb1aB1xb-hSLeg5Hb07mhYCaeszi@mail.gmail.com>
- <20100927180412.GD11086@tuxdriver.com>
- <20100927.111818.149846920.davem@davemloft.net>
- <20100927182546.GE11086@tuxdriver.com>
- <AANLkTi=YHhRWFix1QDuEnRW7r_UaNtp6KSL9uLdUzdqM@mail.gmail.com>
- <20100927184445.GF11086@tuxdriver.com>
- <AANLkTi=2KqQb+gvuigxb+-tSzawx7=q3HtnkkE6t_4XF@mail.gmail.com>
- <AANLkTim9nHmhNLmECnYk-OHYmyk96tz65kd=ybz24M3Y@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTim9nHmhNLmECnYk-OHYmyk96tz65kd=ybz24M3Y@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	Mon, 27 Sep 2010 15:45:59 -0400
+Subject: Re: [PATCH 3/6] secmark: export binary yes/no rather than kernel
+ internal secid
+From: Paul Moore <paul.moore@hp.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
+        selinux@tycho.nsa.gov, netfilter-devel@vger.kernel.org,
+        sds@tycho.nsa.gov, jengelh@medozas.de, casey@schaufler-ca.com,
+        linux-security-module@vger.kernel.org, netfilter@vger.kernel.org,
+        mr.dash.four@googlemail.com
+In-Reply-To: <1285615525.2815.76.camel@localhost.localdomain>
+References: <20100924204517.28355.42822.stgit@paris.rdu.redhat.com>
+	 <20100924204531.28355.20320.stgit@paris.rdu.redhat.com>
+	 <alpine.LRH.2.00.1009271038280.25748@tundra.namei.org>
+	 <1285606896.2815.36.camel@localhost.localdomain>
+	 <1285612156.4935.16.camel@sifl>
+	 <1285615525.2815.76.camel@localhost.localdomain>
+Content-Type: text/plain; charset="us-ascii"
+Organization: Hewlett Packard
+Date: Mon, 27 Sep 2010 15:45:48 -0400
+Message-ID: <1285616748.4935.43.camel@sifl>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 09:06:09PM +0200, Ohad Ben-Cohen wrote:
-> On Mon, Sep 27, 2010 at 9:01 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> > On Mon, Sep 27, 2010 at 8:44 PM, John W. Linville
-> > <linville@tuxdriver.com> wrote:
-> >> On Mon, Sep 27, 2010 at 08:38:50PM +0200, Ohad Ben-Cohen wrote:
-> >>> On Mon, Sep 27, 2010 at 8:25 PM, John W. Linville
-> >>> <linville@tuxdriver.com> wrote:
-> >>> >> BTW, if this fuglet going to work if the driver is built modular?
-> >>> >>
-> >>> >> The idea of this things seems to be to allow arch platform code to call
-> >>> >> into it to set things.  Such calls from arch platform code are going
-> >>> >> to be "obj-y"
-> >>> >>
-> >>> >> So if this is built into the modular driver, I can't see how it
-> >>> >> can work.
-> >>> >
-> >>> > Dave is right -- these Kconfig dependencies (or lack thereof) seem
-> >>> > to be wrong.
-> >>>
-> >>> This is why I had to put it in drivers/net/wireless/Makefile (in both
-> >>> the original patch and in the fix I sent earlier) and not in
-> >>> drivers/net/wireless/wl12xx/Makefile (as it was in the fix that Dave
-> >>> was referring to).
-> >>>
-> >>> This way it works with a modular driver.
-> >>
-> >> That doesn't seem very helpful if someone selects
-> >>
-> >> CONFIG_MACH_OMAP_ZOOM2=y
-> >> CONFIG_WL12XX_PLATFORM_DATA=n
+On Mon, 2010-09-27 at 15:25 -0400, Eric Paris wrote:
+> On Mon, 2010-09-27 at 14:29 -0400, Paul Moore wrote:
+> > On Mon, 2010-09-27 at 13:01 -0400, Eric Paris wrote:
+> > > On Mon, 2010-09-27 at 10:50 +1000, James Morris wrote:
+> > > > On Fri, 24 Sep 2010, Eric Paris wrote:
+> > > 
+> > > > For the reasons above, I think the secctx string needs to be exported in 
+> > > > addition to this rather than instead of.
+> > > 
+> > > I won't argue, I don't agree with your reasoning, but I'm not opposed to
+> > > this result.  We have 3 competing suggestions:
+> > > 
+> > > Jan suggested we:
+> > > completely eliminate secmark from procfs+netlink and only export secctx
+> > > in netlink.
+> > > 
+> > > Eric suggested we:
+> > > completely eliminate secmark from procfs+netlink and then export secctx
+> > > in procfs+netlink
+> > > 
+> > > sounds like James suggested we:
+> > > continue to export meaningless and confusing secmark from procfs+netlink
+> > > and then export secctx in procfs+netlink as well.
+> > > 
+> > > I'm going to implement James' idea and resend the patch series.  Any
+> > > strong objections?
+> > 
+> > I apologize for not getting a chance to look at these patches sooner.
+> > In general they look fine to me and my only real concern was addressed
+> > by Pablo already (breaking userspace due to #define changes).
+> > 
+> > As far as exporting the 32bit secid/secmark to userspace, I think that
+> > is a mistake.  James correctly points out that it does map to a LSM
+> > specific value, e.g. SELinux and Smack security labels, but I don't
+> > think he makes it clear that in the two LSMs that currently use secids
+> > the mapping between the secid and the secctx is not constant; the secids
+> > are transient values that will change with each boot in a manner that
+> > userspace can not predict.  For this reason, I think exporting the
+> > secids is only going to cause users/admins grief, whereas exporting the
+> > associated secctx should be a much more stable value and is likely what
+> > the user/admin is expecting anyway.
 > 
+> So it sounds to me like Paul agrees with me that exporting the SELinux
+> sid as 'secmark=' was a bad idea.  It's the whole reason this thread
+> started, someone wanted to be able to translate and use that field (and
+> instantly realized it was useless.)
 > 
-> That's a good point (it's a separate issue); we need to have a select there.
+> I see it as having 3 options.  lets assume was have a packet with
+> selinux sid=121 and selinux context=packet_t.  We can
 > 
-> I'll send a patch.
+> 1) secmark=121 secctx=packet_t
+> 	This continues to send secmark like we do and people might continue to
+> be baffled by the 121.
+> 
+> 2) secmark=1 secctx=packet_t
+> 	This sends a secmark field to userspace so if an application which
+> reads this exists (I doubt such an application actually exists in in the
+> real world) it will still get all of the information it got before but
+> noone will be baffled by what the number means.  1/0 is pretty obvious.
+> 
+> 3) secctx=packet_t
+> 	Smallest easiest, what my patches actually do.  Could theoretically
+> break some script that expected the field to be there, but any such
+> script is already broken since that field can be easily compiled
+> out......
+> 
+> James, if you are adamant about #1 I'll resend, otherwise I'm sticking
+> with #3.....
 
-No, maybe you don't need it -- the bool line by itself means there
-is no menu item.  So the default y does the job of selecting it all
-the time (which kinda sucks for non-OMAP)...
-
-> >>
-> >
-> > CONFIG_WL12XX_PLATFORM_DATA is selected automatically if the relevant
-> > driver is selected (this is independent of the underlying arch/board):
-> >
-> > config WL12XX_PLATFORM_DATA
-> >        bool
-> >        depends on WL1271_SDIO != n
-> >        default y
-> >
-> > All we have to make sure is that it will be compiled built-in. If we
-> > use drivers/net/wireless/wl12xx/Makefile, and we build a modular
-> > wl1271_sdio, it won't (despite it being selected as y).
-
-I don't understand this part.  FWIW, Kconfig is not a strength for me.
-But...
-
-> > That's why I put it in drivers/net/wireless/Makefile.
-
-Can't we do this?  It seems to work (i.e. the symbols from
-wl12xx_platform_data.o end-up in built-in.o).
-
->From d8ddd0ebe8ae3791ba9c76a506bfcdd60be40f5b Mon Sep 17 00:00:00 2001
-From: John W. Linville <linville@tuxdriver.com>
-Date: Mon, 27 Sep 2010 14:00:51 -0400
-Subject: [PATCH] wl12xx: fix separate-object-folder builds
-
-Make this go away (happens when building with a separate object
-directory):
-
-Assembler messages:
-Fatal error: can't create drivers/net/wireless/wl12xx/.tmp_wl12xx_platform_data.o: No such file or directory
-drivers/net/wireless/wl12xx/wl12xx_platform_data.c: In function 'wl12xx_get_platform_data':
-drivers/net/wireless/wl12xx/wl12xx_platform_data.c:28: error: cannot open drivers/net/wireless/wl12xx/.tmp_wl12xx_platform_data.gcno
-drivers/net/wireless/wl12xx/wl12xx_platform_data.c:28: confused by earlier errors, bailing out
-
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
----
- drivers/net/wireless/Makefile        |    3 +--
- drivers/net/wireless/wl12xx/Makefile |    3 +++
- 2 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/wireless/Makefile b/drivers/net/wireless/Makefile
-index 85af697..a13a602 100644
---- a/drivers/net/wireless/Makefile
-+++ b/drivers/net/wireless/Makefile
-@@ -50,7 +50,6 @@ obj-$(CONFIG_ATH_COMMON)	+= ath/
- obj-$(CONFIG_MAC80211_HWSIM)	+= mac80211_hwsim.o
- 
- obj-$(CONFIG_WL12XX)	+= wl12xx/
--# small builtin driver bit
--obj-$(CONFIG_WL12XX_PLATFORM_DATA)	+= wl12xx/wl12xx_platform_data.o
-+obj-$(CONFIG_WL12XX_PLATFORM_DATA)	+= wl12xx/
- 
- obj-$(CONFIG_IWM)	+= iwmc3200wifi/
-diff --git a/drivers/net/wireless/wl12xx/Makefile b/drivers/net/wireless/wl12xx/Makefile
-index 078b439..0d334d6 100644
---- a/drivers/net/wireless/wl12xx/Makefile
-+++ b/drivers/net/wireless/wl12xx/Makefile
-@@ -16,3 +16,6 @@ wl1271-$(CONFIG_NL80211_TESTMODE)	+= wl1271_testmode.o
- obj-$(CONFIG_WL1271)	+= wl1271.o
- obj-$(CONFIG_WL1271_SPI)	+= wl1271_spi.o
- obj-$(CONFIG_WL1271_SDIO)	+= wl1271_sdio.o
-+
-+# small builtin driver bit
-+obj-$(CONFIG_WL12XX_PLATFORM_DATA)	+= wl12xx_platform_data.o
--- 
-1.7.2.3
-
+James, if you do feel strongly about door #1, can you provide a good
+example of how someone might use the secid to do something useful in
+userspace?  I ask because I can't think of anything and it would be nice
+to have the example on record for future work.
 
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+paul moore
+linux @ hp
+
+
