@@ -1,197 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758839Ab0I0IEz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 04:04:55 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:35454 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752620Ab0I0IEx convert rfc822-to-8bit (ORCPT
+	id S932681Ab0I0IF1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 04:05:27 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:47562 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752620Ab0I0IFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 04:04:53 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>
-References: <m1sk0x9z62.fsf@fess.ebiederm.org>
-	<m1d3s19z38.fsf@fess.ebiederm.org>
-	<AANLkTik=6cGkkpBJUfhNJ8ZhB8MfFrm=zXWtLOP-S_ZR@mail.gmail.com>
-Date: Mon, 27 Sep 2010 01:04:44 -0700
-In-Reply-To: <AANLkTik=6cGkkpBJUfhNJ8ZhB8MfFrm=zXWtLOP-S_ZR@mail.gmail.com>
-	(Pekka Enberg's message of "Mon, 27 Sep 2010 10:15:14 +0300")
-Message-ID: <m1vd5r628z.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Mon, 27 Sep 2010 04:05:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=JcouXLzYxnlWEW/oxSTMYAGgw+unukicDHHQbnaXEcNBwtccIompyu3rkFw38MK2Fi
+         cs4MdECPOkRp0jLFSmS1EzskLRQTT+8E9TwGL/bDWfAfX7Ju1itApr6g4Qh/kt8tPZhI
+         TrustI3uijbSB7nGmh1tUDjYT84Ii3fK5Ftcg=
+Date: Mon, 27 Sep 2010 16:09:54 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Hu Tao <hutao@cn.fujitsu.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Update num_symtab, symtab and strtab right after setup
+ of core_num_syms, core_symtab and core_strtab.
+Message-ID: <20100927080954.GC5785@cr0.nay.redhat.com>
+References: <20100927073028.GA1040@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 98.207.157.188
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Pekka Enberg <penberg@kernel.org>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 3/3] mm: Cause revoke_mappings to wait until all close methods have completed.
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100927073028.GA1040@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pekka Enberg <penberg@kernel.org> writes:
+On Mon, Sep 27, 2010 at 03:30:28PM +0800, Hu Tao wrote:
+>Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
 
-> On Sun, Sep 26, 2010 at 2:34 AM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
->>
->> Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
+
+Changelog is empty.
+What bug did you observe?
+
+>---
+> kernel/module.c |    9 ++++-----
+> 1 files changed, 4 insertions(+), 5 deletions(-)
 >
-> The changelog is slightly too terse for me to review this. What's the
-> race you're trying to avoid? If the point is to make the revoke task
-> wait until everything has been closed, why can't we use the completion
-> API here?
+>diff --git a/kernel/module.c b/kernel/module.c
+>index d0b5f8d..d5dc98b 100644
+>--- a/kernel/module.c
+>+++ b/kernel/module.c
+>@@ -2029,6 +2029,10 @@ static void add_kallsyms(struct module *mod, const struct load_info *info)
+> 	for (*s = 0, i = 1; i < info->sechdrs[info->index.str].sh_size; ++i)
+> 		if (test_bit(i, info->strmap))
+> 			*++s = mod->strtab[i];
+>+
+>+	mod->num_symtab = mod->core_num_syms;
+>+	mod->symtab = mod->core_symtab;
+>+	mod->strtab = mod->core_strtab;
+> }
+> #else
+> static inline void layout_symtab(struct module *mod, struct load_info *info)
+>@@ -2738,11 +2742,6 @@ SYSCALL_DEFINE3(init_module, void __user *, umod,
+> 	/* Drop initial reference. */
+> 	module_put(mod);
+> 	trim_init_extable(mod);
+>-#ifdef CONFIG_KALLSYMS
+>-	mod->num_symtab = mod->core_num_syms;
+>-	mod->symtab = mod->core_symtab;
+>-	mod->strtab = mod->core_strtab;
+>-#endif
+> 	module_free(mod, mod->module_init);
+> 	mod->module_init = NULL;
+> 	mod->init_size = 0;
 
-Because as far as I can tell completions don't map at all.
-At best we have are times when the set of vmas goes empty.
 
-The close_count is needed as we take vmas off the lists early
-to avoid issues with truncate, and so we something to tell
-when the close is actually finished.  If a close is actually
-in progress.
-
-I used a simple task to wake up instead of a wait queue as in all of the
-revoke scenarios I know of, it make sense to serialize at a higher
-level, and a task pointer is smaller than a wait queue head, and
-I am reluctant to increase the size of struct inode to larger than
-necessary.
-
-The count at least has to be always present because objects could start
-closing before we start the revoke.   We can't be ham handed and grab
-all mm->mmap_sem's because mmput() revoke_vma is called without the
-mmap_sem.
-
-So it looked to me that the cleanest and smallest way to go was to write
-an old fashioned schedule/wait loop that are usually hidden behind
-completions, or wait queue logic.
-
-It is my hope that we can be clever at some point and create a union
-either in struct inode proper or in struct address space with a few
-other fields that cannot be used while revoking a vma (like potentially
-the truncate count) and reuse them.  But I am not clever enough today
-to do something like that.
-
-Eric
-
->> ---
->>  include/linux/fs.h |    2 ++
->>  mm/mmap.c          |   13 ++++++++++++-
->>  mm/revoke.c        |   18 +++++++++++++++---
->>  3 files changed, 29 insertions(+), 4 deletions(-)
->>
->> diff --git a/include/linux/fs.h b/include/linux/fs.h
->> index 76041b6..5d3d6b8 100644
->> --- a/include/linux/fs.h
->> +++ b/include/linux/fs.h
->> @@ -633,6 +633,8 @@ struct address_space {
->>        const struct address_space_operations *a_ops;   /* methods */
->>        unsigned long           flags;          /* error bits/gfp mask */
->>        struct backing_dev_info *backing_dev_info; /* device readahead, etc */
->> +       struct task_struct      *revoke_task;   /* Who to wake up when all vmas are closed */
->> +       unsigned int            close_count;    /* Cover race conditions with revoke_mappings */
->>        spinlock_t              private_lock;   /* for use by the address_space */
->>        struct list_head        private_list;   /* ditto */
->>        struct address_space    *assoc_mapping; /* ditto */
->> diff --git a/mm/mmap.c b/mm/mmap.c
->> index 17dd003..3df3193 100644
->> --- a/mm/mmap.c
->> +++ b/mm/mmap.c
->> @@ -218,6 +218,7 @@ void unlink_file_vma(struct vm_area_struct *vma)
->>                struct address_space *mapping = file->f_mapping;
->>                spin_lock(&mapping->i_mmap_lock);
->>                __remove_shared_vm_struct(vma, file, mapping);
->> +               mapping->close_count++;
->>                spin_unlock(&mapping->i_mmap_lock);
->>        }
->>  }
->> @@ -233,9 +234,19 @@ static struct vm_area_struct *remove_vma(struct vm_area_struct *vma)
->>        if (vma->vm_ops && vma->vm_ops->close)
->>                vma->vm_ops->close(vma);
->>        if (vma->vm_file) {
->> -               fput(vma->vm_file);
->> +               struct address_space *mapping = vma->vm_file->f_mapping;
->>                if (vma->vm_flags & VM_EXECUTABLE)
->>                        removed_exe_file_vma(vma->vm_mm);
->> +
->> +               /* Decrement the close count and wake up a revoker if present */
->> +               spin_lock(&mapping->i_mmap_lock);
->> +               mapping->close_count--;
->> +               if ((mapping->close_count == 0) && mapping->revoke_task)
->> +                       /* Is wake_up_process the right variant of try_to_wake_up? */
->> +                       wake_up_process(mapping->revoke_task);
->> +               spin_unlock(&mapping->i_mmap_lock);
->> +
->> +               fput(vma->vm_file);
->>        }
->>        mpol_put(vma_policy(vma));
->>        kmem_cache_free(vm_area_cachep, vma);
->> diff --git a/mm/revoke.c b/mm/revoke.c
->> index a76cd1a..e19f7df 100644
->> --- a/mm/revoke.c
->> +++ b/mm/revoke.c
->> @@ -143,15 +143,17 @@ void revoke_mappings(struct address_space *mapping)
->>        /* Make any access to previously mapped pages trigger a SIGBUS,
->>         * and stop calling vm_ops methods.
->>         *
->> -        * When revoke_mappings returns invocations of vm_ops->close
->> -        * may still be in progress, but no invocations of any other
->> -        * vm_ops methods will be.
->> +        * When revoke_mappings no invocations of any method will be
->> +        * in progress.
->>         */
->>        struct vm_area_struct *vma;
->>        struct prio_tree_iter iter;
->>
->>        spin_lock(&mapping->i_mmap_lock);
->>
->> +       WARN_ON(mapping->revoke_task);
->> +       mapping->revoke_task = current;
->> +
->>  restart_tree:
->>        vma_prio_tree_foreach(vma, &iter, &mapping->i_mmap, 0, ULONG_MAX) {
->>                if (revoke_mapping(mapping, vma->vm_mm, vma->vm_start))
->> @@ -164,6 +166,16 @@ restart_list:
->>                        goto restart_list;
->>        }
->>
->> +       while (!list_empty(&mapping->i_mmap_nonlinear) ||
->> +              !prio_tree_empty(&mapping->i_mmap) ||
->> +              mapping->close_count)
->> +       {
->> +               __set_current_state(TASK_UNINTERRUPTIBLE);
->> +               spin_unlock(&mapping->i_mmap_lock);
->> +               schedule();
->> +               spin_lock(&mapping->i_mmap_lock);
->> +       }
->> +       mapping->revoke_task = NULL;
->>        spin_unlock(&mapping->i_mmap_lock);
->>  }
->>  EXPORT_SYMBOL_GPL(revoke_mappings);
->> --
->> 1.7.2.3
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->>
->>
+This patch is not correct, symbols that are not core symbols will be
+dropped right after this piece of code. So NACK.
