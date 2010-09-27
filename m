@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933323Ab0I0S3i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 14:29:38 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:36526 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933297Ab0I0S3g (ORCPT
+	id S933281Ab0I0S3Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 14:29:25 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:44036 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757190Ab0I0S3X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 14:29:36 -0400
-Date: Mon, 27 Sep 2010 14:25:47 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: David Miller <davem@davemloft.net>
-Cc: ohad@wizery.com, sfr@canb.auug.org.au, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (net
- tree related)
-Message-ID: <20100927182546.GE11086@tuxdriver.com>
-References: <20100927154408.55a28127.sfr@canb.auug.org.au>
- <AANLkTinHk82jM7Ztwb1aB1xb-hSLeg5Hb07mhYCaeszi@mail.gmail.com>
- <20100927180412.GD11086@tuxdriver.com>
- <20100927.111818.149846920.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100927.111818.149846920.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	Mon, 27 Sep 2010 14:29:23 -0400
+Subject: Re: [PATCH 3/6] secmark: export binary yes/no rather than kernel
+ internal secid
+From: Paul Moore <paul.moore@hp.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
+        selinux@tycho.nsa.gov, netfilter-devel@vger.kernel.org,
+        sds@tycho.nsa.gov, jengelh@medozas.de, casey@schaufler-ca.com,
+        linux-security-module@vger.kernel.org, netfilter@vger.kernel.org,
+        mr.dash.four@googlemail.com
+In-Reply-To: <1285606896.2815.36.camel@localhost.localdomain>
+References: <20100924204517.28355.42822.stgit@paris.rdu.redhat.com>
+	 <20100924204531.28355.20320.stgit@paris.rdu.redhat.com>
+	 <alpine.LRH.2.00.1009271038280.25748@tundra.namei.org>
+	 <1285606896.2815.36.camel@localhost.localdomain>
+Content-Type: text/plain; charset="us-ascii"
+Organization: Hewlett Packard
+Date: Mon, 27 Sep 2010 14:29:16 -0400
+Message-ID: <1285612156.4935.16.camel@sifl>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 11:18:18AM -0700, David Miller wrote:
-> From: "John W. Linville" <linville@tuxdriver.com>
-> Date: Mon, 27 Sep 2010 14:04:12 -0400
+On Mon, 2010-09-27 at 13:01 -0400, Eric Paris wrote:
+> On Mon, 2010-09-27 at 10:50 +1000, James Morris wrote:
+> > On Fri, 24 Sep 2010, Eric Paris wrote:
 > 
-> > Subject: [PATCH] wl12xx: fix separate-object-folder builds
-> > 
-> > Make this go away (happens when building with a separate object
-> > directory):
-> > 
-> > Assembler messages:
-> > Fatal error: can't create drivers/net/wireless/wl12xx/.tmp_wl12xx_platform_data.o: No such file or directory
-> > drivers/net/wireless/wl12xx/wl12xx_platform_data.c: In function 'wl12xx_get_platform_data':
-> > drivers/net/wireless/wl12xx/wl12xx_platform_data.c:28: error: cannot open drivers/net/wireless/wl12xx/.tmp_wl12xx_platform_data.gcno
-> > drivers/net/wireless/wl12xx/wl12xx_platform_data.c:28: confused by earlier errors, bailing out
-> > 
-> > Signed-off-by: John W. Linville <linville@tuxdriver.com>
-> > Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> > For the reasons above, I think the secctx string needs to be exported in 
+> > addition to this rather than instead of.
 > 
-> BTW, if this fuglet going to work if the driver is built modular?
+> I won't argue, I don't agree with your reasoning, but I'm not opposed to
+> this result.  We have 3 competing suggestions:
 > 
-> The idea of this things seems to be to allow arch platform code to call
-> into it to set things.  Such calls from arch platform code are going
-> to be "obj-y"
+> Jan suggested we:
+> completely eliminate secmark from procfs+netlink and only export secctx
+> in netlink.
 > 
-> So if this is built into the modular driver, I can't see how it
-> can work.
+> Eric suggested we:
+> completely eliminate secmark from procfs+netlink and then export secctx
+> in procfs+netlink
+> 
+> sounds like James suggested we:
+> continue to export meaningless and confusing secmark from procfs+netlink
+> and then export secctx in procfs+netlink as well.
+> 
+> I'm going to implement James' idea and resend the patch series.  Any
+> strong objections?
 
-Dave is right -- these Kconfig dependencies (or lack thereof) seem
-to be wrong.  Seems like the OMAP code needs to select the option
-for this code?
+I apologize for not getting a chance to look at these patches sooner.
+In general they look fine to me and my only real concern was addressed
+by Pablo already (breaking userspace due to #define changes).
 
-John
+As far as exporting the 32bit secid/secmark to userspace, I think that
+is a mistake.  James correctly points out that it does map to a LSM
+specific value, e.g. SELinux and Smack security labels, but I don't
+think he makes it clear that in the two LSMs that currently use secids
+the mapping between the secid and the secctx is not constant; the secids
+are transient values that will change with each boot in a manner that
+userspace can not predict.  For this reason, I think exporting the
+secids is only going to cause users/admins grief, whereas exporting the
+associated secctx should be a much more stable value and is likely what
+the user/admin is expecting anyway.
+
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+paul moore
+linux @ hp
+
+
