@@ -1,75 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758920Ab0I0It4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 04:49:56 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:57627 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753079Ab0I0Itz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 04:49:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=ZuSOnwT6+zt5lF7Nvif85v0HE7Yo+xxPiz9ZqWebciu7Mh6BhI87iIeqXTVPeD/1ML
-         Vd2+I/701bJYjFyotbN5MEHSnMzaKu6p369nEhcbiMoeR5eAgKSwHWOad1BELBrXa1iq
-         VJnodINJB6DcHeY/kGsm4twDL6d4PY77pD7VI=
-Date: Mon, 27 Sep 2010 16:54:25 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Hu Tao <hutao@cn.fujitsu.com>
-Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Update num_symtab, symtab and strtab right after setup
- of core_num_syms, core_symtab and core_strtab.
-Message-ID: <20100927085425.GE5785@cr0.nay.redhat.com>
-References: <20100927073028.GA1040@localhost.localdomain>
- <20100927080954.GC5785@cr0.nay.redhat.com>
- <20100927082247.GA2463@localhost.localdomain>
+	id S1758960Ab0I0IuB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 04:50:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7216 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758938Ab0I0It7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 04:49:59 -0400
+Date: Mon, 27 Sep 2010 10:49:23 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Neil Horman <nhorman@tuxdriver.com>, eugene@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv2] proc: making "limits" world readable
+Message-ID: <20100927084923.GD1829@jolsa.brq.redhat.com>
+References: <1285060255-15784-1-git-send-email-jolsa@redhat.com>
+ <20100923145642.49f17b20.akpm@linux-foundation.org>
+ <20100924105547.GA1818@jolsa.brq.redhat.com>
+ <20100924162007.GD30252@hmsreliant.think-freely.org>
+ <20100924113246.1221f435.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100927082247.GA2463@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100924113246.1221f435.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 04:22:47PM +0800, Hu Tao wrote:
->On Mon, Sep 27, 2010 at 04:09:54PM +0800, Américo Wang wrote:
->> On Mon, Sep 27, 2010 at 03:30:28PM +0800, Hu Tao wrote:
->> >Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
->> 
->> 
->> Changelog is empty.
->> What bug did you observe?
->
->symtab and strtab will point to vfreed memory after free_copy(&info)
->near end of load_module().
->
+On Fri, Sep 24, 2010 at 11:32:46AM -0700, Andrew Morton wrote:
+> On Fri, 24 Sep 2010 12:20:07 -0400
+> Neil Horman <nhorman@tuxdriver.com> wrote:
+> 
+> > On Fri, Sep 24, 2010 at 12:55:47PM +0200, Jiri Olsa wrote:
+> > > On Thu, Sep 23, 2010 at 02:56:42PM -0700, Andrew Morton wrote:
+> > > > On Tue, 21 Sep 2010 11:10:55 +0200
+> > > > Jiri Olsa <jolsa@redhat.com> wrote:
+> > > > 
+> > > > > hi,
+> > > > > 
+> > > > > I'd like to have the /proc/<pid>/limits file world readable,
+> > > > 
+> > > > Why?
+> > > > 
+> > > 
+> > > having this will ease the task of system management for large install
+> > > bases and where root privileges might be restricted
+> > > 
+> > > jirka
+> > > 
+> > I don't see a problem with making this file world readable.  Doing so would be
+> > in keeping with most of the other stats bearing files in /proc/<pid>.  The only
+> > reason I didn't make it world readable was because the getrlimit sematics
+> > previously kept limit information private to the process, and I didn't want to
+> > deviate from that.  But as long as we're not making it world writeable I think
+> > we're ok.
+> > 
+> > Acked-by: Neil Horman <nhorman@tuxdriver.com>
+> > 
+> 
+> hm, OK, I can't really think of any realistic problem with exposing limits.
+> 
+> The original patch had no signoff.  Please resend, with a changelog
+> which includes a *good* rationale for making the change.  For example,
+> a use case.
+> 
+thanks for feedback, the patch is attached
 
-I think you must mean the error path in load_module(), yeah, probably.
+jirka
 
-But you need to check if this patch misses other thing, like
-the other functions which are called after add_kallsyms() inside load_module().
-According to my eyes, this seems fine (at least on x86), so
+---
+making the /proc/<pid>/limits file world readable.
 
-Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
+Having the limits file world readable will ease the task of
+system management on systems where root privileges might be
+restricted. 
 
->> 
->> 
->> This patch is not correct, symbols that are not core symbols will be
->> dropped right after this piece of code. So NACK.
->
->There is the reason why we should update num_symtab, symtab and strtab
->before non-core-symbols are dropped.
+Having admin restricted with root proviledges, he/she could
+not check other users process' limits.
 
-init section is dropped *after* these value are update, which is correct.
+Also it'd align with most of the /proc stat files.
 
-Again, you need to describe what you are trying to fix in your changelog.
-Please resend it with a proper changelog.
+wbr,
+jirka
 
-Thanks.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ fs/proc/base.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index a1c43e7..8e4adda 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -2675,7 +2675,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+ 	INF("auxv",       S_IRUSR, proc_pid_auxv),
+ 	ONE("status",     S_IRUGO, proc_pid_status),
+ 	ONE("personality", S_IRUSR, proc_pid_personality),
+-	INF("limits",	  S_IRUSR, proc_pid_limits),
++	INF("limits",	  S_IRUGO, proc_pid_limits),
+ #ifdef CONFIG_SCHED_DEBUG
+ 	REG("sched",      S_IRUGO|S_IWUSR, proc_pid_sched_operations),
+ #endif
+@@ -3011,7 +3011,7 @@ static const struct pid_entry tid_base_stuff[] = {
+ 	INF("auxv",      S_IRUSR, proc_pid_auxv),
+ 	ONE("status",    S_IRUGO, proc_pid_status),
+ 	ONE("personality", S_IRUSR, proc_pid_personality),
+-	INF("limits",	 S_IRUSR, proc_pid_limits),
++	INF("limits",	 S_IRUGO, proc_pid_limits),
+ #ifdef CONFIG_SCHED_DEBUG
+ 	REG("sched",     S_IRUGO|S_IWUSR, proc_pid_sched_operations),
+ #endif
+-- 
+1.7.1
+
