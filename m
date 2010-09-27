@@ -1,70 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759952Ab0I0RgX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 13:36:23 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:41728 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759781Ab0I0RgS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 13:36:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=f/jrezqB9uAAru86wESTXGLYHWhHk4Nk2dXn5B0dDKJXnBi7mSdrNrit/tkRfG/qao
-         cSF6ZDPY76B4tgIna94BfssdSpoOXMNzepUdcLQxdjQCauuaQsKdKdCOCBtwu4+3xYE3
-         AfDpqESojCTmX5b+AwAXbrZ00eVfc/UoiDLbo=
+	id S1759928Ab0I0Rht (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 13:37:49 -0400
+Received: from claw.goop.org ([74.207.240.146]:42409 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754816Ab0I0Rhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 13:37:48 -0400
+Message-ID: <4CA0D660.3010804@goop.org>
+Date: Mon, 27 Sep 2010 10:37:36 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.3
 MIME-Version: 1.0
-In-Reply-To: <20100908152036.643594727@linutronix.de>
-References: <20100908152036.643594727@linutronix.de>
-Date: Mon, 27 Sep 2010 10:36:16 -0700
-X-Google-Sender-Auth: ooRWHqA_T8INAToUscrqMNiXxQA
-Message-ID: <AANLkTikVHO9DmyTX==CwViDK1rP0masBwjMakHZ0U=kZ@mail.gmail.com>
-Subject: Re: [RFC trollpatch 1/1] genirq: Remove the fits all and nothing
- __do_IRQ() code
-From: Tony Luck <tony.luck@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-alpha@vger.kernel.org,
-        linux-cris-kernel@axis.com, Haavard Skinnemoen <hskinnemoen@atmel.com>,
-        linux-ia64@vger.kernel.org,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Greg Ungerer <gerg@uclinux.org>, Jeff Dike <jdike@addtoit.com>,
-        linux-parisc@vger.kernel.org, Chris Zankel <chris@zankel.net>,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Greg KH <gregkh@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Ian Jackson <Ian.Jackson@eu.citrix.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Subject: Powertop shows events/0 waking at high rate due to ptys
+Content-Type: multipart/mixed;
+ boundary="------------050009020700020303030809"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 8, 2010 at 11:14 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
->  The following architectures are still using __do_IRQ():
->
->  alpha, cris, ia64, h8300, m32r, m68knommu, parisc, um
+This is a multi-part message in MIME format.
+--------------050009020700020303030809
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 
-Thomas,
+ Hi,
 
-I (belatedly) took a look at fixing ia64 ... but I've run into a small snag.
-The __do_IRQ() routine makes a call to:
+I noticed on one of my systems that powertop was showing events/0 waking
+at a high rate (~2000 times/sec, HZ=1000).  After a lot of tracing I
+found it was due to writes pending to ptys which hadn't been read.
 
- desc->chip->end(irq);
+Specifically, in flush_to_ldisc(), these lines seem to be causing the
+repeated wakeups:
 
-while neither of the "handle_level_irq()" nor "handle_edge_irq()"
-functions do this.
+			if (!tty->receive_room) {
+				schedule_delayed_work(&tty->buf.work, 1);
+				break;
+			}
 
-On ia64 iosapic_end_level_irq() call iosapic_eoi() for me. Without it
-my system hangs during boot (with some driver timeout complaining
-about dropped interrupts).
+After reading the pending writes the system settles down and wakeups
+drops to a normal low level.
 
-Is the omission of desc->chip->end(irq); deliberate? In which case
-I need to find another place to call iosapic_eoi(). Or is it accidental?
+The program provoking this was Xen's xenconsoled, which manages running
+domains' consoles; the unread output was various domains console
+output.  This doesn't seem to be related to Xen at all: Ian Jackson put
+together a small standalone program (attached) which reproduces the
+problem; he reports that this wakeup behaviour is a regression compared
+to a 2.6.16 Debian kernel.
 
-Thanks
+Compile ptypolling with: gcc -o ptypolling ptypolling.c -g -lutil
 
--Tony
+After running ptypolling, powertop shows events/0 waking at a high
+rate.  ptypolling itself is blocked in a select() and is idle.
+
+Thanks,
+    J
+
+
+--------------050009020700020303030809
+Content-Type: text/x-csrc;
+ name="ptypolling.c"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="ptypolling.c"
+
+/* demonstrate polling wakeup */
+
+#include <unistd.h>
+#include <pty.h>
+#include <assert.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+
+static int master, slave;
+
+int main(void) {
+  int r;
+
+  r = openpty(&master,&slave,0,0,0);
+  fprintf(stdout,"openpty=%d master=%d slave=%d\n", r, master, slave);
+  assert(!r);
+  
+  r = fcntl(master, F_GETFL);  assert(r>=0);
+  r = fcntl(master, F_SETFL, r | O_NONBLOCK);
+
+  char buf[400];
+  int i;
+  for (i=0; i<sizeof(buf)-2; i+=2)
+    sprintf(buf+i, "%02x", i);
+  buf[sizeof(buf)-2]= '\r';
+  buf[sizeof(buf)-1]= '\n';
+  
+  fd_set writefds;
+  for (;;) {
+    FD_ZERO(&writefds);
+    FD_SET(master, &writefds);
+    fprintf(stdout,"select\n");
+    r= select(master+1, 0,&writefds,0, 0);
+    if (r==-1) {
+      fprintf(stdout,"select-fail %s\n", strerror(errno));
+      continue;
+    }
+    assert(r==1);
+    assert(FD_ISSET(master, &writefds));
+
+    fprintf(stdout,"write\n");
+    r= write(master,buf,sizeof(buf));
+    if (r==-1) {
+      fprintf(stdout,"write-fail %s\n", strerror(errno));
+      continue;
+    }
+    assert(r>=0 && r<=sizeof(buf));
+    fprintf(stdout,"wrote %d\n",r);
+  }
+}
+
+--------------050009020700020303030809--
