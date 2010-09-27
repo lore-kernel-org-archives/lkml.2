@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913Ab0I0FXN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 01:23:13 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:42093 "EHLO smtps.tip.net.au"
+	id S1753196Ab0I0FZd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 01:25:33 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:49579 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752696Ab0I0FXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 01:23:11 -0400
-Date: Mon, 27 Sep 2010 15:23:04 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Trond Myklebust <trond.myklebust@fys.uio.no>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bryan Schumaker <bjschuma@netapp.com>
-Subject: linux-next: build failure after merge of the  tree (nfs tree
- related)
-Message-Id: <20100927152304.a6463447.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__27_Sep_2010_15_23_04_+1000_HgzN3buw7.7akkFw"
+	id S1751497Ab0I0FZb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 01:25:31 -0400
+From: "Datta, Shubhrajyoti" <shubhrajyoti@ti.com>
+To: Vasiliy Kulikov <segooon@gmail.com>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "Chemparathy, Cyril" <cyril@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 27 Sep 2010 10:55:24 +0530
+Subject: RE: [PATCH] keyboard: tnetv107x: fix input_device leak
+Thread-Topic: [PATCH] keyboard: tnetv107x: fix input_device leak
+Thread-Index: ActdWWPxNBfwT1ICRYaaynFLEKzJCwAqeVTQ
+Message-ID: <0680EC522D0CC943BC586913CF3768C003FF0594C8@dbde02.ent.ti.com>
+References: <1285491584-32664-1-git-send-email-segooon@gmail.com>
+In-Reply-To: <1285491584-32664-1-git-send-email-segooon@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__27_Sep_2010_15_23_04_+1000_HgzN3buw7.7akkFw
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Trond,
 
-After merging the final tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+> -----Original Message-----
+> From: linux-input-owner@vger.kernel.org [mailto:linux-input-
+> owner@vger.kernel.org] On Behalf Of Vasiliy Kulikov
+> Sent: Sunday, September 26, 2010 2:30 PM
+> To: kernel-janitors@vger.kernel.org
+> Cc: Dmitry Torokhov; Chemparathy, Cyril; Kevin Hilman; linux-
+> input@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: [PATCH] keyboard: tnetv107x: fix input_device leak
+> 
+> keypad_probe() calls input_free_device() on error, but keypad_remove()
+> doesn't.
+> ---
+>  Compile tested.
+> 
+>  drivers/input/keyboard/tnetv107x-keypad.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/input/keyboard/tnetv107x-keypad.c
+> b/drivers/input/keyboard/tnetv107x-keypad.c
+> index b4a81eb..1ea20e1 100644
+> --- a/drivers/input/keyboard/tnetv107x-keypad.c
+> +++ b/drivers/input/keyboard/tnetv107x-keypad.c
+> @@ -305,6 +305,7 @@ static int __devexit keypad_remove(struct
+> platform_device *pdev)
+>  	free_irq(kp->irq_press, kp);
+>  	free_irq(kp->irq_release, kp);
+>  	input_unregister_device(kp->input_dev);
+> +	input_free_device(kp->input_dev);
+It does not seem to be correct.
 
-fs/nfs/dir.c: In function 'nfs_readdir_free_large_page':
-fs/nfs/dir.c:464: error: implicit declaration of function 'vm_unmap_ram'
-fs/nfs/dir.c: In function 'nfs_readdir_large_page':
-fs/nfs/dir.c:485: error: implicit declaration of function 'vm_map_ram'
-fs/nfs/dir.c:485: warning: assignment makes pointer from integer without a =
-cast
-
-Caused by commit 2af4eb9746092aab7811b5b581d004049c068a02 ("NFS: readdir
-with vmapped pages").
-
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__27_Sep_2010_15_23_04_+1000_HgzN3buw7.7akkFw
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMoCo4AAoJEDMEi1NhKgbsNlwIAI8TllKjSvpZi4MkGhVeWXOH
-O4/CFlLmB0gN+VJJjML3mQRfOvT1D+xamoBl48rBPEJv9n8gBk4ZI3xf04eqLCCE
-lLn3X7JflbkZ/r/AwtU/ZEzClyCDBcw1tjzc7ibHagkyT6TE0E23+Eqkx7ZJUESs
-KKbqpVuvAekmV0FKRxhegplqkklWpPZZ2QRyUzgak2WcYx/w5eRruNxwkbPtqZ1r
-4UX1qpj8X3uWI+i8d2I/BwV4GLlB3nfMSorXBK1OX2WiWhm6E5IeByrR36OTFBGb
-A7VywG00+zNScpMP+k++YWJuTtx5yfgpl6EUSciK4/zS1dHKJ1vEbw5ffcYygZo=
-=txbt
------END PGP SIGNATURE-----
-
---Signature=_Mon__27_Sep_2010_15_23_04_+1000_HgzN3buw7.7akkFw--
+>  	clk_put(kp->clk);
+>  	iounmap(kp->regs);
+>  	release_mem_region(kp->res->start, resource_size(kp->res));
+> --
+> 1.7.0.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
