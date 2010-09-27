@@ -1,89 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932544Ab0I0AqL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 20:46:11 -0400
-Received: from mga11.intel.com ([192.55.52.93]:2860 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755145Ab0I0AqJ convert rfc822-to-8bit (ORCPT
+	id S1758583Ab0I0Aq1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 20:46:27 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:45866 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758549Ab0I0AqZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 20:46:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,240,1283756400"; 
-   d="scan'208";a="841120138"
-From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "herbert@gondor.hengli.com.au" <herbert@gondor.hengli.com.au>,
-        "jdike@linux.intel.com" <jdike@linux.intel.com>
-Date: Mon, 27 Sep 2010 08:44:52 +0800
-Subject: RE: [PATCH v11 00/17] Provide a zero-copy method on KVM virtio-net.
-Thread-Topic: [PATCH v11 00/17] Provide a zero-copy method on KVM virtio-net.
-Thread-Index: ActdnV5IzY37EumUQUSR1zIrObvBqQAP3sEw
-Message-ID: <F2E9EB7348B8264F86B6AB8151CE2D792EC64F74FA@shsmsx502.ccr.corp.intel.com>
-References: <1285388855-27410-1-git-send-email-xiaohui.xin@intel.com>
- <20100926170142.GA24196@redhat.com>
-In-Reply-To: <20100926170142.GA24196@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 26 Sep 2010 20:46:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=uxbRFVSCc1ljgb/fj5g6V82QUG2pN6PdsI+MAHTT2abjKVynjdXM4ynJwZpLyO1Gse
+         v/1KrOO1beMcVjzwwXoWkIpd7pTFrDiInWRj2OQjD90kBe2+qm29k6tTZnJMCSjZ4hgh
+         RLvYBTg5GHpKAm0Mm4rSUNgWQRaTDg0KiTvhA=
 MIME-Version: 1.0
+In-Reply-To: <4C9F262F.7030709@biereigel-wb.de>
+References: <201009132336.17310.anarsoul@gmail.com>
+	<201009162306.59508.anarsoul@gmail.com>
+	<20100924123901.243c85e1@jbarnes-desktop>
+	<201009242248.36554.anarsoul@gmail.com>
+	<20100924125153.4fdf0c1b@jbarnes-desktop>
+	<4C9F262F.7030709@biereigel-wb.de>
+Date: Mon, 27 Sep 2010 08:46:23 +0800
+X-Google-Sender-Auth: GANP5xVMJ73kfUJ8yPPAYGYO7B4
+Message-ID: <AANLkTinZ-A-D=yEsN00dGB=fpTgV72BgrEra9UpkmVHX@mail.gmail.com>
+Subject: Re: Interrupt latency on some 945GM platforms
+From: Shaohua Li <shaohua.li@intel.com>
+To: Stefan Biereigel <security@biereigel-wb.de>
+Cc: linux-kernel@vger.kernel.org, Vasily Khoruzhick <anarsoul@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sitsofe Wheeler <sitsofe@yahoo.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        intel-gfx@lists.freedesktop.org, Len Brown <lenb@kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From: Michael S. Tsirkin [mailto:mst@redhat.com]
->Sent: Monday, September 27, 2010 1:02 AM
->To: Xin, Xiaohui
->Cc: netdev@vger.kernel.org; kvm@vger.kernel.org; linux-kernel@vger.kernel.org;
->mingo@elte.hu; davem@davemloft.net; herbert@gondor.hengli.com.au;
->jdike@linux.intel.com
->Subject: Re: [PATCH v11 00/17] Provide a zero-copy method on KVM virtio-net.
->
->On Sat, Sep 25, 2010 at 12:27:18PM +0800, xiaohui.xin@intel.com wrote:
->> We provide an zero-copy method which driver side may get external
->> buffers to DMA. Here external means driver don't use kernel space
->> to allocate skb buffers. Currently the external buffer can be from
->> guest virtio-net driver.
+2010/9/26 Stefan Biereigel <security@biereigel-wb.de>:
+> šAm 24.09.2010 21:51, schrieb Jesse Barnes:
 >>
->> The idea is simple, just to pin the guest VM user space and then
->> let host NIC driver has the chance to directly DMA to it.
->> The patches are based on vhost-net backend driver. We add a device
->> which provides proto_ops as sendmsg/recvmsg to vhost-net to
->> send/recv directly to/from the NIC driver. KVM guest who use the
->> vhost-net backend may bind any ethX interface in the host side to
->> get copyless data transfer thru guest virtio-net frontend.
->> patch 01-10:  	net core and kernel changes.
->> patch 11-13:  	new device as interface to mantpulate external buffers.
->> patch 14: 	for vhost-net.
->> patch 15:	An example on modifying NIC driver to using napi_gro_frags().
->> patch 16:	An example how to get guest buffers based on driver
->> 		who using napi_gro_frags().
->> patch 17:	It's a patch to address comments from Michael S. Thirkin
->> 		to add 2 new ioctls in mp device.
->> 		We split it out here to make easier reiewer.
+>> On Fri, 24 Sep 2010 22:48:36 +0300
+>> Vasily Khoruzhick<anarsoul@gmail.com> šwrote:
+>>
+>>> On 24 of September 2010 22:39:01 Jesse Barnes wrote:
+>>>>
+>>>> On Thu, 16 Sep 2010 23:06:46 +0300
+>>>>
+>>>> Vasily Khoruzhick<anarsoul@gmail.com> šwrote:
+>>>>>
+>>>>> ÷ ÓÏÏÂÝÅÎÉÉ ÏÔ 16 of September 2010 21:50:50 Á×ÔÏÒ Thomas Gleixner
+>>>
+>>> ÎÁÐÉÓÁÌ:
+>>>>>>
+>>>>>> Ok. The problematic part of HPET was not the clocksource, it was the
+>>>>>> clock event device which failed to deliver interrupts occasionally. It
+>>>>>> was worth a try at least.
+>>>>>
+>>>>> Hm, it seems that jerky glxgears is not related to jerky keyboard
+>>>>> events.
+>>>>> Keyboard is jerky only in konsole (kde terminal emulator), it seems
+>>>>> something happened it seems that font rendering performance is much
+>>>>> worse in latest xf86-video-intel than in xf86-video-intel-2.12.0.
+>>>>
+>>>> Len just had me try a few things too:
+>>>> š - maxcpus=1 lets things work
+>>>> š - offlining cpu1 at runtime (echo 0
+>>>>
+>>>> š š > š/sys/devices/system/cpu/cpu1/online) lets things work
+>>>>
+>>>> š - binding the i915 interrupt to cpu 0 does *not* help
+>>>>
+>>>> Vasily and Paolo, do you both have Atom CPUs with hyperthreading
+>>>> enabled?
+>>>
+>>> Nope, I have Core2Duo T5500, dual-core, no hyperthreading :)
+>>
+>> Hm, well there goes the theory about Atom HT...
+>>
 >
->
->
->I commented on how to avoid mm semaphore on data path separately, and
->since you didn't have time to review that yet, I won't repeat that here.
->
-
-I think I did avoid that in data path to use mm semaphore. I stored the value
-in mp structures and check with that.
-
->At this point what are the plans on macvtap integration?
->You indicated this is the interface you intend to use longterm.
-
-I'm now working on that.
-
-
-Thanks
-Xiaohui
+> Hello Everyone,
+> just to add on to reports of this problem, there was a Thread here in LKML
+> some months ago targeting the same problem (but not really attacking it at
+> the Chipset driver). As I have one of those Laptops with a 945GM-Chipset and
+> am stuck with the same Problem (disabled tickless now as a workaround and
+> set ticks to 1000) I could maybe do some testing of patches.
+> So what I can summarize is what the others did before: Disabling CPU1 helps,
+> adding nohz=off helps, changing the Clocksource afterwards helps, binding
+> the Interrupt does NOT help.
+> So here's the Link to the old Discussion with follow-ups, maybe you can get
+> some furter information from there.
+> http://linux.derkeiler.com/Mailing-Lists/Kernel/2010-05/msg03696.html
+> We targeted the BIOS itself as everyone in this thread happened to own an
+> Phoenix BIOS with some special version string.
+> best, Stefan
+does disable msi help with 'pci=nomsi'?
