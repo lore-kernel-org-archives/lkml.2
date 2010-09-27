@@ -1,93 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758975Ab0I0JLZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 05:11:25 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:51108 "EHLO
-	mx01.colomx.prod.int.phx2.redhat.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756059Ab0I0JLY convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 05:11:24 -0400
-Date: Mon, 27 Sep 2010 05:10:56 -0400 (EDT)
-From: caiqian@redhat.com
-To: =?utf-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Hugh Dickins <hugh@veritas.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Message-ID: <1562178361.2027721285578656417.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <86925983.2027701285578620865.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-Subject: Re: [PATCH 0/3] Generic support for revoking mappings
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1758994Ab0I0JNQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 05:13:16 -0400
+Received: from cantor.suse.de ([195.135.220.2]:47353 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758962Ab0I0JNO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 05:13:14 -0400
+Subject: Re: [PATCH] x86, nmi: workaround sti; hlt race vs nmi; intr
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <4CA057EA.7000609@redhat.com>
+Date: Mon, 27 Sep 2010 11:13:12 +0200
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
 Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.5.5.72]
-X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.21_GA_3150.RHEL4_64)
+Message-Id: <768A5DC0-131A-4BC8-ADDD-044D8169545E@suse.de>
+References: <1284913699-14986-1-git-send-email-avi@redhat.com> <4CA057EA.7000609@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
------ "Américo Wang" <xiyou.wangcong@gmail.com> wrote:
+On 27.09.2010, at 10:38, Avi Kivity wrote:
 
-> On Mon, Sep 27, 2010 at 04:52:29AM -0400, CAI Qian wrote:
-> >Just a head up. Tried to boot latest mmotm kernel with those patches
-> applied hit this. I am wondering what I did wrong.
-> >
+> On 09/19/2010 06:28 PM, Avi Kivity wrote:
+>> On machines without monitor/mwait we use an sti; hlt sequence to atomically
+>> enable interrupts and put the cpu to sleep.  The sequence uses the "interrupt
+>> shadow" property of the sti instruction: interrupts are enabled only after
+>> the instruction following sti has been executed.  This means an interrupt
+>> cannot happen in the middle of the sequence, which would leave us with
+>> the interrupt processed but the cpu halted.
+>> 
+>> The interrupt shadow, however, can be broken by an nmi; the following
+>> sequence
+>> 
+>>    sti
+>>      nmi ... iret
+>>      # interrupt shadow disabled
+>>      intr ... iret
+>>    hlt
+>> 
+>> puts the cpu to sleep, even though the interrupt may need additional processing
+>> after the hlt (like scheduling a task).
+>> 
+>> sti is explicitly documented not to force an interrupt shadow; though many
+>> processors do inhibit nmi immediately after sti.
+>> 
+>> Avoid the race by checking, during an nmi, if we hit the safe halt sequence.
+>> If we did, increment the instruction pointer past the hlt instruction; this
+>> allows an immediately following interrupt to return to a safe place.
+>> 
+>> Signed-off-by: Avi Kivity<avi@redhat.com>
 > 
-> You missed the header of this oops/warning/bug, is that a BUG_ON or
-> WARN_ON or other thing?
-Oh, sorry. Here it is,
-BUG: unable to handle kernel paging request at ffffffffffffffc0
-IP: [<ffffffff811d4c78>] prio_tree_insert+0x188/0x2a0
-PGD 1827067 PUD 1828067 PMD 0 
-Oops: 0000 [#1] SMP 
-last sysfs file: 
-CPU 5 
+> Ping.
 
-> 
-> 
-> >Pid: 1, comm: init Not tainted 2.6.36-rc5-mm1+ #2 /KVM
-> >RIP: 0010:[<ffffffff811d4c78>]  [<ffffffff811d4c78>]
-> prio_tree_insert+0x188/0x2a0
-> >RSP: 0018:ffff880c3b1bfcd8  EFLAGS: 00010202
-> >RAX: ffff880c374b40d8 RBX: 0000000000000100 RCX: ffff880c374b40d8
-> >RDX: 0000000000000179 RSI: 0000000000000000 RDI: 0000000000000179
-> >RBP: ffff880c9f4ba188 R08: 0000000000000001 R09: ffff880c374b9330
-> >R10: 0000000000000001 R11: 0000000000000002 R12: ffff880c374b40d8
-> >R13: 00000007fa7367ba R14: 00000007fa7367be R15: 0000000000000000
-> >FS:  00007fa7369d9700(0000) GS:ffff8800df540000(0000)
-> knlGS:0000000000000000
-> >CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> >CR2: ffffffffffffffc0 CR3: 0000000c374b1000 CR4: 00000000000006e0
-> >DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> >DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> >Process init (pid: 1, threadinfo ffff880c3b1be000, task
-> ffff880c3b1bd400)
-> >Stack:
-> > ffff880c3b1bd400 ffff880c374b4088 ffff880c374b40d8 ffff880c374b4088
-> ><0> ffff880c9f4ba168 ffff880c9f4ba188 ffff880c374b3680
-> ffffffff810daff8
-> ><0> 0000000000000002 ffff880c374b41f8 ffff880c374b42b0
-> ffffffff810e9171
-> >Call Trace:
-> > [<ffffffff810daff8>] ? vma_prio_tree_insert+0x28/0x120
-> > [<ffffffff810e9171>] ? vma_adjust+0xe1/0x560
-> > [<ffffffff8119715b>] ? avc_has_perm+0x6b/0xa0
-> > [<ffffffff810e97b9>] ? __split_vma+0x1c9/0x250
-> > [<ffffffff810ebf88>] ? mprotect_fixup+0x708/0x7b0
-> > [<ffffffff810e4aca>] ? handle_mm_fault+0x1da/0xcf0
-> > [<ffffffff81033910>] ? pvclock_clocksource_read+0x50/0xc0
-> > [<ffffffff81047220>] ? __dequeue_entity+0x40/0x50
-> > [<ffffffff81198a31>] ? file_has_perm+0xf1/0x100
-> > [<ffffffff810ec1b2>] ? sys_mprotect+0x182/0x250
-> > [<ffffffff8100aec2>] ? system_call_fastpath+0x16/0x1b
-> >Code: 56 20 e9 d4 fe ff ff bb 01 00 00 00 48 d3 e3 48 85 db 0f 84 08
-> 01 00 00 45 31 ff 66 45 85 c0 4c 89 e1 74 78 0f 1f 80 00 00 00 00 <48>
-> 8b 46 c0 48 2b 46 b8 4c 8b 6e 40 48 c1 e8 0c 4c 39 ef 4d 8d 
-> >RIP  [<ffffffff811d4c78>] prio_tree_insert+0x188/0x2a0
-> > RSP <ffff880c3b1bfcd8>
-> >CR2: ffffffffffffffc0
-> >---[ end trace 667258bb79b38e02 ]---
-> >
-> 
-> Looks like something wrong in page fault.
+Wow, this is incredibly ugly :). Can't we just mask NMIs when the interrupt shadow is active?
+
+
+Alex
+
