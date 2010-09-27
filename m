@@ -1,86 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758788Ab0I0Kyj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 06:54:39 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:60294 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752712Ab0I0Kyi convert rfc822-to-8bit (ORCPT
+	id S1758956Ab0I0Kyp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 06:54:45 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:31032 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752712Ab0I0Kym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 06:54:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=TUl5kHHQDfFnbDBcJy/s/fxAp6RxHOVfx+/up5YDYjZpcZc3PTC+mNzgHfN4chQFzw
-         JNHxg+ahhOIh+0QgMv476gYrcU5zy2c52n6B1qAIkNmzQ4/o512BUk8djGc5N5NmVrv1
-         VjabT+b49wW5ntiX4R0vrXRihB6xZwsfNPbXk=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTinkxokX9BGtxysYOr19xbZR4S8oPRYUAyneutzc@mail.gmail.com>
-References: <1285529740-28232-1-git-send-email-notasas@gmail.com>
-	<AANLkTinkxokX9BGtxysYOr19xbZR4S8oPRYUAyneutzc@mail.gmail.com>
-Date: Mon, 27 Sep 2010 13:54:36 +0300
-Message-ID: <AANLkTinh+JTwyE4E33QXdnZ8obYA8S0SU71i3kGi=wRT@mail.gmail.com>
-Subject: Re: [PATCH v3] power_supply: Add driver for TWL4030/TPS65950 BCI charger
-From: Grazvydas Ignotas <notasas@gmail.com>
-To: Arun Murthy <arunrmurthy.83@gmail.com>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Madhusudhan <madhu.cr@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 27 Sep 2010 06:54:42 -0400
+Subject: Re: [PATCH 2/4] leds: Driver for National Semiconductors LP5523
+ chip
+From: "Matti J. Aaltonen" <matti.j.aaltonen@nokia.com>
+Reply-To: matti.j.aaltonen@nokia.com
+To: "Onkalo Samu.P (Nokia-MS/Tampere)" <samu.p.onkalo@nokia.com>
+Cc: "rpurdie@linux.intel.com" <rpurdie@linux.intel.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1284631946-5350-3-git-send-email-samu.p.onkalo@nokia.com>
+References: <1284631946-5350-1-git-send-email-samu.p.onkalo@nokia.com>
+	 <1284631946-5350-3-git-send-email-samu.p.onkalo@nokia.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Nokia
+Date: Mon, 27 Sep 2010 13:54:28 +0300
+Message-ID: <1285584868.8182.194.camel@masi.mnp.nokia.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 27 Sep 2010 10:54:35.0245 (UTC) FILETIME=[5F6B89D0:01CB5E32]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 10:21 AM, Arun Murthy <arunrmurthy.83@gmail.com> wrote:
-> On Mon, Sep 27, 2010 at 1:05 AM, Grazvydas Ignotas <notasas@gmail.com>
-> wrote:
->> ---
->> This is v3 of BCI charger driver I first sent nearly a year ago [1].
->> I've updated it to use the new OTG notifiers for VBUS notifications,
->> however it still is not able to determine charge current to use.
->> For that reason there is now a temporary module param to enable USB
->> charging, until I can figure out how to get that info from the gadget
->> stack (hopefully Felipe can help me here).
->
-> On detecting USB plug, the driver is suppose to detect the type of usb
-> device. Then if the device is a PC(standard host) the charging current is to
-> be obtained from the usb stack. Hence the driver will have to wait until the
-> usb stack or driver notifies the current that can be drawn. The usb stack or
-> driver gets to know the amount of current to be drawn through the
-> negotiations that happen between the host and device.
+Moi.
 
-I'm aware of that, the question was how to get that from Linux USB
-stack (which Felipe already responded).
+On Thu, 2010-09-16 at 12:12 +0200, Onkalo Samu.P (Nokia-MS/Tampere)
+wrote:
+> +
+> +       for (i = 0; i < LP5523_ENGINES; i++) {
+> +               if (chip->engines[i].mode == LP5523_CMD_LOAD)
+> +                       sysfs_remove_group(&dev->kobj, &lp5523_engine_group[i]);
+> +       }
+> +
+> +       for (i = 0; i < chip->num_leds; i++)
+> +               sysfs_remove_group(&chip->leds[i].cdev.dev->kobj,
+> +                               &lp5523_led_attribute_group);
+> +}
 
-<snip>
+Tossa ylla on se asia, josta puhuttiin, style guide sanoo:
 
-> Only AC and USB monitoring is achieved by registering with power supply
-> class.
-> How is battery monitored?
-> An instance of battery is to be registered with power supply class in order
-> to monitor battery.
+Do not unnecessarily use braces where a single statement will do.
 
-The problem is that BCI is only active while charging, when it is not
-charging most (all?) monitoring registers freeze and no monitoring
-happens (BCI registers read frozen values from last charge). So I
-don't register battery as it has no useful data to report. I heard it
-is possible to use MADC to perform monitoring while not charging, so
-battery can be added when MADC driver is merged and corresponding code
-is written for this driver.
+if (condition)
+	action();
 
->>
->> +
->> +static struct platform_driver twl4030_bci_driver = {
->> +       .probe          = twl4030_bci_probe,
->> +       .remove         = __devexit_p(twl4030_bci_remove),
->> +       .driver         = {
->> +               .name   = "twl4030_bci",
->> +               .owner  = THIS_MODULE,
->> +       },
->> +};
->
-> dev_pm_ops can be use
+Tossa ylla on kummankin for:in jalkeen single statement joista kumpikaan
+ei mahdu yhdelle riville... Mun nakemyksen mukaan ne molemmat olis yhta
+selkeita ilman sulkuja...
 
-nothing to do there right now, the driver relies on FSM change
-interrupts from BCI to update state.
+
+> +       if (mode == LP5523_CMD_RUN)
+> +               ret = lp5523_run_program(engine);
+> +
+> +       else if (mode == LP5523_CMD_LOAD) {
+> +
+> +               lp5523_set_engine_mode(engine, LP5523_CMD_DISABLED);
+> +               lp5523_set_engine_mode(engine, LP5523_CMD_LOAD);
+> +
+> +               ret = sysfs_create_group(&dev->kobj, engine->attributes);
+> +               if (ret)
+> +                       return ret;
+> +       }
+> +
+
+Aaltosulut myos if:n jalkeiseen statementtiin....
+
+t.m.a.
+
+
+
