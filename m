@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932786Ab0I0IMe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 04:12:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25358 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758899Ab0I0IMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 04:12:30 -0400
-Date: Mon, 27 Sep 2010 10:12:16 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: kgdb segv in the latest tip due to perf ctx changes
-Message-ID: <20100927081216.GC1829@jolsa.brq.redhat.com>
-References: <20100924180417.GC1818@jolsa.brq.redhat.com>
- <4C9D0A82.5020406@windriver.com>
- <1285374560.2275.1054.camel@laptop>
- <20100925135532.GA5349@nowhere>
+	id S1758907Ab0I0IQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 04:16:29 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46351 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757651Ab0I0IQZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 04:16:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=E+mt7bVyw0FZvutHm51kYt19X/mg+vneod99e4LmM9PUVYLVD+/LRjvRp4Ip3lixmA
+         7DVYVcP1yM/nwnO7Sh+qmWxA0zCXl6E152phwr8Ghtllo2sgFu94ariVdNbDgxtYhcyG
+         yPL60XFRcEgx05hlcTCxb+3GQUnsjge++3baI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100925135532.GA5349@nowhere>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20100924141046.GA26454@sirena.org.uk>
+References: <AANLkTin9Qji_bdyd3yqrP_-ti5xRT9jJ4je2fPM=uHFX@mail.gmail.com>
+	<20100924141046.GA26454@sirena.org.uk>
+Date: Mon, 27 Sep 2010 10:16:11 +0200
+Message-ID: <AANLkTin=PPfgnD5tKBPR1QXf2OeBKBH-kXtoT+s-KPhk@mail.gmail.com>
+Subject: Re: [PATCH 1/6] This patch adds support for the ST-Ericsson CG2900
+From: Par-Gunnar Hjalmdahl <pghatwork@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, Pavan Savoy <pavan_savoy@sify.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 25, 2010 at 03:55:35PM +0200, Frederic Weisbecker wrote:
-> On Sat, Sep 25, 2010 at 02:29:20AM +0200, Peter Zijlstra wrote:
-> > On Fri, 2010-09-24 at 15:30 -0500, Jason Wessel wrote:
-> > > Jiri,
-> > > 
-> > > Can you try this simple patch which is attached?
-> > > 
-> > > 
-> > > 
-> > > On 09/24/2010 01:04 PM, Jiri Olsa wrote:
-> > > > while starting kgdb early debug on latest tip tree,
-> > > > I got SIGSEGV inside kernel in following location:
-> > > >
-> > > >   
-> > > [clip]
-> > > > I found out it's due to foolowing commit, that's causing the init code
-> > > > to be called without the ctx field being defined...
-> > > >
-> > > > commit c3f00c70276d8ae82578c8b773e2db657f69a478
-> > > > Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > > > Date:   Wed Aug 18 14:37:15 2010 +0200
-> > > >
-> > > >
-> > > >   
-> > > 
-> > > I took a look at the tip core, and the ctx parameter is no longer passed
-> > > into the perf_event_alloc() from perf_event_create_kernel_counter() kgdb
-> > > no longer gets it filled in for free.
-> > > 
-> > > The reality is that kgdb never had a true context or a way to mark the
-> > > hw breakpoint as a kernel only context for the hw breakpoint
-> > > reservations.  The patch is only a short term fix perhaps until on of
-> > > the perf guys explains the right way to use it. :-)
-> > 
-> > Argh, yes, its using the ctx rather early.. we cannot have a context
-> > before we've initialized the event, and here it looks like hw_breakpoint
-> > wants to use the context to initialize the event, chick, egg, etc..
-> > 
-> > Frederic, anything we can do about that?
-> 
-> 
-> 
-> Jason's patch is partially good, it just lacks one place to handle.
-> Jiri, can you test that?
+Hi again Mark,
 
-it works ok
+I've not got an answer from the developer of the particular piece of code.
 
-feel free to add
-Tested-by: Jiri Olsa <jolsa@redhat.com>
+2010/9/24 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Fri, Sep 24, 2010 at 03:46:44PM +0200, Par-Gunnar Hjalmdahl wrote:
+>
+>> +static irqreturn_t cg2900_devices_interrupt(int irq, void *dev_id)
+>> +{
+>> +     disable_irq_nosync(irq);
+>> +     if (cg2900_dev_callback && cg2900_dev_callback->interrupt_cb)
+>> +             cg2900_dev_callback->interrupt_cb();
+>> +
+>> +     return IRQ_HANDLED;
+>> +}
+>
+> Why is there this callback mechanism - I'd expect the users of this code
+> to just be using the standard IRQ infrastructure?
+>
 
-thanks,
-jirka
+This is our local IRQ which is handled in cg2900_uart.c by creating a work:
+
+static void cg2900_devices_irq_cb(void)
+{
+ /* Create work and leave irq context. */
+ (void)create_work_item(uart_info->wq, handle_cts_irq, NULL);
+}
+
+
+I understand your concern that client implementing the
+cg2900_dev_callback->interrupt_cb();
+might not know realized that this is irq context which might cause problems.
+
+My motivation for doing like this that we do not expect other clients
+of this code, so there
+is no such risk. We create work in cg2900_uart and leave function.
+
+Let me know if it is ok.
+If not then suggest what is expected way of handling it ? eg. moving
+workqueue down to cg2900_devices
+or other solution?
+
+Best regards,
+/Lukasz via P-G
