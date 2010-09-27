@@ -1,89 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759660Ab0I0Pd1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 11:33:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47218 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759611Ab0I0Pd0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 11:33:26 -0400
-Date: Mon, 27 Sep 2010 11:33:15 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v2 3/7] x86, NMI, Rename memory parity error to PCI SERR
- error
-Message-ID: <20100927153315.GB26290@redhat.com>
-References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
- <1285549026-5008-3-git-send-email-ying.huang@intel.com>
- <20100927080106.GA32222@erda.amd.com>
- <1285576760.20791.70.camel@yhuang-dev>
- <20100927090056.GJ13563@erda.amd.com>
+	id S1759073Ab0I0Phn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 11:37:43 -0400
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:24981 "HELO
+	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755305Ab0I0Phl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 11:37:41 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: LFblAREVM1kvuBolREmGx3Oi.53gmAfvIPw2f4555FYRF0n
+ M9IW1wKT6shDvY00jeT2jtAkRy9wIccSvlVGZb4CB.g6K_iyLxejNnzaeNc_
+ gx71EAM46Zyr3fn8LBR9ygRJcwlBwI1XUwWRfDBRDM5ZgISLuYTkkLVSlyL9
+ n0NChQmUUdg.iZMPVm6cHdahVl4gfsj1qkOIlPC4ie2PPCoEdRW0pbqGDjfF
+ c
+X-Yahoo-Newman-Property: ymail-3
+Date: Mon, 27 Sep 2010 10:37:35 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Christian Riesch <christian@riesch.at>
+cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, john stultz <johnstul@us.ibm.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-api@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, David Miller <davem@davemloft.net>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v6 0/8] ptp: IEEE 1588 hardware clock support
+In-Reply-To: <4C9BC7CE.8020400@riesch.at>
+Message-ID: <alpine.DEB.2.00.1009271035110.9258@router.home>
+References: <cover.1285261533.git.richard.cochran@omicron.at> <alpine.DEB.2.00.1009231238170.2962@router.home> <1285268380.2587.11.camel@localhost.localdomain> <alpine.DEB.2.00.1009231402420.2962@router.home> <1285273684.2587.92.camel@localhost.localdomain>
+ <alpine.DEB.2.00.1009231533040.7522@router.home> <20100923223417.4ed62e5b@lxorguk.ukuu.org.uk> <4C9BC7CE.8020400@riesch.at>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100927090056.GJ13563@erda.amd.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 11:00:56AM +0200, Robert Richter wrote:
-> On 27.09.10 04:39:20, Huang Ying wrote:
-> > > I already commented on this, patch #1 and #3 are basically the same in
-> > > most parts which should be merged. What remains then in this patch is
-> > > the modified printk() and the comment. Both could be added to #1 too
-> > > which is then some sort of code cleanup patch.
-> > 
-> > Don thinks it is Ok to keep 2 patches.
-> 
-> I don't like reviewing new changes which are thrown away with the next
-> patch. I review things twice and it is much harder to see what really
-> changed then. Also we should have a clean history.
+On Thu, 23 Sep 2010, Christian Riesch wrote:
 
-I didn't care either way.  But if it makes it easier to review, it's nice
-to keep reviewers happy too. :-)
+> > > It implies clock tuning in userspace for a potential sub microsecond
+> > > accurate clock. The clock accuracy will be limited by user space
+> > > latencies and noise. You wont be able to discipline the system clock
+> > > accurately.
+> >
+> > Noise matters, latency doesn't.
+>
+> Well put! That's why we need hardware support for PTP timestamping to reduce
+> the noise, but get along well with the clock servo that is steering the PHC in
+> user space.
 
-Hunag, I think there is going to be a V3 of this series, could you just
-combine these patches then?
+Even if I buy into the catch phrase above: User space is subject to noise
+that the in kernel code is not. If you do the tuning over long intervals
+then it hopefully averages out but it still causes jitter effects that
+affects the degree of accuracy (or sync) that you can reach. And the noise
+varies with the load on the system.
 
-> 
-> And with git it is fairly easy to join patches.
-> 
-> > 
-> > > >  #define NMI_REASON_CLEAR_IOCHK	0x08
-> > > >  #define NMI_REASON_CLEAR_MASK	0x0f
-> > > >  
-> > > > --- a/arch/x86/kernel/traps.c
-> > > > +++ b/arch/x86/kernel/traps.c
-> > > > @@ -301,15 +301,14 @@ gp_in_kernel:
-> > > >  }
-> > > >  
-> > > >  static notrace __kprobes void
-> > > > -mem_parity_error(unsigned char reason, struct pt_regs *regs)
-> > > > +pci_serr_error(unsigned char reason, struct pt_regs *regs)
-> > > >  {
-> > > > -	printk(KERN_EMERG
-> > > > -		"Uhhuh. NMI received for unknown reason %02x on CPU %d.\n",
-> > > > -			reason, smp_processor_id());
-> > > > -
-> > > > -	printk(KERN_EMERG
-> > > > -		"You have some hardware problem, likely on the PCI bus.\n");
-> > > > +	printk(KERN_EMERG "NMI: PCI system error (SERR).\n");
-> > > 
-> > > You should keep reporting the cpu id to identify the affected node and
-> > > also the reason.
-> > 
-> > Ok. I will add CPU ID in message. Because we know the reason, I don't
-> > think we need the reason in message.
-> 
-> You only know that bit 7 is set, not the rest. As this is an error
-> message we should provide as much information as possible.
 
-Well, what other info do we know besides that bit being set?  (I wish we
-had more, but I don't think we do)
 
-Cheers,
-Don
