@@ -1,67 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933350Ab0I0TBQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 15:01:16 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:58153 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757252Ab0I0TBP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 15:01:15 -0400
-Date: Mon, 27 Sep 2010 20:01:09 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>, rth@twiddle.net,
-        linux-kernel@vger.kernel.org, Matt Turner <mattst88@gmail.com>
-Subject: Re: alpha: potential race around hae_cache in RESTORE_ALL
-Message-ID: <20100927190109.GD19804@ZenIV.linux.org.uk>
-References: <20100925181304.GV19804@ZenIV.linux.org.uk>
- <AANLkTi=XURM0hOiitvNSiacd9+7Vx8s7V0KZ+oZQsDDQ@mail.gmail.com>
- <20100925191836.GW19804@ZenIV.linux.org.uk>
- <20100925192509.GX19804@ZenIV.linux.org.uk>
- <20100927075828.GA15344@jurassic.park.msu.ru>
- <20100927121227.GB19804@ZenIV.linux.org.uk>
- <20100927124624.GC19804@ZenIV.linux.org.uk>
- <20100927162610.GA18373@jurassic.park.msu.ru>
- <AANLkTimjep+H2VDJC1sFvT52XPmiKgMHuRBirzNm6qnL@mail.gmail.com>
+	id S933400Ab0I0TBX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 15:01:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39146 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933375Ab0I0TBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 15:01:19 -0400
+Date: Mon, 27 Sep 2010 21:00:24 +0200
+From: Jan Kara <jack@suse.cz>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: vgoyal@redhat.com, jmoyer@redhat.com, jaxboe@fusionio.com,
+        Lennart Poettering <lennart@poettering.net>
+Subject: Request starvation with CFQ
+Message-ID: <20100927190024.GF3610@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTimjep+H2VDJC1sFvT52XPmiKgMHuRBirzNm6qnL@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 10:10:40AM -0700, Linus Torvalds wrote:
-> On Mon, Sep 27, 2010 at 9:26 AM, Ivan Kokshaysky
-> <ink@jurassic.park.msu.ru> wrote:
-> >
-> > Looks like we need to drop HAE bits from SAVE_ALL/RESTORE_ALL, which
-> > benefits (1) and automatically fixes (3), and do the entire IO sequences
-> > in (2) with disabled interrupts (if HAE is involved).
-> 
-> No can do.
-> 
-> HAE is used in user space too (the X server), and it depends on the
-> kernel restoring HAE over interrupts and system calls, afaik.
-> 
-> I'm also pretty certain that all SMP machines either don't have HAE at
-> all, or have a per-CPU HAE in hardware (and then it's possible that we
-> screw it up in software, of course). Anything else would be too broken
-> for words. Can somebody find documentation saying otherwise?
+  Hi,
 
-Besides, I'm not particulary happy to force a couple of swpipl on each
-iomem access on old UP alpha boxen.
+  when helping Lennart with answering some questions, I've spotted the
+following problem (at least I think it's a problem ;): The thing is that
+CFQ schedules how requests should be dispatched but does not in any
+significant way limit to whom requests get allocated. Given we have a
+quite limited pool of available requests it can happen that processes
+will be actually starved not waiting for disk but waiting for requests
+getting allocated and any IO scheduling priorities or classes will not
+have serious effect.
+  A pathological example I've tried below:
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
 
-The only flavours that have HAE at all are APECS, LCA, MCPCIA, JENSEN and
-T2.  APECS, LCA and JENSEN are UP-only, MCPCIA we build with
-MCPCIA_ONE_HAE_WINDOW which blocks HAE switching AFAICS.  So it's really
-about T2 and there we have something interesting:
+int main(void)
+{
+  int fd = open("/dev/vdb", O_RDONLY);
+  int loop = 0;
 
-#define T2_HAE_1                (IDENT_ADDR + GAMMA_BIAS + 0x38e0000e0UL)
-#define T2_HAE_2                (IDENT_ADDR + GAMMA_BIAS + 0x38e000100UL)
-#define T2_HAE_3                (IDENT_ADDR + GAMMA_BIAS + 0x38e000240UL)
-#define T2_HAE_4                (IDENT_ADDR + GAMMA_BIAS + 0x38e000260UL)
-#define T2_HAE_ADDRESS          T2_HAE_1
+  if (fd < 0) {
+    perror("open");
+    exit(1);
+  }
+  while (1) {
+    if (loop % 100 == 0)
+      printf("Loop %d\n", loop);
+    posix_fadvise(fd, (random() * 4096) % 1000204886016ULL, 4096, POSIX_FADV_WILLNEED);
+    loop++;
+  }
+}
 
-And seeing that it appears to be 4-CPU chipset...
+  This program will just push as many requests as possible to the block
+layer and does not wait for any IO. Thus it will basically ignore any
+decisions about when requests get dispatched. BTW, don't get distracted
+by the fact that the program operates directly on the device, that is just
+for simplicity. Large enough file would work the same way.
+  Even though I run this program with ionice -c 3, I still see that any
+other IO to the device is basically stalled. When I look at the block
+traces, I indeed see that what happens is that the above program submits
+requests until there are no more available:
+...
+254,16   2      802     1.411285520  2563  Q   R 696733184 + 8 [random_read]
+254,16   2      803     1.411314880  2563  G   R 696733184 + 8 [random_read]
+254,16   2      804     1.411338220  2563  I   R 696733184 + 8 [random_read]
+254,16   2      805     1.411415040  2563  Q   R 1006864600 + 8 [random_read]
+254,16   2      806     1.411441620  2563  S   R 1006864600 + 8 [random_read]
+
+during and after that IO happens:
+254,16   3       31     1.417898030     0  C   R 345134640 + 8 [0]
+254,16   3       32     1.418171910     0  D   R 1524771568 + 8 [swapper]
+254,16   0       33     1.432317140     0  C   R 1524771568 + 8 [0]
+254,16   0       34     1.432597000     0  D   R 1077270768 + 8 [swapper]
+...
+254,16   0       35     1.503238050     0  C   R 33633744 + 8 [0]
+254,16   0       36     1.503558290     0  D   R 22178968 + 8 [swapper]
+
+and the other program comes with IO and gets stalled:
+254,16   1       39     1.508843180  2564  A  RM 12346 + 8 <- (254,17) 12312
+254,16   1       40     1.508876520  2564  Q  RM 12346 + 8 [ls]
+254,16   1       41     1.508905140  2564  S  RM 12346 + 8 [ls]
+...
+IO is still running:
+254,16   2      807     1.512081560     0  C   R 22178968 + 8 [0]
+254,16   2      808     1.512365010     0  D   R 475025688 + 8 [swapper]
+254,16   3       35     1.522113270     0  C   R 475025688 + 8 [0]
+254,16   3       36     1.522390779     0  D   R 697010128 + 8 [swapper]
+254,16   4       33     1.531443760     0  C   R 697010128 + 8 [0]
+...
+random reader even gets to submitting more requests:
+254,16   2      815     1.785734950  2563  G   R 1006864600 + 8 [random_read]
+254,16   2      816     1.785752290  2563  I   R 1006864600 + 8 [random_read]
+254,16   2      817     1.785825880  2563  Q   R 832683552 + 8 [random_read]
+254,16   2      818     1.785850890  2563  G   R 832683552 + 8 [random_read]
+254,16   2      819     1.785874610  2563  I   R 832683552 + 8 [random_read]
+...
+and finally our program gets to adding it's request as well:
+254,16   1       60     2.160884040  2564  G  RM 12346 + 8 [ls]
+254,16   1       61     2.160914700  2564  I   R 12346 + 8 [ls]
+254,16   1       62     2.161142170  2564  D   R 12346 + 8 [ls]
+254,16   1       63     2.161233670  2564  U   N [ls] 128
+
+  I can provide the full traces for download if someone is interested
+in some part I didn't include here. The kernel is 2.6.36-rc4.
+  Now I agree that the above program is about as bad as it can get but
+Lennart would like to implement readahead during boot on background and
+I believe that could starve other IO in a similar way. So any idea how
+to solve this? To me it seems as if we also needed to somehow limit the
+number of allocated requests per cfqq but OTOH we have to be really careful
+to not harm common workloads where we benefit from having lots of requests
+queued...
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
