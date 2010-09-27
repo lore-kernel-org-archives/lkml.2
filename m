@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759307Ab0I0V7s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 17:59:48 -0400
-Received: from nic.NetDirect.CA ([216.16.235.2]:47209 "EHLO
-	rubicon.netdirect.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780Ab0I0V7r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 17:59:47 -0400
-X-Originating-Ip: 216.16.235.2
-Date: Mon, 27 Sep 2010 17:59:41 -0400
-From: Chris Frey <cdfrey@foursquare.net>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: ext3 filesystem corruption in user mode linux
-Message-ID: <20100927215941.GA20458@foursquare.net>
-References: <20100924041410.GA18040@foursquare.net> <20100924060557.GA21238@foursquare.net> <20100924064446.GA22588@foursquare.net> <AANLkTinQ20uSgFP5KV17B0J0v8Y0zAg=AgAd_kf+4Bh0@mail.gmail.com> <20100927211842.GA19667@foursquare.net> <AANLkTinYjJ8m6UjsR++zFCxo4jecDEzCAX_F_CF6NwZV@mail.gmail.com> <20100927212650.GA20386@foursquare.net>
-Mime-Version: 1.0
+	id S1759288Ab0I0WBR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 18:01:17 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:44264 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752289Ab0I0WBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 18:01:15 -0400
+Date: Mon, 27 Sep 2010 15:01:13 -0700
+From: Arthur Kepner <akepner@sgi.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: [RFC/PATCHv2] x86/irq: round-robin distribution of irqs to
+	cpus w/in node
+Message-ID: <20100927220113.GD30050@sgi.com>
+References: <20100927203448.GC30050@sgi.com> <alpine.LFD.2.00.1009272236430.2416@localhost6.localdomain6>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100927212650.GA20386@foursquare.net>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <alpine.LFD.2.00.1009272236430.2416@localhost6.localdomain6>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 05:26:50PM -0400, Chris Frey wrote:
-> > Hmm, maybe this issue affects only your configuration.
-> > When I have some spare time I'll try to trigger this on my setup.
+On Mon, Sep 27, 2010 at 10:46:02PM +0200, Thomas Gleixner wrote:
+> ...
+> Sigh. Why is this a x86 specific problem ?
+>
+
+It's obviously not. But we're particularly seeing it on x86 
+systems, so an x86-specific fix would address our problem.
+ 
+> If we setup an irq on a node then we should set the affinity to the
+> target node in general. 
+
+OK.
+
+> .... The round robin inside the node is really not
+> a problem unless you hit:
 > 
-> That would be great.  Let me know if you need any specific data from my end.
+>    nr_irqs_per_node * nr_cpus_per_node > max_vectors_per_cpu
+> 
 
-One data point that I'm finding so far, is that it is easier to trigger
-in 2.6.35.x than 2.6.32.x.  It also doesn't seem to be dependent on the
-version of the host kernel.  I can reproduce it running 2.6.35.4 or
-2.6.32.22.
+No, I don't think that's true. 
 
-If you want a small gentoo starting point, I have a 56M compressed
-ext3 gentoo guest filesystem I can share with those who wish to test.
-I don't want to make it available to everyone, due to size.
+The problem we're seeing is that one driver asks for a large 
+number of interrupts (on no CPU in particular). And because of the 
+way that the vectors are initially assigned to CPUs (in 
+__assign_irq_vector()), a particular CPU can have all its vectors 
+consumed. 
 
-- Chris
+Now, a second driver comes along, and requests an interrupt on 
+a specific CPU, N. But CPU N is out of interrupts, so that driver 
+fails.
 
+This all happens before a user-space irq balancer is available.
+
+-- 
+Arthur
