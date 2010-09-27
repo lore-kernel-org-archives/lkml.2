@@ -1,52 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933571Ab0I0UJK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 16:09:10 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60481 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933483Ab0I0UJI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 16:09:08 -0400
-Date: Mon, 27 Sep 2010 13:08:44 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Matt Mackall <mpm@selenic.com>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH] drm: Prune GEM vma entries
-Message-Id: <20100927130844.b57ee9eb.akpm@linux-foundation.org>
-In-Reply-To: <1285618116-10086-1-git-send-email-chris@chris-wilson.co.uk>
-References: <20100927115207.633024b1.akpm@linux-foundation.org>
-	<1285618116-10086-1-git-send-email-chris@chris-wilson.co.uk>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	id S933574Ab0I0UMp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 16:12:45 -0400
+Received: from mga02.intel.com ([134.134.136.20]:13339 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933537Ab0I0UMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 16:12:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,244,1283756400"; 
+   d="scan'208";a="661652717"
+Subject: Re: [PATCH] iwl3945: queue the right work if the scan needs to be
+ aborted
+From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
+To: Florian Mickler <florian@mickler.org>
+Cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "Chatre, Reinette" <reinette.chatre@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Berg, Johannes" <johannes.berg@intel.com>, Zhu Yi <yi.zhu@intel.com>,
+        "Cahill, Ben M" <ben.m.cahill@intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1285345323-4250-1-git-send-email-florian@mickler.org>
+References: <1285345323-4250-1-git-send-email-florian@mickler.org>
+Content-Type: text/plain
+Date: Mon, 27 Sep 2010 13:11:54 -0700
+Message-Id: <1285618314.12594.14.camel@wwguy-ubuntu>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.26.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That was quick, thanks.
+On Fri, 2010-09-24 at 09:22 -0700, Florian Mickler wrote:
+> iwl3945's scan_completed calls into the mac80211 stack which triggers a
+> warn on if there is no scan outstanding.
+> 
+> This can be avoided by not calling scan_completed but abort_scan in
+> iwl3945_request_scan  in the done: branch of the function which is used
+> as an error out.
+> 
+> The done: branch seems to be an error-out branch, as, for example, if
+> iwl_is_ready(priv) returns false  the done: branch is executed.
+> 
+> NOTE:
+> I'm not familiar with the driver at all.
+> I just quickly scanned as a reaction to
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=17722
+> 
+> the users of scan_completed in the  iwl3945 driver and noted the odd
+> discrepancy between the comment above this instance and the comment in
+> mac80211 scan_completed function.
+> Signed-off-by: Florian Mickler <florian@mickler.org>
+Acked-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+> ---
+go into wireless-2.6 and stable only, scan fix already in
+wireless-next-2.6
 
-On Mon, 27 Sep 2010 21:08:36 +0100
-Chris Wilson <chris@chris-wilson.co.uk> wrote:
+Thanks
+Wey
 
-> Hook the GEM vm open/close ops into the generic drm vm open/close so
-> that the vma entries are created and destroy appropriately.
-
-Please update the changelog to indicate that it fixes a memory leak.
-
-> Reported-by: Matt Mackall <mpm@selenic.com>
-> Cc: Dave Airlie <airlied@redhat.com>
-> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-
-And here please add
-
-Cc: <stable@kernel.org>
-
-so that earlier kernels get reliably fixed.
-
-Thanks.
-
+>  drivers/net/wireless/iwlwifi/iwl-agn-lib.c  |    2 +-
+>  drivers/net/wireless/iwlwifi/iwl3945-base.c |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
+> index 9dd9e64..8fd00a6 100644
+> --- a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
+> +++ b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
+> @@ -1411,7 +1411,7 @@ void iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
+>  	clear_bit(STATUS_SCAN_HW, &priv->status);
+>  	clear_bit(STATUS_SCANNING, &priv->status);
+>  	/* inform mac80211 scan aborted */
+> -	queue_work(priv->workqueue, &priv->scan_completed);
+> +	queue_work(priv->workqueue, &priv->abort_scan);
+>  }
+>  
+>  int iwlagn_manage_ibss_station(struct iwl_priv *priv,
+> diff --git a/drivers/net/wireless/iwlwifi/iwl3945-base.c b/drivers/net/wireless/iwlwifi/iwl3945-base.c
+> index 59a308b..d31661c 100644
+> --- a/drivers/net/wireless/iwlwifi/iwl3945-base.c
+> +++ b/drivers/net/wireless/iwlwifi/iwl3945-base.c
+> @@ -3018,7 +3018,7 @@ void iwl3945_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
+>  	clear_bit(STATUS_SCANNING, &priv->status);
+>  
+>  	/* inform mac80211 scan aborted */
+> -	queue_work(priv->workqueue, &priv->scan_completed);
+> +	queue_work(priv->workqueue, &priv->abort_scan);
+>  }
+>  
+>  static void iwl3945_bg_restart(struct work_struct *data)
 
