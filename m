@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758916Ab0I0IRN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 04:17:13 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35647
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754170Ab0I0IRM (ORCPT
+	id S1758924Ab0I0ISF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 04:18:05 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:35189 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755803Ab0I0ISC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 04:17:12 -0400
-Date: Mon, 27 Sep 2010 01:17:32 -0700 (PDT)
-Message-Id: <20100927.011732.42806207.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ohad@wizery.com, linville@tuxdriver.com
-Subject: Re: linux-next: build failure after merge of the final tree (net
- tree related)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100927154408.55a28127.sfr@canb.auug.org.au>
-References: <20100927154408.55a28127.sfr@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 27 Sep 2010 04:18:02 -0400
+Date: Mon, 27 Sep 2010 11:16:33 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Arun Murthy <arunrmurthy.83@gmail.com>
+Cc: Grazvydas Ignotas <notasas@gmail.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Balbi, Felipe" <balbi@ti.com>,
+        "Chikkature Rajashekar, Madhusudhan" <madhu.cr@ti.com>
+Subject: Re: [PATCH v3] power_supply: Add driver for TWL4030/TPS65950 BCI
+ charger
+Message-ID: <20100927081633.GD22913@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1285529740-28232-1-git-send-email-notasas@gmail.com>
+ <AANLkTinkxokX9BGtxysYOr19xbZR4S8oPRYUAyneutzc@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <AANLkTinkxokX9BGtxysYOr19xbZR4S8oPRYUAyneutzc@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 27 Sep 2010 15:44:08 +1000
+Hi,
 
-> After merging the final tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> Assembler messages:
-> Fatal error: can't create drivers/net/wireless/wl12xx/.tmp_wl12xx_platform_data.o: No such file or directory
-> drivers/net/wireless/wl12xx/wl12xx_platform_data.c: In function 'wl12xx_get_platform_data':
-> drivers/net/wireless/wl12xx/wl12xx_platform_data.c:28: error: cannot open drivers/net/wireless/wl12xx/.tmp_wl12xx_platform_data.gcno
-> drivers/net/wireless/wl12xx/wl12xx_platform_data.c:28: confused by earlier errors, bailing out
-> 
-> Presumably caused by commit 61ee7007a5d61aa066076da578e8e8084e122d7d
-> ("wl12xx: add platform data passing support").
-> 
-> I do my builds with a separate object directory (which may be a reason
-> you don't see this).
+please re-send this email without the HTML formatting. Please follow the
+netiquette [1].
 
-John, please get this fixed, thanks.
+[1] http://elinux.org/Netiquette
+
+-- 
+balbi
