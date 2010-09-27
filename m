@@ -1,84 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759323Ab0I0XwR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 19:52:17 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53564 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758491Ab0I0XwN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 19:52:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=E0f4FI8suqvsKqGWm+dznbVu1xA7nJQHgtP0CJ43Po1m76m2OQcVxnn81QJOKX8pDj
-         xwXrCTSRyV5e3zwHXPtsu9Lyq8SSvZOgKDoz30Wf+VPWp5SoBmOEHhlhv0Qqco+yPMk7
-         tEcMogTtIFgtLR0XFE41ZBdEDmiMQ2Kd2ig30=
-Date: Tue, 28 Sep 2010 01:52:08 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC PATCH] x86: Barf when faults happen in NMI
-Message-ID: <20100927235206.GB6316@nowhere>
-References: <1285615833-5324-1-git-send-regression-fweisbec@gmail.com> <20100927211401.GA20402@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100927211401.GA20402@Krystal>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1759199Ab0I0Xz0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 19:55:26 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:43386 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756038Ab0I0XzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 19:55:25 -0400
+Subject: Re: [PATCH 4/8] v2 Allow memory block to span multiple memory
+ sections
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Nathan Fontenot <nfont@austin.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
+        Greg KH <greg@kroah.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4CA0EFAA.8050000@austin.ibm.com>
+References: <4CA0EBEB.1030204@austin.ibm.com>
+	 <4CA0EFAA.8050000@austin.ibm.com>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Mon, 27 Sep 2010 16:55:07 -0700
+Message-ID: <1285631707.19976.3385.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 05:14:01PM -0400, Mathieu Desnoyers wrote:
-> * Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> > In x86, faults exit by executing the iret instruction, which then
-> > reenables NMIs if we faulted in NMI context. Then if a fault
-> > happens in NMI, another NMI can nest after the fault exits.
-> > 
-> > But we don't yet support nested NMIs because we have only one NMI
-> > stack. To prevent that, trigger a bug when a fault happens in NMI
-> > context.
-> > 
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Ingo Molnar <mingo@elte.hu>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: H. Peter Anvin <hpa@zytor.com>
-> > Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > ---
-> > 
-> > I first thought about putting it in the vmalloc fault path only.
-> > But then I saw more occasions for the kernel to fault (kmemcheck
-> > or so), and so I thought it should be better put in the all in one
-> > path. But I suspect you won't like that conditional in the big
-> > x86 fault path.
-> > 
-> > 
-> >  arch/x86/mm/fault.c |    2 ++
-> >  1 files changed, 2 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-> > index 4c4508e..80c997e 100644
-> > --- a/arch/x86/mm/fault.c
-> > +++ b/arch/x86/mm/fault.c
-> > @@ -955,6 +955,8 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
-> >  	int write;
-> >  	int fault;
-> >  
-> > +	BUG_ON(in_nmi());
-> 
-> Alternative idea: we could put the test at the beginning of the NMI handler, so
-> if a NMI handler nests over a processor already "in_nmi", then we bug. I agree
-> that this will trigger less easily than bugging in the fault handler (because we
-> need to hit the actual nmi-coming-in-because-iret-reenabled-them-too-early
-> scenario, but it's far less intrusive.
-> 
-> Thoughts ?
+On Mon, 2010-09-27 at 14:25 -0500, Nathan Fontenot wrote:
+> +static inline int base_memory_block_id(int section_nr)
+> +{
+> +       return section_nr / sections_per_block;
+> +}
+...
+> -       mutex_lock(&mem_sysfs_mutex);
+> -
+> -       mem->phys_index = __section_nr(section);
+> +       scn_nr = __section_nr(section);
+> +       mem->phys_index = base_memory_block_id(scn_nr) * sections_per_block; 
 
+I'm really regretting giving this variable such a horrid name.  I suck.
 
-In fact we have that already in nmi_enter(). Now as you said that alone is probably
-too light to find the reason of a nested NMI or to prevent it.
+I think this is correct now:
+
+	mem->phys_index = base_memory_block_id(scn_nr) * sections_per_block;
+	mem->phys_index = section_nr / sections_per_block * sections_per_block;
+	mem->phys_index = section_nr
+
+Since it gets exported to userspace this way:
+
+> +static ssize_t show_mem_start_phys_index(struct sys_device *dev,
+>                         struct sysdev_attribute *attr, char *buf)
+>  {
+>         struct memory_block *mem =
+>                 container_of(dev, struct memory_block, sysdev);
+> -       return sprintf(buf, "%08lx\n", mem->phys_index / sections_per_block);
+> +       unsigned long phys_index;
+> +
+> +       phys_index = mem->start_phys_index / sections_per_block;
+> +       return sprintf(buf, "%08lx\n", phys_index);
+> +}
+
+The only other thing I'd say is that we need to put phys_index out of
+its misery and call it what it is now: a section number.  I think it's
+OK to call them "start/end_section_nr", at least inside the kernel.  I
+intentionally used "phys_index" terminology in sysfs so that we _could_
+eventually do this stuff and break the relationship between sections and
+the sysfs dirs, but I think keeping the terminology around inside the
+kernel is confusing now.
+
+-- Dave
 
