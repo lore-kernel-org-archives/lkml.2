@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759070Ab0I0MMe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 08:12:34 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:45141 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755967Ab0I0MMd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 08:12:33 -0400
-Date: Mon, 27 Sep 2010 13:12:28 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, rth@twiddle.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: alpha: potential race around hae_cache in RESTORE_ALL
-Message-ID: <20100927121227.GB19804@ZenIV.linux.org.uk>
-References: <20100925181304.GV19804@ZenIV.linux.org.uk>
- <AANLkTi=XURM0hOiitvNSiacd9+7Vx8s7V0KZ+oZQsDDQ@mail.gmail.com>
- <20100925191836.GW19804@ZenIV.linux.org.uk>
- <20100925192509.GX19804@ZenIV.linux.org.uk>
- <20100927075828.GA15344@jurassic.park.msu.ru>
+	id S1759092Ab0I0MMu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 08:12:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37100 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754170Ab0I0MMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 08:12:49 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] MN10300: Default config choice GDBSTUB_TTYSM0 should be
+	GDBSTUB_ON_TTYSM0
+To: torvalds@osdl.org, akpm@linux-foundation.org
+Cc: linux-am33-list@redhat.com, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Date: Mon, 27 Sep 2010 13:12:33 +0100
+Message-ID: <20100927121233.14187.3870.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100927075828.GA15344@jurassic.park.msu.ru>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 11:58:28AM +0400, Ivan Kokshaysky wrote:
-> On Sat, Sep 25, 2010 at 08:25:09PM +0100, Al Viro wrote:
-> > BTW, am I right assuming that HAE modifications is UP-only thing?  It would
-> > be obviously b0rken on any SMP box, since alpha_mv is not per-CPU thing...
-> 
-> The only SMP system that does HAE modifications at runtime is T2, so it has
-> a spinlock protection around set_hae() - see core_t2.h. Others are either
-> limited to use HAE window 0 only, or do not have HAE hardware at all.
+The configuration choice for the port on which the GDB stub listens has a
+default of GDBSTUB_TTYSM0, but this should be GDBSTUB_ON_TTYSM0 to match the
+option.
 
-Um?  Pardon me, but that makes no sense; how would a spinlock taken in
-e.g. readl() stop another process from leaving a syscall, getting to
-RESTORE_ALL and overwriting HAE register while we are halfway through
-the spinlock-protected area?
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ arch/mn10300/Kconfig.debug |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+
+diff --git a/arch/mn10300/Kconfig.debug b/arch/mn10300/Kconfig.debug
+index ff80e86..ce83c74 100644
+--- a/arch/mn10300/Kconfig.debug
++++ b/arch/mn10300/Kconfig.debug
+@@ -101,7 +101,7 @@ config GDBSTUB_DEBUG_BREAKPOINT
+ 
+ choice
+ 	prompt "GDB stub port"
+-	default GDBSTUB_TTYSM0
++	default GDBSTUB_ON_TTYSM0
+ 	depends on GDBSTUB
+ 	help
+ 	  Select the serial port used for GDB-stub.
+
