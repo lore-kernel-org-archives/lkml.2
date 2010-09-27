@@ -1,129 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933196Ab0I0QF7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 12:05:59 -0400
+	id S1759742Ab0I0QFt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 12:05:49 -0400
 Received: from mail.logicpd.com ([66.162.60.3]:29868 "EHLO smtp.logicpd.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932420Ab0I0QFv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 12:05:51 -0400
+	id S1759570Ab0I0QFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 12:05:48 -0400
 From: Tim Nordell <tim.nordell@logicpd.com>
 To: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: Tim Nordell <tim.nordell@logicpd.com>
-Subject: [PATCH v4 4/4] ARM: OMAP3LOGIC: Added SMSC Ethernet board support
-Date: Mon, 27 Sep 2010 11:05:50 -0500
-Message-Id: <1285603550-6382-5-git-send-email-tim.nordell@logicpd.com>
+Subject: [PATCH v4 0/4] LogicPD minimal board support for LV_SOM and Torpedo
+Date: Mon, 27 Sep 2010 11:05:46 -0500
+Message-Id: <1285603550-6382-1-git-send-email-tim.nordell@logicpd.com>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1285603550-6382-1-git-send-email-tim.nordell@logicpd.com>
-References: <1285603550-6382-1-git-send-email-tim.nordell@logicpd.com>
-X-OriginalArrivalTime: 27 Sep 2010 16:05:47.0414 (UTC) FILETIME=[D8E66B60:01CB5E5D]
+X-OriginalArrivalTime: 27 Sep 2010 16:05:47.0320 (UTC) FILETIME=[D8D81380:01CB5E5D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable SMSC911x Ethernet driver for LogicPD's OMAP
-3530 LV SOM and OMAP 35x Torpedo board.
+This was tested (and based) against 2.6.36-rc5
 
-Signed-off-by: Tim Nordell <tim.nordell@logicpd.com>
----
- arch/arm/mach-omap2/board-omap3logic.c |   65 ++++++++++++++++++++++++++++++++
- 1 files changed, 65 insertions(+), 0 deletions(-)
+Difference from patch v3 1/4:
+ - Merged DEBUG_LL support patch (patch v3 5/5) into first patch
+ - Added "select OMAP_PACKAGE_CBB" into Kconfig for both boards
 
-diff --git a/arch/arm/mach-omap2/board-omap3logic.c b/arch/arm/mach-omap2/board-omap3logic.c
-index e1f8fbe..687213a 100644
---- a/arch/arm/mach-omap2/board-omap3logic.c
-+++ b/arch/arm/mach-omap2/board-omap3logic.c
-@@ -38,6 +38,7 @@
- #include <plat/mux.h>
- #include <plat/board.h>
- #include <plat/common.h>
-+#include <plat/gpmc-smsc911x.h>
- #include <plat/gpmc.h>
- #include <plat/timer-gp.h>
- #include <plat/sdrc.h>
-@@ -141,6 +142,58 @@ static void __init board_mmc_init(void)
- 	omap3logic_vmmc1_supply.dev = board_mmc_info[0].dev;
- }
- 
-+static struct omap_smsc911x_platform_data __initdata board_smsc911x_data = {
-+	.cs             = OMAP3LOGIC_SMSC911X_CS,
-+	.gpio_irq       = -EINVAL,
-+	.gpio_reset     = -EINVAL,
-+	.flags          = IORESOURCE_IRQ_LOWLEVEL,
-+};
-+
-+/* TODO/FIXME (comment by Peter Barada, LogicPD):
-+ * Fix the PBIAS voltage for Torpedo MMC1 pins that
-+ * are used for other needs (IRQs, etc).            */
-+static void omap3torpedo_fix_pbias_voltage(void)
-+{
-+	u16 control_pbias_offset = OMAP343X_CONTROL_PBIAS_LITE;
-+	u32 reg;
-+
-+	if (machine_is_omap3_torpedo())
-+	{
-+		/* Set the bias for the pin */
-+		reg = omap_ctrl_readl(control_pbias_offset);
-+
-+		reg &= ~OMAP343X_PBIASLITEPWRDNZ1;
-+		omap_ctrl_writel(reg, control_pbias_offset);
-+
-+		/* 100ms delay required for PBIAS configuration */
-+		msleep(100);
-+
-+		reg |= OMAP343X_PBIASLITEVMODE1;
-+		reg |= OMAP343X_PBIASLITEPWRDNZ1;
-+		omap_ctrl_writel(reg | 0x300, control_pbias_offset);
-+	}
-+}
-+
-+static inline void __init board_smsc911x_init(void)
-+{
-+	if (machine_is_omap3530_lv_som()) {
-+		/* OMAP3530 LV SOM board */
-+		board_smsc911x_data.gpio_irq =
-+					OMAP3530_LV_SOM_SMSC911X_GPIO_IRQ;
-+		omap_mux_init_signal("gpio_152", OMAP_PIN_INPUT);
-+	} else if (machine_is_omap3_torpedo()) {
-+		/* OMAP3 Torpedo board */
-+		board_smsc911x_data.gpio_irq = OMAP3_TORPEDO_SMSC911X_GPIO_IRQ;
-+		omap_mux_init_signal("gpio_129", OMAP_PIN_INPUT);
-+	} else {
-+		/* unsupported board */
-+		printk(KERN_ERR "%s(): unknown machine type\n", __func__);
-+		return;
-+	}
-+
-+	gpmc_smsc911x_init(&board_smsc911x_data);
-+}
-+
- static void __init omap3logic_init_irq(void)
- {
- 	omap2_init_common_hw(NULL, NULL);
-@@ -148,11 +201,23 @@ static void __init omap3logic_init_irq(void)
- 	omap_gpio_init();
- }
- 
-+#ifdef CONFIG_OMAP_MUX
-+static struct omap_board_mux board_mux[] __initdata = {
-+	{ .reg_offset = OMAP_MUX_TERMINATOR },
-+};
-+#else
-+#define board_mux       NULL
-+#endif
-+
- static void __init omap3logic_init(void)
- {
-+	omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
-+	omap3torpedo_fix_pbias_voltage();
- 	omap3logic_i2c_init();
- 	omap_serial_init();
- 	board_mmc_init();
-+	board_smsc911x_init();
-+
- 	/* Ensure SDRC pins are mux'd for self-refresh */
- 	omap_mux_init_signal("sdrc_cke0", OMAP_PIN_OUTPUT);
- 	omap_mux_init_signal("sdrc_cke1", OMAP_PIN_OUTPUT);
--- 
-1.7.1
+Tim Nordell (4):
+  Adding LogicPD OMAP3 board support
+  ARM: OMAP3LOGIC: Adding SDMMC support
+  ARM: OMAP3: Add generic smsc911x support when connected to GPMC
+  ARM: OMAP3LOGIC: Added SMSC Ethernet board support
+
+ arch/arm/mach-omap2/Kconfig                     |   20 ++
+ arch/arm/mach-omap2/Makefile                    |    7 +
+ arch/arm/mach-omap2/board-omap3logic.c          |  244 +++++++++++++++++++++++
+ arch/arm/mach-omap2/gpmc-smsc911x.c             |  113 +++++++++++
+ arch/arm/plat-omap/include/plat/gpmc-smsc911x.h |   35 ++++
+ arch/arm/plat-omap/include/plat/uncompress.h    |    2 +
+ 6 files changed, 421 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-omap2/board-omap3logic.c
+ create mode 100644 arch/arm/mach-omap2/gpmc-smsc911x.c
+ create mode 100644 arch/arm/plat-omap/include/plat/gpmc-smsc911x.h
 
