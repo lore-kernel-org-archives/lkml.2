@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932645Ab0I0Dag (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 23:30:36 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:52584 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932620Ab0I0Daf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 23:30:35 -0400
-Date: Sun, 26 Sep 2010 23:30:31 -0400
-From: Kyle McMartin <kyle@mcmartin.ca>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Adrian Hunter <adrian.hunter@nokia.com>,
-        linux-kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable@kernel.org
-Subject: Re: [PATCH] block: prevent merges of discard and write requests
-Message-ID: <20100927033030.GR13116@bombadil.infradead.org>
-References: <1285411002-22924-1-git-send-email-adrian.hunter@nokia.com>
- <4C9DD1B0.9020902@kernel.dk>
+	id S932665Ab0I0D5y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 23:57:54 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:46861 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932640Ab0I0D5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Sep 2010 23:57:53 -0400
+Date: Sun, 26 Sep 2010 20:57:51 -0700
+From: Arthur Kepner <akepner@sgi.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, Ben Hutchings <bhutchings@solarflare.com>
+Subject: Re: [RFC/PATCHv2] kernel/irq: allow more precise irq affinity
+	policies
+Message-ID: <20100927035751.GI20474@sgi.com>
+References: <20100922235208.GC19058@sgi.com> <alpine.LFD.2.00.1009230908080.2416@localhost6.localdomain6> <alpine.LFD.2.00.1009232015180.2416@localhost6.localdomain6>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C9DD1B0.9020902@kernel.dk>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <alpine.LFD.2.00.1009232015180.2416@localhost6.localdomain6>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 25, 2010 at 12:40:48PM +0200, Jens Axboe wrote:
-> On 2010-09-25 12:36, Adrian Hunter wrote:
-> > Add logic to prevent two I/O requests being merged if
-> > only one of them is a discard.  Ditto secure discard.
-> > 
-> > Without this fix, it is possible for write requests
-> > to transform into discard requests.  For example:
-> > 
-> >   Submit bio 1 to discard 8 sectors from sector n
-> >   Submit bio 2 to write 8 sectors from sector n + 16
-> >   Submit bio 3 to write 8 sectors from sector n + 8
-> > 
-> > Bio 1 becomes request 1.  Bio 2 becomes request 2.
-> > Bio 3 is merged with request 2, and then subsequently
-> > request 2 is merged with request 1 resulting in just
-> > one I/O request which discards all 24 sectors.
+On Thu, Sep 23, 2010 at 08:36:35PM +0200, Thomas Gleixner wrote:
 > 
-> Wow, that's a disaster. We can now have requests in the
-> same direction and of the same type (fs), but not mergeable.
+> I thought more about this and came to the conclusion that this
+> facility is completely overengineered and mostly useless except for a
+> little detail.
 > 
-> I would move the check up above the position calculations.
-> I will apply this and upstream it right away. Thanks a lot!
-> 
+> The only problem which it solves is to prevent that we run out of
+> vectors on the low numbered cpus when that NIC which insists to create
+> one irq per cpu starts up.
 
-Jens, is this (the REQ_DISCARD hunk) required for stable as well? It
-appears there's not much change relating to merging requests between
-HEAD and v2.6.35, so I assume it is?
+Yep, that's the problem.
 
---Kyle
+> 
+> Fine, I can see that this is a problem, but we do not need this
+> complete nightmare to solve it. We can do that way simpler.
+> 
+>  1) There is a patch from your coworker to work around that in the low
+>     level x86 code, which is probably working, but suboptimal and not
+>     generic
+>
+
+I don't know what you're referring to there.
+ 
+>  2) We already know that the NIC requested the irq on node N. So when
+>     we set it up, we just honour the wish of the driver as long as it
+>     fits in the default (or modified) affinity mask and restrict the
+>     affinity to the cpus on that very node.
+> 
+>     That makes a whole lot of sense: The driver already knows on which
+>     cpus it wants to see the irq, because it allocated queues and
+>     stuff there.
+> 
+>     So that's probably a 10 lines or less patch do fix that.
+> ....
+
+OK, the simple approach is fine with me. I'll send a patch in 
+a minute.
+
+-- 
+Arthur
