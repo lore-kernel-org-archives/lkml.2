@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933524Ab0I0TyI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 15:54:08 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:47130 "EHLO ogre.sisk.pl"
+	id S1759687Ab0I0T61 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 15:58:27 -0400
+Received: from www.tglx.de ([62.245.132.106]:49868 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933483Ab0I0TyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 15:54:05 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Nishanth Menon <nm@ti.com>
-Subject: Re: [PATCH v4] power: introduce library for device-specific OPPs
-Date: Mon, 27 Sep 2010 21:53:13 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc5-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "linux-pm" <linux-pm@lists.linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm" <linux-arm-kernel@lists.infradead.org>,
-        "linux-omap" <linux-omap@vger.kernel.org>
-References: <1285332640-16736-1-git-send-email-nm@ti.com> <20100926005636.GB3396@linux.vnet.ibm.com> <4CA0A95A.4000408@ti.com>
-In-Reply-To: <4CA0A95A.4000408@ti.com>
+	id S1755947Ab0I0T6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 15:58:23 -0400
+Date: Mon, 27 Sep 2010 21:54:06 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>, linux-alpha@vger.kernel.org,
+        linux-cris-kernel@axis.com, Haavard Skinnemoen <hskinnemoen@atmel.com>,
+        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Greg Ungerer <gerg@uclinux.org>, Jeff Dike <jdike@addtoit.com>,
+        linux-parisc@vger.kernel.org, Chris Zankel <chris@zankel.net>,
+        linux-arch@vger.kernel.org
+Subject: Re: [RFC trollpatch 1/1] genirq: Remove the fits all and nothing
+ __do_IRQ() code
+In-Reply-To: <AANLkTin23sJT+OqjDqjyk-Gr5r-GfJ_03Q1WUqNLCzgH@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1009272152360.2416@localhost6.localdomain6>
+References: <20100908152036.643594727@linutronix.de> <AANLkTin23sJT+OqjDqjyk-Gr5r-GfJ_03Q1WUqNLCzgH@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009272153.13232.rjw@sisk.pl>
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-1112802732-1285617250=:2416"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, September 27, 2010, Nishanth Menon wrote:
-> Paul E. McKenney had written, on 09/25/2010 07:56 PM, the following:
-> > On Sat, Sep 25, 2010 at 10:55:20PM +0200, Rafael J. Wysocki wrote:
-> >> On Friday, September 24, 2010, Paul E. McKenney wrote:
-> >>> On Fri, Sep 24, 2010 at 07:50:40AM -0500, Nishanth Menon wrote:
-> >> ...
-> >>> Looks like a good start!!!  Some questions and suggestions about RCU
-> >>> usage interspersed below.
-> >> ...
-> >>>> + * Locking: RCU reader.
-> >>>> + */
-> >>>> +int opp_get_opp_count(struct device *dev)
-> >>>> +{
-> >>>> +	struct device_opp *dev_opp;
-> >>>> +	struct opp *temp_opp;
-> >>>> +	int count = 0;
-> >>>> +
-> >>>> +	dev_opp = find_device_opp(dev);
-> >>>> +	if (IS_ERR(dev_opp))
-> >>>> +		return PTR_ERR(dev_opp);
-> >>>> +
-> >>>> +	rcu_read_lock();
-> >>>> +	list_for_each_entry_rcu(temp_opp, &dev_opp->opp_list, node) {
-> >>>> +		if (temp_opp->available)
-> >>>> +			count++;
-> >>>> +	}
-> >>>> +	rcu_read_unlock();
-> >>> This one is OK as well.  You are returning a count, so if all of the
-> >>> counted structures are freed at this point, no problem.  The count was
-> >>> valid when it was accumulated, and the fact that it might now be obsolete
-> >>> is (usually) not a problem.
-> >> However, it looks like it should run rcu_read_lock() before calling
-> >> find_device_opp(dev), shouldn't it?
-> > 
-> > Indeed it does appear that you are right -- good catch!!!
-> > 
-> > 							Thanx, Paul
-> dev_opp as discussed before is safe as it is never freed 
-> (find_device_opp uses it's own rcu_read_lock, the rcu_read_lock in this 
-> context is for the opp list. what am I missing?
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-It's simply safer to put the rcu_read_lock() before find_device_opp(), in case
-someone will make it possible to remove things from the opp list in the future.
+---1463795968-1112802732-1285617250=:2416
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-Besides, your entire data structure consists of the opp list and the per-power
-domain lists, so you should really tell the writers when you have finished to
-traverse it entirely, not in the middle of the operation.
+On Mon, 27 Sep 2010, richard -rw- weinberger wrote:
+
+> On Wed, Sep 8, 2010 at 8:14 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > __do_IRQ() has been deprecated after a two years migration phase in
+> >  The following architectures are still using __do_IRQ():
+> >
+> >  alpha, cris, ia64, h8300, m32r, m68knommu, parisc, um
+> >
+> 
+> Maybe I'm naive but shouldn't this path work?
+> Does um need some extra work?
+
+Yes. It needs to set the proper flow handlers. Look for set_irq_chip*
+functions and how they are used in other archs.
 
 Thanks,
-Rafael
+
+	tglx
+
+ 
+---1463795968-1112802732-1285617250=:2416--
