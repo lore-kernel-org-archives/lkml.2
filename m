@@ -1,107 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758534Ab0I0ASV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 20:18:21 -0400
-Received: from dsl78-143-211-26.in-addr.fast.co.uk ([78.143.211.26]:37798 "EHLO
-	ben-laptop" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757257Ab0I0ASU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 20:18:20 -0400
-Message-ID: <4C9FE2C4.8070302@fluff.org>
-Date: Mon, 27 Sep 2010 01:18:12 +0100
-From: Ben Dooks <ben-linux@fluff.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+	id S932607Ab0I0AUV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 20:20:21 -0400
+Received: from kroah.org ([198.145.64.141]:48408 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932185Ab0I0AUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Sep 2010 20:20:19 -0400
+Date: Sun, 26 Sep 2010 17:15:13 -0700
+From: Greg KH <greg@kroah.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
+        Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Chris Mason <chris.mason@oracle.com>, linux-fsdevel@vger.kernel.org,
+        stable@kernel.org, linux-btrfs@vger.kernel.org,
+        Cesar Eduardo Barros <cesarb@cesarb.net>
+Subject: Re: [stable] Dirtiable inode bdi default != sb bdi btrfs
+Message-ID: <20100927001513.GA15973@kroah.com>
+References: <4C9AA546.6050201@cesarb.net> <20100923123849.8975fe47.akpm@linux-foundation.org> <4C9BAD1E.2030007@fusionio.com> <20100923205300.GA6853@kroah.com> <4C9CF06D.2050201@fusionio.com>
 MIME-Version: 1.0
-To: Paulius Zaleckas <paulius.zaleckas@gmail.com>
-CC: Darius Augulis <augulis.darius@gmail.com>, kgene.kim@samsung.com,
-        linux-serial@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Ben Dooks <ben-linux@fluff.org>, linux-kernel@vger.kernel.org
-Subject: Re: [RESEND PATCH] serial: samsung: fix device name
-References: <20100923190212.18863.25678.stgit@darius-desktop>	<4C9BE577.4050504@fluff.org>	<AANLkTi=S8v19iT1DC=6Nh9BEgRvKzyzKTKoJmS0Bw1Fb@mail.gmail.com> <4C9CD3E0.6060000@gmail.com>
-In-Reply-To: <4C9CD3E0.6060000@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C9CF06D.2050201@fusionio.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/09/10 17:37, Paulius Zaleckas wrote:
-> On 09/24/2010 09:57 AM, Darius Augulis wrote:
->> Hi,
->>
->> On Fri, Sep 24, 2010 at 2:40 AM, Ben Dooks<ben-linux@fluff.org>  wrote:
->>> On 23/09/10 20:15, Darius Augulis wrote:
->>>> Swap device and driver names in serial/samsung.c
->>>
->>> This is far too short, please see the notes below on trying
->>> to make this more informative.
->>>
->>>> Signed-off-by: Darius Augulis<augulis.darius@gmail.com>
->>>> ---
->>>>
->>>> This patch was submitted about 3 months ago, but still not merged.
->>>> There was another similar patch from Joonyoung Shim
->>>> <jy0922.shim@samsung.com>  and was discussed here:
->>>> http://marc.info/?l=linux-serial&m=127416101222281&w=2.
->>>> Joonyoung Shim acked my patch and other people on ARM mailing list
->>>> acked it. The maintainer, Ben Dooks, still not responding for
->>>> a long time. Another maintainer, Kukjin Kim, refused to merge
->>>> it without Ben's review.
->>>> I would like to ask somebody pick up this bugfix.
->>>
->>> I belive last time this was brought up I asked about the affect
->>> this has on the userspace. The following issues would be helpful
->>> or essential to have noted in the header about the effect of this.
->>>
->>> - Does it change the /dev name of the device? if so I would thinl
->>>   carefully about applying it, as it would be a change in the way
->>>   that userspace sees the kernel.
->>
->> It does - now devices are named /dev/s3c2410_serial, and patch changes
->> its name to /dev/ttySAC
->>
->>>
->>> - Does it change the kernel output itself? A note on what diffeences
->>>   can be seen in things like dmesg would be helpful.
->>
->> It does. Serial driver reports device names when probing, so there
->> will appear ttySACx instead of
->> s3c2410_serialx.
->>
->>>
->>> - Are there any other side effects
->>>
->>> - Why is this a bug? Maybe the previous points will explain what is
->>>   going on, but if not, then a reasonably concise description of
->>>   what is going on here.
->>
->> This is bug, because of several points:
->>
->> 1. Because it contradicts kernel documentation. Please read
->> Documentation/arm/Samsung-S3C24XX/Overview.txt line 196.
->> This should be enough to apply this patch.
->>
->> 2. Because s3c2410_serial isn't correct name for serial device node.
->> It's name of Samsung serial driver.
->>
->> 3. Because now almost all userspace systems workaround it by creating
->> symlink
->> /dev/ttySACx>  /dev/s3c2410_serialx and only then put some getty on
->> created symlink, not on original device.
->> Systems which don't create this symlink, fail to boot at all, because
->> of wrong console name. Good example is Buildroot.
+On Fri, Sep 24, 2010 at 08:39:41PM +0200, Jens Axboe wrote:
+> On 2010-09-23 22:53, Greg KH wrote:
+> > On Thu, Sep 23, 2010 at 09:40:14PM +0200, Jens Axboe wrote:
+> >> On 2010-09-23 21:38, Andrew Morton wrote:
+> >>>
+> >>> (Cc stable@kernel.org)
+> >>>
+> >>> On Wed, 22 Sep 2010 21:54:30 -0300
+> >>> Cesar Eduardo Barros <cesarb@cesarb.net> wrote:
+> >>>
+> >>>> This started appearing for me on v2.6.36-rc5-49-gc79bd89; it did not 
+> >>>> happen on v2.6.36-rc5-33-g1ce1e41, probably because it does not have 
+> >>>> commit 692ebd17c2905313fff3c504c249c6a0faad16ec which introduces the 
+> >>>> warning.
+> >>>>
+> >>>> [...]
+> >>>> device fsid 44d595920ddedfa-3ece6b56e80f689e devid 1 transid 22342 
+> >>>> /dev/mapper/vg_cesarbinspiro-lv_home
+> >>>> SELinux: initialized (dev dm-3, type btrfs), uses xattr
+> >>>> ------------[ cut here ]------------
+> >>>> WARNING: at fs/fs-writeback.c:87 inode_to_bdi+0x62/0x6d()
+> >>>> Hardware name: Inspiron N4010
+> >>>> Dirtiable inode bdi default != sb bdi btrfs
+> >>>> Modules linked in: ipv6 kvm_intel kvm uinput arc4 ecb 
+> >>>> snd_hda_codec_intelhdmi snd_hda_codec_realtek iwlagn snd_hda_intel 
+> >>>> iwlcore snd_hda_codec uvcvideo snd_hwdep mac80211 videodev snd_seq 
+> >>>> snd_seq_device v4l1_compat snd_pcm atl1c v4l2_compat_ioctl32 btusb 
+> >>>> cfg80211 snd_timer i2c_i801 bluetooth iTCO_wdt dell_wmi dell_laptop snd 
+> >>>> pcspkr wmi dcdbas shpchp iTCO_vendor_support soundcore snd_page_alloc 
+> >>>> rfkill joydev microcode btrfs zlib_deflate libcrc32c cryptd aes_x86_64 
+> >>>> aes_generic xts gf128mul dm_crypt usb_storage i915 drm_kms_helper drm 
+> >>>> i2c_algo_bit i2c_core video output [last unloaded: scsi_wait_scan]
+> >>>> Pid: 1073, comm: find Not tainted 2.6.36-rc5+ #8
+> >>>> Call Trace:
+> >>>>   [<ffffffff8104d0e4>] warn_slowpath_common+0x85/0x9d
+> >>>>   [<ffffffff8104d19f>] warn_slowpath_fmt+0x46/0x48
+> >>>>   [<ffffffff811308b7>] inode_to_bdi+0x62/0x6d
+> >>>>   [<ffffffff81131b48>] __mark_inode_dirty+0xd0/0x177
+> >>>>   [<ffffffff81127168>] touch_atime+0x107/0x12a
+> >>>>   [<ffffffff81122384>] ? filldir+0x0/0xd0
+> >>>>   [<ffffffff8112259b>] vfs_readdir+0x8d/0xb4
+> >>>>   [<ffffffff8112270b>] sys_getdents+0x81/0xd1
+> >>>>   [<ffffffff81009c72>] system_call_fastpath+0x16/0x1b
+> >>>
+> >>> Thanks.  692ebd17c2905313fff3c504c249c6a0faad16ec had a cc:stable in
+> >>> the changelog.  I'd suggest it not be merged into -stable until this
+> >>> regression is sorted out!
+> >>
+> >> It was just added, I'm discussing this with Chris on irc as I type this.
+> >> But yes, lets not replace a regression with a new regression :-). So
+> >> Greg, please hold off on these for a little while.
+> > 
+> > Ok, so which ones should I take out of the -stable tree?  Just this one:
+> > 	692ebd17c2905313fff3c504c249c6a0faad16ec
+> > or it and something else?
 > 
-> I had similar issue with buildroot too, because in /etc/securetty it is
-> defained as ttySAC0
+> You can keep 1/2, just hold off on the one labeled:
 > 
-> 4. For console in kernel boot command line you must enter console=ttySACx.
-> Why it sould be different in userspace?
+> bdi: Fix warnings in __mark_inode_dirty for /dev/zero and friends
 > 
-> For me it seems taht this bug was not noticed earlier, because most
-> embedded
-> systems were using static device nodes and ttySACx was used in these cases.
+> for now. I'm off to Japan in the morning, perhaps Jan can comment
+> if he's available.
 
-As long as these are explained, then I'm reasonably happy for this to be
-applied, as long as there are no other complaints.
+Ok, now dropped, thanks.
 
-However, this is a big change, and I think it should await the next
-merge window.
+greg k-h
