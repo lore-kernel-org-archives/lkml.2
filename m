@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759089Ab0I0MUz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 08:20:55 -0400
-Received: from proxy.dresearch.de ([87.193.137.100]:54387 "EHLO
-	mail.dresearch.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756702Ab0I0MUy (ORCPT
+	id S1759123Ab0I0Mfe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 08:35:34 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:51302 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759095Ab0I0Mfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 08:20:54 -0400
-From: Steffen Sledz <sledz@dresearch.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mtd@lists.infradead.org, Artem Bityutskiy <dedekind1@gmail.com>,
-        Steffen Sledz <sledz@dresearch.de>
-Subject: [PATCH v2] ubifs: avoid kernel error if ubifs superblock read fails
-Date: Mon, 27 Sep 2010 14:20:26 +0200
-Message-Id: <1285590026-11629-1-git-send-email-sledz@dresearch.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1285577837.16181.14.camel@localhost>
-References: <1285577837.16181.14.camel@localhost>
-X-OriginalArrivalTime: 27 Sep 2010 12:20:53.0425 (UTC) FILETIME=[6DDB1A10:01CB5E3E]
+	Mon, 27 Sep 2010 08:35:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=YPLPWlqSi27QGCav/uUTqYWX3HmfWS7x6IyVlFewvyrxYkphgEml78AYjYa6WO2Ude
+         FZ436PNVC2XAGwz/HcsXt/LbKQAxWeNgQqN/d/jI0NjyvDEwlJtiB4avwBXtSq7BvHIR
+         F1QH9bBDeGnzfx4QEicNoczJfEvZBBpHnCK6w=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinh+JTwyE4E33QXdnZ8obYA8S0SU71i3kGi=wRT@mail.gmail.com>
+References: <1285529740-28232-1-git-send-email-notasas@gmail.com>
+	<AANLkTinkxokX9BGtxysYOr19xbZR4S8oPRYUAyneutzc@mail.gmail.com>
+	<AANLkTinh+JTwyE4E33QXdnZ8obYA8S0SU71i3kGi=wRT@mail.gmail.com>
+Date: Mon, 27 Sep 2010 18:05:22 +0530
+Message-ID: <AANLkTik0LOQN8kOPjv_VohhO5To6pZDS=M0mw=q0whPp@mail.gmail.com>
+Subject: Re: [PATCH v3] power_supply: Add driver for TWL4030/TPS65950 BCI charger
+From: Arun Murthy <arunrmurthy.83@gmail.com>
+To: Grazvydas Ignotas <notasas@gmail.com>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        Madhusudhan <madhu.cr@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* .get_sb is called on mounts with automatic fs detection too, so this
-  function should print an error if it cannot read the superblock in
-  debug mode only
-  (new behaviour conforms the other fs types)
+On Mon, Sep 27, 2010 at 4:24 PM, Grazvydas Ignotas <notasas@gmail.com> wrote:
+> On Mon, Sep 27, 2010 at 10:21 AM, Arun Murthy <arunrmurthy.83@gmail.com> wrote:
+>> On Mon, Sep 27, 2010 at 1:05 AM, Grazvydas Ignotas <notasas@gmail.com>
+>> wrote:
+>>> ---
+>> Only AC and USB monitoring is achieved by registering with power supply
+>> class.
+>> How is battery monitored?
+>> An instance of battery is to be registered with power supply class in order
+>> to monitor battery.
+>
+> The problem is that BCI is only active while charging, when it is not
+> charging most (all?) monitoring registers freeze and no monitoring
+> happens (BCI registers read frozen values from last charge). So I
+> don't register battery as it has no useful data to report. I heard it
+> is possible to use MADC to perform monitoring while not charging, so
+> battery can be added when MADC driver is merged and corresponding code
+> is written for this driver.
+>
+How do I check the battery voltage?
+I need to check the battery voltage/current/temp and, if I am not
+wrong these are obtained from MADC.
+MADC driver has to be added first and then the battery.
+With being able to read the basic parameter battery voltage, this
+driver becomes incomplete.
 
-Signed-off-by: Steffen Sledz <sledz@dresearch.de>
----
- fs/ubifs/super.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+How do I get notified if battery voltage is low and needs charging
+from user space?
 
-diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
-index 4e5bf3f..bb6ed5d 100644
---- a/fs/ubifs/super.c
-+++ b/fs/ubifs/super.c
-@@ -2054,8 +2054,8 @@ static int ubifs_get_sb(struct file_system_type *fs_type, int flags,
- 	 */
- 	ubi = open_ubi(name, UBI_READONLY);
- 	if (IS_ERR(ubi)) {
--		ubifs_err("cannot open \"%s\", error %d",
--			  name, (int)PTR_ERR(ubi));
-+		dbg_err("cannot open \"%s\", error %d",
-+			name, (int)PTR_ERR(ubi));
- 		return PTR_ERR(ubi);
- 	}
- 	ubi_get_volume_info(ubi, &vi);
--- 
-1.7.1
-
+Thanks and Regards,
+Arun R Murthy
+---------------------
