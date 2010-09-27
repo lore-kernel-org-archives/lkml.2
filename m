@@ -1,57 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758346Ab0I0Qyp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 12:54:45 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:21102 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756176Ab0I0Qyo (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 27 Sep 2010 12:54:44 -0400
-Date: Mon, 27 Sep 2010 12:53:40 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        linux-kernel@vger.kernel.org,
+	id S1759348Ab0I0Qz7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 12:55:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44616 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756459Ab0I0Qz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 12:55:57 -0400
+Date: Mon, 27 Sep 2010 18:51:33 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        Shailabh Nagar <nagar1234@in.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Ingo Molnar <mingo@elte.hu>,
-        Andre Goddard Rosa <andre.goddard@gmail.com>
-Subject: Re: [PATCH 6/9] swiotlb: Declare swiotlb_init_with_default_size()
-Message-ID: <20100927165340.GA5644@dumpdata.com>
-References: <1285281496-24696-1-git-send-email-ddaney@caviumnetworks.com>
- <1285282051-24907-1-git-send-email-ddaney@caviumnetworks.com>
+        Venkatesh Pallipadi <venki@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Roland McGrath <roland@redhat.com>
+Subject: Re: [RFC][PATCH 09/10] taskstats: Fix exit CPU time accounting
+Message-ID: <20100927165133.GA23535@redhat.com>
+References: <1285249681.1837.28.camel@holzheu-laptop> <1285250541.1837.95.camel@holzheu-laptop> <20100923171025.GA26623@redhat.com> <1285330688.2179.305.camel@holzheu-laptop> <20100926181127.GA26985@redhat.com> <20100927154257.7910cda3@mschwide.boeblingen.de.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1285282051-24907-1-git-send-email-ddaney@caviumnetworks.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100927154257.7910cda3@mschwide.boeblingen.de.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 23, 2010 at 03:47:30PM -0700, David Daney wrote:
-> It comes from swiotlb.c and must be called by external code, so declare it.
-> 
-> Signed-off-by: David Daney <ddaney@caviumnetworks.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Andre Goddard Rosa <andre.goddard@gmail.com>
-> ---
->  include/linux/swiotlb.h |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
-> index 8c0e349..dba51fe 100644
-> --- a/include/linux/swiotlb.h
-> +++ b/include/linux/swiotlb.h
-> @@ -23,6 +23,7 @@ extern int swiotlb_force;
->  #define IO_TLB_SHIFT 11
->  
->  extern void swiotlb_init(int verbose);
-> +extern void swiotlb_init_with_default_size(size_t, int);
->  extern void swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
+On 09/27, Martin Schwidefsky wrote:
+>
+> On Sun, 26 Sep 2010 20:11:27 +0200
+> Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> > No. Well yes, it is not accounted, but this is not because it is
+> > kthread.
+>
+> We noticed that behavior with kernel threads but as you point out
+> the problem is bigger than that.
+>
+> > It is very simple, currently linux accounts the exiting task's
+> > utime and adds its to ->cutime _only_ if parent does do_wait().
+> > If parent ignores SIGCHLD, the child reaps itself and it is not
+> > accounted.
+> >
+> > I do not know why it was done this way, but I'm afraid we can't
+> > change this historical behaviour.
+>
+> Why?
 
-Just use the swiotlb_init_with_tbl. If you need an example of how it is utilized, take
-a look at how swiotlb-xen.c does it.
+Please don't ask me ;) I was equally surprised when I studied this
+code in the past.
+
+> I would consider it to be a BUG() that the time is not accounted.
+> Independent of the fact that a parent wants to see the SIGCHLD and
+> the exit status of its child the process time of the child should be
+> accounted, no?
+
+I do not know. It doesn't look like a BUG(), I mean it looks as if
+the code was intentionally written this way.
+
+> And I'm not a particular fan of the "this has always
+> been that way" reasoning.
+
+Me too, but unfortunately it often happens, sometimes we can't improve
+things just because we should not break existing programs.
+
+Once again, don't get me wrong. Personally I agree, to me it makes
+sense to move the "update parent's cxxx" code from wait_task_zombie()
+to __exit_signal(), and account children unconditionally.
+
+But I do not know who can approve this very much user-visible change.
+Perhaps Roland.
+
+> Got the part about self-reaping processes. But there is another issue:
+> consider an exiting thread where the group leader is still active.
+> The time for the thread will be added to the utime/stime fields in
+> the signal structure.
+
+(to clarify, s/group leader/last thread/)
+
+> Taskstats will happily ignore that time while
+> the group leader is still running.
+
+Sorry. I didn't read the whole series and I forgot everything I knew
+about taskstats. But I don't understand this "ignore" above, every
+exiting thread calls taskstats_exit()->fill_pid()->bacct_add_tsk()
+and reports ->ac_utime?
+
+Never mind. You seem to want to update, say, cutime when a sub-thread
+exits, before the whole process exits, right? Again, trivial to
+implement but this is another user-visible change.
+
+Oleg.
+
