@@ -1,93 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759168Ab0I0MyW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 08:54:22 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43107 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752639Ab0I0MyV (ORCPT
+	id S932747Ab0I0M4s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 08:56:48 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:44878 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756443Ab0I0M4r convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 08:54:21 -0400
-Date: Mon, 27 Sep 2010 14:54:04 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
-        Neil Brown <neilb@suse.de>, "David S. Miller" <davem@davemloft.net>,
-        Randy Dunlap <randy.dunlap@oracle.com>, linux-nfs@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] sunrpc: prompt for RPCSEC_GSS_KRB5 even if NFS_V4 is
-	enabled
-Message-ID: <20100927125404.GB6271@pengutronix.de>
-References: <20100909181454.GB14915@pengutronix.de> <1285584120-16860-1-git-send-email-u.kleine-koenig@pengutronix.de> <1285587572.19362.2.camel@heimdal.trondhjem.org>
+	Mon, 27 Sep 2010 08:56:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=tAGH6MIHAN2x0+eN5r7vVli6WOs0ZxpdLa/53Lc4RNoRY6E7GfmJ1qLd07HOdLtoWD
+         wITEVzDHfntZcH/paiS/MqKTL1/M8Nw4QvVMOcMICnWsU9UuISxDSAAO28GmSZcF0J8O
+         4534EgDUMJkd+S3HkBpKn/9fM+WRClFrSDSOU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1285587572.19362.2.camel@heimdal.trondhjem.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20100927104426.GD32222@erda.amd.com>
+References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
+	<1285549026-5008-7-git-send-email-ying.huang@intel.com>
+	<20100927104426.GD32222@erda.amd.com>
+Date: Mon, 27 Sep 2010 20:56:44 +0800
+Message-ID: <AANLkTinA2HK57w5wqCtq319WNy-PLtWaGBe-v+uoFB=Y@mail.gmail.com>
+Subject: Re: [PATCH -v2 7/7] x86, NMI, Remove do_nmi_callback logic
+From: huang ying <huang.ying.caritas@gmail.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Huang Ying <ying.huang@intel.com>, Don Zickus <dzickus@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Trond,
+On Mon, Sep 27, 2010 at 6:44 PM, Robert Richter <robert.richter@amd.com> wrote:
+> On 26.09.10 20:57:06, Huang Ying wrote:
+>> do_nmi_callback related logic is removed, because it is useless, just
+>> adds code complexity.
+>>
+>> unknown_nmi_panic sysctl is reserved to keep kernel ABI unchanged.
+>
+> "unknown_nmi_panic" and "panic_on_unrecovered_nmi" are different. See
+> below and also Documentation/sysctl/kernel.txt.
+>
+>>
+>> Signed-off-by: Huang Ying <ying.huang@intel.com>
+>> ---
+>>  arch/x86/include/asm/nmi.h    |   10 +++++++++-
+>>  arch/x86/kernel/apic/hw_nmi.c |    1 -
+>>  arch/x86/kernel/apic/nmi.c    |   29 +----------------------------
+>>  arch/x86/kernel/traps.c       |   16 ++++++++++------
+>>  4 files changed, 20 insertions(+), 36 deletions(-)
+>>
+>> --- a/arch/x86/include/asm/nmi.h
+>> +++ b/arch/x86/include/asm/nmi.h
+>> @@ -30,9 +30,17 @@ extern void setup_apic_nmi_watchdog(void
+>>  extern void stop_apic_nmi_watchdog(void *);
+>>  extern void disable_timer_nmi_watchdog(void);
+>>  extern void enable_timer_nmi_watchdog(void);
+>> -extern int nmi_watchdog_tick(struct pt_regs *regs, unsigned reason);
+>>  extern void cpu_nmi_set_wd_enabled(void);
+>>
+>> +#if defined(CONFIG_X86_LOCAL_APIC) && !defined(CONFIG_LOCKUP_DETECTOR)
+>> +extern int nmi_watchdog_tick(struct pt_regs *regs);
+>> +#else
+>> +static inline int nmi_watchdog_tick(struct pt_regs *regs)
+>> +{
+>> +     return 0;
+>> +}
+>> +#endif
+>> +
+>>  extern atomic_t nmi_active;
+>>  extern unsigned int nmi_watchdog;
+>>  #define NMI_NONE     0
+>> --- a/arch/x86/kernel/apic/hw_nmi.c
+>> +++ b/arch/x86/kernel/apic/hw_nmi.c
+>> @@ -100,7 +100,6 @@ void acpi_nmi_disable(void) { return; }
+>>  #endif
+>>  atomic_t nmi_active = ATOMIC_INIT(0);           /* oprofile uses this */
+>>  EXPORT_SYMBOL(nmi_active);
+>> -int unknown_nmi_panic;
+>>  void cpu_nmi_set_wd_enabled(void) { return; }
+>>  void stop_apic_nmi_watchdog(void *unused) { return; }
+>>  void setup_apic_nmi_watchdog(void *unused) { return; }
+>> --- a/arch/x86/kernel/apic/nmi.c
+>> +++ b/arch/x86/kernel/apic/nmi.c
+>> @@ -37,7 +37,6 @@
+>>
+>>  #include <asm/mach_traps.h>
+>>
+>> -int unknown_nmi_panic;
+>>  int nmi_watchdog_enabled;
+>>
+>>  /* For reliability, we're prepared to waste bits here. */
+>> @@ -389,7 +388,7 @@ void touch_nmi_watchdog(void)
+>>  EXPORT_SYMBOL(touch_nmi_watchdog);
+>>
+>>  notrace __kprobes int
+>> -nmi_watchdog_tick(struct pt_regs *regs, unsigned reason)
+>> +nmi_watchdog_tick(struct pt_regs *regs)
+>>  {
+>>       /*
+>>        * Since current_thread_info()-> is always on the stack, and we
+>> @@ -483,23 +482,6 @@ static void disable_ioapic_nmi_watchdog(
+>>       on_each_cpu(stop_apic_nmi_watchdog, NULL, 1);
+>>  }
+>>
+>> -static int __init setup_unknown_nmi_panic(char *str)
+>> -{
+>> -     unknown_nmi_panic = 1;
+>> -     return 1;
+>> -}
+>> -__setup("unknown_nmi_panic", setup_unknown_nmi_panic);
+>> -
+>> -static int unknown_nmi_panic_callback(struct pt_regs *regs, int cpu)
+>> -{
+>> -     unsigned char reason = get_nmi_reason();
+>> -     char buf[64];
+>> -
+>> -     sprintf(buf, "NMI received for unknown reason %02x\n", reason);
+>> -     die_nmi(buf, regs, 1); /* Always panic here */
+>> -     return 0;
+>
+> You are dropping this code that is different to panic().
 
-On Mon, Sep 27, 2010 at 07:39:32AM -0400, Trond Myklebust wrote:
-> On Mon, 2010-09-27 at 12:41 +0200, Uwe Kleine-K�nig wrote:
-> > NFS_V4 works fine without RPCSEC_GSS_KRB5 (even without CRYPTO).
-> > This dependency was introduced in
-> > 
-> > 	df486a2 (NFS: Fix the selection of security flavours in Kconfig)
-> > 
-> > to fix a build failure as RPCSEC_GSS_KRB5 was thought to be needed for
-> > NFS_V4.  The fix didn't work completely as NFS_V4 didn't enforce CRYPTO
-> > and so the select on RPCSEC_GSS_KRB5 didn't work in all situations (e.g.
-> > arm/mx1_defconfig).
-> > 
-> > This was rectified by
-> > 
-> > 	827e345 (SUNRPC: Fix the NFSv4 and RPCSEC_GSS Kconfig dependencies)
-> > 
-> > but the magic for RPCSEC_GSS_KRB5 introduced by df486a2 wasn't reverted.
-> > 
-> > Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-> > Signed-off-by: Uwe Kleine-K�nig <u.kleine-koenig@pengutronix.de>
-> > ---
-> > Hello,
-> > 
-> > after Trond sent me the patch that later ended in 827e345702 I suggested
-> > to fold the patch below into it[1], but without reaction and success as I
-> > noticed just now. :-(
-> > 
-> > Best regards
-> > Uwe
-> 
-> That's because you completely fail to justify why should we change the
-> behaviour to suddenly make RPCSEC_GSS_KRB5 optional for NFSv4. That has
-> never been the case before.
-My intention is not to make "RPCSEC_GSS_KRB5 optional for NFSv4".  First
-I saw a build failure and then I wondered if the fix was optimal.  After
-reading the log of 827e345 I thought NFSv4 doesn't depend on
-RPCSEC_GSS_KRB5, still more considering that 827e345 was your fix after
-I suggested to select CRYPTO to enforce RPCSEC_GSS_KRB5 again.
+What is the difference? Is it relevant?
 
-Currently you can have NFSv4 without RPCSEC_GSS_KRB5 because if you
-don't have CRYPTO RPCSEC_GSS_KRB5 is off, too, even if it defaults to
-yes and there's no prompt.  (Selecting would not work, too.)
-And note that RPCSEC_GSS_KRB5 already selects SUNRPC_GSS, so 827e345
-doesn't do anything useful if NFS_V4 really needs RPCSEC_GSS_KRB5.
-
-So either we should really enforce RPCSEC_GSS_KRB5 if NFS_V4 is selected
-(by letting one of these select CRYPTO, see e.g. my first patch, or by
-letting NFS_V4 depend on CRYPTO) or make it optional in all cases (as it
-is already now in some cases).
-
-Best regards
-Uwe
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-K�nig            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Best Regards,
+Huang Ying
