@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932974Ab0I0ND5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 09:03:57 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55926 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932616Ab0I0ND4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 09:03:56 -0400
-From: Andreas Gruenbacher <agruen@suse.de>
-Organization: SUSE Labs
-To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH -V4 07/11] vfs: Make acl_permission_check() work for richacls
-Date: Mon, 27 Sep 2010 15:03:49 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-desktop; KDE/4.3.5; i686; ; )
-Cc: Jeff Layton <jlayton@redhat.com>, sfrench@us.ibm.com, ffilz@us.ibm.com,
-        adilger@sun.com, sandeen@redhat.com, tytso@mit.edu,
-        bfields@citi.umich.edu, linux-fsdevel@vger.kernel.org,
-        nfsv4@linux-nfs.org, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1285332494-12756-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20100924115049.47b1217b@tlielax.poochiereds.net> <m3y6ar9djc.fsf@linux.vnet.ibm.com>
-In-Reply-To: <m3y6ar9djc.fsf@linux.vnet.ibm.com>
+	id S1759189Ab0I0NIn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 09:08:43 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:48836 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754465Ab0I0NIm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 09:08:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=tXHjW8yUfaA9Ak8cPeTdPBzZeYuuBAK7On934Pt5QuSe73XZ9g6OnSref/dOic7Udk
+         WFtA7G7/nEJD1iCDN9AG4dYxueJltTTMV3UWMR0CxPvTop5zUWOkJvuOOIQ3impGOYgQ
+         mp8E2kTIR8Ick/BjIebQOaLvfui3aCwPT89Dg=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009271503.49193.agruen@suse.de>
+In-Reply-To: <AANLkTik0LOQN8kOPjv_VohhO5To6pZDS=M0mw=q0whPp@mail.gmail.com>
+References: <1285529740-28232-1-git-send-email-notasas@gmail.com>
+	<AANLkTinkxokX9BGtxysYOr19xbZR4S8oPRYUAyneutzc@mail.gmail.com>
+	<AANLkTinh+JTwyE4E33QXdnZ8obYA8S0SU71i3kGi=wRT@mail.gmail.com>
+	<AANLkTik0LOQN8kOPjv_VohhO5To6pZDS=M0mw=q0whPp@mail.gmail.com>
+Date: Mon, 27 Sep 2010 16:08:41 +0300
+Message-ID: <AANLkTi=xS_=QytU0Yrh5EEiiL6GyekcO+DezjT-Zpj-7@mail.gmail.com>
+Subject: Re: [PATCH v3] power_supply: Add driver for TWL4030/TPS65950 BCI charger
+From: Grazvydas Ignotas <notasas@gmail.com>
+To: Arun Murthy <arunrmurthy.83@gmail.com>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        Madhusudhan <madhu.cr@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 24 September 2010 20:55:51 Aneesh Kumar K. V wrote:
-> To be POSIX compatible we need to ensure that additional file access
-> control mechanisms may only further restrict the access permissions defined
-> by the file permission bits.
+On Mon, Sep 27, 2010 at 3:35 PM, Arun Murthy <arunrmurthy.83@gmail.com> wrote:
+> On Mon, Sep 27, 2010 at 4:24 PM, Grazvydas Ignotas <notasas@gmail.com> wrote:
+>> On Mon, Sep 27, 2010 at 10:21 AM, Arun Murthy <arunrmurthy.83@gmail.com> wrote:
+>> The problem is that BCI is only active while charging, when it is not
+>> charging most (all?) monitoring registers freeze and no monitoring
+>> happens (BCI registers read frozen values from last charge). So I
+>> don't register battery as it has no useful data to report. I heard it
+>> is possible to use MADC to perform monitoring while not charging, so
+>> battery can be added when MADC driver is merged and corresponding code
+>> is written for this driver.
+>>
+> How do I check the battery voltage?
+> I need to check the battery voltage/current/temp and, if I am not
+> wrong these are obtained from MADC.
+> MADC driver has to be added first and then the battery.
+> With being able to read the basic parameter battery voltage, this
+> driver becomes incomplete.
 
-That's true but I don't think it fully answers Jeff's question.
+Incomplete driver is better than no driver, don't you think? There are
+some boards like pandora or oswald that have additional battery
+monitoring chips (as twl monitoring is pretty crude anyway), those
+boards would have fully functional charging now. Currently mainline
+kernel is not very useful with them simply because the battery runs
+flat.
 
-With POSIX ACLs, the owner file permission bits are always identical to the 
-permissions that the owner is granted through the ACL.  Therefore, when 
-acl_permission_check() is invoked on behalf of the owner, the ACL does not 
-need to be consulted at all.  For non-owners, the ACL always needs to be 
-checked.  This optimization is also true for richacls for the base permissions 
-(read, write, execute), but:
+> How do I get notified if battery voltage is low and needs charging
+> from user space?
 
- * Some permissions are more fine-grained than the file mode permission
-   bits: richacls distinguish between write and append, and between creating
-   directories and non-directories.
+Either additional monitoring chip notifies you (if you are lucky and
+have one), or wait for update of this driver :) There are efforts to
+merge MADC driver [1], but it may take some time.
 
- * Some permissions go beyond what the owner is implicitly allowed or what can
-   be expressed with read, write, execute: in a richacl, a user can be granted
-   the right to delete a specific file even without write access to the
-   containing directory and to take ownership of a file
-
-(* In addition, a richacl can grant the right to chmod and set the acl of a
-   file, and to explicitly set the file timestamps.  These are permissions
-   which the owner is implicitly allowed anyway, so they are not relevant to
-   this change to acl_permission_check().)
-
-To handle those cases correctly too, we always look at the acl for richacls, 
-even for the owner.  (We could still skip the acl check in some, but fewer, 
-cases.)
-
-Thanks,
-Andreas
+[1] http://marc.info/?t=128461535700002&r=1&w=2
