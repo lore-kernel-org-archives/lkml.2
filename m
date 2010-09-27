@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759439Ab0I0N47 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 09:56:59 -0400
-Received: from mail.solarflare.com ([216.237.3.220]:28276 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759386Ab0I0N4t (ORCPT
+	id S1759450Ab0I0N5r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 09:57:47 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:42006 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752978Ab0I0N5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 09:56:49 -0400
-Subject: Re: [PATCH v11 12/17] Add a kconfig entry and make entry for mp
- device.
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: xiaohui.xin@intel.com
-Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, davem@davemloft.net, herbert@gondor.hengli.com.au,
-        jdike@linux.intel.com
-In-Reply-To: <0eed02838e581f2ef2247be8e69bc34cdecce6b2.1285385607.git.xiaohui.xin@intel.com>
-References: <1285388855-27410-1-git-send-email-xiaohui.xin@intel.com>
-	 <0eed02838e581f2ef2247be8e69bc34cdecce6b2.1285385607.git.xiaohui.xin@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Mon, 27 Sep 2010 14:56:45 +0100
-Message-ID: <1285595805.2263.13.camel@achroite.uk.solarflarecom.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Sep 2010 13:56:48.0850 (UTC) FILETIME=[D45B4320:01CB5E4B]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17668.005
-X-TM-AS-Result: No--9.948900-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	Mon, 27 Sep 2010 09:57:46 -0400
+Date: Mon, 27 Sep 2010 14:57:35 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Len Brown <lenb@kernel.org>
+Cc: Linux Power Management List <linux-pm@lists.osdl.org>,
+        linux-pci@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] intel_idle: PCI quirk to prevent Lenovo Ideapad s10-3
+	boot hang
+Message-ID: <20100927135735.GA856@srcf.ucam.org>
+References: <alpine.LFD.2.00.1009242122390.8641@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1009242122390.8641@localhost.localdomain>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is in the wrong position in the sequence.  It needs to be
-applied after mpassthru.c is created, not before.
+On Fri, Sep 24, 2010 at 09:26:31PM -0400, Len Brown wrote:
+> From: Len Brown <len.brown@intel.com>
+> 
+> When the Lenovo Ideapad S10-3 is booted with HT enabled,
+> it hits a boot hang in the intel_idle driver.
+> 
+> This occurs when entering ATM-C4 for the first time,
+> unless BM_STS is first cleared.
+> 
+> acpi_idle doesn't see this because it first checks
+> and clears BM_STS, but it would hit the same hang
+> if that check were disabled.
 
-Ben.
+If there's hardware that expects BM_STS to be cleared, and if we've 
+previously always cleared BM_STS, shouldn't intel_idle be doing the same 
+thing?
 
 -- 
-Ben Hutchings, Senior Software Engineer, Solarflare Communications
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+Matthew Garrett | mjg59@srcf.ucam.org
