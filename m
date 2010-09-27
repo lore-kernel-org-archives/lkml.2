@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760416Ab0I0Wvt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 18:51:49 -0400
-Received: from nm16.bullet.mail.sp2.yahoo.com ([98.139.91.86]:37713 "HELO
-	nm16.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S933301Ab0I0Wvp (ORCPT
+	id S1760037Ab0I0Wv6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 18:51:58 -0400
+Received: from smtp102.sbc.mail.re3.yahoo.com ([66.196.96.85]:36077 "HELO
+	smtp102.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1760432Ab0I0Wvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 18:51:45 -0400
-X-Yahoo-Newman-Id: 331133.71526.bm@omp1042.mail.ne1.yahoo.com
+	Mon, 27 Sep 2010 18:51:55 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: qAI4YnYVM1m97YuqVLqctZi6BMpRjM71vapLDAirqY3EU0F
- uXm6jdAfKxZ4GCZvfVGo5pjw2rsADpwhECCBAOfQCCzV.xp4bd4EY8n1dIVI
- mSD8GobiEoZ_WlTtAmsIUkKxZsOEynQR7OmvGnXm3x7mb2JdBvWTWlH91jlB
- 8YZxt0340AT5RKhr3kSpNddIDvyNBivQdfy1SSthqkeYaxbAdAxAVwyz9um6
- 4H0cgbn_DqfqGD1TtzxwPpkoCtVDn3CDxokesDTbdZyndHR4KYJoUF_oTP.w
- EvEB5SnGvj5WNR4WMSaDIlsY2ds05BTtG2_YHUvBarT.m7rxoQazTsGPQmBe
- unk8j5flWZ89idZ8_4g--
+X-YMail-OSG: tFdDm0EVM1lvagM_zUIzUwIWl0bPku7OdKtNRFA654.QWkg
+ L8_PVaj8Yaqykyq9xEaviGl_2E1sUmVwhSE.PFMxpqnUYl93Fku0N4FKUxg1
+ rZnNkHxZW9o4Qe8Fai.K.DCGyJOCrfUPvCFQ7QpJowXkQZ1E4NY2sjIR_ZuI
+ NJvhJA84dTI1tRyoMZvlOeFeGqq3W5SXcjMjs0bE8v8v3RvaspEgdmGVpNSR
+ FGUeZAWaraKCGw4nvFSETyor94.N_l5hP3tYJe169kEzPZV37D6Sv0q2Bdm_
+ Grtnc8nfMmXxlZ7P1XTLDXNKt7r7qXjBaC5mZLDPOUfpDSnzLAjBwFTzhuim
+ dyxxRFwg5wNhDuNoYs3P0btcRNZtVUOmndE3hMS2aIUGcgsxMJf5nCPTw0cJ
+ qLdZ4QgKBJxNAX24o0_lwUSjT9CzE_zxoooMv220yaScQa.H3ZKSTkA4eULH
+ e7HzYOMOnfB5hh8I-
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -30,9 +31,9 @@ Cc: Christoph Hellwig <hch@lst.de>,
         Boaz Harrosh <bharrosh@panasas.com>,
         Richard Sharpe <realrichardsharpe@gmail.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 2/3] tcm/iblock: Add UNMAP / Block DISCARD support
-Date: Mon, 27 Sep 2010 15:51:39 -0700
-Message-Id: <1285627899-6471-1-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 3/3] tcm/fileio: Add UNMAP / Block DISCARD support
+Date: Mon, 27 Sep 2010 15:51:49 -0700
+Message-Id: <1285627910-6492-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -40,57 +41,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch adds UNMAP emulation support using Block layer DISCARD in iblock_emulate_scsi_cdb()
+This patch adds UNMAP emulation support using Block layer DISCARD in fd_emulate_scsi_cdb()
 -> transport_generic_unmap().  This includes the use of blk_queue_discard() in
-iblock_create_virtdevice() to determine when to set DEV_ATTRIB(dev)->emulate_tpe=1 to
+fd_create_virtdevice() to determine when to set DEV_ATTRIB(dev)->emulate_tpe=1 to
 signal to TCM Core to perform the necessary control CDB emulation for TPE=1 / UNMAP.
+
+Note this patch igrab() + iput() when accessing struct block_device via
+I_BDEV(file->f_mapping->host) that is required for transport_generic_unmap()
+within fd_emulate_scsi_cdb().
+
+Also note that when (S_ISBLK(inode->i_mode) is NULL, the TPE=1 and UNMAP emulation
+are disabled for non BD struct file I/O.
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/target_core_iblock.c |   19 ++++++++++++++++++-
- 1 files changed, 18 insertions(+), 1 deletions(-)
+ drivers/target/target_core_file.c |   53 ++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 52 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
-index 1b148f5..089f353 100644
---- a/drivers/target/target_core_iblock.c
-+++ b/drivers/target/target_core_iblock.c
-@@ -221,6 +221,16 @@ static struct se_device *iblock_create_virtdevice(
- 	 */
- 	if (__iblock_do_sync_cache(dev) == 0)
- 		ib_dev->ibd_flags |= IBDF_BDEV_ISSUE_FLUSH;
+diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
+index 93d3f63..3b91556 100644
+--- a/drivers/target/target_core_file.c
++++ b/drivers/target/target_core_file.c
+@@ -235,6 +235,17 @@ static struct se_device *fd_create_virtdevice(
+ 
+ 	fd_dev->fd_dev_id = fd_host->fd_host_dev_id_count++;
+ 	fd_dev->fd_queue_depth = dev->queue_depth;
 +	/*
-+	 * Check if the underlying struct block_device request_queue supports
-+	 * the QUEUE_FLAG_DISCARD bit for UNMAP/WRITE_SAME in SCSI + TRIM
-+	 * in ATA and we need to set TPE=1
++	 * Check for QUEUE_FLAG_DISCARD and enable TCM TPE emulation
++	 * if present for struct block_device backend
 +	 */
-+	if (blk_queue_discard(bdev_get_queue(bd))) {
-+		DEV_ATTRIB(dev)->emulate_tpe = 1;
-+		printk(KERN_INFO "IBLOCK: Enabling BLOCK Discard"
++	if (S_ISBLK(inode->i_mode)) {
++		if (blk_queue_discard(bdev_get_queue(inode->i_bdev))) {
++			DEV_ATTRIB(dev)->emulate_tpe = 1;
++			printk(KERN_INFO "FILEIO: Enabling BLOCK Discard"
 +				" and TPE=1 emulation\n");
++		}
 +	}
  
- 	return dev;
- 
-@@ -446,8 +456,10 @@ static int iblock_emulate_read_cap16(struct se_task *task)
- 
- static int iblock_emulate_scsi_cdb(struct se_task *task)
+ 	printk(KERN_INFO "CORE_FILE[%u] - Added TCM FILEIO Device ID: %u at %s,"
+ 		" %llu total bytes\n", fd_host->fd_host_id, fd_dev->fd_dev_id,
+@@ -388,9 +399,13 @@ static int fd_emulate_read_cap16(struct se_task *task)
+  */
+ static int fd_emulate_scsi_cdb(struct se_task *task)
  {
 -	int ret;
-+	struct iblock_dev *ibd = (struct iblock_dev *) task->se_dev->dev_ptr;
-+	struct block_device *bd = ibd->ibd_bd;
  	struct se_cmd *cmd = TASK_CMD(task);
++	struct fd_dev *fd_dev = (struct fd_dev *) task->se_dev->dev_ptr;
+ 	struct fd_request *fd_req = (struct fd_request *) task->transport_req;
++	struct file *f = fd_dev->fd_file;
++	struct inode *i;
++	struct block_device *bd;
 +	int ret;
  
- 	switch (T_TASK(cmd)->t_task_cdb[0]) {
+ 	switch (fd_req->fd_scsi_cdb[0]) {
  	case INQUIRY:
-@@ -490,6 +502,11 @@ static int iblock_emulate_scsi_cdb(struct se_task *task)
+@@ -433,6 +448,42 @@ static int fd_emulate_scsi_cdb(struct se_task *task)
  		if (ret < 0)
  			return ret;
  		break;
 +	case UNMAP:
++		i = igrab(f->f_mapping->host);
++		if (!(i)) {
++			printk(KERN_ERR "FILEIO: Unable to locate inode for"
++					" backend for UNMAP\n");
++			return PYX_TRANSPORT_LU_COMM_FAILURE;
++		}
++		/*
++		 * Currently for struct file w/o a struct block_device
++		 * backend we return a success..
++		 */	
++		if (!(S_ISBLK(i->i_mode))) {
++			printk(KERN_WARNING "Ignoring UNMAP for non BD"
++					" backend for struct file\n");
++			iput(i);
++			return PYX_TRANSPORT_LU_COMM_FAILURE;
++		}
++		bd = I_BDEV(f->f_mapping->host);
++		if (!(bd)) {
++			printk(KERN_ERR "FILEIO: Unable to locate struct"
++					" block_device for UNMAP\n");
++			iput(i);
++			return PYX_TRANSPORT_LU_COMM_FAILURE;
++		}
++		/*
++		 * Now call the transport_generic_unmap() -> blkdev_issue_discard()
++		 * wrapper to translate SCSI UNMAP into Linux/BLOCK discards on
++		 * LBA+Range descriptors in the UNMAP write paylaod.
++		 */
 +		ret = transport_generic_unmap(cmd, bd);
-+		if (ret < 0)
++		if (ret < 0) {
++			iput(i);
 +			return ret;
++		}
++		iput(i);
 +		break;
  	case ALLOW_MEDIUM_REMOVAL:
  	case ERASE:
