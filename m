@@ -1,106 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932907Ab0I0IjY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 04:39:24 -0400
-Received: from mga01.intel.com ([192.55.52.88]:4270 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932844Ab0I0IjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 04:39:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,242,1283756400"; 
-   d="scan'208";a="841217077"
-Subject: Re: [PATCH -v2 3/7] x86, NMI, Rename memory parity error to PCI
- SERR error
-From: Huang Ying <ying.huang@intel.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-In-Reply-To: <20100927080106.GA32222@erda.amd.com>
-References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
-	 <1285549026-5008-3-git-send-email-ying.huang@intel.com>
-	 <20100927080106.GA32222@erda.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 27 Sep 2010 16:39:20 +0800
-Message-ID: <1285576760.20791.70.camel@yhuang-dev>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1758920Ab0I0It4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 04:49:56 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:57627 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753079Ab0I0Itz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 04:49:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=ZuSOnwT6+zt5lF7Nvif85v0HE7Yo+xxPiz9ZqWebciu7Mh6BhI87iIeqXTVPeD/1ML
+         Vd2+I/701bJYjFyotbN5MEHSnMzaKu6p369nEhcbiMoeR5eAgKSwHWOad1BELBrXa1iq
+         VJnodINJB6DcHeY/kGsm4twDL6d4PY77pD7VI=
+Date: Mon, 27 Sep 2010 16:54:25 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Hu Tao <hutao@cn.fujitsu.com>
+Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Update num_symtab, symtab and strtab right after setup
+ of core_num_syms, core_symtab and core_strtab.
+Message-ID: <20100927085425.GE5785@cr0.nay.redhat.com>
+References: <20100927073028.GA1040@localhost.localdomain>
+ <20100927080954.GC5785@cr0.nay.redhat.com>
+ <20100927082247.GA2463@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100927082247.GA2463@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-27 at 16:01 +0800, Robert Richter wrote:
-> On 26.09.10 20:57:02, Huang Ying wrote:
-> > memory parity error is only valid for IBM PC-AT, newer machine use 7
-> > bit (0x80) of 0x61 port for PCI SERR. While memory error is usually
-> > reported via MCE. So corresponding function name and kernel log string
-> > is changed.
-> > 
-> > But on some machines, PCI SERR line is still used to report memory
-> > errors. This is used by EDAC, so corresponding EDAC call is reserved.
-> > 
-> > 
-> > v2:
-> > 
-> > - EDAC call in pci_serr_error is reserved.
-> > 
-> > Signed-off-by: Huang Ying <ying.huang@intel.com>
-> > ---
-> >  arch/x86/include/asm/mach_traps.h |    6 +++---
-> >  arch/x86/kernel/traps.c           |   21 ++++++++++-----------
-> >  2 files changed, 13 insertions(+), 14 deletions(-)
-> > 
-> > --- a/arch/x86/include/asm/mach_traps.h
-> > +++ b/arch/x86/include/asm/mach_traps.h
-> > @@ -9,11 +9,11 @@
-> >  
-> >  #define NMI_REASON_PORT		0x61
-> >  
-> > -#define NMI_REASON_MEMPAR	0x80
-> > +#define NMI_REASON_SERR		0x80
-> >  #define NMI_REASON_IOCHK	0x40
-> > -#define NMI_REASON_MASK		(NMI_REASON_MEMPAR | NMI_REASON_IOCHK)
-> > +#define NMI_REASON_MASK		(NMI_REASON_SERR | NMI_REASON_IOCHK)
-> >  
-> > -#define NMI_REASON_CLEAR_MEMPAR	0x04
-> > +#define NMI_REASON_CLEAR_SERR	0x04
-> 
-> I already commented on this, patch #1 and #3 are basically the same in
-> most parts which should be merged. What remains then in this patch is
-> the modified printk() and the comment. Both could be added to #1 too
-> which is then some sort of code cleanup patch.
+On Mon, Sep 27, 2010 at 04:22:47PM +0800, Hu Tao wrote:
+>On Mon, Sep 27, 2010 at 04:09:54PM +0800, Américo Wang wrote:
+>> On Mon, Sep 27, 2010 at 03:30:28PM +0800, Hu Tao wrote:
+>> >Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
+>> 
+>> 
+>> Changelog is empty.
+>> What bug did you observe?
+>
+>symtab and strtab will point to vfreed memory after free_copy(&info)
+>near end of load_module().
+>
 
-Don thinks it is Ok to keep 2 patches.
+I think you must mean the error path in load_module(), yeah, probably.
 
-> >  #define NMI_REASON_CLEAR_IOCHK	0x08
-> >  #define NMI_REASON_CLEAR_MASK	0x0f
-> >  
-> > --- a/arch/x86/kernel/traps.c
-> > +++ b/arch/x86/kernel/traps.c
-> > @@ -301,15 +301,14 @@ gp_in_kernel:
-> >  }
-> >  
-> >  static notrace __kprobes void
-> > -mem_parity_error(unsigned char reason, struct pt_regs *regs)
-> > +pci_serr_error(unsigned char reason, struct pt_regs *regs)
-> >  {
-> > -	printk(KERN_EMERG
-> > -		"Uhhuh. NMI received for unknown reason %02x on CPU %d.\n",
-> > -			reason, smp_processor_id());
-> > -
-> > -	printk(KERN_EMERG
-> > -		"You have some hardware problem, likely on the PCI bus.\n");
-> > +	printk(KERN_EMERG "NMI: PCI system error (SERR).\n");
-> 
-> You should keep reporting the cpu id to identify the affected node and
-> also the reason.
+But you need to check if this patch misses other thing, like
+the other functions which are called after add_kallsyms() inside load_module().
+According to my eyes, this seems fine (at least on x86), so
 
-Ok. I will add CPU ID in message. Because we know the reason, I don't
-think we need the reason in message.
+Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
 
-Best Regards,
-Huang Ying
+>> 
+>> 
+>> This patch is not correct, symbols that are not core symbols will be
+>> dropped right after this piece of code. So NACK.
+>
+>There is the reason why we should update num_symtab, symtab and strtab
+>before non-core-symbols are dropped.
 
+init section is dropped *after* these value are update, which is correct.
 
+Again, you need to describe what you are trying to fix in your changelog.
+Please resend it with a proper changelog.
+
+Thanks.
