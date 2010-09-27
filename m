@@ -1,31 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757239Ab0I0X2n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 19:28:43 -0400
-Received: from aa011msr.fastwebnet.it ([85.18.95.71]:54028 "EHLO
-	aa011msr.fastwebnet.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754550Ab0I0X2m convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 19:28:42 -0400
-Message-ID: <22848151.1495791285629598766.JavaMail.root@pr002msr>
-Date: Tue, 28 Sep 2010 01:19:58 +0200 (CEST)
-From: GOOGLE ANNIVERSARY PROMO <mary.82@fastwebnet.it>
-Reply-To: mrgrahamben101@gmail.com
-Subject: =?UTF-8?Q?You_won_=C2=A3500,000.00_GBP_in_Google_promotion?=
+	id S1759086Ab0I0X3t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 19:29:49 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:55344 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756459Ab0I0X3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 19:29:48 -0400
+Date: Mon, 27 Sep 2010 16:27:16 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Pekka Enberg <penberg@kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        Fenghua Yu <fenghua.yu@intel.com>, Jean Delvare <khali@linux-fr.org>
+Subject: Re: [PATCH v2] hwmon (coretemp): Fix build breakage if SMP is
+ undefined
+Message-ID: <20100927232716.GB4744@ericsson.com>
+References: <1285588796-20956-1-git-send-email-guenter.roeck@ericsson.com>
+ <20100927125946.GB2862@elte.hu>
+ <AANLkTinPHP8WhoAZQqcmhotEfFa6=mG_Acy+xCBQ0_5+@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: 82.128.17.130
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <AANLkTinPHP8WhoAZQqcmhotEfFa6=mG_Acy+xCBQ0_5+@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You won £500,000.00 GBP in Google promotion.Ticket
-number:00869575733664 ,CGPN:7-22-71-00-66-
-12,Serial,numbers:BTD/ 8070447706/06,Lucky
-numbers:12-12-23-35-40-41(12)
-Contact your claims agent for more information
-Mr Graham Benfield
-Email  mrgrahamben101@gmail.com
+On Mon, Sep 27, 2010 at 09:02:57AM -0400, Pekka Enberg wrote:
+> On Mon, Sep 27, 2010 at 3:59 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > * Guenter Roeck <guenter.roeck@ericsson.com> wrote:
+> >
+> >> +#ifdef CONFIG_SMP
+> >> +#endif
+> >> +#ifdef CONFIG_SMP
+> >> +#endif
+> >
+> > Hm, this tickles my uglo-meter. Is there no cleaner way, preferably one
+> > that doesnt involve preprocessor directives?
+> 
+> Implement cpu_sibling_mask() on UP so that the loop goes away?
 
+So what is the take ? Looks like Linus won't accept my patch without someone 
+else signing off on it. If the uglo-meter prevents it from being accepted,
+I'll be happy to submit the SMP cleanup patch instead. As I mentioned
+before, I would prefer that to go into -next.
+
+Guenter
