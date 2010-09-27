@@ -1,168 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932621Ab0I0Jdz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 05:33:55 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:51213 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780Ab0I0Jdy (ORCPT
+	id S932840Ab0I0JeR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 05:34:17 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57389 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932633Ab0I0JeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 05:33:54 -0400
-Date: Mon, 27 Sep 2010 15:03:41 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 03/10] taskstats: Split fill_pid function
-Message-ID: <20100927093341.GH11780@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <1285249681.1837.28.camel@holzheu-laptop>
- <1285250467.1837.80.camel@holzheu-laptop>
+	Mon, 27 Sep 2010 05:34:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=QM4j4FBpAGXXZU1A8woiKFN29790jIUfNXkJDK//652iDaXHtnP2XQwC5veem/L6hs
+         p++sTVX2vVu0A0x/84Ma1/JnIyaa5WpH7W+fHXQ2Bh+xM9fu06ouLzA+BGdBUlDoXQbY
+         8f2drnKqQNPMA7uH6bVireUMwLKKzcx3mbrwY=
+Message-ID: <4CA06514.1080704@gmail.com>
+Date: Mon, 27 Sep 2010 11:34:12 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.9) Gecko/20100914 SUSE/3.1.4 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1285250467.1837.80.camel@holzheu-laptop>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: linux-kernel@vger.kernel.org
+CC: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
+        chris@chris-wilson.co.uk, dri-devel@lists.freedesktop.org
+Subject: i915 flickering [was: mmotm 2010-09-22-16-11 uploaded]
+References: <201009222343.o8MNh9Mp023931@imap1.linux-foundation.org>
+In-Reply-To: <201009222343.o8MNh9Mp023931@imap1.linux-foundation.org>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Michael Holzheu <holzheu@linux.vnet.ibm.com> [2010-09-23 16:01:07]:
+On 09/23/2010 01:12 AM, akpm@linux-foundation.org wrote:
+> The mm-of-the-moment snapshot 2010-09-22-16-11 has been uploaded to
 
-> Subject: [PATCH] taskstats: Split fill_pid function
-> 
-> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> 
-> Separate the finding of a task_struct by pid or tgid from filling the taskstats
-> data. This makes the code more readable.
-> 
-> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> ---
->  kernel/taskstats.c |   50 +++++++++++++++++++++-----------------------------
->  1 file changed, 21 insertions(+), 29 deletions(-)
-> 
-> --- a/kernel/taskstats.c
-> +++ b/kernel/taskstats.c
-> @@ -175,22 +175,8 @@ static void send_cpu_listeners(struct sk
->  	up_write(&listeners->sem);
->  }
-> 
-> -static int fill_pid(pid_t pid, struct task_struct *tsk,
-> -		struct taskstats *stats)
-> +static void fill_stats(struct task_struct *tsk, struct taskstats *stats)
->  {
-> -	int rc = 0;
-> -
-> -	if (!tsk) {
-> -		rcu_read_lock();
-> -		tsk = find_task_by_vpid(pid);
-> -		if (tsk)
-> -			get_task_struct(tsk);
-> -		rcu_read_unlock();
-> -		if (!tsk)
-> -			return -ESRCH;
-> -	} else
-> -		get_task_struct(tsk);
-> -
->  	memset(stats, 0, sizeof(*stats));
->  	/*
->  	 * Each accounting subsystem adds calls to its functions to
-> @@ -209,17 +195,27 @@ static int fill_pid(pid_t pid, struct ta
-> 
->  	/* fill in extended acct fields */
->  	xacct_add_tsk(stats, tsk);
-> +}
-> 
-> -	/* Define err: label here if needed */
-> -	put_task_struct(tsk);
-> -	return rc;
-> +static int fill_stats_for_pid(pid_t pid, struct taskstats *stats)
-> +{
-> +	struct task_struct *tsk;
-> 
-> +	rcu_read_lock();
-> +	tsk = find_task_by_vpid(pid);
-> +	if (tsk)
-> +		get_task_struct(tsk);
-> +	rcu_read_unlock();
-> +	if (!tsk)
-> +		return -ESRCH;
-> +	fill_stats(tsk, stats);
-> +	put_task_struct(tsk);
-> +	return 0;
->  }
-> 
-> -static int fill_tgid(pid_t tgid, struct task_struct *first,
-> -		struct taskstats *stats)
-> +static int fill_stats_for_tgid(pid_t tgid, struct taskstats *stats)
->  {
-> -	struct task_struct *tsk;
-> +	struct task_struct *tsk, *first;
->  	unsigned long flags;
->  	int rc = -ESRCH;
-> 
-> @@ -228,8 +224,7 @@ static int fill_tgid(pid_t tgid, struct 
->  	 * leaders who are already counted with the dead tasks
->  	 */
->  	rcu_read_lock();
-> -	if (!first)
-> -		first = find_task_by_vpid(tgid);
-> +	first = find_task_by_vpid(tgid);
-> 
->  	if (!first || !lock_task_sighand(first, &flags))
->  		goto out;
-> @@ -268,7 +263,6 @@ out:
->  	return rc;
->  }
-> 
-> -
->  static void fill_tgid_exit(struct task_struct *tsk)
->  {
->  	unsigned long flags;
-> @@ -477,7 +471,7 @@ static int cmd_attr_pid(struct genl_info
->  	if (!stats)
->  		goto err;
-> 
-> -	rc = fill_pid(pid, NULL, stats);
-> +	rc = fill_stats_for_pid(pid, stats);
->  	if (rc < 0)
->  		goto err;
->  	return send_reply(rep_skb, info);
-> @@ -507,7 +501,7 @@ static int cmd_attr_tgid(struct genl_inf
->  	if (!stats)
->  		goto err;
-> 
-> -	rc = fill_tgid(tgid, NULL, stats);
-> +	rc = fill_stats_for_tgid(tgid, stats);
->  	if (rc < 0)
->  		goto err;
->  	return send_reply(rep_skb, info);
-> @@ -593,9 +587,7 @@ void taskstats_exit(struct task_struct *
->  	if (!stats)
->  		goto err;
-> 
-> -	rc = fill_pid(-1, tsk, stats);
-> -	if (rc < 0)
-> -		goto err;
-> +	fill_stats(tsk, stats);
-> 
->  	/*
->  	 * Doesn't matter if tsk is the leader or the last group member leaving
-> 
->
+Hi, it introduced a regression against 2010-09-15-16-21 in i915. The
+screen, especially in thunderbird and firefox screen elements, flickers.
+Is this known/is there a patch for this already?
 
- 
-Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
- 
+00:02.0 VGA compatible controller: Intel Corporation 82G33/G31 Express
+Integrated Graphics Controller (rev 02) (prog-if 00 [VGA controller])
+        Subsystem: Intel Corporation 82G33/G31 Express Integrated
+Graphics Controller
+        Flags: bus master, fast devsel, latency 0, IRQ 42
+        Memory at feb80000 (32-bit, non-prefetchable) [size=512K]
+        I/O ports at ec00 [size=8]
+        Memory at d0000000 (32-bit, prefetchable) [size=256M]
+        Memory at fea00000 (32-bit, non-prefetchable) [size=1M]
+        Expansion ROM at <unassigned> [disabled]
+        Capabilities: [90] MSI: Enable+ Count=1/1 Maskable- 64bit-
+        Capabilities: [d0] Power Management version 2
+        Kernel driver in use: i915
 
+thanks,
 -- 
-	Three Cheers,
-	Balbir
+js
