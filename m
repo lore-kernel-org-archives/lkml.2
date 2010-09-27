@@ -1,120 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933400Ab0I0TBX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 15:01:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39146 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933375Ab0I0TBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 15:01:19 -0400
-Date: Mon, 27 Sep 2010 21:00:24 +0200
-From: Jan Kara <jack@suse.cz>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: vgoyal@redhat.com, jmoyer@redhat.com, jaxboe@fusionio.com,
-        Lennart Poettering <lennart@poettering.net>
-Subject: Request starvation with CFQ
-Message-ID: <20100927190024.GF3610@quack.suse.cz>
+	id S933417Ab0I0TBc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 15:01:32 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:33542 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933403Ab0I0TB3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 15:01:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [46.116.86.31]
+In-Reply-To: <20100927184445.GF11086@tuxdriver.com>
+References: <20100927154408.55a28127.sfr@canb.auug.org.au> <AANLkTinHk82jM7Ztwb1aB1xb-hSLeg5Hb07mhYCaeszi@mail.gmail.com>
+ <20100927180412.GD11086@tuxdriver.com> <20100927.111818.149846920.davem@davemloft.net>
+ <20100927182546.GE11086@tuxdriver.com> <AANLkTi=YHhRWFix1QDuEnRW7r_UaNtp6KSL9uLdUzdqM@mail.gmail.com>
+ <20100927184445.GF11086@tuxdriver.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Mon, 27 Sep 2010 21:01:08 +0200
+Message-ID: <AANLkTi=2KqQb+gvuigxb+-tSzawx7=q3HtnkkE6t_4XF@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the final tree (net tree related)
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: David Miller <davem@davemloft.net>, sfr@canb.auug.org.au,
+        netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi,
+On Mon, Sep 27, 2010 at 8:44 PM, John W. Linville
+<linville@tuxdriver.com> wrote:
+> On Mon, Sep 27, 2010 at 08:38:50PM +0200, Ohad Ben-Cohen wrote:
+>> On Mon, Sep 27, 2010 at 8:25 PM, John W. Linville
+>> <linville@tuxdriver.com> wrote:
+>> >> BTW, if this fuglet going to work if the driver is built modular?
+>> >>
+>> >> The idea of this things seems to be to allow arch platform code to call
+>> >> into it to set things.  Such calls from arch platform code are going
+>> >> to be "obj-y"
+>> >>
+>> >> So if this is built into the modular driver, I can't see how it
+>> >> can work.
+>> >
+>> > Dave is right -- these Kconfig dependencies (or lack thereof) seem
+>> > to be wrong.
+>>
+>> This is why I had to put it in drivers/net/wireless/Makefile (in both
+>> the original patch and in the fix I sent earlier) and not in
+>> drivers/net/wireless/wl12xx/Makefile (as it was in the fix that Dave
+>> was referring to).
+>>
+>> This way it works with a modular driver.
+>
+> That doesn't seem very helpful if someone selects
+>
+> CONFIG_MACH_OMAP_ZOOM2=y
+> CONFIG_WL12XX_PLATFORM_DATA=n
+>
 
-  when helping Lennart with answering some questions, I've spotted the
-following problem (at least I think it's a problem ;): The thing is that
-CFQ schedules how requests should be dispatched but does not in any
-significant way limit to whom requests get allocated. Given we have a
-quite limited pool of available requests it can happen that processes
-will be actually starved not waiting for disk but waiting for requests
-getting allocated and any IO scheduling priorities or classes will not
-have serious effect.
-  A pathological example I've tried below:
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/stat.h>
+CONFIG_WL12XX_PLATFORM_DATA is selected automatically if the relevant
+driver is selected (this is independent of the underlying arch/board):
 
-int main(void)
-{
-  int fd = open("/dev/vdb", O_RDONLY);
-  int loop = 0;
+config WL12XX_PLATFORM_DATA
+        bool
+        depends on WL1271_SDIO != n
+        default y
 
-  if (fd < 0) {
-    perror("open");
-    exit(1);
-  }
-  while (1) {
-    if (loop % 100 == 0)
-      printf("Loop %d\n", loop);
-    posix_fadvise(fd, (random() * 4096) % 1000204886016ULL, 4096, POSIX_FADV_WILLNEED);
-    loop++;
-  }
-}
+All we have to make sure is that it will be compiled built-in. If we
+use drivers/net/wireless/wl12xx/Makefile, and we build a modular
+wl1271_sdio, it won't (despite it being selected as y).
 
-  This program will just push as many requests as possible to the block
-layer and does not wait for any IO. Thus it will basically ignore any
-decisions about when requests get dispatched. BTW, don't get distracted
-by the fact that the program operates directly on the device, that is just
-for simplicity. Large enough file would work the same way.
-  Even though I run this program with ionice -c 3, I still see that any
-other IO to the device is basically stalled. When I look at the block
-traces, I indeed see that what happens is that the above program submits
-requests until there are no more available:
-...
-254,16   2      802     1.411285520  2563  Q   R 696733184 + 8 [random_read]
-254,16   2      803     1.411314880  2563  G   R 696733184 + 8 [random_read]
-254,16   2      804     1.411338220  2563  I   R 696733184 + 8 [random_read]
-254,16   2      805     1.411415040  2563  Q   R 1006864600 + 8 [random_read]
-254,16   2      806     1.411441620  2563  S   R 1006864600 + 8 [random_read]
+That's why I put it in drivers/net/wireless/Makefile.
 
-during and after that IO happens:
-254,16   3       31     1.417898030     0  C   R 345134640 + 8 [0]
-254,16   3       32     1.418171910     0  D   R 1524771568 + 8 [swapper]
-254,16   0       33     1.432317140     0  C   R 1524771568 + 8 [0]
-254,16   0       34     1.432597000     0  D   R 1077270768 + 8 [swapper]
-...
-254,16   0       35     1.503238050     0  C   R 33633744 + 8 [0]
-254,16   0       36     1.503558290     0  D   R 22178968 + 8 [swapper]
+In the original patch I put the code itself in
+drivers/net/wireless/wl12xx to make it look nicer, but as Stephen
+reported that seem to break building with a separate object folder...
 
-and the other program comes with IO and gets stalled:
-254,16   1       39     1.508843180  2564  A  RM 12346 + 8 <- (254,17) 12312
-254,16   1       40     1.508876520  2564  Q  RM 12346 + 8 [ls]
-254,16   1       41     1.508905140  2564  S  RM 12346 + 8 [ls]
-...
-IO is still running:
-254,16   2      807     1.512081560     0  C   R 22178968 + 8 [0]
-254,16   2      808     1.512365010     0  D   R 475025688 + 8 [swapper]
-254,16   3       35     1.522113270     0  C   R 475025688 + 8 [0]
-254,16   3       36     1.522390779     0  D   R 697010128 + 8 [swapper]
-254,16   4       33     1.531443760     0  C   R 697010128 + 8 [0]
-...
-random reader even gets to submitting more requests:
-254,16   2      815     1.785734950  2563  G   R 1006864600 + 8 [random_read]
-254,16   2      816     1.785752290  2563  I   R 1006864600 + 8 [random_read]
-254,16   2      817     1.785825880  2563  Q   R 832683552 + 8 [random_read]
-254,16   2      818     1.785850890  2563  G   R 832683552 + 8 [random_read]
-254,16   2      819     1.785874610  2563  I   R 832683552 + 8 [random_read]
-...
-and finally our program gets to adding it's request as well:
-254,16   1       60     2.160884040  2564  G  RM 12346 + 8 [ls]
-254,16   1       61     2.160914700  2564  I   R 12346 + 8 [ls]
-254,16   1       62     2.161142170  2564  D   R 12346 + 8 [ls]
-254,16   1       63     2.161233670  2564  U   N [ls] 128
+So the fix I sent just moves that builtin code to
+drivers/net/wireless. This maintains the builtin property even if the
+driver is modular, and fixes the issue reported by Stephen.
 
-  I can provide the full traces for download if someone is interested
-in some part I didn't include here. The kernel is 2.6.36-rc4.
-  Now I agree that the above program is about as bad as it can get but
-Lennart would like to implement readahead during boot on background and
-I believe that could starve other IO in a similar way. So any idea how
-to solve this? To me it seems as if we also needed to somehow limit the
-number of allocated requests per cfqq but OTOH we have to be really careful
-to not harm common workloads where we benefit from having lots of requests
-queued...
+Please tell me if you have any thoughts/suggestions.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Thanks,
+Ohad.
+
+> or am I missing something?
+>
+> John
+> --
+> John W. Linville                Someday the world will need a hero, and you
+> linville@tuxdriver.com                  might be all we have.  Be ready.
+>
