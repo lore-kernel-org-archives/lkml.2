@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759565Ab0I0RJZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 13:09:25 -0400
-Received: from cantor.suse.de ([195.135.220.2]:36715 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757031Ab0I0RJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 13:09:24 -0400
-Date: Mon, 27 Sep 2010 19:08:30 +0200
-From: Jan Kara <jack@suse.cz>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Jiri Kosina <trivial@kernel.org>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ext2: fix comment on ext2_try_to_allocate()
-Message-ID: <20100927170830.GD3610@quack.suse.cz>
-References: <1285482660-9937-1-git-send-email-namhyung@gmail.com>
+	id S1759843Ab0I0RKm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 13:10:42 -0400
+Received: from shakespeare.ccsl.carleton.ca ([134.117.225.11]:56148 "EHLO
+	shakespeare.ccsl.carleton.ca" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757041Ab0I0RKl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 13:10:41 -0400
+Date: Mon, 27 Sep 2010 13:10:10 -0400
+From: Glenn Wurster <gwurster@scs.carleton.ca>
+To: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH linux-2.6 v2] IPv6: Temp addresses are immediately deleted.
+Message-ID: <20100927171010.GB7106@adams.ccsl.carleton.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1285482660-9937-1-git-send-email-namhyung@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-TUID: c0de4ddd34f07db9
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 26-09-10 15:31:00, Namhyung Kim wrote:
-> @handle doesn't exist in ext2. Remove it.
-> Also, fit comment header into kernel-doc format.
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-  Thanks. I've merged it in my tree.
+There is a bug in the interaction between ipv6_create_tempaddr and 
+addrconf_verify.  Because ipv6_create_tempaddr uses the cstamp and tstamp 
+from the public address in creating a private address, if we have not 
+received a router advertisement in a while, tstamp + temp_valid_lft might be 
+< now.  If this happens, the new address is created inside 
+ipv6_create_tempaddr, then the loop within addrconf_verify starts again and 
+the address is immediately deleted.  We are left with no temporary addresses 
+on the interface, and no more will be created until the public IP address is 
+updated.  To avoid this, set the expiry time to be the minimum of the time 
+left on the public address or the config option PLUS the current age of the 
+public interface.
 
-							Honza
-> ---
->  fs/ext2/balloc.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/ext2/balloc.c b/fs/ext2/balloc.c
-> index c6c684b..0d06f4e 100644
-> --- a/fs/ext2/balloc.c
-> +++ b/fs/ext2/balloc.c
-> @@ -646,10 +646,9 @@ find_next_usable_block(int start, struct buffer_head *bh, int maxblocks)
->  	return here;
->  }
->  
-> -/*
-> +/**
->   * ext2_try_to_allocate()
->   * @sb:			superblock
-> - * @handle:		handle to this transaction
->   * @group:		given allocation block group
->   * @bitmap_bh:		bufferhead holds the block bitmap
->   * @grp_goal:		given target block within the group
-> -- 
-> 1.7.2.2
-> 
+Version 2, now with 100% fewer line wraps.  Thanks to David Miller for
+pointing out the line wrapping issue.
+
+Signed-off-by: Glenn Wurster <gwurster@scs.carleton.ca>
+---
+ net/ipv6/addrconf.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+index cfee6ae..9c74454 100644
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -836,7 +836,7 @@ static int ipv6_create_tempaddr(struct inet6_ifaddr *ifp, struct inet6_ifaddr *i
+ {
+ 	struct inet6_dev *idev = ifp->idev;
+ 	struct in6_addr addr, *tmpaddr;
+-	unsigned long tmp_prefered_lft, tmp_valid_lft, tmp_cstamp, tmp_tstamp;
++	unsigned long tmp_prefered_lft, tmp_valid_lft, tmp_cstamp, tmp_tstamp, age;
+ 	unsigned long regen_advance;
+ 	int tmp_plen;
+ 	int ret = 0;
+@@ -886,12 +886,13 @@ retry:
+ 		goto out;
+ 	}
+ 	memcpy(&addr.s6_addr[8], idev->rndid, 8);
++	age = (jiffies - ifp->tstamp) / HZ;
+ 	tmp_valid_lft = min_t(__u32,
+ 			      ifp->valid_lft,
+-			      idev->cnf.temp_valid_lft);
++			      idev->cnf.temp_valid_lft + age);
+ 	tmp_prefered_lft = min_t(__u32,
+ 				 ifp->prefered_lft,
+-				 idev->cnf.temp_prefered_lft -
++				 idev->cnf.temp_prefered_lft + age -
+ 				 idev->cnf.max_desync_factor);
+ 	tmp_plen = ifp->prefix_len;
+ 	max_addresses = idev->cnf.max_addresses;
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.5.6.5
+
