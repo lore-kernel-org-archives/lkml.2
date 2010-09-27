@@ -1,100 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759348Ab0I0Qz7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 12:55:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44616 "EHLO mx1.redhat.com"
+	id S1759139Ab0I0Q5S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 12:57:18 -0400
+Received: from mga02.intel.com ([134.134.136.20]:14481 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756459Ab0I0Qz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 12:55:57 -0400
-Date: Mon, 27 Sep 2010 18:51:33 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Roland McGrath <roland@redhat.com>
-Subject: Re: [RFC][PATCH 09/10] taskstats: Fix exit CPU time accounting
-Message-ID: <20100927165133.GA23535@redhat.com>
-References: <1285249681.1837.28.camel@holzheu-laptop> <1285250541.1837.95.camel@holzheu-laptop> <20100923171025.GA26623@redhat.com> <1285330688.2179.305.camel@holzheu-laptop> <20100926181127.GA26985@redhat.com> <20100927154257.7910cda3@mschwide.boeblingen.de.ibm.com>
+	id S1752196Ab0I0Q5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 12:57:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,243,1283756400"; 
+   d="scan'208";a="661583624"
+Date: Mon, 27 Sep 2010 18:57:38 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Daniel Drake <dsd@laptop.org>
+Cc: linux-kernel@vger.kernel.org, laforge@gnumonks.org
+Subject: Re: [PATCH] Add VIA VX855 multi-function device support
+Message-ID: <20100927165737.GJ2560@sortiz-mobl>
+References: <20100919172301.91EEA9D401B@zog.reactivated.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100927154257.7910cda3@mschwide.boeblingen.de.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100919172301.91EEA9D401B@zog.reactivated.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27, Martin Schwidefsky wrote:
->
-> On Sun, 26 Sep 2010 20:11:27 +0200
-> Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > No. Well yes, it is not accounted, but this is not because it is
-> > kthread.
->
-> We noticed that behavior with kernel threads but as you point out
-> the problem is bigger than that.
->
-> > It is very simple, currently linux accounts the exiting task's
-> > utime and adds its to ->cutime _only_ if parent does do_wait().
-> > If parent ignores SIGCHLD, the child reaps itself and it is not
-> > accounted.
-> >
-> > I do not know why it was done this way, but I'm afraid we can't
-> > change this historical behaviour.
->
-> Why?
+Hi Daniel,
 
-Please don't ask me ;) I was equally surprised when I studied this
-code in the past.
+On Sun, Sep 19, 2010 at 06:23:01PM +0100, Daniel Drake wrote:
+> From: Harald Welte <laforge@gnumonks.org>
+> 
+> Initially we add support for the south bridge GPIO lines via GPIOLIB
+> as well as some skeleton for the SPI controllers.
+> 
+> This hardware can be found in the OLPC XO-1.5 laptop.
+Some comments below:
 
-> I would consider it to be a BUG() that the time is not accounted.
-> Independent of the fact that a parent wants to see the SIGCHLD and
-> the exit status of its child the process time of the child should be
-> accounted, no?
+ 
+> +static int vx855_client_dev_register(struct vx855 *vg, const char *name,
+> +				     struct platform_device **pdev)
+> +{
+> +	struct vx855_subdev_pdata *subdev_pdata;
+> +	int ret;
+> +
+> +	*pdev = platform_device_alloc(name, -1);
+> +	if (!*pdev) {
+> +		dev_err(&vg->pdev->dev, "Failed to allocate pdev %s\n", name);
+> +		return -ENOMEM;
+> +	}
+> +
+> +	subdev_pdata = kmalloc(sizeof(*subdev_pdata), GFP_KERNEL);
+> +	if (!subdev_pdata) {
+> +		platform_device_put(*pdev);
+> +		return -ENOMEM;
+> +	}
+> +
+> +	subdev_pdata->vx855 = vg;
+> +	(*pdev)->dev.platform_data = subdev_pdata;
+> +	(*pdev)->dev.parent = &vg->pdev->dev;
+> +
+> +	ret = platform_device_add(*pdev);
+> +	if (ret) {
+> +		dev_err(&vg->pdev->dev, "Failed to register pdev %s\n", name);
+> +		kfree(subdev_pdata);
+> +		platform_device_put(*pdev);
+> +		*pdev = NULL;
+> +		return ret;
+> +	}
+> +
+> +	return 0;
+> +}
+We do have an MFD API for registering sub devices as platform devices. See
+mfd_add_devices(). You'd have to define cells (statically or not) and set the
+cell->platform_data pointer properly. I'd prefer to see this driver using this
+API.
+You will also need to depend on MFD_CORE.
 
-I do not know. It doesn't look like a BUG(), I mean it looks as if
-the code was intentionally written this way.
+> +static __devinit int vx855gpio_probe(struct platform_device *pdev)
+> +{
+> +	struct vx855_gpio *vg;
+> +	struct vx855_subdev_pdata *pdata = pdev->dev.platform_data;
+> +	u_int16_t io_offset;
+> +	int ret;
+> +
+> +	vg = kzalloc(sizeof(*vg), GFP_KERNEL);
+> +	if (!vg)
+> +		return -ENOMEM;
+> +
+> +	vg->vx855 = pdata->vx855;
+> +	platform_set_drvdata(pdev, vg);
+> +
+> +	ret = pci_read_config_word(vg->vx855->pdev,
+> +				   VX855_CFG_PMIO_OFFSET, &io_offset);
+So it seems the only thing you need from the parent device is the I/O region.
+If that really is the case then you may want to pass it from the actual MFD
+driver as a platform resource (you do the pci_read_config_word() from the MFD
+driver). The drivers/mfd/lcp_sch.c driver is a good example for that.
+The benefit you get from that design is that your sub devices drivers are
+completely independent from the parent one, they don't even have to share any
+data structure, you could get rid of vx855.h.
 
-> And I'm not a particular fan of the "this has always
-> been that way" reasoning.
 
-Me too, but unfortunately it often happens, sometimes we can't improve
-things just because we should not break existing programs.
+> +	if (ret) {
+> +		ret = -EIO;
+> +		goto out_free;
+> +	}
+> +
+> +	if (!io_offset) {
+> +		dev_warn(&pdev->dev, "BIOS did not assign PMIO base offset?!?\n");
+> +		ret = -ENODEV;
+> +		goto out_free;
+> +	}
+> +
+> +	/* mask out the lowest seven bits, as they are always zero, but
+> +	 * hardware returns them as 0x01 */
+> +	io_offset &= 0xff80;
+> +	io_offset += VX855_PMIO_GPPM;
+> +
+> +	dev_info(&pdev->dev, "found VX855 PMIO at base 0x%x\n", io_offset);
+> +
+> +	vg->io_base = io_offset;
+> +	spin_lock_init(&vg->lock);
+> +
+> +	/* Typically the ACPI code will already have requested this
+> +	 * region, so we have to skip requesting it.  If you run a
+> +	 * system without ACPI, you should enable VX855GPIO_REQUEST_REGION */
+> +#ifdef VX855GPIO_REQUEST_REGION
+Is this something you want to define in Kconfig ?
 
-Once again, don't get me wrong. Personally I agree, to me it makes
-sense to move the "update parent's cxxx" code from wait_task_zombie()
-to __exit_signal(), and account children unconditionally.
 
-But I do not know who can approve this very much user-visible change.
-Perhaps Roland.
+> +static int __init via_spi_probe(struct platform_device *pdev)
+> +{
+> +	struct vx855_subdev_pdata *pdata = pdev->dev.platform_data;
+> +	struct via_spi *vspi;
+> +	struct spi_master *master;
+> +	u_int32_t ctrlreg;
+> +	int err;
+> +
+> +	vspi = kzalloc(sizeof(*vspi), GFP_KERNEL);
+> +	if (!vspi)
+> +		return -ENOMEM;
+> +
+> +	vspi->vx855 = pdata->vx855;
+> +	platform_set_drvdata(pdev, vspi);
+> +
+> +	/* First we determine the MMIO base of the control registers */
+> +	pci_read_config_dword(vspi->vx855->pdev, 0xbc, &vspi->ctrl.mmio_base);
+Same comment applies to this SPI driver, it seems the onyl thing it needs from
+the parent is the MMIO base address.
 
-> Got the part about self-reaping processes. But there is another issue:
-> consider an exiting thread where the group leader is still active.
-> The time for the thread will be added to the utime/stime fields in
-> the signal structure.
+Cheers,
+Samuel.
 
-(to clarify, s/group leader/last thread/)
-
-> Taskstats will happily ignore that time while
-> the group leader is still running.
-
-Sorry. I didn't read the whole series and I forgot everything I knew
-about taskstats. But I don't understand this "ignore" above, every
-exiting thread calls taskstats_exit()->fill_pid()->bacct_add_tsk()
-and reports ->ac_utime?
-
-Never mind. You seem to want to update, say, cutime when a sub-thread
-exits, before the whole process exits, right? Again, trivial to
-implement but this is another user-visible change.
-
-Oleg.
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
