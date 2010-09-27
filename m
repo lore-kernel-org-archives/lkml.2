@@ -1,107 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933039Ab0I0NnG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 09:43:06 -0400
-Received: from mtagate1.de.ibm.com ([195.212.17.161]:46606 "EHLO
-	mtagate1.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755850Ab0I0NnE (ORCPT
+	id S1759390Ab0I0Nn4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 09:43:56 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:3628 "EHLO
+	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756154Ab0I0Nnz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 09:43:04 -0400
-Date: Mon, 27 Sep 2010 15:42:57 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 09/10] taskstats: Fix exit CPU time accounting
-Message-ID: <20100927154257.7910cda3@mschwide.boeblingen.de.ibm.com>
-In-Reply-To: <20100926181127.GA26985@redhat.com>
-References: <1285249681.1837.28.camel@holzheu-laptop>
- <1285250541.1837.95.camel@holzheu-laptop>
- <20100923171025.GA26623@redhat.com>
- <1285330688.2179.305.camel@holzheu-laptop>
- <20100926181127.GA26985@redhat.com>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 27 Sep 2010 09:43:55 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzzz32i2a8h43h62h)
+X-Spam-TCS-SCL: 1:0
+X-FB-SS: 0,
+X-WSS-ID: 0L9ERGS-01-DDJ-02
+X-M-MSG: 
+Date: Mon, 27 Sep 2010 15:43:41 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: huang ying <huang.ying.caritas@gmail.com>
+CC: Huang Ying <ying.huang@intel.com>, Don Zickus <dzickus@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v2 7/7] x86, NMI, Remove do_nmi_callback logic
+Message-ID: <20100927134341.GQ13563@erda.amd.com>
+References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
+ <1285549026-5008-7-git-send-email-ying.huang@intel.com>
+ <20100927104426.GD32222@erda.amd.com>
+ <AANLkTinA2HK57w5wqCtq319WNy-PLtWaGBe-v+uoFB=Y@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <AANLkTinA2HK57w5wqCtq319WNy-PLtWaGBe-v+uoFB=Y@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 26 Sep 2010 20:11:27 +0200
-Oleg Nesterov <oleg@redhat.com> wrote:
+On 27.09.10 08:56:44, huang ying wrote:
 
-> Hi,
-> 
-> On 09/24, Michael Holzheu wrote:
+> >> -static int unknown_nmi_panic_callback(struct pt_regs *regs, int cpu)
+> >> -{
+> >> -     unsigned char reason = get_nmi_reason();
+> >> -     char buf[64];
+> >> -
+> >> -     sprintf(buf, "NMI received for unknown reason %02x\n", reason);
+> >> -     die_nmi(buf, regs, 1); /* Always panic here */
+> >> -     return 0;
 > >
-> > On Thu, 2010-09-23 at 19:10 +0200, Oleg Nesterov wrote:
-> > >
-> > > On 09/23, Michael Holzheu wrote:
-> > > >
-> > > > Currently there are code pathes (e.g. for kthreads) where the consumed
-> > > > CPU time is not accounted to the parents cumulative counters.
-> > >
-> > > Could you explain more?
-> >
-> > I think one place was "khelper" (kmod.c). It is created with
-> > kernel_thread() and it exits without having accounted the times with
-> > sys_wait() to the parent's ctimes
+> > You are dropping this code that is different to panic().
 > 
-> No. Well yes, it is not accounted, but this is not because it is
-> kthread.
+> What is the difference? Is it relevant?
 
-We noticed that behavior with kernel threads but as you point out
-the problem is bigger than that.
- 
-> To simplify the discussion, lets talk about utime/cutime only,
-> and lets forget about the multithreading.
-> 
-> It is very simple, currently linux accounts the exiting task's
-> utime and adds its to ->cutime _only_ if parent does do_wait().
-> If parent ignores SIGCHLD, the child reaps itself and it is not
-> accounted.
-> 
-> I do not know why it was done this way, but I'm afraid we can't
-> change this historical behaviour.
+I think yes, since the code behaves different. Otherwise we could
+remove die_nmi() completly and replace it by panic(). But both are
+different implementions. Maybe we can merge the code, but I didn't
+look at it closly.
 
-Why? I would consider it to be a BUG() that the time is not accounted.
-Independent of the fact that a parent wants to see the SIGCHLD and
-the exit status of its child the process time of the child should be
-accounted, no? And I'm not a particular fan of the "this has always
-been that way" reasoning.
-
-> > Ok, the problem is that I did not consider exiting threads that are no
-> > thread group leaders. When they exit the ctime of the parent is not
-> > updated. Instead the time is accumulated in the signal struct.
-> 
-> I think I am a bit confused, but see above. With or without threads
-> the whole process can exit without accounting.
-
-Got the part about self-reaping processes. But there is another issue:
-consider an exiting thread where the group leader is still active.
-The time for the thread will be added to the utime/stime fields in
-the signal structure. Taskstats will happily ignore that time while
-the group leader is still running.
-
-Please keep in mind that we want to get to a point where it is
-possible to get a 100% coverage of cpu cycles in the last snapshot
-cycle through the taskstats interface. Otherwise the precise top
-would not be very precise ..
+-Robert
 
 -- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
