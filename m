@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759450Ab0I0N5r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 09:57:47 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:42006 "EHLO
+	id S1759436Ab0I0OAh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 10:00:37 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:42048 "EHLO
 	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752978Ab0I0N5q (ORCPT
+	with ESMTP id S1750996Ab0I0OAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 09:57:46 -0400
-Date: Mon, 27 Sep 2010 14:57:35 +0100
+	Mon, 27 Sep 2010 10:00:35 -0400
+Date: Mon, 27 Sep 2010 15:00:28 +0100
 From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Len Brown <lenb@kernel.org>
-Cc: Linux Power Management List <linux-pm@lists.osdl.org>,
-        linux-pci@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] intel_idle: PCI quirk to prevent Lenovo Ideapad s10-3
-	boot hang
-Message-ID: <20100927135735.GA856@srcf.ucam.org>
-References: <alpine.LFD.2.00.1009242122390.8641@localhost.localdomain>
+To: Keng-Yu Lin <keng-yu.lin@canonical.com>
+Cc: len.brown@intel.com, alan-jenkins@tuffmail.co.uk, superm1@ubuntu.com,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] dell-laptop: Add debugfs support
+Message-ID: <20100927140028.GB856@srcf.ucam.org>
+References: <1284702459-31646-1-git-send-email-keng-yu.lin@canonical.com> <1285325323-4528-1-git-send-email-keng-yu.lin@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1009242122390.8641@localhost.localdomain>
+In-Reply-To: <1285325323-4528-1-git-send-email-keng-yu.lin@canonical.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 X-SA-Exim-Connect-IP: <locally generated>
 X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
@@ -29,22 +27,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 24, 2010 at 09:26:31PM -0400, Len Brown wrote:
-> From: Len Brown <len.brown@intel.com>
-> 
-> When the Lenovo Ideapad S10-3 is booted with HT enabled,
-> it hits a boot hang in the intel_idle driver.
-> 
-> This occurs when entering ATM-C4 for the first time,
-> unless BM_STS is first cleared.
-> 
-> acpi_idle doesn't see this because it first checks
-> and clears BM_STS, but it would hit the same hang
-> if that check were disabled.
-
-If there's hardware that expects BM_STS to be cleared, and if we've 
-previously always cleared BM_STS, shouldn't intel_idle be doing the same 
-thing?
+What's the difference between this version and v3?
 
 -- 
 Matthew Garrett | mjg59@srcf.ucam.org
