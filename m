@@ -1,137 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760184Ab0I0U0T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 16:26:19 -0400
-Received: from tuxonice.net ([74.207.252.127]:53531 "EHLO mail.tuxonice.net"
+	id S933182Ab0I0U2i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 16:28:38 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:47216 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751228Ab0I0U0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 16:26:18 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4CA0FDE8.3000601@tuxonice.net>
-Date: Tue, 28 Sep 2010 06:26:16 +1000
-From: Nigel Cunningham <nigel@tuxonice.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.10pre) Gecko/20100903 Shredder/3.1.4pre
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux PM <linux-pm@lists.linux-foundation.org>,
+	id S1751117Ab0I0U2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 16:28:37 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Nigel Cunningham <nigel@tuxonice.net>
+Subject: Re: [PATCH 01/23] Hibernation: Split compression support out.
+Date: Mon, 27 Sep 2010 22:27:42 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc5-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Linux PM <linux-pm@lists.linux-foundation.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        TuxOnIce-devel <tuxonice-devel@tuxonice.net>
-Subject: Re: [PATCH 02/23] Record & display i/o speed post resume.
-References: <1285566238-10966-1-git-send-email-nigel@tuxonice.net> <1285566238-10966-3-git-send-email-nigel@tuxonice.net> <201009272206.20020.rjw@sisk.pl>
-In-Reply-To: <201009272206.20020.rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+        "TuxOnIce-devel" <tuxonice-devel@tuxonice.net>
+References: <1285566238-10966-1-git-send-email-nigel@tuxonice.net> <1285566238-10966-2-git-send-email-nigel@tuxonice.net>
+In-Reply-To: <1285566238-10966-2-git-send-email-nigel@tuxonice.net>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201009272227.42779.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+On Monday, September 27, 2010, Nigel Cunningham wrote:
+> Separate compression support out into its own file, removing in
+> the process the duplication of the load_image and save_image
+> functions and some #includes from swap.c that are no longer
+> needed.
+> 
+> Signed-off-by: Nigel Cunningham <nigel@tuxonice.net>
 
-On 28/09/10 06:06, Rafael J. Wysocki wrote:
-> On Monday, September 27, 2010, Nigel Cunningham wrote:
->> Record the speed at which the image is written and read, and
->> display it to the user post-resume.
->>
->> Signed-off-by: Nigel Cunningham<nigel@tuxonice.net>
->> ---
->>   kernel/power/hibernate.c |   11 ++++++++++-
->>   kernel/power/power.h     |    3 ++-
->>   kernel/power/swap.c      |   14 +++++++++++---
->>   3 files changed, 23 insertions(+), 5 deletions(-)
->>
->> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
->> index 6c9c9dc..0cd1f05 100644
->> --- a/kernel/power/hibernate.c
->> +++ b/kernel/power/hibernate.c
->> @@ -212,7 +212,7 @@ static void platform_recover(int platform_mode)
->>    *	@msg -		introductory message to print
->>    */
->>
->> -void swsusp_show_speed(struct timeval *start, struct timeval *stop,
->> +int swsusp_show_speed(struct timeval *start, struct timeval *stop,
->>   			unsigned nr_pages, char *msg)
->>   {
->>   	s64 elapsed_centisecs64;
->> @@ -231,6 +231,7 @@ void swsusp_show_speed(struct timeval *start, struct timeval *stop,
->>   			msg, k,
->>   			centisecs / 100, centisecs % 100,
->>   			kps / 1000, (kps % 1000) / 10);
->> +	return kps / 1000;
->>   }
->>
->>   /**
->> @@ -648,6 +649,14 @@ int hibernate(void)
->>   			power_down();
->>   	} else {
->>   		pr_debug("PM: Image restored successfully.\n");
->> +		if (write_speed)
->> +			pr_debug("PM: Image written at %u MB/s.\n",
->> +					(u8) write_speed);
->> +		write_speed = 0;
->> +		if (read_speed)
->> +			pr_debug("PM: Image read at %u MB/s.\n",
->> +					(u8) read_speed);
->> +		read_speed = 0;
->>   	}
->>
->>    Thaw:
->> diff --git a/kernel/power/power.h b/kernel/power/power.h
->> index 03634be..22f8607 100644
->> --- a/kernel/power/power.h
->> +++ b/kernel/power/power.h
->> @@ -53,6 +53,7 @@ extern int hibernation_snapshot(int platform_mode);
->>   extern int hibernation_restore(int platform_mode);
->>   extern int hibernation_platform_enter(void);
->>
->> +extern char __nosavedata write_speed, read_speed;
->>   #else /* !CONFIG_HIBERNATION */
->>
->>   static inline void hibernate_image_size_init(void) {}
->> @@ -161,7 +162,7 @@ extern int hib_wait_on_bio_chain(struct bio **bio_chain);
->>
->>   struct timeval;
->>   /* kernel/power/swsusp.c */
->> -extern void swsusp_show_speed(struct timeval *, struct timeval *,
->> +extern int swsusp_show_speed(struct timeval *, struct timeval *,
->>   				unsigned int, char *);
->>
->>   #ifdef CONFIG_SUSPEND
->> diff --git a/kernel/power/swap.c b/kernel/power/swap.c
->> index 3c01105..caf4db8 100644
->> --- a/kernel/power/swap.c
->> +++ b/kernel/power/swap.c
->> @@ -45,7 +45,8 @@ struct swap_map_page {
->>   };
->>
->>   struct swsusp_header {
->> -	char reserved[PAGE_SIZE - 20 - sizeof(sector_t) - sizeof(int)];
->> +	char reserved[PAGE_SIZE - 21 - sizeof(sector_t) - sizeof(int)];
->> +	char write_speed;
->>   	sector_t image;
->>   	unsigned int flags;	/* Flags to pass to the "boot" kernel */
->>   	char	orig_sig[10];
->> @@ -161,6 +162,7 @@ int swsusp_swap_in_use(void)
->>
->>   static unsigned short root_swap = 0xffff;
->>   struct block_device *hib_resume_bdev;
->> +char __nosavedata write_speed, read_speed;
->
-> I really should have noticed that earlier, but I don't really like __nosavedata
-> being used here.  In fact, it shouldn't be used at all any more, because it's
-> meaningless on x86_64.
+If you're at it, I'd like to do something slightly different.  Explained below.
 
-Really? Okay. When did that change?
+> ---
+>  kernel/power/Makefile   |    2 +-
+>  kernel/power/compress.c |  210 +++++++++++++++++++++++++++++
+>  kernel/power/compress.h |   23 +++
+>  kernel/power/swap.c     |  339 +++++------------------------------------------
+>  kernel/power/swap.h     |   28 ++++
+>  5 files changed, 296 insertions(+), 306 deletions(-)
+>  create mode 100644 kernel/power/compress.c
+>  create mode 100644 kernel/power/compress.h
+>  create mode 100644 kernel/power/swap.h
+> 
+> diff --git a/kernel/power/Makefile b/kernel/power/Makefile
+> index f9063c6..2eb134d 100644
+> --- a/kernel/power/Makefile
+> +++ b/kernel/power/Makefile
+> @@ -9,7 +9,7 @@ obj-$(CONFIG_FREEZER)		+= process.o
+>  obj-$(CONFIG_SUSPEND)		+= suspend.o
+>  obj-$(CONFIG_PM_TEST_SUSPEND)	+= suspend_test.o
+>  obj-$(CONFIG_HIBERNATION)	+= hibernate.o snapshot.o swap.o user.o \
+> -				   block_io.o
+> +				   block_io.o compress.o
+>  obj-$(CONFIG_SUSPEND_NVS)	+= nvs.o
+>  
+>  obj-$(CONFIG_MAGIC_SYSRQ)	+= poweroff.o
+> diff --git a/kernel/power/compress.c b/kernel/power/compress.c
+> new file mode 100644
+> index 0000000..45725ea
+> --- /dev/null
+> +++ b/kernel/power/compress.c
+> @@ -0,0 +1,210 @@
+> +/*
+> + * linux/kernel/power/compress.c
+> + *
+> + * This file provides functions for (optionally) compressing an
+> + * image as it is being written and decompressing it at resume.
+> + *
+> + * Copyright (C) 2003-2010 Nigel Cunningham <nigel@tuxonice.net>
+> + *
+> + * This file is released under the GPLv2.
+> + *
+> + */
+> +
+> +#include <linux/slab.h>
+> +#include <linux/lzo.h>
+> +#include <linux/vmalloc.h>
+> +
+> +#include "power.h"
+> +#include "swap.h"
+> +
+> +/* We need to remember how much compressed data we need to read. */
+> +#define LZO_HEADER	sizeof(size_t)
+> +
+> +/* Number of pages/bytes we'll compress at one time. */
+> +#define LZO_UNC_PAGES	32
+> +#define LZO_UNC_SIZE	(LZO_UNC_PAGES * PAGE_SIZE)
+> +
+> +/* Number of pages/bytes we need for compressed data (worst case). */
+> +#define LZO_CMP_PAGES	DIV_ROUND_UP(lzo1x_worst_compress(LZO_UNC_SIZE) + \
+> +			             LZO_HEADER, PAGE_SIZE)
+> +#define LZO_CMP_SIZE	(LZO_CMP_PAGES * PAGE_SIZE)
+> +
+> +static size_t off, unc_len, cmp_len;
+> +static unsigned char *unc, *cmp, *wrk, *page;
+> +
+> +void compress_image_cleanup(void)
+> +{
+> +	if (cmp) {
+> +		vfree(cmp);
+> +		cmp = NULL;
+> +	}
+> +
+> +	if (unc) {
+> +		vfree(unc);
+> +		unc = NULL;
+> +	}
+> +
+> +	if (wrk) {
+> +		vfree(wrk);
+> +		wrk = NULL;
+> +	}
+> +
+> +	if (page) {
+> +		free_page((unsigned long)page);
+> +		page = NULL;
+> +	}
+> +}
+> +
+> +int compress_image_init(void)
+> +{
+> +	page = (void *)__get_free_page(__GFP_WAIT | __GFP_HIGH);
+> +	if (!page) {
+> +		printk(KERN_ERR "PM: Failed to allocate LZO page\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	wrk = vmalloc(LZO1X_1_MEM_COMPRESS);
+> +	unc = vmalloc(LZO_UNC_SIZE);
+> +	cmp = vmalloc(LZO_CMP_SIZE);
+> +
+> +	if (!wrk || !unc || !cmp) {
+> +		printk(KERN_ERR "PM: Failed to allocate memory for (de)compression.\n");
+> +		compress_image_cleanup();
+> +		return -ENOMEM;
+> +	}
+> +
+> +	off = 0;
+> +
+> +	return 0;
+> +}
+> +
+> +static int compress_and_write(struct swap_map_handle *handle, struct bio **bio)
+> +{
+> +	int ret;
+> +
+> +	if (!off)
+> +		return 0;
+> +
+> +	unc_len = off;
+> +	ret = lzo1x_1_compress(unc, unc_len, cmp + LZO_HEADER, &cmp_len, wrk);
+> +
+> +	if (ret < 0) {
+> +		printk(KERN_ERR "PM: LZO compression failed\n");
+> +		return -EIO;
+> +	}
+> +
+> +	if (unlikely(!cmp_len ||
+> +	             cmp_len > lzo1x_worst_compress(unc_len))) {
+> +		printk(KERN_ERR "PM: Invalid LZO compressed length\n");
+> +		return -EIO;
+> +	}
+> +
+> +	*(size_t *)cmp = cmp_len;
+> +
+> +	/*
+> +	 * Given we are writing one page at a time to disk, we copy
+> +	 * that much from the buffer, although the last bit will likely
+> +	 * be smaller than full page. This is OK - we saved the length
+> +	 * of the compressed data, so any garbage at the end will be
+> +	 * discarded when we read it.
+> +	 */
+> +	for (off = 0; off < LZO_HEADER + cmp_len; off += PAGE_SIZE) {
+> +		memcpy(page, cmp + off, PAGE_SIZE);
+> +
+> +		ret = swap_write_page(handle, page, bio);
+> +		if (ret)
+> +			return ret;
+> +	}
+> +
+> +	off = 0;
+> +	return 0;
+> +}
+> +
+> +int compress_write(struct swap_map_handle *handle, char *buf, struct bio **bio,
+> +		int flags)
+> +{
+> +	int ret = 0;
+> +
+> +	if (flags & SF_NOCOMPRESS_MODE)
+> +		return swap_write_page(handle, buf, bio);
+> +
+> +	if (off == LZO_UNC_SIZE)
+> +		ret = compress_and_write(handle, bio);
+> +
+> +	memcpy(unc + off, buf, PAGE_SIZE);
+> +	off += PAGE_SIZE;
+> +	return ret;
+> +}
 
-> I'm not sure how to implement that without __nosavedata, but please don't
-> use it.  Sorry aboiut that.
+This one doesn't really good to me.  What I'd prefer would be to have a
+structure of "swap operations" pointers like ->start(), ->write_data(),
+->read_data(), and ->finish() that will point to the functions in this file
+(if compression is to be used) or to the "old" swap_write_page()/swap_read_page()
+otherwise.  That would reduce the number of the
+(flags & SF_NOCOMPRESS_MODE) checks quite substantially and will likely result
+in code that's easier to follow.
 
-Well then, for now, let's drop that patch then. At least it's got us the 
-numbers we needed to see these patches are useful. Longer term, I'll do 
-what I do in TuxOnIce and allocate a page while writing the image, store 
-it's location in the image header and use it the transfer information 
-from the boot kernel to the resumed kernel. (Essentially the same thing, 
-except without the special section).
-
-Regards,
-
-Nigel
+Thanks,
+Rafael
