@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758623Ab0I0BBu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Sep 2010 21:01:50 -0400
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:48242 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754544Ab0I0BBt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Sep 2010 21:01:49 -0400
-Date: Mon, 27 Sep 2010 10:01:48 +0900
-From: Norbert Preining <preining@logic.at>
-To: Lukas =?iso-8859-15?Q?Gr=E4sslin?= <lukasgraesslin@gmx.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: changing the default cpufreq governor freezes laptop on suspend
-Message-ID: <20100927010148.GB26533@gamma.logic.tuwien.ac.at>
-References: <20100723011514.GD19985@gamma.logic.tuwien.ac.at> <20100919202331.GA27077@home-server.graesslin.de> <20100921020654.GU6121@gamma.logic.tuwien.ac.at> <20100925174433.GA4509@q9400-arch.graesslin.de>
+	id S1758658Ab0I0BUa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Sep 2010 21:20:30 -0400
+Received: from kroah.org ([198.145.64.141]:51046 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753486Ab0I0BU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Sep 2010 21:20:29 -0400
+Date: Sun, 26 Sep 2010 18:19:43 -0700
+From: Greg KH <greg@kroah.com>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
+        "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
+        "'gregkh@suse.de'" <gregkh@suse.de>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: Re: [PATCH 1/1] Rename camel case variables in channel.c  (updated
+	again)
+Message-ID: <20100927011943.GA6936@kroah.com>
+References: <1FB5E1D5CA062146B38059374562DF7289ED89CF@TK5EX14MBXC130.redmond.corp.microsoft.com> <1FB5E1D5CA062146B38059374562DF7289EDBC9E@TK5EX14MBXC130.redmond.corp.microsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100925174433.GA4509@q9400-arch.graesslin.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1FB5E1D5CA062146B38059374562DF7289EDBC9E@TK5EX14MBXC130.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sa, 25 Sep 2010, Lukas Grässlin wrote:
-> Is there a report on the kernel bugtracker? May we create one?
+On Fri, Sep 24, 2010 at 04:06:38PM +0000, Haiyang Zhang wrote:
+> From: Haiyang Zhang <haiyangz@microsoft.com>
 
-Yes please create one. I will check if I can reconfirm that on recent 
-kernels.
+<snip>
 
-Best wishes
+This patch is mime-encoded and I'm getting tired of having to convert it
+before I can apply it.
 
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-WHISSENDINE (n.)
-The noise which occurs (often by night) in a strange house, which is
-too short and too irregular for you ever to be able to find out what
-it is and where it comes from.
-			--- Douglas Adams, The Meaning of Liff
+Can you please fix up your email client/server to not do this?  I should
+be able to take the raw email and apply the patch with the 'patch'
+command.
+
+And yes, I know git-am handles mime messages and I use it to apply the
+patch, but I still use 'patch' to verify things are sane before
+commiting the patch for real.
+
+Care to resend?
+
+thanks,
+
+greg k-h
