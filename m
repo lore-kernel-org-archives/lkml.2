@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759585Ab0I0PQa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 11:16:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28879 "EHLO mx1.redhat.com"
+	id S1759592Ab0I0PRj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 11:17:39 -0400
+Received: from www.tglx.de ([62.245.132.106]:49341 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753480Ab0I0PQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 11:16:29 -0400
-Date: Mon, 27 Sep 2010 11:16:07 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: huang ying <huang.ying.caritas@gmail.com>,
-        Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v2 7/7] x86, NMI, Remove do_nmi_callback logic
-Message-ID: <20100927151607.GX26290@redhat.com>
-References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
- <1285549026-5008-7-git-send-email-ying.huang@intel.com>
- <20100927104426.GD32222@erda.amd.com>
- <AANLkTinA2HK57w5wqCtq319WNy-PLtWaGBe-v+uoFB=Y@mail.gmail.com>
- <20100927134341.GQ13563@erda.amd.com>
+	id S1753480Ab0I0PRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 11:17:37 -0400
+Date: Mon, 27 Sep 2010 17:16:49 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch 08/19] genirq; Provide compat handling for
+ chip->mask_ack()
+In-Reply-To: <AANLkTimpavoLaAeY7dXPh7-596+xK0ZFxYMb8AHT6fv1@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1009271716130.2416@localhost6.localdomain6>
+References: <20100927121651.904100669@linutronix.de> <20100927121842.240806983@linutronix.de> <AANLkTimpavoLaAeY7dXPh7-596+xK0ZFxYMb8AHT6fv1@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100927134341.GQ13563@erda.amd.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-2123593630-1285600610=:2416"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 03:43:41PM +0200, Robert Richter wrote:
-> On 27.09.10 08:56:44, huang ying wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+---1463795968-2123593630-1285600610=:2416
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+
+On Mon, 27 Sep 2010, Geert Uytterhoeven wrote:
+
+> On Mon, Sep 27, 2010 at 14:44, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > Wrap the old chip function mask_ack() until the migration is complete
+> > and the old chip functions are removed.
+> >
+> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> > ---
+> > Â kernel/irq/chip.c Â  Â  Â | Â  20 ++++++++++++++++++--
+> > Â kernel/irq/internals.h | Â  17 +++++++++++------
+> > Â kernel/irq/manage.c Â  Â | Â  22 +++++++++++-----------
+> > Â 3 files changed, 40 insertions(+), 19 deletions(-)
 > 
-> > >> -static int unknown_nmi_panic_callback(struct pt_regs *regs, int cpu)
-> > >> -{
-> > >> -     unsigned char reason = get_nmi_reason();
-> > >> -     char buf[64];
-> > >> -
-> > >> -     sprintf(buf, "NMI received for unknown reason %02x\n", reason);
-> > >> -     die_nmi(buf, regs, 1); /* Always panic here */
-> > >> -     return 0;
-> > >
-> > > You are dropping this code that is different to panic().
-> > 
-> > What is the difference? Is it relevant?
+> 3 files
 > 
-> I think yes, since the code behaves different. Otherwise we could
-> remove die_nmi() completly and replace it by panic(). But both are
-> different implementions. Maybe we can merge the code, but I didn't
-> look at it closly.
+> > Index: linux-2.6-tip/kernel/irq/chip.c
+> > ===================================================================
+> > --- linux-2.6-tip.orig/kernel/irq/chip.c
+> > +++ linux-2.6-tip/kernel/irq/chip.c
+> 
+> Only 1 file?
 
-Actually die_nmi is a wrapper around panic with two important pieces.
-One, it dumps some registers and two it does another notifier call to
-DIE_NMIWATCHDOG (which correlates to another discussion in this patch
-series).
+Yes, seems I forgot to refresh the patch stats, grmbl.
 
-So if we do any consolidation between panic and die_nmi, it should be
-convert to die_nmi.  But then I wonder if that breaks the original
-semantics of 'panic_on_unrecovered_nmi'.  I don't think so though.
-
-Cheers,
-Don
+     tglx
+---1463795968-2123593630-1285600610=:2416--
