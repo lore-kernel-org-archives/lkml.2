@@ -1,115 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933066Ab0I0OGI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 10:06:08 -0400
-Received: from mtagate2.uk.ibm.com ([194.196.100.162]:55703 "EHLO
-	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759433Ab0I0OGH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 10:06:07 -0400
-Date: Mon, 27 Sep 2010 16:05:51 +0200
-From: Christof Schmitt <christof.schmitt@de.ibm.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Mike Christie <michaelc@cs.wisc.edu>, Joe Eykholt <jeykholt@cisco.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        James Smart <james.smart@emulex.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH v2 01/11] scsi: Convert struct
- Scsi_Host->cmd_serial_number to atomic_t
-Message-ID: <20100927140551.GB8473@schmichrtp.mainz.de.ibm.com>
-References: <1284747709-20862-1-git-send-email-nab@linux-iscsi.org>
- <4C93BB8E.2080501@cisco.com>
- <4C9427B6.9050404@cs.wisc.edu>
- <1284839878.13344.300.camel@haakon2.linux-iscsi.org>
+	id S1759433Ab0I0OH7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 10:07:59 -0400
+Received: from atl.turmel.org ([74.117.157.138]:46762 "EHLO atl.turmel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750865Ab0I0OH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 10:07:58 -0400
+Message-ID: <4CA0A502.5040404@turmel.org>
+Date: Mon, 27 Sep 2010 10:06:58 -0400
+From: Phil Turmel <philip@turmel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100916 Lightning/1.0b2 Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284839878.13344.300.camel@haakon2.linux-iscsi.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Boaz Harrosh <bharrosh@panasas.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Julia Lawall <julia@diku.dk>, "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Stephen Hemminger <shemminger@vyatta.com>
+Subject: Re: {painfully BISECTED} Please revert f25c80a4b2:  arch/um/drivers:
+ remove duplicate structure field initialization
+References: <4CA09977.80506@panasas.com>
+In-Reply-To: <4CA09977.80506@panasas.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 18, 2010 at 12:57:58PM -0700, Nicholas A. Bellinger wrote:
-> On Fri, 2010-09-17 at 21:45 -0500, Mike Christie wrote:
-> > On 09/17/2010 02:03 PM, Joe Eykholt wrote:
-> > >
-> > > How about instead of adding use_serial_number, let's just have the
-> > > drivers that want a serial number call scsi_cmd_get_serial()
-> > 
-> > I think this sounds better.
-> > 
+On 09/27/2010 09:17 AM, Boaz Harrosh wrote:
+[snip /]
 > 
-> In that case I will go ahead and add explict scsi_cmd_get_serial() calls
-> to the LLDs that use struct scsi_cmnd->serial_number in anything beyond
-> an obvious and simple informational purpose.
+> <RANT A HEAD CAN BE IGNORED>
 > 
-> > You could also convert drivers to the host tagging if you needed a 
-> > unique id for each command sent to a host.
+> It has become extremely hard to bisect a simple problem in latest Kernels!
 > 
-> Hmmm, what does this entail again..?
-> 
-> > 
-> > > and stop calling it from scsi_dispatch_cmd()?   AFAICT, it's only
-> > > used in debug messages in some drivers.  I didn't find other usages
-> > > but didn't do an exhaustive search.
-> > 
-> > The comments for serial_number say that it is only supposed to be used 
-> > for debugging printks and most drivers use it for that.
-> 
-> So I would suppose it would be OK for those drivers to continue to
-> printk serial_number to show the internal serial_number allocation is
-> now disabled by default.
-> 
-> > However, it looks like mpt and dpt_i2o are using it for error handling
-> > and/or lookup type of operations. I think the mpt* uses are not needed
-> > in the abort checks.
-> > 
-> 
-> In that case, then adding an explict scsi_cmd_get_serial() call in mpt*
-> and dpt_i20 ->queuecommand() callers would be a good first step.
-> 
-> > And eata is using it for ordering and tracking or something. It could 
-> > probably be converted to the host tagging if or what you suggested if it 
-> > needs the uniqueue id.
-> 
-> Adding an explict scsi_cmd_get_serial() for eata for now, and we can
-> consider LLD canidates for host tag conversion as a future step.
-> 
-> > 
-> > zfcp looks like it copies it. It does not look like the driver needs it.
-> > 
-> 
-> Ok, I will look at removing it's usage in zfcp or if necessary add an
-> the explict scsi_cmd_get_serial() call.
+> Most mainline merges during a merge window are based on an rc1 of the previous
+> Kernel. In the last 5 Kernels there was a 90% chance of a BAD bug in systems
+> I use, at rc1. If a bug is found that needs bisecting. The other bugs creep
+> up during bisect and mask out the possibility to bisect.
 
-In zfcp, the serial_number is only accessed for writing it to debug
-traces. With the change that the driver has to request the serial
-number through use_serial_number, simply remove the serial number from
-zfcp.
+I had similar problems when bisecting the recent USB HID regression.  Once I
+realized that "bisect skip" kept dropping me into a rats nest, I guessed on
+-rc2 and was able to proceed from there.
 
-Thanks,
+...
 
-Christof
+> In short I wish at some 2.6.XX-rc[45] of every Kernel cycle. Maintainers
+> would rebase their next's tree of [XX+1] to a some what more stable rc.
+> Sure re-run all the tests. They still have time for the new tree in next
+> to be tested and verified before the next merge window.
+> (Hell one of my bisect points took me as back as 2.6.34)
+> 
+> Please remind me why maintainers should not rebase their trees once
+> committed, to the point that they don't rebase even for buggy patches
+> that are already in next, and apply fix patches, all within the same
+> merge window. The same is also done with merge conflicts with the
+> rc-cycle of their own code, instead of rebasing.
+> 
+> So in short this is a call for, possibly, cleaner History in main Kernel.
+> Please remind me why re-writing history is a bad thing.
 
-> 
-> > scsi_error.c uses it in scsi_try_to_abort_cmd to check if a command has 
-> > completed, but I think that can be done by checking if REQ_ATOM_COMPLETE 
-> > is set.
-> 
-> Hmmm, good catch here.  Jejb and hch, does this item work for you..?
-> 
-> If so then I will take another peek for any ML uses of a struct
-> scsi_cmnd->serial_number that need to be addressed, and include Joe's
-> and Mike's recommendations into a v3 series.
-> 
-> Thanks for your comments here Mike!
-> 
-> --nab
+I can't comment on whether rebasing is reasonable at that level, but I
+was wondering if it made sense to teach git bisect to automatically
+cherry-pick known regression fixes.  If I recall correctly, someone once
+suggested a  history tag of the form "Fixes: <git-commit-id>".  By itself,
+that's probably not sufficient, as I'm sure some relevant commits would
+get through without that tag.  A separate index file containing pairs of
+commit-ids could supplement the main history.
+
+If that sounds like a reasonable approach, I'm willing to take a stab at
+implementing it.  (Unless someone smarter than me beats me to it, of course.)
+
+Phil
