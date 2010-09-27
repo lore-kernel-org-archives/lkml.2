@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757705Ab0I0LGO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 07:06:14 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:47095 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754953Ab0I0LGN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 07:06:13 -0400
-Date: Mon, 27 Sep 2010 13:06:56 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Doug Thompson <norsk5@yahoo.com>, edac-devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] amd64_edac fix for 36-rc6
-Message-ID: <20100927110656.GB2834@aftab>
+	id S1758585Ab0I0LQt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 07:16:49 -0400
+Received: from wrar.name ([109.74.195.39]:54456 "EHLO haley.wrar.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751259Ab0I0LQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 07:16:48 -0400
+Date: Mon, 27 Sep 2010 17:16:31 +0600
+From: Andrey Rahmatullin <wrar@altlinux.org>
+To: Nigel Cunningham <nigel@tuxonice.net>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        TuxOnIce-devel <tuxonice-devel@tuxonice.net>
+Subject: Re: [TuxOnIce-devel] Swsusp patches applied to suspend-2.6#linux-next
+Message-ID: <20100927111631.GA6759@wrars-comp.wrarsdomain>
+References: <1285566238-10966-1-git-send-email-nigel@tuxonice.net>
+ <20100927080000.GA7032@wrars-comp.wrarsdomain>
+ <4CA055EF.6050608@tuxonice.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="7JfCtLOvnd9MIVvH"
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4CA055EF.6050608@tuxonice.net>
+X-Operating-System: ALT Linux Sisyphus
+X-Jabber-Id: wrar@altlinux.org
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-please pull the following fix so that rmmod'ing the amd64_edac module
-doesn't hang anymore, details in the commit message below.
+--7JfCtLOvnd9MIVvH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks.
+On Mon, Sep 27, 2010 at 06:29:35PM +1000, Nigel Cunningham wrote:
+> >> On my laptop, single-threaded compression actually slows writing down =
+=66rom
+> >> 175MB/s to around 100-120MB/s (depending on how well the image compres=
+ses).
+> >> Reading speed improves from 218MB/s to around 245MB/s. I expect that
+> >> multithreaded writing would bring the writing (and reading) speeds back
+> >> up. It's on my swsusp to do list :)
+> > Works here.
+> What sort of speeds are you seeing?
+[  343.549378] PM: Image written at 107 MB/s.
+[  343.549379] PM: Image read at 205 MB/s.
+Latest ToI (on .35; with the lzo compressor; no clue about
+multithreadedness, though there are 4 CPUs here): I/O speed: Write 166
+MB/s, Read 192 MB/s.
 
---
-amd64_edac: Fix driver module removal
+--=20
+WBR, wRAR (ALT Linux Team)
 
-f4347553b30ec66530bfe63c84530afea3803396 removed the edac polling
-mechanism in favor of using a notifier chain for conveying MCE
-information to edac. However, the module removal path didn't test
-whether the driver had setup the polling function workqueue at all and
-the rmmod process was hanging in the kernel at try_to_del_timer_sync()
-in the cancel_delayed_work() path while trying to cancel an
-uninitialized work struct.
+--7JfCtLOvnd9MIVvH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Fix that by adding a balancing check to the workqueue removal path.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+iQEcBAEBCAAGBQJMoH0PAAoJEOih81koZvPBhGEH+wav+J+hTqqeDBUJx/NQMRXJ
+NH98KNmAgaLLJ1+yzeNTfnNBUp/e4z2QMSjW6y659V086S+p3iEpvzhjN0L2iYI4
+tmRF851ouLeS2gaX+zytitoz3Z1lbFVC4hO7Xvc9SEXqJVV2282/lJHwfouDJZ0L
+kRP5hEEjZ57BWSOlP33o5Is8Thu+YVxDT6kfRwuTLCgR7wMHaqTYDrhYs0Qn3zpI
+gBJ1QjidOR91FTst/IX3Dk8nOLi+aHbmlBn0lAv0AQii7JwZmkYTxi50U8VPbvYK
+7f/g6cMytHMaPSI7TYszjfJTE1ipfwGjgykO6QXgdDUEVOWKvNEN+Oep4xppdaI=
+=Yt10
+-----END PGP SIGNATURE-----
 
-diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index 3630308..6b21e25 100644
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -339,6 +339,9 @@ static void edac_mc_workq_teardown(struct mem_ctl_info *mci)
- {
- 	int status;
-
-+	if (mci->op_state != OP_RUNNING_POLL)
-+		return;
-+
- 	status = cancel_delayed_work(&mci->work);
- 	if (status == 0) {
- 		debugf0("%s() not canceled, flush the queue\n",
-
---
-
-The following changes since commit b30a3f6257ed2105259b404d419b4964e363928c:
-
-  Linux 2.6.36-rc5 (2010-09-20 16:56:53 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git for-linus
-
-Borislav Petkov (1):
-      amd64_edac: Fix driver module removal
-
- drivers/edac/edac_mc.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+--7JfCtLOvnd9MIVvH--
