@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755885Ab0I0V0y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 17:26:54 -0400
-Received: from nic.NetDirect.CA ([216.16.235.2]:42147 "EHLO
-	rubicon.netdirect.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780Ab0I0V0y (ORCPT
+	id S1755266Ab0I0VgV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 17:36:21 -0400
+Received: from mail.solarflare.com ([216.237.3.220]:9159 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751930Ab0I0VgU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 17:26:54 -0400
-X-Originating-Ip: 216.16.235.2
-Date: Mon, 27 Sep 2010 17:26:50 -0400
-From: Chris Frey <cdfrey@foursquare.net>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: ext3 filesystem corruption in user mode linux
-Message-ID: <20100927212650.GA20386@foursquare.net>
-References: <20100924041410.GA18040@foursquare.net> <20100924060557.GA21238@foursquare.net> <20100924064446.GA22588@foursquare.net> <AANLkTinQ20uSgFP5KV17B0J0v8Y0zAg=AgAd_kf+4Bh0@mail.gmail.com> <20100927211842.GA19667@foursquare.net> <AANLkTinYjJ8m6UjsR++zFCxo4jecDEzCAX_F_CF6NwZV@mail.gmail.com>
+	Mon, 27 Sep 2010 17:36:20 -0400
+Subject: Re: [PATCH v11 17/17]add two new ioctls for mp device.
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: xiaohui.xin@intel.com
+Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, davem@davemloft.net, herbert@gondor.hengli.com.au,
+        jdike@linux.intel.com
+In-Reply-To: <b74412a16bc32fe2550461f25156e5b2563c5a2c.1285385607.git.xiaohui.xin@intel.com>
+References: <1285388855-27410-1-git-send-email-xiaohui.xin@intel.com>
+	 <b74412a16bc32fe2550461f25156e5b2563c5a2c.1285385607.git.xiaohui.xin@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Mon, 27 Sep 2010 22:36:15 +0100
+Message-ID: <1285623375.2263.552.camel@achroite.uk.solarflarecom.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinYjJ8m6UjsR++zFCxo4jecDEzCAX_F_CF6NwZV@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 27 Sep 2010 21:36:19.0376 (UTC) FILETIME=[05ABAB00:01CB5E8C]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17668.005
+X-TM-AS-Result: No--11.564900-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 11:25:11PM +0200, richard -rw- weinberger wrote:
-> On Mon, Sep 27, 2010 at 11:18 PM, Chris Frey <cdfrey@foursquare.net> wrote:
-> > On Mon, Sep 27, 2010 at 11:04:07PM +0200, richard -rw- weinberger wrote:
-> >> On Fri, Sep 24, 2010 at 8:44 AM, Chris Frey <cdfrey@foursquare.net> wrote:
-> >> > On Fri, Sep 24, 2010 at 02:05:57AM -0400, Chris Frey wrote:
-> >> >> So far I have been unable to make 2.6.32.21 corrupt its filesystem
-> >> >> when running as the UML kernel (Host 2.6.35.4, UML 2.6.32.21)
-> >> >
-> >> > Spoke too soon... 2.6.32.21 has errors too, if pushed hard enough.
-> >> >
-> >>
-> >> can you do a git bisect?
-> >
-> > I've been trying, but so far the range of buggy versions stretches back
-> > to 2.6.32.x at least. ?I'm trying to find a version that doesn't have
-> > this issue.
-> >
-> > I'm kinda surprised that nobody else has run into this. ?Or maybe user
-> > mode linux isn't used as much as I thought? ? Or I'm just doing something
-> > completely bone headed. :-)
+On Sat, 2010-09-25 at 12:27 +0800, xiaohui.xin@intel.com wrote:
+> From: Xin Xiaohui <xiaohui.xin@intel.com>
 > 
-> Hmm, maybe this issue affects only your configuration.
-> When I have some spare time I'll try to trigger this on my setup.
+> The patch add two ioctls for mp device.
+> One is for userspace to query how much memory locked to make mp device
+> run smoothly. Another one is for userspace to set how much meory locked
+> it really wants.
+[...]
+> diff --git a/include/linux/mpassthru.h b/include/linux/mpassthru.h
+> index ba8f320..083e9f7 100644
+> --- a/include/linux/mpassthru.h
+> +++ b/include/linux/mpassthru.h
+> @@ -7,6 +7,8 @@
+>  /* ioctl defines */
+>  #define MPASSTHRU_BINDDEV      _IOW('M', 213, int)
+>  #define MPASSTHRU_UNBINDDEV    _IO('M', 214)
+> +#define MPASSTHRU_SET_MEM_LOCKED	_IOW('M', 215, unsigned long)
+> +#define MPASSTHRU_GET_MEM_LOCKED_NEED	_IOR('M', 216, unsigned long)
+[...]
 
-That would be great.  Let me know if you need any specific data from my end.
+These will need compat handling.  You can avoid that by defining them to
+use a parameter type of u32 or u64.
 
-- Chris
+Ben.
+
+-- 
+Ben Hutchings, Senior Software Engineer, Solarflare Communications
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
