@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759563Ab0I0PNq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 11:13:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21845 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752196Ab0I0PNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 11:13:45 -0400
-Message-ID: <4CA0B4A5.1090701@redhat.com>
-Date: Mon, 27 Sep 2010 17:13:41 +0200
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.4pre) Gecko/20091014 Fedora/3.0-2.8.b4.fc11 Thunderbird/3.0b4
+	id S933105Ab0I0POt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 11:14:49 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:60274 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755632Ab0I0POq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 11:14:46 -0400
+Date: Mon, 27 Sep 2010 11:10:06 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        alsa-devel@alsa-project.org, dri-devel@lists.freedesktop.org,
+        linux-ide@vger.kernel.org, "Maciej W. Rozycki" <macro@linux-mips.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Finn Thain <fthain@telegraphics.com.au>,
+        Randy Dunlap <rdunlap@xenotime.net>, Matt Turner <mattst88@gmail.com>,
+        Dimitry Torokhov <dmitry.torokhov@gmail.com>,
+        Mike Frysinger <vapier.adi@gmail.com>
+Subject: Re: [RFC v4]update broken web addresses in the kernel.
+Message-ID: <20100927151005.GC11086@tuxdriver.com>
+References: <1285525875-9920-1-git-send-email-justinmattock@gmail.com>
 MIME-Version: 1.0
-To: Matthew Wilcox <matthew@wil.cx>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Pavel Emelianov <xemul@openvz.org>
-Subject: [PATCH] procfs: fix numbering in /proc/locks
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285525875-9920-1-git-send-email-justinmattock@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Sep 26, 2010 at 11:31:15AM -0700, Justin P. Mattock wrote:
+> Below is an updated patch from the original fixing broken web addresses in the kernel.
+> Thanks for all the help and info on this to everybody..
+> Hopefully I didnt miss any of them(if so let me know, and I'll resend).
 
-The lock number in /proc/locks (first field) is implemented by a counter
-(private field of struct seq_file) which is incremented at each call of
-locks_show(). Currently it is reset each time locks_start() is called,
-that is each time we call the read() syscall on /proc/locks. Because of
-that, the numbering erratically restarts at 1 several times when reading
-a long /proc/locks file.
-We want the counter to be initialized at opening time and then never
-reset until we close the file. Fortunately, seq_open() memzeros the
-seq_file structure, so we can just drop the reset in locks_start() and
-move the increment the counter before actually printing the line so the
-numbering still starts at 1.
+Changing a URL for a relocated page is one thing, but removing links
+isn't necessarily a great idea.  Even if the site is technically
+gone, it may be possible to find information e.g through the Internet
+Archive Wayback Machine.
 
-Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
----
-diff --git a/fs/locks.c b/fs/locks.c
-index ab24d49..a5eab5e 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -2161,19 +2161,18 @@ static int locks_show(struct seq_file *f, void *v)
- 
- 	fl = list_entry(v, struct file_lock, fl_link);
- 
-+	f->private++;
- 	lock_get_status(f, fl, (long)f->private, "");
- 
- 	list_for_each_entry(bfl, &fl->fl_block, fl_block)
- 		lock_get_status(f, bfl, (long)f->private, " ->");
- 
--	f->private++;
- 	return 0;
- }
- 
- static void *locks_start(struct seq_file *f, loff_t *pos)
- {
- 	lock_kernel();
--	f->private = (void *)1;
- 	return seq_list_start(&file_lock_list, *pos);
- }
- 
+> diff --git a/drivers/net/wireless/orinoco/main.c b/drivers/net/wireless/orinoco/main.c
+> index e8e2d0f..ba10b07 100644
+> --- a/drivers/net/wireless/orinoco/main.c
+> +++ b/drivers/net/wireless/orinoco/main.c
+> @@ -17,7 +17,6 @@
+>   *
+>   * Portions based on wvlan_cs.c 1.0.6, Copyright Andreas Neuhaus <andy
+>   * AT fasta.fh-dortmund.de>
+> - *      http://www.stud.fh-dortmund.de/~andy/wvlan/
+>   *
+>   * The contents of this file are subject to the Mozilla Public License
+>   * Version 1.1 (the "License"); you may not use this file except in
+
+http://web.archive.org/web/20070716051348/http://www.stud.fh-dortmund.de/~andy/wvlan/
+
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
