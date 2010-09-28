@@ -1,81 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755191Ab0I1WmB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 18:42:01 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:45650 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1753138Ab0I1Wl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 18:41:59 -0400
-X-Authenticated: #31060655
-X-Provags-ID: V01U2FsdGVkX19orJtwWLRo7C1Kk7r0IW6se6mUQgkIFD/lRiBoBU
-	Aq7TrddZBoDVNm
-Message-ID: <4CA26F35.6060408@gmx.net>
-Date: Wed, 29 Sep 2010 00:41:57 +0200
-From: Carl-Daniel Hailfinger <c-d.hailfinger.devel.2006@gmx.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.23) Gecko/20090410 SUSE/1.1.18-0.1 SeaMonkey/1.1.18
-MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mtd <linux-mtd@lists.infradead.org>,
-        sf-linux-drivers <linux-net-drivers@solarflare.com>,
-        flashrom <flashrom@flashrom.org>
-Subject: Re: [RFC] Online firmware upgrade in non-embedded systems
-References: <1285696787.2282.45.camel@achroite.uk.solarflarecom.com>
-In-Reply-To: <1285696787.2282.45.camel@achroite.uk.solarflarecom.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1753434Ab0I1Wxx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 18:53:53 -0400
+Received: from nic.NetDirect.CA ([216.16.235.2]:53785 "EHLO
+	rubicon.netdirect.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915Ab0I1Wxv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 18:53:51 -0400
+X-Originating-Ip: 216.16.235.2
+Date: Tue, 28 Sep 2010 18:52:02 -0400
+From: Chris Frey <cdfrey@foursquare.net>
+To: Richard Weinberger <richard@nod.at>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        jdike@addtoit.com, user-mode-linux-devel@lists.sourceforge.net,
+        user-mode-linux-user@lists.sourceforge.net, janjaap@bos.nl,
+        geert@linux-m68k.org, jaxboe@fusionio.com, martin.petersen@oracle.com,
+        adobriyan@gmail.com, syzop@vulnscan.org
+Subject: Re: [PATCH 1/1] um: ubd: Fix data corruption
+Message-ID: <20100928225202.GA30352@foursquare.net>
+References: <1285710456-4435-1-git-send-email-richard@nod.at> <20100928150000.f007f43e.akpm@linux-foundation.org> <201009290013.11332.richard@nod.at>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201009290013.11332.richard@nod.at>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[adding flashrom@flashrom.org to CC, senders will be whitelisted after a
-short delay]
+On Wed, Sep 29, 2010 at 12:13:10AM +0200, Richard Weinberger wrote:
+> Am Mittwoch 29 September 2010, 00:00:00 schrieb Andrew Morton:
+> > This is a workaround, I think?  Do we know what the actual bug is?
+> > From the comment it appears to be a regression?
+> 
+> Yes, it is a workaround.
+> For more details please have a look at this post:
+> http://lkml.org/lkml/2010/9/28/245
 
-On 28.09.2010 19:59, Ben Hutchings wrote:
-> Network and disk controllers normally have at least some firmware in
-> flash to support their use as boot devices. [...]
->
-> Currently the sfc network driver is optionally combined with an MTD
-> driver (CONFIG_SFC_MTD) which exposes all upgradable firmware and
-> configuration partitions in flash.  This works nicely in kernels with
-> MTD enabled, but since MTD is mainly used in embedded systems with
-> on-board flash it is often disabled in distribution kernels and custom
-> kernels alike.  This leaves users of sfc unable to upgrade firmware
-> without rebuilding the kernel or booting some other distribution.  The
-> lack of widespread MTD support is a regular cause of support requests.
->
-> There are two main alternatives I'm aware of:
->
-> - Use the ethtool ETHTOOL_SEEPROM [...]
->
-> - Use the ethtool ETHTOOL_FLASHDEV command [..]
->
-> Of course these are both specific to network devices; it seems deisrable
-> to have a more general convention for online firmware upgrades.  MTDs
-> clearly are more generally applicable, and pretty much every computer
-> does have flash storage for firmware and boot configuration, so perhaps
-> it should be treated as more of a standard feature?
->   
+I'm going to run some tests to see how this works on my end, but in
+reading old threads, I found this response from Bram Matthys
+that casts some doubt on an older version of this patch.
 
-Given that the flashrom utility <http://www.flashrom.org/> (GPLv2)
-supports flashing many network cards, SATA/PATA controllers, graphics
-cards, and of course the main system firmware/BIOS/EFI, and it does that
-from userspace without any kernel support, using flashrom for those
-purposes makes sense IMHO.
+	http://marc.info/?l=user-mode-linux-user&m=126883932731656&w=2
 
-flashrom works fine under Linux 2.4, 2.6 and pretty much every other OS
-out there. There is a focus on x86, but MIPS, PowerPC and other
-architectures are supported as well. flashrom is independent of the MTD
-framework, so you don't need to boot a special kernel for a firmware
-upgrade.
+I've added him to the CC.
 
-That said, writing a flashrom driver for your hardware is pretty easy.
-You could even use existing kernel code for your device as a template
-for the flashrom driver since the license is compatible.
+- Chris
 
-If you have any questions, please ask.
-
-Regards,
-Carl-Daniel
