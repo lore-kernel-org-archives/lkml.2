@@ -1,118 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760700Ab0I1DeQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 23:34:16 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:31779 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760671Ab0I1Ddv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 23:33:51 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6119"; a="55810526"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Colin Cross <ccross@android.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: [PATCH 2/3] [ARM] Allow machines to override __delay()
-Date: Mon, 27 Sep 2010 20:33:46 -0700
-Message-Id: <1285644827-6846-3-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.3
-In-Reply-To: <1285644827-6846-1-git-send-email-sboyd@codeaurora.org>
-References: <1285644827-6846-1-git-send-email-sboyd@codeaurora.org>
+	id S1758141Ab0I1Diw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 23:38:52 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:59425 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757897Ab0I1Div (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 23:38:51 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_GPIO driver to 2.6.35
+Date: Mon, 27 Sep 2010 23:38:19 -0400
+User-Agent: KMail/1.13.5 (Linux/2.6.35.4; KDE/4.5.1; x86_64; ; )
+Cc: "Mark Brown" <broonie@opensource.wolfsonmicro.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Samuel Ortiz" <sameo@linux.intel.com>,
+        "Randy Dunlap" <randy.dunlap@oracle.com>,
+        "Alek Du" <alek.du@intel.com>,
+        "Richard =?utf-8?q?R=1B=24B=EF=BF=BDK=1B?=(Bfors" 
+	<richard.rojfors@mocean-labs.com>,
+        meego-dev@meego.com, "ML linux-kernel" <linux-kernel@vger.kernel.org>,
+        "Wang, Qi" <qi.wang@intel.com>, andrew.chih.howe.khor@intel.com,
+        gregkh@suse.de, "Wang, Yong Y" <yong.y.wang@intel.com>,
+        "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>
+References: <4C80D3C8.9020204@dsn.okisemi.com> <20100903134827.GA7614@rakim.wolfsonmicro.main> <000301cb5ebc$35ad8d20$66f8800a@maildom.okisemi.com>
+In-Reply-To: <000301cb5ebc$35ad8d20$66f8800a@maildom.okisemi.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart2520623.MFD1FMnYhI";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009272338.23762.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some machines want to implement their own __delay() routine based
-on fixed timers. Expose functionality to set the __delay()
-routine at runtime. This should allow two machines with different
-__delay() routines to happily co-exist within the same kernel
-with minimal overhead.
+--nextPart2520623.MFD1FMnYhI
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Russell expressed concern that using a timer based __delay()
-would cause problems where an iomapped device isn't mapped in
-before a delay call was made (see
-http://article.gmane.org/gmane.linux.ports.arm.kernel/78543 for
-more info). We can sidestep that issue with this approach since
-the __delay() routine _should_ only be pointed to a timer based
-delay once the timer has been properly mapped. Up until that
-point __delay() and udelay() will use delay_loop() which is
-always safe to call.
+On Monday, September 27, 2010 23:21:10 Masayuki Ohtake wrote:
+> > You should be implementing support for the device using the
+> > standard interfaces used by the other GPIO drivers in kernel.
+>=20
+> We are now modifying our GPIO driver with standard interface.
+> I've got a bit of problem.
+>=20
+> I don't understand how userspace accesses to the driver.
+> Let me know how to ? sysfs only ?
 
-This patch is inspired by x86's delay.c
+sysfs only.  look at GPIO_SYSFS in drivers/gpio/.  support the common GPIO=
+=20
+framework and the userspace API is taken care of for you.
+=2Dmike
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Reviewed-by: Saravana Kannan <skannan@codeaurora.org>
----
- arch/arm/include/asm/delay.h |    2 ++
- arch/arm/lib/delay.c         |   21 ++++++++++++++++++---
- 2 files changed, 20 insertions(+), 3 deletions(-)
+--nextPart2520623.MFD1FMnYhI
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-diff --git a/arch/arm/include/asm/delay.h b/arch/arm/include/asm/delay.h
-index ccc5ed5..7c732b5 100644
---- a/arch/arm/include/asm/delay.h
-+++ b/arch/arm/include/asm/delay.h
-@@ -40,5 +40,7 @@ extern void __const_udelay(unsigned long);
- 			__const_udelay((n) * ((2199023U*HZ)>>11))) :	\
- 	  __udelay(n))
- 
-+extern void set_delay_fn(void (*fn)(unsigned long));
-+
- #endif /* defined(_ARM_DELAY_H) */
- 
-diff --git a/arch/arm/lib/delay.c b/arch/arm/lib/delay.c
-index 5ee0adc..b307fcc 100644
---- a/arch/arm/lib/delay.c
-+++ b/arch/arm/lib/delay.c
-@@ -3,6 +3,8 @@
-  *
-  *  Copyright (C) 1995, 1996 Russell King
-  *  Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-+ *  Copyright (C) 1993 Linus Torvalds
-+ *  Copyright (C) 1997 Martin Mares <mj@atrey.karlin.mff.cuni.cz>
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -12,11 +14,9 @@
- #include <linux/delay.h>
- 
- /*
-- * loops = usecs * HZ * loops_per_jiffy / 1000000
-- *
-  * Oh, if only we had a cycle counter...
-  */
--void __delay(unsigned long loops)
-+void delay_loop(unsigned long loops)
- {
- 	asm volatile(
- 	"1:	subs %0, %0, #1 \n"
-@@ -25,6 +25,21 @@ void __delay(unsigned long loops)
- 	: "r" (loops)
- 	);
- }
-+
-+static void (*delay_fn)(unsigned long) = delay_loop;
-+
-+void set_delay_fn(void (*fn)(unsigned long))
-+{
-+	delay_fn = fn;
-+}
-+
-+/*
-+ * loops = usecs * HZ * loops_per_jiffy / 1000000
-+ */
-+void __delay(unsigned long loops)
-+{
-+	delay_fn(loops);
-+}
- EXPORT_SYMBOL(__delay);
- 
- /*
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
 
+iQIcBAABAgAGBQJMoWMvAAoJEEFjO5/oN/WBiakQAIoKQjGhvEVeysE34hrHJlCj
+x0mK1rAni+hwV1hWMwZRY8cpnXkUEGyKqAylaj4v6++RTvp3HDpJ+umbWX2hkokm
+/nt6WJsBpSUj27QLw7NTBfgWqFjgb2jyuETZB5kkeI27HiMJXPK1SkhvbWD+TqNt
+lpjJusxBDzcO/anVQyQNVQaN+ZIim9ibO3pzalFndRah605bQZbhB3pH1D7FxWro
+bykM/2qrbXA78fN8y9CNy+3kt1GHCjPqpMxhUINvbR/R1RklpXWUQsDpCWq4WRvh
+YoFPOJL0twHhifThZjNKkDN+DcD1AqBkOnY8b4a7ZiP3Vwyhl83EXl6/1L/KJ8Pn
+urrzRRtwC0pESgao43JSqjInMUotvDJw9FJBNqigqWT4H/2aQk+ZnwOeA9GnQ99t
+HQ/Xh2Oi8Qb7aZa28ZdQ3lttOI5bcbTemVsfIQBgdRhEUHQLn4qwXzPfo3bnsfXw
+3thdRaTDt7ohX8ZLR/eY9JajqD2poK1Bt+AKS5D8hah0usFGZBAfTzYkg4NPAuoR
+T+6tCFUyI7okk8hk5vdmEGLFxLmAIXLX4DzKY768M49d2Re7r+PMZ3iZ+VlzkonO
+vVKQmlfcWXZb9z1yogZwLSsswTOGoEiWTNPJcppXrMnAn+XFTziA6g0sPW+F6o5q
+HcO0cPw+nK7RkokdWrAz
+=eNro
+-----END PGP SIGNATURE-----
+
+--nextPart2520623.MFD1FMnYhI--
