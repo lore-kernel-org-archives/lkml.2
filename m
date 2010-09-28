@@ -1,259 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820Ab0I1F6d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 01:58:33 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:63324 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752417Ab0I1F6b convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 01:58:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=F47sSjN/3f39qUVdg6a7A3T9WNtbun8lKXfYfERKf+Gh16SPtMZK31FyQX3kXSNbNo
-         Be4kMnSYj7zLiGevaSKsmrHTZ/ulL/xyFUFV3d9JEBYrZeQhGo8JzCsRDXjyzOHpJtPi
-         rWlKDOuAKj5pipaPdpKEDoC6xQrkGVHBBP7PI=
+	id S1758011Ab0I1GCP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 02:02:15 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:65463 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752942Ab0I1GCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 02:02:14 -0400
+Date: Tue, 28 Sep 2010 14:01:17 +0800
+From: Hu Tao <hutao@cn.fujitsu.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Americo Wang <xiyou.wangcong@gmail.com>
+Subject: Re: [PATCH resend] Update num_symtab, symtab and strtab right after
+ setup of core_num_syms, core_symtab and core_strtab.
+Message-ID: <20100928060117.GC10608@localhost.localdomain>
+References: <20100928010628.GA6923@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <20100917150731.f1f44f3c.akpm@linux-foundation.org>
-References: <4C7CD95A.5040309@samsung.com>
-	<20100917150731.f1f44f3c.akpm@linux-foundation.org>
-Date: Tue, 28 Sep 2010 14:58:30 +0900
-Message-ID: <AANLkTim2UhJAhOw1qHvZ9bbctR0tNSMvE61T=sxffHxO@mail.gmail.com>
-Subject: Re: [PATCH] misc: adds support the FSA9480 USB Switch
-From: Minkyu Kang <promsoft@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minkyu Kang <mk7.kang@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, kyungmin.park@samsung.com,
-        Greg KH <greg@kroah.com>, Ben Dooks <ben-i2c@fluff.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20100928010628.GA6923@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Andrew Morton,
+Negative. Sorry for noise.
 
-On 18 September 2010 07:07, Andrew Morton <akpm@linux-foundation.org> wrote:
-> (catching up!)
->
-> On Tue, 31 Aug 2010 19:28:42 +0900
-> Minkyu Kang <mk7.kang@samsung.com> wrote:
->
->> The FSA9480 is a USB port accessory detector and switch.
->> This patch adds support the FSA9480 USB Switch.
->>
->
-> What a strange device.
->
-> Is there a data sheet available?
-
-Hello :)
-I couldn't find the fsa9480 data sheet on the web.
-But I found the fsa9280 data sheet instead.
-It looks very similar.
-http://www.fairchildsemi.com/ds/FS/FSA9280A.pdf
-
->
->> +config USB_SWITCH_FSA9480
->> +     tristate "FSA9480 USB Switch"
->> +     depends on I2C
->> +     help
->> +       The FSA9480 is a USB port accessory detector and switch.
->> +       The FSA9480 is fully controlled using I2C and enables USB data,
->> +       stereo and mono audio, video, microphone and UART data to use
->> +       a common connector port.
->
-> So if I'm understanding it correctly, it's an i2c-controlled device
-> which turns USB devices on and off, multiplexing them into a single USB
-> port?  So if I switch from "USB data" over to "microphone", the USB
-> subsystem will see the "USB data" device get unplugged and will see a
-> "microphone" get plugged in?
->
-> Or something else.  Am I even vaguely understanding this thing?
->
-> It would help if the changelog were to contain a paragraph
-> describing the overall behaviour of this device.
->
->>
->> ...
->>
->> +void fsa9480_set_switch(const char *buf)
->> +{
->> +     struct fsa9480_usbsw *usbsw = chip;
->> +     struct i2c_client *client = usbsw->client;
->> +     unsigned int value;
->> +     unsigned int path = 0;
->> +
->> +     value = fsa9480_read_reg(client, FSA9480_REG_CTRL);
->> +
->> +     if (!strncmp(buf, "VAUDIO", 6)) {
->> +             path = SW_VAUDIO;
->> +             value &= ~CON_MANUAL_SW;
->> +     } else if (!strncmp(buf, "UART", 4)) {
->> +             path = SW_UART;
->> +             value &= ~CON_MANUAL_SW;
->> +     } else if (!strncmp(buf, "AUDIO", 5)) {
->> +             path = SW_AUDIO;
->> +             value &= ~CON_MANUAL_SW;
->> +     } else if (!strncmp(buf, "DHOST", 5)) {
->> +             path = SW_DHOST;
->> +             value &= ~CON_MANUAL_SW;
->> +     } else if (!strncmp(buf, "AUTO", 4)) {
->> +             path = SW_AUTO;
->> +             value |= CON_MANUAL_SW;
->> +     } else {
->> +             printk(KERN_ERR "Wrong command\n");
->> +             return;
->> +     }
->> +
->> +     usbsw->mansw = path;
->> +     fsa9480_write_reg(client, FSA9480_REG_MANSW1, path);
->> +     fsa9480_write_reg(client, FSA9480_REG_CTRL, value);
->> +}
->> +EXPORT_SYMBOL_GPL(fsa9480_set_switch);
->
-> Why was this exported?
-
-Kyungmin already explained about it.
-
->
->> +ssize_t fsa9480_get_switch(char *buf)
->> +{
->> +     struct fsa9480_usbsw *usbsw = chip;
->> +     struct i2c_client *client = usbsw->client;
->> +     unsigned int value;
->> +
->> +     value = fsa9480_read_reg(client, FSA9480_REG_MANSW1);
->> +
->> +     if (value == SW_VAUDIO)
->> +             return sprintf(buf, "VAUDIO\n");
->> +     else if (value == SW_UART)
->> +             return sprintf(buf, "UART\n");
->> +     else if (value == SW_AUDIO)
->> +             return sprintf(buf, "AUDIO\n");
->> +     else if (value == SW_DHOST)
->> +             return sprintf(buf, "DHOST\n");
->> +     else if (value == SW_AUTO)
->> +             return sprintf(buf, "AUTO\n");
->> +     else
->> +             return sprintf(buf, "%x", value);
->> +}
->> +EXPORT_SYMBOL_GPL(fsa9480_get_switch);
->
-> This export also has no callers?
-
-It's for other drivers.
-For example.. When USB cable is connected, PMIC driver enable the
-power for each device.
-But if use the manual switch, PMIC driver can't know what device is enabled.
-So, this function was exported.
-
->
-> These functions implement a userspace API.  Userspace APIs are
-> important.  But the patch provided no documentation for that API.
-> Please always fully, exhaustively document userspace APIs!  For they
-> are the one part of the driver which we can never change.
->
-> Documenting them in a documentation file is OK.  Also there's
-> Documentation/ABI/.  And they can be nicely described in the changelog
-> too.
->
-> But providing us with no description at all makes review harder and
-> less effective than we'd like it to be, and results in a driver which
-> is harder for our users to use.
->
-> OK?
->
->> +static ssize_t fsa9480_show_status(struct device *dev,
->> +                                struct device_attribute *attr,
->> +                                char *buf)
->> +{
->> +     struct fsa9480_usbsw *usbsw = dev_get_drvdata(dev);
->> +     struct i2c_client *client = usbsw->client;
->> +     int devid, ctrl, adc, dev1, dev2, intr,
->> +         intmask1, intmask2, time1, time2, mansw1;
->> +
->> +     devid = fsa9480_read_reg(client, FSA9480_REG_DEVID);
->> +     ctrl = fsa9480_read_reg(client, FSA9480_REG_CTRL);
->> +     adc = fsa9480_read_reg(client, FSA9480_REG_ADC);
->> +     intmask1 = fsa9480_read_reg(client, FSA9480_REG_INT1_MASK);
->> +     intmask2 = fsa9480_read_reg(client, FSA9480_REG_INT2_MASK);
->> +     dev1 = fsa9480_read_reg(client, FSA9480_REG_DEV_T1);
->> +     dev2 = fsa9480_read_reg(client, FSA9480_REG_DEV_T2);
->> +     time1 = fsa9480_read_reg(client, FSA9480_REG_TIMING1);
->> +     time2 = fsa9480_read_reg(client, FSA9480_REG_TIMING2);
->> +     mansw1 = fsa9480_read_reg(client, FSA9480_REG_MANSW1);
->> +
->> +     fsa9480_read_irq(client, &intr);
->> +
->> +     return sprintf(buf, "Device ID(%02x), CTRL(%02x)\n"
->> +                     "ADC(%02x), DEV_T1(%02x), DEV_T2(%02x)\n"
->> +                     "INT(%04x), INTMASK(%02x, %02x)\n"
->> +                     "TIMING(%02x, %02x), MANSW1(%02x)\n",
->> +                     devid, ctrl, adc, dev1, dev2, intr,
->> +                     intmask1, intmask2, time1, time2, mansw1);
->> +}
->
-> That's will produce odd-looking output I suspect.  More conventional
-> would be
->
->        Device ID:%02x CTRL:%02x
->
-> or something like that.
->
-> But that result is basically unparseable by software and a better output
-> would be
->
-> Device_ID: %02x
-> CTRL: %02x
-> ADC: %02x
->
-> etc.
->
-> But even that violates the sysfs one-value-per-file guideline.
->
-> So this interface is problematic.  It should have been discussed
-> up-front in the changelog so we can all take a look at the proposal and
-> have a think about it.
-
-Yes. It's for debugging.
-I'll remove some features and separate this sysfs file.
-
->
->>
->> ...
->>
->> +static irqreturn_t fsa9480_irq_handler(int irq, void *data)
->> +{
->> +     struct fsa9480_usbsw *usbsw = data;
->> +
->> +     if (!work_pending(&usbsw->work)) {
->> +             disable_irq_nosync(irq);
->> +             schedule_work(&usbsw->work);
->> +     }
->> +
->> +     return IRQ_HANDLED;
->> +}
->
-> I expect that this driver can be converted to the new threaded IRQ code
-> (request_threaded_irq) and it will all become simpler.
-
-Ok, I'll convert to new IRQ code.
-
->
->>
->> ...
->>
->
+On Tue, Sep 28, 2010 at 09:06:28AM +0800, Hu Tao wrote:
+> symtab/strtab refer to memory that will be vfreed when load_module() is
+> done. So update them early.
+> 
+> Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
+> ---
+>  kernel/module.c |    9 ++++-----
+>  1 files changed, 4 insertions(+), 5 deletions(-)
+> 
+> diff --git a/kernel/module.c b/kernel/module.c
+> index d0b5f8d..d5dc98b 100644
+> --- a/kernel/module.c
+> +++ b/kernel/module.c
+> @@ -2029,6 +2029,10 @@ static void add_kallsyms(struct module *mod, const struct load_info *info)
+>  	for (*s = 0, i = 1; i < info->sechdrs[info->index.str].sh_size; ++i)
+>  		if (test_bit(i, info->strmap))
+>  			*++s = mod->strtab[i];
+> +
+> +	mod->num_symtab = mod->core_num_syms;
+> +	mod->symtab = mod->core_symtab;
+> +	mod->strtab = mod->core_strtab;
+>  }
+>  #else
+>  static inline void layout_symtab(struct module *mod, struct load_info *info)
+> @@ -2738,11 +2742,6 @@ SYSCALL_DEFINE3(init_module, void __user *, umod,
+>  	/* Drop initial reference. */
+>  	module_put(mod);
+>  	trim_init_extable(mod);
+> -#ifdef CONFIG_KALLSYMS
+> -	mod->num_symtab = mod->core_num_syms;
+> -	mod->symtab = mod->core_symtab;
+> -	mod->strtab = mod->core_strtab;
+> -#endif
+>  	module_free(mod, mod->module_init);
+>  	mod->module_init = NULL;
+>  	mod->init_size = 0;
+> -- 
+> 1.7.3
+> 
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-
-Thanks
-Minkyu Kang.
--- 
-from. prom.
-www.promsoft.net
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
