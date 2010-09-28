@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758166Ab0I1S5E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 14:57:04 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:20382 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757420Ab0I1S5C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 14:57:02 -0400
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Douglas Gilbert <dgilbert@interlog.com>, Jens Axboe <axboe@kernel.dk>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Richard Sharpe <realrichardsharpe@gmail.com>
-Subject: Re: [PATCH 1/3] tcm: Add Thin Provisioning / UNMAP emulation and Block Limits VPD page
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <1285627889-6450-1-git-send-email-nab@linux-iscsi.org>
-Date: Tue, 28 Sep 2010 14:55:30 -0400
-In-Reply-To: <1285627889-6450-1-git-send-email-nab@linux-iscsi.org> (Nicholas
-	A. Bellinger's message of "Mon, 27 Sep 2010 15:51:28 -0700")
-Message-ID: <yq1sk0taeal.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1758270Ab0I1S5d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 14:57:33 -0400
+Received: from www.tglx.de ([62.245.132.106]:37746 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757420Ab0I1S5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 14:57:32 -0400
+Date: Tue, 28 Sep 2010 20:57:19 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: x86@kernel.org, Yinghai Lu <yhlu.kernel@gmail.com>
+Subject: [PATCH] x86: Plug memory leak in sparse irq
+Message-ID: <alpine.LFD.2.00.1009282052570.2416@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "nab" == Nicholas A Bellinger <nab@linux-iscsi.org> writes:
+free_irq_cfg() is not freeing the cpumask_vars in irq_cfg.
 
-nab> This patch also adds the Block Limits VPD (0xb0) page
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: stable@kernel.org
+---
+ arch/x86/kernel/apic/io_apic.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-You should add the Thin Provisioning VPD page as well and set TPU and/or
-TPWS.
-
--- 
-Martin K. Petersen	Oracle Linux Engineering
+Index: linux-2.6/arch/x86/kernel/apic/io_apic.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/apic/io_apic.c
++++ linux-2.6/arch/x86/kernel/apic/io_apic.c
+@@ -311,9 +311,11 @@ void arch_init_copy_chip_data(struct irq
+ 	init_copy_irq_2_pin(old_cfg, cfg, node);
+ }
+ 
+-static void free_irq_cfg(struct irq_cfg *old_cfg)
++static void free_irq_cfg(struct irq_cfg *cfg)
+ {
+-	kfree(old_cfg);
++	free_cpumask_var(cfg->domain);
++	free_cpumask_var(cfg->old_domain);
++	kfree(cfg);
+ }
+ 
+ void arch_free_chip_data(struct irq_desc *old_desc, struct irq_desc *desc)
