@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756988Ab0I1QzZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 12:55:25 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:56586 "EHLO
+	id S1757049Ab0I1Q5S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 12:57:18 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:58865 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756849Ab0I1QzU (ORCPT
+	with ESMTP id S1754534Ab0I1Q5R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 12:55:20 -0400
-Date: Tue, 28 Sep 2010 09:53:10 -0700
+	Tue, 28 Sep 2010 12:57:17 -0400
+Date: Tue, 28 Sep 2010 09:56:43 -0700
 From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Sage Weil <sage@newdream.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>,
+        davem@davemloft.net
 Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        ceph-devel@vger.kernel.org
-Subject: [PATCH -next] ceph: fix debugfs warnings
-Message-Id: <20100928095310.2983a888.randy.dunlap@oracle.com>
+        <masa-korg@dsn.okisemi.com>
+Subject: [PATCH -next] pch_gbe: add header files
+Message-Id: <20100928095643.18c5020f.randy.dunlap@oracle.com>
 In-Reply-To: <20100928141823.8c61000e.sfr@canb.auug.org.au>
 References: <20100928141823.8c61000e.sfr@canb.auug.org.au>
 Organization: Oracle Linux Eng.
@@ -27,28 +28,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Include "super.h" outside of CONFIG_DEBUG_FS to eliminate a compiler warning:
+Fix build errors, more header files needed.
 
-fs/ceph/debugfs.c:266: warning: 'struct ceph_fs_client' declared inside parameter list
-fs/ceph/debugfs.c:266: warning: its scope is only this definition or declaration, which is probably not what you want
-fs/ceph/debugfs.c:271: warning: 'struct ceph_fs_client' declared inside parameter list
+drivers/net/pch_gbe/pch_gbe_main.c:965: error: implicit declaration of function 'tcp_hdr'
+drivers/net/pch_gbe/pch_gbe_main.c:965: error: invalid type argument of '->' (have 'int')
+drivers/net/pch_gbe/pch_gbe_main.c:968: error: invalid type argument of '->' (have 'int')
+drivers/net/pch_gbe/pch_gbe_main.c:976: error: implicit declaration of function 'udp_hdr'
+drivers/net/pch_gbe/pch_gbe_main.c:976: error: invalid type argument of '->' (have 'int')
+drivers/net/pch_gbe/pch_gbe_main.c:980: error: invalid type argument of '->' (have 'int')
 
 Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 ---
- fs/ceph/debugfs.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/pch_gbe/pch_gbe.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- linux-next-20100927.orig/fs/ceph/debugfs.c
-+++ linux-next-20100927/fs/ceph/debugfs.c
-@@ -12,9 +12,10 @@
- #include <linux/ceph/auth.h>
- #include <linux/ceph/debugfs.h>
+--- linux-next-20100927.orig/drivers/net/pch_gbe/pch_gbe.h
++++ linux-next-20100927/drivers/net/pch_gbe/pch_gbe.h
+@@ -31,6 +31,8 @@
+ #include <linux/ethtool.h>
+ #include <linux/vmalloc.h>
+ #include <net/ip.h>
++#include <net/tcp.h>
++#include <net/udp.h>
  
-+#include "super.h"
-+
- #ifdef CONFIG_DEBUG_FS
- 
--#include "super.h"
- #include "mds_client.h"
- 
- static int mdsmap_show(struct seq_file *s, void *p)
+ /**
+  * pch_gbe_regs_mac_adr - Structure holding values of mac address registers
