@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760505Ab0I1CFK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 22:05:10 -0400
-Received: from nm9.bullet.mail.ne1.yahoo.com ([98.138.90.72]:26518 "HELO
-	nm9.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757775Ab0I1CFH (ORCPT
+	id S933149Ab0I1CFb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 22:05:31 -0400
+Received: from smtp127.sbc.mail.sp1.yahoo.com ([69.147.65.186]:40535 "HELO
+	smtp127.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932999Ab0I1CF0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 22:05:07 -0400
-X-Yahoo-Newman-Id: 450448.74345.bm@omp1011.mail.ne1.yahoo.com
+	Mon, 27 Sep 2010 22:05:26 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: BVfUclwVM1mybOsX_LblpodTUCDdsrsAf4YrN8TpV629BXT
- ZIIr_yBroKL7rbb.1l54L.IsadzFBlFf.mb5RBtHO7_are6vfeyhtf7Q2hke
- Ad5DLR8CQi4Gm.9JyxN7bqBzUVFsw0uHgMXWlVPRV.u4gU.lEqxHMVqeogW.
- 4gmiwJFtOBkSgMhIr3N4BzuMM9UVgumS4orUb7e6xXW4yzzz3F3I7eqmFXNg
- KXgLmt6sBmn0wMxNepIm33d3l.wHdRCpzdXIjKZlx3gCB792P0PI65pGH5lZ
- .
+X-YMail-OSG: sQOXPqEVM1m0DsBgBNyvAAYtS7NCv5VZ66.8yY11xSwqQsN
+ yNZMc_hBYHifRgimcrv7cTwUtWqkoQTUc0vtl_hdmWYOSGBQBANlgMRZRo5W
+ 3Z.DzrFoopNzoYB2PYxnOA8Suaku9A2anPnMLEBAfN3cDf8X3RDkR.WMJQMv
+ a9NX0KU98l8BBW2NI7IZcPNjnPuc2mQUNq1St.D9XFInHUXwRx7VZnSzD.rd
+ ycqThgqkVLeEFK6OhQCn02bnRAG41o96xVjgwgexzCzr3AxJGKlObGbTOryU
+ 1czsE.BcilBp6x9bO6MB7ggaFh1YTqAx37DuCRQEbY9I-
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -34,9 +33,9 @@ Cc: James Smart <james.smart@emulex.com>,
         Luben Tuikov <ltuikov@yahoo.com>, mvsas maintainer <kewei@marvell.com>,
         pm8001 maintainer Jack Wang <jack_wang@usish.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [RFC v4 00/19] scsi: Add optional host_lock less scsi_dispatch_cmd()
-Date: Mon, 27 Sep 2010 19:04:59 -0700
-Message-Id: <1285639499-7204-1-git-send-email-nab@linux-iscsi.org>
+Subject: [RFC v4 02/19] libiscsi: Remove host_lock unlock() + lock() from iscsi_queuecommand()
+Date: Mon, 27 Sep 2010 19:05:23 -0700
+Message-Id: <1285639523-7244-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -44,119 +43,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Greetings all,
-
-This is the forth RFC for allowing an optional struct Scsi_Host->host_lock
-less bit for high performance LLDs who where originaly dropping and reaquiring
-host_lock from within their own SHT->queuecommand() callers in order to increase
-performance.  This series includes the wholesale conversion of existing libraries
-and all other SCSI LLD ->queuecommand() callers that use the now extinct host_lock
-optimization of:
-
-        unlock() ; do_some_lld_work() ; lock() -> return from ->mylld_queuecommand()
-
-This series includes patches to drop this historical optimization (and prevent a
-sure-fire deadlock w/ host_lock here) in libiscsi, libsas, libfc, libata and in
-lpfc, qla4xxx, qla2xxx, fnic, and buslogic SCSI LLDs.
-
-This patch also converts the scsi_cmd_get_serial() call to a counting by 2 odd
-counter that is no longer used directly and by default for LLDs in scsi_dispatch_cmd(),
-but is still required for mpt-fusion, mpt2sas, and a handful of old LLDs.
-
-For this case we add explict scsi_cmd_get_serial() calls into SHT->queuecommand()
-callers for mpt2sas, mpt/fusion, dpt_i2o, eata and u14-34f.  There are other
-SCSI LLDs that use struct scsi_cmnd->serial_number informationally, but no other
-ones (AFAICT) actually depend on having ->serial_number set to function properly.
-
-So if anyone else knows if any SCSI LLDs that either:
-
-        *) drop and request struct Scsi_Host->host_lock in their SHT->queuecommand()
-           to prevent dead-lock
-
-        *) or depend upon struct scsi_cmnd->serial_number for some reason to prevent
-           any other old/obsecure LLDs from having problems with a zero ->serial_number.
-
-please let me know and I will queue a follow up patches to address any other issues.
-
-Please note that this patch has a bug wrt to scsi_error.c usage mentioned by
-Mike Anderson, and will be addressed in a RFC v5 series.
-
-Changes from RFC v3 -> v4 include:
-
-	*) Use scsi_dispatch_cmd_locked() by default when LLD is not registering
-	   it's struct scsi_host_template with SHT->unlocked_qcmd=1
-	*) Update aic94xx, mvsas, pm8001 and other LLDs included in RFCv3 to use
-	   new SHT->unlocked_qcmd=1 who where already using the ->queuecommand()
-	   'optimization' discussed above.
-
-Many thanks go out to the linux.intel.com team (Vasu Dev, Tim Chen, Andi Kleen, Matthew Wilcox)
-Joe Eykholt (Cisco), Mike Christie (RHAT), James Bottomley (Suse.de), Mike Anderson + Brian King
-(linux.vnet.ibm.com) and Christof Schmitt (de.ibm.com) for their invaluable input towards
-the whole-sale conversion of drivers/scsi to an optional host_lock less SHT->queuecommand()
-dispatcher!
-
-Thank you!
+This patch removes the now legacy host_lock unlock() + lock() optimization
+from libiscsi.c:iscsi_queuecommand().  This also adds SHT->unlocked_qcmd=1
+to signal host_lock less operation with iscsi_queuecommand().
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+---
+ drivers/scsi/iscsi_tcp.c |    1 +
+ drivers/scsi/libiscsi.c  |    4 ----
+ 2 files changed, 1 insertions(+), 4 deletions(-)
 
-Nicholas Bellinger (19):
-  scsi: Add SHT->unlocked_qcmd for host_lock less SHT->queuecommand()
-    dispatch
-  libiscsi: Remove host_lock unlock() + lock() from
-    iscsi_queuecommand()
-  libsas: Remove host_lock unlock() + lock() from sas_queuecommand()
-  aic94xx: Set SHT->unlocked_qcmd=1 for libsas queuecommand()
-  mvsas: Set SHT->unlocked_qcmd=1 for libsas queuecommand()
-  pm8001: Set SHT->unlocked_qcmd=1 for libsas queuecommand()
-  libfc: Remove host_lock unlock() + lock() from fc_queuecommand()
-  fcoe: Set SHT->unlocked_qcmd=1 for libfc fc_queuecommand()
-  libata: Remove host_lock unlock() + lock() from ata_scsi_queuecmd()
-  lpfc: Remove host_lock unlock() + lock() from lpfc_queuecommand()
-  qla4xxx: Remove host_lock unlock() + lock() from
-    qla4xxx_queuecommand()
-  qla2xxx: Remove host_lock unlock() + lock() from
-    qla2xxx_queuecommand()
-  fnic: Remove host_lock unlock() + lock() from fnic_queuecommand()
-  buslogic: Remove host_lock unlock() + lock() from
-    BusLogic_QueueCommand()
-  mpt2sas: Add scsi_cmd_get_serial() call
-  mpt/fusion: Add scsi_cmd_get_serial() call
-  dpt_i2o: Add scsi_cmd_get_serial() call
-  eata: Add scsi_cmd_get_serial() call
-  u14-34f: Add scsi_cmd_get_serial() call
-
- block/blk.h                          |    4 ++
- drivers/ata/libata-scsi.c            |    4 +-
- drivers/message/fusion/mptfc.c       |    1 +
- drivers/message/fusion/mptsas.c      |    1 +
- drivers/message/fusion/mptscsih.c    |    5 ++
- drivers/message/fusion/mptspi.c      |    1 +
- drivers/scsi/BusLogic.c              |    4 --
- drivers/scsi/aic94xx/aic94xx_init.c  |    1 +
- drivers/scsi/dpt_i2o.c               |    5 ++
- drivers/scsi/eata.c                  |    5 ++
- drivers/scsi/fcoe/fcoe.c             |    1 +
- drivers/scsi/fnic/fnic_main.c        |    1 +
- drivers/scsi/fnic/fnic_scsi.c        |    9 ----
- drivers/scsi/hosts.c                 |    5 ++
- drivers/scsi/iscsi_tcp.c             |    1 +
- drivers/scsi/libfc/fc_fcp.c          |    5 +--
- drivers/scsi/libiscsi.c              |    4 --
- drivers/scsi/libsas/sas_scsi_host.c  |    5 --
- drivers/scsi/lpfc/lpfc_scsi.c        |    4 +-
- drivers/scsi/mpt2sas/mpt2sas_scsih.c |    6 ++
- drivers/scsi/mvsas/mv_init.c         |    1 +
- drivers/scsi/pm8001/pm8001_init.c    |    1 +
- drivers/scsi/qla2xxx/qla_os.c        |    8 +--
- drivers/scsi/qla4xxx/ql4_os.c        |    9 +---
- drivers/scsi/scsi.c                  |   89 ++++++++++++++++++++++++++--------
- drivers/scsi/scsi_error.c            |   10 +++-
- drivers/scsi/u14-34f.c               |    6 ++
- include/linux/libata.h               |    1 +
- include/scsi/scsi_cmnd.h             |    1 +
- include/scsi/scsi_host.h             |   16 +++++-
- 30 files changed, 144 insertions(+), 70 deletions(-)
-
+diff --git a/drivers/scsi/iscsi_tcp.c b/drivers/scsi/iscsi_tcp.c
+index fec47de..f5933dd 100644
+--- a/drivers/scsi/iscsi_tcp.c
++++ b/drivers/scsi/iscsi_tcp.c
+@@ -882,6 +882,7 @@ static struct scsi_host_template iscsi_sw_tcp_sht = {
+ 	.target_alloc		= iscsi_target_alloc,
+ 	.proc_name		= "iscsi_tcp",
+ 	.this_id		= -1,
++	.unlocked_qcmd		= 1,
+ };
+ 
+ static struct iscsi_transport iscsi_sw_tcp_transport = {
+diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
+index 633e090..7e4134e 100644
+--- a/drivers/scsi/libiscsi.c
++++ b/drivers/scsi/libiscsi.c
+@@ -1615,7 +1615,6 @@ int iscsi_queuecommand(struct scsi_cmnd *sc, void (*done)(struct scsi_cmnd *))
+ 
+ 	host = sc->device->host;
+ 	ihost = shost_priv(host);
+-	spin_unlock(host->host_lock);
+ 
+ 	cls_session = starget_to_session(scsi_target(sc->device));
+ 	session = cls_session->dd_data;
+@@ -1706,7 +1705,6 @@ int iscsi_queuecommand(struct scsi_cmnd *sc, void (*done)(struct scsi_cmnd *))
+ 
+ 	session->queued_cmdsn++;
+ 	spin_unlock(&session->lock);
+-	spin_lock(host->host_lock);
+ 	return 0;
+ 
+ prepd_reject:
+@@ -1716,7 +1714,6 @@ reject:
+ 	spin_unlock(&session->lock);
+ 	ISCSI_DBG_SESSION(session, "cmd 0x%x rejected (%d)\n",
+ 			  sc->cmnd[0], reason);
+-	spin_lock(host->host_lock);
+ 	return SCSI_MLQUEUE_TARGET_BUSY;
+ 
+ prepd_fault:
+@@ -1733,7 +1730,6 @@ fault:
+ 		scsi_in(sc)->resid = scsi_in(sc)->length;
+ 	}
+ 	done(sc);
+-	spin_lock(host->host_lock);
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(iscsi_queuecommand);
 -- 
 1.7.3
 
