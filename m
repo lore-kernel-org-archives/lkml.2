@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933518Ab0I1CGL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 22:06:11 -0400
-Received: from smtp102.sbc.mail.re3.yahoo.com ([66.196.96.85]:32373 "HELO
-	smtp102.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S933466Ab0I1CGH (ORCPT
+	id S933549Ab0I1CG1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 22:06:27 -0400
+Received: from smtp104.sbc.mail.ac4.yahoo.com ([76.13.13.243]:40501 "HELO
+	smtp104.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933532Ab0I1CGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 22:06:07 -0400
+	Mon, 27 Sep 2010 22:06:23 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: 6LRYiPgVM1mulHpsjAo3v3KgKRhwJbn_48J0dl4pcnJxv5l
- aVLkeGzs5SHf7J2ZBJ.wlGtRmxr4S8G7H3HHDlwJfTKF8MPLtGnA3Jzy6j7J
- zg78_0lcOy6d9iODAFtTMV86sT_qA_93olqC955o9D6kBdsUW50CZVSecJNn
- IxsLdnrFlp8UDvAmH64eyG8666ofnRNeDqCZVsxfKzGELBjN12GLBbnHkryc
- utg29rLkL539.aNziL1d2TModxV9i1Fu58rFx.gi495etMNuR3YUzMyL48im
- k8wKsDLDZK8b.36e3n3J5yr89W6AZJpqNpYSKLcQZ1ozLmOny2BtXYIaS8ux
- Ti7ccEKmrHIR3fg61Buo5REknIjxxSpkwfgfUy_362_aecKShAC0tOKv87P8
- gudXG9lDievw_vPIkEPJHGWitCqyJAZIRz3AdU38b
+X-YMail-OSG: CUILYQMVM1nwzi4hOeEI9SKCVawiuz5C2wc5KKwC_pmHmJ3
+ vZmfShgeFloZjVHwysEqxwHDQc04A.fQFChhdh0oqYIiyGMzO6YRe0o0.vGD
+ OhIy2XasNsa2Yamcuy8ycv_uOR2wtLv_gvLQV93_YOj6IZyO5vIuKXitGeNA
+ _qReaRjK1ujnsYtvND3jTESmek5ApzKfWb2xuH8kbLJmdVSF.iGbk.nut.xf
+ fslVwKP0GC7pmxZXv5OhJrF1W8X6zXcsUMzlgXN5FLC2BkAcrTDqgOBtIpsO
+ sY4frPz0o4MfSUxXwpMkQ4VYbPvaCGqavP4D98g.C4A4-
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -35,9 +33,9 @@ Cc: James Smart <james.smart@emulex.com>,
         Luben Tuikov <ltuikov@yahoo.com>, mvsas maintainer <kewei@marvell.com>,
         pm8001 maintainer Jack Wang <jack_wang@usish.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [RFC v4 06/19] pm8001: Set SHT->unlocked_qcmd=1 for libsas queuecommand()
-Date: Mon, 27 Sep 2010 19:06:00 -0700
-Message-Id: <1285639560-7325-1-git-send-email-nab@linux-iscsi.org>
+Subject: [RFC v4 07/19] libfc: Remove host_lock unlock() + lock() from fc_queuecommand()
+Date: Mon, 27 Sep 2010 19:06:11 -0700
+Message-Id: <1285639571-7345-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -45,28 +43,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch updates pm8001 to set struct scsi_host_template->unlocked_qcmd=1
-because it is using generic libsas sas_queuecommand() code which now can be
-run without struct Scsi_Host->host_lock held following the original
-host_lock unlock -> do_work() -> lock optimization in sas_queuecommand().
+This patch removes the now legacy host_lock unlock() + lock() optimization
+fc_fcp.c:fc_queuecommand()
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/scsi/pm8001/pm8001_init.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/scsi/libfc/fc_fcp.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/scsi/pm8001/pm8001_init.c b/drivers/scsi/pm8001/pm8001_init.c
-index f8c86b2..96e1dd6 100644
---- a/drivers/scsi/pm8001/pm8001_init.c
-+++ b/drivers/scsi/pm8001/pm8001_init.c
-@@ -69,6 +69,7 @@ static struct scsi_host_template pm8001_sht = {
- 	.can_queue		= 1,
- 	.cmd_per_lun		= 1,
- 	.this_id		= -1,
-+	.unlocked_qcmd		= 1,
- 	.sg_tablesize		= SG_ALL,
- 	.max_sectors		= SCSI_DEFAULT_MAX_SECTORS,
- 	.use_clustering		= ENABLE_CLUSTERING,
+diff --git a/drivers/scsi/libfc/fc_fcp.c b/drivers/scsi/libfc/fc_fcp.c
+index c797f6b..140cd94 100644
+--- a/drivers/scsi/libfc/fc_fcp.c
++++ b/drivers/scsi/libfc/fc_fcp.c
+@@ -1751,8 +1751,7 @@ static inline int fc_fcp_lport_queue_ready(struct fc_lport *lport)
+  * @cmd:   The scsi_cmnd to be executed
+  * @done:  The callback function to be called when the scsi_cmnd is complete
+  *
+- * This is the i/o strategy routine, called by the SCSI layer. This routine
+- * is called with the host_lock held.
++ * This is the i/o strategy routine, called by the SCSI layer.
+  */
+ int fc_queuecommand(struct scsi_cmnd *sc_cmd, void (*done)(struct scsi_cmnd *))
+ {
+@@ -1772,7 +1771,6 @@ int fc_queuecommand(struct scsi_cmnd *sc_cmd, void (*done)(struct scsi_cmnd *))
+ 		done(sc_cmd);
+ 		return 0;
+ 	}
+-	spin_unlock_irq(lport->host->host_lock);
+ 
+ 	if (!*(struct fc_remote_port **)rport->dd_data) {
+ 		/*
+@@ -1849,7 +1847,6 @@ int fc_queuecommand(struct scsi_cmnd *sc_cmd, void (*done)(struct scsi_cmnd *))
+ 		rc = SCSI_MLQUEUE_HOST_BUSY;
+ 	}
+ out:
+-	spin_lock_irq(lport->host->host_lock);
+ 	return rc;
+ }
+ EXPORT_SYMBOL(fc_queuecommand);
 -- 
 1.7.3
 
