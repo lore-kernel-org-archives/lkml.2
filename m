@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757631Ab0I1SYu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 14:24:50 -0400
-Received: from claw.goop.org ([74.207.240.146]:48265 "EHLO claw.goop.org"
+	id S1757607Ab0I1S2r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 14:28:47 -0400
+Received: from kroah.org ([198.145.64.141]:46591 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756030Ab0I1SYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 14:24:49 -0400
-Message-ID: <4CA232EF.3080906@goop.org>
-Date: Tue, 28 Sep 2010 11:24:47 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.3
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+	id S1752612Ab0I1S2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 14:28:46 -0400
+Date: Tue, 28 Sep 2010 11:29:10 -0700
+From: Greg KH <greg@kroah.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Kyle McMartin <kyle@redhat.com>,
+        James Dingwall <james.dingwall@amdocs.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        "sct@redhat.com" <sct@redhat.com>
-Subject: Re: [PATCH 12/12] xen/mtrr: Add mtrr_if support for Xen mtrr
-References: <alpine.DEB.2.00.1009281217540.2864@kaball-desktop> <1285676218-26218-12-git-send-email-stefano.stabellini@eu.citrix.com> <20100928123925.GA18208@elte.hu> <alpine.DEB.2.00.1009281455300.2864@kaball-desktop> <4CA2223B.9040400@goop.org> <4CA22C3C.3020209@zytor.com> <4CA2302C.3000201@goop.org> <4CA231A8.5000100@zytor.com>
-In-Reply-To: <4CA231A8.5000100@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        stable@kernel.org
+Subject: Re: [stable] PROBLEM: [BISECTED] 2.6.35.5 xen domU panics just
+	after the boot
+Message-ID: <20100928182910.GA32464@kroah.com>
+References: <3B7AEC3C7FCC864282DFAC9A56A7BA363D81475787@UKLNDMAIL1.corp.amdocs.com> <20100927024044.GQ13116@bombadil.infradead.org> <20100927061336.GA22721@kroah.com> <4CA0DDAB.9090507@goop.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CA0DDAB.9090507@goop.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 09/28/2010 11:19 AM, H. Peter Anvin wrote:
-> On 09/28/2010 11:13 AM, Jeremy Fitzhardinge wrote:
->>  On 09/28/2010 10:56 AM, H. Peter Anvin wrote:
->>> On 09/28/2010 10:13 AM, Jeremy Fitzhardinge wrote:
->>>> Yes, we could just mask out the MTRR CPU feature and rely entirely on PAT.
->>>>
->>>> The alternative would be to use the wrmsr hooks to emulate the Intel
->>>> MTRR registers by mapping them to hypercalls, but that seems needlessly
->>>> complex.
->>>>
->>> Indeed.  Relying on pure PAT is the Right Thing[TM].
->> Is there a plan to formally deprecate /proc/mtrr and the kernel
->> infrastructure behind it?
->>
-> No, and we really can't do it for a couple of reasons:
->
-> a) Pre-PAT hardware;
-> b) MTRRs and PAT interact on hardware;
-> c) MTRRs, but not PAT, interact with SMM.
+On Mon, Sep 27, 2010 at 11:08:43AM -0700, Jeremy Fitzhardinge wrote:
+>  On 09/26/2010 11:13 PM, Greg KH wrote:
+> > On Sun, Sep 26, 2010 at 10:40:44PM -0400, Kyle McMartin wrote:
+> >> On Thu, Sep 23, 2010 at 04:23:55PM +0100, James Dingwall wrote:
+> >>>> I was experiencing the same immediate crash with a null pointer
+> >>>> dereference (log below) on boot with 2.6.35.5.  Reverting
+> >>>> fb412a178502dc498430723b082a932f797e4763 also resolved the problem for
+> >>>> me.
+> >>> Checking the diff from this commit it looks like there is a typo in the patch.  With the following (probably mangled by my client) I get 2.6.35.5 to boot.  Suggest it should be a candidate for .32 and .35 stable trees.
+> >>>
+> >> Greg, a spelling mistake cropped into this patch during 2.6.35.5 that
+> >> James here points out. Adding you to CC since it seems to have missed
+> >> stable 2.6.35.6...
+> >>
+> >> Was in xen-use-percpu-interrupts-for-ipis-and-virqs.patch.
+> > I don't understand, where did the error come from?  Was it in a patch I
+> > applied, or did I mess up some patch?  Is the same problem upstream, and
+> > if not, why not?
+> 
+> I don't know.  It looks like an 'x' was deleted due to an editor
+> fat-finger or something.  The original upstream patches were cc:d to
+> stable, so I think you would have got them that way (ie, I don't think I
+> sent them to you specifically).  Is there an opportunity in your
+> workflow where this error could have crept in?  The patches should have
+> been a pretty clean 'git cherry-pick' with no conflicts.
 
-What about pre-PAT software (ie, X servers which still use /proc/mtrr)?
+Sorry, I don't know what happened, using my scripts, it does drop to an
+editor so I can add the "signed-off-by" line, so perhaps I accidentally
+did this in there.
 
-> However, since a virtual machine like Xen doesn't have these issues, it
-> doesn't apply
+It's now in the -stable queue and I'll push out new releases in a few
+hours.
 
-Well, we're specifically talking about a virtual machine which has
-direct access to hardware, so it is concerned about the real physical
-memory properties of real physical pages.  If we can assume that
-BIOS/Xen will always set up MTRR correctly then there shouldn't be any
-need for the kernel to modify the MTRR itself.  How true is that in
-general?  I don't know, but if we could rely on BIOS then there'd never
-be a need to touch MTRR, would there?
+thanks,
 
-    J
+greg k-h
