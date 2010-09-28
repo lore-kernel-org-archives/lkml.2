@@ -1,71 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554Ab0I1IJJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 04:09:09 -0400
-Received: from www.tglx.de ([62.245.132.106]:56164 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750921Ab0I1IJH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 04:09:07 -0400
-Date: Tue, 28 Sep 2010 10:08:52 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-cc: Arthur Kepner <akepner@sgi.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [RFC/PATCHv2] x86/irq: round-robin distribution of irqs to cpus
- w/in node
-In-Reply-To: <m1hbhalo1o.fsf@fess.ebiederm.org>
-Message-ID: <alpine.LFD.2.00.1009280957150.2416@localhost6.localdomain6>
-References: <20100927203448.GC30050@sgi.com> <alpine.LFD.2.00.1009272236430.2416@localhost6.localdomain6> <20100927220113.GD30050@sgi.com> <alpine.LFD.2.00.1009280003300.2416@localhost6.localdomain6> <m1hbhalo1o.fsf@fess.ebiederm.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756819Ab0I1ILM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 04:11:12 -0400
+Received: from mtagate5.de.ibm.com ([195.212.17.165]:39151 "EHLO
+	mtagate5.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750702Ab0I1ILK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 04:11:10 -0400
+Date: Tue, 28 Sep 2010 10:11:06 +0200
+From: Christof Schmitt <christof.schmitt@de.ibm.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Mike Christie <michaelc@cs.wisc.edu>, Joe Eykholt <jeykholt@cisco.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Christoph Hellwig <hch@lst.de>
+Subject: [PATCH] zfcp: Remove scsi_cmnd->serial_number from debug traces
+Message-ID: <20100928081103.GA3790@schmichrtp.mainz.de.ibm.com>
+References: <1284747709-20862-1-git-send-email-nab@linux-iscsi.org>
+ <4C93BB8E.2080501@cisco.com>
+ <4C9427B6.9050404@cs.wisc.edu>
+ <1284839878.13344.300.camel@haakon2.linux-iscsi.org>
+ <20100927140551.GB8473@schmichrtp.mainz.de.ibm.com>
+ <1285628548.8880.64.camel@haakon2.linux-iscsi.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285628548.8880.64.camel@haakon2.linux-iscsi.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Sep 2010, Eric W. Biederman wrote:
-> > On Mon, 27 Sep 2010, Arthur Kepner wrote:
-> The deep bug is that create_irq_nr allocates a vector (which it does
-> because at the time there was no better way to mark an irq in use on
-> x86).  In the case of msi-x we really don't know the node that irq is
-> going to be used on until we get a request irq.  We simply know which
-> node the device is on.
+From: Christof Schmitt <christof.schmitt@de.ibm.com>
 
-Bah. So the whole per node allocation business is completely useless
-at this point.
+With the change that drivers have to explicitly request the serial
+number for SCSI commands, this field should not be part of the zfcp
+traces. It is not worth the effort to request the serial number only
+for tracing purposes, so simply remove this field from the debug
+traces.
 
-> If you want to see what is going follow the call trace looks like.
-> pci_enable_msix 
->   arch_setup_msi_irqs
->     create_irq_nr
-> 
-> After pci_enable_msix is finished then the driver goes and makes all
-> of the irqs per cpu irqs.
-> 
-> There are goofy things that happen when hardware asks for 1 irq per cpu.
-> But since msi can ask for up to 4096 irqs (assuming the hardware
-> supports it) I can totally see putting all 256 of those irqs on a single
-> cpu, before you go to user space and let user space or something
-> reassign all of those irqs in a per cpu way.
-> 
-> My gut feel says that the real answer is to delay assigning a vector
-> to an irq until request_irq().  At which point we will know that someone
-> at least wants to use the irq.
+Reviewed-by: Swen Schillig <swen@vnet.ibm.com>
+Signed-off-by: Christof Schmitt <christof.schmitt@de.ibm.com>
+---
+ drivers/s390/scsi/zfcp_dbf.c |    4 ----
+ drivers/s390/scsi/zfcp_dbf.h |    2 --
+ 2 files changed, 6 deletions(-)
 
-Right. So the solution would be:
-
-create_irq allocates an irq number + irq descriptor, nothing else
-
-chip->startup() will setup the vector and chip->shutdown releases
-it. That requires to change the return value of chip->startup to int,
-so we can return an error code, but that can be done in course of the
-overhaul I'm working on. 
-
-Right now I prefer not to add more crap to io_apic.c, it's horrible
-enough already. I'll fix that with the cleanup.
-
-Thanks
-
-	tglx
-
-
+--- a/drivers/s390/scsi/zfcp_dbf.c
++++ b/drivers/s390/scsi/zfcp_dbf.c
+@@ -154,7 +154,6 @@ void _zfcp_dbf_hba_fsf_response(const ch
+ 		scsi_cmnd = (struct scsi_cmnd *)fsf_req->data;
+ 		if (scsi_cmnd) {
+ 			response->u.fcp.cmnd = (unsigned long)scsi_cmnd;
+-			response->u.fcp.serial = scsi_cmnd->serial_number;
+ 			response->u.fcp.data_dir =
+ 				qtcb->bottom.io.data_direction;
+ 		}
+@@ -330,7 +329,6 @@ static void zfcp_dbf_hba_view_response(c
+ 			break;
+ 		zfcp_dbf_out(p, "data_direction", "0x%04x", r->u.fcp.data_dir);
+ 		zfcp_dbf_out(p, "scsi_cmnd", "0x%0Lx", r->u.fcp.cmnd);
+-		zfcp_dbf_out(p, "scsi_serial", "0x%016Lx", r->u.fcp.serial);
+ 		*p += sprintf(*p, "\n");
+ 		break;
+ 
+@@ -881,7 +879,6 @@ void _zfcp_dbf_scsi(const char *tag, con
+ 				}
+ 				rec->scsi_result = scsi_cmnd->result;
+ 				rec->scsi_cmnd = (unsigned long)scsi_cmnd;
+-				rec->scsi_serial = scsi_cmnd->serial_number;
+ 				memcpy(rec->scsi_opcode, scsi_cmnd->cmnd,
+ 					min((int)scsi_cmnd->cmd_len,
+ 						ZFCP_DBF_SCSI_OPCODE));
+@@ -950,7 +947,6 @@ static int zfcp_dbf_scsi_view_format(deb
+ 	zfcp_dbf_out(&p, "scsi_lun", "0x%08x", r->scsi_lun);
+ 	zfcp_dbf_out(&p, "scsi_result", "0x%08x", r->scsi_result);
+ 	zfcp_dbf_out(&p, "scsi_cmnd", "0x%0Lx", r->scsi_cmnd);
+-	zfcp_dbf_out(&p, "scsi_serial", "0x%016Lx", r->scsi_serial);
+ 	zfcp_dbf_outd(&p, "scsi_opcode", r->scsi_opcode, ZFCP_DBF_SCSI_OPCODE,
+ 		      0, ZFCP_DBF_SCSI_OPCODE);
+ 	zfcp_dbf_out(&p, "scsi_retries", "0x%02x", r->scsi_retries);
+--- a/drivers/s390/scsi/zfcp_dbf.h
++++ b/drivers/s390/scsi/zfcp_dbf.h
+@@ -110,7 +110,6 @@ struct zfcp_dbf_hba_record_response {
+ 	union {
+ 		struct {
+ 			u64 cmnd;
+-			u64 serial;
+ 			u32 data_dir;
+ 		} fcp;
+ 		struct {
+@@ -206,7 +205,6 @@ struct zfcp_dbf_scsi_record {
+ 	u32 scsi_lun;
+ 	u32 scsi_result;
+ 	u64 scsi_cmnd;
+-	u64 scsi_serial;
+ #define ZFCP_DBF_SCSI_OPCODE	16
+ 	u8 scsi_opcode[ZFCP_DBF_SCSI_OPCODE];
+ 	u8 scsi_retries;
