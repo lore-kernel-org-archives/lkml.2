@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933704Ab0I1CH5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 22:07:57 -0400
-Received: from smtp106.sbc.mail.mud.yahoo.com ([68.142.198.104]:34037 "HELO
-	smtp106.sbc.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S933680Ab0I1CHq (ORCPT
+	id S933713Ab0I1CIK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 22:08:10 -0400
+Received: from nm23.bullet.mail.sp2.yahoo.com ([98.139.91.93]:47321 "HELO
+	nm23.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933277Ab0I1CIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 22:07:46 -0400
+	Mon, 27 Sep 2010 22:08:07 -0400
+X-Yahoo-Newman-Id: 634610.30320.bm@omp1058.mail.ne1.yahoo.com
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: XJOv1hIVM1m60FeMybk031tcsfky4VMCj.nTLfSPm7Mqg0t
- 6JdfVcvOC_vmA9YNdjW61B2P7xXOMorupsDghRIipJaHMbG3IC1QrS_og_M_
- zYeJ.VX.L4q2Xbhx..ihs_0Nw8qOwvaLyr_gsx3ev9kW.9SRVgd6Wg1B0.ig
- VXSv5DewqgL98tSK_G9A5PhMFjNh7EsP4_ja97TwzMIppt__QAqWlUYhykGV
- cy7v4E254L6GZGA1lHhcWcBhlgu3X.wHnEygZSpDXA0W6SWvh59sZ521syGT
- R7SuSmrzZRQdODPw8aFc_naxHleJMHOYNRy1ymvFgJi4-
+X-YMail-OSG: S3OmMgMVM1lZeszML_IgwiIhFV1w06A3vO2e.xW5hWvavs7
+ bnAvUEMDL6y06faynkOCgD5Nk2vo9DbfLfDX.MWorYH9iXU.opGCSQfrReuJ
+ PK5FyfhA_24O7jgFztyKkHeDG8trO_W8XLOyxCsDTpBe8vRkRI9GOP8yx19R
+ daqcVR0QJyunfMWzTx.dqYXtd0KPftNm8m.tb7WrqPUzt..jhg45vVLrpJqo
+ EnYSGpwEoiblYl_ccTvgYzxL.sZ_zJODkGlFvBLJHza1YOTvt3gf8IdSOSrs
+ i5deZl1_yNcaHAx1bXbF2Wwvs3P1uP.CYayvummb.qwid6eXD_LmP87fbAAD
+ ZdS_zs0gNGL48P_SgsIlud_r55DwcDJvj_OgGZg1EwljLB9LZyDTmtkVi
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -33,9 +35,9 @@ Cc: James Smart <james.smart@emulex.com>,
         Luben Tuikov <ltuikov@yahoo.com>, mvsas maintainer <kewei@marvell.com>,
         pm8001 maintainer Jack Wang <jack_wang@usish.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [RFC v4 15/19] mpt2sas: Add scsi_cmd_get_serial() call
-Date: Mon, 27 Sep 2010 19:07:41 -0700
-Message-Id: <1285639661-7505-1-git-send-email-nab@linux-iscsi.org>
+Subject: [RFC v4 17/19] dpt_i2o: Add scsi_cmd_get_serial() call
+Date: Mon, 27 Sep 2010 19:08:00 -0700
+Message-Id: <1285639680-7545-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -43,42 +45,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch adds a scsi_cmd_get_serial() call in _scsih_qcmd() to setup a
-valid struct scsi_cmnd->serial_number because mpt2sas_scsih_issue_tm()
-still depends upon this being set.
-
-This also includes setting the SHT->unlocked_qcmd=1 for host_lock less mpt2sas
-_scsih_qcmd() operation.
+This patch adds a scsi_cmd_get_serial() call in adpt_queue() to setup a
+valid struct scsi_cmnd->serial_number because adpt_cmd_to_context() still
+depends upon this being set.
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/scsi/mpt2sas/mpt2sas_scsih.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ drivers/scsi/dpt_i2o.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-index 16e99b6..4bedbf2 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -3325,6 +3325,11 @@ _scsih_qcmd(struct scsi_cmnd *scmd, void (*done)(struct scsi_cmnd *))
- 	u16 smid;
+diff --git a/drivers/scsi/dpt_i2o.c b/drivers/scsi/dpt_i2o.c
+index ffc1edf..b4dfaf7 100644
+--- a/drivers/scsi/dpt_i2o.c
++++ b/drivers/scsi/dpt_i2o.c
+@@ -429,6 +429,11 @@ static int adpt_queue(struct scsi_cmnd * cmd, void (*done) (struct scsi_cmnd *))
  
- 	scmd->scsi_done = done;
-+	/*
+ 	cmd->scsi_done = done;
+ 	/*
 +	 * Call scsi_cmd_get_serial() because we need a valid serial number
-+	 * in mpt2sas_scsih_issue_tm()
++	 * for adpt_cmd_to_context()
 +	 */
-+	scsi_cmd_get_serial(scmd);
- 	sas_device_priv_data = scmd->device->hostdata;
- 	if (!sas_device_priv_data || !sas_device_priv_data->sas_target) {
- 		scmd->result = DID_NO_CONNECT << 16;
-@@ -6464,6 +6469,7 @@ static struct scsi_host_template scsih_driver_template = {
- 	.eh_host_reset_handler		= _scsih_host_reset,
- 	.bios_param			= _scsih_bios_param,
- 	.can_queue			= 1,
-+	.unlocked_qcmd			= 1,
- 	.this_id			= -1,
- 	.sg_tablesize			= MPT2SAS_SG_DEPTH,
- 	.max_sectors			= 8192,
++	scsi_cmd_get_serial(cmd);
++	/*
+ 	 * SCSI REQUEST_SENSE commands will be executed automatically by the 
+ 	 * Host Adapter for any errors, so they should not be executed 
+ 	 * explicitly unless the Sense Data is zero indicating that no error 
 -- 
 1.7.3
 
