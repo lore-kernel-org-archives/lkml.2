@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758348Ab0I1GGC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 02:06:02 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:36776 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753219Ab0I1GGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 02:06:00 -0400
-Date: Tue, 28 Sep 2010 09:05:54 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Grazvydas Ignotas <notasas@gmail.com>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Balbi, Felipe" <balbi@ti.com>,
-        "Chikkature Rajashekar, Madhusudhan" <madhu.cr@ti.com>
-Subject: Re: [PATCH v4] power_supply: Add driver for TWL4030/TPS65950 BCI
- charger
-Message-ID: <20100928060554.GF2702@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1285618704-8985-1-git-send-email-notasas@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <1285618704-8985-1-git-send-email-notasas@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1760650Ab0I1GG0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 02:06:26 -0400
+Received: from ganesha.gnumonks.org ([213.95.27.120]:57968 "EHLO
+	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758100Ab0I1GGZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 02:06:25 -0400
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: ben-linux@fluff.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, rmk@arm.linux.org.uk,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: [PATCH] MAINTAINERS: Updates maintainer for S5P ARM ARCHITECTURES
+Date: Tue, 28 Sep 2010 14:46:36 +0900
+Message-Id: <1285652796-24558-1-git-send-email-kgene.kim@samsung.com>
+X-Mailer: git-send-email 1.6.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Ben Dooks <ben-linux@fluff.org>
+Cc: Russell King <rmk@arm.linux.org.uk>
+---
+ MAINTAINERS |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-On Mon, Sep 27, 2010 at 03:18:24PM -0500, Grazvydas Ignotas wrote:
->+static int twl4030_bci_usb_ncb(struct notifier_block *nb, unsigned long val,
->+                              void *priv)
->+{
->+       struct twl4030_bci *bci = container_of(nb, struct twl4030_bci, otg_nb);
->+
->+       dev_dbg(bci->dev, "OTG notify %lu\n", val);
->+
->+       switch (val) {
->+       case USB_EVENT_VBUS:
->+       case USB_EVENT_CHARGER:
-
-you should have removed CHARGER from here :-)
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index c36f5d7..acad9b5 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -962,6 +962,13 @@ W:	http://www.fluff.org/ben/linux/
+ S:	Maintained
+ F:	arch/arm/mach-s3c6410/
+ 
++ARM/S5P ARM ARCHITECTURES
++M:	Kukjin Kim <kgene.kim@samsung.com>
++L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
++L:	linux-samsung-soc@vger.kernel.org (moderated for non-subscribers)
++S:	Maintained
++F:	arch/arm/mach-s5p*/
++
+ ARM/SHMOBILE ARM ARCHITECTURE
+ M:	Paul Mundt <lethal@linux-sh.org>
+ M:	Magnus Damm <magnus.damm@gmail.com>
 -- 
-balbi
+1.6.2.5
+
