@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755045Ab0I1Nvj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 09:51:39 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47020 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753643Ab0I1Nvi (ORCPT
+	id S1755290Ab0I1Nw7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 09:52:59 -0400
+Received: from vs244178.vserver.de ([62.75.244.178]:49984 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752246Ab0I1Nw6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 09:51:38 -0400
-Date: Tue, 28 Sep 2010 15:14:58 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Linus Walleij <linus.ml.walleij@gmail.com>
-Cc: samu.p.onkalo@nokia.com, akpm@osdl.org, rpurdie@linux.intel.com,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Martin Persson <martin.persson@stericsson.com>
-Subject: Re: [PATCH 0/4] Led driver support for LP5521 and LP5523 chips
-Message-ID: <20100928151458.5c8741fb@lxorguk.ukuu.org.uk>
-In-Reply-To: <AANLkTi=N-p_ojTt6ia6bLxoA5AKC6rdZky9kvz_BqFqa@mail.gmail.com>
-References: <1284631946-5350-1-git-send-email-samu.p.onkalo@nokia.com>
-	<62697B07E9803846BC582181BD6FB6B835EF64A9AA@NOK-EUMSG-02.mgdnok.nokia.com>
-	<AANLkTi=N-p_ojTt6ia6bLxoA5AKC6rdZky9kvz_BqFqa@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
+	Tue, 28 Sep 2010 09:52:58 -0400
+X-Greylist: delayed 1973 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Sep 2010 09:52:58 EDT
+Date: Tue, 28 Sep 2010 15:19:28 +0200
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <02122083.20100928151928@eikelenboom.it>
+To: mingo@redhat.com, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: linux-kernel@vger.kernel.org,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        <x86@kernel.org>
+Subject: Re: [PATCH 12/12] xen/mtrr: Add mtrr_if support for Xen mtrr
+MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Sep 2010 11:00:20 +0200
-Linus Walleij <linus.ml.walleij@gmail.com> wrote:
+>* stefano.stabellini@xxxxxxxxxxxxx <stefano.stabellini@xxxxxxxxxxxxx> wrote:
+>
+>> From: Stephen Tweedie <sct@xxxxxxxxxx>
+>> 
+>> Add a Xen mtrr type, and reorganise mtrr initialisation slightly to
+>> allow the mtrr driver to set up num_var_ranges (Xen needs to do this by
+>> querying the hypervisor itself.)
+>> 
+>> [ Impact: add basic MTRR support ]
+>> 
+>> Signed-off-by: Stephen Tweedie <sct@xxxxxxxxxx>
+>> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@xxxxxxxxxx>
+>> Signed-off-by: Stefano Stabellini <stefano.stabellini@xxxxxxxxxxxxx>
+>> ---
+>> arch/x86/kernel/cpu/mtrr/Makefile | 2 +-
+>> arch/x86/kernel/cpu/mtrr/main.c | 3 +
+>> arch/x86/kernel/cpu/mtrr/mtrr.h | 7 ++
+>> arch/x86/kernel/cpu/mtrr/xen.c | 110 +++++++++++++++++++++++++++++++++++++
+> 4 files changed, 121 insertions(+), 1 deletions(-)
+> create mode 100644 arch/x86/kernel/cpu/mtrr/xen.c
+>
+>Still NAK, for the very same reasons as we NAK-ed it the previous time: 
+>/proc/mtrr is a problematic and complicated legacy interface that should 
+>die. Any modern X server will do the right thing via PAT.
+>
+>Also, please get the Ack of at least one x86 maintainer for x86 patches.
+>
+>Thanks,
+>
+>Ingo
+>--
+>
 
-> 2010/9/27  <samu.p.onkalo@nokia.com>:
-> 
-> > I haven't got any mails or comments from Richard about this driver.
-> > Also led tree here:
-> > http://git.o-hand.com/cgit.cgi/linux-rpurdie-leds/
-> >
-> > is not updated in 4 months.
-> >
-> > I'm just wondering should I send this to somebody else than Richard Purdie?
-> >
-> > I'll update the driver based on other comments and send v2 patch set.
-> 
-> We (ST-Ericsson) need this driver in as well.
-> 
-> If Richard is busy maybe Andrew can pick it up for the time being?
+I can't find the MTRR API to be officially deprecated with any schedule for removal (at least i couldn't find it in feature-removal-schedule.txt).
+KVM has had patches for MTRR as well, if it's so deprecated .. why has it ? .. legacy support for a not officially deprecated API perhaps ? To support CPU's that support MTRR but not PAT ?
 
-Same here (Intel)
+If you think the MTRR interface should die, and should die fast, why hasn't it been added to feature-removal-schedule.txt for a complete removal in a not so distant future, since this is the only way to force all users to switch to PAT.
 
-Alan
+Perhaps it would be fair to ask for a working PAT implementation besides MTRR, but since it is not officially deprecated completely objecting a MTRR one just for Xen seems a bit unfair to me.
+
+--
+Sander
+
