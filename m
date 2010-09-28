@@ -1,118 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700Ab0I1VwI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 17:52:08 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:50814 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754590Ab0I1VwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 17:52:06 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
-Subject: Re: [RFC][PATCH] PM / Hibernate: Make some boot messages look less scary
-Date: Tue, 28 Sep 2010 23:51:28 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc5-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>
-References: <201009240056.41308.rjw@sisk.pl>
-In-Reply-To: <201009240056.41308.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1754865Ab0I1WA4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 18:00:56 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:50667 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752855Ab0I1WAz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 18:00:55 -0400
+Date: Tue, 28 Sep 2010 15:00:00 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-kernel@vger.kernel.org, jdike@addtoit.com,
+        user-mode-linux-devel@lists.sourceforge.net,
+        user-mode-linux-user@lists.sourceforge.net, janjaap@bos.nl,
+        geert@linux-m68k.org, jaxboe@fusionio.com, martin.petersen@oracle.com,
+        adobriyan@gmail.com, cdfrey@foursquare.net
+Subject: Re: [PATCH 1/1] um: ubd: Fix data corruption
+Message-Id: <20100928150000.f007f43e.akpm@linux-foundation.org>
+In-Reply-To: <1285710456-4435-1-git-send-email-richard@nod.at>
+References: <1285710456-4435-1-git-send-email-richard@nod.at>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009282351.28392.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 24, 2010, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> Subject: PM / Hibernate: Make some boot messages look less scary
+On Tue, 28 Sep 2010 23:47:36 +0200
+Richard Weinberger <richard@nod.at> wrote:
+
+> Under high load the file system gets corrupted.
+> This patch fixes the issue.
 > 
-> The hibernate resume code checks if there is an image to resume from
-> on every boot and, if the kernel is built with CONFIG_PM_DEBUG set
-> and the image is not present, it prints some scary messages
-> suggesting there was a boot error of some sort.  Apparently, some
-> users are confused by them, so make them look less scary and adjust
-> the other hibernate resume debug messages to match them.
+> Many thanks to Janjaap Bos <janjaap@bos.nl>!
 > 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-
-OK, no one was objecting, so I applied this patch to suspend-2.6/linux-next.
-
-
+> LKML-Reference: <AANLkTi=PTp7YW_eYxtF-H2QSxgei3whWH59wU0C9oCkz () mail ! gmail ! com>
+> Signed-off-by: Richard Weinberger <richard@nod.at>
 > ---
->  kernel/power/hibernate.c |   12 ++++++------
->  kernel/power/swap.c      |    4 ++--
->  2 files changed, 8 insertions(+), 8 deletions(-)
+>  arch/um/drivers/ubd_kern.c |    7 +++++--
+>  1 files changed, 5 insertions(+), 2 deletions(-)
 > 
-> Index: linux-2.6/kernel/power/swap.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/power/swap.c
-> +++ linux-2.6/kernel/power/swap.c
-> @@ -929,13 +929,13 @@ put:
->  		if (error)
->  			blkdev_put(hib_resume_bdev, FMODE_READ);
->  		else
-> -			pr_debug("PM: Signature found, resuming\n");
-> +			pr_debug("PM: Image signature found, resuming\n");
->  	} else {
->  		error = PTR_ERR(hib_resume_bdev);
+> diff --git a/arch/um/drivers/ubd_kern.c b/arch/um/drivers/ubd_kern.c
+> index 1bcd208..2874b83 100644
+> --- a/arch/um/drivers/ubd_kern.c
+> +++ b/arch/um/drivers/ubd_kern.c
+> @@ -748,9 +748,12 @@ static int ubd_open_dev(struct ubd *ubd_dev)
 >  	}
+>  	ubd_dev->fd = fd;
 >  
->  	if (error)
-> -		pr_debug("PM: Error %d checking image file\n", error);
-> +		pr_debug("PM: Image not found (code %d)\n", error);
+> -	if(ubd_dev->cow.file != NULL){
+> -		blk_queue_max_hw_sectors(ubd_dev->queue, 8 * sizeof(long));
+> +	/* A setting higher than 1 sector currently (>= v2.6.31) generates
+> +		data loss, both for raw and cow ubd. */
+> +	blk_queue_max_hw_sectors(ubd_dev->queue, 1 * sizeof(long));
+> +	blk_queue_max_segments(ubd_dev->queue, 1 * sizeof(long));
 >  
->  	return error;
->  }
-> Index: linux-2.6/kernel/power/hibernate.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/power/hibernate.c
-> +++ linux-2.6/kernel/power/hibernate.c
-> @@ -708,7 +708,7 @@ static int software_resume(void)
->  		goto Unlock;
->  	}
->  
-> -	pr_debug("PM: Checking image partition %s\n", resume_file);
-> +	pr_debug("PM: Checking hibernation image partition %s\n", resume_file);
->  
->  	/* Check if the device is there */
->  	swsusp_resume_device = name_to_dev_t(resume_file);
-> @@ -733,10 +733,10 @@ static int software_resume(void)
->  	}
->  
->   Check_image:
-> -	pr_debug("PM: Resume from partition %d:%d\n",
-> +	pr_debug("PM: Hibernation image partition %d:%d present\n",
->  		MAJOR(swsusp_resume_device), MINOR(swsusp_resume_device));
->  
-> -	pr_debug("PM: Checking hibernation image.\n");
-> +	pr_debug("PM: Looking for hibernation image.\n");
->  	error = swsusp_check();
->  	if (error)
->  		goto Unlock;
-> @@ -768,14 +768,14 @@ static int software_resume(void)
->  		goto Done;
->  	}
->  
-> -	pr_debug("PM: Reading hibernation image.\n");
-> +	pr_debug("PM: Loading hibernation image.\n");
->  
->  	error = swsusp_read(&flags);
->  	swsusp_close(FMODE_READ);
->  	if (!error)
->  		hibernation_restore(flags & SF_PLATFORM_MODE);
->  
-> -	printk(KERN_ERR "PM: Restore failed, recovering.\n");
-> +	printk(KERN_ERR "PM: Failed to load hibernation image, recovering.\n");
->  	swsusp_free();
->  	thaw_processes();
->   Done:
-> @@ -788,7 +788,7 @@ static int software_resume(void)
->  	/* For success case, the suspend path will release the lock */
->   Unlock:
->  	mutex_unlock(&pm_mutex);
-> -	pr_debug("PM: Resume from disk failed.\n");
-> +	pr_debug("PM: Hibernation image not present or could not be loaded.\n");
->  	return error;
->  close_finish:
->  	swsusp_close(FMODE_READ);
+> +	if (ubd_dev->cow.file != NULL) {
+>  		err = -ENOMEM;
+>  		ubd_dev->cow.bitmap = vmalloc(ubd_dev->cow.bitmap_len);
+>  		if(ubd_dev->cow.bitmap == NULL){
+
+This is a workaround, I think?  Do we know what the actual bug is?
+
+>From the comment it appears to be a regression?
+
