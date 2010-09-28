@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755051Ab0I1Q2Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 12:28:25 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39532 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754144Ab0I1Q2X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 12:28:23 -0400
-Date: Tue, 28 Sep 2010 09:28:40 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-Cc: Mike Frysinger <vapier@gentoo.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>, Alek Du <alek.du@intel.com>,
-        richard.rojfors@mocean-labs.com, meego-dev@meego.com,
-        ML linux-kernel <linux-kernel@vger.kernel.org>, Qi <qi.wang@intel.com>,
-        andrew.chih.howe.khor@intel.com, gregkh@suse.de,
-        Yong Y <yong.y.wang@intel.com>,
-        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>, joel.clark@intel.com,
-        margie.foster@intel.com, kok.howg.ewe@intel.com
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_GPIO driver to 2.6.35
-Message-ID: <20100928162839.GA10739@opensource.wolfsonmicro.com>
-References: <4C80D3C8.9020204@dsn.okisemi.com>
- <20100903134827.GA7614@rakim.wolfsonmicro.main>
- <000301cb5ebc$35ad8d20$66f8800a@maildom.okisemi.com>
- <201009272338.23762.vapier@gentoo.org>
- <002801cb5ec9$b7936a00$66f8800a@maildom.okisemi.com>
- <AANLkTikUJMfo8m8o1rQdf264g2P39uHLRp80vGPW0Jni@mail.gmail.com>
- <003001cb5ecd$97577930$66f8800a@maildom.okisemi.com>
- <20100928052950.GB5878@sirena.org.uk>
- <001201cb5ed7$6117cb40$66f8800a@maildom.okisemi.com>
+	id S1755156Ab0I1Qaf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 12:30:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7769 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754716Ab0I1Qae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 12:30:34 -0400
+Message-ID: <4CA21820.5010704@redhat.com>
+Date: Tue, 28 Sep 2010 18:30:24 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <001201cb5ed7$6117cb40$66f8800a@maildom.okisemi.com>
-X-Cookie: Excellent day to have a rotten day.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Alexander Graf <agraf@suse.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PATCH] x86, nmi: workaround sti; hlt race vs nmi; intr
+References: <1284913699-14986-1-git-send-email-avi@redhat.com> <4CA057EA.7000609@redhat.com> <768A5DC0-131A-4BC8-ADDD-044D8169545E@suse.de> <61284934-1AD3-4F7A-9488-D46FCEE9B753@suse.de> <4CA06147.7080805@redhat.com> <C725B379-9631-46E4-A825-E43A5120681E@suse.de> <4CA06373.5030501@redhat.com> <4CA112D1.2020004@zytor.com> <4CA1AC50.7000801@redhat.com> <4CA20B21.7060809@zytor.com>
+In-Reply-To: <4CA20B21.7060809@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 28, 2010 at 03:35:39PM +0900, Masayuki Ohtake wrote:
+  On 09/28/2010 05:34 PM, H. Peter Anvin wrote:
+> On 09/28/2010 01:50 AM, Avi Kivity wrote:
+> >
+> >  Personally I think the safer route is to take the patch.  There are
+> >  other processors besides Intel and AMD and we can't test all of them,
+> >  not to mention various emulators and virtual machine monitors out there.
+> >
+>
+> Speaking for the smoltering crater that used to be *Transmeta*, I'm
+> (from memory) quite certain they blocked NMI and that this was
+> intentional behavior.
+>
 
->     gpio->base = (u32)chip->pch_gpio_base_address;
+We'll need:
 
-This is the number that will be assigned to the first GPIO if the chip
-registers successfully.
+- Intel
+- AMD
+- Geode
+- Via
+- kvm (currently no, but plan to)
+- qemu
+- vmware
+- others?
 
->     gpio->ngpio = 12;
+It should be relatively simple to write a small test case to test this.
 
-This is the number of GPIOs your chip has.
+-- 
+error compiling committee.c: too many arguments to function
 
->     chip->pch_gpio_base_address = pci_iomap(pdev, 1, 0);
-
-This initialisation is incorrect and is likely to fail.  gpiolib knows
-nothing of how your chip is controlled, the base is the base for the
-GPIO numbers used to access GPIOs in gpiolib.  Please refer to other
-gpiolib drivers for examples of how to use the gpilib APIs.
