@@ -1,64 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426Ab0I1PjL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 11:39:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34650 "EHLO mx1.redhat.com"
+	id S1754068Ab0I1Ppl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 11:45:41 -0400
+Received: from symlink.to.noone.org ([85.10.207.172]:51132 "EHLO sym.noone.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751401Ab0I1PjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 11:39:10 -0400
-Date: Tue, 28 Sep 2010 11:38:54 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v2 3/7] x86, NMI, Rename memory parity error to PCI SERR
- error
-Message-ID: <20100928153854.GM26290@redhat.com>
-References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
- <1285549026-5008-3-git-send-email-ying.huang@intel.com>
- <20100927080106.GA32222@erda.amd.com>
- <1285576760.20791.70.camel@yhuang-dev>
- <20100927090056.GJ13563@erda.amd.com>
- <20100927153315.GB26290@redhat.com>
- <20100927164502.GS13563@erda.amd.com>
- <1285637617.20791.146.camel@yhuang-dev>
+	id S1753724Ab0I1Ppk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 11:45:40 -0400
+Date: Tue, 28 Sep 2010 17:45:39 +0200
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] altera_uart: Add support for polling mode
+	(IRQ-less)
+Message-ID: <20100928154539.GE3137@distanz.ch>
+References: <20100928133526.GB8289@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1285637617.20791.146.camel@yhuang-dev>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20100928133526.GB8289@oksana.dev.rtsoft.ru>
+X-Editor: Vi IMproved 7.1
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 28, 2010 at 09:33:37AM +0800, Huang Ying wrote:
-> On Tue, 2010-09-28 at 00:45 +0800, Robert Richter wrote:
-> > > > > Ok. I will add CPU ID in message. Because we know the reason, I don't
-> > > > > think we need the reason in message.
-> > > > 
-> > > > You only know that bit 7 is set, not the rest. As this is an error
-> > > > message we should provide as much information as possible.
-> > > 
-> > > Well, what other info do we know besides that bit being set?  (I wish we
-> > > had more, but I don't think we do)
-> > 
-> > We should keep printing the reason byte as it did before.
+On 2010-09-28 at 15:35:26 +0200, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
+> Some Altera UART implementations doesn't route the IRQ line, so we have
+> to work in polling mode.
 > 
-> The reason is printed before because mem_parity_error is treated as
-> something like unknown reason. And iochk_error is treated as known
-> reason and will not print the reason byte. Please the check the original
-> code.
+> Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
+> ---
+>  drivers/serial/altera_uart.c |   38 +++++++++++++++++++++++++++++---------
+>  1 files changed, 29 insertions(+), 9 deletions(-)
 > 
-> But now we treat pci_serr_error (renamed from mem_parity_error) as known
-> reason. So it is not necessary to print the reason byte. I suggest to
-> print the reason byte only if (!(reason & 0xc0) && reason), where the
-> reason is really unknown.
+> diff --git a/drivers/serial/altera_uart.c b/drivers/serial/altera_uart.c
+> index f8d8a00..2603f59 100644
+> --- a/drivers/serial/altera_uart.c
+> +++ b/drivers/serial/altera_uart.c
+> @@ -15,6 +15,7 @@
+>  
+>  #include <linux/kernel.h>
+>  #include <linux/init.h>
+> +#include <linux/timer.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/module.h>
+>  #include <linux/console.h>
+> @@ -76,6 +77,7 @@
+>   */
+>  struct altera_uart {
+>  	struct uart_port port;
+> +	struct timer_list tmr;
+>  	unsigned int sigs;	/* Local copy of line sigs */
+>  	unsigned short imr;	/* Local IMR mirror */
+>  };
+> @@ -168,6 +170,7 @@ static void altera_uart_set_termios(struct uart_port *port,
+>  	tty_termios_encode_baud_rate(termios, baud, baud);
+>  
+>  	spin_lock_irqsave(&port->lock, flags);
+> +	uart_update_timeout(port, termios->c_cflag, baud);
+>  	writel(baudclk, port->membase + ALTERA_UART_DIVISOR_REG);
+>  	spin_unlock_irqrestore(&port->lock, flags);
+>  }
+> @@ -268,6 +271,15 @@ static irqreturn_t altera_uart_interrupt(int irq, void *data)
+>  	return IRQ_RETVAL(isr);
+>  }
+>  
+> +static void altera_uart_timer(unsigned long data)
+> +{
+> +	struct uart_port *port = (void *)data;
+> +	struct altera_uart *pp = container_of(port, struct altera_uart, port);
+> +
+> +	altera_uart_interrupt(0, port);
+> +	mod_timer(&pp->tmr, jiffies + uart_poll_timeout(port));
+> +}
+> +
+>  static void altera_uart_config_port(struct uart_port *port, int flags)
+>  {
+>  	port->type = PORT_ALTERA_UART;
+> @@ -284,14 +296,6 @@ static int altera_uart_startup(struct uart_port *port)
+>  	unsigned long flags;
+>  	int ret;
+>  
+> -	ret = request_irq(port->irq, altera_uart_interrupt, IRQF_DISABLED,
+> -			DRV_NAME, port);
+> -	if (ret) {
+> -		pr_err(DRV_NAME ": unable to attach Altera UART %d "
+> -		       "interrupt vector=%d\n", port->line, port->irq);
+> -		return ret;
+> -	}
+> -
+>  	spin_lock_irqsave(&port->lock, flags);
+>  
+>  	/* Enable RX interrupts now */
+> @@ -300,6 +304,19 @@ static int altera_uart_startup(struct uart_port *port)
+>  
+>  	spin_unlock_irqrestore(&port->lock, flags);
 
-So you are just matching the iochk_error.  I understand your reasoning.
-Yesterday I thought you changed the unknown_nmi_error code.  I guess I
-don't see it as a problem, but I'll let Robert chime in.
+Shouldn't we only enable the RX interrupt if we actually use interrupts?
+Also I would retain the order here (first register the interrupt handler
+and then enable the interrupts).
 
 Cheers,
-Don
+  Tobias
