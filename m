@@ -1,116 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750898Ab0I1Kex (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 06:34:53 -0400
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:37065 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738Ab0I1Kew (ORCPT
+	id S1751023Ab0I1Kf4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 06:35:56 -0400
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:33443 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750814Ab0I1Kfz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 06:34:52 -0400
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: tuxonice-devel@tuxonice.net
-Subject: Re: [TuxOnIce-devel] Nigel's current for-rafael queue
-Date: Tue, 28 Sep 2010 12:34:36 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc5-tp42-hiber-wri-accel-vmembase-0-00133-g3394a84-dirty; KDE/4.5.1; i686; ; )
-Cc: Nigel Cunningham <nigel@tuxonice.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "TuxOnIce-devel" <tuxonice-devel@tuxonice.net>
-References: <1285388224-10012-1-git-send-email-nigel@tuxonice.net> (sfid-20100925_095651_884433_67642C74)
-In-Reply-To: <1285388224-10012-1-git-send-email-nigel@tuxonice.net>
+	Tue, 28 Sep 2010 06:35:55 -0400
+From: Arun Murthy <arun.murthy@stericsson.com>
+To: <lars@metafoo.de>, <akpm@linux-foundation.org>, <kernel@pengutronix.de>,
+        <philipp.zabel@gmail.com>, <robert.jarzmik@free.fr>,
+        <marek.vasut@gmail.com>, <eric.y.miao@gmail.com>, <rpurdie@rpsys.net>,
+        <sameo@linux.intel.com>, <kgene.kim@samsung.com>,
+        <linux-omap@vger.kernel.org>
+Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mips@linux-mips.org>, <arun.murthy@stericsson.com>,
+        <STEricsson_nomadik_linux@list.st.com>
+Subject: [PATCH 0/7] PWM core driver for pwm based led and backlight driver
+Date: Tue, 28 Sep 2010 16:05:27 +0530
+Message-ID: <1285670134-18063-1-git-send-email-arun.murthy@stericsson.com>
+X-Mailer: git-send-email 1.7.2.dirty
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart4392928.sCKcRck9MC";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009281234.49454.Martin@lichtvoll.de>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart4392928.sCKcRck9MC
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+The series of patch add a new pwm core driver.
+Align the existing pwm drivers to make use of the pwm core driver.
 
-Am Samstag 25 September 2010 schrieb Nigel Cunningham:
-> Hi Rafael.
->=20
-> Please find attached a slightly updated version of the patchset I sent
-> a few months ago. The main change is that I've prepended and additional
-> patch which lets the user see the speed at which the image is being
-> read and written. This is accomplished by recording the MB/s in a
-> single byte in the image header, and using a couple of __nosavedata
-> variables to get the data back through the atomic restore. I realise
-> the char limits us to 255MB/s at the moment. In future patches, I
-> intend to address this by storing the data in a 'proper' image header
-> (it's a real problem - TuxOnIce reads and writes on the same set up at
-> speeds around 250MB/s).
->=20
-> Results on my Dell XPS M1530, which has an SSD hard drive are:
->=20
-> With just patch 1 applied:
-> Attempt 1: Write 74MB/s; Read 52MB/s
-> Attempt 2: Write 68MB/s; Read 52MB/s
-> Attempt 3: Write 73MB/s; Read 53MB/s
->=20
-> With the whole sequence:
-> Attempt 1: Write 181MB/s; Read 52MB/s
-> Attempt 2: Write 156MB/s; Read 53MB/s
-> Attempt 3: Write 160MB/s; Read 52MB/s
+Arun Murthy (7):
+  pwm: Add pwm core driver
+  backlight:pwm: add an element 'name' to platform data
+  leds: pwm: add a new element 'name' to platform data
+  pwm: Align existing pwm drivers with pwm-core driver
+  platform: Update the pwm based led and backlight platform data
+  pwm: move existing pwm driver to drivers/pwm
+  pwm: Modify backlight and led Kconfig aligning to pwm core
 
-Is doesn't get much stabler than=20
+ arch/arm/mach-pxa/cm-x300.c               |    1 +
+ arch/arm/mach-pxa/colibri-pxa270-income.c |    1 +
+ arch/arm/mach-pxa/ezx.c                   |    1 +
+ arch/arm/mach-pxa/hx4700.c                |    1 +
+ arch/arm/mach-pxa/lpd270.c                |    1 +
+ arch/arm/mach-pxa/magician.c              |    1 +
+ arch/arm/mach-pxa/mainstone.c             |    1 +
+ arch/arm/mach-pxa/mioa701.c               |    1 +
+ arch/arm/mach-pxa/palm27x.c               |    1 +
+ arch/arm/mach-pxa/palmtc.c                |    1 +
+ arch/arm/mach-pxa/palmte2.c               |    1 +
+ arch/arm/mach-pxa/pcm990-baseboard.c      |    1 +
+ arch/arm/mach-pxa/raumfeld.c              |    1 +
+ arch/arm/mach-pxa/tavorevb.c              |    2 +
+ arch/arm/mach-pxa/viper.c                 |    1 +
+ arch/arm/mach-pxa/z2.c                    |    2 +
+ arch/arm/mach-pxa/zylonite.c              |    1 +
+ arch/arm/mach-s3c2410/mach-h1940.c        |    1 +
+ arch/arm/mach-s3c2440/mach-rx1950.c       |    1 +
+ arch/arm/mach-s3c64xx/mach-hmt.c          |    1 +
+ arch/arm/mach-s3c64xx/mach-smartq.c       |    1 +
+ arch/arm/plat-mxc/pwm.c                   |  166 +++++++++------------
+ arch/arm/plat-pxa/pwm.c                   |  210 ++++++++++++--------------
+ arch/arm/plat-samsung/pwm.c               |  235 +++++++++++++----------------
+ arch/mips/jz4740/pwm.c                    |    2 +-
+ drivers/Kconfig                           |    2 +
+ drivers/Makefile                          |    1 +
+ drivers/leds/Kconfig                      |    2 +-
+ drivers/leds/leds-pwm.c                   |    4 +-
+ drivers/mfd/Kconfig                       |    9 -
+ drivers/mfd/Makefile                      |    1 -
+ drivers/mfd/twl-core.c                    |   13 ++
+ drivers/mfd/twl6030-pwm.c                 |  163 --------------------
+ drivers/misc/Kconfig                      |    9 -
+ drivers/misc/Makefile                     |    1 -
+ drivers/misc/ab8500-pwm.c                 |  168 --------------------
+ drivers/pwm/Kconfig                       |   33 ++++
+ drivers/pwm/Makefile                      |    4 +
+ drivers/pwm/pwm-ab8500.c                  |  157 +++++++++++++++++++
+ drivers/pwm/pwm-core.c                    |  124 +++++++++++++++
+ drivers/pwm/pwm-twl6040.c                 |  196 ++++++++++++++++++++++++
+ drivers/video/backlight/Kconfig           |    2 +-
+ drivers/video/backlight/pwm_bl.c          |    4 +-
+ include/linux/leds_pwm.h                  |    1 +
+ include/linux/pwm.h                       |   29 ++++-
+ include/linux/pwm_backlight.h             |    1 +
+ 46 files changed, 864 insertions(+), 696 deletions(-)
+ delete mode 100644 drivers/mfd/twl6030-pwm.c
+ delete mode 100644 drivers/misc/ab8500-pwm.c
+ create mode 100644 drivers/pwm/Kconfig
+ create mode 100644 drivers/pwm/Makefile
+ create mode 100644 drivers/pwm/pwm-ab8500.c
+ create mode 100644 drivers/pwm/pwm-core.c
+ create mode 100644 drivers/pwm/pwm-twl6040.c
 
-shambhala:~> grep "PM: Image.*at " /var/log/syslog
-Sep 28 11:32:06 shambhala kernel: PM: Image written at 63 MB/s.
-Sep 28 11:32:06 shambhala kernel: PM: Image read at 32 MB/s.
-Sep 28 11:35:00 shambhala kernel: PM: Image written at 65 MB/s.
-Sep 28 11:35:00 shambhala kernel: PM: Image read at 32 MB/s.
-Sep 28 11:38:43 shambhala kernel: PM: Image written at 65 MB/s.
-Sep 28 11:38:43 shambhala kernel: PM: Image read at 33 MB/s.
-Sep 28 11:41:15 shambhala kernel: PM: Image written at 66 MB/s.
-Sep 28 11:41:15 shambhala kernel: PM: Image read at 33 MB/s.
-Sep 28 11:42:57 shambhala kernel: PM: Image written at 66 MB/s.
-Sep 28 11:42:57 shambhala kernel: PM: Image read at 34 MB/s.
-Sep 28 11:45:16 shambhala kernel: PM: Image written at 66 MB/s.
-Sep 28 11:45:16 shambhala kernel: PM: Image read at 34 MB/s.
-Sep 28 12:19:21 shambhala kernel: PM: Image written at 66 MB/s.
-Sep 28 12:19:21 shambhala kernel: PM: Image read at 35 MB/s.
-Sep 28 12:21:35 shambhala kernel: PM: Image written at 65 MB/s.
-Sep 28 12:21:35 shambhala kernel: PM: Image read at 35 MB/s.
-Sep 28 12:23:18 shambhala kernel: PM: Image written at 65 MB/s.
-Sep 28 12:23:18 shambhala kernel: PM: Image read at 35 MB/s.
-Sep 28 12:25:23 shambhala kernel: PM: Image written at 64 MB/s.
-Sep 28 12:25:23 shambhala kernel: PM: Image read at 36 MB/s.
-Sep 28 12:26:55 shambhala kernel: PM: Image written at 65 MB/s.
-Sep 28 12:26:55 shambhala kernel: PM: Image read at 37 MB/s.
-Sep 28 12:28:28 shambhala kernel: PM: Image written at 65 MB/s.
-Sep 28 12:28:28 shambhala kernel: PM: Image read at 37 MB/s.
+-- 
+1.7.2.dirty
 
-many attempts.
-
-So - without readahead patch for now -
-
-Tested-By: Martin Steigerwald <Martin@Lichtvoll.de>
-
-on 2.6.36-rc5.
-
-Thanks,
-=2D-=20
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
-
---nextPart4392928.sCKcRck9MC
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAkyhxL4ACgkQmRvqrKWZhMfrRwCcDW5VPrSTl/PHco7EzjU5KFVH
-ZUUAniRBL8Czg3EJgWpXd2dRfTPKi7Vu
-=ImVY
------END PGP SIGNATURE-----
-
---nextPart4392928.sCKcRck9MC--
