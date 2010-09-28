@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760238Ab0I1JWu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 05:22:50 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:48918
-	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753586Ab0I1JWs (ORCPT
+	id S1760257Ab0I1JXh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 05:23:37 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:51091 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753795Ab0I1JXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 05:22:48 -0400
-X-SpamScore: -32
-X-BigFish: VS-32(zzbb2dK1432N98dN9371Pzz1202hzz15d4Rz32i87h2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L9GA1O-01-5S8-02
-X-M-MSG: 
-Date: Tue, 28 Sep 2010 11:22:59 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Alexander Graf <agraf@suse.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: [PATCH] x86, nmi: workaround sti; hlt race vs nmi; intr
-Message-ID: <20100928092258.GJ9817@amd.com>
-References: <1284913699-14986-1-git-send-email-avi@redhat.com>
- <4CA057EA.7000609@redhat.com>
- <768A5DC0-131A-4BC8-ADDD-044D8169545E@suse.de>
- <61284934-1AD3-4F7A-9488-D46FCEE9B753@suse.de>
- <4CA06147.7080805@redhat.com>
- <C725B379-9631-46E4-A825-E43A5120681E@suse.de>
- <4CA06373.5030501@redhat.com>
- <4CA112D1.2020004@zytor.com>
- <4CA1AC50.7000801@redhat.com>
+	Tue, 28 Sep 2010 05:23:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=l6u6owAfveJ4D2Z1U+bA1ALplWeKZ/ivBwzTA/N/cVgKCySmKPcL914EsX6PTMTqh5
+         Z23an3iCBVxjV0vcaPIQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4CA1AC50.7000801@redhat.com>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+In-Reply-To: <1285408287.2275.1061.camel@laptop>
+References: <4c88dc9c.991ce30a.3d91.3e0e@mx.google.com>
+	<1285061899.2275.824.camel@laptop>
+	<20100922042354.GG6676@balbir.in.ibm.com>
+	<1285140479.2275.893.camel@laptop>
+	<20100922091834.GJ6676@balbir.in.ibm.com>
+	<AANLkTinMsY3KcL7v9R_uwSzVcMVYvsnXHMrbG6Z9XeL4@mail.gmail.com>
+	<1285408287.2275.1061.camel@laptop>
+Date: Tue, 28 Sep 2010 11:23:28 +0200
+Message-ID: <AANLkTi=mV0hxgN-KXzgndR6U5KRBmmynJdBTDBaCxVSN@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/2] perf_events: add support for per-cpu per-cgroup
+ monitoring (v3)
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: balbir@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
+        perfmon2-devel@lists.sf.net, eranian@gmail.com, robert.richter@amd.com,
+        acme@redhat.com, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 28, 2010 at 04:50:24AM -0400, Avi Kivity wrote:
->   On 09/27/2010 11:55 PM, H. Peter Anvin wrote:
-> > On 09/27/2010 02:27 AM, Avi Kivity wrote:
-> > >
-> > >  I don't have write permissions for the spec.  If you can verify that all
-> > >  existing and future hardware will mask NMI after STI and convince the
-> > >  spec owners to update the specifications, I'm all for it; it's certainly
-> > >  a cleaner solution.
-> > >
-> >
-> > I'm trying to see if this is doable.  As you can well imagine, though,
-> > it takes time.
-> 
-> Joerg, can you look at this from the AMD side?
+On Sat, Sep 25, 2010 at 11:51 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2010-09-22 at 12:26 +0200, Stephane Eranian wrote:
+>
+>> Ok, early testing shows that this seems to be working fine with the
+>> pid approach. Of course it is less convenient than just opening a file
+>> descriptor in cgroup_fs. There is more bookkeeping involved, incl.
+>> cleanup the child on exit.
+>
+> Right, so another approach, similar to what you initially proposed,
+> would be to have this cgroup file, but instead of simply opening and
+> passing the fd around, have it provide a cgroup id and pass that around
+> as an integer (or pid_t) in the task argument to the SYSCALL (see the
+> flag bit below).
+>
+> You can use the regular lib/idr.c bits to generate ids and maintain an
+> id->cgroup map.
+>
+What's the advantage of that compared to just passing the fd in the
+pid argument?
+You can close the fd right after returning from perf_event_open().
 
-Yes, I will discuss this with the hardware peoples. Will take some time
-here too.
-
-	Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+>> The other thing is related to how to indicate we want cgroup and not per-thread.
+>> For now, my patch is using a new attr.cgroup bit. The alternative is to use a
+>> bit in the flags parameter to the syscall.
+>
+> Right, I prefer a bit in the syscall flags argument and somehow using
+> the task argument.
+>
