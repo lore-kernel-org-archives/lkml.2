@@ -1,49 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754391Ab0I1Mtp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 08:49:45 -0400
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:28264 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753576Ab0I1Mtp (ORCPT
+	id S1754271Ab0I1Mve (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 08:51:34 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:56439 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753009Ab0I1Mvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 08:49:45 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: Rpb81JIVM1l9k2EouXvVOn3U2oTLFLAxgHRnuV8.UXG8313
- ccxzzGWFuYl2HYWe_zLcJK5HG02kAlpFHKrVnSU.JiFZa9WA0rw3XQr_ssZq
- jjObVkKyVG9MhlWOhDQr6RrkrwR31TxpXrr4G8v5dwTAcosfqtamLj5g9gQH
- hPYCw7iKbS6ihLDWaQI6.r74ZQ9uanjwcfBWGnCOV2z_6FZJDWHECnDxutC8
- kWVUvKJIhhs6SeunQ2ad22lRw3CEX
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 28 Sep 2010 07:49:40 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Bron Gondwana <brong@fastmail.fm>
-cc: Robert Mueller <robm@fastmail.fm>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: Default zone_reclaim_mode = 1 on NUMA kernel is bad forfile/email/web
- servers
-In-Reply-To: <1285677740.30176.1397281937@webmail.messagingengine.com>
-Message-ID: <alpine.DEB.2.00.1009280748590.4144@router.home>
-References: <52C8765522A740A4A5C027E8FDFFDFE3@jem> <20100921090407.GA11439@csn.ul.ie> <20100927110049.6B31.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1009270828510.7000@router.home> <1285629420.10278.1397188599@webmail.messagingengine.com>
- <alpine.DEB.2.00.1009280727370.4144@router.home> <1285677740.30176.1397281937@webmail.messagingengine.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 28 Sep 2010 08:51:33 -0400
+X-Greylist: delayed 553 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Sep 2010 08:51:33 EDT
+Message-Id: <1285677740.30176.1397281937@webmail.messagingengine.com>
+X-Sasl-Enc: pgnhCy02QI/paiGJe7LaIDIyUiep/fc/2CCY4THDhL6n 1285677740
+From: "Bron Gondwana" <brong@fastmail.fm>
+To: "Christoph Lameter" <cl@linux.com>, "Robert Mueller" <robm@fastmail.fm>
+Cc: "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>,
+        "Mel Gorman" <mel@csn.ul.ie>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        "linux-mm" <linux-mm@kvack.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: MessagingEngine.com Webmail Interface
+In-Reply-To: <alpine.DEB.2.00.1009280727370.4144@router.home>
+References: <52C8765522A740A4A5C027E8FDFFDFE3@jem>
+ <20100921090407.GA11439@csn.ul.ie>
+ <20100927110049.6B31.A69D9226@jp.fujitsu.com>
+ <alpine.DEB.2.00.1009270828510.7000@router.home>
+ <1285629420.10278.1397188599@webmail.messagingengine.com>
+ <alpine.DEB.2.00.1009280727370.4144@router.home>
+Subject: Re: Default zone_reclaim_mode = 1 on NUMA kernel is bad
+ forfile/email/web servers
+Date: Tue, 28 Sep 2010 22:42:20 +1000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Sep 2010, Bron Gondwana wrote:
+On Tue, 28 Sep 2010 07:35 -0500, "Christoph Lameter" <cl@linux.com> wrote:
+> > The problem we saw was purely with file caching. The application wasn't
+> > actually allocating much memory itself, but it was reading lots of files
+> > from disk (via mmap'ed memory mostly), and as most people would, we
+> > expected that data would be cached in memory to reduce future reads from
+> > disk. That was not happening.
+> 
+> Obviously and you have stated that numerous times. Problem that the use
+> of
+> a remote memory will reduced performance of reads so the OS (with
+> zone_reclaim=1) defaults to the use of local memory and favors reclaim of
+> local memory over the allocation from the remote node. This is fine if
+> you have multiple applications running on both nodes because then each
+> application will get memory local to it and therefore run faster. That
+> does not work with a single app that only allocates from one node.
 
-> Is this what's happening, or is IO actually coming from disk in preference
-> to the remote node?  I can certainly see the logic behind preferring to
-> reclaim the local node if that's all that's happening - though the OS should
-> be allocating the different tasks more evenly across the nodes in that case.
+Is this what's happening, or is IO actually coming from disk in preference
+to the remote node?  I can certainly see the logic behind preferring to
+reclaim the local node if that's all that's happening - though the OS should
+be allocating the different tasks more evenly across the nodes in that case.
 
-Not sure about the disk. I did not see anything that would indicate and
-issue with only being able to do 32 bit and I am no expert on the device
-driver operations.
+> Control over memory allocations over the various nodes under NUMA
+> for a process can occur via the numactl ctl or the libnuma C apis.
+> 
+> F.e.e
+> 
+> numactl --interleave ... command
+> 
+> will address that issue for a specific command that needs to go
+
+Gosh what a pain.  While it won't kill us too much to add to our
+startup, it does feel a lot like the tail is wagging the dog from here
+still.  A task that doesn't ask for anything special should get sane
+defaults, and the cost of data from the other node should be a lot
+less than the cost of the same data from spinning rust.
+
+Bron.
+-- 
+  Bron Gondwana
+  brong@fastmail.fm
 
