@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758792Ab0I1KOy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 06:14:54 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:48255 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752830Ab0I1KOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 06:14:53 -0400
-Date: Tue, 28 Sep 2010 12:14:08 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org, Pekka Enberg <penberg@kernel.org>,
-        Fenghua Yu <fenghua.yu@intel.com>, Jean Delvare <khali@linux-fr.org>
-Subject: Re: [PATCH v3] hwmon (coretemp): Fix build breakage if SMP is
- undefined
-Message-ID: <20100928101408.GA29525@elte.hu>
-References: <1285637552-1058-1-git-send-email-guenter.roeck@ericsson.com>
- <20100928082729.GA20898@elte.hu>
+	id S1760219Ab0I1KPI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 06:15:08 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:39594 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759682Ab0I1KPD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 06:15:03 -0400
+Message-ID: <4CA1BFBF.2090102@mvista.com>
+Date: Tue, 28 Sep 2010 14:13:19 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100928082729.GA20898@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.0 required=5.9 tests=BAYES_20 autolearn=no SpamAssassin version=3.2.5
-	-1.0 BAYES_20               BODY: Bayesian spam probability is 5 to 20%
-	[score: 0.1023]
+To: Linus Walleij <linus.ml.walleij@gmail.com>
+CC: Sergei Shtylyov <sshtylyov@ru.mvista.com>,
+        linux-arm-kernel@lists.infradead.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        khilman@deeprootsystems.com, linux@arm.linux.org.uk,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: Re: [PATCH v5 1/3] ARM: add CPPI 4.1 DMA support
+References: <201005152214.53993.sshtylyov@ru.mvista.com> <AANLkTinuQsSP1EHWn5DS_9PMrsgj+fpjLOOkpnnBaf8Q@mail.gmail.com>
+In-Reply-To: <AANLkTinuQsSP1EHWn5DS_9PMrsgj+fpjLOOkpnnBaf8Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
-* Ingo Molnar <mingo@elte.hu> wrote:
+On 28-09-2010 13:13, Linus Walleij wrote:
 
-> > v2: Fix compile warning due to unused variable i if SMP is undefined 
-> > v3: include asm/smp.h instead of using ifdef CONFIG_SMP
-> 
-> I've started testing this fix [...]
+>> Add support for Texas Instuments Communication Port Programming Interface 4.1
+>> (CPPI 4.1) used on OMAP-L1x/DA8xx and AM35x.
 
-Works fine here.
+> Sorry for late feedback ...
 
-Tested-by: Ingo Molnar <mingo@elte.hu>
+>> +++ linux-davinci/arch/arm/common/cppi41.c
 
-Thanks,
+> Can you migrate this driver to drivers/dma/cppi41.c and use the
+> DMAengine interface like so many DMA drivers we have created
+> recently, or is there some very special characteristics about this
+> DMA controller meriting it to be placed in arch/arm/*?
 
-	Ingo
+    I have once studied the possibility of doing this driver under 
+drivers/dma/, and found that hardly achievable. Maybe I should try again though...
+
+> Yours,
+> Linus Walleij
+
+WBR, Sergei
