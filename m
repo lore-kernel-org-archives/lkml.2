@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757559Ab0I1RTv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 13:19:51 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:59366 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757165Ab0I1RTu (ORCPT
+	id S1757356Ab0I1RXD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 13:23:03 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:49841 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752082Ab0I1RXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 13:19:50 -0400
-X-IronPort-AV: E=Sophos;i="4.57,248,1283731200"; 
-   d="scan'208";a="2081497"
-Date: Tue, 28 Sep 2010 18:19:37 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        "sct@redhat.com" <sct@redhat.com>
-Subject: Re: [PATCH 12/12] xen/mtrr: Add mtrr_if support for Xen mtrr
-In-Reply-To: <4CA2223B.9040400@goop.org>
-Message-ID: <alpine.DEB.2.00.1009281818490.2864@kaball-desktop>
-References: <alpine.DEB.2.00.1009281217540.2864@kaball-desktop> <1285676218-26218-12-git-send-email-stefano.stabellini@eu.citrix.com> <20100928123925.GA18208@elte.hu> <alpine.DEB.2.00.1009281455300.2864@kaball-desktop> <4CA2223B.9040400@goop.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Tue, 28 Sep 2010 13:23:01 -0400
+Date: Tue, 28 Sep 2010 10:16:41 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk
+Subject: Re: [PATCH 4/4] blkio: Recalculate the throttled bio dispatch time
+ upon throttle limit change
+Message-Id: <20100928101641.a2791513.randy.dunlap@oracle.com>
+In-Reply-To: <1285693859-13591-5-git-send-email-vgoyal@redhat.com>
+References: <1285693859-13591-1-git-send-email-vgoyal@redhat.com>
+	<1285693859-13591-5-git-send-email-vgoyal@redhat.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Sep 2010, Jeremy Fitzhardinge wrote:
->  On 09/28/2010 07:00 AM, Stefano Stabellini wrote:
-> > On Tue, 28 Sep 2010, Ingo Molnar wrote:
-> >> * stefano.stabellini@eu.citrix.com <stefano.stabellini@eu.citrix.com> wrote:
-> >>
-> >>> From: Stephen Tweedie <sct@redhat.com>
-> >>>
-> >>> Add a Xen mtrr type, and reorganise mtrr initialisation slightly to
-> >>> allow the mtrr driver to set up num_var_ranges (Xen needs to do this by
-> >>> querying the hypervisor itself.)
-> >>>
-> >>> [ Impact: add basic MTRR support ]
-> >>>
-> >>> Signed-off-by: Stephen Tweedie <sct@redhat.com>
-> >>> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> >>> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> >>> ---
-> >>>  arch/x86/kernel/cpu/mtrr/Makefile |    2 +-
-> >>>  arch/x86/kernel/cpu/mtrr/main.c   |    3 +
-> >>>  arch/x86/kernel/cpu/mtrr/mtrr.h   |    7 ++
-> >>>  arch/x86/kernel/cpu/mtrr/xen.c    |  110 +++++++++++++++++++++++++++++++++++++
-> >>>  4 files changed, 121 insertions(+), 1 deletions(-)
-> >>>  create mode 100644 arch/x86/kernel/cpu/mtrr/xen.c
-> >> Still NAK, for the very same reasons as we NAK-ed it the previous time: 
-> >> /proc/mtrr is a problematic and complicated legacy interface that should 
-> >> die. Any modern X server will do the right thing via PAT.
-> >>
-> > Sorry I should have read the original thread more carefully: I didn't
-> > realize this patch had been NAK-ed.
-> >
-> > However it is not a problem because we can easily disable MTRRs from Xen
-> > and with no cpu_has_mtrr the kernel would still boot fine on Xen.
-> > Also I think we do have PAT support nowadays but I'll let Jeremy comment
-> > on that.
-> 
-> Yes, we could just mask out the MTRR CPU feature and rely entirely on PAT.
-> 
-> The alternative would be to use the wrmsr hooks to emulate the Intel
-> MTRR registers by mapping them to hypercalls, but that seems needlessly
-> complex.
- 
-Yeah, I have already tested a prototype patch to xen to mask the MTRR
-cpu features and everything seems to run fine on my testbox.
+On Tue, 28 Sep 2010 13:10:59 -0400 Vivek Goyal wrote:
 
+> o Currently any cgroup throttle limit changes are processed asynchronousy and
+>   the change does not take affect till a new bio is dispatched from same group.
+> 
+> o It might happen that a user sets a redicuously low limit on throttling.
+>   Say 1 bytes per second on reads. In such cases simple operations like mount
+>   a disk can wait for a very long time.
+> 
+> o Once bio is throttled, there is no easy way to come out of that wait even if
+>   user increases the read limit later.
+> 
+> o This patch fixes it. Now if a user changes the cgroup limits, we recalculate
+>   the bio dispatch time according to new limits.
+> 
+> o Can't take queueu lock under blkcg_lock, hence after the change I wake
+>   up the dispatch thread again which recalculates the time. So there are some
+>   variables being synchronized across two threads without lock and I had to
+>   make use of barriers. Hoping I have used barriers correctly. Any review of
+>   memory barrier code especially will help.
+
+
+Hi,
+Has this report been addressed/fixed?
+
+
+on i386:
+
+blk-throttle.c:(.text+0x1abb8): undefined reference to `__udivdi3'
+blk-throttle.c:(.text+0x1b1dc): undefined reference to `__udivdi3'
+
+
+on linux-next 2010-0924 and 2010-0927.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
