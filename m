@@ -1,274 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759491Ab0I1HWk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 03:22:40 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:53629
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753823Ab0I1HWj convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 03:22:39 -0400
-Date: Tue, 28 Sep 2010 00:22:59 -0700 (PDT)
-Message-Id: <20100928.002259.70186559.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1759499Ab0I1H1W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 03:27:22 -0400
+Received: from smtprelay04.ispgateway.de ([80.67.31.38]:44895 "EHLO
+	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753445Ab0I1H1U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 03:27:20 -0400
+Message-ID: <4CA1990E.9080206@ladisch.de>
+Date: Tue, 28 Sep 2010 09:28:14 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Jimmie Mayfield <mayfield@sackheads.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Trying to reset a PCIe device and scratching my head...
+References: <20100928020548.GA90230@sackheads.org>
+In-Reply-To: <20100928020548.GA90230@sackheads.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: linux-kernel@cl.domainfactory-kunde.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Jimmie Mayfield wrote:
+> Having the PCIe interface implemented inside FPGA 'A' makes upgrading
+> that particular FPGA rather troublesome.  In a perfect world, one would
+> be able to upgrade the FPGA without having to reboot the machine.  The
+> hardware guys have designed the card to reload that FPGA image upon a
+> slot reset...either fundamental or hot.
+> 
+> So I'd like to be able to send either a fundamental or hot reset to the
+> device but so far I've had no success.
 
-1) AF_ROSE digi count signedness fix
+The PCIe AER driver (drivers/pci/pcie/aer/) sends a hot reset when
+it has received a fatal error.  As far as I can tell, it just sets the
+PCI_BRIDGE_CTL_BUS_RESET bit of the upstream bridge; everything else
+is just infrastructure to handle error reporting and to notify the
+device driver about the reset.
 
-2) On 64-bit, send() with iov_len >= 4GB can fail on TCP.
 
-3) qlcnic assumes NET_IP_ALIGN is 2, use the macro instead of assuming.
-   From Eric Dumazet.
-
-4) ip_gre needs to check both CONFIG_IPV6 and CONFIG_IPV6_MODULE,
-   also from Eric.
-
-5) qlcnic and netxen corrupt skb->truesize breaking socket level and
-   system-wide net buffer memory accounting.  Also from Eric Dumazet.
-
-6) IP fragmentation can corrupt skb->truesize resulting in corrupt
-   socket memory accounting, and stuck sockets (since the memory
-   charge goes negative).  From Eric Dumazet.
-
-7) 3c59x WOL support added some regressions (assumes PCI, which not
-   all 3c59x are, also tries to erroneously hit the card when in D3)
-   Fix from Jan Beulich.
-
-8) Memory leak in wext private ioctls, fix from Johannes Berg.
-
-9) Fix ATM br2684 scheduling-while-atomic, was invoking atomic notifier
-   chain unregister with locks held and irqs disabled, from Karl Hiramoto.
-
-10) Fix drivers using kfree() on a netdev which is always wrong,	
-    need to always use free_netdev().  From Kulikov Vasiliy and
-    Vasiliy Kulikov.
-
-11) Fix broken resume, and forgetting to clear CMB and SBM in ring
-    release, in atl1 driver.  From Luca Tettamanti.
-
-12) Missing unregister_pernet_subsys call in ipv6, from Neil Horman.
-
-13) "struct net" needs __KERNEL__ guard, from Ollie Wild.
-
-14) Several de2104x tulip link handling fixes from Ondrej Zary.
-
-15) net/9p virtio code string comparison is busted, fix from Sven Eckelmann.
-
-16) IPSEC xfrm code uses wrong address family sometimes, from Thomas Egerer.
-
-17) Traversing a tunnel requires resetting the RX queue setting, since
-    downstream device might have different number of queues.  From
-    Tom Herbert.
-
-18) Fix hopefully the last race in our lockless tcp_poll, from
-    Tom Marshall.
-
-19) ipv4 ipsec code erroneously include ECN bits in the TOS it uses,
-    which will cause route failures since those bits have internal
-    meaning in the ipv4 routing code.  From Ulrich Weber.
-
-20) Both ipv4 and ipv6 routing code spew "Neighbour table overflow"
-    making it impossible to tell which of the two the notification is
-    about.  Fix the log messages to be prefixed with "ipv{4,6}:"
-    From Ulrich Weber.
-
-21) ip_route_newport() needs to handle tproxy just as
-    ip_route_connect() does, also from Ulrich Weber.
-
-22) smsc911x missing module alias, from Vincent Stehlé.
-
-23) Don't force a reset during scan in iwlwif, from Wey-Yi Guy.
-
-24) tcp_mark_head_lost() mismarks segmented packets when doing FACK,
-    fix from Yuchung Cheng.
-
-25) e1000e bug fixes from Bruce Alan:
-    a) Handle bugs in Sx state.
-    b) Device reset leaves LEDs and SMBUS address in wrong state
-    c) 82566DC link failure
-    d) jumbo frames erroneously generate CRC errors
-
-26) Netfilter bug fixes via Patrick McHardy
-    a) ipt_REJECT mis-routes when indev==outdev (Changli Gao)
-    b) nf_ct_ext_create() can race (Eric Dumazet)
-    c) fix dangerous blind test of ->nodefrag (Jiri Olsa)
-    d) nf_nat_snmp incorrect csums (Patrick McHardy)
-    e) sip_help_tcp() should default to NF_ACCEPT (Simon Horman)
-
-27) vhost bug fixes from Michael S. Tsirkin
-    a) vhost-net range checking fix
-    b) log ctx signalling inadvertantly in dead code
-
-Please pull, thanks a lot!
-
-The following changes since commit 252a52aa4fa22a668f019e55b3aac3ff71ec1c29:
-
-  Fix pktcdvd ioctl dev_minor range check (2010-09-27 16:29:06 -0700)
-
-are available in the git repository at:
-  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
-
-Bruce Allan (6):
-      e1000e: 82577/8/9 issues with device in Sx
-      e1000e: 82579 SMBus address and LEDs incorrect after device reset
-      e1000e: 82566DC fails to get link
-      e1000e: 82579 unaccounted missed packets
-      e1000e: 82579 jumbo frame workaround causing CRC errors
-      e1000e: 82579 do not gate auto config of PHY by hardware during nominal use
-
-Changli Gao (1):
-      netfilter: fix ipt_REJECT TCP RST routing for indev == outdev
-
-David S. Miller (5):
-      Merge branch 'vhost-net' of git://git.kernel.org/.../mst/vhost
-      rose: Fix signedness issues wrt. digi count.
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-2.6
-      Merge branch 'vhost-net' of git://git.kernel.org/.../mst/vhost
-      tcp: Fix >4GB writes on 64-bit.
-
-Eric Dumazet (8):
-      qlcnic: dont assume NET_IP_ALIGN is 2
-      ip_gre: CONFIG_IPV6_MODULE support
-      qlcnic: dont set skb->truesize
-      netxen: dont set skb->truesize
-      ip: fix truesize mismatch in ip fragmentation
-      netfilter: tproxy: nf_tproxy_assign_sock() can handle tw sockets
-      netfilter: fix a race in nf_ct_ext_create()
-      net: fix a lockdep splat
-
-Jan Beulich (1):
-      3c59x: fix regression from patch "Add ethtool WOL support"
-
-Jiri Olsa (1):
-      netfilter: nf_conntrack_defrag: check socket type before touching nodefrag flag
-
-Johannes Berg (1):
-      wext: fix potential private ioctl memory content leak
-
-Karl Hiramoto (1):
-      br2684: fix scheduling while atomic
-
-Kulikov Vasiliy (3):
-      ibm_newemac: use free_netdev(netdev) instead of kfree()
-      rionet: use free_netdev(netdev) instead of kfree()
-      sgiseeq: use free_netdev(netdev) instead of kfree()
-
-Luca Tettamanti (2):
-      atl1: fix resume
-      atl1: zero out CMB and SBM in atl1_free_ring_resources
-
-Michael S. Tsirkin (2):
-      vhost-net: fix range checking in mrg bufs case
-      vhost: fix log ctx signalling
-
-Neil Horman (1):
-      ipv6: add a missing unregister_pernet_subsys call
-
-Ollie Wild (1):
-      net: Move "struct net" declaration inside the __KERNEL__ macro guard
-
-Ondrej Zary (4):
-      de2104x: disable autonegotiation on broken hardware
-      de2104x: fix power management
-      de2104x: fix TP link detection
-      de2104x: fix ethtool
-
-Patrick McHardy (1):
-      netfilter: nf_nat_snmp: fix checksum calculation (v4)
-
-Simon Horman (1):
-      netfilter: nf_ct_sip: default to NF_ACCEPT in sip_help_tcp()
-
-Sven Eckelmann (1):
-      net/9p: Mount only matching virtio channels
-
-Thomas Egerer (1):
-      xfrm: Allow different selector family in temporary state
-
-Tom Herbert (1):
-      net: reset skb queue mapping when rx'ing over tunnel
-
-Tom Marshall (1):
-      tcp: Fix race in tcp_poll
-
-Ulrich Weber (3):
-      xfrm4: strip ECN bits from tos field
-      ipv6: add IPv6 to neighbour table overflow warning
-      tproxy: check for transparent flag in ip_route_newports
-
-Vasiliy Kulikov (1):
-      s390: use free_netdev(netdev) instead of kfree()
-
-Vincent Stehlé (1):
-      smsc911x: Add MODULE_ALIAS()
-
-Wey-Yi Guy (1):
-      iwlwifi: do not perferm force reset while doing scan
-
-Yuchung Cheng (1):
-      tcp: fix TSO FACK loss marking in tcp_mark_head_lost
-
- drivers/net/3c59x.c                     |   10 ++
- drivers/net/atlx/atl1.c                 |   11 ++-
- drivers/net/e1000e/hw.h                 |    1 +
- drivers/net/e1000e/ich8lan.c            |  197 +++++++++++++++++++++++++-----
- drivers/net/e1000e/netdev.c             |   29 +++--
- drivers/net/ibm_newemac/core.c          |    4 +-
- drivers/net/netxen/netxen_nic_init.c    |    3 -
- drivers/net/qlcnic/qlcnic_init.c        |    7 +-
- drivers/net/rionet.c                    |    2 +-
- drivers/net/sgiseeq.c                   |    2 +-
- drivers/net/smsc911x.c                  |    1 +
- drivers/net/tulip/de2104x.c             |   43 ++++++-
- drivers/net/wireless/iwlwifi/iwl-core.c |    5 +
- drivers/s390/net/ctcm_main.c            |    4 +-
- drivers/vhost/net.c                     |    2 +-
- drivers/vhost/vhost.c                   |    7 +-
- include/linux/netlink.h                 |    4 +-
- include/linux/socket.h                  |    2 +-
- include/net/addrconf.h                  |    1 +
- include/net/dst.h                       |    1 +
- include/net/route.h                     |    2 +
- include/net/xfrm.h                      |    4 +-
- net/9p/trans_virtio.c                   |    3 +-
- net/atm/br2684.c                        |   12 +--
- net/core/iovec.c                        |    5 +-
- net/core/sock.c                         |    8 +-
- net/ipv4/ip_gre.c                       |    8 +-
- net/ipv4/ip_output.c                    |   19 ++-
- net/ipv4/netfilter/ipt_REJECT.c         |    1 +
- net/ipv4/netfilter/nf_defrag_ipv4.c     |    4 +-
- net/ipv4/netfilter/nf_nat_snmp_basic.c  |    6 +-
- net/ipv4/route.c                        |    2 +-
- net/ipv4/tcp.c                          |    9 +-
- net/ipv4/tcp_input.c                    |    5 +-
- net/ipv4/xfrm4_policy.c                 |    2 +-
- net/ipv4/xfrm4_state.c                  |   33 +++--
- net/ipv6/addrconf.c                     |   11 ++-
- net/ipv6/addrlabel.c                    |    5 +
- net/ipv6/ip6_output.c                   |   18 ++-
- net/ipv6/route.c                        |    2 +-
- net/ipv6/xfrm6_state.c                  |   33 +++--
- net/netfilter/nf_conntrack_extend.c     |    4 +-
- net/netfilter/nf_conntrack_sip.c        |    2 +-
- net/netfilter/nf_tproxy_core.c          |    6 +-
- net/rds/tcp_connect.c                   |    4 +-
- net/rds/tcp_listen.c                    |    4 +-
- net/rds/tcp_recv.c                      |    4 +-
- net/rds/tcp_send.c                      |    4 +-
- net/rose/af_rose.c                      |    4 +-
- net/sunrpc/xprtsock.c                   |   28 ++--
- net/wireless/wext-priv.c                |    2 +-
- net/xfrm/xfrm_policy.c                  |    5 +-
- net/xfrm/xfrm_state.c                   |   45 ++++---
- 53 files changed, 444 insertions(+), 196 deletions(-)
+Regards,
+Clemens
