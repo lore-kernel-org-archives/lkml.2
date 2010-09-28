@@ -1,76 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760342Ab0I1BNS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 21:13:18 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:48935 "EHLO imr4.ericy.com"
+	id S1759708Ab0I1BTY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 21:19:24 -0400
+Received: from mga01.intel.com ([192.55.52.88]:31411 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751410Ab0I1BNR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 21:13:17 -0400
-Date: Mon, 27 Sep 2010 18:12:06 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+	id S1752831Ab0I1BTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 21:19:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,244,1283756400"; 
+   d="scan'208";a="841485334"
+Subject: Re: [PATCH -v2 6/7] x86, NMI, Add support to notify hardware error
+ with unknown NMI
+From: Huang Ying <ying.huang@intel.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: huang ying <huang.ying.caritas@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        Fenghua Yu <fenghua.yu@intel.com>, Jean Delvare <khali@linux-fr.org>
-Subject: Re: [PATCH v2] hwmon (coretemp): Fix build breakage if SMP is
- undefined
-Message-ID: <20100928011206.GA5159@ericsson.com>
-References: <1285588796-20956-1-git-send-email-guenter.roeck@ericsson.com>
- <20100927125946.GB2862@elte.hu>
- <AANLkTinPHP8WhoAZQqcmhotEfFa6=mG_Acy+xCBQ0_5+@mail.gmail.com>
- <20100927232716.GB4744@ericsson.com>
- <AANLkTinDkJu2MSJM6bUpWJoB2XOD4LLf6GTPBX39wteD@mail.gmail.com>
- <20100928002634.GA5030@ericsson.com>
- <AANLkTi=m5ZtWhQ6Z69WPUkyvcqhmL1ewG1gZ0HUQB3LE@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=m5ZtWhQ6Z69WPUkyvcqhmL1ewG1gZ0HUQB3LE@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        Andi Kleen <andi@firstfloor.org>
+In-Reply-To: <20100927133816.GP13563@erda.amd.com>
+References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
+	 <1285549026-5008-6-git-send-email-ying.huang@intel.com>
+	 <20100927100901.GC32222@erda.amd.com>
+	 <AANLkTimY5hr3DgN9=v83Z289MkzjgX8k0WzdTWZbGorj@mail.gmail.com>
+	 <20100927133816.GP13563@erda.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 28 Sep 2010 09:19:21 +0800
+Message-ID: <1285636761.20791.133.camel@yhuang-dev>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 09:00:59PM -0400, Linus Torvalds wrote:
-> On Mon, Sep 27, 2010 at 5:26 PM, Guenter Roeck
-> <guenter.roeck@ericsson.com> wrote:
-> >
-> > Not that simple. cpu_sibling_mask()  is defined in asm/smp.h, which is only
-> > included from linux/smp.h if SMP is defined. But many other files do include
-> > asm/smp.h directly. This causes the following error all over the place
-> > if CONFIG_SMP is not defined.
+On Mon, 2010-09-27 at 21:38 +0800, Robert Richter wrote:
+> On 27.09.10 08:47:53, huang ying wrote:
 > 
-> Yeah, that's broken.  Seriously broken.
+> > >>  arch/x86/kernel/hwerr.c    |   55 +++++++++++++++++++++++++++++++++++++++++++++
+> > >
+> > > Instead of creating this file the code should be implemented in
+> > >
+> > >  arch/x86/kernel/cpu/intel.c
+> > >
+> > > Similar AMD NB code is implemented in amd.c and k8.c.
+> > 
+> > Why? This file is not vendor specific.
 > 
-> And I guess that if you had happened to include <asm/smp.h> in
-> coretemp.c you would magically have gotten that cpu_sibling_map()
-> thing, and it would just work - by mistake.
+> No, it only implements an Intel specific PCI device, nothing else.
+
+You can add AMD specific PCI device here too. We will add more device ID
+in the future.
+
+> > >> +late_initcall(check_unknown_nmi_for_hwerr);
+> > >
+> > > Maybe you can use early pci functions like read_pci_config() to avoid
+> > > late init.
+> > 
+> > I don't think late init is a big issue. Hardware error is rare after all.
 > 
-Figured.
-
-> And maybe that's the correct (and really hacky) fix right now. Rather
-
-Yes, that is actually what I am testing right now.
-
-> than introduce an UP-only cpu_sibling_mask(), get the SMP version, and
-> get it ignored.
+> Just want to let you know this as an option.
 > 
-> Seriously broken, but there it is.
+> > >> --- a/arch/x86/kernel/traps.c
+> > >> +++ b/arch/x86/kernel/traps.c
+> > >> @@ -83,6 +83,8 @@ EXPORT_SYMBOL_GPL(used_vectors);
+> > >>
+> > >>  static int ignore_nmis;
+> > >>
+> > >> +int unknown_nmi_for_hwerr;
+> > >
+> > > If it is an nmi for hwerr, it is no longer an unknown nmi. So we
+> > > should drop 'unknow' in the naming.
+> > 
+> > I think unkown NMI is the one we can not identify the source.
+> > Something like anonymous.
+> > 
+> > >> +
+> > >>  /*
+> > >>   * Prevent NMI reason port (0x61) being accessed simultaneously, can
+> > >>   * only be used in NMI handler.
+> > >> @@ -360,6 +362,14 @@ io_check_error(unsigned char reason, str
+> > >>  static notrace __kprobes void
+> > >>  unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
+> > >>  {
+> > >> +     /*
+> > >> +      * On some platforms, hardware errors may be notified via
+> > >> +      * unknown NMI
+> > >> +      */
+> > >> +     if (unknown_nmi_for_hwerr)
+> > >> +             panic("NMI for hardware error without error record: "
+> > >> +                   "Not continuing");
+> > >> +
+> > >
+> > > Instead of checking this flag you should implement and register an nmi
+> > > handler for this case.
+> > 
+> > I think explicit function calls have better readability than notifier chains.
 > 
-> In the long run, I guess we should either
->  - disallow naked '<asm/smp.h>' includes
-> OR
->  - just make '<linux/smp.h>' unconditionally include <asm/smp.h>
+> What is different to unknown_nmi() then?
 > 
-> to at least not have that insane "some things exist in CONFIG_SMP or
-> not depending on how you include files".
->
+> So no, in your case you want to catch unknown nmis for a certain
+> hardware and then throw a panic.
 
-Guess so.
+No. We do NOT catch unknown NMIs for a certain hardware here. We put the
+code here because we think it is general instead of hardware specific.
 
-You should get another patch in a few minutes, after my next set of compiles is done.
-I'll wait for some feedback before pushing it into my integration branch.
+It should be a general rule to treat unknown NMI as hardware error. But
+to avoid to confuse some users have broken hardware (which will generate
+unknown NMI not for hardware error), we use a white list (machines with
+HEST or workable chipset via PCI ID).
 
-Guenter
+Best Regards,
+Huang Ying
+
+
