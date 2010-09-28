@@ -1,63 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644Ab0I1NJk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 09:09:40 -0400
-Received: from mga03.intel.com ([143.182.124.21]:33444 "EHLO mga03.intel.com"
+	id S1754619Ab0I1NNa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 09:13:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62740 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754605Ab0I1NJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 09:09:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,247,1283756400"; 
-   d="scan'208";a="329586895"
-From: Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 2/2] apds9802als: fix als sensing range value
-To: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 28 Sep 2010 13:21:28 +0100
-Message-ID: <20100928122127.492.81083.stgit@localhost.localdomain>
-In-Reply-To: <20100928122109.492.4630.stgit@localhost.localdomain>
-References: <20100928122109.492.4630.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	id S1753802Ab0I1NN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 09:13:29 -0400
+Date: Tue, 28 Sep 2010 15:06:54 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, davem@davemloft.net,
+        herbert@gondor.hengli.com.au, jdike@linux.intel.com, arnd@arndb.de
+Subject: Re: [PATCH v11 13/17] Add mp(mediate passthru) device.
+Message-ID: <20100928130654.GD14385@redhat.com>
+References: <1285388855-27410-1-git-send-email-xiaohui.xin@intel.com>
+ <2c954a831e2d9a93437aaf06386cd3a5af6b73b9.1285385607.git.xiaohui.xin@intel.com>
+ <1285622613.2263.550.camel@achroite.uk.solarflarecom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285622613.2263.550.camel@achroite.uk.solarflarecom.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hong Liu <hong.liu@intel.com>
+On Mon, Sep 27, 2010 at 10:23:33PM +0100, Ben Hutchings wrote:
+> > +/* The main function to transform the guest user space address
+> > + * to host kernel address via get_user_pages(). Thus the hardware
+> > + * can do DMA directly to the external buffer address.
+> > + */
+> > +static struct page_info *alloc_page_info(struct page_ctor *ctor,
+> > +		struct kiocb *iocb, struct iovec *iov,
+> > +		int count, struct frag *frags,
+> > +		int npages, int total)
+> > +{
+> > +	int rc;
+> > +	int i, j, n = 0;
+> > +	int len;
+> > +	unsigned long base, lock_limit;
+> > +	struct page_info *info = NULL;
+> > +
+> > +	lock_limit = current->signal->rlim[RLIMIT_MEMLOCK].rlim_cur;
+> > +	lock_limit >>= PAGE_SHIFT;
+> > +
+> > +	if (ctor->lock_pages + count > lock_limit && npages) {
+> > +		printk(KERN_INFO "exceed the locked memory rlimit.");
+> > +		return NULL;
+> > +	}
+> 
+> What if the process is locking pages with mlock() as well?  Doesn't this
+> allow it to lock twice as many pages as it should be able to?
 
-The 4K and 64K in the hw spec acutally means 4095 (12bit) and 65535 (16bit).
+No, since locked_vm is incremented by both mp and mlock.
+Or at least, that's the idea :)
+In any case, twice as many would not be a big deal: admin can control
+which processes can do this by controlling access to the device.
 
-Signed-off-by: Hong Liu <hong.liu@intel.com>
----
+> > +	info = kmem_cache_alloc(ext_page_info_cache, GFP_KERNEL);
+> > +	
+> > +	if (!info)
+> > +		return NULL;
+> > +	info->skb = NULL;
+> > +	info->next = info->prev = NULL;
+> > +
+> > +	for (i = j = 0; i < count; i++) {
+> > +		base = (unsigned long)iov[i].iov_base;
+> > +		len = iov[i].iov_len;
+> > +
+> > +		if (!len)
+> > +			continue;
+> > +		n = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
+> > +
+> > +		rc = get_user_pages_fast(base, n, npages ? 1 : 0,
+> > +				&info->pages[j]);
+> > +		if (rc != n)
+> > +			goto failed;
+> > +
+> > +		while (n--) {
+> > +			frags[j].offset = base & ~PAGE_MASK;
+> > +			frags[j].size = min_t(int, len,
+> > +					PAGE_SIZE - frags[j].offset);
+> > +			len -= frags[j].size;
+> > +			base += frags[j].size;
+> > +			j++;
+> > +		}
+> > +	}
+> > +
+> > +#ifdef CONFIG_HIGHMEM
+> > +	if (npages && !(dev->features & NETIF_F_HIGHDMA)) {
+> > +		for (i = 0; i < j; i++) {
+> > +			if (PageHighMem(info->pages[i]))
+> > +				goto failed;
+> > +		}
+> > +	}
+> > +#endif
+> 
+> Shouldn't you try to allocate lowmem pages explicitly, rather than
+> failing at this point?
 
- drivers/misc/apds9802als.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+We don't allocate pages, we lock given pages. Once this is
+integrated in macvtap presumably we'll fall back on data copy
+for such devices.
 
+...
 
-diff --git a/drivers/misc/apds9802als.c b/drivers/misc/apds9802als.c
-index cfd004a..a55a215 100644
---- a/drivers/misc/apds9802als.c
-+++ b/drivers/misc/apds9802als.c
-@@ -55,9 +55,9 @@ static ssize_t als_sensing_range_show(struct device *dev,
- 	if (val < 0)
- 		return val;
- 	if (val & 1)
--		return sprintf(buf, "4000\n");
-+		return sprintf(buf, "4095\n");
- 	else
--		return sprintf(buf, "64000\n");
-+		return sprintf(buf, "65535\n");
- }
- 
- static ssize_t als_lux_output_data_show(struct device *dev,
-@@ -111,7 +111,7 @@ static ssize_t als_sensing_range_store(struct device *dev,
- 	/* Reset the bits before setting them */
- 	ret_val = ret_val & 0xFA;
- 
--	if (val == 1) /* Setting the continous measurement up to 8k LUX */
-+	if (val == 1) /* Setting the continous measurement up to 4k LUX */
- 		ret_val = (ret_val | 0x05);
- 	else /* Setting the continous measurement up to 64k LUX*/
- 		ret_val = (ret_val | 0x04);
+> > +	skb_reserve(skb, NET_IP_ALIGN);
+> > +	skb_put(skb, len);
+> > +
+> > +	if (skb_copy_datagram_from_iovec(skb, 0, iov, 0, len)) {
+> > +		kfree_skb(skb);
+> > +		return -EAGAIN;
+> > +	}
+> > +
+> > +	skb->protocol = eth_type_trans(skb, mp->dev);
+> 
+> Why are you calling eth_type_trans() on transmit?
 
+So that GSO can work.  BTW macvtap does:
+
+        skb_set_network_header(skb, ETH_HLEN);
+        skb_reset_mac_header(skb);
+        skb->protocol = eth_hdr(skb)->h_proto;
+
+and I think this is broken for vlans. Arnd?
+
+-- 
+MST
