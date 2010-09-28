@@ -1,94 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab0I1MTY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 08:19:24 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:35447 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185Ab0I1MRb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 08:17:31 -0400
-X-IronPort-AV: E=Sophos;i="4.57,247,1283745600"; 
-   d="scan'208";a="115729357"
-From: stefano.stabellini@eu.citrix.com
-To: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 03/12] xen: map a dummy page for local apic and ioapic in xen_set_fixmap
-Date: Tue, 28 Sep 2010 13:16:49 +0100
-Message-Id: <1285676218-26218-3-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <alpine.DEB.2.00.1009281217540.2864@kaball-desktop>
-References: <alpine.DEB.2.00.1009281217540.2864@kaball-desktop>
-X-OriginalArrivalTime: 28 Sep 2010 12:17:06.0620 (UTC) FILETIME=[111527C0:01CB5F07]
+	id S1753462Ab0I1MXO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 08:23:14 -0400
+Received: from mailfe03.swip.net ([212.247.154.65]:57801 "EHLO swip.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751007Ab0I1MXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 08:23:13 -0400
+X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Sep 2010 08:23:12 EDT
+X-Cloudmark-Score: 0.000000 []
+X-Cloudmark-Analysis: v=1.1 cv=iBCGAMPDYtSF9sDXX85uHY3wcnYctfVT8vFpe3qPflY= c=1 sm=1 a=Dyoqhi_TatcA:10 a=M58Ut_zYM0YA:10 a=Cfj4BQAnxiAA:10 a=pfZbGGSqi3MA:10 a=WDLamDKNsRcq1LMJINB+dg==:17 a=WDLamDKNsRcq1LMJINB+dg==:117
+Reply-To: <trusttfund001@aol.com>
+From: "United Nations Trust Fund" <mazdas@yahoo.com>
+Subject: You won $650,500.00
+Date: Tue, 28 Sep 2010 20:18:06 +0800
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-ID: <auto-000027469477@mailfe03.swip.net>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- arch/x86/xen/mmu.c |   23 ++++++++++++++++++++---
- 1 files changed, 20 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 42086ac..ffc5e24 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -1861,6 +1861,8 @@ __init pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd,
- }
- #endif	/* CONFIG_X86_64 */
- 
-+static unsigned char dummy_mapping[PAGE_SIZE] __page_aligned_bss;
-+
- static void xen_set_fixmap(unsigned idx, phys_addr_t phys, pgprot_t prot)
- {
- 	pte_t pte;
-@@ -1881,15 +1883,28 @@ static void xen_set_fixmap(unsigned idx, phys_addr_t phys, pgprot_t prot)
- #else
- 	case VSYSCALL_LAST_PAGE ... VSYSCALL_FIRST_PAGE:
- #endif
--#ifdef CONFIG_X86_LOCAL_APIC
--	case FIX_APIC_BASE:	/* maps dummy local APIC */
--#endif
- 	case FIX_TEXT_POKE0:
- 	case FIX_TEXT_POKE1:
- 		/* All local page mappings */
- 		pte = pfn_pte(phys, prot);
- 		break;
- 
-+#ifdef CONFIG_X86_LOCAL_APIC
-+	case FIX_APIC_BASE:	/* maps dummy local APIC */
-+		pte = pfn_pte(PFN_DOWN(__pa(dummy_mapping)), PAGE_KERNEL);
-+		break;
-+#endif
-+
-+#ifdef CONFIG_X86_IO_APIC
-+	case FIX_IO_APIC_BASE_0 ... FIX_IO_APIC_BASE_END:
-+		/*
-+		 * We just don't map the IO APIC - all access is via
-+		 * hypercalls.  Keep the address in the pte for reference.
-+		 */
-+		pte = pfn_pte(PFN_DOWN(__pa(dummy_mapping)), PAGE_KERNEL);
-+		break;
-+#endif
-+
- 	case FIX_PARAVIRT_BOOTMAP:
- 		/* This is an MFN, but it isn't an IO mapping from the
- 		   IO domain */
-@@ -2027,6 +2042,8 @@ void __init xen_init_mmu_ops(void)
- 	pv_mmu_ops = xen_mmu_ops;
- 
- 	vmap_lazy_unmap = false;
-+
-+	memset(dummy_mapping, 0xff, PAGE_SIZE);
- }
- 
- /* Protected by xen_reservation_lock. */
--- 
-1.5.6.5
 
