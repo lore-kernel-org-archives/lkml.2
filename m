@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365Ab0I1LlT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 07:41:19 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:61004 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753102Ab0I1LlT (ORCPT
+	id S1752158Ab0I1L46 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 07:56:58 -0400
+Received: from dhruva1.ncra.tifr.res.in ([158.144.12.129]:35114 "EHLO
+	dhruva1.ncra.tifr.res.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750787Ab0I1L44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 07:41:19 -0400
-Message-ID: <4CA1D44B.4080900@metafoo.de>
-Date: Tue, 28 Sep 2010 13:40:59 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+	Tue, 28 Sep 2010 07:56:56 -0400
+From: "Raju Rameshwar Uprade" <rajsingh@ncra.tifr.res.in>
+To: Greg KH <gregkh@suse.de>,
+        Raju Rameshwar Uprade <rajsingh@ncra.tifr.res.in>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: Regarding USB-to-serial device driver
+Date: Tue, 28 Sep 2010 17:26:35 +0530
+Message-Id: <20100928115204.M46802@admin-gateway.ncra.tifr.res.in>
+In-Reply-To: <20100928113036.GA15024@suse.de>
+References: <20100913091318.M67834@admin-gateway.ncra.tifr.res.in> <20100913154843.GA27496@suse.de> <20100914060649.M96376@admin-gateway.ncra.tifr.res.in> <20100914131925.GC375@suse.de> <20100922052107.M44650@admin-gateway.ncra.tifr.res.in> <20100922145607.GB26309@suse.de> <20100923100127.M64470@admin-gateway.ncra.tifr.res.in> <20100923140236.GB31394@suse.de> <20100928091520.M79654@admin-gateway.ncra.tifr.res.in> <20100928113036.GA15024@suse.de>
+X-Mailer: OpenWebMail 2.53 (08:Aug:2008)
+X-OriginatingIP: 158.144.12.129
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>
-Subject: Re: [PATCH 2/3] drivers/power: add missing kfree(jz_battery) in	jz_battery_remove()
-References: <1285571232.31251.1.camel@mola> <1285571311.31251.3.camel@mola>
-In-Reply-To: <1285571311.31251.3.camel@mola>
-X-Enigmail-Version: 0.95.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Acked-By: Lars-Peter Clausen <lars@metafoo.de>
+> Is this with your patched pl2303 driver, or are you now doing this from
+> userspace?
 
-> ---
->  drivers/power/jz4740-battery.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/power/jz4740-battery.c b/drivers/power/jz4740-battery.c
-> index 20c4b95..a8108a7 100644
-> --- a/drivers/power/jz4740-battery.c
-> +++ b/drivers/power/jz4740-battery.c
-> @@ -383,6 +383,7 @@ static int __devexit jz_battery_remove(struct platform_device *pdev)
->  
->  	iounmap(jz_battery->base);
->  	release_mem_region(jz_battery->mem->start, resource_size(jz_battery->mem));
-> +	kfree(jz_battery);
->  
->  	return 0;
->  }
+ This is patched pl2303 driver.
 
-Thanks
-- Lars
+> This looks like your driver, not mine, sorry, you are on your own here.
+> See my previous emails as to why this should be done in userspace and
+> not in the kernel.
+
+Is it possible to control RTS line from user space.
+
+kindly send me some links, regarding doing the things from userspace like controlling
+RTS line,adding mark and space parity with the data bytes.
+
+
+Thanks,
+Raj.
