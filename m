@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760512Ab0I1ByY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 21:54:24 -0400
-Received: from mga11.intel.com ([192.55.52.93]:29616 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757071Ab0I1ByX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 21:54:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,244,1283756400"; 
-   d="scan'208";a="611038263"
-Subject: Re: [PATCH -v2 6/7] x86, NMI, Add support to notify hardware error
- with unknown NMI
-From: Huang Ying <ying.huang@intel.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-In-Reply-To: <20100927153804.GC26290@redhat.com>
-References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
-	 <1285549026-5008-6-git-send-email-ying.huang@intel.com>
-	 <20100927153804.GC26290@redhat.com>
+	id S1760562Ab0I1B6s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 21:58:48 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:49453 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757248Ab0I1B6r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 21:58:47 -0400
+X-Authority-Analysis: v=1.1 cv=DXcwXsiCy0m6dtfuzmckRBGBU5A53VFijNRGSYZIu9o= c=1 sm=0 a=Zf2-li83EnIA:10 a=IkcTkHD0fZMA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=SABkXUh7u2RuocRKMEsA:9 a=Yzc_bzAWWu6s1ntbYnoA:7 a=ib8GVBUr-X8WMMz2NN_uLqzsvKQA:4 a=QEXdDO2ut3YA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: Oops in trace_hardirqs_on (powerpc)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: =?ISO-8859-1?Q?J=F6rg?= Sommer <joerg@alea.gnuu.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
+In-Reply-To: <20100927125037.GA4497@alea.gnuu.de>
+References: <20100806233157.GA7117@alea.gnuu.de>
+	 <1285184671.26872.127.camel@gandalf.stny.rr.com>
+	 <20100927125037.GA4497@alea.gnuu.de>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 28 Sep 2010 09:54:21 +0800
-Message-ID: <1285638861.20791.153.camel@yhuang-dev>
+Date: Mon, 27 Sep 2010 21:58:14 -0400
+Message-ID: <1285639094.2989.1.camel@frodo>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-27 at 23:38 +0800, Don Zickus wrote:
-> Hi Huang,
+On Mon, 2010-09-27 at 14:50 +0200, Jörg Sommer wrote:
+> Hello Steven,
 > 
-> On Mon, Sep 27, 2010 at 08:57:05AM +0800, Huang Ying wrote:
-> > @@ -360,6 +362,14 @@ io_check_error(unsigned char reason, str
-> >  static notrace __kprobes void
-> >  unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
-> >  {
-> > +	/*
-> > +	 * On some platforms, hardware errors may be notified via
-> > +	 * unknown NMI
-> > +	 */
-> > +	if (unknown_nmi_for_hwerr)
-> > +		panic("NMI for hardware error without error record: "
-> > +		      "Not continuing");
+> Steven Rostedt hat am Wed 22. Sep, 15:44 (-0400) geschrieben:
+> > Sorry for the late reply, but I was on vacation when you sent this, and
+> > I missed it while going through email.
+> > 
+> > Do you still have this issue?
 > 
-> Can you modify this to let users know to check the BIOS/BMC for further
-> messages?  Otherwise people just file bugzillas asking what the problem
-> is, and the first thing we have to respond with is check the BIOS/BMC.
+> No. I've rebuild my kernel without TRACE_IRQFLAGS and the problem
+> vanished, as expected. The problem is, that in some cases the stack is
+> only two frames deep, which causes the macro CALLER_ADDR1 makes an
+> invalid access. Someone told me, there a workaround for the problem on
+> i386, too.
+> 
+> % sed -n 2p arch/x86/lib/thunk_32.S
+>  * Trampoline to trace irqs off. (otherwise CALLER_ADDR1 might crash)
 
-Sorry, forget about that. Will change it in next version.
+Yes, I remember that problem. When I get back from Tokyo, I'll tried to
+remember to fix it.
 
-Best Regards,
-Huang Ying
+Thanks!
+
+-- Steve
 
 
