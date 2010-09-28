@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039Ab0I1X2f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 19:28:35 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:39013 "EHLO e5.ny.us.ibm.com"
+	id S1753719Ab0I1X2t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 19:28:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59952 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751164Ab0I1X2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 19:28:34 -0400
-Date: Tue, 28 Sep 2010 16:28:31 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dongdong Deng <dongdong.deng@windriver.com>
-Cc: dipankar@in.ibm.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] rcu: using ACCESS_ONCE() to observe the
- jiffies_stall/rnp->qsmask value
-Message-ID: <20100928232831.GC2419@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1285662763-16748-1-git-send-email-dongdong.deng@windriver.com>
+	id S1751701Ab0I1X2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 19:28:48 -0400
+Message-ID: <4CA27A01.1080606@zytor.com>
+Date: Tue, 28 Sep 2010 16:28:01 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1285662763-16748-1-git-send-email-dongdong.deng@windriver.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Nigel Cunningham <nigel@tuxonice.net>
+Subject: Re: [RFC][PATCH] PM / Hibernate / x86: Change RESTORE_MAGIC on x86_64
+References: <201009290112.11363.rjw@sisk.pl>
+In-Reply-To: <201009290112.11363.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 28, 2010 at 04:32:43PM +0800, Dongdong Deng wrote:
-> Using ACCESS_ONCE() to observe the jiffies_stall/rnp->qsmask value
-> due to the caller didn't hold the root_rcu/rnp node's lock.
-
-Given that the quantities are only used once, ACCESS_ONCE() is strictly
-speaking not necessary.  I am tempted to queue your patch regardless
-for the documentation benefits.
-
-Or is this patch necessary to fix a failure that you have been seeing?
-
-In any case, thank you for taking a look at RCU!
-
-							Thanx, Paul
-
-> Signed-off-by: Dongdong Deng <dongdong.deng@windriver.com>
-> CC: Dipankar Sarma <dipankar@in.ibm.com>
-> CC: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+On 09/28/2010 04:12 PM, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> On x86_64 the configuration and version of the kernel that
+> hibernates and creates a system image may be different from the
+> configuration and version of the boot kernel that loads the image.
+> So long as both these kernels are built with the same value of
+> RESTORE_MAGIC, the image created by one of them should be
+> successfully loaded and restored by the other one.
+> 
+> It wasn't necessary to modify RESTORE_MAGIC in the past, but now
+> that we are adding compression to the in-kernel hibernate code,
+> change the value of RESTORE_MAGIC so that earlier kernels don't
+> try to load compressed images they can't handle.
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 > ---
->  kernel/rcutree.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+>  arch/x86/power/hibernate_64.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index d5bc439..07a7063 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -532,9 +532,9 @@ static void check_cpu_stall(struct rcu_state *rsp, struct rcu_data *rdp)
-> 
->  	if (rcu_cpu_stall_panicking)
->  		return;
-> -	delta = jiffies - rsp->jiffies_stall;
-> +	delta = jiffies - ACCESS_ONCE(rsp->jiffies_stall);
->  	rnp = rdp->mynode;
-> -	if ((rnp->qsmask & rdp->grpmask) && delta >= 0) {
-> +	if ((ACCESS_ONCE(rnp->qsmask) & rdp->grpmask) && delta >= 0) {
-> 
->  		/* We haven't checked in, so go dump stack. */
->  		print_cpu_stall(rsp);
-> -- 
-> 1.6.0.4
-> 
+> Index: linux-2.6/arch/x86/power/hibernate_64.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/power/hibernate_64.c
+> +++ linux-2.6/arch/x86/power/hibernate_64.c
+> @@ -137,7 +137,7 @@ struct restore_data_record {
+>  	unsigned long magic;
+>  };
+>  
+> -#define RESTORE_MAGIC	0x0123456789ABCDEFUL
+> +#define RESTORE_MAGIC	0x0123456789ABCDF0UL
+>  
+
+Two issues with this:
+
+a) shouldn't we only set this when the image is actually compressed?
+
+b) using systematic magics like this is pessimal in terms of collision
+avoidance.  It's much better to use a true random number.
+
+Hence, I propose:
+
+: anacreon 95 ; ranpwd -xc 16
+0x4ddedd3236f1e6e1
+
+	-hpa
