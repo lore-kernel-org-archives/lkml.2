@@ -1,82 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761Ab0I1Kga (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 06:36:30 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:54684 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752104Ab0I1Kg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 06:36:27 -0400
-Date: Tue, 28 Sep 2010 12:36:18 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC PATCH] x86: Barf when faults happen in NMI
-Message-ID: <20100928103618.GB8514@elte.hu>
-References: <1285615833-5324-1-git-send-regression-fweisbec@gmail.com>
+	id S1752383Ab0I1KgW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 06:36:22 -0400
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:44577 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751391Ab0I1KgS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 06:36:18 -0400
+From: Arun Murthy <arun.murthy@stericsson.com>
+To: <lars@metafoo.de>, <akpm@linux-foundation.org>, <kernel@pengutronix.de>,
+        <philipp.zabel@gmail.com>, <robert.jarzmik@free.fr>,
+        <marek.vasut@gmail.com>, <eric.y.miao@gmail.com>, <rpurdie@rpsys.net>,
+        <sameo@linux.intel.com>, <kgene.kim@samsung.com>,
+        <linux-omap@vger.kernel.org>
+Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mips@linux-mips.org>, <arun.murthy@stericsson.com>,
+        <STEricsson_nomadik_linux@list.st.com>
+Subject: [PATCH 7/7] pwm: Modify backlight and led Kconfig aligning to pwm core
+Date: Tue, 28 Sep 2010 16:05:34 +0530
+Message-ID: <1285670134-18063-8-git-send-email-arun.murthy@stericsson.com>
+X-Mailer: git-send-email 1.7.2.dirty
+In-Reply-To: <1285670134-18063-1-git-send-email-arun.murthy@stericsson.com>
+References: <1285670134-18063-1-git-send-email-arun.murthy@stericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1285615833-5324-1-git-send-regression-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+PWM based backlight and led driver will not be calling the pwm drivers
+through the pwm core driver and hence adding dependancy on the same.
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
+Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+---
+ drivers/leds/Kconfig            |    2 +-
+ drivers/pwm/Kconfig             |    2 --
+ drivers/video/backlight/Kconfig |    2 +-
+ 3 files changed, 2 insertions(+), 4 deletions(-)
 
-> In x86, faults exit by executing the iret instruction, which then 
-> reenables NMIs if we faulted in NMI context. Then if a fault happens 
-> in NMI, another NMI can nest after the fault exits.
-> 
-> But we don't yet support nested NMIs because we have only one NMI 
-> stack. To prevent that, trigger a bug when a fault happens in NMI 
-> context.
-> 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
-> 
-> I first thought about putting it in the vmalloc fault path only. But 
-> then I saw more occasions for the kernel to fault (kmemcheck or so), 
-> and so I thought it should be better put in the all in one path. But I 
-> suspect you won't like that conditional in the big x86 fault path.
-> 
-> 
->  arch/x86/mm/fault.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-> index 4c4508e..80c997e 100644
-> --- a/arch/x86/mm/fault.c
-> +++ b/arch/x86/mm/fault.c
-> @@ -955,6 +955,8 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
->  	int write;
->  	int fault;
->  
-> +	BUG_ON(in_nmi());
-> +
+diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+index e411262..eba388f 100644
+--- a/drivers/leds/Kconfig
++++ b/drivers/leds/Kconfig
+@@ -244,7 +244,7 @@ config LEDS_DAC124S085
+ 
+ config LEDS_PWM
+ 	tristate "PWM driven LED Support"
+-	depends on HAVE_PWM
++	depends on HAVE_PWM || PWM_CORE
+ 	help
+ 	  This option enables support for pwm driven LEDs
+ 
+diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+index e347365..1f8cbc0 100644
+--- a/drivers/pwm/Kconfig
++++ b/drivers/pwm/Kconfig
+@@ -17,7 +17,6 @@ if PWM_DEVICES
+ config AB8500_PWM
+ 	bool "AB8500 PWM support"
+ 	depends on AB8500_CORE
+-	select HAVE_PWM
+ 	help
+ 	  This driver exports functions to enable/disble/config/free Pulse
+ 	  Width Modulation in the Analog Baseband Chip AB8500.
+@@ -26,7 +25,6 @@ config AB8500_PWM
+ config TWL6030_PWM
+ 	tristate "TWL6030 PWM (Pulse Width Modulator) Support"
+ 	depends on TWL4030_CORE
+-	select HAVE_PWM
+ 	default n
+ 	help
+ 	  Say yes here if you want support for TWL6030 PWM.
+diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
+index e54a337..73fc17b 100644
+--- a/drivers/video/backlight/Kconfig
++++ b/drivers/video/backlight/Kconfig
+@@ -217,7 +217,7 @@ config BACKLIGHT_CARILLO_RANCH
+ 
+ config BACKLIGHT_PWM
+ 	tristate "Generic PWM based Backlight Driver"
+-	depends on HAVE_PWM
++	depends on HAVE_PWM || PWM_CORE
+ 	help
+ 	  If you have a LCD backlight adjustable by PWM, say Y to enable
+ 	  this driver.
+-- 
+1.7.2.dirty
 
-Hm, this is a fastpath, so it would be nice to put this into the vmalloc 
-and kmemcheck paths (even though it's less clean that way).
-
-Also, a WARN_ON_ONCE() would probably help more in getting bug reports 
-out of such systems, than a BUG_ON() crashed kernel.
-
-Thanks,
-
-	Ingo
