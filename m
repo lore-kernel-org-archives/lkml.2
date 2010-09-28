@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753434Ab0I1Wxx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 18:53:53 -0400
-Received: from nic.NetDirect.CA ([216.16.235.2]:53785 "EHLO
-	rubicon.netdirect.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915Ab0I1Wxv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 18:53:51 -0400
-X-Originating-Ip: 216.16.235.2
-Date: Tue, 28 Sep 2010 18:52:02 -0400
-From: Chris Frey <cdfrey@foursquare.net>
-To: Richard Weinberger <richard@nod.at>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        jdike@addtoit.com, user-mode-linux-devel@lists.sourceforge.net,
-        user-mode-linux-user@lists.sourceforge.net, janjaap@bos.nl,
-        geert@linux-m68k.org, jaxboe@fusionio.com, martin.petersen@oracle.com,
-        adobriyan@gmail.com, syzop@vulnscan.org
-Subject: Re: [PATCH 1/1] um: ubd: Fix data corruption
-Message-ID: <20100928225202.GA30352@foursquare.net>
-References: <1285710456-4435-1-git-send-email-richard@nod.at> <20100928150000.f007f43e.akpm@linux-foundation.org> <201009290013.11332.richard@nod.at>
-Mime-Version: 1.0
+	id S1754950Ab0I1W4U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 18:56:20 -0400
+Received: from flusers.ccur.com ([173.221.59.2]:59758 "EHLO gamx.iccur.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752709Ab0I1W4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 18:56:19 -0400
+X-Greylist: delayed 3167 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Sep 2010 18:56:19 EDT
+Date: Tue, 28 Sep 2010 18:03:11 -0400
+From: Joe Korty <joe.korty@ccur.com>
+To: mingo@elte.hu, a.p.zijlstra@chello.nl, john.blackwood@ccur.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PERF EVENTS] fix incorrect copy_from_user usage
+Message-ID: <20100928220311.GA18145@tsunami.ccur.com>
+Reply-To: Joe Korty <joe.korty@ccur.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201009290013.11332.richard@nod.at>
-User-Agent: Mutt/1.4.2.2i
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 29, 2010 at 12:13:10AM +0200, Richard Weinberger wrote:
-> Am Mittwoch 29 September 2010, 00:00:00 schrieb Andrew Morton:
-> > This is a workaround, I think?  Do we know what the actual bug is?
-> > From the comment it appears to be a regression?
-> 
-> Yes, it is a workaround.
-> For more details please have a look at this post:
-> http://lkml.org/lkml/2010/9/28/245
+perf events: repair incorrect use of copy_from_user
 
-I'm going to run some tests to see how this works on my end, but in
-reading old threads, I found this response from Bram Matthys
-that casts some doubt on an older version of this patch.
+This makes the perf_event_period() return 0 instead of
+-EFAULT on success.
 
-	http://marc.info/?l=user-mode-linux-user&m=126883932731656&w=2
+Developed-by: John Blackwood <john.blackwood@ccur.com>
+Signed-off-by: Joe Korty <joe.korty@ccur.com>
 
-I've added him to the CC.
-
-- Chris
-
+Index: 2.6.36-rc5/kernel/perf_event.c
+===================================================================
+--- 2.6.36-rc5.orig/kernel/perf_event.c	2010-09-28 17:38:16.000000000 -0400
++++ 2.6.36-rc5/kernel/perf_event.c	2010-09-28 17:48:10.000000000 -0400
+@@ -2202,15 +2202,13 @@
+ static int perf_event_period(struct perf_event *event, u64 __user *arg)
+ {
+ 	struct perf_event_context *ctx = event->ctx;
+-	unsigned long size;
+ 	int ret = 0;
+ 	u64 value;
+ 
+ 	if (!event->attr.sample_period)
+ 		return -EINVAL;
+ 
+-	size = copy_from_user(&value, arg, sizeof(value));
+-	if (size != sizeof(value))
++	if (copy_from_user(&value, arg, sizeof(value)))
+ 		return -EFAULT;
+ 
+ 	if (!value)
