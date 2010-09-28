@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754271Ab0I1Mve (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 08:51:34 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:56439 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753009Ab0I1Mvd (ORCPT
+	id S1754464Ab0I1MzM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 08:55:12 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:59578 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753131Ab0I1MzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 08:51:33 -0400
-X-Greylist: delayed 553 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Sep 2010 08:51:33 EDT
-Message-Id: <1285677740.30176.1397281937@webmail.messagingengine.com>
-X-Sasl-Enc: pgnhCy02QI/paiGJe7LaIDIyUiep/fc/2CCY4THDhL6n 1285677740
-From: "Bron Gondwana" <brong@fastmail.fm>
-To: "Christoph Lameter" <cl@linux.com>, "Robert Mueller" <robm@fastmail.fm>
-Cc: "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>,
-        "Mel Gorman" <mel@csn.ul.ie>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "linux-mm" <linux-mm@kvack.org>
+	Tue, 28 Sep 2010 08:55:10 -0400
+Message-ID: <040c01cb5f0c$29bcb3b0$LocalHost@wipblrx0099946>
+From: "Hemanth V" <hemanthv@ti.com>
+To: "Arun Murthy" <arun.murthy@stericsson.com>, <lars@metafoo.de>,
+        "Andrew Morton" <akpm@linux-foundation.org>, <kernel@pengutronix.de>,
+        <philipp.zabel@gmail.com>, <robert.jarzmik@free.fr>,
+        <marek.vasut@gmail.com>, <eric.y.miao@gmail.com>, <rpurdie@rpsys.net>,
+        <sameo@linux.intel.com>, <kgene.kim@samsung.com>,
+        <linux-omap@vger.kernel.org>
+Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mips@linux-mips.org>,
+        "Arun MURTHY" <arun.murthy@stericsson.com>,
+        <STEricsson_nomadik_linux@list.st.com>
+References: <1285670134-18063-1-git-send-email-arun.murthy@stericsson.com> <1285670134-18063-2-git-send-email-arun.murthy@stericsson.com>
+Subject: Re: [PATCH 1/7] pwm: Add pwm core driver
+Date: Tue, 28 Sep 2010 18:23:24 +0530
 MIME-Version: 1.0
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: MessagingEngine.com Webmail Interface
-In-Reply-To: <alpine.DEB.2.00.1009280727370.4144@router.home>
-References: <52C8765522A740A4A5C027E8FDFFDFE3@jem>
- <20100921090407.GA11439@csn.ul.ie>
- <20100927110049.6B31.A69D9226@jp.fujitsu.com>
- <alpine.DEB.2.00.1009270828510.7000@router.home>
- <1285629420.10278.1397188599@webmail.messagingengine.com>
- <alpine.DEB.2.00.1009280727370.4144@router.home>
-Subject: Re: Default zone_reclaim_mode = 1 on NUMA kernel is bad
- forfile/email/web servers
-Date: Tue, 28 Sep 2010 22:42:20 +1000
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.3598
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3350
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Sep 2010 07:35 -0500, "Christoph Lameter" <cl@linux.com> wrote:
-> > The problem we saw was purely with file caching. The application wasn't
-> > actually allocating much memory itself, but it was reading lots of files
-> > from disk (via mmap'ed memory mostly), and as most people would, we
-> > expected that data would be cached in memory to reduce future reads from
-> > disk. That was not happening.
-> 
-> Obviously and you have stated that numerous times. Problem that the use
-> of
-> a remote memory will reduced performance of reads so the OS (with
-> zone_reclaim=1) defaults to the use of local memory and favors reclaim of
-> local memory over the allocation from the remote node. This is fine if
-> you have multiple applications running on both nodes because then each
-> application will get memory local to it and therefore run faster. That
-> does not work with a single app that only allocates from one node.
+----- Original Message ----- 
+From: "Arun Murthy" <arun.murthy@stericsson.com>
 
-Is this what's happening, or is IO actually coming from disk in preference
-to the remote node?  I can certainly see the logic behind preferring to
-reclaim the local node if that's all that's happening - though the OS should
-be allocating the different tasks more evenly across the nodes in that case.
 
-> Control over memory allocations over the various nodes under NUMA
-> for a process can occur via the numactl ctl or the libnuma C apis.
-> 
-> F.e.e
-> 
-> numactl --interleave ... command
-> 
-> will address that issue for a specific command that needs to go
+> The existing pwm based led and backlight driver makes use of the
+> pwm(include/linux/pwm.h). So all the board specific pwm drivers will
+> be exposing the same set of function name as in include/linux/pwm.h.
+> As a result build fails in case of multi soc environments where each soc
+> has a pwm device in it.
 
-Gosh what a pain.  While it won't kill us too much to add to our
-startup, it does feel a lot like the tail is wagging the dog from here
-still.  A task that doesn't ask for anything special should get sane
-defaults, and the cost of data from the other node should be a lot
-less than the cost of the same data from spinning rust.
+This seems very specific to ST environment,  looking at the driver list from
+( [PATCH 4/7] pwm: Align existing pwm drivers with pwm-core ) it seems
+most multi SOC environments might support PWM in either one of the SOC.
 
-Bron.
--- 
-  Bron Gondwana
-  brong@fastmail.fm
+arch/arm/plat-mxc/pwm.c
+arch/arm/plat-pxa/pwm.c
+arch/arm/plat-samsung/pwm.c
+arch/mips/jz4740/pwm.c
+drivers/mfd/twl6030-pwm.c
+
+Unless people have examples of other SOCs which might use this,
+the better approach might be to go for a custom driver rather than changing
+the framework.
+
+Thanks
+Hemanth 
 
