@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757469Ab0I1TXM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 15:23:12 -0400
-Received: from hera.kernel.org ([140.211.167.34]:45165 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752350Ab0I1TXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 15:23:10 -0400
-Message-ID: <4CA24095.6090706@kernel.org>
-Date: Tue, 28 Sep 2010 23:23:01 +0400
-From: Denis Kirjanov <dkirjanov@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+	id S1756161Ab0I1Tbp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 15:31:45 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:48849 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753935Ab0I1Tbn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 15:31:43 -0400
 MIME-Version: 1.0
-To: Vasiliy Kulikov <segooon@gmail.com>
-CC: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jiri Pirko <jpirko@redhat.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 8/9] staging: slicoss: use free_netdev(netdev) instead
- of kfree()
-References: <1285693688-4763-1-git-send-email-segooon@gmail.com>
-In-Reply-To: <1285693688-4763-1-git-send-email-segooon@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 28 Sep 2010 19:22:46 +0000 (UTC)
+Message-ID: <40229210-a2a6-41ab-9a88-bde956ebc66c@default>
+Date: Tue, 28 Sep 2010 12:31:18 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: cleancache into linux-next, target for 2.6.37 merge window?
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.2.1.2  (406224) [OL
+ 12.0.6535.5005]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2010 09:08 PM, Vasiliy Kulikov wrote:
-> Freeing netdev without free_netdev() leads to net, tx leaks.
-> I might lead to dereferencing freed pointer.
-> 
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> @@
-> struct net_device* dev;
-> @@
-> 
-> -kfree(dev)
-> +free_netdev(dev)
-> 
-> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-> ---
->  Compile tested.
-> 
->  drivers/staging/slicoss/slicoss.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/staging/slicoss/slicoss.c b/drivers/staging/slicoss/slicoss.c
-> index 58ff123..18f1103 100644
-> --- a/drivers/staging/slicoss/slicoss.c
-> +++ b/drivers/staging/slicoss/slicoss.c
-> @@ -3233,7 +3233,7 @@ static void __devexit slic_entry_remove(struct pci_dev *pcidev)
->  		slic_global.num_slic_cards--;
->  		slic_card_cleanup(card);
->  	}
-> -	kfree(dev);
-> +	free_netdev(dev);
->  	pci_release_regions(pcidev);
->  }
->  
-Acked-by: Denis Kirjanov <dkirjanov@kernel.org>
+Hi --
+
+The "cleancache" patchset crosses multiple subsystem boundaries and
+at the recent filesystem/storage/mm summit, people suggested that
+after the patchset has stabilized, I should just submit it to
+linux-next and then directly to Linus.  The latest version has received
+no further suggestions or comments.  Previous versions received
+a great deal of review and comment from a wide variety of maintainers
+across all the impacted subsystems, as documented in the commit logs.
+
+Would it be possible to include the following tree in the linux-next
+build process?
+
+git://git.kernel.org/pub/scm/linux/kernel/git/djm/tmem.git#linux-next
+
+The patchset applies cleanly against both 2.6.36-rc3 and -rc5.
+Against next-20100928, I see two very minor merge conflicts in
+mm/Kconfig and include/linux/fs.h due to minor changes from other
+trees.
+
+Thanks,
+Dan Magenheimer
+dan.magenheimer@oracle.com
+
