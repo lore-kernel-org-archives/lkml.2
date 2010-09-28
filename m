@@ -1,55 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756124Ab0I1TNN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 15:13:13 -0400
-Received: from haybaler.sackheads.org ([140.186.190.103]:63949 "EHLO
-	haybaler.sackheads.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755080Ab0I1TNL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 15:13:11 -0400
-DomainKey-Signature: a=rsa-sha1; s=haybaler; d=sackheads.org; c=nofws; q=dns;
-	h=dkim-signature:received:received:date:from:to:cc:subject:
-	message-id:references:mime-version:content-type:
-	content-disposition:in-reply-to:user-agent;
-	b=e5BRS7bOimXWcMXUGAF6rcK5OE9ykLM044BnmPIee3zv4/NwGvP7/iAgg5HJpmuoX
-	PBOqCTOywzFPhRyS7jOK0lZycakQ3JGc0eZSIzMaFMlFhPXUN44dlWj/4N36DvbH1I/
-	s9YX7585k2euUDYZD9Jd/W3stGWgetR2Stt51wA=
-Date: Tue, 28 Sep 2010 15:13:08 -0400
-From: Jimmie Mayfield <mayfield@sackheads.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Trying to reset a PCIe device and scratching my head...
-Message-ID: <20100928191307.GA54440@sackheads.org>
-References: <20100928020548.GA90230@sackheads.org> <4CA1990E.9080206@ladisch.de> <20100928090655.158d1675@jbarnes-desktop>
-MIME-Version: 1.0
+	id S1755895Ab0I1TQi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 15:16:38 -0400
+Received: from havoc.gtf.org ([69.61.125.42]:46143 "EHLO havoc.gtf.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752510Ab0I1TQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 15:16:37 -0400
+Date: Tue, 28 Sep 2010 15:16:36 -0400
+From: Jeff Garzik <jeff@garzik.org>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [git patch] libata fix
+Message-ID: <20100928191636.GA11706@havoc.gtf.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100928090655.158d1675@jbarnes-desktop>
-User-Agent: Mutt/1.5.16 (2007-06-09)
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 28, 2010 at 09:06:55AM -0700, Jesse Barnes wrote:
-> Right, if your system supports this, it may be the easiest way to go.
 
-I was under the impression that PCIe requires support for at least
-fundamental reset and maybe hot reset (secondary bus reset) though I'd
-have to go back to the spec to verify the latter.  Are you saying that
-not all PCIe chipsets support this?  Sorry if this seems like a dumb 
-question...I'm by no means a PCIe guru.
+Please pull from 'upstream-linus' branch of
+master.kernel.org:/pub/scm/linux/kernel/git/jgarzik/libata-dev.git upstream-linus
 
-> But devices often have proprietary ways of resetting themselves too;
-> maybe you could change your device to reset if a specific bit in config
-> or MMIO space was flipped.  You'd likely need some sort of delay before
-> accessing the device again, but it should be bounded and fairly fixed,
-> so probably not a big deal for the driver to handle.
+to receive the following updates:
 
-Indeed, the device does support a proprietary reset via MMIO but 
-that reset only affects those components that lie behind the card's PCIe 
-interface.  So it's nearly a full device reset but not quite.  The FPGA 
-containing the PCIe interface does not get reloaded.  Unfortunately, that 
-behavior is likely set in stone.  
+ drivers/ata/ahci.c          |    4 ++++
+ drivers/ata/ahci.h          |   12 +++++++++++-
+ drivers/ata/ahci_platform.c |    6 +++++-
+ drivers/ata/libahci.c       |   16 ++++------------
+ 4 files changed, 24 insertions(+), 14 deletions(-)
 
-Jimmie
+Tejun Heo (1):
+      ahci: fix module refcount breakage introduced by libahci split
 
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index ff1c945..99d0e5a 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -90,6 +90,10 @@ static int ahci_pci_device_suspend(struct pci_dev *pdev, pm_message_t mesg);
+ static int ahci_pci_device_resume(struct pci_dev *pdev);
+ #endif
+ 
++static struct scsi_host_template ahci_sht = {
++	AHCI_SHT("ahci"),
++};
++
+ static struct ata_port_operations ahci_vt8251_ops = {
+ 	.inherits		= &ahci_ops,
+ 	.hardreset		= ahci_vt8251_hardreset,
+diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
+index 474427b..e5fdeeb 100644
+--- a/drivers/ata/ahci.h
++++ b/drivers/ata/ahci.h
+@@ -298,7 +298,17 @@ struct ahci_host_priv {
+ 
+ extern int ahci_ignore_sss;
+ 
+-extern struct scsi_host_template ahci_sht;
++extern struct device_attribute *ahci_shost_attrs[];
++extern struct device_attribute *ahci_sdev_attrs[];
++
++#define AHCI_SHT(drv_name)						\
++	ATA_NCQ_SHT(drv_name),						\
++	.can_queue		= AHCI_MAX_CMDS - 1,			\
++	.sg_tablesize		= AHCI_MAX_SG,				\
++	.dma_boundary		= AHCI_DMA_BOUNDARY,			\
++	.shost_attrs		= ahci_shost_attrs,			\
++	.sdev_attrs		= ahci_sdev_attrs
++
+ extern struct ata_port_operations ahci_ops;
+ 
+ void ahci_save_initial_config(struct device *dev,
+diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+index 4e97f33..84b6432 100644
+--- a/drivers/ata/ahci_platform.c
++++ b/drivers/ata/ahci_platform.c
+@@ -23,6 +23,10 @@
+ #include <linux/ahci_platform.h>
+ #include "ahci.h"
+ 
++static struct scsi_host_template ahci_platform_sht = {
++	AHCI_SHT("ahci_platform"),
++};
++
+ static int __init ahci_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+@@ -145,7 +149,7 @@ static int __init ahci_probe(struct platform_device *pdev)
+ 	ahci_print_info(host, "platform");
+ 
+ 	rc = ata_host_activate(host, irq, ahci_interrupt, IRQF_SHARED,
+-			       &ahci_sht);
++			       &ahci_platform_sht);
+ 	if (rc)
+ 		goto err0;
+ 
+diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
+index 68dc678..8eea309 100644
+--- a/drivers/ata/libahci.c
++++ b/drivers/ata/libahci.c
+@@ -121,7 +121,7 @@ static DEVICE_ATTR(ahci_port_cmd, S_IRUGO, ahci_show_port_cmd, NULL);
+ static DEVICE_ATTR(em_buffer, S_IWUSR | S_IRUGO,
+ 		   ahci_read_em_buffer, ahci_store_em_buffer);
+ 
+-static struct device_attribute *ahci_shost_attrs[] = {
++struct device_attribute *ahci_shost_attrs[] = {
+ 	&dev_attr_link_power_management_policy,
+ 	&dev_attr_em_message_type,
+ 	&dev_attr_em_message,
+@@ -132,22 +132,14 @@ static struct device_attribute *ahci_shost_attrs[] = {
+ 	&dev_attr_em_buffer,
+ 	NULL
+ };
++EXPORT_SYMBOL_GPL(ahci_shost_attrs);
+ 
+-static struct device_attribute *ahci_sdev_attrs[] = {
++struct device_attribute *ahci_sdev_attrs[] = {
+ 	&dev_attr_sw_activity,
+ 	&dev_attr_unload_heads,
+ 	NULL
+ };
+-
+-struct scsi_host_template ahci_sht = {
+-	ATA_NCQ_SHT("ahci"),
+-	.can_queue		= AHCI_MAX_CMDS - 1,
+-	.sg_tablesize		= AHCI_MAX_SG,
+-	.dma_boundary		= AHCI_DMA_BOUNDARY,
+-	.shost_attrs		= ahci_shost_attrs,
+-	.sdev_attrs		= ahci_sdev_attrs,
+-};
+-EXPORT_SYMBOL_GPL(ahci_sht);
++EXPORT_SYMBOL_GPL(ahci_sdev_attrs);
+ 
+ struct ata_port_operations ahci_ops = {
+ 	.inherits		= &sata_pmp_port_ops,
