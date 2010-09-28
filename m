@@ -1,36 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752030Ab0I1Uvd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 16:51:33 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:56311
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751786Ab0I1Uvc (ORCPT
+	id S1752322Ab0I1Uwk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 16:52:40 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34179 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751786Ab0I1Uwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 16:51:32 -0400
-Date: Tue, 28 Sep 2010 13:51:52 -0700 (PDT)
-Message-Id: <20100928.135152.183065441.davem@davemloft.net>
-To: akpm@linux-foundation.org
-Cc: torvalds@linux-foundation.org, bharrosh@panasas.com, julia@diku.dk,
-        user-mode-linux-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, shemminger@vyatta.com
-Subject: Re: {painfully BISECTED} Please revert f25c80a4b2:
- arch/um/drivers: remove duplicate structure field initialization
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100928134721.f79a5955.akpm@linux-foundation.org>
-References: <4CA09977.80506@panasas.com>
-	<AANLkTim85sH_2o=xCiDuoQrHq_7ZL96Y91xQMGxUP5Fy@mail.gmail.com>
-	<20100928134721.f79a5955.akpm@linux-foundation.org>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 28 Sep 2010 16:52:39 -0400
+Date: Tue, 28 Sep 2010 13:51:17 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
+        Shailabh Nagar <nagar1234@in.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org, Jeff Mahoney <jeffm@suse.com>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH 0/2] taskstats: Cleanup patches
+Message-Id: <20100928135117.4fdd5799.akpm@linux-foundation.org>
+In-Reply-To: <20100928142058.796669370@linux.vnet.ibm.com>
+References: <20100928142058.796669370@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 28 Sep 2010 13:47:21 -0700
+On Tue, 28 Sep 2010 16:20:58 +0200
+Michael Holzheu <holzheu@linux.vnet.ibm.com> wrote:
 
-> Yeah, please revert it.
+> Hello Andrew,
+> 
+> It would be great, if you could accept the taskstats cleanup patches that
+> are the prerequisite for the taskstats precise accounting patches. The
+> patches do not add any new functionality. I think they make the code better
+> readable and extensible:
+> * 01/02: taskstats: Separate taskstats commands
+> * 02/02: taskstats: Split fill_pid function
+> 
 
-I'll take care of this, thanks everyone.
+Sure.
+
+I've been sitting on a couple of taskstats patches for ages.  Mel's
+delay-accounting-re-implement-c-for-getdelaysc-to-report-information-on-a-target-command.patch
+and Jeff's delayacct-align-to-8-byte-boundary-on-64-bit-systems.patch.
+
+I have notes against both of these indicating that Balbir had concerns
+and as far as I know those concerns remain unresolved.  So I'll drop
+those patches now - can you guys please reactivate them if you still
+think we should be making these changes?
+
