@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756349Ab0I1Rut (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 13:50:49 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:36601 "EHLO
+	id S1756534Ab0I1Ru7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 13:50:59 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36604 "EHLO
 	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755513Ab0I1Rur (ORCPT
+	with ESMTP id S1752006Ab0I1Ru5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 13:50:47 -0400
-Date: Tue, 28 Sep 2010 18:50:47 +0100
+	Tue, 28 Sep 2010 13:50:57 -0400
+Date: Tue, 28 Sep 2010 18:50:57 +0100
 To: ralf@linux-mips.org
-Subject: [PATCH 4/5] mips: fix error values in case of bad_stack
+Subject: [PATCH 5/5] mips: do_sigaltstack() expects userland pointers
 Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
 User-Agent: Heirloom mailx 12.4 7/29/08
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <E1P0eKF-0006jH-5I@ZenIV.linux.org.uk>
+Message-Id: <E1P0eKP-0006jZ-5F@ZenIV.linux.org.uk>
 From: Al Viro <viro@ftp.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-we want EFAULT, not -<syscall number>
+o32 compat does the right thing, native and n32 compat do not...
 
 Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 ---
- arch/mips/kernel/scall32-o32.S |    2 +-
- arch/mips/kernel/scall64-o32.S |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/mips/kernel/signal.c     |    5 +----
+ arch/mips/kernel/signal_n32.c |    5 +++++
+ 2 files changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/arch/mips/kernel/scall32-o32.S b/arch/mips/kernel/scall32-o32.S
-index d3edb9f..da98051 100644
---- a/arch/mips/kernel/scall32-o32.S
-+++ b/arch/mips/kernel/scall32-o32.S
-@@ -169,7 +169,7 @@ stackargs:
- 	 * We probably should handle this case a bit more drastic.
- 	 */
- bad_stack:
--	negu	v0				# error
-+	li	v0, EFAULT
- 	sw	v0, PT_R2(sp)
- 	li	t0, 1				# set error flag
- 	sw	t0, PT_R7(sp)
-diff --git a/arch/mips/kernel/scall64-o32.S b/arch/mips/kernel/scall64-o32.S
-index 7ce0a36..d2bc285 100644
---- a/arch/mips/kernel/scall64-o32.S
-+++ b/arch/mips/kernel/scall64-o32.S
-@@ -156,7 +156,7 @@ trace_a_syscall:
- 	 * The stackpointer for a call with more than 4 arguments is bad.
- 	 */
- bad_stack:
--	dnegu	v0			# error
-+	li	v0, EFAULT
- 	sd	v0, PT_R2(sp)
- 	li	t0, 1			# set error flag
- 	sd	t0, PT_R7(sp)
+diff --git a/arch/mips/kernel/signal.c b/arch/mips/kernel/signal.c
+index 604f077..5922342 100644
+--- a/arch/mips/kernel/signal.c
++++ b/arch/mips/kernel/signal.c
+@@ -390,7 +390,6 @@ asmlinkage void sys_rt_sigreturn(nabi_no_regargs struct pt_regs regs)
+ {
+ 	struct rt_sigframe __user *frame;
+ 	sigset_t set;
+-	stack_t st;
+ 	int sig;
+ 
+ 	frame = (struct rt_sigframe __user *) regs.regs[29];
+@@ -411,11 +410,9 @@ asmlinkage void sys_rt_sigreturn(nabi_no_regargs struct pt_regs regs)
+ 	else if (sig)
+ 		force_sig(sig, current);
+ 
+-	if (__copy_from_user(&st, &frame->rs_uc.uc_stack, sizeof(st)))
+-		goto badframe;
+ 	/* It is more difficult to avoid calling this function than to
+ 	   call it and ignore errors.  */
+-	do_sigaltstack((stack_t __user *)&st, NULL, regs.regs[29]);
++	do_sigaltstack(&frame->rs_uc.uc_stack, NULL, regs.regs[29]);
+ 
+ 	/*
+ 	 * Don't let your children do this ...
+diff --git a/arch/mips/kernel/signal_n32.c b/arch/mips/kernel/signal_n32.c
+index 2c5df81..ee24d81 100644
+--- a/arch/mips/kernel/signal_n32.c
++++ b/arch/mips/kernel/signal_n32.c
+@@ -109,6 +109,7 @@ asmlinkage int sysn32_rt_sigsuspend(nabi_no_regargs struct pt_regs regs)
+ asmlinkage void sysn32_rt_sigreturn(nabi_no_regargs struct pt_regs regs)
+ {
+ 	struct rt_sigframe_n32 __user *frame;
++	mm_segment_t old_fs;
+ 	sigset_t set;
+ 	stack_t st;
+ 	s32 sp;
+@@ -143,7 +144,11 @@ asmlinkage void sysn32_rt_sigreturn(nabi_no_regargs struct pt_regs regs)
+ 
+ 	/* It is more difficult to avoid calling this function than to
+ 	   call it and ignore errors.  */
++	old_fs = get_fs();
++	set_fs(KERNEL_DS);
+ 	do_sigaltstack((stack_t __user *)&st, NULL, regs.regs[29]);
++	set_fs(old_fs);
++
+ 
+ 	/*
+ 	 * Don't let your children do this ...
 -- 
 1.5.6.5
-
 
