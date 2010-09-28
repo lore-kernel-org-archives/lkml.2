@@ -1,152 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab0I1Uy2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 16:54:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25525 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752216Ab0I1Uy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 16:54:27 -0400
-Message-ID: <4CA255FE.7060308@redhat.com>
-Date: Tue, 28 Sep 2010 17:54:22 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
+	id S1752747Ab0I1U54 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 16:57:56 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47908 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752273Ab0I1U5z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 16:57:55 -0400
 MIME-Version: 1.0
-To: Vasiliy Kulikov <segooon@gmail.com>
-CC: kernel-janitors@vger.kernel.org, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] edac: i7300_edac: call pci_disable_device
-References: <1285696172-5612-1-git-send-email-segooon@gmail.com>
-In-Reply-To: <1285696172-5612-1-git-send-email-segooon@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100928134721.f79a5955.akpm@linux-foundation.org>
+References: <4CA09977.80506@panasas.com> <AANLkTim85sH_2o=xCiDuoQrHq_7ZL96Y91xQMGxUP5Fy@mail.gmail.com>
+ <20100928134721.f79a5955.akpm@linux-foundation.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 28 Sep 2010 13:57:04 -0700
+Message-ID: <AANLkTi=E7+CpJZE3XC7O1LvJu6LWfmvSxonskH4CYg25@mail.gmail.com>
+Subject: Re: {painfully BISECTED} Please revert f25c80a4b2: arch/um/drivers:
+ remove duplicate structure field initialization
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Boaz Harrosh <bharrosh@panasas.com>, Julia Lawall <julia@diku.dk>,
+        "David S. Miller" <davem@davemloft.net>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Stephen Hemminger <shemminger@vyatta.com>
+Content-Type: multipart/mixed; boundary=0016364ece5684ec7504915817ba
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 28-09-2010 14:49, Vasiliy Kulikov escreveu:
-> i7300_init_one() should call pci_disable_device() on error.
-> i7300_remove_one() should call pci_disable_device() as i7300_init_one() calls
-> pci_enable_device().
-> Also pci_enable_device() might return any error, not only -EIO, so check
-> for nonzero return code instead of checking equation to -EIO.
+--0016364ece5684ec7504915817ba
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-hmm... not sure if this is a good idea. A lspci (before applying i7300 edac
-drivers) pointed to another driver for i7300, handling other things.
-A grep i7300 revels a few drivers with i7300 string on it.
+On Tue, Sep 28, 2010 at 1:47 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+>
+> And I misread that, assuming that it's just a wrapper around
+> eth_mac_addr(). =A0Only it isn't, because it passes eth_mac_addr() the
+> MAC address's address directly (with ->sa_data). =A0But eth_mac_addr()
+> expects a `struct sockaddr *'.
+>
+> And for some wtf reason, eth_mac_addr() passes that `struct
+> sockaddr *' in a `void *', thus cunningly hiding the bug.
+>
+> Yeah, please revert it.
 
-So, before disabling the device, we need to be sure that this won't hurt the
-other drivers.
+Well, the alternative would be to just fix uml_net_set_mac(). The code
+before the patch was clearly crap too, so reverting may make it work,
+but gets us back to a stupid situation with two different initializers
+for one field.
 
-> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-> ---
->  Compile tested.
-> 
->  drivers/edac/i7300_edac.c |   35 +++++++++++++++++++++--------------
->  1 files changed, 21 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/edac/i7300_edac.c b/drivers/edac/i7300_edac.c
-> index 38920c0..749fa75 100644
-> --- a/drivers/edac/i7300_edac.c
-> +++ b/drivers/edac/i7300_edac.c
-> @@ -1046,7 +1046,7 @@ static int __devinit i7300_init_one(struct pci_dev *pdev,
->  
->  	/* wake up device */
->  	rc = pci_enable_device(pdev);
-> -	if (rc == -EIO)
-> +	if (rc)
->  		return rc;
->  
->  	debugf0("MC: " __FILE__ ": %s(), pdev bus %u dev=0x%x fn=0x%x\n",
-> @@ -1055,8 +1055,9 @@ static int __devinit i7300_init_one(struct pci_dev *pdev,
->  		PCI_SLOT(pdev->devfn), PCI_FUNC(pdev->devfn));
->  
->  	/* We only are looking for func 0 of the set */
-> +	rc = -ENODEV;
->  	if (PCI_FUNC(pdev->devfn) != 0)
-> -		return -ENODEV;
-> +		goto fail_disable;
->  
->  	/* As we don't have a motherboard identification routine to determine
->  	 * actual number of slots/dimms per channel, we thus utilize the
-> @@ -1073,10 +1074,10 @@ static int __devinit i7300_init_one(struct pci_dev *pdev,
->  		__func__, num_channels, num_dimms_per_channel, num_csrows);
->  
->  	/* allocate a new MC control structure */
-> +	rc = -ENOMEM;
->  	mci = edac_mc_alloc(sizeof(*pvt), num_csrows, num_channels, 0);
-> -
->  	if (mci == NULL)
-> -		return -ENOMEM;
-> +		goto fail_disable;
->  
->  	debugf0("MC: " __FILE__ ": %s(): mci = %p\n", __func__, mci);
->  
-> @@ -1085,15 +1086,15 @@ static int __devinit i7300_init_one(struct pci_dev *pdev,
->  	pvt = mci->pvt_info;
->  	pvt->pci_dev_16_0_fsb_ctlr = pdev;	/* Record this device in our private */
->  
-> +	rc = -ENOMEM;
->  	pvt->tmp_prt_buffer = kmalloc(PAGE_SIZE, GFP_KERNEL);
-> -	if (!pvt->tmp_prt_buffer) {
-> -		edac_mc_free(mci);
-> -		return -ENOMEM;
-> -	}
-> +	if (!pvt->tmp_prt_buffer)
-> +		goto fail_free;
->  
->  	/* 'get' the pci devices we want to reserve for our use */
-> +	rc = -ENODEV;
->  	if (i7300_get_devices(mci))
-> -		goto fail0;
-> +		goto fail_buffer_free;
->  
->  	mci->mc_idx = 0;
->  	mci->mtype_cap = MEM_FLAG_FB_DDR2;
-> @@ -1121,13 +1122,14 @@ static int __devinit i7300_init_one(struct pci_dev *pdev,
->  	}
->  
->  	/* add this new MC control structure to EDAC's list of MCs */
-> +	rc = -ENODEV;
->  	if (edac_mc_add_mc(mci)) {
->  		debugf0("MC: " __FILE__
->  			": %s(): failed edac_mc_add_mc()\n", __func__);
->  		/* FIXME: perhaps some code should go here that disables error
->  		 * reporting if we just enabled it
->  		 */
-> -		goto fail1;
-> +		goto fail_put;
->  	}
->  
->  	i7300_clear_error(mci);
-> @@ -1146,14 +1148,18 @@ static int __devinit i7300_init_one(struct pci_dev *pdev,
->  	return 0;
->  
->  	/* Error exit unwinding stack */
-> -fail1:
-> -
-> +fail_put:
->  	i7300_put_devices(mci);
->  
-> -fail0:
-> +fail_buffer_free:
->  	kfree(pvt->tmp_prt_buffer);
-> +
-> +fail_free:
->  	edac_mc_free(mci);
-> -	return -ENODEV;
-> +
-> +fail_disable:
-> +	pci_disable_device(pdev);
-> +	return rc;
->  }
->  
->  /**
-> @@ -1181,6 +1187,7 @@ static void __devexit i7300_remove_one(struct pci_dev *pdev)
->  
->  	kfree(tmp);
->  	edac_mc_free(mci);
-> +	pci_disable_device(pdev);
->  }
->  
->  /*
+So perhaps something like the attached patch would make it work, and
+have the locking in place that apparently people think it should have?
 
+Boaz?
+
+                     Linus
+
+--0016364ece5684ec7504915817ba
+Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gen8xns60
+
+IGFyY2gvdW0vZHJpdmVycy9uZXRfa2Vybi5jIHwgICAgNiArKystLS0KIDEgZmlsZXMgY2hhbmdl
+ZCwgMyBpbnNlcnRpb25zKCspLCAzIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2FyY2gvdW0v
+ZHJpdmVycy9uZXRfa2Vybi5jIGIvYXJjaC91bS9kcml2ZXJzL25ldF9rZXJuLmMKaW5kZXggMmFi
+MjMzYi4uZTQ0ZmQ4NyAxMDA2NDQKLS0tIGEvYXJjaC91bS9kcml2ZXJzL25ldF9rZXJuLmMKKysr
+IGIvYXJjaC91bS9kcml2ZXJzL25ldF9rZXJuLmMKQEAgLTI1NywxNCArMjU3LDE0IEBAIHN0YXRp
+YyB2b2lkIHVtbF9uZXRfdHhfdGltZW91dChzdHJ1Y3QgbmV0X2RldmljZSAqZGV2KQogCiBzdGF0
+aWMgaW50IHVtbF9uZXRfc2V0X21hYyhzdHJ1Y3QgbmV0X2RldmljZSAqZGV2LCB2b2lkICphZGRy
+KQogeworCWludCByZXQ7CiAJc3RydWN0IHVtbF9uZXRfcHJpdmF0ZSAqbHAgPSBuZXRkZXZfcHJp
+dihkZXYpOwotCXN0cnVjdCBzb2NrYWRkciAqaHdhZGRyID0gYWRkcjsKIAogCXNwaW5fbG9ja19p
+cnEoJmxwLT5sb2NrKTsKLQlldGhfbWFjX2FkZHIoZGV2LCBod2FkZHItPnNhX2RhdGEpOworCXJl
+dCA9IGV0aF9tYWNfYWRkcihkZXYsIGFkZHIpOwogCXNwaW5fdW5sb2NrX2lycSgmbHAtPmxvY2sp
+OwogCi0JcmV0dXJuIDA7CisJcmV0dXJuIHJldDsKIH0KIAogc3RhdGljIGludCB1bWxfbmV0X2No
+YW5nZV9tdHUoc3RydWN0IG5ldF9kZXZpY2UgKmRldiwgaW50IG5ld19tdHUpCg==
+--0016364ece5684ec7504915817ba--
