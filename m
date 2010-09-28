@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755119Ab0I1NdR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 09:33:17 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:35722 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755043Ab0I1NdP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 09:33:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=IXn8R8C1aKTmynVLLxPgILCh2Hn25Iz1/UAZBJRnPT3GduvJUqtJ/+E10Wj1ZCe+fy
-         Sp9dn97C+A98m7ewdV4UsLjAGf4NdkqTVqLk3hd+/Erhs/heIQDCZ7GeH7TwZKEwaU2y
-         xxxYoWdbYx4nVD2xBnxCCFA1mQWpe5lmyG1Qg=
+	id S1755221Ab0I1Nd4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 09:33:56 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47644 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754760Ab0I1Ndz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 09:33:55 -0400
+Date: Tue, 28 Sep 2010 16:33:45 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: "Balbi, Felipe" <balbi@ti.com>, Grazvydas Ignotas <notasas@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chikkature Rajashekar, Madhusudhan" <madhu.cr@ti.com>,
+        Arun Murthy <arunrmurthy.83@gmail.com>
+Subject: Re: [PATCH v4] power_supply: Add driver for TWL4030/TPS65950 BCI
+ charger
+Message-ID: <20100928133345.GA8575@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1285618704-8985-1-git-send-email-notasas@gmail.com>
+ <20100928060554.GF2702@legolas.emea.dhcp.ti.com>
+ <AANLkTikZqtXa2YQsDehoWVMRstefUyafsQn2mph7U3CZ@mail.gmail.com>
+ <20100928084251.GC3900@legolas.emea.dhcp.ti.com>
+ <AANLkTin-6BLBHeiyA1edTJVjwVAimmJLVicZj8c_VC_2@mail.gmail.com>
+ <20100928090637.GD3900@legolas.emea.dhcp.ti.com>
+ <AANLkTim28RmH28LGgp6bEJ7XbyL4oO_5_C0phLL86roY@mail.gmail.com>
+ <20100928094122.GA7081@legolas.emea.dhcp.ti.com>
+ <20100928112643.GC22734@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
-In-Reply-To: <s5haan3hwxi.wl%tiwai@suse.de>
-References: <Pine.LNX.4.64.1009150615510.4515@boston.corp.fedex.com>
-	<s5htylbxn6b.wl%tiwai@suse.de>
-	<AANLkTimXBLM8POjeU6gET7twhV3SVxN0cS99ehLwf7DT@mail.gmail.com>
-	<s5haan3hwxi.wl%tiwai@suse.de>
-Date: Tue, 28 Sep 2010 21:33:11 +0800
-Message-ID: <AANLkTimHO7OLrr+MN4pYmtOS7gF1qiXGP34Jkien0MpO@mail.gmail.com>
-Subject: Re: Microphone not working on PCI ID 8086:3b56
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Wu Fengguang <fengguang.wu@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <20100928112643.GC22734@oksana.dev.rtsoft.ru>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 28, 2010 at 2:18 AM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Tue, 28 Sep 2010 01:56:44 +0800,
-> Jeff Chua wrote:
+On Tue, Sep 28, 2010 at 06:26:43AM -0500, Anton Vorontsov wrote:
+>On Tue, Sep 28, 2010 at 12:41:22PM +0300, Felipe Balbi wrote:
+>> On Tue, Sep 28, 2010 at 04:39:17AM -0500, Grazvydas Ignotas wrote:
+>> >On Tue, Sep 28, 2010 at 12:06 PM, Felipe Balbi <balbi@ti.com> wrote:
+>> >>On Tue, Sep 28, 2010 at 04:02:48AM -0500, Grazvydas Ignotas wrote:
+>> >>>>
+>> >>>>Charger event is SENT by charger driver when it verifies it's attached
+>> >>>>to a wall charger.
+>> >>>
+>> >>>Isn't that a job for musb/gadget? Detecting D+/D- being shorted by
+>> >>>charger or something like that? I don't think BCI is able to detect
+>> >>>charger.
+>> >>
+>> >>it's part of the charger detection right ? and according to trm, it's on
+>> >>the BCI (actually BCC) role to take care of that :-)
+>> >
+>> >Hm you are probably talking about TWL5031, which has redesigned
+>> >charger block that is named BCC. TWL4030 charger is different, called
+>> >BCI and requires software charger detection from what I see in it's
+>> >TRM.
 >>
->> On Mon, Sep 27, 2010 at 10:42 PM, Takashi Iwai <tiwai@suse.de> wrote:
->> > At Wed, 15 Sep 2010 06:32:22 +0800 (SGT),
->> > Did you try to play with model option for snd-hda-intel driver?
->> > For example, model=lenovo-x200 ?
->>
->> Didn't know there's such option. But I'll try it now. Is there an
->> option to if the driver is not compiled as a module?
+>> ok, might be that I got confused. Then it's ok the way it is. So we need
+>> other means to detect the charger :-p
 >
-> Yes, you can pass via a boot option like MODULENAME.OPTIONNAME=xxx,yyy,...
-> In this case, snd-hda-intel.model=lenovo-x200
+>May we consider this as a minor issue that can be improved later?
 
-Tried, still no mic. Perhaps I'm not using the right driver. Which one
-should I enable?
+Sure, it's fine.
 
-CONFIG_SND_HDA_CODEC_CONEXANT
-CONFIG_SND_HDA_CODEC_INTELHDMI
-CONFIG_SND_HDA_CODEC_REALTEK
+>If so, I would like to apply it, but I'll wait a day or two for
+>Reviewed-by or Acked-by tags to give the proper credits.
 
+Here you go.
 
-Thanks,
-Jeff
+Acked-by: Felipe Balbi <balbi@ti.com>
+
+-- 
+balbi
