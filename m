@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830Ab0I1KPk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 06:15:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13691 "EHLO mx1.redhat.com"
+	id S1760180Ab0I1KVa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 06:21:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15289 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754349Ab0I1KPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 06:15:38 -0400
-Date: Tue, 28 Sep 2010 12:09:07 +0200
+	id S1753886Ab0I1KV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 06:21:29 -0400
+Date: Tue, 28 Sep 2010 12:14:24 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: Alex Williamson <alex.williamson@redhat.com>
 Cc: Tom Lyon <pugs@cisco.com>, linux-pci@vger.kernel.org,
@@ -16,166 +16,35 @@ Cc: Tom Lyon <pugs@cisco.com>, linux-pci@vger.kernel.org,
         chrisw@sous-sol.org
 Subject: Re: [PATCH 3/3] VFIO V4: VFIO driver: Non-privileged user level PCI
  drivers
-Message-ID: <20100928100907.GK12472@redhat.com>
+Message-ID: <20100928101424.GL12472@redhat.com>
 References: <4c9a72a0.u2cnjUB7QZ91tLeo%pugs@cisco.com>
- <1285620392.4951.50.camel@x201>
+ <20100927115420.GA7427@redhat.com>
+ <1285621069.4951.61.camel@x201>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1285620392.4951.50.camel@x201>
+In-Reply-To: <1285621069.4951.61.camel@x201>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 02:46:32PM -0600, Alex Williamson wrote:
-> On Wed, 2010-09-22 at 14:18 -0700, Tom Lyon wrote:
-> > +ssize_t vfio_mem_readwrite(
-> > +		int write,
-> > +		struct vfio_dev *vdev,
-> > +		char __user *buf,
-> > +		size_t count,
-> > +		loff_t *ppos)
-> > +{
-> > +	struct pci_dev *pdev = vdev->pdev;
-> > +	resource_size_t end;
-> > +	void __iomem *io;
-> > +	loff_t pos;
-> > +	int pci_space;
-> > +
-> > +	pci_space = vfio_offset_to_pci_space(*ppos);
-> > +	pos = vfio_offset_to_pci_offset(*ppos);
-> > +
-> > +	if (!pci_resource_start(pdev, pci_space))
-> > +		return -EINVAL;
-> > +	end = pci_resource_len(pdev, pci_space);
-> > +	if (vdev->barmap[pci_space] == NULL)
-> > +		vdev->barmap[pci_space] = pci_iomap(pdev, pci_space, 0);
-> > +	io = vdev->barmap[pci_space];
-> > +
+On Mon, Sep 27, 2010 at 02:57:49PM -0600, Alex Williamson wrote:
+> On Mon, 2010-09-27 at 13:54 +0200, Michael S. Tsirkin wrote:
+> > On Wed, Sep 22, 2010 at 02:18:24PM -0700, Tom Lyon wrote:
+> > > 
+> > > Signed-off-by: Tom Lyon <pugs@cisco.com>
+> > 
+> > Some comments on the pci bits:
+> > 
+> > After going over them for the Nth time - something needs to be done
+> > with the rvirt/write tables. I doubt anyone besides me and you
+> > has gone over them: 
 > 
-> So we do a pci_iomap, but never do corresponding pci_iounmap.  This also
-> only works for the first 6 BARs since the ROM BAR needs pci_map_rom.
+> /me bites tongue...
 
+Ouch
+I figured if anyone looked at them he'd have complained :)
 
-An issue with ROM is that I think it can not be enabled together
-with BARs. This is why pci_read_rom/pci_write_rom do what
-they do.
-
->  I
-> wonder if we should be doing all the BAR mapping at open and unmap at
-> close so that we can fail if the device can't get basic resources.
-
-I belive we should do this on ioctl so that e.g. hotunplug
-can reset the device clean it up. Unused device should also not
-consume resources.
-
-
-> I
-> believe we should also be calling pci_request_regions in here somewhere.
-> Perhaps something like this:
-> 
-> diff --git a/drivers/vfio/vfio_main.c b/drivers/vfio/vfio_main.c
-> index a18e39a..d3886d9 100644
-> --- a/drivers/vfio/vfio_main.c
-> +++ b/drivers/vfio/vfio_main.c
-> @@ -85,6 +85,53 @@ static inline int overlap(int a1, int b1, int a2, int b2)
->  	return !(b2 <= a1 || b1 <= a2);
->  }
->  
-> +static int vfio_setup_pci(struct vfio_dev *vdev)
-> +{
-> +	int ret, bar;
-> +
-> +	ret = pci_enable_device(vdev->pdev);
-> +	if (ret)
-> +		return ret;
-> +		
-> +	ret = pci_request_regions(vdev->pdev, "VFIO");
-> +	if (ret) {
-> +		pci_disable_device(vdev->pdev);
-> +		return ret;
-> +	}
-> +
-> +	for (bar = PCI_STD_RESOURCES; bar <= PCI_ROM_RESOURCE; bar++) {
-> +		if (!pci_resource_len(vdev->pdev, bar))
-> +			continue;
-> +		if (bar != PCI_ROM_RESOURCE) {
-> +			if (!pci_resource_start(vdev->pdev, bar))
-> +				continue;
-> +			vdev->barmap[bar] = pci_iomap(vdev->pdev, bar, 0);
-> +		} else {
-> +			size_t size;
-> +			vdev->barmap[bar] = pci_map_rom(vdev->pdev, &size);
-> +		}
-> +	}
-> +	return ret;
-> +}
-> +
-> +static void vfio_disable_pci(struct vfio_dev *vdev)
-> +{
-> +	int bar;
-> +
-> +	for (bar = PCI_STD_RESOURCES; bar <= PCI_ROM_RESOURCE; bar++) {
-> +		if (!vdev->barmap[bar])
-> +			continue;
-> +		if (bar != PCI_ROM_RESOURCE)
-> +			pci_iounmap(vdev->pdev, vdev->barmap[bar]);
-> +		else
-> +			pci_unmap_rom(vdev->pdev, vdev->barmap[bar]);
-> +		vdev->barmap[bar] = NULL;
-> +	}
-> +
-> +	pci_release_regions(vdev->pdev);
-> +	pci_disable_device(vdev->pdev);
-> +}
-> +
->  static int vfio_open(struct inode *inode, struct file *filep)
->  {
->  	struct vfio_dev *vdev;
-> @@ -110,7 +157,7 @@ static int vfio_open(struct inode *inode, struct file *filep)
->  	INIT_LIST_HEAD(&listener->dm_list);
->  	filep->private_data = listener;
->  	if (vdev->listeners == 0)
-> -		ret = pci_enable_device(vdev->pdev);
-> +		ret = vfio_setup_pci(vdev);
->  	if (ret == 0)
->  		vdev->listeners++;
->  	mutex_unlock(&vdev->lgate);
-> @@ -151,7 +198,7 @@ static int vfio_release(struct inode *inode, struct file *filep)
->  		vdev->vconfig = NULL;
->  		kfree(vdev->pci_config_map);
->  		vdev->pci_config_map = NULL;
-> -		pci_disable_device(vdev->pdev);
-> +		vfio_disable_pci(vdev);
->  		vfio_domain_unset(vdev);
->  		wake_up(&vdev->dev_idle_q);
->  	}
-> diff --git a/drivers/vfio/vfio_rdwr.c b/drivers/vfio/vfio_rdwr.c
-> index 1fd50a6..7705b45 100644
-> --- a/drivers/vfio/vfio_rdwr.c
-> +++ b/drivers/vfio/vfio_rdwr.c
-> @@ -64,7 +64,7 @@ ssize_t vfio_io_readwrite(
->  	if (pos + count > end)
->  		return -EINVAL;
->  	if (vdev->barmap[pci_space] == NULL)
-> -		vdev->barmap[pci_space] = pci_iomap(pdev, pci_space, 0);
-> +		return -EINVAL;
->  	io = vdev->barmap[pci_space];
->  
->  	while (count > 0) {
-> @@ -137,7 +137,12 @@ ssize_t vfio_mem_readwrite(
->  		return -EINVAL;
->  	end = pci_resource_len(pdev, pci_space);
->  	if (vdev->barmap[pci_space] == NULL)
-> -		vdev->barmap[pci_space] = pci_iomap(pdev, pci_space, 0);
-> +		return -EINVAL;
-> +	if (pci_space == PCI_ROM_RESOURCE) {
-> +		u32 rom = *(u32 *)(vdev->vconfig + PCI_ROM_ADDRESS);
-> +		if (!(rom & PCI_ROM_ADDRESS_ENABLE))
-> +			return -EINVAL;
-> +	}
->  	io = vdev->barmap[pci_space];
->  
->  	if (pos > end)
-> 
+-- 
+MST
