@@ -1,90 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954Ab0I1OC0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 10:02:26 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63649 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755505Ab0I1OCZ (ORCPT
+	id S1754931Ab0I1OXI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 10:23:08 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:26211 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753534Ab0I1OXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 10:02:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=P/Ju+79J/d5FMhNE8zc636HNpE9eI70XoxH1oEtk+hyM4VPotaAzIK5GDI+ncTYCuL
-         iD1yiCFivKT3soHprRlM23ushKhwHmZubQoEFmns6clDeUt6+/mvkwp1R1Fdh3D81iaf
-         tLi8+SHrEdsLuBvapFo5UsWHbCsamOoTOH2Vw=
-Date: Tue, 28 Sep 2010 16:02:11 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC PATCH] x86: Barf when faults happen in NMI
-Message-ID: <20100928140158.GA5449@nowhere>
-References: <1285615833-5324-1-git-send-regression-fweisbec@gmail.com> <20100928103618.GB8514@elte.hu>
+	Tue, 28 Sep 2010 10:23:06 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Thomas Renninger <trenn@suse.de>
+Subject: Re: Dynamic Debug module.ddebug fake param enhancements V4
+Date: Tue, 28 Sep 2010 08:22:11 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, jbaron@redhat.com
+References: <20100920184441.GA2915@redhat.com> <201009270909.18490.bjorn.helgaas@hp.com> <201009281425.19070.trenn@suse.de>
+In-Reply-To: <201009281425.19070.trenn@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100928103618.GB8514@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009280822.11675.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 28, 2010 at 12:36:18PM +0200, Ingo Molnar wrote:
+On Tuesday, September 28, 2010 06:25:18 am Thomas Renninger wrote:
+> Greg: Do you mind pushing the first (1/4, V4) and the last (4/4)
+> patch into your tree for linux-next and leave the two PNP patches
+> out, please.
 > 
-> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> More PNP related discussion, below.
 > 
-> > In x86, faults exit by executing the iret instruction, which then 
-> > reenables NMIs if we faulted in NMI context. Then if a fault happens 
-> > in NMI, another NMI can nest after the fault exits.
+> On Monday 27 September 2010 17:09:18 Bjorn Helgaas wrote:
+> > On Monday, September 27, 2010 02:25:46 am Thomas Renninger wrote:
 > > 
-> > But we don't yet support nested NMIs because we have only one NMI 
-> > stack. To prevent that, trigger a bug when a fault happens in NMI 
-> > context.
-> > 
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Ingo Molnar <mingo@elte.hu>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: H. Peter Anvin <hpa@zytor.com>
-> > Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > ---
-> > 
-> > I first thought about putting it in the vmalloc fault path only. But 
-> > then I saw more occasions for the kernel to fault (kmemcheck or so), 
-> > and so I thought it should be better put in the all in one path. But I 
-> > suspect you won't like that conditional in the big x86 fault path.
-> > 
-> > 
-> >  arch/x86/mm/fault.c |    2 ++
-> >  1 files changed, 2 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-> > index 4c4508e..80c997e 100644
-> > --- a/arch/x86/mm/fault.c
-> > +++ b/arch/x86/mm/fault.c
-> > @@ -955,6 +955,8 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
-> >  	int write;
-> >  	int fault;
-> >  
-> > +	BUG_ON(in_nmi());
-> > +
+> > > What do you think (dev_dbg vs printk(KERN_DEBUG...)?
+> ...
+> > With the exception of the ones in pnp/resource.c that I want to convert
+> > to dev_printk(KERN_DEBUG), I think all the pnp_dbg() uses are things
+> > I used during PNP development and haven't ever needed since.
 > 
-> Hm, this is a fastpath, so it would be nice to put this into the vmalloc 
-> and kmemcheck paths (even though it's less clean that way).
+> Ok. Sounds sane.
+> I used the PNP parts as it nicely showed what the
+> module.ddebug boot param is doing, but I agree it hasn't much
+> advantage for PNP.
 > 
-> Also, a WARN_ON_ONCE() would probably help more in getting bug reports 
-> out of such systems, than a BUG_ON() crashed kernel.
-> 
-> Thanks,
-> 
-> 	Ingo
+> Whatabout compiling pnp in one module namespace, the first
+> of the two PNP patches?
 
+[2/4] looks reasonable to me.
 
-Ok, will resend then.
+> E.g. attached patch would be an on top patch which provides no
+> functional change, just that a pnp.debug would be a module param:
+> cat /sys/module/pnp/parameters/debug
 
-Thanks.
+As does the one below.
 
+> ---------
+> PNP: Set up pnp_debug via module and not via boot param.
+> 
+> Cleanup only, no functional change (pnp.debug can be enabled
+> and disabled at runtime, but that's not a real enhancement).
+> 
+> This one depends on another PNP cleanup patch:
+> PNP: Compile all pnp built-in stuff in one module namespace
+> 
+> Signed-off-by: Thomas Renninger <trenn@suse.de>
+> 
+> diff --git a/drivers/pnp/core.c b/drivers/pnp/core.c
+> index 88b3cde..9801918 100644
+> --- a/drivers/pnp/core.c
+> +++ b/drivers/pnp/core.c
+> @@ -218,10 +218,5 @@ subsys_initcall(pnp_init);
+>  int pnp_debug;
+>  
+>  #if defined(CONFIG_PNP_DEBUG_MESSAGES)
+> -static int __init pnp_debug_setup(char *__unused)
+> -{
+> -	pnp_debug = 1;
+> -	return 1;
+> -}
+> -__setup("pnp.debug", pnp_debug_setup);
+> +module_param_named(debug, pnp_debug, int, 0644);
+>  #endif
+> 
