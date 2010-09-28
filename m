@@ -1,43 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616Ab0I1VvX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 17:51:23 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:54684 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754014Ab0I1VvW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 17:51:22 -0400
-Date: Tue, 28 Sep 2010 22:51:08 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: torvalds@linux-foundation.org, bharrosh@panasas.com, julia@diku.dk,
-        akpm@linux-foundation.org, user-mode-linux-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, shemminger@vyatta.com
-Subject: Re: {painfully BISECTED} Please revert f25c80a4b2: arch/um/drivers:
- remove duplicate structure field initialization
-Message-ID: <20100928215108.GH19804@ZenIV.linux.org.uk>
-References: <AANLkTim85sH_2o=xCiDuoQrHq_7ZL96Y91xQMGxUP5Fy@mail.gmail.com>
- <20100928211106.GE19804@ZenIV.linux.org.uk>
- <20100928212417.GF19804@ZenIV.linux.org.uk>
- <20100928.144215.246551852.davem@davemloft.net>
+	id S1754700Ab0I1VwI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 17:52:08 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:50814 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754590Ab0I1VwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 17:52:06 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
+Subject: Re: [RFC][PATCH] PM / Hibernate: Make some boot messages look less scary
+Date: Tue, 28 Sep 2010 23:51:28 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc5-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>
+References: <201009240056.41308.rjw@sisk.pl>
+In-Reply-To: <201009240056.41308.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100928.144215.246551852.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009282351.28392.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 28, 2010 at 02:42:15PM -0700, David Miller wrote:
-> From: Al Viro <viro@ZenIV.linux.org.uk>
-> Date: Tue, 28 Sep 2010 22:24:17 +0100
+On Friday, September 24, 2010, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> Subject: PM / Hibernate: Make some boot messages look less scary
 > 
-> > Who maintains these drivers?
+> The hibernate resume code checks if there is an image to resume from
+> on every boot and, if the kernel is built with CONFIG_PM_DEBUG set
+> and the image is not present, it prints some scary messages
+> suggesting there was a boot error of some sort.  Apparently, some
+> users are confused by them, so make them look less scary and adjust
+> the other hibernate resume debug messages to match them.
 > 
-> Your guess is as good as mine, which probably means there is no
-> active maintainer right now.
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-Oh, joy...  I'm regulary using uml, with some of these drivers used
-from time to time, but I've no fscking clue on e.g. VDE - even on
-the "what the hell it is" level ;-/
+OK, no one was objecting, so I applied this patch to suspend-2.6/linux-next.
+
+
+> ---
+>  kernel/power/hibernate.c |   12 ++++++------
+>  kernel/power/swap.c      |    4 ++--
+>  2 files changed, 8 insertions(+), 8 deletions(-)
+> 
+> Index: linux-2.6/kernel/power/swap.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/power/swap.c
+> +++ linux-2.6/kernel/power/swap.c
+> @@ -929,13 +929,13 @@ put:
+>  		if (error)
+>  			blkdev_put(hib_resume_bdev, FMODE_READ);
+>  		else
+> -			pr_debug("PM: Signature found, resuming\n");
+> +			pr_debug("PM: Image signature found, resuming\n");
+>  	} else {
+>  		error = PTR_ERR(hib_resume_bdev);
+>  	}
+>  
+>  	if (error)
+> -		pr_debug("PM: Error %d checking image file\n", error);
+> +		pr_debug("PM: Image not found (code %d)\n", error);
+>  
+>  	return error;
+>  }
+> Index: linux-2.6/kernel/power/hibernate.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/power/hibernate.c
+> +++ linux-2.6/kernel/power/hibernate.c
+> @@ -708,7 +708,7 @@ static int software_resume(void)
+>  		goto Unlock;
+>  	}
+>  
+> -	pr_debug("PM: Checking image partition %s\n", resume_file);
+> +	pr_debug("PM: Checking hibernation image partition %s\n", resume_file);
+>  
+>  	/* Check if the device is there */
+>  	swsusp_resume_device = name_to_dev_t(resume_file);
+> @@ -733,10 +733,10 @@ static int software_resume(void)
+>  	}
+>  
+>   Check_image:
+> -	pr_debug("PM: Resume from partition %d:%d\n",
+> +	pr_debug("PM: Hibernation image partition %d:%d present\n",
+>  		MAJOR(swsusp_resume_device), MINOR(swsusp_resume_device));
+>  
+> -	pr_debug("PM: Checking hibernation image.\n");
+> +	pr_debug("PM: Looking for hibernation image.\n");
+>  	error = swsusp_check();
+>  	if (error)
+>  		goto Unlock;
+> @@ -768,14 +768,14 @@ static int software_resume(void)
+>  		goto Done;
+>  	}
+>  
+> -	pr_debug("PM: Reading hibernation image.\n");
+> +	pr_debug("PM: Loading hibernation image.\n");
+>  
+>  	error = swsusp_read(&flags);
+>  	swsusp_close(FMODE_READ);
+>  	if (!error)
+>  		hibernation_restore(flags & SF_PLATFORM_MODE);
+>  
+> -	printk(KERN_ERR "PM: Restore failed, recovering.\n");
+> +	printk(KERN_ERR "PM: Failed to load hibernation image, recovering.\n");
+>  	swsusp_free();
+>  	thaw_processes();
+>   Done:
+> @@ -788,7 +788,7 @@ static int software_resume(void)
+>  	/* For success case, the suspend path will release the lock */
+>   Unlock:
+>  	mutex_unlock(&pm_mutex);
+> -	pr_debug("PM: Resume from disk failed.\n");
+> +	pr_debug("PM: Hibernation image not present or could not be loaded.\n");
+>  	return error;
+>  close_finish:
+>  	swsusp_close(FMODE_READ);
