@@ -1,58 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754476Ab0I1Vrt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 17:47:49 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:38791 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754159Ab0I1Vrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 17:47:48 -0400
-/m: 
-From: Richard Weinberger <richard@nod.at>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, jdike@addtoit.com,
-        user-mode-linux-devel@lists.sourceforge.net,
-        user-mode-linux-user@lists.sourceforge.net, janjaap@bos.nl,
-        geert@linux-m68k.org, jaxboe@fusionio.com, martin.petersen@oracle.com,
-        adobriyan@gmail.com, cdfrey@foursquare.net,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH 1/1] um: ubd: Fix data corruption
-Date: Tue, 28 Sep 2010 23:47:36 +0200
-Message-Id: <1285710456-4435-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.6.6.1
+	id S1754616Ab0I1VvX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 17:51:23 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54684 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754014Ab0I1VvW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 17:51:22 -0400
+Date: Tue, 28 Sep 2010 22:51:08 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: torvalds@linux-foundation.org, bharrosh@panasas.com, julia@diku.dk,
+        akpm@linux-foundation.org, user-mode-linux-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, shemminger@vyatta.com
+Subject: Re: {painfully BISECTED} Please revert f25c80a4b2: arch/um/drivers:
+ remove duplicate structure field initialization
+Message-ID: <20100928215108.GH19804@ZenIV.linux.org.uk>
+References: <AANLkTim85sH_2o=xCiDuoQrHq_7ZL96Y91xQMGxUP5Fy@mail.gmail.com>
+ <20100928211106.GE19804@ZenIV.linux.org.uk>
+ <20100928212417.GF19804@ZenIV.linux.org.uk>
+ <20100928.144215.246551852.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100928.144215.246551852.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Under high load the file system gets corrupted.
-This patch fixes the issue.
+On Tue, Sep 28, 2010 at 02:42:15PM -0700, David Miller wrote:
+> From: Al Viro <viro@ZenIV.linux.org.uk>
+> Date: Tue, 28 Sep 2010 22:24:17 +0100
+> 
+> > Who maintains these drivers?
+> 
+> Your guess is as good as mine, which probably means there is no
+> active maintainer right now.
 
-Many thanks to Janjaap Bos <janjaap@bos.nl>!
-
-LKML-Reference: <AANLkTi=PTp7YW_eYxtF-H2QSxgei3whWH59wU0C9oCkz () mail ! gmail ! com>
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- arch/um/drivers/ubd_kern.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
-
-diff --git a/arch/um/drivers/ubd_kern.c b/arch/um/drivers/ubd_kern.c
-index 1bcd208..2874b83 100644
---- a/arch/um/drivers/ubd_kern.c
-+++ b/arch/um/drivers/ubd_kern.c
-@@ -748,9 +748,12 @@ static int ubd_open_dev(struct ubd *ubd_dev)
- 	}
- 	ubd_dev->fd = fd;
- 
--	if(ubd_dev->cow.file != NULL){
--		blk_queue_max_hw_sectors(ubd_dev->queue, 8 * sizeof(long));
-+	/* A setting higher than 1 sector currently (>= v2.6.31) generates
-+		data loss, both for raw and cow ubd. */
-+	blk_queue_max_hw_sectors(ubd_dev->queue, 1 * sizeof(long));
-+	blk_queue_max_segments(ubd_dev->queue, 1 * sizeof(long));
- 
-+	if (ubd_dev->cow.file != NULL) {
- 		err = -ENOMEM;
- 		ubd_dev->cow.bitmap = vmalloc(ubd_dev->cow.bitmap_len);
- 		if(ubd_dev->cow.bitmap == NULL){
--- 
-1.6.6.1
-
+Oh, joy...  I'm regulary using uml, with some of these drivers used
+from time to time, but I've no fscking clue on e.g. VDE - even on
+the "what the hell it is" level ;-/
