@@ -1,235 +1,356 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760665Ab0I1C6P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 22:58:15 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:40286 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760615Ab0I1C6N (ORCPT
+	id S1760638Ab0I1C70 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 22:59:26 -0400
+Received: from www.telegraphics.com.au ([204.15.192.19]:62054 "EHLO
+	mail.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757960Ab0I1C7X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 22:58:13 -0400
-Date: Tue, 28 Sep 2010 03:58:13 +0100
-To: hans-christian.egtvedt@atmel.com
-Subject: [PATCH 6/6] avr32: deal with syscall restarts
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-User-Agent: Heirloom mailx 12.4 7/29/08
+	Mon, 27 Sep 2010 22:59:23 -0400
+Date: Tue, 28 Sep 2010 12:59:17 +1000 (EST)
+From: Finn Thain <fthain@telegraphics.com.au>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        alsa-devel@alsa-project.org, dri-devel@lists.freedesktop.org,
+        linux-ide@vger.kernel.org, "Maciej W. Rozycki" <macro@linux-mips.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Matt Turner <mattst88@gmail.com>,
+        Dimitry Torokhov <dmitry.torokhov@gmail.com>,
+        Mike Frysinger <vapier.adi@gmail.com>
+Subject: Re: [RFC v4]update broken web addresses in the kernel.
+In-Reply-To: <1285525875-9920-1-git-send-email-justinmattock@gmail.com>
+Message-ID: <alpine.OSX.2.00.1009271114330.275@localhost>
+References: <1285525875-9920-1-git-send-email-justinmattock@gmail.com>
+User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <E1P0QOT-0008TU-0m@ZenIV.linux.org.uk>
-From: Al Viro <viro@ftp.linux.org.uk>
+Content-Type: TEXT/PLAIN; CHARSET=US-ASCII
+Content-ID: <alpine.OSX.2.00.1009271218431.396@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Currently we both have signals arriving at sigreturn trigger syscall restart
-when the original handler hadn't been in the syscall at all *and* have
-multiple pending signals trigger the sitation when %pc is shifted back by
-more than one insn.
+On Sun, 26 Sep 2010, Justin P. Mattock wrote:
 
-a) take handling of reschedule, signals and keychains into a new helper -
-work_pending().  All looping is done there now; asm glue calls that if
-we have anything for it to do.
+> diff --git a/drivers/char/apm-emulation.c b/drivers/char/apm-emulation.c
+> index 033e150..d7d9a78 100644
+> --- a/drivers/char/apm-emulation.c
+> +++ b/drivers/char/apm-emulation.c
+> @@ -8,7 +8,7 @@
+>   *   (APM) BIOS Interface Specification, Revision 1.2, February 1996.
+>   *
+>   * [This document is available from Microsoft at:
+> - *    http://www.microsoft.com/hwdev/busbios/amp_12.htm]
+> + *    http://www.microsoft.com/whdc/archive/amp_12.mspx]
+>   */
 
-b) do_signal() gets explicit "may restart" flag as an argument; after
-the first call during that loop it gets unconditional 0.
 
-c) sigreturn() sets a thread flag - TIF_NORESTART.  It is included into
-the "work_pending() has something to do" mask.  work_pending() clears
-it, clearing its may_restart flag if it had done so.
+Can we lose the brackets?
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
----
- arch/avr32/include/asm/thread_info.h |    3 ++
- arch/avr32/kernel/entry-avr32b.S     |   45 ++++------------------------
- arch/avr32/kernel/signal.c           |   55 ++++++++++++++++++++++++----------
- 3 files changed, 48 insertions(+), 55 deletions(-)
 
-diff --git a/arch/avr32/include/asm/thread_info.h b/arch/avr32/include/asm/thread_info.h
-index 7a9c03d..1e8fa49 100644
---- a/arch/avr32/include/asm/thread_info.h
-+++ b/arch/avr32/include/asm/thread_info.h
-@@ -85,6 +85,7 @@ static inline struct thread_info *current_thread_info(void)
- #define TIF_RESTORE_SIGMASK	7	/* restore signal mask in do_signal */
- #define TIF_CPU_GOING_TO_SLEEP	8	/* CPU is entering sleep 0 mode */
- #define TIF_NOTIFY_RESUME	9	/* callback before returning to user */
-+#define TIF_NORESTART		10
- #define TIF_FREEZE		29
- #define TIF_DEBUG		30	/* debugging enabled */
- #define TIF_USERSPACE		31      /* true if FS sets userspace */
-@@ -98,6 +99,7 @@ static inline struct thread_info *current_thread_info(void)
- #define _TIF_RESTORE_SIGMASK	(1 << TIF_RESTORE_SIGMASK)
- #define _TIF_CPU_GOING_TO_SLEEP (1 << TIF_CPU_GOING_TO_SLEEP)
- #define _TIF_NOTIFY_RESUME	(1 << TIF_NOTIFY_RESUME)
-+#define _TIF_NORESTART		(1 << TIF_NORESTART)
- #define _TIF_FREEZE		(1 << TIF_FREEZE)
- 
- /* Note: The masks below must never span more than 16 bits! */
-@@ -106,6 +108,7 @@ static inline struct thread_info *current_thread_info(void)
- #define _TIF_WORK_MASK				\
- 	((1 << TIF_SIGPENDING)			\
- 	 | _TIF_NOTIFY_RESUME			\
-+	 | _TIF_NORESTART			\
- 	 | (1 << TIF_NEED_RESCHED)		\
- 	 | (1 << TIF_POLLING_NRFLAG)		\
- 	 | (1 << TIF_BREAKPOINT)		\
-diff --git a/arch/avr32/kernel/entry-avr32b.S b/arch/avr32/kernel/entry-avr32b.S
-index 5e6beb2..bb455b7 100644
---- a/arch/avr32/kernel/entry-avr32b.S
-+++ b/arch/avr32/kernel/entry-avr32b.S
-@@ -271,28 +271,11 @@ syscall_exit_work:
- 	unmask_interrupts
- 	call	syscall_trace
- 	mask_interrupts
--	ld.w	r1, r0[TI_flags]
--
--1:	bld	r1, TIF_NEED_RESCHED
--	brcc	2f
--	unmask_interrupts
--	call	schedule
--	mask_interrupts
--	ld.w	r1, r0[TI_flags]
--	rjmp	1b
--
--2:	mov	r2, _TIF_SIGPENDING | _TIF_RESTORE_SIGMASK | _TIF_NOTIFY_RESUME
--	tst	r1, r2
--	breq	3f
--	unmask_interrupts
- 	mov	r12, sp
- 	mov	r11, r0
--	call	do_notify_resume
--	mask_interrupts
--	ld.w	r1, r0[TI_flags]
--	rjmp	1b
--
--3:	bld	r1, TIF_BREAKPOINT
-+	mov	r10, 1
-+	call	work_pending
-+	bld	r12, TIF_BREAKPOINT
- 	brcc	syscall_exit_cont
- 	rjmp	enter_monitor_mode
- 
-@@ -576,29 +559,13 @@ irq_exit_work:
- 	mtsr	SYSREG_SR, r8
- 	sub	pc, -2
- 	get_thread_info r0
--	ld.w	r1, r0[TI_flags]
- 
- fault_exit_work:
--	bld	r1, TIF_NEED_RESCHED
--	brcc	1f
--	unmask_interrupts
--	call	schedule
--	mask_interrupts
--	ld.w	r1, r0[TI_flags]
--	rjmp	fault_exit_work
--
--1:	mov	r2, _TIF_SIGPENDING | _TIF_RESTORE_SIGMASK | _TIF_NOTIFY_RESUME
--	tst	r1, r2
--	breq	2f
--	unmask_interrupts
- 	mov	r12, sp
- 	mov	r11, r0
--	call	do_notify_resume
--	mask_interrupts
--	ld.w	r1, r0[TI_flags]
--	rjmp	fault_exit_work
--
--2:	bld	r1, TIF_BREAKPOINT
-+	mov	r10, 0
-+	call	work_pending
-+	bld	r12, TIF_BREAKPOINT
- 	brcc	fault_resume_user
- 	rjmp	enter_monitor_mode
- 
-diff --git a/arch/avr32/kernel/signal.c b/arch/avr32/kernel/signal.c
-index 8e8f6ba..c4c76f5 100644
---- a/arch/avr32/kernel/signal.c
-+++ b/arch/avr32/kernel/signal.c
-@@ -45,6 +45,8 @@ restore_sigcontext(struct pt_regs *regs, struct sigcontext __user *sc)
- 	/* Always make any pending restarted system calls return -EINTR */
- 	current_thread_info()->restart_block.fn = do_no_restart_syscall;
- 
-+	set_thread_flag(TIF_NORESTART);
-+
- #define COPY(x)		err |= __get_user(regs->x, &sc->x)
- 	COPY(sr);
- 	COPY(pc);
-@@ -264,7 +266,7 @@ fail:
-  * doesn't want to handle. Thus you cannot kill init even with a
-  * SIGKILL even by mistake.
-  */
--static void do_signal(struct pt_regs *regs, int syscall)
-+static void do_signal(struct pt_regs *regs, int may_restart)
- {
- 	siginfo_t info;
- 	int signr;
-@@ -285,7 +287,7 @@ static void do_signal(struct pt_regs *regs, int syscall)
- 		oldset = &current->blocked;
- 
- 	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
--	if (syscall) {
-+	if (may_restart) {
- 		switch (regs->r12) {
- 		case -ERESTART_RESTARTBLOCK:
- 		case -ERESTARTNOHAND:
-@@ -317,20 +319,41 @@ static void do_signal(struct pt_regs *regs, int syscall)
- 	handle_signal(signr, &ka, &info, oldset, regs);
- }
- 
--asmlinkage void do_notify_resume(struct pt_regs *regs, struct thread_info *ti)
-+asmlinkage int work_pending(struct pt_regs *regs, struct thread_info *ti, int may_restart)
- {
--	int syscall = 0;
--
--	if ((sysreg_read(SR) & MODE_MASK) == MODE_SUPERVISOR)
--		syscall = 1;
--
--	if (ti->flags & (_TIF_SIGPENDING | _TIF_RESTORE_SIGMASK))
--		do_signal(regs, syscall);
--
--	if (ti->flags & _TIF_NOTIFY_RESUME) {
--		clear_thread_flag(TIF_NOTIFY_RESUME);
--		tracehook_notify_resume(regs);
--		if (current->replacement_session_keyring)
--			key_replace_session_keyring();
-+	int flags = ti->flags;
-+	if (unlikely(flags & _TIF_NORESTART)) {
-+		ti->flags &= ~_TIF_NORESTART;
-+		may_restart = 0;
-+	}
-+	while (1) {
-+		if (flags & _TIF_NEED_RESCHED) {
-+			local_irq_enable();
-+			schedule();
-+			local_irq_disable();
-+			flags = ti->flags;
-+			continue;
-+		}
-+		if (flags & _TIF_SIGPENDING) {
-+			local_irq_enable();
-+			if ((sysreg_read(SR) & MODE_MASK) != MODE_SUPERVISOR)
-+				may_restart = 0;
-+			do_signal(regs, may_restart);
-+			may_restart = 0;
-+			local_irq_disable();
-+			flags = ti->flags;
-+			continue;
-+		}
-+		if (flags & _TIF_NOTIFY_RESUME) {
-+			ti->flags &= ~_TIF_NOTIFY_RESUME;
-+			local_irq_enable();
-+			tracehook_notify_resume(regs);
-+			if (current->replacement_session_keyring)
-+				key_replace_session_keyring();
-+			local_irq_disable();
-+			flags = ti->flags;
-+			continue;
-+		}
-+		return flags;
- 	}
- }
--- 
-1.5.6.5
+>  #include <linux/module.h>
+>  #include <linux/poll.h>
 
+> diff --git a/drivers/firmware/Kconfig b/drivers/firmware/Kconfig
+> index 280c9b5..b2bd5fb 100644
+> --- a/drivers/firmware/Kconfig
+> +++ b/drivers/firmware/Kconfig
+> @@ -73,8 +73,8 @@ config EFI_PCDP
+>  	  on how the driver discovers devices.
+>  
+>  	  You must also enable the appropriate drivers (serial, VGA, etc.)
+> -
+> -	  See <http://www.dig64.org/specifications/DIG64_HCDPv20_042804.pdf>
+> +	  See [DIG64_HCDPv20_042804.pdf] available from
+
+
+What are the square brackets for?
+
+
+> +	  <http://www.dig64.org/specifications/>
+>  
+>  config DELL_RBU
+>  	tristate "BIOS update support for DELL systems via sysfs"
+
+> diff --git a/drivers/firmware/pcdp.h b/drivers/firmware/pcdp.h
+> index ce910d6..777d928 100644
+> --- a/drivers/firmware/pcdp.h
+> +++ b/drivers/firmware/pcdp.h
+> @@ -1,8 +1,8 @@
+>  /*
+>   * Definitions for PCDP-defined console devices
+>   *
+> - * v1.0a: http://www.dig64.org/specifications/DIG64_HCDPv10a_01.pdf
+> - * v2.0:  http://www.dig64.org/specifications/DIG64_PCDPv20.pdf
+> + * For [v1.0a: DIG64_HCDPv10a_01.pdf] [v2.0: DIG64_PCDPv20.pdf] 
+
+
+For DIG64_HCDPv10a_01.pdf and DIG64_PCDPv20.pdf (v10.a and v2.0 resp.), 
+
+
+> + * Please see <http://www.dig64.org/specifications/>
+
+
+please see <http://www.dig64.org/specifications/>
+
+
+>   *
+>   * (c) Copyright 2002, 2004 Hewlett-Packard Development Company, L.P.
+>   *	Khalid Aziz <khalid.aziz@hp.com>
+> diff --git a/drivers/gpu/drm/README.drm b/drivers/gpu/drm/README.drm
+> index b5b3327..bf29068 100644
+> --- a/drivers/gpu/drm/README.drm
+> +++ b/drivers/gpu/drm/README.drm
+> @@ -28,7 +28,7 @@ ways:
+>  Documentation on the DRI is available from:
+>      http://dri.freedesktop.org/wiki/Documentation
+>      http://sourceforge.net/project/showfiles.php?group_id=387
+> -    http://dri.sourceforge.net/doc/
+> +    http://dri.sourceforge.net/doc/DRIuserguide.html 
+
+
+http://dri.freedesktop.org/wiki/Documentation
+
+
+>  
+>  For specific information about kernel-level support, see:
+>  
+
+> diff --git a/drivers/input/mouse/touchkit_ps2.c b/drivers/input/mouse/touchkit_ps2.c
+> index 88121c5..e74753e 100644
+> --- a/drivers/input/mouse/touchkit_ps2.c
+> +++ b/drivers/input/mouse/touchkit_ps2.c
+> @@ -22,7 +22,7 @@
+>   * Based upon touchkitusb.c
+>   *
+>   * Vendor documentation is available in support section of:
+> - * http://www.egalax.com.tw/
+> + * http://home.eeti.com.tw/web20/drivers/Software%20Programming%20Guide_v2.0.pdf 
+
+
+The comment text needs to be fixed also.
+
+
+>   */
+>  
+>  #include <linux/kernel.h>
+
+> diff --git a/drivers/media/dvb/frontends/mt312.c b/drivers/media/dvb/frontends/mt312.c
+> index 472907d..08023f1 100644
+> --- a/drivers/media/dvb/frontends/mt312.c
+> +++ b/drivers/media/dvb/frontends/mt312.c
+> @@ -20,8 +20,9 @@
+>      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+>  
+>      References:
+> -    http://products.zarlink.com/product_profiles/MT312.htm
+> -    http://products.zarlink.com/product_profiles/SL1935.htm
+> +    http://www.zarlink.com/zarlink/hs/71.htm
+> +    http://www.chipcatalog.com/Zarlink/MT312.htm
+> +    http://www.chipcatalog.com/Zarlink/SL1935.htm
+
+
+There's no need for links to chipcatalog.com. As I said in the previous 
+review, we have search engines for finding datasheets. Besides, the old 
+links are in the web archive (complete with PDFs) so there's no need to 
+remove them.
+
+
+>  */
+>  
+>  #include <linux/delay.h>
+> diff --git a/drivers/media/dvb/frontends/mt312.h b/drivers/media/dvb/frontends/mt312.h
+> index 29e3bb5..6d32e3f 100644
+> --- a/drivers/media/dvb/frontends/mt312.h
+> +++ b/drivers/media/dvb/frontends/mt312.h
+> @@ -19,8 +19,9 @@
+>      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+>  
+>      References:
+> -    http://products.zarlink.com/product_profiles/MT312.htm
+> -    http://products.zarlink.com/product_profiles/SL1935.htm
+> +    http://www.zarlink.com/zarlink/hs/71.htm
+> +    http://www.chipcatalog.com/Zarlink/MT312.htm
+> +    http://www.chipcatalog.com/Zarlink/SL1935.htm
+
+
+Same here.
+
+
+>  */
+>  
+>  #ifndef MT312_H
+
+> --- a/drivers/media/video/gspca/gspca.c
+> +++ b/drivers/media/video/gspca/gspca.c
+> @@ -2338,7 +2338,7 @@ EXPORT_SYMBOL(gspca_resume);
+>  
+>  /* auto gain and exposure algorithm based on the knee algorithm described here:
+>     http://ytse.tricolour.net/docs/LowLightOptimization.html
+> -
+> +   http://81.209.78.62:8080/docs/LowLightOptimization.html
+
+
+This is in the web archive.
+
+
+>     Returns 0 if no changes were made, 1 if the gain and or exposure settings
+>     where changed. */
+>  int gspca_auto_gain_n_exposure(struct gspca_dev *gspca_dev, int avg_lum,
+
+> index 701d942..142efd2 100644
+> --- a/drivers/mtd/maps/Kconfig
+> +++ b/drivers/mtd/maps/Kconfig
+> @@ -256,8 +256,7 @@ config MTD_DILNETPC
+>  	depends on X86 && MTD_CONCAT && MTD_PARTITIONS && MTD_CFI_INTELEXT && BROKEN
+>  	help
+>  	  MTD map driver for SSV DIL/Net PC Boards "DNP" and "ADNP".
+> -	  For details, see <http://www.ssv-embedded.de/ssv/pc104/p169.htm>
+> - 	  and <http://www.ssv-embedded.de/ssv/pc104/p170.htm>
+> +	  For details, see <http://www.dilnetpc.com/>
+
+
+This is in the web archive. This removes information.
+
+
+>  
+>  config MTD_DILNETPC_BOOTSIZE
+>  	hex "Size of DIL/Net PC flash boot partition"
+
+> diff --git a/drivers/mtd/maps/dilnetpc.c b/drivers/mtd/maps/dilnetpc.c
+> index 0713e3a..114899b 100644
+> --- a/drivers/mtd/maps/dilnetpc.c
+> +++ b/drivers/mtd/maps/dilnetpc.c
+> @@ -19,8 +19,7 @@
+>   * board: DNP/1486 and ADNP/1486. The DNP version has 2 megs of flash
+>   * ROM (Intel 28F016S3) and 8 megs of DRAM, the ADNP version has 4 megs
+>   * flash and 16 megs of RAM.
+> - * For details, see http://www.ssv-embedded.de/ssv/pc104/p169.htm
+> - * and http://www.ssv-embedded.de/ssv/pc104/p170.htm
+> + * For details, see http://www.dilnetpc.com/ 
+
+
+Same.
+
+
+>   */
+>  
+>  #include <linux/module.h>
+
+> index 49aac70..f4523cd 100644
+> --- a/drivers/net/hamachi.c
+> +++ b/drivers/net/hamachi.c
+> @@ -20,9 +20,6 @@
+>  
+>  	Support and updates available at
+>  	http://www.scyld.com/network/hamachi.html
+> -	[link no longer provides useful info -jgarzik]
+> -	or
+> -	http://www.parl.clemson.edu/~keithu/hamachi.html
+
+
+Why?
+
+
+>  
+>  */
+>  
+
+> index 6af6c83..0723c9f 100644
+> --- a/drivers/staging/comedi/drivers/daqboard2000.c
+> +++ b/drivers/staging/comedi/drivers/daqboard2000.c
+> @@ -51,7 +51,7 @@ Configuration options:
+>     for the card, and here are the findings so far.
+>  
+>     1. A good document that describes the PCI interface chip is found at:
+> -      http://plx.plxtech.com/download/9080/databook/9080db-106.pdf
+> +      [9080db-106.pdf] http://www.plxtech.com/products/io/pci9080 
+
+
+Comments are supposed to be human readable text. Square brackets don't 
+quote filenames by any convention I'm aware of (?)
+I'd suggest:
+
+      A good document that describes the PCI interface chip is 9080db-106.pdf
+      available from http://www.plxtech.com/products/io/pci9080
+
+
+>  
+>     2. The initialization done so far is:
+>          a. program the FPGA (windows code sans a lot of error messages)
+
+> diff --git a/drivers/video/vga16fb.c b/drivers/video/vga16fb.c
+> index 28ccab4..fc853a5 100644
+> --- a/drivers/video/vga16fb.c
+> +++ b/drivers/video/vga16fb.c
+> @@ -2,7 +2,7 @@
+>   * linux/drivers/video/vga16.c -- VGA 16-color framebuffer driver
+>   * 
+>   * Copyright 1999 Ben Pfaff <pfaffben@debian.org> and Petr Vandrovec <VANDROVE@vc.cvut.cz>
+> - * Based on VGA info at http://www.goodnet.com/~tinara/FreeVGA/home.htm
+> + * Based on VGA info at http://www.osdever.net/FreeVGA/home.htm 
+
+
+The old link is in the web archive, you needn't remove it. Add the new one 
+if you wish.
+
+
+>   * Based on VESA framebuffer (c) 1998 Gerd Knorr <kraxel@goldbach.in-berlin.de>
+>   *
+>   * This file is subject to the terms and conditions of the GNU General
+> diff --git a/drivers/video/vgastate.c b/drivers/video/vgastate.c
+> index b91c466..f4043f8 100644
+> --- a/drivers/video/vgastate.c
+> +++ b/drivers/video/vgastate.c
+> @@ -5,7 +5,7 @@
+>   * 
+>   * Copyright history from vga16fb.c:
+>   *	Copyright 1999 Ben Pfaff and Petr Vandrovec
+> - *	Based on VGA info at http://www.goodnet.com/~tinara/FreeVGA/home.htm
+> + *	Based on VGA info at http://www.osdever.net/FreeVGA/home.htm 
+
+
+Same.
+
+
+>   *	Based on VESA framebuffer (c) 1998 Gerd Knorr
+>   *
+>   * This file is subject to the terms and conditions of the GNU General
+> diff --git a/include/linux/ixjuser.h b/include/linux/ixjuser.h
+> index 88b4589..39ef699 100644
+> --- a/include/linux/ixjuser.h
+> +++ b/include/linux/ixjuser.h
+> @@ -25,7 +25,7 @@
+>   *                  Mike Preston, <mpreston@quicknet.net>
+>   *
+>   * More information about the hardware related to this driver can be found
+> - * at our website:    http://www.quicknet.net
+> + * at our website:   http://blemings.org/hugh/keyspan.html 
+
+
+This appears to have been fat-fingered. No patch needed.
+
+
+>   *
+>   * Fixes:
+>   *
+
+> diff --git a/include/video/vga.h b/include/video/vga.h
+> index b49a512..2b8691f 100644
+> --- a/include/video/vga.h
+> +++ b/include/video/vga.h
+> @@ -5,7 +5,7 @@
+>   * 
+>   * Copyright history from vga16fb.c:
+>   *	Copyright 1999 Ben Pfaff and Petr Vandrovec
+> - *	Based on VGA info at http://www.goodnet.com/~tinara/FreeVGA/home.htm
+> + *	Based on VGA info at http://www.osdever.net/FreeVGA/home.htm 
+
+
+See above.
+
+Thanks.
+
+Finn
