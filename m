@@ -1,148 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760034Ab0I1I6v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 04:58:51 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:57052 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753707Ab0I1I6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 04:58:48 -0400
-Message-ID: <4CA1AF52.5080209@cn.fujitsu.com>
-Date: Tue, 28 Sep 2010 17:03:14 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S1759955Ab0I1JAX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 05:00:23 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:58033 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752526Ab0I1JAV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 05:00:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=b/WfCLqkK5fJCszV9r+iP2l+t1a08Q53b87SEe2NC/rphQgLvSKtaCLZewtsUPlcRL
+         Fj3R5tEzhi5eH4Kun3RXYeXhN53YNEkviCKhx3rKZVBrUqspzqNa5sX+bVgeoOKOAuEl
+         x+K2VDrfRnvLOZwg7tKH7ov2gnkhJaPrrWbhE=
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: [PATCH] KVM: MMU: move access code parsing  to FNAME(walk_addr) function
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <62697B07E9803846BC582181BD6FB6B835EF64A9AA@NOK-EUMSG-02.mgdnok.nokia.com>
+References: <1284631946-5350-1-git-send-email-samu.p.onkalo@nokia.com>
+	<62697B07E9803846BC582181BD6FB6B835EF64A9AA@NOK-EUMSG-02.mgdnok.nokia.com>
+Date: Tue, 28 Sep 2010 11:00:20 +0200
+Message-ID: <AANLkTi=N-p_ojTt6ia6bLxoA5AKC6rdZky9kvz_BqFqa@mail.gmail.com>
+Subject: Re: [PATCH 0/4] Led driver support for LP5521 and LP5523 chips
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: samu.p.onkalo@nokia.com, akpm@osdl.org
+Cc: rpurdie@linux.intel.com, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Martin Persson <martin.persson@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move access code parsing from caller site to FNAME(walk_addr) function
+2010/9/27  <samu.p.onkalo@nokia.com>:
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- arch/x86/kvm/paging_tmpl.h |   40 ++++++++++++++++------------------------
- 1 files changed, 16 insertions(+), 24 deletions(-)
+> I haven't got any mails or comments from Richard about this driver.
+> Also led tree here:
+> http://git.o-hand.com/cgit.cgi/linux-rpurdie-leds/
+>
+> is not updated in 4 months.
+>
+> I'm just wondering should I send this to somebody else than Richard Purdie?
+>
+> I'll update the driver based on other comments and send v2 patch set.
 
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index a83ff37..9a5f7bb 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -116,16 +116,18 @@ static unsigned FNAME(gpte_access)(struct kvm_vcpu *vcpu, pt_element_t gpte)
-  */
- static int FNAME(walk_addr_generic)(struct guest_walker *walker,
- 				    struct kvm_vcpu *vcpu, struct kvm_mmu *mmu,
--				    gva_t addr, int write_fault,
--				    int user_fault, int fetch_fault)
-+				    gva_t addr, u32 access)
- {
- 	pt_element_t pte;
- 	gfn_t table_gfn;
- 	unsigned index, pt_access, uninitialized_var(pte_access);
- 	gpa_t pte_gpa;
- 	bool eperm, present, rsvd_fault;
--	int offset;
--	u32 access = 0;
-+	int offset, write_fault, user_fault, fetch_fault;
-+
-+	write_fault = access & PFERR_WRITE_MASK;
-+	user_fault = access & PFERR_USER_MASK;
-+	fetch_fault = access & PFERR_FETCH_MASK;
- 
- 	trace_kvm_mmu_pagetable_walk(addr, write_fault, user_fault,
- 				     fetch_fault);
-@@ -215,6 +217,7 @@ walk:
- 			int lvl = walker->level;
- 			gpa_t real_gpa;
- 			gfn_t gfn;
-+			u32 ac;
- 
- 			gfn = gpte_to_gfn_lvl(pte, lvl);
- 			gfn += (addr & PT_LVL_OFFSET_MASK(lvl)) >> PAGE_SHIFT;
-@@ -224,10 +227,10 @@ walk:
- 			    is_cpuid_PSE36())
- 				gfn += pse36_gfn_delta(pte);
- 
--			access |= write_fault | fetch_fault | user_fault;
-+			ac = write_fault | fetch_fault | user_fault;
- 
- 			real_gpa = mmu->translate_gpa(vcpu, gfn_to_gpa(gfn),
--						      access);
-+						      ac);
- 			if (real_gpa == UNMAPPED_GVA)
- 				return 0;
- 
-@@ -282,21 +285,18 @@ error:
- }
- 
- static int FNAME(walk_addr)(struct guest_walker *walker,
--			    struct kvm_vcpu *vcpu, gva_t addr,
--			    int write_fault, int user_fault, int fetch_fault)
-+			    struct kvm_vcpu *vcpu, gva_t addr, u32 access)
- {
- 	return FNAME(walk_addr_generic)(walker, vcpu, &vcpu->arch.mmu, addr,
--					write_fault, user_fault, fetch_fault);
-+					access);
- }
- 
- static int FNAME(walk_addr_nested)(struct guest_walker *walker,
- 				   struct kvm_vcpu *vcpu, gva_t addr,
--				   int write_fault, int user_fault,
--				   int fetch_fault)
-+				   u32 access)
- {
- 	return FNAME(walk_addr_generic)(walker, vcpu, &vcpu->arch.nested_mmu,
--					addr, write_fault, user_fault,
--					fetch_fault);
-+					addr, access);
- }
- 
- static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
-@@ -532,7 +532,6 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr,
- {
- 	int write_fault = error_code & PFERR_WRITE_MASK;
- 	int user_fault = error_code & PFERR_USER_MASK;
--	int fetch_fault = error_code & PFERR_FETCH_MASK;
- 	struct guest_walker walker;
- 	u64 *sptep;
- 	int write_pt = 0;
-@@ -550,8 +549,7 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr,
- 	/*
- 	 * Look up the guest pte for the faulting address.
- 	 */
--	r = FNAME(walk_addr)(&walker, vcpu, addr, write_fault, user_fault,
--			     fetch_fault);
-+	r = FNAME(walk_addr)(&walker, vcpu, addr, error_code);
- 
- 	/*
- 	 * The page is not mapped by the guest.  Let the guest handle it.
-@@ -669,10 +667,7 @@ static gpa_t FNAME(gva_to_gpa)(struct kvm_vcpu *vcpu, gva_t vaddr, u32 access,
- 	gpa_t gpa = UNMAPPED_GVA;
- 	int r;
- 
--	r = FNAME(walk_addr)(&walker, vcpu, vaddr,
--			     access & PFERR_WRITE_MASK,
--			     access & PFERR_USER_MASK,
--			     access & PFERR_FETCH_MASK);
-+	r = FNAME(walk_addr)(&walker, vcpu, vaddr, access);
- 
- 	if (r) {
- 		gpa = gfn_to_gpa(walker.gfn);
-@@ -690,10 +685,7 @@ static gpa_t FNAME(gva_to_gpa_nested)(struct kvm_vcpu *vcpu, gva_t vaddr,
- 	gpa_t gpa = UNMAPPED_GVA;
- 	int r;
- 
--	r = FNAME(walk_addr_nested)(&walker, vcpu, vaddr,
--				    access & PFERR_WRITE_MASK,
--				    access & PFERR_USER_MASK,
--				    access & PFERR_FETCH_MASK);
-+	r = FNAME(walk_addr_nested)(&walker, vcpu, vaddr, access);
- 
- 	if (r) {
- 		gpa = gfn_to_gpa(walker.gfn);
--- 
-1.7.0.4
+We (ST-Ericsson) need this driver in as well.
+
+If Richard is busy maybe Andrew can pick it up for the time being?
+
+Looking forward to the v2 version!
+
+Yours,
+Linus Walleij
