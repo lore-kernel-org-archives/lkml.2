@@ -1,45 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755704Ab0I1R5x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 13:57:53 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43515 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753452Ab0I1R5w (ORCPT
+	id S1755931Ab0I1R7v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 13:59:51 -0400
+Received: from exchange.solarflare.com ([216.237.3.220]:34036 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754197Ab0I1R7u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 13:57:52 -0400
-Date: Tue, 28 Sep 2010 10:58:09 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
-Cc: meego-dev@meego.com, Andrew Morton <akpm@linux-foundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>, Alek Du <alek.du@intel.com>,
-        Richard =?iso-8859-1?Q?R=F6jfors?= 
-	<richard.rojfors@mocean-labs.com>,
-        Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        kok.howg.ewe@intel.com, joel.clark@intel.com, yong.y.wang@intel.com,
-        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>, margie.foster@intel.com
-Subject: Re: [MeeGo-Dev][PATCH v2] Topcliff: Update PCH_GPIO driver to
- 2.6.35
-Message-ID: <20100928175808.GG10739@opensource.wolfsonmicro.com>
-References: <4CA1B775.9020809@dsn.okisemi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CA1B775.9020809@dsn.okisemi.com>
-X-Cookie: Excellent day to have a rotten day.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 28 Sep 2010 13:59:50 -0400
+Subject: [RFC] Online firmware upgrade in non-embedded systems
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mtd <linux-mtd@lists.infradead.org>
+Cc: sf-linux-drivers <linux-net-drivers@solarflare.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Tue, 28 Sep 2010 18:59:47 +0100
+Message-ID: <1285696787.2282.45.camel@achroite.uk.solarflarecom.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 28 Sep 2010 17:59:50.0166 (UTC) FILETIME=[F1E94360:01CB5F36]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17670.005
+X-TM-AS-Result: No--29.340900-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 28, 2010 at 06:37:57PM +0900, Masayuki Ohtak wrote:
+Network and disk controllers normally have at least some firmware in
+flash to support their use as boot devices.  Solarflare's current
+network adapters can have as many as 4 distinct firmware partitions: one
+for each PHY, one for the management CPU and one for net-boot.  Any or
+all of these may need to be updated in the field, to fix bugs or to add
+features.  (Furthermore, the net-boot firmware is based on gPXE and is
+therefore modifiable by any user.)
 
-> +	gpio->base = (u32)chip->pch_gpio_base_address;
+Currently the sfc network driver is optionally combined with an MTD
+driver (CONFIG_SFC_MTD) which exposes all upgradable firmware and
+configuration partitions in flash.  This works nicely in kernels with
+MTD enabled, but since MTD is mainly used in embedded systems with
+on-board flash it is often disabled in distribution kernels and custom
+kernels alike.  This leaves users of sfc unable to upgrade firmware
+without rebuilding the kernel or booting some other distribution.  The
+lack of widespread MTD support is a regular cause of support requests.
 
-> +	chip->reg = chip->pch_gpio_base_address;
+There are two main alternatives I'm aware of:
 
-The GPIO base passed to gpiolib should be the base GPIO number for the
-device, not the address of the control registers.  Normally this would
-be passed in via platform data or set to -1 to allow the core to assign
-a slot.
+- Use the ethtool ETHTOOL_SEEPROM command with multiple magic numbers
+for different partitions. bnx2x does something a little like this for
+PHY firmware upgrades. The ethtool core passes in a page at a time so
+this won't work well with flash block sizes greater than PAGE_SIZE.
+
+- Use the ethtool ETHTOOL_FLASHDEV command. It's intended for precisely
+this purpose, but the driver is supposed to implement it using
+request_firmware(). That seems to require any firmware update program to
+integrate with udev or to copy firmware images under /lib/firmware even
+though they are one-time updates. That doesn't make a lot of sense to
+me. Am I missing something?
+
+Of course these are both specific to network devices; it seems deisrable
+to have a more general convention for online firmware upgrades.  MTDs
+clearly are more generally applicable, and pretty much every computer
+does have flash storage for firmware and boot configuration, so perhaps
+it should be treated as more of a standard feature?
+
+Ben.
+
+-- 
+Ben Hutchings, Senior Software Engineer, Solarflare Communications
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
