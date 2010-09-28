@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730Ab0I1QHD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 12:07:03 -0400
-Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:47190 "HELO
-	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754535Ab0I1QHB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 12:07:01 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=Ga3hoXpWq4kRVKQM29hDHrSlPUtmdHzQFxz378UFOVsBbngDcUNOmaaCVCdJc5x0wB0+bOkmFfyj95vf8aEqFO7OWzPgl9ZtnKckMGj1KUutLHDYQI7PKFUBddqubia/;
-Date: Tue, 28 Sep 2010 09:06:55 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: Jimmie Mayfield <mayfield@sackheads.org>, linux-kernel@vger.kernel.org
-Subject: Re: Trying to reset a PCIe device and scratching my head...
-Message-ID: <20100928090655.158d1675@jbarnes-desktop>
-In-Reply-To: <4CA1990E.9080206@ladisch.de>
-References: <20100928020548.GA90230@sackheads.org>
-	<4CA1990E.9080206@ladisch.de>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	id S1754796Ab0I1QIe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 12:08:34 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:36874 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754535Ab0I1QId convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:3:1>);
+	Tue, 28 Sep 2010 12:08:33 -0400
+Message-Id: <4CA22F1D020000780001961F@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Tue, 28 Sep 2010 17:08:29 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Conny Seidel" <conny.seidel@amd.com>
+Cc: "borislav.petkov@" <amd.com.borislav.petkov@amd.com>,
+        "Andreas Herrmann3" <Andreas.Herrmann3@amd.com>,
+        "mingo@elte.hu" <mingo@elte.hu>, "LKML" <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>
+Subject: Re: current TIP/master doesn't build on SLES10
+References: <20100928163136.7a2355d0@marah.osrc.amd.com>
+In-Reply-To: <20100928163136.7a2355d0@marah.osrc.amd.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Sep 2010 09:28:14 +0200
-Clemens Ladisch <clemens@ladisch.de> wrote:
-
-> Jimmie Mayfield wrote:
-> > Having the PCIe interface implemented inside FPGA 'A' makes upgrading
-> > that particular FPGA rather troublesome.  In a perfect world, one would
-> > be able to upgrade the FPGA without having to reboot the machine.  The
-> > hardware guys have designed the card to reload that FPGA image upon a
-> > slot reset...either fundamental or hot.
-> > 
-> > So I'd like to be able to send either a fundamental or hot reset to the
-> > device but so far I've had no success.
+>>> On 28.09.10 at 16:31, Conny Seidel <conny.seidel@amd.com> wrote:
+> Hi
 > 
-> The PCIe AER driver (drivers/pci/pcie/aer/) sends a hot reset when
-> it has received a fatal error.  As far as I can tell, it just sets the
-> PCI_BRIDGE_CTL_BUS_RESET bit of the upstream bridge; everything else
-> is just infrastructure to handle error reporting and to notify the
-> device driver about the reset.
+> compiling TIP/master (44bc8c4f500fce7263803b4acd016fa03cf8a91a) on
+> SLES10 fails with the following build error:
+> 
+> arch/x86/kernel/entry_64.S: Assembler messages:
+> arch/x86/kernel/entry_64.S:1181: Error: too many positional arguments
+> arch/x86/kernel/entry_64.S:1181: Error: too many positional arguments
+> make[2]: *** [arch/x86/kernel/entry_64.o] Error 1
+> make[1]: *** [arch/x86/kernel] Error 2
+> make: *** [arch/x86] Error 2
+> 
+> I've bisected it to commit df5d1874ce1a1f0e0eceff4fa3a9d45620243a68.
+> 
+> Reverting it fixes the issue. 
+> 
+> I know that this is caused by binutils 2.16.91.0.5 which is distributed
+> with SLES10.
 
-Right, if your system supports this, it may be the easiest way to go.
-But devices often have proprietary ways of resetting themselves too;
-maybe you could change your device to reset if a specific bit in config
-or MMIO space was flipped.  You'd likely need some sort of delay before
-accessing the device again, but it should be bounded and fairly fixed,
-so probably not a big deal for the driver to handle.
+I'm generally doing almost all of my work on SLE10, and have not run
+into this issue. Are you sure you've got it fully updated?
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+Jan
+
