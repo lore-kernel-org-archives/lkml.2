@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755626Ab0I1IRl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 04:17:41 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:34317 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1750873Ab0I1IRk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 04:17:40 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/QTCxotMnQbCaJgl+Ff5ibUFpY64yZUGwbxyLDHy
-	SFjqb5E72wCBJS
-Subject: Re: broken behavior in cfs when moving threads between cgroups
-From: Mike Galbraith <efault@gmx.de>
-To: Dima Zavin <dmitriyz@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTinmQOYQAOPkQsZNhJBJtCss3ZtHN_a6h4fpamtz@mail.gmail.com>
-References: <AANLkTinmQOYQAOPkQsZNhJBJtCss3ZtHN_a6h4fpamtz@mail.gmail.com>
-Content-Type: text/plain
-Date: Tue, 28 Sep 2010 10:17:58 +0200
-Message-Id: <1285661878.2795.70.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1758205Ab0I1ISC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 04:18:02 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:58581 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757105Ab0I1IR7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 04:17:59 -0400
+Date: Tue, 28 Sep 2010 13:47:32 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: holzheu@linux.vnet.ibm.com, Shailabh Nagar <nagar1234@in.ibm.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Oleg Nesterov <oleg@redhat.com>, John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: Re: [RFC][PATCH 00/10] taskstats: Enhancements for precise accounting
+Message-ID: <20100928081732.GB4128@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <1285249681.1837.28.camel@holzheu-laptop>
+ <20100923131136.356075f4.akpm@linux-foundation.org>
+ <1285319415.2179.116.camel@holzheu-laptop>
+ <20100924115002.fcb4385a.akpm@linux-foundation.org>
+ <1285579127.2116.62.camel@holzheu-laptop>
+ <20100927130256.5d9a3db8.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20100927130256.5d9a3db8.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-27 at 23:07 -0700, Dima Zavin wrote:
+* Andrew Morton <akpm@linux-foundation.org> [2010-09-27 13:02:56]:
 
-> I'm not really sure how to fix #1 cleanly, since we don't have enough
-> information (i.e. we don't know the previous group) inside
-> moved_group_fair() to adjust the value. It has to be adjusted in
-> sched_move_task(), but I don't see the right interface to do that. I
-> included a hacky patch further down that accesses the sched_fair internals
-> directly, which I know is wrong but illustrates what I think needs to be done.
+> > Good point. It is not really necessary. I started development using the
+> > netlink code. Therefore I first added the new command in the netlink
+> > code. I also thought, it would be a good idea to provide all netlink
+> > commands over the procfs interface to be consistent.
+> 
+> Maybe we should have delivered taskstats over procfs from day one.
+>
 
-I don't really see the relevance of an entity's lag in it's previous
-group, so would tend toward entry at parity.
+The intention was to provide taskstats over a scalable backend to deal
+with a large amount of data, including exit notifications. We provided
+some information like blkioi delay data on proc, but not the whole structure. 
 
-Maybe the move _should_ be treated as a fork, for the same reason we do
-START_DEBIT, but if so, seems to me it's irrelevant whether the task is
-currently sleeping or not, it's going to run for the first time in it's
-new home just as any runnable task, and may do so very soon.  OTOH,
-frequent moves with that hefty START_DEBIT price tag could hurt very
-badly, and makes caring about previous lag seem pointless.
-
-	-Mike
-
-(untested)
-
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 9b5b4f8..4dc6b2f 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -3827,10 +3827,14 @@ static void set_curr_task_fair(struct rq *rq)
- static void moved_group_fair(struct task_struct *p, int on_rq)
- {
- 	struct cfs_rq *cfs_rq = task_cfs_rq(p);
-+	struct sched_entity *se = &p->se;
-+	u64 vruntime = 0;
- 
- 	update_curr(cfs_rq);
- 	if (!on_rq)
--		place_entity(cfs_rq, &p->se, 1);
-+		vruntime = cfs_rq->min_vruntime;
-+
-+	se->vruntime = vruntime;
- }
- #endif
- 
-
-
-
+-- 
+	Three Cheers,
+	Balbir
