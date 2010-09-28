@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752925Ab0I1EhS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 00:37:18 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:38426 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282Ab0I1EhQ (ORCPT
+	id S1752139Ab0I1Epx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 00:45:53 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:55846 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767Ab0I1Epw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 00:37:16 -0400
-Date: Tue, 28 Sep 2010 05:37:05 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Joe Perches <joe@perches.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Florian Mickler <florian@mickler.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: RFC: get_maintainer.pl: append reason for cc to the name by
-	default
-Message-ID: <20100928043704.GA7455@sirena.org.uk>
-References: <1284111212-10659-1-git-send-email-florian@mickler.org> <1285527125.1732.24.camel@Joe-Laptop> <20100927165748.354742f2@schatten.dmk.lab> <20100927154441.GE3602@thunk.org> <20100927190026.20ddc268@schatten.dmk.lab> <20100927182124.GA3168@thunk.org> <20100927212650.62859ee0@schatten.dmk.lab> <1285618097.1732.204.camel@Joe-Laptop> <20100927204756.GC3168@thunk.org> <1285622205.4725.34.camel@Joe-Laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 28 Sep 2010 00:45:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Dotdko3+2lcbRIHfuU/H0HLGbsU63USzGDdCEqDraxfsk+14RJrbLEdMrNg9McVhZ0
+         UDWgTPjLeJwfRYDfHla1mtYX/7wxdRcWufUoG1b5feSgG806UNWSDhiEfPoLBVfPZSsF
+         Q5zIj23z4MH4NO+hdqYf2alZ5hTG/luw7MsYc=
+Date: Tue, 28 Sep 2010 00:45:48 -0400
+From: tmhikaru@gmail.com
+To: linux-kernel@vger.kernel.org
+Subject: Re: Linux 2.6.35.6
+Message-ID: <20100928044548.GB12856@roll>
+References: <20100927003608.GA20395@kroah.com> <20100927163208.GA4892@roll> <20100927215135.3d11d587@schatten.dmk.lab> <20100927233956.GA15705@roll>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MfFXiAuoTsnnDAfZ"
 Content-Disposition: inline
-In-Reply-To: <1285622205.4725.34.camel@Joe-Laptop>
-X-Cookie: BOFH excuse
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20100927233956.GA15705@roll>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 02:16:45PM -0700, Joe Perches wrote:
-> On Mon, 2010-09-27 at 16:47 -0400, Ted Ts'o wrote:
 
-> Mark Brown said: http://lkml.org/lkml/2010/9/10/116
-> ----------------------------------------------------
-> On Fri, Sep 10, 2010 at 03:04:26AM -0700, Joe Perches wrote:
+--MfFXiAuoTsnnDAfZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > It'd be great if the ARM/embedded folk would spend
-> > some effort improving the MAINTAINERS file pattern
-> > coverage.
+On Mon, Sep 27, 2010 at 07:39:56PM -0400, tmhikaru@gmail.com wrote:
+> Greg, I noticed that in the ChangeLogs for 2.6.35.x there were some patches
+> for the intel driver which seem to be to my untrained eye an attempt to fix
+> Linus' problem talked about in that bug report; The patch that is referenced
+> in the bug report contains some things at least that were not applied to the
+> tree; since I have no idea what I'm looking at, could you verify for me if
+> I'm barking up the right tree here? If I am, I'll try building a clean
+> 2.6.35 kernel with that patch applied and see if my problem disappears.
 
-> Half the problem is that a lot of drivers aren't maintained by the
-> people who wrote them - for example, they wrote the driver to get a
-> board working but have no ongoing interest or can only really comment on
-> the one specific configuration used on their particular hardware.  This
-> means getting people to add MAINTAINERS entries is a bit more tricky
-> than it needs to be, even if they could offer useful review on changes.
-> ---------------------------------------------------
+WRT to this patch, it appears I was indeed barking up the wrong tree - it
+doesn't apply to 2.6.35 at all. I guess I'll have to start bisecting now.
+2.6.35.1 and 2.6.35 clearly have the problem. Just wanted to make it clear
+that I'd been mistaken about this before you wasted time digging into it.
 
-> So for Mark's case, the current behavior works reasonably well.
+Thank you,
+Tim McGrath
 
-Actually I've got pretty much all the problems Ted has with it - when I
-use get_maintainer it's done in conjunction with my knowledge of who the
-people who turn up are and what the chances are that they'd have been
-doing substantial work on the code.  Half the time it's just because I
-need to look up someone's e-mail address.
+--MfFXiAuoTsnnDAfZ
+Content-Type: application/pgp-signature
+Content-Disposition: inline
 
-> Tell me something Ted.  Have you in the last 5 years or
-> so done any work in the kernel outside of fs or modified
-> files outside of fs when fs structures weren't changed?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-> Are you representative of the typical user of a script like
-> get_maintainer or checkpatch?  Does it matter that much?
+iQEVAwUBTKFy/JEncCrqzVruAQL4MQf9Epq0xbpcfFVmWCXLiBNcxVq93cB6rF/a
+BsILn61SuW4AqWpa5AgZ/Qpxal9XbwKREbAaZ0D7J5zrlPmGQtoEHIY4HrAn8NUA
+0rmnf70UA7T2LQTOrKcLPkbme/2h4sCdbBLy+Y47G8dc8UKk67bDOq7xe8a2StXe
+UbildAMfkjIVT4fVW1tUVxUDcfLCdLOtqcXx8xfceI+rA7mhOX2sIrMExMfClxPc
+jYoAiQTW5h0Efx02KL1B2LRj1JyFggxg0i23bxui9qaaaxOZnXuzVr4wzeznV6DU
+26QbWjxRSAVhwAiexmzWHsF07ae7nTZlV6Ae2sky2vMT9L6SFuD9hg==
+=PWfE
+-----END PGP SIGNATURE-----
 
-I've personally always thought of get_maintainer as being more useful
-for more experienced developers since you have to have a reasonable idea
-of what it's giving you to be able to parse the output effectively.
+--MfFXiAuoTsnnDAfZ--
