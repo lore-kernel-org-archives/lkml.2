@@ -1,95 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754385Ab0I1VpW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 17:45:22 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52352 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753639Ab0I1VpV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 17:45:21 -0400
-Date: Tue, 28 Sep 2010 14:45:18 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Namhyung Kim <namhyung@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: cleanup gfp_zone()
-Message-Id: <20100928144518.0eaf1099.akpm@linux-foundation.org>
-In-Reply-To: <20100928214141.GG19804@ZenIV.linux.org.uk>
-References: <1285676624-1300-1-git-send-email-namhyung@gmail.com>
-	<20100928143239.5fe34e1e.akpm@linux-foundation.org>
-	<20100928214141.GG19804@ZenIV.linux.org.uk>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754572Ab0I1Vpj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 17:45:39 -0400
+Received: from mga03.intel.com ([143.182.124.21]:22204 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754112Ab0I1Vph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 17:45:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,249,1283756400"; 
+   d="scan'208";a="329796002"
+Message-ID: <4CA261F4.5070803@linux.intel.com>
+Date: Tue, 28 Sep 2010 14:45:24 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Jean Pihet <jean.pihet@newoldbits.com>, Thomas Renninger <trenn@suse.de>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Len Brown <len.brown@intel.com>, arjan@infradead.org,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-omap@vger.kernel.org, linux-perf-users@vger.kernel.org,
+        linux-trace-users@vger.kernel.org
+Subject: Re: [PATCH] tracing, perf: add more power related events
+References: <AANLkTinUmbSUUuxUzc8++pcb9gd1CZFdyTQFrveTBXyV@mail.gmail.com> <201009222049.18154.rjw@sisk.pl> <AANLkTinJU5+s_1S6i4GpRuiOfsAPiL9UFtrxCCbtoumt@mail.gmail.com> <201009282322.16291.rjw@sisk.pl>
+In-Reply-To: <201009282322.16291.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Sep 2010 22:41:42 +0100
-Al Viro <viro@ZenIV.linux.org.uk> wrote:
+  On 9/28/2010 2:22 PM, Rafael J. Wysocki wrote:
+> On Tuesday, September 28, 2010, Jean Pihet wrote:
+>> Hi,
+> Hi,
+>
+>> Here is what I am proposing, in reply to all your comments:
+>>
+>> 1) rename the events to match Thomas's proposal:
+>>     power:power_cpu_cstate
+>>     power:power_cpu_pstate
+>>     power:power_cpu_sstate
+> If that sstate thing is going to mean "suspend", then please drop it.
+> "Suspend" is not a state, let alone a CPU state.  It is a procedure by which
+> the (entire) system is put into a sleep state (that is not confined to CPUs).
 
-> On Tue, Sep 28, 2010 at 02:32:39PM -0700, Andrew Morton wrote:
-> > > +#define ZT_SHIFT(gfp) ((__force int) (gfp) * ZONES_SHIFT)
-> > >  #define GFP_ZONE_TABLE ( \
-> > > -	(ZONE_NORMAL << 0 * ZONES_SHIFT)				\
-> > > -	| (OPT_ZONE_DMA << __GFP_DMA * ZONES_SHIFT)			\
-> > > -	| (OPT_ZONE_HIGHMEM << __GFP_HIGHMEM * ZONES_SHIFT)		\
-> > > -	| (OPT_ZONE_DMA32 << __GFP_DMA32 * ZONES_SHIFT)			\
-> > > -	| (ZONE_NORMAL << __GFP_MOVABLE * ZONES_SHIFT)			\
-> > > -	| (OPT_ZONE_DMA << (__GFP_MOVABLE | __GFP_DMA) * ZONES_SHIFT)	\
-> > > -	| (ZONE_MOVABLE << (__GFP_MOVABLE | __GFP_HIGHMEM) * ZONES_SHIFT)\
-> > > -	| (OPT_ZONE_DMA32 << (__GFP_MOVABLE | __GFP_DMA32) * ZONES_SHIFT)\
-> > > +	(ZONE_NORMAL        << ZT_SHIFT(0))				\
-> > > +	| (OPT_ZONE_DMA     << ZT_SHIFT(__GFP_DMA))			\
-> > > +	| (OPT_ZONE_HIGHMEM << ZT_SHIFT(__GFP_HIGHMEM))			\
-> > > +	| (OPT_ZONE_DMA32   << ZT_SHIFT(__GFP_DMA32))			\
-> > > +	| (ZONE_NORMAL      << ZT_SHIFT(__GFP_MOVABLE))			\
-> > > +	| (OPT_ZONE_DMA     << ZT_SHIFT(__GFP_MOVABLE | __GFP_DMA))	\
-> > > +	| (ZONE_MOVABLE     << ZT_SHIFT(__GFP_MOVABLE | __GFP_HIGHMEM)) \
-> > > +	| (OPT_ZONE_DMA32   << ZT_SHIFT(__GFP_MOVABLE | __GFP_DMA32))	\
-> > >  )
-> > 
-> > hm.  I hope these sparse warnings are sufficiently useful to justify
-> > all the gunk we're adding to support them.
-> > 
-> > Is it actually finding any bugs?
-> 
-> FWIW, bitwise or done in the right-hand argumet of shift looks ugly as hell;
-> what the hell is that code _doing_?
+there are also non-suspend S states, like S0i1 and S0i3 (supported in 
+the current Intel "Moorestown" platform)
 
-There's a nice fat comment a few lines up...
-
-/*
- * GFP_ZONE_TABLE is a word size bitstring that is used for looking up the
- * zone to use given the lowest 4 bits of gfp_t. Entries are ZONE_SHIFT long
- * and there are 16 of them to cover all possible combinations of
- * __GFP_DMA, __GFP_DMA32, __GFP_MOVABLE and __GFP_HIGHMEM.
- *
- * The zone fallback order is MOVABLE=>HIGHMEM=>NORMAL=>DMA32=>DMA.
- * But GFP_MOVABLE is not only a zone specifier but also an allocation
- * policy. Therefore __GFP_MOVABLE plus another zone selector is valid.
- * Only 1 bit of the lowest 3 bits (DMA,DMA32,HIGHMEM) can be set to "1".
- *
- *       bit       result
- *       =================
- *       0x0    => NORMAL
- *       0x1    => DMA or NORMAL
- *       0x2    => HIGHMEM or NORMAL
- *       0x3    => BAD (DMA+HIGHMEM)
- *       0x4    => DMA32 or DMA or NORMAL
- *       0x5    => BAD (DMA+DMA32)
- *       0x6    => BAD (HIGHMEM+DMA32)
- *       0x7    => BAD (HIGHMEM+DMA32+DMA)
- *       0x8    => NORMAL (MOVABLE+0)
- *       0x9    => DMA or NORMAL (MOVABLE+DMA)
- *       0xa    => MOVABLE (Movable is valid only if HIGHMEM is set too)
- *       0xb    => BAD (MOVABLE+HIGHMEM+DMA)
- *       0xc    => DMA32 (MOVABLE+HIGHMEM+DMA32)
- *       0xd    => BAD (MOVABLE+DMA32+DMA)
- *       0xe    => BAD (MOVABLE+DMA32+HIGHMEM)
- *       0xf    => BAD (MOVABLE+DMA32+HIGHMEM+DMA)
- *
- * ZONES_SHIFT must be <= 2 on 32 bit platforms.
- */
+so it's slightly more complex than "just" suspend :)
 
