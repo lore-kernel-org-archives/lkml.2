@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760136Ab0I1JEG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 05:04:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4523 "EHLO mx1.redhat.com"
+	id S1760121Ab0I1JGp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 05:06:45 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44032 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753284Ab0I1JEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 05:04:04 -0400
-Message-ID: <4CA1AF7E.40104@redhat.com>
-Date: Tue, 28 Sep 2010 11:03:58 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+	id S1753807Ab0I1JGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 05:06:43 -0400
+Date: Tue, 28 Sep 2010 12:06:37 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Grazvydas Ignotas <notasas@gmail.com>
+Cc: "Balbi, Felipe" <balbi@ti.com>, Anton Vorontsov <cbouatmailru@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chikkature Rajashekar, Madhusudhan" <madhu.cr@ti.com>
+Subject: Re: [PATCH v4] power_supply: Add driver for TWL4030/TPS65950 BCI
+ charger
+Message-ID: <20100928090637.GD3900@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1285618704-8985-1-git-send-email-notasas@gmail.com>
+ <20100928060554.GF2702@legolas.emea.dhcp.ti.com>
+ <AANLkTikZqtXa2YQsDehoWVMRstefUyafsQn2mph7U3CZ@mail.gmail.com>
+ <20100928084251.GC3900@legolas.emea.dhcp.ti.com>
+ <AANLkTin-6BLBHeiyA1edTJVjwVAimmJLVicZj8c_VC_2@mail.gmail.com>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 1/7] KVM: MMU: update 'root_hpa' out of loop in PAE shadow
- path
-References: <4CA06BA4.4090303@cn.fujitsu.com> <4CA06E9C.9060401@cn.fujitsu.com> <4CA0AC99.8000705@redhat.com> <4CA15634.50300@cn.fujitsu.com>
-In-Reply-To: <4CA15634.50300@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <AANLkTin-6BLBHeiyA1edTJVjwVAimmJLVicZj8c_VC_2@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 09/28/2010 04:43 AM, Xiao Guangrong wrote:
-> On 09/27/2010 10:39 PM, Avi Kivity wrote:
-> >   On 09/27/2010 12:14 PM, Xiao Guangrong wrote:
-> >>  On 09/27/2010 06:02 PM, Xiao Guangrong wrote:
-> >>  >   The value of 'vcpu->arch.mmu.pae_root' is not modified, so we can
-> >>  update 'root_hpa'
-> >>  >   out of the loop
-> >>  >
-> >>  >   Xiao Guangrong<xiaoguangrong@cn.fujitsu.com>
-> >>
-> >>  Hi Avi, Marcelo,
-> >>
-> >>  I'm so sorry that missed "Signed-off-by: " string in all patches, i'll
-> >>  repost this
-> >>  patchset after your review. :-(
-> >
-> >  I fixed up the signoffs and applied.
+On Tue, Sep 28, 2010 at 04:02:48AM -0500, Grazvydas Ignotas wrote:
+>> Charger event is SENT by charger driver when it verifies it's attached
+>> to a wall charger.
 >
-> Thanks Avi.
->
-> I noticed you applied "KVM: MMU: rename 'sp->root_count' to 'sp->active_count'"
-> (commit 55d80c448e7e3417) instead of this patch :-)
+>Isn't that a job for musb/gadget? Detecting D+/D- being shorted by
+>charger or something like that? I don't think BCI is able to detect
+>charger.
 
-Thanks for noticing!  Fixed.
-
-No idea how it happened.
+it's part of the charger detection right ? and according to trm, it's on
+the BCI (actually BCC) role to take care of that :-)
 
 -- 
-error compiling committee.c: too many arguments to function
-
+balbi
