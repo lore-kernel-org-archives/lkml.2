@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760080Ab0I1JCv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 05:02:51 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:49860 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753707Ab0I1JCt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 05:02:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=LsDS+/xyRTj7bJGxOFzXWtShePWNPI4Q6u0Ylm7g7N+Lvw/QSfHhmOZSZPPmBAU0jD
-         1Nd4v4BYRpQq561O4sXQmWmZy3CS4SFY+wjU0VvQV8Bh9d3D+HRbxHiEypp5GJ5na6L6
-         fverwCMG0hLOLePCVpwj9UIkg/z5Bai9Ak2oY=
+	id S1760136Ab0I1JEG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 05:04:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4523 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753284Ab0I1JEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 05:04:04 -0400
+Message-ID: <4CA1AF7E.40104@redhat.com>
+Date: Tue, 28 Sep 2010 11:03:58 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <20100928084251.GC3900@legolas.emea.dhcp.ti.com>
-References: <1285618704-8985-1-git-send-email-notasas@gmail.com>
-	<20100928060554.GF2702@legolas.emea.dhcp.ti.com>
-	<AANLkTikZqtXa2YQsDehoWVMRstefUyafsQn2mph7U3CZ@mail.gmail.com>
-	<20100928084251.GC3900@legolas.emea.dhcp.ti.com>
-Date: Tue, 28 Sep 2010 12:02:48 +0300
-Message-ID: <AANLkTin-6BLBHeiyA1edTJVjwVAimmJLVicZj8c_VC_2@mail.gmail.com>
-Subject: Re: [PATCH v4] power_supply: Add driver for TWL4030/TPS65950 BCI charger
-From: Grazvydas Ignotas <notasas@gmail.com>
-To: balbi@ti.com
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chikkature Rajashekar, Madhusudhan" <madhu.cr@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 1/7] KVM: MMU: update 'root_hpa' out of loop in PAE shadow
+ path
+References: <4CA06BA4.4090303@cn.fujitsu.com> <4CA06E9C.9060401@cn.fujitsu.com> <4CA0AC99.8000705@redhat.com> <4CA15634.50300@cn.fujitsu.com>
+In-Reply-To: <4CA15634.50300@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Charger event is SENT by charger driver when it verifies it's attached
-> to a wall charger.
+  On 09/28/2010 04:43 AM, Xiao Guangrong wrote:
+> On 09/27/2010 10:39 PM, Avi Kivity wrote:
+> >   On 09/27/2010 12:14 PM, Xiao Guangrong wrote:
+> >>  On 09/27/2010 06:02 PM, Xiao Guangrong wrote:
+> >>  >   The value of 'vcpu->arch.mmu.pae_root' is not modified, so we can
+> >>  update 'root_hpa'
+> >>  >   out of the loop
+> >>  >
+> >>  >   Xiao Guangrong<xiaoguangrong@cn.fujitsu.com>
+> >>
+> >>  Hi Avi, Marcelo,
+> >>
+> >>  I'm so sorry that missed "Signed-off-by: " string in all patches, i'll
+> >>  repost this
+> >>  patchset after your review. :-(
+> >
+> >  I fixed up the signoffs and applied.
+>
+> Thanks Avi.
+>
+> I noticed you applied "KVM: MMU: rename 'sp->root_count' to 'sp->active_count'"
+> (commit 55d80c448e7e3417) instead of this patch :-)
 
-Isn't that a job for musb/gadget? Detecting D+/D- being shorted by
-charger or something like that? I don't think BCI is able to detect
-charger.
+Thanks for noticing!  Fixed.
+
+No idea how it happened.
+
+-- 
+error compiling committee.c: too many arguments to function
+
