@@ -1,83 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299Ab0I1ItE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 04:49:04 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:39984 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441Ab0I1ItC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 04:49:02 -0400
-Message-ID: <4CA1ABA4.6070803@kernel.org>
-Date: Tue, 28 Sep 2010 01:47:32 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	id S1753903Ab0I1Iuf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 04:50:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12703 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752463Ab0I1Iue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 04:50:34 -0400
+Message-ID: <4CA1AC50.7000801@redhat.com>
+Date: Tue, 28 Sep 2010 10:50:24 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] memblock: Fix big size with find_region()
-Content-Type: text/plain; charset=ISO-8859-1
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Alexander Graf <agraf@suse.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PATCH] x86, nmi: workaround sti; hlt race vs nmi; intr
+References: <1284913699-14986-1-git-send-email-avi@redhat.com> <4CA057EA.7000609@redhat.com> <768A5DC0-131A-4BC8-ADDD-044D8169545E@suse.de> <61284934-1AD3-4F7A-9488-D46FCEE9B753@suse.de> <4CA06147.7080805@redhat.com> <C725B379-9631-46E4-A825-E43A5120681E@suse.de> <4CA06373.5030501@redhat.com> <4CA112D1.2020004@zytor.com>
+In-Reply-To: <4CA112D1.2020004@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+  On 09/27/2010 11:55 PM, H. Peter Anvin wrote:
+> On 09/27/2010 02:27 AM, Avi Kivity wrote:
+> >
+> >  I don't have write permissions for the spec.  If you can verify that all
+> >  existing and future hardware will mask NMI after STI and convince the
+> >  spec owners to update the specifications, I'm all for it; it's certainly
+> >  a cleaner solution.
+> >
+>
+> I'm trying to see if this is doable.  As you can well imagine, though,
+> it takes time.
 
-When trying to find huge range for crashkernel, get
+Joerg, can you look at this from the AMD side?
 
-[    0.000000] ------------[ cut here ]------------
-[    0.000000] WARNING: at arch/x86/mm/memblock.c:248 memblock_x86_reserve_range+0x40/0x7a()
-[    0.000000] Hardware name: Sun Fire x4800
-[    0.000000] memblock_x86_reserve_range: wrong range [0xffffffff37000000, 0x137000000)
-[    0.000000] Modules linked in:
-[    0.000000] Pid: 0, comm: swapper Not tainted 2.6.36-rc5-tip-yh-01876-g1cac214-dirty #59
-[    0.000000] Call Trace:
-[    0.000000]  [<ffffffff82816f7e>] ? memblock_x86_reserve_range+0x40/0x7a
-[    0.000000]  [<ffffffff81078c2d>] warn_slowpath_common+0x85/0x9e
-[    0.000000]  [<ffffffff81078d38>] warn_slowpath_fmt+0x6e/0x70
-[    0.000000]  [<ffffffff8281e77c>] ? memblock_find_region+0x40/0x78
-[    0.000000]  [<ffffffff8281eb1f>] ? memblock_find_base+0x9a/0xb9
-[    0.000000]  [<ffffffff82816f7e>] memblock_x86_reserve_range+0x40/0x7a
-[    0.000000]  [<ffffffff8280452c>] setup_arch+0x99d/0xb2a
-[    0.000000]  [<ffffffff810a3e02>] ? trace_hardirqs_off+0xd/0xf
-[    0.000000]  [<ffffffff81cec7d8>] ? _raw_spin_unlock_irqrestore+0x3d/0x4c
-[    0.000000]  [<ffffffff827ffcec>] start_kernel+0xde/0x3f1
-[    0.000000]  [<ffffffff827ff2d4>] x86_64_start_reservations+0xa0/0xa4
-[    0.000000]  [<ffffffff827ff3de>] x86_64_start_kernel+0x106/0x10d
-[    0.000000] ---[ end trace a7919e7f17c0a725 ]---
-[    0.000000] Reserving 8192MB of memory at 17592186041200MB for crashkernel (System RAM: 526336MB)
+First, do AMD processors block NMI after an IF-enabling STI?  The 
+documentation explicitly states that they don't:
 
-Because memblock_find_region() can not handle size > end, base will be set to huge num.
+> Sets the interrupt flag (IF) in the rFLAGS register to 1, thereby 
+> allowing external interrupts received on
+> the INTR input. Interrupts received on the non-maskable interrupt 
+> (NMI) input are not affected by this
+> instruction.
 
-Try to check size with end.
+though that may refer to the general effect of EFLAGS.IF, not STI.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- mm/memblock.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+Second, if NMIs are blocked, is it possible to retro-document this?
 
-Index: linux-2.6/mm/memblock.c
-===================================================================
---- linux-2.6.orig/mm/memblock.c
-+++ linux-2.6/mm/memblock.c
-@@ -105,13 +105,18 @@ static phys_addr_t __init memblock_find_
- 	phys_addr_t base, res_base;
- 	long j;
- 
-+	/* In case, huge size is requested */
-+	if (end < size)
-+		return MEMBLOCK_ERROR;
-+
-+	base = memblock_align_down((end - size), align);
-+
- 	/* Prevent allocations returning 0 as it's also used to
- 	 * indicate an allocation failure
- 	 */
- 	if (start == 0)
- 		start = PAGE_SIZE;
- 
--	base = memblock_align_down((end - size), align);
- 	while (start <= base) {
- 		j = memblock_overlaps_region(&memblock.reserved, base, size);
- 		if (j < 0)
+Personally I think the safer route is to take the patch.  There are 
+other processors besides Intel and AMD and we can't test all of them, 
+not to mention various emulators and virtual machine monitors out there.
+
+-- 
+error compiling committee.c: too many arguments to function
+
