@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756779Ab0I1PVB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 11:21:01 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:11364 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754169Ab0I1PVA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 11:21:00 -0400
-Date: Tue, 28 Sep 2010 17:20:23 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Jan Beulich <JBeulich@novell.com>,
-        "r.marek@assembler.cz" <r.marek@assembler.cz>,
-        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: x86/hwmon: conditionalize coretemp's dependency on PCI
-Message-ID: <20100928172023.75607337@endymion.delvare>
-In-Reply-To: <20100928120000.GA7139@ericsson.com>
-References: <4C8E18790200007800015AF7@vpn.id2.novell.com>
-	<20100924185509.GA20155@ericsson.com>
-	<4CA05F220200007800018F81@vpn.id2.novell.com>
-	<20100927121650.GB31847@ericsson.com>
-	<4CA0AE5E0200007800019097@vpn.id2.novell.com>
-	<20100927130220.GA2277@ericsson.com>
-	<20100928091759.421b5bf2@endymion.delvare>
-	<20100928120000.GA7139@ericsson.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+	id S1756798Ab0I1PVn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 11:21:43 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:50694 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754383Ab0I1PVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 11:21:42 -0400
+Subject: Re: [PATCH 6/8] v2 Update node sysfs code
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Robin Holt <holt@sgi.com>
+Cc: Nathan Fontenot <nfont@austin.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linuxppc-dev@ozlabs.org, Greg KH <greg@kroah.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100928092919.GF14068@sgi.com>
+References: <4CA0EBEB.1030204@austin.ibm.com>
+	 <4CA0F00D.9000702@austin.ibm.com>  <20100928092919.GF14068@sgi.com>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Tue, 28 Sep 2010 08:21:33 -0700
+Message-ID: <1285687293.19976.6172.camel@nimitz>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Sep 2010 05:00:00 -0700, Guenter Roeck wrote:
-> On Tue, Sep 28, 2010 at 03:17:59AM -0400, Jean Delvare wrote:
-> > Do you mean it is strange from a technical perspective, or do you have
-> > evidences that it doesn't work properly? This trick come from Intel
-> > themselves, I would guess they know their business.
->
-> From a technical perspective. Hard to see what a PCI bridge ID has to do with Tjmax.
+On Tue, 2010-09-28 at 04:29 -0500, Robin Holt wrote:
+> Also, I don't think I much care for the weirdness that occurs if a
+> memory block spans two nodes.  I have not thought through how possible
+> (or likely) this is, but the code certainly permits it.  If that were
+> the case, how would we know which sections need to be taken offline,
+> etc? 
 
-I agree. If you search the archives, you'll see I emitted exactly the
-same complaint back then.
+Since the architecture is the one doing the memory_block_size_bytes()
+override, I'd expect that the per-arch code knows enough to ensure that
+this doesn't happen.  It's probably something to add to the
+documentation or the patch descriptions.  "How should an architecture
+define this?  When should it be overridden?"
 
-> > (...)
-> > Higher or lower doesn't make a difference. As long as the coretemp
-> > driver doesn't properly report the temperature values as being
-> > relative, users don't expect the value to change depending on the
-> > kernel version or configuration options. We have had dozens of user
-> > reports because of this.
-> > 
-> You are right, functionality would change if someone runs a kernel with PCI undefined 
-> on the specific systems which do use the PCI bridge ID to determine Tjmax. So 
-> if there are no other options, maybe the big fat warning in that case would make sense.
-> I would definitely prefer that over disabling coretemp entirely just because it _might_
-> possibly report a wrong Tjmax (which it doees anyway for many CPUs).
+It's just like the question of SECTION_SIZE.  What if a section spans a
+node?  Well, they don't because the sections are a software concept and
+we _define_ them to not be able to cross nodes.  If they do, just make
+them smaller.
 
-I fully agree.
+-- Dave
 
--- 
-Jean Delvare
