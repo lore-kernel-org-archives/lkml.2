@@ -1,133 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751303Ab0I1UbM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 16:31:12 -0400
-Received: from fieldses.org ([174.143.236.118]:47991 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750975Ab0I1UbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 16:31:10 -0400
-Date: Tue, 28 Sep 2010 16:30:45 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
-        corbet@lwn.net, neilb@suse.de, npiggin@kernel.dk,
-        hooanon05@yahoo.co.jp, miklos@szeredi.hu,
-        linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
-        philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V20 02/12] vfs: Add name to file handle conversion
- support
-Message-ID: <20100928203045.GC10548@fieldses.org>
-References: <1285702610-32733-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1285702610-32733-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	id S1751409Ab0I1UiC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 16:38:02 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:33644 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750990Ab0I1UiA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 16:38:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=DjBuVDLQvkt05UBanDbr6eKM8d5Uw7f4M6Vs6ebvCm9tm9cgYWP1+fKE76LlGDMu+B
+         mtLSBSHLOPQfXgN8cNywXS81zp7lWC8YOMaYyGWRENix7hEfS/TP9kt3R301YLtO36Ve
+         GjNGBCuHGQew7lWmK1fvSO2DMj1V+FcF8DfOg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1285702610-32733-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1285704762.14518.19.camel@voyager>
+References: <AANLkTi=PTp7YW_eYxtF-H2QSxgei3whWH59wU0C9oCkz@mail.gmail.com>
+	<1285693648.14518.7.camel@voyager>
+	<AANLkTi=NiB4hoA5Y8kbR7R8B+J-jJXAHGSu5JdOLSQsj@mail.gmail.com>
+	<1285704762.14518.19.camel@voyager>
+Date: Tue, 28 Sep 2010 22:37:59 +0200
+X-Google-Sender-Auth: 7-9n7XCxGud1mpT7LAxAInNB4Ws
+Message-ID: <AANLkTikquMSnLFW2dcDEWW=Jtez5zzYSuRPFwbyVnk+y@mail.gmail.com>
+Subject: Re: [uml-devel] [REGRESSION] um: ubd: block layer issue (Was: ext3
+ filesystem corruption in user mode linux)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Janjaap Bos <janjaap@bos.nl>
+Cc: richard -rw- weinberger <richard.weinberger@gmail.com>, tj@kernel.org,
+        axboe@kernel.dk, mike.miller@hp.com,
+        user-mode-linux-devel@lists.sourceforge.net, adrian@mcmen.demon.co.uk,
+        jdike@addtoit.com, LKML <linux-kernel@vger.kernel.org>,
+        grant.likely@secretlab.ca, Geert.Uytterhoeven@sonycom.com,
+        Chris Frey <cdfrey@foursquare.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 29, 2010 at 01:06:40AM +0530, Aneesh Kumar K.V wrote:
-> @@ -1042,3 +1043,131 @@ int nonseekable_open(struct inode *inode, struct file *filp)
->  }
->  
->  EXPORT_SYMBOL(nonseekable_open);
-> +
-> +#ifdef CONFIG_EXPORTFS
-> +static long do_sys_name_to_handle(struct path *path,
-> +				  struct file_handle __user *ufh,
-> +				  int __user *mnt_id)
-> +{
-> +	long retval;
-> +	int handle_size;
-> +	struct file_handle f_handle;
-> +	struct file_handle *handle = NULL;
-> +
-> +	if (copy_from_user(&f_handle, ufh, sizeof(struct file_handle))) {
-> +		retval = -EFAULT;
-> +		goto err_out;
-> +	}
-> +	if (f_handle.handle_size > MAX_HANDLE_SZ) {
+On Tue, Sep 28, 2010 at 22:12, Janjaap Bos <janjaap@bos.nl> wrote:
+>> On Tue, 2010-09-28 at 21:52 +0200, Geert Uytterhoeven wrote:
+>> On Tue, Sep 28, 2010 at 19:07, Janjaap Bos <janjaap@bos.nl> wrote:
+>> > See attached patch, and earlier message posted in March 2010 on uml user
+>> > list. We are out of maintainer...
+>>
+>> Thanks for the patch!
+>>
+>> | --- a/arch/um/drivers/ubd_kern.c
+>> | +++ b/arch/um/drivers/ubd_kern.c
+>> | @@ -1223,7 +1227,7 @@ static void do_ubd_request(struct request_queue *q)
+>> |       struct io_thread_req *io_req;
+>> |       struct request *req;
+>> |       sector_t sector;
+>> | -     int n;
+>> | +     int n, last_sectors;
+>> |
+>> |       while(1){
+>> |               struct ubd *dev = q->queuedata;
+>> | @@ -1239,9 +1243,12 @@ static void do_ubd_request(struct request_queue *q)
+>> |
+>> |               req = dev->request;
+>> |               sector = blk_rq_pos(req);
+>> | +             last_sectors = 0;
+>> |               while(dev->start_sg < dev->end_sg){
+>> |                       struct scatterlist *sg = &dev->sg[dev->start_sg];
+>> |
+>> | +                     sector += last_sectors;
+>> | +                     last_sectors = 0;
+>> |                       io_req = kmalloc(sizeof(struct io_thread_req),
+>> |                                        GFP_ATOMIC);
+>> |                       if(io_req == NULL){
+>> | @@ -1253,7 +1260,7 @@ static void do_ubd_request(struct request_queue *q)
+>> |                                       (unsigned long long)sector << 9,
+>> |                                       sg->offset, sg->length, sg_page(sg));
+>> |
+>> | -                     sector += sg->length >> 9;
+>> | +                     last_sectors = sg->length >> 9;
+>> |                       n = os_write_file(thread_fd, &io_req,
+>> |                                         sizeof(struct io_thread_req *));
+>> |                       if(n != sizeof(struct io_thread_req *)){
+>>
+>> However, I'm wondering what difference this part makes?
+>>
+>
+>
+> It fixes ubd block handling integrity.
+> With large block operations errors occurred. Probably due to lost
+> request pointers as explained below. Need to keep a local count of
+> sectors and delay the update. Done by reverting commit
+> f81f2f7c9fee307e371f37424577d46f9eaf8692 using the present
+> block api. (At least which is what I intend, but perhaps quite likely I
+> am missing the point, also it may not be needed anymore if only single
+> 512 byte sector blocks are used per request. Anyway... it solves the
+> problem for me ;-)
+>
+> Regards,
+> -Janjaap
+>
+>
+> See:
+>
+> reverted: commit f81f2f7c9fee307e371f37424577d46f9eaf8692
+>          Author: Tejun Heo <tj@kernel.org>
+>          Date:   Tue Apr 28 13:06:10 2009 +0900
+>          ubd: drop unnecessary rq->sector manipulation
+>    ubd curiously updates rq->sector while issuing the request
+>    in multiple pieces.  Don't do it and simply use local copy
+>    of sector.
+>
+> See for original reason:
+>
+> commit 0a6d3a2a3813e7b25267366cfbf9a4a4698dd1c2
+>        Author: Jeff Dike <jdike@addtoit.com>
+>        Date:   Sun Jul 15 23:38:47 2007 -0700
+>        uml: fix request->sector update
+>
+>    It is theoretically possible for a request to finish and be freed
+> between writing it to the I/O thread and updating the sector count.  In
+> this case, the update will dereference a freed pointer.
+>    To avoid this, I delay the update until processing the next sg
+> segment, when the request pointer is known to be good.
+>
+>    modified:   arch/um/drivers/ubd_kern.c
 
-Couldn't handle_size also be negative?:
+This changeset from 2007 indeed moved the update of req->sector.
 
-> +struct file_handle {
-> +	int handle_size;
+However, in the new code, before or after applying your patch, there's no update
+of req->sector anymore. Everything is done in local variables.
 
-Say the user passes in -1.
+Is it possible that we only need the hunk below to fix the corruption?
 
-> +		retval = -EINVAL;
-> +		goto err_out;
-> +	}
-> +	handle = kmalloc(sizeof(struct file_handle) + f_handle.handle_size,
-> +			 GFP_KERNEL);
+| diff --git a/arch/um/drivers/ubd_kern.c b/arch/um/drivers/ubd_kern.c
+| index 5ff5546..655ed9e 100644
+| --- a/arch/um/drivers/ubd_kern.c
+| +++ b/arch/um/drivers/ubd_kern.c
+| @@ -746,8 +746,12 @@ static int ubd_open_dev(struct ubd *ubd_dev)
+|       }
+|       ubd_dev->fd = fd;
+|
+| +     /* A setting higher than 1 sector currently (v2.6.33) generates
+| +     data loss, both for raw and cow ubd. */
+| +     blk_queue_max_sectors(ubd_dev->queue, 1 * sizeof(long));
+| +     blk_queue_max_phys_segments(ubd_dev->queue, 1 * sizeof(long));
+| +
+|       if(ubd_dev->cow.file != NULL){
+| -             blk_queue_max_sectors(ubd_dev->queue, 8 * sizeof(long));
+|
+|               err = -ENOMEM;
+|               ubd_dev->cow.bitmap = vmalloc(ubd_dev->cow.bitmap_len);
 
-This succeeds, but allocates too little memory.
+Gr{oetje,eeting}s,
 
-> +	if (!handle) {
-> +		retval = -ENOMEM;
-> +		goto err_out;
-> +	}
-> +
-> +	/* convert handle size to  multiple of sizeof(u32) */
-> +	handle_size = f_handle.handle_size >> 2;
+                        Geert
 
-Now handle_size is a large positive number.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-> +
-> +	/* we ask for a non connected handle */
-> +	retval = exportfs_encode_fh(path->dentry,
-> +				    (struct fid *)handle->f_handle,
-> +				    &handle_size,  0);
-
-So this succeeds, and writes past the end of the allocated handle.
-
-As long as the interface is privileged hopefully this would be hard to
-abuse.  But how about just defining handle.handle_size and handle_size
-as unsigned?
-
-The u32/bytes thing seems an easy source of mistakes.  Would it be
-possible to use "bytes" or "words" everywhere in place of "size" or
-"SZ"?  And, where possible, store only one or other other in a given
-variable.  (So do stuff like:
-
-	handle_words = f_handle_size >> 2;
-	retval = exportfs_encode_fh(.,., &handle_words,.);
-	handle->handle_type = retval;
-	handle->handle_bytes = handle_words << 2;
-	if (handle->handle_bytes > f_handle.handle_bytes) {
-		...
-)
-
-By the way, apologies, I can't remember from last time: did you decide
-that overflow was really the only case when 255 would be returned from
-exportfs_encode_fs()?
-
---b.
-> +	/* convert handle size to bytes */
-> +	handle_size *= sizeof(u32);
-> +	handle->handle_type = retval;
-> +	handle->handle_size = handle_size;
-> +	if (handle_size > f_handle.handle_size) {
-> +		/*
-> +		 * set the handle_size to zero so we copy only
-> +		 * non variable part of the file_handle
-> +		 */
-> +		handle_size = 0;
-> +		retval = -EOVERFLOW;
-> +	} else
-> +		retval = 0;
-> +	/* copy the mount id */
-> +	if (copy_to_user(mnt_id, &path->mnt->mnt_id, sizeof(*mnt_id))) {
-> +		retval = -EFAULT;
-> +		goto err_free_out;
-> +	}
-> +	if (copy_to_user(ufh, handle,
-> +			 sizeof(struct file_handle) + handle_size))
-> +		retval = -EFAULT;
-> +err_free_out:
-> +	kfree(handle);
-> +err_out:
-> +	return retval;
-> +}
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
