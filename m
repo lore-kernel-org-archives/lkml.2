@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755624Ab0I1Nge (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 09:36:34 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:47083 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755059Ab0I1NgL (ORCPT
+	id S1755098Ab0I1NlQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 09:41:16 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:60563 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754610Ab0I1NlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 09:36:11 -0400
+	Tue, 28 Sep 2010 09:41:13 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=d9sYXfDMQ5P0jL16P/ziGznFwDLvrEFvRgPg70agTLuFTRE0fnGhdIX120n/cPOVPp
-         3U6FzCBFqmY0k8NiPwo1NXH7v951MHiYMPObdZi7pbs45X7bEijQsAeBE0O/QN3+oOjD
-         ydXlYBgZCzq69hT21Hvn1IAA1HU7I5bLu7Azs=
-Date: Tue, 28 Sep 2010 17:35:45 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Alan Cox <alan@linux.intel.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Tobias Klauser <tklauser@distanz.ch>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] altera_uart: Make it possible to use Altera UART and
- 8250 ports together
-Message-ID: <20100928133545.GE8289@oksana.dev.rtsoft.ru>
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=txK7VntpM3Eu/SKu/iDBllwsI6nvbYe+JkfLFoXpeCv8a7iq45hDSOv9siTU565g1y
+         toClR3zEUwnhL23dosEkieoqatMouJlTWaG3HT2ytAhVWdcbOhwnVtKcDRmpwDV0krV2
+         +JeHelKH7E6op0xekFwnaE6oJjk74ssfzsk1U=
+Message-ID: <4CA1F082.2010900@gmail.com>
+Date: Tue, 28 Sep 2010 06:41:22 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Finn Thain <fthain@telegraphics.com.au>
+CC: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        alsa-devel@alsa-project.org, dri-devel@lists.freedesktop.org,
+        linux-ide@vger.kernel.org, "Maciej W. Rozycki" <macro@linux-mips.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Matt Turner <mattst88@gmail.com>,
+        Dimitry Torokhov <dmitry.torokhov@gmail.com>,
+        Mike Frysinger <vapier.adi@gmail.com>
+Subject: Re: [RFC v5]update broken web addresses in the kernel.
+References: <1285647599-14719-1-git-send-email-justinmattock@gmail.com> <alpine.OSX.2.00.1009281613260.276@localhost> <4CA193B6.8020503@gmail.com> <alpine.OSX.2.00.1009281713410.276@localhost>
+In-Reply-To: <alpine.OSX.2.00.1009281713410.276@localhost>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes tty name and major number conflicts. The major number
-204 is used across many platform-specific serial drivers, so we
-use that.
+On 09/28/2010 12:35 AM, Finn Thain wrote:
+>
+> On Tue, 28 Sep 2010, Justin P. Mattock wrote:
+>
+>> o.k... I'll make the changes to the arch patch, and combine the two, and
+>> send it to jiri..
+>
+> Why?
+>
+> My advice is don't do it unless you want to waste reviewers' time.
+>
+>> as for the names and signed offs is what is below fine or do I need to
+>> change some of them?
+>
+> If you combine patch 1 and patch 2 and submit that as patch 3, you will
+> likely have to CC patch 3 to everyone to whom you sent patch 1 plus
+> everyone to whom you sent patch 2. You must also change any "acked-by" to
+> "Cc", since patch 3 is new.
+>
+> Keep the same CC list since Jiri is already on it ("trivial@kernel.org").
+>
+> Finn
+>
 
-Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
----
- drivers/serial/altera_uart.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
+alright.. so it will be two patches then..(not the best at the CC etc.. 
+thing) cool... and thanks again for reviewing this for me..(back 
+breaking work, but somebodies _gots_ to do it..)
 
-diff --git a/drivers/serial/altera_uart.c b/drivers/serial/altera_uart.c
-index 0a1a066..6412357 100644
---- a/drivers/serial/altera_uart.c
-+++ b/drivers/serial/altera_uart.c
-@@ -28,6 +28,7 @@
- #include <linux/altera_uart.h>
- 
- #define DRV_NAME "altera_uart"
-+#define SERIAL_ALTERA_MAJOR 204
- 
- /*
-  * Altera UART register definitions according to the Nios UART datasheet:
-@@ -471,7 +472,7 @@ static int __init altera_uart_console_setup(struct console *co, char *options)
- static struct uart_driver altera_uart_driver;
- 
- static struct console altera_uart_console = {
--	.name	= "ttyS",
-+	.name	= "ttyAL",
- 	.write	= altera_uart_console_write,
- 	.device	= uart_console_device,
- 	.setup	= altera_uart_console_setup,
-@@ -502,8 +503,8 @@ console_initcall(altera_uart_console_init);
- static struct uart_driver altera_uart_driver = {
- 	.owner		= THIS_MODULE,
- 	.driver_name	= DRV_NAME,
--	.dev_name	= "ttyS",
--	.major		= TTY_MAJOR,
-+	.dev_name	= "ttyAL",
-+	.major		= SERIAL_ALTERA_MAJOR,
- 	.minor		= 64,
- 	.nr		= CONFIG_SERIAL_ALTERA_UART_MAXPORTS,
- 	.cons		= ALTERA_UART_CONSOLE,
-@@ -600,3 +601,4 @@ MODULE_DESCRIPTION("Altera UART driver");
- MODULE_AUTHOR("Thomas Chou <thomas@wytron.com.tw>");
- MODULE_LICENSE("GPL");
- MODULE_ALIAS("platform:" DRV_NAME);
-+MODULE_ALIAS_CHARDEV_MAJOR(SERIAL_ALTERA_MAJOR);
--- 
-1.7.0.5
+Justin P. Mattock
