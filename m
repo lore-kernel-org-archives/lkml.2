@@ -1,75 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931Ab0I1R7v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 13:59:51 -0400
-Received: from exchange.solarflare.com ([216.237.3.220]:34036 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754197Ab0I1R7u (ORCPT
+	id S1755523Ab0I1SDd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 14:03:33 -0400
+Received: from web33607.mail.mud.yahoo.com ([68.142.199.196]:34260 "HELO
+	web33607.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753915Ab0I1SDc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 13:59:50 -0400
-Subject: [RFC] Online firmware upgrade in non-embedded systems
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mtd <linux-mtd@lists.infradead.org>
-Cc: sf-linux-drivers <linux-net-drivers@solarflare.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Tue, 28 Sep 2010 18:59:47 +0100
-Message-ID: <1285696787.2282.45.camel@achroite.uk.solarflarecom.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 Sep 2010 17:59:50.0166 (UTC) FILETIME=[F1E94360:01CB5F36]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17670.005
-X-TM-AS-Result: No--29.340900-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	Tue, 28 Sep 2010 14:03:32 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type;
+  b=jMSimk7kiFSyKhR7LyPKEIH1r8GKG40MYHuVkFhSH4NfA31Ha2ERbUEsCP6DdmN7vi0OKQjTNHRVMsamUZhVqhSNFrIuDzy61bFF/lVLqoYoioFVw74ragr/vydARx6/asNohy2/ral/sY3tyaENcEg3Kdak7nKYUSRllQVSNAI=;
+Message-ID: <938781.83445.qm@web33607.mail.mud.yahoo.com>
+X-YMail-OSG: 9qhreNsVM1m6A9EKzcLbW8G4UAcHlflrojp.G1MpLRNdSm0
+ h3IkzvVIViMLcKMzvQOuZ9wLlvVSlpjSnQcy9crIxJDtisrIQWi43fv6u759
+ zNSw.RzVC8Z8Fp8DGeZoPJJGqglEC4poHGdKwLuug3et1DHbzBS3RACDyzbC
+ xuyzjIumerr1JH4zQjssnPoEzfdQjLEn288i6jdySMN4SO7XlLtVxGzxnarE
+ SBH7F2AnJzFm2laIYPgobTHYzI23qf3DsMfwo1IAg0kau_Gl.SWKjqKAjk5n
+ THwAAY8mtU0f7jEu5i4vkP5ZtvHkwkKiMzMFkSYM6DZcVrYjGSAZdkeUzZsi
+ 4UO_tYVnXHIkRLF77ukmhpUDcbA8G9bubpQqkCmoA34HU.A--
+X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.105.279950
+Date: Tue, 28 Sep 2010 11:03:31 -0700 (PDT)
+From: alex zaim <icidrop@yahoo.com>
+Subject: flickering screen
+To: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Network and disk controllers normally have at least some firmware in
-flash to support their use as boot devices.  Solarflare's current
-network adapters can have as many as 4 distinct firmware partitions: one
-for each PHY, one for the management CPU and one for net-boot.  Any or
-all of these may need to be updated in the field, to fix bugs or to add
-features.  (Furthermore, the net-boot firmware is based on gPXE and is
-therefore modifiable by any user.)
+People report on ubuntuforums.org that the latest kernel version from 2.6.32-23 and up cause their scren to flicker. They said they tried fedora 13 and opensuse and the problem persists. Please address this issue if not yet done so. Thank you.
+Here is a link: ubuntuforums.org/showthread.php?t=1559264
 
-Currently the sfc network driver is optionally combined with an MTD
-driver (CONFIG_SFC_MTD) which exposes all upgradable firmware and
-configuration partitions in flash.  This works nicely in kernels with
-MTD enabled, but since MTD is mainly used in embedded systems with
-on-board flash it is often disabled in distribution kernels and custom
-kernels alike.  This leaves users of sfc unable to upgrade firmware
-without rebuilding the kernel or booting some other distribution.  The
-lack of widespread MTD support is a regular cause of support requests.
 
-There are two main alternatives I'm aware of:
-
-- Use the ethtool ETHTOOL_SEEPROM command with multiple magic numbers
-for different partitions. bnx2x does something a little like this for
-PHY firmware upgrades. The ethtool core passes in a page at a time so
-this won't work well with flash block sizes greater than PAGE_SIZE.
-
-- Use the ethtool ETHTOOL_FLASHDEV command. It's intended for precisely
-this purpose, but the driver is supposed to implement it using
-request_firmware(). That seems to require any firmware update program to
-integrate with udev or to copy firmware images under /lib/firmware even
-though they are one-time updates. That doesn't make a lot of sense to
-me. Am I missing something?
-
-Of course these are both specific to network devices; it seems deisrable
-to have a more general convention for online firmware upgrades.  MTDs
-clearly are more generally applicable, and pretty much every computer
-does have flash storage for firmware and boot configuration, so perhaps
-it should be treated as more of a standard feature?
-
-Ben.
-
--- 
-Ben Hutchings, Senior Software Engineer, Solarflare Communications
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+      
