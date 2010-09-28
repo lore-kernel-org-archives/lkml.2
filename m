@@ -1,62 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533Ab0I1VTA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 17:19:00 -0400
-Received: from mailout17.yourhostingaccount.com ([65.254.253.141]:55674 "EHLO
-	mailout17.yourhostingaccount.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752644Ab0I1VS7 (ORCPT
+	id S1753687Ab0I1VTv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 17:19:51 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:61157 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753611Ab0I1VTt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 17:18:59 -0400
-X-Greylist: delayed 2031 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Sep 2010 17:18:59 EDT
-X-EN-OrigOutIP: 10.1.18.6
-X-EN-IMPSID: CLkw1f00D07rVmq0000000
-From: Sinan Akman <sinan@writeme.com>
-To: linux-kernel@vger.kernel.org
-Cc: grant.likely@secretlab.ca, avorontsov@ru.mvista.com, sinan@writeme.com,
-        dbrownell@users.sourceforge.net
-Subject: [PATCH] spi: Add OF-style registration and binding
-Date: Tue, 28 Sep 2010 16:47:28 -0400
-Message-Id: <1285706848-9281-1-git-send-email-sinan@writeme.com>
-X-Mailer: git-send-email 1.6.2.5
-X-EN-UserInfo: 9579962fb128fd4edc0e15f211ef4629:b3dd9e212e2067e834de66fc17565494
-X-EN-AuthUser: remote@bootbits.com
-X-EN-OrigIP: 174.91.219.242
-X-EN-OrigHost: bas1-montreal43-2925255666.dsl.bell.ca
+	Tue, 28 Sep 2010 17:19:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ML/ZxYXI/bE957ueh/Umk5yL/s4mMtj0RgSHN7vln13xb5/spX/b/jqk6Kxxl9c+Pw
+         tpGXXSSdDQU+E5jME5P/yBptBKysSVtCraNtBb/2guIw+FI++3nYNhw0hgIodTgFuXLs
+         ZLLVYO9JCO7QXIKLOEdKRRdMGzukfEOZ3ZkhQ=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTikquMSnLFW2dcDEWW=Jtez5zzYSuRPFwbyVnk+y@mail.gmail.com>
+References: <AANLkTi=PTp7YW_eYxtF-H2QSxgei3whWH59wU0C9oCkz@mail.gmail.com>
+	<1285693648.14518.7.camel@voyager>
+	<AANLkTi=NiB4hoA5Y8kbR7R8B+J-jJXAHGSu5JdOLSQsj@mail.gmail.com>
+	<1285704762.14518.19.camel@voyager>
+	<AANLkTikquMSnLFW2dcDEWW=Jtez5zzYSuRPFwbyVnk+y@mail.gmail.com>
+Date: Tue, 28 Sep 2010 23:19:48 +0200
+Message-ID: <AANLkTi=s4HJepGa32mKfCYn2sHWems09mH0DRKXqAt9R@mail.gmail.com>
+Subject: Re: [uml-devel] [REGRESSION] um: ubd: block layer issue (Was: ext3
+ filesystem corruption in user mode linux)
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Janjaap Bos <janjaap@bos.nl>, tj@kernel.org, axboe@kernel.dk,
+        mike.miller@hp.com, user-mode-linux-devel@lists.sourceforge.net,
+        adrian@mcmen.demon.co.uk, jdike@addtoit.com,
+        LKML <linux-kernel@vger.kernel.org>, grant.likely@secretlab.ca,
+        Geert.Uytterhoeven@sonycom.com, Chris Frey <cdfrey@foursquare.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the OF hook to the spi core so that devices
-can automatically be registered based on device tree data.
+On Tue, Sep 28, 2010 at 10:37 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+>
+> This changeset from 2007 indeed moved the update of req->sector.
+>
+> However, in the new code, before or after applying your patch, there's no update
+> of req->sector anymore. Everything is done in local variables.
+>
+> Is it possible that we only need the hunk below to fix the corruption?
 
-Signed-off-by: Sinan Akman <sinan@writeme.com>
----
- drivers/spi/spi.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+Yes, it seems so. So far all my test cases work fine.
+I'll submit a patch in a few minutes.
 
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 0bcf4c1..b5a78a1 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -23,6 +23,7 @@
- #include <linux/init.h>
- #include <linux/cache.h>
- #include <linux/mutex.h>
-+#include <linux/of_device.h>
- #include <linux/slab.h>
- #include <linux/mod_devicetable.h>
- #include <linux/spi/spi.h>
-@@ -86,6 +87,10 @@ static int spi_match_device(struct device *dev, struct device_driver *drv)
- 	const struct spi_device	*spi = to_spi_device(dev);
- 	const struct spi_driver	*sdrv = to_spi_driver(drv);
- 
-+	/* Attempt an OF style match */
-+	if (of_driver_match_device(dev, drv))
-+		return 1;
-+
- 	if (sdrv->id_table)
- 		return !!spi_match_id(sdrv->id_table, spi);
- 
+> | diff --git a/arch/um/drivers/ubd_kern.c b/arch/um/drivers/ubd_kern.c
+> | index 5ff5546..655ed9e 100644
+> | --- a/arch/um/drivers/ubd_kern.c
+> | +++ b/arch/um/drivers/ubd_kern.c
+> | @@ -746,8 +746,12 @@ static int ubd_open_dev(struct ubd *ubd_dev)
+> |       }
+> |       ubd_dev->fd = fd;
+> |
+> | +     /* A setting higher than 1 sector currently (v2.6.33) generates
+> | +     data loss, both for raw and cow ubd. */
+> | +     blk_queue_max_sectors(ubd_dev->queue, 1 * sizeof(long));
+> | +     blk_queue_max_phys_segments(ubd_dev->queue, 1 * sizeof(long));
+> | +
+> |       if(ubd_dev->cow.file != NULL){
+> | -             blk_queue_max_sectors(ubd_dev->queue, 8 * sizeof(long));
+> |
+> |               err = -ENOMEM;
+> |               ubd_dev->cow.bitmap = vmalloc(ubd_dev->cow.bitmap_len);
+>
+> Gr{oetje,eeting}s,
+>
+>                         Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
+>
+
 -- 
-1.6.2.5
-
+Cheers,
+//richard
