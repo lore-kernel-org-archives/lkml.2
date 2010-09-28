@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756004Ab0I1Oa1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 10:30:27 -0400
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:12890
-	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754633Ab0I1OaZ (ORCPT
+	id S1755917Ab0I1Oe1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 10:34:27 -0400
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:36310 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755090Ab0I1Oe0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 10:30:25 -0400
-X-SpamScore: -8
-X-BigFish: VPS-8(zzbb2cK98dNzz1202hzzz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L9GO9T-02-BFT-02
-X-M-MSG: 
-Date: Tue, 28 Sep 2010 16:29:55 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Huang Ying <ying.huang@intel.com>
-CC: Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v2 3/7] x86, NMI, Rename memory parity error to PCI
- SERR error
-Message-ID: <20100928142955.GB13563@erda.amd.com>
-References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
- <1285549026-5008-3-git-send-email-ying.huang@intel.com>
- <20100927080106.GA32222@erda.amd.com>
- <1285576760.20791.70.camel@yhuang-dev>
- <20100927090056.GJ13563@erda.amd.com>
- <20100927153315.GB26290@redhat.com>
- <20100927164502.GS13563@erda.amd.com>
- <1285637617.20791.146.camel@yhuang-dev>
+	Tue, 28 Sep 2010 10:34:26 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Dan Williams <dan.j.williams@intel.com>,
+        <linux-arm-kernel@lists.infradead.org>, <yuanyabin1978@sina.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/7] PrimeCell Generic DMA v12 
+Date: Tue, 28 Sep 2010 16:33:54 +0200
+Message-ID: <1285684441-21700-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.6.3.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1285637617.20791.146.camel@yhuang-dev>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.09.10 21:33:37, Huang Ying wrote:
+Still haven't acquired a PB926 Versatile board so rebasing
+the patches in the hopes that one will appear.
 
-> I suggest to
-> print the reason byte only if (!(reason & 0xc0) && reason), where the
-> reason is really unknown.
+- Fixed the #ifdefs to be switching on CONFIG_DMA_ENGINE
+  rather than CONFIG_DMADEVICES, we're actually dependent
+  on the engine leading to the compilation problem Grant
+  saw under certain conditions.
+  (This is how it was once in the past before I tried to
+   be clever)
+- Rebased the PL180 extension on top of the out-of-order
+  IRQ arrival patch submitted earlier (so that one is
+  required).
 
-Why make it this complex for an error message?
+I can post a complete set of patches that add the PL08x
+driver, the MMCI updates pending in Russells tracker
+and this stack in case there is interest, but this is
+trying to keep it as small as possible.
 
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+Yours,
+Linus Walleij
 
