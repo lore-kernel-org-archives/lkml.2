@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755857Ab0I1PQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 11:16:29 -0400
-Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:45041
-	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755031Ab0I1PQ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 11:16:28 -0400
-X-SpamScore: -18
-X-BigFish: VPS-18(zzbb2cK1432N98dN4015Lzz1202hzzz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L9GQF4-01-2WQ-02
-X-M-MSG: 
-Date: Tue, 28 Sep 2010 17:16:18 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Huang Ying <ying.huang@intel.com>
-CC: Don Zickus <dzickus@redhat.com>, huang ying <huang.ying.caritas@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v2 7/7] x86, NMI, Remove do_nmi_callback logic
-Message-ID: <20100928151618.GD13563@erda.amd.com>
-References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
- <1285549026-5008-7-git-send-email-ying.huang@intel.com>
- <20100927104426.GD32222@erda.amd.com>
- <AANLkTinA2HK57w5wqCtq319WNy-PLtWaGBe-v+uoFB=Y@mail.gmail.com>
- <20100927134341.GQ13563@erda.amd.com>
- <20100927151607.GX26290@redhat.com>
- <20100927165831.GT13563@erda.amd.com>
- <1285638103.20791.152.camel@yhuang-dev>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1285638103.20791.152.camel@yhuang-dev>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	id S1756432Ab0I1PRt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 11:17:49 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:36909 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754197Ab0I1PRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 11:17:48 -0400
+Subject: Re: [PATCH 0/8] v2 De-Couple sysfs memory directories from memory
+ sections
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Nathan Fontenot <nfont@austin.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linuxppc-dev@ozlabs.org, Greg KH <greg@kroah.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4CA1E338.6070201@redhat.com>
+References: <4CA0EBEB.1030204@austin.ibm.com>  <4CA1E338.6070201@redhat.com>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Tue, 28 Sep 2010 08:17:36 -0700
+Message-ID: <1285687056.19976.6155.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.09.10 21:41:43, Huang Ying wrote:
-> unknown_nmi_panic will cause panic for unknown NMI (can not identify the
-> NMI sources).
+On Tue, 2010-09-28 at 14:44 +0200, Avi Kivity wrote:
+> Why not update sysfs directory creation to be fast, for example by using 
+> an rbtree instead of a linked list.  This fixes an implementation 
+> problem in the kernel instead of working around it and creating a new ABI.
 > 
-> panic_on_unrecovered_nmi should panic for unrecovered hardware errors,
-> for known and unknown NMI. For example, panic_on_unrecovered_nmi will
-> cause panic in mem_parity_error too, which can be considered known NMI.
-> 
-> Is it reasonable?
+> New ABIs mean old tools won't work, and new tools need to understand 
+> both ABIs.
 
-Yes, this makes it clear. Thanks,
+Just to be clear _these_ patches do not change the existing ABI.
 
--Robert
+They do add a new ABI: the end_phys_index file.  But, it is completely
+redundant at the moment.  It could be taken out of these patches.
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+That said, fixing the directory creation speed is probably a worthwhile
+endeavor too.
+
+-- Dave
 
