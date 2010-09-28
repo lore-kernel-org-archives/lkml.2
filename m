@@ -1,90 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752383Ab0I1KgW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 06:36:22 -0400
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:44577 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751391Ab0I1KgS (ORCPT
+	id S1752909Ab0I1Kgh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 06:36:37 -0400
+Received: from mtagate3.de.ibm.com ([195.212.17.163]:57649 "EHLO
+	mtagate3.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104Ab0I1Kge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 06:36:18 -0400
-From: Arun Murthy <arun.murthy@stericsson.com>
-To: <lars@metafoo.de>, <akpm@linux-foundation.org>, <kernel@pengutronix.de>,
-        <philipp.zabel@gmail.com>, <robert.jarzmik@free.fr>,
-        <marek.vasut@gmail.com>, <eric.y.miao@gmail.com>, <rpurdie@rpsys.net>,
-        <sameo@linux.intel.com>, <kgene.kim@samsung.com>,
-        <linux-omap@vger.kernel.org>
-Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mips@linux-mips.org>, <arun.murthy@stericsson.com>,
-        <STEricsson_nomadik_linux@list.st.com>
-Subject: [PATCH 7/7] pwm: Modify backlight and led Kconfig aligning to pwm core
-Date: Tue, 28 Sep 2010 16:05:34 +0530
-Message-ID: <1285670134-18063-8-git-send-email-arun.murthy@stericsson.com>
-X-Mailer: git-send-email 1.7.2.dirty
-In-Reply-To: <1285670134-18063-1-git-send-email-arun.murthy@stericsson.com>
-References: <1285670134-18063-1-git-send-email-arun.murthy@stericsson.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 28 Sep 2010 06:36:34 -0400
+Date: Tue, 28 Sep 2010 12:36:25 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: balbir@linux.vnet.ibm.com
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 09/10] taskstats: Fix exit CPU time accounting
+Message-ID: <20100928123625.18eec4ad@mschwide.boeblingen.de.ibm.com>
+In-Reply-To: <20100928092355.GA4261@balbir.in.ibm.com>
+References: <1285249681.1837.28.camel@holzheu-laptop>
+	<1285250541.1837.95.camel@holzheu-laptop>
+	<20100923171025.GA26623@redhat.com>
+	<1285330688.2179.305.camel@holzheu-laptop>
+	<20100926181127.GA26985@redhat.com>
+	<20100927154257.7910cda3@mschwide.boeblingen.de.ibm.com>
+	<20100928083602.GD4128@balbir.in.ibm.com>
+	<20100928110828.54e1cf25@mschwide.boeblingen.de.ibm.com>
+	<20100928092355.GA4261@balbir.in.ibm.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PWM based backlight and led driver will not be calling the pwm drivers
-through the pwm core driver and hence adding dependancy on the same.
+On Tue, 28 Sep 2010 14:53:55 +0530
+Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
 
-Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
----
- drivers/leds/Kconfig            |    2 +-
- drivers/pwm/Kconfig             |    2 --
- drivers/video/backlight/Kconfig |    2 +-
- 3 files changed, 2 insertions(+), 4 deletions(-)
+> * Martin Schwidefsky <schwidefsky@de.ibm.com> [2010-09-28 11:08:28]:
+> 
+> > On Tue, 28 Sep 2010 14:06:02 +0530
+> > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> > 
+> > > * Martin Schwidefsky <schwidefsky@de.ibm.com> [2010-09-27 15:42:57]:
+> > > > Got the part about self-reaping processes. But there is another issue:
+> > > > consider an exiting thread where the group leader is still active.
+> > > > The time for the thread will be added to the utime/stime fields in
+> > > > the signal structure. Taskstats will happily ignore that time while
+> > > > the group leader is still running.
+> > > >
+> > > 
+> > > Why do you say that? Not sure your comment is very clean, in
+> > > fill_tgid, we do
+> > > 
+> > > 1. Accumulate signal stats (contains stats for dead threads)
+> > > 2. Accumulate stats for current threads
+> > > 
+> > > fill_tgid_exit does something similar
+> > 
+> > Hmm, I can't find anything in the code where the tsk->signal->{utime,stime}
+> 
+> That is left to the actual subsystem (I should have been clearer in
+> stating that the limitation is not with the taskstats infrastructure
+> itself). Yes, your observation is indeed correct.
+> 
+> taskstats code is expected to contain the callback for the subsystems
+> it supports. delayacct() already does the right thing today, AFAICS
+> 
+> > gets transferred to the taskstats record. There is a loop in fill_tgid over
+> > the threads of the process but all it does is to call delayacct_add_tsk.
+> > And that function does nothing with the cpu time of dead threads which is
+> > stored in the signal structure. In addition which taskstats field is
+> > supposed to contain the cpu time of the dead thread, ac_utime/ac_stime?
+> >
+> 
+> I've not focused much on ac_*, The changes that need to occur are we
+> need to get the tsacct.c callbacks into taskstats.
 
-diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-index e411262..eba388f 100644
---- a/drivers/leds/Kconfig
-+++ b/drivers/leds/Kconfig
-@@ -244,7 +244,7 @@ config LEDS_DAC124S085
- 
- config LEDS_PWM
- 	tristate "PWM driven LED Support"
--	depends on HAVE_PWM
-+	depends on HAVE_PWM || PWM_CORE
- 	help
- 	  This option enables support for pwm driven LEDs
- 
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index e347365..1f8cbc0 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -17,7 +17,6 @@ if PWM_DEVICES
- config AB8500_PWM
- 	bool "AB8500 PWM support"
- 	depends on AB8500_CORE
--	select HAVE_PWM
- 	help
- 	  This driver exports functions to enable/disble/config/free Pulse
- 	  Width Modulation in the Analog Baseband Chip AB8500.
-@@ -26,7 +25,6 @@ config AB8500_PWM
- config TWL6030_PWM
- 	tristate "TWL6030 PWM (Pulse Width Modulator) Support"
- 	depends on TWL4030_CORE
--	select HAVE_PWM
- 	default n
- 	help
- 	  Say yes here if you want support for TWL6030 PWM.
-diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
-index e54a337..73fc17b 100644
---- a/drivers/video/backlight/Kconfig
-+++ b/drivers/video/backlight/Kconfig
-@@ -217,7 +217,7 @@ config BACKLIGHT_CARILLO_RANCH
- 
- config BACKLIGHT_PWM
- 	tristate "Generic PWM based Backlight Driver"
--	depends on HAVE_PWM
-+	depends on HAVE_PWM || PWM_CORE
- 	help
- 	  If you have a LCD backlight adjustable by PWM, say Y to enable
- 	  this driver.
+Ok, so tsacct.c is the right place to implement it. We will need new fields
+in struct taskstats to contain the tsk->signal->{utime,stime} and some code
+in bacct_add_tsk to do the copy. Agreed ?
+
 -- 
-1.7.2.dirty
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
 
