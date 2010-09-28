@@ -1,58 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757584Ab0I1SVe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 14:21:34 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:44969 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756795Ab0I1SVd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 14:21:33 -0400
-Message-ID: <4CA231FA.4070907@austin.ibm.com>
-Date: Tue, 28 Sep 2010 13:20:42 -0500
-From: Nathan Fontenot <nfont@austin.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+	id S1757615Ab0I1SW6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 14:22:58 -0400
+Received: from mail.nashwauk.k12.mn.us ([64.8.152.42]:62584 "EHLO
+	mail.nashwauk.k12.mn.us" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755833Ab0I1SW5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 14:22:57 -0400
+X-Greylist: delayed 2639 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Sep 2010 14:22:56 EDT
+To: info@un.org
+From: "Jeff Nelson" <webmaster006@9.cn>
+Reply-to: webmaster006@9.cn
+Organization: Webmail Administrator
+Subject: Your mailbox has exceeded the storage limit
+X-Mailer: Kerio Connect 7.0.1 WebMail Mini
+Message-ID: <20100928120142.a946638c@mail.nashwauk.k12.mn.us>
+Date: Tue, 28 Sep 2010 12:01:42 -0500
+X-User-Agent: Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.1; Trident/4.0; SLCC2; .NET
+	CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0;
+	AskTbMYC/5.8.0.12304; Crazy Browser 3.0.0 RC2)
 MIME-Version: 1.0
-To: Robin Holt <holt@sgi.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
-        Greg KH <greg@kroah.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 4/8] v2 Allow memory block to span multiple memory sections
-References: <4CA0EBEB.1030204@austin.ibm.com> <4CA0EFAA.8050000@austin.ibm.com> <20100928124810.GI14068@sgi.com>
-In-Reply-To: <20100928124810.GI14068@sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2010 07:48 AM, Robin Holt wrote:
->> +u32 __weak memory_block_size_bytes(void)
->> +{
->> +	return MIN_MEMORY_BLOCK_SIZE;
->> +}
->> +
->> +static u32 get_memory_block_size(void)
-> 
-> Can we make this an unsigned long?  We are testing on a system whose
-> smallest possible configuration is 4GB per socket with 512 sockets.
-> We would like to be able to specify this as 2GB by default (results
-> in the least lost memory) and suggest we add a command line option
-> which overrides this value.  We have many installations where 16GB may
-> be optimal.  Large configurations will certainly become more prevalent.
-
-Works for me.
-
-> 
-> ...
->> @@ -551,12 +608,16 @@
->>  	unsigned int i;
->>  	int ret;
->>  	int err;
->> +	int block_sz;
-> 
-> This one needs to match the return above.  In our tests, we ended up
-> with a negative sections_per_block which caused very unexpected results.
-
-Oh, nice catch.  I'll update both of these.
-
--Nathan
-
+Your mailbox has exceeded the storage limit which is 20GB as set by your administrator,you are currently running on 20.9GB,you may not be able to send or receive new mail until you re-validate your mailbox. To re-validate your mailbox  please.Click Here http://yamas-cleanuponline.vistahosting.cn/
