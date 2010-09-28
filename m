@@ -1,52 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407Ab0I1MLJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 08:11:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36610 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752440Ab0I1MLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 08:11:06 -0400
-Date: Tue, 28 Sep 2010 05:07:43 -0700
-From: Greg KH <gregkh@suse.de>
-To: Raju Rameshwar Uprade <rajsingh@ncra.tifr.res.in>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: Regarding USB-to-serial device driver
-Message-ID: <20100928120743.GA15807@suse.de>
-References: <20100913154843.GA27496@suse.de> <20100914060649.M96376@admin-gateway.ncra.tifr.res.in> <20100914131925.GC375@suse.de> <20100922052107.M44650@admin-gateway.ncra.tifr.res.in> <20100922145607.GB26309@suse.de> <20100923100127.M64470@admin-gateway.ncra.tifr.res.in> <20100923140236.GB31394@suse.de> <20100928091520.M79654@admin-gateway.ncra.tifr.res.in> <20100928113036.GA15024@suse.de> <20100928115204.M46802@admin-gateway.ncra.tifr.res.in>
+	id S1753242Ab0I1MQv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 08:16:51 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:60980 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751987Ab0I1MQu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 08:16:50 -0400
+X-IronPort-AV: E=Sophos;i="4.57,247,1283731200"; 
+   d="scan'208";a="2073287"
+Date: Tue, 28 Sep 2010 13:16:37 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: <linux-kernel@vger.kernel.org>
+CC: <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: [PATCH 00/12] xen: initial domain support
+Message-ID: <alpine.DEB.2.00.1009281217540.2864@kaball-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100928115204.M46802@admin-gateway.ncra.tifr.res.in>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 28, 2010 at 05:26:35PM +0530, Raju Rameshwar Uprade wrote:
-> 
-> > Is this with your patched pl2303 driver, or are you now doing this from
-> > userspace?
-> 
->  This is patched pl2303 driver.
+Hi all,
+this series implements the basic support needed to boot Linux as initial
+domain on Xen: the target is not to add full featured dom0 support in
+the kernel but to be able to boot Linux on Xen on native.
+We tried to minimize the impact to generic x86 code and interfaces and
+as you can see from the diffstat below we were able to reduce them
+significantly. The only generic code modifications regard mtrr setups
+(see the last two patches in the series).
 
-Then again, sorry, you are on your own here.
 
-> > This looks like your driver, not mine, sorry, you are on your own here.
-> > See my previous emails as to why this should be done in userspace and
-> > not in the kernel.
-> 
-> Is it possible to control RTS line from user space.
+This series depends on two other patch series not yet applied but
+already sent to the list for comments a little while back:
 
-Yes.
+Konrad's "Xen PCI frontend driver" series
+http://lkml.org/lkml/2010/8/4/374
 
-> kindly send me some links, regarding doing the things from userspace like controlling
-> RTS line,adding mark and space parity with the data bytes.
+my "PV on HVM: receive interrupts as xen events" series
+http://lkml.org/lkml/2010/8/30/170
 
-There's this cool new site called 'google.com' that you might want to
-look into using to find this kind of information :)
 
-Seriously, start at the Serial Programming HOWTO and go from there.
+The list of patches with a diffstat follows:
 
-good luck,
+Ian Campbell (1):
+      xen: use host E820 map for dom0
 
-greg k-h
+Jeremy Fitzhardinge (3):
+      xen: remap GSIs as pirqs when running as initial domain
+      xen: map a dummy page for local apic and ioapic in xen_set_fixmap
+      xen: make hvc_xen console work for dom0.
+
+Juan Quintela (2):
+      xen: Initialize xenbus for dom0.
+      xen: add the direct mapping area for ISA bus access
+
+Qing He (1):
+      xen: remap MSIs into pirqs when running as initial domain
+
+Stefano Stabellini (2):
+      xen: use vcpu_ops to setup cpu masks
+      xen: introduce XEN_DOM0 as a silent option
+
+Stephen Tweedie (3):
+      xen: add support for the platform_ops hypercall
+      x86/mtrr: Extend mtrr_if to include num_var_ranges
+      xen/mtrr: Add mtrr_if support for Xen mtrr
+
+ arch/x86/include/asm/xen/hypercall.h |    8 ++
+ arch/x86/kernel/cpu/mtrr/Makefile    |    2 +-
+ arch/x86/kernel/cpu/mtrr/amd.c       |    6 +
+ arch/x86/kernel/cpu/mtrr/centaur.c   |    6 +
+ arch/x86/kernel/cpu/mtrr/cyrix.c     |    6 +
+ arch/x86/kernel/cpu/mtrr/generic.c   |    8 ++
+ arch/x86/kernel/cpu/mtrr/main.c      |   20 +---
+ arch/x86/kernel/cpu/mtrr/mtrr.h      |    8 ++
+ arch/x86/kernel/cpu/mtrr/xen.c       |  110 +++++++++++++++++++
+ arch/x86/pci/xen.c                   |  199 ++++++++++++++++++++++++++++++----
+ arch/x86/xen/Kconfig                 |    5 +
+ arch/x86/xen/enlighten.c             |    1 +
+ arch/x86/xen/mmu.c                   |   47 ++++++++-
+ arch/x86/xen/setup.c                 |   46 ++++++++-
+ arch/x86/xen/smp.c                   |    8 ++-
+ drivers/char/hvc_xen.c               |   98 +++++++++++------
+ drivers/xen/events.c                 |   73 ++++++++++++-
+ drivers/xen/xenbus/xenbus_probe.c    |   29 +++++-
+ include/xen/events.h                 |    5 +
+ include/xen/interface/memory.h       |   28 +++++
+ include/xen/interface/physdev.h      |   10 ++
+ include/xen/interface/platform.h     |   96 ++++++++++++++++
+ 22 files changed, 741 insertions(+), 78 deletions(-)
+
+
+A git tree with this and the other two series on top of Linux 2.6.36-rc1
+is available here:
+
+git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 2.6.36-rc1-initial-domain
+
+Cheers,
+
+Stefano Stabellini
+
