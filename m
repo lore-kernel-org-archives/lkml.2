@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933669Ab0I1CHm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 22:07:42 -0400
-Received: from nm12.bullet.mail.ne1.yahoo.com ([98.138.90.75]:26757 "HELO
-	nm12.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S933634Ab0I1CHh (ORCPT
+	id S933738Ab0I1CIt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 22:08:49 -0400
+Received: from smtp109.sbc.mail.gq1.yahoo.com ([67.195.14.39]:39234 "HELO
+	smtp109.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933694Ab0I1CHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 22:07:37 -0400
-X-Yahoo-Newman-Id: 122970.52376.bm@omp1008.mail.ne1.yahoo.com
+	Mon, 27 Sep 2010 22:07:55 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: uVACc5cVM1mt62ci5IiZle0pCKbAux71QNKhs1XmajcKsTq
- 4OTxcuby7LLtlv1QMbg25aNwIjbAklB_AilVtSj4rPR9GVWm5nP7C6bilflA
- 2myfVHtQytfd4BWCS72uYtSbL0uYN.q918sT4qUlnyyqgSTgWrkkj.cCzlqF
- 0CKSZ1ZwBWL6igOBgeUP98bA8WktXrvc.1nY6sYBPHWGX8cDhkETLAxYQPFp
- QvGzpr3Tj3e0ZyFrWS0Qgh6xNBcjaHkr7KwGcfLAxceZMWgZDcMxWM.uHb1p
- Wn1xBx7nB2Vlpo4cLWl3WciHl.EAg8aOpQHuRJYQSUZbqRT5CsVpycR5olYo
- fFkR_sX.ISeSeFus_bAi69CWB52emDJSpvH.8RHlM
+X-YMail-OSG: usQzC98VM1kc22rYtWKU_JieIPtMRsBMlAOER_zVRa9LAZb
+ AJs7hDASwuIFH4voUds1ONAzpI8tzx2KIHWde_VSGUMYw9m1hGHAU8SDmB6L
+ cuJraij33F5vJseO3dNG.Ur9FitSGTGC4LjInbj8fC_9fujKecmeN6me.RCL
+ xCZMphrJ1Nw7d86_lQhTsOFBOQIE_G185VZMRMEA9igBQ.jU8I2MT9zLsHqW
+ PQYxpRDR6m16.KOo0JBGf.SMzl2y22sZdyom76YXKai9mft1cYh5yNKuIkpi
+ UYtjdpb3DeIppEJeWUg3Scsg06gHHNhjOimASxkQJlmY-
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -35,9 +33,9 @@ Cc: James Smart <james.smart@emulex.com>,
         Luben Tuikov <ltuikov@yahoo.com>, mvsas maintainer <kewei@marvell.com>,
         pm8001 maintainer Jack Wang <jack_wang@usish.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [RFC v4 14/19] buslogic: Remove host_lock unlock() + lock() from BusLogic_QueueCommand()
-Date: Mon, 27 Sep 2010 19:07:31 -0700
-Message-Id: <1285639651-7485-1-git-send-email-nab@linux-iscsi.org>
+Subject: [RFC v4 16/19] mpt/fusion: Add scsi_cmd_get_serial() call
+Date: Mon, 27 Sep 2010 19:07:50 -0700
+Message-Id: <1285639670-7525-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -45,39 +43,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch removes the now legacy host_lock unlock() + lock() optimization
-from buslogic.c:BusLogic_QueueCommand()
+This patch adds a scsi_cmd_get_serial() call in mptscsih_qcmd() to setup a
+valid struct scsi_cmnd->serial_number because mptscsih_abort() still depends
+upon this being set.
+
+This also includes setting the SHT->unlocked_qcmd=1 for host_lock less
+MPT/Fusion operation for mptfc_driver_template, mptsas_driver_template
+and mptspi_driver_template.
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/scsi/BusLogic.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+ drivers/message/fusion/mptfc.c    |    1 +
+ drivers/message/fusion/mptsas.c   |    1 +
+ drivers/message/fusion/mptscsih.c |    5 +++++
+ drivers/message/fusion/mptspi.c   |    1 +
+ 4 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/scsi/BusLogic.c b/drivers/scsi/BusLogic.c
-index fc0b4b8..f39b4fc 100644
---- a/drivers/scsi/BusLogic.c
-+++ b/drivers/scsi/BusLogic.c
-@@ -2837,9 +2837,7 @@ static int BusLogic_QueueCommand(struct scsi_cmnd *Command, void (*CompletionRou
- 	 */
- 	CCB = BusLogic_AllocateCCB(HostAdapter);
- 	if (CCB == NULL) {
--		spin_unlock_irq(HostAdapter->SCSI_Host->host_lock);
- 		BusLogic_Delay(1);
--		spin_lock_irq(HostAdapter->SCSI_Host->host_lock);
- 		CCB = BusLogic_AllocateCCB(HostAdapter);
- 		if (CCB == NULL) {
- 			Command->result = DID_ERROR << 16;
-@@ -2965,10 +2963,8 @@ static int BusLogic_QueueCommand(struct scsi_cmnd *Command, void (*CompletionRou
- 		   error as a Host Adapter Hard Reset should be initiated soon.
- 		 */
- 		if (!BusLogic_WriteOutgoingMailbox(HostAdapter, BusLogic_MailboxStartCommand, CCB)) {
--			spin_unlock_irq(HostAdapter->SCSI_Host->host_lock);
- 			BusLogic_Warning("Unable to write Outgoing Mailbox - " "Pausing for 1 second\n", HostAdapter);
- 			BusLogic_Delay(1);
--			spin_lock_irq(HostAdapter->SCSI_Host->host_lock);
- 			if (!BusLogic_WriteOutgoingMailbox(HostAdapter, BusLogic_MailboxStartCommand, CCB)) {
- 				BusLogic_Warning("Still unable to write Outgoing Mailbox - " "Host Adapter Dead?\n", HostAdapter);
- 				BusLogic_DeallocateCCB(CCB);
+diff --git a/drivers/message/fusion/mptfc.c b/drivers/message/fusion/mptfc.c
+index e15220f..d92c3b0 100644
+--- a/drivers/message/fusion/mptfc.c
++++ b/drivers/message/fusion/mptfc.c
+@@ -126,6 +126,7 @@ static struct scsi_host_template mptfc_driver_template = {
+ 	.eh_host_reset_handler		= mptfc_host_reset,
+ 	.bios_param			= mptscsih_bios_param,
+ 	.can_queue			= MPT_FC_CAN_QUEUE,
++	.unlocked_qcmd			= 1,
+ 	.this_id			= -1,
+ 	.sg_tablesize			= MPT_SCSI_SG_DEPTH,
+ 	.max_sectors			= 8192,
+diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
+index 83a5115..5dc4277 100644
+--- a/drivers/message/fusion/mptsas.c
++++ b/drivers/message/fusion/mptsas.c
+@@ -1975,6 +1975,7 @@ static struct scsi_host_template mptsas_driver_template = {
+ 	.eh_host_reset_handler		= mptscsih_host_reset,
+ 	.bios_param			= mptscsih_bios_param,
+ 	.can_queue			= MPT_SAS_CAN_QUEUE,
++	.unlocked_qcmd			= 1,
+ 	.this_id			= -1,
+ 	.sg_tablesize			= MPT_SCSI_SG_DEPTH,
+ 	.max_sectors			= 8192,
+diff --git a/drivers/message/fusion/mptscsih.c b/drivers/message/fusion/mptscsih.c
+index 59b8f53..6aaa553 100644
+--- a/drivers/message/fusion/mptscsih.c
++++ b/drivers/message/fusion/mptscsih.c
+@@ -1411,6 +1411,11 @@ mptscsih_qcmd(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_cmnd *))
+ 	hd = shost_priv(SCpnt->device->host);
+ 	ioc = hd->ioc;
+ 	SCpnt->scsi_done = done;
++	/*
++	 * Call scsi_cmd_get_serial() because we need a valid serial number
++	 * in mptscsih_abort()
++	 */
++	scsi_cmd_get_serial(SCpnt);
+ 
+ 	dmfprintk(ioc, printk(MYIOC_s_DEBUG_FMT "qcmd: SCpnt=%p, done()=%p\n",
+ 		ioc->name, SCpnt, done));
+diff --git a/drivers/message/fusion/mptspi.c b/drivers/message/fusion/mptspi.c
+index 0e28031..e681e92 100644
+--- a/drivers/message/fusion/mptspi.c
++++ b/drivers/message/fusion/mptspi.c
+@@ -845,6 +845,7 @@ static struct scsi_host_template mptspi_driver_template = {
+ 	.eh_host_reset_handler		= mptscsih_host_reset,
+ 	.bios_param			= mptscsih_bios_param,
+ 	.can_queue			= MPT_SCSI_CAN_QUEUE,
++	.unlocked_qcmd			= 1,
+ 	.this_id			= -1,
+ 	.sg_tablesize			= MPT_SCSI_SG_DEPTH,
+ 	.max_sectors			= 8192,
 -- 
 1.7.3
 
