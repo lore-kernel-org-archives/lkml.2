@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760316Ab0I1AgQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 20:36:16 -0400
-Received: from mga02.intel.com ([134.134.136.20]:22260 "EHLO mga02.intel.com"
+	id S1760393Ab0I1Ags (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 20:36:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19390 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757865Ab0I1AgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 20:36:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,244,1283756400"; 
-   d="scan'208";a="558518297"
-Subject: Re: [PATCH -v2 6/7] x86, NMI, Add support to notify hardware error
- with unknown NMI
-From: Huang Ying <ying.huang@intel.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Robert Richter <robert.richter@amd.com>,
-        huang ying <huang.ying.caritas@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-In-Reply-To: <20100927152014.GY26290@redhat.com>
-References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
-	 <1285549026-5008-6-git-send-email-ying.huang@intel.com>
-	 <20100927100901.GC32222@erda.amd.com>
-	 <AANLkTimY5hr3DgN9=v83Z289MkzjgX8k0WzdTWZbGorj@mail.gmail.com>
-	 <20100927133816.GP13563@erda.amd.com>  <20100927152014.GY26290@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 28 Sep 2010 08:36:12 +0800
-Message-ID: <1285634172.20791.92.camel@yhuang-dev>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+	id S1760042Ab0I1Agq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 20:36:46 -0400
+Message-ID: <4CA13893.8050409@redhat.com>
+Date: Mon, 27 Sep 2010 21:36:35 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL for 2.6.36] V4L/DVB fixes
+References: <4CA10545.4010204@redhat.com> <AANLkTikYyEPAHq5rYzzckExTSFFCAj_DUqAZEvoeU0WD@mail.gmail.com>
+In-Reply-To: <AANLkTikYyEPAHq5rYzzckExTSFFCAj_DUqAZEvoeU0WD@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-27 at 23:20 +0800, Don Zickus wrote:
-> On Mon, Sep 27, 2010 at 03:38:16PM +0200, Robert Richter wrote:
-> > On 27.09.10 08:47:53, huang ying wrote:
-> > 
-> > > I think explicit function calls have better readability than notifier chains.
-> > 
-> > What is different to unknown_nmi() then?
-> > 
-> > So no, in your case you want to catch unknown nmis for a certain
-> > hardware and then throw a panic. This should be clearly implemented in
-> > a separate handler for this piece of hardware.
-> > 
-> > We want to cleanup this code and throw out all hardware specific
-> > snippets, and not introduce new special cases here.
+Em 27-09-2010 21:02, Linus Torvalds escreveu:
+> On Mon, Sep 27, 2010 at 1:57 PM, Mauro Carvalho Chehab
+> <mchehab@redhat.com> wrote:
+>> The following changes since commit 32163f4b2cef28a5aab8b226ffecfc6379a53786:
+>>
+>>  alpha: fix usp value in multithreaded coredumps (2010-09-25 14:38:13 -0700)
+>>
+>> are available in the git repository at:
+>>  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
 > 
-> I tend to agree with Robert here.  I don't know if there were any 'rules'
-> to which handlers get directly called versus ones that go through the
-> die_chain, so I was originally going to let it go.  But if they aren't
-> any, it does look cleaner to have everything in die_chains.
+> I get
+> 
+>   scripts/kconfig/conf --oldconfig arch/x86/Kconfig
+>   drivers/media/Kconfig:146: 'endif' in different file than 'if'
+>   drivers/media/IR/Kconfig:15: location of the 'if'
+>   drivers/Kconfig:114: unexpected 'endmenu' within if block
+>   drivers/Kconfig:1: missing end statement for this entry
+>   make[1]: *** [oldconfig] Error 1
+>   make: *** [oldconfig] Error 2
+> 
+> with this. And it seems to be due to a totally broken commit at the
+> very beginning of the series by a commit called "Kconfig fixes"
+> (Hah!), that clearly has not been tested at all.
 
-Personally, I think directly call has better readability than
-notifier_chain in general. Notifier_chain is for:
+Argh! something got completely wrong here. Sorry for the mess.
+This patch is already upstream (changeset ade321c5b8a0e4).
 
-- Call functions in module.
-- Need to enable/disable (via register/unregister) at run time.
-- Call functions from low layer to high layer.
+I had some troubles on my local tree (some objects missed after a gc on
+a shared repository). I had to recover my local tree, to avoid loosing 
+some patches applied there for linux-next. It seems that I did a bad work 
+on recovering them. I always compile everything a few times before sending, 
+but this time, I just didn't notice.
 
-Otherwise, notifier_chain should be avoid if possible. So I think it is
-better to keep direct call as much as possible.
+> The commit sequence was also done today, apparently immediately before
+> sending me the pull request. Which sure as hell explains the "clearly
+> not tested at all" situation.
+> 
+> Don't do this. You are now officially on my shit-list for sending me
+> total crap.
+> 
+> How effing hard can it be to understand: you don't send me stuff that
+> hasn't been tested. It needs to be in -next for SEVERAL DAYS, and you
+> don't rebase it or take it from some random quilt series just before
+> sending it to me.
+> 
+> That's true _especially_ during the -rc series. But it's damn well
+> true at any other time too.
+> 
+> I'm angry. I expect at least some _minimal_ amount of competence from
+> people I pull from. This was not it. Get your ^&#! act together!
+> 
+>                                    Linus
 
-Best Regards,
-Huang Ying
+I'll clean up the mess and prepare a new pull request in the next days.
 
+Sorry,
+Mauro.
