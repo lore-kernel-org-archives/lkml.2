@@ -1,69 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755098Ab0I1NlQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 09:41:16 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60563 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754610Ab0I1NlN (ORCPT
+	id S1755314Ab0I1Nl0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 09:41:26 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39339 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754696Ab0I1NlP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 09:41:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=txK7VntpM3Eu/SKu/iDBllwsI6nvbYe+JkfLFoXpeCv8a7iq45hDSOv9siTU565g1y
-         toClR3zEUwnhL23dosEkieoqatMouJlTWaG3HT2ytAhVWdcbOhwnVtKcDRmpwDV0krV2
-         +JeHelKH7E6op0xekFwnaE6oJjk74ssfzsk1U=
-Message-ID: <4CA1F082.2010900@gmail.com>
-Date: Tue, 28 Sep 2010 06:41:22 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
-MIME-Version: 1.0
-To: Finn Thain <fthain@telegraphics.com.au>
-CC: trivial@kernel.org, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        alsa-devel@alsa-project.org, dri-devel@lists.freedesktop.org,
-        linux-ide@vger.kernel.org, "Maciej W. Rozycki" <macro@linux-mips.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Randy Dunlap <rdunlap@xenotime.net>, Matt Turner <mattst88@gmail.com>,
-        Dimitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mike Frysinger <vapier.adi@gmail.com>
-Subject: Re: [RFC v5]update broken web addresses in the kernel.
-References: <1285647599-14719-1-git-send-email-justinmattock@gmail.com> <alpine.OSX.2.00.1009281613260.276@localhost> <4CA193B6.8020503@gmail.com> <alpine.OSX.2.00.1009281713410.276@localhost>
-In-Reply-To: <alpine.OSX.2.00.1009281713410.276@localhost>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Tue, 28 Sep 2010 09:41:15 -0400
+Date: Tue, 28 Sep 2010 15:04:33 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tobias Klauser <tklauser@distanz.ch>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] serial: Factor out uart_poll_timeout() from 8250
+ driver
+Message-ID: <20100928150433.76cc8178@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100928133511.GA8289@oksana.dev.rtsoft.ru>
+References: <20100928133511.GA8289@oksana.dev.rtsoft.ru>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2010 12:35 AM, Finn Thain wrote:
->
-> On Tue, 28 Sep 2010, Justin P. Mattock wrote:
->
->> o.k... I'll make the changes to the arch patch, and combine the two, and
->> send it to jiri..
->
-> Why?
->
-> My advice is don't do it unless you want to waste reviewers' time.
->
->> as for the names and signed offs is what is below fine or do I need to
->> change some of them?
->
-> If you combine patch 1 and patch 2 and submit that as patch 3, you will
-> likely have to CC patch 3 to everyone to whom you sent patch 1 plus
-> everyone to whom you sent patch 2. You must also change any "acked-by" to
-> "Cc", since patch 3 is new.
->
-> Keep the same CC list since Jiri is already on it ("trivial@kernel.org").
->
-> Finn
->
+> +/* Base timer interval for polling */
+> +int uart_poll_timeout(struct uart_port *port)
+> +{
+> +	int timeout = port->timeout;
+> +
+> +	return timeout > 6 ? (timeout / 2 - 2) : 1;
+> +}
+> +EXPORT_SYMBOL(uart_poll_timeout);
 
-alright.. so it will be two patches then..(not the best at the CC etc.. 
-thing) cool... and thanks again for reviewing this for me..(back 
-breaking work, but somebodies _gots_ to do it..)
-
-Justin P. Mattock
+inline this rather than exporting it and making it global - it's a tiny
+spec of code and the export symbol probably costs more !
