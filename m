@@ -1,120 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755226Ab0I1UMu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 16:12:50 -0400
-Received: from comms2.zx.nl ([194.187.76.142]:64914 "EHLO comms2.zx.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751462Ab0I1UMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 16:12:49 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; CHARSET=US-ASCII
-Subject: Re: [uml-devel] [REGRESSION] um: ubd: block layer issue (Was: ext3
- filesystem corruption in user mode linux)
-From: Janjaap Bos <janjaap@bos.nl>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>, tj@kernel.org,
-        axboe@kernel.dk, mike.miller@hp.com,
-        user-mode-linux-devel@lists.sourceforge.net, adrian@mcmen.demon.co.uk,
-        jdike@addtoit.com, LKML <linux-kernel@vger.kernel.org>,
-        grant.likely@secretlab.ca, Geert.Uytterhoeven@sonycom.com,
-        Chris Frey <cdfrey@foursquare.net>
-In-reply-to: <AANLkTi=NiB4hoA5Y8kbR7R8B+J-jJXAHGSu5JdOLSQsj@mail.gmail.com>
-References: <AANLkTi=PTp7YW_eYxtF-H2QSxgei3whWH59wU0C9oCkz@mail.gmail.com>
- <1285693648.14518.7.camel@voyager>
- <AANLkTi=NiB4hoA5Y8kbR7R8B+J-jJXAHGSu5JdOLSQsj@mail.gmail.com>
-Date: Tue, 28 Sep 2010 22:12:42 +0200
-Message-id: <1285704762.14518.19.camel@voyager>
-X-Mailer: Evolution 2.28.3
+	id S1755152Ab0I1UQa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 16:16:30 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:45033 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752959Ab0I1UQ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 16:16:29 -0400
+Message-ID: <4CA24CD9.8090202@oracle.com>
+Date: Tue, 28 Sep 2010 13:15:21 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH] blkio-throttle: Fix linux-next compilation failure on
+ i386
+References: <20100928193446.GE8950@redhat.com>
+In-Reply-To: <20100928193446.GE8950@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, 2010-09-28 at 21:52 +0200, Geert Uytterhoeven wrote:
-> On Tue, Sep 28, 2010 at 19:07, Janjaap Bos <janjaap@bos.nl> wrote:
-> > See attached patch, and earlier message posted in March 2010 on uml user
-> > list. We are out of maintainer...
+On 09/28/10 12:34, Vivek Goyal wrote:
+> Hi Jens,
 > 
-> Thanks for the patch!
+> One more fix for throttling logic. After this fix I realized that there is
+> potential for integer overflow in my calculations. I need to figure out
+> how to take care of these overflow situations and will post a patch for
+> that later.
 > 
-> | --- a/arch/um/drivers/ubd_kern.c
-> | +++ b/arch/um/drivers/ubd_kern.c
-> | @@ -1223,7 +1227,7 @@ static void do_ubd_request(struct request_queue *q)
-> |       struct io_thread_req *io_req;
-> |       struct request *req;
-> |       sector_t sector;
-> | -     int n;
-> | +     int n, last_sectors;
-> |
-> |       while(1){
-> |               struct ubd *dev = q->queuedata;
-> | @@ -1239,9 +1243,12 @@ static void do_ubd_request(struct request_queue *q)
-> |
-> |               req = dev->request;
-> |               sector = blk_rq_pos(req);
-> | +             last_sectors = 0;
-> |               while(dev->start_sg < dev->end_sg){
-> |                       struct scatterlist *sg = &dev->sg[dev->start_sg];
-> |
-> | +                     sector += last_sectors;
-> | +                     last_sectors = 0;
-> |                       io_req = kmalloc(sizeof(struct io_thread_req),
-> |                                        GFP_ATOMIC);
-> |                       if(io_req == NULL){
-> | @@ -1253,7 +1260,7 @@ static void do_ubd_request(struct request_queue *q)
-> |                                       (unsigned long long)sector << 9,
-> |                                       sg->offset, sg->length, sg_page(sg));
-> |
-> | -                     sector += sg->length >> 9;
-> | +                     last_sectors = sg->length >> 9;
-> |                       n = os_write_file(thread_fd, &io_req,
-> |                                         sizeof(struct io_thread_req *));
-> |                       if(n != sizeof(struct io_thread_req *)){
+> Thanks
+> Vivek
 > 
-> However, I'm wondering what difference this part makes?
+> o Randy Dunlap reported following linux-next failure. This patch fixes it.
 > 
+> on i386:
+> 
+> blk-throttle.c:(.text+0x1abb8): undefined reference to `__udivdi3'
+> blk-throttle.c:(.text+0x1b1dc): undefined reference to `__udivdi3'
+> 
+> o bytes_per_second interface is 64bit and I was continuing to do 64 bit
+>   division even on 32bit platform without help of special macros/functions
+>   hence the failure.
+> 
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+
+Thanks.
+
+> ---
+>  block/blk-throttle.c |   16 ++++++++++------
+>  1 file changed, 10 insertions(+), 6 deletions(-)
+> 
+> Index: linux-2.6-block/block/blk-throttle.c
+> ===================================================================
+> --- linux-2.6-block.orig/block/blk-throttle.c	2010-09-28 12:42:51.000000000 -0400
+> +++ linux-2.6-block/block/blk-throttle.c	2010-09-28 14:16:05.000000000 -0400
+> @@ -378,7 +378,8 @@ throtl_slice_used(struct throtl_data *td
+>  static inline void
+>  throtl_trim_slice(struct throtl_data *td, struct throtl_grp *tg, bool rw)
+>  {
+> -	unsigned long nr_slices, bytes_trim, time_elapsed, io_trim;
+> +	unsigned long nr_slices, time_elapsed, io_trim;
+> +	u64 bytes_trim, tmp;
+>  
+>  	BUG_ON(time_before(tg->slice_end[rw], tg->slice_start[rw]));
+>  
+> @@ -396,8 +397,10 @@ throtl_trim_slice(struct throtl_data *td
+>  
+>  	if (!nr_slices)
+>  		return;
+> +	tmp = tg->bps[rw] * throtl_slice * nr_slices;
+> +	do_div(tmp, HZ);
+> +	bytes_trim = tmp;
+>  
+> -	bytes_trim = (tg->bps[rw] * throtl_slice * nr_slices)/HZ;
+>  	io_trim = (tg->iops[rw] * throtl_slice * nr_slices)/HZ;
+>  
+>  	if (!bytes_trim && !io_trim)
+> @@ -415,7 +418,7 @@ throtl_trim_slice(struct throtl_data *td
+>  
+>  	tg->slice_start[rw] += nr_slices * throtl_slice;
+>  
+> -	throtl_log_tg(td, tg, "[%c] trim slice nr=%lu bytes=%lu io=%lu"
+> +	throtl_log_tg(td, tg, "[%c] trim slice nr=%lu bytes=%llu io=%lu"
+>  			" start=%lu end=%lu jiffies=%lu",
+>  			rw == READ ? 'R' : 'W', nr_slices, bytes_trim, io_trim,
+>  			tg->slice_start[rw], tg->slice_end[rw], jiffies);
+> @@ -462,7 +465,7 @@ static bool tg_with_in_bps_limit(struct 
+>  		struct bio *bio, unsigned long *wait)
+>  {
+>  	bool rw = bio_data_dir(bio);
+> -	u64 bytes_allowed, extra_bytes;
+> +	u64 bytes_allowed, extra_bytes, tmp;
+>  	unsigned long jiffy_elapsed, jiffy_wait, jiffy_elapsed_rnd;
+>  
+>  	jiffy_elapsed = jiffy_elapsed_rnd = jiffies - tg->slice_start[rw];
+> @@ -473,8 +476,9 @@ static bool tg_with_in_bps_limit(struct 
+>  
+>  	jiffy_elapsed_rnd = roundup(jiffy_elapsed_rnd, throtl_slice);
+>  
+> -	bytes_allowed = (tg->bps[rw] * jiffies_to_msecs(jiffy_elapsed_rnd))
+> -				/ MSEC_PER_SEC;
+> +	tmp = tg->bps[rw] * jiffies_to_msecs(jiffy_elapsed_rnd);
+> +	do_div(tmp, MSEC_PER_SEC);
+> +	bytes_allowed = tmp;
+>  
+>  	if (tg->bytes_disp[rw] + bio->bi_size <= bytes_allowed) {
+>  		if (wait)
 
 
-It fixes ubd block handling integrity.
-With large block operations errors occurred. Probably due to lost
-request pointers as explained below. Need to keep a local count of
-sectors and delay the update. Done by reverting commit
-f81f2f7c9fee307e371f37424577d46f9eaf8692 using the present
-block api. (At least which is what I intend, but perhaps quite likely I
-am missing the point, also it may not be needed anymore if only single
-512 byte sector blocks are used per request. Anyway... it solves the
-problem for me ;-)
-
-Regards,
--Janjaap
-
-
-See:
-
-reverted: commit f81f2f7c9fee307e371f37424577d46f9eaf8692
-          Author: Tejun Heo <tj@kernel.org>
-          Date:   Tue Apr 28 13:06:10 2009 +0900
-          ubd: drop unnecessary rq->sector manipulation
-    ubd curiously updates rq->sector while issuing the request
-    in multiple pieces.  Don't do it and simply use local copy
-    of sector.
-        
-See for original reason:
-    
-commit 0a6d3a2a3813e7b25267366cfbf9a4a4698dd1c2
-        Author: Jeff Dike <jdike@addtoit.com>
-        Date:   Sun Jul 15 23:38:47 2007 -0700
-        uml: fix request->sector update
-    
-    It is theoretically possible for a request to finish and be freed
-between writing it to the I/O thread and updating the sector count.  In
-this case, the update will dereference a freed pointer.
-    To avoid this, I delay the update until processing the next sg
-segment, when the request pointer is known to be good.
-    
-    modified:   arch/um/drivers/ubd_kern.c
-
-
-
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
