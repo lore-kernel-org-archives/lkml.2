@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754801Ab0I1QVG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 12:21:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35236 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753853Ab0I1QVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 12:21:04 -0400
-Message-ID: <4CA215DF.2060409@zytor.com>
-Date: Tue, 28 Sep 2010 09:20:47 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
+	id S1755051Ab0I1Q2Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 12:28:25 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39532 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754144Ab0I1Q2X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 12:28:23 -0400
+Date: Tue, 28 Sep 2010 09:28:40 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+Cc: Mike Frysinger <vapier@gentoo.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>, Alek Du <alek.du@intel.com>,
+        richard.rojfors@mocean-labs.com, meego-dev@meego.com,
+        ML linux-kernel <linux-kernel@vger.kernel.org>, Qi <qi.wang@intel.com>,
+        andrew.chih.howe.khor@intel.com, gregkh@suse.de,
+        Yong Y <yong.y.wang@intel.com>,
+        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>, joel.clark@intel.com,
+        margie.foster@intel.com, kok.howg.ewe@intel.com
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_GPIO driver to 2.6.35
+Message-ID: <20100928162839.GA10739@opensource.wolfsonmicro.com>
+References: <4C80D3C8.9020204@dsn.okisemi.com>
+ <20100903134827.GA7614@rakim.wolfsonmicro.main>
+ <000301cb5ebc$35ad8d20$66f8800a@maildom.okisemi.com>
+ <201009272338.23762.vapier@gentoo.org>
+ <002801cb5ec9$b7936a00$66f8800a@maildom.okisemi.com>
+ <AANLkTikUJMfo8m8o1rQdf264g2P39uHLRp80vGPW0Jni@mail.gmail.com>
+ <003001cb5ecd$97577930$66f8800a@maildom.okisemi.com>
+ <20100928052950.GB5878@sirena.org.uk>
+ <001201cb5ed7$6117cb40$66f8800a@maildom.okisemi.com>
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@novell.com>
-CC: Conny Seidel <conny.seidel@amd.com>,
-        "borislav.petkov@" <amd.com.borislav.petkov@amd.com>,
-        Andreas Herrmann3 <Andreas.Herrmann3@amd.com>,
-        "mingo@elte.hu" <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: current TIP/master doesn't build on SLES10
-References: <20100928163136.7a2355d0@marah.osrc.amd.com> <4CA22F1D020000780001961F@vpn.id2.novell.com>
-In-Reply-To: <4CA22F1D020000780001961F@vpn.id2.novell.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <001201cb5ed7$6117cb40$66f8800a@maildom.okisemi.com>
+X-Cookie: Excellent day to have a rotten day.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2010 09:08 AM, Jan Beulich wrote:
->>>> On 28.09.10 at 16:31, Conny Seidel <conny.seidel@amd.com> wrote:
->> Hi
->>
->> compiling TIP/master (44bc8c4f500fce7263803b4acd016fa03cf8a91a) on
->> SLES10 fails with the following build error:
->>
->> arch/x86/kernel/entry_64.S: Assembler messages:
->> arch/x86/kernel/entry_64.S:1181: Error: too many positional arguments
->> arch/x86/kernel/entry_64.S:1181: Error: too many positional arguments
->> make[2]: *** [arch/x86/kernel/entry_64.o] Error 1
->> make[1]: *** [arch/x86/kernel] Error 2
->> make: *** [arch/x86] Error 2
->>
->> I've bisected it to commit df5d1874ce1a1f0e0eceff4fa3a9d45620243a68.
->>
->> Reverting it fixes the issue. 
->>
->> I know that this is caused by binutils 2.16.91.0.5 which is distributed
->> with SLES10.
-> 
-> I'm generally doing almost all of my work on SLE10, and have not run
-> into this issue. Are you sure you've got it fully updated?
-> 
+On Tue, Sep 28, 2010 at 03:35:39PM +0900, Masayuki Ohtake wrote:
 
-It definitely sounds like the binutils 2.16 brainscrewage, perhaps one
-of the question is for you: what version is on your system...
+>     gpio->base = (u32)chip->pch_gpio_base_address;
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+This is the number that will be assigned to the first GPIO if the chip
+registers successfully.
 
+>     gpio->ngpio = 12;
+
+This is the number of GPIOs your chip has.
+
+>     chip->pch_gpio_base_address = pci_iomap(pdev, 1, 0);
+
+This initialisation is incorrect and is likely to fail.  gpiolib knows
+nothing of how your chip is controlled, the base is the base for the
+GPIO numbers used to access GPIOs in gpiolib.  Please refer to other
+gpiolib drivers for examples of how to use the gpilib APIs.
