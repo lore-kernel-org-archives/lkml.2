@@ -1,70 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262Ab0I1PdS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 11:33:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27926 "EHLO mx1.redhat.com"
+	id S1753177Ab0I1Pf2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 11:35:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53464 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751141Ab0I1PdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 11:33:17 -0400
-Date: Tue, 28 Sep 2010 11:32:47 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Robert Richter <robert.richter@amd.com>,
-        huang ying <huang.ying.caritas@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v2 6/7] x86, NMI, Add support to notify hardware error
- with unknown NMI
-Message-ID: <20100928153247.GL26290@redhat.com>
-References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
- <1285549026-5008-6-git-send-email-ying.huang@intel.com>
- <20100927100901.GC32222@erda.amd.com>
- <AANLkTimY5hr3DgN9=v83Z289MkzjgX8k0WzdTWZbGorj@mail.gmail.com>
- <20100927133816.GP13563@erda.amd.com>
- <20100927152014.GY26290@redhat.com>
- <1285634172.20791.92.camel@yhuang-dev>
+	id S1751063Ab0I1Pf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 11:35:26 -0400
+Message-ID: <4CA20B21.7060809@zytor.com>
+Date: Tue, 28 Sep 2010 08:34:57 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1285634172.20791.92.camel@yhuang-dev>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Avi Kivity <avi@redhat.com>
+CC: Alexander Graf <agraf@suse.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PATCH] x86, nmi: workaround sti; hlt race vs nmi; intr
+References: <1284913699-14986-1-git-send-email-avi@redhat.com> <4CA057EA.7000609@redhat.com> <768A5DC0-131A-4BC8-ADDD-044D8169545E@suse.de> <61284934-1AD3-4F7A-9488-D46FCEE9B753@suse.de> <4CA06147.7080805@redhat.com> <C725B379-9631-46E4-A825-E43A5120681E@suse.de> <4CA06373.5030501@redhat.com> <4CA112D1.2020004@zytor.com> <4CA1AC50.7000801@redhat.com>
+In-Reply-To: <4CA1AC50.7000801@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 28, 2010 at 08:36:12AM +0800, Huang Ying wrote:
-> > I tend to agree with Robert here.  I don't know if there were any 'rules'
-> > to which handlers get directly called versus ones that go through the
-> > die_chain, so I was originally going to let it go.  But if they aren't
-> > any, it does look cleaner to have everything in die_chains.
+On 09/28/2010 01:50 AM, Avi Kivity wrote:
 > 
-> Personally, I think directly call has better readability than
-
-I am confused what type of readability you are looking for?  Can we create
-a sysfs entry to give you that info?
-
-> notifier_chain in general. Notifier_chain is for:
+> Personally I think the safer route is to take the patch.  There are
+> other processors besides Intel and AMD and we can't test all of them,
+> not to mention various emulators and virtual machine monitors out there.
 > 
-> - Call functions in module.
-> - Need to enable/disable (via register/unregister) at run time.
-> - Call functions from low layer to high layer.
-> 
-> Otherwise, notifier_chain should be avoid if possible. So I think it is
-> better to keep direct call as much as possible.
 
-But the problem is you have to export all this platform specific stuff to
-traps.c and surround the code with #ifdef's, which start to look ugly.
+Speaking for the smoltering crater that used to be *Transmeta*, I'm
+(from memory) quite certain they blocked NMI and that this was
+intentional behavior.
 
-Is there any reason why traps.c should know about MCA/HEST/<other hardware
-errors>?  Shouldn't it be abstracted away?
+	-hpa
 
-Honestly, I would be interested in creating a southbridge driver and
-moving the port 0x61 code there and keeping the default_do_nmi() function
-stupidly simple (just a call to the die_chain and the
-unknown_nmi_error()).
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-Just my two cents.
-
-Cheers,
-Don
