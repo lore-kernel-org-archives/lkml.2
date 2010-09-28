@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933721Ab0I1CIX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 22:08:23 -0400
-Received: from smtp102.sbc.mail.re3.yahoo.com ([66.196.96.85]:34471 "HELO
-	smtp102.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932157Ab0I1CIT (ORCPT
+	id S933734Ab0I1CI3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 22:08:29 -0400
+Received: from smtp102.sbc.mail.gq1.yahoo.com ([67.195.15.61]:48018 "HELO
+	smtp102.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932157Ab0I1CIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 22:08:19 -0400
+	Mon, 27 Sep 2010 22:08:25 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: iq6o82MVM1mStIQmL54Oq0b3ZPEYqgjBGld2cvTvxO0gTk7
- GDAH6.SXUdcTf1mGo0Q_d8GXpBgF7Mw5oSN1WtYAmlCPclFWCdSlVS.zvt2m
- 4XVUGTmsdgmgeEd0UrrkuQEsMn7p8D49vaiP31iJRgOsv.9d87fRAQgM3z8m
- pi4J8msTslWKKn_EZr6t6CWKVH3IC.yG1TYQIGZkJGCNd_1fjIeyDDovh2fz
- vwS3t5Lnx9qB5j0xDepZASAcyUk42Gl2mrcyp82YWVJWOaaxHLmzhVVB8Ipz
- 6NoLDhpEqxSmTHkvFIBrHfOCCRh.hFcwgvNtWti.VU5qFvkJT.JlTj6MkuRo
- sB9jcg3MNfsx9XpqwZ.30tYZOEccZRlDOUyTbEirhy7F8yl.kebfA7xg7oB1
- Zymb3PpIEiS7iw5cdzs9faKZAgjCwEbVBOF9MC42j
+X-YMail-OSG: bzSrgLQVM1kQVVuzPYSsvB2kh9bdVFvW9Gk_HkGRF.c0CYJ
+ xqsu5tMcBkAZGOggLWUycki8kf9eKRb0MAFR1QVbg8v0stbGRyppZ5Qty_sd
+ a0vkAUMG.S5iZKIypX2dcxOVYIlZFo7YBJY82_kyte6eCX9T5rlha7Mrm_h2
+ bGLfT5aYjrhRk1uqLmB5SG2aK3djo_yhUnzLI85Z6YkN49iDGAsStsqjDykP
+ sP8eyIxXPWKXAACjgNXZ.NTYx500hG.44b0bx7Bqti9m.1j1ls58ptwwjBzf
+ SS2VM9WLK4CqVAkVtKX5SaXfAxEZ47Ia86J1pNFPovOM-
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -35,9 +33,9 @@ Cc: James Smart <james.smart@emulex.com>,
         Luben Tuikov <ltuikov@yahoo.com>, mvsas maintainer <kewei@marvell.com>,
         pm8001 maintainer Jack Wang <jack_wang@usish.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [RFC v4 18/19] eata: Add scsi_cmd_get_serial() call
-Date: Mon, 27 Sep 2010 19:08:11 -0700
-Message-Id: <1285639691-7565-1-git-send-email-nab@linux-iscsi.org>
+Subject: [RFC v4 19/19] u14-34f: Add scsi_cmd_get_serial() call
+Date: Mon, 27 Sep 2010 19:08:21 -0700
+Message-Id: <1285639701-7585-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -45,31 +43,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch adds a scsi_cmd_get_serial() call in eata2x_queuecommand()
-to setup a valid struct scsi_cmnd->serial_number because ihdlr() still
+This patch adds a scsi_cmd_get_serial() call in u14_34f_queuecommand()
+to setup a valid struct scsi_cmnd->serial_number because reorder() still
 depends upon this being set.
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/scsi/eata.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ drivers/scsi/u14-34f.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/scsi/eata.c b/drivers/scsi/eata.c
-index d1c3137..e56a0d7 100644
---- a/drivers/scsi/eata.c
-+++ b/drivers/scsi/eata.c
-@@ -1765,6 +1765,11 @@ static int eata2x_queuecommand(struct scsi_cmnd *SCpnt,
- 	struct hostdata *ha = (struct hostdata *)shost->hostdata;
- 	unsigned int i, k;
- 	struct mscp *cpp;
-+        /*
-+	 * Call scsi_cmd_get_serial() because we need a valid serial number
-+	 * for the main eata interrupt handler in ihdlr()
-+	 */
-+        scsi_cmd_get_serial(SCpnt);
+diff --git a/drivers/scsi/u14-34f.c b/drivers/scsi/u14-34f.c
+index 5d9fdee..ea20906 100644
+--- a/drivers/scsi/u14-34f.c
++++ b/drivers/scsi/u14-34f.c
+@@ -1255,6 +1255,12 @@ static int u14_34f_queuecommand(struct scsi_cmnd *SCpnt, void (*done)(struct scs
+    /* j is the board number */
+    j = ((struct hostdata *) SCpnt->device->host->hostdata)->board_number;
  
- 	if (SCpnt->host_scribble)
- 		panic("%s: qcomm, pid %ld, SCpnt %p already active.\n",
++   /*
++    * Call scsi_cmd_get_serial() because we need a valid serial number
++    * for reorder().
++    */
++   scsi_cmd_get_serial(SCpnt);
++
+    if (SCpnt->host_scribble)
+       panic("%s: qcomm, pid %ld, SCpnt %p already active.\n",
+             BN(j), SCpnt->serial_number, SCpnt);
 -- 
 1.7.3
 
