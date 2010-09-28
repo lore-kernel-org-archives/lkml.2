@@ -1,260 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759383Ab0I1HR2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 03:17:28 -0400
-Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:54268 "EHLO
-	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756891Ab0I1HR1 (ORCPT
+	id S1759587Ab0I1HSc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 03:18:32 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:27734 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754086Ab0I1HSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 03:17:27 -0400
-Date: Tue, 28 Sep 2010 00:16:06 -0700
-From: matt mooney <mfm@muteddisk.com>
-To: Greg Ungerer <gerg@snapgear.com>
-Cc: Greg Ungerer <gerg@uclinux.org>, Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Tim Abbott <tabbott@ksplice.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH 08/20] m68knommu: change to new flag variables
-Message-ID: <20100928071606.GA13303@haskell.muteddisk.com>
-Mail-Followup-To: Greg Ungerer <gerg@snapgear.com>,
-	Greg Ungerer <gerg@uclinux.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	David Howells <dhowells@redhat.com>,
-	Tim Abbott <tabbott@ksplice.com>, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org, linux-kbuild@vger.kernel.org
-References: <1285224645-29728-1-git-send-email-mfm@muteddisk.com>
- <4CA18E00.7090207@snapgear.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CA18E00.7090207@snapgear.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 28 Sep 2010 03:18:31 -0400
+Date: Tue, 28 Sep 2010 09:17:59 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Jan Beulich <JBeulich@novell.com>,
+        "r.marek@assembler.cz" <r.marek@assembler.cz>,
+        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: x86/hwmon: conditionalize coretemp's dependency on PCI
+Message-ID: <20100928091759.421b5bf2@endymion.delvare>
+In-Reply-To: <20100927130220.GA2277@ericsson.com>
+References: <4C8E18790200007800015AF7@vpn.id2.novell.com>
+	<20100924185509.GA20155@ericsson.com>
+	<4CA05F220200007800018F81@vpn.id2.novell.com>
+	<20100927121650.GB31847@ericsson.com>
+	<4CA0AE5E0200007800019097@vpn.id2.novell.com>
+	<20100927130220.GA2277@ericsson.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16:41 Tue 28 Sep     , Greg Ungerer wrote:
-> 
-> Hi Matt,
-> 
-> On 23/09/10 16:50, matt mooney wrote:
-> >Replace EXTRA_CFLAGS with ccflags-y and EXTRA_AFLAGS with asflags-y.
-> >
-> >Signed-off-by: matt mooney<mfm@muteddisk.com>
-> 
-> Looks fine to me. Are you looking for this to go through
-> maintainer trees, or the whole patch series in one go?
+Hi Guenter,
 
-Hi Greg,
+On Mon, 27 Sep 2010 06:02:20 -0700, Guenter Roeck wrote:
+> On Mon, Sep 27, 2010 at 08:46:54AM -0400, Jan Beulich wrote:
+> > Guenter Roeck <guenter.roeck@ericsson.com> wrote:
+> > > Seems to me the dependency should not exist in the first place, then.
+> > > Otherwise, the driver would still be disabled for GENERIC_CPU, which isn't
+> > > good either.
+> > 
+> > Oh, not having a dependency on PCI at all would be even better.
+> > I didn't dare to suggest that.
+> > 
+> > > Are there examples of other drivers which are not defining the PCI 
+> > > dependency
+> > > but are conditionally calling pci functions ?
+> > 
+> > I'm not aware of any, but also didn't explicitly look for such.
+>
+> It still compiles if I remove the PCI dependency and disable PCI. So that is one plus.
+> 
+> That whole dependency is just to get the host bridge ID which is then used
+> to determine tjmax. Personally I would prefer to have a wrong tjmax over not having 
+> coretemp at all,
 
-My original intent was through the maintainer trees; however, I am starting to
-realize that it probably would have been best to all go into the kbuild tree as
-one patch series. That being said, some people have picked them up and others
-have just acked, so really whatever is easiest for you. All unapplied will
-eventually go through the kbuild tree.
+No! Reporting broken monitoring values is worse than not returning any
+value at all. The coretemp (and k8/k10temp) driver(s) already have a
+very bad reputation for presenting relative temperature readings as
+absolute ones, please let's not add to it.
 
-Thanks,
-mfm
+At this point there are 2 things which can be done:
+* If building a kernel for the Atom platform without PCI support is
+  something relatively common, which makes sense, then we should look
+  for an alternative way to determine the TjMax value for these CPUs,
+  which doesn't require PCI support.
+* If building a kernel for the Atom platform without PCI support is
+  something rare, which makes little sense, then we can simply either
+  prevent the driver from building at all in this case, or have it
+  print a big fat warning (with suggestion to rebuild the kernel with
+  PCI support) when it can't determine the TjMax value.
 
-> Acked-by: Greg Ungerer <gerg@uclinux.org>
-> 
-> Regards
-> Greg
-> 
-> 
-> >---
-> >  arch/m68knommu/platform/5206/Makefile     |    4 ++--
-> >  arch/m68knommu/platform/5206e/Makefile    |    4 ++--
-> >  arch/m68knommu/platform/520x/Makefile     |    4 ++--
-> >  arch/m68knommu/platform/523x/Makefile     |    4 ++--
-> >  arch/m68knommu/platform/5249/Makefile     |    4 ++--
-> >  arch/m68knommu/platform/5272/Makefile     |    4 ++--
-> >  arch/m68knommu/platform/527x/Makefile     |    4 ++--
-> >  arch/m68knommu/platform/528x/Makefile     |    4 ++--
-> >  arch/m68knommu/platform/5307/Makefile     |    4 ++--
-> >  arch/m68knommu/platform/532x/Makefile     |    4 ++--
-> >  arch/m68knommu/platform/5407/Makefile     |    4 ++--
-> >  arch/m68knommu/platform/coldfire/Makefile |    4 ++--
-> >  12 files changed, 24 insertions(+), 24 deletions(-)
-> >
-> >diff --git a/arch/m68knommu/platform/5206/Makefile b/arch/m68knommu/platform/5206/Makefile
-> >index 113c333..b5db056 100644
-> >--- a/arch/m68knommu/platform/5206/Makefile
-> >+++ b/arch/m68knommu/platform/5206/Makefile
-> >@@ -8,8 +8,8 @@
-> >  # on the console port whenever a DBG interrupt occurs.  You have to
-> >  # set up you HW breakpoints to trigger a DBG interrupt:
-> >  #
-> >-# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
-> >-# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
-> >+# ccflags-y := -DTRAP_DBG_INTERRUPT
-> >+# asflags-y := -DTRAP_DBG_INTERRUPT
-> >  #
-> >
-> >  asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
-> >diff --git a/arch/m68knommu/platform/5206e/Makefile b/arch/m68knommu/platform/5206e/Makefile
-> >index 113c333..b5db056 100644
-> >--- a/arch/m68knommu/platform/5206e/Makefile
-> >+++ b/arch/m68knommu/platform/5206e/Makefile
-> >@@ -8,8 +8,8 @@
-> >  # on the console port whenever a DBG interrupt occurs.  You have to
-> >  # set up you HW breakpoints to trigger a DBG interrupt:
-> >  #
-> >-# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
-> >-# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
-> >+# ccflags-y := -DTRAP_DBG_INTERRUPT
-> >+# asflags-y := -DTRAP_DBG_INTERRUPT
-> >  #
-> >
-> >  asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
-> >diff --git a/arch/m68knommu/platform/520x/Makefile b/arch/m68knommu/platform/520x/Makefile
-> >index 435ab34..ad3f4e5 100644
-> >--- a/arch/m68knommu/platform/520x/Makefile
-> >+++ b/arch/m68knommu/platform/520x/Makefile
-> >@@ -8,8 +8,8 @@
-> >  # on the console port whenever a DBG interrupt occurs.  You have to
-> >  # set up you HW breakpoints to trigger a DBG interrupt:
-> >  #
-> >-# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
-> >-# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
-> >+# ccflags-y := -DTRAP_DBG_INTERRUPT
-> >+# asflags-y := -DTRAP_DBG_INTERRUPT
-> >  #
-> >
-> >  asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
-> >diff --git a/arch/m68knommu/platform/523x/Makefile b/arch/m68knommu/platform/523x/Makefile
-> >index b8f9b45..c04b8f7 100644
-> >--- a/arch/m68knommu/platform/523x/Makefile
-> >+++ b/arch/m68knommu/platform/523x/Makefile
-> >@@ -8,8 +8,8 @@
-> >  # on the console port whenever a DBG interrupt occurs.  You have to
-> >  # set up you HW breakpoints to trigger a DBG interrupt:
-> >  #
-> >-# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
-> >-# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
-> >+# ccflags-y := -DTRAP_DBG_INTERRUPT
-> >+# asflags-y := -DTRAP_DBG_INTERRUPT
-> >  #
-> >
-> >  asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
-> >diff --git a/arch/m68knommu/platform/5249/Makefile b/arch/m68knommu/platform/5249/Makefile
-> >index f56225d..4bed30f 100644
-> >--- a/arch/m68knommu/platform/5249/Makefile
-> >+++ b/arch/m68knommu/platform/5249/Makefile
-> >@@ -8,8 +8,8 @@
-> >  # on the console port whenever a DBG interrupt occurs.  You have to
-> >  # set up you HW breakpoints to trigger a DBG interrupt:
-> >  #
-> >-# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
-> >-# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
-> >+# ccflags-y := -DTRAP_DBG_INTERRUPT
-> >+# asflags-y := -DTRAP_DBG_INTERRUPT
-> >  #
-> >
-> >  asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
-> >diff --git a/arch/m68knommu/platform/5272/Makefile b/arch/m68knommu/platform/5272/Makefile
-> >index 93673ef..34110fc 100644
-> >--- a/arch/m68knommu/platform/5272/Makefile
-> >+++ b/arch/m68knommu/platform/5272/Makefile
-> >@@ -8,8 +8,8 @@
-> >  # on the console port whenever a DBG interrupt occurs.  You have to
-> >  # set up you HW breakpoints to trigger a DBG interrupt:
-> >  #
-> >-# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
-> >-# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
-> >+# ccflags-y := -DTRAP_DBG_INTERRUPT
-> >+# asflags-y := -DTRAP_DBG_INTERRUPT
-> >  #
-> >
-> >  asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
-> >diff --git a/arch/m68knommu/platform/527x/Makefile b/arch/m68knommu/platform/527x/Makefile
-> >index 3d90e6d..6ac4b57 100644
-> >--- a/arch/m68knommu/platform/527x/Makefile
-> >+++ b/arch/m68knommu/platform/527x/Makefile
-> >@@ -8,8 +8,8 @@
-> >  # on the console port whenever a DBG interrupt occurs.  You have to
-> >  # set up you HW breakpoints to trigger a DBG interrupt:
-> >  #
-> >-# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
-> >-# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
-> >+# ccflags-y := -DTRAP_DBG_INTERRUPT
-> >+# asflags-y := -DTRAP_DBG_INTERRUPT
-> >  #
-> >
-> >  asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
-> >diff --git a/arch/m68knommu/platform/528x/Makefile b/arch/m68knommu/platform/528x/Makefile
-> >index 3d90e6d..6ac4b57 100644
-> >--- a/arch/m68knommu/platform/528x/Makefile
-> >+++ b/arch/m68knommu/platform/528x/Makefile
-> >@@ -8,8 +8,8 @@
-> >  # on the console port whenever a DBG interrupt occurs.  You have to
-> >  # set up you HW breakpoints to trigger a DBG interrupt:
-> >  #
-> >-# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
-> >-# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
-> >+# ccflags-y := -DTRAP_DBG_INTERRUPT
-> >+# asflags-y := -DTRAP_DBG_INTERRUPT
-> >  #
-> >
-> >  asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
-> >diff --git a/arch/m68knommu/platform/5307/Makefile b/arch/m68knommu/platform/5307/Makefile
-> >index 6de5269..d4293b7 100644
-> >--- a/arch/m68knommu/platform/5307/Makefile
-> >+++ b/arch/m68knommu/platform/5307/Makefile
-> >@@ -8,8 +8,8 @@
-> >  # on the console port whenever a DBG interrupt occurs. You have to
-> >  # set up you HW breakpoints to trigger a DBG interrupt:
-> >  #
-> >-# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
-> >-# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
-> >+# ccflags-y := -DTRAP_DBG_INTERRUPT
-> >+# asflags-y := -DTRAP_DBG_INTERRUPT
-> >  #
-> >
-> >  asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
-> >diff --git a/arch/m68knommu/platform/532x/Makefile b/arch/m68knommu/platform/532x/Makefile
-> >index 4cc2324..ce01669 100644
-> >--- a/arch/m68knommu/platform/532x/Makefile
-> >+++ b/arch/m68knommu/platform/532x/Makefile
-> >@@ -8,8 +8,8 @@
-> >  # on the console port whenever a DBG interrupt occurs. You have to
-> >  # set up you HW breakpoints to trigger a DBG interrupt:
-> >  #
-> >-# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
-> >-# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
-> >+# ccflags-y := -DTRAP_DBG_INTERRUPT
-> >+# asflags-y := -DTRAP_DBG_INTERRUPT
-> >  #
-> >
-> >  asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
-> >diff --git a/arch/m68knommu/platform/5407/Makefile b/arch/m68knommu/platform/5407/Makefile
-> >index dee62c5..e83fe14 100644
-> >--- a/arch/m68knommu/platform/5407/Makefile
-> >+++ b/arch/m68knommu/platform/5407/Makefile
-> >@@ -8,8 +8,8 @@
-> >  # on the console port whenever a DBG interrupt occurs. You have to
-> >  # set up you HW breakpoints to trigger a DBG interrupt:
-> >  #
-> >-# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
-> >-# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
-> >+# ccflags-y := -DTRAP_DBG_INTERRUPT
-> >+# asflags-y := -DTRAP_DBG_INTERRUPT
-> >  #
-> >
-> >  asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
-> >diff --git a/arch/m68knommu/platform/coldfire/Makefile b/arch/m68knommu/platform/coldfire/Makefile
-> >index f72a0e5..788c13f 100644
-> >--- a/arch/m68knommu/platform/coldfire/Makefile
-> >+++ b/arch/m68knommu/platform/coldfire/Makefile
-> >@@ -8,8 +8,8 @@
-> >  # on the console port whenever a DBG interrupt occurs. You have to
-> >  # set up you HW breakpoints to trigger a DBG interrupt:
-> >  #
-> >-# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
-> >-# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
-> >+# ccflags-y := -DTRAP_DBG_INTERRUPT
-> >+# asflags-y := -DTRAP_DBG_INTERRUPT
-> >  #
-> >
-> >  asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
-> 
+> and the means to determine tjmax through the bridge ID is kind
+> of bogus anyway.
+
+Do you mean it is strange from a technical perspective, or do you have
+evidences that it doesn't work properly? This trick come from Intel
+themselves, I would guess they know their business.
+
+> So at least in this case it would make sense for me to remove
+> the dependency completely. Actually, we won't even change functionality,
+> since tjmax is only set to a higher value for specific bridge IDs.
+
+Higher or lower doesn't make a difference. As long as the coretemp
+driver doesn't properly report the temperature values as being
+relative, users don't expect the value to change depending on the
+kernel version or configuration options. We have had dozens of user
+reports because of this.
+
+-- 
+Jean Delvare
