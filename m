@@ -1,53 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754950Ab0I1W4U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 18:56:20 -0400
-Received: from flusers.ccur.com ([173.221.59.2]:59758 "EHLO gamx.iccur.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752709Ab0I1W4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 18:56:19 -0400
-X-Greylist: delayed 3167 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Sep 2010 18:56:19 EDT
-Date: Tue, 28 Sep 2010 18:03:11 -0400
-From: Joe Korty <joe.korty@ccur.com>
-To: mingo@elte.hu, a.p.zijlstra@chello.nl, john.blackwood@ccur.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PERF EVENTS] fix incorrect copy_from_user usage
-Message-ID: <20100928220311.GA18145@tsunami.ccur.com>
-Reply-To: Joe Korty <joe.korty@ccur.com>
+	id S1755158Ab0I1W5U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 18:57:20 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:12353 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790Ab0I1W5S convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 18:57:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=wqQCcEkeHS3KfStMYdbASChl8hlzamgoFKUGHxvRmtgJVr3y2+16NVKkVZTtESQzwR
+         uXvdbXUFBTnn6JUi3Qug==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1285661878.2795.70.camel@marge.simson.net>
+References: <AANLkTinmQOYQAOPkQsZNhJBJtCss3ZtHN_a6h4fpamtz@mail.gmail.com>
+	<1285661878.2795.70.camel@marge.simson.net>
+Date: Tue, 28 Sep 2010 15:57:15 -0700
+Message-ID: <AANLkTikjH1J_nCxZympo9v_VZbptWHBNJ8xh=pFXLRrQ@mail.gmail.com>
+Subject: Re: broken behavior in cfs when moving threads between cgroups
+From: Dima Zavin <dmitriyz@google.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf events: repair incorrect use of copy_from_user
+Mike,
 
-This makes the perf_event_period() return 0 instead of
--EFAULT on success.
+Thanks for the reply.
 
-Developed-by: John Blackwood <john.blackwood@ccur.com>
-Signed-off-by: Joe Korty <joe.korty@ccur.com>
+> I don't really see the relevance of an entity's lag in it's previous
+> group, so would tend toward entry at parity.
+>
+> Maybe the move _should_ be treated as a fork, for the same reason we do
+> START_DEBIT, but if so, seems to me it's irrelevant whether the task is
+> currently sleeping or not, it's going to run for the first time in it's
+> new home just as any runnable task, and may do so very soon.  OTOH,
+> frequent moves with that hefty START_DEBIT price tag could hurt very
+> badly, and makes caring about previous lag seem pointless.
+>
+>        -Mike
+>
+> (untested)
+>
+> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> index 9b5b4f8..4dc6b2f 100644
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -3827,10 +3827,14 @@ static void set_curr_task_fair(struct rq *rq)
+>  static void moved_group_fair(struct task_struct *p, int on_rq)
+>  {
+>        struct cfs_rq *cfs_rq = task_cfs_rq(p);
+> +       struct sched_entity *se = &p->se;
+> +       u64 vruntime = 0;
+>
+>        update_curr(cfs_rq);
+>        if (!on_rq)
+> -               place_entity(cfs_rq, &p->se, 1);
+> +               vruntime = cfs_rq->min_vruntime;
+> +
+> +       se->vruntime = vruntime;
+>  }
+>  #endif
 
-Index: 2.6.36-rc5/kernel/perf_event.c
-===================================================================
---- 2.6.36-rc5.orig/kernel/perf_event.c	2010-09-28 17:38:16.000000000 -0400
-+++ 2.6.36-rc5/kernel/perf_event.c	2010-09-28 17:48:10.000000000 -0400
-@@ -2202,15 +2202,13 @@
- static int perf_event_period(struct perf_event *event, u64 __user *arg)
+Hmm. Would we really want to give the sleeping task such a bump in the
+new group? Why not just start it off at min_vruntime and let
+place_entity do it's thing? Something like...
+
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index a7be83c..4656231 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -3622,10 +3622,15 @@ static void set_curr_task_fair(struct rq *rq)
+ static void moved_group_fair(struct task_struct *p, int on_rq)
  {
- 	struct perf_event_context *ctx = event->ctx;
--	unsigned long size;
- 	int ret = 0;
- 	u64 value;
- 
- 	if (!event->attr.sample_period)
- 		return -EINVAL;
- 
--	size = copy_from_user(&value, arg, sizeof(value));
--	if (size != sizeof(value))
-+	if (copy_from_user(&value, arg, sizeof(value)))
- 		return -EFAULT;
- 
- 	if (!value)
+        struct cfs_rq *cfs_rq = task_cfs_rq(p);
++       struct sched_entity *se = &p->se;
+
+        update_curr(cfs_rq);
+-       if (!on_rq)
++       if (on_rq) {
++               se->vruntime = 0;
++       } else {
++               se->vruntime = cfs_rq->min_vruntime;
+                place_entity(cfs_rq, &p->se, 1);
++       }
+ }
+ #endif
