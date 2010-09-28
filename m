@@ -1,86 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759424Ab0I1GrT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 02:47:19 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38107 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753329Ab0I1GrS (ORCPT
+	id S1758164Ab0I1Gvj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 02:51:39 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:52946 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753458Ab0I1Gvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 02:47:18 -0400
+	Tue, 28 Sep 2010 02:51:38 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=fxDXVxp/hoYBquiWtTWCN88jLdoHtO+1Ghu/Q19nJ4VpiN1wIiLw0MpKtG8jZQ+Dhq
-         hu43kjpT4j2qtgWVjuib1LM70F48ez0jdMcI620D2mUZqxReLH64I1jZ2fxqS5INih1a
-         Twleiiv41a6/zok5A2K/+vfNy1MNrOuuNqIs8=
-Date: Tue, 28 Sep 2010 08:47:10 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-api@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        David Miller <davem@davemloft.net>, John Stultz <johnstul@us.ibm.com>,
-        Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v6 0/8] ptp: IEEE 1588 hardware clock support
-Message-ID: <20100928064710.GB7224@riccoc20.at.omicron.at>
-References: <cover.1285261533.git.richard.cochran@omicron.at>
- <20100923213654.0c64b047@lxorguk.ukuu.org.uk>
- <20100924131407.GA3113@riccoc20.at.omicron.at>
- <20100924150246.0e6064b6@lxorguk.ukuu.org.uk>
- <alpine.DEB.2.00.1009271054320.9258@router.home>
- <20100927180558.52817d5f@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100927180558.52817d5f@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=HNCe0GOWj/b5H2FBNZv+3fMMgepPTNY7sxXe5TiQ0ErQ7zGhm7kMohr0jckdOiF/3W
+         nj02gOm2ubVdo3cHQrY0gxW2OF16p3kMbiyqBBr8O1pevSwcse9eeKu/+jAhMO+abaYY
+         rJAZW7LIolqkYX9vgcIuS3r/GyqwHnP/GFam4=
+Subject: Re: [PATCH v2] ubifs: avoid kernel error if ubifs superblock read
+ fails
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Steffen Sledz <sledz@dresearch.de>
+Cc: linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org
+In-Reply-To: <1285590026-11629-1-git-send-email-sledz@dresearch.de>
+References: <1285577837.16181.14.camel@localhost>
+	 <1285590026-11629-1-git-send-email-sledz@dresearch.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 28 Sep 2010 09:49:48 +0300
+Message-ID: <1285656588.2437.21.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 06:05:58PM +0100, Alan Cox wrote:
-> On Mon, 27 Sep 2010 10:56:09 -0500 (CDT)
-> Christoph Lameter <cl@linux.com> wrote:
+On Mon, 2010-09-27 at 14:20 +0200, Steffen Sledz wrote:
+> * .get_sb is called on mounts with automatic fs detection too, so this
+>   function should print an error if it cannot read the superblock in
+>   debug mode only
+>   (new behaviour conforms the other fs types)
 > 
-> > 
-> > On Fri, 24 Sep 2010, Alan Cox wrote:
-> > 
-> > > Whether you add new syscalls or do the fd passing using flags and hide
-> > > the ugly bits in glibc is another question.
-> > 
-> > Use device specific ioctls instead of syscalls?
-> 
-> Some of the ioctls are probably not device specific, the job of the OS in
-> part is to present a unified interface. We already have a mess of HPET
-> and RTC driver ioctls.
+> Signed-off-by: Steffen Sledz <sledz@dresearch.de>
 
-Yes, and the whole point of introducing a PTP hardare clock API was to
-avoid each new clock driver introducing yet another ioctl interface.
+Pushed to ubifs-2.6.git, thanks!
 
-I had proposed a standard ioctl interface for PTP hardware clocks, but
-that interface was rightly criticized for duplicating the posix clock
-API. It does not make sense to have multiple interfaces with the exact
-same functionality.
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
-It is impossible to support every last feature of every possible
-hardware clock with a generic interface, so there will always need to
-be special ioctls for such features.
-
-However, some clock functions *are* completely generic and apply to
-every clock:
-
-- set time
-- get time
-- adjust the frequency by N ppb
-- shift the time by a given offset
-
-The first two are provided by the posix clock interface, the third by
-the NTP adjtimex call, which also can support (by a single mode
-extension) the last item.
-
-Richard
