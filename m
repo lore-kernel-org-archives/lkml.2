@@ -1,94 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760214Ab0I1A23 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 20:28:29 -0400
-Received: from mga14.intel.com ([143.182.124.37]:40105 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751502Ab0I1A22 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 20:28:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,244,1283756400"; 
-   d="scan'208";a="329395304"
-Subject: Re: [PATCH -v2 7/7] x86, NMI, Remove do_nmi_callback logic
-From: Huang Ying <ying.huang@intel.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Robert Richter <robert.richter@amd.com>,
-        huang ying <huang.ying.caritas@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-In-Reply-To: <20100927151607.GX26290@redhat.com>
-References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
-	 <1285549026-5008-7-git-send-email-ying.huang@intel.com>
-	 <20100927104426.GD32222@erda.amd.com>
-	 <AANLkTinA2HK57w5wqCtq319WNy-PLtWaGBe-v+uoFB=Y@mail.gmail.com>
-	 <20100927134341.GQ13563@erda.amd.com>  <20100927151607.GX26290@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 28 Sep 2010 08:28:25 +0800
-Message-ID: <1285633705.20791.84.camel@yhuang-dev>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1760355Ab0I1AaY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 20:30:24 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:63250 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757891Ab0I1AaV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 20:30:21 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=BboorWmt2lXW5t56L0EIMkOxYlg6sMp80rvZTlooBmDiI5VHOLPpzW5XsX1o8JIjh
+	7JtfbyZrEEOjWHItCWufA==
+From: Nikhil Rao <ncrao@google.com>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Mike Galbraith <efault@gmx.de>
+Cc: Venkatesh Pallipadi <venki@google.com>, linux-kernel@vger.kernel.org,
+        Nikhil Rao <ncrao@google.com>
+Subject: [PATCH 3/3] sched: do not consider SCHED_IDLE tasks to be cache hot
+Date: Mon, 27 Sep 2010 17:29:58 -0700
+Message-Id: <1285633798-26886-4-git-send-email-ncrao@google.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1285633798-26886-1-git-send-email-ncrao@google.com>
+References: <1285633798-26886-1-git-send-email-ncrao@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Don,
+This patch adds a check in task_hot to return if the task has SCHED_IDLE
+policy. SCHED_IDLE tasks have very low weight, and when run with regular
+weight tasks, are typically scheduled many milliseconds apart. There is no
+benefit from considering SCHED_IDLE tasks cache hot for load balancing.
 
-On Mon, 2010-09-27 at 23:16 +0800, Don Zickus wrote:
-> On Mon, Sep 27, 2010 at 03:43:41PM +0200, Robert Richter wrote:
-> > On 27.09.10 08:56:44, huang ying wrote:
-> > 
-> > > >> -static int unknown_nmi_panic_callback(struct pt_regs *regs, int cpu)
-> > > >> -{
-> > > >> -     unsigned char reason = get_nmi_reason();
-> > > >> -     char buf[64];
-> > > >> -
-> > > >> -     sprintf(buf, "NMI received for unknown reason %02x\n", reason);
-> > > >> -     die_nmi(buf, regs, 1); /* Always panic here */
-> > > >> -     return 0;
-> > > >
-> > > > You are dropping this code that is different to panic().
-> > > 
-> > > What is the difference? Is it relevant?
-> > 
-> > I think yes, since the code behaves different. Otherwise we could
-> > remove die_nmi() completly and replace it by panic(). But both are
-> > different implementions. Maybe we can merge the code, but I didn't
-> > look at it closly.
-> 
-> Actually die_nmi is a wrapper around panic with two important pieces.
-> One, it dumps some registers and two it does another notifier call to
-> DIE_NMIWATCHDOG (which correlates to another discussion in this patch
-> series).
-> 
-> So if we do any consolidation between panic and die_nmi, it should be
-> convert to die_nmi.  But then I wonder if that breaks the original
-> semantics of 'panic_on_unrecovered_nmi'.  I don't think so though.
+Signed-off-by: Nikhil Rao <ncrao@google.com>
+---
+ kernel/sched.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-Please take a look at the original code:
-
-
-                if (nmi_watchdog_tick(regs, reason))
-                        return;
-                if (!do_nmi_callback(regs, cpu))
-#endif /* !CONFIG_LOCKUP_DETECTOR */
-                        unknown_nmi_error(reason, regs);
-#else
-                unknown_nmi_error(reason, regs);
-#endif
-
-If NMI comes from watchdog, nmi_watchdog_tick() will return 1. So
-do_nmi_callback() is NOT for watchdog NMI, but for unknown NMI. Why do
-we call DIE_NMIWATCHDOG for unknown NMI (NOT watchdog NMI)? die_nmi is
-for watchdog, not unknown NMI.
-
-So another issue is registers dumping. If it is necessary, we can dump
-registers in unknown_nmi_error(). Although I think unknown NMI comes
-from hardware instead of software, so it does not help much to dump
-registers.
-
-Best Regards,
-Huang Ying
-
+diff --git a/kernel/sched.c b/kernel/sched.c
+index ed09d4f..874efde 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2003,6 +2003,9 @@ task_hot(struct task_struct *p, u64 now, struct sched_domain *sd)
+ 	if (p->sched_class != &fair_sched_class)
+ 		return 0;
+ 
++	if (p->policy == SCHED_IDLE)
++		return 0;
++
+ 	/*
+ 	 * Buddy candidates are cache hot:
+ 	 */
+-- 
+1.7.1
 
