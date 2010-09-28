@@ -1,86 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754931Ab0I1OXI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 10:23:08 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:26211 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753534Ab0I1OXG (ORCPT
+	id S1755535Ab0I1OZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 10:25:26 -0400
+Received: from mtagate1.de.ibm.com ([195.212.17.161]:35303 "EHLO
+	mtagate1.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753691Ab0I1OZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 10:23:06 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Thomas Renninger <trenn@suse.de>
-Subject: Re: Dynamic Debug module.ddebug fake param enhancements V4
-Date: Tue, 28 Sep 2010 08:22:11 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, jbaron@redhat.com
-References: <20100920184441.GA2915@redhat.com> <201009270909.18490.bjorn.helgaas@hp.com> <201009281425.19070.trenn@suse.de>
-In-Reply-To: <201009281425.19070.trenn@suse.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009280822.11675.bjorn.helgaas@hp.com>
+	Tue, 28 Sep 2010 10:25:24 -0400
+Message-Id: <20100928142519.439448271@linux.vnet.ibm.com>
+User-Agent: quilt/0.48-1
+Date: Tue, 28 Sep 2010 16:21:00 +0200
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
+        Shailabh Nagar <nagar1234@in.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] taskstats: Split fill_pid function
+References: <20100928142058.796669370@linux.vnet.ibm.com>
+Content-Disposition: inline; filename=03-taskstats-top-prepare-2.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, September 28, 2010 06:25:18 am Thomas Renninger wrote:
-> Greg: Do you mind pushing the first (1/4, V4) and the last (4/4)
-> patch into your tree for linux-next and leave the two PNP patches
-> out, please.
-> 
-> More PNP related discussion, below.
-> 
-> On Monday 27 September 2010 17:09:18 Bjorn Helgaas wrote:
-> > On Monday, September 27, 2010 02:25:46 am Thomas Renninger wrote:
-> > 
-> > > What do you think (dev_dbg vs printk(KERN_DEBUG...)?
-> ...
-> > With the exception of the ones in pnp/resource.c that I want to convert
-> > to dev_printk(KERN_DEBUG), I think all the pnp_dbg() uses are things
-> > I used during PNP development and haven't ever needed since.
-> 
-> Ok. Sounds sane.
-> I used the PNP parts as it nicely showed what the
-> module.ddebug boot param is doing, but I agree it hasn't much
-> advantage for PNP.
-> 
-> Whatabout compiling pnp in one module namespace, the first
-> of the two PNP patches?
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 
-[2/4] looks reasonable to me.
+Separate the finding of a task_struct by pid or tgid from filling the
+taskstats data. This makes the code more readable.
 
-> E.g. attached patch would be an on top patch which provides no
-> functional change, just that a pnp.debug would be a module param:
-> cat /sys/module/pnp/parameters/debug
+Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+---
+ kernel/taskstats.c |   50 +++++++++++++++++++++-----------------------------
+ 1 file changed, 21 insertions(+), 29 deletions(-)
 
-As does the one below.
+--- a/kernel/taskstats.c
++++ b/kernel/taskstats.c
+@@ -175,22 +175,8 @@ static void send_cpu_listeners(struct sk
+ 	up_write(&listeners->sem);
+ }
+ 
+-static int fill_pid(pid_t pid, struct task_struct *tsk,
+-		struct taskstats *stats)
++static void fill_stats(struct task_struct *tsk, struct taskstats *stats)
+ {
+-	int rc = 0;
+-
+-	if (!tsk) {
+-		rcu_read_lock();
+-		tsk = find_task_by_vpid(pid);
+-		if (tsk)
+-			get_task_struct(tsk);
+-		rcu_read_unlock();
+-		if (!tsk)
+-			return -ESRCH;
+-	} else
+-		get_task_struct(tsk);
+-
+ 	memset(stats, 0, sizeof(*stats));
+ 	/*
+ 	 * Each accounting subsystem adds calls to its functions to
+@@ -209,17 +195,27 @@ static int fill_pid(pid_t pid, struct ta
+ 
+ 	/* fill in extended acct fields */
+ 	xacct_add_tsk(stats, tsk);
++}
+ 
+-	/* Define err: label here if needed */
+-	put_task_struct(tsk);
+-	return rc;
++static int fill_stats_for_pid(pid_t pid, struct taskstats *stats)
++{
++	struct task_struct *tsk;
+ 
++	rcu_read_lock();
++	tsk = find_task_by_vpid(pid);
++	if (tsk)
++		get_task_struct(tsk);
++	rcu_read_unlock();
++	if (!tsk)
++		return -ESRCH;
++	fill_stats(tsk, stats);
++	put_task_struct(tsk);
++	return 0;
+ }
+ 
+-static int fill_tgid(pid_t tgid, struct task_struct *first,
+-		struct taskstats *stats)
++static int fill_stats_for_tgid(pid_t tgid, struct taskstats *stats)
+ {
+-	struct task_struct *tsk;
++	struct task_struct *tsk, *first;
+ 	unsigned long flags;
+ 	int rc = -ESRCH;
+ 
+@@ -228,8 +224,7 @@ static int fill_tgid(pid_t tgid, struct 
+ 	 * leaders who are already counted with the dead tasks
+ 	 */
+ 	rcu_read_lock();
+-	if (!first)
+-		first = find_task_by_vpid(tgid);
++	first = find_task_by_vpid(tgid);
+ 
+ 	if (!first || !lock_task_sighand(first, &flags))
+ 		goto out;
+@@ -268,7 +263,6 @@ out:
+ 	return rc;
+ }
+ 
+-
+ static void fill_tgid_exit(struct task_struct *tsk)
+ {
+ 	unsigned long flags;
+@@ -477,7 +471,7 @@ static int cmd_attr_pid(struct genl_info
+ 	if (!stats)
+ 		goto err;
+ 
+-	rc = fill_pid(pid, NULL, stats);
++	rc = fill_stats_for_pid(pid, stats);
+ 	if (rc < 0)
+ 		goto err;
+ 	return send_reply(rep_skb, info);
+@@ -507,7 +501,7 @@ static int cmd_attr_tgid(struct genl_inf
+ 	if (!stats)
+ 		goto err;
+ 
+-	rc = fill_tgid(tgid, NULL, stats);
++	rc = fill_stats_for_tgid(tgid, stats);
+ 	if (rc < 0)
+ 		goto err;
+ 	return send_reply(rep_skb, info);
+@@ -593,9 +587,7 @@ void taskstats_exit(struct task_struct *
+ 	if (!stats)
+ 		goto err;
+ 
+-	rc = fill_pid(-1, tsk, stats);
+-	if (rc < 0)
+-		goto err;
++	fill_stats(tsk, stats);
+ 
+ 	/*
+ 	 * Doesn't matter if tsk is the leader or the last group member leaving
 
-> ---------
-> PNP: Set up pnp_debug via module and not via boot param.
-> 
-> Cleanup only, no functional change (pnp.debug can be enabled
-> and disabled at runtime, but that's not a real enhancement).
-> 
-> This one depends on another PNP cleanup patch:
-> PNP: Compile all pnp built-in stuff in one module namespace
-> 
-> Signed-off-by: Thomas Renninger <trenn@suse.de>
-> 
-> diff --git a/drivers/pnp/core.c b/drivers/pnp/core.c
-> index 88b3cde..9801918 100644
-> --- a/drivers/pnp/core.c
-> +++ b/drivers/pnp/core.c
-> @@ -218,10 +218,5 @@ subsys_initcall(pnp_init);
->  int pnp_debug;
->  
->  #if defined(CONFIG_PNP_DEBUG_MESSAGES)
-> -static int __init pnp_debug_setup(char *__unused)
-> -{
-> -	pnp_debug = 1;
-> -	return 1;
-> -}
-> -__setup("pnp.debug", pnp_debug_setup);
-> +module_param_named(debug, pnp_debug, int, 0644);
->  #endif
-> 
