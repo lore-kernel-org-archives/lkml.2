@@ -1,82 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759537Ab0I1Ifb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 04:35:31 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:39418 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830Ab0I1If3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 04:35:29 -0400
+	id S1759819Ab0I1IgW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 04:36:22 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:47906 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759289Ab0I1IgU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 04:36:20 -0400
+Date: Tue, 28 Sep 2010 14:06:02 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 09/10] taskstats: Fix exit CPU time accounting
+Message-ID: <20100928083602.GD4128@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <1285249681.1837.28.camel@holzheu-laptop>
+ <1285250541.1837.95.camel@holzheu-laptop>
+ <20100923171025.GA26623@redhat.com>
+ <1285330688.2179.305.camel@holzheu-laptop>
+ <20100926181127.GA26985@redhat.com>
+ <20100927154257.7910cda3@mschwide.boeblingen.de.ibm.com>
 MIME-Version: 1.0
-X-Originating-IP: [87.66.147.230]
-In-Reply-To: <201009222049.18154.rjw@sisk.pl>
-References: <AANLkTinUmbSUUuxUzc8++pcb9gd1CZFdyTQFrveTBXyV@mail.gmail.com>
-	<201009180026.59482.trenn@suse.de>
-	<AANLkTimMAr9kEzybFGai3qGyXx36v055iPpXq_C1vW8C@mail.gmail.com>
-	<201009222049.18154.rjw@sisk.pl>
-Date: Tue, 28 Sep 2010 10:35:27 +0200
-Message-ID: <AANLkTinJU5+s_1S6i4GpRuiOfsAPiL9UFtrxCCbtoumt@mail.gmail.com>
-Subject: Re: [PATCH] tracing, perf: add more power related events
-From: Jean Pihet <jean.pihet@newoldbits.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Thomas Renninger <trenn@suse.de>, Ingo Molnar <mingo@elte.hu>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
-        arjan@infradead.org, Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        linux-omap@vger.kernel.org, linux-perf-users@vger.kernel.org,
-        linux-trace-users@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20100927154257.7910cda3@mschwide.boeblingen.de.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+* Martin Schwidefsky <schwidefsky@de.ibm.com> [2010-09-27 15:42:57]:
 
-Here is what I am proposing, in reply to all your comments:
-
-1) rename the events to match Thomas's proposal:
-   power:power_cpu_cstate
-   power:power_cpu_pstate
-   power:power_cpu_sstate
-   ...
-
-2) introduce a new Kconfig option CONFIG_DEPRECATED_POWER_EVENTS and
-conditionally map a subset of the new events to the old ones for
-backward compatibility with the existing user apps. The apps should be
-converted to the new API asap,
-
-3) update documentation
-
-Other remarks here below:
-
-On Wed, Sep 22, 2010 at 8:49 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-...
-> This POWER_SSTATE thing seems to be totally artificial and omap-specific.
+> On Sun, 26 Sep 2010 20:11:27 +0200
+> Oleg Nesterov <oleg@redhat.com> wrote:
+> 
+> > Hi,
+> > 
+> > On 09/24, Michael Holzheu wrote:
+> > >
+> > > On Thu, 2010-09-23 at 19:10 +0200, Oleg Nesterov wrote:
+> > > >
+> > > > On 09/23, Michael Holzheu wrote:
+> > > > >
+> > > > > Currently there are code pathes (e.g. for kthreads) where the consumed
+> > > > > CPU time is not accounted to the parents cumulative counters.
+> > > >
+> > > > Could you explain more?
+> > >
+> > > I think one place was "khelper" (kmod.c). It is created with
+> > > kernel_thread() and it exits without having accounted the times with
+> > > sys_wait() to the parent's ctimes
+> > 
+> > No. Well yes, it is not accounted, but this is not because it is
+> > kthread.
+> 
+> We noticed that behavior with kernel threads but as you point out
+> the problem is bigger than that.
+> 
+> > To simplify the discussion, lets talk about utime/cutime only,
+> > and lets forget about the multithreading.
+> > 
+> > It is very simple, currently linux accounts the exiting task's
+> > utime and adds its to ->cutime _only_ if parent does do_wait().
+> > If parent ignores SIGCHLD, the child reaps itself and it is not
+> > accounted.
+> > 
+> > I do not know why it was done this way, but I'm afraid we can't
+> > change this historical behaviour.
+> 
+> Why? I would consider it to be a BUG() that the time is not accounted.
+> Independent of the fact that a parent wants to see the SIGCHLD and
+> the exit status of its child the process time of the child should be
+> accounted, no? And I'm not a particular fan of the "this has always
+> been that way" reasoning.
+> 
+> > > Ok, the problem is that I did not consider exiting threads that are no
+> > > thread group leaders. When they exit the ctime of the parent is not
+> > > updated. Instead the time is accumulated in the signal struct.
+> > 
+> > I think I am a bit confused, but see above. With or without threads
+> > the whole process can exit without accounting.
+> 
+> Got the part about self-reaping processes. But there is another issue:
+> consider an exiting thread where the group leader is still active.
+> The time for the thread will be added to the utime/stime fields in
+> the signal structure. Taskstats will happily ignore that time while
+> the group leader is still running.
 >
-> Why do you want it to be done this way?
->
-> Or is the ACPI handling added in the ACPI patch?  In which case, why don't you
-> put that power_switch_state(POWER_SSTATE, 1, 0, cpu) into
-> kernel/power/suspend.c:suspend_enter() (and analogously for
-> power_switch_state(POWER_SSTATE, 0, 0, cpu)).
-The ACPI code is not using the SSTATE event.
-Indeed inserting a tracepoint at
-kernel/power/suspend.c:suspend_enter() is more generic. I will correct
-this.
 
-> Moreover, why is the cpu argument necessary for POWER_SSTATE at all?
-The cpu_id parameter is present in all events prototypes. This is not
-needed. I will correct this.
+Why do you say that? Not sure your comment is very clean, in
+fill_tgid, we do
 
->
-> Thanks,
-> Rafael
->
+1. Accumulate signal stats (contains stats for dead threads)
+2. Accumulate stats for current threads
 
-A new patch should be ready in the coming days. I would like to have
-your opinion on the proposed rework before re-doing it all again.
+fill_tgid_exit does something similar
+ 
+> Please keep in mind that we want to get to a point where it is
+> possible to get a 100% coverage of cpu cycles in the last snapshot
+> cycle through the taskstats interface. Otherwise the precise top
+> would not be very precise ..
 
-Thanks,
-Jean
+-- 
+	Three Cheers,
+	Balbir
