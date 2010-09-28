@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753719Ab0I1X2t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 19:28:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59952 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751701Ab0I1X2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 19:28:48 -0400
-Message-ID: <4CA27A01.1080606@zytor.com>
-Date: Tue, 28 Sep 2010 16:28:01 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
+	id S1753987Ab0I1X3g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 19:29:36 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:39533 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751568Ab0I1X3f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 19:29:35 -0400
+X-Authenticated: #20450766
+X-Provags-ID: V01U2FsdGVkX18p20M2oPcpZ79B6GhkT0auY0BVkDTN/r/aMzGqDQ
+	e5XRZl4S6QOWyO
+Date: Wed, 29 Sep 2010 01:29:35 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+To: Raymond Liu <raymondliu3linux@gmail.com>
+cc: Ben Gamari <bgamari@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: HDMI open source to handle audio/video/CEC in one driver
+In-Reply-To: <AANLkTikxzY9KP2zzQ+pXN0t_5Z4L7kHyd_Xz5fD+GcZn@mail.gmail.com>
+Message-ID: <Pine.LNX.4.64.1009290115500.15162@axis700.grange>
+References: <AANLkTimMH604FW_NZehY68w8B_cV_Lhe-ZwZq0cAYUfd@mail.gmail.com>
+ <AANLkTi=mLizQGyp5cdR_WtHjMMhixBOOagkFUNVqO4vj@mail.gmail.com>
+ <Pine.LNX.4.64.1009281624100.11083@axis700.grange>
+ <AANLkTikxzY9KP2zzQ+pXN0t_5Z4L7kHyd_Xz5fD+GcZn@mail.gmail.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Nigel Cunningham <nigel@tuxonice.net>
-Subject: Re: [RFC][PATCH] PM / Hibernate / x86: Change RESTORE_MAGIC on x86_64
-References: <201009290112.11363.rjw@sisk.pl>
-In-Reply-To: <201009290112.11363.rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2010 04:12 PM, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rjw@sisk.pl>
+On Tue, 28 Sep 2010, Raymond Liu wrote:
+
+> Hi Ben and Guennadi,
 > 
-> On x86_64 the configuration and version of the kernel that
-> hibernates and creates a system image may be different from the
-> configuration and version of the boot kernel that loads the image.
-> So long as both these kernels are built with the same value of
-> RESTORE_MAGIC, the image created by one of them should be
-> successfully loaded and restored by the other one.
+> Really appreciate your inputs.
 > 
-> It wasn't necessary to modify RESTORE_MAGIC in the past, but now
-> that we are adding compression to the in-kernel hibernate code,
-> change the value of RESTORE_MAGIC so that earlier kernels don't
-> try to load compressed images they can't handle.
-> 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> ---
->  arch/x86/power/hibernate_64.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> Index: linux-2.6/arch/x86/power/hibernate_64.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/power/hibernate_64.c
-> +++ linux-2.6/arch/x86/power/hibernate_64.c
-> @@ -137,7 +137,7 @@ struct restore_data_record {
->  	unsigned long magic;
->  };
->  
-> -#define RESTORE_MAGIC	0x0123456789ABCDEFUL
-> +#define RESTORE_MAGIC	0x0123456789ABCDF0UL
->  
+> For temporarily short term purpose (we already had a driver but it did
+> not fit into any of these you mentioned), what is the process we
+> should follow to make it an "open source"?
 
-Two issues with this:
+Sorry, do not understand: if it didn't fit into any of these categories, 
+what is it like? In any case, general instructions you find in the 
+following files in your Linux kernel sources directory:
 
-a) shouldn't we only set this when the image is actually compressed?
+Documentation/SubmitChecklist
+Documentation/SubmittingPatches
+Documentation/SubmittingDrivers
+Documentation/CodingStyle
 
-b) using systematic magics like this is pessimal in terms of collision
-avoidance.  It's much better to use a true random number.
+I know, it might seem a lot, but take a bit of time to look through them, 
+not everything will be 100% relevant to each specific case, but do follow 
+Documentation/CodingStyle and choose a suitable mailing list for your 
+posts - this list (LKML) is too gneric for your questions, that's why 
+you're getting so few to-the-topic replies.
 
-Hence, I propose:
+And I'm not sure what you mean by "temporarily short term purpose." As 
+soon as your driver gets into the kernel, it is better, if it is designed 
+to stay there for a longer time. It might not be perfect from the very 
+first version, its functionality might be restricted, but for that little, 
+that it does, it should already adhere to the kernel standards. You might 
+also consider adding your driver under drivers/staging - if you're unable 
+to follow the guidelines and want to give your driver more exposure to 
+gradually fix it.
 
-: anacreon 95 ; ranpwd -xc 16
-0x4ddedd3236f1e6e1
-
-	-hpa
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
