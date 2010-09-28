@@ -1,70 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758373Ab0I1UJF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 16:09:05 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:57145 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755912Ab0I1UJD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 16:09:03 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Joseph S. Myers" <joseph@codesourcery.com>
-Subject: Re: asm-generic/unistd.h and glibc use of NR_ipc
-Date: Tue, 28 Sep 2010 22:08:51 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc5+; KDE/4.5.1; x86_64; ; )
-Cc: Chris Metcalf <cmetcalf@tilera.com>, linasvepstas@gmail.com,
-        linux-kernel@vger.kernel.org, libc-ports@sourceware.org,
-        andrew@codesourcery.com
-References: <AANLkTi=33kimswSJ1tYsnG-PVs6Z4dVBtnqq65GN8Vxw@mail.gmail.com> <201009281813.56443.arnd@arndb.de> <Pine.LNX.4.64.1009281623320.22692@digraph.polyomino.org.uk>
-In-Reply-To: <Pine.LNX.4.64.1009281623320.22692@digraph.polyomino.org.uk>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009282208.52075.arnd@arndb.de>
-X-Provags-ID: V02:K0:Yq/0BA+4nCYHSQHKeFQN7E/zkS8TxBYYxzc9PwrMZoi
- EyldT67wejtVeAJ9BDNyftrv4mY07wmAw9Yh4ngoLzvB4LNRhZ
- s+DztnB5Lf/J8M94X2oYnPNOVsbz37PlrP08ZU0pj9hFfMwLYh
- +/lE1ssOuQqCls920jnNPPEAFk0nQ1hqfLqe8PCJZLPmOl2QqE
- WGuXGS2qZCFZpaPkNV7lQ==
+	id S1755226Ab0I1UMu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 16:12:50 -0400
+Received: from comms2.zx.nl ([194.187.76.142]:64914 "EHLO comms2.zx.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751462Ab0I1UMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 16:12:49 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; CHARSET=US-ASCII
+Subject: Re: [uml-devel] [REGRESSION] um: ubd: block layer issue (Was: ext3
+ filesystem corruption in user mode linux)
+From: Janjaap Bos <janjaap@bos.nl>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: richard -rw- weinberger <richard.weinberger@gmail.com>, tj@kernel.org,
+        axboe@kernel.dk, mike.miller@hp.com,
+        user-mode-linux-devel@lists.sourceforge.net, adrian@mcmen.demon.co.uk,
+        jdike@addtoit.com, LKML <linux-kernel@vger.kernel.org>,
+        grant.likely@secretlab.ca, Geert.Uytterhoeven@sonycom.com,
+        Chris Frey <cdfrey@foursquare.net>
+In-reply-to: <AANLkTi=NiB4hoA5Y8kbR7R8B+J-jJXAHGSu5JdOLSQsj@mail.gmail.com>
+References: <AANLkTi=PTp7YW_eYxtF-H2QSxgei3whWH59wU0C9oCkz@mail.gmail.com>
+ <1285693648.14518.7.camel@voyager>
+ <AANLkTi=NiB4hoA5Y8kbR7R8B+J-jJXAHGSu5JdOLSQsj@mail.gmail.com>
+Date: Tue, 28 Sep 2010 22:12:42 +0200
+Message-id: <1285704762.14518.19.camel@voyager>
+X-Mailer: Evolution 2.28.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 28 September 2010 18:41:41 Joseph S. Myers wrote:
-> In my experience very little of a glibc port relates to the particular set 
-> of syscalls present on a particular architecture (and what does often 
-> consists of one-line files that #include the file for i386 or some other 
-> convenient architecture); changing a port from an old syscall ABI to the 
-> generic one would mean making it use the new set of generic files in 
-> preference to some existing sysdeps/unix/sysv/linux files, and maybe 
-> having fewer bits/ headers if some of the architecture differences there 
-> are avoided, but no real differences to any of the bits that aren't purely 
-> mechanical such as the implementation of each architecture's TLS ABI, 
-> other pieces of the ELF ABI, the set of atomic operations available, 
-> startup code, longjmp, profiling, clone, the interface used to call an 
-> individual syscall, etc. - remember that you can't build any vaguely 
-> recent glibc without full shared library and NPTL support.
+Hi,
+
+On Tue, 2010-09-28 at 21:52 +0200, Geert Uytterhoeven wrote:
+> On Tue, Sep 28, 2010 at 19:07, Janjaap Bos <janjaap@bos.nl> wrote:
+> > See attached patch, and earlier message posted in March 2010 on uml user
+> > list. We are out of maintainer...
 > 
-> A lot of the changes made to maintain an existing port relate to 
-> constants in the duplicated bits/* headers which it might be good to 
-> duplicate less if future architectures share values for all the constants, 
-> but that's not where most of the complexity in the port lies.  MIPS is 
-> probably the worst case for code dealing with syscall ABI peculiarities 
-> (given the three different ABIs, and n64 having different userspace stat 
-> and stat64 structures), but even there they aren't much of a source of 
-> complexity (MIPS ELF peculiarities are much more an issue).
+> Thanks for the patch!
+> 
+> | --- a/arch/um/drivers/ubd_kern.c
+> | +++ b/arch/um/drivers/ubd_kern.c
+> | @@ -1223,7 +1227,7 @@ static void do_ubd_request(struct request_queue *q)
+> |       struct io_thread_req *io_req;
+> |       struct request *req;
+> |       sector_t sector;
+> | -     int n;
+> | +     int n, last_sectors;
+> |
+> |       while(1){
+> |               struct ubd *dev = q->queuedata;
+> | @@ -1239,9 +1243,12 @@ static void do_ubd_request(struct request_queue *q)
+> |
+> |               req = dev->request;
+> |               sector = blk_rq_pos(req);
+> | +             last_sectors = 0;
+> |               while(dev->start_sg < dev->end_sg){
+> |                       struct scatterlist *sg = &dev->sg[dev->start_sg];
+> |
+> | +                     sector += last_sectors;
+> | +                     last_sectors = 0;
+> |                       io_req = kmalloc(sizeof(struct io_thread_req),
+> |                                        GFP_ATOMIC);
+> |                       if(io_req == NULL){
+> | @@ -1253,7 +1260,7 @@ static void do_ubd_request(struct request_queue *q)
+> |                                       (unsigned long long)sector << 9,
+> |                                       sg->offset, sg->length, sg_page(sg));
+> |
+> | -                     sector += sg->length >> 9;
+> | +                     last_sectors = sg->length >> 9;
+> |                       n = os_write_file(thread_fd, &io_req,
+> |                                         sizeof(struct io_thread_req *));
+> |                       if(n != sizeof(struct io_thread_req *)){
+> 
+> However, I'm wondering what difference this part makes?
+> 
 
-Good point. As a kernel developer I tend to see glibc too much as
-just a front-end for the system calls, but of course you are right
-that it is much more that requires a lot of hard work for an architecture
-port.
-I did not mean to discredit the good work that has gone into the nios2
-port or any part of upstream glibc.
 
-The question that Linas was asking is specifically about the syscall
-ABI and this is what I'm mostly interested in as well. A significant
-part of the maintainance work in the kernel is just keeping up with
-syscall ABI changes, which now gets minimized for new architectures.
+It fixes ubd block handling integrity.
+With large block operations errors occurred. Probably due to lost
+request pointers as explained below. Need to keep a local count of
+sectors and delay the update. Done by reverting commit
+f81f2f7c9fee307e371f37424577d46f9eaf8692 using the present
+block api. (At least which is what I intend, but perhaps quite likely I
+am missing the point, also it may not be needed anymore if only single
+512 byte sector blocks are used per request. Anyway... it solves the
+problem for me ;-)
 
-	Arnd
+Regards,
+-Janjaap
+
+
+See:
+
+reverted: commit f81f2f7c9fee307e371f37424577d46f9eaf8692
+          Author: Tejun Heo <tj@kernel.org>
+          Date:   Tue Apr 28 13:06:10 2009 +0900
+          ubd: drop unnecessary rq->sector manipulation
+    ubd curiously updates rq->sector while issuing the request
+    in multiple pieces.  Don't do it and simply use local copy
+    of sector.
+        
+See for original reason:
+    
+commit 0a6d3a2a3813e7b25267366cfbf9a4a4698dd1c2
+        Author: Jeff Dike <jdike@addtoit.com>
+        Date:   Sun Jul 15 23:38:47 2007 -0700
+        uml: fix request->sector update
+    
+    It is theoretically possible for a request to finish and be freed
+between writing it to the I/O thread and updating the sector count.  In
+this case, the update will dereference a freed pointer.
+    To avoid this, I delay the update until processing the next sg
+segment, when the request pointer is known to be good.
+    
+    modified:   arch/um/drivers/ubd_kern.c
+
+
+
