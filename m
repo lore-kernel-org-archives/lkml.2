@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933149Ab0I1CFb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 22:05:31 -0400
-Received: from smtp127.sbc.mail.sp1.yahoo.com ([69.147.65.186]:40535 "HELO
-	smtp127.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932999Ab0I1CF0 (ORCPT
+	id S933376Ab0I1CFt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 22:05:49 -0400
+Received: from smtp104.sbc.mail.mud.yahoo.com ([68.142.198.203]:33702 "HELO
+	smtp104.sbc.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933326Ab0I1CFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 22:05:26 -0400
+	Mon, 27 Sep 2010 22:05:47 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: sQOXPqEVM1m0DsBgBNyvAAYtS7NCv5VZ66.8yY11xSwqQsN
- yNZMc_hBYHifRgimcrv7cTwUtWqkoQTUc0vtl_hdmWYOSGBQBANlgMRZRo5W
- 3Z.DzrFoopNzoYB2PYxnOA8Suaku9A2anPnMLEBAfN3cDf8X3RDkR.WMJQMv
- a9NX0KU98l8BBW2NI7IZcPNjnPuc2mQUNq1St.D9XFInHUXwRx7VZnSzD.rd
- ycqThgqkVLeEFK6OhQCn02bnRAG41o96xVjgwgexzCzr3AxJGKlObGbTOryU
- 1czsE.BcilBp6x9bO6MB7ggaFh1YTqAx37DuCRQEbY9I-
+X-YMail-OSG: MuUrWgAVM1k.H7ujWeKx5FWsZb9ckjZi894DJeCD1KvNhdp
+ .FBcOAltYKLAXXph6MdblyhIphg1zsmNzYCxtIpdctXNaw0EDEb2YmzjooKh
+ F1yRci32e8t6ZYi3peDMYNIGyz__MiqybYN5oviXwCz2aKjrPDdUK_F5J4Lg
+ uqrVfe.IBNix7qIy4z1L7X3R0xAkt63_1tP8pODBWsI4XLEdWIM6c0beyb8e
+ zciuGcKt54udueN1fyiCECckmarSOAeKIeA3yM0F8RS2XJjR.ezkUMH_2OGu
+ _DF6PqUwwK5NRCZq.
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -33,9 +33,9 @@ Cc: James Smart <james.smart@emulex.com>,
         Luben Tuikov <ltuikov@yahoo.com>, mvsas maintainer <kewei@marvell.com>,
         pm8001 maintainer Jack Wang <jack_wang@usish.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [RFC v4 02/19] libiscsi: Remove host_lock unlock() + lock() from iscsi_queuecommand()
-Date: Mon, 27 Sep 2010 19:05:23 -0700
-Message-Id: <1285639523-7244-1-git-send-email-nab@linux-iscsi.org>
+Subject: [RFC v4 04/19] aic94xx: Set SHT->unlocked_qcmd=1 for libsas queuecommand()
+Date: Mon, 27 Sep 2010 19:05:41 -0700
+Message-Id: <1285639541-7284-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -43,64 +43,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch removes the now legacy host_lock unlock() + lock() optimization
-from libiscsi.c:iscsi_queuecommand().  This also adds SHT->unlocked_qcmd=1
-to signal host_lock less operation with iscsi_queuecommand().
+This patch updates aic94xx to set struct scsi_host_template->unlocked_qcmd=1
+because it is using generic libsas sas_queuecommand() code which now can be
+run without struct Scsi_Host->host_lock held following the original
+host_lock unlock -> do_work() -> lock optimization in sas_queuecommand().
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/scsi/iscsi_tcp.c |    1 +
- drivers/scsi/libiscsi.c  |    4 ----
- 2 files changed, 1 insertions(+), 4 deletions(-)
+ drivers/scsi/aic94xx/aic94xx_init.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/scsi/iscsi_tcp.c b/drivers/scsi/iscsi_tcp.c
-index fec47de..f5933dd 100644
---- a/drivers/scsi/iscsi_tcp.c
-+++ b/drivers/scsi/iscsi_tcp.c
-@@ -882,6 +882,7 @@ static struct scsi_host_template iscsi_sw_tcp_sht = {
- 	.target_alloc		= iscsi_target_alloc,
- 	.proc_name		= "iscsi_tcp",
+diff --git a/drivers/scsi/aic94xx/aic94xx_init.c b/drivers/scsi/aic94xx/aic94xx_init.c
+index 3b7e83d..b236d720 100644
+--- a/drivers/scsi/aic94xx/aic94xx_init.c
++++ b/drivers/scsi/aic94xx/aic94xx_init.c
+@@ -77,6 +77,7 @@ static struct scsi_host_template aic94xx_sht = {
+ 	.can_queue		= 1,
+ 	.cmd_per_lun		= 1,
  	.this_id		= -1,
 +	.unlocked_qcmd		= 1,
- };
- 
- static struct iscsi_transport iscsi_sw_tcp_transport = {
-diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
-index 633e090..7e4134e 100644
---- a/drivers/scsi/libiscsi.c
-+++ b/drivers/scsi/libiscsi.c
-@@ -1615,7 +1615,6 @@ int iscsi_queuecommand(struct scsi_cmnd *sc, void (*done)(struct scsi_cmnd *))
- 
- 	host = sc->device->host;
- 	ihost = shost_priv(host);
--	spin_unlock(host->host_lock);
- 
- 	cls_session = starget_to_session(scsi_target(sc->device));
- 	session = cls_session->dd_data;
-@@ -1706,7 +1705,6 @@ int iscsi_queuecommand(struct scsi_cmnd *sc, void (*done)(struct scsi_cmnd *))
- 
- 	session->queued_cmdsn++;
- 	spin_unlock(&session->lock);
--	spin_lock(host->host_lock);
- 	return 0;
- 
- prepd_reject:
-@@ -1716,7 +1714,6 @@ reject:
- 	spin_unlock(&session->lock);
- 	ISCSI_DBG_SESSION(session, "cmd 0x%x rejected (%d)\n",
- 			  sc->cmnd[0], reason);
--	spin_lock(host->host_lock);
- 	return SCSI_MLQUEUE_TARGET_BUSY;
- 
- prepd_fault:
-@@ -1733,7 +1730,6 @@ fault:
- 		scsi_in(sc)->resid = scsi_in(sc)->length;
- 	}
- 	done(sc);
--	spin_lock(host->host_lock);
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(iscsi_queuecommand);
+ 	.sg_tablesize		= SG_ALL,
+ 	.max_sectors		= SCSI_DEFAULT_MAX_SECTORS,
+ 	.use_clustering		= ENABLE_CLUSTERING,
 -- 
 1.7.3
 
