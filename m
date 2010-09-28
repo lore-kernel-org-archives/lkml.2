@@ -1,81 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755352Ab0I1NzE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 09:55:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33975 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753527Ab0I1NzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 09:55:03 -0400
-Date: Tue, 28 Sep 2010 09:54:49 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        kexec <kexec@lists.infradead.org>, caiqian@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: kexec load failure introduced by "x86, memblock: Replace
- e820_/_early string with memblock_"
-Message-ID: <20100928135449.GA8950@redhat.com>
-References: <632974489.2046131285586512527.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
- <4CA11918.7050708@kernel.org>
- <4CA11FB7.2080101@zytor.com>
- <4CA126BE.7000609@kernel.org>
- <4CA1283C.9010105@zytor.com>
- <4CA12976.5060504@kernel.org>
- <4CA129EB.5000309@zytor.com>
- <4CA12BAB.1040308@kernel.org>
- <20100928005358.GA6456@redhat.com>
- <4CA16522.8060107@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CA16522.8060107@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755488Ab0I1N5c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 09:57:32 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:37949 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1753230Ab0I1N5b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 09:57:31 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+QvJ0tfHuQjM5q6TuO1MsC0+uNwa3FMYGlFGKIfY
+	Q/l4K7+GH4lvxV
+Subject: Re: [PATCH 0/3][RFC] Improve load balancing when tasks have large
+ weight differential
+From: Mike Galbraith <efault@gmx.de>
+To: Nikhil Rao <ncrao@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Venkatesh Pallipadi <venki@google.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <1285633798-26886-1-git-send-email-ncrao@google.com>
+References: <1285633798-26886-1-git-send-email-ncrao@google.com>
+Content-Type: text/plain
+Date: Tue, 28 Sep 2010 15:57:53 +0200
+Message-Id: <1285682273.7469.3.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 08:46:42PM -0700, H. Peter Anvin wrote:
-> On 09/27/2010 05:53 PM, Vivek Goyal wrote:
-> > 
-> > Actually, hardcoding the upper limit to 4G is probably not the best idea.
-> > Kexec loads the the relocatable binary (purgatory) and I remember that
-> > one of the generated relocation type was signed 32 bit and allowed max value
-> > to be 2G only. So IIRC, purgatory code always needed to be loaded below 2G.
-> > 
-> > I liked HPA's other idea better of introducing memblock_find_in_range_lowest() 
-> > so that we search bottom up and not rely on a specific upper limit.
-> > 
+On Mon, 2010-09-27 at 17:29 -0700, Nikhil Rao wrote:
+> Hi all,
 > 
-> No, it's just another crappy hack which is broken in the same way.  It's
-> better than open-coding, but it's still a hack.
+> I have attached a series of patches that improve load balancing when there is a
+> large weight differential between tasks. These patches are based off the
+> feedback Peter Zijlstra gave in an earlier post (see http://thread.gmane.org/gmane.linux.kernel/1015966).
+> They can be applied to v2.6.36-rc5 or -tip without conflicts.
 > 
-> The Right Thing[TM] to do is for kexec to communicate the topmost
-> address it wants to this code, so it has both the upper and the lower
-> boundaries available to it instead of just one.
+> Tested with the following setup.
+> - Test machine is a 16 cpu box (quad-socket, quad-core).
+> - Baseline is v2.6.36-rc5 kernel
 > 
+> We spawn 16 SCHED_IDLE soaker threads and one SCHED_NORMAL task. On the
+> baseline kernel, the machine has ~18% idle time. With these patches applied on
+> top of baseline, idle time drops to 0%.
 
-Being able to specify the upper limit would be the best thing so that
-kernel does not have to make any assumptions or hardcode anything.
+Hm. I can get it stuck with one core idle on ym little quad.
 
-Question is how to determine the upper limit.
+top - 15:53:22 up 11 min, 17 users,  load average: 5.05, 4.40, 2.51
+Tasks: 270 total,   7 running, 263 sleeping,   0 stopped,   0 zombie
+Cpu(s): 75.3%us,  0.0%sy,  0.0%ni, 24.7%id,  0.0%wa,  0.0%hi,  0.0%si,  0.0%st
 
-- The upper limit will depend on what is being loaded in reserved region.
-  Reserving memory using crashkernel= is a boot time optin and that point
-  of time kexec has not even run. So we don't know what is the upper
-  limit.
+  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  P COMMAND
+ 7455 root       5 -15  7996  340  256 R  100  0.0   0:59.93 1 pert
+ 7421 root      20   0  7996  340  256 R   50  0.0   4:20.01 3 pert
+ 7422 root      20   0  7996  340  256 R   50  0.0   3:45.81 2 pert
+ 7423 root      20   0  7996  340  256 R   50  0.0   4:09.45 2 pert
+ 7424 root      20   0  7996  344  256 R   50  0.0   4:12.75 3 pert
 
-  Now we can do extra reboot to make it happen. Boot first kernel without
-  reserving any memory. Introduce an option in kexec which tells user what
-  are the segments kexec would like to load (for a given binary) and what
-  are there upper memory limits and then user goes ahead modifies the
-  command line and reboots the kernel back.
 
-  This all sounds not so clean. Especially upper limit might change based
-  on binary being loaded and a user might have to perform a reboot again.
-
-So to me trying to get lowest memory available possible for crashkernel
-reservations is not that a bad idea. It is certainly better than making
-hardcoded assumptions about the upper limit.
-
-Thanks
-Vivek
