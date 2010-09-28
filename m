@@ -1,44 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755246Ab0I1ReU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 13:34:20 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:55529
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752949Ab0I1ReS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 13:34:18 -0400
-Date: Tue, 28 Sep 2010 10:34:38 -0700 (PDT)
-Message-Id: <20100928.103438.193722403.davem@davemloft.net>
-To: randy.dunlap@oracle.com
-Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, masa-korg@dsn.okisemi.com
-Subject: Re: [PATCH -next] pch_gbe: add header files
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100928095643.18c5020f.randy.dunlap@oracle.com>
-References: <20100928141823.8c61000e.sfr@canb.auug.org.au>
-	<20100928095643.18c5020f.randy.dunlap@oracle.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1755230Ab0I1Rgf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 13:36:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63193 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753396Ab0I1Rge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 13:36:34 -0400
+Date: Tue, 28 Sep 2010 13:36:26 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk
+Subject: Re: [PATCH 4/4] blkio: Recalculate the throttled bio dispatch time
+ upon throttle limit change
+Message-ID: <20100928173625.GD8950@redhat.com>
+References: <1285693859-13591-1-git-send-email-vgoyal@redhat.com>
+ <1285693859-13591-5-git-send-email-vgoyal@redhat.com>
+ <20100928101641.a2791513.randy.dunlap@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100928101641.a2791513.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Date: Tue, 28 Sep 2010 09:56:43 -0700
+On Tue, Sep 28, 2010 at 10:16:41AM -0700, Randy Dunlap wrote:
+> On Tue, 28 Sep 2010 13:10:59 -0400 Vivek Goyal wrote:
+> 
+> > o Currently any cgroup throttle limit changes are processed asynchronousy and
+> >   the change does not take affect till a new bio is dispatched from same group.
+> > 
+> > o It might happen that a user sets a redicuously low limit on throttling.
+> >   Say 1 bytes per second on reads. In such cases simple operations like mount
+> >   a disk can wait for a very long time.
+> > 
+> > o Once bio is throttled, there is no easy way to come out of that wait even if
+> >   user increases the read limit later.
+> > 
+> > o This patch fixes it. Now if a user changes the cgroup limits, we recalculate
+> >   the bio dispatch time according to new limits.
+> > 
+> > o Can't take queueu lock under blkcg_lock, hence after the change I wake
+> >   up the dispatch thread again which recalculates the time. So there are some
+> >   variables being synchronized across two threads without lock and I had to
+> >   make use of barriers. Hoping I have used barriers correctly. Any review of
+> >   memory barrier code especially will help.
+> 
+> 
+> Hi,
+> Has this report been addressed/fixed?
+> 
 
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> Fix build errors, more header files needed.
-> 
-> drivers/net/pch_gbe/pch_gbe_main.c:965: error: implicit declaration of function 'tcp_hdr'
-> drivers/net/pch_gbe/pch_gbe_main.c:965: error: invalid type argument of '->' (have 'int')
-> drivers/net/pch_gbe/pch_gbe_main.c:968: error: invalid type argument of '->' (have 'int')
-> drivers/net/pch_gbe/pch_gbe_main.c:976: error: implicit declaration of function 'udp_hdr'
-> drivers/net/pch_gbe/pch_gbe_main.c:976: error: invalid type argument of '->' (have 'int')
-> drivers/net/pch_gbe/pch_gbe_main.c:980: error: invalid type argument of '->' (have 'int')
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Hi Randy,
 
-Applied, thanks Randy.
+No. I was not aware of it. Thanks for bringing it to my notice. I will look
+into it.
+
+Vivek
+
+> 
+> on i386:
+> 
+> blk-throttle.c:(.text+0x1abb8): undefined reference to `__udivdi3'
+> blk-throttle.c:(.text+0x1b1dc): undefined reference to `__udivdi3'
+> 
+> 
+> on linux-next 2010-0924 and 2010-0927.
+> 
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
