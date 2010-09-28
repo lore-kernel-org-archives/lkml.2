@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757569Ab0I1STK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 14:19:10 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:54975 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757403Ab0I1STH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 14:19:07 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: jgarzik@pobox.com
-Subject: [PATCH] de2104x: disable media debug messages by default
-Date: Tue, 28 Sep 2010 20:18:55 +0200
-User-Agent: KMail/1.9.10
-Cc: netdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
+	id S1757590Ab0I1STz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 14:19:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60329 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752612Ab0I1STy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 14:19:54 -0400
+Message-ID: <4CA231A8.5000100@zytor.com>
+Date: Tue, 28 Sep 2010 11:19:20 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        "sct@redhat.com" <sct@redhat.com>
+Subject: Re: [PATCH 12/12] xen/mtrr: Add mtrr_if support for Xen mtrr
+References: <alpine.DEB.2.00.1009281217540.2864@kaball-desktop> <1285676218-26218-12-git-send-email-stefano.stabellini@eu.citrix.com> <20100928123925.GA18208@elte.hu> <alpine.DEB.2.00.1009281455300.2864@kaball-desktop> <4CA2223B.9040400@goop.org> <4CA22C3C.3020209@zytor.com> <4CA2302C.3000201@goop.org>
+In-Reply-To: <4CA2302C.3000201@goop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201009282018.57547.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Print media debug messages only when HW debug is enabled.
+On 09/28/2010 11:13 AM, Jeremy Fitzhardinge wrote:
+>  On 09/28/2010 10:56 AM, H. Peter Anvin wrote:
+>> On 09/28/2010 10:13 AM, Jeremy Fitzhardinge wrote:
+>>> Yes, we could just mask out the MTRR CPU feature and rely entirely on PAT.
+>>>
+>>> The alternative would be to use the wrmsr hooks to emulate the Intel
+>>> MTRR registers by mapping them to hypercalls, but that seems needlessly
+>>> complex.
+>>>
+>> Indeed.  Relying on pure PAT is the Right Thing[TM].
+> 
+> Is there a plan to formally deprecate /proc/mtrr and the kernel
+> infrastructure behind it?
+> 
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+No, and we really can't do it for a couple of reasons:
 
---- linux-2.6.36-rc3-/drivers/net/tulip/de2104x.c	2010-09-28 19:50:51.000000000 +0200
-+++ linux-2.6.36-rc3/drivers/net/tulip/de2104x.c	2010-09-28 20:05:34.000000000 +0200
-@@ -948,8 +948,9 @@ static void de_set_media (struct de_priv
- 	else
- 		macmode &= ~FullDuplex;
- 
--	if (netif_msg_link(de)) {
-+	if (netif_msg_link(de))
- 		dev_info(&de->dev->dev, "set link %s\n", media_name[media]);
-+	if (netif_msg_hw(de)) {
- 		dev_info(&de->dev->dev, "mode 0x%x, sia 0x%x,0x%x,0x%x,0x%x\n",
- 			 dr32(MacMode), dr32(SIAStatus),
- 			 dr32(CSR13), dr32(CSR14), dr32(CSR15));
+a) Pre-PAT hardware;
+b) MTRRs and PAT interact on hardware;
+c) MTRRs, but not PAT, interact with SMM.
 
+However, since a virtual machine like Xen doesn't have these issues, it
+doesn't apply.
 
--- 
-Ondrej Zary
+	-hpa
