@@ -1,107 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756819Ab0I1ILM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 04:11:12 -0400
-Received: from mtagate5.de.ibm.com ([195.212.17.165]:39151 "EHLO
-	mtagate5.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702Ab0I1ILK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 04:11:10 -0400
-Date: Tue, 28 Sep 2010 10:11:06 +0200
-From: Christof Schmitt <christof.schmitt@de.ibm.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Mike Christie <michaelc@cs.wisc.edu>, Joe Eykholt <jeykholt@cisco.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        James Smart <james.smart@emulex.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Christoph Hellwig <hch@lst.de>
-Subject: [PATCH] zfcp: Remove scsi_cmnd->serial_number from debug traces
-Message-ID: <20100928081103.GA3790@schmichrtp.mainz.de.ibm.com>
-References: <1284747709-20862-1-git-send-email-nab@linux-iscsi.org>
- <4C93BB8E.2080501@cisco.com>
- <4C9427B6.9050404@cs.wisc.edu>
- <1284839878.13344.300.camel@haakon2.linux-iscsi.org>
- <20100927140551.GB8473@schmichrtp.mainz.de.ibm.com>
- <1285628548.8880.64.camel@haakon2.linux-iscsi.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1285628548.8880.64.camel@haakon2.linux-iscsi.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755626Ab0I1IRl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 04:17:41 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:34317 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1750873Ab0I1IRk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 04:17:40 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/QTCxotMnQbCaJgl+Ff5ibUFpY64yZUGwbxyLDHy
+	SFjqb5E72wCBJS
+Subject: Re: broken behavior in cfs when moving threads between cgroups
+From: Mike Galbraith <efault@gmx.de>
+To: Dima Zavin <dmitriyz@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTinmQOYQAOPkQsZNhJBJtCss3ZtHN_a6h4fpamtz@mail.gmail.com>
+References: <AANLkTinmQOYQAOPkQsZNhJBJtCss3ZtHN_a6h4fpamtz@mail.gmail.com>
+Content-Type: text/plain
+Date: Tue, 28 Sep 2010 10:17:58 +0200
+Message-Id: <1285661878.2795.70.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christof Schmitt <christof.schmitt@de.ibm.com>
+On Mon, 2010-09-27 at 23:07 -0700, Dima Zavin wrote:
 
-With the change that drivers have to explicitly request the serial
-number for SCSI commands, this field should not be part of the zfcp
-traces. It is not worth the effort to request the serial number only
-for tracing purposes, so simply remove this field from the debug
-traces.
+> I'm not really sure how to fix #1 cleanly, since we don't have enough
+> information (i.e. we don't know the previous group) inside
+> moved_group_fair() to adjust the value. It has to be adjusted in
+> sched_move_task(), but I don't see the right interface to do that. I
+> included a hacky patch further down that accesses the sched_fair internals
+> directly, which I know is wrong but illustrates what I think needs to be done.
 
-Reviewed-by: Swen Schillig <swen@vnet.ibm.com>
-Signed-off-by: Christof Schmitt <christof.schmitt@de.ibm.com>
----
- drivers/s390/scsi/zfcp_dbf.c |    4 ----
- drivers/s390/scsi/zfcp_dbf.h |    2 --
- 2 files changed, 6 deletions(-)
+I don't really see the relevance of an entity's lag in it's previous
+group, so would tend toward entry at parity.
 
---- a/drivers/s390/scsi/zfcp_dbf.c
-+++ b/drivers/s390/scsi/zfcp_dbf.c
-@@ -154,7 +154,6 @@ void _zfcp_dbf_hba_fsf_response(const ch
- 		scsi_cmnd = (struct scsi_cmnd *)fsf_req->data;
- 		if (scsi_cmnd) {
- 			response->u.fcp.cmnd = (unsigned long)scsi_cmnd;
--			response->u.fcp.serial = scsi_cmnd->serial_number;
- 			response->u.fcp.data_dir =
- 				qtcb->bottom.io.data_direction;
- 		}
-@@ -330,7 +329,6 @@ static void zfcp_dbf_hba_view_response(c
- 			break;
- 		zfcp_dbf_out(p, "data_direction", "0x%04x", r->u.fcp.data_dir);
- 		zfcp_dbf_out(p, "scsi_cmnd", "0x%0Lx", r->u.fcp.cmnd);
--		zfcp_dbf_out(p, "scsi_serial", "0x%016Lx", r->u.fcp.serial);
- 		*p += sprintf(*p, "\n");
- 		break;
+Maybe the move _should_ be treated as a fork, for the same reason we do
+START_DEBIT, but if so, seems to me it's irrelevant whether the task is
+currently sleeping or not, it's going to run for the first time in it's
+new home just as any runnable task, and may do so very soon.  OTOH,
+frequent moves with that hefty START_DEBIT price tag could hurt very
+badly, and makes caring about previous lag seem pointless.
+
+	-Mike
+
+(untested)
+
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 9b5b4f8..4dc6b2f 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -3827,10 +3827,14 @@ static void set_curr_task_fair(struct rq *rq)
+ static void moved_group_fair(struct task_struct *p, int on_rq)
+ {
+ 	struct cfs_rq *cfs_rq = task_cfs_rq(p);
++	struct sched_entity *se = &p->se;
++	u64 vruntime = 0;
  
-@@ -881,7 +879,6 @@ void _zfcp_dbf_scsi(const char *tag, con
- 				}
- 				rec->scsi_result = scsi_cmnd->result;
- 				rec->scsi_cmnd = (unsigned long)scsi_cmnd;
--				rec->scsi_serial = scsi_cmnd->serial_number;
- 				memcpy(rec->scsi_opcode, scsi_cmnd->cmnd,
- 					min((int)scsi_cmnd->cmd_len,
- 						ZFCP_DBF_SCSI_OPCODE));
-@@ -950,7 +947,6 @@ static int zfcp_dbf_scsi_view_format(deb
- 	zfcp_dbf_out(&p, "scsi_lun", "0x%08x", r->scsi_lun);
- 	zfcp_dbf_out(&p, "scsi_result", "0x%08x", r->scsi_result);
- 	zfcp_dbf_out(&p, "scsi_cmnd", "0x%0Lx", r->scsi_cmnd);
--	zfcp_dbf_out(&p, "scsi_serial", "0x%016Lx", r->scsi_serial);
- 	zfcp_dbf_outd(&p, "scsi_opcode", r->scsi_opcode, ZFCP_DBF_SCSI_OPCODE,
- 		      0, ZFCP_DBF_SCSI_OPCODE);
- 	zfcp_dbf_out(&p, "scsi_retries", "0x%02x", r->scsi_retries);
---- a/drivers/s390/scsi/zfcp_dbf.h
-+++ b/drivers/s390/scsi/zfcp_dbf.h
-@@ -110,7 +110,6 @@ struct zfcp_dbf_hba_record_response {
- 	union {
- 		struct {
- 			u64 cmnd;
--			u64 serial;
- 			u32 data_dir;
- 		} fcp;
- 		struct {
-@@ -206,7 +205,6 @@ struct zfcp_dbf_scsi_record {
- 	u32 scsi_lun;
- 	u32 scsi_result;
- 	u64 scsi_cmnd;
--	u64 scsi_serial;
- #define ZFCP_DBF_SCSI_OPCODE	16
- 	u8 scsi_opcode[ZFCP_DBF_SCSI_OPCODE];
- 	u8 scsi_retries;
+ 	update_curr(cfs_rq);
+ 	if (!on_rq)
+-		place_entity(cfs_rq, &p->se, 1);
++		vruntime = cfs_rq->min_vruntime;
++
++	se->vruntime = vruntime;
+ }
+ #endif
+ 
+
+
+
