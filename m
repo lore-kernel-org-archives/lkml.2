@@ -1,92 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933690Ab0I1CHr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 22:07:47 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:59954 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933005Ab0I1CHk (ORCPT
+	id S933704Ab0I1CH5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 22:07:57 -0400
+Received: from smtp106.sbc.mail.mud.yahoo.com ([68.142.198.104]:34037 "HELO
+	smtp106.sbc.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933680Ab0I1CHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 22:07:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=S1Andxurj2TrU1fAl0F289IHL9A5joCIc8mQ6EXqXaJfGWTkU6wG12a5URGFR8ntEV
-         OJJVMOEL0n4TA8cuKxaAHxnQh29EOGJ+opqh3yBj7EyC9wr0xA3DsPrGw7ogNO23fgG9
-         8Baqw4EwqZov5mJF6NHgcq1DYeWaraLm2GEOs=
-Message-ID: <4CA14DF6.3070505@gmail.com>
-Date: Mon, 27 Sep 2010 19:07:50 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
-MIME-Version: 1.0
-To: Finn Thain <fthain@telegraphics.com.au>
-CC: Joe Perches <joe@perches.com>, "John W. Linville" <linville@tuxdriver.com>,
-        trivial@kernel.org, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        alsa-devel@alsa-project.org, dri-devel@lists.freedesktop.org,
-        linux-ide@vger.kernel.org, "Maciej W. Rozycki" <macro@linux-mips.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Randy Dunlap <rdunlap@xenotime.net>, Matt Turner <mattst88@gmail.com>,
-        Dimitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mike Frysinger <vapier.adi@gmail.com>
-Subject: Re: [RFC v4]update broken web addresses in the kernel.
-References: <1285525875-9920-1-git-send-email-justinmattock@gmail.com>  <20100927151005.GC11086@tuxdriver.com> <1285603383.1732.106.camel@Joe-Laptop> <4CA0CB0F.3060303@gmail.com> <alpine.OSX.2.00.1009281119570.276@localhost>
-In-Reply-To: <alpine.OSX.2.00.1009281119570.276@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 27 Sep 2010 22:07:46 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: XJOv1hIVM1m60FeMybk031tcsfky4VMCj.nTLfSPm7Mqg0t
+ 6JdfVcvOC_vmA9YNdjW61B2P7xXOMorupsDghRIipJaHMbG3IC1QrS_og_M_
+ zYeJ.VX.L4q2Xbhx..ihs_0Nw8qOwvaLyr_gsx3ev9kW.9SRVgd6Wg1B0.ig
+ VXSv5DewqgL98tSK_G9A5PhMFjNh7EsP4_ja97TwzMIppt__QAqWlUYhykGV
+ cy7v4E254L6GZGA1lHhcWcBhlgu3X.wHnEygZSpDXA0W6SWvh59sZ521syGT
+ R7SuSmrzZRQdODPw8aFc_naxHleJMHOYNRy1ymvFgJi4-
+X-Yahoo-Newman-Property: ymail-3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>
+Cc: James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
+        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
+        MPTFusionLinux <DL-MPTFusionLinux@lsi.com>,
+        "eata.c maintainer" <dario.ballabio@inwind.it>,
+        Luben Tuikov <ltuikov@yahoo.com>, mvsas maintainer <kewei@marvell.com>,
+        pm8001 maintainer Jack Wang <jack_wang@usish.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [RFC v4 15/19] mpt2sas: Add scsi_cmd_get_serial() call
+Date: Mon, 27 Sep 2010 19:07:41 -0700
+Message-Id: <1285639661-7505-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2010 06:37 PM, Finn Thain wrote:
->
-> On Mon, 27 Sep 2010, Justin P. Mattock wrote:
->
->> On 09/27/2010 09:03 AM, Joe Perches wrote:
->>> On Mon, 2010-09-27 at 11:10 -0400, John W. Linville wrote:
->>>> On Sun, Sep 26, 2010 at 11:31:15AM -0700, Justin P. Mattock wrote:
->>>>> Below is an updated patch from the original fixing broken web
->>>>> addresses in the kernel. Thanks for all the help and info on this
->>>>> to everybody.. Hopefully I didnt miss any of them(if so let me
->>>>> know, and I'll resend).
->>>> Changing a URL for a relocated page is one thing, but removing links
->>>> isn't necessarily a great idea.  Even if the site is technically
->>>> gone, it may be possible to find information e.g through the
->>>> Internet Archive Wayback Machine.
->>>
->>> Perhaps it'd be better to scrape the contents of the various web
->>> pages, collect them somewhere like wiki.kernel.org and encourage
->>> others to put new contributions in that site.
->
-> The copyright problem aside, this might be a good idea for material not
-> already archived but I don't think it makes sense to start a new
-> archive when archive.org (or other) has the information.
->
-> And which version(s) do you scrape? I discussed some problems with
-> changing URLs in another thread: http://lkml.org/lkml/2010/9/22/22
->
-> Anyway, without knowing what future archive(s) would be available or
-> relevant to any given URL in the future, I think the best we might do is a
-> "Retrieved on YYYY-MM-DD" qualification for new URLs.
->
->>
->>
->> yeah I think somebody was saying something about having a separate file,
->> with all the web addresses in them or something...In any case, up to you
->> guys..
->
-> I don't see how moving the addresses would help.
-> And would it not make the information harder to find?
->
-> Finn
->
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-depends on how the setup is.. I was thinking of having some kind of 
-letter/number scheme i.e. (A-13) in the comment, then in the file with 
-all the addresses under article "A" 13th address down you would have the 
-web address.(but keep in mind that's just speculation..)
+This patch adds a scsi_cmd_get_serial() call in _scsih_qcmd() to setup a
+valid struct scsi_cmnd->serial_number because mpt2sas_scsih_issue_tm()
+still depends upon this being set.
 
-Justin P. Mattock
+This also includes setting the SHT->unlocked_qcmd=1 for host_lock less mpt2sas
+_scsih_qcmd() operation.
 
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+---
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+index 16e99b6..4bedbf2 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -3325,6 +3325,11 @@ _scsih_qcmd(struct scsi_cmnd *scmd, void (*done)(struct scsi_cmnd *))
+ 	u16 smid;
+ 
+ 	scmd->scsi_done = done;
++	/*
++	 * Call scsi_cmd_get_serial() because we need a valid serial number
++	 * in mpt2sas_scsih_issue_tm()
++	 */
++	scsi_cmd_get_serial(scmd);
+ 	sas_device_priv_data = scmd->device->hostdata;
+ 	if (!sas_device_priv_data || !sas_device_priv_data->sas_target) {
+ 		scmd->result = DID_NO_CONNECT << 16;
+@@ -6464,6 +6469,7 @@ static struct scsi_host_template scsih_driver_template = {
+ 	.eh_host_reset_handler		= _scsih_host_reset,
+ 	.bios_param			= _scsih_bios_param,
+ 	.can_queue			= 1,
++	.unlocked_qcmd			= 1,
+ 	.this_id			= -1,
+ 	.sg_tablesize			= MPT2SAS_SG_DEPTH,
+ 	.max_sectors			= 8192,
+-- 
+1.7.3
 
