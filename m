@@ -1,78 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138Ab0I1VZw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 17:25:52 -0400
-Received: from tuxonice.net ([74.207.252.127]:40434 "EHLO mail.tuxonice.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753478Ab0I1VZt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 17:25:49 -0400
-X-Bogosity: Ham, spamicity=0.000007
-Message-ID: <4CA25D59.2040409@tuxonice.net>
-Date: Wed, 29 Sep 2010 07:25:45 +1000
-From: Nigel Cunningham <nigel@tuxonice.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.10pre) Gecko/20100903 Shredder/3.1.4pre
+	id S1753529Ab0I1VbH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 17:31:07 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:39489 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753106Ab0I1VbE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 17:31:04 -0400
+Message-ID: <4CA25E5C.2020203@kernel.org>
+Date: Tue, 28 Sep 2010 14:30:04 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-To: Martin Steigerwald <Martin@lichtvoll.de>
-CC: tuxonice-devel@tuxonice.net, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        TuxOnIce-devel <tuxonice-devel@tuxonice.net>
-Subject: Re: [TuxOnIce-devel] Nigel's current for-rafael queue
-References: <1285388224-10012-1-git-send-email-nigel@tuxonice.net> (sfid-20100925_095651_884433_67642C74) <201009282145.46948.Martin@lichtvoll.de>
-In-Reply-To: <201009282145.46948.Martin@lichtvoll.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Fwd: [PATCH] x86: Plug memory leak in sparse irq
+References: <alpine.LFD.2.00.1009282052570.2416@localhost6.localdomain6> <AANLkTi=940qOigieOHd_cBcocBAb4AtYnm2v60i9CSmp@mail.gmail.com>
+In-Reply-To: <AANLkTi=940qOigieOHd_cBcocBAb4AtYnm2v60i9CSmp@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Martin.
+> From: Thomas Gleixner <tglx@linutronix.de>
+> Date: Tue, Sep 28, 2010 at 11:57 AM
+> Subject: [PATCH] x86: Plug memory leak in sparse irq
+> To: LKML <linux-kernel@vger.kernel.org>
+> Cc: x86@kernel.org, Yinghai Lu <yhlu.kernel@gmail.com>
+> 
+> 
+> free_irq_cfg() is not freeing the cpumask_vars in irq_cfg.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: stable@kernel.org
+> ---
+>  arch/x86/kernel/apic/io_apic.c |    6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> Index: linux-2.6/arch/x86/kernel/apic/io_apic.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/kernel/apic/io_apic.c
+> +++ linux-2.6/arch/x86/kernel/apic/io_apic.c
+> @@ -311,9 +311,11 @@ void arch_init_copy_chip_data(struct irq
+>        init_copy_irq_2_pin(old_cfg, cfg, node);
+>  }
+> 
+> -static void free_irq_cfg(struct irq_cfg *old_cfg)
+> +static void free_irq_cfg(struct irq_cfg *cfg)
+>  {
+> -       kfree(old_cfg);
+> +       free_cpumask_var(cfg->domain);
+> +       free_cpumask_var(cfg->old_domain);
+> +       kfree(cfg);
+>  }
+> 
+>  void arch_free_chip_data(struct irq_desc *old_desc, struct irq_desc *desc)
 
-On 29/09/10 05:45, Martin Steigerwald wrote:
-> Am Samstag 25 September 2010 schrieb Nigel Cunningham:
->> Hi Rafael.
->
-> Hi Nigel,
->
->> Please find attached a slightly updated version of the patchset I sent
->> a few months ago. The main change is that I've prepended and additional
->> patch which lets the user see the speed at which the image is being
->> read and written. This is accomplished by recording the MB/s in a
->> single byte in the image header, and using a couple of __nosavedata
->> variables to get the data back through the atomic restore. I realise
->> the char limits us to 255MB/s at the moment. In future patches, I
->> intend to address this by storing the data in a 'proper' image header
->> (it's a real problem - TuxOnIce reads and writes on the same set up at
->> speeds around 250MB/s).
->>
->> Results on my Dell XPS M1530, which has an SSD hard drive are:
->
-> I found one issue with this patchset or more precise I think with the
-> state of in-kernel-suspend before:
->
-> I accidentally booted a kernel without your patches and it didn't seem to
-> stop on the hibernation image from the kernel with your patches. Well I
-> let my laptop unattended for a little while, so when there has been a
-> (short) timeout, I might have missed that message.
->
-> I lost a hibernation image this way which caused successful journal replay
-> on my Ext4 filesystems.
->
-> Does a kernel without your patches offer to reboot into the correct kernel,
-> then it finds a hibernation image from a kernel with your patches?
->
-> If not, I think for the future it should give a warning with a quite high
-> timeout, and offer to reboot into the right kernel.
+yes. still need
 
-My patches only focus on the I/O code in swsusp at the moment. I know 
-there are still tons of things from TuxOnIce that could be put into 
-swsusp, but at the moment I'm just focusing on I/O code.
+[PATCH] x86: copy cpumask while copying chip_data for offstack cpumask
 
-The answer at the moment is therefore "I'm sorry, but if you're going to 
-try out this code, you're going to have to live without some of 
-TuxOnIce's nice features until I can split them into nice little 
-patches, and start trying to persuade Rafael they're a good idea to merge."
+While looking Thomas's
+|	x86: Plug memory leak in sparse irq
 
-Sorry!
+found copy_chip_data() could copy the cpumask pointers instead of real data.
+Need to use cpumask_copy there.
 
-Nigel
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: stable@kernel.org
+
+---
+ arch/x86/kernel/apic/io_apic.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+Index: linux-2.6/arch/x86/kernel/apic/io_apic.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/apic/io_apic.c
++++ linux-2.6/arch/x86/kernel/apic/io_apic.c
+@@ -306,7 +306,10 @@ void arch_init_copy_chip_data(struct irq
+ 
+ 	old_cfg = old_desc->chip_data;
+ 
+-	memcpy(cfg, old_cfg, sizeof(struct irq_cfg));
++	cfg->vector = old_cfg->vector;
++	cfg->move_in_progress = old_cfg->move_in_progress;
++	cpumask_copy(cfg->domain, old_cfg->domain);
++	cpumask_copy(cfg->old_domain, old_cfg->old_domain);
+ 
+ 	init_copy_irq_2_pin(old_cfg, cfg, node);
+ }
