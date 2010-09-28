@@ -1,121 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab0I1HQy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 03:16:54 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:61277 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981Ab0I1HQx (ORCPT
+	id S1759383Ab0I1HR2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 03:17:28 -0400
+Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:54268 "EHLO
+	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756891Ab0I1HR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 03:16:53 -0400
-Message-ID: <4CA195D7.4010706@kernel.org>
-Date: Tue, 28 Sep 2010 00:14:31 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	Tue, 28 Sep 2010 03:17:27 -0400
+Date: Tue, 28 Sep 2010 00:16:06 -0700
+From: matt mooney <mfm@muteddisk.com>
+To: Greg Ungerer <gerg@snapgear.com>
+Cc: Greg Ungerer <gerg@uclinux.org>, Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>, Tim Abbott <tabbott@ksplice.com>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 08/20] m68knommu: change to new flag variables
+Message-ID: <20100928071606.GA13303@haskell.muteddisk.com>
+Mail-Followup-To: Greg Ungerer <gerg@snapgear.com>,
+	Greg Ungerer <gerg@uclinux.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	David Howells <dhowells@redhat.com>,
+	Tim Abbott <tabbott@ksplice.com>, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org, linux-kbuild@vger.kernel.org
+References: <1285224645-29728-1-git-send-email-mfm@muteddisk.com>
+ <4CA18E00.7090207@snapgear.com>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Vivek Goyal <vgoyal@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        kexec <kexec@lists.infradead.org>, caiqian@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: kexec load failure introduced by "x86, memblock: Replace e820_/_early
- string with memblock_"
-References: <632974489.2046131285586512527.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com> <4CA11918.7050708@kernel.org> <4CA11FB7.2080101@zytor.com> <4CA126BE.7000609@kernel.org> <4CA1283C.9010105@zytor.com> <4CA12976.5060504@kernel.org> <4CA129EB.5000309@zytor.com> <4CA12BAB.1040308@kernel.org> <20100928005358.GA6456@redhat.com> <4CA16522.8060107@zytor.com>
-In-Reply-To: <4CA16522.8060107@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CA18E00.7090207@snapgear.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2010 08:46 PM, H. Peter Anvin wrote:
-> On 09/27/2010 05:53 PM, Vivek Goyal wrote:
->>
->> Actually, hardcoding the upper limit to 4G is probably not the best idea.
->> Kexec loads the the relocatable binary (purgatory) and I remember that
->> one of the generated relocation type was signed 32 bit and allowed max value
->> to be 2G only. So IIRC, purgatory code always needed to be loaded below 2G.
->>
->> I liked HPA's other idea better of introducing memblock_find_in_range_lowest() 
->> so that we search bottom up and not rely on a specific upper limit.
->>
+On 16:41 Tue 28 Sep     , Greg Ungerer wrote:
 > 
-> No, it's just another crappy hack which is broken in the same way.  It's
-> better than open-coding, but it's still a hack.
+> Hi Matt,
 > 
-> The Right Thing[TM] to do is for kexec to communicate the topmost
-> address it wants to this code, so it has both the upper and the lower
-> boundaries available to it instead of just one.
+> On 23/09/10 16:50, matt mooney wrote:
+> >Replace EXTRA_CFLAGS with ccflags-y and EXTRA_AFLAGS with asflags-y.
+> >
+> >Signed-off-by: matt mooney<mfm@muteddisk.com>
+> 
+> Looks fine to me. Are you looking for this to go through
+> maintainer trees, or the whole patch series in one go?
 
-hope you are happy with this one.
+Hi Greg,
 
-[PATCH -v5] x86, memblock: Fix crashkernel allocation
+My original intent was through the maintainer trees; however, I am starting to
+realize that it probably would have been best to all go into the kbuild tree as
+one patch series. That being said, some people have picked them up and others
+have just acked, so really whatever is easiest for you. All unapplied will
+eventually go through the kbuild tree.
 
-Cai Qian found crashkernel is broken with x86 memblock changes
-1. crashkernel=128M@32M always reported that range is used, even first kernel is small
-   no one use that range
-2. always get following report when using "kexec -p"
-	Could not find a free area of memory of a000 bytes...
-	locate_hole failed
+Thanks,
+mfm
 
-The root cause is that generic memblock_find_in_range() will try to get range from top_down.
-But crashkernel do need from low and specified range.
-
-Let's limit the target range with rash_base + crash_size to make sure that
-We get range from bottom.
-
--v5: use DEFAULT_BZIMAGE_ADDR_MAX to limit area that could be used by bzImge.
-     also second try for vmlinux or new kexec tools will use bzImage 64bit entry
-
-Reported-and-Bisected-by: CAI Qian <caiqian@redhat.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
----
- arch/x86/kernel/setup.c |   24 ++++++++++++++++++------
- 1 file changed, 18 insertions(+), 6 deletions(-)
-
-Index: linux-2.6/arch/x86/kernel/setup.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/setup.c
-+++ linux-2.6/arch/x86/kernel/setup.c
-@@ -501,6 +501,7 @@ static inline unsigned long long get_tot
- 	return total << PAGE_SHIFT;
- }
- 
-+#define DEFAULT_BZIMAGE_ADDR_MAX 0x37FFFFFF
- static void __init reserve_crashkernel(void)
- {
- 	unsigned long long total_mem;
-@@ -518,17 +519,28 @@ static void __init reserve_crashkernel(v
- 	if (crash_base <= 0) {
- 		const unsigned long long alignment = 16<<20;	/* 16M */
- 
--		crash_base = memblock_find_in_range(alignment, ULONG_MAX, crash_size,
--				 alignment);
-+		/*
-+		 * Assume half crash_size is for bzImage
-+		 *  kexec want bzImage is below DEFAULT_BZIMAGE_ADDR_MAX
-+		 */
-+		crash_base = memblock_find_in_range(alignment,
-+				DEFAULT_BZIMAGE_ADDR_MAX + crash_size/2,
-+				crash_size, alignment);
-+
- 		if (crash_base == MEMBLOCK_ERROR) {
--			pr_info("crashkernel reservation failed - No suitable area found.\n");
--			return;
-+			crash_base = memblock_find_in_range(alignment,
-+					 ULONG_MAX, crash_size, alignment);
-+
-+			if (crash_base == MEMBLOCK_ERROR) {
-+				pr_info("crashkernel reservation failed - No suitable area found.\n");
-+				return;
-+			}
- 		}
- 	} else {
- 		unsigned long long start;
- 
--		start = memblock_find_in_range(crash_base, ULONG_MAX, crash_size,
--				 1<<20);
-+		start = memblock_find_in_range(crash_base,
-+				 crash_base + crash_size, crash_size, 1<<20);
- 		if (start != crash_base) {
- 			pr_info("crashkernel reservation failed - memory is in use.\n");
- 			return;
+> Acked-by: Greg Ungerer <gerg@uclinux.org>
+> 
+> Regards
+> Greg
+> 
+> 
+> >---
+> >  arch/m68knommu/platform/5206/Makefile     |    4 ++--
+> >  arch/m68knommu/platform/5206e/Makefile    |    4 ++--
+> >  arch/m68knommu/platform/520x/Makefile     |    4 ++--
+> >  arch/m68knommu/platform/523x/Makefile     |    4 ++--
+> >  arch/m68knommu/platform/5249/Makefile     |    4 ++--
+> >  arch/m68knommu/platform/5272/Makefile     |    4 ++--
+> >  arch/m68knommu/platform/527x/Makefile     |    4 ++--
+> >  arch/m68knommu/platform/528x/Makefile     |    4 ++--
+> >  arch/m68knommu/platform/5307/Makefile     |    4 ++--
+> >  arch/m68knommu/platform/532x/Makefile     |    4 ++--
+> >  arch/m68knommu/platform/5407/Makefile     |    4 ++--
+> >  arch/m68knommu/platform/coldfire/Makefile |    4 ++--
+> >  12 files changed, 24 insertions(+), 24 deletions(-)
+> >
+> >diff --git a/arch/m68knommu/platform/5206/Makefile b/arch/m68knommu/platform/5206/Makefile
+> >index 113c333..b5db056 100644
+> >--- a/arch/m68knommu/platform/5206/Makefile
+> >+++ b/arch/m68knommu/platform/5206/Makefile
+> >@@ -8,8 +8,8 @@
+> >  # on the console port whenever a DBG interrupt occurs.  You have to
+> >  # set up you HW breakpoints to trigger a DBG interrupt:
+> >  #
+> >-# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
+> >-# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
+> >+# ccflags-y := -DTRAP_DBG_INTERRUPT
+> >+# asflags-y := -DTRAP_DBG_INTERRUPT
+> >  #
+> >
+> >  asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
+> >diff --git a/arch/m68knommu/platform/5206e/Makefile b/arch/m68knommu/platform/5206e/Makefile
+> >index 113c333..b5db056 100644
+> >--- a/arch/m68knommu/platform/5206e/Makefile
+> >+++ b/arch/m68knommu/platform/5206e/Makefile
+> >@@ -8,8 +8,8 @@
+> >  # on the console port whenever a DBG interrupt occurs.  You have to
+> >  # set up you HW breakpoints to trigger a DBG interrupt:
+> >  #
+> >-# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
+> >-# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
+> >+# ccflags-y := -DTRAP_DBG_INTERRUPT
+> >+# asflags-y := -DTRAP_DBG_INTERRUPT
+> >  #
+> >
+> >  asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
+> >diff --git a/arch/m68knommu/platform/520x/Makefile b/arch/m68knommu/platform/520x/Makefile
+> >index 435ab34..ad3f4e5 100644
+> >--- a/arch/m68knommu/platform/520x/Makefile
+> >+++ b/arch/m68knommu/platform/520x/Makefile
+> >@@ -8,8 +8,8 @@
+> >  # on the console port whenever a DBG interrupt occurs.  You have to
+> >  # set up you HW breakpoints to trigger a DBG interrupt:
+> >  #
+> >-# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
+> >-# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
+> >+# ccflags-y := -DTRAP_DBG_INTERRUPT
+> >+# asflags-y := -DTRAP_DBG_INTERRUPT
+> >  #
+> >
+> >  asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
+> >diff --git a/arch/m68knommu/platform/523x/Makefile b/arch/m68knommu/platform/523x/Makefile
+> >index b8f9b45..c04b8f7 100644
+> >--- a/arch/m68knommu/platform/523x/Makefile
+> >+++ b/arch/m68knommu/platform/523x/Makefile
+> >@@ -8,8 +8,8 @@
+> >  # on the console port whenever a DBG interrupt occurs.  You have to
+> >  # set up you HW breakpoints to trigger a DBG interrupt:
+> >  #
+> >-# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
+> >-# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
+> >+# ccflags-y := -DTRAP_DBG_INTERRUPT
+> >+# asflags-y := -DTRAP_DBG_INTERRUPT
+> >  #
+> >
+> >  asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
+> >diff --git a/arch/m68knommu/platform/5249/Makefile b/arch/m68knommu/platform/5249/Makefile
+> >index f56225d..4bed30f 100644
+> >--- a/arch/m68knommu/platform/5249/Makefile
+> >+++ b/arch/m68knommu/platform/5249/Makefile
+> >@@ -8,8 +8,8 @@
+> >  # on the console port whenever a DBG interrupt occurs.  You have to
+> >  # set up you HW breakpoints to trigger a DBG interrupt:
+> >  #
+> >-# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
+> >-# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
+> >+# ccflags-y := -DTRAP_DBG_INTERRUPT
+> >+# asflags-y := -DTRAP_DBG_INTERRUPT
+> >  #
+> >
+> >  asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
+> >diff --git a/arch/m68knommu/platform/5272/Makefile b/arch/m68knommu/platform/5272/Makefile
+> >index 93673ef..34110fc 100644
+> >--- a/arch/m68knommu/platform/5272/Makefile
+> >+++ b/arch/m68knommu/platform/5272/Makefile
+> >@@ -8,8 +8,8 @@
+> >  # on the console port whenever a DBG interrupt occurs.  You have to
+> >  # set up you HW breakpoints to trigger a DBG interrupt:
+> >  #
+> >-# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
+> >-# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
+> >+# ccflags-y := -DTRAP_DBG_INTERRUPT
+> >+# asflags-y := -DTRAP_DBG_INTERRUPT
+> >  #
+> >
+> >  asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
+> >diff --git a/arch/m68knommu/platform/527x/Makefile b/arch/m68knommu/platform/527x/Makefile
+> >index 3d90e6d..6ac4b57 100644
+> >--- a/arch/m68knommu/platform/527x/Makefile
+> >+++ b/arch/m68knommu/platform/527x/Makefile
+> >@@ -8,8 +8,8 @@
+> >  # on the console port whenever a DBG interrupt occurs.  You have to
+> >  # set up you HW breakpoints to trigger a DBG interrupt:
+> >  #
+> >-# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
+> >-# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
+> >+# ccflags-y := -DTRAP_DBG_INTERRUPT
+> >+# asflags-y := -DTRAP_DBG_INTERRUPT
+> >  #
+> >
+> >  asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
+> >diff --git a/arch/m68knommu/platform/528x/Makefile b/arch/m68knommu/platform/528x/Makefile
+> >index 3d90e6d..6ac4b57 100644
+> >--- a/arch/m68knommu/platform/528x/Makefile
+> >+++ b/arch/m68knommu/platform/528x/Makefile
+> >@@ -8,8 +8,8 @@
+> >  # on the console port whenever a DBG interrupt occurs.  You have to
+> >  # set up you HW breakpoints to trigger a DBG interrupt:
+> >  #
+> >-# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
+> >-# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
+> >+# ccflags-y := -DTRAP_DBG_INTERRUPT
+> >+# asflags-y := -DTRAP_DBG_INTERRUPT
+> >  #
+> >
+> >  asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
+> >diff --git a/arch/m68knommu/platform/5307/Makefile b/arch/m68knommu/platform/5307/Makefile
+> >index 6de5269..d4293b7 100644
+> >--- a/arch/m68knommu/platform/5307/Makefile
+> >+++ b/arch/m68knommu/platform/5307/Makefile
+> >@@ -8,8 +8,8 @@
+> >  # on the console port whenever a DBG interrupt occurs. You have to
+> >  # set up you HW breakpoints to trigger a DBG interrupt:
+> >  #
+> >-# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
+> >-# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
+> >+# ccflags-y := -DTRAP_DBG_INTERRUPT
+> >+# asflags-y := -DTRAP_DBG_INTERRUPT
+> >  #
+> >
+> >  asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
+> >diff --git a/arch/m68knommu/platform/532x/Makefile b/arch/m68knommu/platform/532x/Makefile
+> >index 4cc2324..ce01669 100644
+> >--- a/arch/m68knommu/platform/532x/Makefile
+> >+++ b/arch/m68knommu/platform/532x/Makefile
+> >@@ -8,8 +8,8 @@
+> >  # on the console port whenever a DBG interrupt occurs. You have to
+> >  # set up you HW breakpoints to trigger a DBG interrupt:
+> >  #
+> >-# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
+> >-# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
+> >+# ccflags-y := -DTRAP_DBG_INTERRUPT
+> >+# asflags-y := -DTRAP_DBG_INTERRUPT
+> >  #
+> >
+> >  asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
+> >diff --git a/arch/m68knommu/platform/5407/Makefile b/arch/m68knommu/platform/5407/Makefile
+> >index dee62c5..e83fe14 100644
+> >--- a/arch/m68knommu/platform/5407/Makefile
+> >+++ b/arch/m68knommu/platform/5407/Makefile
+> >@@ -8,8 +8,8 @@
+> >  # on the console port whenever a DBG interrupt occurs. You have to
+> >  # set up you HW breakpoints to trigger a DBG interrupt:
+> >  #
+> >-# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
+> >-# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
+> >+# ccflags-y := -DTRAP_DBG_INTERRUPT
+> >+# asflags-y := -DTRAP_DBG_INTERRUPT
+> >  #
+> >
+> >  asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
+> >diff --git a/arch/m68knommu/platform/coldfire/Makefile b/arch/m68knommu/platform/coldfire/Makefile
+> >index f72a0e5..788c13f 100644
+> >--- a/arch/m68knommu/platform/coldfire/Makefile
+> >+++ b/arch/m68knommu/platform/coldfire/Makefile
+> >@@ -8,8 +8,8 @@
+> >  # on the console port whenever a DBG interrupt occurs. You have to
+> >  # set up you HW breakpoints to trigger a DBG interrupt:
+> >  #
+> >-# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
+> >-# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
+> >+# ccflags-y := -DTRAP_DBG_INTERRUPT
+> >+# asflags-y := -DTRAP_DBG_INTERRUPT
+> >  #
+> >
+> >  asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
+> 
