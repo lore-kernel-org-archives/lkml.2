@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933443Ab0I1CF6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 22:05:58 -0400
-Received: from nm15-vm0.bullet.mail.ne1.yahoo.com ([98.138.91.70]:35342 "HELO
-	nm15-vm0.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S933005Ab0I1CF4 (ORCPT
+	id S933310Ab0I1CFk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 22:05:40 -0400
+Received: from smtp101.sbc.mail.re3.yahoo.com ([66.196.96.84]:33546 "HELO
+	smtp101.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933220Ab0I1CFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 22:05:56 -0400
-X-Yahoo-Newman-Id: 245127.77382.bm@omp1011.mail.ne1.yahoo.com
+	Mon, 27 Sep 2010 22:05:37 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: aa3NOUwVM1nlxHGL1GKIprlluhO__4Ga_nSKNohnd9FFI22
- JEXc75vo64aj4DIQsUXji.LajwUixRMsYGOKd69zTEPyALptuFBTRiI7DzZj
- mI.Avz83avWILZHzWfoxA7lsubFi1dQIIrazjhkEnkM8ckoHXoAdJcBV2l5.
- 5a0RyaVr09Pxa3vpbkLrED.k_bUrkAJtOYldZjORnwqkdSHiLfWrGgRD8UlN
- isLxf5YcfO1TUClq1CsQVLNLmXj8pb6V3R1fhmdZ2vkQqixPlEiq1yzyzLoM
- _xQ8nayHMF79KbAPebl2Ar.Rx0N55dtMlOWL95Yn_LMEg
+X-YMail-OSG: HQwED8IVM1k4u_7kYstyeFSgWz4SCBaXzpnBOXORtFEPTRk
+ CUQx5Bc8KH1kdNXXc1TdIQ_i4cTFNuXUOzy9RLJ8QX_At_vpIobfR5Badejm
+ QBozk_eS3LKNFbK833Gwyy2dkCe0dfl_.xOElYe_.el8JuIQiwubRPLCLIaU
+ 5miEMXYEvxORc6cXdmZD1NnNaB2kmVraRG2pGowVSJnxNGUbsvuVyUFCyp9T
+ FJOPuIMQX5JXs.wI1BW8JZkwKyrunIqFZrVRlvAAS1ukj9YWScDnfbWoTXwP
+ FkzQ.R7sUmmPmApaUS_dtIMSz8u8xl0HycV74Se0wiMLpjI9kpn_XRiErzeV
+ BxHvNnPUf0ssW2p5hWnbBCv2lKm8G6CNLYqboGx.qUS5RFEzLw_ZmivouOPQ
+ UJ8hT24AXcZPIt6_JqWhMdKAcye.c.gWG0WuT9GlY
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -34,9 +35,9 @@ Cc: James Smart <james.smart@emulex.com>,
         Luben Tuikov <ltuikov@yahoo.com>, mvsas maintainer <kewei@marvell.com>,
         pm8001 maintainer Jack Wang <jack_wang@usish.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [RFC v4 05/19] mvsas: Set SHT->unlocked_qcmd=1 for libsas queuecommand()
-Date: Mon, 27 Sep 2010 19:05:50 -0700
-Message-Id: <1285639550-7304-1-git-send-email-nab@linux-iscsi.org>
+Subject: [RFC v4 03/19] libsas: Remove host_lock unlock() + lock() from sas_queuecommand()
+Date: Mon, 27 Sep 2010 19:05:31 -0700
+Message-Id: <1285639531-7264-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -44,28 +45,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch updates mvsas to set struct scsi_host_template->unlocked_qcmd=1
-because it is using generic libsas sas_queuecommand() code which now can be
-run without struct Scsi_Host->host_lock held following the original
-host_lock unlock -> do_work() -> lock optimization in sas_queuecommand().
+This patch removes the now legacy host_lock unlock() + lock() optimization
+from sas_scsi_host.c:sas_queuecommand()
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/scsi/mvsas/mv_init.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/scsi/libsas/sas_scsi_host.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/scsi/mvsas/mv_init.c b/drivers/scsi/mvsas/mv_init.c
-index 19ad34f..7a83e07 100644
---- a/drivers/scsi/mvsas/mv_init.c
-+++ b/drivers/scsi/mvsas/mv_init.c
-@@ -54,6 +54,7 @@ static struct scsi_host_template mvs_sht = {
- 	.can_queue		= 1,
- 	.cmd_per_lun		= 1,
- 	.this_id		= -1,
-+	.unlocked_qcmd		= 1,
- 	.sg_tablesize		= SG_MX,
- 	.max_sectors		= SCSI_DEFAULT_MAX_SECTORS,
- 	.use_clustering		= ENABLE_CLUSTERING,
+diff --git a/drivers/scsi/libsas/sas_scsi_host.c b/drivers/scsi/libsas/sas_scsi_host.c
+index f0cfba9..bc1c97c 100644
+--- a/drivers/scsi/libsas/sas_scsi_host.c
++++ b/drivers/scsi/libsas/sas_scsi_host.c
+@@ -202,18 +202,14 @@ int sas_queue_up(struct sas_task *task)
+  */
+ int sas_queuecommand(struct scsi_cmnd *cmd,
+ 		     void (*scsi_done)(struct scsi_cmnd *))
+-	__releases(host->host_lock)
+ 	__acquires(dev->sata_dev.ap->lock)
+ 	__releases(dev->sata_dev.ap->lock)
+-	__acquires(host->host_lock)
+ {
+ 	int res = 0;
+ 	struct domain_device *dev = cmd_to_domain_dev(cmd);
+ 	struct Scsi_Host *host = cmd->device->host;
+ 	struct sas_internal *i = to_sas_internal(host->transportt);
+ 
+-	spin_unlock_irq(host->host_lock);
+-
+ 	{
+ 		struct sas_ha_struct *sas_ha = dev->port->ha;
+ 		struct sas_task *task;
+@@ -254,7 +250,6 @@ int sas_queuecommand(struct scsi_cmnd *cmd,
+ 		}
+ 	}
+ out:
+-	spin_lock_irq(host->host_lock);
+ 	return res;
+ }
+ 
 -- 
 1.7.3
 
