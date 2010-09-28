@@ -1,106 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068Ab0I1Ppl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 11:45:41 -0400
-Received: from symlink.to.noone.org ([85.10.207.172]:51132 "EHLO sym.noone.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753724Ab0I1Ppk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 11:45:40 -0400
-Date: Tue, 28 Sep 2010 17:45:39 +0200
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] altera_uart: Add support for polling mode
-	(IRQ-less)
-Message-ID: <20100928154539.GE3137@distanz.ch>
-References: <20100928133526.GB8289@oksana.dev.rtsoft.ru>
+	id S1754602Ab0I1P4i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 11:56:38 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:40203 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753452Ab0I1P4g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 11:56:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=lOR5ySmsdenbnwlk3tpL15Tz+o+E1SB2+QnPt/1l4Tf+fFk2qjTC9Rnm9uoCz5U8Ci
+         9LtXjJO9YENcNlyH5ex7BJ3KidXdugwvPXmgy+ZJyJM0fNk/KHR5FCEE1u6fWCpgQvtQ
+         UkR2lq9ELryp8wWkB3W3FprAYptAwUkVhSX4Y=
+Date: Tue, 28 Sep 2010 17:56:21 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, paulus <paulus@samba.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, dhowells <dhowells@redhat.com>,
+        Russell King <rmk@arm.linux.org.uk>, Kyle McMartin <kyle@mcmartin.ca>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        davem <davem@davemloft.net>, Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH -tip -v6] irq_work: generic hard-irq context callbacks
+Message-ID: <20100928155609.GA5354@nowhere>
+References: <1285663908.20791.286.camel@yhuang-dev>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100928133526.GB8289@oksana.dev.rtsoft.ru>
-X-Editor: Vi IMproved 7.1
+In-Reply-To: <1285663908.20791.286.camel@yhuang-dev>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-09-28 at 15:35:26 +0200, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
-> Some Altera UART implementations doesn't route the IRQ line, so we have
-> to work in polling mode.
-> 
-> Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
-> ---
->  drivers/serial/altera_uart.c |   38 +++++++++++++++++++++++++++++---------
->  1 files changed, 29 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/serial/altera_uart.c b/drivers/serial/altera_uart.c
-> index f8d8a00..2603f59 100644
-> --- a/drivers/serial/altera_uart.c
-> +++ b/drivers/serial/altera_uart.c
-> @@ -15,6 +15,7 @@
->  
->  #include <linux/kernel.h>
->  #include <linux/init.h>
-> +#include <linux/timer.h>
->  #include <linux/interrupt.h>
->  #include <linux/module.h>
->  #include <linux/console.h>
-> @@ -76,6 +77,7 @@
->   */
->  struct altera_uart {
->  	struct uart_port port;
-> +	struct timer_list tmr;
->  	unsigned int sigs;	/* Local copy of line sigs */
->  	unsigned short imr;	/* Local IMR mirror */
->  };
-> @@ -168,6 +170,7 @@ static void altera_uart_set_termios(struct uart_port *port,
->  	tty_termios_encode_baud_rate(termios, baud, baud);
->  
->  	spin_lock_irqsave(&port->lock, flags);
-> +	uart_update_timeout(port, termios->c_cflag, baud);
->  	writel(baudclk, port->membase + ALTERA_UART_DIVISOR_REG);
->  	spin_unlock_irqrestore(&port->lock, flags);
->  }
-> @@ -268,6 +271,15 @@ static irqreturn_t altera_uart_interrupt(int irq, void *data)
->  	return IRQ_RETVAL(isr);
->  }
->  
-> +static void altera_uart_timer(unsigned long data)
-> +{
-> +	struct uart_port *port = (void *)data;
-> +	struct altera_uart *pp = container_of(port, struct altera_uart, port);
+On Tue, Sep 28, 2010 at 04:51:48PM +0800, Huang Ying wrote:
+> +++ b/arch/x86/kernel/irq_work.c
+> @@ -0,0 +1,30 @@
+> +/*
+> + * x86 specific code for irq_work
+> + *
+> + * Copyright (C) 2010 Red Hat, Inc., Peter Zijlstra <pzijlstr@redhat.com>
+> + */
 > +
-> +	altera_uart_interrupt(0, port);
-> +	mod_timer(&pp->tmr, jiffies + uart_poll_timeout(port));
+> +#include <linux/kernel.h>
+> +#include <linux/irq_work.h>
+> +#include <linux/hardirq.h>
+> +#include <asm/apic.h>
+> +
+> +void smp_irq_work_interrupt(struct pt_regs *regs)
+> +{
+> +	irq_enter();
+> +	ack_APIC_irq();
+> +	inc_irq_stat(apic_irq_work_irqs);
+> +	irq_work_run();
+> +	irq_exit();
 > +}
 > +
->  static void altera_uart_config_port(struct uart_port *port, int flags)
->  {
->  	port->type = PORT_ALTERA_UART;
-> @@ -284,14 +296,6 @@ static int altera_uart_startup(struct uart_port *port)
->  	unsigned long flags;
->  	int ret;
->  
-> -	ret = request_irq(port->irq, altera_uart_interrupt, IRQF_DISABLED,
-> -			DRV_NAME, port);
-> -	if (ret) {
-> -		pr_err(DRV_NAME ": unable to attach Altera UART %d "
-> -		       "interrupt vector=%d\n", port->line, port->irq);
-> -		return ret;
-> -	}
-> -
->  	spin_lock_irqsave(&port->lock, flags);
->  
->  	/* Enable RX interrupts now */
-> @@ -300,6 +304,19 @@ static int altera_uart_startup(struct uart_port *port)
->  
->  	spin_unlock_irqrestore(&port->lock, flags);
+> +void arch_irq_work_raise(void)
+> +{
+> +#ifdef CONFIG_X86_LOCAL_APIC
+> +	if (!cpu_has_apic)
+> +		return;
+> +
+> +	apic->send_IPI_self(IRQ_WORK_VECTOR);
+> +	apic_wait_icr_idle();
+> +#endif
+> +}
 
-Shouldn't we only enable the RX interrupt if we actually use interrupts?
-Also I would retain the order here (first register the interrupt handler
-and then enable the interrupts).
 
-Cheers,
-  Tobias
+
+So basically, CONFIG_X86_LOCAL_APIC == !HAVE_IRQ_WORK ?
+
+But IIUC, this will fallback to the timer interrupt:
+
+
+
+> @@ -1279,7 +1279,10 @@ void update_process_times(int user_tick)
+>  	run_local_timers();
+>  	rcu_check_callbacks(cpu, user_tick);
+>  	printk_tick();
+> -	perf_event_do_pending();
+> +#ifdef CONFIG_IRQ_WORK
+> +	if (in_irq())
+> +		irq_work_run();
+> +#endif
+>  	scheduler_tick();
+>  	run_posix_cpu_timers(p);
+>  }
+
+
+
+Then HAVE_IRQ_WORK just means that the arch supports self IPIs.
+So, CONFIG_IRQ_WORK doesn't need to depend on HAVE_IRQ_WORK
+because of the timer fallback. But archs that support self
+IPIs should avoid the above fallback because it bloats
+the timer interrupt.
+
+Perhaps CONFIG_HAVE_IRQ_WORK should be CONFIG_HAVE_IRQ_WORK_SOURCE
+or CONFIG_HAVE_IRQ_WORK_TRIGGER to better denote the capability.
+And then:
+
+config IRQ_WORK_TRIGGER
+	depends on HAVE_IRQ_WORK_TRIGGER && IRQ_WORK
+	default y
+
+And that would define the right condition to build the fallback
+in the timer interrupt.
+
+Or I am completely misunderstanding something?
+
+Thanks.
+
