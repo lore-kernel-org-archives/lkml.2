@@ -1,56 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755260Ab0I1WfI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 18:35:08 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:59608 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668Ab0I1WfG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 18:35:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:in-reply-to:references:user-agent:date
-         :message-id:mime-version:content-type;
-        b=p480vLsVy3R1uKz93GgZxw8kKKv6/xo485KckQ5bTXYSsmUhtel+JVhacqxWw1U560
-         1pHRaERZuh3ohiN7d6/BVAIYvCoTw7NfkpgQGEFmjuYwef/WNr6B30vsuEEWhWZb3h4f
-         2D8jF+lkmejPUnPyK9DdCTugegjCaqNHkHkm0=
-From: Ben Gamari <bgamari@gmail.com>
-To: Raymond Liu <raymondliu3linux@gmail.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: HDMI open source to handle audio/video/CEC in one driver
-In-Reply-To: <AANLkTikxzY9KP2zzQ+pXN0t_5Z4L7kHyd_Xz5fD+GcZn@mail.gmail.com>
-References: <AANLkTimMH604FW_NZehY68w8B_cV_Lhe-ZwZq0cAYUfd@mail.gmail.com> <AANLkTi=mLizQGyp5cdR_WtHjMMhixBOOagkFUNVqO4vj@mail.gmail.com> <Pine.LNX.4.64.1009281624100.11083@axis700.grange> <AANLkTikxzY9KP2zzQ+pXN0t_5Z4L7kHyd_Xz5fD+GcZn@mail.gmail.com>
-User-Agent: Notmuch/0.3.1-62-g4723706 (http://notmuchmail.org) Emacs/23.1.1 (x86_64-pc-linux-gnu)
-Date: Tue, 28 Sep 2010 18:35:01 -0400
-Message-ID: <8739stxzsa.fsf@gmail.com>
+	id S1755191Ab0I1WmB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 18:42:01 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:45650 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1753138Ab0I1Wl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 18:41:59 -0400
+X-Authenticated: #31060655
+X-Provags-ID: V01U2FsdGVkX19orJtwWLRo7C1Kk7r0IW6se6mUQgkIFD/lRiBoBU
+	Aq7TrddZBoDVNm
+Message-ID: <4CA26F35.6060408@gmx.net>
+Date: Wed, 29 Sep 2010 00:41:57 +0200
+From: Carl-Daniel Hailfinger <c-d.hailfinger.devel.2006@gmx.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.23) Gecko/20090410 SUSE/1.1.18-0.1 SeaMonkey/1.1.18
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mtd <linux-mtd@lists.infradead.org>,
+        sf-linux-drivers <linux-net-drivers@solarflare.com>,
+        flashrom <flashrom@flashrom.org>
+Subject: Re: [RFC] Online firmware upgrade in non-embedded systems
+References: <1285696787.2282.45.camel@achroite.uk.solarflarecom.com>
+In-Reply-To: <1285696787.2282.45.camel@achroite.uk.solarflarecom.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Sep 2010 13:07:40 -0700, Raymond Liu <raymondliu3linux@gmail.com> wrote:
-> Hi Ben and Guennadi,
-> 
-> Really appreciate your inputs.
-> 
-> For temporarily short term purpose (we already had a driver but it did
-> not fit into any of these you mentioned), what is the process we
-> should follow to make it an "open source"?
-> 
-Well, "release early, release often" is a good mantra to follow. Even if
-you think the code is not ready, it never does any harm to put it up
-somewhere for folks to look at under an open source license (GPL would
-be a good idea if you are looking to merge upstream).
+[adding flashrom@flashrom.org to CC, senders will be whitelisted after a
+short delay]
 
-If you are serious about bringing a usable driver to the masses you
-should clean up the code and adapt it to fit into one of the existing
-frameworks for exposing graphics devices, along with bringing the driver
-into conformance with the Linux kernel style guidelines. Once the driver
-is beginning to look ready to merging upstream you can request that it
-be pulled into the -staging tree. When you think the driver is ready for
-inclusion in the kernel you can request merging upstream and start the
-code review process.
+On 28.09.2010 19:59, Ben Hutchings wrote:
+> Network and disk controllers normally have at least some firmware in
+> flash to support their use as boot devices. [...]
+>
+> Currently the sfc network driver is optionally combined with an MTD
+> driver (CONFIG_SFC_MTD) which exposes all upgradable firmware and
+> configuration partitions in flash.  This works nicely in kernels with
+> MTD enabled, but since MTD is mainly used in embedded systems with
+> on-board flash it is often disabled in distribution kernels and custom
+> kernels alike.  This leaves users of sfc unable to upgrade firmware
+> without rebuilding the kernel or booting some other distribution.  The
+> lack of widespread MTD support is a regular cause of support requests.
+>
+> There are two main alternatives I'm aware of:
+>
+> - Use the ethtool ETHTOOL_SEEPROM [...]
+>
+> - Use the ethtool ETHTOOL_FLASHDEV command [..]
+>
+> Of course these are both specific to network devices; it seems deisrable
+> to have a more general convention for online firmware upgrades.  MTDs
+> clearly are more generally applicable, and pretty much every computer
+> does have flash storage for firmware and boot configuration, so perhaps
+> it should be treated as more of a standard feature?
+>   
 
-- Ben
+Given that the flashrom utility <http://www.flashrom.org/> (GPLv2)
+supports flashing many network cards, SATA/PATA controllers, graphics
+cards, and of course the main system firmware/BIOS/EFI, and it does that
+from userspace without any kernel support, using flashrom for those
+purposes makes sense IMHO.
+
+flashrom works fine under Linux 2.4, 2.6 and pretty much every other OS
+out there. There is a focus on x86, but MIPS, PowerPC and other
+architectures are supported as well. flashrom is independent of the MTD
+framework, so you don't need to boot a special kernel for a firmware
+upgrade.
+
+That said, writing a flashrom driver for your hardware is pretty easy.
+You could even use existing kernel code for your device as a template
+for the flashrom driver since the license is compatible.
+
+If you have any questions, please ask.
+
+Regards,
+Carl-Daniel
