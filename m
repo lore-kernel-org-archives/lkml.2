@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758011Ab0I1GCP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 02:02:15 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:65463 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752942Ab0I1GCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 02:02:14 -0400
-Date: Tue, 28 Sep 2010 14:01:17 +0800
-From: Hu Tao <hutao@cn.fujitsu.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Americo Wang <xiyou.wangcong@gmail.com>
-Subject: Re: [PATCH resend] Update num_symtab, symtab and strtab right after
- setup of core_num_syms, core_symtab and core_strtab.
-Message-ID: <20100928060117.GC10608@localhost.localdomain>
-References: <20100928010628.GA6923@localhost.localdomain>
+	id S1758348Ab0I1GGC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 02:06:02 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:36776 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753219Ab0I1GGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 02:06:00 -0400
+Date: Tue, 28 Sep 2010 09:05:54 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Grazvydas Ignotas <notasas@gmail.com>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Balbi, Felipe" <balbi@ti.com>,
+        "Chikkature Rajashekar, Madhusudhan" <madhu.cr@ti.com>
+Subject: Re: [PATCH v4] power_supply: Add driver for TWL4030/TPS65950 BCI
+ charger
+Message-ID: <20100928060554.GF2702@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1285618704-8985-1-git-send-email-notasas@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Disposition: inline
-In-Reply-To: <20100928010628.GA6923@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1285618704-8985-1-git-send-email-notasas@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Negative. Sorry for noise.
+Hi,
 
-On Tue, Sep 28, 2010 at 09:06:28AM +0800, Hu Tao wrote:
-> symtab/strtab refer to memory that will be vfreed when load_module() is
-> done. So update them early.
-> 
-> Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
-> ---
->  kernel/module.c |    9 ++++-----
->  1 files changed, 4 insertions(+), 5 deletions(-)
-> 
-> diff --git a/kernel/module.c b/kernel/module.c
-> index d0b5f8d..d5dc98b 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -2029,6 +2029,10 @@ static void add_kallsyms(struct module *mod, const struct load_info *info)
->  	for (*s = 0, i = 1; i < info->sechdrs[info->index.str].sh_size; ++i)
->  		if (test_bit(i, info->strmap))
->  			*++s = mod->strtab[i];
-> +
-> +	mod->num_symtab = mod->core_num_syms;
-> +	mod->symtab = mod->core_symtab;
-> +	mod->strtab = mod->core_strtab;
->  }
->  #else
->  static inline void layout_symtab(struct module *mod, struct load_info *info)
-> @@ -2738,11 +2742,6 @@ SYSCALL_DEFINE3(init_module, void __user *, umod,
->  	/* Drop initial reference. */
->  	module_put(mod);
->  	trim_init_extable(mod);
-> -#ifdef CONFIG_KALLSYMS
-> -	mod->num_symtab = mod->core_num_syms;
-> -	mod->symtab = mod->core_symtab;
-> -	mod->strtab = mod->core_strtab;
-> -#endif
->  	module_free(mod, mod->module_init);
->  	mod->module_init = NULL;
->  	mod->init_size = 0;
-> -- 
-> 1.7.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On Mon, Sep 27, 2010 at 03:18:24PM -0500, Grazvydas Ignotas wrote:
+>+static int twl4030_bci_usb_ncb(struct notifier_block *nb, unsigned long val,
+>+                              void *priv)
+>+{
+>+       struct twl4030_bci *bci = container_of(nb, struct twl4030_bci, otg_nb);
+>+
+>+       dev_dbg(bci->dev, "OTG notify %lu\n", val);
+>+
+>+       switch (val) {
+>+       case USB_EVENT_VBUS:
+>+       case USB_EVENT_CHARGER:
+
+you should have removed CHARGER from here :-)
+
+-- 
+balbi
