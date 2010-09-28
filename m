@@ -1,61 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757585Ab0I1Fcn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 01:32:43 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:60832 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753910Ab0I1Fcm (ORCPT
+	id S1755820Ab0I1F6d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 01:58:33 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:63324 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752417Ab0I1F6b convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 01:32:42 -0400
+	Tue, 28 Sep 2010 01:58:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=tJWUDV9+/vGMj1DFZzMFO8pIkmThR8i8JgIEWVSFgGbwi0Vs7KbU3OMSaX1QmQIHYw
-         Ima3vaZJ5yxT/BH/gxU5Ncv9VWhwUyrqAWZZEMlFclzUrG7+gJZuyPznPgXnWqC9bBow
-         fR2ZbCvB1+t9XQpb05V/SHklrLmwN0tzghfgw=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=F47sSjN/3f39qUVdg6a7A3T9WNtbun8lKXfYfERKf+Gh16SPtMZK31FyQX3kXSNbNo
+         Be4kMnSYj7zLiGevaSKsmrHTZ/ulL/xyFUFV3d9JEBYrZeQhGo8JzCsRDXjyzOHpJtPi
+         rWlKDOuAKj5pipaPdpKEDoC6xQrkGVHBBP7PI=
 MIME-Version: 1.0
-In-Reply-To: <003001cb5ecd$97577930$66f8800a@maildom.okisemi.com>
-References: <4C80D3C8.9020204@dsn.okisemi.com> <20100903134827.GA7614@rakim.wolfsonmicro.main>
- <000301cb5ebc$35ad8d20$66f8800a@maildom.okisemi.com> <201009272338.23762.vapier@gentoo.org>
- <002801cb5ec9$b7936a00$66f8800a@maildom.okisemi.com> <AANLkTikUJMfo8m8o1rQdf264g2P39uHLRp80vGPW0Jni@mail.gmail.com>
- <003001cb5ecd$97577930$66f8800a@maildom.okisemi.com>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Tue, 28 Sep 2010 01:32:20 -0400
-X-Google-Sender-Auth: bQ0dSTlEn1gUCPpaAEc2uH-4xfw
-Message-ID: <AANLkTi=PvwA81YiZszUu2B=rDoBhduJwdWv2CrYWWu+f@mail.gmail.com>
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_GPIO driver to 2.6.35
-To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>, Alek Du <alek.du@intel.com>,
-        richard.rojfors@mocean-labs.com, meego-dev@meego.com,
-        ML linux-kernel <linux-kernel@vger.kernel.org>, Qi <qi.wang@intel.com>,
-        andrew.chih.howe.khor@intel.com, gregkh@suse.de,
-        Yong Y <yong.y.wang@intel.com>,
-        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>, joel.clark@intel.com,
-        margie.foster@intel.com, kok.howg.ewe@intel.com
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20100917150731.f1f44f3c.akpm@linux-foundation.org>
+References: <4C7CD95A.5040309@samsung.com>
+	<20100917150731.f1f44f3c.akpm@linux-foundation.org>
+Date: Tue, 28 Sep 2010 14:58:30 +0900
+Message-ID: <AANLkTim2UhJAhOw1qHvZ9bbctR0tNSMvE61T=sxffHxO@mail.gmail.com>
+Subject: Re: [PATCH] misc: adds support the FSA9480 USB Switch
+From: Minkyu Kang <promsoft@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Minkyu Kang <mk7.kang@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, kyungmin.park@samsung.com,
+        Greg KH <greg@kroah.com>, Ben Dooks <ben-i2c@fluff.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 28, 2010 at 01:25, Masayuki Ohtake wrote:
->> find out what range of GPIO numbers your driver is using and use those
->> instead of "1"
->
-> I have attached a part of our source file.
->
-> Since I set "ngpio=12",
-> I guess 0-11 can be used, thus, "echo 1 > export" should be success too.
-> Is this true ?
+Dear Andrew Morton,
 
-there are often multiple gpio sources in a system.  whichever one is
-registered first (usually the arch/cpu specific one) tends to start at
-0.
+On 18 September 2010 07:07, Andrew Morton <akpm@linux-foundation.org> wrote:
+> (catching up!)
+>
+> On Tue, 31 Aug 2010 19:28:42 +0900
+> Minkyu Kang <mk7.kang@samsung.com> wrote:
+>
+>> The FSA9480 is a USB port accessory detector and switch.
+>> This patch adds support the FSA9480 USB Switch.
+>>
+>
+> What a strange device.
+>
+> Is there a data sheet available?
 
-i'm merely providing generic gpio information.  i know nothing of your
-specific arch/cpu/board setup.  you'll have to do some
-digging/debugging on your side.
--mike
+Hello :)
+I couldn't find the fsa9480 data sheet on the web.
+But I found the fsa9280 data sheet instead.
+It looks very similar.
+http://www.fairchildsemi.com/ds/FS/FSA9280A.pdf
+
+>
+>> +config USB_SWITCH_FSA9480
+>> +     tristate "FSA9480 USB Switch"
+>> +     depends on I2C
+>> +     help
+>> +       The FSA9480 is a USB port accessory detector and switch.
+>> +       The FSA9480 is fully controlled using I2C and enables USB data,
+>> +       stereo and mono audio, video, microphone and UART data to use
+>> +       a common connector port.
+>
+> So if I'm understanding it correctly, it's an i2c-controlled device
+> which turns USB devices on and off, multiplexing them into a single USB
+> port?  So if I switch from "USB data" over to "microphone", the USB
+> subsystem will see the "USB data" device get unplugged and will see a
+> "microphone" get plugged in?
+>
+> Or something else.  Am I even vaguely understanding this thing?
+>
+> It would help if the changelog were to contain a paragraph
+> describing the overall behaviour of this device.
+>
+>>
+>> ...
+>>
+>> +void fsa9480_set_switch(const char *buf)
+>> +{
+>> +     struct fsa9480_usbsw *usbsw = chip;
+>> +     struct i2c_client *client = usbsw->client;
+>> +     unsigned int value;
+>> +     unsigned int path = 0;
+>> +
+>> +     value = fsa9480_read_reg(client, FSA9480_REG_CTRL);
+>> +
+>> +     if (!strncmp(buf, "VAUDIO", 6)) {
+>> +             path = SW_VAUDIO;
+>> +             value &= ~CON_MANUAL_SW;
+>> +     } else if (!strncmp(buf, "UART", 4)) {
+>> +             path = SW_UART;
+>> +             value &= ~CON_MANUAL_SW;
+>> +     } else if (!strncmp(buf, "AUDIO", 5)) {
+>> +             path = SW_AUDIO;
+>> +             value &= ~CON_MANUAL_SW;
+>> +     } else if (!strncmp(buf, "DHOST", 5)) {
+>> +             path = SW_DHOST;
+>> +             value &= ~CON_MANUAL_SW;
+>> +     } else if (!strncmp(buf, "AUTO", 4)) {
+>> +             path = SW_AUTO;
+>> +             value |= CON_MANUAL_SW;
+>> +     } else {
+>> +             printk(KERN_ERR "Wrong command\n");
+>> +             return;
+>> +     }
+>> +
+>> +     usbsw->mansw = path;
+>> +     fsa9480_write_reg(client, FSA9480_REG_MANSW1, path);
+>> +     fsa9480_write_reg(client, FSA9480_REG_CTRL, value);
+>> +}
+>> +EXPORT_SYMBOL_GPL(fsa9480_set_switch);
+>
+> Why was this exported?
+
+Kyungmin already explained about it.
+
+>
+>> +ssize_t fsa9480_get_switch(char *buf)
+>> +{
+>> +     struct fsa9480_usbsw *usbsw = chip;
+>> +     struct i2c_client *client = usbsw->client;
+>> +     unsigned int value;
+>> +
+>> +     value = fsa9480_read_reg(client, FSA9480_REG_MANSW1);
+>> +
+>> +     if (value == SW_VAUDIO)
+>> +             return sprintf(buf, "VAUDIO\n");
+>> +     else if (value == SW_UART)
+>> +             return sprintf(buf, "UART\n");
+>> +     else if (value == SW_AUDIO)
+>> +             return sprintf(buf, "AUDIO\n");
+>> +     else if (value == SW_DHOST)
+>> +             return sprintf(buf, "DHOST\n");
+>> +     else if (value == SW_AUTO)
+>> +             return sprintf(buf, "AUTO\n");
+>> +     else
+>> +             return sprintf(buf, "%x", value);
+>> +}
+>> +EXPORT_SYMBOL_GPL(fsa9480_get_switch);
+>
+> This export also has no callers?
+
+It's for other drivers.
+For example.. When USB cable is connected, PMIC driver enable the
+power for each device.
+But if use the manual switch, PMIC driver can't know what device is enabled.
+So, this function was exported.
+
+>
+> These functions implement a userspace API.  Userspace APIs are
+> important.  But the patch provided no documentation for that API.
+> Please always fully, exhaustively document userspace APIs!  For they
+> are the one part of the driver which we can never change.
+>
+> Documenting them in a documentation file is OK.  Also there's
+> Documentation/ABI/.  And they can be nicely described in the changelog
+> too.
+>
+> But providing us with no description at all makes review harder and
+> less effective than we'd like it to be, and results in a driver which
+> is harder for our users to use.
+>
+> OK?
+>
+>> +static ssize_t fsa9480_show_status(struct device *dev,
+>> +                                struct device_attribute *attr,
+>> +                                char *buf)
+>> +{
+>> +     struct fsa9480_usbsw *usbsw = dev_get_drvdata(dev);
+>> +     struct i2c_client *client = usbsw->client;
+>> +     int devid, ctrl, adc, dev1, dev2, intr,
+>> +         intmask1, intmask2, time1, time2, mansw1;
+>> +
+>> +     devid = fsa9480_read_reg(client, FSA9480_REG_DEVID);
+>> +     ctrl = fsa9480_read_reg(client, FSA9480_REG_CTRL);
+>> +     adc = fsa9480_read_reg(client, FSA9480_REG_ADC);
+>> +     intmask1 = fsa9480_read_reg(client, FSA9480_REG_INT1_MASK);
+>> +     intmask2 = fsa9480_read_reg(client, FSA9480_REG_INT2_MASK);
+>> +     dev1 = fsa9480_read_reg(client, FSA9480_REG_DEV_T1);
+>> +     dev2 = fsa9480_read_reg(client, FSA9480_REG_DEV_T2);
+>> +     time1 = fsa9480_read_reg(client, FSA9480_REG_TIMING1);
+>> +     time2 = fsa9480_read_reg(client, FSA9480_REG_TIMING2);
+>> +     mansw1 = fsa9480_read_reg(client, FSA9480_REG_MANSW1);
+>> +
+>> +     fsa9480_read_irq(client, &intr);
+>> +
+>> +     return sprintf(buf, "Device ID(%02x), CTRL(%02x)\n"
+>> +                     "ADC(%02x), DEV_T1(%02x), DEV_T2(%02x)\n"
+>> +                     "INT(%04x), INTMASK(%02x, %02x)\n"
+>> +                     "TIMING(%02x, %02x), MANSW1(%02x)\n",
+>> +                     devid, ctrl, adc, dev1, dev2, intr,
+>> +                     intmask1, intmask2, time1, time2, mansw1);
+>> +}
+>
+> That's will produce odd-looking output I suspect.  More conventional
+> would be
+>
+>        Device ID:%02x CTRL:%02x
+>
+> or something like that.
+>
+> But that result is basically unparseable by software and a better output
+> would be
+>
+> Device_ID: %02x
+> CTRL: %02x
+> ADC: %02x
+>
+> etc.
+>
+> But even that violates the sysfs one-value-per-file guideline.
+>
+> So this interface is problematic.  It should have been discussed
+> up-front in the changelog so we can all take a look at the proposal and
+> have a think about it.
+
+Yes. It's for debugging.
+I'll remove some features and separate this sysfs file.
+
+>
+>>
+>> ...
+>>
+>> +static irqreturn_t fsa9480_irq_handler(int irq, void *data)
+>> +{
+>> +     struct fsa9480_usbsw *usbsw = data;
+>> +
+>> +     if (!work_pending(&usbsw->work)) {
+>> +             disable_irq_nosync(irq);
+>> +             schedule_work(&usbsw->work);
+>> +     }
+>> +
+>> +     return IRQ_HANDLED;
+>> +}
+>
+> I expect that this driver can be converted to the new threaded IRQ code
+> (request_threaded_irq) and it will all become simpler.
+
+Ok, I'll convert to new IRQ code.
+
+>
+>>
+>> ...
+>>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
+Thanks
+Minkyu Kang.
+-- 
+from. prom.
+www.promsoft.net
