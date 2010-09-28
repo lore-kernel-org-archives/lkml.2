@@ -1,121 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755152Ab0I1UQa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 16:16:30 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:45033 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752959Ab0I1UQ3 (ORCPT
+	id S1751032Ab0I1UZg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 16:25:36 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:32800 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750790Ab0I1UZf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 16:16:29 -0400
-Message-ID: <4CA24CD9.8090202@oracle.com>
-Date: Tue, 28 Sep 2010 13:15:21 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Tue, 28 Sep 2010 16:25:35 -0400
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH] blkio-throttle: Fix linux-next compilation failure on
- i386
-References: <20100928193446.GE8950@redhat.com>
-In-Reply-To: <20100928193446.GE8950@redhat.com>
+In-Reply-To: <4CA09977.80506@panasas.com>
+References: <4CA09977.80506@panasas.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 28 Sep 2010 13:24:40 -0700
+Message-ID: <AANLkTim85sH_2o=xCiDuoQrHq_7ZL96Y91xQMGxUP5Fy@mail.gmail.com>
+Subject: Re: {painfully BISECTED} Please revert f25c80a4b2: arch/um/drivers:
+ remove duplicate structure field initialization
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Julia Lawall <julia@diku.dk>, "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Stephen Hemminger <shemminger@vyatta.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/10 12:34, Vivek Goyal wrote:
-> Hi Jens,
-> 
-> One more fix for throttling logic. After this fix I realized that there is
-> potential for integer overflow in my calculations. I need to figure out
-> how to take care of these overflow situations and will post a patch for
-> that later.
-> 
-> Thanks
-> Vivek
-> 
-> o Randy Dunlap reported following linux-next failure. This patch fixes it.
-> 
-> on i386:
-> 
-> blk-throttle.c:(.text+0x1abb8): undefined reference to `__udivdi3'
-> blk-throttle.c:(.text+0x1b1dc): undefined reference to `__udivdi3'
-> 
-> o bytes_per_second interface is 64bit and I was continuing to do 64 bit
->   division even on 32bit platform without help of special macros/functions
->   hence the failure.
-> 
-> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+Ping, no comments?
 
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+On Mon, Sep 27, 2010 at 6:17 AM, Boaz Harrosh <bharrosh@panasas.com> wrote:
+>
+> [bharrosh@fs2 ~/dev/git/pub/scsi-misc] 1115$ git bisect good
+> f25c80a4b2bf93c99820f470573626557db35202 is the first bad commit
+> commit f25c80a4b2bf93c99820f470573626557db35202
 
-Thanks.
+It looks like that commit is indeed very misleading. The commit message says:
 
-> ---
->  block/blk-throttle.c |   16 ++++++++++------
->  1 file changed, 10 insertions(+), 6 deletions(-)
-> 
-> Index: linux-2.6-block/block/blk-throttle.c
-> ===================================================================
-> --- linux-2.6-block.orig/block/blk-throttle.c	2010-09-28 12:42:51.000000000 -0400
-> +++ linux-2.6-block/block/blk-throttle.c	2010-09-28 14:16:05.000000000 -0400
-> @@ -378,7 +378,8 @@ throtl_slice_used(struct throtl_data *td
->  static inline void
->  throtl_trim_slice(struct throtl_data *td, struct throtl_grp *tg, bool rw)
->  {
-> -	unsigned long nr_slices, bytes_trim, time_elapsed, io_trim;
-> +	unsigned long nr_slices, time_elapsed, io_trim;
-> +	u64 bytes_trim, tmp;
->  
->  	BUG_ON(time_before(tg->slice_end[rw], tg->slice_start[rw]));
->  
-> @@ -396,8 +397,10 @@ throtl_trim_slice(struct throtl_data *td
->  
->  	if (!nr_slices)
->  		return;
-> +	tmp = tg->bps[rw] * throtl_slice * nr_slices;
-> +	do_div(tmp, HZ);
-> +	bytes_trim = tmp;
->  
-> -	bytes_trim = (tg->bps[rw] * throtl_slice * nr_slices)/HZ;
->  	io_trim = (tg->iops[rw] * throtl_slice * nr_slices)/HZ;
->  
->  	if (!bytes_trim && !io_trim)
-> @@ -415,7 +418,7 @@ throtl_trim_slice(struct throtl_data *td
->  
->  	tg->slice_start[rw] += nr_slices * throtl_slice;
->  
-> -	throtl_log_tg(td, tg, "[%c] trim slice nr=%lu bytes=%lu io=%lu"
-> +	throtl_log_tg(td, tg, "[%c] trim slice nr=%lu bytes=%llu io=%lu"
->  			" start=%lu end=%lu jiffies=%lu",
->  			rw == READ ? 'R' : 'W', nr_slices, bytes_trim, io_trim,
->  			tg->slice_start[rw], tg->slice_end[rw], jiffies);
-> @@ -462,7 +465,7 @@ static bool tg_with_in_bps_limit(struct 
->  		struct bio *bio, unsigned long *wait)
->  {
->  	bool rw = bio_data_dir(bio);
-> -	u64 bytes_allowed, extra_bytes;
-> +	u64 bytes_allowed, extra_bytes, tmp;
->  	unsigned long jiffy_elapsed, jiffy_wait, jiffy_elapsed_rnd;
->  
->  	jiffy_elapsed = jiffy_elapsed_rnd = jiffies - tg->slice_start[rw];
-> @@ -473,8 +476,9 @@ static bool tg_with_in_bps_limit(struct 
->  
->  	jiffy_elapsed_rnd = roundup(jiffy_elapsed_rnd, throtl_slice);
->  
-> -	bytes_allowed = (tg->bps[rw] * jiffies_to_msecs(jiffy_elapsed_rnd))
-> -				/ MSEC_PER_SEC;
-> +	tmp = tg->bps[rw] * jiffies_to_msecs(jiffy_elapsed_rnd);
-> +	do_div(tmp, MSEC_PER_SEC);
-> +	bytes_allowed = tmp;
->  
->  	if (tg->bytes_disp[rw] + bio->bi_size <= bytes_allowed) {
->  		if (wait)
+  "arch/um/drivers: remove duplicate structure field initialization"
+
+but it is in fact not duplicate: there's two field initializations,
+but they are _different_. Looking at the patch, it has:
+
+        .ndo_set_mac_address    = uml_net_set_mac,
+-       .ndo_set_mac_address    = eth_mac_addr,
+
+so it removes the later one, but it is not at all clear which one the
+compiler actually used. My guess is that it used to use the later one
+(the standard eth_mac_addr function), and the patch made it suddenly
+use the uml_net_set_mac function.
+
+I didn't check what gcc used to do, but this:
+
+> The patch Reverts cleanly on top of 2.6.36-rc5 and after Revert works perfectly as
+> before.
+
+makes me suspect that nobody else checked it either.
+
+> <RANT A HEAD CAN BE IGNORED>
+>
+> It has become extremely hard to bisect a simple problem in latest Kernels!
+
+It's always been extremely hard, it just depends on luck how well it
+works. Sometimes you never see any problems (except the one you
+bisect, which is obviously the problem you _want_ to see), and then
+sometimes bisection is really painful because there are multiple
+independent ones you hit.
+
+> For instance I found the bug I see was already present in 2.6.36-rc2
+> and that a good point was 2.6.35. Bisecting two bad(s) quickly took me
+> to some 2.6.35-rc1 Kernel that did not boot at all. So I was clever I
+> decided to merge in 2.6.35 at each bisect point.
+
+That really wasn't clever. Don't do it. It will cause untold pain. All
+your problems resulted from that initial thing - you were basically
+bisecting commits that weren't even part of the original "bad" state.
+After a while, git-bisect ends up hitting those commits that aren't
+even reachable from 'bad', and now you're screwed.
+
+So all the other problems you had were due to that.
+
+Now, admittedly, the thing that caused you to do this in the first
+place (hitting a bad kernel that you couldn't even test) is painful.
+And no, "git bisect skip" doesn't necessarily work all that well. But
+what you tried really just made things worse.
+
+If the real thing to do, just so you know next time, is to do the "git
+bisect visualize", and try to pick a good point, and just select that
+(with "git reset --hard xyzzy").
+
+Now, that "good" is obviously a matter of judgement, because you don't
+want to pick it too close to a known-bad or known-good commit (that
+just makes bisection not work very efficiently), and seeing that can
+be hard. But usually a good strategy is to pick something that looks
+_reasonably_ central in the gitk view, and also looks like it's not in
+the middle of some big upheaval (and preferably as far as reasonable
+from the commit you know you can't test - pick a point on a different
+branch before that got merged, for example)
 
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+
+> Then reset and continue.
+> But for some reason the bisect got mixed up and complained about an impossible
+> merge common bases. So out of desperation I did a very very^ stupid thing.
+> []$ git rebase -i v2.6.35 v2.6.36-rc1
+
+This _really_ won't work. I mean yes, it can work, but with any kind
+of complex history, you're setting yourself up for more pain than it's
+worth. It _can_ be worthwhile, but it's absolutely the last thing you
+should try.
+
+> In short I wish at some 2.6.XX-rc[45] of every Kernel cycle. Maintainers
+> would rebase their next's tree of [XX+1] to a some what more stable rc.
+> Sure re-run all the tests. They still have time for the new tree in next
+> to be tested and verified before the next merge window.
+> (Hell one of my bisect points took me as back as 2.6.34)
+>
+> Please remind me why maintainers should not rebase their trees once
+> committed, to the point that they don't rebase even for buggy patches
+> that are already in next, and apply fix patches, all within the same
+> merge window. The same is also done with merge conflicts with the
+> rc-cycle of their own code, instead of rebasing.
+
+Umm. Rebasing often makes things much _worse_.
+
+The real problem is that maintainers often pick random - and not at
+all stable - points for their development to begin with. They just
+pick some random "this is where Linus -git tree is today", and do
+their development on top of that. THAT is the problem - they are
+unaware that there's some nasty bug in that version.
+
+It's actually made worse by rebasing. A lot of people end up rebasing
+on top of such a random kernel (again, just because it's the 'most
+recent'). It's very annoying.
+
+Not to mention that rebasing easily results in bugs of its own, when
+you do hit merge conflicts or double-apply something that already got
+applied (and wasn't seen as a duplicate and merged away automatically,
+because the code had been further modified since). We had that in the
+DVB pull request just yesterday.
+
+> So in short this is a call for, possibly, cleaner History in main Kernel.
+> Please remind me why re-writing history is a bad thing.
+
+Rebasing doesn't result in cleaner history. It just results in
+_incorrect_ history that looks simpler.
+
+To get cleaner history, people should try to keep their tree clean.
+Not add random patches to random branches, and not start random
+branches at random points in time that aren't necessarily stable.
+
+                                    Linus
