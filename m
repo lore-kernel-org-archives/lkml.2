@@ -1,134 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753153Ab0I1Khv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 06:37:51 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9052 "EHLO mga09.intel.com"
+	id S1751367Ab0I1KkJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 06:40:09 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:40966 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752179Ab0I1Kht (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 06:37:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,246,1283756400"; 
-   d="scan'208";a="661868542"
-Subject: Re: high power consumption in recent kernels
-From: "Alex,Shi" <alex.shi@intel.com>
-To: Norbert Preining <preining@logic.at>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>,
-        "arjan@infradead.org" <arjan@infradead.org>,
-        "efault@gmx.de" <efault@gmx.de>, "Li, Shaohua" <shaohua.li@intel.com>,
-        tglx <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        yakui.zhao@intel.com
-In-Reply-To: <20100922154452.GA9080@gamma.logic.tuwien.ac.at>
-References: <1284355277.26157.8109.camel@debian>
-	 <1284689374.17745.89.camel@debian> <1283840425.26157.6486.camel@debian>
-	 <20100909093140.GC29648@gamma.logic.tuwien.ac.at>
-	 <EA929A9653AAE14F841771FB1DE5A1366008738EC2@rrsmsx501.amr.corp.intel.com>
-	 <20100909205115.GD11053@gamma.logic.tuwien.ac.at>
-	 <1284107099.402.30.camel@laptop>
-	 <6E3BC7F7C9A4BF4286DD4C043110F30B2991AF14FD@shsmsx502.ccr.corp.intel.com>
-	 <20100910145451.GB21450@gamma.logic.tuwien.ac.at>
-	 <1284355277.26157.8109.camel@debian>
-	 <20100922154452.GA9080@gamma.logic.tuwien.ac.at>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 28 Sep 2010 18:40:26 +0800
-Message-ID: <1285670426.21962.43.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1750787Ab0I1KkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 06:40:07 -0400
+Date: Tue, 28 Sep 2010 16:09:38 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 09/10] taskstats: Fix exit CPU time accounting
+Message-ID: <20100928103938.GB4261@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <1285249681.1837.28.camel@holzheu-laptop>
+ <1285250541.1837.95.camel@holzheu-laptop>
+ <20100923171025.GA26623@redhat.com>
+ <1285330688.2179.305.camel@holzheu-laptop>
+ <20100926181127.GA26985@redhat.com>
+ <20100927154257.7910cda3@mschwide.boeblingen.de.ibm.com>
+ <20100928083602.GD4128@balbir.in.ibm.com>
+ <20100928110828.54e1cf25@mschwide.boeblingen.de.ibm.com>
+ <20100928092355.GA4261@balbir.in.ibm.com>
+ <20100928123625.18eec4ad@mschwide.boeblingen.de.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20100928123625.18eec4ad@mschwide.boeblingen.de.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Martin Schwidefsky <schwidefsky@de.ibm.com> [2010-09-28 12:36:25]:
 
-> and it seems that still works nicely. I am now running on battery power,
-> connected to the internet over bluetooth to my mobile, and get:
-> Wakeups-from-idle per second : 452.2    interval: 10.0s
-> Power usage (ACPI estimate): 12.4W (3.6 hours) (long term: 8.0W,/5.6h)
+> On Tue, 28 Sep 2010 14:53:55 +0530
+> Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
 > 
-> Top causes for wakeups:
->   16.1% ( 79.5)   [yenta, ehci_hcd:usb2, uhci_hcd:usb6, uhci_hcd:usb7, uhci_hcd:
->   14.3% ( 70.7)   [kernel scheduler] Load balancing tick
->   14.1% ( 69.8)   [extra timer interrupt]
->   13.1% ( 64.9)   kworker/0:0
->   10.7% ( 53.0)   USB device  8-2 : BCM2046 Bluetooth Device (Broadcom Corp)
->    8.4% ( 41.8)   [kernel core] hrtimer_start (tick_sched_timer)
->    3.8% ( 19.0)   gnome-terminal
->    2.9% ( 14.6)   icedove-bin
->    2.2% ( 10.7)   PS/2 keyboard/mouse/touchpad interrupt
+> > * Martin Schwidefsky <schwidefsky@de.ibm.com> [2010-09-28 11:08:28]:
+> > 
+> > > On Tue, 28 Sep 2010 14:06:02 +0530
+> > > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> > > 
+> > > > * Martin Schwidefsky <schwidefsky@de.ibm.com> [2010-09-27 15:42:57]:
+> > > > > Got the part about self-reaping processes. But there is another issue:
+> > > > > consider an exiting thread where the group leader is still active.
+> > > > > The time for the thread will be added to the utime/stime fields in
+> > > > > the signal structure. Taskstats will happily ignore that time while
+> > > > > the group leader is still running.
+> > > > >
+> > > > 
+> > > > Why do you say that? Not sure your comment is very clean, in
+> > > > fill_tgid, we do
+> > > > 
+> > > > 1. Accumulate signal stats (contains stats for dead threads)
+> > > > 2. Accumulate stats for current threads
+> > > > 
+> > > > fill_tgid_exit does something similar
+> > > 
+> > > Hmm, I can't find anything in the code where the tsk->signal->{utime,stime}
+> > 
+> > That is left to the actual subsystem (I should have been clearer in
+> > stating that the limitation is not with the taskstats infrastructure
+> > itself). Yes, your observation is indeed correct.
+> > 
+> > taskstats code is expected to contain the callback for the subsystems
+> > it supports. delayacct() already does the right thing today, AFAICS
+> > 
+> > > gets transferred to the taskstats record. There is a loop in fill_tgid over
+> > > the threads of the process but all it does is to call delayacct_add_tsk.
+> > > And that function does nothing with the cpu time of dead threads which is
+> > > stored in the signal structure. In addition which taskstats field is
+> > > supposed to contain the cpu time of the dead thread, ac_utime/ac_stime?
+> > >
+> > 
+> > I've not focused much on ac_*, The changes that need to occur are we
+> > need to get the tsacct.c callbacks into taskstats.
 > 
-> Which shows that the "Load balancing tick" and "extra timer interrupt" are
-> down to halfway normal levels. I guess when I shutdown the usb/bluetooth
-> connection both of them will drop even further.
+> Ok, so tsacct.c is the right place to implement it. We will need new fields
+> in struct taskstats to contain the tsk->signal->{utime,stime} and some code
+> in bacct_add_tsk to do the copy. Agreed ?
+>
 
-> Hope you can do something with it!
-> 
-> Let me know if I should do more testing.
-> 
-Seems in .36 kernel the extra timer reduced. Guess the following patch
-worked. http://lkml.org/lkml/2010/6/9/109
+Yes, the caveat though is that tsacct.c or xacct was not designed to
+provide notifications for tgid exit or provide tgid data. I don't
+recollect why they decided to go down that path or if there are some
+limitations that affect it. 
 
-Tim,Yakui and I talked with the issue. We thought the nohz_ratelimit()
-only hart the power when lots of interrupts with light load in system.
-Since the tick_nohz_stop_sched_tick() only be checked in cpu_idle() and
-in irq_exit(), we remove the nohz checking in irq_exit(). The TCP/UDP RR
-loop back testing of netperf also benefit from this. But it have no
-effect on real network testing. 
-
-Could you like to try the following patch on your system and see how
-many power it consumption now? 
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 1e2a6db..a4dbb37 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -274,8 +274,13 @@ extern cpumask_var_t nohz_cpu_mask;
- #if defined(CONFIG_SMP) && defined(CONFIG_NO_HZ)
- extern void select_nohz_load_balancer(int stop_tick);
- extern int get_nohz_timer_target(void);
-+extern int nohz_ratelimit(int cpu);
- #else
- static inline void select_nohz_load_balancer(int stop_tick) { }
-+static inline int nohz_ratelimit(int cpu)
-+{
-+	return 0;
-+}
- #endif
- 
- /*
-diff --git a/kernel/sched.c b/kernel/sched.c
-index dc85ceb..132a21c 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -1182,6 +1182,16 @@ static void resched_task(struct task_struct *p)
- 		smp_send_reschedule(cpu);
- }
- 
-+int nohz_ratelimit(int cpu)
-+{
-+	struct rq *rq = cpu_rq(cpu);
-+	u64 diff = rq->clock - rq->nohz_stamp;
-+
-+	rq->nohz_stamp = rq->clock;
-+
-+	return diff < (NSEC_PER_SEC / HZ) >> 1;
-+}
-+
- static void resched_cpu(int cpu)
- {
- 	struct rq *rq = cpu_rq(cpu);
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 3e216e0..0b5b186 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -325,7 +325,7 @@ void tick_nohz_stop_sched_tick(int inidle)
- 	} while (read_seqretry(&xtime_lock, seq));
- 
- 	if (rcu_needs_cpu(cpu) || printk_needs_cpu(cpu) ||
--	    arch_needs_cpu(cpu)) {
-+		arch_needs_cpu(cpu)|| (inidle && nohz_ratelimit(cpu))) {
- 		next_jiffies = last_jiffies + 1;
- 		delta_jiffies = 1;
- 	} else {
-
-
+-- 
+	Three Cheers,
+	Balbir
