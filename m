@@ -1,96 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755158Ab0I1W5U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 18:57:20 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:12353 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790Ab0I1W5S convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 18:57:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=wqQCcEkeHS3KfStMYdbASChl8hlzamgoFKUGHxvRmtgJVr3y2+16NVKkVZTtESQzwR
-         uXvdbXUFBTnn6JUi3Qug==
-MIME-Version: 1.0
-In-Reply-To: <1285661878.2795.70.camel@marge.simson.net>
-References: <AANLkTinmQOYQAOPkQsZNhJBJtCss3ZtHN_a6h4fpamtz@mail.gmail.com>
-	<1285661878.2795.70.camel@marge.simson.net>
-Date: Tue, 28 Sep 2010 15:57:15 -0700
-Message-ID: <AANLkTikjH1J_nCxZympo9v_VZbptWHBNJ8xh=pFXLRrQ@mail.gmail.com>
-Subject: Re: broken behavior in cfs when moving threads between cgroups
-From: Dima Zavin <dmitriyz@google.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1754166Ab0I1XFP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 19:05:15 -0400
+Received: from mga01.intel.com ([192.55.52.88]:29776 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753396Ab0I1XFO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 19:05:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,249,1283756400"; 
+   d="scan'208";a="611365027"
+Subject: Re: [PATCH 2/3] sched: drop group_capacity to 1 only if remote
+ group has no running tasks
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Nikhil Rao <ncrao@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Mike Galbraith <efault@gmx.de>, Venkatesh Pallipadi <venki@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1285633798-26886-3-git-send-email-ncrao@google.com>
+References: <1285633798-26886-1-git-send-email-ncrao@google.com>
+	 <1285633798-26886-3-git-send-email-ncrao@google.com>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Tue, 28 Sep 2010 16:04:56 -0700
+Message-Id: <1285715096.2623.37.camel@sbsiddha-MOBL3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike,
-
-Thanks for the reply.
-
-> I don't really see the relevance of an entity's lag in it's previous
-> group, so would tend toward entry at parity.
->
-> Maybe the move _should_ be treated as a fork, for the same reason we do
-> START_DEBIT, but if so, seems to me it's irrelevant whether the task is
-> currently sleeping or not, it's going to run for the first time in it's
-> new home just as any runnable task, and may do so very soon.  OTOH,
-> frequent moves with that hefty START_DEBIT price tag could hurt very
-> badly, and makes caring about previous lag seem pointless.
->
->        -Mike
->
-> (untested)
->
+On Mon, 2010-09-27 at 17:29 -0700, Nikhil Rao wrote:
+> When SD_PREFER_SIBLING is set on a sched domain, drop group_capacity to 1
+> only if the remote sched group has no running tasks. This addresses the case
+> where you have two tasks on one socket and the other socket is idle, in which
+> case you drop the capacity to 1. If the remote group has >=1 running task, then
+> there is no difference from a cache-sharing perspective.
+> 
+> Signed-off-by: Nikhil Rao <ncrao@google.com>
+> ---
+>  kernel/sched_fair.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
 > diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-> index 9b5b4f8..4dc6b2f 100644
+> index de8a6a0..33a7985 100644
 > --- a/kernel/sched_fair.c
 > +++ b/kernel/sched_fair.c
-> @@ -3827,10 +3827,14 @@ static void set_curr_task_fair(struct rq *rq)
->  static void moved_group_fair(struct task_struct *p, int on_rq)
->  {
->        struct cfs_rq *cfs_rq = task_cfs_rq(p);
-> +       struct sched_entity *se = &p->se;
-> +       u64 vruntime = 0;
->
->        update_curr(cfs_rq);
->        if (!on_rq)
-> -               place_entity(cfs_rq, &p->se, 1);
-> +               vruntime = cfs_rq->min_vruntime;
-> +
-> +       se->vruntime = vruntime;
->  }
->  #endif
+> @@ -2548,7 +2548,7 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
+>  		 * first, lower the sg capacity to one so that we'll try
+>  		 * and move all the excess tasks away.
+>  		 */
+> -		if (prefer_sibling)
+> +		if (prefer_sibling && !sgs.sum_nr_running)
+>  			sgs.group_capacity = min(sgs.group_capacity, 1UL);
+>  
+>  		if (local_group) {
 
-Hmm. Would we really want to give the sleeping task such a bump in the
-new group? Why not just start it off at min_vruntime and let
-place_entity do it's thing? Something like...
+Nikhil, Doesn't this break the case of:
 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index a7be83c..4656231 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -3622,10 +3622,15 @@ static void set_curr_task_fair(struct rq *rq)
- static void moved_group_fair(struct task_struct *p, int on_rq)
- {
-        struct cfs_rq *cfs_rq = task_cfs_rq(p);
-+       struct sched_entity *se = &p->se;
+two sockets with dual-core and HT. Four tasks currently scheduled as:
+three on socket-0 (two threads on core-0 running two tasks and 1 thread
+on core-1 running one task). One on socket-1 (one thread on core-0
+running a task, with other core-1 idle)
 
-        update_curr(cfs_rq);
--       if (!on_rq)
-+       if (on_rq) {
-+               se->vruntime = 0;
-+       } else {
-+               se->vruntime = cfs_rq->min_vruntime;
-                place_entity(cfs_rq, &p->se, 1);
-+       }
- }
- #endif
+We would like to move the task from core-0 socket-0 to core-1 socket-1,
+while we are load balancing at the socket level (it might be smp or numa
+level depending on system).
+
+thanks,
+suresh
+
