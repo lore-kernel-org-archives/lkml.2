@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab0I1QOA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 12:14:00 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:60425 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754459Ab0I1QN7 (ORCPT
+	id S1754263Ab0I1QQX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 12:16:23 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:39292 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752672Ab0I1QQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 12:13:59 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Joseph S. Myers" <joseph@codesourcery.com>
-Subject: Re: asm-generic/unistd.h and glibc use of NR_ipc
-Date: Tue, 28 Sep 2010 18:13:56 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Chris Metcalf <cmetcalf@tilera.com>, linasvepstas@gmail.com,
-        linux-kernel@vger.kernel.org, libc-ports@sourceware.org,
-        andrew@codesourcery.com
-References: <AANLkTi=33kimswSJ1tYsnG-PVs6Z4dVBtnqq65GN8Vxw@mail.gmail.com> <4CA1E809.5010103@tilera.com> <Pine.LNX.4.64.1009281537400.22692@digraph.polyomino.org.uk>
-In-Reply-To: <Pine.LNX.4.64.1009281537400.22692@digraph.polyomino.org.uk>
+	Tue, 28 Sep 2010 12:16:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=nQeEpEqt8cPvsEBiFsjLrRJpR1DZwFiiVnh7FvO+RAvypKEeyQ8YoBuBZ5DassAkPp
+         FrV2LlSJZAqpedICYwMLQQ06dkRbQVzmfqj29b/BZxZJLbE/MqWLD21js97nJdA2fC9x
+         NtsKA8kQL9fdQ9yiI3VnuBFU8s+xUYNgWBrwA=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009281813.56443.arnd@arndb.de>
-X-Provags-ID: V02:K0:eVkbXdAkueWyV0eJBSF44WVZ/8m67B5aCx77HuRPzl2
- zbS8pvM+jxaUy+hywLft4bFcMIu1kzM1/8HNN4/89ulcPYwGDX
- OeXhyHYrOq13f8d3MkRK7+/9e0NJMTND+TYobN5FwNAyqvPny1
- poXrvMVp6yspfGErYPvfsupyBpWT8atnkxof0A8qJmhNASA5II
- KVgqizXab8MB+1Jwk+7aw==
+Date: Tue, 28 Sep 2010 18:16:19 +0200
+Message-ID: <AANLkTi=PTp7YW_eYxtF-H2QSxgei3whWH59wU0C9oCkz@mail.gmail.com>
+Subject: [REGRESSION] um: ubd: block layer issue (Was: ext3 filesystem
+ corruption in user mode linux)
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: tj@kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net, axboe@kernel.dk,
+        jdike@addtoit.com, Geert.Uytterhoeven@sonycom.com,
+        grant.likely@secretlab.ca, adrian@mcmen.demon.co.uk,
+        mike.miller@hp.com, Chris Frey <cdfrey@foursquare.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 28 September 2010, Joseph S. Myers wrote:
-> (Removing libc-alpha as my comments aren't relevant to that list.)
-> 
-> Two of the three seem rather surprising to me as regards glibc ports being 
-> ready to merge - maybe kernel ports are ready, however, it isn't clear to 
-> me what (kernel or glibc) the original comment was referring to.
+Hi Tejun!
 
-I was talking about kernel ports.
- 
-> C6X has no MMU so a glibc port isn't a possibility.  There are indeed 
-> uClibc and GCC ports we will be contributing in due course - but the 
-> linker support for shared objects is still in development (I contributed 
-> the static linking binutils support upstream earlier this year) and is 
-> required for building anything for uClinux userspace for this platform.
+Chris Frey ran into some problems with ext3 on UML.
+See: http://marc.info/?i=20100924041410.GA18040%20()%20foursquare%20!%20net
 
-Right. Obviously the same question exists for uClibc though: The C6X syscall
-ABI will need to be rewritten (as in deleted and replaced by generic
-code) in the kernel in order to get merged, so the uClibc port will
-have to gain the same kind of generic API that we need for glibc.
+I can reproduce this issue with any file system on Linux >= 2.6.31.
+There seems to be a serious problem with the block layer on UML.
+Under high load any file system gets corrupted.
 
-> As for Nios II, we have a fully functional glibc port at CodeSourcery.  
-> It is I believe all our own work so there are no legal obstacles to our 
-> contributing it to the FSF - but upstream contribution would not really be 
-> useful without the GCC and binutils ports, and those ports (to which we 
-> added PIC and TLS support among other things) are based on code from 
-> Altera which is not covered by an FSF copyright assignment, so while the 
-> code is available we have no current plans for Nios II upstream 
-> contribution.
-> 
-> http://www.codesourcery.com/sgpp/portal/datasheet?target_arch=Nios+II&amp;target_os=GNU%2FLinux
+The regression was most likely introduced with this three changes:
+83096ebf1263b2c1ee5e653ba37d993d02e3eb7b (block: convert to pos and
+nr_sectors accessors)
+f81f2f7c9fee307e371f37424577d46f9eaf8692 (ubd: drop unnecessary
+rq->sector manipulation)
+4d6c84d91d1a539ebc47d1a36a35e9390ba11fdc (ubd: cleanup completion path)
 
-Same thing here. I wouldn't call the glibc port "fully functional" because
-it does not cover a mainline Linux and getting the architecture tree
-upstream means replacing the syscall ABI with a proper one.
+Maybe only f81f2f7 is the bad one. They depend on each and I don't
+know all the internals...
 
-Once the kernel parts are upstream and use the generic syscall ABI, only
-rudimentary architecture support in glibc would be needed.
-
-	Arnd
+-- 
+Cheers,
+//richard
