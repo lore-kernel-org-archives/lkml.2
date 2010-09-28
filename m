@@ -1,116 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933738Ab0I1CIt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 22:08:49 -0400
-Received: from smtp109.sbc.mail.gq1.yahoo.com ([67.195.14.39]:39234 "HELO
-	smtp109.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S933694Ab0I1CHz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 22:07:55 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: usQzC98VM1kc22rYtWKU_JieIPtMRsBMlAOER_zVRa9LAZb
- AJs7hDASwuIFH4voUds1ONAzpI8tzx2KIHWde_VSGUMYw9m1hGHAU8SDmB6L
- cuJraij33F5vJseO3dNG.Ur9FitSGTGC4LjInbj8fC_9fujKecmeN6me.RCL
- xCZMphrJ1Nw7d86_lQhTsOFBOQIE_G185VZMRMEA9igBQ.jU8I2MT9zLsHqW
- PQYxpRDR6m16.KOo0JBGf.SMzl2y22sZdyom76YXKai9mft1cYh5yNKuIkpi
- UYtjdpb3DeIppEJeWUg3Scsg06gHHNhjOimASxkQJlmY-
-X-Yahoo-Newman-Property: ymail-3
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>
-Cc: James Smart <james.smart@emulex.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
-        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
-        MPTFusionLinux <DL-MPTFusionLinux@lsi.com>,
-        "eata.c maintainer" <dario.ballabio@inwind.it>,
-        Luben Tuikov <ltuikov@yahoo.com>, mvsas maintainer <kewei@marvell.com>,
-        pm8001 maintainer Jack Wang <jack_wang@usish.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [RFC v4 16/19] mpt/fusion: Add scsi_cmd_get_serial() call
-Date: Mon, 27 Sep 2010 19:07:50 -0700
-Message-Id: <1285639670-7525-1-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.5.6.5
+	id S1760565Ab0I1ChQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 22:37:16 -0400
+Received: from web82805.mail.mud.yahoo.com ([68.142.201.98]:32786 "HELO
+	web82805.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757938Ab0I1ChP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 22:37:15 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Sep 2010 22:37:14 EDT
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=sbcglobal.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=iLNsOujoPFT5MTu9NkPgppHC4Pn+rLvQs4rc5xUIRgN9t8P0lKybb7ZlWyMYhEaNQkRAG3lz9x5nMXFPodb2BT9WUD0r2fc1CXb/H+O5CMgWrzvT1LAU13Yx9iTBNZua1BUy2X/6FwS9imMxm+smX58iTwJisWyFXf6Qa190mnE=;
+Message-ID: <166991.11253.qm@web82805.mail.mud.yahoo.com>
+X-YMail-OSG: XwYercUVM1m27Lmh66Nwati0lUG7QgG9y9SmPnBFPj8xeYv
+ NS8kDMFeuSxpDVKdsBV5Z2.l1ZE2d.NvyBjvNYhhFbSVBXdpZX7hJEREQCD8
+ N9ZXUjFVVwNp6Ybxz5uqSvEpnwxSIacYlW1KgzKvTIdDUmkznOaHE_HD4Pmo
+ XfJO4m_hig_15gsiry12JIqWFA2P.6szTs8Rdyq3oOd_Ss8JyL3za8Ezs1RP
+ TdViO9AXHP6iJIQrk8JNE3uhvZYOlpapBgjqZFmEiBeFhG_9.vR7PO0SOs5w
+ 5HbyiWf_QQoYRh4xED1aunEkA1s7cQTKkKtD8iYZ4fURoxE5PpCxdnY2oZWa
+ w5kg5eMcLW3cQc1Z6XtfLoI1hTZ.Fi76hGRao4CrwU0O_No4PAQGftkShB42
+ TlBDeCh1fTytV2cLHbWhnDWmYjOcgw7IYeEmzwOnOKJyBZX8Hk_HmT0dV6kr
+ R6a2bEfUIyxElsbPdYdus7yAY33eJbnQH7lFrkCMfCF_5rDeAs5g_RTy9NlD
+ LwQZz1xBIfMbml2sl1ukNBXFb_Y07.8hXCGvW8qK0j52iNsCTmG8.wRl8pMr
+ fxQV6BJFvwlailL6QuVWic_HW3ofE4SMAk.RMg9btfix3ygwmUcMaFDBWnfI
+ sxN3Y48wb2n.Mq_g6BW7r5JafWauGDBimD6ssk6ibtKRpy2N3so4ICrc16nG
+ 8ByXzjlpsY3pnfLbDsbzCpbN2s4QnyYkr9FG8CiY7J8POvZztBzvQzp1.syX
+ e1Q9JX4Q6BBCvU66_osS7S2kq0PMA5.DpsrRK2PcVFhSBKBoSgTkhMGu3rW.
+ yAKDK_4oNj80Z_PvSqyfRpu6QUCmwhGdxW6iwfAT_xWoa283G1DWJXxJx6cp
+ DlKT_m3PVJivUdBvaKDYCcceFweDAAZu_9_fxwQSjzWPPFWd_KpONVBJJj3.
+ YrsynGuYXTn9slqLWvROZfAMNfbKznsHMrUMTA_vevbFRlUCYjR8yYkNCxbJ
+ 9JrgZJq.nBs1KEjlq3JVh2CwUpw1zlYgAY2eY00ExlJBjYWdUb9azprI9IYQ
+ X.tKD_K3gblC8sXAVkcrmO0.lvNbeVu4RW9IlwCtWkdDfXWwuKC0IefxCPzJ
+ 67wxtNUbqhtEiMS3iCeplxJdXy_KE6UnhVwl6Bb5rzhASYHCuVIEhRk31E64
+ LHy9zIDk7icWVIn3RaUrEuGcKLVhwia2CI.nEemrO58zDY5h2VtblTCmdgri
+ kajJyOWbUSzgo6NuOSo9AQ15aC.e4VjI6CNTo8MoGA84pGUdpV_J2aV_lWa0
+ 7IgKTGZrfNzgEAk2bLM3jT13ystnc7Qs0Y9F5fdKcf5zK31kiG4rSIinmlBT
+ MSbWgYHmrO.F7APCj26TVbg8.zNwFgK0o1bloHhTlPHSNd.xmrg.x
+X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.105.279950
+Date: Mon, 27 Sep 2010 19:30:33 -0700 (PDT)
+From: jean-rinehart@sbcglobal.net
+To: undisclosed recipients:;
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch adds a scsi_cmd_get_serial() call in mptscsih_qcmd() to setup a
-valid struct scsi_cmnd->serial_number because mptscsih_abort() still depends
-upon this being set.
+Your email id has won £ 2,500,000.00 Pounds
 
-This also includes setting the SHT->unlocked_qcmd=1 for host_lock less
-MPT/Fusion operation for mptfc_driver_template, mptsas_driver_template
-and mptspi_driver_template.
-
-Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
----
- drivers/message/fusion/mptfc.c    |    1 +
- drivers/message/fusion/mptsas.c   |    1 +
- drivers/message/fusion/mptscsih.c |    5 +++++
- drivers/message/fusion/mptspi.c   |    1 +
- 4 files changed, 8 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/message/fusion/mptfc.c b/drivers/message/fusion/mptfc.c
-index e15220f..d92c3b0 100644
---- a/drivers/message/fusion/mptfc.c
-+++ b/drivers/message/fusion/mptfc.c
-@@ -126,6 +126,7 @@ static struct scsi_host_template mptfc_driver_template = {
- 	.eh_host_reset_handler		= mptfc_host_reset,
- 	.bios_param			= mptscsih_bios_param,
- 	.can_queue			= MPT_FC_CAN_QUEUE,
-+	.unlocked_qcmd			= 1,
- 	.this_id			= -1,
- 	.sg_tablesize			= MPT_SCSI_SG_DEPTH,
- 	.max_sectors			= 8192,
-diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
-index 83a5115..5dc4277 100644
---- a/drivers/message/fusion/mptsas.c
-+++ b/drivers/message/fusion/mptsas.c
-@@ -1975,6 +1975,7 @@ static struct scsi_host_template mptsas_driver_template = {
- 	.eh_host_reset_handler		= mptscsih_host_reset,
- 	.bios_param			= mptscsih_bios_param,
- 	.can_queue			= MPT_SAS_CAN_QUEUE,
-+	.unlocked_qcmd			= 1,
- 	.this_id			= -1,
- 	.sg_tablesize			= MPT_SCSI_SG_DEPTH,
- 	.max_sectors			= 8192,
-diff --git a/drivers/message/fusion/mptscsih.c b/drivers/message/fusion/mptscsih.c
-index 59b8f53..6aaa553 100644
---- a/drivers/message/fusion/mptscsih.c
-+++ b/drivers/message/fusion/mptscsih.c
-@@ -1411,6 +1411,11 @@ mptscsih_qcmd(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_cmnd *))
- 	hd = shost_priv(SCpnt->device->host);
- 	ioc = hd->ioc;
- 	SCpnt->scsi_done = done;
-+	/*
-+	 * Call scsi_cmd_get_serial() because we need a valid serial number
-+	 * in mptscsih_abort()
-+	 */
-+	scsi_cmd_get_serial(SCpnt);
- 
- 	dmfprintk(ioc, printk(MYIOC_s_DEBUG_FMT "qcmd: SCpnt=%p, done()=%p\n",
- 		ioc->name, SCpnt, done));
-diff --git a/drivers/message/fusion/mptspi.c b/drivers/message/fusion/mptspi.c
-index 0e28031..e681e92 100644
---- a/drivers/message/fusion/mptspi.c
-+++ b/drivers/message/fusion/mptspi.c
-@@ -845,6 +845,7 @@ static struct scsi_host_template mptspi_driver_template = {
- 	.eh_host_reset_handler		= mptscsih_host_reset,
- 	.bios_param			= mptscsih_bios_param,
- 	.can_queue			= MPT_SCSI_CAN_QUEUE,
-+	.unlocked_qcmd			= 1,
- 	.this_id			= -1,
- 	.sg_tablesize			= MPT_SCSI_SG_DEPTH,
- 	.max_sectors			= 8192,
--- 
-1.7.3
-
+Fullname:
+Address:
+Tel:
