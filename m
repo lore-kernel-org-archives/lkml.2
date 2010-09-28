@@ -1,91 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756311Ab0I1Tpv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 15:45:51 -0400
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:49399 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756134Ab0I1Tpu (ORCPT
+	id S1756519Ab0I1TxU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 15:53:20 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:56539 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755310Ab0I1TxT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 15:45:50 -0400
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: tuxonice-devel@tuxonice.net
-Subject: Re: [TuxOnIce-devel] Nigel's current for-rafael queue
-Date: Tue, 28 Sep 2010 21:45:37 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc5-tp42-hiber-wri-accel-vmembase-0-00133-g3394a84-dirty; KDE/4.5.1; i686; ; )
-Cc: Nigel Cunningham <nigel@tuxonice.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "TuxOnIce-devel" <tuxonice-devel@tuxonice.net>
-References: <1285388224-10012-1-git-send-email-nigel@tuxonice.net> (sfid-20100925_095651_884433_67642C74)
-In-Reply-To: <1285388224-10012-1-git-send-email-nigel@tuxonice.net>
+	Tue, 28 Sep 2010 15:53:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=b237dKuWmIE0LRg5DdJzVfrx8n8ka6ugFXb5qKyLAX/RGl9j5k3xG2BL/f4kqYvr3Y
+         Hngg4r5jL+N/01lml/D6iueiwpIjo4cN06sT/ZeDReADt3d1aNX56y7/0jYjK5FY4BVL
+         tWzTqebfsVonoQ6luQ+C/CgIMKw2JMsfCR9SM=
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1949636.cTmNjiBp7y";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009282145.46948.Martin@lichtvoll.de>
+In-Reply-To: <1285693648.14518.7.camel@voyager>
+References: <AANLkTi=PTp7YW_eYxtF-H2QSxgei3whWH59wU0C9oCkz@mail.gmail.com>
+	<1285693648.14518.7.camel@voyager>
+Date: Tue, 28 Sep 2010 21:52:01 +0200
+X-Google-Sender-Auth: 5pDD1OsRbhoY2QvUweT_huQFeVA
+Message-ID: <AANLkTi=NiB4hoA5Y8kbR7R8B+J-jJXAHGSu5JdOLSQsj@mail.gmail.com>
+Subject: Re: [uml-devel] [REGRESSION] um: ubd: block layer issue (Was: ext3
+ filesystem corruption in user mode linux)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Janjaap Bos <janjaap@bos.nl>
+Cc: richard -rw- weinberger <richard.weinberger@gmail.com>, tj@kernel.org,
+        axboe@kernel.dk, mike.miller@hp.com,
+        user-mode-linux-devel@lists.sourceforge.net, adrian@mcmen.demon.co.uk,
+        jdike@addtoit.com, LKML <linux-kernel@vger.kernel.org>,
+        grant.likely@secretlab.ca, Geert.Uytterhoeven@sonycom.com,
+        Chris Frey <cdfrey@foursquare.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1949636.cTmNjiBp7y
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+On Tue, Sep 28, 2010 at 19:07, Janjaap Bos <janjaap@bos.nl> wrote:
+> See attached patch, and earlier message posted in March 2010 on uml user
+> list. We are out of maintainer...
 
-Am Samstag 25 September 2010 schrieb Nigel Cunningham:
-> Hi Rafael.
+Thanks for the patch!
 
-Hi Nigel,
+| --- a/arch/um/drivers/ubd_kern.c
+| +++ b/arch/um/drivers/ubd_kern.c
+| @@ -1223,7 +1227,7 @@ static void do_ubd_request(struct request_queue *q)
+|       struct io_thread_req *io_req;
+|       struct request *req;
+|       sector_t sector;
+| -     int n;
+| +     int n, last_sectors;
+|
+|       while(1){
+|               struct ubd *dev = q->queuedata;
+| @@ -1239,9 +1243,12 @@ static void do_ubd_request(struct request_queue *q)
+|
+|               req = dev->request;
+|               sector = blk_rq_pos(req);
+| +             last_sectors = 0;
+|               while(dev->start_sg < dev->end_sg){
+|                       struct scatterlist *sg = &dev->sg[dev->start_sg];
+|
+| +                     sector += last_sectors;
+| +                     last_sectors = 0;
+|                       io_req = kmalloc(sizeof(struct io_thread_req),
+|                                        GFP_ATOMIC);
+|                       if(io_req == NULL){
+| @@ -1253,7 +1260,7 @@ static void do_ubd_request(struct request_queue *q)
+|                                       (unsigned long long)sector << 9,
+|                                       sg->offset, sg->length, sg_page(sg));
+|
+| -                     sector += sg->length >> 9;
+| +                     last_sectors = sg->length >> 9;
+|                       n = os_write_file(thread_fd, &io_req,
+|                                         sizeof(struct io_thread_req *));
+|                       if(n != sizeof(struct io_thread_req *)){
 
-> Please find attached a slightly updated version of the patchset I sent
-> a few months ago. The main change is that I've prepended and additional
-> patch which lets the user see the speed at which the image is being
-> read and written. This is accomplished by recording the MB/s in a
-> single byte in the image header, and using a couple of __nosavedata
-> variables to get the data back through the atomic restore. I realise
-> the char limits us to 255MB/s at the moment. In future patches, I
-> intend to address this by storing the data in a 'proper' image header
-> (it's a real problem - TuxOnIce reads and writes on the same set up at
-> speeds around 250MB/s).
->=20
-> Results on my Dell XPS M1530, which has an SSD hard drive are:
+However, I'm wondering what difference this part makes?
 
-I found one issue with this patchset or more precise I think with the=20
-state of in-kernel-suspend before:
+> On Tue, 2010-09-28 at 18:16 +0200, richard -rw- weinberger wrote:
+>> Hi Tejun!
+>>
+>> Chris Frey ran into some problems with ext3 on UML.
+>> See: http://marc.info/?i=20100924041410.GA18040%20()%20foursquare%20!%20net
+>>
+>> I can reproduce this issue with any file system on Linux >= 2.6.31.
+>> There seems to be a serious problem with the block layer on UML.
+>> Under high load any file system gets corrupted.
+>>
+>> The regression was most likely introduced with this three changes:
+>> 83096ebf1263b2c1ee5e653ba37d993d02e3eb7b (block: convert to pos and
+>> nr_sectors accessors)
+>> f81f2f7c9fee307e371f37424577d46f9eaf8692 (ubd: drop unnecessary
+>> rq->sector manipulation)
+>> 4d6c84d91d1a539ebc47d1a36a35e9390ba11fdc (ubd: cleanup completion path)
+>>
+>> Maybe only f81f2f7 is the bad one. They depend on each and I don't
+>> know all the internals...
 
-I accidentally booted a kernel without your patches and it didn't seem to=20
-stop on the hibernation image from the kernel with your patches. Well I=20
-let my laptop unattended for a little while, so when there has been a=20
-(short) timeout, I might have missed that message.
+Gr{oetje,eeting}s,
 
-I lost a hibernation image this way which caused successful journal replay=
-=20
-on my Ext4 filesystems.=20
+                        Geert
 
-Does a kernel without your patches offer to reboot into the correct kernel,=
-=20
-then it finds a hibernation image from a kernel with your patches?
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-If not, I think for the future it should give a warning with a quite high=20
-timeout, and offer to reboot into the right kernel.
-
-Ciao,
-=2D-=20
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
-
---nextPart1949636.cTmNjiBp7y
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAkyiReIACgkQmRvqrKWZhMedSwCgtODcl0S2Mwv+qlU3V8KfA3YY
-b9oAn1eAPwnsmKX9+yVndhWpGD6A9AkB
-=CyH4
------END PGP SIGNATURE-----
-
---nextPart1949636.cTmNjiBp7y--
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
