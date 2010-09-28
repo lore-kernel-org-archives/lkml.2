@@ -1,65 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757607Ab0I1S2r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 14:28:47 -0400
-Received: from kroah.org ([198.145.64.141]:46591 "EHLO coco.kroah.org"
+	id S1757710Ab0I1S2u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 14:28:50 -0400
+Received: from kroah.org ([198.145.64.141]:46599 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752612Ab0I1S2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 14:28:46 -0400
-Date: Tue, 28 Sep 2010 11:29:10 -0700
+	id S1757661Ab0I1S2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 14:28:48 -0400
+Date: Tue, 28 Sep 2010 11:29:33 -0700
 From: Greg KH <greg@kroah.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Kyle McMartin <kyle@redhat.com>,
-        James Dingwall <james.dingwall@amdocs.com>,
+To: James Dingwall <james.dingwall@amdocs.com>
+Cc: Kyle McMartin <kmcmartin@redhat.com>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable@kernel.org
+        "stable@kernel.org" <stable@kernel.org>,
+        "james@dingwall.me.uk" <james@dingwall.me.uk>
 Subject: Re: [stable] PROBLEM: [BISECTED] 2.6.35.5 xen domU panics just
-	after the boot
-Message-ID: <20100928182910.GA32464@kroah.com>
-References: <3B7AEC3C7FCC864282DFAC9A56A7BA363D81475787@UKLNDMAIL1.corp.amdocs.com> <20100927024044.GQ13116@bombadil.infradead.org> <20100927061336.GA22721@kroah.com> <4CA0DDAB.9090507@goop.org>
+	after the boot [PATCH]
+Message-ID: <20100928182933.GB32464@kroah.com>
+References: <3B7AEC3C7FCC864282DFAC9A56A7BA363D81475787@UKLNDMAIL1.corp.amdocs.com> <20100927024044.GQ13116@bombadil.infradead.org> <20100927061336.GA22721@kroah.com> <20100927063405.GM19458@ihatethathostname.lab.bos.redhat.com> <3B7AEC3C7FCC864282DFAC9A56A7BA363D81475979@UKLNDMAIL1.corp.amdocs.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CA0DDAB.9090507@goop.org>
+In-Reply-To: <3B7AEC3C7FCC864282DFAC9A56A7BA363D81475979@UKLNDMAIL1.corp.amdocs.com>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 11:08:43AM -0700, Jeremy Fitzhardinge wrote:
->  On 09/26/2010 11:13 PM, Greg KH wrote:
-> > On Sun, Sep 26, 2010 at 10:40:44PM -0400, Kyle McMartin wrote:
-> >> On Thu, Sep 23, 2010 at 04:23:55PM +0100, James Dingwall wrote:
-> >>>> I was experiencing the same immediate crash with a null pointer
-> >>>> dereference (log below) on boot with 2.6.35.5.  Reverting
-> >>>> fb412a178502dc498430723b082a932f797e4763 also resolved the problem for
-> >>>> me.
-> >>> Checking the diff from this commit it looks like there is a typo in the patch.  With the following (probably mangled by my client) I get 2.6.35.5 to boot.  Suggest it should be a candidate for .32 and .35 stable trees.
-> >>>
-> >> Greg, a spelling mistake cropped into this patch during 2.6.35.5 that
-> >> James here points out. Adding you to CC since it seems to have missed
-> >> stable 2.6.35.6...
-> >>
-> >> Was in xen-use-percpu-interrupts-for-ipis-and-virqs.patch.
-> > I don't understand, where did the error come from?  Was it in a patch I
-> > applied, or did I mess up some patch?  Is the same problem upstream, and
-> > if not, why not?
-> 
-> I don't know.  It looks like an 'x' was deleted due to an editor
-> fat-finger or something.  The original upstream patches were cc:d to
-> stable, so I think you would have got them that way (ie, I don't think I
-> sent them to you specifically).  Is there an opportunity in your
-> workflow where this error could have crept in?  The patches should have
-> been a pretty clean 'git cherry-pick' with no conflicts.
+On Mon, Sep 27, 2010 at 09:37:17AM +0100, James Dingwall wrote:
+> My first contribution so I hope I didn't miss any important steps in
+> formatting the patch and that Outlook keeps it intact...  If it needs
+> any fixing up let me know.
 
-Sorry, I don't know what happened, using my scripts, it does drop to an
-editor so I can add the "signed-off-by" line, so perhaps I accidentally
-did this in there.
-
-It's now in the -stable queue and I'll push out new releases in a few
-hours.
-
-thanks,
+Looks good, I've now queued it up, thanks so much for this.
 
 greg k-h
