@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757945Ab0I1SrL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 14:47:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40297 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757846Ab0I1SrJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 14:47:09 -0400
-Message-ID: <4CA23800.4020409@zytor.com>
-Date: Tue, 28 Sep 2010 11:46:24 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
+	id S1757894Ab0I1Ssq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 14:48:46 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:32887 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756860Ab0I1Ssp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 14:48:45 -0400
+Message-ID: <4CA23882.1030909@us.ibm.com>
+Date: Tue, 28 Sep 2010 11:48:34 -0700
+From: Sridhar Samudrala <sri@us.ibm.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        "sct@redhat.com" <sct@redhat.com>
-Subject: Re: [PATCH 12/12] xen/mtrr: Add mtrr_if support for Xen mtrr
-References: <alpine.DEB.2.00.1009281217540.2864@kaball-desktop> <1285676218-26218-12-git-send-email-stefano.stabellini@eu.citrix.com> <20100928123925.GA18208@elte.hu> <alpine.DEB.2.00.1009281455300.2864@kaball-desktop> <4CA2223B.9040400@goop.org> <4CA22C3C.3020209@zytor.com> <4CA2302C.3000201@goop.org> <4CA231A8.5000100@zytor.com> <4CA232EF.3080906@goop.org>
-In-Reply-To: <4CA232EF.3080906@goop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnd Bergmann <arnd@arndb.de>
+CC: "Michael S. Tsirkin" <mst@redhat.com>,
+        Ben Hutchings <bhutchings@solarflare.com>, xiaohui.xin@intel.com,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, davem@davemloft.net,
+        herbert@gondor.hengli.com.au, jdike@linux.intel.com
+Subject: Re: [PATCH v11 13/17] Add mp(mediate passthru) device.
+References: <1285388855-27410-1-git-send-email-xiaohui.xin@intel.com> <201009281639.59417.arnd@arndb.de> <20100928144311.GB15294@redhat.com> <201009281718.15813.arnd@arndb.de>
+In-Reply-To: <201009281718.15813.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2010 11:24 AM, Jeremy Fitzhardinge wrote:
->>>
->> No, and we really can't do it for a couple of reasons:
->>
->> a) Pre-PAT hardware;
->> b) MTRRs and PAT interact on hardware;
->> c) MTRRs, but not PAT, interact with SMM.
-> 
-> What about pre-PAT software (ie, X servers which still use /proc/mtrr)?
-> 
+  On 9/28/2010 8:18 AM, Arnd Bergmann wrote:
+> On Tuesday 28 September 2010, Michael S. Tsirkin wrote:
+>> On Tue, Sep 28, 2010 at 04:39:59PM +0200, Arnd Bergmann wrote:
+>>> Can you be more specific what the problem is? Do you think
+>>> it breaks when a guest sends VLAN tagged frames or when macvtap
+>>> is connected to a VLAN interface that adds another tag (or
+>>> only the combination)?
+>> I expect the protocol value to be wrong when guest sends vlan tagged
+>> frames as 802.1q frames have a different format.
+> Ok, I see. Would that be fixed by using eth_type_trans()? I don't
+> see any code in there that tries to deal with the VLAN tag, so
+> do we have the same problem in the tun/tap driver?
+tun_get_user() does call eth_type_trans(). Not sure why i didn't use it 
+in macvtap code.
+Need to test it with guest VLAN tagging to make sure it works.
+> Also, I wonder how we handle the case where both the guest and
+> the host do VLAN tagging. Does the host transparently override
+> the guest tag, or does it add a nested tag? More importantly,
+> what should it do?
+> 	
+I would think If both guest and host do VLAN tagging, the tags will be 
+nested.
 
-Fortunately going away... we have talked in the past about doing
-"virtual MTRRs" in terms of PAT to deal with this kind of legacy
-software, but the demand for it seems to be low enough to not be worth
-bothering with.
+Thanks
+Sridhar
 
->> However, since a virtual machine like Xen doesn't have these issues, it
->> doesn't apply
-> 
-> Well, we're specifically talking about a virtual machine which has
-> direct access to hardware, so it is concerned about the real physical
-> memory properties of real physical pages.  If we can assume that
-> BIOS/Xen will always set up MTRR correctly then there shouldn't be any
-> need for the kernel to modify the MTRR itself.  How true is that in
-> general?  I don't know, but if we could rely on BIOS then there'd never
-> be a need to touch MTRR, would there?
 
-Well, in the past MTRRs were abused for device properties mainly by the
-X server, but other than that, no, not really.  The other thing we do is
-the MTRR cleanup (which doesn't involve /proc/mtrr) to deal with
-brokenness in the BIOS setup, but that really belongs in the hypervisor
-in your case since it fundamentally affects how memory is handled.
 
-	-hpa
