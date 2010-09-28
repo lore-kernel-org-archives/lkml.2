@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760168Ab0I1BD4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 21:03:56 -0400
-Received: from mga01.intel.com ([192.55.52.88]:11984 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751410Ab0I1BDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 21:03:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,244,1283756400"; 
-   d="scan'208";a="611027826"
-Subject: Re: [PATCH -v2 4/7] x86, NMI, Rewrite NMI handler
-From: Huang Ying <ying.huang@intel.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: huang ying <huang.ying.caritas@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-In-Reply-To: <20100927132537.GO13563@erda.amd.com>
-References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
-	 <1285549026-5008-4-git-send-email-ying.huang@intel.com>
-	 <20100927094136.GB32222@erda.amd.com>
-	 <AANLkTimTg1uqXdAJ+GyZ3_B6n2xKWdqFL96jvv18JBM+@mail.gmail.com>
-	 <20100927132537.GO13563@erda.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 28 Sep 2010 09:03:52 +0800
-Message-ID: <1285635832.20791.119.camel@yhuang-dev>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1756354Ab0I1BH0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 21:07:26 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:53238 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751373Ab0I1BHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 21:07:25 -0400
+Date: Tue, 28 Sep 2010 09:06:28 +0800
+From: Hu Tao <hutao@cn.fujitsu.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        =?utf-8?Q?Am=A8=A6rico?= Wang <xiyou.wangcong@gmail.com>
+Subject: [PATCH resend] Update num_symtab, symtab and strtab right after
+ setup of core_num_syms, core_symtab and core_strtab.
+Message-ID: <20100928010628.GA6923@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-27 at 21:25 +0800, Robert Richter wrote:
-> On 27.09.10 08:39:24, huang ying wrote:
-> 
-> Looking at all you comments below I would vote for the following:
-> 
-> We implement all handlers using DIE_NMI and set its priority
-> accordingly in struct notifier_block when registering the the nmi
-> handler. We define NMI priorities as macros such as
-> NMI_PRIORITY_LOCAL, NMI_PRIORITY_WATCHDOG, NMI_PRIORITY_IO, etc. and
-> require all handlers to set the priority. register_die_notifier() with
-> (!nb->priority) should return -EINVAL. DIE_NMI_UNKNOWN should only be
-> used if there is a handler for the case when all others fail such as
-> implemented in the perf nmi handler or when reporting an unknown nmi.
-> 
-> This will avoid all the confusion below and also makes the code much
-> cleaner.
+symtab/strtab refer to memory that will be vfreed when load_module() is
+done. So update them early.
 
-Use priority to enforce the order has some issues except what Don
-pointed out (two registers for two call in chain):
+Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
+---
+ kernel/module.c |    9 ++++-----
+ 1 files changed, 4 insertions(+), 5 deletions(-)
 
-- Almost all direct call in default_do_nmi() must be turned into
-notifier_block. I know this is what you want. But I am not a big fan of
-notifier chain :)
-
-- This makes order of notifier call more implicitly. And I think the
-order is important for NMI handler to work properly.
-
-- In your scheme, both die_val (DIE_NMI or DIE_NMI_UNKNOWN) and priority
-are used to determine the order of call. This makes code more complex
-and no additional benefit.
-
-So I think it is better to use different die_val to determine the order,
-and insert some direct call between them.
-
-Best Regards,
-Huang Ying
-
+diff --git a/kernel/module.c b/kernel/module.c
+index d0b5f8d..d5dc98b 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2029,6 +2029,10 @@ static void add_kallsyms(struct module *mod, const struct load_info *info)
+ 	for (*s = 0, i = 1; i < info->sechdrs[info->index.str].sh_size; ++i)
+ 		if (test_bit(i, info->strmap))
+ 			*++s = mod->strtab[i];
++
++	mod->num_symtab = mod->core_num_syms;
++	mod->symtab = mod->core_symtab;
++	mod->strtab = mod->core_strtab;
+ }
+ #else
+ static inline void layout_symtab(struct module *mod, struct load_info *info)
+@@ -2738,11 +2742,6 @@ SYSCALL_DEFINE3(init_module, void __user *, umod,
+ 	/* Drop initial reference. */
+ 	module_put(mod);
+ 	trim_init_extable(mod);
+-#ifdef CONFIG_KALLSYMS
+-	mod->num_symtab = mod->core_num_syms;
+-	mod->symtab = mod->core_symtab;
+-	mod->strtab = mod->core_strtab;
+-#endif
+ 	module_free(mod, mod->module_init);
+ 	mod->module_init = NULL;
+ 	mod->init_size = 0;
+-- 
+1.7.3
 
