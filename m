@@ -1,77 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123Ab0I1VGa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 17:06:30 -0400
-Received: from mail.sf-mail.de ([62.27.20.61]:44539 "EHLO mail.sf-mail.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752799Ab0I1VG3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 17:06:29 -0400
-From: Rolf Eike Beer <eike-kernel@sf-tec.de>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Subject: Re: [PATCH 3/3] tcm/fileio: Add UNMAP / Block DISCARD support
-Date: Tue, 28 Sep 2010 23:06:22 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.3-desktop; KDE/4.5.1; i686; ; )
-Cc: "linux-scsi" <linux-scsi@vger.kernel.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Douglas Gilbert <dgilbert@interlog.com>, Jens Axboe <axboe@kernel.dk>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Richard Sharpe <realrichardsharpe@gmail.com>
-References: <1285627910-6492-1-git-send-email-nab@linux-iscsi.org>
-In-Reply-To: <1285627910-6492-1-git-send-email-nab@linux-iscsi.org>
+	id S1753175Ab0I1VJZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 17:09:25 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57918 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752644Ab0I1VJY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 17:09:24 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1384148.rnYdPORNX9";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009282306.23514.eike-kernel@sf-tec.de>
+In-Reply-To: <20100928.140014.115950817.davem@davemloft.net>
+References: <AANLkTim85sH_2o=xCiDuoQrHq_7ZL96Y91xQMGxUP5Fy@mail.gmail.com>
+ <20100928134721.f79a5955.akpm@linux-foundation.org> <AANLkTi=E7+CpJZE3XC7O1LvJu6LWfmvSxonskH4CYg25@mail.gmail.com>
+ <20100928.140014.115950817.davem@davemloft.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 28 Sep 2010 14:08:35 -0700
+Message-ID: <AANLkTinyPHP2wQvCiZnN3QkX96LM_25GiLpn0by6jfXo@mail.gmail.com>
+Subject: Re: {painfully BISECTED} Please revert f25c80a4b2: arch/um/drivers:
+ remove duplicate structure field initialization
+To: David Miller <davem@davemloft.net>
+Cc: akpm@linux-foundation.org, bharrosh@panasas.com, julia@diku.dk,
+        user-mode-linux-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, shemminger@vyatta.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1384148.rnYdPORNX9
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+On Tue, Sep 28, 2010 at 2:00 PM, David Miller <davem@davemloft.net> wrote:
+> From: Linus Torvalds <torvalds@linux-foundation.org>
+> Date: Tue, 28 Sep 2010 13:57:04 -0700
+>
+>> So perhaps something like the attached patch would make it work, and
+>> have the locking in place that apparently people think it should have?
+>
+> I'm fine with this if it works:
+>
+> Acked-by: David S. Miller <davem@davemloft.net>
 
-Nicholas A. Bellinger wrote:
+And you can add my sign-off to it if somebody tests it.
 
-> @@ -433,6 +448,42 @@ static int fd_emulate_scsi_cdb(struct se_task *task)
->  		if (ret < 0)
->  			return ret;
->  		break;
-> +	case UNMAP:
-> +		i = igrab(f->f_mapping->host);
-> +		if (!(i)) {
+It does look like the obvious fix. The "wrapper" is simply totally
+wrong as-is, and passes the wrong thing entirely to eth_mac_addr()
+afaik.
 
-.....
-
-> +		if (!(S_ISBLK(i->i_mode))) {
-
-.....
-
-> +		if (!(bd)) {
-
-Is this LISP or what? ;)
-
-Eike
-
---nextPart1384148.rnYdPORNX9
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.15 (GNU/Linux)
-
-iEYEABECAAYFAkyiWM8ACgkQXKSJPmm5/E7KkQCgglTnTW8gFujWZfXnnB02k8SQ
-SNYAoIgVZr4uyPQKirWkOEW9VEE43Vuc
-=1/fv
------END PGP SIGNATURE-----
-
---nextPart1384148.rnYdPORNX9--
+                Linus
