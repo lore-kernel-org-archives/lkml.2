@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760529Ab0I1Jjr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 05:39:47 -0400
-Received: from mx3.orcon.net.nz ([219.88.242.53]:58931 "EHLO mx3.orcon.net.nz"
+	id S1760479Ab0I1Jl3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 05:41:29 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:34839 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760412Ab0I1Jjq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 05:39:46 -0400
-Message-ID: <4CA1B7DF.10202@orcon.net.nz>
-Date: Tue, 28 Sep 2010 22:39:43 +1300
-From: Michael Cree <mcree@orcon.net.nz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100913 Icedove/3.0.7
+	id S1753813Ab0I1Jl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 05:41:28 -0400
+Date: Tue, 28 Sep 2010 12:41:22 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Grazvydas Ignotas <notasas@gmail.com>
+Cc: "Balbi, Felipe" <balbi@ti.com>, Anton Vorontsov <cbouatmailru@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chikkature Rajashekar, Madhusudhan" <madhu.cr@ti.com>
+Subject: Re: [PATCH v4] power_supply: Add driver for TWL4030/TPS65950 BCI
+ charger
+Message-ID: <20100928094122.GA7081@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1285618704-8985-1-git-send-email-notasas@gmail.com>
+ <20100928060554.GF2702@legolas.emea.dhcp.ti.com>
+ <AANLkTikZqtXa2YQsDehoWVMRstefUyafsQn2mph7U3CZ@mail.gmail.com>
+ <20100928084251.GC3900@legolas.emea.dhcp.ti.com>
+ <AANLkTin-6BLBHeiyA1edTJVjwVAimmJLVicZj8c_VC_2@mail.gmail.com>
+ <20100928090637.GD3900@legolas.emea.dhcp.ti.com>
+ <AANLkTim28RmH28LGgp6bEJ7XbyL4oO_5_C0phLL86roY@mail.gmail.com>
 MIME-Version: 1.0
-To: Al Viro <viro@ftp.linux.org.uk>
-CC: linux-kernel@vger.kernel.org, mattst88@gmail.com,
-        torvalds@linux-foundation.org
-Subject: Re: [PATCH 1/2] alpha: switch osf_sigprocmask() to use of sigprocmask()
-References: <E1OzvxM-0002ng-B5@ZenIV.linux.org.uk>
-In-Reply-To: <E1OzvxM-0002ng-B5@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
-X-DSPAM-Check: by mx3.orcon.net.nz on Tue, 28 Sep 2010 22:39:44 +1300
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Tue Sep 28 22:39:44 2010
-X-DSPAM-Confidence: 0.7413
-X-DSPAM-Probability: 0.0000
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <AANLkTim28RmH28LGgp6bEJ7XbyL4oO_5_C0phLL86roY@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/09/10 07:28, Al Viro wrote:
+On Tue, Sep 28, 2010 at 04:39:17AM -0500, Grazvydas Ignotas wrote:
+>On Tue, Sep 28, 2010 at 12:06 PM, Felipe Balbi <balbi@ti.com> wrote:
+>> On Tue, Sep 28, 2010 at 04:02:48AM -0500, Grazvydas Ignotas wrote:
+>>>>
+>>>> Charger event is SENT by charger driver when it verifies it's attached
+>>>> to a wall charger.
+>>>
+>>> Isn't that a job for musb/gadget? Detecting D+/D- being shorted by
+>>> charger or something like that? I don't think BCI is able to detect
+>>> charger.
+>>
+>> it's part of the charger detection right ? and according to trm, it's on
+>> the BCI (actually BCC) role to take care of that :-)
 >
-> get rid of a useless wrapper, while we are at it
->
-> Signed-off-by: Al Viro<viro@zeniv.linux.org.uk>
+>Hm you are probably talking about TWL5031, which has redesigned
+>charger block that is named BCC. TWL4030 charger is different, called
+>BCI and requires software charger detection from what I see in it's
+>TRM.
 
-Compiling this leads to the following errors:
+ok, might be that I got confused. Then it's ok the way it is. So we need
+other means to detect the charger :-p
 
-arch/alpha/kernel/signal.c: In function ‘SYSC_osf_sigprocmask’:
-arch/alpha/kernel/signal.c:52: error: implicit declaration of function 
-‘siprocmask’
-arch/alpha/kernel/signal.c:55: error: invalid type argument of ‘->’ 
-(have ‘sigset_t’)
-
-Obviously it should be sigprocmask at line 52, and presumably line 55 
-which is currently
-
-		res = oldmask->sig[0];
-
-should be
-
-		res = oldmask.sig[0];
-
-Cheers
-Michael.
+-- 
+balbi
