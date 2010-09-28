@@ -1,113 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760487Ab0I1BZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 21:25:58 -0400
-Received: from mga09.intel.com ([134.134.136.24]:19169 "EHLO mga09.intel.com"
+	id S1760495Ab0I1Bbz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 21:31:55 -0400
+Received: from kroah.org ([198.145.64.141]:53479 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755983Ab0I1BZ4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 21:25:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,244,1283756400"; 
-   d="scan'208";a="558531696"
-From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
-To: "Xin, Xiaohui" <xiaohui.xin@intel.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "herbert@gondor.hengli.com.au" <herbert@gondor.hengli.com.au>,
-        "jdike@linux.intel.com" <jdike@linux.intel.com>
-Date: Tue, 28 Sep 2010 09:25:46 +0800
-Subject: RE: [PATCH v11 00/17] Provide a zero-copy method on KVM virtio-net.
-Thread-Topic: [PATCH v11 00/17] Provide a zero-copy method on KVM virtio-net.
-Thread-Index: ActdnV5IzY37EumUQUSR1zIrObvBqQAP3sEwADOC7uA=
-Message-ID: <F2E9EB7348B8264F86B6AB8151CE2D792EC64F796C@shsmsx502.ccr.corp.intel.com>
-References: <1285388855-27410-1-git-send-email-xiaohui.xin@intel.com>
- <20100926170142.GA24196@redhat.com>
- <F2E9EB7348B8264F86B6AB8151CE2D792EC64F74FA@shsmsx502.ccr.corp.intel.com>
-In-Reply-To: <F2E9EB7348B8264F86B6AB8151CE2D792EC64F74FA@shsmsx502.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757677Ab0I1Bby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 21:31:54 -0400
+Date: Mon, 27 Sep 2010 18:25:40 -0700
+From: Greg KH <greg@kroah.com>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: Greg KH <gregkh@suse.de>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
+        "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: Re: [PATCH 1/1] Rename camel case variables in channel.c  (updated
+	again)
+Message-ID: <20100928012540.GA5188@kroah.com>
+References: <1FB5E1D5CA062146B38059374562DF7289ED89CF@TK5EX14MBXC130.redmond.corp.microsoft.com> <1FB5E1D5CA062146B38059374562DF7289EDBC9E@TK5EX14MBXC130.redmond.corp.microsoft.com> <20100927011943.GA6936@kroah.com> <1FB5E1D5CA062146B38059374562DF7289F076BD@TK5EX14MBXC128.redmond.corp.microsoft.com> <20100927061029.GC22319@suse.de> <1FB5E1D5CA062146B38059374562DF7289F13EFE@TK5EX14MBXC128.redmond.corp.microsoft.com> <20100927193216.GA25924@kroah.com> <1FB5E1D5CA062146B38059374562DF7289F19F42@TK5EX14MBXC130.redmond.corp.microsoft.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1FB5E1D5CA062146B38059374562DF7289F19F42@TK5EX14MBXC130.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On
->Behalf Of Xin, Xiaohui
->Sent: Monday, September 27, 2010 8:45 AM
->To: Michael S. Tsirkin
->Cc: netdev@vger.kernel.org; kvm@vger.kernel.org; linux-kernel@vger.kernel.org;
->mingo@elte.hu; davem@davemloft.net; herbert@gondor.hengli.com.au;
->jdike@linux.intel.com
->Subject: RE: [PATCH v11 00/17] Provide a zero-copy method on KVM virtio-net.
->
->>From: Michael S. Tsirkin [mailto:mst@redhat.com]
->>Sent: Monday, September 27, 2010 1:02 AM
->>To: Xin, Xiaohui
->>Cc: netdev@vger.kernel.org; kvm@vger.kernel.org; linux-kernel@vger.kernel.org;
->>mingo@elte.hu; davem@davemloft.net; herbert@gondor.hengli.com.au;
->>jdike@linux.intel.com
->>Subject: Re: [PATCH v11 00/17] Provide a zero-copy method on KVM virtio-net.
->>
->>On Sat, Sep 25, 2010 at 12:27:18PM +0800, xiaohui.xin@intel.com wrote:
->>> We provide an zero-copy method which driver side may get external
->>> buffers to DMA. Here external means driver don't use kernel space
->>> to allocate skb buffers. Currently the external buffer can be from
->>> guest virtio-net driver.
->>>
->>> The idea is simple, just to pin the guest VM user space and then
->>> let host NIC driver has the chance to directly DMA to it.
->>> The patches are based on vhost-net backend driver. We add a device
->>> which provides proto_ops as sendmsg/recvmsg to vhost-net to
->>> send/recv directly to/from the NIC driver. KVM guest who use the
->>> vhost-net backend may bind any ethX interface in the host side to
->>> get copyless data transfer thru guest virtio-net frontend.
->>> patch 01-10:  	net core and kernel changes.
->>> patch 11-13:  	new device as interface to mantpulate external buffers.
->>> patch 14: 	for vhost-net.
->>> patch 15:	An example on modifying NIC driver to using napi_gro_frags().
->>> patch 16:	An example how to get guest buffers based on driver
->>> 		who using napi_gro_frags().
->>> patch 17:	It's a patch to address comments from Michael S. Thirkin
->>> 		to add 2 new ioctls in mp device.
->>> 		We split it out here to make easier reiewer.
->>
->>
->>
->>I commented on how to avoid mm semaphore on data path separately, and
->>since you didn't have time to review that yet, I won't repeat that here.
->>
->
->I think I did avoid that in data path to use mm semaphore. I stored the value
->in mp structures and check with that.
->
-Hi Michael,
-Did you think I have addressed your comments about to avoid mm semaphore on
-data path or not? I stored the value in mp structures and don't use mmap_semphore.
-Or you still have some concerns with it?
+On Mon, Sep 27, 2010 at 10:59:33PM +0000, Haiyang Zhang wrote:
+> > From: Greg KH [mailto:greg@kroah.com]
+> > Sent: Monday, September 27, 2010 3:32 PM
+> 
+> > What's wrong with using 'git send-email' with your server?  Have you
+> > tried that?  That shouldn't change the mime-type of the patch, and if
+> > it
+> > does, that would be grounds for a bug to be filed against such a server,
+> > right?
+> 
+> I have sent the patch again with git-send-email. Is the email format correct
+> now?
 
->>At this point what are the plans on macvtap integration?
->>You indicated this is the interface you intend to use longterm.
->
->I'm now working on that.
->
-I'm now trying to export some functions from mp device, and let macvtap to use them
-for rx zero-copy.
->
->Thanks
->Xiaohui
->--
->To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
->Please read the FAQ at  http://www.tux.org/lkml/
+I do not know, as I did not recieve any such emails :)
+
+Care to check that the messages really did get sent?
+
+thanks,
+
+greg k-h
