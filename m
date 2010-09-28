@@ -1,136 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757104Ab0I1IVZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 04:21:25 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:49151 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752208Ab0I1IVX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 04:21:23 -0400
-Date: Tue, 28 Sep 2010 13:51:05 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 09/10] taskstats: Fix exit CPU time accounting
-Message-ID: <20100928082105.GC4128@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <1285249681.1837.28.camel@holzheu-laptop>
- <1285250541.1837.95.camel@holzheu-laptop>
+	id S1757575Ab0I1IZf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 04:25:35 -0400
+Received: from cantor.suse.de ([195.135.220.2]:57843 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751348Ab0I1IZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 04:25:33 -0400
+From: Andreas Gruenbacher <agruen@suse.de>
+Organization: SUSE Labs, Novell Inc.
+To: Valerie Aurora <vaurora@redhat.com>
+Subject: Re: [PATCH 6/7 v3] overlay: hybrid overlay filesystem prototype
+Date: Tue, 28 Sep 2010 10:24:59 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
+Cc: Miklos Szeredi <miklos@szeredi.hu>, linuxram@us.ibm.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        neilb@suse.de, viro@zeniv.linux.org.uk
+References: <20100920180404.939991832@szeredi.hu> <E1P08oT-0004C7-3O@pomaz-ex.szeredi.hu> <20100927184747.GC8089@shell>
+In-Reply-To: <20100927184747.GC8089@shell>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1285250541.1837.95.camel@holzheu-laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009281025.00727.agruen@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Michael Holzheu <holzheu@linux.vnet.ibm.com> [2010-09-23 16:02:21]:
-
-> Subject: [PATCH] taskstats: Fix exit CPU time accounting
-> 
-> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> 
-> Currently there are code pathes (e.g. for kthreads) where the consumed
-> CPU time is not accounted to the parents cumulative counters.
-> Now CPU time is accounted to the parent, if the exit accounting has not
-> been done correctly.
+On Monday 27 September 2010 20:47:47 Valerie Aurora wrote:
+> Maybe I don't understand.  It seems like directories created when the
+> file system is *not* union mounted should definitely be merged with
+> matching directories on the lower layer.
 >
+> Take the case of /etc/fstab.  The first union mount never touches /etc
+> and it doesn't exist on the topmost layer.  Then we unmount the upper
+> layer, mount it somewhere else as a plain mount, and create /etc/ and
+> /etc/fstab.  When we union mount it back over the lower layer again,
+> we still want the lower layer /etc/ to be merged with the topmost
+> /etc/, or else init.d will disappear.
 
-Does this impact account of the init process? Why do we care about
-accounting the time to the parent? In the case of tgid, all threads
-data makes sense. What is the benefit or gap we are trying to address
-in terms of lost data or accountability?
- 
-> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> ---
->  include/linux/sched.h |    1 +
->  kernel/exit.c         |   35 +++++++++++++++++++++++++++++++++++
->  2 files changed, 36 insertions(+)
-> 
-> Index: git-linux-2.6/include/linux/sched.h
-> ===================================================================
-> --- git-linux-2.6.orig/include/linux/sched.h	2010-09-23 14:16:37.000000000 +0200
-> +++ git-linux-2.6/include/linux/sched.h	2010-09-23 14:17:20.000000000 +0200
-> @@ -1282,6 +1282,7 @@
->  	cputime_t prev_utime, prev_stime, prev_sttime;
->  #endif
->  	unsigned long long acct_time;		/* Time for last accounting */
-> +	int exit_accounting_done;
->  	unsigned long nvcsw, nivcsw; /* context switch counts */
->  	struct timespec start_time; 		/* monotonic time */
->  	struct timespec real_start_time;	/* boot based time */
-> Index: git-linux-2.6/kernel/exit.c
-> ===================================================================
-> --- git-linux-2.6.orig/kernel/exit.c	2010-09-23 14:16:37.000000000 +0200
-> +++ git-linux-2.6/kernel/exit.c	2010-09-23 14:17:20.000000000 +0200
-> @@ -157,11 +157,45 @@
->  	put_task_struct(tsk);
->  }
-> 
-> +static void account_to_parent(struct task_struct *p)
-> +{
-> +	struct signal_struct *psig, *sig;
-> +	struct task_struct *tsk_parent;
-> +
-> +	read_lock(&tasklist_lock);
-> +	tsk_parent = p->real_parent;
-> +	if (!tsk_parent) {
-> +		read_unlock(&tasklist_lock);
-> +		return;
-> +	}
-> +	get_task_struct(tsk_parent);
-> +	read_unlock(&tasklist_lock);
-> +
-> +	// printk("XXX Fix accounting: pid=%d ppid=%d\n", p->pid, tsk_parent->pid);
-> +	spin_lock_irq(&tsk_parent->sighand->siglock);
-> +	psig = tsk_parent->signal;
-> +	sig = p->signal;
-> +	psig->cutime = cputime_add(psig->cutime,
-> +				   cputime_add(sig->cutime, p->utime));
-> +	psig->cstime = cputime_add(psig->cstime,
-> +				   cputime_add(sig->cstime, p->stime));
-> +	psig->csttime = cputime_add(psig->csttime,
-> +				    cputime_add(sig->csttime, p->sttime));
-> +	psig->cgtime = cputime_add(psig->cgtime,
-> +		       cputime_add(p->gtime,
-> +		       cputime_add(sig->gtime, sig->cgtime)));
-> +	p->exit_accounting_done = 1;
-> +	spin_unlock_irq(&tsk_parent->sighand->siglock);
-> +	put_task_struct(tsk_parent);
-> +}
-> 
->  void release_task(struct task_struct * p)
->  {
->  	struct task_struct *leader;
->  	int zap_leader;
-> +
-> +	if (!p->exit_accounting_done)
-> +		account_to_parent(p);
->  repeat:
->  	tracehook_prepare_release_task(p);
->  	/* don't need to get the RCU readlock here - the process is dead and
-> @@ -1279,6 +1313,7 @@
->  			psig->cmaxrss = maxrss;
->  		task_io_accounting_add(&psig->ioac, &p->ioac);
->  		task_io_accounting_add(&psig->ioac, &sig->ioac);
-> +		p->exit_accounting_done = 1;
->  		spin_unlock_irq(&p->real_parent->sighand->siglock);
->  	}
-> 
-> 
-> 
+I can't think of a reason why the upper layer would really *need* to be 
+modified separately as in this example though, and I'm sure that examples for 
+opaqueness by default can be constructed as well.  Transparency comes at a 
+cost though (lookup, readdir, whiteouts), and defaulting to opaque directories 
+will be more efficient in some cases.  This is why I think that opaqueness by 
+default is preferable.
 
--- 
-	Three Cheers,
-	Balbir
+> Again, maybe I'm misunderstanding, but this doesn't make much sense to
+> me.  Say I create:
+> 
+> /upper/a_dir/upper_file
+> /lower/a_dir/lower_file
+> 
+> Then when I union mount them, I want a_dir/ to be transparent
+> automatically and show both upper_file and lower_file, without marking
+> it manually.
+
+Why?
+
+Thanks,
+Andreas
