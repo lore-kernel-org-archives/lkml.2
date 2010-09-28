@@ -1,81 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758141Ab0I1Diw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 23:38:52 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:59425 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757897Ab0I1Div (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 23:38:51 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_GPIO driver to 2.6.35
-Date: Mon, 27 Sep 2010 23:38:19 -0400
-User-Agent: KMail/1.13.5 (Linux/2.6.35.4; KDE/4.5.1; x86_64; ; )
-Cc: "Mark Brown" <broonie@opensource.wolfsonmicro.com>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        "Randy Dunlap" <randy.dunlap@oracle.com>,
-        "Alek Du" <alek.du@intel.com>,
-        "Richard =?utf-8?q?R=1B=24B=EF=BF=BDK=1B?=(Bfors" 
-	<richard.rojfors@mocean-labs.com>,
-        meego-dev@meego.com, "ML linux-kernel" <linux-kernel@vger.kernel.org>,
-        "Wang, Qi" <qi.wang@intel.com>, andrew.chih.howe.khor@intel.com,
-        gregkh@suse.de, "Wang, Yong Y" <yong.y.wang@intel.com>,
-        "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>
-References: <4C80D3C8.9020204@dsn.okisemi.com> <20100903134827.GA7614@rakim.wolfsonmicro.main> <000301cb5ebc$35ad8d20$66f8800a@maildom.okisemi.com>
-In-Reply-To: <000301cb5ebc$35ad8d20$66f8800a@maildom.okisemi.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2520623.MFD1FMnYhI";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009272338.23762.vapier@gentoo.org>
+	id S1760569Ab0I1DoS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 23:44:18 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:47174 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757960Ab0I1DoQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 23:44:16 -0400
+From: Keng-Yu Lin <keng-yu.lin@canonical.com>
+To: mjg59@srcf.ucam.org, len.brown@intel.com, alan-jenkins@tuffmail.co.uk,
+        superm1@ubuntu.com, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Keng-Yu Lin <keng-yu.lin@canonical.com>
+Subject: [PATCH v5] dell-laptop: Add debugfs support
+Date: Tue, 28 Sep 2010 11:43:31 +0800
+Message-Id: <1285645411-4369-1-git-send-email-keng-yu.lin@canonical.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20100928025202.GA17740@srcf.ucam.org>
+References: <20100928025202.GA17740@srcf.ucam.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2520623.MFD1FMnYhI
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Export the status of RF killswitch through debugfs.
 
-On Monday, September 27, 2010 23:21:10 Masayuki Ohtake wrote:
-> > You should be implementing support for the device using the
-> > standard interfaces used by the other GPIO drivers in kernel.
->=20
-> We are now modifying our GPIO driver with standard interface.
-> I've got a bit of problem.
->=20
-> I don't understand how userspace accesses to the driver.
-> Let me know how to ? sysfs only ?
+The killswitch status is obtained by the SMI to BIOS. Exporting this status
+through debugfs can help identify the issue with the misbehaving firmware.
 
-sysfs only.  look at GPIO_SYSFS in drivers/gpio/.  support the common GPIO=
-=20
-framework and the userspace API is taken care of for you.
-=2Dmike
+Signed-off-by: Keng-Yu Lin <keng-yu.lin@canonical.com>
+---
+ drivers/platform/x86/dell-laptop.c |   77 ++++++++++++++++++++++++++++++++++++
+ 1 files changed, 77 insertions(+), 0 deletions(-)
 
---nextPart2520623.MFD1FMnYhI
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+V5 fixed operator precedence mess-up of hwswitch_state, and prints the
+bit number so that this debug info is complete for hardare manufacturers. 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
+diff --git a/drivers/platform/x86/dell-laptop.c b/drivers/platform/x86/dell-laptop.c
+index 4413975..cf8a89a 100644
+--- a/drivers/platform/x86/dell-laptop.c
++++ b/drivers/platform/x86/dell-laptop.c
+@@ -25,6 +25,8 @@
+ #include <linux/mm.h>
+ #include <linux/i8042.h>
+ #include <linux/slab.h>
++#include <linux/debugfs.h>
++#include <linux/seq_file.h>
+ #include "../../firmware/dcdbas.h"
+ 
+ #define BRIGHTNESS_TOKEN 0x7d
+@@ -325,6 +327,75 @@ static const struct rfkill_ops dell_rfkill_ops = {
+ 	.query = dell_rfkill_query,
+ };
+ 
++static struct dentry *dell_laptop_dir;
++
++static int dell_debugfs_show(struct seq_file *s, void *data)
++{
++	int status;
++
++	get_buffer();
++	dell_send_request(buffer, 17, 11);
++	status = buffer->output[1];
++	release_buffer();
++
++	seq_printf(s, "status:\t0x%X\n", status);
++	seq_printf(s, "Bit 0 : Hardware switch supported:   %lu\n",
++		   status & BIT(0));
++	seq_printf(s, "Bit 1 : Wifi locator supported:      %lu\n",
++		  (status & BIT(1)) >> 1);
++	seq_printf(s, "Bit 2 : Wifi is supported:           %lu\n",
++		  (status & BIT(2)) >> 2);
++	seq_printf(s, "Bit 3 : Bluetooth is supported:      %lu\n",
++		  (status & BIT(3)) >> 3);
++	seq_printf(s, "Bit 4 : WWAN is supported:           %lu\n",
++		  (status & BIT(4)) >> 4);
++	seq_printf(s, "Bit 5 : Wireless keyboard supported: %lu\n",
++		  (status & BIT(5)) >> 5);
++	seq_printf(s, "Bit 8 : Wifi is installed:           %lu\n",
++		  (status & BIT(8)) >> 8);
++	seq_printf(s, "Bit 9 : Bluetooth is installed:      %lu\n",
++		  (status & BIT(9)) >> 9);
++	seq_printf(s, "Bit 10: WWAN is installed:           %lu\n",
++		  (status & BIT(10)) >> 10);
++	seq_printf(s, "Bit 16: Hardware switch is on:       %lu\n",
++		  (status & BIT(16)) >> 16);
++	seq_printf(s, "Bit 17: Wifi is blocked:             %lu\n",
++		  (status & BIT(17)) >> 17);
++	seq_printf(s, "Bit 18: Bluetooth is blocked:        %lu\n",
++		  (status & BIT(18)) >> 18);
++	seq_printf(s, "Bit 19: WWAN is blocked:             %lu\n",
++		  (status & BIT(19)) >> 19);
++
++	seq_printf(s, "\nhwswitch_state:\t0x%X\n", hwswitch_state);
++	seq_printf(s, "Bit 0 : Wifi controlled by switch:      %lu\n",
++		   hwswitch_state & BIT(0));
++	seq_printf(s, "Bit 1 : Bluetooth controlled by switch: %lu\n",
++		   (hwswitch_state & BIT(1)) >> 1);
++	seq_printf(s, "Bit 2 : WWAN controlled by switch:      %lu\n",
++		   (hwswitch_state & BIT(2)) >> 2);
++	seq_printf(s, "Bit 7 : Wireless switch config locked:  %lu\n",
++		   (hwswitch_state & BIT(7)) >> 7);
++	seq_printf(s, "Bit 8 : Wifi locator enabled:           %lu\n",
++		   (hwswitch_state & BIT(8)) >> 8);
++	seq_printf(s, "Bit 15: Wifi locator setting locked:    %lu\n",
++		   (hwswitch_state & BIT(15)) >> 15);
++
++	return 0;
++}
++
++static int dell_debugfs_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, dell_debugfs_show, inode->i_private);
++}
++
++static const struct file_operations dell_debugfs_fops = {
++	.owner = THIS_MODULE,
++	.open = dell_debugfs_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++
+ static void dell_update_rfkill(struct work_struct *ignored)
+ {
+ 	if (wifi_rfkill)
+@@ -556,6 +627,11 @@ static int __init dell_init(void)
+ 		goto fail_filter;
+ 	}
+ 
++	dell_laptop_dir = debugfs_create_dir("dell_laptop", NULL);
++	if (dell_laptop_dir != NULL)
++		debugfs_create_file("rfkill", 0444, dell_laptop_dir, NULL,
++				    &dell_debugfs_fops);
++
+ #ifdef CONFIG_ACPI
+ 	/* In the event of an ACPI backlight being available, don't
+ 	 * register the platform controller.
+@@ -615,6 +691,7 @@ fail_platform_driver:
+ 
+ static void __exit dell_exit(void)
+ {
++	debugfs_remove_recursive(dell_laptop_dir);
+ 	i8042_remove_filter(dell_laptop_i8042_filter);
+ 	cancel_delayed_work_sync(&dell_rfkill_work);
+ 	backlight_device_unregister(dell_backlight_device);
+-- 
+1.7.1
 
-iQIcBAABAgAGBQJMoWMvAAoJEEFjO5/oN/WBiakQAIoKQjGhvEVeysE34hrHJlCj
-x0mK1rAni+hwV1hWMwZRY8cpnXkUEGyKqAylaj4v6++RTvp3HDpJ+umbWX2hkokm
-/nt6WJsBpSUj27QLw7NTBfgWqFjgb2jyuETZB5kkeI27HiMJXPK1SkhvbWD+TqNt
-lpjJusxBDzcO/anVQyQNVQaN+ZIim9ibO3pzalFndRah605bQZbhB3pH1D7FxWro
-bykM/2qrbXA78fN8y9CNy+3kt1GHCjPqpMxhUINvbR/R1RklpXWUQsDpCWq4WRvh
-YoFPOJL0twHhifThZjNKkDN+DcD1AqBkOnY8b4a7ZiP3Vwyhl83EXl6/1L/KJ8Pn
-urrzRRtwC0pESgao43JSqjInMUotvDJw9FJBNqigqWT4H/2aQk+ZnwOeA9GnQ99t
-HQ/Xh2Oi8Qb7aZa28ZdQ3lttOI5bcbTemVsfIQBgdRhEUHQLn4qwXzPfo3bnsfXw
-3thdRaTDt7ohX8ZLR/eY9JajqD2poK1Bt+AKS5D8hah0usFGZBAfTzYkg4NPAuoR
-T+6tCFUyI7okk8hk5vdmEGLFxLmAIXLX4DzKY768M49d2Re7r+PMZ3iZ+VlzkonO
-vVKQmlfcWXZb9z1yogZwLSsswTOGoEiWTNPJcppXrMnAn+XFTziA6g0sPW+F6o5q
-HcO0cPw+nK7RkokdWrAz
-=eNro
------END PGP SIGNATURE-----
-
---nextPart2520623.MFD1FMnYhI--
