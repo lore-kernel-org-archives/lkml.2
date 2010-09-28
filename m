@@ -1,64 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759722Ab0I1I1x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 04:27:53 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:39460 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758537Ab0I1I1s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 04:27:48 -0400
-Date: Tue, 28 Sep 2010 10:27:29 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org, Pekka Enberg <penberg@kernel.org>,
-        Fenghua Yu <fenghua.yu@intel.com>, Jean Delvare <khali@linux-fr.org>
-Subject: Re: [PATCH v3] hwmon (coretemp): Fix build breakage if SMP is
- undefined
-Message-ID: <20100928082729.GA20898@elte.hu>
-References: <1285637552-1058-1-git-send-email-guenter.roeck@ericsson.com>
+	id S1759537Ab0I1Ifb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 04:35:31 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:39418 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752830Ab0I1If3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 04:35:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1285637552-1058-1-git-send-email-guenter.roeck@ericsson.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0001]
+X-Originating-IP: [87.66.147.230]
+In-Reply-To: <201009222049.18154.rjw@sisk.pl>
+References: <AANLkTinUmbSUUuxUzc8++pcb9gd1CZFdyTQFrveTBXyV@mail.gmail.com>
+	<201009180026.59482.trenn@suse.de>
+	<AANLkTimMAr9kEzybFGai3qGyXx36v055iPpXq_C1vW8C@mail.gmail.com>
+	<201009222049.18154.rjw@sisk.pl>
+Date: Tue, 28 Sep 2010 10:35:27 +0200
+Message-ID: <AANLkTinJU5+s_1S6i4GpRuiOfsAPiL9UFtrxCCbtoumt@mail.gmail.com>
+Subject: Re: [PATCH] tracing, perf: add more power related events
+From: Jean Pihet <jean.pihet@newoldbits.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Thomas Renninger <trenn@suse.de>, Ingo Molnar <mingo@elte.hu>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
+        arjan@infradead.org, Kevin Hilman <khilman@deeprootsystems.com>,
+        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-omap@vger.kernel.org, linux-perf-users@vger.kernel.org,
+        linux-trace-users@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-* Guenter Roeck <guenter.roeck@ericsson.com> wrote:
+Here is what I am proposing, in reply to all your comments:
 
-> Commit e40cc4bdfd4b89813f072f72bd9c7055814d3f0f introduced
-> a build breakage if CONFIG_SMP is undefined. This commit
-> fixes the problem.
+1) rename the events to match Thomas's proposal:
+   power:power_cpu_cstate
+   power:power_cpu_pstate
+   power:power_cpu_sstate
+   ...
 
-This commit works around the problem in a hacky but not-so-ugly way.
+2) introduce a new Kconfig option CONFIG_DEPRECATED_POWER_EVENTS and
+conditionally map a subset of the new events to the old ones for
+backward compatibility with the existing user apps. The apps should be
+converted to the new API asap,
 
-( You might also want to include Linus's suggestion about how to fix it 
-  for real in the future - so that we have at least some kind of record 
-  of it. )
+3) update documentation
 
-> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-> Cc: Fenghua Yu <fenghua.yu@intel.com>
+Other remarks here below:
 
-FYI, while i dont care about my Reported-by's but you lost a Reported-by 
-tag here - you should be as careful about them as about your own 
-signoffs.
+On Wed, Sep 22, 2010 at 8:49 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+...
+> This POWER_SSTATE thing seems to be totally artificial and omap-specific.
+>
+> Why do you want it to be done this way?
+>
+> Or is the ACPI handling added in the ACPI patch?  In which case, why don't you
+> put that power_switch_state(POWER_SSTATE, 1, 0, cpu) into
+> kernel/power/suspend.c:suspend_enter() (and analogously for
+> power_switch_state(POWER_SSTATE, 0, 0, cpu)).
+The ACPI code is not using the SSTATE event.
+Indeed inserting a tracepoint at
+kernel/power/suspend.c:suspend_enter() is more generic. I will correct
+this.
 
-> v2: Fix compile warning due to unused variable i if SMP is undefined 
-> v3: include asm/smp.h instead of using ifdef CONFIG_SMP
+> Moreover, why is the cpu argument necessary for POWER_SSTATE at all?
+The cpu_id parameter is present in all events prototypes. This is not
+needed. I will correct this.
 
-I've started testing this fix - but i'd expect it to fix the problem - 
-so consider it fixed unless i report back within a few hours that 
-there's some breakage left.
+>
+> Thanks,
+> Rafael
+>
+
+A new patch should be ready in the coming days. I would like to have
+your opinion on the proposed rework before re-doing it all again.
 
 Thanks,
-
-	Ingo
+Jean
