@@ -1,93 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756715Ab0I1QgJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 12:36:09 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:52485 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755608Ab0I1QgI (ORCPT
+	id S1755608Ab0I1Qlp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 12:41:45 -0400
+Received: from mail.codesourcery.com ([38.113.113.100]:60938 "EHLO
+	mail.codesourcery.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753927Ab0I1Qlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 12:36:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:message-id:x-mailer;
-        b=tttC+55xCD1u28otrCW/jvKatTwrjLg246xH6h41XfH2DXR3Ik20+NYjTisuDZCt+A
-         924GJzmN7dADxkYd2FKlkUYBxGx6MtdTCLiNB0e19a9GCAG6PE3YmtxfPzAma1fCbNa0
-         UI0rC5zfFYVB/Z6F8hPfvaTu/IVBnVdxKF5kw=
-From: Maurice Dawson <mauricedawson2699@gmail.com>
-To: gregkh@suse.de, arun.thomas@gmail.com, stewart_r@aliencamel.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 13/13] Staging: comedi: fix EXPORT SYMBOL coding style issue in ni_labpc.c
-Date: Tue, 28 Sep 2010 17:35:53 +0100
-Message-Id: <1285691753-4391-1-git-send-email-mauricedawson2699@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Tue, 28 Sep 2010 12:41:44 -0400
+Date: Tue, 28 Sep 2010 16:41:41 +0000 (UTC)
+From: "Joseph S. Myers" <joseph@codesourcery.com>
+X-X-Sender: jsm28@digraph.polyomino.org.uk
+To: Arnd Bergmann <arnd@arndb.de>
+cc: Chris Metcalf <cmetcalf@tilera.com>, linasvepstas@gmail.com,
+        linux-kernel@vger.kernel.org, libc-ports@sourceware.org,
+        andrew@codesourcery.com
+Subject: Re: asm-generic/unistd.h and glibc use of NR_ipc
+In-Reply-To: <201009281813.56443.arnd@arndb.de>
+Message-ID: <Pine.LNX.4.64.1009281623320.22692@digraph.polyomino.org.uk>
+References: <AANLkTi=33kimswSJ1tYsnG-PVs6Z4dVBtnqq65GN8Vxw@mail.gmail.com>
+ <4CA1E809.5010103@tilera.com> <Pine.LNX.4.64.1009281537400.22692@digraph.polyomino.org.uk>
+ <201009281813.56443.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the ni_labpc.c file that fixes up, EXPORT SYMBOL(foo) should immediately follow its function/variable
- warnings, found by the checkpatch.pl tool
+On Tue, 28 Sep 2010, Arnd Bergmann wrote:
 
-Signed-off-by: Maurice Dawson <mauricedawson2699@gmail.com>
----
- drivers/staging/comedi/drivers/ni_labpc.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+> Once the kernel parts are upstream and use the generic syscall ABI, only
+> rudimentary architecture support in glibc would be needed.
 
-diff --git a/drivers/staging/comedi/drivers/ni_labpc.c b/drivers/staging/comedi/drivers/ni_labpc.c
-index bfce5c8..0f61bb1 100644
---- a/drivers/staging/comedi/drivers/ni_labpc.c
-+++ b/drivers/staging/comedi/drivers/ni_labpc.c
-@@ -345,6 +345,7 @@ const int labpc_1200_is_unipolar[NUM_LABPC_1200_AI_RANGES] = {
- 	1,
- 	1,
- };
-+EXPORT_SYMBOL_GPL(labpc_1200_is_unipolar);
- 
- /* map range index to gain bits */
- const int labpc_1200_ai_gain_bits[NUM_LABPC_1200_AI_RANGES] = {
-@@ -363,6 +364,7 @@ const int labpc_1200_ai_gain_bits[NUM_LABPC_1200_AI_RANGES] = {
- 	0x60,
- 	0x70,
- };
-+EXPORT_SYMBOL_GPL(labpc_1200_ai_gain_bits);
- 
- const struct comedi_lrange range_labpc_1200_ai = {
- 	NUM_LABPC_1200_AI_RANGES,
-@@ -383,6 +385,7 @@ const struct comedi_lrange range_labpc_1200_ai = {
- 	 UNI_RANGE(0.1),
- 	 }
- };
-+EXPORT_SYMBOL_GPL(range_labpc_1200_ai);
- 
- /* analog output ranges */
- #define AO_RANGE_IS_UNIPOLAR 0x1
-@@ -701,6 +704,7 @@ int labpc_common_attach(struct comedi_device *dev, unsigned long iobase,
- 
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(labpc_common_attach);
- 
- static int labpc_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- {
-@@ -807,6 +811,7 @@ int labpc_common_detach(struct comedi_device *dev)
- 
- 	return 0;
- };
-+EXPORT_SYMBOL_GPL(labpc_common_detach);
- 
- static void labpc_clear_adc_fifo(const struct comedi_device *dev)
- {
-@@ -2152,11 +2157,6 @@ module_init(driver_labpc_init_module);
- module_exit(driver_labpc_cleanup_module);
- #endif
- 
--EXPORT_SYMBOL_GPL(labpc_common_attach);
--EXPORT_SYMBOL_GPL(labpc_common_detach);
--EXPORT_SYMBOL_GPL(range_labpc_1200_ai);
--EXPORT_SYMBOL_GPL(labpc_1200_ai_gain_bits);
--EXPORT_SYMBOL_GPL(labpc_1200_is_unipolar);
- 
- MODULE_AUTHOR("Comedi http://www.comedi.org");
- MODULE_DESCRIPTION("Comedi low-level driver");
+In my experience very little of a glibc port relates to the particular set 
+of syscalls present on a particular architecture (and what does often 
+consists of one-line files that #include the file for i386 or some other 
+convenient architecture); changing a port from an old syscall ABI to the 
+generic one would mean making it use the new set of generic files in 
+preference to some existing sysdeps/unix/sysv/linux files, and maybe 
+having fewer bits/ headers if some of the architecture differences there 
+are avoided, but no real differences to any of the bits that aren't purely 
+mechanical such as the implementation of each architecture's TLS ABI, 
+other pieces of the ELF ABI, the set of atomic operations available, 
+startup code, longjmp, profiling, clone, the interface used to call an 
+individual syscall, etc. - remember that you can't build any vaguely 
+recent glibc without full shared library and NPTL support.
+
+A lot of the *changes made to maintain an existing port* relate to 
+constants in the duplicated bits/* headers which it might be good to 
+duplicate less if future architectures share values for all the constants, 
+but that's not where most of the complexity in the port lies.  MIPS is 
+probably the worst case for code dealing with syscall ABI peculiarities 
+(given the three different ABIs, and n64 having different userspace stat 
+and stat64 structures), but even there they aren't much of a source of 
+complexity (MIPS ELF peculiarities are much more an issue).
+
 -- 
-1.7.0.4
-
+Joseph S. Myers
+joseph@codesourcery.com
