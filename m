@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756633Ab0I1GbH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 02:31:07 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60583 "EHLO
+	id S1755809Ab0I1GfA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 02:35:00 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58287 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996Ab0I1GbF (ORCPT
+	with ESMTP id S1750996Ab0I1Ge6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 02:31:05 -0400
+	Tue, 28 Sep 2010 02:34:58 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=FCzopVCezz25zO6IGvXOgoJ1MaJgt+a7VzXia+FOneo9+5fDruPW5ykX0pnqVVhh2Z
-         gg0Egj3a6ptvoKVdPgfLsfpFuyIP/AZy1mT7PivWVwfWXWO09XkNfwryZjqtGNsiu++n
-         RjMb4UvO/pnMXG1/FDDN1QmVrse8Eh0nijRdc=
-Subject: Re: [PATCH] mtd : add init_size hook for NAND driver
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Huang Shijie <shijie8@gmail.com>
-Cc: David.Woodhouse@intel.com, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-In-Reply-To: <AANLkTi=6zROsDs2zkCJOXJdiPDh53A=x7WXGZKTyHDoO@mail.gmail.com>
-References: <1285328063-7982-1-git-send-email-shijie8@gmail.com>
-	 <1285502719.13050.17.camel@brekeke>
-	 <AANLkTi=6zROsDs2zkCJOXJdiPDh53A=x7WXGZKTyHDoO@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 28 Sep 2010 09:29:14 +0300
-Message-ID: <1285655354.2437.15.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 8bit
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=K/ddSKnhxsk9I8ruGA6Swpkq3Db8I9YbqpDqMcDrNFVDBg9MTqr+kM/DTgAzcDoLF3
+         YnFPRJYrQTvdV3GL4/IWVJprj48dT0MHW4lieFjHXlZdv4/IjjW5xr7Fch3dHd57tv58
+         0HDmbR+3T+cfCgeHKz4iFu3ofH8cSTuDJ9fIc=
+Date: Tue, 28 Sep 2010 08:34:49 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: "M. Warner Losh" <imp@bsdimp.com>
+Cc: cl@linux.com, johnstul@us.ibm.com, giometti@linux.it, peterz@infradead.org,
+        linux-api@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net,
+        netdev@vger.kernel.org, tglx@linutronix.de,
+        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
+        khc@pm.waw.pl
+Subject: Re: [PATCH v6 0/8] ptp: IEEE 1588 hardware clock support
+Message-ID: <20100928063449.GA7224@riccoc20.at.omicron.at>
+References: <alpine.DEB.2.00.1009231533040.7522@router.home>
+ <1285278136.2587.154.camel@localhost.localdomain>
+ <alpine.DEB.2.00.1009271038150.9258@router.home>
+ <20100927.101423.702773873740300798.imp@bsdimp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100927.101423.702773873740300798.imp@bsdimp.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-27 at 11:06 +0800, Huang Shijie wrote:
-> Hi Artem:
->     I think the new patch is better.
+On Mon, Sep 27, 2010 at 10:14:23AM -0600, M. Warner Losh wrote:
 > 
-> The new patch will reuse the id_data.
-> Even if the additional id byte does not have all the information in
-> some case, but other infomation such as manufacture id and device id
-> are also useful to the NAND driver.
+> This is a common error that I've seen repeated in this thread.  The
+> only reason that it has historically been important is because when
+> you are doing timestamping in software based on an interrupt, that
+> stuff does matter.
 
-OK, pushed this one to l2-mtd-2.6.git, thanks.
+Yes, thanks for your helpful explanation.
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+To further illustrate how small the effect of running the servo in
+user space is, consider the following.
 
+It is true that delays and jitter in the time to process the received
+packet negatively affect the clock servo loop. However, the effect in
+our case will be quite small.
+
+John Eidson's book [1] presents a rigorous servo model that includes
+an analysis of the delay from the time the samples (timestamps) are
+taken until the corrective action is performed by the PTP software.
+
+For PTP, the sample time is at the sender (the remote host, the master
+clock). The master sends *two* packets, where the second one (the so
+called follow-up packet) contains the hardware time stamp of the first
+one. So, the computational delay includes the time spent by the sender
+in its PTP stack preparing the second packet, the time the packet
+spends in transit, and the time in the receiver's PTP stack and servo.
+
+According to Eidson's analysis, a delay of up to 10 milliseconds would
+be acceptable, even with a sample rate of 10 Hz. Therefore, saving a
+few dozen microseconds by placing the servo (and PTP stack) into the
+kernel is not worth the effort.
+
+Richard
+
+
+[1] title =     {Measurement, control, and communication using IEEE 1588},
+    author =    {J. C. Eidson},
+    year =      2006,
+    publisher = {Springer-Verlag},
