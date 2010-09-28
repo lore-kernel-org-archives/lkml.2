@@ -1,43 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072Ab0I1SNH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 14:13:07 -0400
-Received: from claw.goop.org ([74.207.240.146]:54465 "EHLO claw.goop.org"
+	id S1756574Ab0I1SOc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 14:14:32 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:43380 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754463Ab0I1SNF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 14:13:05 -0400
-Message-ID: <4CA2302C.3000201@goop.org>
-Date: Tue, 28 Sep 2010 11:13:00 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.3
+	id S1754463Ab0I1SOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 14:14:31 -0400
+Message-ID: <4CA2307C.9060202@austin.ibm.com>
+Date: Tue, 28 Sep 2010 13:14:20 -0500
+From: Nathan Fontenot <nfont@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        "sct@redhat.com" <sct@redhat.com>
-Subject: Re: [PATCH 12/12] xen/mtrr: Add mtrr_if support for Xen mtrr
-References: <alpine.DEB.2.00.1009281217540.2864@kaball-desktop> <1285676218-26218-12-git-send-email-stefano.stabellini@eu.citrix.com> <20100928123925.GA18208@elte.hu> <alpine.DEB.2.00.1009281455300.2864@kaball-desktop> <4CA2223B.9040400@goop.org> <4CA22C3C.3020209@zytor.com>
-In-Reply-To: <4CA22C3C.3020209@zytor.com>
+To: Robin Holt <holt@sgi.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
+        Greg KH <greg@kroah.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 2/8] v2 Add section count to memory_block struct
+References: <4CA0EBEB.1030204@austin.ibm.com> <4CA0EEF0.70402@austin.ibm.com> <20100928093132.GG14068@sgi.com>
+In-Reply-To: <20100928093132.GG14068@sgi.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 09/28/2010 10:56 AM, H. Peter Anvin wrote:
-> On 09/28/2010 10:13 AM, Jeremy Fitzhardinge wrote:
->> Yes, we could just mask out the MTRR CPU feature and rely entirely on PAT.
->>
->> The alternative would be to use the wrmsr hooks to emulate the Intel
->> MTRR registers by mapping them to hypercalls, but that seems needlessly
->> complex.
->>
-> Indeed.  Relying on pure PAT is the Right Thing[TM].
+On 09/28/2010 04:31 AM, Robin Holt wrote:
+> In the next patch, you introduce a mutex for adding/removing memory blocks.
+> Is there really a need for this to be atomic?  If you reorder the patches
+> so the mutex comes first, would the atomic be needed any longer?
+> 
 
-Is there a plan to formally deprecate /proc/mtrr and the kernel
-infrastructure behind it?
+I think you're right.  Looking at the code with all patches applied I am only
+updating the atomic when holding the mem_sysfs_mutex.  I think the atomic
+could safely be changed to a regular int.
 
-    J
+-Nathan
+
+> Robin
+> 
+> On Mon, Sep 27, 2010 at 02:22:24PM -0500, Nathan Fontenot wrote:
+>> Add a section count property to the memory_block struct to track the number
+>> of memory sections that have been added/removed from a memory block. This
+>> allows us to know when the last memory section of a memory block has been
+>> removed so we can remove the memory block.
+>>
+>> Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
+>>
+>> ---
+>>  drivers/base/memory.c  |   16 ++++++++++------
+>>  include/linux/memory.h |    3 +++
+>>  2 files changed, 13 insertions(+), 6 deletions(-)
+>>
+>> Index: linux-next/drivers/base/memory.c
+>> ===================================================================
+>> --- linux-next.orig/drivers/base/memory.c	2010-09-27 09:17:20.000000000 -0500
+>> +++ linux-next/drivers/base/memory.c	2010-09-27 09:31:35.000000000 -0500
+>> @@ -478,6 +478,7 @@
+>>  
+>>  	mem->phys_index = __section_nr(section);
+>>  	mem->state = state;
+>> +	atomic_inc(&mem->section_count);
+>>  	mutex_init(&mem->state_mutex);
+>>  	start_pfn = section_nr_to_pfn(mem->phys_index);
+>>  	mem->phys_device = arch_get_memory_phys_device(start_pfn);
+>> @@ -505,12 +506,15 @@
+>>  	struct memory_block *mem;
+>>  
+>>  	mem = find_memory_block(section);
+>> -	unregister_mem_sect_under_nodes(mem);
+>> -	mem_remove_simple_file(mem, phys_index);
+>> -	mem_remove_simple_file(mem, state);
+>> -	mem_remove_simple_file(mem, phys_device);
+>> -	mem_remove_simple_file(mem, removable);
+>> -	unregister_memory(mem, section);
+>> +
+>> +	if (atomic_dec_and_test(&mem->section_count)) {
+>> +		unregister_mem_sect_under_nodes(mem);
+>> +		mem_remove_simple_file(mem, phys_index);
+>> +		mem_remove_simple_file(mem, state);
+>> +		mem_remove_simple_file(mem, phys_device);
+>> +		mem_remove_simple_file(mem, removable);
+>> +		unregister_memory(mem, section);
+>> +	}
+>>  
+>>  	return 0;
+>>  }
+>> Index: linux-next/include/linux/memory.h
+>> ===================================================================
+>> --- linux-next.orig/include/linux/memory.h	2010-09-27 09:17:20.000000000 -0500
+>> +++ linux-next/include/linux/memory.h	2010-09-27 09:22:56.000000000 -0500
+>> @@ -19,10 +19,13 @@
+>>  #include <linux/node.h>
+>>  #include <linux/compiler.h>
+>>  #include <linux/mutex.h>
+>> +#include <asm/atomic.h>
+>>  
+>>  struct memory_block {
+>>  	unsigned long phys_index;
+>>  	unsigned long state;
+>> +	atomic_t section_count;
+>> +
+>>  	/*
+>>  	 * This serializes all state change requests.  It isn't
+>>  	 * held during creation because the control files are
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+
