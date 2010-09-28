@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551Ab0I1PMY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 11:12:24 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:37931 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752006Ab0I1PMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 11:12:23 -0400
-Date: Tue, 28 Sep 2010 10:12:18 -0500
-From: Robin Holt <holt@sgi.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Nathan Fontenot <nfont@austin.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linuxppc-dev@ozlabs.org, Greg KH <greg@kroah.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 0/8] v2 De-Couple sysfs memory directories from memory
- sections
-Message-ID: <20100928151218.GJ14068@sgi.com>
-References: <4CA0EBEB.1030204@austin.ibm.com>
- <4CA1E338.6070201@redhat.com>
+	id S1755857Ab0I1PQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 11:16:29 -0400
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:45041
+	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755031Ab0I1PQ2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 11:16:28 -0400
+X-SpamScore: -18
+X-BigFish: VPS-18(zzbb2cK1432N98dN4015Lzz1202hzzz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L9GQF4-01-2WQ-02
+X-M-MSG: 
+Date: Tue, 28 Sep 2010 17:16:18 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Huang Ying <ying.huang@intel.com>
+CC: Don Zickus <dzickus@redhat.com>, huang ying <huang.ying.caritas@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v2 7/7] x86, NMI, Remove do_nmi_callback logic
+Message-ID: <20100928151618.GD13563@erda.amd.com>
+References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
+ <1285549026-5008-7-git-send-email-ying.huang@intel.com>
+ <20100927104426.GD32222@erda.amd.com>
+ <AANLkTinA2HK57w5wqCtq319WNy-PLtWaGBe-v+uoFB=Y@mail.gmail.com>
+ <20100927134341.GQ13563@erda.amd.com>
+ <20100927151607.GX26290@redhat.com>
+ <20100927165831.GT13563@erda.amd.com>
+ <1285638103.20791.152.camel@yhuang-dev>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <4CA1E338.6070201@redhat.com>
+In-Reply-To: <1285638103.20791.152.camel@yhuang-dev>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 28, 2010 at 02:44:40PM +0200, Avi Kivity wrote:
->  On 09/27/2010 09:09 PM, Nathan Fontenot wrote:
-> >This set of patches decouples the concept that a single memory
-> >section corresponds to a single directory in
-> >/sys/devices/system/memory/.  On systems
-> >with large amounts of memory (1+ TB) there are perfomance issues
-> >related to creating the large number of sysfs directories.  For
-> >a powerpc machine with 1 TB of memory we are creating 63,000+
-> >directories.  This is resulting in boot times of around 45-50
-> >minutes for systems with 1 TB of memory and 8 hours for systems
-> >with 2 TB of memory.  With this patch set applied I am now seeing
-> >boot times of 5 minutes or less.
-> >
-> >The root of this issue is in sysfs directory creation. Every time
-> >a directory is created a string compare is done against all sibling
-> >directories to ensure we do not create duplicates.  The list of
-> >directory nodes in sysfs is kept as an unsorted list which results
-> >in this being an exponentially longer operation as the number of
-> >directories are created.
-> >
-> >The solution solved by this patch set is to allow a single
-> >directory in sysfs to span multiple memory sections.  This is
-> >controlled by an optional architecturally defined function
-> >memory_block_size_bytes().  The default definition of this
-> >routine returns a memory block size equal to the memory section
-> >size. This maintains the current layout of sysfs memory
-> >directories as it appears to userspace to remain the same as it
-> >is today.
-> >
+On 27.09.10 21:41:43, Huang Ying wrote:
+> unknown_nmi_panic will cause panic for unknown NMI (can not identify the
+> NMI sources).
 > 
-> Why not update sysfs directory creation to be fast, for example by
-> using an rbtree instead of a linked list.  This fixes an
-> implementation problem in the kernel instead of working around it
-> and creating a new ABI.
-
-Because the old ABI creates 129,000+ entries inside
-/sys/devices/system/memory with their associated links from
-/sys/devices/system/node/node*/ back to those directory entries.
-
-Thankfully things like rpm, hald, and other miscellaneous commands scan
-that information.  On our 8 TB test machine, hald runs continuously
-following boot for nearly an hour mostly scanning useless information
-from /sys/
-
-Robin
-
+> panic_on_unrecovered_nmi should panic for unrecovered hardware errors,
+> for known and unknown NMI. For example, panic_on_unrecovered_nmi will
+> cause panic in mem_parity_error too, which can be considered known NMI.
 > 
-> New ABIs mean old tools won't work, and new tools need to understand
-> both ABIs.
-> 
-> -- 
-> error compiling committee.c: too many arguments to function
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Is it reasonable?
+
+Yes, this makes it clear. Thanks,
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
