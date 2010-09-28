@@ -1,55 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760248Ab0I1AaU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 20:30:20 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:37575 "EHLO
+	id S932849Ab0I1Aas (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 20:30:48 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:63241 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755652Ab0I1AaT (ORCPT
+	with ESMTP id S1755983Ab0I1AaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 20:30:19 -0400
+	Mon, 27 Sep 2010 20:30:20 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=jYNc6/mxTqPcCTUZhJRBfbyhvU+iSuNFk6rIxtfVnN3hnRcSr+4GXXxi1oXUE7+fx
-	hLYLKbwg9bjRzZCWkDD4A==
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=wliCTS+Xi8oFfaWy4m8NA694ieqScaqgmfqY+H8X9pqZhO/Ta/ONPad8rLAroh2HN
+	TwiTik92hccXjYg1gyUng==
 From: Nikhil Rao <ncrao@google.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Mike Galbraith <efault@gmx.de>
 Cc: Venkatesh Pallipadi <venki@google.com>, linux-kernel@vger.kernel.org,
         Nikhil Rao <ncrao@google.com>
-Subject: [PATCH 2/3] sched: drop group_capacity to 1 only if remote group has no running tasks
-Date: Mon, 27 Sep 2010 17:29:57 -0700
-Message-Id: <1285633798-26886-3-git-send-email-ncrao@google.com>
+Subject: [PATCH 0/3][RFC] Improve load balancing when tasks have large weight differential
+Date: Mon, 27 Sep 2010 17:29:55 -0700
+Message-Id: <1285633798-26886-1-git-send-email-ncrao@google.com>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1285633798-26886-1-git-send-email-ncrao@google.com>
-References: <1285633798-26886-1-git-send-email-ncrao@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When SD_PREFER_SIBLING is set on a sched domain, drop group_capacity to 1
-only if the remote sched group has no running tasks. This addresses the case
-where you have two tasks on one socket and the other socket is idle, in which
-case you drop the capacity to 1. If the remote group has >=1 running task, then
-there is no difference from a cache-sharing perspective.
+Hi all,
 
-Signed-off-by: Nikhil Rao <ncrao@google.com>
----
- kernel/sched_fair.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I have attached a series of patches that improve load balancing when there is a
+large weight differential between tasks. These patches are based off the
+feedback Peter Zijlstra gave in an earlier post (see http://thread.gmane.org/gmane.linux.kernel/1015966).
+They can be applied to v2.6.36-rc5 or -tip without conflicts.
 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index de8a6a0..33a7985 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -2548,7 +2548,7 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
- 		 * first, lower the sg capacity to one so that we'll try
- 		 * and move all the excess tasks away.
- 		 */
--		if (prefer_sibling)
-+		if (prefer_sibling && !sgs.sum_nr_running)
- 			sgs.group_capacity = min(sgs.group_capacity, 1UL);
- 
- 		if (local_group) {
--- 
-1.7.1
+Tested with the following setup.
+- Test machine is a 16 cpu box (quad-socket, quad-core).
+- Baseline is v2.6.36-rc5 kernel
+
+We spawn 16 SCHED_IDLE soaker threads and one SCHED_NORMAL task. On the
+baseline kernel, the machine has ~18% idle time. With these patches applied on
+top of baseline, idle time drops to 0%.
+
+v2.6.36-rc5
+
+04:58:46 PM  CPU   %user   %nice    %sys %iowait    %irq   %soft  %steal   %idle    intr/s
+04:58:47 PM  all   81.47    0.00    0.25    0.00    0.00    0.00    0.00   18.28  13796.00
+04:58:48 PM  all   81.20    0.00    0.25    0.00    0.00    0.00    0.00   18.55  13816.00
+04:58:49 PM  all   80.93    0.19    0.25    0.00    0.00    0.06    0.00   18.57  13965.00
+04:58:50 PM  all   81.40    0.00    0.25    0.00    0.00    0.00    0.00   18.35  13837.37
+04:58:51 PM  all   81.19    0.00    0.31    0.00    0.00    0.00    0.00   18.50  13592.08
+04:58:52 PM  all   81.25    0.00    0.25    0.00    0.00    0.00    0.00   18.50  13721.00
+04:58:53 PM  all   81.19    0.00    0.25    0.00    0.00    0.00    0.00   18.56  13764.00
+04:58:54 PM  all   81.25    0.00    0.25    0.00    0.00    0.00    0.00   18.50  13841.41
+04:58:55 PM  all   80.30    0.00    1.19    0.00    0.00    0.00    0.00   18.51  14989.11
+04:58:56 PM  all   80.77    0.00    0.50    0.00    0.00    0.00    0.00   18.73  13964.65
+Average:     all   81.09    0.02    0.37    0.00    0.00    0.01    0.00   18.51  13929.53
+
+v2.6.36-rc5 + patches
+
+05:00:06 PM  CPU   %user   %nice    %sys %iowait    %irq   %soft  %steal   %idle    intr/s
+05:00:07 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16364.00
+05:00:08 PM  all   99.81    0.06    0.12    0.00    0.00    0.00    0.00    0.00  16348.00
+05:00:09 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16330.00
+05:00:10 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16317.00
+05:00:11 PM  all   99.88    0.06    0.06    0.00    0.00    0.00    0.00    0.00  16327.00
+05:00:12 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16323.00
+05:00:13 PM  all   99.88    0.00    0.12    0.00    0.00    0.00    0.00    0.00  16323.00
+05:00:14 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16321.00
+05:00:15 PM  all   99.63    0.06    0.25    0.00    0.00    0.06    0.00    0.00  16354.00
+05:00:16 PM  all   99.62    0.00    0.38    0.00    0.00    0.00    0.00    0.00  19059.60
+Average:     all   99.85    0.02    0.13    0.00    0.00    0.01    0.00    0.00  16604.20
+
+Comments, feedback welcome.
+
+-Thanks,
+Nikhil
+
+Nikhil Rao (3):
+  sched: set group_imb only a task can be pulled from the busiest cpu
+  sched: drop group_capacity to 1 only if remote group has no running
+    tasks
+  sched: do not consider SCHED_IDLE tasks to be cache hot
+
+ kernel/sched.c      |    3 +++
+ kernel/sched_fair.c |   12 ++++++++----
+ 2 files changed, 11 insertions(+), 4 deletions(-)
 
