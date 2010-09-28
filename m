@@ -1,110 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756508Ab0I1Ozt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 10:55:49 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:34673 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753131Ab0I1Ozs convert rfc822-to-8bit (ORCPT
+	id S1756585Ab0I1PCY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 11:02:24 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:4116 "EHLO
+	VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755152Ab0I1PCX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 10:55:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=nIVxvWYayeSlwDyRlfjZ+sCM4zNntsY0lCyR1hMHHzLPQkObaHFXCYbOn+QbUkYxxO
-         CQatS5bKS0Ubrh9rU/b+pMWa/089HFNbONjJAohyfVOZ5vxOA9KnDRxEejPXYbGPdY26
-         Ga6jx1IyAEgrE01YXSz29NIaMnMS045NP6zSk=
+	Tue, 28 Sep 2010 11:02:23 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzzz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-SS: 0,
+X-WSS-ID: 0L9GPNS-01-0JF-02
+X-M-MSG: 
+Date: Tue, 28 Sep 2010 16:59:54 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Huang Ying <ying.huang@intel.com>
+CC: huang ying <huang.ying.caritas@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v2 4/7] x86, NMI, Rewrite NMI handler
+Message-ID: <20100928145953.GC13563@erda.amd.com>
+References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
+ <1285549026-5008-4-git-send-email-ying.huang@intel.com>
+ <20100927094136.GB32222@erda.amd.com>
+ <AANLkTimTg1uqXdAJ+GyZ3_B6n2xKWdqFL96jvv18JBM+@mail.gmail.com>
+ <20100927132537.GO13563@erda.amd.com>
+ <1285635832.20791.119.camel@yhuang-dev>
 MIME-Version: 1.0
-In-Reply-To: <4CA1B775.9020809@dsn.okisemi.com>
-References: <4CA1B775.9020809@dsn.okisemi.com>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Tue, 28 Sep 2010 10:55:26 -0400
-X-Google-Sender-Auth: 4TYTVbUOQ8EFxXWQ4r_qR5j2DmM
-Message-ID: <AANLkTikVtxYiSyqn-DbNsjukf+am9N2xU+xzWLFFhC0Y@mail.gmail.com>
-Subject: Re: [MeeGo-Dev][PATCH v2] Topcliff: Update PCH_GPIO driver to 2.6.35
-To: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
-Cc: meego-dev@meego.com, Andrew Morton <akpm@linux-foundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>, Alek Du <alek.du@intel.com>,
-        =?UTF-8?Q?Richard_R=C3=B6jfors?= <richard.rojfors@mocean-labs.com>,
-        linux-kernel@vger.kernel.org, qi.wang@intel.com,
-        andrew.chih.howe.khor@intel.com, kok.howg.ewe@intel.com,
-        joel.clark@intel.com, yong.y.wang@intel.com,
-        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>, margie.foster@intel.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1285635832.20791.119.camel@yhuang-dev>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 28, 2010 at 05:37, Masayuki Ohtak wrote:
-> --- a/drivers/gpio/Kconfig
-> +++ b/drivers/gpio/Kconfig
->
->  comment "I2C GPIO expanders:"
->
-> +config PCH_GPIO
-> +       tristate "PCH GPIO"
-> +       depends on PCI
+On 27.09.10 21:03:52, Huang Ying wrote:
+> Use priority to enforce the order has some issues except what Don
+> pointed out (two registers for two call in chain):
+> 
+> - Almost all direct call in default_do_nmi() must be turned into
+> notifier_block. I know this is what you want. But I am not a big fan of
+> notifier chain :)
+> 
+> - This makes order of notifier call more implicitly. And I think the
+> order is important for NMI handler to work properly.
+> 
+> - In your scheme, both die_val (DIE_NMI or DIE_NMI_UNKNOWN) and priority
+> are used to determine the order of call. This makes code more complex
+> and no additional benefit.
+> 
+> So I think it is better to use different die_val to determine the order,
+> and insert some direct call between them.
 
-this is connected to a PCI bus, not I2C, so it shouldnt be under the
-I2C comment.  move it to a diff place in the file.
+Huang,
 
-> --- a/drivers/gpio/Makefile
-> +++ b/drivers/gpio/Makefile
-> @@ -35,3 +35,4 @@ obj-$(CONFIG_GPIO_WM8994)     += wm8994-gpio.o
->  obj-$(CONFIG_GPIO_SCH)         += sch_gpio.o
->  obj-$(CONFIG_GPIO_RDC321X)     += rdc321x-gpio.o
->  obj-$(CONFIG_GPIO_JANZ_TTL)    += janz-ttl.o
-> +obj-$(CONFIG_PCH_GPIO) += pch_gpio.o
+registering a notifier is the only clean way to add an NMI handler.
+Modifying the NMI control flow in traps.c with global flags is not the
+right approach. Currently, execution order depends on die_val, this is
+not obvious when reading the code and we all were wondering in the
+beginning why there was DIE_NMI, DIE_NMI_IPI and DIE_NMI_UNKNOWN, etc.
 
-there is a clear standard of naming things CONFIG_GPIO_XXX, so i'd
-change your CONFIG_PCH_GPIO to CONFIG_GPIO_PCH
+So, better we say instead, this is the notifier function with that
+priority, add it to the call chain. With priorities we are able to
+clearly specify the execution order even more fine grained than
+now. And, code in traps.c will become fairly easy. Also, we don't need
+two notifiers, because there is no need for different priorities
+then. Give me one use case, I don't know of any.
 
-> +#include <linux/cdev.h>
+And the setup of a notifier is not that much overhead or complex, sure
+we need to change the code, but actually this the work to be done to
+clean it up.
 
-you dont actually use cdev anywhere.  punt the header.
+-Robert
 
-> +#define MODULE_NAME "pch_gpio"
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
-KBUILD_MODNAME already exists
-
-> +#define PCI_DEVICE_ID_PCH_GPIO 0x8803
-
-considering you use this define in one place, i dont see why you need
-a define at all.  just put the id in the one structure.
-
-> +#ifdef CONFIG_PM
-> +static s32 pch_gpio_suspend(struct pci_dev *pdev, pm_message_t state)
-> +static s32 pch_gpio_resume(struct pci_dev *pdev)
-
-suspend/resume funcs return "int", not "s32"
-
-> +static struct pci_device_id pch_gpio_pcidev_id[] = {
-
-should be const
-
-> +static s32 __devinit pch_gpio_probe(struct pci_dev *pdev,
-> +                                   const struct pci_device_id *id)
-
-return value is "int", not "s32"
-
-> +       chip = kzalloc(sizeof(struct pch_gpio_chip), GFP_KERNEL);
-
-sizeof(*chip)
-
-
-> +               printk(KERN_ERR "PCH gpio: Failed to register GPIO\n");
-
-use dev_err()
-
-> +static s32 __init pch_gpio_pci_init(void)
-> +{
-> +       return pci_register_driver(&pch_gpio_driver);
-> +}
-> +module_init(pch_gpio_pci_init);
-
-module_init funcs return "int", not "s32"
--mike
