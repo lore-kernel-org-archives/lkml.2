@@ -1,92 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754729Ab0I1E7d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 00:59:33 -0400
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:34858 "EHLO sabe.cs.wisc.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754299Ab0I1E7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 00:59:31 -0400
-Message-ID: <4CA1777A.2050606@cs.wisc.edu>
-Date: Tue, 28 Sep 2010 00:04:58 -0500
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	id S1754549Ab0I1FBf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 01:01:35 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:57602 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751012Ab0I1FBe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 01:01:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=rbBD82+3HbSBP9jwMrn1a0fOA5pulJj2zusW+m8AKQpCeaSoIpMCU4r7FJSq2YuMX2
+         YOl+oBo4310dRRFfA4azBJN2fto2SY5tMPPZ8CHIblejXbyL57x1bslMPHPdeeMG9SxZ
+         emHxXxCWV9N+u9nF4gY4EQYczfW3djLaqETjQ=
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jens Axboe <jaxboe@fusionio.com>, James Smart <james.smart@emulex.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
-        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
-        MPTFusionLinux <DL-MPTFusionLinux@lsi.com>,
-        "eata.c maintainer" <dario.ballabio@inwind.it>,
-        Luben Tuikov <ltuikov@yahoo.com>, mvsas maintainer <kewei@marvell.com>,
-        pm8001 maintainer Jack Wang <jack_wang@usish.com>
-Subject: Re: [RFC v4 10/19] lpfc: Remove host_lock unlock() + lock() from
- lpfc_queuecommand()
-References: <1285639612-7405-1-git-send-email-nab@linux-iscsi.org>
-In-Reply-To: <1285639612-7405-1-git-send-email-nab@linux-iscsi.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100928042416.GA9359@opensource.wolfsonmicro.com>
+References: <1285120171-3030-1-git-send-email-tom.leiming@gmail.com>
+	<20100927154809.GI2560@sortiz-mobl>
+	<AANLkTikjGD32hPhwPhZfETZX9H+--_SduTtqgyuqY_72@mail.gmail.com>
+	<20100928042416.GA9359@opensource.wolfsonmicro.com>
+Date: Tue, 28 Sep 2010 13:01:32 +0800
+Message-ID: <AANLkTimT8WkgiCANL4tXcNgnm63oMnO2d2bKjDD1chJv@mail.gmail.com>
+Subject: Re: [PATCH] mfd: speedup twl4030 irq response time and decrease irq
+ disable time
+From: Ming Lei <tom.leiming@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-omap@vger.kernel.org,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Balaji T K <balajitk@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2010 09:06 PM, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger<nab@linux-iscsi.org>
->
-> This patch removes the now legacy host_lock unlock() + lock() optimization
-> from lpfc_scsi.c:lpfc_queuecommand().  This also includes setting the
-> SHT->unlocked_qcmd=1 for host_lock less lpfc lpfc_queuecommand() operation.
->
-> Signed-off-by: Nicholas A. Bellinger<nab@linux-iscsi.org>
-> ---
->   drivers/scsi/lpfc/lpfc_scsi.c |    4 ++--
->   1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/scsi/lpfc/lpfc_scsi.c b/drivers/scsi/lpfc/lpfc_scsi.c
-> index 2e51aa6..69fe31e 100644
-> --- a/drivers/scsi/lpfc/lpfc_scsi.c
-> +++ b/drivers/scsi/lpfc/lpfc_scsi.c
-> @@ -3023,11 +3023,9 @@ lpfc_queuecommand(struct scsi_cmnd *cmnd, void (*done) (struct scsi_cmnd *))
->   		goto out_host_busy_free_buf;
->   	}
->   	if (phba->cfg_poll&  ENABLE_FCP_RING_POLLING) {
-> -		spin_unlock(shost->host_lock);
->   		lpfc_sli_handle_fast_ring_event(phba,
->   			&phba->sli.ring[LPFC_FCP_RING], HA_R0RE_REQ);
->
-> -		spin_lock(shost->host_lock);
->   		if (phba->cfg_poll&  DISABLE_FCP_RING_INT)
->   			lpfc_poll_rearm_timer(phba);
->   	}
-> @@ -3723,6 +3721,7 @@ struct scsi_host_template lpfc_template = {
->   	.slave_destroy		= lpfc_slave_destroy,
->   	.scan_finished		= lpfc_scan_finished,
->   	.this_id		= -1,
-> +	.unlocked_qcmd		= 1,
->   	.sg_tablesize		= LPFC_DEFAULT_SG_SEG_CNT,
->   	.cmd_per_lun		= LPFC_CMD_PER_LUN,
->   	.use_clustering		= ENABLE_CLUSTERING,
-> @@ -3746,6 +3745,7 @@ struct scsi_host_template lpfc_vport_template = {
->   	.slave_destroy		= lpfc_slave_destroy,
->   	.scan_finished		= lpfc_scan_finished,
->   	.this_id		= -1,
-> +	.unlocked_qcmd		= 1,
->   	.sg_tablesize		= LPFC_DEFAULT_SG_SEG_CNT,
->   	.cmd_per_lun		= LPFC_CMD_PER_LUN,
->   	.use_clustering		= ENABLE_CLUSTERING,
+CC genirq guys
 
-The FC class sets the rport state and bits with the host lock held. 
-Drivers were then calling fc_remote_port_chkready from the queuecommand 
-with the host lock held. If we remove the host lock from queuecommand is 
-it possible that the on one proc the fc class calls fc_remote_port_add 
-to re-add a rport, this sets the rport state to online, it unblocks the 
-devices, but then on some other processor we start calling queuecommand 
-and see that the rport is not online (maybe blocked with 
-FC_RPORT_FAST_FAIL_TIMEDOUT set) and so we end up failing the IO?
+2010/9/28 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Tue, Sep 28, 2010 at 08:25:24AM +0800, Ming Lei wrote:
+>> 2010/9/27 Samuel Ortiz <sameo@linux.intel.com>:
+>
+>> > Wouldn't converting your twl4030_irq_thread() to the threaded IRQ framework
+>> > fix that problem ?
+>
+>> IRQ_DISABLED flag is set by disable_irq_nosync called from PIH handler,
+>> then thread function can't be executed in irq thread function, so we can't
+>> convert this to threaded IRQ framework simply.
+>
+> Have you raised this issue with the genirq guys?  This sounds like
+> something that the core infrastructure should be able to cope with.
+>
+
+Even genirq guys can help us to convert to irq thread framework, I
+don't think there is good way to set priority for one irq thread.
+
+For twl4030, if we can make twl4030_irq_thread to run at higher
+priority than that of other irq thread, the PIH irq disable time can be
+decreased further since other irq thread waken up by twl4030_irq_thread
+can preempt the running of twl4030_irq_thread, and the PIH irq will be
+enabled until complete of twl4030_irq_thread.
+
+thanks,
+-- 
+Lei Ming
