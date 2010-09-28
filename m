@@ -1,43 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177Ab0I1Pf2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 11:35:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53464 "EHLO mail.zytor.com"
+	id S1753576Ab0I1Pgf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 11:36:35 -0400
+Received: from symlink.to.noone.org ([85.10.207.172]:39359 "EHLO sym.noone.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751063Ab0I1Pf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 11:35:26 -0400
-Message-ID: <4CA20B21.7060809@zytor.com>
-Date: Tue, 28 Sep 2010 08:34:57 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
+	id S1751127Ab0I1Pge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 11:36:34 -0400
+X-Greylist: delayed 423 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Sep 2010 11:36:33 EDT
+Date: Tue, 28 Sep 2010 17:29:29 +0200
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] altera_uart: Add support for different address
+	strides
+Message-ID: <20100928152929.GD3137@distanz.ch>
+References: <20100928133537.GD8289@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Alexander Graf <agraf@suse.de>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: Re: [PATCH] x86, nmi: workaround sti; hlt race vs nmi; intr
-References: <1284913699-14986-1-git-send-email-avi@redhat.com> <4CA057EA.7000609@redhat.com> <768A5DC0-131A-4BC8-ADDD-044D8169545E@suse.de> <61284934-1AD3-4F7A-9488-D46FCEE9B753@suse.de> <4CA06147.7080805@redhat.com> <C725B379-9631-46E4-A825-E43A5120681E@suse.de> <4CA06373.5030501@redhat.com> <4CA112D1.2020004@zytor.com> <4CA1AC50.7000801@redhat.com>
-In-Reply-To: <4CA1AC50.7000801@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100928133537.GD8289@oksana.dev.rtsoft.ru>
+X-Editor: Vi IMproved 7.1
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2010 01:50 AM, Avi Kivity wrote:
+On 2010-09-28 at 15:35:37 +0200, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
+> Some controllers implement registers with a stride, to support
+> those we must implement the proper IO accessors.
 > 
-> Personally I think the safer route is to take the patch.  There are
-> other processors besides Intel and AMD and we can't test all of them,
-> not to mention various emulators and virtual machine monitors out there.
+> Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
+> ---
+>  drivers/serial/altera_uart.c |   59 +++++++++++++++++++++++++++---------------
+>  include/linux/altera_uart.h  |    1 +
+>  2 files changed, 39 insertions(+), 21 deletions(-)
 > 
+> diff --git a/drivers/serial/altera_uart.c b/drivers/serial/altera_uart.c
+> index 7686aaa..0a1a066 100644
+> --- a/drivers/serial/altera_uart.c
+> +++ b/drivers/serial/altera_uart.c
+> @@ -78,13 +78,28 @@
+>  struct altera_uart {
+>  	struct uart_port port;
+>  	struct timer_list tmr;
+> +	int bus_shift;
 
-Speaking for the smoltering crater that used to be *Transmeta*, I'm
-(from memory) quite certain they blocked NMI and that this was
-intentional behavior.
+This member is never used (only bus_shift from struct
+altera_uart_platform_uart). Seems to be a leftover.
 
-	-hpa
+>  	unsigned int sigs;	/* Local copy of line sigs */
+>  	unsigned short imr;	/* Local IMR mirror */
+>  };
+>  
+> +static u32 altera_uart_readl(struct uart_port *port, int reg)
+> +{
+> +	struct altera_uart_platform_uart *platp = port->private_data;
+> +
+> +	return readl(port->membase + (reg << platp->bus_shift));
+> +}
+> +
+> +static void altera_uart_writel(struct uart_port *port, u32 dat, int reg)
+> +{
+> +	struct altera_uart_platform_uart *platp = port->private_data;
+> +
+> +	writel(dat, port->membase + (reg << platp->bus_shift));
+> +}
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Why not make these inline?
 
+Cheers,
+  Tobias
