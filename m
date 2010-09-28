@@ -1,78 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760553Ab0I1BpM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 21:45:12 -0400
-Received: from www.telegraphics.com.au ([204.15.192.19]:60613 "EHLO
-	mail.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757688Ab0I1BpK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 21:45:10 -0400
-X-Greylist: delayed 413 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Sep 2010 21:45:10 EDT
-Date: Tue, 28 Sep 2010 11:37:57 +1000 (EST)
-From: Finn Thain <fthain@telegraphics.com.au>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-cc: Joe Perches <joe@perches.com>, "John W. Linville" <linville@tuxdriver.com>,
-        trivial@kernel.org, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        alsa-devel@alsa-project.org, dri-devel@lists.freedesktop.org,
-        linux-ide@vger.kernel.org, "Maciej W. Rozycki" <macro@linux-mips.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Randy Dunlap <rdunlap@xenotime.net>, Matt Turner <mattst88@gmail.com>,
-        Dimitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mike Frysinger <vapier.adi@gmail.com>
-Subject: Re: [RFC v4]update broken web addresses in the kernel.
-In-Reply-To: <4CA0CB0F.3060303@gmail.com>
-Message-ID: <alpine.OSX.2.00.1009281119570.276@localhost>
-References: <1285525875-9920-1-git-send-email-justinmattock@gmail.com>  <20100927151005.GC11086@tuxdriver.com> <1285603383.1732.106.camel@Joe-Laptop> <4CA0CB0F.3060303@gmail.com>
-User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1760512Ab0I1ByY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 21:54:24 -0400
+Received: from mga11.intel.com ([192.55.52.93]:29616 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757071Ab0I1ByX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 21:54:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,244,1283756400"; 
+   d="scan'208";a="611038263"
+Subject: Re: [PATCH -v2 6/7] x86, NMI, Add support to notify hardware error
+ with unknown NMI
+From: Huang Ying <ying.huang@intel.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+In-Reply-To: <20100927153804.GC26290@redhat.com>
+References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
+	 <1285549026-5008-6-git-send-email-ying.huang@intel.com>
+	 <20100927153804.GC26290@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 28 Sep 2010 09:54:21 +0800
+Message-ID: <1285638861.20791.153.camel@yhuang-dev>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Mon, 27 Sep 2010, Justin P. Mattock wrote:
-
-> On 09/27/2010 09:03 AM, Joe Perches wrote:
-> > On Mon, 2010-09-27 at 11:10 -0400, John W. Linville wrote:
-> > > On Sun, Sep 26, 2010 at 11:31:15AM -0700, Justin P. Mattock wrote:
-> > > > Below is an updated patch from the original fixing broken web 
-> > > > addresses in the kernel. Thanks for all the help and info on this 
-> > > > to everybody.. Hopefully I didnt miss any of them(if so let me 
-> > > > know, and I'll resend).
-> > > Changing a URL for a relocated page is one thing, but removing links 
-> > > isn't necessarily a great idea.  Even if the site is technically 
-> > > gone, it may be possible to find information e.g through the 
-> > > Internet Archive Wayback Machine.
-> > 
-> > Perhaps it'd be better to scrape the contents of the various web 
-> > pages, collect them somewhere like wiki.kernel.org and encourage 
-> > others to put new contributions in that site.
-
-The copyright problem aside, this might be a good idea for material not 
-already archived but I don't think it makes sense to start a new 
-archive when archive.org (or other) has the information.
-
-And which version(s) do you scrape? I discussed some problems with 
-changing URLs in another thread: http://lkml.org/lkml/2010/9/22/22
-
-Anyway, without knowing what future archive(s) would be available or 
-relevant to any given URL in the future, I think the best we might do is a 
-"Retrieved on YYYY-MM-DD" qualification for new URLs.
-
+On Mon, 2010-09-27 at 23:38 +0800, Don Zickus wrote:
+> Hi Huang,
 > 
+> On Mon, Sep 27, 2010 at 08:57:05AM +0800, Huang Ying wrote:
+> > @@ -360,6 +362,14 @@ io_check_error(unsigned char reason, str
+> >  static notrace __kprobes void
+> >  unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
+> >  {
+> > +	/*
+> > +	 * On some platforms, hardware errors may be notified via
+> > +	 * unknown NMI
+> > +	 */
+> > +	if (unknown_nmi_for_hwerr)
+> > +		panic("NMI for hardware error without error record: "
+> > +		      "Not continuing");
 > 
-> yeah I think somebody was saying something about having a separate file, 
-> with all the web addresses in them or something...In any case, up to you 
-> guys..
+> Can you modify this to let users know to check the BIOS/BMC for further
+> messages?  Otherwise people just file bugzillas asking what the problem
+> is, and the first thing we have to respond with is check the BIOS/BMC.
 
-I don't see how moving the addresses would help.
-And would it not make the information harder to find?
+Sorry, forget about that. Will change it in next version.
 
-Finn
+Best Regards,
+Huang Ying
 
-> 
-> Justin P. Mattock
-> 
+
