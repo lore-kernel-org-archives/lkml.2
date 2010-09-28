@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760468Ab0I1A46 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 20:56:58 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63392 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1760352Ab0I1A45 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 20:56:57 -0400
-Date: Tue, 28 Sep 2010 08:55:58 +0800
-From: Hu Tao <hutao@cn.fujitsu.com>
-To: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Update num_symtab, symtab and strtab right after setup
- of core_num_syms, core_symtab and core_strtab.
-Message-ID: <20100928005558.GA6044@localhost.localdomain>
-References: <20100927073028.GA1040@localhost.localdomain>
- <20100927080954.GC5785@cr0.nay.redhat.com>
- <20100927082247.GA2463@localhost.localdomain>
- <20100927085425.GE5785@cr0.nay.redhat.com>
+	id S1757600Ab0I1BBw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 21:01:52 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47028 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750811Ab0I1BBv convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 21:01:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20100927085425.GE5785@cr0.nay.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20100928002634.GA5030@ericsson.com>
+References: <1285588796-20956-1-git-send-email-guenter.roeck@ericsson.com>
+ <20100927125946.GB2862@elte.hu> <AANLkTinPHP8WhoAZQqcmhotEfFa6=mG_Acy+xCBQ0_5+@mail.gmail.com>
+ <20100927232716.GB4744@ericsson.com> <AANLkTinDkJu2MSJM6bUpWJoB2XOD4LLf6GTPBX39wteD@mail.gmail.com>
+ <20100928002634.GA5030@ericsson.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 27 Sep 2010 18:00:59 -0700
+Message-ID: <AANLkTi=m5ZtWhQ6Z69WPUkyvcqhmL1ewG1gZ0HUQB3LE@mail.gmail.com>
+Subject: Re: [PATCH v2] hwmon (coretemp): Fix build breakage if SMP is undefined
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        Fenghua Yu <fenghua.yu@intel.com>, Jean Delvare <khali@linux-fr.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 04:54:25PM +0800, Américo Wang wrote:
-> On Mon, Sep 27, 2010 at 04:22:47PM +0800, Hu Tao wrote:
-> >On Mon, Sep 27, 2010 at 04:09:54PM +0800, Américo Wang wrote:
-> >> On Mon, Sep 27, 2010 at 03:30:28PM +0800, Hu Tao wrote:
-> >> >Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
-> >> 
-> >> 
-> >> Changelog is empty.
-> >> What bug did you observe?
-> >
-> >symtab and strtab will point to vfreed memory after free_copy(&info)
-> >near end of load_module().
-> >
-> 
-> I think you must mean the error path in load_module(), yeah, probably.
+On Mon, Sep 27, 2010 at 5:26 PM, Guenter Roeck
+<guenter.roeck@ericsson.com> wrote:
+>
+> Not that simple. cpu_sibling_mask() �is defined in asm/smp.h, which is only
+> included from linux/smp.h if SMP is defined. But many other files do include
+> asm/smp.h directly. This causes the following error all over the place
+> if CONFIG_SMP is not defined.
 
-No. There is a free_copy(&info) at the end of normal path of load_module().
+Yeah, that's broken.  Seriously broken.
 
-> 
-> But you need to check if this patch misses other thing, like
-> the other functions which are called after add_kallsyms() inside load_module().
-> According to my eyes, this seems fine (at least on x86), so
-> 
-> Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
+And I guess that if you had happened to include <asm/smp.h> in
+coretemp.c you would magically have gotten that cpu_sibling_map()
+thing, and it would just work - by mistake.
 
-Thanks for review.
+And maybe that's the correct (and really hacky) fix right now. Rather
+than introduce an UP-only cpu_sibling_mask(), get the SMP version, and
+get it ignored.
 
-> 
-> >> 
-> >> 
-> >> This patch is not correct, symbols that are not core symbols will be
-> >> dropped right after this piece of code. So NACK.
-> >
-> >There is the reason why we should update num_symtab, symtab and strtab
-> >before non-core-symbols are dropped.
-> 
-> init section is dropped *after* these value are update, which is correct.
-> 
-> Again, you need to describe what you are trying to fix in your changelog.
-> Please resend it with a proper changelog.
-> 
-> Thanks.
+Seriously broken, but there it is.
+
+In the long run, I guess we should either
+ - disallow naked '<asm/smp.h>' includes
+OR
+ - just make '<linux/smp.h>' unconditionally include <asm/smp.h>
+
+to at least not have that insane "some things exist in CONFIG_SMP or
+not depending on how you include files".
+
+                           Linus
