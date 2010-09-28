@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759573Ab0I1JWN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 05:22:13 -0400
-Received: from dhruva1.ncra.tifr.res.in ([158.144.12.129]:36730 "EHLO
-	dhruva1.ncra.tifr.res.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753586Ab0I1JWL (ORCPT
+	id S1760238Ab0I1JWu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 05:22:50 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:48918
+	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753586Ab0I1JWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 05:22:11 -0400
-From: "Raju Rameshwar Uprade" <rajsingh@ncra.tifr.res.in>
-To: Greg KH <gregkh@suse.de>,
-        Raju Rameshwar Uprade <rajsingh@ncra.tifr.res.in>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Regarding USB-to-serial device driver
-Date: Tue, 28 Sep 2010 14:51:57 +0530
-Message-Id: <20100928091520.M79654@admin-gateway.ncra.tifr.res.in>
-In-Reply-To: <20100923140236.GB31394@suse.de>
-References: <20100913091318.M67834@admin-gateway.ncra.tifr.res.in> <20100913154843.GA27496@suse.de> <20100914060649.M96376@admin-gateway.ncra.tifr.res.in> <20100914131925.GC375@suse.de> <20100922052107.M44650@admin-gateway.ncra.tifr.res.in> <20100922145607.GB26309@suse.de> <20100923100127.M64470@admin-gateway.ncra.tifr.res.in> <20100923140236.GB31394@suse.de>
-X-Mailer: OpenWebMail 2.53 (08:Aug:2008)
-X-OriginatingIP: 158.144.12.129
+	Tue, 28 Sep 2010 05:22:48 -0400
+X-SpamScore: -32
+X-BigFish: VS-32(zzbb2dK1432N98dN9371Pzz1202hzz15d4Rz32i87h2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-DOMAIN-IP-MATCH: fail
+X-WSS-ID: 0L9GA1O-01-5S8-02
+X-M-MSG: 
+Date: Tue, 28 Sep 2010 11:22:59 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Avi Kivity <avi@redhat.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Alexander Graf <agraf@suse.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: [PATCH] x86, nmi: workaround sti; hlt race vs nmi; intr
+Message-ID: <20100928092258.GJ9817@amd.com>
+References: <1284913699-14986-1-git-send-email-avi@redhat.com>
+ <4CA057EA.7000609@redhat.com>
+ <768A5DC0-131A-4BC8-ADDD-044D8169545E@suse.de>
+ <61284934-1AD3-4F7A-9488-D46FCEE9B753@suse.de>
+ <4CA06147.7080805@redhat.com>
+ <C725B379-9631-46E4-A825-E43A5120681E@suse.de>
+ <4CA06373.5030501@redhat.com>
+ <4CA112D1.2020004@zytor.com>
+ <4CA1AC50.7000801@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=utf-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4CA1AC50.7000801@redhat.com>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Greg,
- 
-      I am using pl2303.c ( USB to serial device driver ) to communicate to various
-devices connected in parallel using RS-485 interface card.
+On Tue, Sep 28, 2010 at 04:50:24AM -0400, Avi Kivity wrote:
+>   On 09/27/2010 11:55 PM, H. Peter Anvin wrote:
+> > On 09/27/2010 02:27 AM, Avi Kivity wrote:
+> > >
+> > >  I don't have write permissions for the spec.  If you can verify that all
+> > >  existing and future hardware will mask NMI after STI and convince the
+> > >  spec owners to update the specifications, I'm all for it; it's certainly
+> > >  a cleaner solution.
+> > >
+> >
+> > I'm trying to see if this is doable.  As you can well imagine, though,
+> > it takes time.
+> 
+> Joerg, can you look at this from the AMD side?
 
-I am now able to separate the Address byte and data bytes.Driver send the Address byte
-properly but when it tries to send the data bytes following error occurs,
+Yes, I will discuss this with the hardware peoples. Will take some time
+here too.
 
-pl2303_mcm ttyUSB0: pl2303_write - failed submitting write urb, error -22.
+	Joerg
 
-I have also attached the kernel log.
+-- 
+AMD Operating System Research Center
 
-/home/teleset/Desktop/USB-Serial/pl2303_mcm.c: pl2303_write before any thing - port 0, 9
-bytes 
-/home/teleset/Desktop/USB-Serial/pl2303_mcm.c: set_control_lines - value = 3, retval = 0
- 
- Data in The BUF 0 is -----> 02 
- 
- Data in The BUF 1 is -----> 08 
- 
- Data in The BUF 2 is -----> 00 
- 
- Data in The BUF 3 is -----> 00 
- 
- Data in The BUF 4 is -----> 00 
- 
- Data in The BUF 5 is -----> 00 
- 
- Data in The BUF 6 is -----> 00 
- 
- Data in The BUF 7 is -----> 00 
- 
- Data in The BUF 8 is -----> f8 
-pl2303_mcm ttyUSB0: pl2303_write - length = 1, data = 02 
-/home/teleset/Desktop/USB-Serial/pl2303_mcm.c: After the first urb submission count =  9
-and length = 8 
-pl2303_mcm ttyUSB0: pl2303_write - length = 8, data = 08 00 00 00 00 00 00 f8 
-pl2303_mcm ttyUSB0: pl2303_write - failed submitting write urb, error -22
-/home/teleset/Desktop/USB-Serial/pl2303_mcm.c: pl2303_write_bulk_callback - port 0
-/home/teleset/Desktop/USB-Serial/pl2303_mcm.c: set_control_lines - value = 0, retval = 0
-
-Kindly help me.
-
-Raj.
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
