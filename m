@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757475Ab0I1RTP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 13:19:15 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:51097 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757165Ab0I1RTO (ORCPT
+	id S1757559Ab0I1RTv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 13:19:51 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:59366 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757165Ab0I1RTu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 13:19:14 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 67.188.36.105
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX195Zv/KQMcSWCmFTxWGQbr1
-Date: Tue, 28 Sep 2010 10:19:09 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Tim Nordell <tim.nordell@logicpd.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 0/4] LogicPD minimal board support for LV_SOM and
- Torpedo
-Message-ID: <20100928171908.GE3117@atomide.com>
-References: <1285603550-6382-1-git-send-email-tim.nordell@logicpd.com>
+	Tue, 28 Sep 2010 13:19:50 -0400
+X-IronPort-AV: E=Sophos;i="4.57,248,1283731200"; 
+   d="scan'208";a="2081497"
+Date: Tue, 28 Sep 2010 18:19:37 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        "sct@redhat.com" <sct@redhat.com>
+Subject: Re: [PATCH 12/12] xen/mtrr: Add mtrr_if support for Xen mtrr
+In-Reply-To: <4CA2223B.9040400@goop.org>
+Message-ID: <alpine.DEB.2.00.1009281818490.2864@kaball-desktop>
+References: <alpine.DEB.2.00.1009281217540.2864@kaball-desktop> <1285676218-26218-12-git-send-email-stefano.stabellini@eu.citrix.com> <20100928123925.GA18208@elte.hu> <alpine.DEB.2.00.1009281455300.2864@kaball-desktop> <4CA2223B.9040400@goop.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1285603550-6382-1-git-send-email-tim.nordell@logicpd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tim Nordell <tim.nordell@logicpd.com> [100927 08:57]:
-> This was tested (and based) against 2.6.36-rc5
+On Tue, 28 Sep 2010, Jeremy Fitzhardinge wrote:
+>  On 09/28/2010 07:00 AM, Stefano Stabellini wrote:
+> > On Tue, 28 Sep 2010, Ingo Molnar wrote:
+> >> * stefano.stabellini@eu.citrix.com <stefano.stabellini@eu.citrix.com> wrote:
+> >>
+> >>> From: Stephen Tweedie <sct@redhat.com>
+> >>>
+> >>> Add a Xen mtrr type, and reorganise mtrr initialisation slightly to
+> >>> allow the mtrr driver to set up num_var_ranges (Xen needs to do this by
+> >>> querying the hypervisor itself.)
+> >>>
+> >>> [ Impact: add basic MTRR support ]
+> >>>
+> >>> Signed-off-by: Stephen Tweedie <sct@redhat.com>
+> >>> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> >>> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> >>> ---
+> >>>  arch/x86/kernel/cpu/mtrr/Makefile |    2 +-
+> >>>  arch/x86/kernel/cpu/mtrr/main.c   |    3 +
+> >>>  arch/x86/kernel/cpu/mtrr/mtrr.h   |    7 ++
+> >>>  arch/x86/kernel/cpu/mtrr/xen.c    |  110 +++++++++++++++++++++++++++++++++++++
+> >>>  4 files changed, 121 insertions(+), 1 deletions(-)
+> >>>  create mode 100644 arch/x86/kernel/cpu/mtrr/xen.c
+> >> Still NAK, for the very same reasons as we NAK-ed it the previous time: 
+> >> /proc/mtrr is a problematic and complicated legacy interface that should 
+> >> die. Any modern X server will do the right thing via PAT.
+> >>
+> > Sorry I should have read the original thread more carefully: I didn't
+> > realize this patch had been NAK-ed.
+> >
+> > However it is not a problem because we can easily disable MTRRs from Xen
+> > and with no cpu_has_mtrr the kernel would still boot fine on Xen.
+> > Also I think we do have PAT support nowadays but I'll let Jeremy comment
+> > on that.
 > 
-> Difference from patch v3 1/4:
->  - Merged DEBUG_LL support patch (patch v3 5/5) into first patch
->  - Added "select OMAP_PACKAGE_CBB" into Kconfig for both boards
+> Yes, we could just mask out the MTRR CPU feature and rely entirely on PAT.
 > 
-> Tim Nordell (4):
->   Adding LogicPD OMAP3 board support
->   ARM: OMAP3LOGIC: Adding SDMMC support
->   ARM: OMAP3: Add generic smsc911x support when connected to GPMC
->   ARM: OMAP3LOGIC: Added SMSC Ethernet board support
-> 
->  arch/arm/mach-omap2/Kconfig                     |   20 ++
->  arch/arm/mach-omap2/Makefile                    |    7 +
->  arch/arm/mach-omap2/board-omap3logic.c          |  244 +++++++++++++++++++++++
->  arch/arm/mach-omap2/gpmc-smsc911x.c             |  113 +++++++++++
->  arch/arm/plat-omap/include/plat/gpmc-smsc911x.h |   35 ++++
->  arch/arm/plat-omap/include/plat/uncompress.h    |    2 +
->  6 files changed, 421 insertions(+), 0 deletions(-)
->  create mode 100644 arch/arm/mach-omap2/board-omap3logic.c
->  create mode 100644 arch/arm/mach-omap2/gpmc-smsc911x.c
->  create mode 100644 arch/arm/plat-omap/include/plat/gpmc-smsc911x.h
-
-Thanks, queuing all of them for the upcoming merge window.
-I've updated the MMC related patch with the following to
-keep it compiling with the MMC related platform init changes.
-
-Regards,
-
-Tony
-
---- a/arch/arm/mach-omap2/board-omap3logic.c
-+++ b/arch/arm/mach-omap2/board-omap3logic.c
-@@ -26,6 +26,7 @@
- #include <linux/regulator/machine.h>
+> The alternative would be to use the wrmsr hooks to emulate the Intel
+> MTRR registers by mapping them to hypercalls, but that seems needlessly
+> complex.
  
- #include <linux/i2c/twl.h>
-+#include <linux/mmc/host.h>
- 
- #include <mach/hardware.h>
- #include <asm/mach-types.h>
-@@ -112,7 +113,7 @@ static struct omap2_hsmmc_info __initdata board_mmc_info[] = {
- 	{
- 		.name		= "external",
- 		.mmc		= 1,
--		.wires		= 4,
-+		.caps		= MMC_CAP_4_BIT_DATA,
- 		.gpio_cd	= -EINVAL,
- 		.gpio_wp	= -EINVAL,
- 	},
+Yeah, I have already tested a prototype patch to xen to mask the MTRR
+cpu features and everything seems to run fine on my testbox.
+
