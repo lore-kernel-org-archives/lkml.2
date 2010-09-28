@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755809Ab0I1GfA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 02:35:00 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58287 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996Ab0I1Ge6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 02:34:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=K/ddSKnhxsk9I8ruGA6Swpkq3Db8I9YbqpDqMcDrNFVDBg9MTqr+kM/DTgAzcDoLF3
-         YnFPRJYrQTvdV3GL4/IWVJprj48dT0MHW4lieFjHXlZdv4/IjjW5xr7Fch3dHd57tv58
-         0HDmbR+3T+cfCgeHKz4iFu3ofH8cSTuDJ9fIc=
-Date: Tue, 28 Sep 2010 08:34:49 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: "M. Warner Losh" <imp@bsdimp.com>
-Cc: cl@linux.com, johnstul@us.ibm.com, giometti@linux.it, peterz@infradead.org,
-        linux-api@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net,
-        netdev@vger.kernel.org, tglx@linutronix.de,
-        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
-        khc@pm.waw.pl
-Subject: Re: [PATCH v6 0/8] ptp: IEEE 1588 hardware clock support
-Message-ID: <20100928063449.GA7224@riccoc20.at.omicron.at>
-References: <alpine.DEB.2.00.1009231533040.7522@router.home>
- <1285278136.2587.154.camel@localhost.localdomain>
- <alpine.DEB.2.00.1009271038150.9258@router.home>
- <20100927.101423.702773873740300798.imp@bsdimp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100927.101423.702773873740300798.imp@bsdimp.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757411Ab0I1GfN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 02:35:13 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:53378 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756488Ab0I1GfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 02:35:09 -0400
+Date: Tue, 28 Sep 2010 08:35:05 +0200
+From: Florian Mickler <florian@mickler.org>
+To: tmhikaru@gmail.com
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: Linux 2.6.35.6
+Message-ID: <20100928083505.0a808ffd@schatten.dmk.lab>
+In-Reply-To: <20100927233956.GA15705@roll>
+References: <20100927003608.GA20395@kroah.com>
+	<20100927163208.GA4892@roll>
+	<20100927215135.3d11d587@schatten.dmk.lab>
+	<20100927233956.GA15705@roll>
+X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 10:14:23AM -0600, M. Warner Losh wrote:
+On Mon, 27 Sep 2010 19:39:56 -0400
+tmhikaru@gmail.com wrote:
+
+> On Mon, Sep 27, 2010 at 09:51:35PM +0200, Florian Mickler wrote:
+> > I can't comment on the bouncing part, but increased load average is
+> > partly bisected down in Bug 16525 (unexpected high load since 2.6.35
+> > Bug 16525)[1]. Maybe you are seeing something similiar? 
 > 
-> This is a common error that I've seen repeated in this thread.  The
-> only reason that it has historically been important is because when
-> you are doing timestamping in software based on an interrupt, that
-> stuff does matter.
+> If you're referring to
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=16525
+> 
 
-Yes, thanks for your helpful explanation.
+> then I have to admit that's very interesting; in fact, I tested my machine
+> without X running, and the problem I'm having goes away entirely - loadavg
+> quickly settles to 0.00 - and even with *only* a mrxvt terminal running,
+> that is to say NO window manager, just mrxvt running, X on 2.6.35.3 and
+> later has the wildly bouncy load averages.
 
-To further illustrate how small the effect of running the servo in
-user space is, consider the following.
+That would of course lead one to think it happens
+somewhere in the gfx stack. 
 
-It is true that delays and jitter in the time to process the received
-packet negatively affect the clock servo loop. However, the effect in
-our case will be quite small.
+> 
+> Here's a graphical example of just how wacky this is:
+> 
+> http://yfrog.com/6lloadbp
+> 
+> In this image, the dip down to less than 0.5 after the 18'th is due to me
+> experimenting using the slackware distribution kernel (2.6.33.4) after I
+> finally noticed something was amiss. The sharp rise afterwards is due to me
+> first, building 2.6.35.5, and then afterwards, using it. To be perfectly
+> clear, I've previously used 2.6.34.2 and did not experience the problem
+> there either, nor is it in 2.6.33.4.
 
-John Eidson's book [1] presents a rigorous servo model that includes
-an analysis of the delay from the time the samples (timestamps) are
-taken until the corrective action is performed by the PTP software.
+What load figure are you basing your observations on? The 15 minutes
+average should be the most interesting (sampled at a 7 minutes
+interval...)
 
-For PTP, the sample time is at the sender (the remote host, the master
-clock). The master sends *two* packets, where the second one (the so
-called follow-up packet) contains the hardware time stamp of the first
-one. So, the computational delay includes the time spent by the sender
-in its PTP stack preparing the second packet, the time the packet
-spends in transit, and the time in the receiver's PTP stack and servo.
-
-According to Eidson's analysis, a delay of up to 10 milliseconds would
-be acceptable, even with a sample rate of 10 Hz. Therefore, saving a
-few dozen microseconds by placing the servo (and PTP stack) into the
-kernel is not worth the effort.
-
-Richard
-
-
-[1] title =     {Measurement, control, and communication using IEEE 1588},
-    author =    {J. C. Eidson},
-    year =      2006,
-    publisher = {Springer-Verlag},
+Regards,
+Flo 
