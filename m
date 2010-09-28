@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755713Ab0I1OAF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 10:00:05 -0400
-Received: from lon1-post-1.mail.demon.net ([195.173.77.148]:59166 "EHLO
-	lon1-post-1.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753527Ab0I1OAE (ORCPT
+	id S1755834Ab0I1OBM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 10:01:12 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:4637 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755260Ab0I1OBL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 10:00:04 -0400
-Subject: [Patch] fsnotify: remove alignment padding from fsnotify_mark on
- 64 bit builds
-From: Richard Kennedy <richard@rsk.demon.co.uk>
-To: Eric Paris <eparis@redhat.com>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 28 Sep 2010 15:00:02 +0100
-Message-ID: <1285682402.1878.11.camel@castor.rsk>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Sep 2010 10:01:11 -0400
+X-IronPort-AV: E=Sophos;i="4.57,247,1283731200"; 
+   d="scan'208";a="2076471"
+Date: Tue, 28 Sep 2010 15:00:58 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Ingo Molnar <mingo@elte.hu>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        "sct@redhat.com" <sct@redhat.com>
+Subject: Re: [PATCH 12/12] xen/mtrr: Add mtrr_if support for Xen mtrr
+In-Reply-To: <20100928123925.GA18208@elte.hu>
+Message-ID: <alpine.DEB.2.00.1009281455300.2864@kaball-desktop>
+References: <alpine.DEB.2.00.1009281217540.2864@kaball-desktop> <1285676218-26218-12-git-send-email-stefano.stabellini@eu.citrix.com> <20100928123925.GA18208@elte.hu>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reorder struct fsnotfiy_mark to remove 8 bytes of alignment padding on
-64 bit builds.
-Shrinks fsnotfiy_mark to 128 bytes allowing more objects per slab in its
-kmem_cache and reduces the number of cachelines needed for each
-structure.
-    
-Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
-----
+On Tue, 28 Sep 2010, Ingo Molnar wrote:
+> 
+> * stefano.stabellini@eu.citrix.com <stefano.stabellini@eu.citrix.com> wrote:
+> 
+> > From: Stephen Tweedie <sct@redhat.com>
+> > 
+> > Add a Xen mtrr type, and reorganise mtrr initialisation slightly to
+> > allow the mtrr driver to set up num_var_ranges (Xen needs to do this by
+> > querying the hypervisor itself.)
+> > 
+> > [ Impact: add basic MTRR support ]
+> > 
+> > Signed-off-by: Stephen Tweedie <sct@redhat.com>
+> > Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > ---
+> >  arch/x86/kernel/cpu/mtrr/Makefile |    2 +-
+> >  arch/x86/kernel/cpu/mtrr/main.c   |    3 +
+> >  arch/x86/kernel/cpu/mtrr/mtrr.h   |    7 ++
+> >  arch/x86/kernel/cpu/mtrr/xen.c    |  110 +++++++++++++++++++++++++++++++++++++
+> >  4 files changed, 121 insertions(+), 1 deletions(-)
+> >  create mode 100644 arch/x86/kernel/cpu/mtrr/xen.c
+> 
+> Still NAK, for the very same reasons as we NAK-ed it the previous time: 
+> /proc/mtrr is a problematic and complicated legacy interface that should 
+> die. Any modern X server will do the right thing via PAT.
+> 
 
-Hi Eric,
-patch against 2.6.36-rc5
-compiled & booted on x86_64.
+Sorry I should have read the original thread more carefully: I didn't
+realize this patch had been NAK-ed.
 
-I'm not sure how to test this, but it boots and I think it's safe to
-make this change.
-
-regards
-Richard
+However it is not a problem because we can easily disable MTRRs from Xen
+and with no cpu_has_mtrr the kernel would still boot fine on Xen.
+Also I think we do have PAT support nowadays but I'll let Jeremy comment
+on that.
 
 
+> Also, please get the Ack of at least one x86 maintainer for x86 patches.
+> 
+ 
+I'll repost the series without the last two patches, so there won't be
+any x86 changes at all :)
 
-diff --git a/include/linux/fsnotify_backend.h b/include/linux/fsnotify_backend.h
-index e40190d..369bed5 100644
---- a/include/linux/fsnotify_backend.h
-+++ b/include/linux/fsnotify_backend.h
-@@ -275,8 +275,8 @@ struct fsnotify_mark {
- 		struct fsnotify_inode_mark i;
- 		struct fsnotify_vfsmount_mark m;
- 	};
--	__u32 ignored_mask;		/* events types to ignore */
- 	struct list_head free_g_list;	/* tmp list used when freeing this mark */
-+	__u32 ignored_mask;		/* events types to ignore */
- #define FSNOTIFY_MARK_FLAG_INODE		0x01
- #define FSNOTIFY_MARK_FLAG_VFSMOUNT		0x02
- #define FSNOTIFY_MARK_FLAG_OBJECT_PINNED	0x04
+Many thanks for your quick feedback,
 
-
+Stefano
