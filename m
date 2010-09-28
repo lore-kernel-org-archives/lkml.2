@@ -1,116 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540Ab0I1MX5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 08:23:57 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:51340 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751007Ab0I1MX4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 08:23:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=D8oxSwTwqT3H7Krq45akykFHoXIi0Se2atiVRgKm3OqEsgv1CBomF3dHWH/mb9yoid
-         VNtKy4BRyBzAIh0pwHN09tYzbvjZBFkP2XStKzN5OM6byY9B4k9M4oq7jroceWUlmN8D
-         DLbdIhX8Ylaax0ISLgWwSBbeNs1kM7C6mTXUs=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mm: cleanup gfp_zone()
-Date: Tue, 28 Sep 2010 21:23:44 +0900
-Message-Id: <1285676624-1300-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.2.2
+	id S1753572Ab0I1MZW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 08:25:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37180 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752440Ab0I1MZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 08:25:21 -0400
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Subject: Re: Dynamic Debug module.ddebug fake param enhancements V4
+Date: Tue, 28 Sep 2010 14:25:18 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.31.5-0.1-desktop; KDE/4.4.3; x86_64; ; )
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, jbaron@redhat.com
+References: <20100920184441.GA2915@redhat.com> <201009271025.47558.trenn@suse.de> <201009270909.18490.bjorn.helgaas@hp.com>
+In-Reply-To: <201009270909.18490.bjorn.helgaas@hp.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009281425.19070.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use Z[TB]_SHIFT() macro to calculate GFP_ZONE_TABLE and GFP_ZONE_BAD.
-This also removes lots of warnings from sparse like following:
+Greg: Do you mind pushing the first (1/4, V4) and the last (4/4)
+patch into your tree for linux-next and leave the two PNP patches
+out, please.
 
- warning: restricted gfp_t degrades to integer
+More PNP related discussion, below.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- include/linux/gfp.h |   43 ++++++++++++++++++++++++-------------------
- 1 files changed, 24 insertions(+), 19 deletions(-)
+On Monday 27 September 2010 17:09:18 Bjorn Helgaas wrote:
+> On Monday, September 27, 2010 02:25:46 am Thomas Renninger wrote:
+> 
+> > What do you think (dev_dbg vs printk(KERN_DEBUG...)?
+...
+> With the exception of the ones in pnp/resource.c that I want to convert
+> to dev_printk(KERN_DEBUG), I think all the pnp_dbg() uses are things
+> I used during PNP development and haven't ever needed since.
 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 975609c..cebfee1 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -185,15 +185,16 @@ static inline int allocflags_to_migratetype(gfp_t gfp_flags)
- #error ZONES_SHIFT too large to create GFP_ZONE_TABLE integer
+Ok. Sounds sane.
+I used the PNP parts as it nicely showed what the
+module.ddebug boot param is doing, but I agree it hasn't much
+advantage for PNP.
+
+Whatabout compiling pnp in one module namespace, the first
+of the two PNP patches?
+I do not see an urgent need/advantage, it would just be a general
+cleanup.
+PNP could then make use of moduleparam.h interface instead of using
+__setup(..).
+
+E.g. attached patch would be an on top patch which provides no
+functional change, just that a pnp.debug would be a module param:
+cat /sys/module/pnp/parameters/debug
+
+Again there is not much use for this with pnp as all should be
+processed at boot time. But theoretically one could enable pnp.debug
+at runtime :) (or it should get hidden with 0000 perms if not needed).
+It's more a general cleanup, further pnp boot params can be
+pnp.xy module params then.
+
+Bjoern: If you like them I can repost these two:
+(PNP build in one module namespace and below)
+
+        Thomas
+
+---------
+PNP: Set up pnp_debug via module and not via boot param.
+
+Cleanup only, no functional change (pnp.debug can be enabled
+and disabled at runtime, but that's not a real enhancement).
+
+This one depends on another PNP cleanup patch:
+PNP: Compile all pnp built-in stuff in one module namespace
+
+Signed-off-by: Thomas Renninger <trenn@suse.de>
+
+diff --git a/drivers/pnp/core.c b/drivers/pnp/core.c
+index 88b3cde..9801918 100644
+--- a/drivers/pnp/core.c
++++ b/drivers/pnp/core.c
+@@ -218,10 +218,5 @@ subsys_initcall(pnp_init);
+ int pnp_debug;
+ 
+ #if defined(CONFIG_PNP_DEBUG_MESSAGES)
+-static int __init pnp_debug_setup(char *__unused)
+-{
+-	pnp_debug = 1;
+-	return 1;
+-}
+-__setup("pnp.debug", pnp_debug_setup);
++module_param_named(debug, pnp_debug, int, 0644);
  #endif
- 
-+#define ZT_SHIFT(gfp) ((__force int) (gfp) * ZONES_SHIFT)
- #define GFP_ZONE_TABLE ( \
--	(ZONE_NORMAL << 0 * ZONES_SHIFT)				\
--	| (OPT_ZONE_DMA << __GFP_DMA * ZONES_SHIFT)			\
--	| (OPT_ZONE_HIGHMEM << __GFP_HIGHMEM * ZONES_SHIFT)		\
--	| (OPT_ZONE_DMA32 << __GFP_DMA32 * ZONES_SHIFT)			\
--	| (ZONE_NORMAL << __GFP_MOVABLE * ZONES_SHIFT)			\
--	| (OPT_ZONE_DMA << (__GFP_MOVABLE | __GFP_DMA) * ZONES_SHIFT)	\
--	| (ZONE_MOVABLE << (__GFP_MOVABLE | __GFP_HIGHMEM) * ZONES_SHIFT)\
--	| (OPT_ZONE_DMA32 << (__GFP_MOVABLE | __GFP_DMA32) * ZONES_SHIFT)\
-+	(ZONE_NORMAL        << ZT_SHIFT(0))				\
-+	| (OPT_ZONE_DMA     << ZT_SHIFT(__GFP_DMA))			\
-+	| (OPT_ZONE_HIGHMEM << ZT_SHIFT(__GFP_HIGHMEM))			\
-+	| (OPT_ZONE_DMA32   << ZT_SHIFT(__GFP_DMA32))			\
-+	| (ZONE_NORMAL      << ZT_SHIFT(__GFP_MOVABLE))			\
-+	| (OPT_ZONE_DMA     << ZT_SHIFT(__GFP_MOVABLE | __GFP_DMA))	\
-+	| (ZONE_MOVABLE     << ZT_SHIFT(__GFP_MOVABLE | __GFP_HIGHMEM)) \
-+	| (OPT_ZONE_DMA32   << ZT_SHIFT(__GFP_MOVABLE | __GFP_DMA32))	\
- )
- 
- /*
-@@ -202,24 +203,25 @@ static inline int allocflags_to_migratetype(gfp_t gfp_flags)
-  * entry starting with bit 0. Bit is set if the combination is not
-  * allowed.
-  */
-+#define ZB_SHIFT(gfp) ((__force int) (gfp))
- #define GFP_ZONE_BAD ( \
--	1 << (__GFP_DMA | __GFP_HIGHMEM)				\
--	| 1 << (__GFP_DMA | __GFP_DMA32)				\
--	| 1 << (__GFP_DMA32 | __GFP_HIGHMEM)				\
--	| 1 << (__GFP_DMA | __GFP_DMA32 | __GFP_HIGHMEM)		\
--	| 1 << (__GFP_MOVABLE | __GFP_HIGHMEM | __GFP_DMA)		\
--	| 1 << (__GFP_MOVABLE | __GFP_DMA32 | __GFP_DMA)		\
--	| 1 << (__GFP_MOVABLE | __GFP_DMA32 | __GFP_HIGHMEM)		\
--	| 1 << (__GFP_MOVABLE | __GFP_DMA32 | __GFP_DMA | __GFP_HIGHMEM)\
-+	1   << ZB_SHIFT(__GFP_DMA | __GFP_HIGHMEM)			\
-+	| 1 << ZB_SHIFT(__GFP_DMA | __GFP_DMA32)			\
-+	| 1 << ZB_SHIFT(__GFP_DMA32 | __GFP_HIGHMEM)			\
-+	| 1 << ZB_SHIFT(__GFP_DMA | __GFP_DMA32 | __GFP_HIGHMEM)	\
-+	| 1 << ZB_SHIFT(__GFP_MOVABLE | __GFP_HIGHMEM | __GFP_DMA)	\
-+	| 1 << ZB_SHIFT(__GFP_MOVABLE | __GFP_DMA32 | __GFP_DMA)	\
-+	| 1 << ZB_SHIFT(__GFP_MOVABLE | __GFP_DMA32 | __GFP_HIGHMEM)	\
-+	| 1 << ZB_SHIFT(__GFP_MOVABLE | __GFP_DMA32 | __GFP_DMA |	\
-+			__GFP_HIGHMEM)					\
- )
- 
- static inline enum zone_type gfp_zone(gfp_t flags)
- {
- 	enum zone_type z;
--	int bit = flags & GFP_ZONEMASK;
-+	int bit = (__force int) (flags & GFP_ZONEMASK);
- 
--	z = (GFP_ZONE_TABLE >> (bit * ZONES_SHIFT)) &
--					 ((1 << ZONES_SHIFT) - 1);
-+	z = (GFP_ZONE_TABLE >> ZT_SHIFT(bit)) & ((1 << ZONES_SHIFT) - 1);
- 
- 	if (__builtin_constant_p(bit))
- 		MAYBE_BUILD_BUG_ON((GFP_ZONE_BAD >> bit) & 1);
-@@ -231,6 +233,9 @@ static inline enum zone_type gfp_zone(gfp_t flags)
- 	return z;
- }
- 
-+#undef ZT_SHIFT
-+#undef ZB_SHIFT
-+
- /*
-  * There is only one page-allocator function, and two main namespaces to
-  * it. The alloc_page*() variants return 'struct page *' and as such
--- 
-1.7.2.2
-
