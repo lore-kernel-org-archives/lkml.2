@@ -1,97 +1,280 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909Ab0I1Kgh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 06:36:37 -0400
-Received: from mtagate3.de.ibm.com ([195.212.17.163]:57649 "EHLO
-	mtagate3.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104Ab0I1Kge (ORCPT
+	id S1752968Ab0I1Khg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 06:37:36 -0400
+Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:52460 "EHLO
+	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751481Ab0I1KgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 06:36:34 -0400
-Date: Tue, 28 Sep 2010 12:36:25 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: balbir@linux.vnet.ibm.com
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 09/10] taskstats: Fix exit CPU time accounting
-Message-ID: <20100928123625.18eec4ad@mschwide.boeblingen.de.ibm.com>
-In-Reply-To: <20100928092355.GA4261@balbir.in.ibm.com>
-References: <1285249681.1837.28.camel@holzheu-laptop>
-	<1285250541.1837.95.camel@holzheu-laptop>
-	<20100923171025.GA26623@redhat.com>
-	<1285330688.2179.305.camel@holzheu-laptop>
-	<20100926181127.GA26985@redhat.com>
-	<20100927154257.7910cda3@mschwide.boeblingen.de.ibm.com>
-	<20100928083602.GD4128@balbir.in.ibm.com>
-	<20100928110828.54e1cf25@mschwide.boeblingen.de.ibm.com>
-	<20100928092355.GA4261@balbir.in.ibm.com>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Sep 2010 06:36:12 -0400
+From: Arun Murthy <arun.murthy@stericsson.com>
+To: <lars@metafoo.de>, <akpm@linux-foundation.org>, <kernel@pengutronix.de>,
+        <philipp.zabel@gmail.com>, <robert.jarzmik@free.fr>,
+        <marek.vasut@gmail.com>, <eric.y.miao@gmail.com>, <rpurdie@rpsys.net>,
+        <sameo@linux.intel.com>, <kgene.kim@samsung.com>,
+        <linux-omap@vger.kernel.org>
+Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mips@linux-mips.org>, <arun.murthy@stericsson.com>,
+        <STEricsson_nomadik_linux@list.st.com>
+Subject: [PATCH 1/7] pwm: Add pwm core driver
+Date: Tue, 28 Sep 2010 16:05:28 +0530
+Message-ID: <1285670134-18063-2-git-send-email-arun.murthy@stericsson.com>
+X-Mailer: git-send-email 1.7.2.dirty
+In-Reply-To: <1285670134-18063-1-git-send-email-arun.murthy@stericsson.com>
+References: <1285670134-18063-1-git-send-email-arun.murthy@stericsson.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Sep 2010 14:53:55 +0530
-Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+The existing pwm based led and backlight driver makes use of the
+pwm(include/linux/pwm.h). So all the board specific pwm drivers will
+be exposing the same set of function name as in include/linux/pwm.h.
+As a result build fails in case of multi soc environments where each soc
+has a pwm device in it.
 
-> * Martin Schwidefsky <schwidefsky@de.ibm.com> [2010-09-28 11:08:28]:
-> 
-> > On Tue, 28 Sep 2010 14:06:02 +0530
-> > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> > 
-> > > * Martin Schwidefsky <schwidefsky@de.ibm.com> [2010-09-27 15:42:57]:
-> > > > Got the part about self-reaping processes. But there is another issue:
-> > > > consider an exiting thread where the group leader is still active.
-> > > > The time for the thread will be added to the utime/stime fields in
-> > > > the signal structure. Taskstats will happily ignore that time while
-> > > > the group leader is still running.
-> > > >
-> > > 
-> > > Why do you say that? Not sure your comment is very clean, in
-> > > fill_tgid, we do
-> > > 
-> > > 1. Accumulate signal stats (contains stats for dead threads)
-> > > 2. Accumulate stats for current threads
-> > > 
-> > > fill_tgid_exit does something similar
-> > 
-> > Hmm, I can't find anything in the code where the tsk->signal->{utime,stime}
-> 
-> That is left to the actual subsystem (I should have been clearer in
-> stating that the limitation is not with the taskstats infrastructure
-> itself). Yes, your observation is indeed correct.
-> 
-> taskstats code is expected to contain the callback for the subsystems
-> it supports. delayacct() already does the right thing today, AFAICS
-> 
-> > gets transferred to the taskstats record. There is a loop in fill_tgid over
-> > the threads of the process but all it does is to call delayacct_add_tsk.
-> > And that function does nothing with the cpu time of dead threads which is
-> > stored in the signal structure. In addition which taskstats field is
-> > supposed to contain the cpu time of the dead thread, ac_utime/ac_stime?
-> >
-> 
-> I've not focused much on ac_*, The changes that need to occur are we
-> need to get the tsacct.c callbacks into taskstats.
+In order to overcome this issue all the pwm drivers must register to
+some core pwm driver with function pointers for pwm operations (i.e
+pwm_config, pwm_enable, pwm_disable).
 
-Ok, so tsacct.c is the right place to implement it. We will need new fields
-in struct taskstats to contain the tsk->signal->{utime,stime} and some code
-in bacct_add_tsk to do the copy. Agreed ?
+The clients of pwm device will have to call pwm_request, wherein
+they will get the pointer to struct pwm_ops. This structure include
+function pointers for pwm_config, pwm_enable and pwm_disable.
 
+Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
+Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+---
+ drivers/Kconfig        |    2 +
+ drivers/Makefile       |    1 +
+ drivers/pwm/Kconfig    |   16 ++++++
+ drivers/pwm/Makefile   |    1 +
+ drivers/pwm/pwm-core.c |  129 ++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/pwm.h    |   12 ++++-
+ 6 files changed, 160 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/pwm/Kconfig
+ create mode 100644 drivers/pwm/Makefile
+ create mode 100644 drivers/pwm/pwm-core.c
+
+diff --git a/drivers/Kconfig b/drivers/Kconfig
+index a2b902f..e042f27 100644
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@ -111,4 +111,6 @@ source "drivers/xen/Kconfig"
+ source "drivers/staging/Kconfig"
+ 
+ source "drivers/platform/Kconfig"
++
++source "drivers/pwm/Kconfig"
+ endmenu
+diff --git a/drivers/Makefile b/drivers/Makefile
+index 4ca727d..0061ec4 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -116,3 +116,4 @@ obj-$(CONFIG_STAGING)		+= staging/
+ obj-y				+= platform/
+ obj-y				+= ieee802154/
+ obj-y				+= vbus/
++obj-$(CONFIG_PWM_DEVICES)	+= pwm/
+diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+new file mode 100644
+index 0000000..5d10106
+--- /dev/null
++++ b/drivers/pwm/Kconfig
+@@ -0,0 +1,16 @@
++#
++# PWM devices
++#
++
++menuconfig PWM_DEVICES
++	bool "PWM devices"
++	default y
++	---help---
++	  Say Y here to get to see options for device drivers from various
++	  different categories. This option alone does not add any kernel code.
++
++	  If you say N, all options in this submenu will be skipped and disabled.
++
++if PWM_DEVICES
++
++endif # PWM_DEVICES
+diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
+new file mode 100644
+index 0000000..552f969
+--- /dev/null
++++ b/drivers/pwm/Makefile
+@@ -0,0 +1 @@
++obj-$(CONFIG_PWM_DEVICES)	+= pwm-core.o
+diff --git a/drivers/pwm/pwm-core.c b/drivers/pwm/pwm-core.c
+new file mode 100644
+index 0000000..b84027a
+--- /dev/null
++++ b/drivers/pwm/pwm-core.c
+@@ -0,0 +1,129 @@
++/*
++ * Copyright (C) ST-Ericsson SA 2010
++ *
++ * License Terms: GNU General Public License v2
++ * Author: Arun R Murthy <arun.murthy@stericsson.com>
++ */
++#include <linux/init.h>
++#include <linux/device.h>
++#include <linux/slab.h>
++#include <linux/rwsem.h>
++#include <linux/err.h>
++#include <linux/pwm.h>
++
++struct pwm_device {
++	struct pwm_ops *pops;
++	int pwm_id;
++};
++
++struct pwm_dev_info {
++	struct pwm_device *pwm_dev;
++	struct list_head list;
++};
++static struct pwm_dev_info *di;
++
++DECLARE_RWSEM(pwm_list_lock);
++
++void __deprecated pwm_free(struct pwm_device *pwm)
++{
++}
++
++int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
++{
++	return pwm->pops->pwm_config(pwm, duty_ns, period_ns);
++}
++EXPORT_SYMBOL(pwm_config);
++
++int pwm_enable(struct pwm_device *pwm)
++{
++	return pwm->pops->pwm_enable(pwm);
++}
++EXPORT_SYMBOL(pwm_enable);
++
++void pwm_disable(struct pwm_device *pwm)
++{
++	pwm->pops->pwm_disable(pwm);
++}
++EXPORT_SYMBOL(pwm_disable);
++
++int pwm_device_register(struct pwm_device *pwm_dev)
++{
++	struct pwm_dev_info *pwm;
++
++	down_write(&pwm_list_lock);
++	pwm = kzalloc(sizeof(struct pwm_dev_info), GFP_KERNEL);
++	if (!pwm) {
++		up_write(&pwm_list_lock);
++		return -ENOMEM;
++	}
++	pwm->pwm_dev = pwm_dev;
++	list_add_tail(&pwm->list, &di->list);
++	up_write(&pwm_list_lock);
++
++	return 0;
++}
++EXPORT_SYMBOL(pwm_device_register);
++
++int pwm_device_unregister(struct pwm_device *pwm_dev)
++{
++	struct pwm_dev_info *tmp;
++	struct list_head *pos, *tmp_lst;
++
++	down_write(&pwm_list_lock);
++	list_for_each_safe(pos, tmp_lst, &di->list) {
++		tmp = list_entry(pos, struct pwm_dev_info, list);
++		if (tmp->pwm_dev == pwm_dev) {
++			list_del(pos);
++			kfree(tmp);
++			up_write(&pwm_list_lock);
++			return 0;
++		}
++	}
++	up_write(&pwm_list_lock);
++	return -ENOENT;
++}
++EXPORT_SYMBOL(pwm_device_unregister);
++
++struct pwm_device *pwm_request(int pwm_id, const char *name)
++{
++	struct pwm_dev_info *pwm;
++	struct list_head *pos;
++
++	down_read(&pwm_list_lock);
++	list_for_each(pos, &di->list) {
++		pwm = list_entry(pos, struct pwm_dev_info, list);
++		if ((!strcmp(pwm->pwm_dev->pops->name, name)) &&
++				(pwm->pwm_dev->pwm_id == pwm_id)) {
++			up_read(&pwm_list_lock);
++			return pwm->pwm_dev;
++		}
++	}
++	up_read(&pwm_list_lock);
++	return ERR_PTR(-ENOENT);
++}
++EXPORT_SYMBOL(pwm_request);
++
++static int __init pwm_init(void)
++{
++	struct pwm_dev_info *pwm;
++
++	pwm = kzalloc(sizeof(struct pwm_dev_info), GFP_KERNEL);
++	if (!pwm)
++		return -ENOMEM;
++	INIT_LIST_HEAD(&pwm->list);
++	di = pwm;
++	return 0;
++}
++
++static void __exit pwm_exit(void)
++{
++	kfree(di);
++}
++
++subsys_initcall(pwm_init);
++module_exit(pwm_exit);
++
++MODULE_LICENSE("GPL v2");
++MODULE_AUTHOR("Arun R Murthy");
++MODULE_ALIAS("core:pwm");
++MODULE_DESCRIPTION("Core pwm driver");
+diff --git a/include/linux/pwm.h b/include/linux/pwm.h
+index 7c77575..6e7da1f 100644
+--- a/include/linux/pwm.h
++++ b/include/linux/pwm.h
+@@ -3,6 +3,13 @@
+ 
+ struct pwm_device;
+ 
++struct pwm_ops {
++	int (*pwm_config)(struct pwm_device *pwm, int duty_ns, int period_ns);
++	int (*pwm_enable)(struct pwm_device *pwm);
++	int (*pwm_disable)(struct pwm_device *pwm);
++	char *name;
++};
++
+ /*
+  * pwm_request - request a PWM device
+  */
+@@ -11,7 +18,7 @@ struct pwm_device *pwm_request(int pwm_id, const char *label);
+ /*
+  * pwm_free - free a PWM device
+  */
+-void pwm_free(struct pwm_device *pwm);
++void __deprecated pwm_free(struct pwm_device *pwm);
+ 
+ /*
+  * pwm_config - change a PWM device configuration
+@@ -28,4 +35,7 @@ int pwm_enable(struct pwm_device *pwm);
+  */
+ void pwm_disable(struct pwm_device *pwm);
+ 
++int pwm_device_register(struct pwm_device *pwm_dev);
++int pwm_device_unregister(struct pwm_device *pwm_dev);
++
+ #endif /* __LINUX_PWM_H */
 -- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
+1.7.2.dirty
 
