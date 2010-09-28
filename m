@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756787Ab0I1QzP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 12:55:15 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:56086 "EHLO
+	id S1756988Ab0I1QzZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 12:55:25 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:56586 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754534Ab0I1QzN (ORCPT
+	with ESMTP id S1756849Ab0I1QzU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 12:55:13 -0400
-Date: Tue, 28 Sep 2010 09:54:56 -0700
+	Tue, 28 Sep 2010 12:55:20 -0400
+Date: Tue, 28 Sep 2010 09:53:10 -0700
 From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -next] fs.h: fix functions for FILE_LOCKING disabled
-Message-Id: <20100928095456.4b390540.randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Sage Weil <sage@newdream.net>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        ceph-devel@vger.kernel.org
+Subject: [PATCH -next] ceph: fix debugfs warnings
+Message-Id: <20100928095310.2983a888.randy.dunlap@oracle.com>
 In-Reply-To: <20100928141823.8c61000e.sfr@canb.auug.org.au>
 References: <20100928141823.8c61000e.sfr@canb.auug.org.au>
 Organization: Oracle Linux Eng.
@@ -26,29 +27,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Fix function signature warning when CONFIG_FILE_LOCKING is disabled.
+Include "super.h" outside of CONFIG_DEBUG_FS to eliminate a compiler warning:
 
-include/linux/fs.h:1275: warning: function declaration isn't a prototype
-include/linux/fs.h:1279: warning: function declaration isn't a prototype
+fs/ceph/debugfs.c:266: warning: 'struct ceph_fs_client' declared inside parameter list
+fs/ceph/debugfs.c:266: warning: its scope is only this definition or declaration, which is probably not what you want
+fs/ceph/debugfs.c:271: warning: 'struct ceph_fs_client' declared inside parameter list
 
 Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 ---
- include/linux/fs.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/ceph/debugfs.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- linux-next-20100927.orig/include/linux/fs.h
-+++ linux-next-20100927/include/linux/fs.h
-@@ -1271,11 +1271,11 @@ static inline int lock_may_write(struct 
- 	return 1;
- }
+--- linux-next-20100927.orig/fs/ceph/debugfs.c
++++ linux-next-20100927/fs/ceph/debugfs.c
+@@ -12,9 +12,10 @@
+ #include <linux/ceph/auth.h>
+ #include <linux/ceph/debugfs.h>
  
--static inline void lock_flocks()
-+static inline void lock_flocks(void)
- {
- }
++#include "super.h"
++
+ #ifdef CONFIG_DEBUG_FS
  
--static inline void unlock_flocks()
-+static inline void unlock_flocks(void)
- {
- }
+-#include "super.h"
+ #include "mds_client.h"
  
+ static int mdsmap_show(struct seq_file *s, void *p)
