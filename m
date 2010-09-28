@@ -1,93 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760003Ab0I1AKX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 20:10:23 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:34448 "EHLO imr3.ericy.com"
+	id S1760023Ab0I1AM2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 20:12:28 -0400
+Received: from sh.osrg.net ([192.16.179.4]:40873 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751517Ab0I1AKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 20:10:22 -0400
-Date: Mon, 27 Sep 2010 17:07:04 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        Fenghua Yu <fenghua.yu@intel.com>, Jean Delvare <khali@linux-fr.org>
-Subject: Re: [PATCH v2] hwmon (coretemp): Fix build breakage if SMP is
- undefined
-Message-ID: <20100928000704.GB4875@ericsson.com>
-References: <1285588796-20956-1-git-send-email-guenter.roeck@ericsson.com>
- <20100927125946.GB2862@elte.hu>
- <AANLkTinPHP8WhoAZQqcmhotEfFa6=mG_Acy+xCBQ0_5+@mail.gmail.com>
- <20100927232716.GB4744@ericsson.com>
- <AANLkTinDkJu2MSJM6bUpWJoB2XOD4LLf6GTPBX39wteD@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <AANLkTinDkJu2MSJM6bUpWJoB2XOD4LLf6GTPBX39wteD@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752196Ab0I1AM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 20:12:27 -0400
+Date: Tue, 28 Sep 2010 09:12:17 +0900
+To: ddaney@caviumnetworks.com
+Cc: fujita.tomonori@lab.ntt.co.jp, linux-mips@linux-mips.org,
+        ralf@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/9] MIPS: Convert DMA to use dma-mapping-common.h
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <4CA0D5D3.3040700@caviumnetworks.com>
+References: <1285281496-24696-6-git-send-email-ddaney@caviumnetworks.com>
+	<20100927142628X.fujita.tomonori@lab.ntt.co.jp>
+	<4CA0D5D3.3040700@caviumnetworks.com>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100928090805M.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 28 Sep 2010 09:12:18 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 07:44:01PM -0400, Linus Torvalds wrote:
-> On Mon, Sep 27, 2010 at 4:27 PM, Guenter Roeck
-> <guenter.roeck@ericsson.com> wrote:
-> > On Mon, Sep 27, 2010 at 09:02:57AM -0400, Pekka Enberg wrote:
-> >> On Mon, Sep 27, 2010 at 3:59 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> >> >
-> >> > * Guenter Roeck <guenter.roeck@ericsson.com> wrote:
-> >> >
-> >> >> +#ifdef CONFIG_SMP
-> >> >> +#endif
-> >> >> +#ifdef CONFIG_SMP
-> >> >> +#endif
-> >> >
-> >> > Hm, this tickles my uglo-meter. Is there no cleaner way, preferably one
-> >> > that doesnt involve preprocessor directives?
+On Mon, 27 Sep 2010 10:35:15 -0700
+David Daney <ddaney@caviumnetworks.com> wrote:
+
+> >> diff --git a/arch/mips/include/asm/dma-mapping.h b/arch/mips/include/asm/dma-mapping.h
+> >> index 18fbf7a..9a4c307 100644
+> >> --- a/arch/mips/include/asm/dma-mapping.h
+> >> +++ b/arch/mips/include/asm/dma-mapping.h
+> >> @@ -5,51 +5,67 @@
+> >>   #include<asm/cache.h>
+> >>   #include<asm-generic/dma-coherent.h>
 > >>
-> >> Implement cpu_sibling_mask() on UP so that the loop goes away?
+> >> -void *dma_alloc_noncoherent(struct device *dev, size_t size,
+> >> -			   dma_addr_t *dma_handle, gfp_t flag);
+> >> +struct mips_dma_map_ops {
+> >> +	struct dma_map_ops dma_map_ops;
+> >> +	dma_addr_t (*phys_to_dma)(struct device *dev, phys_addr_t paddr);
+> >> +	phys_addr_t (*dma_to_phys)(struct device *dev, dma_addr_t daddr);
+> >> +};
 > >
-> > So what is the take ? Looks like Linus won't accept my patch without someone
-> > else signing off on it. If the uglo-meter prevents it from being accepted,
-> > I'll be happy to submit the SMP cleanup patch instead. As I mentioned
-> > before, I would prefer that to go into -next.
+> > The above code doesn't look great but we don't want to add phys_to_dma
+> > and dma_to_phys to dma_map_ops struct, and these functions on MIPS
+> > looks too complicated for ifdef. So I guess that we need to live with
+> > the above code.
+> >
 > 
-> I'd _much_ rather see cpu_sibling_mask() on UP, and just have the loop go away.
-> 
-> But that would be a generic change. Something like the (UNTESTED!)
+> I think you have a point here.  I will attempt to move these two into a 
+> chip specific operations vector, and leave the more generic MIPS version 
+> with the simplified static definition.
 
-Which is why I didn't do it...
-
-> attached. It returns a NULL, since it would always be a bug to
-> actually _use_ the (nonexistent) mask. And that's fine for things like
-> for_each_cpu() that will then happily ignore the mask.
-> 
-> Ingo, does this make those randconfig things work? I think it's
-> prettier than the horrible "sprinkle #ifdef CONFIG_SMP around in
-> random places".
-> 
->                         Linus
-
->  include/linux/smp.h |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/smp.h b/include/linux/smp.h
-> index cfa2d20..ad48077 100644
-> --- a/include/linux/smp.h
-> +++ b/include/linux/smp.h
-> @@ -149,6 +149,8 @@ smp_call_function_any(const struct cpumask *mask, void (*func)(void *info),
->  	return smp_call_function_single(0, func, info, wait);
->  }
->  
-> +static inline const struct cpumask *cpu_sibling_mask(int cpu) { return NULL; }
-> +
->  #endif /* !SMP */
->  
-That works. Every other use of cpu_sibling_mask() is either in smp code
-or surrounded with #ifdef CONFIG_SMP.
-
-Ok, I'll submit another version of the patch with the generic change after 
-some more testing.
-
-Guenter
+Yeah, that sounds a better (cleaner) approach.
