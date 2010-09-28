@@ -1,54 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932558Ab0I1A1r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Sep 2010 20:27:47 -0400
-Received: from claw.goop.org ([74.207.240.146]:33764 "EHLO claw.goop.org"
+	id S1760214Ab0I1A23 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Sep 2010 20:28:29 -0400
+Received: from mga14.intel.com ([143.182.124.37]:40105 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760043Ab0I1A1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Sep 2010 20:27:46 -0400
-Message-ID: <4CA1367F.7040106@goop.org>
-Date: Mon, 27 Sep 2010 17:27:43 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.3
-MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Linus Torvalds <torvalds@linux-foundation.org>, Greg KH <gregkh@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Ian Jackson <Ian.Jackson@eu.citrix.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Subject: Re: Powertop shows events/0 waking at high rate due to ptys
-References: <4CA0D660.3010804@goop.org> <20100927191536.1de29492@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100927191536.1de29492@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751502Ab0I1A22 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Sep 2010 20:28:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,244,1283756400"; 
+   d="scan'208";a="329395304"
+Subject: Re: [PATCH -v2 7/7] x86, NMI, Remove do_nmi_callback logic
+From: Huang Ying <ying.huang@intel.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Robert Richter <robert.richter@amd.com>,
+        huang ying <huang.ying.caritas@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+In-Reply-To: <20100927151607.GX26290@redhat.com>
+References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
+	 <1285549026-5008-7-git-send-email-ying.huang@intel.com>
+	 <20100927104426.GD32222@erda.amd.com>
+	 <AANLkTinA2HK57w5wqCtq319WNy-PLtWaGBe-v+uoFB=Y@mail.gmail.com>
+	 <20100927134341.GQ13563@erda.amd.com>  <20100927151607.GX26290@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 28 Sep 2010 08:28:25 +0800
+Message-ID: <1285633705.20791.84.camel@yhuang-dev>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 09/27/2010 11:15 AM, Alan Cox wrote:
-> Really the line discipline should wake the work queue when it sets
-> tty->receive_room non-zero, but while only n_tty currently uses that
-> facility the existing code doesn't do it in any kind of race-free manner
-> and sometimes is only saved by the polling picking it up.
->
-> It's all really just a symptom of the fact that input and output buffers
-> shouldn't be attached to the tty in the first place but to a struct
-> representing the physical port. Fix that and the race conditions in
-> serial output go away, as do the potential crashes and this wakeup stuff
-> as well as a ton of locking in the irq/tx/rx paths. In several cases it
-> also saves you an entire copy.
->
-> Unfortunately while I got the tty port structures into lots of places
-> needed the job never gone done.
+Hi, Don,
 
-OK, so it sounds like there's a basic design problem here which will
-need some non-trivial work to fix.  In the meantime we'll need to look
-at doing something to work around the issue, since it ends up consuming
-a non-trivial amount of CPU in events/0.  I guess reducing HZ would be
-the first, simplest thing to do, but changing xenconsoled to avoid
-writing to readerless ptys might not be too hard.
+On Mon, 2010-09-27 at 23:16 +0800, Don Zickus wrote:
+> On Mon, Sep 27, 2010 at 03:43:41PM +0200, Robert Richter wrote:
+> > On 27.09.10 08:56:44, huang ying wrote:
+> > 
+> > > >> -static int unknown_nmi_panic_callback(struct pt_regs *regs, int cpu)
+> > > >> -{
+> > > >> -     unsigned char reason = get_nmi_reason();
+> > > >> -     char buf[64];
+> > > >> -
+> > > >> -     sprintf(buf, "NMI received for unknown reason %02x\n", reason);
+> > > >> -     die_nmi(buf, regs, 1); /* Always panic here */
+> > > >> -     return 0;
+> > > >
+> > > > You are dropping this code that is different to panic().
+> > > 
+> > > What is the difference? Is it relevant?
+> > 
+> > I think yes, since the code behaves different. Otherwise we could
+> > remove die_nmi() completly and replace it by panic(). But both are
+> > different implementions. Maybe we can merge the code, but I didn't
+> > look at it closly.
+> 
+> Actually die_nmi is a wrapper around panic with two important pieces.
+> One, it dumps some registers and two it does another notifier call to
+> DIE_NMIWATCHDOG (which correlates to another discussion in this patch
+> series).
+> 
+> So if we do any consolidation between panic and die_nmi, it should be
+> convert to die_nmi.  But then I wonder if that breaks the original
+> semantics of 'panic_on_unrecovered_nmi'.  I don't think so though.
 
-Thanks,
-    J
+Please take a look at the original code:
+
+
+                if (nmi_watchdog_tick(regs, reason))
+                        return;
+                if (!do_nmi_callback(regs, cpu))
+#endif /* !CONFIG_LOCKUP_DETECTOR */
+                        unknown_nmi_error(reason, regs);
+#else
+                unknown_nmi_error(reason, regs);
+#endif
+
+If NMI comes from watchdog, nmi_watchdog_tick() will return 1. So
+do_nmi_callback() is NOT for watchdog NMI, but for unknown NMI. Why do
+we call DIE_NMIWATCHDOG for unknown NMI (NOT watchdog NMI)? die_nmi is
+for watchdog, not unknown NMI.
+
+So another issue is registers dumping. If it is necessary, we can dump
+registers in unknown_nmi_error(). Although I think unknown NMI comes
+from hardware instead of software, so it does not help much to dump
+registers.
+
+Best Regards,
+Huang Ying
+
+
