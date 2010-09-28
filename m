@@ -1,129 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759505Ab0I1HJQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 03:09:16 -0400
-Received: from mtagate4.de.ibm.com ([195.212.17.164]:56897 "EHLO
-	mtagate4.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754036Ab0I1HJO (ORCPT
+	id S1754148Ab0I1HQy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 03:16:54 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:61277 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981Ab0I1HQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 03:09:14 -0400
-Date: Tue, 28 Sep 2010 09:09:04 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Roland McGrath <roland@redhat.com>
-Subject: Re: [RFC][PATCH 09/10] taskstats: Fix exit CPU time accounting
-Message-ID: <20100928090904.7edc7c02@mschwide.boeblingen.de.ibm.com>
-In-Reply-To: <20100927165133.GA23535@redhat.com>
-References: <1285249681.1837.28.camel@holzheu-laptop>
-	<1285250541.1837.95.camel@holzheu-laptop>
-	<20100923171025.GA26623@redhat.com>
-	<1285330688.2179.305.camel@holzheu-laptop>
-	<20100926181127.GA26985@redhat.com>
-	<20100927154257.7910cda3@mschwide.boeblingen.de.ibm.com>
-	<20100927165133.GA23535@redhat.com>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 28 Sep 2010 03:16:53 -0400
+Message-ID: <4CA195D7.4010706@kernel.org>
+Date: Tue, 28 Sep 2010 00:14:31 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Vivek Goyal <vgoyal@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        kexec <kexec@lists.infradead.org>, caiqian@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: kexec load failure introduced by "x86, memblock: Replace e820_/_early
+ string with memblock_"
+References: <632974489.2046131285586512527.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com> <4CA11918.7050708@kernel.org> <4CA11FB7.2080101@zytor.com> <4CA126BE.7000609@kernel.org> <4CA1283C.9010105@zytor.com> <4CA12976.5060504@kernel.org> <4CA129EB.5000309@zytor.com> <4CA12BAB.1040308@kernel.org> <20100928005358.GA6456@redhat.com> <4CA16522.8060107@zytor.com>
+In-Reply-To: <4CA16522.8060107@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Sep 2010 18:51:33 +0200
-Oleg Nesterov <oleg@redhat.com> wrote:
-
-> On 09/27, Martin Schwidefsky wrote:
-> >
-> > On Sun, 26 Sep 2010 20:11:27 +0200
-> > Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> > > No. Well yes, it is not accounted, but this is not because it is
-> > > kthread.
-> >
-> > We noticed that behavior with kernel threads but as you point out
-> > the problem is bigger than that.
-> >
-> > > It is very simple, currently linux accounts the exiting task's
-> > > utime and adds its to ->cutime _only_ if parent does do_wait().
-> > > If parent ignores SIGCHLD, the child reaps itself and it is not
-> > > accounted.
-> > >
-> > > I do not know why it was done this way, but I'm afraid we can't
-> > > change this historical behaviour.
-> >
-> > Why?
+On 09/27/2010 08:46 PM, H. Peter Anvin wrote:
+> On 09/27/2010 05:53 PM, Vivek Goyal wrote:
+>>
+>> Actually, hardcoding the upper limit to 4G is probably not the best idea.
+>> Kexec loads the the relocatable binary (purgatory) and I remember that
+>> one of the generated relocation type was signed 32 bit and allowed max value
+>> to be 2G only. So IIRC, purgatory code always needed to be loaded below 2G.
+>>
+>> I liked HPA's other idea better of introducing memblock_find_in_range_lowest() 
+>> so that we search bottom up and not rely on a specific upper limit.
+>>
 > 
-> Please don't ask me ;) I was equally surprised when I studied this
-> code in the past.
+> No, it's just another crappy hack which is broken in the same way.  It's
+> better than open-coding, but it's still a hack.
+> 
+> The Right Thing[TM] to do is for kexec to communicate the topmost
+> address it wants to this code, so it has both the upper and the lower
+> boundaries available to it instead of just one.
 
-But I do ask >:-)
+hope you are happy with this one.
+
+[PATCH -v5] x86, memblock: Fix crashkernel allocation
+
+Cai Qian found crashkernel is broken with x86 memblock changes
+1. crashkernel=128M@32M always reported that range is used, even first kernel is small
+   no one use that range
+2. always get following report when using "kexec -p"
+	Could not find a free area of memory of a000 bytes...
+	locate_hole failed
+
+The root cause is that generic memblock_find_in_range() will try to get range from top_down.
+But crashkernel do need from low and specified range.
+
+Let's limit the target range with rash_base + crash_size to make sure that
+We get range from bottom.
+
+-v5: use DEFAULT_BZIMAGE_ADDR_MAX to limit area that could be used by bzImge.
+     also second try for vmlinux or new kexec tools will use bzImage 64bit entry
+
+Reported-and-Bisected-by: CAI Qian <caiqian@redhat.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ arch/x86/kernel/setup.c |   24 ++++++++++++++++++------
+ 1 file changed, 18 insertions(+), 6 deletions(-)
+
+Index: linux-2.6/arch/x86/kernel/setup.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/setup.c
++++ linux-2.6/arch/x86/kernel/setup.c
+@@ -501,6 +501,7 @@ static inline unsigned long long get_tot
+ 	return total << PAGE_SHIFT;
+ }
  
-> > I would consider it to be a BUG() that the time is not accounted.
-> > Independent of the fact that a parent wants to see the SIGCHLD and
-> > the exit status of its child the process time of the child should be
-> > accounted, no?
-> 
-> I do not know. It doesn't look like a BUG(), I mean it looks as if
-> the code was intentionally written this way.
-
-Well, one thing to consider is the fact that the exiting process can
-not the process accounting by itself. While a process is still running
-it uses cpu which has to bet accounted to cstime of the parent.
-So logically some other process has to do the cutime/cstime update.
-
-> > And I'm not a particular fan of the "this has always
-> > been that way" reasoning.
-> 
-> Me too, but unfortunately it often happens, sometimes we can't improve
-> things just because we should not break existing programs.
-> 
-> Once again, don't get me wrong. Personally I agree, to me it makes
-> sense to move the "update parent's cxxx" code from wait_task_zombie()
-> to __exit_signal(), and account children unconditionally.
-> 
-> But I do not know who can approve this very much user-visible change.
-> Perhaps Roland.
-
-I wonder which user space tool would break.
-
-> > Got the part about self-reaping processes. But there is another issue:
-> > consider an exiting thread where the group leader is still active.
-> > The time for the thread will be added to the utime/stime fields in
-> > the signal structure.
-> 
-> (to clarify, s/group leader/last thread/)
-> 
-> > Taskstats will happily ignore that time while
-> > the group leader is still running.
-> 
-> Sorry. I didn't read the whole series and I forgot everything I knew
-> about taskstats. But I don't understand this "ignore" above, every
-> exiting thread calls taskstats_exit()->fill_pid()->bacct_add_tsk()
-> and reports ->ac_utime?
-> 
-> Never mind. You seem to want to update, say, cutime when a sub-thread
-> exits, before the whole process exits, right? Again, trivial to
-> implement but this is another user-visible change.
-
-No, not necessarily. But to get to 100% coverage of the cpu time we
-need to be able to "find" the time. Currently the time of already
-exited threads of a thread group is invisible via the taskstats
-interface. New taskstats fields would do for this particular problem.
-
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
++#define DEFAULT_BZIMAGE_ADDR_MAX 0x37FFFFFF
+ static void __init reserve_crashkernel(void)
+ {
+ 	unsigned long long total_mem;
+@@ -518,17 +519,28 @@ static void __init reserve_crashkernel(v
+ 	if (crash_base <= 0) {
+ 		const unsigned long long alignment = 16<<20;	/* 16M */
+ 
+-		crash_base = memblock_find_in_range(alignment, ULONG_MAX, crash_size,
+-				 alignment);
++		/*
++		 * Assume half crash_size is for bzImage
++		 *  kexec want bzImage is below DEFAULT_BZIMAGE_ADDR_MAX
++		 */
++		crash_base = memblock_find_in_range(alignment,
++				DEFAULT_BZIMAGE_ADDR_MAX + crash_size/2,
++				crash_size, alignment);
++
+ 		if (crash_base == MEMBLOCK_ERROR) {
+-			pr_info("crashkernel reservation failed - No suitable area found.\n");
+-			return;
++			crash_base = memblock_find_in_range(alignment,
++					 ULONG_MAX, crash_size, alignment);
++
++			if (crash_base == MEMBLOCK_ERROR) {
++				pr_info("crashkernel reservation failed - No suitable area found.\n");
++				return;
++			}
+ 		}
+ 	} else {
+ 		unsigned long long start;
+ 
+-		start = memblock_find_in_range(crash_base, ULONG_MAX, crash_size,
+-				 1<<20);
++		start = memblock_find_in_range(crash_base,
++				 crash_base + crash_size, crash_size, 1<<20);
+ 		if (start != crash_base) {
+ 			pr_info("crashkernel reservation failed - memory is in use.\n");
+ 			return;
