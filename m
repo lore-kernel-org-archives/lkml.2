@@ -1,42 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760110Ab0I1JBI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 05:01:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45940 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753701Ab0I1JBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 05:01:07 -0400
-Message-ID: <4CA1AECA.9090409@redhat.com>
-Date: Tue, 28 Sep 2010 11:00:58 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+	id S1760080Ab0I1JCv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 05:02:51 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:49860 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753707Ab0I1JCt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 05:02:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=LsDS+/xyRTj7bJGxOFzXWtShePWNPI4Q6u0Ylm7g7N+Lvw/QSfHhmOZSZPPmBAU0jD
+         1Nd4v4BYRpQq561O4sXQmWmZy3CS4SFY+wjU0VvQV8Bh9d3D+HRbxHiEypp5GJ5na6L6
+         fverwCMG0hLOLePCVpwj9UIkg/z5Bai9Ak2oY=
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/7] KVM: MMU: cleanup for error mask set while walk guest
- page table
-References: <4CA06BA4.4090303@cn.fujitsu.com> <4CA06BEF.7060401@cn.fujitsu.com> <4CA0AA7E.4090901@redhat.com> <4CA1AE18.7070200@cn.fujitsu.com>
-In-Reply-To: <4CA1AE18.7070200@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100928084251.GC3900@legolas.emea.dhcp.ti.com>
+References: <1285618704-8985-1-git-send-email-notasas@gmail.com>
+	<20100928060554.GF2702@legolas.emea.dhcp.ti.com>
+	<AANLkTikZqtXa2YQsDehoWVMRstefUyafsQn2mph7U3CZ@mail.gmail.com>
+	<20100928084251.GC3900@legolas.emea.dhcp.ti.com>
+Date: Tue, 28 Sep 2010 12:02:48 +0300
+Message-ID: <AANLkTin-6BLBHeiyA1edTJVjwVAimmJLVicZj8c_VC_2@mail.gmail.com>
+Subject: Re: [PATCH v4] power_supply: Add driver for TWL4030/TPS65950 BCI charger
+From: Grazvydas Ignotas <notasas@gmail.com>
+To: balbi@ti.com
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chikkature Rajashekar, Madhusudhan" <madhu.cr@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 09/28/2010 10:58 AM, Xiao Guangrong wrote:
-> Yeah, it's a good idea, i'll post a patch to do it.
->
-> >  Not sure how that interacts with nested
-> >  ept (which has a different permission model).
-> >
->
-> Umm, we just move the error code parsing from the caller site to FNAME(walk_addr)
-> function, i think it not make trouble for implement nested ept.
+> Charger event is SENT by charger driver when it verifies it's attached
+> to a wall charger.
 
-It means the nept code will have to take the ept error code and convert 
-it to the standard error code.  Not too difficult.
-
--- 
-error compiling committee.c: too many arguments to function
-
+Isn't that a job for musb/gadget? Detecting D+/D- being shorted by
+charger or something like that? I don't think BCI is able to detect
+charger.
