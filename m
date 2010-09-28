@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757416Ab0I1RNK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 13:13:10 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:17656 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756935Ab0I1RNI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 13:13:08 -0400
-Message-ID: <4CA22223.3030701@caviumnetworks.com>
-Date: Tue, 28 Sep 2010 10:13:07 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
+	id S1757440Ab0I1RNf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 13:13:35 -0400
+Received: from claw.goop.org ([74.207.240.146]:40723 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752082Ab0I1RNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 13:13:34 -0400
+Message-ID: <4CA2223B.9040400@goop.org>
+Date: Tue, 28 Sep 2010 10:13:31 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.3
 MIME-Version: 1.0
-To: Vasiliy Kulikov <segooon@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>
-CC: kernel-janitors@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/9] staging: octeon: use free_netdev(netdev) instead
- of kfree()
-References: <1285693681-4679-1-git-send-email-segooon@gmail.com>
-In-Reply-To: <1285693681-4679-1-git-send-email-segooon@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        "sct@redhat.com" <sct@redhat.com>
+Subject: Re: [PATCH 12/12] xen/mtrr: Add mtrr_if support for Xen mtrr
+References: <alpine.DEB.2.00.1009281217540.2864@kaball-desktop> <1285676218-26218-12-git-send-email-stefano.stabellini@eu.citrix.com> <20100928123925.GA18208@elte.hu> <alpine.DEB.2.00.1009281455300.2864@kaball-desktop>
+In-Reply-To: <alpine.DEB.2.00.1009281455300.2864@kaball-desktop>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 Sep 2010 17:13:07.0260 (UTC) FILETIME=[6B3FBFC0:01CB5F30]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2010 10:08 AM, Vasiliy Kulikov wrote:
-> It is not guaranteed that free_netdev() is macro.
-> Freeing netdev without free_netdev() leads to net, tx leaks.
-> I might lead to dereferencing freed pointer.
+ On 09/28/2010 07:00 AM, Stefano Stabellini wrote:
+> On Tue, 28 Sep 2010, Ingo Molnar wrote:
+>> * stefano.stabellini@eu.citrix.com <stefano.stabellini@eu.citrix.com> wrote:
+>>
+>>> From: Stephen Tweedie <sct@redhat.com>
+>>>
+>>> Add a Xen mtrr type, and reorganise mtrr initialisation slightly to
+>>> allow the mtrr driver to set up num_var_ranges (Xen needs to do this by
+>>> querying the hypervisor itself.)
+>>>
+>>> [ Impact: add basic MTRR support ]
+>>>
+>>> Signed-off-by: Stephen Tweedie <sct@redhat.com>
+>>> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+>>> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+>>> ---
+>>>  arch/x86/kernel/cpu/mtrr/Makefile |    2 +-
+>>>  arch/x86/kernel/cpu/mtrr/main.c   |    3 +
+>>>  arch/x86/kernel/cpu/mtrr/mtrr.h   |    7 ++
+>>>  arch/x86/kernel/cpu/mtrr/xen.c    |  110 +++++++++++++++++++++++++++++++++++++
+>>>  4 files changed, 121 insertions(+), 1 deletions(-)
+>>>  create mode 100644 arch/x86/kernel/cpu/mtrr/xen.c
+>> Still NAK, for the very same reasons as we NAK-ed it the previous time: 
+>> /proc/mtrr is a problematic and complicated legacy interface that should 
+>> die. Any modern X server will do the right thing via PAT.
+>>
+> Sorry I should have read the original thread more carefully: I didn't
+> realize this patch had been NAK-ed.
 >
->
-> Signed-off-by: Vasiliy Kulikov<segooon@gmail.com>
+> However it is not a problem because we can easily disable MTRRs from Xen
+> and with no cpu_has_mtrr the kernel would still boot fine on Xen.
+> Also I think we do have PAT support nowadays but I'll let Jeremy comment
+> on that.
 
-Thanks, you can add:
+Yes, we could just mask out the MTRR CPU feature and rely entirely on PAT.
 
-Acked-by: David Daney <ddaney@caviumnetworks.com>
+The alternative would be to use the wrmsr hooks to emulate the Intel
+MTRR registers by mapping them to hypercalls, but that seems needlessly
+complex.
 
-
-> ---
->   drivers/staging/octeon/ethernet.c |    8 ++++----
->   1 files changed, 4 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/staging/octeon/ethernet.c b/drivers/staging/octeon/ethernet.c
-> index fb568a9..a8f780e 100644
-> --- a/drivers/staging/octeon/ethernet.c
-> +++ b/drivers/staging/octeon/ethernet.c
-> @@ -670,7 +670,7 @@ static int __init cvm_oct_init_module(void)
->
->   			if (register_netdev(dev)<  0) {
->   				pr_err("Failed to register ethernet device for POW\n");
-> -				kfree(dev);
-> +				free_netdev(dev);
->   			} else {
->   				cvm_oct_device[CVMX_PIP_NUM_INPUT_PORTS] = dev;
->   				pr_info("%s: POW send group %d, receive group %d\n",
-> @@ -756,12 +756,12 @@ static int __init cvm_oct_init_module(void)
->   			}
->
->   			if (!dev->netdev_ops) {
-> -				kfree(dev);
-> +				free_netdev(dev);
->   			} else if (register_netdev(dev)<  0) {
->   				pr_err("Failed to register ethernet device "
->   					 "for interface %d, port %d\n",
->   					 interface, priv->port);
-> -				kfree(dev);
-> +				free_netdev(dev);
->   			} else {
->   				cvm_oct_device[priv->port] = dev;
->   				fau -=
-> @@ -815,7 +815,7 @@ static void __exit cvm_oct_cleanup_module(void)
->
->   			cvm_oct_tx_shutdown_dev(dev);
->   			unregister_netdev(dev);
-> -			kfree(dev);
-> +			free_netdev(dev);
->   			cvm_oct_device[port] = NULL;
->   		}
->   	}
-
+    J
