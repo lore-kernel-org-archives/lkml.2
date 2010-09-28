@@ -1,100 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620Ab0I1MfS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 08:35:18 -0400
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:33298 "HELO
-	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751229Ab0I1MfR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 08:35:17 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 4EHSGC8VM1mIUXGdIjeeuv2KDsPi.m1i3uzkkJqJmSGXisI
- y5c2zEOJcU4bFnP3wsibYG3CRzAc0rzO15uY80y50ngqA4jvJLtB6UWYy_zn
- 0WjnkpSY0ckrB9oYFOqzQKohON.bKqzLp5E8nj0GEkK0TwcuJZcZBiKYuvs3
- WGizum8EZtIMUJCrhD3pDSUaVWC1scUejcuWAvmucXtE7pz297a98t0dw20J
- shQ4uSP277et10e4egoiNB6Ev8Iaxr4sqgw--
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 28 Sep 2010 07:35:13 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Robert Mueller <robm@fastmail.fm>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-        Bron Gondwana <brong@fastmail.fm>, linux-mm <linux-mm@kvack.org>
-Subject: Re: Default zone_reclaim_mode = 1 on NUMA kernel is bad forfile/email/web
- servers
-In-Reply-To: <1285629420.10278.1397188599@webmail.messagingengine.com>
-Message-ID: <alpine.DEB.2.00.1009280727370.4144@router.home>
-References: <52C8765522A740A4A5C027E8FDFFDFE3@jem> <20100921090407.GA11439@csn.ul.ie> <20100927110049.6B31.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1009270828510.7000@router.home> <1285629420.10278.1397188599@webmail.messagingengine.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753916Ab0I1Mi6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 08:38:58 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:58848 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753102Ab0I1Mi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 08:38:57 -0400
+Date: Tue, 28 Sep 2010 07:38:48 -0500
+From: Robin Holt <holt@sgi.com>
+To: Nathan Fontenot <nfont@austin.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
+        Greg KH <greg@kroah.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 0/8] v2 De-Couple sysfs memory directories from memory
+ sections
+Message-ID: <20100928123848.GH14068@sgi.com>
+References: <4CA0EBEB.1030204@austin.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CA0EBEB.1030204@austin.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Sep 2010, Robert Mueller wrote:
+I was tasked with looking at a slowdown in similar sized SGI machines
+booting x86_64.  Jack Steiner had already looked into the memory_dev_init.
+I was looking at link_mem_sections().
 
-> How would the ACPI information actually be changed?
+I made a dramatic improvement on a 16TB machine in that function by
+merely caching the most recent memory section and checking to see if
+the next memory section happens to be the subsequent in the linked list
+of kobjects.
 
-Fix the BIOS SLIT distance tables.
+That simple cache reduced the time for link_mem_sections from 1 hour 27
+minutes down to 46 seconds.
 
-> I ran numactl -H to get the hardware information, and that seems to
-> include distances. As mentioned previously, this is a very standard
-> Intel server motherboard.
->
-> http://www.intel.com/Products/Server/Motherboards/S5520UR/S5520UR-specifications.htm
->
-> Intel 5520 chipset with Intel I/O Controller Hub ICH10R
->
-> $ numactl -H
-> available: 2 nodes (0-1)
-> node 0 cpus: 0 2 4 6 8 10 12 14
-> node 0 size: 24517 MB
-> node 0 free: 1523 MB
-> node 1 cpus: 1 3 5 7 9 11 13 15
-> node 1 size: 24576 MB
-> node 1 free: 39 MB
-> node distances:
-> node   0   1
->   0:  10  21
->   1:  21  10
+I would like to propose we implement something along those lines also,
+but I am currently swamped.  I can probably get you a patch tomorrow
+afternoon that applies at the end of this set.
 
-21 is larger than REMOTE_DISTANCE on x86 and triggers zone_reclaim
+Thanks,
+Robin
 
-19 would keep it off.
-
-
-> Since I'm not sure what the "distance" values mean, I have no idea if
-> those values large or not?
-
-Distance values represent the additional latency necessary to access
-remote memory vs local memory (10)
-
-> > 4. Fix the application to be conscious of the effect of memory
-> >    allocations on a NUMA systems. Use the numa memory allocations API
-> >    to allocate anonymous memory locally for optimal access and set
-> >    interleave for the file backed pages.
->
-> The problem we saw was purely with file caching. The application wasn't
-> actually allocating much memory itself, but it was reading lots of files
-> from disk (via mmap'ed memory mostly), and as most people would, we
-> expected that data would be cached in memory to reduce future reads from
-> disk. That was not happening.
-
-Obviously and you have stated that numerous times. Problem that the use of
-a remote memory will reduced performance of reads so the OS (with
-zone_reclaim=1) defaults to the use of local memory and favors reclaim of
-local memory over the allocation from the remote node. This is fine if
-you have multiple applications running on both nodes because then each
-application will get memory local to it and therefore run faster. That
-does not work with a single app that only allocates from one node.
-
-Control over memory allocations over the various nodes under NUMA
-for a process can occur via the numactl ctl or the libnuma C apis.
-
-F.e.e
-
-numactl --interleave ... command
-
-will address that issue for a specific command that needs to go
+On Mon, Sep 27, 2010 at 02:09:31PM -0500, Nathan Fontenot wrote:
+> This set of patches decouples the concept that a single memory
+> section corresponds to a single directory in 
+> /sys/devices/system/memory/.  On systems
+> with large amounts of memory (1+ TB) there are perfomance issues
+> related to creating the large number of sysfs directories.  For
+> a powerpc machine with 1 TB of memory we are creating 63,000+
+> directories.  This is resulting in boot times of around 45-50
+> minutes for systems with 1 TB of memory and 8 hours for systems
+> with 2 TB of memory.  With this patch set applied I am now seeing
+> boot times of 5 minutes or less.
+> 
+> The root of this issue is in sysfs directory creation. Every time
+> a directory is created a string compare is done against all sibling
+> directories to ensure we do not create duplicates.  The list of
+> directory nodes in sysfs is kept as an unsorted list which results
+> in this being an exponentially longer operation as the number of
+> directories are created.
+> 
+> The solution solved by this patch set is to allow a single
+> directory in sysfs to span multiple memory sections.  This is
+> controlled by an optional architecturally defined function
+> memory_block_size_bytes().  The default definition of this
+> routine returns a memory block size equal to the memory section
+> size. This maintains the current layout of sysfs memory
+> directories as it appears to userspace to remain the same as it
+> is today.
+> 
+> For architectures that define their own version of this routine,
+> as is done for powerpc in this patchset, the view in userspace
+> would change such that each memoryXXX directory would span
+> multiple memory sections.  The number of sections spanned would
+> depend on the value reported by memory_block_size_bytes.
+> 
+> In both cases a new file 'end_phys_index' is created in each
+> memoryXXX directory.  This file will contain the physical id
+> of the last memory section covered by the sysfs directory.  For
+> the default case, the value in 'end_phys_index' will be the same
+> as in the existing 'phys_index' file.
+> 
+> This version of the patch set includes an update to to properly
+> report block_size_bytes, phys_index, and end_phys_index.  Additionally,
+> the patch that adds the end_phys_index sysfs file is now patch 5/8
+> instead of being patch 2/8 as in the previous version of the patches.
+> 
+> -Nathan Fontenot
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
