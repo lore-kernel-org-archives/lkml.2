@@ -1,413 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579Ab0I1QcJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 12:32:09 -0400
-Received: from ppsw-30.csi.cam.ac.uk ([131.111.8.130]:39059 "EHLO
-	ppsw-30.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755112Ab0I1QcH (ORCPT
+	id S1755708Ab0I1Qcl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 12:32:41 -0400
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:13354
+	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755007Ab0I1Qcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 12:32:07 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4CA21885.1040603@cam.ac.uk>
-Date: Tue, 28 Sep 2010 17:32:05 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100909 Lightning/1.0b3pre Thunderbird/3.1.3
+	Tue, 28 Sep 2010 12:32:39 -0400
+X-Greylist: delayed 906 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Sep 2010 12:32:39 EDT
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275bhz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L9GT8V-01-AEK-02
+X-M-MSG: 
+Date: Tue, 28 Sep 2010 18:19:12 +0200
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
+To: Jan Beulich <JBeulich@novell.com>
+CC: "Seidel, Conny" <Conny.Seidel@amd.com>,
+        "borislav.petkov" <borislav.petkov@amd.com>,
+        "mingo@elte.hu" <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>
+Subject: Re: current TIP/master doesn't build on SLES10
+Message-ID: <20100928161912.GF5003@loge.amd.com>
+References: <20100928163136.7a2355d0@marah.osrc.amd.com>
+ <4CA22F1D020000780001961F@vpn.id2.novell.com>
 MIME-Version: 1.0
-To: Alan Cox <alan@linux.intel.com>
-CC: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Add ALS drivers for the apds9802als
-References: <20100928141757.1075.64887.stgit@localhost.localdomain>
-In-Reply-To: <20100928141757.1075.64887.stgit@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4CA22F1D020000780001961F@vpn.id2.novell.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/10 15:18, Alan Cox wrote:
-> From: anantha <anantha.narayanan@intel.com>
+On Tue, Sep 28, 2010 at 12:08:29PM -0400, Jan Beulich wrote:
+> >>> On 28.09.10 at 16:31, Conny Seidel <conny.seidel@amd.com> wrote:
+> > Hi
+> > 
+> > compiling TIP/master (44bc8c4f500fce7263803b4acd016fa03cf8a91a) on
+> > SLES10 fails with the following build error:
+> > 
+> > arch/x86/kernel/entry_64.S: Assembler messages:
+> > arch/x86/kernel/entry_64.S:1181: Error: too many positional arguments
+> > arch/x86/kernel/entry_64.S:1181: Error: too many positional arguments
+> > make[2]: *** [arch/x86/kernel/entry_64.o] Error 1
+> > make[1]: *** [arch/x86/kernel] Error 2
+> > make: *** [arch/x86] Error 2
+> > 
+> > I've bisected it to commit df5d1874ce1a1f0e0eceff4fa3a9d45620243a68.
+> > 
+> > Reverting it fixes the issue. 
+> > 
+> > I know that this is caused by binutils 2.16.91.0.5 which is distributed
+> > with SLES10.
 > 
-> This adds support for the ADPS9802ALS sensor.
-Hi Alan,
+> I'm generally doing almost all of my work on SLE10, and have not run
+> into this issue. Are you sure you've got it fully updated?
 
-One last point, hwmon equivalent syntax for the naming would be
-lux0_input rather than the lux_input0 you have here.
+BTW, the build error looks similar to the build problem fixed by
 
-I'm still not keen on the lack of association between sensing range
-and what it is of, but then we don't have a unified naming convention
-for this as yet.
-> 
-> Cleanup by Alan Cox
-> 	- move mutexes to cover more things
-> 	- report I/O errors back to user space
-> 	- report range and values in LUX
-> 
-> Signed-off-by: Anantha Narayanan <anantha.narayanan@intel.com>
-> [The 4K and 64K in the hw spec acutally means 4095 (12bit) and 65535 (16bit).]
-> Signed-off-by: Hong Liu <hong.liu@intel.com>
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
-> ---
-> 
->  drivers/misc/Kconfig       |   10 +
->  drivers/misc/Makefile      |    1 
->  drivers/misc/apds9802als.c |  308 ++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 319 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/misc/apds9802als.c
-> 
-> 
-> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-> index 53b21ff..d6ec9ce 100644
-> --- a/drivers/misc/Kconfig
-> +++ b/drivers/misc/Kconfig
-> @@ -293,6 +293,16 @@ config SGI_GRU_DEBUG
->  	This option enables addition debugging code for the SGI GRU driver. If
->  	you are unsure, say N.
->  
-> +config APDS9802ALS
-> +	tristate "Medfield Avago APDS9802 ALS Sensor module"
-> +	depends on I2C
-> +	help
-> +	  If you say yes here you get support for the ALS APDS9802 ambient
-> +	  light sensor.
-> +
-> +	  This driver can also be built as a module.  If so, the module
-> +	  will be called apds9802als.
-> +
->  config ISL29003
->  	tristate "Intersil ISL29003 ambient light sensor"
->  	depends on I2C && SYSFS
-> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-> index 4c771a2..0e5f2a5 100644
-> --- a/drivers/misc/Makefile
-> +++ b/drivers/misc/Makefile
-> @@ -23,6 +23,7 @@ obj-$(CONFIG_SGI_XP)		+= sgi-xp/
->  obj-$(CONFIG_SGI_GRU)		+= sgi-gru/
->  obj-$(CONFIG_CS5535_MFGPT)	+= cs5535-mfgpt.o
->  obj-$(CONFIG_HP_ILO)		+= hpilo.o
-> +obj-$(CONFIG_APDS9802ALS)	+= apds9802als.o
->  obj-$(CONFIG_ISL29003)		+= isl29003.o
->  obj-$(CONFIG_SENSORS_TSL2550)	+= tsl2550.o
->  obj-$(CONFIG_EP93XX_PWM)	+= ep93xx_pwm.o
-> diff --git a/drivers/misc/apds9802als.c b/drivers/misc/apds9802als.c
-> new file mode 100644
-> index 0000000..a52270d
-> --- /dev/null
-> +++ b/drivers/misc/apds9802als.c
-> @@ -0,0 +1,308 @@
-> +/*
-> + * apds9802als.c - apds9802  ALS Driver
-> + *
-> + * Copyright (C) 2009 Intel Corp
-> + *
-> + *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; version 2 of the License.
-> + *
-> + * This program is distributed in the hope that it will be useful, but
-> + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-> + * General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License along
-> + * with this program; if not, write to the Free Software Foundation, Inc.,
-> + * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
-> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> + *
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/slab.h>
-> +#include <linux/i2c.h>
-> +#include <linux/err.h>
-> +#include <linux/delay.h>
-> +#include <linux/mutex.h>
-> +#include <linux/sysfs.h>
-> +#include <linux/hwmon-sysfs.h>
-> +
-> +#define ALS_MIN_RANGE_VAL 1
-> +#define ALS_MAX_RANGE_VAL 2
-> +#define POWER_STA_ENABLE 1
-> +#define POWER_STA_DISABLE 0
-> +#define APDS9802ALS_I2C_ADDR 0x29
-> +
-> +#define DRIVER_NAME "apds9802als"
-> +
-> +struct als_data {
-> +	struct device *hwmon_dev;
-> +	bool needresume;
-> +	struct mutex mutex;
-> +};
-> +
-> +static ssize_t als_sensing_range_show(struct device *dev,
-> +			struct device_attribute *attr,  char *buf)
-> +{
-> +	struct i2c_client *client = to_i2c_client(dev);
-> +	int  val;
-> +
-> +	val = i2c_smbus_read_byte_data(client, 0x81);
-> +	if (val < 0)
-> +		return val;
-> +	if (val & 1)
-> +		return sprintf(buf, "4095\n");
-> +	else
-> +		return sprintf(buf, "65535\n");
-> +}
-> +
-> +static ssize_t als_lux_input0_data_show(struct device *dev,
-> +			struct device_attribute *attr, char *buf)
-> +{
-> +	struct i2c_client *client = to_i2c_client(dev);
-> +	struct als_data *data = i2c_get_clientdata(client);
-> +	unsigned int ret_val;
-> +	int temp;
-> +
-> +	/* Protect against parallel reads */
-> +	mutex_lock(&data->mutex);
-> +	temp = i2c_smbus_read_byte_data(client, 0x8C);/*LSB data*/
-> +	if (temp < 0) {
-> +		ret_val = temp;
-> +		goto failed;
-> +	}
-> +	ret_val = i2c_smbus_read_byte_data(client, 0x8D);/*MSB data*/
-> +	if (ret_val < 0)
-> +		goto failed;
-> +	mutex_unlock(&data->mutex);
-> +	ret_val = (ret_val << 8) | temp;
-> +	return sprintf(buf, "%d\n", ret_val);
-> +failed:
-> +	mutex_unlock(&data->mutex);
-> +	return ret_val;
-> +}
-> +
-> +static ssize_t als_sensing_range_store(struct device *dev,
-> +		struct device_attribute *attr, const  char *buf, size_t count)
-> +{
-> +	struct i2c_client *client = to_i2c_client(dev);
-> +	struct als_data *data = i2c_get_clientdata(client);
-> +	unsigned int ret_val;
-> +	unsigned long val;
-> +
-> +	if (strict_strtoul(buf, 10, &val))
-> +		return -EINVAL;
-> +
-> +	if (val < 4096)
-> +		val = 1;
-> +	else if (val < 65536)
-> +		val = 2;
-> +	else
-> +		return -ERANGE;
-> +
-> +	/* Make sure nobody else reads/modifies/writes 0x81 while we
-> +	   are active */
-> +
-> +	mutex_lock(&data->mutex);
-> +
-> +	ret_val = i2c_smbus_read_byte_data(client, 0x81);
-> +	if (ret_val < 0)
-> +		goto fail;
-> +
-> +	/* Reset the bits before setting them */
-> +	ret_val = ret_val & 0xFA;
-> +
-> +	if (val == 1) /* Setting the continous measurement up to 4k LUX */
-> +		ret_val = (ret_val | 0x05);
-> +	else /* Setting the continous measurement up to 64k LUX*/
-> +		ret_val = (ret_val | 0x04);
-> +
-> +	ret_val = i2c_smbus_write_byte_data(client, 0x81, ret_val);
-> +	if (ret_val >= 0) {
-> +		/* All OK */
-> +		mutex_unlock(&data->mutex);
-> +		return count;
-> +	}
-> +fail:
-> +	mutex_unlock(&data->mutex);
-> +	return ret_val;
-> +}
-> +
-> +static ssize_t als_power_status_show(struct device *dev,
-> +			struct device_attribute *attr, char *buf)
-> +{
-> +	struct i2c_client *client = to_i2c_client(dev);
-> +	int ret_val;
-> +	ret_val = i2c_smbus_read_byte_data(client, 0x80);
-> +	if (ret_val < 0)
-> +		return ret_val;
-> +	ret_val = ret_val & 0x01;
-> +	return sprintf(buf, "%d\n", ret_val);
-> +}
-> +
-> +static int als_set_power_state(struct i2c_client *client, bool on_off)
-> +{
-> +	int ret_val;
-> +	struct als_data *data = i2c_get_clientdata(client);
-> +
-> +	mutex_lock(&data->mutex);
-> +	ret_val = i2c_smbus_read_byte_data(client, 0x80);
-> +	if (ret_val < 0)
-> +		goto fail;
-> +	if (on_off)
-> +		ret_val = ret_val | 0x01;
-> +	else
-> +		ret_val = ret_val & 0xFE;
-> +	ret_val = i2c_smbus_write_byte_data(client, 0x80, ret_val);
-> +fail:
-> +	mutex_unlock(&data->mutex);
-> +	return ret_val;
-> +}
-> +
-> +static ssize_t als_power_status_store(struct device *dev,
-> +		struct device_attribute *attr, const char *buf, size_t count)
-> +{
-> +	struct i2c_client *client = to_i2c_client(dev);
-> +	struct als_data *data = i2c_get_clientdata(client);
-> +	unsigned long val;
-> +	int ret_val;
-> +
-> +	if (strict_strtoul(buf, 10, &val))
-> +		return -EINVAL;
-> +	if (val == POWER_STA_ENABLE) {
-> +		ret_val = als_set_power_state(client, true);
-> +		data->needresume = true;
-> +	} else if (val == POWER_STA_DISABLE) {
-> +		ret_val = als_set_power_state(client, false);
-> +		data->needresume = false;
-> +	} else
-> +		return -EINVAL;
-> +	if (ret_val < 0)
-> +		return ret_val;
-> +	return count;
-> +}
-> +
-> +static DEVICE_ATTR(sensing_range, S_IRUGO | S_IWUSR,
-> +	als_sensing_range_show, als_sensing_range_store);
-> +static DEVICE_ATTR(lux_input0, S_IRUGO, als_lux_input0_data_show, NULL);
-> +static DEVICE_ATTR(power_state, S_IRUGO | S_IWUSR,
-> +	als_power_status_show, als_power_status_store);
-> +
-> +static struct attribute *mid_att_als[] = {
-> +	&dev_attr_sensing_range.attr,
-> +	&dev_attr_lux_input0.attr,
-> +	&dev_attr_power_state.attr,
-> +	NULL
-> +};
-> +
-> +static struct attribute_group m_als_gr = {
-> +	.name = "apds9802als",
-> +	.attrs = mid_att_als
-> +};
-> +
-> +static int als_set_default_config(struct i2c_client *client)
-> +{
-> +	int ret_val;
-> +	/* Write the command and then switch on */
-> +	ret_val = i2c_smbus_write_byte_data(client, 0x80, 0x01);
-> +	if (ret_val < 0) {
-> +		dev_err(&client->dev, "failed default switch on write\n");
-> +		return ret_val;
-> +	}
-> +	/* Continous from 1Lux to 64k Lux */
-> +	ret_val = i2c_smbus_write_byte_data(client, 0x81, 0x04);
-> +	if (ret_val < 0)
-> +		dev_err(&client->dev, "failed default LUX on write\n");
-> +	return ret_val;
-> +}
-> +
-> +static int  apds9802als_probe(struct i2c_client *client,
-> +					const struct i2c_device_id *id)
-> +{
-> +	int res;
-> +	struct als_data *data;
-> +
-> +	data = kzalloc(sizeof(struct als_data), GFP_KERNEL);
-> +	if (data == NULL) {
-> +		dev_err(&client->dev, "Memory allocation failed");
-> +		return -ENOMEM;
-> +	}
-> +	i2c_set_clientdata(client, data);
-> +	res = sysfs_create_group(&client->dev.kobj, &m_als_gr);
-> +	if (res) {
-> +		dev_err(&client->dev, "device create file failed\n");
-> +		goto als_error1;
-> +	}
-> +	dev_info(&client->dev,
-> +		"%s apds9802als: ALS chip found\n", client->name);
-> +	als_set_default_config(client);
-> +	data->needresume = true;
-> +	mutex_init(&data->mutex);
-> +	return res;
-> +als_error1:
-> +	i2c_set_clientdata(client, NULL);
-> +	kfree(data);
-> +	return res;
-> +}
-> +
-> +static int apds9802als_remove(struct i2c_client *client)
-> +{
-> +	struct als_data *data = i2c_get_clientdata(client);
-> +	sysfs_remove_group(&client->dev.kobj, &m_als_gr);
-> +	kfree(data);
-> +	return 0;
-> +}
-> +
-> +static int apds9802als_suspend(struct i2c_client *client, pm_message_t mesg)
-> +{
-> +	als_set_power_state(client, false);
-> +	return 0;
-> +}
-> +
-> +static int apds9802als_resume(struct i2c_client *client)
-> +{
-> +	struct als_data *data = i2c_get_clientdata(client);
-> +
-> +	if (data->needresume == true)
-> +		als_set_power_state(client, true);
-> +	return 0;
-> +}
-> +
-> +static struct i2c_device_id apds9802als_id[] = {
-> +	{ DRIVER_NAME, 0 },
-> +	{ }
-> +};
-> +
-> +MODULE_DEVICE_TABLE(i2c, apds9802als_id);
-> +
-> +static struct i2c_driver apds9802als_driver = {
-> +	.driver = {
-> +	.name = DRIVER_NAME,
-> +	.owner = THIS_MODULE,
-> +	},
-> +	.probe = apds9802als_probe,
-> +	.remove = apds9802als_remove,
-> +	.suspend = apds9802als_suspend,
-> +	.resume = apds9802als_resume,
-> +	.id_table = apds9802als_id,
-> +};
-> +
-> +static int __init sensor_apds9802als_init(void)
-> +{
-> +	return i2c_add_driver(&apds9802als_driver);
-> +}
-> +
-> +static void  __exit sensor_apds9802als_exit(void)
-> +{
-> +	i2c_del_driver(&apds9802als_driver);
-> +}
-> +module_init(sensor_apds9802als_init);
-> +module_exit(sensor_apds9802als_exit);
-> +
-> +MODULE_AUTHOR("Anantha Narayanan <Anantha.Narayanan@intel.com");
-> +MODULE_DESCRIPTION("Avago apds9802als ALS Driver");
-> +MODULE_LICENSE("GPL v2");
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+  commit e8a0e27662186f8856a0a6242e7a8386c9a64a53
+  Author: Ingo Molnar <mingo@elte.hu>
+  Date:   Fri Nov 21 15:11:32 2008 +0100
+
+    x86: clean up after: move entry_64.S register saving out of the macros, fix
+
+
+
+Andreas
+
 
