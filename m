@@ -1,112 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756519Ab0I1TxU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 15:53:20 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:56539 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755310Ab0I1TxT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 15:53:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=b237dKuWmIE0LRg5DdJzVfrx8n8ka6ugFXb5qKyLAX/RGl9j5k3xG2BL/f4kqYvr3Y
-         Hngg4r5jL+N/01lml/D6iueiwpIjo4cN06sT/ZeDReADt3d1aNX56y7/0jYjK5FY4BVL
-         tWzTqebfsVonoQ6luQ+C/CgIMKw2JMsfCR9SM=
+	id S932088Ab0I1Txf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 15:53:35 -0400
+Received: from fieldses.org ([174.143.236.118]:56705 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758325Ab0I1Txd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 15:53:33 -0400
+Date: Tue, 28 Sep 2010 15:52:50 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+        corbet@lwn.net, neilb@suse.de, npiggin@kernel.dk,
+        hooanon05@yahoo.co.jp, miklos@szeredi.hu,
+        linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+        philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V20 01/12] exportfs: Return the minimum required
+ handle size
+Message-ID: <20100928195250.GA10548@fieldses.org>
+References: <1285702610-32733-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1285702610-32733-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1285693648.14518.7.camel@voyager>
-References: <AANLkTi=PTp7YW_eYxtF-H2QSxgei3whWH59wU0C9oCkz@mail.gmail.com>
-	<1285693648.14518.7.camel@voyager>
-Date: Tue, 28 Sep 2010 21:52:01 +0200
-X-Google-Sender-Auth: 5pDD1OsRbhoY2QvUweT_huQFeVA
-Message-ID: <AANLkTi=NiB4hoA5Y8kbR7R8B+J-jJXAHGSu5JdOLSQsj@mail.gmail.com>
-Subject: Re: [uml-devel] [REGRESSION] um: ubd: block layer issue (Was: ext3
- filesystem corruption in user mode linux)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Janjaap Bos <janjaap@bos.nl>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>, tj@kernel.org,
-        axboe@kernel.dk, mike.miller@hp.com,
-        user-mode-linux-devel@lists.sourceforge.net, adrian@mcmen.demon.co.uk,
-        jdike@addtoit.com, LKML <linux-kernel@vger.kernel.org>,
-        grant.likely@secretlab.ca, Geert.Uytterhoeven@sonycom.com,
-        Chris Frey <cdfrey@foursquare.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285702610-32733-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 28, 2010 at 19:07, Janjaap Bos <janjaap@bos.nl> wrote:
-> See attached patch, and earlier message posted in March 2010 on uml user
-> list. We are out of maintainer...
+On Wed, Sep 29, 2010 at 01:06:39AM +0530, Aneesh Kumar K.V wrote:
+> The exportfs encode handle function should return the minimum required
+> handle size. This helps user to find out the handle size by passing 0
+> handle size in the first step and then redoing to the call again with
+> the returned handle size value.
 
-Thanks for the patch!
+Just nits; seems OK otherwise:
 
-| --- a/arch/um/drivers/ubd_kern.c
-| +++ b/arch/um/drivers/ubd_kern.c
-| @@ -1223,7 +1227,7 @@ static void do_ubd_request(struct request_queue *q)
-|       struct io_thread_req *io_req;
-|       struct request *req;
-|       sector_t sector;
-| -     int n;
-| +     int n, last_sectors;
-|
-|       while(1){
-|               struct ubd *dev = q->queuedata;
-| @@ -1239,9 +1243,12 @@ static void do_ubd_request(struct request_queue *q)
-|
-|               req = dev->request;
-|               sector = blk_rq_pos(req);
-| +             last_sectors = 0;
-|               while(dev->start_sg < dev->end_sg){
-|                       struct scatterlist *sg = &dev->sg[dev->start_sg];
-|
-| +                     sector += last_sectors;
-| +                     last_sectors = 0;
-|                       io_req = kmalloc(sizeof(struct io_thread_req),
-|                                        GFP_ATOMIC);
-|                       if(io_req == NULL){
-| @@ -1253,7 +1260,7 @@ static void do_ubd_request(struct request_queue *q)
-|                                       (unsigned long long)sector << 9,
-|                                       sg->offset, sg->length, sg_page(sg));
-|
-| -                     sector += sg->length >> 9;
-| +                     last_sectors = sg->length >> 9;
-|                       n = os_write_file(thread_fd, &io_req,
-|                                         sizeof(struct io_thread_req *));
-|                       if(n != sizeof(struct io_thread_req *)){
+> diff --git a/fs/ocfs2/export.c b/fs/ocfs2/export.c
+> index 19ad145..250a347 100644
+> --- a/fs/ocfs2/export.c
+> +++ b/fs/ocfs2/export.c
+> @@ -201,8 +201,14 @@ static int ocfs2_encode_fh(struct dentry *dentry, u32 *fh_in, int *max_len,
+>  		   dentry->d_name.len, dentry->d_name.name,
+>  		   fh, len, connectable);
+>  
+> -	if (len < 3 || (connectable && len < 6)) {
+> +	if (connectable && (len < 6)) {
+>  		mlog(ML_ERROR, "fh buffer is too small for encoding\n");
 
-However, I'm wondering what difference this part makes?
+Should that really be a printk(KERN_ERR, ...) if this is an expected use
+of the interface?
 
-> On Tue, 2010-09-28 at 18:16 +0200, richard -rw- weinberger wrote:
->> Hi Tejun!
->>
->> Chris Frey ran into some problems with ext3 on UML.
->> See: http://marc.info/?i=20100924041410.GA18040%20()%20foursquare%20!%20net
->>
->> I can reproduce this issue with any file system on Linux >= 2.6.31.
->> There seems to be a serious problem with the block layer on UML.
->> Under high load any file system gets corrupted.
->>
->> The regression was most likely introduced with this three changes:
->> 83096ebf1263b2c1ee5e653ba37d993d02e3eb7b (block: convert to pos and
->> nr_sectors accessors)
->> f81f2f7c9fee307e371f37424577d46f9eaf8692 (ubd: drop unnecessary
->> rq->sector manipulation)
->> 4d6c84d91d1a539ebc47d1a36a35e9390ba11fdc (ubd: cleanup completion path)
->>
->> Maybe only f81f2f7 is the bad one. They depend on each and I don't
->> know all the internals...
+> +		*max_len = 6;
+> +		type = 255;
+> +		goto bail;
+> +	} else if (len < 3) {
+> +		mlog(ML_ERROR, "fh buffer is too small for encoding\n");
 
-Gr{oetje,eeting}s,
+Ditto.
 
-                        Geert
+> +		*max_len = 3;
+>  		type = 255;
+>  		goto bail;
+>  	}
+> diff --git a/include/linux/exportfs.h b/include/linux/exportfs.h
+> index a9cd507..acd0b2d 100644
+> --- a/include/linux/exportfs.h
+> +++ b/include/linux/exportfs.h
+> @@ -108,8 +108,10 @@ struct fid {
+>   *    set, the encode_fh() should store sufficient information so that a good
+>   *    attempt can be made to find not only the file but also it's place in the
+>   *    filesystem.   This typically means storing a reference to de->d_parent in
+> - *    the filehandle fragment.  encode_fh() should return the number of bytes
+> - *    stored or a negative error code such as %-ENOSPC
+> + *    the filehandle fragment.  encode_fh() should return the fileid_type on
+> + *    success and on error returns 255 (if the space needed to encode fh is
+> + *    greater than @max_len*4 bytes). On error @max_len contain the minimum
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+s/contain/contains/.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> + *    size(in 4 byte unit) needed to encode the file handle.
+>   *
+>   * fh_to_dentry:
+>   *    @fh_to_dentry is given a &struct super_block (@sb) and a file handle
+
+--b.
