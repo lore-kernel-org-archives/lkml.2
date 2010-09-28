@@ -1,66 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757421Ab0I1RI3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 13:08:29 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:51574 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757354Ab0I1RIP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 13:08:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=FwXCz0NSy3ActQGNW085sYlVE0pDe13sYh1a/FOE07gVU+zvDiLoGV3Ts77RtJf0XN
-         6+7kt3TbdBiyBIAXumllysjFzb46SgBxD6UIi1VMuyGmBzhJEcQsqRWEZD/TE2Ei9suZ
-         oJrBBhOWz3ge9ZPU1GgDb2gIeC7WXuVtnMic4=
-From: Vasiliy Kulikov <segooon@gmail.com>
-To: kernel-janitors@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jiri Pirko <jpirko@redhat.com>, Henk de Groot <pe1dnn@amsat.org>,
-        Andrew Morton <akpm@linux-foundation.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 9/9] staging: wlags49_h2: use free_netdev(netdev) instead of kfree()
-Date: Tue, 28 Sep 2010 21:08:11 +0400
-Message-Id: <1285693692-4805-1-git-send-email-segooon@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1757035Ab0I1RLG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 13:11:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41996 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755507Ab0I1RLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 13:11:03 -0400
+Subject: Re: [PATCH 3/3] VFIO V4: VFIO driver: Non-privileged user level
+ PCI drivers
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Tom Lyon <pugs@cisco.com>, linux-pci@vger.kernel.org,
+        jbarnes@virtuousgeek.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, randy.dunlap@oracle.com, arnd@arndb.de,
+        joro@8bytes.org, hjk@linutronix.de, avi@redhat.com, gregkh@suse.de,
+        chrisw@sous-sol.org
+In-Reply-To: <20100928144009.GA15294@redhat.com>
+References: <4c9a72a0.u2cnjUB7QZ91tLeo%pugs@cisco.com>
+	 <1285620392.4951.50.camel@x201> <20100928100907.GK12472@redhat.com>
+	 <1285683981.4951.112.camel@x201>  <20100928144009.GA15294@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 28 Sep 2010 11:10:42 -0600
+Message-ID: <1285693842.4951.212.camel@x201>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Freeing netdev without free_netdev() leads to net, tx leaks.
-I might lead to dereferencing freed pointer.
+On Tue, 2010-09-28 at 16:40 +0200, Michael S. Tsirkin wrote:
+> On Tue, Sep 28, 2010 at 08:26:21AM -0600, Alex Williamson wrote:
+> > On Tue, 2010-09-28 at 12:09 +0200, Michael S. Tsirkin wrote:
+> > > On Mon, Sep 27, 2010 at 02:46:32PM -0600, Alex Williamson wrote:
+> > > > On Wed, 2010-09-22 at 14:18 -0700, Tom Lyon wrote:
+> > > > > +ssize_t vfio_mem_readwrite(
+> > > > > +		int write,
+> > > > > +		struct vfio_dev *vdev,
+> > > > > +		char __user *buf,
+> > > > > +		size_t count,
+> > > > > +		loff_t *ppos)
+> > > > > +{
+> > > > > +	struct pci_dev *pdev = vdev->pdev;
+> > > > > +	resource_size_t end;
+> > > > > +	void __iomem *io;
+> > > > > +	loff_t pos;
+> > > > > +	int pci_space;
+> > > > > +
+> > > > > +	pci_space = vfio_offset_to_pci_space(*ppos);
+> > > > > +	pos = vfio_offset_to_pci_offset(*ppos);
+> > > > > +
+> > > > > +	if (!pci_resource_start(pdev, pci_space))
+> > > > > +		return -EINVAL;
+> > > > > +	end = pci_resource_len(pdev, pci_space);
+> > > > > +	if (vdev->barmap[pci_space] == NULL)
+> > > > > +		vdev->barmap[pci_space] = pci_iomap(pdev, pci_space, 0);
+> > > > > +	io = vdev->barmap[pci_space];
+> > > > > +
+> > > > 
+> > > > So we do a pci_iomap, but never do corresponding pci_iounmap.  This also
+> > > > only works for the first 6 BARs since the ROM BAR needs pci_map_rom.
+> > > 
+> > > 
+> > > An issue with ROM is that I think it can not be enabled together
+> > > with BARs. This is why pci_read_rom/pci_write_rom do what
+> > > they do.
+> > 
+> > I don't think that's an issue.  pci_read/write_rom doesn't do anything
+> > about disabling BARs when the ROM is read.
+> 
+> Oh yes it does: it calls pci_map rom which calls pci_enable_rom.
+> And this enables ROM space decoder, which, PCI spec says,
+> can disable BAR decoder in device.
+> 
+> See it now?
 
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+Ok, I see the comment there now, thanks.
 
-@@
-struct net_device* dev;
-@@
+> >  The reason that it maps and
+> > unmaps around the read is to be resource friendly.
+> 
+> Not only that. you can not use both ROM and BARs
+> at the same time: if you enable ROM you must not
+> access BARs.
 
--kfree(dev)
-+free_netdev(dev)
+So we either need to shadow the ROM if we want to support an mmap to it
+or map/unmap around reads.
 
-Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
----
- Compile tested.
+> >  For vfio, since
+> > we've assigned a device to vfio and it's open, I think it's valid to
+> > assign all the resources and sit on them.  Otherwise I don't think we
+> > can guarantee that a read that worked last time will still get resources
+> > and work this time.
+> 
+> The issue is that BARs are not accessible while ROM is enabled.  It
+> might be a security hole to try to do that from an app, and I do know
+> there is hardware where it will not work, and PCI spec says as much:
+> 
+> 6.2.5.2:
+> 	In order to minimize the number of address decoders needed, a device may
+> 	share a decoder between the Expansion ROM Base Address register and
+> 	other Base Address registers.47 When expansion ROM decode is enabled,
+> 	the decoder is used for accesses to the expansion ROM and device
+> 	independent software must not access the device through any other Base
+> 	Address registers.
+> 
+> Thus I think applications must shadow the ROM and kernel must prevent
+> ROM access after mapping BARs. We could shadow in kernel as well but this
+> would be expensive in memory as ROMs are sometimes quite large.
 
- drivers/staging/wlags49_h2/wl_netdev.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Shadowing in the VFIO kernel driver seems too resource intensive,
+probably best to disable mmap for the ROM and only allow read write,
+letting the app shadow if it wants.  Preventing BAR access is
+troublesome since we support mmaps.  I don't like the idea of overly
+restrictive ordering, but should we shutdown ROM access after the domain
+is set(?)
 
-diff --git a/drivers/staging/wlags49_h2/wl_netdev.c b/drivers/staging/wlags49_h2/wl_netdev.c
-index e2a7ad0..954bece 100644
---- a/drivers/staging/wlags49_h2/wl_netdev.c
-+++ b/drivers/staging/wlags49_h2/wl_netdev.c
-@@ -1586,7 +1586,7 @@ void wl_wds_device_dealloc( struct wl_private *lp )
-                 dev_wds->flags &= ~( IFF_UP | IFF_RUNNING );
-             }
- 
--            kfree( dev_wds );
-+            free_netdev(dev_wds);
-             lp->wds_port[count].dev = NULL;
-         }
-     }
--- 
-1.7.0.4
+> > > >  I
+> > > > wonder if we should be doing all the BAR mapping at open and unmap at
+> > > > close so that we can fail if the device can't get basic resources.
+> > > 
+> > > I belive we should do this on ioctl so that e.g. hotunplug
+> > > can reset the device clean it up. Unused device should also not
+> > > consume resources.
+> > 
+> > If it's assigned to vfio and opened, then it's not unused.  A hotunplug
+> > would involve a close of the vfio device, which could then reset the
+> > device.  I think we probably are still missing a device reset, but I'm
+> > not sure if it needs an ioctl or if a reset on open would be sufficient.
+> > 
+> > Alex
+> 
+> You are only looking at qemu, but look at the whole stack:
+> 
+> First, I think we want reset on close, so the device is in sane
+> state when it's returned to the OS.
+
+Yep, I'd agree with that.
+
+> Second, we typically will want libvirt to open the device and pass it to qemu,
+> qemu might start using it much later, and it might keep it around,
+> unused, for as long as it wants. So we do want a way to reset without close.
+
+I'm fine with that, but we also need a reset on open to prevent leaking
+host state to guest/userspace.
+
+> Finally, we will want a way for libvirt to verify that qemu has
+> closed the device, so it's safe to pass it to another guest.
+
+This gets tricky since we'd really like a revoke to insure there isn't a
+mmap still lingering.  What do you propose?
+
+> > > > I
+> > > > believe we should also be calling pci_request_regions in here somewhere.
+> > > > Perhaps something like this:
+> > > > 
+> > > > diff --git a/drivers/vfio/vfio_main.c b/drivers/vfio/vfio_main.c
+> > > > index a18e39a..d3886d9 100644
+> > > > --- a/drivers/vfio/vfio_main.c
+> > > > +++ b/drivers/vfio/vfio_main.c
+> > > > @@ -85,6 +85,53 @@ static inline int overlap(int a1, int b1, int a2, int b2)
+> > > >  	return !(b2 <= a1 || b1 <= a2);
+> > > >  }
+> > > >  
+> > > > +static int vfio_setup_pci(struct vfio_dev *vdev)
+> > > > +{
+> > > > +	int ret, bar;
+> > > > +
+> > > > +	ret = pci_enable_device(vdev->pdev);
+> > > > +	if (ret)
+> > > > +		return ret;
+> > > > +		
+> > > > +	ret = pci_request_regions(vdev->pdev, "VFIO");
+> > > > +	if (ret) {
+> > > > +		pci_disable_device(vdev->pdev);
+> > > > +		return ret;
+> > > > +	}
+> > > > +
+> > > > +	for (bar = PCI_STD_RESOURCES; bar <= PCI_ROM_RESOURCE; bar++) {
+> > > > +		if (!pci_resource_len(vdev->pdev, bar))
+> > > > +			continue;
+> > > > +		if (bar != PCI_ROM_RESOURCE) {
+> > > > +			if (!pci_resource_start(vdev->pdev, bar))
+> > > > +				continue;
+> > > > +			vdev->barmap[bar] = pci_iomap(vdev->pdev, bar, 0);
+> > > > +		} else {
+> > > > +			size_t size;
+> > > > +			vdev->barmap[bar] = pci_map_rom(vdev->pdev, &size);
+> > > > +		}
+> > > > +	}
+> > > > +	return ret;
+> > > > +}
+> > > > +
+> > > > +static void vfio_disable_pci(struct vfio_dev *vdev)
+> > > > +{
+> > > > +	int bar;
+> > > > +
+> > > > +	for (bar = PCI_STD_RESOURCES; bar <= PCI_ROM_RESOURCE; bar++) {
+> > > > +		if (!vdev->barmap[bar])
+> > > > +			continue;
+> > > > +		if (bar != PCI_ROM_RESOURCE)
+> > > > +			pci_iounmap(vdev->pdev, vdev->barmap[bar]);
+> > > > +		else
+> > > > +			pci_unmap_rom(vdev->pdev, vdev->barmap[bar]);
+> > > > +		vdev->barmap[bar] = NULL;
+> > > > +	}
+> > > > +
+> > > > +	pci_release_regions(vdev->pdev);
+> > > > +	pci_disable_device(vdev->pdev);
+> > > > +}
+> > > > +
+> > > >  static int vfio_open(struct inode *inode, struct file *filep)
+> > > >  {
+> > > >  	struct vfio_dev *vdev;
+> > > > @@ -110,7 +157,7 @@ static int vfio_open(struct inode *inode, struct file *filep)
+> > > >  	INIT_LIST_HEAD(&listener->dm_list);
+> > > >  	filep->private_data = listener;
+> > > >  	if (vdev->listeners == 0)
+> > > > -		ret = pci_enable_device(vdev->pdev);
+> > > > +		ret = vfio_setup_pci(vdev);
+> > > >  	if (ret == 0)
+> > > >  		vdev->listeners++;
+> > > >  	mutex_unlock(&vdev->lgate);
+> > > > @@ -151,7 +198,7 @@ static int vfio_release(struct inode *inode, struct file *filep)
+> > > >  		vdev->vconfig = NULL;
+> > > >  		kfree(vdev->pci_config_map);
+> > > >  		vdev->pci_config_map = NULL;
+> > > > -		pci_disable_device(vdev->pdev);
+> > > > +		vfio_disable_pci(vdev);
+> > > >  		vfio_domain_unset(vdev);
+> > > >  		wake_up(&vdev->dev_idle_q);
+> > > >  	}
+> > > > diff --git a/drivers/vfio/vfio_rdwr.c b/drivers/vfio/vfio_rdwr.c
+> > > > index 1fd50a6..7705b45 100644
+> > > > --- a/drivers/vfio/vfio_rdwr.c
+> > > > +++ b/drivers/vfio/vfio_rdwr.c
+> > > > @@ -64,7 +64,7 @@ ssize_t vfio_io_readwrite(
+> > > >  	if (pos + count > end)
+> > > >  		return -EINVAL;
+> > > >  	if (vdev->barmap[pci_space] == NULL)
+> > > > -		vdev->barmap[pci_space] = pci_iomap(pdev, pci_space, 0);
+> > > > +		return -EINVAL;
+> > > >  	io = vdev->barmap[pci_space];
+> > > >  
+> > > >  	while (count > 0) {
+> > > > @@ -137,7 +137,12 @@ ssize_t vfio_mem_readwrite(
+> > > >  		return -EINVAL;
+> > > >  	end = pci_resource_len(pdev, pci_space);
+> > > >  	if (vdev->barmap[pci_space] == NULL)
+> > > > -		vdev->barmap[pci_space] = pci_iomap(pdev, pci_space, 0);
+> > > > +		return -EINVAL;
+> > > > +	if (pci_space == PCI_ROM_RESOURCE) {
+> > > > +		u32 rom = *(u32 *)(vdev->vconfig + PCI_ROM_ADDRESS);
+> > > > +		if (!(rom & PCI_ROM_ADDRESS_ENABLE))
+> > > > +			return -EINVAL;
+> > > > +	}
+> > > >  	io = vdev->barmap[pci_space];
+> > > >  
+> > > >  	if (pos > end)
+> > > > 
+> > 
+> > 
+
+
 
