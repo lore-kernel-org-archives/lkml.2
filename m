@@ -1,54 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796Ab0I1QIe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 12:08:34 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:36874 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754535Ab0I1QId convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:3:1>);
-	Tue, 28 Sep 2010 12:08:33 -0400
-Message-Id: <4CA22F1D020000780001961F@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Tue, 28 Sep 2010 17:08:29 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Conny Seidel" <conny.seidel@amd.com>
-Cc: "borislav.petkov@" <amd.com.borislav.petkov@amd.com>,
-        "Andreas Herrmann3" <Andreas.Herrmann3@amd.com>,
-        "mingo@elte.hu" <mingo@elte.hu>, "LKML" <linux-kernel@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>
-Subject: Re: current TIP/master doesn't build on SLES10
-References: <20100928163136.7a2355d0@marah.osrc.amd.com>
-In-Reply-To: <20100928163136.7a2355d0@marah.osrc.amd.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1754336Ab0I1QNf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 12:13:35 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45151 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753486Ab0I1QNe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 12:13:34 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: Add WM8325 support
+Date: Tue, 28 Sep 2010 09:13:39 -0700
+Message-Id: <1285690419-10854-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 28.09.10 at 16:31, Conny Seidel <conny.seidel@amd.com> wrote:
-> Hi
-> 
-> compiling TIP/master (44bc8c4f500fce7263803b4acd016fa03cf8a91a) on
-> SLES10 fails with the following build error:
-> 
-> arch/x86/kernel/entry_64.S: Assembler messages:
-> arch/x86/kernel/entry_64.S:1181: Error: too many positional arguments
-> arch/x86/kernel/entry_64.S:1181: Error: too many positional arguments
-> make[2]: *** [arch/x86/kernel/entry_64.o] Error 1
-> make[1]: *** [arch/x86/kernel] Error 2
-> make: *** [arch/x86] Error 2
-> 
-> I've bisected it to commit df5d1874ce1a1f0e0eceff4fa3a9d45620243a68.
-> 
-> Reverting it fixes the issue. 
-> 
-> I know that this is caused by binutils 2.16.91.0.5 which is distributed
-> with SLES10.
+The WM8325 is a PMIC for low power, high performance applications.  From
+a software point of view the device is identical to the WM8320, all the
+differences are at the hardware level.
 
-I'm generally doing almost all of my work on SLE10, and have not run
-into this issue. Are you sure you've got it fully updated?
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm831x-core.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-Jan
+diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
+index 1e7aaaf..ad36579 100644
+--- a/drivers/mfd/wm831x-core.c
++++ b/drivers/mfd/wm831x-core.c
+@@ -96,6 +96,7 @@ enum wm831x_parent {
+ 	WM8312 = 0x8312,
+ 	WM8320 = 0x8320,
+ 	WM8321 = 0x8321,
++	WM8325 = 0x8325,
+ };
+ 
+ static int wm831x_reg_locked(struct wm831x *wm831x, unsigned short reg)
+@@ -1540,6 +1541,12 @@ static int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
+ 		dev_info(wm831x->dev, "WM8321 revision %c\n", 'A' + rev);
+ 		break;
+ 
++	case WM8325:
++		parent = WM8325;
++		wm831x->num_gpio = 12;
++		dev_info(wm831x->dev, "WM8325 revision %c\n", 'A' + rev);
++		break;
++
+ 	default:
+ 		dev_err(wm831x->dev, "Unknown WM831x device %04x\n", ret);
+ 		ret = -EINVAL;
+@@ -1620,6 +1627,12 @@ static int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
+ 				      NULL, 0);
+ 		break;
+ 
++	case WM8325:
++		ret = mfd_add_devices(wm831x->dev, -1,
++				      wm8320_devs, ARRAY_SIZE(wm8320_devs),
++				      NULL, 0);
++		break;
++
+ 	default:
+ 		/* If this happens the bus probe function is buggy */
+ 		BUG();
+@@ -1791,6 +1804,7 @@ static const struct i2c_device_id wm831x_i2c_id[] = {
+ 	{ "wm8312", WM8312 },
+ 	{ "wm8320", WM8320 },
+ 	{ "wm8321", WM8321 },
++	{ "wm8325", WM8325 },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, wm831x_i2c_id);
+-- 
+1.7.1
 
