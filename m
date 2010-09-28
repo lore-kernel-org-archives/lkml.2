@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756162Ab0I1TF7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 15:05:59 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39253 "EHLO mail.zytor.com"
+	id S1757570Ab0I1TIZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 15:08:25 -0400
+Received: from lo.gmane.org ([80.91.229.12]:41156 "EHLO lo.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755172Ab0I1TF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 15:05:58 -0400
-Message-ID: <4CA23C6F.1040807@zytor.com>
-Date: Tue, 28 Sep 2010 12:05:19 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
-MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        "sct@redhat.com" <sct@redhat.com>
-Subject: Re: [PATCH 12/12] xen/mtrr: Add mtrr_if support for Xen mtrr
-References: <alpine.DEB.2.00.1009281217540.2864@kaball-desktop> <1285676218-26218-12-git-send-email-stefano.stabellini@eu.citrix.com> <20100928123925.GA18208@elte.hu> <alpine.DEB.2.00.1009281455300.2864@kaball-desktop> <4CA2223B.9040400@goop.org> <4CA22C3C.3020209@zytor.com> <4CA2302C.3000201@goop.org> <4CA231A8.5000100@zytor.com> <4CA232EF.3080906@goop.org> <4CA23800.4020409@zytor.com> <4CA23ABD.1010208@goop.org>
-In-Reply-To: <4CA23ABD.1010208@goop.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754955Ab0I1TIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 15:08:24 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Alexander Clouter <alex@digriz.org.uk>
+Subject: Re: [RFC] Online firmware upgrade in non-embedded systems
+Date: Tue, 28 Sep 2010 19:45:33 +0100
+Message-ID: <dnp9n7-puv.ln1@chipmunk.wormnet.eu>
+References: <1285696787.2282.45.camel@achroite.uk.solarflarecom.com>
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: chipmunk.wormnet.eu
+User-Agent: tin/1.9.3-20080506 ("Dalintober") (UNIX) (Linux/2.6.26-2-sparc64-smp (sparc64))
+Cc: netdev@vger.kernel.org, linux-mtd@lists.infradead.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2010 11:58 AM, Jeremy Fitzhardinge wrote:
->  On 09/28/2010 11:46 AM, H. Peter Anvin wrote:
->> Well, we're specifically talking about a virtual machine which has
->> direct access to hardware, so it is concerned about the real physical
->> memory properties of real physical pages.  If we can assume that
->> BIOS/Xen will always set up MTRR correctly then there shouldn't be any
->> need for the kernel to modify the MTRR itself.  How true is that in
->> general?  I don't know, but if we could rely on BIOS then there'd never
->> be a need to touch MTRR, would there?
->> Well, in the past MTRRs were abused for device properties mainly by the
->> X server, but other than that, no, not really.  The other thing we do is
->> the MTRR cleanup (which doesn't involve /proc/mtrr) to deal with
->> brokenness in the BIOS setup, but that really belongs in the hypervisor
->> in your case since it fundamentally affects how memory is handled.
+In gmane.linux.kernel Ben Hutchings <bhutchings@solarflare.com> wrote:
 > 
-> Yeah, the hypervisor should definitely deal with that.  I have no
-> problem in principle with leaving MTRRs entirely to Xen, but I was just
-> concerned about possible repercussions.  Certainly when I first did this
-> work, I was using Fedora 8 whose X server did depend on /proc/mtrr for
-> good performance.
+> Currently the sfc network driver is optionally combined with an MTD
+> driver (CONFIG_SFC_MTD) which exposes all upgradable firmware and
+> configuration partitions in flash.  This works nicely in kernels with
+> MTD enabled, but since MTD is mainly used in embedded systems with
+> on-board flash it is often disabled in distribution kernels and custom
+> kernels alike.  This leaves users of sfc unable to upgrade firmware
+> without rebuilding the kernel or booting some other distribution.  The
+> lack of widespread MTD support is a regular cause of support requests.
 > 
+----
+ac56@proxy0:~$ uname -a
+Linux proxy0 2.6.32-5-686 #1 SMP Wed Aug 25 14:28:12 UTC 2010 i686 GNU/Linux
+ac56@proxy0:~$ cat /etc/debian_version 
+squeeze/sid
+ac56@proxy0:~$ grep CONFIG_SFC_MTD /boot/config-2.6.32-5-686 
+CONFIG_SFC_MTD=y
+ac56@proxy0:~$ grep '^CONFIG_MTD' /boot/config-2.6.32-5-686 | wc
+     72      72    1693
+----
 
-Yeah, that should all be fixed now.
+I tell them "use a real distribution".
 
-	-hpa
+Cheers
+
+-- 
+Alexander Clouter
+.sigmonster says: BOFH excuse #119:
+                  evil hackers from Serbia.
+
