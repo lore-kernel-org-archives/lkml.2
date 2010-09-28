@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754037Ab0I1VdO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 17:33:14 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36415 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751164Ab0I1VdN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 17:33:13 -0400
-Date: Tue, 28 Sep 2010 14:32:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: cleanup gfp_zone()
-Message-Id: <20100928143239.5fe34e1e.akpm@linux-foundation.org>
-In-Reply-To: <1285676624-1300-1-git-send-email-namhyung@gmail.com>
-References: <1285676624-1300-1-git-send-email-namhyung@gmail.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754211Ab0I1VgF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 17:36:05 -0400
+Received: from www.tglx.de ([62.245.132.106]:60433 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753872Ab0I1VgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 17:36:03 -0400
+Date: Tue, 28 Sep 2010 23:35:51 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yinghai Lu <yinghai@kernel.org>
+cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Fwd: [PATCH] x86: Plug memory leak in sparse irq
+In-Reply-To: <4CA25E5C.2020203@kernel.org>
+Message-ID: <alpine.LFD.2.00.1009282333440.2416@localhost6.localdomain6>
+References: <alpine.LFD.2.00.1009282052570.2416@localhost6.localdomain6> <AANLkTi=940qOigieOHd_cBcocBAb4AtYnm2v60i9CSmp@mail.gmail.com> <4CA25E5C.2020203@kernel.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Sep 2010 21:23:44 +0900
-Namhyung Kim <namhyung@gmail.com> wrote:
-
-> Use Z[TB]_SHIFT() macro to calculate GFP_ZONE_TABLE and GFP_ZONE_BAD.
-> This also removes lots of warnings from sparse like following:
+On Tue, 28 Sep 2010, Yinghai Lu wrote:
+> > From: Thomas Gleixner <tglx@linutronix.de>
+> > Date: Tue, Sep 28, 2010 at 11:57 AM
+> > Subject: [PATCH] x86: Plug memory leak in sparse irq
+> > To: LKML <linux-kernel@vger.kernel.org>
+> > Cc: x86@kernel.org, Yinghai Lu <yhlu.kernel@gmail.com>
+> > 
+> > 
+> > free_irq_cfg() is not freeing the cpumask_vars in irq_cfg.
+> > 
+> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: stable@kernel.org
+> > ---
+> >  arch/x86/kernel/apic/io_apic.c |    6 ++++--
+> >  1 file changed, 4 insertions(+), 2 deletions(-)
+> > 
+> > Index: linux-2.6/arch/x86/kernel/apic/io_apic.c
+> > ===================================================================
+> > --- linux-2.6.orig/arch/x86/kernel/apic/io_apic.c
+> > +++ linux-2.6/arch/x86/kernel/apic/io_apic.c
+> > @@ -311,9 +311,11 @@ void arch_init_copy_chip_data(struct irq
+> >        init_copy_irq_2_pin(old_cfg, cfg, node);
+> >  }
+> > 
+> > -static void free_irq_cfg(struct irq_cfg *old_cfg)
+> > +static void free_irq_cfg(struct irq_cfg *cfg)
+> >  {
+> > -       kfree(old_cfg);
+> > +       free_cpumask_var(cfg->domain);
+> > +       free_cpumask_var(cfg->old_domain);
+> > +       kfree(cfg);
+> >  }
+> > 
+> >  void arch_free_chip_data(struct irq_desc *old_desc, struct irq_desc *desc)
 > 
->  warning: restricted gfp_t degrades to integer
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> ---
->  include/linux/gfp.h |   43 ++++++++++++++++++++++++-------------------
->  1 files changed, 24 insertions(+), 19 deletions(-)
-> 
-> diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-> index 975609c..cebfee1 100644
-> --- a/include/linux/gfp.h
-> +++ b/include/linux/gfp.h
-> @@ -185,15 +185,16 @@ static inline int allocflags_to_migratetype(gfp_t gfp_flags)
->  #error ZONES_SHIFT too large to create GFP_ZONE_TABLE integer
->  #endif
->  
-> +#define ZT_SHIFT(gfp) ((__force int) (gfp) * ZONES_SHIFT)
->  #define GFP_ZONE_TABLE ( \
-> -	(ZONE_NORMAL << 0 * ZONES_SHIFT)				\
-> -	| (OPT_ZONE_DMA << __GFP_DMA * ZONES_SHIFT)			\
-> -	| (OPT_ZONE_HIGHMEM << __GFP_HIGHMEM * ZONES_SHIFT)		\
-> -	| (OPT_ZONE_DMA32 << __GFP_DMA32 * ZONES_SHIFT)			\
-> -	| (ZONE_NORMAL << __GFP_MOVABLE * ZONES_SHIFT)			\
-> -	| (OPT_ZONE_DMA << (__GFP_MOVABLE | __GFP_DMA) * ZONES_SHIFT)	\
-> -	| (ZONE_MOVABLE << (__GFP_MOVABLE | __GFP_HIGHMEM) * ZONES_SHIFT)\
-> -	| (OPT_ZONE_DMA32 << (__GFP_MOVABLE | __GFP_DMA32) * ZONES_SHIFT)\
-> +	(ZONE_NORMAL        << ZT_SHIFT(0))				\
-> +	| (OPT_ZONE_DMA     << ZT_SHIFT(__GFP_DMA))			\
-> +	| (OPT_ZONE_HIGHMEM << ZT_SHIFT(__GFP_HIGHMEM))			\
-> +	| (OPT_ZONE_DMA32   << ZT_SHIFT(__GFP_DMA32))			\
-> +	| (ZONE_NORMAL      << ZT_SHIFT(__GFP_MOVABLE))			\
-> +	| (OPT_ZONE_DMA     << ZT_SHIFT(__GFP_MOVABLE | __GFP_DMA))	\
-> +	| (ZONE_MOVABLE     << ZT_SHIFT(__GFP_MOVABLE | __GFP_HIGHMEM)) \
-> +	| (OPT_ZONE_DMA32   << ZT_SHIFT(__GFP_MOVABLE | __GFP_DMA32))	\
->  )
+> yes. still need
 
-hm.  I hope these sparse warnings are sufficiently useful to justify
-all the gunk we're adding to support them.
+Was about to send that out next.
+ 
+> [PATCH] x86: copy cpumask while copying chip_data for offstack cpumask
+> 
+> While looking Thomas's
+> |	x86: Plug memory leak in sparse irq
+> 
+> found copy_chip_data() could copy the cpumask pointers instead of real data.
+> Need to use cpumask_copy there.
 
-Is it actually finding any bugs?
+Sigh. That code should just depend on CONFIG_BROKEN, really.
+
+Thanks,
+
+	tglx
