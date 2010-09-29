@@ -1,254 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564Ab0I2MTZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 08:19:25 -0400
-Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:50352 "EHLO
+	id S1755821Ab0I2MVr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 08:21:47 -0400
+Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:50489 "EHLO
 	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755353Ab0I2MTT (ORCPT
+	with ESMTP id S1755623Ab0I2MT3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 08:19:19 -0400
+	Wed, 29 Sep 2010 08:19:29 -0400
 From: Dave Chinner <david@fromorbit.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 02/17] fs: icache lock s_inodes list
-Date: Wed, 29 Sep 2010 22:18:34 +1000
-Message-Id: <1285762729-17928-3-git-send-email-david@fromorbit.com>
+Subject: [PATCH 0/17] fs: Inode cache scalability
+Date: Wed, 29 Sep 2010 22:18:32 +1000
+Message-Id: <1285762729-17928-1-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1285762729-17928-1-git-send-email-david@fromorbit.com>
-References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nick Piggin <npiggin@suse.de>
+This patch set is derived from Nick Piggin's VFS scalability tree.
+There doesn't appear to be any push to get that tree into shape for
+.37, so this is an attempt to start the process of finer grained
+review of the series for upstream inclusion. I'm hitting VFS lock
+contention problems with XFS on 8-16p machines now, so I need to get
+this stuff moving.
 
-To allow removal of the inode_lock, we first need to protect the
-superblock inode list with it's own lock instead of using the
-inode_lock for this purpose. Nest the new sb_inode_list_lock inside
-the inode_lock around the list operations it needs to protect.
+This patch set is just the basic inode_lock breakup patches plus a
+few more simple changes to the inode code. It stops short of
+introducing RCU inode freeing because those changes are not
+completely baked yet. It also stops short of changing the way inodes
+are tracked for writeback because I'd like not to spend my week
+after -rc1 is released fixing writeback again....
 
-Signed-off-by: Nick Piggin <npiggin@suse.de>
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
----
- fs/drop_caches.c          |    4 ++++
- fs/fs-writeback.c         |    4 ++++
- fs/inode.c                |   19 +++++++++++++++++++
- fs/notify/inode_mark.c    |    2 ++
- fs/quota/dquot.c          |    6 ++++++
- include/linux/writeback.h |    1 +
- 6 files changed, 36 insertions(+), 0 deletions(-)
+As a result, the full inode handling improvements of Nick's patch
+set are not realised with this short series. However, my own testing
+indicates that the amount of lock traffic and contention is down by
+an order of magnitude on an 8-way box for parallel inode create and
+unlink workloads, so there is still significant improvements in
+scalability from just this patch set.
 
-diff --git a/fs/drop_caches.c b/fs/drop_caches.c
-index 2195c21..ab69ae7 100644
---- a/fs/drop_caches.c
-+++ b/fs/drop_caches.c
-@@ -17,18 +17,22 @@ static void drop_pagecache_sb(struct super_block *sb, void *unused)
- 	struct inode *inode, *toput_inode = NULL;
- 
- 	spin_lock(&inode_lock);
-+	spin_lock(&sb_inode_list_lock);
- 	list_for_each_entry(inode, &sb->s_inodes, i_sb_list) {
- 		if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW))
- 			continue;
- 		if (inode->i_mapping->nrpages == 0)
- 			continue;
- 		__iget(inode);
-+		spin_unlock(&sb_inode_list_lock);
- 		spin_unlock(&inode_lock);
- 		invalidate_mapping_pages(inode->i_mapping, 0, -1);
- 		iput(toput_inode);
- 		toput_inode = inode;
- 		spin_lock(&inode_lock);
-+		spin_lock(&sb_inode_list_lock);
- 	}
-+	spin_unlock(&sb_inode_list_lock);
- 	spin_unlock(&inode_lock);
- 	iput(toput_inode);
- }
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 81e086d..9adc9d9 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -1021,6 +1021,7 @@ static void wait_sb_inodes(struct super_block *sb)
- 	WARN_ON(!rwsem_is_locked(&sb->s_umount));
- 
- 	spin_lock(&inode_lock);
-+	spin_lock(&sb_inode_list_lock);
- 
- 	/*
- 	 * Data integrity sync. Must wait for all pages under writeback,
-@@ -1038,6 +1039,7 @@ static void wait_sb_inodes(struct super_block *sb)
- 		if (mapping->nrpages == 0)
- 			continue;
- 		__iget(inode);
-+		spin_unlock(&sb_inode_list_lock);
- 		spin_unlock(&inode_lock);
- 		/*
- 		 * We hold a reference to 'inode' so it couldn't have
-@@ -1055,7 +1057,9 @@ static void wait_sb_inodes(struct super_block *sb)
- 		cond_resched();
- 
- 		spin_lock(&inode_lock);
-+		spin_lock(&sb_inode_list_lock);
- 	}
-+	spin_unlock(&sb_inode_list_lock);
- 	spin_unlock(&inode_lock);
- 	iput(old_inode);
- }
-diff --git a/fs/inode.c b/fs/inode.c
-index 8646433..ca98254 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -26,6 +26,15 @@
- #include <linux/posix_acl.h>
- 
- /*
-+ * Usage:
-+ * sb_inode_list_lock protects:
-+ *   s_inodes, i_sb_list
-+ *
-+ * Ordering:
-+ * inode_lock
-+ *   sb_inode_list_lock
-+ */
-+/*
-  * This is needed for the following functions:
-  *  - inode_has_buffers
-  *  - invalidate_inode_buffers
-@@ -83,6 +92,7 @@ static struct hlist_head *inode_hashtable __read_mostly;
-  * the i_state of an inode while it is in use..
-  */
- DEFINE_SPINLOCK(inode_lock);
-+DEFINE_SPINLOCK(sb_inode_list_lock);
- 
- /*
-  * iprune_sem provides exclusion between the kswapd or try_to_free_pages
-@@ -339,7 +349,9 @@ static void dispose_list(struct list_head *head)
- 
- 		spin_lock(&inode_lock);
- 		hlist_del_init(&inode->i_hash);
-+		spin_lock(&sb_inode_list_lock);
- 		list_del_init(&inode->i_sb_list);
-+		spin_unlock(&sb_inode_list_lock);
- 		spin_unlock(&inode_lock);
- 
- 		wake_up_inode(inode);
-@@ -371,6 +383,7 @@ static int invalidate_list(struct list_head *head, struct list_head *dispose)
- 		 * shrink_icache_memory() away.
- 		 */
- 		cond_resched_lock(&inode_lock);
-+		cond_resched_lock(&sb_inode_list_lock);
- 
- 		next = next->next;
- 		if (tmp == head)
-@@ -408,8 +421,10 @@ int invalidate_inodes(struct super_block *sb)
- 
- 	down_write(&iprune_sem);
- 	spin_lock(&inode_lock);
-+	spin_lock(&sb_inode_list_lock);
- 	fsnotify_unmount_inodes(&sb->s_inodes);
- 	busy = invalidate_list(&sb->s_inodes, &throw_away);
-+	spin_unlock(&sb_inode_list_lock);
- 	spin_unlock(&inode_lock);
- 
- 	dispose_list(&throw_away);
-@@ -597,7 +612,9 @@ __inode_add_to_lists(struct super_block *sb, struct hlist_head *head,
- {
- 	inodes_stat.nr_inodes++;
- 	list_add(&inode->i_list, &inode_in_use);
-+	spin_lock(&sb_inode_list_lock);
- 	list_add(&inode->i_sb_list, &sb->s_inodes);
-+	spin_unlock(&sb_inode_list_lock);
- 	if (head)
- 		hlist_add_head(&inode->i_hash, head);
- }
-@@ -1231,7 +1248,9 @@ static void iput_final(struct inode *inode)
- 		hlist_del_init(&inode->i_hash);
- 	}
- 	list_del_init(&inode->i_list);
-+	spin_lock(&sb_inode_list_lock);
- 	list_del_init(&inode->i_sb_list);
-+	spin_unlock(&sb_inode_list_lock);
- 	WARN_ON(inode->i_state & I_NEW);
- 	inode->i_state |= I_FREEING;
- 	inodes_stat.nr_inodes--;
-diff --git a/fs/notify/inode_mark.c b/fs/notify/inode_mark.c
-index 33297c0..34b1585 100644
---- a/fs/notify/inode_mark.c
-+++ b/fs/notify/inode_mark.c
-@@ -283,6 +283,7 @@ void fsnotify_unmount_inodes(struct list_head *list)
- 		 * will be added since the umount has begun.  Finally,
- 		 * iprune_mutex keeps shrink_icache_memory() away.
- 		 */
-+		spin_unlock(&sb_inode_list_lock);
- 		spin_unlock(&inode_lock);
- 
- 		if (need_iput_tmp)
-@@ -296,5 +297,6 @@ void fsnotify_unmount_inodes(struct list_head *list)
- 		iput(inode);
- 
- 		spin_lock(&inode_lock);
-+		spin_lock(&sb_inode_list_lock);
- 	}
- }
-diff --git a/fs/quota/dquot.c b/fs/quota/dquot.c
-index aad1316..2e3b913 100644
---- a/fs/quota/dquot.c
-+++ b/fs/quota/dquot.c
-@@ -897,6 +897,7 @@ static void add_dquot_ref(struct super_block *sb, int type)
- #endif
- 
- 	spin_lock(&inode_lock);
-+	spin_lock(&sb_inode_list_lock);
- 	list_for_each_entry(inode, &sb->s_inodes, i_sb_list) {
- 		if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW))
- 			continue;
-@@ -910,6 +911,7 @@ static void add_dquot_ref(struct super_block *sb, int type)
- 			continue;
- 
- 		__iget(inode);
-+		spin_unlock(&sb_inode_list_lock);
- 		spin_unlock(&inode_lock);
- 
- 		iput(old_inode);
-@@ -921,7 +923,9 @@ static void add_dquot_ref(struct super_block *sb, int type)
- 		 * keep the reference and iput it later. */
- 		old_inode = inode;
- 		spin_lock(&inode_lock);
-+		spin_lock(&sb_inode_list_lock);
- 	}
-+	spin_unlock(&sb_inode_list_lock);
- 	spin_unlock(&inode_lock);
- 	iput(old_inode);
- 
-@@ -1004,6 +1008,7 @@ static void remove_dquot_ref(struct super_block *sb, int type,
- 	int reserved = 0;
- 
- 	spin_lock(&inode_lock);
-+	spin_lock(&sb_inode_list_lock);
- 	list_for_each_entry(inode, &sb->s_inodes, i_sb_list) {
- 		/*
- 		 *  We have to scan also I_NEW inodes because they can already
-@@ -1017,6 +1022,7 @@ static void remove_dquot_ref(struct super_block *sb, int type,
- 			remove_inode_dquot_ref(inode, type, tofree_head);
- 		}
- 	}
-+	spin_unlock(&sb_inode_list_lock);
- 	spin_unlock(&inode_lock);
- #ifdef CONFIG_QUOTA_DEBUG
- 	if (reserved) {
-diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-index 72a5d64..9974edb 100644
---- a/include/linux/writeback.h
-+++ b/include/linux/writeback.h
-@@ -10,6 +10,7 @@
- struct backing_dev_info;
- 
- extern spinlock_t inode_lock;
-+extern spinlock_t sb_inode_list_lock;
- extern struct list_head inode_in_use;
- extern struct list_head inode_unused;
- 
--- 
-1.7.1
+I've only ported the patches so far, without changing anything
+significant other than the comit descriptions. One thing that has
+stood out as I've done this is that the ordering of the patches is
+not ideal, and some things (like the inode counters) are modified
+multiple times through the patch set.  I'm quite happy to
+reorder/rework the series to fix these problems if that is desired.
 
+Basically I'm trying to get this patchset ready for .37 (merge
+window is not really that far off now), and I'm aiming to have the
+rest of the inode changes (RCU freeing, writeback, etc) ready for
+.38. I may even look to some of the dcache changes for .38 depending
+on how much I can get tested and reviewed in that time frame.
+
+Comments are welcome.
+
+The current patchset is also available at the following location.
+
+The following changes since commit b30a3f6257ed2105259b404d419b4964e363928c:
+
+  Linux 2.6.36-rc5 (2010-09-20 16:56:53 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/dgc/xfsdev.git inode-scale
+
+Eric Dumazet (2):
+      fs: inode per-cpu last_ino allocator
+      fs: Convert nr_inodes to a per-cpu counter
+
+Nick Piggin (15):
+      kernel: add bl_list
+      fs: icache lock s_inodes list
+      fs: icache lock inode hash
+      fs: icache lock i_state
+      fs: icache lock i_count
+      fs: icache lock lru/writeback lists
+      fs: icache atomic inodes_stat
+      fs: icache protect inode state
+      fs: Make last_ino, iunique independent of inode_lock
+      fs: icache remove inode_lock
+      fs: Factor inode hash operations into functions
+      fs: Introduce per-bucket inode hash locks
+      fs: Implement lazy LRU updates for inodes.
+      fs: Inode counters do not need to be atomic.
+      fs: Clean up inode reference counting
+
+ Documentation/filesystems/Locking        |    2 +-
+ Documentation/filesystems/porting        |   10 +-
+ Documentation/filesystems/vfs.txt        |    2 +-
+ arch/powerpc/platforms/cell/spufs/file.c |    2 +-
+ drivers/staging/pohmelfs/inode.c         |   14 +-
+ fs/9p/vfs_inode.c                        |    4 +-
+ fs/affs/inode.c                          |    2 +-
+ fs/afs/dir.c                             |    4 +-
+ fs/anon_inodes.c                         |    2 +-
+ fs/bfs/dir.c                             |    2 +-
+ fs/block_dev.c                           |    7 +-
+ fs/btrfs/inode.c                         |   23 +-
+ fs/buffer.c                              |    2 +-
+ fs/ceph/mds_client.c                     |    2 +-
+ fs/cifs/inode.c                          |    2 +-
+ fs/coda/dir.c                            |    2 +-
+ fs/drop_caches.c                         |   19 +-
+ fs/exofs/inode.c                         |   10 +-
+ fs/exofs/namei.c                         |    2 +-
+ fs/ext2/namei.c                          |    2 +-
+ fs/ext3/ialloc.c                         |    4 +-
+ fs/ext3/namei.c                          |    2 +-
+ fs/ext4/ialloc.c                         |    4 +-
+ fs/ext4/namei.c                          |    2 +-
+ fs/fs-writeback.c                        |  156 +++++---
+ fs/gfs2/ops_inode.c                      |    2 +-
+ fs/hfs/hfs_fs.h                          |    2 +-
+ fs/hfs/inode.c                           |    2 +-
+ fs/hfsplus/dir.c                         |    2 +-
+ fs/hfsplus/hfsplus_fs.h                  |    2 +-
+ fs/hfsplus/inode.c                       |    2 +-
+ fs/hpfs/inode.c                          |    2 +-
+ fs/inode.c                               |  603 ++++++++++++++++++++----------
+ fs/jffs2/dir.c                           |    4 +-
+ fs/jfs/jfs_txnmgr.c                      |    2 +-
+ fs/jfs/namei.c                           |    2 +-
+ fs/libfs.c                               |    2 +-
+ fs/locks.c                               |    2 +-
+ fs/logfs/dir.c                           |    2 +-
+ fs/logfs/inode.c                         |    2 +-
+ fs/logfs/readwrite.c                     |    6 +-
+ fs/minix/namei.c                         |    2 +-
+ fs/namei.c                               |    2 +-
+ fs/nfs/dir.c                             |    2 +-
+ fs/nfs/getroot.c                         |    4 +-
+ fs/nfs/inode.c                           |    4 +-
+ fs/nfs/nfs4state.c                       |    2 +-
+ fs/nfs/write.c                           |    2 +-
+ fs/nilfs2/gcdat.c                        |    1 +
+ fs/nilfs2/gcinode.c                      |   22 +-
+ fs/nilfs2/mdt.c                          |    2 +-
+ fs/nilfs2/namei.c                        |    2 +-
+ fs/nilfs2/segment.c                      |    2 +-
+ fs/nilfs2/the_nilfs.h                    |    2 +-
+ fs/notify/inode_mark.c                   |   46 ++-
+ fs/notify/mark.c                         |    1 -
+ fs/notify/vfsmount_mark.c                |    1 -
+ fs/ntfs/inode.c                          |    4 +-
+ fs/ntfs/super.c                          |    2 +-
+ fs/ocfs2/inode.c                         |    2 +-
+ fs/ocfs2/namei.c                         |    2 +-
+ fs/quota/dquot.c                         |   36 +-
+ fs/reiserfs/namei.c                      |    2 +-
+ fs/reiserfs/stree.c                      |    2 +-
+ fs/reiserfs/xattr.c                      |    2 +-
+ fs/sysv/namei.c                          |    2 +-
+ fs/ubifs/dir.c                           |    2 +-
+ fs/ubifs/super.c                         |    2 +-
+ fs/udf/namei.c                           |    2 +-
+ fs/ufs/namei.c                           |    2 +-
+ fs/xfs/linux-2.6/xfs_iops.c              |    2 +-
+ fs/xfs/linux-2.6/xfs_trace.h             |    2 +-
+ fs/xfs/xfs_inode.h                       |    4 +-
+ include/linux/fs.h                       |   54 ++-
+ include/linux/list_bl.h                  |  127 +++++++
+ include/linux/rculist_bl.h               |  128 +++++++
+ include/linux/writeback.h                |    4 +-
+ ipc/mqueue.c                             |    2 +-
+ kernel/futex.c                           |    2 +-
+ kernel/sysctl.c                          |    4 +-
+ mm/backing-dev.c                         |    8 +-
+ mm/filemap.c                             |    6 +-
+ mm/rmap.c                                |    6 +-
+ mm/shmem.c                               |    6 +-
+ net/socket.c                             |    2 +-
+ 85 files changed, 1001 insertions(+), 437 deletions(-)
+ create mode 100644 include/linux/list_bl.h
+ create mode 100644 include/linux/rculist_bl.h
