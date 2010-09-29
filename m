@@ -1,102 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754242Ab0I2QbJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 12:31:09 -0400
-Received: from fieldses.org ([174.143.236.118]:45827 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753860Ab0I2QbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 12:31:07 -0400
-Date: Wed, 29 Sep 2010 12:30:55 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (Was:
- linux-next: build warning after merge of the final tree)
-Message-ID: <20100929163055.GC17087@fieldses.org>
-References: <20100929140238.c987caac.sfr@canb.auug.org.au>
- <20100929141657.3c076eb7.sfr@canb.auug.org.au>
- <4CA322DA.90705@parallels.com>
+	id S1754387Ab0I2Qba (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 12:31:30 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:55854 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754336Ab0I2Qb2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 12:31:28 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzzz32i2a8h63h)
+X-Spam-TCS-SCL: 2:0
+X-WSS-ID: 0L9IOK4-01-D5H-02
+X-M-MSG: 
+Date: Wed, 29 Sep 2010 18:31:18 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Stephane Eranian <eranian@google.com>
+CC: Cyrill Gorcunov <gorcunov@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "mingo@elte.hu" <mingo@elte.hu>
+Subject: Re: [tip:perf/urgent] perf, x86: Catch spurious interrupts after
+ disabling counters
+Message-ID: <20100929163118.GN13563@erda.amd.com>
+References: <tip-63e6be6d98e1a2bcdca86872b67052e51ab6afa1@git.kernel.org>
+ <AANLkTimB2gf=2zYCwiKEgozt_Rsa1Cpb6JuLSzmHusFX@mail.gmail.com>
+ <20100929125301.GG13563@erda.amd.com>
+ <20100929125453.GH13563@erda.amd.com>
+ <AANLkTimoE8wAhT+yxXBPnZvTTGrAtDjdaXPBN3Xg28eL@mail.gmail.com>
+ <AANLkTi=WYU2=4Hu7tb+TSrhJw9K9du19_KjMcG3ij=qn@mail.gmail.com>
+ <20100929150140.GK13563@erda.amd.com>
+ <20100929151253.GL13563@erda.amd.com>
+ <20100929152745.GC9440@lenovo>
+ <AANLkTikvYreYiyCbGeG02j+r4dWVLRH7BqeeG9O=VTNN@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <4CA322DA.90705@parallels.com>
+In-Reply-To: <AANLkTikvYreYiyCbGeG02j+r4dWVLRH7BqeeG9O=VTNN@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 29, 2010 at 03:28:26PM +0400, Pavel Emelyanov wrote:
-> > This actually causes a build failure on a sparc32 defconfig build:
-> > 
-> > `rpcauth_remove_module' referenced in section `.init.text' of net/built-in.o: defined in discarded section `.exit.text' of net/built-in.o
-> > 
-> > I applied the following patch for today:
-> > 
-> > From: Stephen Rothwell <sfr@canb.auug.org.au>
-> > Date: Wed, 29 Sep 2010 14:07:07 +1000
-> > Subject: [PATCH] sunrpc: fix up section mismatch
-> > 
-> > Fixes:
-> > 
-> > `rpcauth_remove_module' referenced in section `.init.text' of net/built-in.o: defined in discarded section `.exit.text' of net/built-in.o
-> > 
-> > Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+On 29.09.10 11:33:07, Stephane Eranian wrote:
+> There is something else bothering me with cpuc->running.
 > 
-> Oops :(
-> 
-> Acked-by: Pavel Emelyanov <xemul@openvz.org>
+> It is not reset outside of the interrupt handler. So what if
+> event scheduling shuffles things around and an event is
+> moved somewhere else. Don't you need to clear the
+> cpuc->running[idx] for the old counter index?
 
-Thanks, applied, and I'll push that out soon.
+We can clear it only in the NMI handler, because the next NMI after
+stopping a counter must mark the counter as handled. This may cause
+some false positives, but it is the best we can get.
 
---b.
+-Robert
 
-> 
-> > ---
-> >  include/linux/sunrpc/auth.h |    4 ++--
-> >  net/sunrpc/auth.c           |    2 +-
-> >  net/sunrpc/auth_generic.c   |    2 +-
-> >  3 files changed, 4 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/include/linux/sunrpc/auth.h b/include/linux/sunrpc/auth.h
-> > index 5bbc447..b202475 100644
-> > --- a/include/linux/sunrpc/auth.h
-> > +++ b/include/linux/sunrpc/auth.h
-> > @@ -122,8 +122,8 @@ extern const struct rpc_authops	authnull_ops;
-> >  int __init		rpc_init_authunix(void);
-> >  int __init		rpc_init_generic_auth(void);
-> >  int __init		rpcauth_init_module(void);
-> > -void __exit		rpcauth_remove_module(void);
-> > -void __exit		rpc_destroy_generic_auth(void);
-> > +void			rpcauth_remove_module(void);
-> > +void			rpc_destroy_generic_auth(void);
-> >  void 			rpc_destroy_authunix(void);
-> >  
-> >  struct rpc_cred *	rpc_lookup_cred(void);
-> > diff --git a/net/sunrpc/auth.c b/net/sunrpc/auth.c
-> > index e9eaaf7..2c0d9e6 100644
-> > --- a/net/sunrpc/auth.c
-> > +++ b/net/sunrpc/auth.c
-> > @@ -658,7 +658,7 @@ out1:
-> >  	return err;
-> >  }
-> >  
-> > -void __exit rpcauth_remove_module(void)
-> > +void rpcauth_remove_module(void)
-> >  {
-> >  	rpc_destroy_authunix();
-> >  	rpc_destroy_generic_auth();
-> > diff --git a/net/sunrpc/auth_generic.c b/net/sunrpc/auth_generic.c
-> > index 43162bb..e010a01 100644
-> > --- a/net/sunrpc/auth_generic.c
-> > +++ b/net/sunrpc/auth_generic.c
-> > @@ -158,7 +158,7 @@ int __init rpc_init_generic_auth(void)
-> >  	return rpcauth_init_credcache(&generic_auth);
-> >  }
-> >  
-> > -void __exit rpc_destroy_generic_auth(void)
-> > +void rpc_destroy_generic_auth(void)
-> >  {
-> >  	rpcauth_destroy_credcache(&generic_auth);
-> >  }
-> 
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
