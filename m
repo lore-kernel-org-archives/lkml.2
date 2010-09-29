@@ -1,110 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663Ab0I2Asi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 20:48:38 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:42514 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750943Ab0I2Asg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754355Ab0I2Asg (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 28 Sep 2010 20:48:36 -0400
-Date: Wed, 29 Sep 2010 10:48:27 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: cleancache into linux-next, target for 2.6.37 merge window?
-Message-Id: <20100929104827.49e29a95.sfr@canb.auug.org.au>
-In-Reply-To: <40229210-a2a6-41ab-9a88-bde956ebc66c@default>
-References: <40229210-a2a6-41ab-9a88-bde956ebc66c@default>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__29_Sep_2010_10_48_27_+1000_4mp=MYKs=M3hH0++"
+Received: from comms2.zx.nl ([194.187.76.142]:54779 "EHLO comms2.zx.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750943Ab0I2Asf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 20:48:35 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; CHARSET=US-ASCII
+Subject: Re: [PATCH 1/1] um: ubd: Fix data corruption
+From: Janjaap Bos <janjaap@bos.nl>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Chris Frey <cdfrey@foursquare.net>, Richard Weinberger <richard@nod.at>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jdike@addtoit.com" <jdike@addtoit.com>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        "user-mode-linux-user@lists.sourceforge.net" 
+	<user-mode-linux-user@lists.sourceforge.net>,
+        "geert@linux-m68k.org" <geert@linux-m68k.org>,
+        "martin.petersen@oracle.com" <martin.petersen@oracle.com>,
+        "adobriyan@gmail.com" <adobriyan@gmail.com>,
+        "syzop@vulnscan.org" <syzop@vulnscan.org>
+In-reply-to: <4CA275CE.6060401@fusionio.com>
+References: <1285710456-4435-1-git-send-email-richard@nod.at>
+ <20100928150000.f007f43e.akpm@linux-foundation.org>
+ <201009290013.11332.richard@nod.at> <20100928225202.GA30352@foursquare.net>
+ <4CA275CE.6060401@fusionio.com>
+Date: Wed, 29 Sep 2010 02:48:28 +0200
+Message-id: <1285721308.9775.3.camel@voyager>
+X-Mailer: Evolution 2.28.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__29_Sep_2010_10_48_27_+1000_4mp=MYKs=M3hH0++
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2010-09-29 at 08:10 +0900, Jens Axboe wrote:
 
-Hi Dan,
+> It looks like that if we need to restart the requeue, then
+> we use the initial position and not the current index. Does
+> this help?
+> 
+> diff --git a/arch/um/drivers/ubd_kern.c b/arch/um/drivers/ubd_kern.c
+> index 1bcd208..81ee063 100644
+> --- a/arch/um/drivers/ubd_kern.c
+> +++ b/arch/um/drivers/ubd_kern.c
+> @@ -162,7 +162,7 @@ struct ubd {
+>  	spinlock_t lock;
+>  	struct scatterlist sg[MAX_SG];
+>  	struct request *request;
+> -	int start_sg, end_sg;
+> +	int start_sg, end_sg, rq_off;
+>  };
+>  
+>  #define DEFAULT_COW { \
+> @@ -187,6 +187,7 @@ struct ubd {
+>  	.request =		NULL, \
+>  	.start_sg =		0, \
+>  	.end_sg =		0, \
+> +	.rq_off =		0, \
+>  }
+>  
+>  /* Protected by ubd_lock */
+> @@ -1241,10 +1242,11 @@ static void do_ubd_request(struct request_queue *q)
+>  			dev->request = req;
+>  			dev->start_sg = 0;
+>  			dev->end_sg = blk_rq_map_sg(q, req, dev->sg);
+> +			dev->rq_off = 0;
+>  		}
+>  
+>  		req = dev->request;
+> -		sector = blk_rq_pos(req);
+> +		sector = blk_rq_pos(req) + dev->rq_off;
+>  		while(dev->start_sg < dev->end_sg){
+>  			struct scatterlist *sg = &dev->sg[dev->start_sg];
+>  
+> @@ -1273,6 +1275,7 @@ static void do_ubd_request(struct request_queue *q)
+>  			}
+>  
+>  			dev->start_sg++;
+> +			dev->rq_off += sg->length >> 9;
+>  		}
+>  		dev->end_sg = 0;
+>  		dev->request = NULL;
+> 
 
-On Tue, 28 Sep 2010 12:31:18 -0700 (PDT) Dan Magenheimer <dan.magenheimer@o=
-racle.com> wrote:
->
-> The "cleancache" patchset crosses multiple subsystem boundaries and
-> at the recent filesystem/storage/mm summit, people suggested that
-> after the patchset has stabilized, I should just submit it to
-> linux-next and then directly to Linus.  The latest version has received
-> no further suggestions or comments.  Previous versions received
-> a great deal of review and comment from a wide variety of maintainers
-> across all the impacted subsystems, as documented in the commit logs.
->=20
-> Would it be possible to include the following tree in the linux-next
-> build process?
->=20
-> git://git.kernel.org/pub/scm/linux/kernel/git/djm/tmem.git#linux-next
+Yes, this works. I quickly tested it on current git version, and it does
+not require the work-around. So far no corruption seen.
 
-Included from today.  I have you as the contact (in case I have problems)
-if there is any other address I should notify, just let me know.
+Thanks!
+-Janjaap
 
-> The patchset applies cleanly against both 2.6.36-rc3 and -rc5.
-> Against next-20100928, I see two very minor merge conflicts in
-> mm/Kconfig and include/linux/fs.h due to minor changes from other
-> trees.
 
-Thanks.  I will send notifications for those (just so you know) and will
-fix them up.  Minor conflicts are not a problem and can be fixed by Linus
-when he merges this tree (or the others that conflict).
-
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
-
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
-
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
-
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
-
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
-
---Signature=_Wed__29_Sep_2010_10_48_27_+1000_4mp=MYKs=M3hH0++
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMoozcAAoJEDMEi1NhKgbs338IAI12C1e7BJWtkRdEXngD2azt
-U6GVR24leqR1mKtTB7wDcJ2Xflx3MMrIXCA0n1hgmh3bgB7Af5TehYCqC2pcemOb
-zesoj5JxCKPHJcTCz7Pj/oTAzW5GsrY5hmiojhyFXIcbSj1bYPOpMbKy1icv5X4g
-VMwsLuD3Z4lFCjQoTQhArTIChIsTgiZlJgJHOoMNVR3I7ujzv6AiaMJ0JrH2knEV
-lMOuUWZbcIpUcsEgNsZQggmXBQQM+ufgQDZA668B+kyAuw7tdXxaAAy3bBUgehz8
-OCUH1nnKmsrDMcd9OtlYEpApLdEfRy/d1ZcPBZswMLiMm6W6/v9Jie5CzsAExes=
-=We9U
------END PGP SIGNATURE-----
-
---Signature=_Wed__29_Sep_2010_10_48_27_+1000_4mp=MYKs=M3hH0++--
