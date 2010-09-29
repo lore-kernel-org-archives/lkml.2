@@ -1,113 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696Ab0I2PdN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 11:33:13 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:8567 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752121Ab0I2PdM convert rfc822-to-8bit (ORCPT
+	id S1753802Ab0I2Pj6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 11:39:58 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61872 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750943Ab0I2Pj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 11:33:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=WfnN6k1AksKMSbLExRQYZ+kYf7GNlzTugeiWUbeVD98xgEypt3tvXc9srxmBlBJyHo
-         ANtiyhBnyrfUIzhtESyw==
-MIME-Version: 1.0
-In-Reply-To: <20100929152745.GC9440@lenovo>
-References: <20100915162034.GO13563@erda.amd.com>
-	<tip-63e6be6d98e1a2bcdca86872b67052e51ab6afa1@git.kernel.org>
-	<AANLkTimB2gf=2zYCwiKEgozt_Rsa1Cpb6JuLSzmHusFX@mail.gmail.com>
-	<20100929125301.GG13563@erda.amd.com>
-	<20100929125453.GH13563@erda.amd.com>
-	<AANLkTimoE8wAhT+yxXBPnZvTTGrAtDjdaXPBN3Xg28eL@mail.gmail.com>
-	<AANLkTi=WYU2=4Hu7tb+TSrhJw9K9du19_KjMcG3ij=qn@mail.gmail.com>
-	<20100929150140.GK13563@erda.amd.com>
-	<20100929151253.GL13563@erda.amd.com>
-	<20100929152745.GC9440@lenovo>
-Date: Wed, 29 Sep 2010 17:33:07 +0200
-Message-ID: <AANLkTikvYreYiyCbGeG02j+r4dWVLRH7BqeeG9O=VTNN@mail.gmail.com>
-Subject: Re: [tip:perf/urgent] perf, x86: Catch spurious interrupts after
- disabling counters
-From: Stephane Eranian <eranian@google.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Robert Richter <robert.richter@amd.com>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "mingo@elte.hu" <mingo@elte.hu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Wed, 29 Sep 2010 11:39:57 -0400
+Subject: Re: [PATCH] oprofile, arm: proper release resources on failure
+From: Will Deacon <will.deacon@arm.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <20100929145225.GJ13563@erda.amd.com>
+References: <20100929145225.GJ13563@erda.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 29 Sep 2010 16:39:44 +0100
+Message-ID: <1285774784.30080.19.camel@e102144-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 29 Sep 2010 15:39:47.0700 (UTC) FILETIME=[8C107340:01CB5FEC]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Robert,
+On Wed, 2010-09-29 at 15:52 +0100, Robert Richter wrote:
+> Will,
+> 
 
-There is something else bothering me with cpuc->running.
-
-It is not reset outside of the interrupt handler. So what if
-event scheduling shuffles things around and an event is
-moved somewhere else. Don't you need to clear the
-cpuc->running[idx] for the old counter index?
+Hi Robert,
 
 
-On Wed, Sep 29, 2010 at 5:27 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> On Wed, Sep 29, 2010 at 05:12:53PM +0200, Robert Richter wrote:
->> On 29.09.10 17:01:40, Robert Richter wrote:
->> > Right, I wasn't remembering correctly, it was P6 and core. And yes, P4
->> > requires the fix. Will send a patch for this.
->>
->> Ok, Cyrill is sending the patch.
->>
->> Thanks,
->>
->> -Robert
->>
->
-> Managed to implement it earlier then I thought.
->
->  Cyrill
-> ---
-> Subject: [PATCH -tip] perf, x86: Handle in flight IRQs on P4 platform
->
-> Stephane reported we've missed to guard P4 platform
-> against spurious in-flight performance IRQs. Fix it.
->
-> [ the patch is a complement to commit 63e6be6d98e1 ]
->
-> Reported-by: Stephane Eranian <eranian@google.com>
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> CC: Robert Richter <robert.richter@amd.com>
-> CC: Lin Ming <ming.m.lin@intel.com>
-> ---
->  arch/x86/kernel/cpu/perf_event_p4.c |    6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
->
-> Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-> =====================================================================
-> --- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
-> +++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-> @@ -904,8 +904,12 @@ static int p4_pmu_handle_irq(struct pt_r
->        for (idx = 0; idx < x86_pmu.num_counters; idx++) {
->                int overflow;
->
-> -               if (!test_bit(idx, cpuc->active_mask))
-> +               if (!test_bit(idx, cpuc->active_mask)) {
-> +                       /* catch in-flight IRQs */
-> +                       if (__test_and_clear_bit(idx, cpuc->running))
-> +                               handled++;
->                        continue;
-> +               }
->
->                event = cpuc->events[idx];
->                hwc = &event->hw;
->
+> the patch below fixes a resource leak I found during code review. Can
+> you please review and test it (I don't have an ARM environment for
+> this available). If you are fine with the change, please ack. I want
+> to send it upstream via tip/perf/urgent.
+> 
+
+I have a few minor clarifications:
+> 
+
+> diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
+> index 0691176..72e09eb 100644
+> --- a/arch/arm/oprofile/common.c
+> +++ b/arch/arm/oprofile/common.c
+> @@ -102,6 +102,7 @@ static int op_create_counter(int cpu, int event)
+>         if (IS_ERR(pevent)) {
+>                 ret = PTR_ERR(pevent);
+>         } else if (pevent->state != PERF_EVENT_STATE_ACTIVE) {
+> +               perf_event_release_kernel(pevent);
+>                 pr_warning("oprofile: failed to enable event %d "
+>                                 "on CPU %d\n", event, cpu);
+>                 ret = -EBUSY;
+
+
+Yup, this is needed. Thanks! It would be nice to do away with the
+else statement altogether but I think adding a pinned event and
+then failing to activate it still succeeds in
+perf_event_create_kernel_counter.
+
+
+> @@ -365,6 +366,7 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
+>         ret = init_driverfs();
+>         if (ret) {
+>                 kfree(counter_config);
+> +               counter_config = NULL;
+>                 return ret;
+>         }
+> 
+> @@ -402,7 +404,6 @@ void oprofile_arch_exit(void)
+>         struct perf_event *event;
+> 
+>         if (*perf_events) {
+> -               exit_driverfs();
+>                 for_each_possible_cpu(cpu) {
+>                         for (id = 0; id < perf_num_counters; ++id) {
+>                                 event = perf_events[cpu][id];
+> @@ -413,8 +414,10 @@ void oprofile_arch_exit(void)
+>                 }
+>         }
+> 
+> -       if (counter_config)
+> +       if (counter_config) {
+>                 kfree(counter_config);
+> +               exit_driverfs();
+> +       }
+>  }
+>  #else
+>  int __init oprofile_arch_init(struct oprofile_operations *ops)
+> --
+> 1.7.2.2
+> 
+
+Hmm, these three hunks conflict with the patches I posted last
+month to fix the resource allocation and freeing. Can't we
+merge those patches instead? I have versions against -rc6 here:
+
+git://linux-arm.org/linux-2.6-wd.git oprofile-mm
+
+Cheers,
+
+Will
+
