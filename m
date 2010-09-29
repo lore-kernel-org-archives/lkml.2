@@ -1,83 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233Ab0I2IIa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 04:08:30 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:35567 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752114Ab0I2II2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 04:08:28 -0400
-Date: Wed, 29 Sep 2010 10:08:23 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Chase Douglas <chase.douglas@canonical.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [PATCH -v1.2] trace/function-graph: Fix build warning on 32-bit
-Message-ID: <20100929080823.GA13595@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	Chase Douglas <chase.douglas@canonical.com>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	lkml <linux-kernel@vger.kernel.org>
-References: <20100929073853.GA13264@liondog.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100929073853.GA13264@liondog.tnic>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754285Ab0I2IMt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 04:12:49 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:45372 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1752621Ab0I2IMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 04:12:48 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18rPrsndecrIu9sUy/AyMepmUjD2Tc8F6oywXt50k
+	fVIHvfbwmaCbY4
+Subject: Re: [PATCH 1/2] sched: normalize sleeper's vruntime during group
+ change
+From: Mike Galbraith <efault@gmx.de>
+To: Dima Zavin <dima@android.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
+In-Reply-To: <1285742774-5013-1-git-send-email-dima@android.com>
+References: <1285742774-5013-1-git-send-email-dima@android.com>
+Content-Type: text/plain
+Date: Wed, 29 Sep 2010 10:13:15 +0200
+Message-Id: <1285747995.7844.42.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Fix
+On Tue, 2010-09-28 at 23:46 -0700, Dima Zavin wrote:
+> This adds a new callback, prep_move_task, to struct sched_class
+> to give sched_fair the opportunity to adjust the task's vruntime
+> just before setting its new group.
 > 
-> kernel/trace/trace_functions_graph.c: In function ‘trace_print_graph_duration’:
-> kernel/trace/trace_functions_graph.c:652: warning: comparison of distinct pointer types lacks a cast
+> This allows us to properly normalize a sleeping task's vruntime
+> when moving it between different cgroups.
 
-sh*t, I got completely carried away with all that typechecking, take
-this one instead:
 
---
-From: Borislav Petkov <bp@alien8.de>
-Date: Wed, 29 Sep 2010 08:39:43 +0200
-Subject: [PATCH] trace/function-graph: Fix build warning on 32-bit
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> index db3f674..008fe57 100644
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -3827,10 +3827,23 @@ static void set_curr_task_fair(struct rq *rq)
+>  static void moved_group_fair(struct task_struct *p, int on_rq)
+>  {
+>  	struct cfs_rq *cfs_rq = task_cfs_rq(p);
+> +	struct sched_entity *se = &p->se;
+>  
+>  	update_curr(cfs_rq);
+> -	if (!on_rq)
+> +	if (!on_rq) {
+> +		se->vruntime += cfs_rq->min_vruntime;
+>  		place_entity(cfs_rq, &p->se, 1);
+> +	}
+> +}
 
-Fix
+I'm still missing the place_entity() rationale.  Why is a sleeping task
+eligible for pain therapy that a runnable task is spared?  That state
+can change a usec from now.
 
-kernel/trace/trace_functions_graph.c: In function ‘trace_print_graph_duration’:
-kernel/trace/trace_functions_graph.c:652: warning: comparison of distinct pointer types lacks a cast
+Nit: place_entity(cfs_rq, se, 1);
 
-when building 36-rc6 on a 32-bit due to the strict type check failing in
-the min() macro.
+	-Mike
 
-Signed-off-by: Borislav Petkov <bp@alien8.de>
----
- kernel/trace/trace_functions_graph.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index 6f23369..82306cc 100644
---- a/kernel/trace/trace_functions_graph.c
-+++ b/kernel/trace/trace_functions_graph.c
-@@ -649,8 +649,9 @@ trace_print_graph_duration(unsigned long long duration, struct trace_seq *s)
- 
- 	/* Print nsecs (we don't want to exceed 7 numbers) */
- 	if (len < 7) {
--		snprintf(nsecs_str, min(sizeof(nsecs_str), 8UL - len), "%03lu",
--			 nsecs_rem);
-+		size_t slen = min_t(size_t, sizeof(nsecs_str), 8UL - len);
-+
-+		snprintf(nsecs_str, slen, "%03lu", nsecs_rem);
- 		ret = trace_seq_printf(s, ".%s", nsecs_str);
- 		if (!ret)
- 			return TRACE_TYPE_PARTIAL_LINE;
--- 
-1.7.2.3
-
--- 
-Regards/Gruss,
-    Boris.
