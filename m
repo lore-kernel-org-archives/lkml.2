@@ -1,75 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755708Ab0I2UGj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 16:06:39 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:54432 "EHLO ogre.sisk.pl"
+	id S1755660Ab0I2UMl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 16:12:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39739 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755136Ab0I2UGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 16:06:38 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [RFC][PATCH] PM / Hibernate / x86: Change RESTORE_MAGIC on x86_64
-Date: Wed, 29 Sep 2010 22:05:45 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc6-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Nigel Cunningham <nigel@tuxonice.net>
-References: <201009290112.11363.rjw@sisk.pl> <4CA27A01.1080606@zytor.com> <201009291258.06048.rjw@sisk.pl>
-In-Reply-To: <201009291258.06048.rjw@sisk.pl>
+	id S1753728Ab0I2UMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 16:12:40 -0400
+Date: Wed, 29 Sep 2010 13:11:26 -0700
+From: Greg KH <gregkh@suse.de>
+To: Sven Joachim <svenjoac@gmx.de>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org
+Subject: Re: Linux 2.6.35.7
+Message-ID: <20100929201126.GA21624@suse.de>
+References: <20100929011355.GA25515@kroah.com> <87zkv0a9mb.fsf@turtle.gmx.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009292205.45724.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87zkv0a9mb.fsf@turtle.gmx.de>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 29, 2010, Rafael J. Wysocki wrote:
-> On Wednesday, September 29, 2010, H. Peter Anvin wrote:
-> > On 09/28/2010 04:12 PM, Rafael J. Wysocki wrote:
-> > > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > > 
-> > > On x86_64 the configuration and version of the kernel that
-> > > hibernates and creates a system image may be different from the
-> > > configuration and version of the boot kernel that loads the image.
-> > > So long as both these kernels are built with the same value of
-> > > RESTORE_MAGIC, the image created by one of them should be
-> > > successfully loaded and restored by the other one.
-> > > 
-> > > It wasn't necessary to modify RESTORE_MAGIC in the past, but now
-> > > that we are adding compression to the in-kernel hibernate code,
-> > > change the value of RESTORE_MAGIC so that earlier kernels don't
-> > > try to load compressed images they can't handle.
-> > > 
-> > > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > > ---
-> > >  arch/x86/power/hibernate_64.c |    2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > 
-> > > Index: linux-2.6/arch/x86/power/hibernate_64.c
-> > > ===================================================================
-> > > --- linux-2.6.orig/arch/x86/power/hibernate_64.c
-> > > +++ linux-2.6/arch/x86/power/hibernate_64.c
-> > > @@ -137,7 +137,7 @@ struct restore_data_record {
-> > >  	unsigned long magic;
-> > >  };
-> > >  
-> > > -#define RESTORE_MAGIC	0x0123456789ABCDEFUL
-> > > +#define RESTORE_MAGIC	0x0123456789ABCDF0UL
-> > >  
-> > 
-> > Two issues with this:
-> > 
-> > a) shouldn't we only set this when the image is actually compressed?
+On Wed, Sep 29, 2010 at 04:48:44PM +0200, Sven Joachim wrote:
+> Am 29.09.2010 um 03:13 schrieb Greg KH:
 > 
-> Well, in fact, this is a workaround, because the compression happens in a
-> different layer.  However, that other layer doesn't have any compatibility
-> checks (at least on x86-64), other than seeing that the image metadata
-> don't make sense at one point.
+> > I'm announcing the release of the 2.6.35.7 kernel.
+> > This is only needed if you run Xen, there was a typo that caused
+> > problems.  My fault, sorry.
+> 
+> This typo is also in 2.6.32.2[23], could you make a 2.6.32.24 release as
+> well?
 
-Sorry, I was wrong.  This patch shouldn't be necessary, I'll send another one
-that only touches things in kernel/power.
+I will be doing so in a few hours.  Sorry, I am at LinuxCon Tokyo so my
+time available to do this was limited yesterday.
 
-Thanks,
-Rafael
+thanks,
+
+greg k-h
