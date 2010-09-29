@@ -1,82 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684Ab0I2Au2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 20:50:28 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:54514 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754555Ab0I2AuZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 20:50:25 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: "N.P.S. N.P.S." <napohybelskurwysynom2010@gmail.com>
-cc: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: mmotm 2010-09-28-16-13 uploaded
-In-reply-to: Your message of "Wed, 29 Sep 2010 02:27:55 +0200."
-             <AANLkTimFbxc7MGdirSzdJ-YZbFFHBVn4JJhHcP46W1_4@mail.gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <201009282344.o8SNiliN024981@imap1.linux-foundation.org>
-            <AANLkTimFbxc7MGdirSzdJ-YZbFFHBVn4JJhHcP46W1_4@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Date: Tue, 28 Sep 2010 20:49:44 -0400
-Message-ID: <124506.1285721384@localhost>
-X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020201.4CA28D29.01A1,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	id S1754610Ab0I2Ayx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 20:54:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53995 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753420Ab0I2Ayw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 20:54:52 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] MN10300: Handle missing sys_cacheflush() when caching disabled
+To: torvalds@osdl.org, akpm@linux-foundation.org, msalter@redhat.com
+Cc: linux-am33-list@redhat.com, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Date: Wed, 29 Sep 2010 01:54:36 +0100
+Message-ID: <20100929005435.20399.6395.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Sep 2010 02:27:55 +0200, "N.P.S. N.P.S." said:
-> Hi,
-> 
-> 2010/9/29  <akpm@linux-foundation.org>:
-> > The mm-of-the-moment snapshot 2010-09-28-16-13 has been uploaded to
-> 
-> I wonder why are these two functions in include/linux/fs.h
-> static inline void lock_flocks()
-> {
-> }
-> 
-> static inline void unlock_flocks()
-> {
-> }
+When caching is disabled on the MN10300 arch, the sys_cacheflush() function is
+removed by conditional stuff in the makefiles, but is still referred to by the
+syscall table.
 
-Those were added as part of the kill-the-BKL project.  They used to be
-done as #defines to lock_kernel and unlock_kernel, but became full-fledged
-functions in this release.  Unfortunately, if you build with CONFIG_FILE_LOCKING=n
-you need to provide a dummy stub, which is what was intended here.
+Provide a null version that just returns 0 when caching is disabled (or -EINVAL
+if the arguments are silly).
 
-Does the following (untested) fix the problem for you?
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
-Signed-Off-By: Valdis Kletnieks <valdis.kletnieks@vt.edu>
+ arch/mn10300/mm/Makefile         |   14 ++++++--------
+ arch/mn10300/mm/cache-disabled.c |   21 +++++++++++++++++++++
+ 2 files changed, 27 insertions(+), 8 deletions(-)
+ create mode 100644 arch/mn10300/mm/cache-disabled.c
 
---- linux-2.6.36-rc5-mmotm0928/include/linux/fs.h.dist	2010-09-28 20:46:29.276970365 -0400
-+++ linux-2.6.36-rc5-mmotm0928/include/linux/fs.h	2010-09-28 20:47:34.221924470 -0400
-@@ -1274,11 +1274,11 @@ static inline int lock_may_write(struct 
- 	return 1;
- }
+
+diff --git a/arch/mn10300/mm/Makefile b/arch/mn10300/mm/Makefile
+index 28b9d98..f076a95 100644
+--- a/arch/mn10300/mm/Makefile
++++ b/arch/mn10300/mm/Makefile
+@@ -2,13 +2,11 @@
+ # Makefile for the MN10300-specific memory management code
+ #
  
--static inline void lock_flocks()
-+static inline void lock_flocks(void)
- {
- }
- 
--static inline void unlock_flocks()
-+static inline void unlock_flocks(void)
- {
- }
- 
++cacheflush-y	:= cache.o cache-mn10300.o
++cacheflush-$(CONFIG_MN10300_CACHE_WBACK) := cache-flush-mn10300.o
++
++cacheflush-$(CONFIG_MN10300_CACHE_DISABLED) := cache-disabled.o
++
+ obj-y := \
+ 	init.o fault.o pgtable.o extable.o tlb-mn10300.o mmu-context.o \
+-	misalignment.o dma-alloc.o
+-
+-ifneq ($(CONFIG_MN10300_CACHE_DISABLED),y)
+-obj-y	+= cache.o cache-mn10300.o
+-ifeq ($(CONFIG_MN10300_CACHE_WBACK),y)
+-obj-y	+= cache-flush-mn10300.o
+-endif
+-endif
++	misalignment.o dma-alloc.o $(cacheflush-y)
+diff --git a/arch/mn10300/mm/cache-disabled.c b/arch/mn10300/mm/cache-disabled.c
+new file mode 100644
+index 0000000..f669ea4
+--- /dev/null
++++ b/arch/mn10300/mm/cache-disabled.c
+@@ -0,0 +1,21 @@
++/* Handle the cache being disabled
++ *
++ * Copyright (C) 2010 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++#include <linux/mm.h>
++
++/*
++ * allow userspace to flush the instruction cache
++ */
++asmlinkage long sys_cacheflush(unsigned long start, unsigned long end)
++{
++	if (end < start)
++		return -EINVAL;
++	return 0;
++}
 
