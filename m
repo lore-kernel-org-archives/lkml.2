@@ -1,113 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751857Ab0I2FVR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 01:21:17 -0400
-Received: from mx1.fusionio.com ([64.244.102.30]:34114 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751769Ab0I2FVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 01:21:16 -0400
-X-ASG-Debug-ID: 1285737673-695939fd0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4CA2CCC3.8010307@fusionio.com>
-Date: Wed, 29 Sep 2010 14:21:07 +0900
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Chris Frey <cdfrey@foursquare.net>
-CC: Richard Weinberger <richard@nod.at>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jdike@addtoit.com" <jdike@addtoit.com>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        "user-mode-linux-user@lists.sourceforge.net" 
-	<user-mode-linux-user@lists.sourceforge.net>,
-        "janjaap@bos.nl" <janjaap@bos.nl>,
-        "geert@linux-m68k.org" <geert@linux-m68k.org>,
-        "martin.petersen@oracle.com" <martin.petersen@oracle.com>,
-        "adobriyan@gmail.com" <adobriyan@gmail.com>,
-        "syzop@vulnscan.org" <syzop@vulnscan.org>
-Subject: Re: [PATCH 1/1] um: ubd: Fix data corruption
-References: <1285710456-4435-1-git-send-email-richard@nod.at> <20100928150000.f007f43e.akpm@linux-foundation.org> <201009290013.11332.richard@nod.at> <20100928225202.GA30352@foursquare.net> <4CA275CE.6060401@fusionio.com> <20100929012945.GA3324@foursquare.net>
-X-ASG-Orig-Subj: Re: [PATCH 1/1] um: ubd: Fix data corruption
-In-Reply-To: <20100929012945.GA3324@foursquare.net>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1751832Ab0I2FYy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 01:24:54 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52267
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750977Ab0I2FYx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 01:24:53 -0400
+Date: Tue, 28 Sep 2010 22:25:10 -0700 (PDT)
+Message-Id: <20100928.222510.71109554.davem@davemloft.net>
+To: gwurster@scs.carleton.ca
+Cc: kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, shemminger@vyatta.com,
+        eric.dumazet@gmail.com, herbert@gondor.hengli.com.au,
+        ebiederm@xmission.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH linux-2.6 v2] IPv6: Create temporary address if none
+ exists.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100927170430.GA7106@adams.ccsl.carleton.ca>
+References: <20100927170430.GA7106@adams.ccsl.carleton.ca>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1285737673
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -2.02
-X-Barracuda-Spam-Status: No, SCORE=-2.02 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.42202
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-09-29 10:29, Chris Frey wrote:
-> On Wed, Sep 29, 2010 at 08:10:06AM +0900, Jens Axboe wrote:
->> It looks like that if we need to restart the requeue, then
->> we use the initial position and not the current index. Does
->> this help?
->>
->> diff --git a/arch/um/drivers/ubd_kern.c b/arch/um/drivers/ubd_kern.c
->> index 1bcd208..81ee063 100644
->> --- a/arch/um/drivers/ubd_kern.c
->> +++ b/arch/um/drivers/ubd_kern.c
->> @@ -162,7 +162,7 @@ struct ubd {
->>  	spinlock_t lock;
->>  	struct scatterlist sg[MAX_SG];
->>  	struct request *request;
->> -	int start_sg, end_sg;
->> +	int start_sg, end_sg, rq_off;
->>  };
->>  
->>  #define DEFAULT_COW { \
->> @@ -187,6 +187,7 @@ struct ubd {
->>  	.request =		NULL, \
->>  	.start_sg =		0, \
->>  	.end_sg =		0, \
->> +	.rq_off =		0, \
->>  }
->>  
->>  /* Protected by ubd_lock */
->> @@ -1241,10 +1242,11 @@ static void do_ubd_request(struct request_queue *q)
->>  			dev->request = req;
->>  			dev->start_sg = 0;
->>  			dev->end_sg = blk_rq_map_sg(q, req, dev->sg);
->> +			dev->rq_off = 0;
->>  		}
->>  
->>  		req = dev->request;
->> -		sector = blk_rq_pos(req);
->> +		sector = blk_rq_pos(req) + dev->rq_off;
->>  		while(dev->start_sg < dev->end_sg){
->>  			struct scatterlist *sg = &dev->sg[dev->start_sg];
->>  
->> @@ -1273,6 +1275,7 @@ static void do_ubd_request(struct request_queue *q)
->>  			}
->>  
->>  			dev->start_sg++;
->> +			dev->rq_off += sg->length >> 9;
->>  		}
->>  		dev->end_sg = 0;
->>  		dev->request = NULL;
->>
->> -- 
+From: Glenn Wurster <gwurster@scs.carleton.ca>
+Date: Mon, 27 Sep 2010 13:04:30 -0400
+
+> If privacy extentions are enabled, but no current temporary address exists,
+> then create one when we get a router advertisement.
 > 
-> This patch does not fix the corruption issue for me.  I applied the patch
-> to 2.6.35.5, and reproduced the "deleted inode referenced" errors
-> in both a gentoo and ubuntu guest OS.  It does take longer to reproduce
-> though, with this patch.
+> Version 2, now with 100% fewer line wraps.  Thanks to David Miller for
+> pointing out the line wrapping issue.
+> 
+> Signed-off-by: Glenn Wurster <gwurster@scs.carleton.ca>
 
-This seems to imply that the original commit pin pointed is not
-the only issue we have in that code atm.
+The existing code is correct from what I can tell.
 
-I think we need to find the real fix here, just disabling merging
-is not a fix (it's just a nasty work-around for the real bug).
+Variable "create" is true when "ifp == NULL" and "valid_lft != 0"
 
--- 
-Jens Axboe
+And RFC 3041 explicitly states in section 3.3:
+
+	When a new public address is created as described in [ADDRCONF]
+	(because the prefix advertised does not match the prefix of any
+	address already assigned to the interface, and Valid Lifetime
+	in the option is not zero), also create a new temporary address.
+
+Your patch is going to cause us to create a temporary address even
+when valid_lft is zero, which the RFC says we should not do.
+
+That goes against what the RFC tells us to do, so I can only conclude
+that your patch is not correct.
+
+I'm not applying this, sorry.
 
