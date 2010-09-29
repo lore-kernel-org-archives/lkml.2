@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444Ab0I2JJQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 05:09:16 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:13049 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753941Ab0I2JJP (ORCPT
+	id S1755454Ab0I2JKS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 05:10:18 -0400
+Received: from smtp102.sbc.mail.ac4.yahoo.com ([76.13.13.241]:32046 "HELO
+	smtp102.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753941Ab0I2JKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 05:09:15 -0400
-Date: Wed, 29 Sep 2010 18:09:04 +0900
-From: Kyungmin Park <kmpark@infradead.org>
-Subject: [PATCH v3 2/2] MAINTAINERS: Add Samsung S5P series FIMC maintainers
-To: linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        rmk@arm.linux.org.uk, kgene.kim@samsung.com, m.szyprowski@samsung.com,
-        pawel@osciak.com, t.fujak@samsung.com, s.nawrocki@samsung.com
-Message-id: <20100929090904.GA21199@july>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7BIT
-Content-disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-OriginalArrivalTime: 29 Sep 2010 09:09:12.0614 (UTC)
- FILETIME=[FBAA1C60:01CB5FB5]
+	Wed, 29 Sep 2010 05:10:15 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: 3PL2MPYVM1n9mA.j0_hyEp9pqGl5p69cOSu8tdXKbCizvZ9
+ IY7E.PGKh0KC.T51uLcxvGiztWUm4zi8zO0ercRFFNL.ZTPcT6eP7iZlzMxC
+ jscxRi5BThE7hmetoxgb6Y3xPFI4w3acEdOffR7NALZVc7CwcAZDp58Snnvr
+ natSZDhSDH.qdSQ8DwKRC73vFaRvdKYmFMUNrK9Xml8zDug2UeJzX0Y5vq_u
+ my1abzBDWq1RQvEyBlPz8WMZYyzGGCuWOdVJ1XlGeU3n7aPNEjHw5ZTr0_JG
+ im3FguMeYfAvX_51Tdg3M1hXMujjHm6lYqlKafQveSGOd7.41tNZTEl0LS7p
+ uxPuOAGkARM8X4HnFow--
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [PATCH 1/3] tcm: Add Thin Provisioning / UNMAP emulation and
+	Block Limits VPD page
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>,
+        Douglas Gilbert <dgilbert@interlog.com>, Jens Axboe <axboe@kernel.dk>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Richard Sharpe <realrichardsharpe@gmail.com>
+In-Reply-To: <yq1sk0taeal.fsf@sermon.lab.mkp.net>
+References: <1285627889-6450-1-git-send-email-nab@linux-iscsi.org>
+	 <yq1sk0taeal.fsf@sermon.lab.mkp.net>
+Content-Type: text/plain
+Date: Wed, 29 Sep 2010 02:05:56 -0700
+Message-Id: <1285751156.18417.57.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kyungmin Park <kyungmin.park@samsung.com>
+On Tue, 2010-09-28 at 14:55 -0400, Martin K. Petersen wrote:
+> >>>>> "nab" == Nicholas A Bellinger <nab@linux-iscsi.org> writes:
+> 
+> nab> This patch also adds the Block Limits VPD (0xb0) page
+> 
+> You should add the Thin Provisioning VPD page as well and set TPU and/or
+> TPWS.
+> 
 
-Add Samsung S5P series FIMC(Camera Interface) maintainers
+Greetings mkp,
 
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
-v2:
-	Write the right maintainers
+So I was looking at adding this VPD page orginally to set TPU=1 w/ DP=0
+(because I don't believe there is currently way to get build the
+PROVISIONING GROUP DESCRIPTORs from Block Discard knowledge), but I
+ended getting a bit confused by the THRESHOLD EXPONENT, and what value
+this should returned for the TCM/IBLOCK and TCM/FILEIO backstores when
+blk_queue_discard()==1 is enabled.
 
- MAINTAINERS |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+Since this is currently not implemented in scsi_debug.c or used in any
+way by sd.c AFAICT, do you have any additional information on how this
+should be determined together with the UNMAP -> blk_issue_discard()
+emulation bits..?
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 8ae1797..1e233d9 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -977,6 +977,16 @@ L:	linux-arm-kernel@lists.infradead.org
- S:	Maintained
- F:	arch/arm/mach-s5pv310/mach-universal_c210.c
- 
-+ARM/SAMSUNG S5P SERIES FIMC SUPPORT
-+M:	Kyungmin Park <kyungmin.park@samsung.com>
-+M:	Sylwester Nawrocki <s.nawrocki@samsung.com>
-+L:	linux-arm-kernel@lists.infradead.org
-+L:	linux-media@vger.kernel.org
-+S:	Maintained
-+F:	arch/arm/plat-s5p/dev-fimc*
-+F:	arch/arm/plat-samsung/include/plat/*fimc*
-+F:	drivers/media/video/s5p-fimc/
-+
- ARM/SHMOBILE ARM ARCHITECTURE
- M:	Paul Mundt <lethal@linux-sh.org>
- M:	Magnus Damm <magnus.damm@gmail.com>
--- 
-1.5.3.3
+Thanks!
+
+--nab
 
