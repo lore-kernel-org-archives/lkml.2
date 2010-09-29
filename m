@@ -1,133 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab0I2GG7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 02:06:59 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:48264 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750801Ab0I2GG6 convert rfc822-to-8bit (ORCPT
+	id S1752782Ab0I2GLu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 02:11:50 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:47833 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751907Ab0I2GLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 02:06:58 -0400
-Date: Wed, 29 Sep 2010 15:06:45 +0900
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: =?ISO-8859-1?B?QW3pcmljbw==?= Wang <xiyou.wangcong@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Marek <mmarek@suse.cz>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] namespace.pl: fix source tree name mangling
-Message-ID: <20100929150645.75b7e390@s6510>
-In-Reply-To: <20100929060427.GD5169@cr0.nay.redhat.com>
-References: <20100928084400.997539242@vyatta.com>
-	<20100928084528.884369764@vyatta.com>
-	<20100929043112.GB5169@cr0.nay.redhat.com>
-	<20100929141153.551a4851@s6510>
-	<20100929060427.GD5169@cr0.nay.redhat.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 29 Sep 2010 02:11:49 -0400
+Date: Wed, 29 Sep 2010 15:11:46 +0900
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Michal Simek <monstr@monstr.eu>
+Cc: linux-kernel@vger.kernel.org, john.williams@petalogix.com,
+        edgar.iglesias@gmail.com, duyl@xilinx.com, linnj@xilinx.com,
+        microblaze-uclinux@itee.uq.edu.au,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 4/7] net: emaclite: Add support for little-endian
+ platforms
+Message-ID: <20100929061146.GA2439@angua.secretlab.ca>
+References: <1285739538-29058-1-git-send-email-monstr@monstr.eu>
+ <1285739538-29058-2-git-send-email-monstr@monstr.eu>
+ <1285739538-29058-3-git-send-email-monstr@monstr.eu>
+ <1285739538-29058-4-git-send-email-monstr@monstr.eu>
+ <1285739538-29058-5-git-send-email-monstr@monstr.eu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285739538-29058-5-git-send-email-monstr@monstr.eu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Sep 2010 14:04:27 +0800
-Américo Wang <xiyou.wangcong@gmail.com> wrote:
-
-> On Wed, Sep 29, 2010 at 02:11:53PM +0900, Stephen Hemminger wrote:
-> >On Wed, 29 Sep 2010 12:31:12 +0800
-> >Américo Wang <xiyou.wangcong@gmail.com> wrote:
-> >
-> >> On Tue, Sep 28, 2010 at 05:44:02PM +0900, Stephen Hemminger wrote:
-> >> >The current namespace.pl script does not find source files correctly.
-> >> >The problem is that the current directory is not the base of the kernel
-> >> >tree at the point where it calls objdump.
-> >> >
-> >> >Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
-> >> >
-> >> >--- a/scripts/namespace.pl	2010-09-27 17:53:29.919433444 +0900
-> >> >+++ b/scripts/namespace.pl	2010-09-28 09:24:36.891552993 +0900
-> >> >@@ -167,8 +167,10 @@ sub do_nm
-> >> > 		printf STDERR "$fullname is not an object file\n";
-> >> > 		return;
-> >> > 	}
-> >> >-	($source = $fullname) =~ s/\.o$//;
-> >> >-	if (-e "$objtree$source.c" || -e "$objtree$source.S") {
-> >> >+	$fullname =~ s/\.o$//;
-> >> >+	$source = $basename;
-> >> >+	$source =~ s/\.o$//;
-> >> 
-> >> With your patch applied, $source will be the basename of
-> >> an obj path with .o stripped.
-> >> 
-> >> >+	if (-e "$objtree$fullname.c" || -e "$objtree$fullname.S") {
-> >> > 		$source = "$objtree$source";
-> >> > 	} else {
-> >> > 		$source = "$srctree$source";
-> >> >
-> >> 
-> >> So here we will get a non-exist path stored in $source.
-> >> 
-> >> Are you serious? What problem did you meet? I see no problem
-> >> with the original code here.
-> >
-> >The original script is broken, if you run it on a compiled
-> >kernel tree.
-> >
-> >No source file found for arch/x86/boot/a20.o
-> >No source file found for arch/x86/boot/bioscall.o
-> >No source file found for arch/x86/boot/cmdline.o
-> >No source file found for arch/x86/boot/copy.o
-> >No source file found for arch/x86/boot/cpucheck.o
-> >No source file found for arch/x86/boot/early_serial_console.o
-> >No source file found for arch/x86/boot/edd.o
-> >No source file found for arch/x86/boot/main.o
-> >No source file found for arch/x86/boot/mca.o
-> >No source file found for arch/x86/boot/memory.o
-> >No source file found for arch/x86/boot/pm.o
-> >No source file found for arch/x86/boot/pmjump.o
-> >No source file found for arch/x86/boot/printf.o
-> >
-> >...
-> >
-> >Running under perl debugger shows that the script has
-> >done chdir prior to the failing test:
-> >
+On Wed, Sep 29, 2010 at 03:52:15PM +1000, Michal Simek wrote:
+> Upcomming Microblaze is little endian that's why is necessary
+> to fix protocol and length loading.
 > 
-> I see, the docs of Find module said it will do chdir. :)
-> But I think your patch is still not right, how about the
-> one below?
+> Signed-off-by: Michal Simek <monstr@monstr.eu>
+> CC: "David S. Miller" <davem@davemloft.net>
+> CC: Grant Likely <grant.likely@secretlab.ca>
+> CC: Eric Dumazet <eric.dumazet@gmail.com>
+> CC: netdev@vger.kernel.org
+> CC: linux-kernel@vger.kernel.org
+> CC: devicetree-discuss@lists.ozlabs.org
 
-Please be more precise about "not right"? It makes the code
-work.
+This should go via davem, but it looks correct to me.
 
-Externally defined symbols with no external references
-  arch/x86/boot/copy
-    memcpy
-  arch/x86/boot/header
-    _start
-    bootsect_start
-    realmode_swtch
-  arch/x86/boot/pmjump
-    in_pm32
-  arch/x86/boot/string
-    atou
-  arch/x86/crypto/aes_glue
-    crypto_aes_decrypt_x86
-    crypto_aes_encrypt_x86
-  arch/x86/kernel/acpi/boot
-    mp_config_acpi_legacy_irqs
-    mp_override_legacy_irq
-    mp_register_gsi
-  arch/x86/kernel/acpi/realmode/copy
-    memcpy
-  arch/x86/kernel/acpi/realmode/wakeup
-    _start
-  arch/x86/kernel/acpi/wakeup_32
-    saved_eip
-  arch/x86/kernel/apic/apic
-    apic_disable
-    enable_IR
-    max_physical_apicid
-    setup_APIC_eilvt_mce
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-
-...
+> ---
+>  drivers/net/xilinx_emaclite.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/net/xilinx_emaclite.c b/drivers/net/xilinx_emaclite.c
+> index 71122ee..533ebb1 100644
+> --- a/drivers/net/xilinx_emaclite.c
+> +++ b/drivers/net/xilinx_emaclite.c
+> @@ -430,8 +430,8 @@ static u16 xemaclite_recv_data(struct net_local *drvdata, u8 *data)
+>  	}
+>  
+>  	/* Get the protocol type of the ethernet frame that arrived */
+> -	proto_type = ((in_be32(addr + XEL_HEADER_OFFSET +
+> -			XEL_RXBUFF_OFFSET) >> XEL_HEADER_SHIFT) &
+> +	proto_type = ((ntohl(in_be32(addr + XEL_HEADER_OFFSET +
+> +			XEL_RXBUFF_OFFSET)) >> XEL_HEADER_SHIFT) &
+>  			XEL_RPLR_LENGTH_MASK);
+>  
+>  	/* Check if received ethernet frame is a raw ethernet frame
+> @@ -439,9 +439,9 @@ static u16 xemaclite_recv_data(struct net_local *drvdata, u8 *data)
+>  	if (proto_type > (ETH_FRAME_LEN + ETH_FCS_LEN)) {
+>  
+>  		if (proto_type == ETH_P_IP) {
+> -			length = ((in_be32(addr +
+> +			length = ((ntohl(in_be32(addr +
+>  					XEL_HEADER_IP_LENGTH_OFFSET +
+> -					XEL_RXBUFF_OFFSET) >>
+> +					XEL_RXBUFF_OFFSET)) >>
+>  					XEL_HEADER_SHIFT) &
+>  					XEL_RPLR_LENGTH_MASK);
+>  			length += ETH_HLEN + ETH_FCS_LEN;
+> -- 
+> 1.5.5.1
+> 
