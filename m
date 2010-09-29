@@ -1,107 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196Ab0I2Ied (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 04:34:33 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:27521 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755001Ab0I2Iec (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 04:34:32 -0400
-Message-ID: <4CA2FA13.8050405@panasas.com>
-Date: Wed, 29 Sep 2010 10:34:27 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	id S1755312Ab0I2Iej (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 04:34:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65402 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755213Ab0I2Ieg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 04:34:36 -0400
+Date: Wed, 29 Sep 2010 10:28:20 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
+        "Xin, Xiaohui" <xiaohui.xin@intel.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
+ kernel
+Message-ID: <20100929082820.GC21195@redhat.com>
+References: <20100914182707.GB15549@redhat.com>
+ <1284490143.13351.82.camel@localhost.localdomain>
+ <20100914190156.GA16037@redhat.com>
+ <1284492983.13351.95.camel@localhost.localdomain>
+ <20100915051241.GA25340@redhat.com>
+ <1284531675.24603.259.camel@localhost.localdomain>
+ <20100915101000.GB28016@redhat.com>
+ <1284562354.2573.12.camel@localhost.localdomain>
+ <1285730669.31343.7.camel@localhost.localdomain>
+ <20100929081645.GA21195@redhat.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>
-CC: Andrew Morton <akpm@linux-foundation.org>, Julia Lawall <julia@diku.dk>,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: [PATCH] um: Proper Fix for f25c80a4: remove duplicate structure field
- initialization
-References: <4CA09977.80506@panasas.com> <AANLkTim85sH_2o=xCiDuoQrHq_7ZL96Y91xQMGxUP5Fy@mail.gmail.com> <20100928134721.f79a5955.akpm@linux-foundation.org> <AANLkTi=E7+CpJZE3XC7O1LvJu6LWfmvSxonskH4CYg25@mail.gmail.com>
-In-Reply-To: <AANLkTi=E7+CpJZE3XC7O1LvJu6LWfmvSxonskH4CYg25@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Sep 2010 08:34:31.0069 (UTC) FILETIME=[22F78CD0:01CB5FB1]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100929081645.GA21195@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 29, 2010 at 10:16:45AM +0200, Michael S. Tsirkin wrote:
+> On Tue, Sep 28, 2010 at 08:24:29PM -0700, Shirley Ma wrote:
+> > Hello Michael,
+> > 
+> > On Wed, 2010-09-15 at 07:52 -0700, Shirley Ma wrote:
+> > > > >  Don't you think once I address vhost_add_used_and_signal update
+> > > > > issue, it is a simple and complete patch for macvtap TX zero copy?
+> > > > > 
+> > > > > Thanks
+> > > > > Shirley
+> > > > 
+> > > > I like the fact that the patch is simple. Unfortunately
+> > > > I suspect it'll stop being simple by the time it's complete :) 
+> > > 
+> > > I can make a try. :)
+> > 
+> > I compared several approaches for addressing the issue being raised here
+> > on how/when to update vhost_add_used_and_signal. The simple approach I
+> > have found is:
+> > 
+> > 1. Adding completion field in struct virtqueue;
+> > 2. when it is a zero copy packet, put vhost thread wait for completion
+> > to update vhost_add_used_and_signal;
+> > 3. passing vq from vhost to macvtap as skb destruct_arg;
+> > 4. when skb is freed for the last reference, signal vq completion
+> > The test results show same performance as the original patch. How do you
+> > think? If it sounds good to you. I will resubmit this reversion patch.
+> > The patch still keeps as simple as it was before. :)
+> > 
+> > Thanks
+> > Shirley
+> 
+> If you look at dev_hard_start_xmit you will see a call
+> to skb_orphan_try which often calls the skb destructor.
+> So I suspect this is almost equivalent to your original patch,
+> and has the same correctness issue.
 
-uml_net_set_mac() was broken and luckily it was never used, before.
-What it was trying to do is spin_lock before memcopy the mac address.
-Linus attempted to fix it in assumption that someone decided the
-lock was needed. But since it was never ever used at all, and was
-just dead code, I think we can assume that it is not needed, after
-all.
+So you could try doing skb_tx(skb)->prevent_sk_orphan = 1
+just to see what will happen. Might be interesting - just
+make sure the device doesn't orphan the skb first thing.
+I suspect lack of parallelism will result in bad throughput
+esp for small messages.
 
-On the other hand patch [f25c80a4] was trying to use eth_mac_addr()
-in eth_configure(), *which was the real fallout*. Because of state
-checks done inside eth_mac_addr() the address was never set. I have
-not reintroduced the memcpy wrapper, but I've put a comment for future
-cats.
+Note this still won't make it correct (this has module unloading
+issue, and devices might still orphan skb, clone it, or hang on to
+paged data in some other way) but at least closer.
 
-The code now is back to exactly as it was before [f25c80a4]. With
-the cleanup applied. If the spin_lock is indeed needed then a contender
-should supply a test case that fails, then fix it with the proper
-locking, as a separate unrelated patch.
+I think you should try testing with guest to external communication,
+this will uncover some of these correctness issues for you.
+I think netperf also has some flag to check data, might
+be a good idea to use it for testing.
 
-CC: Julia Lawall <julia@diku.dk>
-CC: David S. Miller <davem@davemloft.net>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Al Viro <viro@ZenIV.linux.org.uk>
-Tested-by: Boaz Harrosh <bharrosh@panasas.com>
-Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
----
- arch/um/drivers/net_kern.c |   17 +++--------------
- 1 files changed, 3 insertions(+), 14 deletions(-)
-
-diff --git a/arch/um/drivers/net_kern.c b/arch/um/drivers/net_kern.c
-index 2ab233b..47d0c37 100644
---- a/arch/um/drivers/net_kern.c
-+++ b/arch/um/drivers/net_kern.c
-@@ -255,18 +255,6 @@ static void uml_net_tx_timeout(struct net_device *dev)
- 	netif_wake_queue(dev);
- }
- 
--static int uml_net_set_mac(struct net_device *dev, void *addr)
--{
--	struct uml_net_private *lp = netdev_priv(dev);
--	struct sockaddr *hwaddr = addr;
--
--	spin_lock_irq(&lp->lock);
--	eth_mac_addr(dev, hwaddr->sa_data);
--	spin_unlock_irq(&lp->lock);
--
--	return 0;
--}
--
- static int uml_net_change_mtu(struct net_device *dev, int new_mtu)
- {
- 	dev->mtu = new_mtu;
-@@ -373,7 +361,7 @@ static const struct net_device_ops uml_netdev_ops = {
- 	.ndo_start_xmit 	= uml_net_start_xmit,
- 	.ndo_set_multicast_list = uml_net_set_multicast_list,
- 	.ndo_tx_timeout 	= uml_net_tx_timeout,
--	.ndo_set_mac_address	= uml_net_set_mac,
-+	.ndo_set_mac_address	= eth_mac_addr,
- 	.ndo_change_mtu 	= uml_net_change_mtu,
- 	.ndo_validate_addr	= eth_validate_addr,
- };
-@@ -472,7 +460,8 @@ static void eth_configure(int n, void *init, char *mac,
- 	    ((*transport->user->init)(&lp->user, dev) != 0))
- 		goto out_unregister;
- 
--	eth_mac_addr(dev, device->mac);
-+	/* don't use eth_mac_addr, it will not work here */
-+	memcpy(dev->dev_addr, device->mac, ETH_ALEN);
- 	dev->mtu = transport->user->mtu;
- 	dev->netdev_ops = &uml_netdev_ops;
- 	dev->ethtool_ops = &uml_net_ethtool_ops;
--- 
-1.7.2.3
-
-
+> -- 
+> MST
