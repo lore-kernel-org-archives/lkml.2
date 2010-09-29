@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992Ab0I2Ao3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 20:44:29 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38853 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751243Ab0I2Ao2 (ORCPT
+	id S1754537Ab0I2AqP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 20:46:15 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:59550 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753124Ab0I2AqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 20:44:28 -0400
-Date: Tue, 28 Sep 2010 17:44:59 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "N.P.S. N.P.S." <napohybelskurwysynom2010@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: mmotm 2010-09-28-16-13 uploaded
-Message-Id: <20100928174459.53c5a865.akpm@linux-foundation.org>
-In-Reply-To: <AANLkTimFbxc7MGdirSzdJ-YZbFFHBVn4JJhHcP46W1_4@mail.gmail.com>
-References: <201009282344.o8SNiliN024981@imap1.linux-foundation.org>
-	<AANLkTimFbxc7MGdirSzdJ-YZbFFHBVn4JJhHcP46W1_4@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Sep 2010 20:46:13 -0400
+Date: Tue, 28 Sep 2010 20:46:07 -0400
+From: Kyle McMartin <kyle@mcmartin.ca>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-alpha@vger.kernel.org" <linux-alpha@vger.kernel.org>,
+        "linux-cris-kernel@axis.com" <linux-cris-kernel@axis.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Greg Ungerer <gerg@uclinux.org>, Jeff Dike <jdike@addtoit.com>,
+        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
+        Chris Zankel <chris@zankel.net>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: [RFC trollpatch 1/1] genirq: Remove the fits all and nothing
+ __do_IRQ() code
+Message-ID: <20100929004607.GA18362@bombadil.infradead.org>
+References: <20100908152036.643594727@linutronix.de>
+ <AANLkTikVHO9DmyTX==CwViDK1rP0masBwjMakHZ0U=kZ@mail.gmail.com>
+ <alpine.LFD.2.00.1009271953390.2416@localhost6.localdomain6>
+ <987664A83D2D224EAE907B061CE93D5301604712B4@orsmsx505.amr.corp.intel.com>
+ <alpine.LFD.2.00.1009272048100.2416@localhost6.localdomain6>
+ <987664A83D2D224EAE907B061CE93D530160471328@orsmsx505.amr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <987664A83D2D224EAE907B061CE93D530160471328@orsmsx505.amr.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Sep 2010 02:27:55 +0200 "N.P.S. N.P.S." <napohybelskurwysynom2010@gmail.com> wrote:
-
-> Hi,
+On Mon, Sep 27, 2010 at 12:01:51PM -0700, Luck, Tony wrote:
+> > Hmm, why isn't chip->unmask() sufficient ?
+>  
+> That's a good question.  I'll take a look at what ia64 is doing
+> in the ->unmask() and ->end() functions to see if I can fix this
+> with some code shuffling.
 > 
-> 2010/9/29  <akpm@linux-foundation.org>:
-> > The mm-of-the-moment snapshot 2010-09-28-16-13 has been uploaded to
-> 
-> I wonder why are these two functions in include/linux/fs.h
-> static inline void lock_flocks()
-> {
-> }
-> 
-> static inline void unlock_flocks()
-> {
-> }
-> 
-> Was there any contest for function, which will cause many warnings?
-> 
-> I'm getting an awful lot of
->   CC      kernel/trace/trace_sched_switch.o
-> In file included from kernel/trace/trace_sched_switch.c:8:
-> include/linux/fs.h:1278: warning: function declaration isn___t a prototype
-> include/linux/fs.h:1282: warning: function declaration isn___t a prototype
->   CC      kernel/trace/trace_functions.o
-> In file included from include/linux/debugfs.h:18,
->                  from kernel/trace/trace_functions.c:13:
-> include/linux/fs.h:1278: warning: function declaration isn___t a prototype
-> include/linux/fs.h:1282: warning: function declaration isn___t a prototype
 
-Arnd has been bad.
+Did you end up solving this? ia64 iosapic and parisc iosapic still look
+fairly similar... I hit the same issue of ->end() not being called in
+the handle_level_irq path and ended up just folding in the missing bit
+to ->unmask (we were already EOI the IOSAPIC, but missing the EOI for
+the parisc cpu.)
 
-commit 0a4de5980db88de75b798b291524ba9af8553e7c
-Author:     Arnd Bergmann <arnd@arndb.de>
-AuthorDate: Sat Sep 18 15:09:31 2010 +0200
-Commit:     Arnd Bergmann <arnd@arndb.de>
-CommitDate: Sat Sep 25 18:07:47 2010 +0200
-
-    fs/locks.c: prepare for BKL removal
-
+--Kyle
