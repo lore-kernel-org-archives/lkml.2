@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab0I2NQs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 09:16:48 -0400
-Received: from kroah.org ([198.145.64.141]:43738 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755484Ab0I2NQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 09:16:47 -0400
-Date: Wed, 29 Sep 2010 05:37:52 -0700
-From: Greg KH <greg@kroah.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Robin Holt <holt@sgi.com>, Nathan Fontenot <nfont@austin.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linuxppc-dev@ozlabs.org, Dave Hansen <dave@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 0/8] v2 De-Couple sysfs memory directories from memory
-	sections
-Message-ID: <20100929123752.GA18865@kroah.com>
-References: <4CA0EBEB.1030204@austin.ibm.com> <4CA1E338.6070201@redhat.com> <20100928151218.GJ14068@sgi.com> <20100929025035.GA13096@kroah.com> <4CA2F9A2.3090202@redhat.com>
+	id S1756155Ab0I2N3C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 09:29:02 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:56977 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753374Ab0I2N3A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 09:29:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=QLeopAMLEVemKgNtrH92uXbJ1hs3w5O6NXHZFwF0DAXMOgjKagyx2ZrPzUZt8eD33r
+         IEXAiS1cIu/nDqMhe3nw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CA2F9A2.3090202@redhat.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <AANLkTimoE8wAhT+yxXBPnZvTTGrAtDjdaXPBN3Xg28eL@mail.gmail.com>
+References: <20100915162034.GO13563@erda.amd.com>
+	<tip-63e6be6d98e1a2bcdca86872b67052e51ab6afa1@git.kernel.org>
+	<AANLkTimB2gf=2zYCwiKEgozt_Rsa1Cpb6JuLSzmHusFX@mail.gmail.com>
+	<20100929125301.GG13563@erda.amd.com>
+	<20100929125453.GH13563@erda.amd.com>
+	<AANLkTimoE8wAhT+yxXBPnZvTTGrAtDjdaXPBN3Xg28eL@mail.gmail.com>
+Date: Wed, 29 Sep 2010 15:28:56 +0200
+Message-ID: <AANLkTi=WYU2=4Hu7tb+TSrhJw9K9du19_KjMcG3ij=qn@mail.gmail.com>
+Subject: Re: [tip:perf/urgent] perf, x86: Catch spurious interrupts after
+ disabling counters
+From: Stephane Eranian <eranian@google.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "gorcunov@gmail.com" <gorcunov@gmail.com>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "mingo@elte.hu" <mingo@elte.hu>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 29, 2010 at 10:32:34AM +0200, Avi Kivity wrote:
->  On 09/29/2010 04:50 AM, Greg KH wrote:
->> >
->> >  Because the old ABI creates 129,000+ entries inside
->> >  /sys/devices/system/memory with their associated links from
->> >  /sys/devices/system/node/node*/ back to those directory entries.
->> >
->> >  Thankfully things like rpm, hald, and other miscellaneous commands scan
->> >  that information.
->>
->> Really?  Why?  Why would rpm care about this?  hald is dead now so we
->> don't need to worry about that anymore,
->
-> That's not what compatiblity means.  We can't just support 
-> latest-and-greatest userspace on latest-and-greatest kernels.
-
-Oh, I know that, that's not what I was getting at at all here, sorry if
-it came across that way.
-
-I wanted to know so we could go fix programs that are mucking around in
-these files, as odds are, the shouldn't be doing that in the first
-place.
-
-Like rpm, why would it matter what the memory in the system looks like?
-
-thanks,
-
-greg k-h
+On Wed, Sep 29, 2010 at 3:13 PM, Stephane Eranian <eranian@google.com> wrote:
+> On Wed, Sep 29, 2010 at 2:54 PM, Robert Richter <robert.richter@amd.com> wrote:
+>> On 29.09.10 14:53:01, Robert Richter wrote:
+>>> Stephane,
+>>>
+>>> On 29.09.10 08:26:41, Stephane Eranian wrote:
+>>> > You've applied the fix only to the generic X86 interrupt handler
+>>> > which is currently used by AMD64 processors.
+>>>
+>>> (... and P4).
+>>>
+Well, in tip-x86, I don't see your fix in p4_pmu_handle_irq(). Is
+that pending?
