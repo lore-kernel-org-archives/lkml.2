@@ -1,83 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755537Ab0I2TWy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 15:22:54 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:28319 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755380Ab0I2TWF (ORCPT
+	id S1755340Ab0I2T1N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 15:27:13 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:45972 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755060Ab0I2T1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 15:22:05 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:
-	references:x-system-of-record;
-	b=bvA9sBsrtk9s1le6xO74rRLgq5y8BrQO+q8aJa6OYf734mz/8qg43N1hT9LaEBA01
-	oegLgfCZApmTF2sy8G9Bw==
-From: Venkatesh Pallipadi <venki@google.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Venkatesh Pallipadi <venki@google.com>
-Subject: [PATCH 4/7] x86: Add IRQ_TIME_ACCOUNTING in x86 -v3
-Date: Wed, 29 Sep 2010 12:21:33 -0700
-Message-Id: <1285788096-29471-5-git-send-email-venki@google.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1285788096-29471-1-git-send-email-venki@google.com>
-References: <1285788096-29471-1-git-send-email-venki@google.com>
-X-System-Of-Record: true
+	Wed, 29 Sep 2010 15:27:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=bAw3k7UHKHpWEcEZ5MGUPC3KfWcMF0EWlW+bM7SV3dHgziK3khHC6bZgQ+dJMO5ryo
+         mgcd18uAiBRImJwCMP/CgcuyePopJ1Fwz4BmuxKnOLUTI5ipRMZsi1F40+HkNHhFPdho
+         X0VeMgVsT60tQhyhSI2dYV5K7x5GFHCd0/Moo=
+MIME-Version: 1.0
+In-Reply-To: <Pine.LNX.4.64.1009290115500.15162@axis700.grange>
+References: <AANLkTimMH604FW_NZehY68w8B_cV_Lhe-ZwZq0cAYUfd@mail.gmail.com>
+	<AANLkTi=mLizQGyp5cdR_WtHjMMhixBOOagkFUNVqO4vj@mail.gmail.com>
+	<Pine.LNX.4.64.1009281624100.11083@axis700.grange>
+	<AANLkTikxzY9KP2zzQ+pXN0t_5Z4L7kHyd_Xz5fD+GcZn@mail.gmail.com>
+	<Pine.LNX.4.64.1009290115500.15162@axis700.grange>
+Date: Wed, 29 Sep 2010 12:27:11 -0700
+Message-ID: <AANLkTinPAuqQa+KOLuaX3ZQO4NXuVoi=uWsofTiNXW04@mail.gmail.com>
+Subject: Re: HDMI open source to handle audio/video/CEC in one driver
+From: Raymond Liu <raymondliu3linux@gmail.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Ben Gamari <bgamari@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds IRQ_TIME_ACCOUNTING option on x86 and runtime enables it
-when TSC is enabled.
+Hi Ben and Guennadi,
 
-This change just enables fine grained irq time accounting, isn't used yet.
-Following patches use it for different purposes.
+Thanks again for these important inputs.  We had a much clear picture
+about what we can do and what we should do with our OEMs on the driver
+for open source at this point.
 
-Signed-off-by: Venkatesh Pallipadi <venki@google.com>
----
- arch/x86/Kconfig      |   11 +++++++++++
- arch/x86/kernel/tsc.c |    2 ++
- 2 files changed, 13 insertions(+), 0 deletions(-)
+Thanks,
+Raymond
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index cea0cd9..f4c70c2 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -795,6 +795,17 @@ config SCHED_MC
- 	  making when dealing with multi-core CPU chips at a cost of slightly
- 	  increased overhead in some places. If unsure say N here.
- 
-+config IRQ_TIME_ACCOUNTING
-+	bool "Fine granularity task level IRQ time accounting"
-+	default n
-+	---help---
-+	  Select this option to enable fine granularity task irq time
-+	  accounting. This is done by reading a timestamp on each
-+	  transitions between softirq and hardirq state, so there can be a
-+	  small performance impact.
-+
-+	  If in doubt, say N here.
-+
- source "kernel/Kconfig.preempt"
- 
- config X86_UP_APIC
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index 26a863a..110d815 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -987,6 +987,8 @@ void __init tsc_init(void)
- 	/* now allow native_sched_clock() to use rdtsc */
- 	tsc_disabled = 0;
- 
-+	enable_sched_clock_irqtime();
-+
- 	lpj = ((u64)tsc_khz * 1000);
- 	do_div(lpj, HZ);
- 	lpj_fine = lpj;
--- 
-1.7.1
-
+On Tue, Sep 28, 2010 at 4:29 PM, Guennadi Liakhovetski
+<g.liakhovetski@gmx.de> wrote:
+> On Tue, 28 Sep 2010, Raymond Liu wrote:
+>
+>> Hi Ben and Guennadi,
+>>
+>> Really appreciate your inputs.
+>>
+>> For temporarily short term purpose (we already had a driver but it did
+>> not fit into any of these you mentioned), what is the process we
+>> should follow to make it an "open source"?
+>
+> Sorry, do not understand: if it didn't fit into any of these categories,
+> what is it like? In any case, general instructions you find in the
+> following files in your Linux kernel sources directory:
+>
+> Documentation/SubmitChecklist
+> Documentation/SubmittingPatches
+> Documentation/SubmittingDrivers
+> Documentation/CodingStyle
+>
+> I know, it might seem a lot, but take a bit of time to look through them,
+> not everything will be 100% relevant to each specific case, but do follow
+> Documentation/CodingStyle and choose a suitable mailing list for your
+> posts - this list (LKML) is too gneric for your questions, that's why
+> you're getting so few to-the-topic replies.
+>
+> And I'm not sure what you mean by "temporarily short term purpose." As
+> soon as your driver gets into the kernel, it is better, if it is designed
+> to stay there for a longer time. It might not be perfect from the very
+> first version, its functionality might be restricted, but for that little,
+> that it does, it should already adhere to the kernel standards. You might
+> also consider adding your driver under drivers/staging - if you're unable
+> to follow the guidelines and want to give your driver more exposure to
+> gradually fix it.
+>
+> Thanks
+> Guennadi
+> ---
+> Guennadi Liakhovetski, Ph.D.
+> Freelance Open-Source Software Developer
+> http://www.open-technology.de/
+>
