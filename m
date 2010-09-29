@@ -1,74 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486Ab0I2PUh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 11:20:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27662 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750984Ab0I2PUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 11:20:35 -0400
-Date: Wed, 29 Sep 2010 17:14:15 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
-        "Xin, Xiaohui" <xiaohui.xin@intel.com>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
- kernel
-Message-ID: <20100929151415.GA27041@redhat.com>
-References: <1284483745.13351.71.camel@localhost.localdomain>
- <20100914182707.GB15549@redhat.com>
- <1284490143.13351.82.camel@localhost.localdomain>
- <20100914190156.GA16037@redhat.com>
- <1284492983.13351.95.camel@localhost.localdomain>
- <20100915051241.GA25340@redhat.com>
- <1284531675.24603.259.camel@localhost.localdomain>
- <20100915101000.GB28016@redhat.com>
- <1284562354.2573.12.camel@localhost.localdomain>
- <1285730669.31343.7.camel@localhost.localdomain>
+	id S1753585Ab0I2P1v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 11:27:51 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:39074 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751249Ab0I2P1u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 11:27:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Js2yIH8aPWEkAqesJxHvaWQcFSH8hMzjJTufvK7klnhr15HCNd+DAEl++M0H7yTWGj
+         XNc1WqSwNXmj1/WlMPXZzywrsQ1+fhllJ7o6tAspAGW0ZHxQDJQ30CxyShIuZykJ3uuk
+         G4jmNONShA7R87RQe+W5104Y+HBJF7Luzw1eY=
+Date: Wed, 29 Sep 2010 19:27:45 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Stephane Eranian <eranian@google.com>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "mingo@elte.hu" <mingo@elte.hu>
+Subject: Re: [tip:perf/urgent] perf, x86: Catch spurious interrupts after
+	disabling counters
+Message-ID: <20100929152745.GC9440@lenovo>
+References: <20100915162034.GO13563@erda.amd.com> <tip-63e6be6d98e1a2bcdca86872b67052e51ab6afa1@git.kernel.org> <AANLkTimB2gf=2zYCwiKEgozt_Rsa1Cpb6JuLSzmHusFX@mail.gmail.com> <20100929125301.GG13563@erda.amd.com> <20100929125453.GH13563@erda.amd.com> <AANLkTimoE8wAhT+yxXBPnZvTTGrAtDjdaXPBN3Xg28eL@mail.gmail.com> <AANLkTi=WYU2=4Hu7tb+TSrhJw9K9du19_KjMcG3ij=qn@mail.gmail.com> <20100929150140.GK13563@erda.amd.com> <20100929151253.GL13563@erda.amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1285730669.31343.7.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20100929151253.GL13563@erda.amd.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 28, 2010 at 08:24:29PM -0700, Shirley Ma wrote:
-> Hello Michael,
+On Wed, Sep 29, 2010 at 05:12:53PM +0200, Robert Richter wrote:
+> On 29.09.10 17:01:40, Robert Richter wrote:
+> > Right, I wasn't remembering correctly, it was P6 and core. And yes, P4
+> > requires the fix. Will send a patch for this.
 > 
-> On Wed, 2010-09-15 at 07:52 -0700, Shirley Ma wrote:
-> > > >  Don't you think once I address vhost_add_used_and_signal update
-> > > > issue, it is a simple and complete patch for macvtap TX zero copy?
-> > > > 
-> > > > Thanks
-> > > > Shirley
-> > > 
-> > > I like the fact that the patch is simple. Unfortunately
-> > > I suspect it'll stop being simple by the time it's complete :) 
-> > 
-> > I can make a try. :)
+> Ok, Cyrill is sending the patch.
 > 
-> I compared several approaches for addressing the issue being raised here
-> on how/when to update vhost_add_used_and_signal. The simple approach I
-> have found is:
+> Thanks,
 > 
-> 1. Adding completion field in struct virtqueue;
-> 2. when it is a zero copy packet, put vhost thread wait for completion
-> to update vhost_add_used_and_signal;
-> 3. passing vq from vhost to macvtap as skb destruct_arg;
-> 4. when skb is freed for the last reference, signal vq completion
-> 
-> The test results show same performance as the original patch. How do you
-> think? If it sounds good to you. I will resubmit this reversion patch.
-> The patch still keeps as simple as it was before. :)
-> 
-> Thanks
-> Shirley
+> -Robert
+>
 
-I guess I just don't understand what your patch does.
-If you send it, I can take a look.
+Managed to implement it earlier then I thought.
 
--- 
-MST
+  Cyrill
+---
+Subject: [PATCH -tip] perf, x86: Handle in flight IRQs on P4 platform
+
+Stephane reported we've missed to guard P4 platform
+against spurious in-flight performance IRQs. Fix it.
+
+[ the patch is a complement to commit 63e6be6d98e1 ]
+
+Reported-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Robert Richter <robert.richter@amd.com>
+CC: Lin Ming <ming.m.lin@intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_p4.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
++++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -904,8 +904,12 @@ static int p4_pmu_handle_irq(struct pt_r
+ 	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
+ 		int overflow;
+ 
+-		if (!test_bit(idx, cpuc->active_mask))
++		if (!test_bit(idx, cpuc->active_mask)) {
++			/* catch in-flight IRQs */
++			if (__test_and_clear_bit(idx, cpuc->running))
++				handled++;
+ 			continue;
++		}
+ 
+ 		event = cpuc->events[idx];
+ 		hwc = &event->hw;
