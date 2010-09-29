@@ -1,78 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266Ab0I2TBS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 15:01:18 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:60747 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754022Ab0I2TBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 15:01:16 -0400
-Message-Id: <20100929190115.766603780@gulag1.americas.sgi.com>
+	id S1755295Ab0I2TBT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 15:01:19 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:41477 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754217Ab0I2TBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 15:01:17 -0400
+Message-Id: <20100929190115.494540024@gulag1.americas.sgi.com>
 User-Agent: quilt/0.47-1
-Date: Wed, 29 Sep 2010 14:00:56 -0500
+Date: Wed, 29 Sep 2010 14:00:54 -0500
 From: Robin Holt <holt@sgi.com>
-To: lkml <linux-kernel@vger.kernel.org>, Gary Hade <garyhade@us.ibm.com>,
-        Badari Pulavarty <pbadari@us.ibm.com>, Ingo Molnar <mingo@elte.hu>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Dave Hansen <haveblue@us.ibm.com>,
-        Matt Tolentino <matthew.e.tolentino@intel.com>,
-        "Robert P. J. Day" <rpjday@crashcourse.ca>
-Subject: [Patch 3/3] Convert link_mem_sections to use find_memory_block_hinted.
+To: lkml <linux-kernel@vger.kernel.org>,
+        "Robert P. J. Day" <rpjday@crashcourse.ca>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Badari Pulavarty <pbadari@us.ibm.com>, Dave Hansen <haveblue@us.ibm.com>,
+        Gary Hade <garyhade@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Matt Tolentino <matthew.e.tolentino@intel.com>
+Subject: [Patch 1/3] Introduce kset_find_obj_hinted.
 References: <20100929190053.992911934@gulag1.americas.sgi.com>
-Content-Disposition: inline; filename=link_mem_sections-hints
+Content-Disposition: inline; filename=add-kset_find_obj_hinted
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+One call chain getting to kset_find_obj is:
+  link_mem_sections()
+    find_mem_section()
+      kset_find_obj()
 
-Modify link_mem_sections() to pass in the previous mem_block as a hint to
-locating the next mem_block.  Since they are typically added in order this
-results in a massive saving in time during boot of a very large system.
-For example, on a 16TB x86_64 machine, it reduced the total time spent
-linking all node's memory sections from 1 hour, 27 minutes to 46 seconds.
+This is done during boot.  The memory sections were added in a linearly
+increasing order and link_mem_sections tends to utilize them in that
+same linear order.
+
+Introduce a kset_find_obj_hinted which is passed the result of the
+previous kset_find_obj which it uses for a quick "is the next object
+our desired object" check before falling back to the old behavior.
 
 Signed-off-by: Robin Holt <holt@sgi.com>
-To: Gary Hade <garyhade@us.ibm.com>
-To: Badari Pulavarty <pbadari@us.ibm.com>
-To: Ingo Molnar <mingo@elte.hu>
+To: Robert P. J. Day <rpjday@crashcourse.ca>
+To: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: lkml <linux-kernel@vger.kernel.org>
 
 ---
 
- drivers/base/node.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ include/linux/kobject.h |    2 +
+ lib/kobject.c           |   39 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 41 insertions(+)
 
-Index: pv1010359/drivers/base/node.c
+Index: pv1010359/include/linux/kobject.h
 ===================================================================
---- pv1010359.orig/drivers/base/node.c	2010-09-29 11:03:14.076094048 -0500
-+++ pv1010359/drivers/base/node.c	2010-09-29 11:03:44.739949033 -0500
-@@ -409,25 +409,27 @@ static int link_mem_sections(int nid)
- 	unsigned long start_pfn = NODE_DATA(nid)->node_start_pfn;
- 	unsigned long end_pfn = start_pfn + NODE_DATA(nid)->node_spanned_pages;
- 	unsigned long pfn;
-+	struct memory_block *mem_blk = NULL;
- 	int err = 0;
+--- pv1010359.orig/include/linux/kobject.h	2010-09-29 11:03:42.000000000 -0500
++++ pv1010359/include/linux/kobject.h	2010-09-29 11:20:09.903825173 -0500
+@@ -191,6 +191,8 @@ static inline struct kobj_type *get_ktyp
+ }
  
- 	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
- 		unsigned long section_nr = pfn_to_section_nr(pfn);
- 		struct mem_section *mem_sect;
--		struct memory_block *mem_blk;
- 		int ret;
+ extern struct kobject *kset_find_obj(struct kset *, const char *);
++extern struct kobject *kset_find_obj_hinted(struct kset *, const char *,
++						struct kobject *);
  
- 		if (!present_section_nr(section_nr))
- 			continue;
- 		mem_sect = __nr_to_section(section_nr);
--		mem_blk = find_memory_block(mem_sect);
-+		mem_blk = find_memory_block_hinted(mem_sect, mem_blk);
- 		ret = register_mem_sect_under_node(mem_blk, nid);
- 		if (!err)
- 			err = ret;
+ /* The global /sys/kernel/ kobject for people to chain off of */
+ extern struct kobject *kernel_kobj;
+Index: pv1010359/lib/kobject.c
+===================================================================
+--- pv1010359.orig/lib/kobject.c	2010-09-29 11:03:42.000000000 -0500
++++ pv1010359/lib/kobject.c	2010-09-29 11:21:14.343956075 -0500
+@@ -746,17 +746,56 @@ void kset_unregister(struct kset *k)
+  */
+ struct kobject *kset_find_obj(struct kset *kset, const char *name)
+ {
++	return kset_find_obj_hinted(kset, name, NULL);
++}
++
++/**
++ * kset_find_obj_hinted - search for object in kset given a predecessor hint.
++ * @kset: kset we're looking in.
++ * @name: object's name.
++ * @hint: hint to possible object's predecessor.
++ *
++ * Check the hint's next object and if it is a match return it directly,
++ * otherwise, fall back to the behavior of kset_find_obj().  Either way
++ * a reference for the returned object is held and the reference on the
++ * hinted object is released.
++ */
++struct kobject *kset_find_obj_hinted(struct kset *kset, const char *name,
++				     struct kobject *hint)
++{
+ 	struct kobject *k;
+ 	struct kobject *ret = NULL;
  
- 		/* discard ref obtained in find_memory_block() */
--		kobject_put(&mem_blk->sysdev.kobj);
+ 	spin_lock(&kset->list_lock);
++
++	if (!hint)
++		goto slow_search;
++
++	/* end of list detection */
++	if (hint->entry.next == kset->list.next)
++		goto slow_search;
++
++	k = container_of(hint->entry.next, struct kobject, entry);
++	if (!kobject_name(k) || strcmp(kobject_name(k), name))
++		goto slow_search;
++
++	ret = kobject_get(k);
++	goto unlock_exit;
++
++slow_search:
+ 	list_for_each_entry(k, &kset->list, entry) {
+ 		if (kobject_name(k) && !strcmp(kobject_name(k), name)) {
+ 			ret = kobject_get(k);
+ 			break;
+ 		}
  	}
 +
-+	if (mem_blk)
-+		kobject_put(&mem_blk->sysdev.kobj);
- 	return err;
++unlock_exit:
+ 	spin_unlock(&kset->list_lock);
++
++	if (hint)
++		kobject_put(hint);
++
+ 	return ret;
  }
  
 
