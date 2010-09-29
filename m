@@ -1,57 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124Ab0I2XQy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 19:16:54 -0400
-Received: from qmta05.emeryville.ca.mail.comcast.net ([76.96.30.48]:47721 "EHLO
-	qmta05.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752442Ab0I2XQx (ORCPT
+	id S1753318Ab0I2XRs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 19:17:48 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:42483 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101Ab0I2XRq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 19:16:53 -0400
-Date: Wed, 29 Sep 2010 16:15:21 -0700
-From: matt mooney <mfm@muteddisk.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Greg Ungerer <gerg@snapgear.com>, Greg Ungerer <gerg@uclinux.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Tim Abbott <tabbott@ksplice.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH 08/20] m68knommu: change to new flag variables
-Message-ID: <20100929231521.GA21930@haskell.muteddisk.com>
-Mail-Followup-To: Michal Marek <mmarek@suse.cz>,
-	Greg Ungerer <gerg@snapgear.com>, Greg Ungerer <gerg@uclinux.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	David Howells <dhowells@redhat.com>,
-	Tim Abbott <tabbott@ksplice.com>, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org, linux-kbuild@vger.kernel.org
-References: <1285224645-29728-1-git-send-email-mfm@muteddisk.com>
- <4CA18E00.7090207@snapgear.com>
- <20100928071606.GA13303@haskell.muteddisk.com>
- <4CA34F0B.6010605@suse.cz>
+	Wed, 29 Sep 2010 19:17:46 -0400
+Date: Wed, 29 Sep 2010 19:17:30 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: smfrench@gmail.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        stable@kernel.org
+Subject: Re: [PATCH] cifs: set backing_dev_info on new S_ISREG inodes
+Message-ID: <20100929231730.GA6921@infradead.org>
+References: <1285768194-29595-1-git-send-email-jlayton@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CA34F0B.6010605@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1285768194-29595-1-git-send-email-jlayton@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16:36 Wed 29 Sep     , Michal Marek wrote:
-> On 28.9.2010 09:16, matt mooney wrote:
-> > My original intent was through the maintainer trees; however, I am starting to
-> > realize that it probably would have been best to all go into the kbuild tree as
-> > one patch series. That being said, some people have picked them up and others
-> > have just acked, so really whatever is easiest for you. All unapplied will
-> > eventually go through the kbuild tree.
+On Wed, Sep 29, 2010 at 09:49:54AM -0400, Jeff Layton wrote:
+> Testing on very recent kernel (2.6.36-rc6) made this warning pop:
 > 
-> Please try push as much through maintainer trees as possible, to avoid
-> unnecessary merge conflicts. Of course, if you end up with some patches
-> that nobody is picking up, I'll apply them to the kbuild tree.
+>     WARNING: at fs/fs-writeback.c:87 inode_to_bdi+0x65/0x70()
+>     Hardware name:
+>     Dirtiable inode bdi default != sb bdi cifs
+> 
+> ...the following patch fixes it and seems to be the obviously correct
+> thing to do for cifs.
 
-Okay, if anybody else asks, I will definitely ask them kindly to pick them
-up. There are, however, some patches that will need to go through the kbuild
-tree because some maintainers have already acked the patches and not picked them
-up. I will wait a couple more weeks, and then I will resend to you and the
-kbuild list with all acks added.
+See my patch in the btrfs/default_backing_dev_info thread for the real
+fix for the underlying issue.  But your patch won't harm either way.
 
--mfm
