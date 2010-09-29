@@ -1,41 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751618Ab0I2Osu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 10:48:50 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:53351 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1750962Ab0I2Ost (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 10:48:49 -0400
-X-Authenticated: #28250155
-X-Provags-ID: V01U2FsdGVkX1+kNBQZOgOkOAZoHHBt6mPtrGDdgDPxmkk3bI1F3s
-	V7GTW4CAg113w8
-From: Sven Joachim <svenjoac@gmx.de>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org
-Subject: Re: Linux 2.6.35.7
-References: <20100929011355.GA25515@kroah.com>
-Date: Wed, 29 Sep 2010 16:48:44 +0200
-In-Reply-To: <20100929011355.GA25515@kroah.com> (Greg KH's message of "Tue, 28
-	Sep 2010 18:13:55 -0700")
-Message-ID: <87zkv0a9mb.fsf@turtle.gmx.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2.50 (gnu/linux)
+	id S1751478Ab0I2OuX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 10:50:23 -0400
+Received: from mailrelayi.jaist.ac.jp ([150.65.19.7]:56187 "EHLO
+	mailrelayi.jaist.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898Ab0I2OuW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 10:50:22 -0400
+X-Greylist: delayed 615 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Sep 2010 10:50:22 EDT
+X-IronPort-AV: E=Sophos;i="4.57,253,1283698800"; 
+   d="scan'208";a="85746390"
+Message-ID: <4CA34F95.30400@logic.at>
+Date: Wed, 29 Sep 2010 23:39:17 +0900
+From: Norbert Preining <preining@logic.at>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100917 Icedove/3.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Y-GMX-Trusted: 0
+To: "Alex,Shi" <alex.shi@intel.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>,
+        "arjan@infradead.org" <arjan@infradead.org>,
+        "efault@gmx.de" <efault@gmx.de>, "Li, Shaohua" <shaohua.li@intel.com>,
+        tglx <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        yakui.zhao@intel.com
+Subject: Re: high power consumption in recent kernels
+References: <1284355277.26157.8109.camel@debian>	 <1284689374.17745.89.camel@debian> <1283840425.26157.6486.camel@debian>	 <20100909093140.GC29648@gamma.logic.tuwien.ac.at>	 <EA929A9653AAE14F841771FB1DE5A1366008738EC2@rrsmsx501.amr.corp.intel.com>	 <20100909205115.GD11053@gamma.logic.tuwien.ac.at>	 <1284107099.402.30.camel@laptop>	 <6E3BC7F7C9A4BF4286DD4C043110F30B2991AF14FD@shsmsx502.ccr.corp.intel.com>	 <20100910145451.GB21450@gamma.logic.tuwien.ac.at>	 <1284355277.26157.8109.camel@debian>	 <20100922154452.GA9080@gamma.logic.tuwien.ac.at> <1285670426.21962.43.camel@debian>
+In-Reply-To: <1285670426.21962.43.camel@debian>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 29.09.2010 um 03:13 schrieb Greg KH:
+Hi Alex,
 
-> I'm announcing the release of the 2.6.35.7 kernel.
-> This is only needed if you run Xen, there was a typo that caused
-> problems.  My fault, sorry.
+> Could you like to try the following patch on your system and see how
+> many power it consumption now?
 
-This typo is also in 2.6.32.2[23], could you make a 2.6.32.24 release as
-well?
+But this patch is excately what you send me already and what I tried
+and I answered in the last email?
 
-Cheers,
-       Sven
+Do I miss something here?
 
+All the best
+
+Norbert
