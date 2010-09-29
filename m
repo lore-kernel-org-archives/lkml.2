@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306Ab0I2Oy0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 10:54:26 -0400
-Received: from rcpt-mqugw.biglobe.ne.jp ([133.205.19.69]:57425 "EHLO
-	rcpt-mqugw.biglobe.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345Ab0I2OyZ (ORCPT
+	id S1752194Ab0I2O4j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 10:56:39 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:33270 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984Ab0I2O4i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 10:54:25 -0400
-X-Biglobe-Sender: <d-nishimura@mtf.biglobe.ne.jp>
-Date: Wed, 29 Sep 2010 23:02:52 +0900
-From: Daisuke Nishimura <d-nishimura@mtf.biglobe.ne.jp>
-To: "Kirill A. Shutsemov" <kirill@shutemov.name>
-Cc: linux-mm@kvack.org, Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUGFIX][PATCH] memcg: fix thresholds with use_hierarchy == 1
-Message-Id: <20100929230252.f593abb1.d-nishimura@mtf.biglobe.ne.jp>
-In-Reply-To: <1285763245-19408-1-git-send-email-kirill@shutemov.name>
-References: <1285763245-19408-1-git-send-email-kirill@shutemov.name>
-Reply-To: nishimura@mxp.nes.nec.co.jp
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.3; x86_64-pc-linux-gnu)
+	Wed, 29 Sep 2010 10:56:38 -0400
+Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
+ kernel
+From: Shirley Ma <mashirle@us.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
+        "Xin, Xiaohui" <xiaohui.xin@intel.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20100929082820.GC21195@redhat.com>
+References: <20100914182707.GB15549@redhat.com>
+	 <1284490143.13351.82.camel@localhost.localdomain>
+	 <20100914190156.GA16037@redhat.com>
+	 <1284492983.13351.95.camel@localhost.localdomain>
+	 <20100915051241.GA25340@redhat.com>
+	 <1284531675.24603.259.camel@localhost.localdomain>
+	 <20100915101000.GB28016@redhat.com>
+	 <1284562354.2573.12.camel@localhost.localdomain>
+	 <1285730669.31343.7.camel@localhost.localdomain>
+	 <20100929081645.GA21195@redhat.com>  <20100929082820.GC21195@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 29 Sep 2010 07:56:26 -0700
+Message-ID: <1285772186.31343.23.camel@localhost.localdomain>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Sep 2010 15:27:25 +0300
-"Kirill A. Shutsemov" <kirill@shutemov.name> wrote:
-
-> From: Kirill A. Shutemov <kirill@shutemov.name>
+On Wed, 2010-09-29 at 10:28 +0200, Michael S. Tsirkin wrote:
+> > > 1. Adding completion field in struct virtqueue;
+> > > 2. when it is a zero copy packet, put vhost thread wait for
+> completion
+> > > to update vhost_add_used_and_signal;
+> > > 3. passing vq from vhost to macvtap as skb destruct_arg;
+> > > 4. when skb is freed for the last reference, signal vq completion
+> > > The test results show same performance as the original patch. How
+> do you
+> > > think? If it sounds good to you. I will resubmit this reversion
+> patch.
+> > > The patch still keeps as simple as it was before. :)
+> > > 
+> > > Thanks
+> > > Shirley
+> > 
+> > If you look at dev_hard_start_xmit you will see a call
+> > to skb_orphan_try which often calls the skb destructor.
+> > So I suspect this is almost equivalent to your original patch,
+> > and has the same correctness issue.
 > 
-> We need to check parent's thresholds if parent has use_hierarchy == 1 to
-> be sure that parent's threshold events will be triggered even if parent
-> itself is not active (no MEM_CGROUP_EVENTS).
+> So you could try doing skb_tx(skb)->prevent_sk_orphan = 1
+> just to see what will happen. Might be interesting - just
+> make sure the device doesn't orphan the skb first thing.
+> I suspect lack of parallelism will result in bad throughput
+> esp for small messages.
 > 
-> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
-> ---
->  mm/memcontrol.c |   17 ++++++++++++++---
->  1 files changed, 14 insertions(+), 3 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 3eed583..196f710 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3587,9 +3587,20 @@ unlock:
->  
->  static void mem_cgroup_threshold(struct mem_cgroup *memcg)
->  {
-> -	__mem_cgroup_threshold(memcg, false);
-> -	if (do_swap_account)
-> -		__mem_cgroup_threshold(memcg, true);
-> +	struct cgroup *parent;
-> +
-> +	while (1) {
-> +		__mem_cgroup_threshold(memcg, false);
-> +		if (do_swap_account)
-> +			__mem_cgroup_threshold(memcg, true);
-> +
-> +		parent = memcg->css.cgroup->parent;
-> +		if (!parent)
-> +			break;
-> +		memcg = mem_cgroup_from_cont(parent);
-> +		if (!memcg->use_hierarchy)
-> +			break;
-> +	}
-I think you can simplify this part by using parent_mem_cgroup() like:
+> Note this still won't make it correct (this has module unloading
+> issue, and devices might still orphan skb, clone it, or hang on to
+> paged data in some other way) but at least closer. 
 
-	parent = parent_mem_cgroup(memcg);
-	if (!memcg)
-		break;
+For message size smaller than 128, it still does copy. I tested some
+small message size, I didn't see any regression. I will run more test to
+focus on small message size between 128 - 4K.
 
-Thanks,
-Daisuke Nishimura.
+I don't need prevent_sk_orphan since in skb_release_data for last
+reference, I just need the ZEROCOPY flag from that sock to signal a
+completion.
+
+Thanks
+Shirley
+
