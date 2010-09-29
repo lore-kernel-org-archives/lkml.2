@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753211Ab0I2Cyb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 22:54:31 -0400
-Received: from kroah.org ([198.145.64.141]:37052 "EHLO coco.kroah.org"
+	id S1752644Ab0I2C6H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 22:58:07 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:58048 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751832Ab0I2Cya (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 22:54:30 -0400
-Date: Tue, 28 Sep 2010 19:50:35 -0700
-From: Greg KH <greg@kroah.com>
-To: Robin Holt <holt@sgi.com>
-Cc: Avi Kivity <avi@redhat.com>, Nathan Fontenot <nfont@austin.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linuxppc-dev@ozlabs.org, Dave Hansen <dave@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 0/8] v2 De-Couple sysfs memory directories from memory
-	sections
-Message-ID: <20100929025035.GA13096@kroah.com>
-References: <4CA0EBEB.1030204@austin.ibm.com> <4CA1E338.6070201@redhat.com> <20100928151218.GJ14068@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100928151218.GJ14068@sgi.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1750717Ab0I2C6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 22:58:05 -0400
+Date: Wed, 29 Sep 2010 12:57:56 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (hwpoison tree related)
+Message-Id: <20100929125756.2e264f7a.sfr@canb.auug.org.au>
+In-Reply-To: <20100927155551.2e4e4b26.sfr@canb.auug.org.au>
+References: <20100927155551.2e4e4b26.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__29_Sep_2010_12_57_56_+1000_Y_eNBaPeI8kX+WGo"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 28, 2010 at 10:12:18AM -0500, Robin Holt wrote:
-> On Tue, Sep 28, 2010 at 02:44:40PM +0200, Avi Kivity wrote:
-> >  On 09/27/2010 09:09 PM, Nathan Fontenot wrote:
-> > >This set of patches decouples the concept that a single memory
-> > >section corresponds to a single directory in
-> > >/sys/devices/system/memory/.  On systems
-> > >with large amounts of memory (1+ TB) there are perfomance issues
-> > >related to creating the large number of sysfs directories.  For
-> > >a powerpc machine with 1 TB of memory we are creating 63,000+
-> > >directories.  This is resulting in boot times of around 45-50
-> > >minutes for systems with 1 TB of memory and 8 hours for systems
-> > >with 2 TB of memory.  With this patch set applied I am now seeing
-> > >boot times of 5 minutes or less.
-> > >
-> > >The root of this issue is in sysfs directory creation. Every time
-> > >a directory is created a string compare is done against all sibling
-> > >directories to ensure we do not create duplicates.  The list of
-> > >directory nodes in sysfs is kept as an unsorted list which results
-> > >in this being an exponentially longer operation as the number of
-> > >directories are created.
-> > >
-> > >The solution solved by this patch set is to allow a single
-> > >directory in sysfs to span multiple memory sections.  This is
-> > >controlled by an optional architecturally defined function
-> > >memory_block_size_bytes().  The default definition of this
-> > >routine returns a memory block size equal to the memory section
-> > >size. This maintains the current layout of sysfs memory
-> > >directories as it appears to userspace to remain the same as it
-> > >is today.
-> > >
-> > 
-> > Why not update sysfs directory creation to be fast, for example by
-> > using an rbtree instead of a linked list.  This fixes an
-> > implementation problem in the kernel instead of working around it
-> > and creating a new ABI.
-> 
-> Because the old ABI creates 129,000+ entries inside
-> /sys/devices/system/memory with their associated links from
-> /sys/devices/system/node/node*/ back to those directory entries.
-> 
-> Thankfully things like rpm, hald, and other miscellaneous commands scan
-> that information.
+--Signature=_Wed__29_Sep_2010_12_57_56_+1000_Y_eNBaPeI8kX+WGo
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Really?  Why?  Why would rpm care about this?  hald is dead now so we
-don't need to worry about that anymore, but what other commands/programs
-read this information?
+Hi Andi,
 
-thanks,
+On Mon, 27 Sep 2010 15:55:51 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> After merging the final tree, today's linux-next build (powerpc allnoconf=
+ig)
+> failed like this:
+>=20
+> mm/mprotect.o: In function `migrate_huge_page_move_mapping':
+> mprotect.c:(.text+0x0): multiple definition of `migrate_huge_page_move_ma=
+pping'
+> mm/shmem.o:shmem.c:(.text+0x0): first defined here
+> mm/rmap.o: In function `migrate_huge_page_move_mapping':
+> rmap.c:(.text+0x0): multiple definition of `migrate_huge_page_move_mappin=
+g'
+> mm/shmem.o:shmem.c:(.text+0x0): first defined here
+>=20
+> Caused by commit 7b217c52ce7f33379beb27aa7685109fa74ed6bf ("hugetlb:
+> hugepage migration core").
+>=20
+> This function is declared as "extern int ..." with a body in
+> include/linux/migrate.h for the non CONFIG_MIGRATION case.
+>=20
+> I reverted the whole hwpoison tree for today.
 
-greg k-h
+This is still not fixed ... so I am still using the hwpoison tree from
+next-20100924.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__29_Sep_2010_12_57_56_+1000_Y_eNBaPeI8kX+WGo
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMoqs0AAoJEDMEi1NhKgbs3p4H/05uX5jJP12fEKV+V+LT0pZa
+O4pExKUQv4Fc0UzCN+vxW+lITV4ws7hysT2Kds4Z5Ad3Sxtvs5lOdk5oYompT+aM
+94zgg3jwqapxnlIdiolk0kpbCpvx+At+qNtDIR/nIk99AvGNkZ+9SaZTjhCIsDZe
+lLe0VYnfDE2uSUl1gFbJR9FsdI+qptO1YC7oWafBVY7ofTDnkUTSMnUU7Ute99nh
+9Ong3lx8TLq0TisXQd8L7NdlFUp3X2OPWKYWCRIT6V89W++ZlXlS2YDjQeE7CoYE
+YLtaCgjxN+ZbG8mjeVNxlybCVEZeQ1wdAQgnTkCqq9LprdV9Q5IOgHTD6LHnKyM=
+=RUkc
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__29_Sep_2010_12_57_56_+1000_Y_eNBaPeI8kX+WGo--
