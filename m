@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754931Ab0I2SC2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 14:02:28 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51475 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754780Ab0I2SC1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 14:02:27 -0400
-Date: Wed, 29 Sep 2010 11:01:13 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: balbir@linux.vnet.ibm.com
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, Shailabh Nagar <nagar1234@in.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org, Jeff Mahoney <jeffm@suse.com>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 0/2] taskstats: Cleanup patches
-Message-Id: <20100929110113.374e8651.akpm@linux-foundation.org>
-In-Reply-To: <20100929075044.GF4261@balbir.in.ibm.com>
-References: <20100928142058.796669370@linux.vnet.ibm.com>
-	<20100928135117.4fdd5799.akpm@linux-foundation.org>
-	<20100929075044.GF4261@balbir.in.ibm.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754926Ab0I2SGS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 14:06:18 -0400
+Received: from www.tglx.de ([62.245.132.106]:45998 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754804Ab0I2SGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 14:06:18 -0400
+Date: Wed, 29 Sep 2010 20:05:40 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Arthur Kepner <akepner@sgi.com>
+cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [RFC/PATCHv2] x86/irq: round-robin distribution of irqs to cpus
+ w/in node
+In-Reply-To: <20100929171941.GH3096@sgi.com>
+Message-ID: <alpine.LFD.2.00.1009291959380.2416@localhost6.localdomain6>
+References: <20100927203448.GC30050@sgi.com> <alpine.LFD.2.00.1009272236430.2416@localhost6.localdomain6> <20100927220113.GD30050@sgi.com> <alpine.LFD.2.00.1009280003300.2416@localhost6.localdomain6> <m1hbhalo1o.fsf@fess.ebiederm.org>
+ <alpine.LFD.2.00.1009280957150.2416@localhost6.localdomain6> <m1eicennfu.fsf@fess.ebiederm.org> <20100929171941.GH3096@sgi.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Sep 2010 13:20:44 +0530
-Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+On Wed, 29 Sep 2010, Arthur Kepner wrote:
+> On Mon, Sep 27, 2010 at 05:17:07PM -0700, Eric W. Biederman wrote:
+> > Thomas Gleixner <tglx@linutronix.de> writes:
+> 
+> On Tue, Sep 28, 2010 at 03:59:33AM -0700, Eric W. Biederman wrote:
+> > Thomas Gleixner <tglx@linutronix.de> writes:
+> > 
+> > > On Mon, 27 Sep 2010, Eric W. Biederman wrote:
+> > >> > On Mon, 27 Sep 2010, Arthur Kepner wrote:
+> > >> The deep bug is that create_irq_nr allocates a vector (which it does
+> > >> because at the time there was no better way to mark an irq in use on
+> > >> x86).  In the case of msi-x we really don't know the node that irq is
+> > >> going to be used on until we get a request irq.  We simply know which
+> > >> node the device is on.
+> > >
+> > > Bah. So the whole per node allocation business is completely useless
+> > > at this point.
+> > 
+> > Probably.
+> 
+> Huh? No, the patch that started this thread spreads the irqs around 
+> and avoids the problem of a single CPU's vectors all being consumed.
 
-> * Andrew Morton <akpm@linux-foundation.org> [2010-09-28 13:51:17]:
-> 
-> > On Tue, 28 Sep 2010 16:20:58 +0200
-> > Michael Holzheu <holzheu@linux.vnet.ibm.com> wrote:
+I'm talking about the per node memory allocations for sparse. Not the
+irq vectors
+ 
 > > 
-> > > Hello Andrew,
-> > > 
-> > > It would be great, if you could accept the taskstats cleanup patches that
-> > > are the prerequisite for the taskstats precise accounting patches. The
-> > > patches do not add any new functionality. I think they make the code better
-> > > readable and extensible:
-> > > * 01/02: taskstats: Separate taskstats commands
-> > > * 02/02: taskstats: Split fill_pid function
-> > > 
-> > 
-> > Sure.
-> > 
-> > I've been sitting on a couple of taskstats patches for ages.  Mel's
-> > delay-accounting-re-implement-c-for-getdelaysc-to-report-information-on-a-target-command.patch
-> > and Jeff's delayacct-align-to-8-byte-boundary-on-64-bit-systems.patch.
-> > 
-> > I have notes against both of these indicating that Balbir had concerns
-> > and as far as I know those concerns remain unresolved.  So I'll drop
-> > those patches now - can you guys please reactivate them if you still
-> > think we should be making these changes?
-> > 
+> > Understood.  It has taken a couple of years before this bug finally
+> > bit anyone waiting a release or two to get it fixed properly seems
+> > reasonable.
+> > ....
 > 
-> Hi, Andrew,
-> 
-> My concern with Jeff's patch was that it might break existing
-> applications. He clarified it does not, I had requested for a version
-> bump since the patches change some definitions
-> 
-> I had no concerns (IIRC) with Mel's patches. Mel wanted me to
-> implement the "-c" option we had earlier.
-> 
+> And so what are we to do in the meantime? At the moment we're 
+> disabling MSIX, which is a pretty unattractive workaround.
 
-hm, OK, thanks, I requeued them for 2.6.37.
+I understand that. The cleanup patches are hopefully ready for the
+next kernel, so we can deal with that problem on top of them.
+
+Thanks,
+
+	tglx
