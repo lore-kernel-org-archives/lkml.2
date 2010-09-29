@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101Ab0I2TU0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 15:20:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36981 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754830Ab0I2TUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 15:20:24 -0400
+	id S1755271Ab0I2TVh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 15:21:37 -0400
+Received: from sj-iport-6.cisco.com ([171.71.176.117]:8816 "EHLO
+	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754662Ab0I2TVg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 15:21:36 -0400
+Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAC4vo0yrRN+K/2dsb2JhbACiHHGrRZxohUQEhFCFaoR5
+X-IronPort-AV: E=Sophos;i="4.57,255,1283731200"; 
+   d="scan'208";a="596712936"
+From: Roland Dreier <rdreier@cisco.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Steve Wise <swise@opengridcomputing.com>, linux-rdma@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] RDMA/cxgb4: Add default_llseek to debugfs files.
+References: <20100929141112.26944.21931.stgit@build.ogc.int>
+	<adawrq431sr.fsf@cisco.com> <201009292117.54828.arnd@arndb.de>
+X-Message-Flag: Warning: May contain useful information
+Date: Wed, 29 Sep 2010 12:21:14 -0700
+In-Reply-To: <201009292117.54828.arnd@arndb.de> (Arnd Bergmann's message of
+	"Wed, 29 Sep 2010 21:17:54 +0200")
+Message-ID: <ada4od82w5x.fsf@cisco.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-X-Fcc: ~/Mail/linus
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 09/10] taskstats: Fix exit CPU time accounting
-In-Reply-To: Oleg Nesterov's message of  Monday, 27 September 2010 18:51:33 +0200 <20100927165133.GA23535@redhat.com>
-References: <1285249681.1837.28.camel@holzheu-laptop>
-	<1285250541.1837.95.camel@holzheu-laptop>
-	<20100923171025.GA26623@redhat.com>
-	<1285330688.2179.305.camel@holzheu-laptop>
-	<20100926181127.GA26985@redhat.com>
-	<20100927154257.7910cda3@mschwide.boeblingen.de.ibm.com>
-	<20100927165133.GA23535@redhat.com>
-Emacs: don't try this at home, kids!
-Message-Id: <20100929191916.21E1840038@magilla.sf.frob.com>
-Date: Wed, 29 Sep 2010 12:19:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > I would consider it to be a BUG() that the time is not accounted.
-> > Independent of the fact that a parent wants to see the SIGCHLD and
-> > the exit status of its child the process time of the child should be
-> > accounted, no?
-> 
-> I do not know. It doesn't look like a BUG(), I mean it looks as if
-> the code was intentionally written this way.
+ > The main difference between default_llseek and generic_file_llseek
+ > is that default_llseek doesn't care about the maximum file size
+ > of the underlying file system, which is ULONG_MAX on debugfs,
+ > so they are equivalent.
 
-POSIX specifies this behavior: "If the child is never waited for (for
-example, if the parent has SA_NOCLDWAIT set or sets SIGCHLD to SIG_IGN),
-the resource information for the child process is discarded and not
-included in the resource information provided by getrusage()."
+I thought default_llseek also takes the BKL still?
 
+ > In general, the preferred one is no_llseek for those files where
+ > you know you do not need to seek. If you do, I'd use default_llseek
+ > for character devices and generic_file_llseek for file systems
+ > that set the s_maxbytes.
 
-Thanks,
-Roland
+The case in question is for debugfs files, so we should use
+generic_file_llseek, right?
+
+ - R.
