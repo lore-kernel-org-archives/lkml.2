@@ -1,66 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561Ab0I2OnS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 10:43:18 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:28530 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918Ab0I2OnR (ORCPT
+	id S1753021Ab0I2Onb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 10:43:31 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:29141 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752747Ab0I2On3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 10:43:17 -0400
-Date: Wed, 29 Sep 2010 16:42:51 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Ben Dooks <ben-i2c@fluff.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, mikpe@it.uu.se,
-        rdunlap@xenotime.net, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH (Option 1)] of/i2c: fix module load order issue caused 
- by of_i2c.c
-Message-ID: <20100929164251.0243ac7f@endymion.delvare>
-In-Reply-To: <20100928232054.GQ21564@trinity.fluff.org>
-References: <20100924221313.28357.61419.stgit@angua>
-	<20100928232054.GQ21564@trinity.fluff.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 29 Sep 2010 10:43:29 -0400
+Message-ID: <4CA35084.8010503@hp.com>
+Date: Wed, 29 Sep 2010 10:43:16 -0400
+From: Brian Haley <brian.haley@hp.com>
+Organization: Open Source and Linux Organization
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Lightning/1.0b1 Thunderbird/3.0.8
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: gwurster@scs.carleton.ca, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        shemminger@vyatta.com, eric.dumazet@gmail.com,
+        herbert@gondor.hengli.com.au, ebiederm@xmission.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH linux-2.6 v2] IPv6: Create temporary address if none exists.
+References: <20100927170430.GA7106@adams.ccsl.carleton.ca> <20100928.222510.71109554.davem@davemloft.net>
+In-Reply-To: <20100928.222510.71109554.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Sep 2010 00:20:54 +0100, Ben Dooks wrote:
-> On Fri, Sep 24, 2010 at 04:14:53PM -0600, Grant Likely wrote:
-> > Commit 959e85f7, "i2c: add OF-style registration and binding" caused a
-> > module dependency loop where of_i2c.c calls functions in i2c-core, and
-> > i2c-core calls of_i2c_register_devices() in of_i2c.  This means that
-> > when i2c support is built as a module when CONFIG_OF is set, then
-> > neither i2c_core nor of_i2c are able to be loaded.
-> > 
-> > This patch fixes the problem by moving the of_i2c_register_devices()
-> > function into the body of i2c_core and renaming it to
-> > i2c_scan_of_devices (of_i2c_register_devices is analogous to the
-> > existing i2c_scan_static_board_info function and so should be named
-> > similarly).  This function isn't called by any code outside of
-> > i2c_core, and it must always be present when CONFIG_OF is selected, so
-> > it makes sense to locate it there.  When CONFIG_OF is not selected,
-> > of_i2c_register_devices() becomes a no-op.
+On 09/29/2010 01:25 AM, David Miller wrote:
+> From: Glenn Wurster <gwurster@scs.carleton.ca>
+> Date: Mon, 27 Sep 2010 13:04:30 -0400
 > 
-> I sort of go with this one.
+>> If privacy extentions are enabled, but no current temporary address exists,
+>> then create one when we get a router advertisement.
+>>
+>> Version 2, now with 100% fewer line wraps.  Thanks to David Miller for
+>> pointing out the line wrapping issue.
+>>
+>> Signed-off-by: Glenn Wurster <gwurster@scs.carleton.ca>
+> 
+> The existing code is correct from what I can tell.
+> 
+> Variable "create" is true when "ifp == NULL" and "valid_lft != 0"
+> 
+> And RFC 3041 explicitly states in section 3.3:
+> 
+> 	When a new public address is created as described in [ADDRCONF]
+> 	(because the prefix advertised does not match the prefix of any
+> 	address already assigned to the interface, and Valid Lifetime
+> 	in the option is not zero), also create a new temporary address.
+> 
+> Your patch is going to cause us to create a temporary address even
+> when valid_lft is zero, which the RFC says we should not do.
+> 
+> That goes against what the RFC tells us to do, so I can only conclude
+> that your patch is not correct.
 
-Actually I would prefer option #2, even though I understand it won't
-make Grant too happy. Having a large chunk of OF-specific code in
-i2c-core, leaving of_i2c.c almost empty, doesn't seem right.
+I think this patch might actually be OK, I had to look at this more than
+once to figure out the problem Glenn was trying to fix.  Maybe he can
+confirm.
 
-I took a look at what other relevant subsystems do. SPI is boolean so it
-doesn't have the issue. MDIO is tristate, the registration function is
-in of_mdio.c and individual drivers call it. And there are a lot more
-of these (9) than i2c drivers (3).
+>From what I have found, this is fixing the case where we've changed
+use_tempaddr to 1 on an interface that already has a "stable" IPv6
+prefix.  In that case you'll never add a temporary address:
 
-So I would let individual drivers call of_i2c_register_devices(), as it
-used to be until 2.6.35. 2 extra functions calls doesn't seem a high
-price to pay to keep the code logically separated. This also make
-things consistent, with all OF registration functions living under
-drivers/of.
+# ip -6 a s dev eth6
+10: eth6: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qlen 1000
+    inet6 2620:0:a09:e000:21f:29ff:fe59:faca/64 scope global dynamic 
+       valid_lft 2591820sec preferred_lft 604620sec
+    inet6 fe80::21f:29ff:fe59:faca/64 scope link 
+       valid_lft forever preferred_lft forever
 
-Thanks,
--- 
-Jean Delvare
+07:47:52.119051 IP6 fe80::205:9aff:fe3a:1871 > ip6-allnodes: ICMP6, router advertisement
+
+# ip -6 a s dev eth6
+10: eth6: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qlen 1000
+    inet6 2620:0:a09:e000:21f:29ff:fe59:faca/64 scope global dynamic 
+       valid_lft 2591996sec preferred_lft 604796sec
+    inet6 fe80::21f:29ff:fe59:faca/64 scope link 
+       valid_lft forever preferred_lft forever
+
+No temp address :(
+
+Since we're in the "if (ifp)" block, we can assume that at some point
+in time we did get a valid advertisement to add this address, whether
+is was right now or an hour ago doesn't matter.  Of course the RFCs
+don't cover this case, they assume privacy settings were enabled at
+boot time, if there's ever an update to 4941/3041 that should be
+clarified.
+
+Maybe the below (untested) patch is better?  Glenn, can you test this?
+
+-Brian
+
+
+---
+
+If privacy extensions are enabled, but no current temporary address exists,
+then create one when we get a router advertisement with a valid lifetime.
+
+Signed-off-by: Brian Haley <brian.haley@hp.com>
+
+diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+index 8c88340..fb238d6 100644
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -1925,7 +1925,8 @@ ok:
+ 			update_lft = create = 1;
+ 			ifp->cstamp = jiffies;
+ 			addrconf_dad_start(ifp, RTF_ADDRCONF|RTF_PREFIX_RT);
+-		}
++		} else if (list_empty(&in6_dev->tempaddr_list) && valid_lft)
++			create = 1;	/* use_tempaddr could have changed */
+ 
+ 		if (ifp) {
+ 			int flags;
