@@ -1,44 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab0I2PFe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 11:05:34 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60219 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751829Ab0I2PFd (ORCPT
+	id S1753302Ab0I2PGf convert rfc822-to-quoted-printable (ORCPT
+	<rfc822;w@1wt.eu>); Wed, 29 Sep 2010 11:06:35 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:63740 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915Ab0I2PGd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 11:05:33 -0400
+	Wed, 29 Sep 2010 11:06:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=AR3FaT35iunUWyopmu79alVyanSKZuSS/c1i8FUX3jnlyLCPAOFydmQdQF239/+cpW
+         cYfYROi2xxz+viSlN1Tv7vfM6+N4Qmp20imjIPqgFO3PqKm1ScrYLIiPgW6DYDLPlY73
+         IeAwVUrFOvGFtxOR/iv2DeXnPqEB7pK6hgNjU=
 MIME-Version: 1.0
-In-Reply-To: <4CA2FA13.8050405@panasas.com>
-References: <4CA09977.80506@panasas.com> <AANLkTim85sH_2o=xCiDuoQrHq_7ZL96Y91xQMGxUP5Fy@mail.gmail.com>
- <20100928134721.f79a5955.akpm@linux-foundation.org> <AANLkTi=E7+CpJZE3XC7O1LvJu6LWfmvSxonskH4CYg25@mail.gmail.com>
- <4CA2FA13.8050405@panasas.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 29 Sep 2010 08:05:04 -0700
-Message-ID: <AANLkTikX1xWiZ+XROF=CEvkE+BVpv6vk5vzW2BGt-bxq@mail.gmail.com>
-Subject: Re: [PATCH] um: Proper Fix for f25c80a4: remove duplicate structure
- field initialization
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Julia Lawall <julia@diku.dk>,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
+In-Reply-To: <20100929080113.5581c19d.rdunlap@xenotime.net>
+References: <201009282344.o8SNiliN024981@imap1.linux-foundation.org>
+	<AANLkTinYExzihm6BuP=amLDwMO-zXejeUq5xeHL4ETg_@mail.gmail.com>
+	<20100929080113.5581c19d.rdunlap@xenotime.net>
+Date: Wed, 29 Sep 2010 17:05:07 +0200
+Message-ID: <AANLkTim0+vCOMQ9QXGWbEn_n7x=znZkVEQ36xmCT6hsY@mail.gmail.com>
+Subject: Re: mmotm 2010-09-28-16-13 uploaded
+From: Na Pohybel <napohybelskurwysynom2010@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from QUOTED-PRINTABLE to 8bit by mail.home.local id o8TF7ntm007663
 
-On Wed, Sep 29, 2010 at 1:34 AM, Boaz Harrosh <bharrosh@panasas.com> wrote:
+2010/9/29 Randy Dunlap <rdunlap@xenotime.net>:
+> On Wed, 29 Sep 2010 15:13:41 +0200 N.P.S. N.P.S. wrote:
 >
-> On the other hand patch [f25c80a4] was trying to use eth_mac_addr()
-> in eth_configure(), *which was the real fallout*. Because of state
-> checks done inside eth_mac_addr() the address was never set. I have
-> not reintroduced the memcpy wrapper, but I've put a comment for future
-> cats.
+>> 2010/9/29  <akpm@linux-foundation.org>:
+>> > The mm-of-the-moment snapshot 2010-09-28-16-13 has been uploaded to
+>>
+>> Another randconfig thing
+>>
+>> drivers/net/pch_gbe/pch_gbe_main.c: In function 'pch_gbe_tx_queue':
+>> drivers/net/pch_gbe/pch_gbe_main.c:965: error: implicit declaration of
+>> function 'tcp_hdr'
+>> drivers/net/pch_gbe/pch_gbe_main.c:965: error: invalid type argument
+>> of '->' (have 'int')
+>> drivers/net/pch_gbe/pch_gbe_main.c:968: error: invalid type argument
+>> of '->' (have 'int')
+>> drivers/net/pch_gbe/pch_gbe_main.c:976: error: implicit declaration of
+>> function 'udp_hdr'
+>> drivers/net/pch_gbe/pch_gbe_main.c:976: error: invalid type argument
+>> of '->' (have 'int')
+>> drivers/net/pch_gbe/pch_gbe_main.c:980: error: invalid type argument
+>> of '->' (have 'int')
+>> make[3]: *** [drivers/net/pch_gbe/pch_gbe_main.o] Error 1
+>> make[2]: *** [drivers/net/pch_gbe] Error 2
+>> make[1]: *** [drivers/net] Error 2
+>> make: *** [drivers] Error 2
+>
+> Patch has been sent to DaveM and he has merged it.
 
-Ahh. Ok, this looks fine. David, please use this instead of my broken
-one that didn't do the whole thing.
+Thanks again!
 
-                           Linus
+>
+>
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+>
+
+
+
+-- 
+Slawa!
+N.P.S.
