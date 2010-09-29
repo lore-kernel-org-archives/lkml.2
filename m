@@ -1,163 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913Ab0I2OWT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 10:22:19 -0400
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:33090 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751167Ab0I2OWR (ORCPT
+	id S1752121Ab0I2O3n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 10:29:43 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:48236 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1750996Ab0I2O3m convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 10:22:17 -0400
-Date: Wed, 29 Sep 2010 10:22:13 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Regression (ancient), bisected: TCP hangs with certain ESP6 SA.
-Message-ID: <20100929142213.GA26031@elliptictech.com>
-Mail-Followup-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-	Herbert Xu <herbert@gondor.apana.org.au>,
-	"David S. Miller" <davem@davemloft.net>,
-	Eric Dumazet <eric.dumazet@gmail.com>
+	Wed, 29 Sep 2010 10:29:42 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX19HDfpgQ4RHhdqAmoA/5/kQMeYdE6bgRnvMjTuykn
+	YxOMhSOnDtW9eK
+From: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: Re: dma-mapping commit breaks UML
+Date: Wed, 29 Sep 2010 16:29:38 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35.6; KDE/4.4.5; i686; ; )
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <201009291155.30873.toralf.foerster@gmx.de> <20100929221620K.fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100929221620K.fujita.tomonori@lab.ntt.co.jp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201009291629.39077.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since around 2.6.25, TCP connections hang when using IPv6 ESP, in
-transport mode, with AES and a null MAC.  It really is that specific:
-ICMP/UDP work fine with this cipher/mac combination, tunnel mode works
-fine, and so do DES/triple-DES.
 
-In this scenario, there are two hosts, host1 and host2, with IPv6
-addresses fec0:42::2 and fec0:42::3, respectively.  Host2 is running
-lighttpd serving a 300MB binary file called 'big'.
+FUJITA Tomonori wrote at 15:20:38
+> On Wed, 29 Sep 2010 11:55:30 +0200
+> 
+> Toralf **UNKNOWN CHARSET** <toralf.foerster@gmx.de> wrote:
+> > The
+> > 
+> > 4565f0170dfc849b3629c27d769db800467baa62 is the first bad commit
+> > commit 4565f0170dfc849b3629c27d769db800467baa62
+> > Author: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> > Date:   Tue Aug 10 18:03:22 2010 -0700
+> > 
+> >     dma-mapping: unify dma_get_cache_alignment implementations
+> 
+> I think that the commit f3c072ad727617f00bffae17dba8cd895f5b7bdb
+> already fixed this breakage. You still have the issue with the latest
+> git?
 
-On host1, we run the following setkey script:
+Argh,
 
-  add fec0:42::2 fec0:42::3 esp 0x6B8B4567  -f seq-pad
-   -E rijndael-cbc 0x643C98696633487374B0DC5119495CFF
-   -A null;
-  
-  add fec0:42::3 fec0:42::2 esp 0x327B23C6  -f seq-pad
-   -E rijndael-cbc 0x3D1B58BA507ED7AB2EB141F241B71EFB
-   -A null;
-  
-  spdadd fec0:42::2 fec0:42::3 any -P out ipsec
-   esp/transport//require;
-  spdadd fec0:42::3 fec0:42::2 any -P in ipsec
-   esp/transport//require;
+I use a script for git-bisect to catch this compile error in the current git kernel v2.6.36-rc6-20-g8189b14 :
 
-And on host2, the complementary script:
+...
+  CC      arch/um/kernel/trap.o
+arch/um/drivers/hostaudio_kern.c: In function ‘hostaudio_open’:
+arch/um/drivers/hostaudio_kern.c:204: error: ‘__param_dsp’ undeclared (first use in this function)
+arch/um/drivers/hostaudio_kern.c:204: error: (Each undeclared identifier is reported only once
+arch/um/drivers/hostaudio_kern.c:204: error: for each function it appears in.)
+arch/um/drivers/hostaudio_kern.c: In function ‘hostmixer_open_mixdev’:
+arch/um/drivers/hostaudio_kern.c:265: error: ‘__param_mixer’ undeclared (first use in this function)
+arch/um/drivers/hostaudio_kern.c:272: error: ‘__param_dsp’ undeclared (first use in this function)
+make[1]: *** [arch/um/drivers/hostaudio_kern.o] Error 1
+make: *** [arch/um/drivers] Error 2
+make: *** Waiting for unfinished jobs....
+...
 
-  add fec0:42::2 fec0:42::3 esp 0x6B8B4567  -f seq-pad
-   -E rijndael-cbc 0x643C98696633487374B0DC5119495CFF
-   -A null;
-  
-  add fec0:42::3 fec0:42::2 esp 0x327B23C6  -f seq-pad
-   -E rijndael-cbc 0x3D1B58BA507ED7AB2EB141F241B71EFB
-   -A null;
-  
-  spdadd fec0:42::3 fec0:42::2 any -P out ipsec
-   esp/transport//require;
-  spdadd fec0:42::2 fec0:42::3 any -P in ipsec
-   esp/transport//require;
-
->From host1 we can now do ping6 fec0:42::3 and it will work.  However,
-when we attempt to wget 'http://[fec0:42::3]/big',  we get the
-following:
-
-  Connecting to fec0:42::3:80... connected.
-  HTTP request sent, awaiting response... Read error (connection timed
-  out) in headers.
-  Giving up.
-
-A similar issue occurs with SSH: we can connect successfully, and even
-run some commands on the remote host, but the connection stalls
-permanently as soon as we try to do anything remotely interesting.
-
-I managed to bisect the issue to the following commit.  Amazingly, the
-commit can still be reverted with almost no hassle and solves this
-particular issue.
-
-b5c15fc004ac83b7ad280acbe0fd4bbed7e2c8d4 is the first bad commit
-commit b5c15fc004ac83b7ad280acbe0fd4bbed7e2c8d4
-Author: Herbert Xu <herbert@gondor.apana.org.au>
-Date:   Thu Feb 14 23:49:37 2008 -0800
-
-    [IPV6]: Fix reversed local_df test in ip6_fragment
-    
-    I managed to reverse the local_df test when forward-porting this
-    patch so it actually makes things worse by never fragmenting at
-    all.
-    
-    Thanks to David Stevens for testing and reporting this bug.
-    
-    Bill Fink pointed out that the local_df setting is also the wrong
-    way around.
-    
-    Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
-
-:040000 040000 e8b31c5a4196df9292237f6c654758eebeadf00d a6be8522530892360965c38951b45520bc49160b M	net
-
-git bisect start
-# good: [bbf25010f1a6b761914430f5fca081ec8c7accd1] Linux 2.6.23
-git bisect good bbf25010f1a6b761914430f5fca081ec8c7accd1
-# bad: [8e0ee43bc2c3e19db56a4adaa9a9b04ce885cd84] Linux 2.6.29
-git bisect bad 8e0ee43bc2c3e19db56a4adaa9a9b04ce885cd84
-# bad: [6b648063eb51e2620774ddaebef4e07f2f6f4ae7] [S390] Cleanup lcs printk messages.
-git bisect bad 6b648063eb51e2620774ddaebef4e07f2f6f4ae7
-# good: [2c044a4803804708984931bcbd03314732e995d5] USB: fix codingstyle issues in drivers/usb/core/*.c
-git bisect good 2c044a4803804708984931bcbd03314732e995d5
-# bad: [334d094504c2fe1c44211ecb49146ae6bca8c321] Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-2.6.26
-git bisect bad 334d094504c2fe1c44211ecb49146ae6bca8c321
-# bad: [e51c683717e3ac21713444e9a517aa8e0ad0ee48] zd1211rw: Fixed incorrect constant name.
-git bisect bad e51c683717e3ac21713444e9a517aa8e0ad0ee48
-# good: [0afc2edfada50980bec999f94dcea26ebad3dda6] Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc-2.6
-git bisect good 0afc2edfada50980bec999f94dcea26ebad3dda6
-# good: [b791dd3ed7bef989f268365e85800862e8ac756f] Merge branch 'upstream-davem' of master.kernel.org:/pub/scm/linux/kernel/git/jgarzik/netdev-2.6
-git bisect good b791dd3ed7bef989f268365e85800862e8ac756f
-# bad: [d5c67bac833c6c9cc713f6a27daa77dcba898dd8] Merge branch 'upstream' of git://ftp.linux-mips.org/pub/scm/upstream-linus
-git bisect bad d5c67bac833c6c9cc713f6a27daa77dcba898dd8
-# good: [0d63e4f9ea61df1d727bd52a174aba732e6e1853] Dont touch fs_struct in drivers
-git bisect good 0d63e4f9ea61df1d727bd52a174aba732e6e1853
-# good: [7d8330a563b00040326084f933f5bee06675ac54] KVM is not seen under X86 config with latest git (32 bit compile)
-git bisect good 7d8330a563b00040326084f933f5bee06675ac54
-# good: [30b3cfe1f67550bb6ec6868507a78060ef98269a] [ATYFB]: Kill 'prom_palette' sparc code.
-git bisect good 30b3cfe1f67550bb6ec6868507a78060ef98269a
-# bad: [b69409279c4c960fcd1575bcf80f2a0ca414ca93] Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc-2.6
-git bisect bad b69409279c4c960fcd1575bcf80f2a0ca414ca93
-# good: [45b503548210fe6f23e92b856421c2a3f05fd034] [RTNETLINK]: Send a single notification on device state changes.
-git bisect good 45b503548210fe6f23e92b856421c2a3f05fd034
-# bad: [c58310bf4933986513020fa90b4190c7492995ae] Merge git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6 into for-linus
-git bisect bad c58310bf4933986513020fa90b4190c7492995ae
-# good: [f527cf405017e60ceb28f84e2d60ab16fc34f209] Merge branch 'slab-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/christoph/vm
-git bisect good f527cf405017e60ceb28f84e2d60ab16fc34f209
-# good: [96f2fc006c281cbd5702a409c57d1f1549cde1fe] sh: Clean up whitespace damage in Kconfig.debug.
-git bisect good 96f2fc006c281cbd5702a409c57d1f1549cde1fe
-# good: [5c8f82c64941594cdab53bf9f9a66c190781f4f6] maple: Fix up maple build failure.
-git bisect good 5c8f82c64941594cdab53bf9f9a66c190781f4f6
-# good: [e036eaa681a17f71b64f6d9040fe605555623919] sh: use ctrl_in/out for on chip pci access
-git bisect good e036eaa681a17f71b64f6d9040fe605555623919
-# good: [11d64be6a631236b3b3d21711c7d1a83d9f85904] Merge git://git.kernel.org/pub/scm/linux/kernel/git/lethal/sh-2.6
-git bisect good 11d64be6a631236b3b3d21711c7d1a83d9f85904
-# bad: [f6866fecd6fd8e44a6715da09844a4fd1b8484da] Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-2.6
-git bisect bad f6866fecd6fd8e44a6715da09844a4fd1b8484da
-# good: [4ee29f6a52158cea526b16a44ae38643946103ec] Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid
-git bisect good 4ee29f6a52158cea526b16a44ae38643946103ec
-# good: [0f4bda005fd685f7cbb2ad47b7bab1b155df2b86] net: xfrm statistics depend on INET
-git bisect good 0f4bda005fd685f7cbb2ad47b7bab1b155df2b86
-# good: [073a371987f9a9806a85329eed51dca1fc52a7a0] [XFRM]: Avoid bogus BUG() when throwing new policy away.
-git bisect good 073a371987f9a9806a85329eed51dca1fc52a7a0
-# bad: [69c3683ca7fe066ecba9e8a0424c5abd258a5d58] netconsole: avoid null pointer dereference at show_local_mac()
-git bisect bad 69c3683ca7fe066ecba9e8a0424c5abd258a5d58
-# bad: [b5c15fc004ac83b7ad280acbe0fd4bbed7e2c8d4] [IPV6]: Fix reversed local_df test in ip6_fragment
-git bisect bad b5c15fc004ac83b7ad280acbe0fd4bbed7e2c8d4
+but catched another compile error -  how can I now automatically git-bisect for
+that wrong commit w/o heavy scripting ? - Or simply asking who to blame wrt this compile error ?
 
 -- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+MfG/Kind regards
+Toralf Förster
+
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+
