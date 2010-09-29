@@ -1,101 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866Ab0I2Vo1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 17:44:27 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:48080 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751241Ab0I2Vo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 17:44:26 -0400
-Date: Wed, 29 Sep 2010 16:44:25 -0500
-From: Robin Holt <holt@sgi.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Robin Holt <holt@sgi.com>, lkml <linux-kernel@vger.kernel.org>,
-        "Robert P. J. Day" <rpjday@crashcourse.ca>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Badari Pulavarty <pbadari@us.ibm.com>,
-        Dave Hansen <haveblue@us.ibm.com>, Gary Hade <garyhade@us.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Matt Tolentino <matthew.e.tolentino@intel.com>
-Subject: Re: [Patch 1/3] Introduce kset_find_obj_hinted.
-Message-ID: <20100929214425.GR14064@sgi.com>
-References: <20100929190053.992911934@gulag1.americas.sgi.com>
- <20100929190115.494540024@gulag1.americas.sgi.com>
- <1285793956.19976.10359.camel@nimitz>
+	id S1753689Ab0I2VpO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 17:45:14 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:60607 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751409Ab0I2VpM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 17:45:12 -0400
+From: Dima Zavin <dima@android.com>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Dima Zavin <dima@android.com>,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
+Subject: [PATCH 1/2] sched: normalize sleeper's vruntime during group change
+Date: Wed, 29 Sep 2010 14:44:21 -0700
+Message-Id: <1285796661-29007-1-git-send-email-dima@android.com>
+X-Mailer: git-send-email 1.6.6
+In-Reply-To: <1285747995.7844.42.camel@marge.simson.net>
+References: <1285747995.7844.42.camel@marge.simson.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1285793956.19976.10359.camel@nimitz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 29, 2010 at 01:59:16PM -0700, Dave Hansen wrote:
-> On Wed, 2010-09-29 at 14:00 -0500, Robin Holt wrote:
-> > 
-> >  struct kobject *kset_find_obj(struct kset *kset, const char *name)
-> >  {
-> > +       return kset_find_obj_hinted(kset, name, NULL);
-> > +}
-> > +
-> > +/**
-> > + * kset_find_obj_hinted - search for object in kset given a predecessor hint.
-> > + * @kset: kset we're looking in.
-> > + * @name: object's name.
-> > + * @hint: hint to possible object's predecessor.
-> > + *
-> > + * Check the hint's next object and if it is a match return it directly,
-> > + * otherwise, fall back to the behavior of kset_find_obj().  Either way
-> > + * a reference for the returned object is held and the reference on the
-> > + * hinted object is released.
-> > + */
-> > +struct kobject *kset_find_obj_hinted(struct kset *kset, const char *name,
-> > +                                    struct kobject *hint)
-> > +{
-> >         struct kobject *k;
-> >         struct kobject *ret = NULL;
-> > 
-> >         spin_lock(&kset->list_lock);
-> > +
-> > +       if (!hint)
-> > +               goto slow_search;
-> > +
-> > +       /* end of list detection */
-> > +       if (hint->entry.next == kset->list.next)
-> > +               goto slow_search;
-> > +
-> > +       k = container_of(hint->entry.next, struct kobject, entry);
-> > +       if (!kobject_name(k) || strcmp(kobject_name(k), name))
-> > +               goto slow_search;
-> > +
-> > +       ret = kobject_get(k);
-> > +       goto unlock_exit;
-> > +
-> > +slow_search:
-> >         list_for_each_entry(k, &kset->list, entry) {
-> >                 if (kobject_name(k) && !strcmp(kobject_name(k), name)) {
-> >                         ret = kobject_get(k);
-> >                         break;
-> >                 }
-> >         }
-> 
-> So, the slow search ends up looking through _all_ of the sections in the
-> order they got registered, which _guarantees_ that we'll go all the way
-> through the list every time.  Right?
-> 
-> I guess we could also add to the list using list_add_tail(), iterate
-> during the search using list_for_each_tail(), or even just look at the
-> last entry by looking at kset->list.prev directly.  Those would have the
-> advantage of not having to have several levels in the call chain.  We
-> also wouldn't have to change anything if and when this gets fixed
-> properly.
+If you switch the cgroup of a sleeping thread, its vruntime does
+not get adjusted correctly for the difference between the
+min_vruntime values of the two groups.
 
-Except that drivers/base/memory.c's memory_dev_init registers all the
-memory sections and then later, drivers/base/node.c's node_dev_init
-looks for memory sections on each node and does the symlink.
+This patch adds a new callback, prep_move_task, to struct sched_class
+to give sched_fair the opportunity to adjust the task's vruntime
+just before setting its new group. This allows us to properly normalize
+a sleeping task's vruntime when moving it between different cgroups.
 
-Since the two are separated in time, either the head or tail based search
-is going to end up with last or first part of the search sequence being
-much slower.
+More details about the problem:
+  http://lkml.org/lkml/2010/9/28/24
 
-Robin
+Cc: Arve Hjønnevåg <arve@android.com>
+Signed-off-by: Dima Zavin <dima@android.com>
+---
+ include/linux/sched.h |    1 +
+ kernel/sched.c        |    5 +++++
+ kernel/sched_fair.c   |   14 +++++++++++++-
+ 3 files changed, 19 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 1e2a6db..ba3494e 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1073,6 +1073,7 @@ struct sched_class {
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	void (*moved_group) (struct task_struct *p, int on_rq);
++	void (*prep_move_group) (struct task_struct *p, int on_rq);
+ #endif
+ };
+ 
+diff --git a/kernel/sched.c b/kernel/sched.c
+index dc85ceb..fe4bb20 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -8297,6 +8297,11 @@ void sched_move_task(struct task_struct *tsk)
+ 	if (unlikely(running))
+ 		tsk->sched_class->put_prev_task(rq, tsk);
+ 
++#ifdef CONFIG_FAIR_GROUP_SCHED
++	if (tsk->sched_class->prep_move_group)
++		tsk->sched_class->prep_move_group(tsk, on_rq);
++#endif
++
+ 	set_task_rq(tsk, task_cpu(tsk));
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index db3f674..6ded59f 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -3827,10 +3827,21 @@ static void set_curr_task_fair(struct rq *rq)
+ static void moved_group_fair(struct task_struct *p, int on_rq)
+ {
+ 	struct cfs_rq *cfs_rq = task_cfs_rq(p);
++	struct sched_entity *se = &p->se;
+ 
+ 	update_curr(cfs_rq);
+ 	if (!on_rq)
+-		place_entity(cfs_rq, &p->se, 1);
++		se->vruntime += cfs_rq->min_vruntime;
++}
++
++static void prep_move_group_fair(struct task_struct *p, int on_rq)
++{
++	struct cfs_rq *cfs_rq = task_cfs_rq(p);
++	struct sched_entity *se = &p->se;
++
++	/* normalize the runtime of a sleeping task before moving it */
++	if (!on_rq)
++		se->vruntime -= cfs_rq->min_vruntime;
+ }
+ #endif
+ 
+@@ -3883,6 +3894,7 @@ static const struct sched_class fair_sched_class = {
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	.moved_group		= moved_group_fair,
++	.prep_move_group	= prep_move_group_fair,
+ #endif
+ };
+ 
+-- 
+1.6.6
+
