@@ -1,55 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab0I2R16 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 13:27:58 -0400
-Received: from smtp.opengridcomputing.com ([209.198.142.2]:37998 "EHLO
-	smtp.opengridcomputing.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754574Ab0I2R14 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 13:27:56 -0400
-Message-ID: <4CA37715.4020302@opengridcomputing.com>
-Date: Wed, 29 Sep 2010 12:27:49 -0500
-From: Steve Wise <swise@opengridcomputing.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100915 Lightning/1.0b1 Thunderbird/3.0.8
+	id S1754700Ab0I2R36 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 13:29:58 -0400
+Received: from leb.cs.unibo.it ([130.136.1.102]:34539 "EHLO leb.cs.unibo.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752710Ab0I2R35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 13:29:57 -0400
+X-Greylist: delayed 608 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Sep 2010 13:29:57 EDT
+Date: Wed, 29 Sep 2010 19:19:45 +0200
+From: Renzo Davoli <renzo@cs.unibo.it>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: David Miller <davem@davemloft.net>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, julia@diku.dk, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, shemminger@vyatta.com,
+        shammash@artha.org
+Subject: Re: [uml-devel] {painfully BISECTED} Please revert f25c80a4b2:
+	arch/um/drivers: remove duplicate structure field initialization
+Message-ID: <20100929171944.GA3942@cs.unibo.it>
+References: <AANLkTim85sH_2o=xCiDuoQrHq_7ZL96Y91xQMGxUP5Fy@mail.gmail.com> <20100928211106.GE19804@ZenIV.linux.org.uk> <20100928212417.GF19804@ZenIV.linux.org.uk> <20100928.144215.246551852.davem@davemloft.net> <20100928215108.GH19804@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: Roland Dreier <rdreier@cisco.com>
-CC: Arnd Bergmann <arnd@arndb.de>, linux-rdma@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] RDMA/cxgb4: Add default_llseek to debugfs files.
-References: <20100929141112.26944.21931.stgit@build.ogc.int> <adawrq431sr.fsf@cisco.com>
-In-Reply-To: <adawrq431sr.fsf@cisco.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100928215108.GH19804@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/29/2010 12:19 PM, Roland Dreier wrote:
->   >  @@ -182,6 +182,7 @@ static const struct file_operations qp_debugfs_fops = {
->   >   	.open    = qp_open,
->   >   	.release = qp_release,
->   >   	.read    = debugfs_read,
->   >  +	.llseek  = default_llseek,
->   >   };
->
-> I think this could actually be generic_file_llseek (right, Arnd?).
->
-> Also could qp_read() and other read methods be simplified by using
-> simple_read_from_buffer()?  I don't see anything fancy there, seems like
-> the read methods could become one-liners that way.
->
->    
+> Oh, joy...  I'm regulary using uml, with some of these drivers used
+> from time to time, but I've no fscking clue on e.g. VDE - even on
+> the "what the hell it is" level ;-/
+VDE is Virtual Distributed Ethernet.
+http://wiki.virtualsquare.org/wiki/index.php/Introduction#Virtual_Square_Networking
 
-I assume you mean debugs_read()...Like this?
+I am the main author of VDE.
+Was it just an example or there is a bug on the VDE support for user-mode Linux?
 
-static ssize_t debugfs_read(struct file *file, char __user *buf, size_t 
-count,
-                             loff_t *ppos)
-{
-         struct c4iw_debugfs_data *d = file->private_data;
-
-         return simple_read_from_buffer(buf, ppos, d->buf, d->pos);
-}
-
-
-Steve.
+	renzo
