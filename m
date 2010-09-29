@@ -1,33 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753866Ab0I2D2p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 23:28:45 -0400
-Received: from correo.corpivensa.gob.ve ([200.44.112.148]:53030 "EHLO
-	correo.corpivensa.gob.ve" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462Ab0I2D2o (ORCPT
+	id S1754018Ab0I2Dc2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 23:32:28 -0400
+Received: from nic.NetDirect.CA ([216.16.235.2]:55510 "EHLO
+	rubicon.netdirect.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752737Ab0I2Dc1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 23:28:44 -0400
-Date: Tue, 28 Sep 2010 23:04:30 -0430 (VET)
-From: Faraddin Bin <saltuve@corpivensa.gob.ve>
-Reply-To: Faraddin Bin <timiala@voila.fr>
-Message-ID: <20971492.330891285731270638.JavaMail.root@correo>
-Subject: GOLD DEAL
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [60.53.50.83]
-X-Mailer: Zimbra 5.0.16_GA_2921.DEBIAN4.0 (ZimbraWebClient - IE6 (Win)/5.0.16_GA_2921.DEBIAN4.0)
-To: undisclosed-recipients:;
+	Tue, 28 Sep 2010 23:32:27 -0400
+X-Originating-Ip: 216.16.235.2
+Date: Tue, 28 Sep 2010 23:30:38 -0400
+From: Chris Frey <cdfrey@foursquare.net>
+To: Richard Weinberger <richard@nod.at>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        jdike@addtoit.com, user-mode-linux-devel@lists.sourceforge.net,
+        user-mode-linux-user@lists.sourceforge.net, janjaap@bos.nl,
+        geert@linux-m68k.org, jaxboe@fusionio.com, martin.petersen@oracle.com,
+        adobriyan@gmail.com
+Subject: Re: [PATCH 1/1] um: ubd: Fix data corruption
+Message-ID: <20100929033038.GA7668@foursquare.net>
+References: <1285710456-4435-1-git-send-email-richard@nod.at> <20100928150000.f007f43e.akpm@linux-foundation.org> <201009290013.11332.richard@nod.at>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201009290013.11332.richard@nod.at>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have 110 kg of Switz refined gold, 99.99(24 karat).
+On Wed, Sep 29, 2010 at 12:13:10AM +0200, Richard Weinberger wrote:
+> Am Mittwoch 29 September 2010, 00:00:00 schrieb Andrew Morton:
+> > This is a workaround, I think?  Do we know what the actual bug is?
+> > From the comment it appears to be a regression?
+> 
+> Yes, it is a workaround.
+> For more details please have a look at this post:
+> http://lkml.org/lkml/2010/9/28/245
 
-Should you be interested to buy it, please reply me for more and better arrangement on the method of transaction;
+I am so far unable to reproduce the corruption with this workaround patch.
+So it looks like we have at least one fix.
 
-I will offer you cheaper than the international gold price. 
+Thank you very much to everyone who worked on this.
 
-If we can develop a certain level of trust between us, I will consider letting you lift it to your country and sell, then pay me based on the price we will agree on as I am only interested to sell it to a capable client instead of selling per kilo.
+- Chris
 
-Please get back to me.
