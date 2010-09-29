@@ -1,70 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734Ab0I2Hut (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 03:50:49 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:43025 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751609Ab0I2Hus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 03:50:48 -0400
-Date: Wed, 29 Sep 2010 13:20:44 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, Shailabh Nagar <nagar1234@in.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org, Jeff Mahoney <jeffm@suse.com>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 0/2] taskstats: Cleanup patches
-Message-ID: <20100929075044.GF4261@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20100928142058.796669370@linux.vnet.ibm.com>
- <20100928135117.4fdd5799.akpm@linux-foundation.org>
+	id S1753379Ab0I2Hyr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 03:54:47 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:52471 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752395Ab0I2Hyq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 03:54:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=h7A5Fh0LnmC9wh0ei/gIgquUTPCRTyqSFpEX8tPGL+L90kFL0/Nb3N9VWD6YtvkdF9
+         Ar8GpWWfqkjiMB61HLrcmsQXQL113T9XuGVduQLE/IgIlf5m6tghjnt6tyvwbt0REe7V
+         W9BktP5z+bdHRH1geIbSwHMFpfYNpH9pP/q38=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100928135117.4fdd5799.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20100928145953.GC13563@erda.amd.com>
+References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
+	<1285549026-5008-4-git-send-email-ying.huang@intel.com>
+	<20100927094136.GB32222@erda.amd.com>
+	<AANLkTimTg1uqXdAJ+GyZ3_B6n2xKWdqFL96jvv18JBM+@mail.gmail.com>
+	<20100927132537.GO13563@erda.amd.com>
+	<1285635832.20791.119.camel@yhuang-dev>
+	<20100928145953.GC13563@erda.amd.com>
+Date: Wed, 29 Sep 2010 15:54:45 +0800
+Message-ID: <AANLkTikSF-jBkiwUUFwtnusnKFtHvX=WdDKq5WM1sfE3@mail.gmail.com>
+Subject: Re: [PATCH -v2 4/7] x86, NMI, Rewrite NMI handler
+From: huang ying <huang.ying.caritas@gmail.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Huang Ying <ying.huang@intel.com>, Don Zickus <dzickus@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Andrew Morton <akpm@linux-foundation.org> [2010-09-28 13:51:17]:
+Hi, Robert,
 
-> On Tue, 28 Sep 2010 16:20:58 +0200
-> Michael Holzheu <holzheu@linux.vnet.ibm.com> wrote:
-> 
-> > Hello Andrew,
-> > 
-> > It would be great, if you could accept the taskstats cleanup patches that
-> > are the prerequisite for the taskstats precise accounting patches. The
-> > patches do not add any new functionality. I think they make the code better
-> > readable and extensible:
-> > * 01/02: taskstats: Separate taskstats commands
-> > * 02/02: taskstats: Split fill_pid function
-> > 
-> 
-> Sure.
-> 
-> I've been sitting on a couple of taskstats patches for ages.  Mel's
-> delay-accounting-re-implement-c-for-getdelaysc-to-report-information-on-a-target-command.patch
-> and Jeff's delayacct-align-to-8-byte-boundary-on-64-bit-systems.patch.
-> 
-> I have notes against both of these indicating that Balbir had concerns
-> and as far as I know those concerns remain unresolved.  So I'll drop
-> those patches now - can you guys please reactivate them if you still
-> think we should be making these changes?
-> 
+On Tue, Sep 28, 2010 at 10:59 PM, Robert Richter <robert.richter@amd.com> wrote:
+> On 27.09.10 21:03:52, Huang Ying wrote:
+>> Use priority to enforce the order has some issues except what Don
+>> pointed out (two registers for two call in chain):
+>>
+>> - Almost all direct call in default_do_nmi() must be turned into
+>> notifier_block. I know this is what you want. But I am not a big fan of
+>> notifier chain :)
+>>
+>> - This makes order of notifier call more implicitly. And I think the
+>> order is important for NMI handler to work properly.
+>>
+>> - In your scheme, both die_val (DIE_NMI or DIE_NMI_UNKNOWN) and priority
+>> are used to determine the order of call. This makes code more complex
+>> and no additional benefit.
+>>
+>> So I think it is better to use different die_val to determine the order,
+>> and insert some direct call between them.
+>
+> Huang,
+>
+> registering a notifier is the only clean way to add an NMI handler.
+> Modifying the NMI control flow in traps.c with global flags is not the
+> right approach.
 
-Hi, Andrew,
+If you mean my code in [PATCH 6/7], in that patch, I add another logic
+into the general unknown NMI processing: treat all unknown NMI as
+hardware error and go panic. The global flag is just used to implement
+white list, it is not the point. I am not adding another NMI handler
+there.
 
-My concern with Jeff's patch was that it might break existing
-applications. He clarified it does not, I had requested for a version
-bump since the patches change some definitions
+In general, I think it is better to call the NMI handler in
+default_do_nmi() directly if possible. That is clearer, and the code
+is much easier to be understood too.
 
-I had no concerns (IIRC) with Mel's patches. Mel wanted me to
-implement the "-c" option we had earlier.
+> Currently, execution order depends on die_val, this is
+> not obvious when reading the code
 
+I think that is more obvious for reading than priority value. When you
+look at the new default_do_nmi(), it is very clear that the order is
+as follow:
 
--- 
-	Three Cheers,
-	Balbir
+DIE_NMI_IPI
+DIE_NMI
+port 0x61
+watchdog
+DIE_NMIUNKNOWN
+
+Because the corresponding notifiers are called in this order.
+
+With priority value, people may say: Oh, this is data-driven
+programming, the execution order is based on data value. That is not
+so obvious for me.
+
+> and we all were wondering in the
+> beginning why there was DIE_NMI, DIE_NMI_IPI and DIE_NMI_UNKNOWN, etc.
+
+What I thought about this is described in my reply to Don in 3/7 thread.
+
+> So, better we say instead, this is the notifier function with that
+> priority, add it to the call chain. With priorities we are able to
+> clearly specify the execution order even more fine grained than
+> now.
+
+Do we need fine grained order? Do you have some use cases. Fine
+grained order is hard to managed too. Especially because some NMI
+handler may be hardware independent.
+
+> And, code in traps.c will become fairly easy. Also, we don't need
+> two notifiers, because there is no need for different priorities
+> then. Give me one use case, I don't know of any.
+
+If my understanding is correct, in your previous mail, you said there
+will be two notifier chain, DIE_NMI and DIE_NMI_UNKNOWN, so I said
+that.
+
+> And the setup of a notifier is not that much overhead or complex, sure
+> we need to change the code, but actually this the work to be done to
+> clean it up.
+
+I just want to clean it up in different way as you :)
+
+Best Regards,
+Huang Ying
