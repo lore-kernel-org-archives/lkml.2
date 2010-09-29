@@ -1,93 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727Ab0I2Tl3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 15:41:29 -0400
-Received: from smtp.df.ru ([195.42.160.16]:37114 "EHLO smtp.df.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755564Ab0I2Tl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 15:41:27 -0400
-X-Greylist: delayed 1326 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Sep 2010 15:41:27 EDT
-Date: Wed, 29 Sep 2010 23:18:51 +0400
-From: Alexey Vlasov <renton@renton.name>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Packet time delays on multi-core systems
-Message-ID: <20100929191851.GC86786@beaver.vrungel.ru>
+	id S1755523Ab0I2Tmv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 15:42:51 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:2362 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754376Ab0I2Tmt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 15:42:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=JcSVLg0qVchxlExJ/4dxrowsubtHGYcR2z1zlDWLGh+y7Mm0dE7/1/OWa+w1G3/+ZB
+         3VCF1T021/HP8A7n3JRg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=koi8-r
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100929181207.GW26290@redhat.com>
+References: <20100929125453.GH13563@erda.amd.com>
+	<AANLkTimoE8wAhT+yxXBPnZvTTGrAtDjdaXPBN3Xg28eL@mail.gmail.com>
+	<AANLkTi=WYU2=4Hu7tb+TSrhJw9K9du19_KjMcG3ij=qn@mail.gmail.com>
+	<20100929150140.GK13563@erda.amd.com>
+	<20100929151253.GL13563@erda.amd.com>
+	<20100929152745.GC9440@lenovo>
+	<AANLkTikvYreYiyCbGeG02j+r4dWVLRH7BqeeG9O=VTNN@mail.gmail.com>
+	<20100929154528.GD9440@lenovo>
+	<AANLkTinkqTXXD5fMUYTT4zrRD6YoTi_G+uOA5CsOgxtT@mail.gmail.com>
+	<20100929170924.GR13563@erda.amd.com>
+	<20100929181207.GW26290@redhat.com>
+Date: Wed, 29 Sep 2010 21:42:26 +0200
+Message-ID: <AANLkTimp=+1GzBOYaUZWtDF6teGt6FZe+RTpb9fAyOyd@mail.gmail.com>
+Subject: Re: [tip:perf/urgent] perf, x86: Catch spurious interrupts after
+ disabling counters
+From: Stephane Eranian <eranian@google.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Robert Richter <robert.richter@amd.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@elte.hu" <mingo@elte.hu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+On Wed, Sep 29, 2010 at 8:12 PM, Don Zickus <dzickus@redhat.com> wrote:
+> On Wed, Sep 29, 2010 at 07:09:24PM +0200, Robert Richter wrote:
+>> On 29.09.10 12:00:35, Stephane Eranian wrote:
+>> > Here is a scenario:
+>> >
+>> > event A -> counter 0, cpuc->running = 0x1 active_mask = 0x1
+>> > move A
+>> > event A -> counter 1, cpuc->running = 0x3, active_mask = 0x2
+>> >
+>> > No interrupt, we are just counting for a short period.
+>> > Then, you get an NMI interrupt, suppose it is not generated
+>> > by the PMU, it is destined for another handler.
+>> >
+>> > For i=0, you have (active_mask & 0x1) == 0, but (running & 0x1) == 1,
+>> > you mark the interrupt as handled, i.e., you swallow it, the actual
+>> > handler never gets it.
+>>
+>> Yes, then changing the counters you will get *one* nmi with 2 handled
+>> counters. This is valid as the disabled counter could generate a
+>> spurious interrupt. But you get (handled == 2) instead of (handled ==
+>> 1) which is not much impact. All following nmis have (handled == 1)
+>> then again.
+>
+> Robert,
+>
+> I think you missed Stephane's point.  Say for example, kgdb is being used
+> while we are doing stuff with the perf counter (and say kgdb's handler is
+> a lower priority than perf; which isn't true I know, but let's say):
+>
+Yes, exactly my point. The reality is you cannot afford to have false positive
+because you may starve another subsystem from an important notification.
 
-I'm not sure actually that I should write here, may be I should ask in
-netfilter maillist, but if is something wrong please correct me.
+I think it boils down to whether or not we need an error message (Dazed) in
+case no subsystem claimed the NMI. If you were to just silently consume the
+NMI when no subsystem claims it, then you would not have these issues.
 
-I've got rather large linux shared hosting, and on my new servers I
-noticed some strange singularity, that this simple rule:
+What Don has done is use a heuristic which gets activated when a PMU
+interrupt handler signals that more than one counter have overflowed. His
+claim is that this situation is likely to trigger back-to-back.
 
-# iptables -A OUTPUT -p tcp -m tcp --dport 80 --tcp-flags
-FIN,SYN,RST,ACK SYN -j LOG --log-prefix "ipsec:SYN-OUTPUT "
---log-uid
+The reason this heuristic works is because it waits until ALL the subsystems
+have seen the notification before it declares that the NMI was PMU spurious.
+To do that is uses the DIE_NMI_UNKNOWN callchain. Handler on this chain
+get call last, after all subsystems have seen the notification once. I believe
+that is the only way to safely "consume" a "spurious" NMI and avoid
+the 'Dazed' message. Anything else runs the risks of starving the other
+subsystems.
 
-gives essential time delays simply at ping from the adjacent server
-on a local area network. I don't know precisely what's wrong whether the
-reason is in the bad support by a kernel of new hardware, or it concerns
-generally the new kernel, but now it leads to the situation that even at simple
-DDOS attacks to client sites, it becomes difficult to make something, and in
-general all works only worse.
-
-It seems to me that with the increase of CPU cores' amount, it only becomes
-worse and worse, and, obviously, iptables uses resources of only one processor,
-which resources to it for any reason doesn't suffice.
-
-newbox # iptables -F
-otherbox # ping -c 100 newbox
-...
-100 packets transmitted, 100 received, 0% packet loss, time 100044ms
-rtt min/avg/max/mdev = 0.133/2.637/17.172/3.736 ms
-
-OK.
-
-newbox # iptables -A OUTPUT -p tcp -m tcp --dport 80 --tcp-flags FIN,SYN,RST,ACK SYN
--j LOG --log-prefix "ipsec:SYN-OUTPUT " --log-uid
-otherbox # ping -c 100 newbox
-...
-64 bytes from (newbox): icmp_seq=3 ttl=64 time=1.58 ms
-64 bytes from (newbox): icmp_seq=4 ttl=64 time=98.7 ms
-64 bytes from (newbox): icmp_seq=5 ttl=64 time=18.2 ms
-64 bytes from (newbox): icmp_seq=6 ttl=64 time=6.13 ms
-64 bytes from (newbox): icmp_seq=7 ttl=64 time=108 ms
-...
-64 bytes from (newbox): icmp_seq=55 ttl=64 time=2.30 ms
-64 bytes from (newbox): icmp_seq=56 ttl=64 time=59.9 ms
-64 bytes from (newbox): icmp_seq=57 ttl=64 time=0.155 ms
-...
-64 bytes from (newbox): icmp_seq=61 ttl=64 time=13.4 ms
-64 bytes from (newbox): icmp_seq=62 ttl=64 time=55.0 ms
-64 bytes from (newbox): icmp_seq=63 ttl=64 time=0.233 ms
-...
-100 packets transmitted, 100 received, 0% packet loss, time 99957ms
-rtt min/avg/max/mdev = 0.111/7.519/108.061/18.478 ms
-
-newbox # iptables -L -v -n
-Chain INPUT (policy ACCEPT 346K packets, 213M bytes)
- pkts bytes target     prot opt in     out     source               destination
-
-Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
- pkts bytes target     prot opt in     out     source               destination
-
-Chain OUTPUT (policy ACCEPT 296K packets, 290M bytes)
- pkts bytes target     prot opt in     out     source               destination
-  234 14040 LOG        tcp  --  *      *       0.0.0.0/0            0.0.0.0/0    
-tcp dpt:80 flags:0x17/0x02 LOG flags 8 level 4 prefix `ipsec:SYN-OUTPUT- '
-
-My old server: Intel SR1500, Xeon 5430, kernel 2.6.24 - 2.6.28
-Newbox: SR1620UR, 5650, kernel 2.6.32
-
-Thanks in advance.
-
--- 
-BRGDS. Alexey Vlasov.
+> perf NMI comes in, issues pmu_stop 'cleanly' (meaning no spurious
+> interrupt).  The cpuc->running bit is never cleared.
+>
+> kgdb NMI comes in, but the die_chain dictates perf looks at it first.
+> perf will see that cpuc->active == 0 and cpuc->running == 1 and bump
+> handled.  Thus returning NOTIFY_STOP.  kgdb never sees the NMI. :-(
+>
+> Now I sent a patch last week that can prevent that extra NMI from being
+> generated at the cost of another rdmsrl in the non-pmu_stop cases (which I
+> will attach below again, obviously P4 would need something similar too).
+>
+> I think we currently don't see the problems Stephane describes because the
+> only thing we test that uses NMIs are perf, which also happens to be a low
+> priority on the die_chain.
+>
+> But it is an interesting scenario that we should look at more.
+>
+> Cheers,
+> Don
+>
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> index 48c6d8d..1642f48 100644
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -1175,11 +1175,22 @@ static int x86_pmu_handle_irq(struct pt_regs *regs)
+>                handled++;
+>                data.period     = event->hw.last_period;
+>
+> -               if (!x86_perf_event_set_period(event))
+> -                       continue;
+> +               /*
+> +                * if period is over, process the overflow
+> +                * before reseting the counter, otherwise
+> +                * a new overflow could occur before the
+> +                * event is stopped
+> +                */
+> +               if (local64_read(&hwc->period_left) <= 0) {
+> +                       if (perf_event_overflow(event, 1, &data, regs)) {
+> +                               x86_pmu_stop(event, 0);
+> +                               continue;
+> +                       }
+> +                       /* if the overflow doesn't stop the event, resync */
+> +                       x86_perf_event_update(event);
+> +               }
+>
+> -               if (perf_event_overflow(event, 1, &data, regs))
+> -                       x86_pmu_stop(event, 0);
+> +               x86_perf_event_set_period(event);
+>        }
+>
+>        if (handled)
+>
