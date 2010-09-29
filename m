@@ -1,87 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202Ab0I2Q0h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 12:26:37 -0400
-Received: from fieldses.org ([174.143.236.118]:35632 "EHLO fieldses.org"
+	id S1754242Ab0I2QbJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 12:31:09 -0400
+Received: from fieldses.org ([174.143.236.118]:45827 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753971Ab0I2Q0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 12:26:35 -0400
-Date: Wed, 29 Sep 2010 12:26:25 -0400
+	id S1753860Ab0I2QbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 12:31:07 -0400
+Date: Wed, 29 Sep 2010 12:30:55 -0400
 From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        netdev@vger.kernel.org
-Subject: null dereference in ipip6_get_stats in linux-next
-Message-ID: <20100929162625.GB17087@fieldses.org>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree (Was:
+ linux-next: build warning after merge of the final tree)
+Message-ID: <20100929163055.GC17087@fieldses.org>
+References: <20100929140238.c987caac.sfr@canb.auug.org.au>
+ <20100929141657.3c076eb7.sfr@canb.auug.org.au>
+ <4CA322DA.90705@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <4CA322DA.90705@parallels.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Last night's linux-next fails to boot for me; apologies if this is already
-known.
+On Wed, Sep 29, 2010 at 03:28:26PM +0400, Pavel Emelyanov wrote:
+> > This actually causes a build failure on a sparc32 defconfig build:
+> > 
+> > `rpcauth_remove_module' referenced in section `.init.text' of net/built-in.o: defined in discarded section `.exit.text' of net/built-in.o
+> > 
+> > I applied the following patch for today:
+> > 
+> > From: Stephen Rothwell <sfr@canb.auug.org.au>
+> > Date: Wed, 29 Sep 2010 14:07:07 +1000
+> > Subject: [PATCH] sunrpc: fix up section mismatch
+> > 
+> > Fixes:
+> > 
+> > `rpcauth_remove_module' referenced in section `.init.text' of net/built-in.o: defined in discarded section `.exit.text' of net/built-in.o
+> > 
+> > Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> 
+> Oops :(
+> 
+> Acked-by: Pavel Emelyanov <xemul@openvz.org>
+
+Thanks, applied, and I'll push that out soon.
 
 --b.
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-IP: [<ffffffff818f1fc0>] ipip6_get_stats+0x10/0x50
-PGD 0 
-Oops: 0000 [#1] PREEMPT 
-last sysfs file: 
-CPU 0 
-Modules linked in:
-
-Pid: 1, comm: swapper Not tainted 2.6.36-rc5-next-20100929-05834-g1063b82 #471 /Bochs
-RIP: 0010:[<ffffffff818f1fc0>]  [<ffffffff818f1fc0>] ipip6_get_stats+0x10/0x50
-RSP: 0018:ffff88001f4bdbe0  EFLAGS: 00010282
-RAX: 0000000000000000 RBX: ffff88001f4bdc30 RCX: 0000000000000000
-RDX: ffff88001ceecc60 RSI: ffff88001f4bdc30 RDI: ffff88001ceecc60
-RBP: ffff88001f4bdbe0 R08: ffffffff81b31b20 R09: ffff88001cef55e4
-R10: 0000000000000000 R11: 0000000000000000 R12: ffff88001f506c48
-R13: ffff88001cef54f8 R14: ffff88001f4bdd1c R15: 0000000000000000
-FS:  0000000000000000(0000) GS:ffffffff81e1c000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000008 CR3: 000000001ce5f000 CR4: 00000000000006f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process swapper (pid: 1, threadinfo ffff88001f4bc000, task ffff88001f4ba050)
-Stack:
- ffff88001f4bdc00 ffffffff81840f6e ffff88001f4bdc00 ffff88001ceecc60
-<0> ffff88001f4bdd50 ffffffff8184fe9b ffff88001f4bdcb0 ffff88001cef5584
-<0> ffff88001cef3ca8 ffff8800ffffffff ffff88001cef54f0 ffff88001f400e80
-Call Trace:
- [<ffffffff81840f6e>] dev_get_stats+0x5e/0xa0
- [<ffffffff8184fe9b>] rtnl_fill_ifinfo+0x39b/0x870
- [<ffffffff810e247a>] ? cache_alloc_debugcheck_after+0xea/0x220
- [<ffffffff81851115>] ? rtmsg_ifinfo+0x45/0x100
- [<ffffffff810e3f70>] ? __kmalloc_track_caller+0x150/0x290
- [<ffffffff81851115>] ? rtmsg_ifinfo+0x45/0x100
- [<ffffffff8185113e>] rtmsg_ifinfo+0x6e/0x100
- [<ffffffff8105f5c6>] ? raw_notifier_call_chain+0x16/0x20
- [<ffffffff81845391>] register_netdevice+0x441/0x4f0
- [<ffffffff818460df>] register_netdev+0x3f/0x60
- [<ffffffff81f0e9e6>] sit_init_net+0x194/0x1c4
- [<ffffffff81f0e934>] ? sit_init_net+0xe2/0x1c4
- [<ffffffff8183e28a>] ? ops_init.clone.2+0x6a/0x120
- [<ffffffff8183e268>] ops_init.clone.2+0x48/0x120
- [<ffffffff8183e417>] ? register_pernet_device+0x27/0x80
- [<ffffffff81f0e7f2>] ? sit_init+0x0/0x60
- [<ffffffff8183e397>] register_pernet_operations+0x57/0xb0
- [<ffffffff81f0e7f2>] ? sit_init+0x0/0x60
- [<ffffffff8183e426>] register_pernet_device+0x36/0x80
- [<ffffffff81f0e815>] sit_init+0x23/0x60
- [<ffffffff810001d2>] do_one_initcall+0x42/0x170
- [<ffffffff81ed85f5>] kernel_init+0xa5/0x12a
- [<ffffffff8196ccb9>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff81003274>] kernel_thread_helper+0x4/0x10
- [<ffffffff8196defe>] ? restore_args+0x0/0x30
- [<ffffffff81ed8550>] ? kernel_init+0x0/0x12a
- [<ffffffff81003270>] ? kernel_thread_helper+0x0/0x10
-Code: 48 8b 93 b8 00 00 00 e9 fd fe ff ff 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 55 48 89 e5 0f 1f 44 00 00 48 8b 87 58 04 00 00 <48> 8b 70 08 48 8b 48 10 48 8b 50 18 48 8b 00 48 89 b7 e0 00 00 
-RIP  [<ffffffff818f1fc0>] ipip6_get_stats+0x10/0x50
- RSP <ffff88001f4bdbe0>
-CR2: 0000000000000008
----[ end trace e2d6566c536d1627 ]---
+> 
+> > ---
+> >  include/linux/sunrpc/auth.h |    4 ++--
+> >  net/sunrpc/auth.c           |    2 +-
+> >  net/sunrpc/auth_generic.c   |    2 +-
+> >  3 files changed, 4 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/include/linux/sunrpc/auth.h b/include/linux/sunrpc/auth.h
+> > index 5bbc447..b202475 100644
+> > --- a/include/linux/sunrpc/auth.h
+> > +++ b/include/linux/sunrpc/auth.h
+> > @@ -122,8 +122,8 @@ extern const struct rpc_authops	authnull_ops;
+> >  int __init		rpc_init_authunix(void);
+> >  int __init		rpc_init_generic_auth(void);
+> >  int __init		rpcauth_init_module(void);
+> > -void __exit		rpcauth_remove_module(void);
+> > -void __exit		rpc_destroy_generic_auth(void);
+> > +void			rpcauth_remove_module(void);
+> > +void			rpc_destroy_generic_auth(void);
+> >  void 			rpc_destroy_authunix(void);
+> >  
+> >  struct rpc_cred *	rpc_lookup_cred(void);
+> > diff --git a/net/sunrpc/auth.c b/net/sunrpc/auth.c
+> > index e9eaaf7..2c0d9e6 100644
+> > --- a/net/sunrpc/auth.c
+> > +++ b/net/sunrpc/auth.c
+> > @@ -658,7 +658,7 @@ out1:
+> >  	return err;
+> >  }
+> >  
+> > -void __exit rpcauth_remove_module(void)
+> > +void rpcauth_remove_module(void)
+> >  {
+> >  	rpc_destroy_authunix();
+> >  	rpc_destroy_generic_auth();
+> > diff --git a/net/sunrpc/auth_generic.c b/net/sunrpc/auth_generic.c
+> > index 43162bb..e010a01 100644
+> > --- a/net/sunrpc/auth_generic.c
+> > +++ b/net/sunrpc/auth_generic.c
+> > @@ -158,7 +158,7 @@ int __init rpc_init_generic_auth(void)
+> >  	return rpcauth_init_credcache(&generic_auth);
+> >  }
+> >  
+> > -void __exit rpc_destroy_generic_auth(void)
+> > +void rpc_destroy_generic_auth(void)
+> >  {
+> >  	rpcauth_destroy_credcache(&generic_auth);
+> >  }
+> 
