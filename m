@@ -1,91 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754381Ab0I2Lyj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 07:54:39 -0400
-Received: from mga02.intel.com ([134.134.136.20]:51878 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752323Ab0I2LyG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 07:54:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,252,1283756400"; 
-   d="scan'208";a="559002009"
-From: Huang Ying <ying.huang@intel.com>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        linux-acpi@vger.kernel.org,
-        Jin Dongming <jin.dongming@np.css.fujitsu.com>,
-        Huang Ying <ying.huang@intel.com>
-Subject: [PATCH -v2 3/5] ACPI, APEI, HEST Fix the unsuitable usage of platform_data
-Date: Wed, 29 Sep 2010 19:53:53 +0800
-Message-Id: <1285761235-4751-4-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1285761235-4751-1-git-send-email-ying.huang@intel.com>
-References: <1285761235-4751-1-git-send-email-ying.huang@intel.com>
+	id S1754593Ab0I2Lyo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 07:54:44 -0400
+Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:33545 "EHLO
+	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752323Ab0I2Lyl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 07:54:41 -0400
+Message-ID: <4CA328E3.3040502@stericsson.com>
+Date: Wed, 29 Sep 2010 13:54:11 +0200
+From: Linus Walleij <linus.walleij@stericsson.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "yuanyabin1978@sina.com" <yuanyabin1978@sina.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/7] SPI: add PrimeCell generic DMA to PL022 v12
+References: <1285684441-21700-1-git-send-email-linus.walleij@stericsson.com> <1285684441-21700-2-git-send-email-linus.walleij@stericsson.com> <20100929082055.GC4703@angua.secretlab.ca>
+In-Reply-To: <20100929082055.GC4703@angua.secretlab.ca>
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+Grant Likely wrote:
 
-platform_data in hest_parse_ghes() is used for saving the address of entry
-information of erst_tab. When the device is failed to be added, platform_data
-will be freed by platform_device_put(). But the value saved in platform_data
-should not be freed here. If it is done, it will make system panic.
+> On Tue, Sep 28, 2010 at 04:33:55PM +0200, Linus Walleij wrote:
 
-So I think platform_data should save the address of allocated memory
-which saves entry information of erst_tab.
+>> This extends the PL022 SSP/SPI driver with generic DMA engine
+>> support using the PrimeCell DMA engine interface. Also fix up the
+>> test code for the U300 platform.
+>> (...)
+>> --- a/arch/arm/mach-u300/dummyspichip.c
+>> +++ b/arch/arm/mach-u300/dummyspichip.c
+>> @@ -267,6 +267,7 @@ static struct spi_driver pl022_dummy_driver = {
+>>  	.driver = {
+>>  		.name	= "spi-dummy",
+>>  		.owner	= THIS_MODULE,
+>> +		.bus = &spi_bus_type,
+> 
+> This shouldn't be necessary.  spi_register_driver already sets the bus
+> type field.
+> 
+> Otherwise, this patch looks good.  If you're okay with me dropping
+> this hunk, then I'll pick up this patch into my next-spi branch.
 
-This patch fixed it and I confirmed it on x86_64 next-tree.
+OK just drop it, thanks Grant.
 
-v2:
-    Transport the pointer of hest_hdr to platform_data using
-    platform_device_add_data()
+I need to come up with the right way to refactor that dummychip anyway
+to I'll churn it out completely sooner or later.
 
-Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-Signed-off-by: Huang Ying <ying.huang@intel.com>
----
- drivers/acpi/apei/ghes.c |    2 +-
- drivers/acpi/apei/hest.c |   11 +++++++----
- 2 files changed, 8 insertions(+), 5 deletions(-)
+Yours,
+Linus Walleij
 
---- a/drivers/acpi/apei/ghes.c
-+++ b/drivers/acpi/apei/ghes.c
-@@ -302,7 +302,7 @@ static int __devinit ghes_probe(struct p
- 	struct ghes *ghes = NULL;
- 	int rc = -EINVAL;
- 
--	generic = ghes_dev->dev.platform_data;
-+	generic = *(struct acpi_hest_generic **)ghes_dev->dev.platform_data;
- 	if (!generic->enabled)
- 		return -ENODEV;
- 
---- a/drivers/acpi/apei/hest.c
-+++ b/drivers/acpi/apei/hest.c
-@@ -137,20 +137,23 @@ static int hest_parse_ghes_count(struct
- 
- static int hest_parse_ghes(struct acpi_hest_header *hest_hdr, void *data)
- {
--	struct acpi_hest_generic *generic;
- 	struct platform_device *ghes_dev;
- 	struct ghes_arr *ghes_arr = data;
- 	int rc;
- 
- 	if (hest_hdr->type != ACPI_HEST_TYPE_GENERIC_ERROR)
- 		return 0;
--	generic = (struct acpi_hest_generic *)hest_hdr;
--	if (!generic->enabled)
-+
-+	if (!((struct acpi_hest_generic *)hest_hdr)->enabled)
- 		return 0;
- 	ghes_dev = platform_device_alloc("GHES", hest_hdr->source_id);
- 	if (!ghes_dev)
- 		return -ENOMEM;
--	ghes_dev->dev.platform_data = generic;
-+
-+	rc = platform_device_add_data(ghes_dev, &hest_hdr, sizeof(void *));
-+	if (rc)
-+		goto err;
-+
- 	rc = platform_device_add(ghes_dev);
- 	if (rc)
- 		goto err;
