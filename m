@@ -1,97 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756051Ab0I2NBy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 09:01:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52260 "EHLO mx2.suse.de"
+	id S1756083Ab0I2NC0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 09:02:26 -0400
+Received: from cantor.suse.de ([195.135.220.2]:54726 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752218Ab0I2NBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 09:01:53 -0400
-Date: Wed, 29 Sep 2010 15:00:56 +0200
+	id S1752218Ab0I2NCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 09:02:25 -0400
+Date: Wed, 29 Sep 2010 15:01:31 +0200
 From: Jan Kara <jack@suse.cz>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Chris Mason <chris.mason@oracle.com>, Jan Kara <jack@suse.cz>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Andrew Morton <akpm@linux-foundation.org>, hch@lst.de,
+To: Cesar Eduardo Barros <cesarb@cesarb.net>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org, Jens Axboe <jaxboe@fusionio.com>,
-        linux-btrfs@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
         linux-fsdevel@vger.kernel.org, stable@kernel.org,
         Jens Axboe <axboe@kernel.dk>,
         =?utf-8?Q?Micha=C5=82?= Piotrowski <mkkp4x4@gmail.com>,
         Chuck Ebbert <cebbert@redhat.com>, kernel@lists.fedoraproject.org
 Subject: Re: Dirtiable inode bdi default != sb bdi btrfs
-Message-ID: <20100929130056.GG3290@quack.suse.cz>
+Message-ID: <20100929130131.GH3290@quack.suse.cz>
 References: <4C9AA546.6050201@cesarb.net>
  <20100923123849.8975fe47.akpm@linux-foundation.org>
  <20100927222548.GG3610@quack.suse.cz>
- <20100927225452.GG4270@think>
- <1285657549.2437.28.camel@localhost>
+ <4CA12F01.2@cesarb.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1285657549.2437.28.camel@localhost>
+In-Reply-To: <4CA12F01.2@cesarb.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 28-09-10 10:05:49, Artem Bityutskiy wrote:
-> On Mon, 2010-09-27 at 18:54 -0400, Chris Mason wrote:
-> > On Tue, Sep 28, 2010 at 12:25:48AM +0200, Jan Kara wrote:
-> > > [Added CCs for similar ecryptfs warning]
-> > > On Thu 23-09-10 12:38:49, Andrew Morton wrote:
-> > > > > This started appearing for me on v2.6.36-rc5-49-gc79bd89; it did not 
-> > > > > happen on v2.6.36-rc5-33-g1ce1e41, probably because it does not have 
-> > > > > commit 692ebd17c2905313fff3c504c249c6a0faad16ec which introduces the 
-> > > > > warning.
-> > > > > [...]
-> > > > > device fsid 44d595920ddedfa-3ece6b56e80f689e devid 1 transid 22342 
-> > > > > /dev/mapper/vg_cesarbinspiro-lv_home
-> > > > > SELinux: initialized (dev dm-3, type btrfs), uses xattr
-> > > > > ------------[ cut here ]------------
-> > > > > WARNING: at fs/fs-writeback.c:87 inode_to_bdi+0x62/0x6d()
-> > > > > Hardware name: Inspiron N4010
-> > > > > Dirtiable inode bdi default != sb bdi btrfs
-> > > > > Modules linked in: ipv6 kvm_intel kvm uinput arc4 ecb 
-> > > > > snd_hda_codec_intelhdmi snd_hda_codec_realtek iwlagn snd_hda_intel 
-> > > > > iwlcore snd_hda_codec uvcvideo snd_hwdep mac80211 videodev snd_seq 
-> > > > > snd_seq_device v4l1_compat snd_pcm atl1c v4l2_compat_ioctl32 btusb 
-> > > > > cfg80211 snd_timer i2c_i801 bluetooth iTCO_wdt dell_wmi dell_laptop snd 
-> > > > > pcspkr wmi dcdbas shpchp iTCO_vendor_support soundcore snd_page_alloc 
-> > > > > rfkill joydev microcode btrfs zlib_deflate libcrc32c cryptd aes_x86_64 
-> > > > > aes_generic xts gf128mul dm_crypt usb_storage i915 drm_kms_helper drm 
-> > > > > i2c_algo_bit i2c_core video output [last unloaded: scsi_wait_scan]
-> > > > > Pid: 1073, comm: find Not tainted 2.6.36-rc5+ #8
-> > > > > Call Trace:
-> > > > >   [<ffffffff8104d0e4>] warn_slowpath_common+0x85/0x9d
-> > > > >   [<ffffffff8104d19f>] warn_slowpath_fmt+0x46/0x48
-> > > > >   [<ffffffff811308b7>] inode_to_bdi+0x62/0x6d
-> > > > >   [<ffffffff81131b48>] __mark_inode_dirty+0xd0/0x177
-> > > > >   [<ffffffff81127168>] touch_atime+0x107/0x12a
-> > > > >   [<ffffffff81122384>] ? filldir+0x0/0xd0
-> > > > >   [<ffffffff8112259b>] vfs_readdir+0x8d/0xb4
-> > > > >   [<ffffffff8112270b>] sys_getdents+0x81/0xd1
-> > > > >   [<ffffffff81009c72>] system_call_fastpath+0x16/0x1b
-> > >   Thanks for the report. These bdi pointers are a mess. As Chris pointed
-> > > out, btrfs forgets to properly initialize inode->i_mapping.backing_dev_info
-> > > for directories and special inodes and thus these were previously attached
-> > > to default_backing_dev_info which probably isn't what Chris would like to
-> > > see.
-> > 
-> > There's no actual writeback for these, so it works fine for btrfs either
-> > way.
+On Mon 27-09-10 20:55:45, Cesar Eduardo Barros wrote:
+> Em 27-09-2010 19:25, Jan Kara escreveu:
+> >[Added CCs for similar ecryptfs warning]
+> >On Thu 23-09-10 12:38:49, Andrew Morton wrote:
+> >>>[...]
+> >>>device fsid 44d595920ddedfa-3ece6b56e80f689e devid 1 transid 22342
+> >>>/dev/mapper/vg_cesarbinspiro-lv_home
+> >>>SELinux: initialized (dev dm-3, type btrfs), uses xattr
+> >>>------------[ cut here ]------------
+> >>>WARNING: at fs/fs-writeback.c:87 inode_to_bdi+0x62/0x6d()
+> >>>Hardware name: Inspiron N4010
+> >>>Dirtiable inode bdi default != sb bdi btrfs
+> >   That suggests that we should probably handle such cases in a more generic
+> >way by changing the code in inode_init_always(). The patch below makes at
+> >least btrfs happy for me... Could you maybe test it? Thanks.
 > 
-> Side note: every time inode is marked as dirty, we wake up a bdi thread
-> or the default bdi thread. So if we have inodes which do not need
-> write-back, we should never mark them as dirty.
-  Are you sure? I think we wake up the thread only when it's the first
-dirty inode for the bdi...
-  And a side side note ;): It's harder not to dirty the inode than it seems.
-E.g. btrfs (or similarly ext3) add the new inode data to the journal already
-at inode dirty time but still they need to track that the transaction
-carrying the inode is still uncommitted. Thus the inode *is* dirty in some
-sense. Only it does not need any writeout to happen...
+> Applied on top of v2.6.36-rc5-151-g32163f4, running it right now.
+> The warning messages no longer happen, and everything seems to be
+> working fine.
+> 
+> Tested-by: Cesar Eduardo Barros <cesarb@cesarb.net>
+  Great, thanks for testing.
 
-								Honza
+									Honza
 -- 
 Jan Kara <jack@suse.cz>
 SUSE Labs, CR
