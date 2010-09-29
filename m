@@ -1,102 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755765Ab0I3Mua (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 08:50:30 -0400
-Received: from cmx.wol.de ([193.158.62.4]:45010 "EHLO cmx.wol.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754821Ab0I3Mua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 08:50:30 -0400
-Subject: Re: [PATCH] Fix capi devicenames
-From: "Marc - A. Dahlhaus" <mad@wol.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
-        isdn@linux-pingi.de
-In-Reply-To: <20100930122928.19e5ee84@lxorguk.ukuu.org.uk>
-References: <4CA391B3.1030806@wol.de>
-	 <20100930103010.1a6a7785@lxorguk.ukuu.org.uk>
-	 <1285843077.748.32.camel@marc>
-	 <AANLkTi=d+5uDVK9RHguSmwFhKLVUPXvzo=G3s=NKKDW3@mail.gmail.com>
-	 <20100930122928.19e5ee84@lxorguk.ukuu.org.uk>
-Content-Type: text/plain
-Date: Thu, 30 Sep 2010 14:50:24 +0200
-Message-Id: <1285851024.748.97.camel@marc>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.3 
-Content-Transfer-Encoding: 7bit
+	id S1755855Ab0I3M7Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 08:59:25 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:36944 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752742Ab0I3M7W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 08:59:22 -0400
+Date: Wed, 29 Sep 2010 16:33:53 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: wireless-2.6 2010-09-29
+Message-ID: <20100929203352.GC2516@tuxdriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, den 30.09.2010, 12:29 +0100 schrieb Alan Cox:
-> > In any case devices.txt should be fixed, it has not much to do with
-> > the real world.
-> 
-> If some distros chose not to follow devices.txt that is their problem.
-> 
-> devices.txt is the specification, and its ABI.
-> 
-> It is fixed and the kernel behaviour is to follow it. Those who didn't
-> follow it, or who didn't propose a change back when it was specified in
-> the first place have only themselves to blame.
-> 
-> It isn't changing, and the ISDN code should follow the spec.
-> 
-> How you sort out your userspace is a problem for those who dug holes and
-> jumped down them.
+Dave,
 
-Well, i doubt that any distro or hand crafted setup out there is using
-anything else than the /dev/capi20 and /dev/capi/[0-9]+ devices for capi
-interaction. Because the userspace (libcapi20 & capiinit) handle just
-this devices. (i checked debian/ubuntu, fedora rawhide and gentoo and
-all are not using other device node names...)
+Here are two more fixes intended for 2.6.36.  One fixes a user after
+free error, the other fixes a reported regression (bug 17722).  Both are
+reasonably small and well documented in the commit logs.
 
-<minorrant>
+Please let me know if there are problems!
 
-The only setup that could get broken by this is the setup that uses udev
-to handle the devices and gives the nodes different access rights or
-something.
+Thanks,
 
-And that already happened by the time the rules used to create the capi
-devices got removed from udev and it was right to remove them from udev
-IMO.
+John
 
-What is a specification in devices.txt worth if nobody actually cares
-about it in this case because it has evolved long time ago and nobody
-cared to update the devices.txt file by then?
+---
 
-capifs is already deprecated and scheduled for removal soon because udev
-is able to replace its functionality and fedora has a patch in srpm that
-removes the capifs load from capiinit.
+The following changes since commit 01db403cf99f739f86903314a489fb420e0e254f:
 
-Userspace expects the capifs device nodes.
+  tcp: Fix >4GB writes on 64-bit. (2010-09-27 20:24:54 -0700)
 
-We are stuck by now. No matter what the specification states,
-no setup will work with an up to date version of linux kernel, udev and
-isdn4linux userspace now.
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git master
 
-</minorrant>
+Florian Mickler (1):
+      iwl3945: queue the right work if the scan needs to be aborted
 
-Well, in the end, i don't get it:
+Johannes Berg (1):
+      mac80211: fix use-after-free
 
-How could we brake an already broken thing by fixing an broken
-specification and make upstream respect what any distro out there does?
+ drivers/net/wireless/iwlwifi/iwl-agn-lib.c  |    2 +-
+ drivers/net/wireless/iwlwifi/iwl3945-base.c |    2 +-
+ net/mac80211/rx.c                           |    4 ----
+ 3 files changed, 2 insertions(+), 6 deletions(-)
 
-I could send a patch that "fixes" the device names according to the
-broken specification in devices.txt and also send a rule for udev to
-create symlinks that the userspace expects.
-
-We would get useless kernel suggested devices for capi that nobody needs
-because userspace will not use them, period. A well polluted /dev is the
-end if this would be the right way to fix this case. Nice, isn't it ;)
-
-I know the rules are made out of noble intends, but IMO the rule will
-defeat the logical right fix for the problem that will not brake anyones
-setup and there should be exception from the rule for this one case
-because the things are how they are now. The spec will not help anyone
-out there who is trying to use eg. his B1-ISDN card to receive a
-faximile or to provide an old school dial-in access in cases where the
-internet carrier is down once the upstream versions are used in the
-distros...
-
-Marc
-
+diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
+index 9dd9e64..8fd00a6 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
+@@ -1411,7 +1411,7 @@ void iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
+ 	clear_bit(STATUS_SCAN_HW, &priv->status);
+ 	clear_bit(STATUS_SCANNING, &priv->status);
+ 	/* inform mac80211 scan aborted */
+-	queue_work(priv->workqueue, &priv->scan_completed);
++	queue_work(priv->workqueue, &priv->abort_scan);
+ }
+ 
+ int iwlagn_manage_ibss_station(struct iwl_priv *priv,
+diff --git a/drivers/net/wireless/iwlwifi/iwl3945-base.c b/drivers/net/wireless/iwlwifi/iwl3945-base.c
+index 59a308b..d31661c 100644
+--- a/drivers/net/wireless/iwlwifi/iwl3945-base.c
++++ b/drivers/net/wireless/iwlwifi/iwl3945-base.c
+@@ -3018,7 +3018,7 @@ void iwl3945_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
+ 	clear_bit(STATUS_SCANNING, &priv->status);
+ 
+ 	/* inform mac80211 scan aborted */
+-	queue_work(priv->workqueue, &priv->scan_completed);
++	queue_work(priv->workqueue, &priv->abort_scan);
+ }
+ 
+ static void iwl3945_bg_restart(struct work_struct *data)
+diff --git a/net/mac80211/rx.c b/net/mac80211/rx.c
+index fa0f37e..2862428 100644
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -2199,9 +2199,6 @@ static void ieee80211_rx_cooked_monitor(struct ieee80211_rx_data *rx,
+ 	struct net_device *prev_dev = NULL;
+ 	struct ieee80211_rx_status *status = IEEE80211_SKB_RXCB(skb);
+ 
+-	if (status->flag & RX_FLAG_INTERNAL_CMTR)
+-		goto out_free_skb;
+-
+ 	if (skb_headroom(skb) < sizeof(*rthdr) &&
+ 	    pskb_expand_head(skb, sizeof(*rthdr), 0, GFP_ATOMIC))
+ 		goto out_free_skb;
+@@ -2260,7 +2257,6 @@ static void ieee80211_rx_cooked_monitor(struct ieee80211_rx_data *rx,
+ 	} else
+ 		goto out_free_skb;
+ 
+-	status->flag |= RX_FLAG_INTERNAL_CMTR;
+ 	return;
+ 
+  out_free_skb:
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
