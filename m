@@ -1,363 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751462Ab0I2EgO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 00:36:14 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:37288 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751407Ab0I2EgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 00:36:11 -0400
-Date: Wed, 29 Sep 2010 14:36:04 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for September 29
-Message-Id: <20100929143604.3d870ddf.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__29_Sep_2010_14_36_04_+1000_+UYfMLcNx6QAlM3X"
+	id S1751318Ab0I2Eix (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 00:38:53 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56756 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750801Ab0I2Eix (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 00:38:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=KLy8lX2Pa4nxHdGEz1anYBwEvv9JbV72fFGC/UlEABBibJPTkpO3uH2mRJ3oeUiYYb
+         r2DxPOEIu+p4dgWhh6NcaYs6xd23H1ibhxYs0GKLiTaLEauukbr+X49FPlMCj/hzYUW+
+         HoAY+v3cCkIB02N1O21RkPa4wOcERMahnY+74=
+Date: Wed, 29 Sep 2010 12:43:22 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Marek <mmarek@suse.cz>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] namespace.pl : update file exclusion list
+Message-ID: <20100929044322.GC5169@cr0.nay.redhat.com>
+References: <20100928084400.997539242@vyatta.com>
+ <20100928084528.970713277@vyatta.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100928084528.970713277@vyatta.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__29_Sep_2010_14_36_04_+1000_+UYfMLcNx6QAlM3X
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Sep 28, 2010 at 05:44:03PM +0900, Stephen Hemminger wrote:
+>The list of exceptions in kernel tree was out of date. Convert
+>the long list of if clauses to a hashes which is more efficient
+>and more common in perl.
+>
+>Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+>
+>--- a/scripts/namespace.pl	2010-09-28 09:28:52.251563058 +0900
+>+++ b/scripts/namespace.pl	2010-09-28 15:13:38.092073114 +0900
+>@@ -84,6 +84,58 @@ my %ksymtab = ();	# names that appear in
+> my %ref = ();		# $ref{$name} exists if there is a true external reference to $name
+> my %export = ();	# $export{$name} exists if there is an EXPORT_... of $name
+> 
+>+my %nmexception = (
+>+    'fs/ext3/bitmap'			=> 1,
+>+    'fs/ext4/bitmap'			=> 1,
+>+    'arch/x86/lib/thunk_32'		=> 1,
+>+    'arch/x86/lib/cmpxchg'		=> 1,
+>+    'arch/x86/vdso/vdso32/note'		=> 1,
+>+    'lib/irq_regs'			=> 1,
+>+    'usr/initramfs_data'		=> 1,
+>+    'drivers/scsi/aic94xx/aic94xx_dump'	=> 1,
+>+    'drivers/scsi/libsas/sas_dump'	=> 1,
+>+    'lib/dec_and_lock'			=> 1,
+>+    'drivers/ide/ide-probe-mini'	=> 1,
+>+    'usr/initramfs_data'		=> 1,
+>+    'drivers/acpi/acpia/exdump'		=> 1,
+>+    'drivers/acpi/acpia/rsdump'		=> 1,
+>+    'drivers/acpi/acpia/nsdumpdv'	=> 1,
+>+    'drivers/acpi/acpia/nsdump'		=> 1,
+>+    'arch/ia64/sn/kernel/sn2/io'	=> 1,
+>+    'arch/ia64/kernel/gate-data'	=> 1,
+>+    'security/capability'		=> 1,
+>+    'fs/ntfs/sysctl'			=> 1,
+>+    'fs/jfs/jfs_debug'			=> 1,
+>+);
+>+
+>+my %nameexception = (
+>+    'mod_use_count_'	 => 1,
+>+    '__initramfs_end'	=> 1,
+>+    '__initramfs_start'	=> 1,
+>+    '_einittext'	=> 1,
+>+    '_sinittext'	=> 1,
+>+    'kallsyms_names'	=> 1,
+>+    'kallsyms_num_syms'	=> 1,
+>+    'kallsyms_addresses'=> 1,
+>+    '__this_module'	=> 1,
+>+    '_etext'		=> 1,
+>+    '_edata'		=> 1,
+>+    '_end'		=> 1,
+>+    '__bss_start'	=> 1,
+>+    '_text'		=> 1,
+>+    '_stext'		=> 1,
+>+    '__gp'		=> 1,
+>+    'ia64_unw_start'	=> 1,
+>+    'ia64_unw_end'	=> 1,
+>+    '__init_begin'	=> 1,
+>+    '__init_end'	=> 1,
+>+    '__bss_stop'	=> 1,
+>+    '__nosave_begin'	=> 1,
+>+    '__nosave_end'	=> 1,
+>+    'pg0'		=> 1,
+>+);
+>+
+>+
+> &find(\&linux_objects, '.');	# find the objects and do_nm on them
+> &list_multiply_defined();
+> &resolve_external_references();
+>@@ -272,27 +324,9 @@ sub do_nm
+> 	close($nmdata);
+> 
+> 	if ($#nmdata < 0) {
+>-		if (
+>-			$fullname ne "lib/brlock.o"
+>-			&& $fullname ne "lib/dec_and_lock.o"
+>-			&& $fullname ne "fs/xfs/xfs_macros.o"
+>-			&& $fullname ne "drivers/ide/ide-probe-mini.o"
+>-			&& $fullname ne "usr/initramfs_data.o"
+>-			&& $fullname ne "drivers/acpi/executer/exdump.o"
+>-			&& $fullname ne "drivers/acpi/resources/rsdump.o"
+>-			&& $fullname ne "drivers/acpi/namespace/nsdumpdv.o"
+>-			&& $fullname ne "drivers/acpi/namespace/nsdump.o"
+>-			&& $fullname ne "arch/ia64/sn/kernel/sn2/io.o"
+>-			&& $fullname ne "arch/ia64/kernel/gate-data.o"
+>-			&& $fullname ne "drivers/ieee1394/oui.o"
+>-			&& $fullname ne "security/capability.o"
+>-			&& $fullname ne "sound/core/wrappers.o"
+>-			&& $fullname ne "fs/ntfs/sysctl.o"
+>-			&& $fullname ne "fs/jfs/jfs_debug.o"
+>-		) {
+>-			printf "No nm data for $fullname\n";
+>-		}
+>-		return;
+>+	    printf "No nm data for $fullname\n"
+>+		unless $nmexception{$fullname};
+>+	    return;
+> 	}
+> 	$nmdata{$fullname} = \@nmdata;
+> }
+>@@ -374,31 +408,7 @@ sub resolve_external_references
+> 						$ref{$name} = ""
+> 					}
+> 				}
+>-				elsif (    $name ne "mod_use_count_"
+>-					&& $name ne "__initramfs_end"
+>-					&& $name ne "__initramfs_start"
+>-					&& $name ne "_einittext"
+>-					&& $name ne "_sinittext"
+>-					&& $name ne "kallsyms_names"
+>-					&& $name ne "kallsyms_num_syms"
+>-					&& $name ne "kallsyms_addresses"
+>-					&& $name ne "__this_module"
+>-					&& $name ne "_etext"
+>-					&& $name ne "_edata"
+>-					&& $name ne "_end"
+>-					&& $name ne "__bss_start"
+>-					&& $name ne "_text"
+>-					&& $name ne "_stext"
+>-					&& $name ne "__gp"
+>-					&& $name ne "ia64_unw_start"
+>-					&& $name ne "ia64_unw_end"
+>-					&& $name ne "__init_begin"
+>-					&& $name ne "__init_end"
+>-					&& $name ne "__bss_stop"
+>-					&& $name ne "__nosave_begin"
+>-					&& $name ne "__nosave_end"
+>-					&& $name ne "pg0"
+>-					&& $name ne "__module_text_address"
+>+				elsif ( ! $nameexception{$name}
+> 					&& $name !~ /^__sched_text_/
+> 					&& $name !~ /^__start_/
+> 					&& $name !~ /^__end_/
+>@@ -409,7 +419,6 @@ sub resolve_external_references
+> 					&& $name !~ /^__.*per_cpu_end/
+> 					&& $name !~ /^__alt_instructions/
+> 					&& $name !~ /^__setup_/
+>-					&& $name !~ /^jiffies/
 
-Hi all,
 
-Changes since 20100928:
-
-New tree: cleancache
-
-The nfsd tree gained a build failure for which I applied a patch.
-
-The v4l-dvb tree gained a build failure so I used the version from next-201=
-00928.
-
-The net tree lost its build failure.
-
-The hwpoison tree still has its build failure so I used the version from
-next-20100924.
-
-The bkl-llseek tree gained a conflict against the infiniband tree.
-
-The cleancache tree gained conflicts against the slab and rcu trees.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 176 trees (counting Linus' and 22 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging kbuild-current/rc-fixes
-Merging quilt/driver-core.current
-Merging quilt/tty.current
-Merging quilt/usb.current
-Merging quilt/staging.current
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging gcl-current/merge
-Merging arm/devel
-CONFLICT (content): Merge conflict in arch/arm/mm/mmu.c
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/next
-Merging galak/next
-CONFLICT (content): Merge conflict in arch/powerpc/platforms/85xx/mpc85xx_m=
-ds.c
-Merging s390/features
-Merging sh/master
-Merging genesis/master
-Merging sparc/master
-Merging tile/master
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-Merging quilt/jdelvare-hwmon
-CONFLICT (content): Merge conflict in MAINTAINERS
-Merging hwmon-staging/hwmon-next
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-$ git reset --hard HEAD^
-Merging refs/next/20100928/v4l-dvb
-CONFLICT (content): Merge conflict in drivers/media/IR/ir-keytable.c
-CONFLICT (content): Merge conflict in drivers/media/IR/ir-lirc-codec.c
-CONFLICT (content): Merge conflict in drivers/media/IR/ir-raw-event.c
-CONFLICT (add/add): Merge conflict in drivers/media/IR/streamzap.c
-CONFLICT (content): Merge conflict in drivers/media/dvb/siano/smscoreapi.c
-CONFLICT (add/add): Merge conflict in drivers/media/video/s5p-fimc/fimc-cor=
-e.c
-[master d9a21e1] Merge commit 'refs/next/20100928/v4l-dvb'
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging swiotlb-xen/master
-Merging ibft/master
-Merging scsi/master
-Merging async_tx/next
-Merging wireless/master
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-omap3pandor=
-a.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-zoom-periph=
-erals.c
-CONFLICT (content): Merge conflict in drivers/net/wireless/libertas/if_sdio=
-.c
-Merging net/master
-CONFLICT (content): Merge conflict in drivers/net/pcmcia/pcnet_cs.c
-Merging mtd/master
-Merging crypto/master
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/devices.c
-Merging sound-asoc/for-next
-CONFLICT (content): Merge conflict in drivers/video/sh_mobile_hdmi.c
-Merging sound/for-next
-Merging cpufreq/next
-Merging quilt/rr
-Merging input/next
-CONFLICT (content): Merge conflict in drivers/input/keyboard/Kconfig
-Merging lsm/for-next
-Merging block/for-next
-CONFLICT (content): Merge conflict in fs/ext4/mballoc.c
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-CONFLICT (content): Merge conflict in drivers/net/pcmcia/smc91c92_cs.c
-Merging battery/master
-Merging leds/for-mm
-Merging backlight/for-mm
-Merging mmc/mmc-next
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-CONFLICT (content): Merge conflict in drivers/mfd/sh_mobile_sdhi.c
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/atombios_crtc.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/radeon_legacy_=
-crtc.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/radeon_mode.h
-Merging viafb/viafb-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging lblnet/master
-Merging agp/agp-next
-Merging uwb/for-upstream
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-Merging audit/for-next
-Merging quilt/aoe
-Merging suspend/linux-next
-Merging bluetooth/master
-Merging fsnotify/for-next
-Merging irda/for-next
-CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
-Merging catalin/for-next
-CONFLICT (content): Merge conflict in arch/arm/include/asm/smp_plat.h
-CONFLICT (content): Merge conflict in arch/arm/kernel/Makefile
-CONFLICT (content): Merge conflict in arch/arm/mach-vexpress/ct-ca9x4.c
-Merging alacrity/linux-next
-CONFLICT (content): Merge conflict in include/linux/Kbuild
-Merging i7core_edac/linux_next
-CONFLICT (content): Merge conflict in MAINTAINERS
-Merging i7300_edac/linux_next
-Merging devicetree/next-devicetree
-Merging spi/next-spi
-Merging omap_dss2/for-next
-Merging xen/upstream/xen
-Merging rcu/rcu/next
-Merging tip/auto-latest
-CONFLICT (content): Merge conflict in include/linux/percpu.h
-CONFLICT (content): Merge conflict in net/core/dev.c
-Merging lost-spurious-irq/lost-spurious-irq
-CONFLICT (content): Merge conflict in drivers/ata/libata-core.c
-CONFLICT (content): Merge conflict in include/linux/libata.h
-Merging edac-amd/for-next
-Merging oprofile/for-next
-Merging percpu/for-next
-CONFLICT (content): Merge conflict in include/linux/percpu.h
-CONFLICT (content): Merge conflict in mm/percpu.c
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-$ git reset --hard HEAD^
-Merging refs/next/20100924/hwpoison
-Merging sysctl/master
-Merging quilt/driver-core
-CONFLICT (content): Merge conflict in drivers/misc/Makefile
-Merging quilt/tty
-Merging quilt/usb
-CONFLICT (content): Merge conflict in drivers/usb/gadget/rndis.c
-Merging staging-next/staging-next
-CONFLICT (content): Merge conflict in drivers/staging/Makefile
-CONFLICT (content): Merge conflict in drivers/staging/batman-adv/hard-inter=
-face.c
-CONFLICT (delete/modify): drivers/staging/mrst-touchscreen/Makefile deleted=
- in HEAD and modified in staging-next/staging-next. Version staging-next/st=
-aging-next of drivers/staging/mrst-touchscreen/Makefile left in tree.
-CONFLICT (delete/modify): drivers/staging/mrst-touchscreen/intel-mid-touch.=
-c deleted in HEAD and modified in staging-next/staging-next. Version stagin=
-g-next/staging-next of drivers/staging/mrst-touchscreen/intel-mid-touch.c l=
-eft in tree.
-CONFLICT (delete/modify): drivers/staging/ti-st/st.h deleted in staging-nex=
-t/staging-next and modified in HEAD. Version HEAD of drivers/staging/tiReso=
-lved 'drivers/staging/Makefile' using previous resolution.
-CONFLICT (delete/modify): drivers/staging/ti-st/st_core.h deleted in stagin=
-g-next/staging-next and modified in HEAD. Version HEAD of drivers/staging/t=
-i-st/st_core.h left in tree.
-CONFLICT (content): Merge conflict in drivers/staging/ti-st/st_kim.c
-$ git rm -f drivers/staging/mrst-touchscreen/Makefile drivers/staging/mrst-=
-touchscreen/intel-mid-touch.c
-$ git rm -f drivers/staging/ti-st/st.h drivers/staging/ti-st/st_core.h
-Merging slabh/slabh
-Merging bkl-trivial/trivial
-CONFLICT (content): Merge conflict in drivers/block/ataflop.c
-CONFLICT (content): Merge conflict in drivers/char/pcmcia/cm4000_cs.c
-CONFLICT (content): Merge conflict in drivers/char/pcmcia/cm4040_cs.c
-CONFLICT (content): Merge conflict in drivers/mmc/card/block.c
-Merging bkl-llseek/llseek
-CONFLICT (content): Merge conflict in drivers/infiniband/hw/cxgb4/device.c
-Merging bkl-vfs/vfs
-CONFLICT (content): Merge conflict in fs/cifs/cifsfs.c
-CONFLICT (content): Merge conflict in fs/nilfs2/super.c
-Merging bkl-config/config
-Merging irqflags/master
-Merging cleancache/linux-next
-CONFLICT (content): Merge conflict in include/linux/fs.h
-CONFLICT (content): Merge conflict in mm/Kconfig
-Merging scsi-post-merge/merge-base:master
-Applying: sunrpc: fix up section mismatch
-
---Signature=_Wed__29_Sep_2010_14_36_04_+1000_+UYfMLcNx6QAlM3X
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMosI0AAoJEDMEi1NhKgbsHOgH/1oDb1trL5uusc9MKQwWVaIY
-RmG+Lh7ac+wjsRM5Xx8jVqcXowGOkLy/I4Thew+IpnQVCwOQTgnO2HI1ET8dDVv2
-G5ARL2PdII5fcUe6sDl7gvbQDkM7RixpZ39QRc8pxk4opeYGM3OZbH++U/ZEjGtf
-TfmXV89LhuxwLSWGsHE0Sk5PPjeLizAx35da7Cq4X5FVgOyUYooPI2GB146yc4Oe
-Su84LmjDLy9cS7G7Hqt3n8VceTRUB/uw7x0SkUkKqqSzwi1HuhYQ4HQyYN+9Ce3P
-o91zTZB7SAw6oA2o+KD5FxtjRfl6AvlMHZiavLgcCcbDYDYNZ9vzzrpjsNj9mj0=
-=0pAe
------END PGP SIGNATURE-----
-
---Signature=_Wed__29_Sep_2010_14_36_04_+1000_+UYfMLcNx6QAlM3X--
+I don't check all the symbols you updated, but why did you remove 'jiffies'?
+It is defined externally by the linker too.
