@@ -1,160 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752424Ab0I2Lwv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 07:52:51 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:60207 "EHLO mx01.d-labs.de"
+	id S1753429Ab0I2LyG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 07:54:06 -0400
+Received: from mga02.intel.com ([134.134.136.20]:51878 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751412Ab0I2Lwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 07:52:50 -0400
-Date: Wed, 29 Sep 2010 13:52:48 +0200
-From: Florian Mickler <florian@mickler.org>
-To: tmhikaru@gmail.com
-Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>
-Subject: Re: Linux 2.6.35.6
-Message-ID: <20100929135248.09cd7a84@schatten.dmk.lab>
-In-Reply-To: <20100929110247.GA2032@roll>
-References: <20100927003608.GA20395@kroah.com>
-	<20100927163208.GA4892@roll>
-	<20100927215135.3d11d587@schatten.dmk.lab>
-	<20100927233956.GA15705@roll>
-	<20100928083505.0a808ffd@schatten.dmk.lab>
-	<20100928190358.GA24303@roll>
-	<20100929092924.2090f19e@schatten.dmk.lab>
-	<20100929110247.GA2032@roll>
-X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752114Ab0I2LyD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 07:54:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,252,1283756400"; 
+   d="scan'208";a="559001994"
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        linux-acpi@vger.kernel.org, Huang Ying <ying.huang@intel.com>
+Subject: [PATCH -v2 1/5] ACPI, APEI, Fix APEI related table size checking
+Date: Wed, 29 Sep 2010 19:53:51 +0800
+Message-Id: <1285761235-4751-2-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1285761235-4751-1-git-send-email-ying.huang@intel.com>
+References: <1285761235-4751-1-git-send-email-ying.huang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Sep 2010 07:02:48 -0400
-tmhikaru@gmail.com wrote:
+On Huang Ying's machine:
 
-> On Wed, Sep 29, 2010 at 09:29:24AM +0200, Florian Mickler wrote:
-> > Do you know what load average conky is showing you? If I
-> > type 'uptime' on a console, i get three load numbers: 1minute-,
-> > 5minutes- and 15minutes-average. 
-> > If there is a systematic bias it should be visible on the
-> > 15minutes-average.  If there are only bursts of 'load' it should be
-> > visible on the 1 minutes average numbers.
-> 
-> It is giving the same averages that uptime does in the same format, and
-> there is a routine problem - it remains high on all averages on the kernels
-> that do not work properly, and zeroes eventually if I leave it alone long
-> enough on kernels that do work properly. When I discovered X was part of the
-> problem somehow, it was due to me testing in X with mrxvt running bash and
-> uptime, and in console without X using bash with uptime. uptime consistently
-> gives the same numbers that conky does, so I don't think I need to worry
-> about conky confusing the issue.
+erst_tab->header_length == sizeof(struct acpi_table_einj)
 
-Ok. I just asked out of curiosity and to establish a common baseline. 
+but Yinghai reported that on his machine,
 
-> 
-> > 
-> > But it doesn't really matter for now what kind of load disturbance you
-> > are seeing, because you actually have a better way to distinguish a good
-> > kernel from a bad:
-> 
-> You may think a timed kernel compile is a better way to determine if there
-> is a fault with the kernel, but it takes my machine around two hours (WITH
-> ccache) to build my kernel. Since the use of ccache speeds up the builds
-> dramatically and would give misleading readings if I compiled the exact
-> kernel source twice, I'd have to disable it if I wanted it to be a
-> worthwhile test. So it would take even *longer* to build than normally. This
-> is not something I'm willing to use as a 'better' test - especially since
-> the loadavg numbers are consistently high when on a bad kernel and
-> consistently zeroed or very close to it when not.
+erst_tab->header_length == sizeof(struct acpi_table_einj) -
+sizeof(struct acpi_table_header)
 
-I didn't know that. The right thing to do is to bisect using the
-criteria that is easiest for you. After all the likelihood of those two
-symptoms (kernel build taking longer and higher load average) beeing
-correlated is quite high. 
+To make erst table size checking code works on all systems, both
+testing are treated as PASS.
 
-I termed it 'better way' because a performance regression is actually a
-serious issue, while load averages going crazy may or may not be
-serious. Also I didn't know that the difference between the load-average
-figures would be easy to reproduce.
+Same situation applies to einj_tab->header_length, so corresponding
+table size checking is changed in similar way too.
 
-In all cases, you can simply do the bisection based on the 'load
-average' criteria and then later check if the changeset that you've
-found that way also influences the kernel compile times. 
+v2:
 
-> Here's an uptime sample from a working version:
-> 
-> 06:20:31 up 21 min,  4 users,  load average: 0.00, 0.02, 0.06
-> 
-> I've been typing up this email while waiting for the load to flatten from
-> the initial boot. I think it's pretty obvious here that it's working
-> properly, so I'm going to git bisect good it...
-> 
-> Bisecting: 27 revisions left to test after this (roughly 5 steps)
-> 
-> I'm getting fairly close at least.
+- Treat both table size as valid
 
-Out of curiosity, what region are you circling in?
+Originally-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+---
+ drivers/acpi/apei/einj.c |    4 +++-
+ drivers/acpi/apei/erst.c |    4 +++-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
+--- a/drivers/acpi/apei/einj.c
++++ b/drivers/acpi/apei/einj.c
+@@ -426,7 +426,9 @@ DEFINE_SIMPLE_ATTRIBUTE(error_inject_fop
  
-> Here's an uptime output from a version of the kernel that was NOT working
-> properly, 2.6.35.6:
-> 14:30:12 up  3:46,  4 users,  load average: 0.85, 0.93, 0.89
-> 
-> I think simply letting the machine idle is just as good a test for
-> determining wether or not any particular kernel is good/bad since the
-> readings are like night and day. I only brought up that the timed kernel
-> runs were taking longer on the kernel with the higher load average since it
-> meant that it wasn't simply a broken statistic giving false readings;
-> something *is* wrong, and I can't simply ignore it.
-> 
-> It's taken me several days to bisect this far. If greg insists, I'll restart
-> the bisection from scratch using a kernel compile as a test, but I implore
-> you not to ask me to do so; it will more than likely give me the same
-> results I'm getting now for more than double the amount of time invested.
-> 
-> > Yes, the sample rate was one of the things I wanted to know, but also which of
-> > the 3 load figures you were graphing.  
-> To be honest, I actually don't know. I'm *terrible* at regex, this is what
-> the bash script is doing:
-
-It's taking the first column of the line in  /proc/loadavg which
-corresponds to the 15 min avg on my machine. 
+ static int einj_check_table(struct acpi_table_einj *einj_tab)
+ {
+-	if (einj_tab->header_length != sizeof(struct acpi_table_einj))
++	if ((einj_tab->header_length !=
++	     (sizeof(struct acpi_table_einj) - sizeof(einj_tab->header)))
++	    && (einj_tab->header_length != sizeof(struct acpi_table_einj)))
+ 		return -EINVAL;
+ 	if (einj_tab->header.length < sizeof(struct acpi_table_einj))
+ 		return -EINVAL;
+--- a/drivers/acpi/apei/erst.c
++++ b/drivers/acpi/apei/erst.c
+@@ -750,7 +750,9 @@ __setup("erst_disable", setup_erst_disab
  
-> cat /proc/loadavg     | perl -p -e 
-
-'s/'
-
-s before the / means, we are replacing something.  After the / begins
-the pattern we are searching. 
-
-then the next '^' is the beginning of line marker
-
-	'([^ ]+)'
-This matches one or more non-whitespace characters. Inside a character
-group [] the ^ negates the character group, so that it matches
-everything not in that group. The plus means "one or more" and the
-brackets () make the substring matched by the enclosed pattern
-available as $1.
-
-	' .+$/' 
-The whitespace matches a whitespace, the . is a metacharacter meaning
-"any char" and the + specifying the quantity "one or more" again.
-Last the $ means 'end of line'.
-
-So this part matches any whitespaced followed by at least one character.
-
-In effect the whole expression replaces everything on the line with
-the first consecutive non-blank character sequence, iff there are
-non-blank characters at the beginning of the line.
-
-One could also just use awk for this. ( awk '{print $1}' /proc/loadavg)
-
-
-> 
-> If you can explain what that's doing, I'd appreciate it. If it's not to your
-> liking, I can change it to something else.
-
-No, it's ok. 
-
-Regards,
-Flo
+ static int erst_check_table(struct acpi_table_erst *erst_tab)
+ {
+-	if (erst_tab->header_length != sizeof(struct acpi_table_erst))
++	if ((erst_tab->header_length !=
++	     (sizeof(struct acpi_table_erst) - sizeof(erst_tab->header)))
++	    && (erst_tab->header_length != sizeof(struct acpi_table_einj)))
+ 		return -EINVAL;
+ 	if (erst_tab->header.length < sizeof(struct acpi_table_erst))
+ 		return -EINVAL;
