@@ -1,69 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971Ab0I2Qso (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 12:48:44 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33323 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752306Ab0I2Qsn (ORCPT
+	id S1754207Ab0I2Qu5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 12:50:57 -0400
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:39511
+	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752018Ab0I2Qu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 12:48:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=pMvH+JY8XiiuHS5oGylAg7iCYbvCluzt+wgZhjvtfQ20eTyULgt7TmaMp00opw1G/t
-         5XRfiOnHAu0wQdDUve6c9GcWXaAP0eMDxinJDN2Z1x/xdFF4zvPvVLMHlPcMXTmv7QGM
-         3rkmrK4F7YieQnl30/ar8dVtkF1AC1/R9jEyY=
-Date: Wed, 29 Sep 2010 20:48:39 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Stephane Eranian <eranian@google.com>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "mingo@elte.hu" <mingo@elte.hu>
-Subject: Re: [tip:perf/urgent] perf, x86: Catch spurious interrupts after
-	disabling counters
-Message-ID: <20100929164839.GG9440@lenovo>
-References: <20100929125453.GH13563@erda.amd.com> <AANLkTimoE8wAhT+yxXBPnZvTTGrAtDjdaXPBN3Xg28eL@mail.gmail.com> <AANLkTi=WYU2=4Hu7tb+TSrhJw9K9du19_KjMcG3ij=qn@mail.gmail.com> <20100929150140.GK13563@erda.amd.com> <20100929151253.GL13563@erda.amd.com> <20100929152745.GC9440@lenovo> <AANLkTikvYreYiyCbGeG02j+r4dWVLRH7BqeeG9O=VTNN@mail.gmail.com> <20100929154528.GD9440@lenovo> <20100929155102.GE9440@lenovo> <20100929163246.GO13563@erda.amd.com>
+	Wed, 29 Sep 2010 12:50:56 -0400
+X-SpamScore: -20
+X-BigFish: VPS-20(zzbb2cK1432N98dN179dN103dK2f55kzz1202hzzz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L9IPGH-02-6ZA-02
+X-M-MSG: 
+Date: Wed, 29 Sep 2010 18:50:27 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Will Deacon <will.deacon@arm.com>
+CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] oprofile, arm: proper release resources on failure
+Message-ID: <20100929165027.GP13563@erda.amd.com>
+References: <20100929145225.GJ13563@erda.amd.com>
+ <1285774784.30080.19.camel@e102144-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20100929163246.GO13563@erda.amd.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1285774784.30080.19.camel@e102144-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 29, 2010 at 06:32:46PM +0200, Robert Richter wrote:
-> On 29.09.10 11:51:02, Cyrill Gorcunov wrote:
-> > On Wed, Sep 29, 2010 at 07:45:28PM +0400, Cyrill Gorcunov wrote:
-> > ... 
-> > > Btw, since x86 architectural and p4 are using same tests for
-> > > running I presume better to have some helper rather then
-> > > open coded pile?
-> 
-> I rather tend to merge the x86 and p4 handler, the code is almost the
-> same.
-> 
+On 29.09.10 11:39:44, Will Deacon wrote:
 
-There are still some difference which would require if() in code depending
-on which real cpu code is running, that is why I didn't merge it in a first
-place. And branch misprediction penalty might worth to not merge such
-critical path. On the other hands perhaps we might look into "alternatives"
-and just nopify some calls early in cpu initialization.
+> I have a few minor clarifications:
+> > 
+> 
+> > diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
+> > index 0691176..72e09eb 100644
+> > --- a/arch/arm/oprofile/common.c
+> > +++ b/arch/arm/oprofile/common.c
+> > @@ -102,6 +102,7 @@ static int op_create_counter(int cpu, int event)
+> >         if (IS_ERR(pevent)) {
+> >                 ret = PTR_ERR(pevent);
+> >         } else if (pevent->state != PERF_EVENT_STATE_ACTIVE) {
+> > +               perf_event_release_kernel(pevent);
+> >                 pr_warning("oprofile: failed to enable event %d "
+> >                                 "on CPU %d\n", event, cpu);
+> >                 ret = -EBUSY;
+> 
+> 
+> Yup, this is needed. Thanks! It would be nice to do away with the
+> else statement altogether but I think adding a pinned event and
+> then failing to activate it still succeeds in
+> perf_event_create_kernel_counter.
 
-> -Robert
+Yes, I have cleanup code already for this. But as this is an -rc and
+stable fix, I didn't want to change too much here. But I will send a
+follow-on patch with the cleanup I made.
+
 > 
-> -- 
-> Advanced Micro Devices, Inc.
-> Operating System Research Center
 > 
-  Cyrill
+> > @@ -365,6 +366,7 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
+> >         ret = init_driverfs();
+> >         if (ret) {
+> >                 kfree(counter_config);
+> > +               counter_config = NULL;
+> >                 return ret;
+> >         }
+> > 
+> > @@ -402,7 +404,6 @@ void oprofile_arch_exit(void)
+> >         struct perf_event *event;
+> > 
+> >         if (*perf_events) {
+> > -               exit_driverfs();
+> >                 for_each_possible_cpu(cpu) {
+> >                         for (id = 0; id < perf_num_counters; ++id) {
+> >                                 event = perf_events[cpu][id];
+> > @@ -413,8 +414,10 @@ void oprofile_arch_exit(void)
+> >                 }
+> >         }
+> > 
+> > -       if (counter_config)
+> > +       if (counter_config) {
+> >                 kfree(counter_config);
+> > +               exit_driverfs();
+> > +       }
+> >  }
+> >  #else
+> >  int __init oprofile_arch_init(struct oprofile_operations *ops)
+> > --
+> > 1.7.2.2
+> > 
+> 
+> Hmm, these three hunks conflict with the patches I posted last
+> month to fix the resource allocation and freeing. Can't we
+> merge those patches instead? I have versions against -rc6 here:
+
+Yes, these patches are also in my oprofile/core branch and its changes
+conflict, but are scheduled for the next merge window. This fix is for
+urgent and for 2.6.36. We will then merge back rc7 or 2.6.36 to
+oprofile/core and solve the conflicts. But if you don't have something
+else for -rc7/.36 that conflicts, this should be ok.
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
