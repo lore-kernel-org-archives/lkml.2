@@ -1,94 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814Ab0I2L2s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 07:28:48 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:21845 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751272Ab0I2L2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 07:28:47 -0400
-Message-ID: <4CA322DA.90705@parallels.com>
-Date: Wed, 29 Sep 2010 15:28:26 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
+	id S1751478Ab0I2Ldl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 07:33:41 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:48099 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751046Ab0I2Ldk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 07:33:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=h2S+rai+ADymoYmOiKbeauVipD2otgh5Hd23d+jTA9EIKq0g52WckzRVX/EpjtYCtA
+         41TtdYojs8mrkUWuhUnEztvcPExjNoH9prk7t6wZdOUp0EkGGaXAGebSK8JG22snJGFj
+         4MDEDy8j6x6eD24IAR3a68Mx4y/4jIs3fWQ/U=
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "J. Bruce Fields" <bfields@fieldses.org>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (Was:
- linux-next: build warning after merge of the final tree)
-References: <20100929140238.c987caac.sfr@canb.auug.org.au> <20100929141657.3c076eb7.sfr@canb.auug.org.au>
-In-Reply-To: <20100929141657.3c076eb7.sfr@canb.auug.org.au>
+In-Reply-To: <20100929110247.GA2032@roll>
+References: <20100927003608.GA20395@kroah.com>
+	<20100927163208.GA4892@roll>
+	<20100927215135.3d11d587@schatten.dmk.lab>
+	<20100927233956.GA15705@roll>
+	<20100928083505.0a808ffd@schatten.dmk.lab>
+	<20100928190358.GA24303@roll>
+	<20100929092924.2090f19e@schatten.dmk.lab>
+	<20100929110247.GA2032@roll>
+Date: Wed, 29 Sep 2010 13:33:39 +0200
+Message-ID: <AANLkTikwnRPzGE2+Kw=4+TbWm7JknM4qPdz9BDCUuSnA@mail.gmail.com>
+Subject: Re: Linux 2.6.35.6
+From: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
+To: tmhikaru@gmail.com
+Cc: Florian Mickler <florian@mickler.org>, linux-kernel@vger.kernel.org,
+        Greg KH <gregkh@suse.de>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This actually causes a build failure on a sparc32 defconfig build:
-> 
-> `rpcauth_remove_module' referenced in section `.init.text' of net/built-in.o: defined in discarded section `.exit.text' of net/built-in.o
-> 
-> I applied the following patch for today:
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Wed, 29 Sep 2010 14:07:07 +1000
-> Subject: [PATCH] sunrpc: fix up section mismatch
-> 
-> Fixes:
-> 
-> `rpcauth_remove_module' referenced in section `.init.text' of net/built-in.o: defined in discarded section `.exit.text' of net/built-in.o
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+On Wed, Sep 29, 2010 at 1:02 PM,  <tmhikaru@gmail.com> wrote:
+> On Wed, Sep 29, 2010 at 09:29:24AM +0200, Florian Mickler wrote:
+>> Do you know what load average conky is showing you? If I
+>> type 'uptime' on a console, i get three load numbers: 1minute-,
+>> 5minutes- and 15minutes-average.
+>> If there is a systematic bias it should be visible on the
+>> 15minutes-average.  If there are only bursts of 'load' it should be
+>> visible on the 1 minutes average numbers.
+>
+> It is giving the same averages that uptime does in the same format, and
+> there is a routine problem - it remains high on all averages on the kernels
+> that do not work properly, and zeroes eventually if I leave it alone long
+> enough on kernels that do work properly. When I discovered X was part of the
+> problem somehow, it was due to me testing in X with mrxvt running bash and
+> uptime, and in console without X using bash with uptime. uptime consistently
+> gives the same numbers that conky does, so I don't think I need to worry
+> about conky confusing the issue.
+>
+>>
+>> But it doesn't really matter for now what kind of load disturbance you
+>> are seeing, because you actually have a better way to distinguish a good
+>> kernel from a bad:
+>
+> You may think a timed kernel compile is a better way to determine if there
+> is a fault with the kernel, but it takes my machine around two hours (WITH
+> ccache) to build my kernel. Since the use of ccache speeds up the builds
+> dramatically and would give misleading readings if I compiled the exact
+> kernel source twice, I'd have to disable it if I wanted it to be a
+> worthwhile test. So it would take even *longer* to build than normally. This
+> is not something I'm willing to use as a 'better' test - especially since
+> the loadavg numbers are consistently high when on a bad kernel and
+> consistently zeroed or very close to it when not.
+>
+> Here's an uptime sample from a working version:
+>
+> 06:20:31 up 21 min,  4 users,  load average: 0.00, 0.02, 0.06
+>
+> I've been typing up this email while waiting for the load to flatten from
+> the initial boot. I think it's pretty obvious here that it's working
+> properly, so I'm going to git bisect good it...
+>
+> Bisecting: 27 revisions left to test after this (roughly 5 steps)
+>
+> I'm getting fairly close at least.
+>
+> Here's an uptime output from a version of the kernel that was NOT working
+> properly, 2.6.35.6:
+> 14:30:12 up  3:46,  4 users,  load average: 0.85, 0.93, 0.89
+>
+> And it probably doesn't give you any useful information, but here's 2.6.35.1's
+> reaction to building 2.6.35:
+> 22:01:22 up 15 min, 4 users, load average: 1.84, 1.38, 0.83
+>
+> whereas on a working kernel this is what the load average looks like when
+> building a kernel:
+> 06:33:13 up 34 min,  4 users,  load average: 1.01, 0.92, 0.52
+>
+> This is not a multiprocessor or multicore system, it's an athlon XP 2800
+> with 1.5GB of ram. Before the question is asked, no, I'm not being silly and
+> using make -j2.
+>
+> I think simply letting the machine idle is just as good a test for
+> determining wether or not any particular kernel is good/bad since the
+> readings are like night and day. I only brought up that the timed kernel
+> runs were taking longer on the kernel with the higher load average since it
+> meant that it wasn't simply a broken statistic giving false readings;
+> something *is* wrong, and I can't simply ignore it.
+>
+> It's taken me several days to bisect this far. If greg insists, I'll restart
+> the bisection from scratch using a kernel compile as a test, but I implore
+> you not to ask me to do so; it will more than likely give me the same
+> results I'm getting now for more than double the amount of time invested.
+>
+>> Yes, the sample rate was one of the things I wanted to know, but also which of
+>> the 3 load figures you were graphing.
+> To be honest, I actually don't know. I'm *terrible* at regex, this is what
+> the bash script is doing:
+>
+> cat /proc/loadavg     | perl -p -e 's/^([^ ]+) .+$/$1/'
+>
+> If you can explain what that's doing, I'd appreciate it. If it's not to your
+> liking, I can change it to something else.
 
-Oops :(
+You are taking the average over the last minute.
 
-Acked-by: Pavel Emelyanov <xemul@openvz.org>
-
-> ---
->  include/linux/sunrpc/auth.h |    4 ++--
->  net/sunrpc/auth.c           |    2 +-
->  net/sunrpc/auth_generic.c   |    2 +-
->  3 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/include/linux/sunrpc/auth.h b/include/linux/sunrpc/auth.h
-> index 5bbc447..b202475 100644
-> --- a/include/linux/sunrpc/auth.h
-> +++ b/include/linux/sunrpc/auth.h
-> @@ -122,8 +122,8 @@ extern const struct rpc_authops	authnull_ops;
->  int __init		rpc_init_authunix(void);
->  int __init		rpc_init_generic_auth(void);
->  int __init		rpcauth_init_module(void);
-> -void __exit		rpcauth_remove_module(void);
-> -void __exit		rpc_destroy_generic_auth(void);
-> +void			rpcauth_remove_module(void);
-> +void			rpc_destroy_generic_auth(void);
->  void 			rpc_destroy_authunix(void);
->  
->  struct rpc_cred *	rpc_lookup_cred(void);
-> diff --git a/net/sunrpc/auth.c b/net/sunrpc/auth.c
-> index e9eaaf7..2c0d9e6 100644
-> --- a/net/sunrpc/auth.c
-> +++ b/net/sunrpc/auth.c
-> @@ -658,7 +658,7 @@ out1:
->  	return err;
->  }
->  
-> -void __exit rpcauth_remove_module(void)
-> +void rpcauth_remove_module(void)
->  {
->  	rpc_destroy_authunix();
->  	rpc_destroy_generic_auth();
-> diff --git a/net/sunrpc/auth_generic.c b/net/sunrpc/auth_generic.c
-> index 43162bb..e010a01 100644
-> --- a/net/sunrpc/auth_generic.c
-> +++ b/net/sunrpc/auth_generic.c
-> @@ -158,7 +158,7 @@ int __init rpc_init_generic_auth(void)
->  	return rpcauth_init_credcache(&generic_auth);
->  }
->  
-> -void __exit rpc_destroy_generic_auth(void)
-> +void rpc_destroy_generic_auth(void)
->  {
->  	rpcauth_destroy_credcache(&generic_auth);
->  }
-
+>
+>
+> Tim McGrath
