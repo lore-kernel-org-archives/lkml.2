@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647Ab0I2UFx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 16:05:53 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:46713 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753263Ab0I2UFw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 16:05:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:cc:content-type;
-        b=Llm1u3LpRvHJeBfHpfHB47OZEGReZ0WuiB3pQbnBWlrSUIG4kKTFTeuRQdBxlXgXZw
-         FiCB1z5lOhdjeyuFIHfIDmOWOyKZNo1X4LsYik3uBpoiecN0Sx2+UzHAwvHEct8Fr680
-         9znpfFopcZFWK4/6VXxXuHkerHqOjOcIgy2jg=
+	id S1755708Ab0I2UGj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 16:06:39 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:54432 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755136Ab0I2UGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 16:06:38 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [RFC][PATCH] PM / Hibernate / x86: Change RESTORE_MAGIC on x86_64
+Date: Wed, 29 Sep 2010 22:05:45 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc6-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Nigel Cunningham <nigel@tuxonice.net>
+References: <201009290112.11363.rjw@sisk.pl> <4CA27A01.1080606@zytor.com> <201009291258.06048.rjw@sisk.pl>
+In-Reply-To: <201009291258.06048.rjw@sisk.pl>
 MIME-Version: 1.0
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Wed, 29 Sep 2010 13:05:30 -0700
-Message-ID: <AANLkTim=dHyuS=WP0LY6eZUr71J4kLqEtkrsM5fPS6C+@mail.gmail.com>
-Subject: [ANN] Atheros Linux Bluetooth drivers home page
-To: linux-bluetooth <linux-bluetooth@vger.kernel.org>
-Cc: linux-wireless <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Ken Steck <Ken.Steck@atheros.com>,
-        Shanmugamkamatchi Balashanmugam 
-	<Shanmugamkamatchi.Balashanmugam@atheros.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009292205.45724.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I noted a while ago Bluetooth seemed to lack a wiki-based home and if
-we can just borrow the existing wiki on wireless.kernel.org and saw no
-opposition so started adding some related Bluetooth documentation like
-Bluetooth-Coexistance [1]. I now found a need to document some pending
-patches for ath3k [2] so started a Linux Atheros Bluetooth drivers
-page [3] with just one reference to ath3k [4]. Goal is also to
-motivate and welcome more developers to document more of the Bluetooth
-subsystem and drivers on wireless.kernel.org. If you have a Bluetooth
-drivers you'd like to document please feel free to add it to the
-Bluetooth Drivers section [5] BT3.0 stuff might be a really good
-candidate to be documented here. I tried modifying the site a bit to
-add Bluetooth Specific navigation bar but failed, will wait on
-Johannes to figure that stuff out.
+On Wednesday, September 29, 2010, Rafael J. Wysocki wrote:
+> On Wednesday, September 29, 2010, H. Peter Anvin wrote:
+> > On 09/28/2010 04:12 PM, Rafael J. Wysocki wrote:
+> > > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > > 
+> > > On x86_64 the configuration and version of the kernel that
+> > > hibernates and creates a system image may be different from the
+> > > configuration and version of the boot kernel that loads the image.
+> > > So long as both these kernels are built with the same value of
+> > > RESTORE_MAGIC, the image created by one of them should be
+> > > successfully loaded and restored by the other one.
+> > > 
+> > > It wasn't necessary to modify RESTORE_MAGIC in the past, but now
+> > > that we are adding compression to the in-kernel hibernate code,
+> > > change the value of RESTORE_MAGIC so that earlier kernels don't
+> > > try to load compressed images they can't handle.
+> > > 
+> > > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > > ---
+> > >  arch/x86/power/hibernate_64.c |    2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > 
+> > > Index: linux-2.6/arch/x86/power/hibernate_64.c
+> > > ===================================================================
+> > > --- linux-2.6.orig/arch/x86/power/hibernate_64.c
+> > > +++ linux-2.6/arch/x86/power/hibernate_64.c
+> > > @@ -137,7 +137,7 @@ struct restore_data_record {
+> > >  	unsigned long magic;
+> > >  };
+> > >  
+> > > -#define RESTORE_MAGIC	0x0123456789ABCDEFUL
+> > > +#define RESTORE_MAGIC	0x0123456789ABCDF0UL
+> > >  
+> > 
+> > Two issues with this:
+> > 
+> > a) shouldn't we only set this when the image is actually compressed?
+> 
+> Well, in fact, this is a workaround, because the compression happens in a
+> different layer.  However, that other layer doesn't have any compatibility
+> checks (at least on x86-64), other than seeing that the image metadata
+> don't make sense at one point.
 
-  Luis
+Sorry, I was wrong.  This patch shouldn't be necessary, I'll send another one
+that only touches things in kernel/power.
 
-[1] http://wireless.kernel.org/en/users/Documentation/Bluetooth-coexistence
-[2] http://marc.info/?l=linux-bluetooth&m=128536965702436&w=2
-[3] http://wireless.kernel.org/en/users/Drivers/Atheros-BT
-[4] http://wireless.kernel.org/en/users/Drivers/ath3k
-[5] http://wireless.kernel.org/en/users/Drivers-bluetooth
+Thanks,
+Rafael
