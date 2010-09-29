@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756015Ab0I2Mpx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 08:45:53 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:38308 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1755752Ab0I2Mpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 08:45:51 -0400
-X-Authenticated: #31060655
-X-Provags-ID: V01U2FsdGVkX1/bHAtFwGrbEAt796pDWo5mvF1iQ0we2gPnTL8QBP
-	GgDTc9l1cbZDkD
-Message-ID: <4CA334FA.2080707@gmx.net>
-Date: Wed, 29 Sep 2010 14:45:46 +0200
-From: Carl-Daniel Hailfinger <c-d.hailfinger.devel.2006@gmx.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.23) Gecko/20090410 SUSE/1.1.18-0.1 SeaMonkey/1.1.18
+	id S1756007Ab0I2Mxn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 08:53:43 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:17111
+	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753728Ab0I2Mxl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 08:53:41 -0400
+X-SpamScore: -8
+X-BigFish: VPS-8(zzbb2cK98dNzz1202hzzz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-SS: 0,
+X-WSS-ID: 0L9IEGC-01-97U-02
+X-M-MSG: 
+Date: Wed, 29 Sep 2010 14:53:01 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Stephane Eranian <eranian@google.com>
+CC: "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "gorcunov@gmail.com" <gorcunov@gmail.com>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:perf/urgent] perf, x86: Catch spurious interrupts after
+ disabling counters
+Message-ID: <20100929125301.GG13563@erda.amd.com>
+References: <20100915162034.GO13563@erda.amd.com>
+ <tip-63e6be6d98e1a2bcdca86872b67052e51ab6afa1@git.kernel.org>
+ <AANLkTimB2gf=2zYCwiKEgozt_Rsa1Cpb6JuLSzmHusFX@mail.gmail.com>
 MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mtd <linux-mtd@lists.infradead.org>,
-        sf-linux-drivers <linux-net-drivers@solarflare.com>,
-        flashrom <flashrom@flashrom.org>
-Subject: Re: [RFC] Online firmware upgrade in non-embedded systems
-References: <1285696787.2282.45.camel@achroite.uk.solarflarecom.com>	 <4CA26F35.6060408@gmx.net> <1285763700.2283.6.camel@achroite.uk.solarflarecom.com>
-In-Reply-To: <1285763700.2283.6.camel@achroite.uk.solarflarecom.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <AANLkTimB2gf=2zYCwiKEgozt_Rsa1Cpb6JuLSzmHusFX@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29.09.2010 14:35, Ben Hutchings wrote:
-> On Wed, 2010-09-29 at 00:41 +0200, Carl-Daniel Hailfinger wrote:
->   
->> [adding flashrom@flashrom.org to CC, senders will be whitelisted after a
->> short delay]
->>
->> On 28.09.2010 19:59, Ben Hutchings wrote:
->>     
->>> Network and disk controllers normally have at least some firmware in
->>> flash to support their use as boot devices. [...]
->>>   
->>>       
->> Given that the flashrom utility <http://www.flashrom.org/> (GPLv2)
->> supports flashing many network cards, SATA/PATA controllers, graphics
->> cards, and of course the main system firmware/BIOS/EFI, and it does that
->> from userspace without any kernel support,
->>     
-> [...]
->
-> I'm looking for a clean solution, not a hack.
->   
+Stephane,
 
-What would qualify as a clean solution? And is cross-platform code one
-of your goals?
+On 29.09.10 08:26:41, Stephane Eranian wrote:
+> You've applied the fix only to the generic X86 interrupt handler
+> which is currently used by AMD64 processors.
 
+(... and P4).
 
-Regards,
-Carl-Daniel
+> It seems to me that this "in-flight interrupt after disable" problem
+> may also happen on Intel and should therefore also be added
+> to intel_pmu_handle_irq(). Don't you think so?
+
+It only happens if the active_mask is used for checking single
+counters for overflows.
+
+Systems with Intel Architectural Perfmon use the status mask msr to
+determine which counter overflowed. In intel_pmu_handle_irq() the
+handled counter is incremented in this case even if the counter is not
+active, so everything should be fine here.
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
