@@ -1,114 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647Ab0I2HSL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 03:18:11 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:35773 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751114Ab0I2HSJ (ORCPT
+	id S1753264Ab0I2HVb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 03:21:31 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:49642 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751114Ab0I2HV3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 03:18:09 -0400
-From: Dima Zavin <dima@android.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>, Dima Zavin <dima@android.com>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
-Subject: [PATCH 1/2] sched: normalize sleeper's vruntime during group change
-Date: Wed, 29 Sep 2010 00:17:48 -0700
-Message-Id: <1285744668-9209-1-git-send-email-dima@android.com>
-X-Mailer: git-send-email 1.6.6
-In-Reply-To: <AANLkTimM9bHqGtuNisYjOtL=d014CzB3foQSnnf-bPkv@mail.gmail.com>
-References: <AANLkTimM9bHqGtuNisYjOtL=d014CzB3foQSnnf-bPkv@mail.gmail.com>
+	Wed, 29 Sep 2010 03:21:29 -0400
+Date: Wed, 29 Sep 2010 00:14:58 -0700 (PDT)
+From: Stephen Hemminger <stephen.hemminger@vyatta.com>
+To: =?utf-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Marek <mmarek@suse.cz>,
+        linux-kernel@vger.kernel.org
+Message-ID: <635705110.22841.1285744498655.JavaMail.root@tahiti.vyatta.com>
+In-Reply-To: <20100929070631.GE5169@cr0.nay.redhat.com>
+Subject: Re: [PATCH 1/2] namespace.pl: fix source tree name mangling
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-System-Of-Record: true
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [203.112.11.42]
+X-Mailer: Zimbra 6.0.6_GA_2330.RHEL5_64 (ZimbraWebClient - FF3.0 (Linux)/6.0.6_GA_2330.RHEL5_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a new callback, prep_move_task, to struct sched_class
-to give sched_fair the opportunity to adjust the task's vruntime
-just before setting its new group.
 
-This allows us to properly normalize a sleeping task's vruntime
-when moving it between different cgroups.
 
-More details about the problem:
-  http://lkml.org/lkml/2010/9/28/24
+----- Original Message -----
+> On Wed, Sep 29, 2010 at 03:06:45PM +0900, Stephen Hemminger wrote:
+> >On Wed, 29 Sep 2010 14:04:27 +0800
+> >Américo Wang <xiyou.wangcong@gmail.com> wrote:
+> >
+> >> On Wed, Sep 29, 2010 at 02:11:53PM +0900, Stephen Hemminger wrote:
+> >> >On Wed, 29 Sep 2010 12:31:12 +0800
+> >> >Américo Wang <xiyou.wangcong@gmail.com> wrote:
+> >> >
+> >> >> On Tue, Sep 28, 2010 at 05:44:02PM +0900, Stephen Hemminger
+> >> >> wrote:
+> >> >> >The current namespace.pl script does not find source files
+> >> >> >correctly. The problem is that the current directory is not the
+> >> >> >base of the kernel
+> >> >> >tree at the point where it calls objdump.
+> >> >> >
+> >> >> >Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+> >> >> >
+> >> >> >--- a/scripts/namespace.pl 2010-09-27 17:53:29.919433444 +0900
+> >> >> >+++ b/scripts/namespace.pl 2010-09-28 09:24:36.891552993 +0900
+> >> >> >@@ -167,8 +167,10 @@ sub do_nm
+> >> >> > 		printf STDERR "$fullname is not an object file\n";
+> >> >> > 		return;
+> >> >> > 	}
+> >> >> >- ($source = $fullname) =~ s/\.o$//;
+> >> >> >- if (-e "$objtree$source.c" || -e "$objtree$source.S") {
+> >> >> >+ $fullname =~ s/\.o$//;
+> >> >> >+ $source = $basename;
+> >> >> >+ $source =~ s/\.o$//;
+> >> >>
+> >> >> With your patch applied, $source will be the basename of
+> >> >> an obj path with .o stripped.
+> >> >>
+> >> >> >+ if (-e "$objtree$fullname.c" || -e "$objtree$fullname.S") {
+> >> >> > 		$source = "$objtree$source";
+> >> >> > 	} else {
+> >> >> > 		$source = "$srctree$source";
+> >> >> >
+> >> >>
+> >> >> So here we will get a non-exist path stored in $source.
+> >> >>
+> ...
+> >>
+> >> I see, the docs of Find module said it will do chdir. :)
+> >> But I think your patch is still not right, how about the
+> >> one below?
+> >
+> >Please be more precise about "not right"? It makes the code
+> >work.
+> >
+> 
+> Hmm? $srctree is the path of top source code, and $source
+> is the basename of an object, so dirname is missed, no?
 
-Cc: Arve Hjønnevåg <arve@android.com>
-Signed-off-by: Dima Zavin <dima@android.com>
----
- include/linux/sched.h |    1 +
- kernel/sched.c        |    5 +++++
- kernel/sched_fair.c   |   16 +++++++++++++++-
- 3 files changed, 21 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 1e2a6db..ba3494e 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1073,6 +1073,7 @@ struct sched_class {
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	void (*moved_group) (struct task_struct *p, int on_rq);
-+	void (*prep_move_group) (struct task_struct *p, int on_rq);
- #endif
- };
- 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index dc85ceb..fe4bb20 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -8297,6 +8297,11 @@ void sched_move_task(struct task_struct *tsk)
- 	if (unlikely(running))
- 		tsk->sched_class->put_prev_task(rq, tsk);
- 
-+#ifdef CONFIG_FAIR_GROUP_SCHED
-+	if (tsk->sched_class->prep_move_group)
-+		tsk->sched_class->prep_move_group(tsk, on_rq);
-+#endif
-+
- 	set_task_rq(tsk, task_cpu(tsk));
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index db3f674..008fe57 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -3827,10 +3827,23 @@ static void set_curr_task_fair(struct rq *rq)
- static void moved_group_fair(struct task_struct *p, int on_rq)
- {
- 	struct cfs_rq *cfs_rq = task_cfs_rq(p);
-+	struct sched_entity *se = &p->se;
- 
- 	update_curr(cfs_rq);
--	if (!on_rq)
-+	if (!on_rq) {
-+		se->vruntime += cfs_rq->min_vruntime;
- 		place_entity(cfs_rq, &p->se, 1);
-+	}
-+}
-+
-+static void prep_move_group_fair(struct task_struct *p, int on_rq)
-+{
-+	struct cfs_rq *cfs_rq = task_cfs_rq(p);
-+	struct sched_entity *se = &p->se;
-+
-+	/* normalize the runtime of a sleeping task before moving it */
-+	if (!on_rq)
-+		se->vruntime -= cfs_rq->min_vruntime;
- }
- #endif
- 
-@@ -3883,6 +3896,7 @@ static const struct sched_class fair_sched_class = {
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	.moved_group		= moved_group_fair,
-+	.prep_move_group	= prep_move_group_fair,
- #endif
- };
- 
--- 
-1.6.6
+No. it works, please stop speculating and use a debugger or demonstrate
+what you think the problem is.
 
