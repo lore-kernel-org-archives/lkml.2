@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703Ab0I2MCa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 08:02:30 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:45686 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754352Ab0I2MC2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 08:02:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=BoMUn5flkaOePGCLHuvDzD7Y2qYLdCm9jr6MDCLX1gtfoO9vkX9FO/Aln17oqBcVMc
-         XwSN8W4bPFHeeeNeufDZcTwAIngMHpYPz/14f4Mj2gTyK0xMUemCB7uROWo/5EKoKAVC
-         sPOa6GmO1YAsL2fVjHUseQMS4DIKTcmLmFaDc=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] slub: Add lock release annotation
-Date: Wed, 29 Sep 2010 21:02:14 +0900
-Message-Id: <1285761735-31499-2-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <1285761735-31499-1-git-send-email-namhyung@gmail.com>
-References: <1285761735-31499-1-git-send-email-namhyung@gmail.com>
+	id S1754590Ab0I2MJB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 08:09:01 -0400
+Received: from outbound2.messaging.lotuslive.com ([8.12.152.118]:46250 "EHLO
+	outbound2.messaging.lotuslive.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752498Ab0I2MJA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 08:09:00 -0400
+X-Greylist: delayed 647 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Sep 2010 08:09:00 EDT
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+From: inasxxwz656h558@ovi.com
+To: k12688@hotmail.com, stephane81218@yahoo.com.tw, hslaw@ms4.hinet.net,
+        qdexzjr@126.com, t850505@ilc.edu.tw, damagesqwzo@pensionlei.com,
+        a_couple_of@yahoo.com.tw, jahlinn@gmail.com, rb26dett3037@msn.com,
+        kittenssweet@yahoo.com, bee88164@yahoo.com.tw,
+        linux-kernel@vger.kernel.org, sVITv@msn.com,
+        forummaster@baby-kingdom.com, b9131050@wmail4.npust.edu.tw,
+        eagle233@yam.com.tw, zororonoroa@hotmail.com, gertie-88@yahoo.com,
+        meimeo_hokimo@yahoo.com.tw, ciewl@ms27.hinet.net, orchidac@gmail.com,
+        junepearl4616@gmail.com, wnn06@hotmail.com,
+        changue.b62150@msa.hinet.net, z45a7oaqs8hp@jetable.com,
+        alex_1976_8@hotmail.com, greedf@bluebottle.com, tfn_100@hotmail.com,
+        our@wmw.com.tw, gigi1234333@yahoo.com.tw, xfxvrtkzsr@music.email.ne.jp,
+        jackl@cfs.com.tw, bruce@pos.tw, mm6601234@hotmail.com,
+        sunkiwu123@hotmail.com, forever.s0127@hotmail.com,
+        dennis_311_3@hotmail.com, harry630.tw@yahoo.com.tw,
+        elvm6g4@yahoo.com.tw, aclara@hotmail.com, herbaedm2@yahoo.com.tw
+Date: Wed, 29 Sep 2010 19:58:12 +0800
+Subject: =?utf-8?B?5Yqg55uf5LiN5aaC5Ym15qWtLi7pgbjmk4fnlbboh6rlt7HnmoTogIHpl4Ys5pyI5YWlOC0xNeiQrA==?=
+X-Originating-Ip: 114.40.30.76
+X-Originating-Server: c-in3ws--02-08.sv2.lotusliveops.com
+Message-Id: <20100929115812.88E6846D357@c-in3ws--02-08.sv2.lotuslive.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The unfreeze_slab() releases page's PG_locked bit but was missing
-proper annotation. The deactivate_slab() needs to be marked also
-since it calls unfreeze_slab() without grabbing the lock.
+您是"月光族"還是每月"不滿族"?
+您已厭倦再當"伸手牌"?
+您不想下班後又趕著去接小孩的生活?
+立即加入WFS在家工作系統
+WFS是經過科學設計,
+符合現代及未來的工作模式
+只要跟著我們一起
+進入這個系統按部就班
+您將改變目前的生活 實現自己的夢想
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- mm/slub.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+快按下列網址改變您的生活(限年滿23歲)
+http://www.wfhom8.com/
 
-diff --git a/mm/slub.c b/mm/slub.c
-index e137688..f0684a9 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1405,6 +1405,7 @@ static struct page *get_partial(struct kmem_cache *s, gfp_t flags, int node)
-  * On exit the slab lock will have been dropped.
-  */
- static void unfreeze_slab(struct kmem_cache *s, struct page *page, int tail)
-+	__releases(bitlock)
- {
- 	struct kmem_cache_node *n = get_node(s, page_to_nid(page));
- 
-@@ -1447,6 +1448,7 @@ static void unfreeze_slab(struct kmem_cache *s, struct page *page, int tail)
-  * Remove the cpu slab
-  */
- static void deactivate_slab(struct kmem_cache *s, struct kmem_cache_cpu *c)
-+	__releases(bitlock)
- {
- 	struct page *page = c->page;
- 	int tail = 1;
--- 
-1.7.2.2
+
+
+
+
+
+
+
+
+
+
+
+--------------------------------------------------------------
+Ovi Mail: Making email access easy
+http://mail.ovi.com
 
