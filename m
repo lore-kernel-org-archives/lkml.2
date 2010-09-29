@@ -1,41 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960Ab0I2PrQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 11:47:16 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:44698 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753150Ab0I2PrO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 11:47:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=BHAJvtEwtQN6fPv/7X9I2Amp4nDekvHmCBZ0x14wmQx4BthU3MAQhHXfhqDolGiL7S
-         0ABNGftoSqyi9C80Xdoyw1tsuOvDZzARwkD55dNOOha/JPOb58nISR24IeMmfuDsZwR/
-         Y0jaE2JkxukHQdfFzklKC+EBgtYIMFrycE36U=
+	id S1754003Ab0I2PsL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 11:48:11 -0400
+Received: from claw.goop.org ([74.207.240.146]:44771 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753056Ab0I2PsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 11:48:10 -0400
+Message-ID: <4CA35FB7.10600@goop.org>
+Date: Wed, 29 Sep 2010 08:48:07 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.3
 MIME-Version: 1.0
-In-Reply-To: <1285761235-4751-2-git-send-email-ying.huang@intel.com>
-References: <1285761235-4751-1-git-send-email-ying.huang@intel.com>
-	<1285761235-4751-2-git-send-email-ying.huang@intel.com>
-Date: Wed, 29 Sep 2010 08:47:13 -0700
-X-Google-Sender-Auth: y0yGFkD6If3v80pMEQFgUcJOOpY
-Message-ID: <AANLkTi=JkcJiQhxLSmU2vgmrACPSrE16cEhRnxCOr_5g@mail.gmail.com>
-Subject: Re: [PATCH -v2 1/5] ACPI, APEI, Fix APEI related table size checking
-From: Yinghai Lu <yinghai@kernel.org>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>, linux-acpi@vger.kernel.org
+To: Greg KH <greg@kroah.com>
+CC: Kyle McMartin <kyle@redhat.com>,
+        James Dingwall <james.dingwall@amdocs.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable@kernel.org
+Subject: Re: [stable] PROBLEM: [BISECTED] 2.6.35.5 xen domU panics just	after
+ the boot
+References: <3B7AEC3C7FCC864282DFAC9A56A7BA363D81475787@UKLNDMAIL1.corp.amdocs.com> <20100927024044.GQ13116@bombadil.infradead.org> <20100927061336.GA22721@kroah.com> <4CA0DDAB.9090507@goop.org> <20100928182910.GA32464@kroah.com>
+In-Reply-To: <20100928182910.GA32464@kroah.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 29, 2010 at 4:53 AM, Huang Ying <ying.huang@intel.com> wrote:
-> On Huang Ying's machine:
+ On 09/28/2010 11:29 AM, Greg KH wrote:
+> On Mon, Sep 27, 2010 at 11:08:43AM -0700, Jeremy Fitzhardinge wrote:
+>>  On 09/26/2010 11:13 PM, Greg KH wrote:
+>>> On Sun, Sep 26, 2010 at 10:40:44PM -0400, Kyle McMartin wrote:
+>>>> On Thu, Sep 23, 2010 at 04:23:55PM +0100, James Dingwall wrote:
+>>>>>> I was experiencing the same immediate crash with a null pointer
+>>>>>> dereference (log below) on boot with 2.6.35.5.  Reverting
+>>>>>> fb412a178502dc498430723b082a932f797e4763 also resolved the problem for
+>>>>>> me.
+>>>>> Checking the diff from this commit it looks like there is a typo in the patch.  With the following (probably mangled by my client) I get 2.6.35.5 to boot.  Suggest it should be a candidate for .32 and .35 stable trees.
+>>>>>
+>>>> Greg, a spelling mistake cropped into this patch during 2.6.35.5 that
+>>>> James here points out. Adding you to CC since it seems to have missed
+>>>> stable 2.6.35.6...
+>>>>
+>>>> Was in xen-use-percpu-interrupts-for-ipis-and-virqs.patch.
+>>> I don't understand, where did the error come from?  Was it in a patch I
+>>> applied, or did I mess up some patch?  Is the same problem upstream, and
+>>> if not, why not?
+>> I don't know.  It looks like an 'x' was deleted due to an editor
+>> fat-finger or something.  The original upstream patches were cc:d to
+>> stable, so I think you would have got them that way (ie, I don't think I
+>> sent them to you specifically).  Is there an opportunity in your
+>> workflow where this error could have crept in?  The patches should have
+>> been a pretty clean 'git cherry-pick' with no conflicts.
+> Sorry, I don't know what happened, using my scripts, it does drop to an
+> editor so I can add the "signed-off-by" line, so perhaps I accidentally
+> did this in there.
 >
-> erst_tab->header_length == sizeof(struct acpi_table_einj)
+> It's now in the -stable queue and I'll push out new releases in a few
+> hours.
+>
 
-So it seems your system firmware violates the 4.0 spec
+I should have pointed out it is the same in the stable-2.6.32 tree as well.
 
-Yinghai
+    J
