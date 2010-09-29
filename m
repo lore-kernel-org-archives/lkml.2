@@ -1,120 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828Ab0I2Pnn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 11:43:43 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:3948 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab0I2Pnm (ORCPT
+	id S1753734Ab0I2Ppd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 11:45:33 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:56453 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751249Ab0I2Ppc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 11:43:42 -0400
-Date: Wed, 29 Sep 2010 17:43:28 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: mikpe@it.uu.se, rdunlap@xenotime.net, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH (Option 2)] of/i2c: fix module load order issue caused
- by  of_i2c.c
-Message-ID: <20100929174328.48af4735@endymion.delvare>
-In-Reply-To: <20100924221458.28357.58921.stgit@angua>
-References: <20100924221313.28357.61419.stgit@angua>
-	<20100924221458.28357.58921.stgit@angua>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 29 Sep 2010 11:45:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=hlBoe2fGkLzk9hK/TMEFAOoxRPEpa3MrrJKwLleYXMlvWcfqHr4GkPSTf8U9L3ceK3
+         8eHRayzk5yAH+4aooMb23len8Q038oLoDVq5cmhbBpAbJQkfv8faoaoSB1bUUHpdwVdb
+         L2BTUaZE7XAxGfBW+oqoksKhbI/T7YrSkeUiY=
+Date: Wed, 29 Sep 2010 19:45:28 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Robert Richter <robert.richter@amd.com>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "mingo@elte.hu" <mingo@elte.hu>
+Subject: Re: [tip:perf/urgent] perf, x86: Catch spurious interrupts after
+	disabling counters
+Message-ID: <20100929154528.GD9440@lenovo>
+References: <tip-63e6be6d98e1a2bcdca86872b67052e51ab6afa1@git.kernel.org> <AANLkTimB2gf=2zYCwiKEgozt_Rsa1Cpb6JuLSzmHusFX@mail.gmail.com> <20100929125301.GG13563@erda.amd.com> <20100929125453.GH13563@erda.amd.com> <AANLkTimoE8wAhT+yxXBPnZvTTGrAtDjdaXPBN3Xg28eL@mail.gmail.com> <AANLkTi=WYU2=4Hu7tb+TSrhJw9K9du19_KjMcG3ij=qn@mail.gmail.com> <20100929150140.GK13563@erda.amd.com> <20100929151253.GL13563@erda.amd.com> <20100929152745.GC9440@lenovo> <AANLkTikvYreYiyCbGeG02j+r4dWVLRH7BqeeG9O=VTNN@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikvYreYiyCbGeG02j+r4dWVLRH7BqeeG9O=VTNN@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Sep 2010 16:15:18 -0600, Grant Likely wrote:
-> Commit 959e85f7, "i2c: add OF-style registration and binding" caused a
-> module dependency loop where of_i2c.c calls functions in i2c-core, and
-> i2c-core calls of_i2c_register_devices() in of_i2c.  This means that
-> when i2c support is built as a module when CONFIG_OF is set, then
-> neither i2c_core nor of_i2c are able to be loaded.
+On Wed, Sep 29, 2010 at 05:33:07PM +0200, Stephane Eranian wrote:
+> Robert,
 > 
-> This patch fixes the problem by moving the of_i2c_register_devices()
-> calls back into the device drivers.  Device drivers already
-> specifically request the core code to parse the device tree for
-> devices anyway by setting the of_node pointer, so it isn't a big
-> deal to also call the registration function.  The drivers just become
-> slightly more verbose.
+> There is something else bothering me with cpuc->running.
 > 
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> ---
->  drivers/i2c/busses/i2c-cpm.c     |    5 +++++
->  drivers/i2c/busses/i2c-ibm_iic.c |    3 +++
->  drivers/i2c/busses/i2c-mpc.c     |    1 +
->  drivers/i2c/i2c-core.c           |    4 ----
->  4 files changed, 9 insertions(+), 4 deletions(-)
+> It is not reset outside of the interrupt handler. So what if
+> event scheduling shuffles things around and an event is
+> moved somewhere else. Don't you need to clear the
+> cpuc->running[idx] for the old counter index?
 > 
-> diff --git a/drivers/i2c/busses/i2c-cpm.c b/drivers/i2c/busses/i2c-cpm.c
-> index f7bd261..f2de3be 100644
-> --- a/drivers/i2c/busses/i2c-cpm.c
-> +++ b/drivers/i2c/busses/i2c-cpm.c
-> @@ -677,6 +677,11 @@ static int __devinit cpm_i2c_probe(struct platform_device *ofdev,
->  	dev_dbg(&ofdev->dev, "hw routines for %s registered.\n",
->  		cpm->adap.name);
->  
-> +	/*
-> +	 * register OF I2C devices
-> +	 */
-> +	of_i2c_register_devices(&cpm->adap);
-> +
->  	return 0;
->  out_shut:
->  	cpm_i2c_shutdown(cpm);
-> diff --git a/drivers/i2c/busses/i2c-ibm_iic.c b/drivers/i2c/busses/i2c-ibm_iic.c
-> index 43ca32f..89eedf4 100644
-> --- a/drivers/i2c/busses/i2c-ibm_iic.c
-> +++ b/drivers/i2c/busses/i2c-ibm_iic.c
-> @@ -761,6 +761,9 @@ static int __devinit iic_probe(struct platform_device *ofdev,
->  	dev_info(&ofdev->dev, "using %s mode\n",
->  		 dev->fast_mode ? "fast (400 kHz)" : "standard (100 kHz)");
->  
-> +	/* Now register all the child nodes */
-> +	of_i2c_register_devices(adap);
-> +
->  	return 0;
->  
->  error_cleanup:
-> diff --git a/drivers/i2c/busses/i2c-mpc.c b/drivers/i2c/busses/i2c-mpc.c
-> index a1c419a..b74e6dc 100644
-> --- a/drivers/i2c/busses/i2c-mpc.c
-> +++ b/drivers/i2c/busses/i2c-mpc.c
-> @@ -632,6 +632,7 @@ static int __devinit fsl_i2c_probe(struct platform_device *op,
->  		dev_err(i2c->dev, "failed to add adapter\n");
->  		goto fail_add;
->  	}
-> +	of_i2c_register_devices(&i2c->adap);
->  
->  	return result;
->  
-> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> index 6649176..a9589f5 100644
-> --- a/drivers/i2c/i2c-core.c
-> +++ b/drivers/i2c/i2c-core.c
-> @@ -32,7 +32,6 @@
->  #include <linux/init.h>
->  #include <linux/idr.h>
->  #include <linux/mutex.h>
-> -#include <linux/of_i2c.h>
->  #include <linux/of_device.h>
->  #include <linux/completion.h>
->  #include <linux/hardirq.h>
-> @@ -876,9 +875,6 @@ static int i2c_register_adapter(struct i2c_adapter *adap)
->  	if (adap->nr < __i2c_first_dynamic_bus_num)
->  		i2c_scan_static_board_info(adap);
->  
-> -	/* Register devices from the device tree */
-> -	of_i2c_register_devices(adap);
-> -
->  	/* Notify drivers */
->  	mutex_lock(&core_lock);
->  	bus_for_each_drv(&i2c_bus_type, NULL, adap, __process_new_adapter);
 > 
 
-I've applied this variant, thanks.
+Both bitmasks are set and test with same index though it might
+be a bit obscure scheme (we could be clearing this bit in
+x86_pmu_stop but it just a wasting cycles).
 
--- 
-Jean Delvare
+Btw, since x86 architectural and p4 are using same tests for
+running I presume better to have some helper rather then
+open coded pile?
+
+Cyrill
