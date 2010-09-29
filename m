@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504Ab0I2WQf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 18:16:35 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:3243 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022Ab0I2WQe (ORCPT
+	id S1752579Ab0I2WRp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 18:17:45 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:54678 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751707Ab0I2WRo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 18:16:34 -0400
-Message-ID: <4CA3BABC.7020505@caviumnetworks.com>
-Date: Wed, 29 Sep 2010 15:16:28 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
+	Wed, 29 Sep 2010 18:17:44 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
+Subject: [RFC][PATCH] PM: Allow wakeup events to abort freezing of tasks
+Date: Thu, 30 Sep 2010 00:16:50 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc6-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-To: Andreas Saebjoernsen <andreas@digitalplaywright.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: interpreting semantics of ipc system call
-References: <AANLkTik8auzhRB00fRWxbmZKOKg+T87ZZa07ydDAGp=f@mail.gmail.com>
-In-Reply-To: <AANLkTik8auzhRB00fRWxbmZKOKg+T87ZZa07ydDAGp=f@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Sep 2010 22:16:33.0932 (UTC) FILETIME=[F9AF2CC0:01CB6023]
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201009300016.50128.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/29/2010 03:03 PM, Andreas Saebjoernsen wrote:
-> We are developing a simulator that can simulate any specimen x86 linux program.
-> Our simulator has a simulated memory, unlike the concrete memory state of
-> tools like Valgrind, so that we can do concrete symbolic execution. Instead of
-> reimplementing the system calls we marshal the system calls called by
-> the specimen.
->
-> I am currently working on marshaling calls to the ipc system call (system
-> call 117) which has the following signature
->
-> int ipc(unsigned int call, int first, int second, int third, void
-> *ptr, long fifth)
->
-> I have a problem interpreting what the size is of the data structure
-> pointed to by
-> the 'void*', and I have been unable to locate good documentation or code on the
-> semantics of this system call.
- >
- > Could you please help me interpret the size of the data structure
- > pointed to by the
- > 'void*' or point me to documentation/code for the ipc system call?
+From: Rafael J. Wysocki <rjw@sisk.pl>
+Subject: PM: Allow wakeup events to abort freezing of tasks
 
-man 2 
-{ipc,msgctl,msgget,msgrcv,msgsnd,semctl,semget,semop,semtimedop,shmat,shmctl,shmdt,shmget}
+If there is a wakeup event during the freezing of tasks, suspend or
+hibernation will fail anyway.  Since try_to_freeze_tasks() can take
+up to 20 seconds to complete or fail, aborting it as soon as a wakeup
+event is detected improves the worst case wakeup latency.
 
-Also look at the source code for the system call in ipc/syscall.c and 
-the glibc sources.
+Based on a patch from Arve Hjønnevåg.
 
-David Daney
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ kernel/power/process.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
+Index: linux-2.6/kernel/power/process.c
+===================================================================
+--- linux-2.6.orig/kernel/power/process.c
++++ linux-2.6/kernel/power/process.c
+@@ -40,6 +40,7 @@ static int try_to_freeze_tasks(bool sig_
+ 	struct timeval start, end;
+ 	u64 elapsed_csecs64;
+ 	unsigned int elapsed_csecs;
++	bool wakeup = false;
+ 
+ 	do_gettimeofday(&start);
+ 
+@@ -78,6 +79,11 @@ static int try_to_freeze_tasks(bool sig_
+ 		if (!todo || time_after(jiffies, end_time))
+ 			break;
+ 
++		if (!pm_check_wakeup_events()) {
++			wakeup = true;
++			break;
++		}
++
+ 		/*
+ 		 * We need to retry, but first give the freezing tasks some
+ 		 * time to enter the regrigerator.
+@@ -97,8 +103,9 @@ static int try_to_freeze_tasks(bool sig_
+ 		 * but it cleans up leftover PF_FREEZE requests.
+ 		 */
+ 		printk("\n");
+-		printk(KERN_ERR "Freezing of tasks failed after %d.%02d seconds "
++		printk(KERN_ERR "Freezing of tasks %s after %d.%02d seconds "
+ 		       "(%d tasks refusing to freeze, wq_busy=%d):\n",
++		       wakeup ? "aborted" : "failed",
+ 		       elapsed_csecs / 100, elapsed_csecs % 100,
+ 		       todo - wq_busy, wq_busy);
+ 
+@@ -107,7 +114,7 @@ static int try_to_freeze_tasks(bool sig_
+ 		read_lock(&tasklist_lock);
+ 		do_each_thread(g, p) {
+ 			task_lock(p);
+-			if (freezing(p) && !freezer_should_skip(p))
++			if (!wakeup && freezing(p) && !freezer_should_skip(p))
+ 				sched_show_task(p);
+ 			cancel_freezing(p);
+ 			task_unlock(p);
