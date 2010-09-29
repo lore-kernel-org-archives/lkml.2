@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971Ab0I2BHl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 21:07:41 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:38050 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956Ab0I2BHk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 21:07:40 -0400
-Date: Wed, 29 Sep 2010 02:07:38 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Michael Cree <mcree@orcon.net.nz>
-Cc: Al Viro <viro@ftp.linux.org.uk>, linux-kernel@vger.kernel.org,
-        mattst88@gmail.com, torvalds@linux-foundation.org
-Subject: Re: [PATCH 1/2] alpha: switch osf_sigprocmask() to use of
- sigprocmask()
-Message-ID: <20100929010738.GJ19804@ZenIV.linux.org.uk>
-References: <E1OzvxM-0002ng-B5@ZenIV.linux.org.uk>
- <4CA1B7DF.10202@orcon.net.nz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CA1B7DF.10202@orcon.net.nz>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1754557Ab0I2BNM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 21:13:12 -0400
+Received: from xenotime.net ([72.52.115.56]:52016 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751941Ab0I2BNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 21:13:11 -0400
+Date: Tue, 28 Sep 2010 18:13:04 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: "N.P.S. N.P.S." <napohybelskurwysynom2010@gmail.com>
+Cc: akpm@linux-foundation.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mmotm 2010-09-28-16-13 uploaded
+Message-Id: <20100928181304.74bbfc79.rdunlap@xenotime.net>
+In-Reply-To: <AANLkTim4BKvyyEbS6fp52FcjZzL_gVgSe7=ra2pA9ObR@mail.gmail.com>
+References: <201009282344.o8SNiliN024981@imap1.linux-foundation.org>
+	<AANLkTim4BKvyyEbS6fp52FcjZzL_gVgSe7=ra2pA9ObR@mail.gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 28, 2010 at 10:39:43PM +1300, Michael Cree wrote:
-> On 27/09/10 07:28, Al Viro wrote:
-> >
-> >get rid of a useless wrapper, while we are at it
-> >
-> >Signed-off-by: Al Viro<viro@zeniv.linux.org.uk>
-> 
-> Compiling this leads to the following errors:
-> 
-> arch/alpha/kernel/signal.c: In function ?SYSC_osf_sigprocmask?:
-> arch/alpha/kernel/signal.c:52: error: implicit declaration of
-> function ?siprocmask?
-> arch/alpha/kernel/signal.c:55: error: invalid type argument of ?->?
-> (have ?sigset_t?)
-> 
-> Obviously it should be sigprocmask at line 52, and presumably line
-> 55 which is currently
-> 
-> 		res = oldmask->sig[0];
-> 
-> should be
-> 
-> 		res = oldmask.sig[0];
+On Wed, 29 Sep 2010 02:49:57 +0200 N.P.S. N.P.S. wrote:
 
-Grrrr....   My apologies - cherry-pick from the wrong branch ;-/
+> 2010/9/29  <akpm@linux-foundation.org>:
+> > The mm-of-the-moment snapshot 2010-09-28-16-13 has been uploaded to
+> 
+> It seems that randconfig causes a problem
+> 
+> drivers/hwmon/pkgtemp.c: In function 'pkgtemp_init':
+> drivers/hwmon/pkgtemp.c:413: error: 'pkgtemp_cpu_notifier' undeclared (first use
+> drivers/hwmon/pkgtemp.c:413: error: (Each undeclared identifier is reported only
+> drivers/hwmon/pkgtemp.c:413: error: for each function it appears in.)
+> make[2]: *** [drivers/hwmon/pkgtemp.o] Błąd 1
+> make[1]: *** [drivers/hwmon] Błąd 2
+> make: *** [drivers] Błąd 2
 
-Al "nothing like seeing the errors one has fixed show up in what's sent" Viro
+I sent a patch for this in reply to today's linux-next announcement.
+
+Same for the fs.h warnings.  And several others that are needed in mmotm
+due to its base.
+
+Andrew, should I be cc-ing you on all of these patches?
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
