@@ -1,57 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754970Ab0I2SwU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 14:52:20 -0400
-Received: from sj-iport-3.cisco.com ([171.71.176.72]:36932 "EHLO
-	sj-iport-3.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752411Ab0I2SwT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 14:52:19 -0400
-Authentication-Results: sj-iport-3.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAK8no0yrRN+J/2dsb2JhbACiHHGrRJxwhUQEhFCFaoR5
-X-IronPort-AV: E=Sophos;i="4.57,255,1283731200"; 
-   d="scan'208";a="240743337"
-From: Roland Dreier <rdreier@cisco.com>
-To: Steve Wise <swise@opengridcomputing.com>
-Cc: stable@kernel.org, linux-rdma@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] RDMA/cxgb4: Add default_llseek to debugfs files.
-References: <20100929141112.26944.21931.stgit@build.ogc.int>
-X-Message-Flag: Warning: May contain useful information
-Date: Wed, 29 Sep 2010 11:52:10 -0700
-In-Reply-To: <20100929141112.26944.21931.stgit@build.ogc.int> (Steve Wise's
-	message of "Wed, 29 Sep 2010 09:11:12 -0500")
-Message-ID: <ada8w2k2xid.fsf@cisco.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755314Ab0I2TBT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 15:01:19 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:47091 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754339Ab0I2TBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 15:01:17 -0400
+Message-Id: <20100929190053.992911934@gulag1.americas.sgi.com>
+User-Agent: quilt/0.47-1
+Date: Wed, 29 Sep 2010 14:00:53 -0500
+From: Robin Holt <holt@sgi.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Badari Pulavarty <pbadari@us.ibm.com>,
+        Dave Hansen <haveblue@us.ibm.com>, Gary Hade <garyhade@us.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Matt Tolentino <matthew.e.tolentino@intel.com>,
+        "Robert P. J. Day" <rpjday@crashcourse.ca>
+Subject: [Patch 0/3] Speed up link_mem_sections during boot.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- > --- a/drivers/infiniband/hw/cxgb4/device.c
- > +++ b/drivers/infiniband/hw/cxgb4/device.c
- > @@ -182,6 +182,7 @@ static const struct file_operations qp_debugfs_fops = {
- >  	.open    = qp_open,
- >  	.release = qp_release,
- >  	.read    = debugfs_read,
- > +	.llseek  = default_llseek,
- >  };
- >  
- >  static int dump_stag(int id, void *p, void *data)
- > @@ -255,6 +256,7 @@ static const struct file_operations stag_debugfs_fops = {
- >  	.open    = stag_open,
- >  	.release = stag_release,
- >  	.read    = debugfs_read,
- > +	.llseek  = default_llseek,
- >  };
- >  
- >  static int setup_debugfs(struct c4iw_dev *devp)
- > 
- > 
 
-Steve, can you also do a quick test to make sure this works OK with
-generic_file_llseek instead of default_llseek?
+During boot of a large system, we see a delay in the portion of boot which
+is calling link_mem_sections().  On a 16TB x86_64 system, it is taking
+1 hour 27 minutes.  With this patch set applied, it takes 46 seconds.
 
-Thanks.
+The speedup is accomplished by simply caching the results from the
+previous find_memory_block and using that as a quick check to see if
+the next block happens to be adjacent to the previous.  In our testing,
+that was true 100% of the time.
+
+---
+
+ drivers/base/memory.c   |   28 ++++++++++++++++++----------
+ drivers/base/node.c     |    8 +++++---
+ include/linux/kobject.h |    2 ++
+ include/linux/memory.h  |    2 ++
+ lib/kobject.c           |   39 +++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 66 insertions(+), 13 deletions(-)
