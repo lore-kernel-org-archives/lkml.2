@@ -1,92 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755050Ab0I2U7Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 16:59:24 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:49219 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751154Ab0I2U7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 16:59:23 -0400
-Subject: Re: [Patch 1/3] Introduce kset_find_obj_hinted.
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Robin Holt <holt@sgi.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        "Robert P. J. Day" <rpjday@crashcourse.ca>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Badari Pulavarty <pbadari@us.ibm.com>,
-        Dave Hansen <haveblue@us.ibm.com>, Gary Hade <garyhade@us.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Matt Tolentino <matthew.e.tolentino@intel.com>
-In-Reply-To: <20100929190115.494540024@gulag1.americas.sgi.com>
-References: <20100929190053.992911934@gulag1.americas.sgi.com>
-	 <20100929190115.494540024@gulag1.americas.sgi.com>
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Date: Wed, 29 Sep 2010 13:59:16 -0700
-Message-ID: <1285793956.19976.10359.camel@nimitz>
+	id S1755514Ab0I2VCR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 17:02:17 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:40626 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751320Ab0I2VCQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 17:02:16 -0400
+Date: Wed, 29 Sep 2010 22:26:23 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] DMI: log system, BIOS, and board information
+Message-ID: <20100929222623.4b020427@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100929182402.31093.4303.stgit@bob.kio>
+References: <20100929182402.31093.4303.stgit@bob.kio>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-09-29 at 14:00 -0500, Robin Holt wrote:
+On Wed, 29 Sep 2010 12:24:02 -0600
+Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
+
 > 
->  struct kobject *kset_find_obj(struct kset *kset, const char *name)
->  {
-> +       return kset_find_obj_hinted(kset, name, NULL);
-> +}
-> +
-> +/**
-> + * kset_find_obj_hinted - search for object in kset given a predecessor hint.
-> + * @kset: kset we're looking in.
-> + * @name: object's name.
-> + * @hint: hint to possible object's predecessor.
-> + *
-> + * Check the hint's next object and if it is a match return it directly,
-> + * otherwise, fall back to the behavior of kset_find_obj().  Either way
-> + * a reference for the returned object is held and the reference on the
-> + * hinted object is released.
-> + */
-> +struct kobject *kset_find_obj_hinted(struct kset *kset, const char *name,
-> +                                    struct kobject *hint)
-> +{
->         struct kobject *k;
->         struct kobject *ret = NULL;
+> Put basic system information in the dmesg log.  There are lots of dmesg
+> logs on the web, and it would be useful if they contained this information
+> for debugging platform problems.
 > 
->         spin_lock(&kset->list_lock);
-> +
-> +       if (!hint)
-> +               goto slow_search;
-> +
-> +       /* end of list detection */
-> +       if (hint->entry.next == kset->list.next)
-> +               goto slow_search;
-> +
-> +       k = container_of(hint->entry.next, struct kobject, entry);
-> +       if (!kobject_name(k) || strcmp(kobject_name(k), name))
-> +               goto slow_search;
-> +
-> +       ret = kobject_get(k);
-> +       goto unlock_exit;
-> +
-> +slow_search:
->         list_for_each_entry(k, &kset->list, entry) {
->                 if (kobject_name(k) && !strcmp(kobject_name(k), name)) {
->                         ret = kobject_get(k);
->                         break;
->                 }
->         }
+> DMI often doesn't supply a board name, but I assume the others are pretty
+> standard.
 
-So, the slow search ends up looking through _all_ of the sections in the
-order they got registered, which _guarantees_ that we'll go all the way
-through the list every time.  Right?
+You need to filter the characters before printing them in the log. Some
+platforms contain binary garbage.
 
-I guess we could also add to the list using list_add_tail(), iterate
-during the search using list_for_each_tail(), or even just look at the
-last entry by looking at kset->list.prev directly.  Those would have the
-advantage of not having to have several levels in the call chain.  We
-also wouldn't have to change anything if and when this gets fixed
-properly.
+So NAK.
 
--- Dave
-
+It's also the wrong thing in most cases because the key data is in sysfs
+so your bug capturing tool can collect it.
