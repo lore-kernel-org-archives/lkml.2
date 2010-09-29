@@ -1,142 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799Ab0I2LDe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 07:03:34 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:57130 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752424Ab0I2LDc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 07:03:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=DRuc7tDAxqZ+BM/UHd2/G4Pyl4/Bu6LPbWZGjWX3aTveA7h9JBp9vRWHshb2HpfXcT
-         talmimR2xkychMlngQQq3T1XW2/jRS8FHFI+okm/5NMtKBfdqjzGsGkDJ4zDmnRP51uj
-         klMJFykVXAfTc/Iz6W+BBI5pSVB5fTRPwMtJs=
-Date: Wed, 29 Sep 2010 07:02:48 -0400
-From: tmhikaru@gmail.com
-To: Florian Mickler <florian@mickler.org>, linux-kernel@vger.kernel.org,
-        Greg KH <gregkh@suse.de>
-Subject: Re: Linux 2.6.35.6
-Message-ID: <20100929110247.GA2032@roll>
-References: <20100927003608.GA20395@kroah.com> <20100927163208.GA4892@roll> <20100927215135.3d11d587@schatten.dmk.lab> <20100927233956.GA15705@roll> <20100928083505.0a808ffd@schatten.dmk.lab> <20100928190358.GA24303@roll> <20100929092924.2090f19e@schatten.dmk.lab>
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZGiS0Q5IWpPtfppv"
-Content-Disposition: inline
-In-Reply-To: <20100929092924.2090f19e@schatten.dmk.lab>
-User-Agent: Mutt/1.4.2.3i
+	id S1753302Ab0I2LEo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 07:04:44 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:58126 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751412Ab0I2LEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 07:04:41 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX18AwPcgx7sA7JUtc2TAGhKHxfnSxX4v3u7HEW1007
+	yynIEduELPUwhK
+From: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+To: linux-kernel@vger.kernel.org
+Subject: Fwd: i915  blocked for more than 120 seconds.
+Date: Wed, 29 Sep 2010 13:04:38 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35.6; KDE/4.4.5; i686; ; )
+MIME-Version: 1.0
+Content-Type: Multipart/Mixed;
+  boundary="Boundary-00=_H1xoM8odydHBkot"
+Message-Id: <201009291304.39255.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---ZGiS0Q5IWpPtfppv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+--Boundary-00=_H1xoM8odydHBkot
+Content-Type: text/plain;
+  charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, Sep 29, 2010 at 09:29:24AM +0200, Florian Mickler wrote:
-> Do you know what load average conky is showing you? If I
-> type 'uptime' on a console, i get three load numbers: 1minute-,
-> 5minutes- and 15minutes-average.=20
-> If there is a systematic bias it should be visible on the
-> 15minutes-average.  If there are only bursts of 'load' it should be
-> visible on the 1 minutes average numbers.
+=46orget to Cc: the kernel list.
 
-It is giving the same averages that uptime does in the same format, and
-there is a routine problem - it remains high on all averages on the kernels
-that do not work properly, and zeroes eventually if I leave it alone long
-enough on kernels that do work properly. When I discovered X was part of the
-problem somehow, it was due to me testing in X with mrxvt running bash and
-uptime, and in console without X using bash with uptime. uptime consistently
-gives the same numbers that conky does, so I don't think I need to worry
-about conky confusing the issue.
+=2D-=20
+MfG/Kind regards
+Toralf F=C3=B6rster
 
->=20
-> But it doesn't really matter for now what kind of load disturbance you
-> are seeing, because you actually have a better way to distinguish a good
-> kernel from a bad:
-
-You may think a timed kernel compile is a better way to determine if there
-is a fault with the kernel, but it takes my machine around two hours (WITH
-ccache) to build my kernel. Since the use of ccache speeds up the builds
-dramatically and would give misleading readings if I compiled the exact
-kernel source twice, I'd have to disable it if I wanted it to be a
-worthwhile test. So it would take even *longer* to build than normally. This
-is not something I'm willing to use as a 'better' test - especially since
-the loadavg numbers are consistently high when on a bad kernel and
-consistently zeroed or very close to it when not.
-
-Here's an uptime sample from a working version:
-
-06:20:31 up 21 min,  4 users,  load average: 0.00, 0.02, 0.06
-
-I've been typing up this email while waiting for the load to flatten from
-the initial boot. I think it's pretty obvious here that it's working
-properly, so I'm going to git bisect good it...
-
-Bisecting: 27 revisions left to test after this (roughly 5 steps)
-
-I'm getting fairly close at least.
-
-Here's an uptime output from a version of the kernel that was NOT working
-properly, 2.6.35.6:
-14:30:12 up  3:46,  4 users,  load average: 0.85, 0.93, 0.89
-
-And it probably doesn't give you any useful information, but here's 2.6.35.=
-1's
-reaction to building 2.6.35:
-22:01:22 up 15 min, 4 users, load average: 1.84, 1.38, 0.83
-
-whereas on a working kernel this is what the load average looks like when
-building a kernel:
-06:33:13 up 34 min,  4 users,  load average: 1.01, 0.92, 0.52
-
-This is not a multiprocessor or multicore system, it's an athlon XP 2800
-with 1.5GB of ram. Before the question is asked, no, I'm not being silly and
-using make -j2.
-
-I think simply letting the machine idle is just as good a test for
-determining wether or not any particular kernel is good/bad since the
-readings are like night and day. I only brought up that the timed kernel
-runs were taking longer on the kernel with the higher load average since it
-meant that it wasn't simply a broken statistic giving false readings;
-something *is* wrong, and I can't simply ignore it.
-
-It's taken me several days to bisect this far. If greg insists, I'll restart
-the bisection from scratch using a kernel compile as a test, but I implore
-you not to ask me to do so; it will more than likely give me the same
-results I'm getting now for more than double the amount of time invested.
-
-> Yes, the sample rate was one of the things I wanted to know, but also whi=
-ch of
-> the 3 load figures you were graphing. =20
-To be honest, I actually don't know. I'm *terrible* at regex, this is what
-the bash script is doing:
-
-cat /proc/loadavg     | perl -p -e 's/^([^ ]+) .+$/$1/'
-
-If you can explain what that's doing, I'd appreciate it. If it's not to your
-liking, I can change it to something else.
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
 
 
-Tim McGrath
---ZGiS0Q5IWpPtfppv
-Content-Type: application/pgp-signature
+--Boundary-00=_H1xoM8odydHBkot
+Content-Type: message/rfc822;
+  name="forwarded message"
+Content-Transfer-Encoding: 7bit
+Content-Description: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>: i915  blocked for more than 120 seconds.
 Content-Disposition: inline
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+From: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+To: dri-devel@lists.freedesktop.org
+Subject: i915  blocked for more than 120 seconds.
+Date: Wed, 29 Sep 2010 11:36:22 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35.6; KDE/4.4.5; i686; ; )
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+Message-Id: <201009291136.23043.toralf.foerster@gmx.de>
 
-iQEVAwUBTKMc15EncCrqzVruAQIT1wgAhBnJeBayzoJ5fFtfEdU9W/Sa+I56UEPC
-wuywEBTnjka3DRxkAX9w0c1aRbByCwqPKt8OjnGXrw61rzn0K1pnJFMv1zny1dGG
-X8Ka3vHCpNVeTXO2/1tTr/oyN0qNgX0yCA7koVYPl6FPQx8wJqzAHM7ln5P+h1ow
-Bsfb3K9BW1VJrbDN5JVlTKH0QuermVDclKHCKmr9fpFPrcY8zWUnWpRwIIQhCt3M
-eOClAIA5NmvDg7O/35n4Vvx2t/G/00xGPFL8FTFcUm8NOYYGxWnnw+atwVcopzV7
-jsBzqgea46FsLHEAQ4Jch9TW8ZcX8NNe3GjTn6gk8M4WaKJ9D+Ci2g==
-=r2NO
------END PGP SIGNATURE-----
+Hello,
 
---ZGiS0Q5IWpPtfppv--
+today I run at the latest 2.6.35.6 kernel few apps like Lotus Notes under w=
+ine, amarok and firefox
+and in parallel a "git bisect" when I got this :
+
+n22 ~ # grep 2010-09-29T11:21 /var/log/messages | grep kernel
+2010-09-29T11:21:36.984+02:00 n22 kernel: INFO: task i915:868 blocked for m=
+ore than 120 seconds.
+2010-09-29T11:21:36.984+02:00 n22 kernel: "echo 0 > /proc/sys/kernel/hung_t=
+ask_timeout_secs" disables this message.
+2010-09-29T11:21:36.984+02:00 n22 kernel: i915          D ffa47280     0   =
+868      2 0x00000000
+2010-09-29T11:21:36.984+02:00 n22 kernel: f5d0ff1c 00000046 000112be ffa472=
+80 f53f0064 0ec0c353 00000532 f723b804
+2010-09-29T11:21:36.984+02:00 n22 kernel: c2406b40 0000118d 00000000 c13b7b=
+00 0ec0b1c6 00000532 c13b1000 c13b1000
+2010-09-29T11:21:36.984+02:00 n22 kernel: c13b7b00 c13b7b00 f6384030 f63840=
+30 f5d0ff6c c123c6f1 1ddceea9 0000164f
+2010-09-29T11:21:36.984+02:00 n22 kernel: Call Trace:
+2010-09-29T11:21:36.984+02:00 n22 kernel: [<c123c6f1>] ? schedule+0x211/0x7=
+80
+2010-09-29T11:21:36.984+02:00 n22 kernel: [<c123d5c0>] __mutex_lock_slowpat=
+h+0xd0/0x130
+2010-09-29T11:21:36.984+02:00 n22 kernel: [<c123d980>] mutex_lock+0x20/0x40
+2010-09-29T11:21:36.984+02:00 n22 kernel: [<f8a88508>] i915_gem_retire_work=
+_handler+0x28/0xc0 [i915]
+2010-09-29T11:21:36.984+02:00 n22 kernel: [<f8a884e0>] ? i915_gem_retire_wo=
+rk_handler+0x0/0xc0 [i915]
+2010-09-29T11:21:36.984+02:00 n22 kernel: [<c10441af>] worker_thread+0xef/0=
+x1b0
+2010-09-29T11:21:36.984+02:00 n22 kernel: [<c102e6ab>] ? default_wake_funct=
+ion+0xb/0x10
+2010-09-29T11:21:36.984+02:00 n22 kernel: [<c1047bd0>] ? autoremove_wake_fu=
+nction+0x0/0x40
+2010-09-29T11:21:36.984+02:00 n22 kernel: [<c10440c0>] ? worker_thread+0x0/=
+0x1b0
+2010-09-29T11:21:36.984+02:00 n22 kernel: [<c1047864>] kthread+0x74/0x80
+2010-09-29T11:21:36.984+02:00 n22 kernel: [<c10477f0>] ? kthread+0x0/0x80
+2010-09-29T11:21:36.984+02:00 n22 kernel: [<c10032be>] kernel_thread_helper=
++0x6/0x18
+2010-09-29T11:21:36.984+02:00 n22 kernel: INFO: task X:12082 blocked for mo=
+re than 120 seconds.
+2010-09-29T11:21:36.985+02:00 n22 kernel: "echo 0 > /proc/sys/kernel/hung_t=
+ask_timeout_secs" disables this message.
+2010-09-29T11:21:36.985+02:00 n22 kernel: X             D c11cf5a4     0 12=
+082  12029 0x00400004
+2010-09-29T11:21:36.985+02:00 n22 kernel: f5fc7dd0 00203082 f5fc7db0 c11cf5=
+a4 ffffffff f2e0157c 00000531 00000000
+2010-09-29T11:21:36.985+02:00 n22 kernel: 000004d0 000382ff 00000000 c13b7b=
+00 f2dc927d 00000531 c13b1000 c13b1000
+2010-09-29T11:21:36.985+02:00 n22 kernel: c13b7b00 c13b7b00 f516dba0 f5fc7d=
+c4 c11d26e8 00000020 c3680c80 00000020
+2010-09-29T11:21:36.985+02:00 n22 kernel: Call Trace:
+2010-09-29T11:21:36.985+02:00 n22 kernel: [<c11cf5a4>] ? sock_alloc_send_ps=
+kb+0x164/0x2a0
+2010-09-29T11:21:36.985+02:00 n22 kernel: [<c11d26e8>] ? skb_queue_tail+0x3=
+8/0x50
+2010-09-29T11:21:36.985+02:00 n22 kernel: [<c123d5c0>] __mutex_lock_slowpat=
+h+0xd0/0x130
+2010-09-29T11:21:36.985+02:00 n22 kernel: [<c123d980>] mutex_lock+0x20/0x40
+2010-09-29T11:21:36.985+02:00 n22 kernel: [<f8a8843b>] i915_gem_throttle_io=
+ctl+0x2b/0x80 [i915]
+2010-09-29T11:21:36.985+02:00 n22 kernel: [<c11cb3f3>] ? sock_aio_write+0x1=
+13/0x140
+2010-09-29T11:21:36.985+02:00 n22 kernel: [<f89ea08b>] drm_ioctl+0x1ab/0x43=
+0 [drm]
+2010-09-29T11:21:36.985+02:00 n22 kernel: [<f8a88410>] ? i915_gem_throttle_=
+ioctl+0x0/0x80 [i915]
+2010-09-29T11:21:36.985+02:00 n22 kernel: [<c10a2045>] ? do_sync_readv_writ=
+ev+0x95/0xd0
+2010-09-29T11:21:36.985+02:00 n22 kernel: [<c10a1eb2>] ? rw_copy_check_uvec=
+tor+0x52/0x100
+2010-09-29T11:21:36.985+02:00 n22 kernel: [<c10af03d>] vfs_ioctl+0x2d/0xc0
+2010-09-29T11:21:36.985+02:00 n22 kernel: [<c10a27c1>] ? do_readv_writev+0x=
+141/0x1b0
+2010-09-29T11:21:36.985+02:00 n22 kernel: [<f89e9ee0>] ? drm_ioctl+0x0/0x43=
+0 [drm]
+2010-09-29T11:21:36.985+02:00 n22 kernel: [<c10af21a>] do_vfs_ioctl+0x6a/0x=
+590
+2010-09-29T11:21:36.985+02:00 n22 kernel: [<c104bac3>] ? hrtimer_try_to_can=
+cel+0x33/0x80
+2010-09-29T11:21:36.985+02:00 n22 kernel: [<c1036efd>] ? do_setitimer+0xad/=
+0x1a0
+2010-09-29T11:21:36.985+02:00 n22 kernel: [<c112c6e8>] ? _copy_from_user+0x=
+38/0x130
+2010-09-29T11:21:36.985+02:00 n22 kernel: [<c103703c>] ? sys_setitimer+0x4c=
+/0xa0
+2010-09-29T11:21:36.985+02:00 n22 kernel: [<c10af779>] sys_ioctl+0x39/0x60
+2010-09-29T11:21:36.985+02:00 n22 kernel: [<c1002d97>] sysenter_do_call+0x1=
+2/0x26
+
+The ThinkPad T400 hang completey and I had to use the magic SysRq+B key to =
+reboot the system.
+Is this a known problem ?
+
+=2D-=20
+MfG/Kind regards
+Toralf F=C3=B6rster
+
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+
+
+--Boundary-00=_H1xoM8odydHBkot--
