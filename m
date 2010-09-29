@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab0I2JKy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 05:10:54 -0400
-Received: from mgw-sa02.ext.nokia.com ([147.243.1.48]:36261 "EHLO
+	id S1755522Ab0I2JKv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 05:10:51 -0400
+Received: from mgw-sa02.nokia.com ([147.243.1.48]:36174 "EHLO
 	mgw-sa02.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755008Ab0I2JKw (ORCPT
+	with ESMTP id S1755008Ab0I2JKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 05:10:52 -0400
+	Wed, 29 Sep 2010 05:10:49 -0400
 From: Samu Onkalo <samu.p.onkalo@nokia.com>
 To: rpurdie@linux.intel.com, akpm@osdl.org
 Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv2 3/4] leds: Update LP552x support Kconfig and Makefile
-Date: Wed, 29 Sep 2010 12:10:04 +0300
-Message-Id: <1285751405-22039-4-git-send-email-samu.p.onkalo@nokia.com>
+Subject: [PATCHv2 0/4] Led driver support for LP5521 and LP5523 chips
+Date: Wed, 29 Sep 2010 12:10:01 +0300
+Message-Id: <1285751405-22039-1-git-send-email-samu.p.onkalo@nokia.com>
 X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1285751405-22039-1-git-send-email-samu.p.onkalo@nokia.com>
-References: <1285751405-22039-1-git-send-email-samu.p.onkalo@nokia.com>
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide configuration and compilation support for LP5521 and LP5523
+Changes in v2 patch set:
+- Documentation corrections
+- Coding style corrections
+- 5521 selftest return value handling changed
+- check against illegal channel number value in platform data
 
-Signed-off-by: Samu Onkalo <samu.p.onkalo@nokia.com>
----
- drivers/leds/Kconfig  |   18 ++++++++++++++++++
- drivers/leds/Makefile |    2 ++
- 2 files changed, 20 insertions(+), 0 deletions(-)
+Original cover-letter:
 
-diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-index e411262..c789087 100644
---- a/drivers/leds/Kconfig
-+++ b/drivers/leds/Kconfig
-@@ -176,6 +176,24 @@ config LEDS_LP3944
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called leds-lp3944.
- 
-+config LEDS_LP5521
-+	tristate "LED Support for N.S. LP5521 LED driver chip"
-+	depends on LEDS_CLASS && I2C
-+	help
-+	  If you say yes here you get support for the National Semiconductor
-+	  LP5521 LED driver. It is 3 channel chip with programmable engines.
-+	  Driver provides direct control via LED class and interface for
-+	  programming the engines.
-+
-+config LEDS_LP5523
-+	tristate "LED Support for N.S. LP5523 LED driver chip"
-+	depends on LEDS_CLASS && I2C
-+	help
-+	  If you say yes here you get support for the National Semiconductor
-+	  LP5523 LED driver. It is 9 channel chip with programmable engines.
-+	  Driver provides direct control via LED class and interface for
-+	  programming the engines.
-+
- config LEDS_CLEVO_MAIL
- 	tristate "Mail LED on Clevo notebook"
- 	depends on X86 && SERIO_I8042 && DMI
-diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-index 7d6b958..2ba98f6 100644
---- a/drivers/leds/Makefile
-+++ b/drivers/leds/Makefile
-@@ -23,6 +23,8 @@ obj-$(CONFIG_LEDS_SUNFIRE)		+= leds-sunfire.o
- obj-$(CONFIG_LEDS_PCA9532)		+= leds-pca9532.o
- obj-$(CONFIG_LEDS_GPIO)			+= leds-gpio.o
- obj-$(CONFIG_LEDS_LP3944)		+= leds-lp3944.o
-+obj-$(CONFIG_LEDS_LP5521)		+= leds-lp5521.o
-+obj-$(CONFIG_LEDS_LP5523)		+= leds-lp5523.o
- obj-$(CONFIG_LEDS_CLEVO_MAIL)		+= leds-clevo-mail.o
- obj-$(CONFIG_LEDS_HP6XX)		+= leds-hp6xx.o
- obj-$(CONFIG_LEDS_FSG)			+= leds-fsg.o
--- 
-1.6.0.4
+Patch set provides support for LP5521 and LP5523 LED driver chips
+from National Semicondutor. Both drivers supports programmable engines
+and naturally LED class features.
+
+Documentation is provided as a part of the patch set.
+I created "leds" sub directory to Documentation.
+Perhaps rest of the leds* documentation should be moved
+there.
+
+Datasheets are freely available at National Semiconductor www pages.
+
+Tested to work in top of 2.6.36-RC5 kernel.
+
+Samu Onkalo (4):
+  leds: driver for National Semiconductor LP5521 chip
+  leds: Driver for National Semiconductors LP5523 chip
+  leds: Update LP552x support Kconfig and Makefile
+  Documentation: led drivers lp5521 and lp5523
+
+ Documentation/leds/leds-lp5521.txt |   88 +++
+ Documentation/leds/leds-lp5523.txt |   84 +++
+ drivers/leds/Kconfig               |   18 +
+ drivers/leds/Makefile              |    2 +
+ drivers/leds/leds-lp5521.c         |  821 +++++++++++++++++++++++++++
+ drivers/leds/leds-lp5523.c         | 1065 ++++++++++++++++++++++++++++++++++++
+ include/linux/leds-lp5521.h        |   48 ++
+ include/linux/leds-lp5523.h        |   48 ++
+ 8 files changed, 2174 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/leds/leds-lp5521.txt
+ create mode 100644 Documentation/leds/leds-lp5523.txt
+ create mode 100644 drivers/leds/leds-lp5521.c
+ create mode 100644 drivers/leds/leds-lp5523.c
+ create mode 100644 include/linux/leds-lp5521.h
+ create mode 100644 include/linux/leds-lp5523.h
 
