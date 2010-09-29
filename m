@@ -1,72 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755879Ab0I2UpW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 16:45:22 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61097 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752897Ab0I2UpV (ORCPT
+	id S1755913Ab0I2Uq4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 16:46:56 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:49141 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755050Ab0I2Uqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 16:45:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Y48g+r7sNB4+6GqCEyTjZzJurMa7ut+gUuxIv0tJFDtoDSwGeHzkFFD7yO8slEV80K
-         tGfkegOlS/YVWBG83SpdCgR0RLorbLO9uoIl8oExntezxNZyfthkKoX3HlbVyBT2TDzq
-         hp5iSiViiq4NIN6xHXSC+qAgGyGHKt+XtqfQM=
-Subject: Re: [PATCH] [XFRM]: Don't dereference error pointer dst1
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Roel Kluin <roel.kluin@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4CA3BFA3.1060204@gmail.com>
-References: <4CA3BFA3.1060204@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 29 Sep 2010 22:45:13 +0200
-Message-ID: <1285793113.5211.8.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Wed, 29 Sep 2010 16:46:55 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6121"; a="56026019"
+From: Gregory Bean <gbean@codeaurora.org>
+To: dwalker@codeaurora.org
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Gregory Bean <gbean@codeaurora.org>
+Subject: [PATCH 2/2] msm: defconfig: enable CONFIG_PACKET.
+Date: Wed, 29 Sep 2010 13:46:46 -0700
+Message-Id: <1285793206-5717-2-git-send-email-gbean@codeaurora.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1285793206-5717-1-git-send-email-gbean@codeaurora.org>
+References: <1285793206-5717-1-git-send-email-gbean@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 30 septembre 2010 à 00:37 +0200, Roel Kluin a écrit :
-> Don't dereference dst1 when it's an error pointer.
-> 
-> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
-> ---
->  net/xfrm/xfrm_policy.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> I just noticed this by code analysis. It wasn't tested in any way.
-> 
-> diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
-> index cbab6e1..b186c3d 100644
-> --- a/net/xfrm/xfrm_policy.c
-> +++ b/net/xfrm/xfrm_policy.c
-> @@ -1414,13 +1414,14 @@ static struct dst_entry *xfrm_bundle_create(struct xfrm_policy *policy,
->  
->  	for (; i < nx; i++) {
->  		struct xfrm_dst *xdst = xfrm_alloc_dst(net, family);
-> -		struct dst_entry *dst1 = &xdst->u.dst;
-> +		struct dst_entry *dst1;
->  
->  		err = PTR_ERR(xdst);
->  		if (IS_ERR(xdst)) {
->  			dst_release(dst);
->  			goto put_states;
->  		}
-> +		dst1 = &xdst->u.dst;
->  
->  		if (!dst_prev)
->  			dst0 = dst1;
-> 
+Enable CONFIG_PACKET by default so DHCP will work correctly.
 
-This is not a dereference, but a cast from "struct xfrm_dst *" to
-"struct dst_entry *"
+Signed-off-by: Gregory Bean <gbean@codeaurora.org>
+---
+ arch/arm/configs/msm_defconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
+diff --git a/arch/arm/configs/msm_defconfig b/arch/arm/configs/msm_defconfig
+index 2b8f7af..07bfdd9 100644
+--- a/arch/arm/configs/msm_defconfig
++++ b/arch/arm/configs/msm_defconfig
+@@ -18,6 +18,7 @@ CONFIG_ZBOOT_ROM_BSS=0x0
+ CONFIG_CMDLINE="mem=64M console=ttyMSM,115200n8"
+ CONFIG_PM=y
+ CONFIG_NET=y
++CONFIG_PACKET=y
+ CONFIG_UNIX=y
+ CONFIG_INET=y
+ # CONFIG_INET_XFRM_MODE_TRANSPORT is not set
+-- 
+1.7.0.4
 
-
-
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
