@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358Ab0I2Bpg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 21:45:36 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:39497 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1754039Ab0I2Bpf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 21:45:35 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+LNiUqS0SLjrSx5HwpxpedLX+jqBtRwwx4okH/L9
-	/JH2moE3qWTMBD
-Subject: Re: [PATCH 0/3][RFC] Improve load balancing when tasks have large
- weight differential
-From: Mike Galbraith <efault@gmx.de>
-To: Nikhil Rao <ncrao@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Venkatesh Pallipadi <venki@google.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTin=Dic2UE55yUaam8NzGHTib=9s=x-wyzk03BU0@mail.gmail.com>
-References: <1285633798-26886-1-git-send-email-ncrao@google.com>
-	 <1285682273.7469.3.camel@marge.simson.net>
-	 <AANLkTin=Dic2UE55yUaam8NzGHTib=9s=x-wyzk03BU0@mail.gmail.com>
-Content-Type: text/plain
-Date: Wed, 29 Sep 2010 03:45:58 +0200
-Message-Id: <1285724758.7440.11.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1753423Ab0I2CJP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 22:09:15 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:62337 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751858Ab0I2CJN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 22:09:13 -0400
+From: =?UTF-8?q?Diego=20Elio=20Petten=C3=B2?= <flameeyes@gmail.com>
+To: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Cc: David Henningsson <david.henningsson@canonical.com>
+Subject: Band-aid solution for Dell Latitude E6410/E6510 microphone
+Date: Wed, 29 Sep 2010 04:09:00 +0200
+Message-Id: <1285726141-26448-1-git-send-email-flameeyes@gmail.com>
+X-Mailer: git-send-email 1.7.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-09-28 at 14:15 -0700, Nikhil Rao wrote:
+Hi all,
 
-> Thanks for running this. I've not been able to reproduce what you are
-> seeing on the few test machines that I have (different combinations of
-> MC, CPU and NODE domains). Can you please give me more info about
-> your setup?
+I'm sending out a patch that I didn't write (and thus most likely require
+David's Signed-Off), but which I think might be a good idea to at least
+have accessible to search.
 
-It's a plain-jane Q6600 box, so has only MC and CPU domains.
+As David already pointed out to me, the proper fix for the issue is
+Takashi's commit 75e0eb24ee3ec3549c2e53707dcc87e5f7a2c791, but that hasn't
+made it into .36 RCs and thus seem unlikely to come to users anytime soon.
 
-It doesn't necessarily _instantly_ "stick", can take a couple tries, or
-a little time.
+David's patch is a "band aid" solution; it solves most of the problem by
+adding one more special case to the sigmatel patches; on the other hand it
+makes the internal microphone to work fine on my laptop, which is a good
+thing, right?
 
-	-Mike
+Anyway, if this can be considered for .36 or for some stable branch (*looks
+toward Greg hoping for pity*), it would probably make me (and other owners
+of such laptops) probably very happy. Especially given that we have enough
+trouble with a non-working SDHCI and a not-yet-supported Alps
+touchpad/trackpoint combination.
 
+Thanks in advance, whatever the outcome,
+
+-- 
+Diego Elio Pettenò
