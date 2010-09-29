@@ -1,120 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924Ab0I2Pq0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 11:46:26 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:28023 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753049Ab0I2PqY (ORCPT
+	id S1753960Ab0I2PrQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 11:47:16 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:44698 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753150Ab0I2PrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 11:46:24 -0400
-Date: Wed, 29 Sep 2010 17:46:06 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Julia Lawall <julia@diku.dk>
-Cc: "Ben Dooks (em, bedded platforms)" <ben-linux@fluff.org>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 7/8] drivers/i2c/busses/i2c-amd8111.c: Fix unsigned
- return   type
-Message-ID: <20100929174606.616e564c@endymion.delvare>
-In-Reply-To: <Pine.LNX.4.64.1009081148040.3297@ask.diku.dk>
-References: <Pine.LNX.4.64.1009080757050.27892@ask.diku.dk>
-	<20100908093449.0adef429@hyperion.delvare>
-	<Pine.LNX.4.64.1009081148040.3297@ask.diku.dk>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 29 Sep 2010 11:47:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=BHAJvtEwtQN6fPv/7X9I2Amp4nDekvHmCBZ0x14wmQx4BthU3MAQhHXfhqDolGiL7S
+         0ABNGftoSqyi9C80Xdoyw1tsuOvDZzARwkD55dNOOha/JPOb58nISR24IeMmfuDsZwR/
+         Y0jaE2JkxukHQdfFzklKC+EBgtYIMFrycE36U=
+MIME-Version: 1.0
+In-Reply-To: <1285761235-4751-2-git-send-email-ying.huang@intel.com>
+References: <1285761235-4751-1-git-send-email-ying.huang@intel.com>
+	<1285761235-4751-2-git-send-email-ying.huang@intel.com>
+Date: Wed, 29 Sep 2010 08:47:13 -0700
+X-Google-Sender-Auth: y0yGFkD6If3v80pMEQFgUcJOOpY
+Message-ID: <AANLkTi=JkcJiQhxLSmU2vgmrACPSrE16cEhRnxCOr_5g@mail.gmail.com>
+Subject: Re: [PATCH -v2 1/5] ACPI, APEI, Fix APEI related table size checking
+From: Yinghai Lu <yinghai@kernel.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>, linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Julia,
+On Wed, Sep 29, 2010 at 4:53 AM, Huang Ying <ying.huang@intel.com> wrote:
+> On Huang Ying's machine:
+>
+> erst_tab->header_length == sizeof(struct acpi_table_einj)
 
-On Wed, 8 Sep 2010 11:48:17 +0200 (CEST), Julia Lawall wrote:
-> OK, thanks. I will look at the code again.
+So it seems your system firmware violates the 4.0 spec
 
-Any update on this patch?
-
-> On Wed, 8 Sep 2010, Jean Delvare wrote:
-> 
-> > Hi Julia,
-> > 
-> > On Wed, 8 Sep 2010 07:58:45 +0200 (CEST), Julia Lawall wrote:
-> > > From: Julia Lawall <julia@diku.dk>
-> > > 
-> > > In each case, the function has an unsigned return type, but returns a
-> > > negative constant to indicate an error condition.  The result of calling
-> > > the function is always stored in a variable of type (signed) int, and thus
-> > > unsigned can be dropped from the return type.
-> > > 
-> > > A sematic match that finds this problem is as follows:
-> > > (http://coccinelle.lip6.fr/)
-> > > 
-> > > // <smpl>
-> > > @exists@
-> > > identifier f;
-> > > constant C;
-> > > @@
-> > > 
-> > >  unsigned f(...)
-> > >  { <+...
-> > > *  return -C;
-> > >  ...+> }
-> > > // </smpl>
-> > > 
-> > > Signed-off-by: Julia Lawall <julia@diku.dk>
-> > > 
-> > > ---
-> > >  drivers/i2c/busses/i2c-amd8111.c |    4 ++--
-> > >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/drivers/i2c/busses/i2c-amd8111.c b/drivers/i2c/busses/i2c-amd8111.c
-> > > index af1e5e2..02a3726 100644
-> > > --- a/drivers/i2c/busses/i2c-amd8111.c
-> > > +++ b/drivers/i2c/busses/i2c-amd8111.c
-> > > @@ -69,7 +69,7 @@ static struct pci_driver amd8111_driver;
-> > >   * ACPI 2.0 chapter 13 access of registers of the EC
-> > >   */
-> > >  
-> > > -static unsigned int amd_ec_wait_write(struct amd_smbus *smbus)
-> > > +static int amd_ec_wait_write(struct amd_smbus *smbus)
-> > >  {
-> > >  	int timeout = 500;
-> > >  
-> > > @@ -85,7 +85,7 @@ static unsigned int amd_ec_wait_write(struct amd_smbus *smbus)
-> > >  	return 0;
-> > >  }
-> > >  
-> > > -static unsigned int amd_ec_wait_read(struct amd_smbus *smbus)
-> > > +static int amd_ec_wait_read(struct amd_smbus *smbus)
-> > >  {
-> > >  	int timeout = 500;
-> > >  
-> > > 
-> > 
-> > Thanks for reporting. Unfortunately the fix above is incomplete.
-> > amd_ec_wait_write() and amd_ec_wait_read() are called by amd_ec_read()
-> > and amd_ec_write(), which will now attempt to return negative error
-> > codes as unsigned ints. So amd_ec_read() and amd_ec_write() must have
-> > their return type fixed too.
-> > 
-> > Note that the driver code never checks for errors returned by
-> > amd_ec_read() or amd_ec_write() anyway, so the fix alone is a no-op. A
-> > real fix would have to also update the caller sites to properly deal
-> > with errors if then happen.
-> > 
-> > -- 
-> > Jean Delvare
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
--- 
-Jean Delvare
+Yinghai
