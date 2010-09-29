@@ -1,91 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755312Ab0I2Iej (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 04:34:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65402 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755213Ab0I2Ieg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 04:34:36 -0400
-Date: Wed, 29 Sep 2010 10:28:20 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
-        "Xin, Xiaohui" <xiaohui.xin@intel.com>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
- kernel
-Message-ID: <20100929082820.GC21195@redhat.com>
-References: <20100914182707.GB15549@redhat.com>
- <1284490143.13351.82.camel@localhost.localdomain>
- <20100914190156.GA16037@redhat.com>
- <1284492983.13351.95.camel@localhost.localdomain>
- <20100915051241.GA25340@redhat.com>
- <1284531675.24603.259.camel@localhost.localdomain>
- <20100915101000.GB28016@redhat.com>
- <1284562354.2573.12.camel@localhost.localdomain>
- <1285730669.31343.7.camel@localhost.localdomain>
- <20100929081645.GA21195@redhat.com>
+	id S1755213Ab0I2Ik7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 04:40:59 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:62086 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754217Ab0I2Ik5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 04:40:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=s5L+VmlVblTMNfJ5aeGwsNaum6zll/62x4UxbL5ABXLLc2ahmTVS3qU1QweDfpXLz6
+         XWCGMkZN/LUDl1wylmOdq735j0/YLl+CgbWo1LhqOnr1LJ9iBu9aNxB8kAhUGPIqEISU
+         LHFhW/qmvf1B/6ZMhNllflghvRS/a1Yhq/pS4=
+Date: Wed, 29 Sep 2010 10:41:05 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Cliff Wickman <cpw@sgi.com>, Jack Steiner <steiner@sgi.com>,
+        Robin Holt <holt@sgi.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch v2] tlb_uv: use allocated buffer in tunables_read()
+Message-ID: <20100929083118.GA6376@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+	x86@kernel.org, Cliff Wickman <cpw@sgi.com>,
+	Jack Steiner <steiner@sgi.com>, Robin Holt <holt@sgi.com>,
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+References: <20100816105502.GC645@bicker> <20100927161203.732833b0.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100929081645.GA21195@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20100927161203.732833b0.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 29, 2010 at 10:16:45AM +0200, Michael S. Tsirkin wrote:
-> On Tue, Sep 28, 2010 at 08:24:29PM -0700, Shirley Ma wrote:
-> > Hello Michael,
-> > 
-> > On Wed, 2010-09-15 at 07:52 -0700, Shirley Ma wrote:
-> > > > >  Don't you think once I address vhost_add_used_and_signal update
-> > > > > issue, it is a simple and complete patch for macvtap TX zero copy?
-> > > > > 
-> > > > > Thanks
-> > > > > Shirley
-> > > > 
-> > > > I like the fact that the patch is simple. Unfortunately
-> > > > I suspect it'll stop being simple by the time it's complete :) 
-> > > 
-> > > I can make a try. :)
-> > 
-> > I compared several approaches for addressing the issue being raised here
-> > on how/when to update vhost_add_used_and_signal. The simple approach I
-> > have found is:
-> > 
-> > 1. Adding completion field in struct virtqueue;
-> > 2. when it is a zero copy packet, put vhost thread wait for completion
-> > to update vhost_add_used_and_signal;
-> > 3. passing vq from vhost to macvtap as skb destruct_arg;
-> > 4. when skb is freed for the last reference, signal vq completion
-> > The test results show same performance as the original patch. How do you
-> > think? If it sounds good to you. I will resubmit this reversion patch.
-> > The patch still keeps as simple as it was before. :)
-> > 
-> > Thanks
-> > Shirley
-> 
-> If you look at dev_hard_start_xmit you will see a call
-> to skb_orphan_try which often calls the skb destructor.
-> So I suspect this is almost equivalent to your original patch,
-> and has the same correctness issue.
+The original code didn't check that the value returned from snprintf()
+was less than the size of the buffer.  Although it didn't cause a
+runtime bug in this case, it makes the static checkers complain.
 
-So you could try doing skb_tx(skb)->prevent_sk_orphan = 1
-just to see what will happen. Might be interesting - just
-make sure the device doesn't orphan the skb first thing.
-I suspect lack of parallelism will result in bad throughput
-esp for small messages.
+Andrew Morton suggested a dynamically sized buffer would be cleaner.
 
-Note this still won't make it correct (this has module unloading
-issue, and devices might still orphan skb, clone it, or hang on to
-paged data in some other way) but at least closer.
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+---
+I don't have an x86_64 system so I haven't been able to compile this
+code.  Sorry for that.
 
-I think you should try testing with guest to external communication,
-this will uncover some of these correctness issues for you.
-I think netperf also has some flag to check data, might
-be a good idea to use it for testing.
+V2:  The first version was yuk.
 
-> -- 
-> MST
+diff --git a/arch/x86/kernel/tlb_uv.c b/arch/x86/kernel/tlb_uv.c
+index 312ef02..33e77e4 100644
+--- a/arch/x86/kernel/tlb_uv.c
++++ b/arch/x86/kernel/tlb_uv.c
+@@ -1001,10 +1001,10 @@ static int uv_ptc_seq_show(struct seq_file *file, void *data)
+ static ssize_t tunables_read(struct file *file, char __user *userbuf,
+ 						size_t count, loff_t *ppos)
+ {
+-	char buf[300];
++	char *buf;
+ 	int ret;
+ 
+-	ret = snprintf(buf, 300, "%s %s %s\n%d %d %d %d %d %d %d %d %d\n",
++	buf = kasprintf(GFP_KERNEL, "%s %s %s\n%d %d %d %d %d %d %d %d %d\n",
+ 		"max_bau_concurrent plugged_delay plugsb4reset",
+ 		"timeoutsb4reset ipi_reset_limit complete_threshold",
+ 		"congested_response_us congested_reps congested_period",
+@@ -1012,7 +1012,12 @@ static ssize_t tunables_read(struct file *file, char __user *userbuf,
+ 		timeoutsb4reset, ipi_reset_limit, complete_threshold,
+ 		congested_response_us, congested_reps, congested_period);
+ 
+-	return simple_read_from_buffer(userbuf, count, ppos, buf, ret);
++	if (!buf)
++		return -ENOMEM;
++
++	ret = simple_read_from_buffer(userbuf, count, ppos, buf, strlen(buf));
++	kfree(buf);
++	return ret;
+ }
+ 
+ /*
